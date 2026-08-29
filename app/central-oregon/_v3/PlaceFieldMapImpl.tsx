@@ -21,7 +21,7 @@ import { getExploreMapOptions, MAP_NAVY } from '@/lib/maps/markers'
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { useV3FieldBinding } from '@/components/site/v3'
 
-const FILL = { width: '100%', height: '100%' } as const
+const FILL = { position: 'relative', width: '100%', height: '100%' } as const
 const SINGLE_POINT_ZOOM = 14
 /** Same 10% inset the Field plot uses. */
 const FRAME_INSET_PCT = 10
@@ -205,6 +205,12 @@ export function PlaceFieldMapImpl({
         options={{
           ...getExploreMapOptions({ preferMapId: false }),
           center: fallbackCenter,
+          disableDefaultUI: true,
+          mapTypeControl: false,
+          zoomControl: false,
+          fullscreenControl: false,
+          streetViewControl: false,
+          clickableIcons: false,
         }}
         onLoad={onLoad}
         onClick={() => setActiveId(null)}
@@ -270,6 +276,34 @@ export function PlaceFieldMapImpl({
           </OverlayView>
         ))}
       </GoogleMap>
+      <div className="v3-field__zoom" role="group" aria-label="Map zoom">
+        <button
+          type="button"
+          className="v3-field__zoom-btn"
+          aria-label="Zoom in"
+          onClick={() => {
+            const map = mapRef.current
+            const zoom = map?.getZoom()
+            if (map == null || zoom == null) return
+            map.setZoom(zoom + 1)
+          }}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="v3-field__zoom-btn"
+          aria-label="Zoom out"
+          onClick={() => {
+            const map = mapRef.current
+            const zoom = map?.getZoom()
+            if (map == null || zoom == null) return
+            map.setZoom(zoom - 1)
+          }}
+        >
+          -
+        </button>
+      </div>
     </div>
   )
 }

@@ -9,6 +9,8 @@ const FIELD = readFileSync(resolve('app/_v3/HomeHomesField.tsx'), 'utf8')
 const V3_FIELD = readFileSync(resolve('components/site/v3/V3Field.tsx'), 'utf8')
 const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'utf8')
 const FIELD_MAP = readFileSync(resolve('app/central-oregon/_v3/PlaceFieldMapImpl.tsx'), 'utf8')
+const HOME_CONSTANTS = readFileSync(resolve('app/_v3/home-constants.ts'), 'utf8')
+const FOOTER = readFileSync(resolve('components/site/v3/V3Footer.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
   it('mounts HomeHeroSearch as the only Stage action', () => {
@@ -63,6 +65,10 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD).not.toContain('home-field-types')
     expect(FIELD).toContain('V3Button')
     expect(FIELD).toContain('listFlow')
+    expect(FIELD).toContain('listFirst')
+    expect(FIELD).toContain('mapToggle')
+    expect(FIELD).toContain('v3-field__range')
+    expect(FIELD).toContain('aria-label="Price range"')
     expect(FIELD).not.toContain('count=')
     expect(V3_FIELD_CSS).toContain('.v3-field__lead')
     expect(V3_FIELD_CSS).toContain('.v3-field__mark--cat-0')
@@ -77,6 +83,12 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).toContain('order: 0')
     expect(V3_FIELD_CSS).toContain('.v3-field__frame > .v3-field__col:last-of-type')
     expect(V3_FIELD_CSS).toContain('order: 1')
+    expect(V3_FIELD).toContain('listFirst')
+    expect(V3_FIELD).toContain('v3-field--list-first')
+    expect(V3_FIELD).toContain('mapToggle')
+    expect(V3_FIELD).toContain('v3-field--map-toggle')
+    expect(V3_FIELD_CSS).toContain('.v3.v3-field--list-first .v3-field__frame > .v3-field__col:first-of-type')
+    expect(V3_FIELD_CSS).toContain('.v3.v3-field--map-toggle:not(.v3-field--map-open)')
   })
 
   it('wears the Field frame: fold-filling map, same-height list from 900, See all', () => {
@@ -112,6 +124,9 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD_MAP).not.toContain('getListingMarkerIcon')
     expect(FIELD_MAP).not.toContain('MAP_LABEL_LISTING')
     expect(FIELD_MAP).not.toContain('#0d9488')
+    expect(FIELD_MAP).toContain('disableDefaultUI: true')
+    expect(FIELD_MAP).toContain('v3-field__zoom')
+    expect(FIELD_MAP).toContain('v3-field__zoom-btn')
     expect(FIELD_MAP).not.toContain('setZoom(9)')
     expect(FIELD).toContain('PlaceFieldMap')
     expect(FIELD).toContain('boundary={boundary}')
@@ -143,9 +158,25 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD).not.toContain('count=')
   })
 
-  it('does not print MARKET TRUTH LEFTOVER on the market chart', () => {
+  it('does not print leftover labels or the banned market H2', () => {
     expect(PAGE).toContain('Median close by month, single-family, Central Oregon')
+    expect(PAGE).toContain('How tight the market is')
+    expect(PAGE).toContain('chartFirst')
     expect(PAGE).not.toContain('Market Truth leftover')
+    expect(PAGE).not.toContain('Market Truth metric layer')
+    expect(PAGE).not.toContain('leftover membership')
+    expect(PAGE).not.toContain('methodology v3')
+    expect(PAGE).not.toContain('city_quarter_sale_to_ask')
+    expect(PAGE).not.toContain("Is Central Oregon a buyer's or seller's market?")
+    expect(HOME_CONSTANTS).not.toContain('Market Truth leftover')
+    expect(HOME_CONSTANTS).not.toContain('Market Truth metric layer')
+    expect(FOOTER).not.toContain('<h2 className="v3-footer__column-title">')
+    expect(FOOTER).toContain('<p className="v3-footer__column-title">')
+  })
+
+  it('puts Field card prices in Amboqia', () => {
+    expect(V3_FIELD_CSS).toContain('.v3-field__price')
+    expect(V3_FIELD_CSS).toContain('font-family: var(--v3-font-display)')
   })
 
   it('keeps Field lead chips on one scrolling row per nav', () => {

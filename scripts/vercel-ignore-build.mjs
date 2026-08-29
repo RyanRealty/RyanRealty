@@ -21,9 +21,13 @@ import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product
 const vercelEnv = (process.env.VERCEL_ENV || '').trim()
 const commitRef = (process.env.VERCEL_GIT_COMMIT_REF || '').trim()
 
-// PR 161 — allow one walkable Vercel preview of the listing land-face branch.
-// Production (main) ignore behavior is unchanged.
-if (commitRef === 'cursor/listing-land-face-d3ec') {
+// PR 161 / homepage stack — allow walkable Vercel previews of the listing
+// land-face branch and the homepage restyle stacked on it. Production (main)
+// ignore behavior is unchanged.
+if (
+  commitRef === 'cursor/listing-land-face-d3ec' ||
+  commitRef === 'cursor/homepage-restyle-e216'
+) {
   console.log(`[vercel-ignore-build] BUILD — allowlisted preview branch (${commitRef})`)
   process.exit(1)
 }

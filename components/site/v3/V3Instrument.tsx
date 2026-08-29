@@ -196,6 +196,11 @@ export type V3InstrumentProps = {
    */
   chart?: V3ChartProps
   /**
+   * Homepage Chart Room: sentence, then the series, then the figures.
+   * City and market Instruments keep the default (figures, then chart).
+   */
+  chartFirst?: boolean
+  /**
    * A second series under the first. Still one Instrument, not a seventh pattern.
    * Use when the page has two honest series (composition and a monthly median).
    */
@@ -243,6 +248,7 @@ export function V3Instrument({
   note,
   action,
   chart,
+  chartFirst = false,
   chartSecondary,
   cards,
   level,
@@ -281,7 +287,12 @@ export function V3Instrument({
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-instrument', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-instrument',
+        chartFirst && 'v3-instrument--chart-first',
+        className,
+      )}
       aria-labelledby={headlineId}
       aria-label={headlineId ? undefined : headline}
     >
@@ -320,7 +331,7 @@ export function V3Instrument({
           foldAfter != null && foldAfter > 0 && figures.length > foldAfter + 1 ? foldAfter : null
         const lead = foldAt != null ? figures.slice(0, foldAt) : figures
         const tail = foldAt != null ? figures.slice(foldAt) : []
-        return (
+        const figureBlock = (
           <>
             <div
               className={cn(
@@ -342,22 +353,35 @@ export function V3Instrument({
             ) : null}
           </>
         )
+        const chartBlock = (
+          <>
+            {chart ? (
+              <div className="v3-instrument__chart">
+                <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
+              </div>
+            ) : null}
+            {chartSecondary ? (
+              <div className="v3-instrument__chart">
+                <V3Chart
+                  {...chartSecondary}
+                  id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
+                />
+              </div>
+            ) : null}
+          </>
+        )
+        return chartFirst ? (
+          <>
+            {chartBlock}
+            {figureBlock}
+          </>
+        ) : (
+          <>
+            {figureBlock}
+            {chartBlock}
+          </>
+        )
       })()}
-
-      {chart ? (
-        <div className="v3-instrument__chart">
-          <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
-        </div>
-      ) : null}
-
-      {chartSecondary ? (
-        <div className="v3-instrument__chart">
-          <V3Chart
-            {...chartSecondary}
-            id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
-          />
-        </div>
-      ) : null}
 
       {cards && cards.length > 0 ? (
         <div className="v3-instrument__cards">

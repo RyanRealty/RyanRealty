@@ -43,8 +43,12 @@ describe('homepage market figures stay on the leftover pile', () => {
     expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
   })
 
-  it('does not print MARKET TRUTH LEFTOVER on the year overlay caption', () => {
+  it('does not print leftover labels or the banned market H2', () => {
     expect(SRC).toContain('Median close by month, single-family, Central Oregon')
+    expect(SRC).toContain('How tight the market is')
+    expect(SRC).toContain('chartFirst')
     expect(SRC).not.toContain('Market Truth leftover')
+    expect(SRC).not.toContain('Market Truth metric layer')
+    expect(SRC).not.toContain("Is Central Oregon a buyer's or seller's market?")
   })
 })

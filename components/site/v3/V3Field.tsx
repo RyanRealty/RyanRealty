@@ -158,6 +158,16 @@ export type V3FieldProps = {
    */
   listFlow?: boolean
   /**
+   * 390: list first. Wide: map left, list right (the default frame).
+   * Homepage inventory uses this so the cards are the first screen.
+   */
+  listFirst?: boolean
+  /**
+   * 390: the map sits behind a Map toggle. Wide: both panes stay open and
+   * the toggle hides. Default is off so city Fields keep the map in view.
+   */
+  mapToggle?: boolean
+  /**
    * The door after a capped set. Same slot Ledger already has: one ghost
    * control, earned by the rows above it.
    */
@@ -306,6 +316,8 @@ export function V3Field({
   lead,
   footNote,
   listFlow = false,
+  listFirst = false,
+  mapToggle = false,
   action,
   emptyMessage = 'No listings in this view.',
   activeId,
@@ -314,6 +326,7 @@ export function V3Field({
   className,
 }: V3FieldProps) {
   const [internalActive, setInternalActive] = useState<string | null>(null)
+  const [mapOpen, setMapOpen] = useState(false)
   const isControlled = activeId === undefined ? false : true
   const active = isControlled ? activeId ?? null : internalActive
 
@@ -368,6 +381,9 @@ export function V3Field({
           'v3-field',
           usePhotoSurface && 'v3-field--photos',
           listFlow && 'v3-field--flow',
+          listFirst && 'v3-field--list-first',
+          mapToggle && 'v3-field--map-toggle',
+          mapToggle && mapOpen && 'v3-field--map-open',
           className,
         )}
       >
@@ -378,7 +394,22 @@ export function V3Field({
           </p>
         ) : null}
 
-        {lead ? <div className="v3-field__lead">{lead}</div> : null}
+        {lead || mapToggle ? (
+          <div className="v3-field__lead">
+            {lead}
+            {mapToggle ? (
+              <V3Button
+                type="button"
+                variant="ghost"
+                className="v3-field__map-toggle"
+                ariaPressed={mapOpen}
+                onClick={() => setMapOpen((open) => !open)}
+              >
+                Map
+              </V3Button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           className={cn(

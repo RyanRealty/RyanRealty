@@ -13,8 +13,8 @@ export const HERO_VIDEO = '/videos/hero-optimized.mp4'
 export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
 
 /** Preview Field: map + list in one frame. Cap is high enough to read as
- *  inventory, not a four-card platter. See all opens the rest. Do not dump
- *  a novel of cards above the map — the map stays first. */
+ *  inventory, not a four-card platter. See all opens the rest. On 390 the
+ *  list is first and the map sits behind a Map toggle. */
 export const HOME_FIELD_LIMIT = 12
 
 /** Mixed-type pool the type toggle filters. Larger than the visible cap so
@@ -27,11 +27,12 @@ export const HOME_FIELD_POOL = 24
 export const HOME_TILE_FETCH = 3000
 
 /**
- * The count line's source: the count is the leftover Market Truth region row
- * (D19/D78 — never tiles, never a pulse all-count), so the trace names it.
+ * The count line's source: the count is the regional leftover pile
+ * (D19/D78 — never tiles, never a pulse all-count). Public HTML names the
+ * feed, not the leftover label.
  */
 export const HOME_COUNT_TRACE =
-  'Market Truth leftover region row: detached single-family homes for sale across Central Oregon'
+  'Oregon Data Share region row: detached single-family homes for sale across Central Oregon'
 
 /**
  * The trace over the communities ledger's active-count column. These rows print
@@ -46,9 +47,8 @@ export const HOME_COMMUNITY_TRACE =
  * the same MoS clauses appended by the caller when a supply figure prints.
  */
 export const HOME_MARKET_TRACE =
-  'regional MLS through Oregon Data Share, read through the Market Truth metric layer: ' +
-  'detached single-family houses across the Central Oregon region. ' +
-  'Every figure names its own window. A figure the layer withheld is absent, not estimated.'
+  'Oregon Data Share, Central Oregon, detached single-family houses. ' +
+  'Every figure names its own window. A figure that cannot publish is absent, not estimated.'
 
 /** Live place hero when present. Otherwise the page's existing fallback image. */
 export { preferPlaceHero } from '@/lib/geo-images'
