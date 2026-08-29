@@ -74,7 +74,20 @@
   left: 0;
   right: 0;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 3.5rem);
+  overflow: hidden;
   background: var(--v3-surface);
+}
+
+.search-workspace--stuck .search-filter-dock {
+  flex: none;
+}
+
+.search-workspace--stuck .search-field {
+  flex: 1;
+  min-height: 0;
 }
 
 @media (min-width: 56.25rem) {

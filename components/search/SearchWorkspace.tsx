@@ -30,7 +30,7 @@ export function SearchWorkspace({ children }: { children: ReactNode }) {
       const height = box.offsetHeight
       const naturalTop = slot.getBoundingClientRect().top
       const emailTop = email ? email.getBoundingClientRect().top : Number.POSITIVE_INFINITY
-      const shouldStick = naturalTop <= chrome && emailTop > chrome + height
+      const shouldStick = naturalTop <= chrome && emailTop > window.innerHeight
       if (shouldStick) {
         box.classList.add('search-workspace--stuck')
         slot.style.height = `${height}px`
