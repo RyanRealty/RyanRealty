@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { communityImage } from '@/lib/geo-images'
 import type { ListingTile } from '@/lib/data/types/listing'
@@ -43,6 +45,25 @@ function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): 
     ...partial,
   } as ListingTile
 }
+
+describe('city opening', () => {
+  const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+
+  it('opens on leftover city face + PlaceSplitView, not Stage or CityHomesField', () => {
+    expect(page).toMatch(/leftoverHudKpis\(\{/)
+    expect(page).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
+    expect(page).toMatch(/<PlaceFaceStrip/)
+    expect(page).toMatch(/<PlaceSplitView/)
+    expect(page).toMatch(/getBoundaryGeoJSON\(\{\s*geoType:\s*'city'/)
+    expect(page).not.toMatch(/<CityHomesField/)
+    expect(page).not.toMatch(/<V3Stage/)
+    expect(page).not.toMatch(/searchParams[^;]{0,80}shapes/)
+    expect(page).not.toMatch(/\b728\b|\$760k/)
+    expect(page).toMatch(/getCityDetachedMarket\(slug\)/)
+    expect(page).toMatch(/getCityDetachedInventory\(slug\)/)
+    expect(page).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'city',\s*geoSlug:\s*slug/)
+  })
+})
 
 describe('neighborhood pace', () => {
   // The pulse-figure builders (liveFigures, liveFallbackFigures) are gone with

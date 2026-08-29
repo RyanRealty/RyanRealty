@@ -206,22 +206,24 @@ describe('design directive contracts', () => {
   it('D78 — city hero active count is leftover HUD, not tiles or snapshot all-count', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/leftoverHudKpis/)
+    expect(src).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
     expect(src).toMatch(/activeCount(?::[^=]*)?=\s*hud\.active/)
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=\s*publishedInventory\.count/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
+    expect(src).not.toMatch(/\b728\b|\$760k/)
   })
 
-  it('§0 — neighborhood active count is leftover HUD, never a second population', () => {
+  it('§0 — neighborhood face count is polygon inventory, leftover HUD stays for FAQ', () => {
     const src = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
     expect(src).toMatch(/leftoverHudKpis/)
-    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*hud\.active/)
+    expect(src).toMatch(/publishPlaceFace/)
+    expect(src).toMatch(/grain:\s*['"]neighborhood['"]/)
+    expect(src).toMatch(/active:\s*inventoryOk \? inventory\.activeCount : null/)
+    expect(src).toMatch(/getNeighborhoodPublicInventory\(boundaryNeighborhoodSlug\)/)
     expect(src).not.toMatch(/inBoundaryCount \?\? pulse\?\.activeCount \?\? neighborhood\.activeCount/)
     expect(src).not.toMatch(/activeCount \?\? mapFeatures\.length/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
-    // Either Result-shaped guard: the boundary read must carry `.ok` so a
-    // degraded read can never publish a count. skippableRailResult adds the
-    // SSG skip (G70 follow-up) on the same Result contract.
     expect(src).toMatch(
       /(?:withTimeoutFallbackResult|skippableRailResult)\s*\(\s*(?:\(\)\s*=>\s*)?getGeoBoundaryMapData/,
     )
@@ -259,21 +261,15 @@ describe('design directive contracts', () => {
   })
 
   it('D86 — city imagery sources from the VERIFIED cityHero registry (Family 4, 2026-06-10)', () => {
-    // v3.2 supersedes the v3.1 tile-imagery contract: the seeded-pool
-    // getGeoTileImages/golfCommunityImage path put wrong-city photos on city
-    // pages (Tumalo Falls as the Bend hero). Ledger imagery still resolves
-    // through buildOtherCityItems → cityHero() and renders NO thumbnail for
-    // an unverified city. The city first fold (2026-08-28) mounts existing
-    // V3Stage with a geo-strict library still via city-opening.ts — never
-    // getSurfaceImage / getGeoTileImages / pickGeoImage in page.tsx itself.
+    // First screen is leftover face + PlaceSplitView, not a Stage still.
+    // Ledger imagery still resolves through buildOtherCityItems → cityHero()
+    // and renders NO thumbnail for an unverified city.
     const src = readSrc('app/cities/[slug]/page.tsx')
-    expect(src).toMatch(/V3Stage/)
-    expect(src).toMatch(/cityLibraryHero|cityStagePoster/)
+    expect(src).toMatch(/<PlaceSplitView/)
+    expect(src).toMatch(/<PlaceFaceStrip/)
+    expect(src).not.toMatch(/<V3Stage/)
+    expect(src).not.toMatch(/<CityHomesField/)
     expect(src).toMatch(/buildOtherCityItems\(/)
-    const opening = readSrc('app/cities/[slug]/_v3/city-opening.ts')
-    expect(opening).toMatch(/geoOnly:\s*true/)
-    expect(opening).toMatch(/preferPlaceHeroOrNull/)
-    expect(opening).not.toMatch(/\bcityHero\s*\(/)
     const shared = readSrc('lib/kb/place-sections.ts')
     expect(shared).toMatch(/preferPlaceHero/)
     expect(shared).toMatch(/cityHero\s*\(/)
@@ -294,6 +290,7 @@ describe('design directive contracts', () => {
   it('D80 — city page surfaces a blog/guides section from real posts', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/getRecentBlogPosts/)
+    expect(src).toMatch(/post\.title\.toLowerCase\(\)\.includes\(cityName\.toLowerCase\(\)\)/)
     // The RENDERER changed register, the section did not (P9, 2026-08-12). The route
     // moved onto components/site/v3, whose barrel law forbids importing the KB
     // register, so the guides section is a V3Ledger of real posts instead of

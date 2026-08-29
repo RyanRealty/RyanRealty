@@ -48,6 +48,8 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     )
     expect(citySections).toMatch(/hud\.pending/)
     expect(citySections).toMatch(/label: v3Text\('pending · now'\)/)
+    expect(files.city, 'city').toMatch(/leftoverHudKpis/)
+    expect(files.city, 'city').toMatch(/publishPlaceFace\(\{\s*grain:\s*'city'/)
     expect(files.city, 'city').not.toMatch(/pending:\s*pulse/)
     expect(files.city, 'city').not.toMatch(/getMarketPulse/)
     // Same v3 rule for the neighborhood and community pages (2026-08-26):

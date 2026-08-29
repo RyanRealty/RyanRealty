@@ -10,6 +10,7 @@ import { buildShapeSetForSearch } from '@/lib/map-polygon'
 import { publishPlaceSplitSeed } from '@/lib/search/publish-place-split-seed'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import './search-ledger.css'
 
 /**
  * Flagship Split, scoped to a place page. Seed the ring as initialShapes
@@ -17,6 +18,7 @@ import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
  * lives in MapSearchView.
  */
 export async function PlaceSplitView(props: {
+  id?: string
   city?: string
   neighborhood?: string
   subdivision?: string
@@ -84,7 +86,7 @@ export async function PlaceSplitView(props: {
   }
 
   return (
-    <div className="place-split">
+    <div className="place-split" id={props.id}>
       <MapSearchView
         initialListings={listings ?? []}
         initialTotalCount={totalCount ?? listings?.length ?? 0}

@@ -5,9 +5,7 @@
  * no structured data of their own, on purpose, so one derivation feeds the visible
  * copy and the markup and the two cannot disagree (CLAUDE.md section 0).
  *
- * `hasMap` ships when the Field's map slot holds PlaceFieldMap (pins with
- * coordinates). It left when this route had only V3Field's relative plot. It
- * returns with the map.
+ * `hasMap` ships because PlaceSplitView always mounts the flagship map.
  *
  * It lives beside the route rather than inside it for the reason city-constants.ts
  * states: ci:file-size-budget's instruction when a route file approaches the floor is
@@ -57,7 +55,7 @@ export function buildCitySchemas(input: {
   cityName: string
   slug: string
   faq: MarketFaq
-  /** True when PlaceFieldMap is in the Field slot with at least one pin. */
+  /** True when PlaceSplitView mounts the flagship map. */
   hasMap: boolean
 }): SchemaInput[] {
   const { cityName, slug, faq } = input

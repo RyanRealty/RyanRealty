@@ -86,3 +86,61 @@
     min-width: var(--v3-split-list-min);
   }
 }
+
+/* H1 + leftover face above the place-page Split. */
+.place-opening {
+  max-width: var(--v3-measure, 72rem);
+  margin: var(--v3-space-lg, 1.5rem) auto 0;
+  padding: 0 var(--v3-gutter, 1.25rem);
+}
+
+/* Place-page Split is a section, not the search app frame. */
+.place-split {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--v3-place-split-h);
+  min-height: var(--v3-map-min);
+}
+.place-split .map-search-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.place-face {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm) var(--v3-space-lg);
+  padding: var(--v3-space-sm) 0;
+}
+.place-face__cell {
+  min-width: 6rem;
+}
+.place-face__value {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  color: var(--v3-navy);
+  line-height: 1.1;
+}
+.place-face__label {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3.place-face-block {
+  max-width: var(--v3-measure, 72rem);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter, 1.25rem);
+}
+
+.place-type-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm, 0.75rem);
+  max-width: var(--v3-measure, 72rem);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter, 1.25rem) var(--v3-section-pad, 1.5rem);
+}

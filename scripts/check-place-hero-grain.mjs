@@ -65,14 +65,13 @@ const pages = [
   },
   {
     path: 'app/cities/[slug]/page.tsx',
-    label: 'city page opening count names the city, not a coarser parent',
-    // The v3 Field replaced KbHero here (2026-08-26). The count that opens the
-    // page is cityFieldCaption's, and that builder interpolates the city name
-    // itself, so the caption cannot hang the count on a coarser parent.
+    label: 'city page opening count is leftover city grain, not a coarser parent',
+    // First screen is publishPlaceFace grain city (PlaceFaceStrip). MOS/verdict/DTP
+    // only print at city; a finer grain cannot hang a city leftover count.
     v3: {
-      module: 'app/cities/[slug]/_v3/city-sections.ts',
-      builder: 'cityFieldCaption',
-      names: 'in ${input.cityName}',
+      module: 'lib/market/publish-place-face.ts',
+      builder: 'publishPlaceFace',
+      names: "input.grain !== 'city'",
     },
   },
   {

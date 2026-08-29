@@ -1,64 +1,26 @@
 /**
- * /cities/[slug] - the city node, on the components/site/v3 barrel.
+ * /cities/[slug] - the city node. Same template for Bend, Redmond, every city.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 City. First screen is
- * V3Stage when a place-owned library still exists, then the Field of this
- * city's houses. Verdict is a caption, never a number hero.
- * Child neighborhoods and master-plans are doors below the fold. Section order
- * is the parity contract: design_system/ryan-realty/ui_kits/city/parity.json.
+ * First screen: H1 `{City} homes for sale`, leftover grain face
+ * (publishPlaceFace grain city), flagship PlaceSplitView seeded from the city
+ * polygon. Do not write ?shapes= onto this URL. Type chips live on Split, not
+ * as first-screen property-type H2s. Time/Relate/Rank charts stay below the
+ * fold off leftover monthly close + getCoreChartSeries.
  *
- * LEDGER IS THE PATTERN THIS ROUTE SPENDS ITS FIFTH SLOT ON, under the
- * 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt). The 2026-08-12
- * migration deferred V3Ledger to hold the four-of-six cap and deleting the
- * ledgers deleted six Matt-issued product directives with them: the
- * designated-neighborhood set (D83), the separate golf and master-planned
- * section (D85), the city guides (D80), the other-cities exit (D84), the full
- * communities rail (D88), and the live activity feed (D93). Matt ruled
- * 2026-08-26 that those directives outrank the rhythm preference on exactly
- * this family, so the ledgers are back - on the barrel's own Ledger primitive.
- * The fifth slot is declared in parity.json. No two adjacent sections share a
- * pattern when every section renders; the residual conditional collisions are
- * declared there too, the way the plat page declares its own.
+ * Face numbers are leftover HUD for THIS slug. Miss omits. Median close 12mo
+ * stays on the city chart, never as a fake list price. Do not hardcode a
+ * count, MoS, or median.
  *
- * THE MARKET SECTION IS THE LEFTOVER HUD, NOT PULSE (MARKET_TRUTH D19/D26/D78,
- * all post-2026-08-15 - the reverted draft predates them and was corrected, not
- * restored). leftoverHudKpis is the one pile: the hero count is hud.active, a
- * missing cell is omitted, pulse and the stats cache never fill a tile, and
- * buildMarketFaq is called UNCONDITIONALLY with source 'market-truth' so the
- * Dataset/FAQPage JSON-LD survives a leftover miss at the cost of one figure,
- * never the markup (D91). The one verdict derivation: hud.monthsSupply is the
- * PUBLISHED raw value (publishMonthsOfSupply ran inside leftoverHudKpis),
- * marketVerdict classifies it, formatMonthsOfSupply displays it, and
- * buildMarketFaq repeats the same two steps on the same raw value.
+ * Section order: design_system/ryan-realty/ui_kits/city/parity.json.
  *
- * THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the
- * market Instrument's level-2 headline is "Is {city} a buyer's or seller's
- * market?" whenever a verdict exists, with the answer as the section note
- * directly beneath - the same question KbMarketHud carried, now on the barrel.
- * With no verdict there is no question (a question with no answer under it is
- * worse than a label), and the H1 stays the money head term on the Field.
+ * THE MARKET SECTION IS THE LEFTOVER HUD, NOT PULSE (MARKET_TRUTH D19/D26/D78).
+ * leftoverHudKpis is the one pile; publishPlaceFace filters it for the face
+ * strip. Pulse and the stats cache never fill a tile. buildMarketFaq is called
+ * UNCONDITIONALLY with source 'market-truth' (D91).
  *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
- * pageMetadata, generateStaticParams over PRIMARY_CITIES with dynamicParams,
- * revalidate 60, MetadataBlock JSON-LD, a rendered CityPageTracker, and a
- * rendered V3SectionTracker (page_type derives from the path taxonomy). MetadataBlock stays on the
- * legacy register (JSON-LD, pinned by ci:ai-structured-data). V3SectionTracker
- * is a v3 island, not a seventh pattern.
- *
- * Invariants, each enforced at its own site:
- *  1. ABSENT IS NOT ZERO, AND UNTRACED IS NOT PUBLISHED (CLAUDE.md §0). No
- *     leftover cell means no figure and a stated reason, never a synthesized 0
- *     under a live-MLS source line. Every ledger publishes a value column only
- *     when the read behind it succeeded, and drops the column - not the rows -
- *     when it did not.
- *  2. ONE POPULATION PER FIGURE, NAMED. The Field caption counts ITS OWN
- *     listed set (active single-family with a price and a street); the
- *     Instrument's "detached homes for sale" is the leftover membership count.
- *     Two counts, two labels, each under its own trace.
- *  3. ONE PRIMARY PER VIEWPORT, COUNTING VISIBLE FILLED CONTROLS (PUBLIC_UI.md
- *     §1). The first viewport is Stage (owned still) or the Field; the next
- *     tap is a house. The Instrument ask sits below the fold. Every Ledger
- *     action stays a ghost and V3Footer carries no button.
+ * THE PAGE CONTRACT: generateMetadata through pageMetadata, generateStaticParams
+ * over PRIMARY_CITIES with dynamicParams, revalidate 60, MetadataBlock JSON-LD,
+ * CityPageTracker, V3SectionTracker.
  */
 
 import { notFound } from 'next/navigation'
@@ -77,6 +39,8 @@ import {
   getAreaGuideVideo,
   getNeighborhoodDirectory,
   getCityHeroUrlsBySlug,
+  getBoundaryGeoJSON,
+  getCityBoundaryGeoJSON,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
@@ -89,9 +53,9 @@ import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
-import { CITY_PLACE_LIST_CAP } from '@/lib/explore/subdivision-page-extras'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { getCityContent } from '@/lib/city-content'
@@ -120,22 +84,21 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3Heading,
   V3Instrument,
   V3Ledger,
   V3PlacePropertyTypes,
   V3Quiet,
-  V3Stage,
   V3SectionTracker,
   type V3ChartCardProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
-import { CityHomesField } from './_v3/CityHomesField'
-import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
-import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
   activityRows,
@@ -144,8 +107,6 @@ import {
   cityAboutItems,
   cityActivityTrace,
   cityExploreItems,
-  cityFieldCaption,
-  cityFieldTrace,
   cityMarketTrace,
   communityRows,
   leftoverMarketFigures,
@@ -179,6 +140,24 @@ export const dynamicParams = true
 export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
+
+/** Polygon / MultiPolygon, or a Feature wrapping one. Miss is null. */
+function asPlaceBoundary(value: unknown): { type?: string; coordinates?: unknown } | null {
+  if (!value || typeof value !== 'object') return null
+  const rec = value as {
+    type?: string
+    coordinates?: unknown
+    geometry?: { type?: string; coordinates?: unknown }
+  }
+  if ((rec.type === 'Polygon' || rec.type === 'MultiPolygon') && Array.isArray(rec.coordinates)) {
+    return rec
+  }
+  const geom = rec.geometry
+  if (geom && (geom.type === 'Polygon' || geom.type === 'MultiPolygon') && Array.isArray(geom.coordinates)) {
+    return geom
+  }
+  return null
+}
 
 // Metadata - unchanged from the KB page.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -233,7 +212,8 @@ export default async function CityDetailPage({ params }: Props) {
     regionMartRow,
     indexCities,
     neighborhoodDirectory,
-    libraryHero,
+    cityBoundary,
+    cityBoundaryFallback,
   ] = await Promise.all([
     withTimeoutFallback(getCityDetachedMarket(slug), null, 3000, 'city:detached'),
     withTimeoutFallback(getCityDetachedInventory(slug), null, 3000, 'city:detachedInv'),
@@ -248,28 +228,28 @@ export default async function CityDetailPage({ params }: Props) {
     ),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
-    // THE FIELD'S SET - SFR only (C-02): every sibling geo map is the Single
-    // Family Residence sub-type, and the caption beside this map counts THIS
-    // set. An all-types pool put a 1,000-home badge beside a 491 hero on Bend.
-    withTimeoutFallback(
-      getCityListings(cityName, {
-        status: 'active',
-        sort: 'newest',
-        propertyType: 'A',
-        propertySubType: 'Single Family Residence',
-        limit: CITY_TILE_FETCH_LIMIT,
-      }),
-      [],
-      4500,
-      'city:mapTiles',
-    ),
+    // Bend neighborhood hover photos (D89). Split fetches its own viewport set.
+    isBend
+      ? withTimeoutFallback(
+          getCityListings(cityName, {
+            status: 'active',
+            sort: 'newest',
+            propertyType: 'A',
+            propertySubType: 'Single Family Residence',
+            limit: CITY_TILE_FETCH_LIMIT,
+          }),
+          [],
+          4500,
+          'city:mapTiles',
+        )
+      : Promise.resolve([] as Awaited<ReturnType<typeof getCityListings>>),
     isBend
       ? withTimeoutFallback(getBendNeighborhoodLedger(), [], 5000, 'city:nbhStats')
       : Promise.resolve([] as Awaited<ReturnType<typeof getBendNeighborhoodLedger>>),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
     withTimeoutFallback(getAllCitySnapshots(), [], 3000, 'city:allCities'),
     withTimeoutFallback(getCityCommunitySnapshots(slug), [], 3000, 'city:commSnaps'),
-    skippableRail(() => getRecentBlogPosts({ cityName, limit: 3 }), [], 3000, 'city:blog'),
+    skippableRail(() => getRecentBlogPosts({ cityName, limit: 12 }), [], 3000, 'city:blog'),
     skippableRail(
       () => getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }),
       [],
@@ -289,8 +269,11 @@ export default async function CityDetailPage({ params }: Props) {
     getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
     withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'city:liveHeroes'),
     withTimeoutFallback(getNeighborhoodDirectory(), [], 3000, 'city:nbhDir'),
-    withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero'),
+    withTimeoutFallback(getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }), null, 2000, 'city:boundary'),
+    withTimeoutFallback(getCityBoundaryGeoJSON(cityName), null, 2000, 'city:boundaryFallback'),
   ])
+
+  const cityGeojson = asPlaceBoundary(cityBoundary) ?? asPlaceBoundary(cityBoundaryFallback)
 
   // The approved area-guide clip - a guides-Ledger door on this node (the
   // pattern set holds no mid-page media slot here); it plays full-bleed on the
@@ -307,6 +290,7 @@ export default async function CityDetailPage({ params }: Props) {
     inventory: detachedInv,
     pace: publicPace,
   })
+  const face = publishPlaceFace({ grain: 'city', hud })
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
   // never a snapshot all-count, never a `?? 0`.
@@ -404,22 +388,6 @@ export default async function CityDetailPage({ params }: Props) {
   })
   const trendsCard = coreChartsCard(coreCharts ? toPublicCoreChartSeries(coreCharts) : null, cityName)
   const marketCards: V3ChartCardProps[] = [...(trendsCard ? [trendsCard] : []), ...townCards]
-
-  /* ── The Field ─────────────────────────────────────────────────────────── */
-
-  // Explicit preview cap: the Field lists (and plots) the newest
-  // CITY_PLACE_LIST_CAP qualifying homes, the same cap the KB dual-pane list
-  // carried, so a 1,000-listing city does not ship a 1,000-row DOM. The full
-  // count is the Instrument's figure; its action is the view-all door.
-  const fieldItems = cityFieldItems(tiles, CITY_PLACE_LIST_CAP)
-  const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
-  const fieldCaption = cityFieldCaption({
-    cityName,
-    count: fieldItems.length,
-    mosLabel,
-    verdictKind: verdict.kind,
-    verdictLabel: verdict.label,
-  })
 
   /* ── The place ledgers ──────────────────────────────────────────────────── */
 
@@ -539,6 +507,8 @@ export default async function CityDetailPage({ params }: Props) {
   // Live activity and city guides.
   const activityItems = buildActivityItems(activity, { staleNewAfterDays: 21 })
   const articlePosts = buildArticlePosts(blogPosts)
+    .filter((post) => post.title.toLowerCase().includes(cityName.toLowerCase()))
+    .slice(0, 3)
 
   // V3Ledger's rows prop is a non-empty tuple, so each section destructures a
   // head and renders nothing when there is none.
@@ -578,7 +548,7 @@ export default async function CityDetailPage({ params }: Props) {
     cityName,
     slug,
     faq: marketFaq,
-    hasMap: fieldItems.some((item) => item.lat != null && item.lng != null),
+    hasMap: true,
   })
 
   return (
@@ -594,41 +564,23 @@ export default async function CityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        {stagePosterSrc ? (
-          <>
-            <V3Breadcrumb
-              tone="on-media"
-              trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]}
-            />
-            <V3Stage
-              id="place"
-              headingLevel={1}
-              height="tall"
-              eyebrow={`${cityName} · Oregon`}
-              headline={`${cityName} homes for sale`}
-              posterSrc={stagePosterSrc}
-              action={{
-                label: fieldItems[0]?.title || `See ${cityName} homes`,
-                href: fieldItems[0]?.href || '#homes',
-              }}
-            />
-          </>
-        ) : (
-          <V3Breadcrumb
-            trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]}
-          />
-        )}
+        <V3Breadcrumb
+          trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]}
+        />
 
-        {/* Pattern 2, Field. Houses fill the fold when Stage has no owned still;
-            otherwise the Field is the map tap-through under Stage. */}
-        <CityHomesField
-          cityName={cityName}
-          headline={v3Text(`${cityName} homes for sale`)}
-          ownsHeading={!stagePosterSrc}
-          fieldItems={fieldItems}
-          tilesLength={tiles.length}
-          caption={fieldCaption}
-          source={cityFieldTrace(cityName)}
+        <div className="place-opening">
+          <V3Heading level={1} size="field">
+            {`${cityName} homes for sale`}
+          </V3Heading>
+          <PlaceFaceStrip stats={face.stats} />
+        </div>
+
+        <PlaceSplitView
+          id="homes"
+          city={cityName}
+          boundaryGeojson={cityGeojson}
+          seedRing
+          placeQuery={`${cityName} Oregon`}
         />
 
         {/* Pattern 1, Instrument. The market question is the section headline,
@@ -662,7 +614,7 @@ export default async function CityDetailPage({ params }: Props) {
           <V3Quiet
             id="market"
             heading={`The ${cityName} market`}
-            items={marketAbsenceItems(cityName, Boolean(fieldItems.length))}
+            items={marketAbsenceItems(cityName, true)}
           />
         )}
 
