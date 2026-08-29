@@ -372,7 +372,7 @@ describe('public place pages', () => {
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
     expect(city).toMatch(/getPublicPlaceSegments/)
     // v3 city page (2026-08-26): the enumeration is the shared barrel section.
-    expect(city).toMatch(/V3PlacePropertyTypes/)
+    expect(city).toMatch(/PlaceTypeSlider/)
     expect(strip).toMatch(/publicSegmentBrowseHref/)
     expect(strip).toMatch(/publicSegmentDisplayBits/)
     expect(market).toMatch(/getPublicPlaceSegments/)
@@ -430,7 +430,7 @@ describe('public place pages', () => {
     expect(community).not.toMatch(/V3PlacePropertyTypes/)
     expect(neighborhood).toMatch(/getPublicPlaceSegments/)
     // v3 neighborhood page (2026-08-26): the enumeration is the barrel section.
-    expect(neighborhood).toMatch(/V3PlacePropertyTypes/)
+    expect(neighborhood).toMatch(/PlaceTypeSlider/)
     expect(city).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
     expect(strip).not.toMatch(/geo_type['"]\s*,\s*['"]neighborhood/)
   })

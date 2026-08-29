@@ -67,7 +67,7 @@ import {
   V3Ledger,
   V3PlaceCharacter,
   V3PlaceDocuments,
-  V3PlacePropertyTypes,
+
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
@@ -487,17 +487,15 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
           <V3Breadcrumb trail={trail} />
         )}
 
-        <div className="place-opening">
-          {stagePosterSrc ? null : (
-            <>
-              <V3Heading level={1} size="field">
-                {headline}
-              </V3Heading>
-              <PlaceFaceStrip stats={face.stats} />
-            </>
-          )}
-          <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
-        </div>
+        {stagePosterSrc ? null : (
+          <div className="place-opening">
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face.stats} />
+          </div>
+        )}
+        <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
 
         <div id="homes">
           <PlaceSplitView
@@ -560,11 +558,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
 
         {/* Pattern 1 again, as ONE enumeration: one section per other property
             type this neighborhood holds. */}
-        <V3PlacePropertyTypes
-          placeName={neighborhood.name}
-          citySlug={citySlug}
-          rows={publicSegments}
-        />
+
 
         {/* The recorded governing documents (Ledger; renders null when the
             place has none on file). Metric slug - see the read above. */}

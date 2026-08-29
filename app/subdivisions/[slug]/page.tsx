@@ -136,7 +136,7 @@ import {
   V3Heading,
   V3Instrument,
   V3PlaceCharacter,
-  V3PlacePropertyTypes,
+
   V3SectionTracker,
   V3SourceLine,
   type V3InstrumentFigure,
@@ -543,18 +543,16 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
           />
         )}
 
-        <div id="overview" className="place-opening">
-          {stagePosterSrc ? null : (
-            <>
-              <V3Heading level={1} size="field">
-                {headline}
-              </V3Heading>
-              <PlaceFaceStrip stats={face.stats} />
-            </>
-          )}
-          <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
-          <V3SourceLine source={inventorySource} />
-        </div>
+        {stagePosterSrc ? null : (
+          <div id="overview" className="place-opening">
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face.stats} />
+            <V3SourceLine source={inventorySource} />
+          </div>
+        )}
+        <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
 
         <div id="homes">
           <PlaceSplitView
@@ -626,11 +624,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             type the plat holds. The registry withholds price and months of
             supply below neighbourhood grain, so a plat supplies counts alone,
             and a type with no counts never reaches the component. */}
-        <V3PlacePropertyTypes
-          placeName={displayName}
-          citySlug={citySlug}
-          rows={mtCounts.extras}
-        />
+
 
       </main>
 

@@ -71,8 +71,8 @@
       "blocking": true
     },
     {
-      "name": "V3PlacePropertyTypes",
-      "section": "A section per other property type this place holds. Counts alone at this grain.",
+      "name": "PlaceTypeSlider",
+      "section": "Horizontal type cards. Replaces stacked V3PlacePropertyTypes Instruments.",
       "blocking": true
     },
     {

@@ -87,11 +87,11 @@
   }
 }
 
-/* H1 + leftover face above the place-page Split. */
+/* Fallback H1 when there is no hero. Same gutter as the hero copy. */
 .place-opening {
-  max-width: var(--v3-measure, 72rem);
-  margin: var(--v3-space-lg, 1.5rem) auto 0;
-  padding: 0 var(--v3-gutter, 1.25rem);
+  width: 100%;
+  margin: var(--v3-space-md) 0 0;
+  padding: 0 var(--v3-gutter);
 }
 
 /* Place-page Split is a section, not the search app frame. */
@@ -189,38 +189,53 @@
   color: var(--v3-ink-on-media);
   opacity: 0.8;
 }
-.place-type-card__thumb {
-  aspect-ratio: 16 / 10;
-  margin: calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) var(--v3-space-sm);
-  overflow: hidden;
-  background: var(--v3-navy);
-}
-.place-type-card__thumb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .place-type-slider {
   width: 100%;
+  overflow: hidden;
 }
 .place-type-slider__track {
   display: flex;
+  align-items: stretch;
   gap: var(--v3-space-sm);
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  padding: var(--v3-space-sm) 0 var(--v3-space-md);
+  padding: var(--v3-space-sm) var(--v3-gutter) var(--v3-space-md);
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.place-type-slider__track::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 .place-type-card {
-  flex: 0 0 13.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 14rem;
+  min-height: 18rem;
   scroll-snap-align: start;
   padding: var(--v3-space-sm);
   border: 1px solid var(--v3-edge);
   background: var(--v3-cream);
   color: var(--v3-navy);
   text-decoration: none;
+}
+.place-type-card__thumb {
+  aspect-ratio: 16 / 10;
+  margin: calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) var(--v3-space-sm);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-navy) 12%, var(--v3-cream));
+  flex: 0 0 auto;
+}
+.place-type-card.is-active .place-type-card__thumb {
+  background: color-mix(in srgb, var(--v3-cream) 12%, var(--v3-navy));
+}
+.place-type-card__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .place-type-card.is-active {
   background: var(--v3-navy);

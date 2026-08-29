@@ -8,6 +8,7 @@ import SearchFilters, { type SearchFiltersInitial } from '@/components/search/Se
 import { publishPlaceSplitSeed } from '@/lib/search/publish-place-split-seed'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import './search-ledger.css'
 
 function boundsFromListings(rows: ListingTileRow[]): MapBounds | null {
@@ -124,10 +125,11 @@ export async function PlaceSplitView(props: {
 
   const initialBounds = seedBounds ?? boundsFromListings(listings ?? []) ?? BEND_DEFAULT_BOUNDS
 
-  const [session, savedKeys, likedKeys] = await Promise.all([
+  const [session, savedKeys, likedKeys, openHouseLabels] = await Promise.all([
     getSession(),
     getSavedListingKeys(),
     getLikedListingKeys(),
+    loadOpenHouseBadgeLabels(props.city),
   ])
 
   const filters: SearchFiltersInitial = {
@@ -169,6 +171,7 @@ export async function PlaceSplitView(props: {
         nowMs={Date.now()}
         initialDegraded={degraded}
         lockPlace
+        openHouseLabels={openHouseLabels}
       />
     </div>
   )

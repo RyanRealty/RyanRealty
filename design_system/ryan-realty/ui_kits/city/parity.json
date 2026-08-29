@@ -65,8 +65,8 @@
       "blocking": true
     },
     {
-      "name": "V3PlacePropertyTypes",
-      "section": "Pattern 1 as ONE enumeration BELOW THE FOLD: one Instrument per other property type the city holds, from getPublicPlaceSegments at city grain. Not on the first screen — Split filters are the type chips. A type with nothing publishable is absent, never an empty section and never a zero.",
+      "name": "PlaceTypeSlider",
+      "section": "Horizontal leftover type cards with listing thumbs. Filters Split Home type. Replaces the stacked V3PlacePropertyTypes Instruments that all looked the same.",
       "blocking": true
     }
   ],

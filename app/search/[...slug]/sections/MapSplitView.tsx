@@ -1,5 +1,6 @@
 import { type ReactNode, Suspense } from 'react'
 import { getSession } from '../../../actions/auth'
+import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
 import { getCommunityBySlug } from '../../../actions/communities'
@@ -126,17 +127,20 @@ export async function renderMapSplitView(props: {
       : `${city} Oregon`
     : 'Bend Oregon'
 
-  const mapBoundaryGeojson = city
-    ? decodedSubdivision
-      ? (
-          await withTimeout(
-            getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))),
-            null,
-            1000
-          )
-        )?.boundaryGeojson ?? null
-      : await withTimeout(getCityBoundary(city), null, 1000)
-    : null
+  const [mapBoundaryGeojson, openHouseLabels] = await Promise.all([
+    city
+      ? decodedSubdivision
+        ? (
+            await withTimeout(
+              getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))),
+              null,
+              1000
+            )
+          )?.boundaryGeojson ?? null
+        : withTimeout(getCityBoundary(city), null, 1000)
+      : Promise.resolve(null),
+    loadOpenHouseBadgeLabels(city),
+  ])
 
   const initialBounds =
     bboxFromSearchParam((sp as Record<string, string | undefined>).bbox) ??
@@ -377,6 +381,7 @@ export async function renderMapSplitView(props: {
           initialShapes={initialShapes}
           nowMs={Date.now()}
           initialDegraded={viewportDegraded}
+          openHouseLabels={openHouseLabels}
         />
       </div>
     </main>

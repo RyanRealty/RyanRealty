@@ -60,8 +60,8 @@
       "blocking": true
     },
     {
-      "name": "V3PlacePropertyTypes",
-      "section": "Pattern 1 as ONE enumeration (2026-08-26 amendment): one Instrument per other property type this neighborhood holds, from getPublicPlaceSegments at neighborhood grain (metric slug).",
+      "name": "PlaceTypeSlider",
+      "section": "Horizontal leftover type cards. Filters Split. Replaces stacked V3PlacePropertyTypes Instruments.",
       "blocking": true
     },
     {

@@ -15,6 +15,7 @@ import type { SearchFilters as SearchFiltersState } from '@/app/actions/search'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
+import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { bboxFromSearchParam } from '@/lib/search/publish-map-bbox'
@@ -243,11 +244,12 @@ export default async function SearchPage({
   // other — run them in parallel so anonymous TTFB is not auth+boundary serial.
   // Saved/liked still wait on session (signed-in only).
   const citySlug = effectiveFilters.city ? slugify(effectiveFilters.city) : null
-  const [session, cityBoundaryGeo] = await Promise.all([
+  const [session, cityBoundaryGeo, openHouseLabels] = await Promise.all([
     getSession(),
     view !== 'list' && citySlug
       ? withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
       : Promise.resolve(null),
+    loadOpenHouseBadgeLabels(effectiveFilters.city),
   ])
   const [savedKeys, likedKeys] =
     session?.user
@@ -469,6 +471,7 @@ export default async function SearchPage({
                 initialShapes={initialShapes}
                 nowMs={Date.now()}
                 initialDegraded={viewportDegraded}
+                openHouseLabels={openHouseLabels}
               />
             ) : (
               <SearchResults

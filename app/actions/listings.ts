@@ -1109,6 +1109,8 @@ function tileToSearchRow(t: ListingTile): ListingTileRow {
     PropertySubType: t.propertySubType,
     OnMarketDate: t.onMarketDate,
     CloseDate: t.closeDate,
+    has_virtual_tour: t.hasVirtualTour,
+    price_drop_count: t.priceDropCount,
   }
 }
 

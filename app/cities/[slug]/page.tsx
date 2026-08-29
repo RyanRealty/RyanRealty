@@ -87,7 +87,7 @@ import {
   V3Heading,
   V3Instrument,
   V3Ledger,
-  V3PlacePropertyTypes,
+
   V3Quiet,
   V3SectionTracker,
   type V3ChartCardProps,
@@ -608,17 +608,15 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           <V3Breadcrumb trail={trail} />
         )}
 
-        <div className="place-opening">
-          {stagePosterSrc ? null : (
-            <>
-              <V3Heading level={1} size="field">
-                {headline}
-              </V3Heading>
-              <PlaceFaceStrip stats={face.stats} />
-            </>
-          )}
-          <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
-        </div>
+        {stagePosterSrc ? null : (
+          <div className="place-opening">
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face.stats} />
+          </div>
+        )}
+        <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
 
         <PlaceSplitView
           id="homes"
@@ -703,7 +701,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {/* Pattern 1 again, as ONE enumeration: one section per other property
             type this city holds. A type with nothing publishable is absent,
             never an empty section and never a zero. */}
-        <V3PlacePropertyTypes placeName={cityName} citySlug={slug} rows={publicSegments} />
+        {/* Property types live on PlaceTypeSlider + Split Home type, not as a stack of identical Instruments. */}
 
         {/* D85: golf and master-planned communities are their OWN section,
             never folded into the neighborhoods list. The value column publishes

@@ -562,16 +562,12 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         ) : (
           <V3Quiet id="place" heading={headline} headingLevel={1} items={placeItems} />
         )}
-        {stagePosterSrc ? (
-          <div className="place-opening">
-            <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
-          </div>
-        ) : (
+        {stagePosterSrc ? null : (
           <section className={`${V3_ROOT_CLASS} place-face-block`} aria-label={`${publicName} live inventory`}>
             {face.stats.length > 0 ? <PlaceFaceStrip stats={face.stats} /> : null}
-            <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
           </section>
         )}
+        <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
 
         <PlaceSplitView
           id="homes"

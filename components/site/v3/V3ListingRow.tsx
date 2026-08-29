@@ -75,6 +75,8 @@ export type V3ListingRowData = {
   city: string | null
   listNumber: string | null
   badge?: { kind: V3ListingRowBadge; label: string }
+  /** Redfin-style pills. When set, this is the whole set; `badge` is ignored. */
+  badges?: Array<{ kind: V3ListingRowBadge; label: string }>
   /** Carried for shape compatibility with ListingCardData; the row links to detail. */
   tourUrl?: string | null
 }
@@ -86,7 +88,7 @@ const SOLID_BADGE: Record<V3ListingRowBadge, boolean> = {
   sold: true,
   pending: true,
   new: false,
-  open: false,
+  open: true,
   video: false,
 }
 
@@ -164,16 +166,16 @@ export function V3ListingRow({
       </span>
 
       <span className="v3-lrow__body">
-        {listing.badge ? (
+        {(listing.badges ?? (listing.badge ? [listing.badge] : [])).length > 0 ? (
           <span className="v3-lrow__tags">
-            <span
-              className={cn(
-                'v3-lrow__tag',
-                SOLID_BADGE[listing.badge.kind] && 'v3-lrow__tag--solid',
-              )}
-            >
-              {listing.badge.label}
-            </span>
+            {(listing.badges ?? (listing.badge ? [listing.badge] : [])).map((tag) => (
+              <span
+                key={`${tag.kind}-${tag.label}`}
+                className={cn('v3-lrow__tag', SOLID_BADGE[tag.kind] && 'v3-lrow__tag--solid')}
+              >
+                {tag.label}
+              </span>
+            ))}
           </span>
         ) : null}
         <span className="v3-lrow__addr">{listing.addressLine}</span>

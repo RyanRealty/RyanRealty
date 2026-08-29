@@ -36,7 +36,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
 import { V3ListingRow, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
-import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
+import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import './search-ledger.css'
 
@@ -125,27 +125,26 @@ type ViewportSearchFn = (
   options?: ViewportSearchOptions
 ) => ReturnType<typeof getViewportSearch>
 
-const NEW_LISTING_WINDOW_DAYS = 7
-
 /**
  * Map viewport badge → ListingCard badge prop.
  * Non-active MLS status uses publishListingStatusBadge (Pending / Under
  * contract / Sold). `nowMs` is a server-passed wall-clock prop so SSR HTML
  * matches hydration (do not sample the clock inside this pure helper).
  */
-function cardBadge(
+function cardBadges(
   l: ListingTileRow,
-  nowMs: number
-): { kind: ListingBadge; label: string } | undefined {
-  const statusBadge = publishListingStatusBadge(l.StandardStatus)
-  if (statusBadge) return statusBadge
-  if (l.OnMarketDate) {
-    const days = (nowMs - new Date(l.OnMarketDate).getTime()) / 86_400_000
-    if (Number.isFinite(days) && days >= 0 && days <= NEW_LISTING_WINDOW_DAYS) {
-      return { kind: 'new', label: 'New' }
-    }
-  }
-  return undefined
+  nowMs: number,
+  openHouseLabels: Record<string, string>,
+): { kind: ListingBadge; label: string }[] {
+  const key = String(l.ListingKey ?? '').trim()
+  return publishListingCardBadges({
+    nowMs,
+    standardStatus: l.StandardStatus,
+    onMarketDate: l.OnMarketDate,
+    priceDropCount: l.price_drop_count ?? null,
+    hasVirtualTour: l.has_virtual_tour ?? null,
+    openHouseLabel: key ? openHouseLabels[key] ?? null : null,
+  })
 }
 
 function rowKey(l: ListingTileRow): string {
@@ -270,6 +269,8 @@ export type MapSearchViewProps = {
   initialDegraded?: boolean
   /** Place pages: the city pin is the page. Do not offer "clear Redmond". */
   lockPlace?: boolean
+  /** listingKey → upcoming open-house badge label. */
+  openHouseLabels?: Record<string, string>
 }
 
 export default function MapSearchView({
@@ -287,6 +288,7 @@ export default function MapSearchView({
   nowMs,
   initialDegraded = false,
   lockPlace = false,
+  openHouseLabels = {},
 }: MapSearchViewProps) {
   // One initial shape set, whichever URL spelling delivered it: ?shapes=
   // (multi-shape) wins; a legacy ?poly= ring arrives as a single include
@@ -864,7 +866,7 @@ export default function MapSearchView({
             const isHovered = hoveredKey === key
             const isSelected = selectedKey === key
             const addressLine = cardStreet(l)
-            const badge = nowMs != null ? cardBadge(l, nowMs) : undefined
+            const badges = nowMs != null ? cardBadges(l, nowMs, openHouseLabels) : []
             // V3ListingRow — the Ledger-register listing unit (same as
             // SearchResults). Wrapper owns data-listing-key + hide control;
             // the map hover/select state rides the row's own functional
@@ -908,7 +910,8 @@ export default function MapSearchView({
                     subdivisionName: l.SubdivisionName ?? null,
                     city: l.City ?? null,
                     listNumber: l.ListNumber ?? null,
-                    badge,
+                    badges,
+                    badge: badges[0],
                   }}
                 />
               </div>
