@@ -174,7 +174,9 @@ describe('CookieConsentBanner occupancy', () => {
     await act(async () => {
       window.dispatchEvent(new Event('scroll'))
     })
-    expect(container.querySelector('[data-cookie-notice="bar"]')).not.toBeNull()
+    const bar = container.querySelector('[data-cookie-notice="bar"]') as HTMLElement | null
+    expect(bar).not.toBeNull()
+    expect(bar?.style.bottom).toBe('var(--listing-sticky-height, 0px)')
     const accept = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Accept all')
     expect(accept).toBeTruthy()
     await act(async () => {
@@ -267,6 +269,12 @@ describe('CookieConsentBanner source contract', () => {
     expect(src).toContain("data-cookie-notice=\"chip\"")
     expect(src).toContain("data-cookie-notice=\"bar\"")
     expect(src).not.toMatch(/if \(consent === null\) setVisible\(true\)/)
+  })
+
+  it('lifts the legal bar above the listing sticky instead of covering it', () => {
+    expect(src).toContain("style={{ bottom: 'var(--listing-sticky-height, 0px)' }}")
+    expect(src).toContain('min-h-11')
+    expect(src).not.toMatch(/listing-mobile-cta, z-index 80/)
   })
 
   it('uses shadcn controls and tokens, not a raw button or a filled chip', () => {
