@@ -37,24 +37,23 @@
       padding-bottom: 0;
     }
   }
+}
 
-  /* Search lists are long. When Map is on, the map must be the surface
-     (tiles can peek below). Homepage Field CSS keeps list-first order even
-     after the toggle, which is fine for a capped set and wrong here. */
-  @media (max-width: 56.249rem) {
-    .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:first-of-type {
-      order: 0;
-    }
-
-    .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:last-of-type {
-      order: 1;
-    }
+/* Unlayered so these beat V3Field.css. Search lists are long: when Map is
+   on, the map is the surface and tiles peek below. */
+@media (max-width: 56.249rem) {
+  .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:first-of-type {
+    order: 0;
   }
 
-  /* .v3 .v3-btn and .v3-field__lead .v3-btn outrank the barrel hide. */
-  @media (min-width: 56.25rem) {
-    .search-field .v3-field__lead .v3-btn.v3-field__map-toggle {
-      display: none;
-    }
+  .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:last-of-type {
+    order: 1;
+  }
+}
+
+/* .v3 .v3-btn and .v3-field__lead .v3-btn outrank the barrel hide. */
+@media (min-width: 56.25rem) {
+  .search-field .v3-field__lead .v3-btn.v3-field__map-toggle {
+    display: none;
   }
 }
