@@ -63,6 +63,7 @@ export type SearchFiltersInitial = {
   yearBuiltMin?: string
   yearBuiltMax?: string
   propertyType?: string
+  propertySubTypes?: string
   hasPool?: string
   hasView?: string
   hasWaterfront?: string
@@ -236,11 +237,20 @@ type Props = {
   initialFilters: SearchFiltersInitial
   /** Signed-in state — SaveSearchButton switches between account save and guest email capture. */
   signedIn?: boolean
+  /** Place pages stay Split. Do not offer list/map app-frame hops. */
+  hideViewToggle?: boolean
+  /** Place pages already name the place. Location search would fight that pin. */
+  hideLocation?: boolean
 }
 
 type OpenPanel = 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
-export default function SearchFilters({ initialFilters, signedIn = false }: Props) {
+export default function SearchFilters({
+  initialFilters,
+  signedIn = false,
+  hideViewToggle = false,
+  hideLocation = false,
+}: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -464,6 +474,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
           }}
         >
+        {hideLocation ? null : (
         <div className="relative w-40 shrink-0 sm:w-56">
           <div className="srch-panel flex min-h-11 min-w-0 items-center gap-2 px-3 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -522,6 +533,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             />
           )}
         </div>
+        )}
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
@@ -756,6 +768,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         </Button>
         <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
         <SaveSearchButton user={signedIn} />
+        {hideViewToggle ? null : (
         <ToggleGroup
           type="single"
           value={view}
@@ -780,6 +793,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        )}
       </div>
 
       {/* Row 3: active filter chips. Row 2's trigger buttons already show the

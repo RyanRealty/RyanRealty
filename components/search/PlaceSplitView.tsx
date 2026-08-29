@@ -1,12 +1,10 @@
 import { getSession } from '@/app/actions/auth'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
-import { getViewportSearch, type SearchFilters } from '@/app/actions/search'
+import { getViewportSearch, type SearchFilters as ViewportFilters } from '@/app/actions/search'
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import MapSearchView from '@/components/search/MapSearchView'
-import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
-import { stripGeoScope } from '@/components/search/geo-scope'
-import { buildShapeSetForSearch } from '@/lib/map-polygon'
+import SearchFilters, { type SearchFiltersInitial } from '@/components/search/SearchFilters'
 import { publishPlaceSplitSeed } from '@/lib/search/publish-place-split-seed'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -43,54 +41,72 @@ function boundsFromListings(rows: ListingTileRow[]): MapBounds | null {
   }
 }
 
+function firstParam(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? ''
+  return value ?? ''
+}
+
 /**
- * Flagship Split, scoped to a place page. Seed the ring as initialShapes
- * (SSR). Never write ?shapes= onto the place URL. Search this area after pan
- * lives in MapSearchView.
+ * Flagship Split on a place page.
+ *
+ * Camera + painted boundary only. Do not seed a drawable Area that can flip
+ * to Exclude and empty the list. Home type / price / beds ride SearchFilters
+ * so area maps have the same type picker as /homes-for-sale.
  */
 export async function PlaceSplitView(props: {
   id?: string
   city?: string
   neighborhood?: string
   subdivision?: string
-  propertyType?: string
   boundaryGeojson?: { type?: string; coordinates?: unknown } | null
-  /** False when the stored hull is untrusted (Eagle Crest). */
+  /** When false, do not fit the camera to an untrusted hull. */
   seedRing?: boolean
   placeQuery: string
   listings?: ListingTileRow[]
   totalCount?: number
   bounds?: MapBounds
   degraded?: boolean
+  searchParams?: Record<string, string | string[] | undefined>
 }) {
   const seed =
     props.seedRing === false ? null : publishPlaceSplitSeed(props.boundaryGeojson ?? null)
-  const initialShapes = seed?.shapes ?? null
-  const hasInclude = Boolean(initialShapes?.some((s) => !s.exclude))
   const seedBounds = props.bounds ?? seed?.bounds ?? null
   const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
 
-  const viewportFilters: SearchFilters = {
+  const sp = props.searchParams ?? {}
+  const propertyType = firstParam(sp.propertyType)
+  const propertySubTypes = firstParam(sp.propertySubTypes)
+  const minPrice = firstParam(sp.minPrice)
+  const maxPrice = firstParam(sp.maxPrice)
+  const beds = firstParam(sp.beds)
+  const baths = firstParam(sp.baths)
+  const status = firstParam(sp.status) || 'Active'
+  const sort = firstParam(sp.sort) || 'newest'
+
+  const viewportFilters: ViewportFilters = {
     city: props.city || undefined,
     subdivision: props.neighborhood ? undefined : props.subdivision || undefined,
-    propertyType: props.propertyType || undefined,
-    status: 'Active',
-    sort: 'newest',
+    neighborhood: props.neighborhood || undefined,
+    propertyType: propertyType || undefined,
+    propertySubTypes: propertySubTypes ? propertySubTypes.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+    minPrice: minPrice ? Number(minPrice) : undefined,
+    maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    beds: beds ? Number(beds) : undefined,
+    baths: baths ? Number(baths) : undefined,
+    status,
+    sort,
   }
 
   const empty = { listings: [] as ListingTileRow[], totalCount: 0, capped: false }
-  let listings = props.listings
-  let totalCount = props.totalCount
+  const hasTypeFilter = Boolean(propertyType || propertySubTypes)
+  let listings = hasTypeFilter ? undefined : props.listings
+  let totalCount = hasTypeFilter ? undefined : props.totalCount
   let capped = false
   let degraded = props.degraded ?? false
 
   if (listings == null) {
     const settled = await withTimeoutFallbackResult(
-      getViewportSearch(
-        hasInclude ? stripGeoScope(viewportFilters) : viewportFilters,
-        fetchBounds,
-        buildShapeSetForSearch(initialShapes, fetchBounds),
-      ),
+      getViewportSearch(viewportFilters, fetchBounds, null),
       empty,
       4000,
       'place-split-viewport',
@@ -113,14 +129,27 @@ export async function PlaceSplitView(props: {
     city: props.city ?? '',
     subdivision: props.neighborhood ? '' : props.subdivision ?? '',
     neighborhood: props.neighborhood ?? '',
-    status: 'Active',
-    sort: 'newest',
+    status,
+    sort,
     view: 'split',
-    propertyType: props.propertyType ?? '',
+    propertyType,
+    propertySubTypes,
+    minPrice,
+    maxPrice,
+    beds,
+    baths,
   }
 
   return (
     <div className="place-split" id={props.id}>
+      <div className="place-split__filters">
+        <SearchFilters
+          initialFilters={filters}
+          signedIn={!!session?.user}
+          hideViewToggle
+          hideLocation
+        />
+      </div>
       <MapSearchView
         initialListings={listings ?? []}
         initialTotalCount={totalCount ?? listings?.length ?? 0}
@@ -131,7 +160,7 @@ export async function PlaceSplitView(props: {
         likedListingKeys={session?.user ? likedKeys : []}
         placeQuery={props.placeQuery}
         boundaryGeojson={props.boundaryGeojson ?? undefined}
-        initialShapes={initialShapes}
+        initialShapes={null}
         nowMs={Date.now()}
         initialDegraded={degraded}
       />

@@ -96,6 +96,13 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/ · \{publishedCounts\.viewport\.phrase\}/)
   })
 
+  it('place Split does not seed a drawable exclude area', () => {
+    const place = readSrc('components/search/PlaceSplitView.tsx')
+    expect(place).toMatch(/initialShapes=\{null\}/)
+    expect(place).toMatch(/hideViewToggle/)
+    expect(place).toMatch(/Home type|SearchFilters/)
+  })
+
   it('clears Search this area when filters re-seed the list', () => {
     expect(src).toMatch(/setAreaDirty\(false\)/)
   })

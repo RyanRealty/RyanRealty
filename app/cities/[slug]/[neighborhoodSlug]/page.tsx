@@ -38,7 +38,7 @@ import {
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
-import { communityImage, preferPlaceHero } from '@/lib/geo-images'
+import { communityImage, preferPlaceHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { buildYearSeries } from '@/lib/kb/year-series'
 // Row-to-prop shaping shared with the city + community place pages - one copy,
 // so a fix cannot land on one of the three and drift on the others.
@@ -73,7 +73,10 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
+import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
+import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -106,7 +109,10 @@ export async function generateStaticParams(): Promise<Array<{ slug: string; neig
 export const dynamicParams = true
 export const revalidate = 60
 
-type Props = { params: Promise<{ slug: string; neighborhoodSlug: string }> }
+type Props = {
+  params: Promise<{ slug: string; neighborhoodSlug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 // Short form for the character-constrained meta description below ONLY.
 const fmtK = (n: number | null): string | null => (n != null ? `$${Math.round(n / 1000).toLocaleString()}K` : null)
@@ -145,8 +151,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function NeighborhoodDetailPage({ params }: Props) {
+export default async function NeighborhoodDetailPage({ params, searchParams }: Props) {
   const { slug: citySlug, neighborhoodSlug } = await params
+  const sp = await searchParams
 
   const neighborhood = await getNeighborhoodBySlug(citySlug, neighborhoodSlug)
   if (!neighborhood) notFound()
@@ -287,6 +294,22 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     active: inventoryOk ? inventory.activeCount : null,
     medianList: inventoryOk ? inventory.medianListPrice : null,
   })
+  const typeCards = publishPlaceTypeCards({
+    path: `/cities/${citySlug}/${neighborhoodSlug}`,
+    search: searchParamsQuery(sp),
+    placeName: neighborhood.name,
+    sfrCount: inventoryOk ? inventory.activeCount : null,
+    sfrMedian: inventoryOk ? inventory.medianListPrice : null,
+    sfrMos: null,
+    segments: publicSegments,
+  })
+  const headline = neighborhoodHeadline(neighborhood.name)
+  const trail = [
+    { label: 'Home', href: '/' },
+    { label: cityName, href: `/cities/${citySlug}` },
+    { label: neighborhood.name },
+  ]
+  const stagePosterSrc = preferPlaceHeroOrNull(null, communityImage(neighborhoodSlug) ?? communityImage(neighborhood.name))
 
   /* ── The market, off the ONE leftover pile ─────────────────────────────── */
 
@@ -447,31 +470,39 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: cityName, href: `/cities/${citySlug}` },
-            { label: neighborhood.name },
-          ]}
-        />
+        {stagePosterSrc ? (
+          <PlaceAreaHero
+            eyebrow={`${neighborhood.name} · ${cityName}`}
+            headline={headline}
+            posterSrc={stagePosterSrc}
+            actionLabel={`See ${neighborhood.name} homes`}
+            trail={trail}
+          />
+        ) : (
+          <V3Breadcrumb trail={trail} />
+        )}
 
         <div className="place-opening">
-          <V3Heading level={1} size="field">
-            {neighborhoodHeadline(neighborhood.name)}
-          </V3Heading>
+          {stagePosterSrc ? null : (
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+          )}
           <PlaceFaceStrip stats={face.stats} />
+          <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
         </div>
 
         <div id="homes">
           <PlaceSplitView
-            city="Bend"
+            city={cityName}
             neighborhood={neighborhood.name}
             boundaryGeojson={boundaryMapData.polygon}
             seedRing
-            placeQuery={`${neighborhood.name} Bend`}
+            placeQuery={`${neighborhood.name} ${cityName}`}
             listings={splitListings}
             totalCount={inventoryOk ? inventory.activeCount : undefined}
             degraded={!boundaryRead.ok && !inventoryOk}
+            searchParams={sp}
           />
         </div>
 

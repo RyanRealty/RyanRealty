@@ -95,10 +95,14 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
+import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
+import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
+import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
   activityRows,
@@ -139,7 +143,10 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 export const dynamicParams = true
 export const revalidate = 60
 
-type Props = { params: Promise<{ slug: string }> }
+type Props = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 /** Polygon / MultiPolygon, or a Feature wrapping one. Miss is null. */
 function asPlaceBoundary(value: unknown): { type?: string; coordinates?: unknown } | null {
@@ -172,8 +179,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-export default async function CityDetailPage({ params }: Props) {
+export default async function CityDetailPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const sp = await searchParams
 
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
   if (!snapshot) notFound()
@@ -279,6 +287,8 @@ export default async function CityDetailPage({ params }: Props) {
   // pattern set holds no mid-page media slot here); it plays full-bleed on the
   // community Stage. Null when the geo has none, and the row is then absent.
   const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video')
+  const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
+  const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
 
   const resortTiles = resortRead.value
 
@@ -291,6 +301,17 @@ export default async function CityDetailPage({ params }: Props) {
     pace: publicPace,
   })
   const face = publishPlaceFace({ grain: 'city', hud })
+  const typeCards = publishPlaceTypeCards({
+    path: `/cities/${slug}`,
+    search: searchParamsQuery(sp),
+    placeName: cityName,
+    sfrCount: hud.active,
+    sfrMedian: hud.medianList,
+    sfrMos: hud.monthsSupply,
+    segments: publicSegments,
+  })
+  const trail = [{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]
+  const headline = `${cityName} homes for sale`
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
   // never a snapshot all-count, never a `?? 0`.
@@ -564,15 +585,26 @@ export default async function CityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        <V3Breadcrumb
-          trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]}
-        />
+        {stagePosterSrc ? (
+          <PlaceAreaHero
+            eyebrow={`${cityName} · Oregon`}
+            headline={headline}
+            posterSrc={stagePosterSrc}
+            actionLabel={`See ${cityName} homes`}
+            trail={trail}
+          />
+        ) : (
+          <V3Breadcrumb trail={trail} />
+        )}
 
         <div className="place-opening">
-          <V3Heading level={1} size="field">
-            {`${cityName} homes for sale`}
-          </V3Heading>
+          {stagePosterSrc ? null : (
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+          )}
           <PlaceFaceStrip stats={face.stats} />
+          <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
         </div>
 
         <PlaceSplitView
@@ -581,6 +613,7 @@ export default async function CityDetailPage({ params }: Props) {
           boundaryGeojson={cityGeojson}
           seedRing
           placeQuery={`${cityName} Oregon`}
+          searchParams={sp}
         />
 
         {/* Pattern 1, Instrument. The market question is the section headline,

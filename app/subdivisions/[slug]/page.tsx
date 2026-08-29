@@ -143,7 +143,10 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
+import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
+import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
@@ -176,7 +179,10 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return []
 }
 
-type Props = { params: Promise<{ slug: string }> }
+type Props = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 /** Title-case a slug for display, null in / null out. */
 function titleCaseSlug(slug: string | null | undefined): string | null {
@@ -283,8 +289,9 @@ const loadSubdivisionCore = cache(async (slug: string) => {
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function SubdivisionPage({ params }: Props) {
+export default async function SubdivisionPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const sp = await searchParams
 
   const { inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, mapTiles, refused } =
     await loadSubdivisionCore(slug)
@@ -374,6 +381,17 @@ export default async function SubdivisionPage({ params }: Props) {
     active: activeCount,
     medianList: platFigures.medianListPrice,
   })
+  const typeCards = publishPlaceTypeCards({
+    path: `/subdivisions/${slug}`,
+    search: searchParamsQuery(sp),
+    placeName: displayName,
+    sfrCount: activeCount,
+    sfrMedian: platFigures.medianListPrice,
+    sfrMos: null,
+    segments: [],
+  })
+  const headline = `${displayName} homes for sale`
+  const stagePosterSrc = splitListings.find((row) => row.PhotoURL)?.PhotoURL ?? null
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -488,24 +506,46 @@ export default async function SubdivisionPage({ params }: Props) {
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            ...(resortSlug
-              ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-              : citySlug
-                ? [{ label: cityName, href: `/cities/${citySlug}` }]
-                : []),
-            { label: displayName },
-          ]}
-        />
+        {stagePosterSrc ? (
+          <PlaceAreaHero
+            eyebrow={splitCity ? `${displayName} · ${splitCity}` : displayName}
+            headline={headline}
+            posterSrc={stagePosterSrc}
+            actionLabel={`See ${displayName} homes`}
+            trail={[
+              { label: 'Home', href: '/' },
+              { label: 'Communities', href: '/communities' },
+              ...(resortSlug
+                ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+                : citySlug
+                  ? [{ label: cityName, href: `/cities/${citySlug}` }]
+                  : []),
+              { label: displayName },
+            ]}
+          />
+        ) : (
+          <V3Breadcrumb
+            trail={[
+              { label: 'Home', href: '/' },
+              { label: 'Communities', href: '/communities' },
+              ...(resortSlug
+                ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+                : citySlug
+                  ? [{ label: cityName, href: `/cities/${citySlug}` }]
+                  : []),
+              { label: displayName },
+            ]}
+          />
+        )}
 
         <div id="overview" className="place-opening">
-          <V3Heading level={1} size="field">
-            {`${displayName} homes for sale`}
-          </V3Heading>
+          {stagePosterSrc ? null : (
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+          )}
           <PlaceFaceStrip stats={face.stats} />
+          <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
           <V3SourceLine source={inventorySource} />
         </div>
 
@@ -520,6 +560,7 @@ export default async function SubdivisionPage({ params }: Props) {
             totalCount={activeCount ?? splitListings.length}
             bounds={seedRing ? undefined : pinBounds ?? undefined}
             degraded={!inventoryRead.ok}
+            searchParams={sp}
           />
         </div>
 

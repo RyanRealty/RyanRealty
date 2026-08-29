@@ -90,6 +90,18 @@ export function publicSegmentNoun(segment: string, count: number): string {
   return count === 1 ? n.one : n.many
 }
 
+/** URL filter pair this extra type uses on Split / search. */
+export function publicSegmentFilterParams(
+  segment: string,
+): { propertyType?: string; propertySubTypes?: string } | null {
+  const spec = BROWSE[segment as PublicPlaceSegment]
+  if (!spec) return null
+  return {
+    propertyType: spec.propertyType,
+    propertySubTypes: spec.propertySubTypes,
+  }
+}
+
 export function publicSegmentBrowseHref(
   citySlug: string | null,
   segment: string,

@@ -78,7 +78,10 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
+import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
+import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -96,10 +99,12 @@ import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
   belongingHeadline,
+  communityLibraryHero,
   communitySplitListings,
   communityTypeStripItems,
   firstAboutParagraph,
   leftoverSoldHistoryFigures,
+  stagePoster,
 } from './_v3/community-opening'
 import { resortQuietItems } from '../_v3/resort-doors'
 import {
@@ -115,7 +120,10 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 export const dynamicParams = true
 export const revalidate = 60
 
-type Props = { params: Promise<{ slug: string }> }
+type Props = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 const BOUNDARY_ROW_CAP = 200
 
@@ -139,8 +147,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
 }
 
-export default async function CommunityDetailPage({ params }: Props) {
+export default async function CommunityDetailPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const sp = await searchParams
 
   const community = await getCommunityBySlug(slug)
   if (!community) notFound()
@@ -266,6 +275,18 @@ export default async function CommunityDetailPage({ params }: Props) {
   })
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
+  const typeCards = publishPlaceTypeCards({
+    path: `/communities/${slug}`,
+    search: searchParamsQuery(sp),
+    placeName: publicName,
+    sfrCount: hud.active,
+    sfrMedian: hud.medianList,
+    sfrMos: null,
+    segments: publicSegments,
+  })
+  const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
+  const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
+  const headline = belongingHeadline(publicName, richContent)
 
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
@@ -518,18 +539,32 @@ export default async function CommunityDetailPage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={communitySchemas} />
 
-        <V3Breadcrumb trail={trail} />
-        <V3Quiet
-          id="place"
-          heading={belongingHeadline(publicName, richContent)}
-          headingLevel={1}
-          items={placeItems}
-        />
+        {stagePosterSrc ? (
+          <PlaceAreaHero
+            eyebrow={`${publicName} · ${cityName}`}
+            headline={headline}
+            posterSrc={stagePosterSrc}
+            actionLabel={`See ${publicName} homes`}
+            trail={trail}
+          />
+        ) : (
+          <V3Breadcrumb trail={trail} />
+        )}
+        {stagePosterSrc ? (
+          faceAbout ? (
+            <V3Quiet id="place-about" heading={`${publicName}`} headingLevel={2} items={placeItems.filter((item) => item.kind === 'prose')} />
+          ) : null
+        ) : (
+          <V3Quiet id="place" heading={headline} headingLevel={1} items={placeItems} />
+        )}
         {face.stats.length > 0 ? (
           <section className={`${V3_ROOT_CLASS} place-face-block`} aria-label={`${publicName} live inventory`}>
             <PlaceFaceStrip stats={face.stats} />
+            <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
           </section>
-        ) : null}
+        ) : (
+          <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
+        )}
 
         <PlaceSplitView
           id="homes"
@@ -541,16 +576,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           listings={splitListings}
           totalCount={splitListings?.length}
           degraded={!citySfrRead.ok && isResortInCity}
+          searchParams={sp}
         />
-        {typeItems.length > 0 ? (
-          <nav className="place-type-strip" aria-label={`${publicName} property types`}>
-            {typeItems.map((item) => (
-              <V3Button key={item.key} href={item.href} variant="ghost">
-                {item.label}
-              </V3Button>
-            ))}
-          </nav>
-        ) : null}
 
         {firstMarketFigure ? (
           <V3Instrument
