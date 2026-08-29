@@ -96,7 +96,7 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     city: 'city',
     neighborhood: 'neighborhood',
     community: 'community',
-    subdivision: 'plat',
+    subdivision: 'subdivision',
   }
   for (const parent of placeContext.parents) {
     push(`${parent.label} ${PARENT_NOUN[parent.type]}`, parent.href)
@@ -107,7 +107,7 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
   if (peerPlats.length > 0) {
     edges.push({
       kind: 'prose',
-      term: `Other plats in ${resortLabel ?? 'this community'}`,
+      term: `Other neighborhoods in ${resortLabel ?? 'this community'}`,
       body: 'Each one is recorded under its own MLS subdivision name.',
     })
     for (const peer of peerPlats) push(peer.name, peer.href)

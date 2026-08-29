@@ -78,14 +78,13 @@ const pages = [
   {
     path: 'app/subdivisions/[slug]/page.tsx',
     label: 'plat page opening names the plat, not the parent city alone',
-    // The v3 Ledger/Field replaced KbHero here (2026-08-26). The heading is
-    // `Homes for sale in ${displayName}` and the count's own trace names the
-    // plat: homesLedgerTrace interpolates the subdivision name, so the counted
+    // Stage then Field (2026-08-29). The H1 is `Homes for sale in ${displayName}`
+    // and the Field caption interpolates the subdivision name, so the counted
     // set cannot read as the parent city's inventory.
     v3: {
-      module: 'app/subdivisions/[slug]/_v3/subdivision-traces.ts',
-      builder: 'homesLedgerTrace',
-      names: '${scope.subdivisionName} name in ${scope.city}',
+      module: 'app/subdivisions/[slug]/_v3/subdivision-face.ts',
+      builder: 'subdivisionFaceFieldCaption',
+      names: 'in ${input.placeName}',
     },
   },
   {

@@ -2,7 +2,7 @@
   "route": "app/subdivisions/[slug]/page.tsx",
   "mockup": null,
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This route never had a KB-era mockup, which is why this directory holds a contract and no index.html. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is a Ledger of this plat's homes. Giant 0 is forbidden. Empty Ledger if none. Parent community or city is the back door. Schools on the first path. Field only when pins are a real map.",
+  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is Stage (Imagine/library still of the parent resort or this neighborhood) then one Field of its houses. Giant 0 is forbidden. Empty Ledger if none. Parent community or city is the back door. Schools on the first path. Face never says plat.",
   "note": "MIGRATED TO THE v3 BARREL 2026-08-26, completing the repair this file has described since 2026-08-14. Opens a Ledger of this plat's homes; a Field only when the plat carries FIELD_MAP_MIN pins or more, because a short plat is a list and a three-pin map is not a map. Giant 0 is forbidden: a timed-out read is an honest empty Ledger with the reason, never a 0 hero. Parent community or city is the ghost action. Schools sit immediately after the homes. Value my home is not the opening ask. FOUR PATTERNS, WHICH IS THE CAP: Field or Ledger (the homes) / Quiet (the assigned schools and every outbound edge) / Instrument (the plat's own market, then once per other property type the plat holds) / Ledger (the sales history, then the recorded documents). THE RHYTHM CONFLICT IS DECLARED, NOT HIDDEN: four sections render only when their data exists, and no ordering of four independent conditionals over four patterns can guarantee no-two-adjacent for every combination. The order is correct when the data is present and degrades to at worst one repeated pair; the alternative is dropping a section the data supports, which section 0 forbids. THE PARENT PULSE IS GONE AND MUST NOT COME BACK: a registry plat has no market_pulse_live row, so the KB page's parent-market band attributed Redmond's pending days to Ridge At Eagle Crest. lib/market/publish-plat-figures.ts and ci:publish-plat-figures replaced it on 2026-08-16, and ci:subdivision-stats-integrity now FAILS on a closedLast30Days figure reappearing in _v3/subdivision-figures.ts. THE CLOSED PRICE IS WITHHELD AT THIS GRAIN (REGISTRY section 4): the yearly Ledger publishes counts only, and it calls publishSubdivisionClosedPrice rather than assuming the withholding, so the day the registry lets a plat publish a price it arrives there.",
   "requiredComponents": [
     {
@@ -26,8 +26,13 @@
       "blocking": true
     },
     {
-      "name": "V3Field",
-      "section": "Pattern 2, Field — the plat's homes beside the real Google map (PlaceFieldMap in the map slot), with the recorded plat boundary drawn on it, ONLY when the plat carries FIELD_MAP_MIN pins or more. Replaces KbFeatured, KbListingMap and PlaceMapListSplit.",
+      "name": "V3Stage",
+      "section": "Pattern 4. Imagine or library still of the parent resort / this neighborhood (elevated course or rim). Never a plat diagram, Unsplash, or Google pixels. headingLevel 1: Homes for sale in {name}.",
+      "blocking": true
+    },
+    {
+      "name": "SubdivisionHomesField",
+      "section": "Pattern 2. Route-local Field: H1 only when Stage did not take it + V3Field with PlaceFieldMap, list-first Map toggle at 390, navy --v3-cat pins. Caption counts the live homes. Required map attribution stays.",
       "blocking": true
     },
     {
@@ -47,12 +52,7 @@
     },
     {
       "name": "SubdivisionSalesHistory",
-      "section": "Pattern 3, Ledger, route-local. One row per calendar year of closed single-family sales from the get_subdivision_sales_history RPC, the value column the CLOSED COUNT (REGISTRY section 4 withholds a plat-grain closed price), each row a door into the closed-sales explorer at that year. THE DOOR OPENS THE YEAR IT NAMES: /housing-market/history clamps its year parameter to [1998, 2030], and 7,553 closings across 497 plats predate 1998, so years outside that range get no row and are stated as a count in the note instead of a link that lands on another year's aggregates. The range lives in _v3/history-door.ts and ci:subdivision-stats-integrity pins it to the destination's own clamp. Renders nothing only when the RPC returns nothing, because an empty result there is the absence of an answer rather than the answer zero. ODS rule 5-4 A.4: aggregates only.",
-      "blocking": true
-    },
-    {
-      "name": "SubdivisionMarketCharts",
-      "section": "The approved chart-room cards (V3ChartCard), rendered INSIDE the sales-history section so the page still carries one market section. Every floor and every withheld year is named in each card's own Source trace.",
+      "section": "Pattern 3, Ledger, route-local. The one closed-sales picture: one row per calendar year from the get_subdivision_sales_history RPC. Counts only. THE DOOR OPENS THE YEAR IT NAMES. Heading is Closed single-family sales, {name}.",
       "blocking": true
     },
     {
@@ -103,10 +103,10 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Quiet (overview) + V3Field (homes) when the plat carries FIELD_MAP_MIN pins, else V3Ledger (homes)",
+    "V3Stage when an owned still exists, then SubdivisionHomesField (list-first Map toggle). Empty inventory is a Ledger.",
     "SubdivisionSchools (Quiet: assigned schools, then every outbound edge)",
-    "V3Instrument (the plat's own market, conditional)",
-    "SubdivisionSalesHistory (Ledger) with SubdivisionMarketCharts inside it",
+    "V3Instrument (this neighborhood's own market, conditional, no closed-sales chart)",
+    "SubdivisionSalesHistory (the one closed-sales year list)",
     "V3PlaceCharacter (Quiet, conditional)",
     "SubdivisionDocuments (Ledger, conditional)",
     "V3PlacePropertyTypes (Instrument enumeration, conditional)",

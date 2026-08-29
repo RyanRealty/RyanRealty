@@ -38,13 +38,9 @@
  * aggregates and shared this section's source line.
  */
 
-import type { ReactNode } from 'react'
 import {
   v3Text,
-  V3Instrument,
   V3Ledger,
-  type V3ChartProps,
-  type V3InstrumentFigure,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
 import { publishSubdivisionClosedPrice } from '@/lib/market/publish-subdivision-closed-price'
@@ -63,24 +59,9 @@ interface Props {
   history: SubdivisionSalesYear[]
   /** The plat's city, when the page resolved one. Narrows the year door. */
   cityName: string
-  /**
-   * Yearly closed-count series. Present only when the plat-stats Instrument did
-   * not already take it. Two Instruments in a row would break the rhythm rule,
-   * which is why the page moves the parent-market band below this section when
-   * this chart mounts here.
-   */
-  chart?: V3ChartProps
-  /**
-   * The approved chart-room cards for this plat, ALREADY RENDERED. They are a
-   * node rather than card props because this component is synchronous and the
-   * cards read the DAL. They mount inside this section for the reason their own
-   * header states: a plat page carries ONE market section, and a second headed
-   * block of charts would be a second one.
-   */
-  charts?: ReactNode
 }
 
-export function SubdivisionSalesHistory({ displayName, history, cityName, chart, charts }: Props) {
+export function SubdivisionSalesHistory({ displayName, history, cityName }: Props) {
   if (history.length === 0) return null
 
   // COUNTS ONLY, STRUCTURALLY. Every year's median goes through the registry
@@ -134,16 +115,16 @@ export function SubdivisionSalesHistory({ displayName, history, cityName, chart,
   const note =
     outsideClosed > 0
       ? `${totalsSentence} Each row opens the Central Oregon closed-sales explorer at that year, ` +
-        `which covers a wider area than this plat. ${rangeBit}, so the ${outsideBit} recorded here ` +
+        `which covers a wider area than this neighborhood. ${rangeBit}, so the ${outsideBit} recorded here ` +
         `outside those years are in the total above and have no row.`
       : `${totalsSentence} Each row opens the Central Oregon closed-sales explorer at that year, ` +
-        `which covers a wider area than this plat.`
+        `which covers a wider area than this neighborhood.`
 
   const ledger = !first ? (
     <V3Ledger
       id="sales-history"
       eyebrow={v3Text(`${displayName} · Sales history`)}
-      heading={v3Text(chart ? 'Sales by year' : `Closed sales in ${displayName}`)}
+      heading={v3Text(`Closed single-family sales, ${displayName}.`)}
       note={v3Text(`${totalsSentence} They fall in ${outsideYearBit} of closings.`)}
       rows={[]}
       emptyMessage={v3Text(
@@ -151,51 +132,19 @@ export function SubdivisionSalesHistory({ displayName, history, cityName, chart,
           `row here has a year to open.`,
       )}
       source={v3Text(salesHistoryTrace(displayName, priceMayPublish))}
-      action={chart ? undefined : explorerAction}
+      action={explorerAction}
     />
   ) : (
     <V3Ledger
       id="sales-history"
       eyebrow={v3Text(`${displayName} · Sales history`)}
-      heading={v3Text(chart ? 'Sales by year' : `Closed sales in ${displayName}`)}
+      heading={v3Text(`Closed single-family sales, ${displayName}.`)}
       note={v3Text(note)}
       rows={[first, ...rest]}
       source={v3Text(salesHistoryTrace(displayName, priceMayPublish))}
-      action={chart ? undefined : explorerAction}
+      action={explorerAction}
     />
   )
 
-  if (!chart) {
-    return charts ? (
-      <>
-        {ledger}
-        {charts}
-      </>
-    ) : (
-      ledger
-    )
-  }
-
-  const closedFigure: V3InstrumentFigure = {
-    value: v3Text(totalClosed.toLocaleString('en-US')),
-    label: v3Text(totalClosed === 1 ? 'closed sale on record' : 'closed sales on record'),
-    href: HISTORY_PATH,
-  }
-
-  return (
-    <>
-      <V3Instrument
-        id="sales-history-chart"
-        level={2}
-        eyebrow={v3Text(`${displayName} · Sales history`)}
-        headline={v3Text(`Closed sales in ${displayName}`)}
-        figures={[closedFigure]}
-        source={v3Text(salesHistoryTrace(displayName, priceMayPublish))}
-        chart={chart}
-        action={explorerAction}
-      />
-      {ledger}
-      {charts}
-    </>
-  )
+  return ledger
 }

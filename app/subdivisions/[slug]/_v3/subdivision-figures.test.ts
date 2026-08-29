@@ -45,13 +45,13 @@ describe('platStatsFigures', () => {
 })
 
 describe('subdivisionSalesChart', () => {
-  it('captions the series as MLS plat-name closed counts', () => {
+  it('captions the series as closed single-family sales for this neighborhood', () => {
     const chart = subdivisionSalesChart('Kitty Hawk', [
       { year: 2024, closedCount: 3, medianClosePrice: 317_000 },
       { year: 2023, closedCount: 2, medianClosePrice: 287_500 },
     ])
-    expect(chart?.caption).toContain('MLS plat name')
-    expect(chart?.caption).not.toMatch(/recorded[\s-]plat/i)
+    expect(chart?.caption).toBe('Closed single-family sales, Kitty Hawk.')
+    expect(chart?.caption).not.toMatch(/\bplat\b/i)
     expect(chart?.series?.[0]?.name).toBe('Closed counts')
     expect(JSON.stringify(chart)).not.toContain('$')
     expect(JSON.stringify(chart)).not.toMatch(/months of supply/i)

@@ -36,11 +36,11 @@ function renderHistory() {
  * is the same rule; only the spelling of what renders it moved.
  */
 describe('subdivision yearly history grain', () => {
-  it('labels the rows as MLS plat-name closed counts, not recorded plat', () => {
+  it('labels the rows as closed single-family sales for this neighborhood', () => {
     const html = renderHistory()
-    expect(html).toContain('MLS plat name')
+    expect(html).toContain('Closed single-family sales, Kitty Hawk.')
     expect(html).toMatch(/single-family name join/i)
-    expect(html).toMatch(/not recorded-plat membership/i)
+    expect(html).not.toMatch(/\bplat\b/i)
     expect(html).toContain('>2024<')
     expect(html).toMatch(/closings/i)
   })

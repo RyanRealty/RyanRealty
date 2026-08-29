@@ -21,8 +21,8 @@ import { listingDetailPath } from '@/lib/slug'
 /** Pins at or above this count are a map. Below it, the plat is a list. */
 export const FIELD_MAP_MIN = 4
 
-/** A Field item that is known to carry coordinates, so it can also be a pin. */
-export type FieldEntry = V3FieldItem & { lat: number; lng: number }
+/** A Field item. Coordinates are optional so a home without pins still lists. */
+export type FieldEntry = V3FieldItem & { lat?: number; lng?: number }
 
 /** What a listing with no published price says instead of printing a zero. */
 const NO_PRICE = 'Price not published'
@@ -40,9 +40,9 @@ function metaLine(
   return bits.length > 0 ? bits.join(' · ') : undefined
 }
 
-/** One active single-family tile as a Field row. Null when it cannot be placed. */
+/** One active single-family tile as a Field row. Null only when the key is missing. */
 export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry | null {
-  if (tile.lat == null || tile.lng == null) return null
+  if (!tile.listingKey) return null
   const street = publishStreetLine({
     streetNumber: tile.streetNumber,
     streetName: tile.streetName,
@@ -72,8 +72,8 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
       'Listing',
     meta: metaLine(tile.beds, tile.baths, hasVideo),
     photoSrc: tile.photoUrl?.trim() || undefined,
-    lat: tile.lat,
-    lng: tile.lng,
+    ...(tile.lat != null && tile.lng != null ? { lat: tile.lat, lng: tile.lng } : {}),
+    cat: 0,
   }
 }
 
@@ -100,6 +100,6 @@ export function platHomesMode(input: {
 }): 'unknown' | 'empty' | 'field' | 'ledger' {
   if (input.activeCount == null) return 'unknown'
   if (input.activeCount === 0 || input.homeRows === 0) return 'empty'
-  if (input.pinCount >= FIELD_MAP_MIN) return 'field'
+  if (input.homeRows > 0) return 'field'
   return 'ledger'
 }

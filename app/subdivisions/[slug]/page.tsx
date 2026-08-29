@@ -2,11 +2,12 @@
 /**
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 (locked 2026-08-11).
- * "Subdivision → Ledger of this plat's homes. Field only when the plat has
- * enough pins to be a map. A short plat is a list." Giant 0 is forbidden: an
- * empty Ledger states the reason. The parent community or city is the back
- * door. Schools sit on the first path. Section order is the parity contract at
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3.
+ * Subdivision opens Stage (Imagine/library still of the parent resort or this
+ * neighborhood) then one Field of its houses. Face says subdivision / this
+ * neighborhood, never plat. Giant 0 is forbidden: an empty Ledger states the
+ * reason. The parent community or city is the back door. Schools sit on the
+ * first path. Section order is the parity contract at
  * design_system/ryan-realty/ui_kits/subdivision/parity.json.
  *
  * FOUR PATTERNS, WHICH IS THE CAP. Field or Ledger (the homes) · Quiet (the
@@ -137,32 +138,36 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
-  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
   V3PlaceCharacter,
   V3PlacePropertyTypes,
-  V3Quiet,
+  V3Stage,
   V3SectionTracker,
   type V3FieldItem,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
-import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
-import { platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
+import { platStatsFigures } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
-import { platHomesMode, toFieldEntry, toLedgerRows, type FieldEntry } from './_v3/subdivision-rows'
+import { platHomesMode, toFieldEntry, type FieldEntry } from './_v3/subdivision-rows'
+import { SubdivisionHomesField } from './_v3/SubdivisionHomesField'
 import {
-  fieldTrace,
-  homesLedgerTrace,
+  subdivisionHeadline,
+  subdivisionLibraryHero,
+  subdivisionStagePoster,
+} from './_v3/subdivision-opening'
+import {
+  subdivisionFaceFieldCaption,
+  subdivisionFaceFieldTrace,
+} from './_v3/subdivision-face'
+import {
   PERIOD_LABEL,
   platCountsTrace,
   platInventoryTrace,
@@ -363,10 +368,9 @@ export default async function SubdivisionPage({ params }: Props) {
     const entry = toFieldEntry(tile, videoKeys.has(tile.listingKey))
     if (entry) plotted.push(entry)
   }
-  const mapPins = fieldMapPins(plotted)
   const fieldItems: V3FieldItem[] = plotted
   const mapPolygon = hasBoundary && boundary.polygon ? boundary.polygon : undefined
-  const hasMap = plotted.length > 0 || Boolean(mapPolygon)
+  const hasMap = plotted.some((item) => item.lat != null && item.lng != null) || Boolean(mapPolygon)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
   const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter] =
@@ -444,7 +448,27 @@ export default async function SubdivisionPage({ params }: Props) {
 
   const statsPeriodLabel = subdivisionStats ? PERIOD_LABEL[subdivisionStats.periodType] : ''
   const [firstPlatFigure, ...restPlatFigures] = marketFigures
-  const salesChart = subdivisionSalesChart(displayName, salesHistory)
+  const schoolSinceYear =
+    salesHistory.length > 0
+      ? Math.min(...salesHistory.map((row) => row.year))
+      : null
+  const libraryHero = await withTimeoutFallback(
+    subdivisionLibraryHero(slug, resortSlug),
+    null,
+    3000,
+    'sub:libraryHero',
+  )
+  const posterSrc = subdivisionStagePoster(null, libraryHero, resortSlug)
+  const headline = subdivisionHeadline(displayName)
+  const fieldCaption = subdivisionFaceFieldCaption({
+    placeName: displayName,
+    count: fieldItems.length,
+  })
+  const fieldSource = subdivisionFaceFieldTrace(
+    displayName,
+    placeCity,
+    hasBoundary,
+  )
 
   // ONE SENTENCE PER POPULATION THAT ACTUALLY REACHED THE PAGE, and the sentences
   // are joined rather than concatenated: each trace is written to follow the word
@@ -509,14 +533,25 @@ export default async function SubdivisionPage({ params }: Props) {
     homeRows: fieldItems.length,
     pinCount: plotted.length,
   })
-  const homeRows = toLedgerRows(fieldItems)
-  const [firstHome, ...restHomes] = homeRows
   const parentHref = resortSlug
     ? `/communities/${resortSlug}`
     : citySlug
       ? `/cities/${citySlug}`
       : '/communities'
   const parentLabel = resortLabel ?? cityName
+  const trail = [
+    { label: 'Home', href: '/' },
+    { label: 'Communities', href: '/communities' },
+    ...(resortSlug
+      ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+      : citySlug
+        ? [{ label: cityName, href: `/cities/${citySlug}` }]
+        : []),
+    { label: displayName },
+  ]
+  const seeHomes = browseHref
+    ? { label: `See ${displayName} homes`, href: browseHref }
+    : { label: `See ${displayName} homes`, href: '#homes' }
 
   return (
     <>
@@ -524,68 +559,41 @@ export default async function SubdivisionPage({ params }: Props) {
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            ...(resortSlug
-              ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-              : citySlug
-                ? [{ label: cityName, href: `/cities/${citySlug}` }]
-                : []),
-            { label: displayName },
-          ]}
-        />
-
-        {/* Pattern 2, Field — only when the plat has enough pins to BE a map.
-            A short plat is a list, which is the next branch. */}
-        {homesMode === 'field' ? (
+        {posterSrc ? (
           <>
-            <V3Quiet
-              id="overview"
-              heading={`Homes for sale in ${displayName}`}
+            <V3Breadcrumb tone="on-media" trail={trail} />
+            <V3Stage
+              id="place"
               headingLevel={1}
+              height="tall"
               eyebrow={eyebrow}
-              items={[{ label: parentLabel, href: parentHref }]}
-            />
-            <V3Field
-              id="homes"
-              ariaLabel={`Homes for sale in ${displayName}`}
-              items={fieldItems}
-              mapSlot={
-                <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
-              }
-              count={{
-                value: fieldItems.length.toLocaleString('en-US'),
-                label: fieldItems.length === 1 ? 'home shown here' : 'homes shown here',
-                source: fieldTrace(platScope),
-              }}
-              mapNote={
-                mapPolygon
-                  ? `The outline is the recorded ${displayName} plat boundary.`
-                  : undefined
-              }
+              headline={headline}
+              posterSrc={posterSrc}
+              action={seeHomes}
             />
           </>
-        ) : firstHome ? (
-          /* Pattern 3, Ledger. Every row is a door. */
-          <V3Ledger
-            id="homes"
-            headingLevel={1}
-            eyebrow={v3Text(eyebrow)}
-            heading={v3Text(`Homes for sale in ${displayName}`)}
-            rows={[firstHome, ...restHomes]}
-            source={v3Text(homesLedgerTrace(platScope))}
-            action={{ label: v3Text(parentLabel), href: parentHref, variant: 'ghost' }}
+        ) : (
+          <V3Breadcrumb trail={trail} />
+        )}
+
+        {homesMode === 'field' || fieldItems.length > 0 ? (
+          <SubdivisionHomesField
+            placeName={displayName}
+            headline={v3Text(headline)}
+            ownsHeading={!posterSrc}
+            fieldItems={fieldItems}
+            inventoryOk={homesMode !== 'unknown'}
+            caption={fieldCaption}
+            source={fieldSource}
+            seeAll={browseHref ? { href: browseHref, label: `See ${displayName} homes` } : undefined}
+            boundary={mapPolygon}
           />
         ) : (
-          /* Giant 0 is forbidden. An empty Ledger states WHICH of the two
-             things happened: nothing is listed, or nothing answered. */
           <V3Ledger
             id="homes"
             headingLevel={1}
             eyebrow={v3Text(eyebrow)}
-            heading={v3Text(`Homes for sale in ${displayName}`)}
+            heading={v3Text(headline)}
             rows={[]}
             emptyMessage={v3Text(
               homesMode === 'unknown'
@@ -596,12 +604,13 @@ export default async function SubdivisionPage({ params }: Props) {
           />
         )}
 
-        {/* Pattern 6, Quiet — the assigned schools and every outbound edge this
-            page carries. ci:subdivision-stats-integrity requires this component
-            by name. */}
-        <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
+        <SubdivisionSchools
+          displayName={displayName}
+          schools={subdivisionSchools}
+          sinceYear={schoolSinceYear}
+          edges={edges}
+        />
 
-        {/* Pattern 1, Instrument — the plat's own market, one population. */}
         {firstPlatFigure ? (
           <V3Instrument
             id="market-report"
@@ -617,27 +626,13 @@ export default async function SubdivisionPage({ params }: Props) {
                 ? v3Text(formatDate(subdivisionStats.refreshedAt))
                 : undefined
             }
-            chart={salesChart}
           />
         ) : null}
 
-        {/* Pattern 3, Ledger — one row per calendar year, every row a door, with
-            the approved chart-room cards inside the same market section. */}
         <SubdivisionSalesHistory
           displayName={displayName}
           history={salesHistory}
           cityName={cityName}
-          chart={firstPlatFigure ? undefined : salesChart}
-          charts={
-            <SubdivisionMarketCharts
-              slug={slug}
-              platName={displayName}
-              citySlug={citySlug}
-              cityName={cityName}
-              resortSlug={resortSlug}
-              history={salesHistory}
-            />
-          }
         />
 
         {/* Pattern 6, Quiet — build years and HOA as sentences, because

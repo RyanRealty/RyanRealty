@@ -85,7 +85,7 @@ export function subdivisionSalesChart(
     }))
   if (points.length < 2) return undefined
   return {
-    caption: v3Text(`Closed single-family sales by MLS plat name, ${displayName}`),
+    caption: v3Text(`Closed single-family sales, ${displayName}.`),
     series: [{ name: v3Text('Closed counts'), points }],
   }
 }

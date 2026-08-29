@@ -172,7 +172,7 @@ place types from reading as one page, and it binds whatever the pattern set hold
 | City | `/cities/[slug]`, `/zip/[zip]` | Stage (owned library place still) then Field of this city's houses. No owned still → Field only. Verdict is a caption, never a number hero. | Child neighborhoods and master-plans are doors below the fold. |
 | Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | Stage (owned Imagine or library still) then Field of this neighborhood's houses. No owned still → Field only. Verdict is a caption, never a 30-tile hero. | Daily life (schools, parks) only when the library has rows. Not amenities or membership. |
 | Master-plan | `/communities/[slug]` | Stage (owned place photo) then Field. No owned asset → Instrument of what belonging here is, then Field. | Amenities, membership, STR. Child plats are doors. Not a neighborhood. |
-| Subdivision | `/subdivisions/[slug]` | Ledger of this plat's homes. Field only when the plat has enough pins to be a map. | Parent community or city is the back door. Schools on the first path. A short plat is a list. |
+| Subdivision | `/subdivisions/[slug]` | Stage (owned Imagine or library still of the parent resort / this neighborhood) then one Field of its houses. No owned still → Field only. Face says subdivision / this neighborhood, never plat. | Parent community or city is the back door. Schools on the first path. One closed-sales picture. |
 | Listing | the house URL | Stage (this house's media) with price and specs on the media, then one act (Sheet: tour or ask). | Same shop as the place pages. Payment, history, this place, who listed = layer 1. |
 | Market | `/housing-market` and leaves | Instrument | Number and chart. |
 | Sell | `/sell` | Stage then Sheet | Address field is the spine. |
@@ -326,3 +326,8 @@ Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
   place-owned Imagine or library still exists, then one Field of its houses.
   The 30-tile Instrument stack and the buyer/seller H2 are retired. Latest
   market activity sits under the Stage. Chart Room is mid-page.
+- **2026-08-29** — Subdivision first fold is existing `V3Stage` when an
+  Imagine or library still of the parent resort / this neighborhood exists
+  (elevated course or rim, never a plat diagram), then one Field of its
+  houses. Face copy says subdivision / this neighborhood. One closed-sales
+  picture. School samples that are historical stay labeled historical.

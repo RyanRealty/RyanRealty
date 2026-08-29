@@ -49,13 +49,19 @@ interface Props {
   displayName: string
   schools: SubdivisionSchool[]
   /**
+   * Oldest year in the closed-sales series when the school sample is the
+   * historical set (189 listings since 2021 on Ridge). Live headline count
+   * stays the Field's homes.
+   */
+  sinceYear?: number | null
+  /**
    * Every other outbound edge this page carries, built at the page where the
    * data that justifies each one was read. Rendered after the schools.
    */
   edges: readonly V3QuietItem[]
 }
 
-export function SubdivisionSchools({ displayName, schools, edges }: Props) {
+export function SubdivisionSchools({ displayName, schools, sinceYear, edges }: Props) {
   const items: V3QuietItem[] = []
 
   for (const school of schools) {
@@ -64,7 +70,10 @@ export function SubdivisionSchools({ displayName, schools, edges }: Props) {
     items.push({
       kind: 'prose',
       term: LEVEL_LABEL[school.level],
-      body: `${name}, the assignment on ${school.modalCount} of the ${school.totalCount} listings here that carry one.`,
+      body:
+        sinceYear != null
+          ? `${name}, the assignment on ${school.modalCount} of the ${school.totalCount} historical listings here since ${sinceYear} that carry one.`
+          : `${name}, the assignment on ${school.modalCount} of the ${school.totalCount} historical listings here that carry one.`,
     })
     const registered = findSchoolByName(name)
     if (registered) {
@@ -79,7 +88,7 @@ export function SubdivisionSchools({ displayName, schools, edges }: Props) {
       kind: 'prose',
       term: 'How these assignments were read',
       body:
-        `School assignments reflect the listings recorded in ${displayName}. A school appears only ` +
+        `School assignments reflect the historical listings recorded in ${displayName}. A school appears only ` +
         `when at least ${agreementBit} of at least ${SCHOOL_MIN_SAMPLES} of those listings name it. ` +
         `Confirm enrollment and boundaries with the district. The listing data comes from Oregon ` +
         `Data Share through Ryan Realty.`,

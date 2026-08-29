@@ -255,7 +255,7 @@ describe('subdivision ledger', () => {
     expect(platHomesMode({ activeCount: null, homeRows: 0, pinCount: 0 })).toBe('unknown')
     expect(platHomesMode({ activeCount: 0, homeRows: 0, pinCount: 0 })).toBe('empty')
     expect(platHomesMode({ activeCount: 6, homeRows: 6, pinCount: 6 })).toBe('field')
-    expect(platHomesMode({ activeCount: 2, homeRows: 2, pinCount: 2 })).toBe('ledger')
+    expect(platHomesMode({ activeCount: 2, homeRows: 2, pinCount: 2 })).toBe('field')
   })
 
   it('keeps address and price as the row, with a photo when one exists', () => {
