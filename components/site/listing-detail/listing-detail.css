@@ -240,11 +240,19 @@
   border: 0;
 }
 
-.listing-mosaic__badge {
+.listing-mosaic__pills {
   position: absolute;
   right: var(--v3-space-sm);
   bottom: var(--v3-space-sm);
   z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+.listing-mosaic__badge {
   display: inline-flex;
   align-items: center;
   min-height: var(--v3-tap);
@@ -258,6 +266,7 @@
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .listing-mosaic__open-tour {
@@ -942,8 +951,8 @@
 }
 
 .listing-detail .place-list__kind {
-  display: inline-block;
-  margin-right: 0.65rem;
+  display: block;
+  margin: 0 0 0.35rem;
   font-family: var(--v3-font-body);
   font-size: 0.68rem;
   font-weight: 600;

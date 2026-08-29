@@ -9,6 +9,7 @@ import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { ListingTourOverlay } from './ListingTourOverlay'
 import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingLeadMedia } from '@/lib/listing/publish-listing-lead-media'
+import { publishListingMosaicPills } from '@/lib/listing/publish-listing-mosaic-pills'
 
 /**
  * Listing media mosaic. Media 1 is a video or 3D tour when one exists,
@@ -67,15 +68,17 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
   const hasLeadMedia = heroVideo != null || total > 0
   const canUnmute = publishListingHeroUnmute(publishListingHeroVideo(videos))
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
-  const badgeLabel = heroVideo
-    ? total > 0
-      ? `Video + ${total}`
-      : 'Video'
-    : total > 0
-      ? `${total} photos`
-      : null
+  const mosaicPills = publishListingMosaicPills({ photoCount: total, videos })
   const thumbs = photos.slice(heroVideo ? 0 : 1, heroVideo ? 4 : 5)
   const carouselStills = heroVideo ? photos : photos.slice(1)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const raw = new URLSearchParams(window.location.search).get('photo')
+    const n = raw ? Number(raw) : Number.NaN
+    if (!Number.isInteger(n) || n < 1 || total === 0) return
+    setOpenIndex(Math.max(0, Math.min(n - 1, total - 1)))
+  }, [total])
 
   if (!hasLeadMedia) return null
 
@@ -230,24 +233,31 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
         </div>
       </div>
 
-      {badgeLabel ? (
-        <button
-          type="button"
-          className="listing-mosaic__badge"
-          onClick={() => (heroVideo ? openTour() : openGallery(0))}
-          aria-label={badgeLabel}
-        >
-          {badgeLabel}
-        </button>
+      {mosaicPills.length > 0 ? (
+        <div className="listing-mosaic__pills">
+          {mosaicPills.map((pill) => (
+            <button
+              key={pill.id}
+              type="button"
+              className="listing-mosaic__badge"
+              onClick={() => (pill.action === 'tour' ? openTour() : openGallery(0))}
+              aria-label={pill.label}
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
       ) : null}
 
       <PhotoGalleryLightbox
         photos={photos.map((p) => ({ url: p.url, caption: p.caption }))}
+        videos={videos}
         openIndex={openIndex}
         total={total}
         altBase={altBase}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}
+        onOpenTour={heroVideo ? openTour : undefined}
       />
       <ListingTourOverlay
         open={tourOpen}

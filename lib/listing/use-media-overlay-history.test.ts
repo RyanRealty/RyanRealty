@@ -13,13 +13,15 @@ function Harness({
   hash,
   onClose,
   onDismiss,
+  photo,
 }: {
   open: boolean
   hash: 'gallery' | 'tour'
   onClose: () => void
   onDismiss: (dismiss: () => void) => void
+  photo?: number | null
 }) {
-  const { dismiss } = useMediaOverlayHistory(open, onClose, hash)
+  const { dismiss } = useMediaOverlayHistory(open, onClose, hash, photo)
   React.useEffect(() => {
     onDismiss(dismiss)
   }, [dismiss, onDismiss])
@@ -45,7 +47,7 @@ describe('useMediaOverlayHistory', () => {
     container.remove()
   })
 
-  it('pushes #gallery when the overlay opens and dismiss uses history.back', async () => {
+  it('pushes ?photo=1 when the gallery opens and dismiss uses history.back', async () => {
     const onClose = vi.fn()
     const pushSpy = vi.spyOn(history, 'pushState')
     const backSpy = vi.spyOn(history, 'back')
@@ -56,6 +58,7 @@ describe('useMediaOverlayHistory', () => {
         React.createElement(Harness, {
           open: true,
           hash: 'gallery',
+          photo: 1,
           onClose,
           onDismiss: (fn) => {
             dismiss = fn
@@ -66,7 +69,8 @@ describe('useMediaOverlayHistory', () => {
 
     expect(pushSpy).toHaveBeenCalled()
     const url = String(pushSpy.mock.calls.at(-1)?.[2] ?? '')
-    expect(url).toContain('#gallery')
+    expect(url).toContain('photo=1')
+    expect(url).not.toContain('#gallery')
 
     await act(async () => {
       dismiss?.()

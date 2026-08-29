@@ -159,6 +159,7 @@ export function V3ListingRow({
             sizes="72px"
           />
         ) : null}
+        <span className="v3-lrow__addr-tip">{listing.addressLine}</span>
       </span>
 
       <span className="v3-lrow__body">

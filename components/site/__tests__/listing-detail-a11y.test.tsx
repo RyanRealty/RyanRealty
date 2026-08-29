@@ -179,16 +179,19 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
   )
   const hook = readFileSync(join(root, 'lib/listing/use-media-overlay-history.ts'), 'utf8')
 
-  it('pushes a hash entry instead of router.push', () => {
+  it('pushes a history entry instead of router.push', () => {
     expect(hook).toMatch(/history\.pushState/)
     expect(hook).toMatch(/listingMedia/)
+    expect(hook).toMatch(/photo=/)
     expect(hook).not.toMatch(/useRouter/)
-    expect(gallery).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'gallery'\)/)
+    expect(gallery).toMatch(/useMediaOverlayHistory\(/)
+    expect(gallery).toMatch(/'gallery'/)
     expect(tour).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'tour'\)/)
   })
 
   it('labels the control Back at 44px', () => {
     expect(gallery).toMatch(/aria-label="Back"/)
+    expect(gallery).toMatch(/aria-label="Close"/)
     expect(gallery).toMatch(/min-h-11/)
     expect(tour).toMatch(/aria-label="Back"/)
     expect(tour).toMatch(/min-h-11/)

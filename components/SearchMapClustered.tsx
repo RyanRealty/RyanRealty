@@ -180,8 +180,8 @@ function buildPricePillElement(
   const pill = document.createElement('div')
   // Cream edge + soft shadow: less "generic navy blob", more brand pin.
   pill.style.cssText = [
-    `background:${active ? MAP_WHITE : MAP_NAVY}`,
-    `color:${active ? MAP_NAVY : MAP_WHITE}`,
+    `background:${active || hover ? MAP_WHITE : MAP_NAVY}`,
+    `color:${active || hover ? MAP_NAVY : MAP_WHITE}`,
     'font-family:system-ui,-apple-system,"Segoe UI",sans-serif',
     `font-size:${hover || active ? '13px' : '12px'}`,
     'font-weight:700',
@@ -190,8 +190,8 @@ function buildPricePillElement(
     'white-space:nowrap',
     'letter-spacing:-0.02em',
     'font-variant-numeric:tabular-nums',
-    `border:1.5px solid ${active ? MAP_NAVY : 'color-mix(in srgb, var(--v3-cream) 92%, transparent)'}`,
-    active
+    `border:1.5px solid ${active || hover ? MAP_NAVY : 'color-mix(in srgb, var(--v3-cream) 92%, transparent)'}`,
+    active || hover
       ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 4px 12px color-mix(in srgb, var(--v3-navy) 28%, transparent)`
       : 'box-shadow:0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)',
     saved && !active ? `box-shadow:0 0 0 2px #dc2626,0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)` : '',
@@ -210,7 +210,7 @@ function buildPricePillElement(
     'height:0',
     `border-left:6px solid transparent`,
     `border-right:6px solid transparent`,
-    `border-top:7px solid ${active ? MAP_WHITE : MAP_NAVY}`,
+    `border-top:7px solid ${active || hover ? MAP_WHITE : MAP_NAVY}`,
   ].join(';')
 
   el.appendChild(pill)

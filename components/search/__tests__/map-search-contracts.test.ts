@@ -60,6 +60,9 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/handleBoundsChanged/)
     expect(src).toMatch(/runViewportSearch/)
     expect(src).toMatch(/setTimeout/) // debounce
+    expect(src).toMatch(/Search this area/)
+    expect(src).toMatch(/useState\(false\)/)
+    expect(src).toMatch(/setAreaDirty\(true\)/)
   })
 
   it('out-of-order viewport responses are dropped (no race on fast panning)', () => {

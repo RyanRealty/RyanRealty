@@ -313,7 +313,8 @@ export default function MapSearchView({
   // out of BOTH the card list AND the map pins here, from the signed-in user's
   // hidden_listings rows. Signed-out users get an empty set (no filtering).
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
-  const [searchAsMove, setSearchAsMove] = useState(true)
+  const [searchAsMove, setSearchAsMove] = useState(false)
+  const [areaDirty, setAreaDirty] = useState(false)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   /** Pin/list selection (stronger than hover) — map popup open ↔ list card ring + scroll. */
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -589,11 +590,12 @@ export default function MapSearchView({
       )
       if (cameraUrl) router.replace(cameraUrl, { scroll: false })
       if (isInitialSettle === false) dropGeoScope()
-      if (!searchAsMove) return
-      // Perf (SEARCH_UX_WAVE3 P2): SSR already seeded list + markers for the city
-      // bbox. The map's first idle/fitBounds is not a user pan — do not pay a
-      // second exact-count viewport query (~500 tiles) on every cold load.
       if (isInitialSettle) return
+      if (!searchAsMove) {
+        setAreaDirty(true)
+        return
+      }
+      setAreaDirty(false)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       // Single 350 ms debounce on pan (map idle delay reduced separately).
       // Cap pan payload at 250 pins; SSR seed keeps full fidelity (no remount recap).
@@ -679,9 +681,17 @@ export default function MapSearchView({
   const toggleSearchAsMove = useCallback(() => {
     setSearchAsMove((prev) => {
       const next = !prev
-      if (next) runViewportSearch(lastBoundsRef.current, drawnShapes)
+      if (next) {
+        setAreaDirty(false)
+        runViewportSearch(lastBoundsRef.current, drawnShapes)
+      }
       return next
     })
+  }, [drawnShapes, runViewportSearch])
+
+  const searchThisArea = useCallback(() => {
+    setAreaDirty(false)
+    runViewportSearch(lastBoundsRef.current, drawnShapes, { limit: 250 })
   }, [drawnShapes, runViewportSearch])
 
   const onListHover = useCallback((key: string | null) => setHoveredKey(key), [])
@@ -973,7 +983,16 @@ export default function MapSearchView({
           replaces the drawn shape set, so it rides the identical ?shapes=
           contract and is shareable + alert-savable like any drawn area. */}
       <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
-      {/* Search-as-you-move toggle (Redfin/Zillow pattern). */}
+      {areaDirty && !searchAsMove ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={searchThisArea}
+          className="absolute left-1/2 top-3 z-[100] h-11 -translate-x-1/2 rounded-none border-border bg-card px-4 text-sm font-medium text-foreground shadow-none"
+        >
+          Search this area
+        </Button>
+      ) : (
       <Label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-none border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-none">
         <Checkbox
           checked={searchAsMove}
@@ -981,6 +1000,7 @@ export default function MapSearchView({
         />
         Search as I move the map
       </Label>
+      )}
       {/* Active place scope — visible until the first user map move, then the
           query is pure bounding-box. Tap the chip to drop the scope now. */}
       {scopeLabel && scopeDropped === false ? (
