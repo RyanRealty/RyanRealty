@@ -7,9 +7,8 @@
  * JSX. This module owns the pure turn from a city snapshot into Ledger rows.
  * Nothing here fetches, reads the clock, or classifies a market.
  *
- * D9 leftover: each city is a door into its own report. A line through cities
- * invents a sequence. V3Chart is a trend atom, not a comparison of places, so
- * this Ledger stays type.
+ * Each city is a door into its own report. A line through cities invents a
+ * sequence. Relate/Rank charts compare cities. This Ledger stays type.
  */
 
 import type { MarketPulseSnapshot } from '@/lib/data'
@@ -23,6 +22,16 @@ import {
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
+import type { PublicPaceRow } from '@/lib/data/market-truth/public-pace'
+import { publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { publicMixItems, type PublicMixRow } from '@/lib/data/market-truth/public-mix'
+import {
+  publicSegmentBrowseHref,
+  publicSegmentDisplayBits,
+  publicSegmentNoun,
+  type PublicSegmentRow,
+} from '@/lib/data/market-truth/public-segments'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { CITY_LABELS, CITY_SLUG, HISTORY_PATH } from './hub-constants'
 import {
@@ -116,7 +125,9 @@ export function buildCityLedger(
       fact: `${city.label} has ${city.active.toLocaleString('en-US')} active single-family listings not in the table above`,
     })
   }
-  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the leftover regional count'))) {
+  for (const fact of remainder.facts) {
+    if (fact.includes('regional count and not in the table')) continue
+    if (fact.includes('houses sit outside these town rows')) continue
     footnotes.push({ label: 'Outside city rows', fact })
   }
 
@@ -201,31 +212,82 @@ export function buildHubLead(closedYear: CoMarketAnnualRow | null | undefined): 
   }
 }
 
+/** Pace keys already printed as decision figures. */
+const PACE_ON_DECISION = new Set(['pending', 'closed', 'medClose', 'sto'])
+
+export const HUB_DECISION_FOLD_AFTER = 8
+
+export const CITY_LEDGER_TRACE =
+  'Oregon Data Share MLS, Central Oregon, single-family, active listings, one row per city'
+
+export function hubMarketTrace(opts: { hasMos: boolean; hasFloorMix: boolean }): string {
+  const floor = opts.hasFloorMix
+    ? ' Feature shares other than garage are floors: the printed percent is at least that share of closes.'
+    : ''
+  return (
+    `Oregon Data Share MLS, Central Oregon, single-family.` +
+    ` Every figure names its own window. A miss omits.` +
+    floor +
+    (opts.hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
+  )
+}
+
+export function alignHubFaqWindows(
+  faqs: readonly { question: string; answer: string }[],
+): { question: string; answer: string }[] {
+  return faqs.map((item) => {
+    if (/median home price/i.test(item.question)) {
+      return {
+        ...item,
+        answer: item.answer.replace(
+          /is (\$[\d,]+)(?: as of .+?)?, based on/,
+          'is $1 now, from the active list, based on',
+        ),
+      }
+    }
+    if (/take to sell/i.test(item.question) && !/90 days/.test(item.answer)) {
+      return {
+        ...item,
+        answer: item.answer.replace('to go pending', 'to go pending over the last 90 days'),
+      }
+    }
+    return item
+  })
+}
+
 /**
- * Live SFR figures for the level-1 hero (2026-08-27 hero-reorder fix): median
- * list price, homes for sale, months of supply, median to pending, in that
- * order (parity.json market-report requiredComponents, V3Instrument section).
- * ONE POPULATION, ONE CLOCK: every figure here reads off the same leftover HUD
- * row the page stamps with `refreshedAt`, so this Instrument's `updated` prop
- * is never null the way the old mixed hero's was.
+ * Live SFR figures for the level-1 hero: 6 to 8 decision stats first, then
+ * the long tail. Every median names its window. "at least" stays in the
+ * source, never in a headline number.
  */
-export function buildSfrFollowFigures(hud: {
-  medianList: number | null
-  active: number | null
-  daysToPending: number | null
-} | null, mosText: string | null): V3InstrumentFigure[] {
+export function buildSfrFollowFigures(
+  hud: {
+    medianList: number | null
+    active: number | null
+    daysToPending: number | null
+    pending?: number | null
+    sold12mo?: number | null
+    saleToList?: number | null
+  } | null,
+  mosText: string | null,
+  extras?: {
+    pace?: PublicPaceRow
+    mix?: PublicMixRow
+    segments?: readonly PublicSegmentRow[]
+  },
+): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
   if (hud?.medianList != null && hud.medianList > 0) {
     figures.push({
       value: v3Text(formatPriceExact(hud.medianList)),
-      label: v3Text('median list price, single-family'),
+      label: v3Text('median list price · now, single-family'),
       href: '/housing-market/central-oregon',
     })
   }
   if (hud != null && hud.active != null && hud.active > 0) {
     figures.push({
       value: v3Text(hud.active.toLocaleString('en-US')),
-      label: v3Text('homes for sale, single-family'),
+      label: v3Text('homes for sale · now, single-family'),
       href: listingsBrowsePath(),
     })
   }
@@ -243,5 +305,64 @@ export function buildSfrFollowFigures(hud: {
       href: '/housing-market/central-oregon',
     })
   }
+  if (hud?.pending != null && hud.pending > 0) {
+    figures.push({
+      value: v3Text(hud.pending.toLocaleString('en-US')),
+      label: v3Text('pending · now'),
+    })
+  }
+  if (hud?.sold12mo != null && hud.sold12mo > 0) {
+    figures.push({
+      value: v3Text(hud.sold12mo.toLocaleString('en-US')),
+      label: v3Text('closed sales · 12 months'),
+    })
+  }
+  if (extras?.pace?.medianClose != null && extras.pace.medianClose > 0) {
+    figures.push({
+      value: v3Text(formatPriceExact(extras.pace.medianClose)),
+      label: v3Text('median close · 12 months'),
+    })
+  }
+  if (hud?.saleToList != null) {
+    figures.push({
+      value: v3Text(`${hud.saleToList.toFixed(1)}%`),
+      label: v3Text('sale to original list · 12 months'),
+    })
+  }
+
+  if (extras?.pace) {
+    for (const item of publicPaceItems(extras.pace)) {
+      if (PACE_ON_DECISION.has(item.key)) continue
+      figures.push({
+        value: v3Text(item.value),
+        label: v3Text(item.label),
+      })
+    }
+  }
+  if (extras?.mix) {
+    for (const item of publicMixItems(extras.mix)) {
+      figures.push({
+        value: v3Text(item.value.replace(/^at least /, '')),
+        label: v3Text(item.label),
+      })
+    }
+  }
+  if (extras?.segments) {
+    for (const row of extras.segments) {
+      if (row.activeCount == null || row.activeCount <= 0) continue
+      const bits = publicSegmentDisplayBits(row).slice(0, 3)
+      figures.push({
+        value: v3Text(row.activeCount.toLocaleString('en-US')),
+        label: v3Text(
+          [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
+        ),
+        href: publicSegmentBrowseHref(null, row.segment),
+      })
+    }
+  }
   return figures
+}
+
+export function hubMixHasFloors(mix: PublicMixRow | null | undefined): boolean {
+  return Boolean(mix?.features.some((bit) => bit.floor))
 }

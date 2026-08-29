@@ -59,21 +59,11 @@ import {
   getPriceHistory,
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
-import {
-  getPublicPlaceSegments,
-  publicSegmentBrowseHref,
-  publicSegmentDisplayBits,
-  publicSegmentNoun,
-} from '@/lib/data/market-truth/public-segments'
-import {
-  getPublicDetachedPace,
-  publicPaceHasRow,
-  publicPaceItems,
-} from '@/lib/data/market-truth/public-pace'
-import { getPublicDetachedMix, publicMixHasRow, publicMixItems } from '@/lib/data/market-truth/public-mix'
-import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
+import { getPublicDetachedMonthly } from '@/lib/data/market-truth/public-monthly'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishInstrumentStamp } from '@/lib/market/publish-mixed-instrument-stamp'
 import {
   getCoMarketAnnual,
@@ -93,7 +83,7 @@ import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { marketVerdict } from '@/lib/market/classify'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -113,8 +103,20 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
 import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
-import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
-import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
+import {
+  alignHubFaqWindows,
+  buildCityLedger,
+  buildHubLead,
+  buildSfrFollowFigures,
+  CITY_LEDGER_TRACE,
+  HUB_DECISION_FOLD_AFTER,
+  hubMarketTrace,
+  hubMixHasFloors,
+} from './_v3/hub-sections'
+import { buildHubRankChart, buildHubRelateChart, buildHubTimeChart } from './_v3/hub-charts'
+import { hubHudKpis, hubMonthlySeries } from './_v3/hub-read'
+import { MarketChartRoom } from './_v3/MarketChartRoom'
+import { dropInProgressMonth } from './_v3/market-charts'
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 
@@ -158,7 +160,7 @@ export default async function HousingMarketHubPage() {
     publicSegments,
     publicPace,
     publicMix,
-    leftoverMonthly,
+    monthlyOverlay,
     regionOverlays,
   ] = await Promise.all([
     getMarketPulseAllCitySnapshots(),
@@ -180,7 +182,7 @@ export default async function HousingMarketHubPage() {
     getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
   ])
   const regionMt = regionOverlays.get('region:central-oregon')
-  const hud = leftoverHudKpis({
+  const hud = hubHudKpis({
     grain: 'region',
     headlines: regionMt?.headlines ?? null,
     inventory: regionMt?.inventory ?? null,
@@ -193,11 +195,13 @@ export default async function HousingMarketHubPage() {
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
-  const chartMonths = leftoverOrCacheMonthly(
-    leftoverMonthly,
+  const chartMonths = hubMonthlySeries(
+    monthlyOverlay,
     dropInProgressMonth(priceHistory, todayKey.slice(0, 7)),
   )
-  const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
+  const timeChart = buildHubTimeChart(chartMonths.months)
+  const relateChart = buildHubRelateChart(citySnapshots)
+  const rankChart = buildHubRankChart(citySnapshots)
 
   // The long view: the approved chart-room forms wired live. A fourth
   // population set (national FRED series, the mart's SFR cube, the seller-net
@@ -222,7 +226,7 @@ export default async function HousingMarketHubPage() {
   // Two market-truth rows feed this section's figures. One stamp only when
   // both rows carry one clock; a mismatch withholds the stamp rather than
   // aging the fresher row (publishInstrumentStamp contract).
-  const leftoverStamp = publishInstrumentStamp([
+  const hudStamp = publishInstrumentStamp([
     regionMt?.headlines?.computedAt,
     regionMt?.inventory?.computedAt,
   ])
@@ -235,14 +239,14 @@ export default async function HousingMarketHubPage() {
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: publicPace.closedCount ?? null,
     pulseActiveCount: hud.active,
-    refreshedAt: leftoverStamp,
+    refreshedAt: hudStamp,
   }
   const marketFaq = buildMarketFaq(
     'Central Oregon',
     pulse ?? { grain: 'region', activeCount: null, medianListPrice: null, refreshedAt: null },
   )
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
-  const refreshedAt = leftoverStamp
+  const refreshedAt = hudStamp
 
   // ALL-TYPE closed year from the mart. source === 'missing' is empty, not a
   // printed zero. 2026-08-27 hero-reorder fix (parity.json market-report
@@ -255,46 +259,23 @@ export default async function HousingMarketHubPage() {
   const historyPath = lead.historyPath
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
 
-  // Live single-family figures for the LEVEL-1 hero (the page's answer): median
-  // list price, homes for sale, months of supply, median to pending, then the
-  // extra leftover segments/pace/mix figures. One population, one clock
-  // (refreshedAt), so this section's stamp is never dropped by a clock mismatch.
-  const sfrFollow = buildSfrFollowFigures(hud, mosText)
-  for (const row of publicSegments) {
-    if (row.activeCount == null || row.activeCount <= 0) continue
-    // Mobile audit 2026-08-27 (group-c): the full bit list (up to 9 stats)
-    // ran on as one gray run-on paragraph under each tile at 390px — a wall
-    // of text with no hierarchy. The first 3 bits are price, months of
-    // supply, and the buyer's/seller's verdict — the segment's headline
-    // read. The rest (pending, closed, days to contract, sale-to-original,
-    // YoY, price-cut share) stay one tap away behind the tile's existing
-    // href rather than crammed inline; nothing is removed from the site.
-    const bits = publicSegmentDisplayBits(row).slice(0, 3)
-    sfrFollow.push({
-      value: v3Text(row.activeCount.toLocaleString('en-US')),
-      label: v3Text(
-        [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
-      ),
-      href: publicSegmentBrowseHref(null, row.segment),
-    })
-  }
-  for (const item of publicPaceItems(publicPace)) {
-    sfrFollow.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
-  for (const item of publicMixItems(publicMix)) {
-    sfrFollow.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
+  // Live single-family figures: 6 to 8 decision stats on the face, the rest
+  // behind More indicators. One population, one clock (refreshedAt).
+  const sfrFollow = buildSfrFollowFigures(hud, mosText, {
+    pace: publicPace,
+    mix: publicMix,
+    segments: publicSegments,
+  })
   const [firstSfrFigure, ...restSfrFigures] = sfrFollow
+  const marketSource = hubMarketTrace({
+    hasMos: mosText != null,
+    hasFloorMix: hubMixHasFloors(publicMix),
+  })
 
   // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
   // array that feeds the FAQPage JSON-LD. Both read the strings computed above.
-  const faqs = [...marketFaq.faqs]
+  // Windows match the hero: list median is now, days-to-pending is 90 days.
+  const faqs = alignHubFaqWindows([...marketFaq.faqs])
   if (closed && lead.volumeSentence) {
     const medianBit = lead.medianLabel ? ` Median close price was ${lead.medianLabel}.` : ''
     faqs.push({
@@ -309,8 +290,7 @@ export default async function HousingMarketHubPage() {
     }
   }
 
-  // City rows. D9 leftover lives on the builder: each city is a door, and a
-  // line through cities invents a sequence V3Chart is not for.
+  // City rows. Each city is a door. Relate/Rank compare cities; this Ledger stays type.
   const cityLedger = buildCityLedger(citySnapshots, {
     regionActive: hud.active,
   })
@@ -458,15 +438,16 @@ export default async function HousingMarketHubPage() {
               `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
-            source={v3Text(
-              `${
-                publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
-                  ? 'Leftover membership. Single-family figures, extra product types, and 12-month pace are the leftover pile. A miss omits. Not ALL-TYPE closed sales'
-                  : 'Leftover membership, single-family houses across the Central Oregon region. Not ALL-TYPE closed sales'
-              }.${mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`,
-            )}
+            foldAfter={HUB_DECISION_FOLD_AFTER}
+            foldLabel={v3Text('More indicators')}
+            source={v3Text(marketSource)}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-            chart={regionChart}
+            chartFirst
+            chartRoom={
+              timeChart ? (
+                <MarketChartRoom time={timeChart} relate={relateChart} rank={rankChart} />
+              ) : undefined
+            }
           />
         ) : (
           <V3Quiet
@@ -490,9 +471,7 @@ export default async function HousingMarketHubPage() {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Market by city')}
             rows={[firstCityRow, ...restCityRows]}
-            source={v3Text(
-              'leftover membership, active single-family houses, one row per city',
-            )}
+            source={v3Text(CITY_LEDGER_TRACE)}
             updated={cityRefreshedAt ? v3Text(formatDate(cityRefreshedAt)) : undefined}
             action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}
           />

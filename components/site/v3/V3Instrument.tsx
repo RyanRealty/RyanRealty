@@ -50,7 +50,7 @@
  * prop that fires on arrival. The retired implementation is V3InstrumentCount.client.tsx,
  * which this file no longer imports.
  */
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -151,13 +151,16 @@ export type V3InstrumentProps = {
    */
   headline: V3Text
   /**
-   * Figures beyond this count fold behind a native disclosure ("All figures"),
-   * closed by default. For the long-tail stat walls (2026-08-27 mobile audit:
-   * /cities/bend ran 31 figures deep at 390px) — the lead figures answer the
-   * page's question, the tail stays one tap away without leaving the section.
-   * Omit to render every figure open (the default, unchanged).
+   * Figures beyond this count fold behind a native disclosure, closed by
+   * default. The lead figures answer the page's question; the tail stays one
+   * tap away. Omit to render every figure open (the default, unchanged).
    */
   foldAfter?: number
+  /**
+   * The fold summary. Market uses "More indicators". Default is
+   * "All N figures".
+   */
+  foldLabel?: V3Text
   /** The supporting figures, left to right in the order the caller passes them. */
   figures: V3InstrumentFigures
   /**
@@ -196,10 +199,16 @@ export type V3InstrumentProps = {
    */
   chart?: V3ChartProps
   /**
-   * Homepage Chart Room: sentence, then the series, then the figures.
-   * City and market Instruments keep the default (figures, then chart).
+   * Chart Room: sentence, then the series, then the figures.
+   * Market opens this way. City and place Instruments keep the default
+   * (figures, then chart) unless they opt in.
    */
   chartFirst?: boolean
+  /**
+   * Chart Room switch (Time / Relate / Rank) in the chart slot. When set,
+   * it replaces chart + chartSecondary so the first screen is one series.
+   */
+  chartRoom?: ReactNode
   /**
    * A second series under the first. Still one Instrument, not a seventh pattern.
    * Use when the page has two honest series (composition and a monthly median).
@@ -241,6 +250,7 @@ const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
 export function V3Instrument({
   headline,
   foldAfter,
+  foldLabel,
   figures,
   source,
   updated,
@@ -249,6 +259,7 @@ export function V3Instrument({
   action,
   chart,
   chartFirst = false,
+  chartRoom,
   chartSecondary,
   cards,
   level,
@@ -328,7 +339,7 @@ export function V3Instrument({
           )
         }
         const foldAt =
-          foldAfter != null && foldAfter > 0 && figures.length > foldAfter + 1 ? foldAfter : null
+          foldAfter != null && foldAfter > 0 && figures.length > foldAfter ? foldAfter : null
         const lead = foldAt != null ? figures.slice(0, foldAt) : figures
         const tail = foldAt != null ? figures.slice(foldAt) : []
         const figureBlock = (
@@ -344,7 +355,7 @@ export function V3Instrument({
             {tail.length > 0 ? (
               <details className="v3-instrument__fold">
                 <summary className="v3-instrument__fold-summary">
-                  All {figures.length} figures
+                  {foldLabel ?? `All ${figures.length} figures`}
                 </summary>
                 <div className="v3-instrument__figures">
                   {tail.map((figure, i) => renderFigure(figure, i + lead.length))}
@@ -353,7 +364,9 @@ export function V3Instrument({
             ) : null}
           </>
         )
-        const chartBlock = (
+        const chartBlock = chartRoom ? (
+          <div className="v3-instrument__chart">{chartRoom}</div>
+        ) : (
           <>
             {chart ? (
               <div className="v3-instrument__chart">

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const files = {
   mos: readFileSync(resolve('app/months-of-supply/page.tsx'), 'utf8'),
-  hub: readFileSync(resolve('app/housing-market/page.tsx'), 'utf8'),
+  hub: readFileSync(resolve('app/housing-market/_v3/hub-read.ts'), 'utf8'),
   region: readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8'),
   annual: readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8'),
   cities: readFileSync(resolve('app/cities/page.tsx'), 'utf8'),
@@ -29,6 +29,9 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
     for (const [name, src] of Object.entries(files)) {
       expect(src, name).toMatch(/leftoverHudKpis/)
     }
+    const hubPage = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
+    expect(hubPage, 'hub page').toMatch(/hubHudKpis/)
+    expect(hubPage, 'hub page').not.toMatch(/getRegionPulse|getMarketPulse\(/)
   })
 
   it('homepage does not print a leftover regional remainder', () => {

@@ -514,8 +514,8 @@
   appearance: none;
   border: 0;
   margin: 0;
-  padding: var(--v3-space-2xs) var(--v3-space-md);
-  min-height: calc(var(--v3-tap) - var(--v3-space-sm));
+  padding: 0 var(--v3-space-md);
+  min-height: var(--v3-tap);
   border-radius: var(--v3-radius-pill);
   background: transparent;
   color: var(--v3-ink-muted);
