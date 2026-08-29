@@ -19,6 +19,15 @@ import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product
 // production). Production keeps the docs/skills path filter below.
 // Belt-and-suspenders with project setting previewDeploymentsDisabled=true.
 const vercelEnv = (process.env.VERCEL_ENV || '').trim()
+const commitRef = (process.env.VERCEL_GIT_COMMIT_REF || '').trim()
+
+// PR 161 — allow one walkable Vercel preview of the listing land-face branch.
+// Production (main) ignore behavior is unchanged.
+if (commitRef === 'cursor/listing-land-face-d3ec') {
+  console.log(`[vercel-ignore-build] BUILD — allowlisted preview branch (${commitRef})`)
+  process.exit(1)
+}
+
 if (vercelEnv && vercelEnv !== 'production') {
   console.log(`[vercel-ignore-build] SKIP — non-production env (${vercelEnv})`)
   process.exit(0)
