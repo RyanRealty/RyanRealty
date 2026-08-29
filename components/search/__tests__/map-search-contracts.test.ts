@@ -91,6 +91,46 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/Search this area/)
     expect(src).toMatch(/areaDirty/)
   })
+
+  it('clears Search this area when filters re-seed the list', () => {
+    expect(src).toMatch(/setAreaDirty\(false\)/)
+  })
+})
+
+describe('split loading skeleton matches the live rail', () => {
+  const src = readSrc('app/search/loading.tsx')
+
+  it('uses the token list pane, not a 420px clamp', () => {
+    expect(src).toMatch(/map-search-list/)
+    expect(src).not.toMatch(/lg:w-\[420px\]/)
+  })
+})
+
+describe('SearchFilters view toggle stays on 390', () => {
+  const src = readSrc('components/search/SearchFilters.tsx')
+
+  it('keeps List Split Map visible, not desktop-only', () => {
+    expect(src).toMatch(/aria-label=\{`\$\{v\} view`\}/)
+    expect(src).not.toMatch(/hidden lg:flex/)
+  })
+})
+
+describe('split row and map chrome stay navy', () => {
+  it('uses the 160px split thumb and a navy active ring', () => {
+    const row = readSrc('components/site/v3/V3ListingRow.tsx')
+    const css = readSrc('components/site/v3/V3ListingRow.css')
+    expect(row).toMatch(/sizes=\{splitThumb \? '160px' : '72px'\}/)
+    expect(css).toMatch(/box-shadow: inset 0 0 0 2px var\(--v3-navy\)/)
+  })
+
+  it('drops the rounded map shadow and paints saved hearts from the marker token', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    const popup = readSrc('components/search/MapListingPopup.tsx')
+    expect(map).toMatch(/borderRadius: 0/)
+    expect(map).toMatch(/boxShadow: 'none'/)
+    expect(popup).toMatch(/MAP_RED_HEART/)
+    expect(popup).not.toMatch(/#dc2626/)
+  })
 })
 
 describe('hidden homes are excluded from the map split view (W7.2, 2026-07-22)', () => {
@@ -638,7 +678,7 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(view).toMatch(/selectedKey/)
     expect(view).toMatch(/onMarkerClick/)
     // Selection is the Ledger row's functional inset ring (`is-active`,
-    // 2px ink) — stronger than the hover wash (`is-hot`, 1px edge).
+    // 2px navy) - stronger than the hover wash (`is-hot`).
     expect(view).toMatch(/is-active/)
     expect(view).toMatch(/is-hot/)
     expect(view).toMatch(/in this map view/)

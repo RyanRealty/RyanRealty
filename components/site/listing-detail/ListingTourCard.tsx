@@ -1,8 +1,6 @@
-import { Button } from '@/components/ui/button'
-
 /**
  * Desktop sticky tour card. Starts below the mosaic. Actions only —
- * no second price.
+ * no second price. Same .btn register as PriceCtaStrip.
  */
 export function ListingTourCard({
   tourHref,
@@ -17,21 +15,21 @@ export function ListingTourCard({
 }) {
   return (
     <div className="listing-tour-card">
-      <Button asChild className="w-full">
-        <a href={tourHref}>Schedule a tour</a>
-      </Button>
-      <Button asChild variant="outline" className="w-full">
-        <a href={askHref}>Ask</a>
-      </Button>
+      <a href={tourHref} className="btn alt">
+        Schedule a tour
+      </a>
+      <a href={askHref} className="btn">
+        Ask
+      </a>
       {tel ? (
-        <Button asChild variant="outline" className="w-full">
-          <a href={`tel:${tel}`}>Call</a>
-        </Button>
+        <a href={`tel:${tel}`} className="btn">
+          Call
+        </a>
       ) : null}
       {sms ? (
-        <Button asChild variant="outline" className="w-full">
-          <a href={`sms:${sms}`}>Text</a>
-        </Button>
+        <a href={`sms:${sms}`} className="btn">
+          Text
+        </a>
       ) : null}
     </div>
   )

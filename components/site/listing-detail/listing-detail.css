@@ -386,6 +386,8 @@
 
 .listing-tour-card a,
 .listing-tour-card button {
+  width: 100%;
+  justify-content: center;
   min-height: var(--v3-tap);
 }
 
@@ -719,7 +721,7 @@
   display: block;
   overflow: hidden;
   border: var(--edge) solid var(--navy);
-  background: #0b1c30;
+  background: var(--navy);
   color: var(--cream);
 }
 /* navy base so a slow/failed photo or a buffering tour never flashes a black
@@ -747,7 +749,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 30%, rgba(11, 28, 48, 0.86));
+  background: linear-gradient(180deg, transparent 30%, color-mix(in srgb, var(--v3-navy) 86%, transparent));
   z-index: 2;
 }
 .listing-detail .lst-info {
@@ -1007,6 +1009,7 @@
 /* Gallery portals to document.body. Pin it to the viewport so 390 Back
    is not clipped by DialogContent's default center/translate. */
 .listing-gallery__overlay {
+  z-index: 110;
   background: color-mix(in srgb, var(--v3-navy) 92%, transparent);
 }
 
@@ -1015,7 +1018,10 @@
   inset: 0;
   top: 0;
   left: 0;
-  z-index: 50;
+  z-index: 110;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   width: 100vw;

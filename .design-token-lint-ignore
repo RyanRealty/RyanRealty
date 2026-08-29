@@ -281,6 +281,9 @@ components/site/kb/
 # class as components/site/kb/ above; scope is the two .btn buttons only (text
 # sizes were cleaned to the ladder in the design-audit remediation).
 components/site/listing-detail/PriceCtaStrip.tsx
+# Listing video play overlay: same navy/cream raw control as mosaic pills.
+# shadcn Button stacked a second chrome system on the poster.
+components/site/listing-detail/ListingVideoEmbed.tsx
 # F4 soft next-step coach (2026-08-10): dismiss is a quiet text control matching
 # PriceCtaStrip KB register; shadcn Button would trip ci:shadcn-burndown on a new
 # site surface, so raw <button> + navy/cream vars (same exception class as strip).
@@ -549,10 +552,9 @@ components/site/GuestWatchingBanner.client.tsx
 # Inline brand hex + raw button/close required — same class as lib/maps/markers.ts.
 components/search/MapListingPopup.tsx
 
-# /homes-for-sale loading skeleton (2026-08-11): the list-pane widths must mirror
-# MapSearchView.tsx's baselined lg:w-[420px]/min-w-[360px]/max-w-[480px] exactly —
-# a diverging skeleton causes layout shift when the real pane hydrates. Same
-# values, same class of exception as the component it mirrors.
+# /homes-for-sale loading skeleton: token list pane (map-search-list), not a
+# 420px clamp. Kept on the ignore list only if the file still trips raw-width
+# lint for skeleton layout classes.
 app/search/loading.tsx
 
 # Public Product OS (P7, 2026-08-11, visual lock in docs/plans/PUBLIC_PRODUCT/decisions.md):

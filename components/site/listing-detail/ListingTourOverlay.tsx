@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import './listing-detail.css'
@@ -26,53 +26,51 @@ export function ListingTourOverlay({
 
   return (
     <Dialog open={isOpen} onOpenChange={(next) => { if (!next) dismiss() }}>
-      <DialogPortal>
-        <DialogOverlay className="listing-gallery__overlay" />
-        <DialogContent
-          showCloseButton={false}
-          aria-label="Listing tour"
-          className="listing-gallery"
-        >
-          <div className="listing-gallery__bar">
-            <div className="listing-gallery__exit">
-              <button
-                type="button"
-                onClick={dismiss}
-                className="listing-gallery__back"
-                aria-label="Back"
-              >
-                ← Back
-              </button>
-              <button
-                type="button"
-                onClick={dismiss}
-                className="listing-gallery__close"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
+      <DialogContent
+        showCloseButton={false}
+        aria-label="Listing tour"
+        overlayClassName="listing-gallery__overlay z-[110]"
+        className="listing-gallery z-[110]"
+      >
+        <div className="listing-gallery__bar">
+          <div className="listing-gallery__exit">
+            <button
+              type="button"
+              onClick={dismiss}
+              className="listing-gallery__back"
+              aria-label="Back"
+            >
+              ← Back
+            </button>
+            <button
+              type="button"
+              onClick={dismiss}
+              className="listing-gallery__close"
+              aria-label="Close"
+            >
+              ×
+            </button>
           </div>
-          <div className="listing-gallery__embed">
-            {video.embedType === 'iframe' ? (
-              <iframe
-                src={video.url}
-                title={title}
-                allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
-                allowFullScreen
-              />
-            ) : (
-              <video
-                src={video.url}
-                poster={video.posterUrl}
-                controls
-                autoPlay
-                playsInline
-              />
-            )}
-          </div>
-        </DialogContent>
-      </DialogPortal>
+        </div>
+        <div className="listing-gallery__embed">
+          {video.embedType === 'iframe' ? (
+            <iframe
+              src={video.url}
+              title={title}
+              allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
+              allowFullScreen
+            />
+          ) : (
+            <video
+              src={video.url}
+              poster={video.posterUrl}
+              controls
+              autoPlay
+              playsInline
+            />
+          )}
+        </div>
+      </DialogContent>
     </Dialog>
   )
 }

@@ -196,4 +196,44 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
     expect(tour).toMatch(/listing-gallery__close/)
     expect(gallery).not.toMatch(/Close gallery/)
   })
+
+  it('sits above chrome via overlayClassName z-110', () => {
+    expect(gallery).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
+    expect(tour).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
+    expect(gallery).toMatch(/className="listing-gallery z-\[110\]"/)
+    expect(tour).toMatch(/className="listing-gallery z-\[110\]"/)
+  })
+})
+
+describe('listing mosaic lead and empty thumbs', () => {
+  const { readFileSync } = require('node:fs') as typeof import('node:fs')
+  const { join } = require('node:path') as typeof import('node:path')
+  const hero = readFileSync(
+    join(__dirname, '../../..', 'components/site/listing-detail/ListingHero.tsx'),
+    'utf8',
+  )
+  const css = readFileSync(
+    join(__dirname, '../../..', 'components/site/listing-detail/listing-detail.css'),
+    'utf8',
+  )
+  const embed = readFileSync(
+    join(__dirname, '../../..', 'components/site/listing-detail/ListingVideoEmbed.tsx'),
+    'utf8',
+  )
+
+  it('names the iframe lead Open video or Open tour from the media kind', () => {
+    expect(hero).toMatch(/lead\?\.kind === 'video' \? 'Open video'/)
+    expect(hero).toMatch(/lead\?\.kind === 'tour' \? 'Open tour'/)
+    expect(hero).toMatch(/emptyThumbSlots/)
+    expect(hero).toMatch(/empty-thumb-/)
+  })
+
+  it('pins the gallery above 64px chrome', () => {
+    expect(css).toMatch(/z-index: 110/)
+  })
+
+  it('plays the walkthrough from a listing-register button, not shadcn Button', () => {
+    expect(embed).toMatch(/aria-label="Play listing video"/)
+    expect(embed).not.toMatch(/from '@\/components\/ui\/button'/)
+  })
 })

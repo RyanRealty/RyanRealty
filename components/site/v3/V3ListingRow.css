@@ -64,7 +64,7 @@
 .v3.v3-lrow.is-active,
 .v3 .v3-lrow.is-active {
   background: var(--v3-wash);
-  box-shadow: inset 0 0 0 2px var(--v3-ink);
+  box-shadow: inset 0 0 0 2px var(--v3-navy);
 }
 
 /* Photography small, data-first: the thumb is a square at --v3-photo-thumb

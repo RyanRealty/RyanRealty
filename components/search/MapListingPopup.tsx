@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import Link from 'next/link'
 import { formatPriceExact } from '@/lib/format/money'
-import { MAP_NAVY, MAP_WHITE } from '@/lib/maps/markers'
+import { MAP_NAVY, MAP_RED_HEART, MAP_WHITE } from '@/lib/maps/markers'
 
 const CREAM = '#faf8f4'
 const BORDER = 'rgba(16,39,66,0.12)'
@@ -139,7 +139,7 @@ function PopupCard({
         >
           {formatPriceExact(listing.price)}
           {listing.isSaved ? (
-            <span style={{ marginLeft: 6, color: '#dc2626', fontSize: 14 }} aria-hidden>
+            <span style={{ marginLeft: 6, color: MAP_RED_HEART, fontSize: 14 }} aria-hidden>
               ♥
             </span>
           ) : null}

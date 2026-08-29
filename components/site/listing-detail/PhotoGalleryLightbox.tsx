@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import {
   publishListingGalleryMobilePills,
@@ -158,13 +158,12 @@ export function PhotoGalleryLightbox({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) dismiss() }}>
-      <DialogPortal>
-        <DialogOverlay className="listing-gallery__overlay" />
-        <DialogContent
-          showCloseButton={false}
-          aria-label="Photo gallery"
-          className="listing-gallery"
-        >
+      <DialogContent
+        showCloseButton={false}
+        aria-label="Photo gallery"
+        overlayClassName="listing-gallery__overlay z-[110]"
+        className="listing-gallery z-[110]"
+      >
           <div className="listing-gallery__bar">
             <div className="listing-gallery__exit">
               <button
@@ -317,7 +316,6 @@ export function PhotoGalleryLightbox({
             ))}
           </div>
         </DialogContent>
-      </DialogPortal>
     </Dialog>
   )
 }

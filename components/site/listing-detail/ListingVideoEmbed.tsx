@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Eyebrow, H2, Stack } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -140,11 +139,10 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
             />
           )
         ) : (
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={() => setPlaying(true)}
-            className="absolute inset-0 flex h-auto w-auto items-center justify-center rounded-none p-0 group bg-cover bg-center hover:bg-transparent"
+            className="absolute inset-0 flex h-auto w-auto items-center justify-center rounded-none p-0 bg-cover bg-center"
             style={
               video.posterUrl
                 ? { backgroundImage: `url(${video.posterUrl})` }
@@ -156,7 +154,7 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
               <div className="absolute inset-0" style={{ background: 'var(--navy)' }} />
             ) : null}
             <span
-              className="relative w-16 h-16 flex items-center justify-center transition"
+              className="relative w-16 h-16 flex items-center justify-center"
               style={{
                 background: 'var(--cream)',
                 border: '3px solid var(--cream)',
@@ -165,7 +163,7 @@ export function ListingVideoEmbed({ videos, className, variant = 'video' }: Prop
             >
               <span aria-hidden className="text-2xl ml-1">▶</span>
             </span>
-          </Button>
+          </button>
         )}
       </div>
     </Stack>

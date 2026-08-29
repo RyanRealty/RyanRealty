@@ -143,6 +143,7 @@ export function V3ListingRow({
     propertyType: listing.propertyType,
   })
   const meta = metaParts(listing, showPricePerSqft)
+  const splitThumb = typeof className === 'string' && className.includes('v3-lrow--split')
 
   return (
     <Link href={listing.href} className={cn(V3_ROOT_CLASS, 'v3-lrow', className)}>
@@ -156,7 +157,7 @@ export function V3ListingRow({
             alt=""
             fill
             priority={priority}
-            sizes="72px"
+            sizes={splitThumb ? '160px' : '72px'}
           />
         ) : null}
         <span className="v3-lrow__addr-tip">{listing.addressLine}</span>

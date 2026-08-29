@@ -767,7 +767,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           }}
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-11 overflow-hidden rounded-none border border-border/60 bg-muted/40 lg:flex"
+          className="ml-auto flex h-11 overflow-hidden rounded-none border border-border/60 bg-muted/40"
         >
           {(['list', 'split', 'map'] as const).map((v) => (
             <ToggleGroupItem

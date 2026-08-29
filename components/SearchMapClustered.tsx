@@ -1045,9 +1045,9 @@ export default function SearchMapClustered({
       style={{
         height: '100%',
         minHeight: 360,
-        borderRadius: '12px',
+        borderRadius: 0,
         overflow: 'hidden',
-        boxShadow: '0 4px 20px color-mix(in srgb, var(--v3-navy) 14%, transparent), 0 1px 4px color-mix(in srgb, var(--v3-navy) 10%, transparent)',
+        boxShadow: 'none',
       }}
     >
       {/* Map container — we own map creation via the imperative useEffect above.

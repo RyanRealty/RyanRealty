@@ -82,7 +82,10 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
     floorPlanCount: floorPlans.length,
   })
   const thumbs = photos.slice(heroVideo ? 0 : 1, heroVideo ? 4 : 5)
+  const emptyThumbSlots = Math.max(0, 4 - thumbs.length)
   const carouselStills = heroVideo ? photos : photos.slice(1)
+  const leadOpenLabel =
+    lead?.kind === 'video' ? 'Open video' : lead?.kind === 'tour' ? 'Open tour' : null
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -138,6 +141,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
               altBase={altBase}
               videoRef={videoRef}
               onTap={openLead}
+              openLabel={leadOpenLabel ?? 'Open video'}
             />
           </div>
         ) : photos[0] ? (
@@ -188,6 +192,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
               altBase={altBase}
               videoRef={videoRef}
               onTap={openLead}
+              openLabel={leadOpenLabel ?? 'Open video'}
             />
           </div>
         ) : (
@@ -201,7 +206,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
                 ? isMuted
                   ? 'Unmute video'
                   : 'Mute video'
-                : 'Open tour'
+                : (leadOpenLabel ?? 'Open video')
               : `Open photo 1 of ${total}`
           }
         >
@@ -212,6 +217,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
               altBase={altBase}
               videoRef={videoRef}
               onTap={openLead}
+              openLabel={leadOpenLabel ?? 'Open video'}
             />
           ) : photos[0] ? (
             <Image
@@ -246,6 +252,9 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
               </button>
             )
           })}
+          {Array.from({ length: emptyThumbSlots }, (_, i) => (
+            <div key={`empty-thumb-${i}`} className="listing-mosaic__thumb" aria-hidden />
+          ))}
         </div>
       </div>
 
@@ -300,15 +309,25 @@ function VideoLayer({
   altBase,
   videoRef,
   onTap,
+  openLabel,
 }: {
   video: VideoEmbed
   posterUrl?: string
   altBase: string
   videoRef: React.RefObject<HTMLVideoElement | null>
   onTap: () => void
+  openLabel: string
 }) {
   if (video.embedType === 'iframe') {
-    return <IframeHeroLayer video={video} posterUrl={posterUrl} altBase={altBase} onOpen={onTap} />
+    return (
+      <IframeHeroLayer
+        video={video}
+        posterUrl={posterUrl}
+        altBase={altBase}
+        onOpen={onTap}
+        openLabel={openLabel}
+      />
+    )
   }
   return (
     <video
@@ -350,11 +369,13 @@ function IframeHeroLayer({
   posterUrl,
   altBase,
   onOpen,
+  openLabel,
 }: {
   video: VideoEmbed
   posterUrl?: string
   altBase: string
   onOpen: () => void
+  openLabel: string
 }) {
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
@@ -388,9 +409,9 @@ function IframeHeroLayer({
         type="button"
         className="listing-mosaic__open-tour"
         onClick={onOpen}
-        aria-label="Open tour"
+        aria-label={openLabel}
       >
-        Open tour
+        {openLabel}
       </button>
     </>
   )

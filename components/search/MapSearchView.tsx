@@ -473,6 +473,7 @@ export default function MapSearchView({
     setVisibleCount(CARD_PAGE)
     scopeDroppedRef.current = initialPolygon != null
     setScopeDropped(initialPolygon != null)
+    setAreaDirty(false)
   }, [initialListings, initialTotalCount, initialCapped, initialDegraded, initialDrawn, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up any pending debounce on unmount.
