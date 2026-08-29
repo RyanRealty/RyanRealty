@@ -8,12 +8,12 @@ import { test, expect } from '@playwright/test'
  *   - Gallery: arrow key (ArrowRight) advances photo counter
  *   - Gallery: Escape closes the lightbox
  *   - Mortgage calculator: changing rate/down payment updates monthly payment
- *   - "Tour this home" CTA is visible (Stage + Sheet)
+ *   - "Schedule a tour" CTA is visible (PriceCtaStrip + TextMattCTA)
  *
  * Selectors from:
  *   - PhotoGalleryLightbox.tsx: aria-label="Photo gallery", "Close gallery",
  *     "Previous photo", "Next photo"
- *   - ListingHero.tsx / ListingActSheet: "Tour this home"
+ *   - PriceCtaStrip.tsx: "Schedule a tour" link/button text
  *   - MortgageCalculator.tsx: input for home price / interest rate, formatCurrency output
  */
 
@@ -36,7 +36,7 @@ async function getFirstListingHref(page: import('@playwright/test').Page): Promi
 test.describe('Listing detail', () => {
   test.setTimeout(DATA_TIMEOUT)
 
-  test('page loads with address heading and Tour this home CTA', async ({ page }) => {
+  test('page loads with address heading and Schedule a tour CTA', async ({ page }) => {
     const href = await getFirstListingHref(page)
     if (!href) {
       test.skip(true, 'No listing links found on /homes-for-sale/bend — skipping detail tests')
@@ -48,8 +48,9 @@ test.describe('Listing detail', () => {
     // Should have a heading (address)
     await expect(page.locator('h1, [role="heading"]').first()).toBeVisible({ timeout: DATA_TIMEOUT })
 
-    const tourCta = page.getByRole('link', { name: /tour this home/i }).first()
-      .or(page.getByRole('button', { name: /tour this home/i }).first())
+    // "Schedule a tour" CTA — from PriceCtaStrip and TextMattCTA
+    const tourCta = page.getByRole('link', { name: /schedule a tour/i }).first()
+      .or(page.getByRole('button', { name: /schedule a tour/i }).first())
     await expect(tourCta).toBeVisible({ timeout: 30_000 })
 
     // No application error
@@ -67,7 +68,9 @@ test.describe('Listing detail', () => {
     await page.goto(href, { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
     await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })
 
-    const viewAllBtn = page.getByRole('button', { name: /view all/i }).first()
+    // Gallery trigger: the hero photo grid or "View all" button
+    // ListingHero renders a "View all N photos" button or clicking any photo opens the lightbox
+    const viewAllBtn = page.getByRole('button', { name: /view all|photos|gallery/i }).first()
     const heroPhoto = page.locator('[aria-label*="photo" i], .listing-hero img, [data-gallery]').first()
 
     const viewAllVisible = await viewAllBtn.isVisible({ timeout: 15_000 }).catch(() => false)

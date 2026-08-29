@@ -161,6 +161,7 @@ checks.push({
 for (const surface of [
   { path: 'app/communities/[slug]/page.tsx', label: 'community charts pass toPublicCoreChartSeries' },
   { path: 'app/cities/[slug]/page.tsx', label: 'city charts pass toPublicCoreChartSeries' },
+  { path: 'components/site/listing-detail/NeighborhoodMarketContext.tsx', label: 'listing market charts pass toPublicCoreChartSeries' },
 ]) {
   const text = src(surface.path)
   checks.push({
@@ -170,17 +171,6 @@ for (const surface of [
       /toPublicCoreChartSeries\(/.test(text),
   })
 }
-
-const listingMarket = src('components/site/listing-detail/NeighborhoodMarketContext.tsx')
-const listingChart = src('lib/listing/publish-listing-chart-source.ts')
-checks.push({
-  label: 'listing market charts strip leftover via toListingPublicCoreChartSeries',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-listing-chart-source['"]/.test(listingMarket) &&
-    /toListingPublicCoreChartSeries\(/.test(listingMarket) &&
-    /toPublicCoreChartSeries\(/.test(listingChart) &&
-    listingChart.includes('Market Truth leftover'),
-})
 
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {

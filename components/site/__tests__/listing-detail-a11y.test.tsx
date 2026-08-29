@@ -4,9 +4,20 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 
 /**
- * Listing facts strip after the Stage. Tour, ask, and save live in the one
- * Sheet. This strip keeps address, status, share, and alerts — and must not
- * reprint the Stage ask.
+ * Accessible-name locks for the listing-detail CTA row.
+ *
+ * The strip's Save and Share controls carry bare verbs as visible text. Before
+ * 2026-07-29 the Save button shipped `aria-pressed` and NO `aria-label`, so its
+ * accessible name was the literal string "Save" — a screen-reader visitor heard
+ * an action with no object and no state, on the one page where the object is
+ * the whole point. Dumping every `[aria-label]` on
+ * /homes-for-sale/bend/kenwood-gardens/1265-saginaw-220226009 returned no
+ * save/like entry at all.
+ *
+ * These tests render the real component (no DOM library in this repo, so
+ * renderToStaticMarkup + attribute assertions, same as
+ * components/market/core-charts.test.ts) and assert the accessible name states
+ * the property and reflects saved vs not.
  */
 
 const LISTING = {
@@ -48,18 +59,42 @@ function ariaLabelOfButtonWithText(html: string, text: string): string | null {
   return null
 }
 
-describe('listing-detail facts strip', () => {
-  it('does not reprint a second ask or a tour stack', () => {
-    const html = render()
-    expect(html).not.toMatch(/\$895,000/)
-    expect(html).not.toMatch(/Schedule a tour/)
-    expect(html).not.toMatch(/Ask a question/)
-    expect(html).not.toMatch(/\/contact\?/)
-    expect(html).not.toMatch(/>Save</)
+describe('listing-detail CTA row accessible names', () => {
+  it('the save control is not left with the bare visible text as its whole name', () => {
+    const label = ariaLabelOfButtonWithText(render(), 'Save')
+    expect(label).not.toBeNull()
+    expect(label).not.toBe('Save')
   })
 
-  it('the share control names the property', () => {
+  it('an unsaved listing names the property and the action', () => {
+    const label = ariaLabelOfButtonWithText(render(), 'Save')
+    expect(label).toBe('Save 1265 Saginaw Ave to your saved homes')
+  })
+
+  it('a saved listing reflects the saved state in the accessible name', () => {
+    const label = ariaLabelOfButtonWithText(render({ initialSaved: true }), 'Saved')
+    expect(label).toBe('Remove 1265 Saginaw Ave from your saved homes')
+  })
+
+  it('falls back to a generic object when the street address is unavailable', () => {
+    const html = render({
+      listing: {
+        ...LISTING,
+        streetNumber: null,
+        streetName: null,
+        streetSuffix: null,
+      } as unknown as Parameters<typeof PriceCtaStrip>[0]['listing'],
+    })
+    expect(ariaLabelOfButtonWithText(html, 'Save')).toBe('Save this home to your saved homes')
+  })
+
+  it('the share control names the property too', () => {
     expect(ariaLabelOfButtonWithText(render(), 'Share')).toBe('Share 1265 Saginaw Ave')
+  })
+
+  it('aria-pressed still tracks the saved state', () => {
+    expect(render()).toMatch(/aria-pressed="false"/)
+    expect(render({ initialSaved: true })).toMatch(/aria-pressed="true"/)
   })
 
   it('Mariposa: withholds a $9.8M original that listing history does not carry', () => {
@@ -76,12 +111,13 @@ describe('listing-detail facts strip', () => {
     })
     expect(html).not.toMatch(/9,800,000/)
     expect(html).not.toMatch(/1,900,000/)
-    expect(html).not.toMatch(/7,900,000/)
+    expect(html).toMatch(/7,900,000/)
   })
 
   it('offers a clear path to the listing alert strip', () => {
     const html = render()
     expect(html).toMatch(/href="#listing-like-alerts"/)
+    // Full-width outline btn (elevated from text link 2026-08-11).
     expect(html).toMatch(/Get free alerts for homes like this/)
   })
 })

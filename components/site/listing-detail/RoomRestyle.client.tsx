@@ -120,7 +120,8 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
   const exteriorSelected = isLikelyExteriorPhoto(safePhotos[photoIdx])
   const selectedCaption = safePhotos[photoIdx]?.caption?.trim()
   const styleMeta = STYLES.find((s) => s.id === style) ?? STYLES[0]
-  const actHref = '#listing-act'
+  const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
+  const contactHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=restyle`
 
   async function run() {
     if (exteriorSelected) {
@@ -485,7 +486,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
 
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Link
-                href={actHref}
+                href={tourHref}
                 className="btn alt"
                 style={{
                   minHeight: 44,
@@ -496,7 +497,20 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                   padding: '10px 16px',
                 }}
               >
-                Talk about this home
+                Schedule a tour
+              </Link>
+              <Link
+                href={contactHref}
+                className="font-semibold underline-offset-2 hover:underline"
+                style={{
+                  color: 'var(--navy)',
+                  minHeight: 44,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0 4px',
+                }}
+              >
+                Ask a broker about finishes
               </Link>
               <button
                 type="button"

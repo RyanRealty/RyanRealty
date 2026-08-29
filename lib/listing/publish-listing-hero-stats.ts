@@ -1,18 +1,19 @@
 /**
- * Listing-hero price + key stats.
+ * Listing-hero compact price + key stats.
  *
- * Hero used a compact $569K next to the body $568,900 (2949 Flagstone).
- * The published ask is the exact whole-dollar ListPrice, same as the
- * price strip. Compact K/M rounding is gone from this hero.
+ * Compact prices that thousands-round across $1M printed `$1000K`
+ * (195 Roosevelt, MLS 220225285, $999,900). Land / farm listings
+ * with a real lot size and no beds/baths/sqft printed price only
+ * (33725 Columbus 19.77 acres, 0 Kouns Drive 1.35 acres).
  *
- * Land / farm listings with a real lot size and no beds/baths/sqft
- * printed price only (33725 Columbus 19.77 acres, 0 Kouns Drive 1.35 acres).
+ * Founding fingerprints: 2ceabe03a3cc759cc09d94d2bd1e442a,
+ * 639e24f1d222997d0f59f2e137981de8, 57b38d188f133fe2c93c05ca6150d5d9.
  *
  * Do not invent beds or a second MLS row. Acres print only when
  * living-area stats are absent and the lot size is verified.
  */
 
-import { publishMoneyText } from '@/lib/listing/publish-listing-figure'
+import { formatPriceCompact } from '@/lib/format/money'
 
 function isPositive(n: number | null | undefined): n is number {
   return n != null && Number.isFinite(n) && n > 0
@@ -23,17 +24,13 @@ function formatAcres(n: number): string {
   return `${rounded} acres`
 }
 
-export function publishListingHeroPrice(
-  listPrice: number | null | undefined,
-): string | null {
-  return publishMoneyText(listPrice, 'exact')
-}
-
-/** Same exact dollars as publishListingHeroPrice. Kept for existing callers. */
 export function publishListingHeroCompactPrice(
   listPrice: number | null | undefined,
 ): string | null {
-  return publishListingHeroPrice(listPrice)
+  if (listPrice == null || !Number.isFinite(listPrice) || listPrice <= 0) return null
+  const compact = formatPriceCompact(listPrice)
+  if (/\$\d{4,}K/.test(compact)) return null
+  return compact
 }
 
 export function publishListingHeroKeyStats(input: {

@@ -122,17 +122,8 @@ export type V3StageProps = {
    * 2 when it sits inside a page that already has its h1. Defaults to 2.
    */
   headingLevel?: 1 | 2
-  /**
-   * 'tall' when the next section should peek under the fold on 390.
-   * 'compact' when the next section (the ask) must fit in the first 390 viewport.
-   * 'frame' is a 16:9 media frame (listing opening). Default Stage stays 62vh.
-   */
-  height?: 'standard' | 'tall' | 'compact' | 'frame'
-  /**
-   * Optional media click. Does not add a second visible Stage action.
-   * Listing uses this to open photos. Homepage does not pass it.
-   */
-  onMediaClick?: () => void
+  /** 'tall' when the next section should peek under the fold on 390. 'compact' when the next section (the ask) must fit in the first 390 viewport. */
+  height?: 'standard' | 'tall' | 'compact'
   /**
    * Optional working control in the copy stack (homepage search). When this
    * is the Stage action, omit `action` so a second button does not ship.
@@ -192,7 +183,6 @@ export function V3Stage<H extends string, L extends string>({
   headline,
   posterSrc,
   videoSrc,
-  onMediaClick,
   action,
   overlayStrength = 'standard',
   eyebrow,
@@ -220,7 +210,6 @@ export function V3Stage<H extends string, L extends string>({
         `v3-stage--${overlayStrength}`,
         height === 'tall' && 'v3-stage--tall',
         height === 'compact' && 'v3-stage--compact',
-        height === 'frame' && 'v3-stage--frame',
         Boolean(children) && 'v3-stage--with-slot',
         className,
       )}
@@ -228,11 +217,7 @@ export function V3Stage<H extends string, L extends string>({
     >
       {/* The media carries no information the headline does not, and it has no
           audio and no controls, so it stays out of the accessibility tree. */}
-      <div
-        className="v3-stage-media"
-        aria-hidden="true"
-        onClick={onMediaClick}
-      >
+      <div className="v3-stage-media" aria-hidden="true">
         {/* Plain img, not next/image: the poster must be byte-identical to the
             video's own poster frame and must render for any owned asset path
             without depending on image-host configuration. */}

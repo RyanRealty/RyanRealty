@@ -13,7 +13,7 @@
  *   (a) a formatted price matching /$[\d,]{6,}/
  *   (b) at least one listing photo URL (sparkplatform CDN or listing_photos cdn_url)
  *   (c) the listing-agent name marker (Talk to a broker)
- *   (d) the contact/tour CTA (Tour this home)
+ *   (d) the contact/tour CTA (Schedule a tour)
  *
  * Requires the SMOKE_LISTING_KEY env var OR a dynamic lookup from the site's
  * own active-listing API. In CI, pick-lhci-listing.mjs already resolves a key;
@@ -69,9 +69,10 @@ const PHOTO_URL_RE = /(?:sparkplatform\.com|supabase\.co\/storage|_next\/image\?
 const AGENT_CTA_RE = /Talk to a broker/i
 
 /**
- * (d) Tour CTA: Stage action into the on-page Sheet.
+ * (d) Tour CTA: rendered by TextMattCTA.tsx as the primary CTAButton label.
+ * Falls back to "Questions about this home?" for the H3. Both stable.
  */
-const TOUR_CTA_RE = /Tour this home/i
+const TOUR_CTA_RE = /Schedule a tour/i
 
 // ---------------------------------------------------------------------------
 // Fetch a live active-listing key dynamically if none was pinned
@@ -154,7 +155,7 @@ async function main() {
   if (!PRICE_RE.test(html)) fails.push('no formatted price ($NNN,NNN) found — ListPrice not rendered')
   if (!PHOTO_URL_RE.test(html)) fails.push('no listing photo URL found — photo resolver returned empty or crashed')
   if (!AGENT_CTA_RE.test(html)) fails.push('no "Talk to a broker" marker — TextMattCTA sidebar not rendering')
-  if (!TOUR_CTA_RE.test(html)) fails.push('no "Tour this home" CTA — listing Stage / Sheet missing')
+  if (!TOUR_CTA_RE.test(html)) fails.push('no "Schedule a tour" CTA — TextMattCTA primary button missing')
 
   if (JSON_OUT) {
     console.log(JSON.stringify({

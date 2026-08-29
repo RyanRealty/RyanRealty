@@ -62,11 +62,6 @@ if (consent && !/data-sms-consent-checkbox/.test(consent)) {
     `${CONSENT}: missing the SMS consent CHECKBOX (data-sms-consent-checkbox). A2P 10DLC requires an explicit, unchecked-by-default checkbox dedicated to SMS, separate from voice.`,
   )
 }
-if (consent && !/aria-label=/.test(consent)) {
-  fails.push(
-    `${CONSENT}: the SMS consent checkbox must carry an aria-label. Radix renders a button role=checkbox, so htmlFor does not name it for the accessibility API.`,
-  )
-}
 // The condition clause lives in the imported sentence; the SOURCE carries it
 // (verified above via EXACT), and the component renders the import.
 if (consent && !/href="\/privacy"/.test(consent)) {

@@ -15,7 +15,6 @@ import {
   HOUSEME_LABEL_READ_REFUSE,
   HOUSEME_LABEL_TRUE_COST,
   HOUSEME_TITLE_FACTS,
-  PUBLIC_READ_DISCLAIMER,
   PUBLIC_READ_TITLE,
   PUBLIC_READ_TITLE_REFUSE,
   housemeRefuseCopy,
@@ -189,7 +188,8 @@ describe('buildHouseMeRows', () => {
     const text = allCopy(facts)
     expect(text).not.toMatch(BANNED)
     expect(text).toContain(PUBLIC_READ_TITLE)
-    expect(housemeSourceLine(buildHouseMeRows(facts))).toBe(PUBLIC_READ_DISCLAIMER)
-    expect(housemeSourceLine(buildHouseMeRows(facts))).not.toMatch(/listing_pricing_reads|Market Truth/)
+    expect(housemeSourceLine(buildHouseMeRows(facts))).toBe(
+      'Stamp from listing_pricing_reads. Listing fields from Spark. Place median from the live pulse.',
+    )
   })
 })

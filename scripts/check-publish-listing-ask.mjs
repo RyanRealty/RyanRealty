@@ -26,19 +26,20 @@ checks.push({
     !helper.includes('Math.round(n / 1000)'),
 })
 
-const hero = src('components/site/listing-detail/ListingHero.tsx')
 const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
-// The ask lives on the Stage once (exact dollars). The strip keeps the drop
-// line only. Do not remount a second price H1 under the Stage.
+// The H1 moved from publishListingAsk(number) to publishListingSaleAsk({price,
+// propertyType}) on 2026-08-19: MLS PropertyType 'G' is a Commercial Lease, so
+// its ListPrice is rent and there is no sale ask to print. 735 Purcell (MLS
+// 220174840) published an H1 of "$3" off a $2.50/sq ft lease rate. The strip
+// must use the SALE-aware publisher, not the bare one.
 checks.push({
-  label: 'Stage ask and strip drop stay exact whole dollars',
+  label: 'PriceCtaStrip H1 and drop gate through publishListingSaleAsk / Drop + Price exact',
   ok:
-    /publishListingHeroPrice\(/.test(hero) &&
-    hero.includes('V3Figure') &&
     /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(strip) &&
+    /publishListingSaleAsk\(\{[^}]*propertyType:/s.test(strip) &&
     /publishListingDrop\(/.test(strip) &&
-    strip.includes('<Price value={publishedDrop.drop} exact />') &&
-    !strip.includes('<Price value={headlinePrice} exact />'),
+    strip.includes('<Price value={headlinePrice} exact />') &&
+    strip.includes('<Price value={publishedDrop.drop} exact />'),
 })
 
 // The JSON-LD moved into a sibling builder when the page hit its file-size

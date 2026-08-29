@@ -2,24 +2,22 @@ import { describe, expect, it } from 'vitest'
 import {
   publishListingHeroCompactPrice,
   publishListingHeroKeyStats,
-  publishListingHeroPrice,
 } from './publish-listing-hero-stats'
 
-describe('publishListingHeroPrice', () => {
-  it('prints Flagstone exact dollars, never a compact K', () => {
-    expect(publishListingHeroPrice(568_900)).toBe('$568,900')
-    expect(publishListingHeroPrice(568_900)).not.toBe('$569K')
+describe('publishListingHeroCompactPrice', () => {
+  it('prints Roosevelt $999,900 as $1.0M, never $1000K', () => {
+    expect(publishListingHeroCompactPrice(999_900)).toBe('$1.0M')
+    expect(publishListingHeroCompactPrice(999_900)).not.toBe('$1000K')
   })
 
-  it('prints Roosevelt and million-dollar asks as exact dollars', () => {
-    expect(publishListingHeroPrice(999_900)).toBe('$999,900')
-    expect(publishListingHeroPrice(1_495_000)).toBe('$1,495,000')
-    expect(publishListingHeroCompactPrice(260_000)).toBe('$260,000')
+  it('keeps sub-million K labels and exact millions', () => {
+    expect(publishListingHeroCompactPrice(260_000)).toBe('$260K')
+    expect(publishListingHeroCompactPrice(1_495_000)).toBe('$1.5M')
   })
 
   it('withholds a missing ask', () => {
-    expect(publishListingHeroPrice(null)).toBeNull()
-    expect(publishListingHeroPrice(0)).toBeNull()
+    expect(publishListingHeroCompactPrice(null)).toBeNull()
+    expect(publishListingHeroCompactPrice(0)).toBeNull()
   })
 })
 
