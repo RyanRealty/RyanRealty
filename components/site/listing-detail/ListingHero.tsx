@@ -72,7 +72,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
   const reel = publishListingHeroVideo(videos)
   const virtualTour = publishListingVirtualTour(videos)
   const lead = publishListingLeadMedia(videos)
-  const heroVideo = lead?.video ?? null
+  const heroVideo = lead?.kind === 'video' ? lead.video : null
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0
   const canUnmute = publishListingHeroUnmute(reel)
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
@@ -84,8 +84,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
   const thumbs = photos.slice(heroVideo ? 0 : 1, heroVideo ? 4 : 5)
   const emptyThumbSlots = Math.max(0, 4 - thumbs.length)
   const carouselStills = heroVideo ? photos : photos.slice(1)
-  const leadOpenLabel =
-    lead?.kind === 'video' ? 'Open video' : lead?.kind === 'tour' ? 'Open tour' : null
+  const leadOpenLabel = lead?.kind === 'video' ? 'Open video' : null
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -117,7 +116,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
       return
     }
     if (heroVideo) {
-      openEmbed(lead?.kind === 'tour' ? 'tour' : 'video')
+      openEmbed('video')
       return
     }
     openGallery(0)

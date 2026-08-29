@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import './listing-detail.css'
@@ -30,8 +30,9 @@ export function ListingTourOverlay({
         showCloseButton={false}
         aria-label="Listing tour"
         overlayClassName="listing-gallery__overlay z-[110]"
-        className="listing-gallery z-[110]"
+        className="listing-gallery z-[110] top-0 left-0 translate-x-0 translate-y-0"
       >
+        <DialogTitle className="sr-only">{title}</DialogTitle>
         <div className="listing-gallery__bar">
           <div className="listing-gallery__exit">
             <button

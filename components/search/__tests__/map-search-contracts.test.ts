@@ -92,6 +92,10 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/areaDirty/)
   })
 
+  it('separates filter-match and viewport phrases so they do not concatenate', () => {
+    expect(src).toMatch(/ · \{publishedCounts\.viewport\.phrase\}/)
+  })
+
   it('clears Search this area when filters re-seed the list', () => {
     expect(src).toMatch(/setAreaDirty\(false\)/)
   })

@@ -22,8 +22,8 @@ describe('publishListingLeadMedia', () => {
     expect(publishListingLeadMedia([rockwayTour, reel])).toEqual({ kind: 'video', video: reel })
   })
 
-  it('a 3D tour is media 1 when no reel exists', () => {
-    expect(publishListingLeadMedia([rockwayTour])).toEqual({ kind: 'tour', video: rockwayTour })
+  it('a 3D tour is a pill, not media 1 — the house still is the lead', () => {
+    expect(publishListingLeadMedia([rockwayTour])).toBeNull()
   })
 
   it('returns null so the caller uses the first still of this house', () => {

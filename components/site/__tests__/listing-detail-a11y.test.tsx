@@ -200,8 +200,15 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
   it('sits above chrome via overlayClassName z-110', () => {
     expect(gallery).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(tour).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
-    expect(gallery).toMatch(/className="listing-gallery z-\[110\]"/)
-    expect(tour).toMatch(/className="listing-gallery z-\[110\]"/)
+    expect(gallery).toMatch(/className="listing-gallery z-\[110\]/)
+    expect(tour).toMatch(/className="listing-gallery z-\[110\]/)
+  })
+
+  it('pins the gallery to the viewport instead of the dialog center translate', () => {
+    expect(gallery).toMatch(/translate-x-0/)
+    expect(gallery).toMatch(/translate-y-0/)
+    expect(tour).toMatch(/translate-x-0/)
+    expect(tour).toMatch(/translate-y-0/)
   })
 })
 
@@ -221,9 +228,9 @@ describe('listing mosaic lead and empty thumbs', () => {
     'utf8',
   )
 
-  it('names the iframe lead Open video or Open tour from the media kind', () => {
+  it('names the iframe lead Open video from the reel; 3D stays a pill', () => {
     expect(hero).toMatch(/lead\?\.kind === 'video' \? 'Open video'/)
-    expect(hero).toMatch(/lead\?\.kind === 'tour' \? 'Open tour'/)
+    expect(hero).not.toMatch(/lead\?\.kind === 'tour' \? 'Open tour'/)
     expect(hero).toMatch(/emptyThumbSlots/)
     expect(hero).toMatch(/empty-thumb-/)
   })

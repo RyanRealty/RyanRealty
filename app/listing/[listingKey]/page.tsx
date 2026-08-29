@@ -465,7 +465,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { label: street || `Listing ${listingKey}` },
   ]
 
-  // Media 1 is a reel or 3D tour when one exists (publishListingLeadMedia).
+  // Media 1 is a reel when one exists (publishListingLeadMedia). 3D is a pill.
   // Tours also keep their own viewer below the mosaic.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
   const contactKey =

@@ -1,32 +1,23 @@
 /**
  * Media 1 for a listing detail page.
  *
- * Matt's media-1 rule: if a video or 3D tour exists, it is media 1
- * (1280 mosaic left pane, 390 first carousel slide, gallery slide 1).
- * Stills follow. No video = first still of THIS house. Never a city shot.
+ * Matt's media-1 rule: if a VIDEO exists, it is media 1 (1280 mosaic left
+ * pane, 390 first carousel slide). Stills follow. No video = first still of
+ * THIS house. Never a city shot. Never a Zillow/Matterport captcha iframe.
  *
- * This is a LAYOUT pick over the already-fetched `getListingVideos` +
- * `getListingPhotos` rows. It does not invent media or swap the source.
- *
- * `publishListingHeroVideo` still names the unmute-able reel. This function
- * is the wider lead: reel first, then a virtual tour, else null (caller
- * uses the first still).
+ * 3D / virtual tours stay mosaic pills and overlay tabs. They are not the
+ * lead frame.
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
-import { publishListingHeroVideo, publishListingVirtualTour } from './publish-listing-hero-video'
+import { publishListingHeroVideo } from './publish-listing-hero-video'
 
-export type ListingLeadMedia =
-  | { kind: 'video'; video: VideoEmbed }
-  | { kind: 'tour'; video: VideoEmbed }
+export type ListingLeadMedia = { kind: 'video'; video: VideoEmbed }
 
 export function publishListingLeadMedia(
   videos: ReadonlyArray<VideoEmbed>,
 ): ListingLeadMedia | null {
   const reel = publishListingHeroVideo(videos)
   if (reel) return { kind: 'video', video: reel }
-
-  const tour = publishListingVirtualTour(videos)
-  if (tour) return { kind: 'tour', video: tour }
   return null
 }
