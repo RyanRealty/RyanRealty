@@ -13,13 +13,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { GoogleMap, Marker, OverlayView, Polygon, Polyline } from '@react-google-maps/api'
+import { Circle, GoogleMap, Marker, OverlayView, Polygon, Polyline } from '@react-google-maps/api'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions, MAP_NAVY, MAP_SEARCH_STYLES } from '@/lib/maps/markers'
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { useV3FieldBinding } from '@/components/site/v3'
+import type { DrawnShape } from '@/lib/map-polygon'
 
 const FILL = { position: 'relative', width: '100%', height: '100%' } as const
 const SINGLE_POINT_ZOOM = 14
@@ -76,6 +77,13 @@ export type PlaceFieldMapPin = {
   cat?: 0 | 1 | 2 | 3 | 4
 }
 
+export type PlaceFieldMapBounds = {
+  west: number
+  south: number
+  east: number
+  north: number
+}
+
 export function PlaceFieldMapImpl({
   pins,
   boundary,
@@ -83,6 +91,11 @@ export function PlaceFieldMapImpl({
   centerLonLat,
   placePin,
   posterSrc,
+  onBoundsChanged,
+  fitOnPinChange = true,
+  onRetry,
+  shapes,
+  onShapesChange: _onShapesChange,
 }: {
   pins: readonly PlaceFieldMapPin[]
   boundary?: unknown
@@ -92,10 +105,22 @@ export function PlaceFieldMapImpl({
   placePin?: { lat: number; lng: number; title: string }
   /** Live listing photograph shown while the map script loads. */
   posterSrc?: string
+  /** Search-as-you-move. Homepage omits this. */
+  onBoundsChanged?: (bounds: PlaceFieldMapBounds) => void
+  /**
+   * Default true: homepage refits when the pin set changes.
+   * Search sets false so a pan is not fought by a refit.
+   */
+  fitOnPinChange?: boolean
+  /** Remount the map after a load failure. */
+  onRetry?: () => void
+  shapes?: DrawnShape[] | null
+  onShapesChange?: (shapes: DrawnShape[]) => void
 }) {
   const { ready, error } = useGoogleMapsReady()
   const { activeId, setActiveId } = useV3FieldBinding()
   const mapRef = useRef<google.maps.Map | null>(null)
+  const didInitialFit = useRef(false)
   const [mapReady, setMapReady] = useState(false)
 
   const polygons = useMemo(() => toPolygons(boundary), [boundary])
@@ -167,19 +192,43 @@ export function PlaceFieldMapImpl({
     if (!mapReady) return
     const map = mapRef.current
     if (!map) return
-    fit(map)
+    if (fitOnPinChange || !didInitialFit.current) {
+      if (fit(map)) didInitialFit.current = true
+    }
     const el = map.getDiv()
     const ro = new ResizeObserver(() => {
-      fit(map)
+      if (fitOnPinChange || !didInitialFit.current) {
+        if (fit(map)) didInitialFit.current = true
+      }
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [fit, mapReady])
+  }, [fit, mapReady, fitOnPinChange])
+
+  const emitBounds = useCallback(() => {
+    const map = mapRef.current
+    if (!map || !onBoundsChanged) return
+    const b = map.getBounds()
+    if (!b) return
+    const ne = b.getNorthEast()
+    const sw = b.getSouthWest()
+    onBoundsChanged({
+      west: sw.lng(),
+      south: sw.lat(),
+      east: ne.lng(),
+      north: ne.lat(),
+    })
+  }, [onBoundsChanged])
 
   if (error) {
     return (
-      <div style={FILL} role="status">
-        The {placeName} map did not load. The homes are listed beside it.
+      <div className="v3-field__map-pending" style={FILL} role="status">
+        <p>The {placeName} map did not load. The homes are listed beside it.</p>
+        {onRetry ? (
+          <button type="button" className="v3-field__zoom-btn" onClick={onRetry}>
+            Retry
+          </button>
+        ) : null}
       </div>
     )
   }
@@ -211,12 +260,14 @@ export function PlaceFieldMapImpl({
           fullscreenControl: false,
           streetViewControl: false,
           clickableIcons: false,
+          gestureHandling: 'greedy',
           styles: [
             ...MAP_SEARCH_STYLES,
             { featureType: 'poi', stylers: [{ visibility: 'off' }] },
           ],
         }}
         onLoad={onLoad}
+        onIdle={emitBounds}
         onClick={() => setActiveId(null)}
         onUnmount={() => {
           mapRef.current = null
@@ -253,6 +304,34 @@ export function PlaceFieldMapImpl({
             zIndex={50}
           />
         ) : null}
+        {(shapes ?? []).map((shape, i) =>
+          shape.type === 'polygon' ? (
+            <Polygon
+              key={`draw-${i}`}
+              paths={shape.points}
+              options={{
+                fillColor: MAP_NAVY,
+                fillOpacity: shape.exclude ? 0.08 : 0.16,
+                strokeColor: MAP_NAVY,
+                strokeWeight: 2,
+                clickable: false,
+              }}
+            />
+          ) : (
+            <Circle
+              key={`draw-${i}`}
+              center={shape.center}
+              radius={shape.radiusM}
+              options={{
+                fillColor: MAP_NAVY,
+                fillOpacity: shape.exclude ? 0.08 : 0.16,
+                strokeColor: MAP_NAVY,
+                strokeWeight: 2,
+                clickable: false,
+              }}
+            />
+          ),
+        )}
         {pins.map((pin) => (
           <OverlayView
             key={pin.id}

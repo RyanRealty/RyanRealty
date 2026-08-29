@@ -16,6 +16,7 @@ import HomeTypeFilterPanel, { homeTypeChipLabel } from '@/components/search/Home
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import dynamic from 'next/dynamic'
 import SaveSearchButton from '@/components/SaveSearchButton'
+import type { SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
 import {
   activeRegistryFilters,
   ParsedSearchNotice,
@@ -35,7 +36,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
@@ -210,7 +210,7 @@ function FilterDropdown({
           className={cn(
             // Dense 32px Ledger control on fine pointers; the W-UI audit's
             // 44px tap floor holds on touch (ci:publish-search-count).
-            'srch-chip h-8 min-h-8 min-w-11 shrink-0 gap-1 whitespace-nowrap px-3 [@media(pointer:coarse)]:min-h-11',
+            'srch-chip h-11 min-h-11 min-w-11 shrink-0 gap-1 whitespace-nowrap px-3',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -237,11 +237,13 @@ type Props = {
   initialFilters: SearchFiltersInitial
   /** Signed-in state — SaveSearchButton switches between account save and guest email capture. */
   signedIn?: boolean
+  /** Server-resolved geography for place search save/alert. */
+  pathContext?: SavedSearchPathContext
 }
 
 type OpenPanel = 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
-export default function SearchFilters({ initialFilters, signedIn = false }: Props) {
+export default function SearchFilters({ initialFilters, signedIn = false, pathContext }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -459,7 +461,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         {/* Location + Save share one 390 row so the first house address
             reaches the fold. Voice is sm+ only. */}
         <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <div className="srch-panel flex min-w-0 items-center gap-2 px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
+          <div className="srch-panel flex min-h-11 min-w-0 items-center gap-2 px-3.5 py-1.5 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
@@ -493,7 +495,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
                 if (picked) handleSuggestPick(picked)
                 else applyNaturalQuery(locationQuery)
               }}
-              className="h-auto flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="h-auto min-h-11 flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Search by address, city, community, zip, or broker"
               role="combobox"
               aria-expanded={locationOpen && suggestItems.length > 0}
@@ -502,6 +504,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
                 locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined
               }
             />
+            <VoiceSearchButton onTranscript={applyNaturalQuery} className="shrink-0" />
           </div>
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
           {/* ONE shared suggestions panel (SearchSuggest) — renders EVERY
@@ -520,51 +523,16 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           )}
         </div>
 
-        {/* Voice search — speaks the same registry the screen panel renders */}
-        <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
-
-        {/* Save search — captures every live URL param, registry filters included.
-            Guest listing-alert capture lives in SearchAlertCapture (collapsed
-            "Get listing alerts"). Do not add a second navy Get-alerts chip. */}
-        <SaveSearchButton user={signedIn} />
-
-        {/* View toggle (split / list / map) — desktop only, quiet chrome.
-            MapSearchView owns the mobile List/Map switcher (design-audit P2). */}
-        <ToggleGroup
-          type="single"
-          value={view}
-          onValueChange={(v) => {
-            if (v === 'split' || v === 'list' || v === 'map') {
-              setFilter('view', v)
-              setView(v)
-            }
-          }}
-          variant="outline"
-          size="sm"
-          className="ml-auto hidden h-8 overflow-hidden rounded-none border border-border/60 bg-muted/40 lg:flex"
-        >
-          {(['split', 'list', 'map'] as const).map((v) => (
-            <ToggleGroupItem
-              key={v}
-              value={v}
-              className="srch-chip h-8 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
-              aria-label={`${v} view`}
-            >
-              {v}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <SaveSearchButton user={signedIn} pathContext={pathContext} />
       </div>
 
       <Separator />
 
-      {/* Row 2: chips + All filters. 390 keeps the chip set on one
-          horizontal row so Price/Beds/Baths stay tappable. */}
-      <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
-        {/* The right-edge fade signals more chips off-screen (2026-08-27
-            mobile audit: the row scrolls, but a hard clip read as cut off). */}
+      {/* Row 2: chips wrap so Beds / Home type stay on the face. Overflow
+          still scrolls with a right-edge fade as a cue. */}
+      <div className="flex items-start gap-2 px-3 py-2 sm:px-4">
         <div
-          className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar"
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-2 overflow-x-auto no-scrollbar"
           style={{
             WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
             maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
@@ -796,7 +764,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             setMoreSheetMounted(true)
             setMoreSheetOpen(true)
           }}
-          className="srch-chip h-8 shrink-0 gap-1 px-3 [@media(pointer:coarse)]:min-h-11"
+          className="srch-chip h-11 min-h-11 shrink-0 gap-1 px-3"
           aria-label="Open all filters"
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />

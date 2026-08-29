@@ -1,4 +1,4 @@
-import { type ReactNode, Suspense } from 'react'
+import { type ReactNode } from 'react'
 import { getSession } from '../../../actions/auth'
 import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
@@ -19,12 +19,13 @@ import { ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import MapSearchView from '@/components/search/MapSearchView'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3_LEDGER_CLASS, V3Breadcrumb } from '@/components/site/v3'
-import SearchFilterBar from '../../../../components/SearchFilterBar'
+import { V3_ROOT_CLASS, V3Footer, V3_FOOTER_COLUMNS, V3Heading } from '@/components/site/v3'
+import SearchFilters from '@/components/search/SearchFilters'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
+import type { SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -92,29 +93,25 @@ export async function renderMapSplitView(props: {
   initialPolygon: ReturnType<typeof decodeMapPolygon>
   presetChips: readonly { label: string; param: string }[]
   perPageParam: string
-  /** The "Grid view" return CTA (a shadcn Button) — rendered by page.tsx, which
-   *  already owns the route's @/components/ui imports (G47 shadcn burn-down
-   *  counts importing files; this section must not become a new one). */
-  gridViewCta: ReactNode
+  gridViewCta?: ReactNode
+  pathContext: SavedSearchPathContext
+  tail?: ReactNode
 }) {
   const {
     sp,
-    slug,
-    resolved,
     city,
     decodedSubdivision,
     neighborhood: neighborhoodName,
     displayName,
-    searchPagePath,
-    searchBreadcrumbItems,
     savedKeys,
     likedKeys,
     session,
     effectiveStatusFilter,
     initialPolygon,
-    presetChips,
-    perPageParam,
-    gridViewCta,
+    presetChips: _presetChips,
+    perPageParam: _perPageParam,
+    pathContext,
+    tail,
   } = props
   // priceChangeKeys + prefs: still accepted from page.tsx for call-site stability.
   // MapSearchView does not consume buying prefs or price-change badge keys.
@@ -285,8 +282,6 @@ export async function renderMapSplitView(props: {
     postalCode: sp.postalCode ?? '',
   }
 
-  // Compact guest alert strip for map/split (layout-safe: non-sticky shrink-0).
-  // Grid/list branch of this route still uses sticky SearchAlertCapture in page.tsx.
   const guestAlertFilters: Record<string, string> = {}
   if (sp.minPrice) guestAlertFilters.minPrice = String(sp.minPrice)
   if (sp.maxPrice) guestAlertFilters.maxPrice = String(sp.maxPrice)
@@ -295,86 +290,43 @@ export async function renderMapSplitView(props: {
   if (sp.propertyType) guestAlertFilters.propertyType = String(sp.propertyType)
   if (sp.keywords) guestAlertFilters.keywords = String(sp.keywords)
 
-  // V3Chrome is sticky in flow. search-app-frame (search-frame.css) sizes the
-  // shell to remaining viewport and flex-fills nested .map-search-shell.
-  // No footer on the app-frame. Search is the Homes Field, not header chrome.
-  // V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
-  // (THE LOOK, PUBLIC_UI.md section 6).
   return (
-    <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-2 sm:px-6">
-        {searchBreadcrumbItems.length > 1 ? (
-          <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
-        ) : (
-          <span />
-        )}
-        {gridViewCta}
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-border bg-card">
-          <SearchFilterBar
-            basePath={searchPagePath}
-            presetChips={presetChips}
-            locationLabel={displayName}
-            locationHref={`${searchPagePath}?${new URLSearchParams({ ...sp, view: 'map' }).toString()}`}
-            signedIn={!!session?.user}
-            pathContext={{ ...resolved, city, citySlug: slug[0] }}
-            minPrice={sp.minPrice}
-            maxPrice={sp.maxPrice}
-            beds={sp.beds}
-            baths={sp.baths}
-            minSqFt={sp.minSqFt}
-            maxSqFt={sp.maxSqFt}
-            maxBeds={sp.maxBeds}
-            maxBaths={sp.maxBaths}
-            yearBuiltMin={sp.yearBuiltMin}
-            yearBuiltMax={sp.yearBuiltMax}
-            lotAcresMin={sp.lotAcresMin}
-            lotAcresMax={sp.lotAcresMax}
-            postalCode={sp.postalCode}
-            propertyType={sp.propertyType}
-            statusFilter={sp.statusFilter}
-            keywords={sp.keywords}
-            hasOpenHouse={sp.hasOpenHouse}
-            garageMin={sp.garageMin}
-            hasPool={sp.hasPool}
-            hasView={sp.hasView}
-            hasWaterfront={sp.hasWaterfront}
-            newListingsDays={sp.newListingsDays}
-            includeClosed={sp.includeClosed}
-            sort={sp.sort}
-            view="map"
-            perPage={perPageParam}
-            poly={sp.poly}
-          />
-        </div>
-        {/* underFilterBar slot: guest alert sits under the filter bar (was a
-            MapSearchView owns the list/map shell). */}
-        <Suspense fallback={null}>
-          <SearchAlertCapture
-            signedIn={!!session?.user}
-            defaultCity={city ?? ''}
-            defaultSubdivision={decodedSubdivision ?? ''}
-            defaultFilters={guestAlertFilters}
-            variant="inline"
-          />
-        </Suspense>
-        <MapSearchView
-          initialListings={viewport.listings}
-          initialTotalCount={viewport.totalCount}
-          initialCapped={viewport.capped}
-          initialBounds={initialBounds}
-          filters={filters}
-          savedListingKeys={savedKeys}
-          likedListingKeys={likedKeys}
-          placeQuery={placeQuery}
-          boundaryGeojson={mapBoundaryGeojson ?? undefined}
-          initialPolygon={initialPolygon}
-          initialShapes={initialShapes}
-          nowMs={Date.now()}
-          initialDegraded={viewportDegraded}
+    <>
+    <main className={cn(V3_ROOT_CLASS, 'min-h-screen w-full')}>
+      <header className="search-filter-dock mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6">
+        <V3Heading level={1} size="field">Homes for Sale</V3Heading>
+        {displayName ? <p className="v3-field__note mt-2">{displayName}</p> : null}
+        <SearchFilters
+          initialFilters={filters}
+          signedIn={!!session?.user}
+          pathContext={pathContext}
         />
-      </div>
+      </header>
+      <MapSearchView
+        initialListings={viewport.listings}
+        initialTotalCount={viewport.totalCount}
+        initialCapped={viewport.capped}
+        initialBounds={initialBounds}
+        filters={filters}
+        savedListingKeys={savedKeys}
+        likedListingKeys={likedKeys}
+        placeQuery={placeQuery}
+        boundaryGeojson={mapBoundaryGeojson ?? undefined}
+        initialPolygon={initialPolygon}
+        initialShapes={initialShapes}
+        nowMs={Date.now()}
+        initialDegraded={viewportDegraded}
+      />
+      <SearchAlertCapture
+        signedIn={!!session?.user}
+        defaultCity={city ?? ''}
+        defaultSubdivision={decodedSubdivision ?? ''}
+        defaultFilters={guestAlertFilters}
+        variant="inline"
+      />
+      {tail}
     </main>
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

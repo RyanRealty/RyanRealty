@@ -155,7 +155,7 @@ export default async function SearchPage({
   if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
   if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
 
-  const isMapSplitView = (sp.view === 'map' || sp.view === 'split') && (city || hasFilterOnly)
+  const isMapSplitView = Boolean(city || hasFilterOnly)
 
   // Map/split seeds from MapSplitView's own viewport fetch. Do not wait on the
   // 12s grid listings RPC (or grid-only JSON-LD/banner reads) first.
@@ -174,15 +174,6 @@ export default async function SearchPage({
             withTimeout(getBuyingPreferences(), null, 600),
           ])
         : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
-    const gridViewHref = (() => {
-      const params = new URLSearchParams(
-        Object.entries(sp).filter(
-          ([k, v]) => typeof v === 'string' && v !== '' && k !== 'view' && k !== 'poly'
-        ) as [string, string][]
-      )
-      const q = params.toString()
-      return q ? `${searchPagePath}?${q}` : searchPagePath
-    })()
     return renderMapSplitView({
       sp,
       slug,
@@ -202,13 +193,8 @@ export default async function SearchPage({
       initialPolygon,
       presetChips,
       perPageParam,
-      gridViewCta: (
-        <Button asChild variant="secondary" size="sm" className="shrink-0">
-          <Link href={gridViewHref} aria-label="Switch back to the grid view">
-            Grid view
-          </Link>
-        </Button>
-      ),
+      gridViewCta: null,
+      pathContext: { ...resolved, city, citySlug: slug[0] },
     })
   }
 
