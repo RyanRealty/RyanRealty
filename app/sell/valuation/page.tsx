@@ -1,30 +1,12 @@
-// @data-free. Leftover written-CMA intake. No live figures. Capture is ValuationForm.
 /**
- * /sell/valuation - the written-CMA leftover, on the components/site/v3 barrel.
+ * /sell/valuation — written CMA intake. Stage then one cream sheet:
+ * address field, then what goes into the number.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Sell-family leftover.
- * Three of the six patterns, no two adjacent alike: Breadcrumb, Stage, Sheet
- * (ValuationForm), Quiet, Footer.
- *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
- * pageMetadata (title "Home Valuation in Central Oregon", keywords may keep
- * search-demand "what is my home worth Bend"), MetadataBlock breadcrumb
- * JSON-LD, V3SectionTracker pageType="sell-valuation", the route, and the
- * capture contract. ValuationForm still calls submitValuationRequest with the
- * same field names. This page is a second intake beside /sell#get-value. The
- * lease keeps it. It does not 301 it. E-CUT owns that cut.
- *
- * D11: visible CTA/headline is "Value my home" / "Get your home's value".
- * Title and H1 stay search-first. Breadcrumb is "Home valuation", not
- * "What's your home worth".
- *
- * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider,
- * primitives H2/H3/Eyebrow/Body/CTAButton, shadcn Card, the sticky mobile
- * bar. Method steps and the 3% close survive as Quiet prose and doors.
+ * Capture contract unchanged: ValuationValueForm posts submitValuationRequest.
  */
 
 import type { Metadata } from 'next'
-import ValuationForm from '@/app/home-valuation/ValuationForm'
+import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { CONTACT } from '@/lib/brand/contact'
@@ -33,11 +15,14 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Stage,
+  V3Heading,
   V3Quiet,
+  V3Stage,
   V3SectionTracker,
 } from '@/components/site/v3'
 import { SellCapture } from '../_v3/SellCapture'
+import { ValuationValueForm } from '../_v3/ValuationValueForm'
+import '../_v3/valuation-stage.css'
 import {
   VALUATION_ROUTE,
   VALUATION_FORM_ANCHOR,
@@ -48,6 +33,8 @@ import {
   FORM_ANCHOR,
   ROUTE_PATH,
 } from '../_v3/sell-constants'
+
+export const revalidate = 300
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
@@ -65,10 +52,17 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-export default function SellValuationPage() {
+export default async function SellValuationPage() {
+  const heroSrc = await getSurfaceImage('hero', {
+    geoTags: ['tetherow'],
+    seed: VALUATION_ROUTE,
+    fallback: SELL_POSTER,
+  })
+  const posterSrc = heroSrc ?? SELL_POSTER
+
   return (
     <>
-      <main className={V3_ROOT_CLASS}>
+      <main className={`${V3_ROOT_CLASS} valuation-page`}>
         <V3SectionTracker />
         <MetadataBlock
           schemas={[
@@ -113,31 +107,39 @@ export default function SellValuationPage() {
         <V3Stage
           headingLevel={1}
           height="compact"
+          className="valuation-stage-poster"
           eyebrow={VALUATION_STAGE_EYEBROW}
           headline="Home valuation in Central Oregon"
-          posterSrc={SELL_POSTER}
+          posterSrc={posterSrc}
           action={{ label: 'Value my home', href: VALUATION_FORM_ANCHOR, variant: 'ghost' }}
         />
 
         <SellCapture
           id="valuation-form"
           headingId="valuation-form-heading"
+          className="valuation-value-sheet"
           eyebrow="Free. No listing agreement."
           heading="Get your home's value"
         >
-          <ValuationForm />
+          <ValuationValueForm />
+          <div className="valuation-method">
+            <V3Heading id="how-we-value" level={2}>
+              What goes into the number
+            </V3Heading>
+            <dl className="valuation-method-list">
+              {VALUE_STEPS.map((step) => (
+                <div key={step.title}>
+                  <dt>{step.title}</dt>
+                  <dd>{step.body}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </SellCapture>
 
         <V3Quiet
-          id="how-we-value"
-          eyebrow="How the number is built"
-          heading="What goes into the number"
+          ariaLabel="Valuation questions"
           items={[
-            ...VALUE_STEPS.map((step) => ({
-              kind: 'prose' as const,
-              term: step.title,
-              body: step.body,
-            })),
             ...VALUATION_FAQ_ITEMS.map((item) => ({
               kind: 'prose' as const,
               term: item.question,

@@ -1,0 +1,101 @@
+/* Valuation Stage is poster + H1. Hide the Stage control so chrome Value my
+   home and the Sheet submit are one ask. */
+.v3.v3-stage.valuation-stage-poster .v3-stage-copy .v3-btn {
+  display: none;
+}
+
+/* First screen on 390: compact Stage, then the cream sheet under the H1. */
+@media (max-width: 47.999rem) {
+  .v3.v3-stage.valuation-stage-poster {
+    min-height: 0;
+  }
+
+  .v3.v3-stage.valuation-stage-poster .v3-stage-copy {
+    padding-bottom: var(--v3-space-md);
+  }
+
+  .v3.v3-sheet.valuation-value-sheet {
+    padding-top: var(--v3-space-md);
+    padding-bottom: var(--v3-space-lg);
+  }
+}
+
+/* Address field + submit at 44px, cream face. */
+.v3.v3-sheet.valuation-value-sheet [data-slot='input'],
+.v3.v3-sheet.valuation-value-sheet input:not([type='radio']):not([type='checkbox']) {
+  height: var(--v3-tap);
+  min-height: var(--v3-tap);
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-navy);
+  border-radius: var(--v3-radius-control);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+}
+
+.v3.v3-sheet.valuation-value-sheet button[type='submit'] {
+  min-height: var(--v3-tap);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-address,
+.v3.v3-sheet.valuation-value-sheet form {
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-match {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-note {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-error {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-confirm {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  color: var(--v3-ink);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-method {
+  display: grid;
+  gap: var(--v3-space-md);
+  margin-top: var(--v3-space-xl);
+  padding-top: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-method-list {
+  display: grid;
+  gap: var(--v3-space-md);
+  margin: 0;
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-method-list dt {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+}
+
+.v3.v3-sheet.valuation-value-sheet .valuation-method-list dd {
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+/* Cookie bar is 44px actions. Pad so the bar does not cover the H2. */
+.v3.valuation-page {
+  padding-bottom: calc(var(--v3-tap) * 3 + var(--v3-space-xl));
+}
