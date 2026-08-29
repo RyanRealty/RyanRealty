@@ -34,7 +34,7 @@ describe('ListingMobileContactBar source', () => {
   it('publishes listing sticky height for the cookie bar to sit above', () => {
     expect(SRC).toContain('--listing-sticky-height')
     expect(SRC).toContain('dataset.listingSticky')
-    expect(SRC).toContain('Schedule a tour')
+    expect(SRC).toContain("face === 'land' ? 'Schedule' : 'Schedule a tour'")
     expect(SRC).toContain('lmc-tour')
     expect(SRC).toContain('lmc-call')
   })
@@ -91,5 +91,27 @@ describe('ListingMobileContactBar occupancy', () => {
     expect(document.documentElement.style.getPropertyValue('--listing-sticky-height')).toMatch(/px$/)
     expect(container.textContent).toContain('Schedule a tour')
     expect(container.textContent).toContain('Call')
+  })
+
+  it('keeps the land sticky label Schedule after the cookie bar sits above it', async () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(
+        React.createElement(ListingMobileContactBar, {
+          broker,
+          listingKey: '220218296',
+          face: 'land',
+        }),
+      )
+    })
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 400, writable: true })
+    await act(async () => {
+      window.dispatchEvent(new Event('scroll'))
+    })
+    expect(container.textContent).toContain('Schedule')
+    expect(container.textContent).not.toContain('Schedule a tour')
+    expect(document.documentElement.style.getPropertyValue('--listing-sticky-height')).toMatch(/px$/)
   })
 })
