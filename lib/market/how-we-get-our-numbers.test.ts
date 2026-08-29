@@ -64,9 +64,9 @@ describe('HUD and leftover panels jump to the dictionary', () => {
   // section source line instead of per-KPI how-links, and the dictionary page
   // itself survives behind the chrome footer's Market column. HUD_KPI_HOW's
   // label coverage is asserted above against the dictionary's own entries.
-  // PublicProductTypes survives on its one remaining mount (the listing page's
-  // NeighborhoodMarketContext) and keeps its how-link.
-  it('the surviving product-types strip carries a how-link', () => {
+  // PublicProductTypes keeps its how-link. The listing market block no longer
+  // mounts it (visual review: OTHER PRODUCT TYPES · MARKET TRUTH leftover).
+  it('the product-types strip carries a how-link', () => {
     const types = readFileSync(resolve('app/cities/[slug]/PublicProductTypes.tsx'), 'utf8')
     expect(types).toMatch(/MetricHowLink/)
     expect(types).toMatch(/PANEL_HOW\.products/)
@@ -74,7 +74,15 @@ describe('HUD and leftover panels jump to the dictionary', () => {
       resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),
       'utf8',
     )
-    expect(listing).toMatch(/PublicProductTypes/)
+    expect(listing).not.toMatch(/PublicProductTypes/)
+    expect(listing).not.toMatch(/OTHER PRODUCT TYPES|Market Truth leftover/)
+    const houseme = readFileSync(
+      resolve('components/site/listing-detail/HouseMeReport.tsx'),
+      'utf8',
+    )
+    expect(houseme).not.toMatch(/Stamp from listing_pricing_reads/)
+    expect(houseme).not.toMatch(/Listing fields from Spark/)
+    expect(houseme).not.toMatch(/Place median from the live pulse/)
   })
   it('the dictionary page renders every entry id', () => {
     const page = readFileSync(resolve('app/how-we-get-our-numbers/page.tsx'), 'utf8')

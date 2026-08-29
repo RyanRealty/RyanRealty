@@ -11,8 +11,9 @@ import type { ReviewsSummary } from '@/lib/data/reviews/getReviews'
 /**
  * Listing-detail broker contact card — the ONE sticky sidebar CTA. Shows the
  * contact broker's FULL contact info (click-to-call phone + email, name, title,
- * license, headshot), the primary "Schedule a tour" + Call/Text actions, and —
- * on large screens only — a short verified-Google-review social-proof block.
+ * license, headshot), and Call / Text. Tour lives on the Stage and the one
+ * Sheet. Face stays small. On large screens only, a short verified-Google-
+ * review social-proof block.
  *
  * The phone is the broker's Twilio business line (broker.phoneDirect): inbound is
  * recorded, logged to the CRM timeline, and forwarded to their cell.
@@ -33,7 +34,6 @@ type Props = {
   reviews?: ReviewsSummary | null
   headline?: string
   body?: string
-  primaryCta?: { href: string; label: string }
   className?: string
 }
 
@@ -43,15 +43,12 @@ function digits(phone: string): string {
 
 export function TextMattCTA({
   broker,
-  listingKey,
+  listingKey: _listingKey,
   reviews,
   headline,
   body,
-  primaryCta,
   className,
 }: Props) {
-  const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
-  const tourLabel = primaryCta?.label ?? 'Schedule a tour'
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
   const quote = reviews?.reviews?.[0] ?? null
@@ -60,6 +57,7 @@ export function TextMattCTA({
   return (
     <div
       className={className ?? undefined}
+      data-listing-broker={broker.slug}
       style={{
         border: '3px solid var(--navy)',
         background: 'var(--cream)',
@@ -73,15 +71,15 @@ export function TextMattCTA({
           {body ?? 'Tour requests usually get a same-day reply.'}
         </Body>
 
-        {/* Broker — large photo on the left, all contact on the right */}
+        {/* Broker — small face, never a hero */}
         <div className="flex gap-4 pt-1">
           <Image
             src={broker.headshotPng}
             alt={broker.fullName}
-            width={96}
-            height={120}
+            width={48}
+            height={60}
             className="shrink-0 self-start"
-            style={{ width: 96, height: 120, objectFit: 'contain', objectPosition: 'top' }}
+            style={{ width: 48, height: 60, objectFit: 'contain', objectPosition: 'top' }}
           />
           <div className="min-w-0 flex flex-col gap-1.5">
             <div>
@@ -121,24 +119,16 @@ export function TextMattCTA({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2.5 pt-1">
-          <a href={tourHref} className="btn alt" style={{ justifyContent: 'center' }}>
-            {tourLabel}
-          </a>
-          <div className="grid grid-cols-2 gap-2.5">
-            {phone ? (
-              <a href={`tel:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                Call
-              </a>
-            ) : null}
-            {phone ? (
-              <a href={`sms:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
-                Text
-              </a>
-            ) : null}
+        {phone ? (
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <a href={`tel:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
+              Call
+            </a>
+            <a href={`sms:${digits(phone)}`} className="btn" style={OUTLINE_BTN}>
+              Text
+            </a>
           </div>
-        </div>
+        ) : null}
 
         {/* Social proof — large screens only (verified Google reviews) */}
         {showProof ? (

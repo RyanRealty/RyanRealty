@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * Listing hero compact price + land acres.
+ * Listing hero exact price + land acres.
  *
  * Founding cases:
- *   195 Roosevelt (220225285) $999,900 printed $1000K
- *     fleet:2ceabe03a3cc759cc09d94d2bd1e442a
+ *   2949 Flagstone $568,900 printed $569K in the hero next to $568,900 in the body
  *   33725 Columbus (220226514) 19.77 acres, no beds — hero omitted lot size
  *     fleet:639e24f1d222997d0f59f2e137981de8
  *   0 Kouns Drive (220220757) 1.35 acres, no beds — hero omitted lot size
@@ -31,30 +30,110 @@ checks.push({
 
 const helper = src('lib/listing/publish-listing-hero-stats.ts')
 checks.push({
-  label: 'publishListingHeroCompactPrice / KeyStats carry founding fingerprints',
+  label: 'publishListingHeroPrice / KeyStats carry founding fingerprints',
   ok:
-    /export function publishListingHeroCompactPrice/.test(helper) &&
+    /export function publishListingHeroPrice/.test(helper) &&
     /export function publishListingHeroKeyStats/.test(helper) &&
-    helper.includes('2ceabe03a3cc759cc09d94d2bd1e442a') &&
-    helper.includes('220225285') &&
+    helper.includes('568,900') &&
     helper.includes('19.77') &&
     helper.includes('1.35'),
 })
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'ListingHero publishes compact price + key stats',
+  label: 'ListingHero publishes exact price + key stats on V3Stage',
   ok:
     /from ['"]@\/lib\/listing\/publish-listing-hero-stats['"]/.test(hero) &&
-    /publishListingHeroCompactPrice\(/.test(hero) &&
+    /publishListingHeroPrice\(/.test(hero) &&
     /publishListingHeroKeyStats\(/.test(hero) &&
-    !/function formatPrice\(/.test(hero),
+    hero.includes('V3Stage') &&
+    hero.includes('height="frame"') &&
+    hero.includes('V3Figure') &&
+    hero.includes("label: 'Tour this home'") &&
+    hero.includes('View all') &&
+    !hero.includes('See all') &&
+    !hero.includes('+49 more') &&
+    !hero.includes('more photos') &&
+    !/function formatPrice\(/.test(hero) &&
+    !hero.includes('videoSrc') &&
+    !hero.includes('listing-hero-band') &&
+    !hero.includes('listing-hero-strip'),
+})
+
+const stageCss = src('components/site/v3/V3Stage.css')
+const listingCss = src('components/site/listing-detail/listing-detail.css')
+checks.push({
+  label: '16:9 frame lives on V3Stage, not a listing-invented hero skin',
+  ok:
+    stageCss.includes('.v3.v3-stage--frame') &&
+    stageCss.includes('aspect-ratio: 16 / 9') &&
+    !listingCss.includes('listing-hero-band') &&
+    !listingCss.includes('listing-hero-strip') &&
+    !listingCss.includes('listing-hero-arrow') &&
+    !listingCss.includes('ldSectionRise') &&
+    !listingCss.includes('translateY(30px)'),
+})
+
+const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
+const mobile = src('components/site/listing-detail/ListingMobileContactBar.client.tsx')
+const broker = src('components/site/listing-detail/TextMattCTA.tsx')
+const act = src('components/site/listing-detail/ListingActSheet.client.tsx')
+checks.push({
+  label: 'tour, ask, and save stay on one listing Sheet, not /contact',
+  ok:
+    act.includes('id="listing-act"') &&
+    act.includes('V3Sheet') &&
+    act.includes('Save this home') &&
+    !strip.includes('Schedule a tour') &&
+    !strip.includes('Ask a question') &&
+    !strip.includes('Save this home') &&
+    !mobile.includes('Schedule a tour') &&
+    !broker.includes('Schedule a tour') &&
+    !broker.includes('#listing-act') &&
+    !strip.includes('/contact?') &&
+    !mobile.includes('/contact?') &&
+    !broker.includes('/contact?'),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')
+const footerCss = src('components/site/v3/V3Footer.css')
+checks.push({
+  label: 'listing closes on existing cream V3Footer, not a navy fill',
+  ok:
+    page.includes('<V3Footer columns={V3_FOOTER_COLUMNS} />') &&
+    footerCss.includes('background: var(--v3-cream)') &&
+    !/background:\s*var\(--v3-(navy|surface-inverse)\)/.test(footerCss) &&
+    !listingCss.includes('.v3-footer') &&
+    !listingCss.includes('listing-footer'),
+})
 checks.push({
   label: 'listing detail passes lotSizeAcres into the hero',
   ok: /acres=\{listing\.lotSizeAcres\}/.test(page),
+})
+checks.push({
+  label: 'listing breadcrumb overlays the hero (no cream gap under sticky chrome)',
+  ok:
+    /<V3Breadcrumb trail=\{breadcrumbs\} tone="on-media" belowNav=\{false\} \/>/.test(page),
+})
+
+const houseme = src('components/site/listing-detail/HouseMeReport.tsx')
+const marketCtx = src('components/site/listing-detail/NeighborhoodMarketContext.tsx')
+checks.push({
+  label: 'listing market block strips stamp leftover and other-product-types row',
+  ok:
+    houseme.includes('return PUBLIC_READ_DISCLAIMER') &&
+    !houseme.includes('Stamp from listing_pricing_reads') &&
+    !houseme.includes('Listing fields from Spark') &&
+    !marketCtx.includes('PublicProductTypes') &&
+    !marketCtx.includes('OTHER PRODUCT TYPES'),
+})
+
+const market = src('components/site/listing-detail/NeighborhoodMarketContext.tsx')
+checks.push({
+  label: 'listing market line prints exact list price, not thousand-round',
+  ok:
+    /<Price value=\{thisListPrice\} exact/.test(market) &&
+    !/<Price value=\{thisListPrice\} \/>/.test(market),
 })
 
 const failed = checks.filter((c) => !c.ok)

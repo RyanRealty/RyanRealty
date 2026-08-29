@@ -1,17 +1,16 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
 import type { Broker } from '@/lib/data/types/broker'
+import { useCookieNoticeOpen } from './use-listing-overlay-lane'
 
 /**
  * Mobile sticky contact bar — the always-reachable broker CTA on small screens,
  * replacing the retiring CRM floating widget. Fixed to the bottom of the
  * viewport, hidden on lg+ (the desktop sticky sidebar card carries it there).
  *
- * Slides up once the visitor scrolls past the hero so it never covers the first
- * paint, and routes the same as the desktop card: tel: / sms: the broker's
- * recorded Twilio line, and "Tour" to the pre-tagged contact form.
+ * Stays on the fold from first paint: Call / Text. Tour lives on the Stage
+ * and the one Sheet. Hidden while the cookie notice owns the overlay.
  *
  * Lenis runs in native mode here (html.lenis, no transform wrapper — see
  * SmoothScrollProvider), so position:fixed resolves to the viewport without a
@@ -25,22 +24,18 @@ export default function ListingMobileContactBar({
   broker: Broker
   listingKey: string
 }) {
-  const [shown, setShown] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => setShown(window.scrollY > 360)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
   const tel = phone ? phone.replace(/[^\d]/g, '') : null
   const firstName = broker.fullName.split(/\s+/)[0]
-  const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
+  const cookieOpen = useCookieNoticeOpen()
+  void listingKey
 
   return (
-    <div className="listing-mobile-cta" data-shown={shown ? 'true' : 'false'} aria-hidden={!shown}>
+    <div
+      className="listing-mobile-cta"
+      data-listing-broker={broker.slug}
+      data-shown={cookieOpen ? 'false' : 'true'}
+    >
       <div className="listing-mobile-cta-inner">
         <Image
           src={broker.headshotPng}
@@ -65,9 +60,6 @@ export default function ListingMobileContactBar({
               <ChatIcon />
             </a>
           ) : null}
-          <a href={tourHref} className="lmc-tour">
-            Schedule a tour
-          </a>
         </div>
       </div>
     </div>

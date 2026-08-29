@@ -36,6 +36,7 @@ import {
   LISTING_UNAVAILABLE_METADATA,
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
+import { ListingActSheet } from '@/components/site/listing-detail/ListingActSheet.client'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
@@ -86,11 +87,15 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
+  V3Sheet as _V3SheetImport,
+  V3Stage as _V3StageImport,
 } from '@/components/site/v3'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
 void _TextMattCTAImport
+void _V3SheetImport
+void _V3StageImport
 void ListingMobileContactBar
 
 /**
@@ -100,7 +105,8 @@ void ListingMobileContactBar
  * judge the market, schools and parks, history, run the money, then
  * who to call.
  *
- *   hero        ListingHero (photo-grid OR autoplay-video)
+ *   hero        ListingHero (V3Stage 16:9 still, one Amboqia price)
+ *   act         ListingActSheet (one V3Sheet: tour, ask, or save)
  *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
  *               · ListingLikeThisAlerts (#listing-like-alerts + coach)
  *               · RoomRestyle · ListingVideoEmbed · ListingLocationMap
@@ -197,7 +203,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 }
 
-// Save/unsave a listing from the price strip. Returns needsAuth for a signed-out
+// Save/unsave from the listing Sheet. Returns needsAuth for a signed-out
 // visitor so the client routes them to sign-in (the save -> account capture path).
 async function saveListingFromStrip(key: string): Promise<{ saved: boolean; needsAuth?: boolean }> {
   'use server'
@@ -407,27 +413,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
     null
   const ctaBroker = listingAgent ?? matt
 
-  // The sticky card shows ONE broker who may not be the person a given review
-  // names, so the social-proof quote must be broker-agnostic. Drop any review
-  // that names a broker (first/last name), keeping the brokerage count + average
-  // intact. "ryan" is excluded from the tokens — it's the brokerage name, not a
-  // person — and "matt" is added for the Matthew short form.
-  const brokerNameTokens = new Set<string>(['matt'])
-  for (const b of brokers) {
-    for (const part of b.fullName.split(/\s+/)) {
-      const t = part.toLowerCase().replace(/[^a-z]/g, '')
-      if (t.length >= 4 && t !== 'ryan') brokerNameTokens.add(t)
-    }
-  }
-  const genericReviews = reviews
-    ? {
-        ...reviews,
-        reviews: reviews.reviews.filter(
-          (r) => ![...brokerNameTokens].some((tok) => new RegExp(`\\b${tok}\\b`).test(r.text.toLowerCase())),
-        ),
-      }
-    : reviews
-
   const street = listingMlsStreetLine(listing)
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
   const listingHref = listingDetailPath(
@@ -455,16 +440,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { label: street || `Listing ${listingKey}` },
   ]
 
-  // Videos ≠ virtual tours (Matt): hero gets reels; tours get their own viewer.
+  // Stage is a still. Virtual tours keep their own viewer below the fold.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
-  const reelVideos = videos.filter((v) => !v.isVirtualTour)
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
   const hero = (
     <ListingHero
       photos={photos}
-      videos={reelVideos}
       addressLine={street}
       price={publishedSaleAsk}
       beds={listing.beds}
@@ -475,13 +458,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
       subdivisionName={listing.subdivisionName}
       city={listing.city}
       listNumber={listing.listNumber}
-      lat={listing.lat} lng={listing.lng}
     />
   )
 
   const main = (
     <>
-      <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} history={history} />
+      <ListingActSheet
+        listingKey={contactKey}
+        saveListingKey={listing.listingKey}
+        listingSummary={street || undefined}
+        onSave={saveListingFromStrip}
+        initialSaved={initialSaved}
+      />
+      <PriceCtaStrip listing={listingWithPhotos} history={history} />
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
         read={pricingRead}
@@ -620,7 +609,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       defaultBroker={ctaBroker}
       brokers={brokers}
       listingKey={contactKey}
-      reviews={genericReviews}
+      reviews={reviews}
       lockToDefault={listingAgent != null}
     />
   ) : null
@@ -658,7 +647,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           baths={listing.baths ?? undefined}
         />
         <V3SectionTracker />
-        <V3Breadcrumb trail={breadcrumbs} />
+        <V3Breadcrumb trail={breadcrumbs} tone="on-media" belowNav={false} />
         <ListingDetailShell
           hero={hero}
           main={main}
@@ -682,9 +671,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
         ) : null}
       </main>
-      {/* The tour and ask that KbFooter's listing band carried live on
-          PriceCtaStrip, the broker sidebar, and the mobile bar; V3Footer
-          carries the ODS attribution slot and no button. */}
+      {/* Existing V3Footer: cream ground, navy section rule. Not a navy fill. */}
       <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )

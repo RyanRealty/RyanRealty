@@ -25,6 +25,8 @@
   /* kb.css set 1.4 on .kb-root; the body components were authored against it.
      The .v3 base sets its own leading, so restate the one this stack expects. */
   line-height: 1.4;
+  position: relative;
+  background: var(--v3-cream);
   /* clip, not hidden: hidden makes this a scroll container and kills the
      sticky broker sidebar (the same defect kb-root already paid for). */
   overflow-x: clip;
@@ -195,6 +197,19 @@
   width: 100%;
 }
 
+/* Overlay the barrel on-media trail on the Stage so sticky chrome sits on
+   the photo, not a cream band. Do not restyle the strip: V3Breadcrumb.css
+   already paints the navy on-media surface. */
+.listing-detail > .v3.v3-breadcrumb {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 6;
+  max-width: none;
+  margin: 0;
+}
+
 .listing-detail-shell {
   width: 100%;
   max-width: 1500px;
@@ -273,6 +288,11 @@
     display: none;
   }
 }
+@media (max-width: 1023px) {
+  .listing-detail {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .listing-detail .listing-mobile-cta {
     transition: none;
@@ -318,8 +338,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
   border: 2px solid var(--navy);
   color: var(--navy);
   background: transparent;
@@ -331,7 +351,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  height: var(--v3-tap);
   padding: 0 13px;
   background: var(--navy);
   color: var(--cream);
@@ -350,8 +372,8 @@
 
 /* ===== Live market context (.mkt) — the navy market surface. Ported from
    kb.css verbatim (values unchanged) when the page dropped kb-root: the
-   NeighborhoodMarketContext section and PublicProductTypes rows render these
-   classes and previously painted only under .kb-root. ===== */
+   NeighborhoodMarketContext section renders these classes and previously
+   painted only under .kb-root. ===== */
 .listing-detail .mkt {
   background: var(--navy);
   color: var(--cream);
@@ -667,43 +689,8 @@
   padding-top: 34px;
 }
 
-/* ===== Section transitions — each section RISES into view as it enters, so
-   the cream/navy cuts read as intentional arrivals instead of an abrupt snap.
-   Pure CSS scroll-driven, gated on view-timeline support; the fallback is the
-   static (visible) section. Honors reduced-motion. NAVY .mkt sections rise
-   WITHOUT the opacity ramp: a navy surface fading in over cream reads as a
-   broken slate-gray block while it enters — on a 2000px+ market section that
-   gray wash held the screen for a whole viewport (mobile QA 2026-08-26). */
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .listing-detail .section {
-      animation: ldSectionRise linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 32%;
-    }
-    @keyframes ldSectionRise {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: none;
-      }
-    }
-    .listing-detail .section.mkt {
-      animation-name: ldSectionRiseSolid;
-    }
-    @keyframes ldSectionRiseSolid {
-      from {
-        transform: translateY(30px);
-      }
-      to {
-        transform: none;
-      }
-    }
-  }
-}
+/* No scroll-driven translateY on listing sections. A transform on in-flow
+   blocks under the sticky site chrome leaves a cream/white gap on scroll. */
 
 /* ===== Mobile ramp (≤760px) — kb.css's phone overrides that reached this
    page's body. Same values, so 375px renders exactly as reviewed. ===== */

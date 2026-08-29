@@ -63,6 +63,7 @@ export function SmsConsentDisclosure({
         value="yes"
         checked={checked}
         onCheckedChange={onCheckedChange ? (c) => onCheckedChange(c === true) : undefined}
+        aria-label="I agree to receive text messages from Ryan Realty"
         data-sms-consent-checkbox="true"
         className={cn(
           'mt-0.5 shrink-0',
