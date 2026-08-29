@@ -33,7 +33,6 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { homeFieldItems } from '@/app/_v3/home-field-items'
 import { HomeHomesField } from '@/app/_v3/HomeHomesField'
 import { HOME_TILE_FETCH, HOME_FIELD_LIMIT } from '@/app/_v3/home-constants'
-import { homesForSalePath } from '@/lib/slug'
 import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -79,7 +78,7 @@ export default async function BuyPage() {
   // "live MLS search as the next step" and it rendered no listings -- a
   // buyer-intent page with no houses on it, recorded in openDefects and closed
   // here. Same Field as the homepage: HomeHomesField owns the map slot
-  // (PlaceFieldMap inside the frame). Towns stay as doors.
+  // (PlaceFieldMap inside the frame). Types are the lead chips.
   const [buyTiles, buyCities] = await Promise.all([
     getListingTiles({ status: 'active', propertySubType: 'Single Family Residence', limit: HOME_TILE_FETCH }).catch(() => []),
     getMarketPulseAllCitySnapshots().catch(() => []),
@@ -155,7 +154,6 @@ export default async function BuyPage() {
         {/* Pattern 2, Field -- the houses, first thing after the Stage. */}
         <HomeHomesField
           fieldItems={buyFieldItems}
-          towns={buyTowns.map((t) => ({ label: t.name, href: homesForSalePath(t.name) }))}
           emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
         />
 

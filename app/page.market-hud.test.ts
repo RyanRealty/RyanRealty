@@ -42,4 +42,9 @@ describe('homepage market figures stay on the leftover pile', () => {
     expect(SRC).toMatch(/marketVerdict\(mosRaw\)/)
     expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
   })
+
+  it('does not print MARKET TRUTH LEFTOVER on the year overlay caption', () => {
+    expect(SRC).toContain('Median close by month, single-family, Central Oregon')
+    expect(SRC).not.toContain('Market Truth leftover')
+  })
 })

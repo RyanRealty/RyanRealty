@@ -2,17 +2,17 @@
 
 /**
  * Homepage inventory Field. Types that exist in the set are lead chips on
- * V3Field (tokens only). Towns stay as doors. Map and list share one frame.
+ * V3Field (tokens only). Towns are not a second chip row — Stage search
+ * already takes a place. Map and list share one frame.
  */
 import { useMemo, useState } from 'react'
 import { V3Button, V3Field } from '@/components/site/v3'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import type { HomeFieldItem } from './home-field-items'
-import { HOME_FIELD_LIMIT, homeFieldNote } from './home-constants'
+import { HOME_FIELD_LIMIT } from './home-constants'
 
 export function HomeHomesField({
   fieldItems,
-  towns,
   boundary,
   listFlow,
   seeAll,
@@ -20,7 +20,6 @@ export function HomeHomesField({
   displayLimit = HOME_FIELD_LIMIT,
 }: {
   fieldItems: HomeFieldItem[]
-  towns: readonly { label: string; href: string }[]
   boundary?: unknown
   listFlow?: boolean
   seeAll?: { href: string; label: string }
@@ -46,7 +45,6 @@ export function HomeHomesField({
     return set.slice(0, displayLimit)
   }, [fieldItems, selectedTypes, displayLimit])
 
-  const [firstTown, ...restTowns] = towns
   const typeLead =
     types.length > 1 ? (
       <nav aria-label="Property types">
@@ -76,18 +74,6 @@ export function HomeHomesField({
         })}
       </nav>
     ) : null
-  const townLead = firstTown ? (
-    <nav aria-label="Towns">
-      <V3Button href={firstTown.href} variant="ghost">
-        {firstTown.label}
-      </V3Button>
-      {restTowns.map((town) => (
-        <V3Button key={town.href} href={town.href} variant="ghost">
-          {town.label}
-        </V3Button>
-      ))}
-    </nav>
-  ) : null
 
   return (
     <V3Field
@@ -120,15 +106,7 @@ export function HomeHomesField({
           />
         )
       }}
-      mapNote={visible.length > 0 ? homeFieldNote(visible.length) : undefined}
-      lead={
-        typeLead || townLead ? (
-          <>
-            {typeLead}
-            {townLead}
-          </>
-        ) : null
-      }
+      lead={typeLead}
       listFlow={listFlow}
       action={seeAll}
       emptyMessage={emptyMessage}

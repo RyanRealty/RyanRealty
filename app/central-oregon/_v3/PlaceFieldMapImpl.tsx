@@ -25,6 +25,8 @@ const FILL = { width: '100%', height: '100%' } as const
 const SINGLE_POINT_ZOOM = 14
 /** Same 10% inset the Field plot uses. */
 const FRAME_INSET_PCT = 10
+/** fitBounds on a 0×0 tile zooms to the world (an ocean of basemap). */
+const MIN_FIT_PX = 64
 
 type Ring = google.maps.LatLngLiteral[]
 
@@ -94,7 +96,7 @@ export function PlaceFieldMapImpl({
   const { ready, error } = useGoogleMapsReady()
   const { activeId, setActiveId } = useV3FieldBinding()
   const mapRef = useRef<google.maps.Map | null>(null)
-  const [fitted, setFitted] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
 
   const polygons = useMemo(() => toPolygons(boundary), [boundary])
   const polylines = useMemo(() => toPolylines(boundary), [boundary])
@@ -108,6 +110,8 @@ export function PlaceFieldMapImpl({
   const fit = useCallback(
     (map: google.maps.Map) => {
       if (typeof google === 'undefined' || !google.maps?.LatLngBounds) return
+      const el = map.getDiv()
+      if (el.clientWidth < MIN_FIT_PX || el.clientHeight < MIN_FIT_PX) return false
       const bounds = new google.maps.LatLngBounds()
       let count = 0
       for (const ring of polygons) {
@@ -135,17 +139,17 @@ export function PlaceFieldMapImpl({
       if (count === 0) {
         map.setCenter(fallbackCenter)
         map.setZoom(SINGLE_POINT_ZOOM)
-        return
+        return true
       }
       if (count === 1) {
         map.setCenter(bounds.getCenter())
         map.setZoom(SINGLE_POINT_ZOOM)
-        return
+        return true
       }
-      const el = map.getDiv()
       const padX = Math.max(12, Math.round(el.clientWidth * (FRAME_INSET_PCT / 100)))
       const padY = Math.max(12, Math.round(el.clientHeight * (FRAME_INSET_PCT / 100)))
       map.fitBounds(bounds, { top: padY, bottom: padY, left: padX, right: padX })
+      return true
     },
     [pins, placePin, polygons, polylines, fallbackCenter],
   )
@@ -153,16 +157,24 @@ export function PlaceFieldMapImpl({
   const onLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map
+      setMapReady(true)
       fit(map)
-      setFitted(true)
     },
     [fit],
   )
 
   useEffect(() => {
-    if (!fitted || !mapRef.current) return
-    fit(mapRef.current)
-  }, [fit, fitted])
+    if (!mapReady) return
+    const map = mapRef.current
+    if (!map) return
+    fit(map)
+    const el = map.getDiv()
+    const ro = new ResizeObserver(() => {
+      fit(map)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [fit, mapReady])
 
   if (error) {
     return (
@@ -190,9 +202,10 @@ export function PlaceFieldMapImpl({
     <div style={FILL} role="group" aria-label={`Map of homes for sale near ${placeName}`}>
       <GoogleMap
         mapContainerStyle={FILL}
-        center={fallbackCenter}
-        zoom={SINGLE_POINT_ZOOM}
-        options={getExploreMapOptions({ preferMapId: false })}
+        options={{
+          ...getExploreMapOptions({ preferMapId: false }),
+          center: fallbackCenter,
+        }}
         onLoad={onLoad}
         onClick={() => setActiveId(null)}
         onUnmount={() => {

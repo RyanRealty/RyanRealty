@@ -70,7 +70,7 @@ describe('homepage Field stays on the barrel', () => {
 
   it('caps the preview set so the map sits with the list, not after a novel of cards', () => {
     const constants = readFileSync(resolve('app/_v3/home-constants.ts'), 'utf8')
-    expect(constants).toMatch(/export const HOME_FIELD_LIMIT = 4/)
+    expect(constants).toMatch(/export const HOME_FIELD_LIMIT = 12/)
     expect(constants).toMatch(/export const HOME_FIELD_POOL = 24/)
     expect(FIELD).toContain('displayLimit')
     expect(V3_FIELD_CSS).toContain('.v3-field__frame > .v3-field__col:first-of-type')
@@ -79,12 +79,13 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).toContain('order: 1')
   })
 
-  it('fixes overlap inside V3Field: list in flow, See all action', () => {
+  it('wears the Field frame: fold-filling map, same-height list from 900, See all', () => {
     expect(V3_FIELD).toContain('listFlow')
     expect(V3_FIELD).toContain('v3-field--flow')
     expect(V3_FIELD).toContain('v3-field__action')
-    expect(V3_FIELD_CSS).toContain('.v3.v3-field--flow .v3-field__list')
-    expect(V3_FIELD_CSS).toContain('max-height: none')
+    expect(V3_FIELD_CSS).toContain('.v3.v3-field--flow .v3-field__map:not(.v3-field__map--photos)')
+    expect(V3_FIELD_CSS).toContain('min-height: var(--v3-photo-lead-min)')
+    expect(V3_FIELD_CSS).toContain('align-items: stretch')
     expect(PAGE).toMatch(/listFlow/)
     expect(PAGE).toMatch(/seeAll=\{\{ href: publishRegionalSearchHref\(\)/)
   })
@@ -104,6 +105,8 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD_MAP).toContain('v3-field__pin--cat-')
     expect(FIELD_MAP).toContain('<Link')
     expect(FIELD_MAP).toContain('FRAME_INSET_PCT')
+    expect(FIELD_MAP).toContain('MIN_FIT_PX')
+    expect(FIELD_MAP).toContain('ResizeObserver')
     expect(FIELD_MAP).toContain('for (const ring of polygons)')
     expect(FIELD_MAP).not.toContain('MarkerClusterer')
     expect(FIELD_MAP).not.toContain('getListingMarkerIcon')
@@ -119,7 +122,8 @@ describe('homepage Field stays on the barrel', () => {
 
   it('toggles types that exist in the set as Field lead chips', () => {
     expect(FIELD).toContain('aria-label="Property types"')
-    expect(FIELD).toContain('aria-label="Towns"')
+    expect(FIELD).not.toContain('aria-label="Towns"')
+    expect(PAGE).not.toMatch(/towns=\{/)
     expect(FIELD).toContain('v3-field__mark')
     expect(FIELD).toContain('ariaPressed')
     expect(FIELD).toContain('mapSlot={(binding)')
@@ -133,8 +137,22 @@ describe('homepage Field stays on the barrel', () => {
   it('does not print the leftover inventory caption', () => {
     expect(PAGE).not.toContain('HERO_COUNT_LEAD')
     expect(PAGE).not.toContain('homes for sale across Central Oregon. Live list prices and days on market.')
+    expect(PAGE).not.toContain('The map plots these')
+    expect(FIELD).not.toContain('mapNote')
     expect(PAGE).not.toMatch(/\bcount=\{/)
     expect(FIELD).not.toContain('count=')
+  })
+
+  it('does not print MARKET TRUTH LEFTOVER on the market chart', () => {
+    expect(PAGE).toContain('Median close by month, single-family, Central Oregon')
+    expect(PAGE).not.toContain('Market Truth leftover')
+  })
+
+  it('keeps Field lead chips on one scrolling row per nav', () => {
+    expect(V3_FIELD_CSS).toContain('.v3-field__lead nav')
+    expect(V3_FIELD_CSS).toContain('flex-wrap: nowrap')
+    expect(V3_FIELD_CSS).toContain('overflow-x: auto')
+    expect(V3_FIELD_CSS).toContain('flex: none')
   })
 
   it('opens with Stage then Field, Chart Room mid-page', () => {

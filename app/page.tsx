@@ -10,7 +10,6 @@ import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
-import { homesForSalePath } from '@/lib/slug'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import {
@@ -211,7 +210,7 @@ export default async function Home() {
   const [firstMarketFigure, ...restMarketFigures] = figures
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, Central Oregon`,
+    'Median close by month, single-family, Central Oregon',
   )
   const marketSource = `${HOME_MARKET_TRACE}${mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`
 
@@ -243,7 +242,6 @@ export default async function Home() {
 
         <HomeHomesField
           fieldItems={fieldItems}
-          towns={townItems.map((t) => ({ label: t.name, href: homesForSalePath(t.name) }))}
           boundary={regionBoundary ?? undefined}
           listFlow
           seeAll={{ href: publishRegionalSearchHref(), label: seeAllLabel }}

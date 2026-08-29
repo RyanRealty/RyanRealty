@@ -12,9 +12,10 @@
 export const HERO_VIDEO = '/videos/hero-optimized.mp4'
 export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
 
-/** Preview Field: map + a short set in one frame. Twelve full rows on 390
- *  dumped the map under a novel of cards. See all opens the rest. */
-export const HOME_FIELD_LIMIT = 4
+/** Preview Field: map + list in one frame. Cap is high enough to read as
+ *  inventory, not a four-card platter. See all opens the rest. Do not dump
+ *  a novel of cards above the map — the map stays first. */
+export const HOME_FIELD_LIMIT = 12
 
 /** Mixed-type pool the type toggle filters. Larger than the visible cap so
  *  a House / Land pick still has rows, without dumping 13 cards on 390. */
@@ -48,14 +49,6 @@ export const HOME_MARKET_TRACE =
   'regional MLS through Oregon Data Share, read through the Market Truth metric layer: ' +
   'detached single-family houses across the Central Oregon region. ' +
   'Every figure names its own window. A figure the layer withheld is absent, not estimated.'
-
-/**
- * The honest description of the Field's listed subset. The map and the list
- * are the same visible set.
- */
-export function homeFieldNote(shown: number): string {
-  return `The map plots these ${shown}.`
-}
 
 /** Live place hero when present. Otherwise the page's existing fallback image. */
 export { preferPlaceHero } from '@/lib/geo-images'

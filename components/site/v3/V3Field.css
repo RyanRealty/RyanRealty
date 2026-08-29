@@ -68,21 +68,31 @@
 
 .v3-field__lead {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
   gap: var(--v3-space-xs);
   margin: 0 0 var(--v3-space-sm);
 }
 
-/* Each nav in the lead is one chip row (types, then towns). */
+/* One chip row. Overflow scrolls sideways; wrap must not grow five rows
+   of chips on 390. */
 .v3-field__lead nav {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--v3-space-xs);
   width: 100%;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.v3-field__lead nav::-webkit-scrollbar {
+  display: none;
 }
 
 .v3-field__lead .v3-btn {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: var(--v3-space-2xs);
 }
@@ -566,12 +576,34 @@
   color: var(--v3-ink-muted);
 }
 
-/* Preview Fields (homepage): the list stays in the page flow so a capped
-   set cannot paint over the next section. Callers cap the items and pass
-   action for See all. City / search Fields keep the 560px scroller. */
+/* Preview Fields (homepage): map is the frame. On 390 the list stays in
+   page flow under a fold-filling map. From 900 the list is the Field
+   scroller and the map stretches to the same height. City / search Fields
+   keep the default 4/3 map. */
+.v3.v3-field--flow .v3-field__map:not(.v3-field__map--photos) {
+  aspect-ratio: auto;
+  min-height: var(--v3-photo-lead-min);
+}
+
 .v3.v3-field--flow .v3-field__list {
   max-height: none;
   overflow: visible;
+}
+
+@media (min-width: 56.25rem) {
+  .v3.v3-field--flow .v3-field__frame {
+    align-items: stretch;
+  }
+
+  .v3.v3-field--flow .v3-field__map:not(.v3-field__map--photos) {
+    height: 100%;
+    min-height: min(70vh, 560px);
+  }
+
+  .v3.v3-field--flow .v3-field__list {
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+  }
 }
 
 .v3-field__action {
