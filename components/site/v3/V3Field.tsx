@@ -503,7 +503,7 @@ export function V3Field({
                   return (
                   <li
                     key={item.id}
-                    className="v3-field__item"
+                    className={cn('v3-field__item', itemChrome ? 'group/hide' : null)}
                     data-listing-key={item.id}
                   >
                     {itemChrome?.(item)}

@@ -50,6 +50,7 @@ import { shouldNoIndexSearchVariant } from '../../../lib/seo-routing'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 import { generateStaticParams as buildSearchStaticParams, IS_PRODUCTION_BUILD } from './search-static'
 import { withTimeout, LISTINGS_FETCH_TIMEOUT_MS } from './fetch-guards'
+import { dedupeListingRows } from '../_v3/search-field-items'
 import { resolveSlug, buildCanonicalPath } from './resolve-slug'
 import { buildSearchSlugMetadata } from './search-metadata'
 import { resolvePlaceBannerUrl } from './place-banner'
@@ -276,7 +277,8 @@ export default async function SearchPage({
       `[search] listings degraded for a non-bare-city scope — rendering the retry state instead of inventing an empty market (city=${city ?? 'none'} subdivision=${subdivision ?? 'none'} preset=${resolved.presetSlug ?? 'none'})`,
     )
   }
-  const { listings, totalCount } = listingsResult
+  const { listings: rawListings, totalCount } = listingsResult
+  const listings = dedupeListingRows(rawListings)
   const cityContent = city ? getCityContent(city) : null
   const subdivisionTabContent =
     subdivision && city ? await withTimeout(getSubdivisionTabContent(city, decodedSubdivision!), null, 1200) : null
