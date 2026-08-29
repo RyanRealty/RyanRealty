@@ -4,28 +4,23 @@ import { cn } from '@/lib/utils'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { slugify } from '@/lib/slug'
 import { parseCommunitySlug } from '@/lib/community-slug'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
-import {
-  EMPTY_PUBLIC_PACE,
-  getPublicDetachedPace,
-  type PublicPaceRow,
-} from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { toListingCoreChartSeries } from '@/lib/listing/listing-chart-source'
+import type { CoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Chart Room for this listing's place. Cream surface. V3Chart via
- * MarketCoreCharts. Source line is Oregon Data Share. No leftover labels.
+ * MarketCoreCharts. Series arrive already cleaned (no leftover labels).
  */
 
 type Props = {
   geoName: string
   hubHref: string
   hud: LeftoverHudKpis | null
-  leftoverPace?: PublicPaceRow | null
+  pace?: PublicPaceRow | null
+  publishedCharts?: CoreChartSeries | null
   thisListPrice: number | null
   refreshedAt?: string
   className?: string
@@ -72,11 +67,12 @@ function diffPctVsMedian(price: number | null, median: number | null): number | 
   return ((price - median) / median) * 100
 }
 
-export async function NeighborhoodMarketContext({
+export function NeighborhoodMarketContext({
   geoName,
   hubHref,
   hud,
-  leftoverPace,
+  pace,
+  publishedCharts,
   thisListPrice,
   refreshedAt,
   className,
@@ -86,29 +82,9 @@ export async function NeighborhoodMarketContext({
   if (!hud) return null
 
   const citySlug = chartCitySlug ?? deriveCitySlugFromHubHref(hubHref)
-  const [coreCharts, pace] = await Promise.all([
-    citySlug
-      ? withTimeoutFallback(
-          getCoreChartSeries({ geoType: 'city', geoSlug: citySlug.replace(/-/g, ' ') }),
-          null,
-          4000,
-          'listing:coreCharts',
-        )
-      : Promise.resolve(null),
-    leftoverPace
-      ? Promise.resolve(leftoverPace)
-      : citySlug
-        ? withTimeoutFallback(
-            getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
-            EMPTY_PUBLIC_PACE,
-            3000,
-            'listing:pace',
-          )
-        : Promise.resolve(EMPTY_PUBLIC_PACE),
-  ])
   const cityLabel = citySlug ? cityDisplayName(citySlug) : null
   const chartScopeLabel = cityLabel && cityLabel !== geoName ? `${cityLabel} city` : undefined
-  const publishedCharts = coreCharts ? toListingCoreChartSeries(coreCharts) : null
+  const paceRow = pace ?? EMPTY_PUBLIC_PACE
 
   const activeCount = hud.active
   const medianList = hud.medianList
@@ -125,7 +101,7 @@ export async function NeighborhoodMarketContext({
       <div
         className="listing-market-kpis"
         style={{
-          ['--kpi-cols' as string]: [activeCount, hud.pending, medianList, daysToPending, mos, pace.daysToContract].filter(
+          ['--kpi-cols' as string]: [activeCount, hud.pending, medianList, daysToPending, mos, paceRow.daysToContract].filter(
             (v) => v != null,
           ).length,
         }}
@@ -152,8 +128,8 @@ export async function NeighborhoodMarketContext({
         {mos != null ? (
           <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
         ) : null}
-        {pace.daysToContract != null ? (
-          <KpiCell label="Days to contract, 12 months" value={<TabularNumber value={pace.daysToContract} />} />
+        {paceRow.daysToContract != null ? (
+          <KpiCell label="Days to contract, 12 months" value={<TabularNumber value={paceRow.daysToContract} />} />
         ) : null}
       </div>
 

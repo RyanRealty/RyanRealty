@@ -30,6 +30,9 @@ import { getListingPricingRead } from '@/lib/data/pricing/reads'
 import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
+import { toListingCoreChartSeries } from '@/lib/listing/listing-chart-source'
 import { LivePricingRead } from '@/components/site/listing-detail/LivePricingRead'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import {
@@ -270,7 +273,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults, stagePoster] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults, stagePoster, coreCharts] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -360,10 +363,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
         3000,
         'listing:stagePoster',
       ),
+      listing.citySlug
+        ? withTimeoutFallback(
+            getCoreChartSeries({ geoType: 'city', geoSlug: canonicalCityCacheSlug(listing.citySlug) }),
+            null,
+            4000,
+            'listing:coreCharts',
+          )
+        : Promise.resolve(null),
     ])
 
   let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
-  let leftoverPace = EMPTY_PUBLIC_PACE
+  let marketPace = EMPTY_PUBLIC_PACE
   let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
   let leftoverGrain = leftoverGrains[leftoverGrains.length - 1] ?? null
   for (let i = 0; i < leftoverGrains.length; i++) {
@@ -379,7 +390,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     })
     if (leftoverHudPublishes(hud) || pace.pendingCount != null) {
       leftoverHud = hud
-      leftoverPace = pace
+      marketPace = pace
       leftoverLayers = layers
       leftoverGrain = grain
       break
@@ -603,7 +614,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
           geoName={leftoverGrain.name}
           hubHref={leftoverGrain.hubHref}
           hud={leftoverHud}
-          leftoverPace={leftoverPace}
+          pace={marketPace}
+          publishedCharts={coreCharts ? toListingCoreChartSeries(coreCharts) : null}
           thisListPrice={wholePropertyPrice}
           refreshedAt={leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt}
           chartCitySlug={listing.citySlug ?? null}
