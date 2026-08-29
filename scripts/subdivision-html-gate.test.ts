@@ -15,7 +15,7 @@ describe('subdivisionHtmlGate', () => {
   it('passes a subdivision face without leftover labels, plat, or the banned H2', () => {
     const html = `
       <h1>Homes for sale in Ridge At Eagle Crest</h1>
-      <p>15 homes for sale in Ridge At Eagle Crest</p>
+      <p>15 homes for sale now in Ridge At Eagle Crest</p>
       <h2>Around Ridge At Eagle Crest</h2>
       <h2>Ridge At Eagle Crest on record</h2>
       <h2>Closed single-family sales, Ridge At Eagle Crest.</h2>
@@ -66,6 +66,8 @@ describe('subdivisionHtmlGate', () => {
     expect(page).not.toMatch(/Is \$\{displayName\} a buyer/)
     expect(field).toContain('listFirst')
     expect(field).toContain('mapToggle')
+    expect(field).toContain('subdivisionFaceFieldCount')
+    expect(field).toContain('count={fieldCount')
     expect(opening).toContain('isListingStagePlatStill')
     expect(opening).toContain('unsplash')
   })

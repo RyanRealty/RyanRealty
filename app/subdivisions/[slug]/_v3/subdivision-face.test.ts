@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   subdivisionFaceClosedSalesCaption,
+  subdivisionFaceClosedTotalsSentence,
   subdivisionFaceFieldCaption,
+  subdivisionFaceFieldCount,
   subdivisionFaceFieldTrace,
   subdivisionFaceHeadline,
+  subdivisionFaceSchoolAssignment,
 } from './subdivision-face'
 
 describe('subdivision face', () => {
@@ -13,9 +16,37 @@ describe('subdivision face', () => {
     )
     expect(
       subdivisionFaceFieldCaption({ placeName: 'Ridge At Eagle Crest', count: 15 }),
-    ).toBe('15 homes for sale in Ridge At Eagle Crest')
+    ).toBe('15 homes for sale now in Ridge At Eagle Crest')
+    expect(
+      subdivisionFaceFieldCount({ placeName: 'Ridge At Eagle Crest', count: 15 }),
+    ).toEqual({
+      value: '15',
+      label: 'homes for sale now in Ridge At Eagle Crest',
+    })
     expect(subdivisionFaceClosedSalesCaption('Ridge At Eagle Crest')).toBe(
       'Closed single-family sales, Ridge At Eagle Crest.',
+    )
+  })
+
+  it('names active, historical, and closed as three live counts', () => {
+    expect(
+      subdivisionFaceSchoolAssignment({
+        schoolName: 'Tumalo Community School',
+        modalCount: 183,
+        totalCount: 189,
+        sinceYear: 2021,
+      }),
+    ).toBe(
+      'Tumalo Community School, the assignment on 183 of the 189 historical listings here since 2021 that carry one, a historical set, not the homes for sale now and not the closed sales.',
+    )
+    expect(
+      subdivisionFaceClosedTotalsSentence({
+        closedCount: 114,
+        placeName: 'Ridge At Eagle Crest',
+        sinceYear: 2021,
+      }),
+    ).toBe(
+      '114 sold single-family homes have closed in Ridge At Eagle Crest since 2021, not the homes for sale now.',
     )
   })
 

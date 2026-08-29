@@ -45,6 +45,7 @@ import {
 } from '@/components/site/v3'
 import { publishSubdivisionClosedPrice } from '@/lib/market/publish-subdivision-closed-price'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import { subdivisionFaceClosedTotalsSentence } from './_v3/subdivision-face'
 import { MAX_YEAR_ROWS, salesHistoryTrace } from './_v3/subdivision-traces'
 import {
   HISTORY_MAX_YEAR,
@@ -91,12 +92,11 @@ export function SubdivisionSalesHistory({ displayName, history, cityName }: Prop
   // The totals cover EVERY year the RPC returned, including the years with no row.
   const totalClosed = history.reduce((sum, row) => sum + row.closedCount, 0)
   const firstYear = history[history.length - 1]?.year ?? null
-  const sinceBit = firstYear != null ? ` since ${firstYear}` : ''
-  const homesBit =
-    totalClosed === 1
-      ? '1 single-family home has closed'
-      : `${totalClosed.toLocaleString('en-US')} single-family homes have closed`
-  const totalsSentence = `${homesBit} in ${displayName}${sinceBit}.`
+  const totalsSentence = subdivisionFaceClosedTotalsSentence({
+    closedCount: totalClosed,
+    placeName: displayName,
+    sinceYear: firstYear,
+  })
 
   // The years with no row, named with their count. The explorer's range is the
   // reason, and it is read from the same constants the door is built from.

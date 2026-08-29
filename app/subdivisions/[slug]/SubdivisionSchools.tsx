@@ -32,6 +32,7 @@
 
 import { V3Quiet, type V3QuietItem } from '@/components/site/v3'
 import { findSchoolByName } from '@/data/co-schools'
+import { subdivisionFaceSchoolAssignment } from './_v3/subdivision-face'
 import {
   SCHOOL_MIN_AGREEMENT,
   SCHOOL_MIN_SAMPLES,
@@ -70,10 +71,12 @@ export function SubdivisionSchools({ displayName, schools, sinceYear, edges }: P
     items.push({
       kind: 'prose',
       term: LEVEL_LABEL[school.level],
-      body:
-        sinceYear != null
-          ? `${name}, the assignment on ${school.modalCount} of the ${school.totalCount} historical listings here since ${sinceYear} that carry one.`
-          : `${name}, the assignment on ${school.modalCount} of the ${school.totalCount} historical listings here that carry one.`,
+      body: subdivisionFaceSchoolAssignment({
+        schoolName: name,
+        modalCount: school.modalCount,
+        totalCount: school.totalCount,
+        sinceYear,
+      }),
     })
     const registered = findSchoolByName(name)
     if (registered) {

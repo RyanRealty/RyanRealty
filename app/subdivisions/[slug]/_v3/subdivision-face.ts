@@ -17,7 +17,46 @@ export function subdivisionFaceFieldCaption(input: {
   if (input.count <= 0) return null
   return `${input.count.toLocaleString('en-US')} ${
     input.count === 1 ? 'home' : 'homes'
-  } for sale in ${input.placeName}`
+  } for sale now in ${input.placeName}`
+}
+
+export function subdivisionFaceFieldCount(input: {
+  placeName: string
+  count: number
+}): { value: string; label: string } | null {
+  const caption = subdivisionFaceFieldCaption(input)
+  if (!caption) return null
+  const value = input.count.toLocaleString('en-US')
+  return { value, label: caption.slice(value.length).trim() }
+}
+
+export function subdivisionFaceSchoolAssignment(input: {
+  schoolName: string
+  modalCount: number
+  totalCount: number
+  sinceYear?: number | null
+}): string {
+  const window =
+    input.sinceYear != null
+      ? `historical listings here since ${input.sinceYear}`
+      : 'historical listings here'
+  return (
+    `${input.schoolName}, the assignment on ${input.modalCount} of the ${input.totalCount} ${window} ` +
+    `that carry one, a historical set, not the homes for sale now and not the closed sales.`
+  )
+}
+
+export function subdivisionFaceClosedTotalsSentence(input: {
+  closedCount: number
+  placeName: string
+  sinceYear?: number | null
+}): string {
+  const sinceBit = input.sinceYear != null ? ` since ${input.sinceYear}` : ''
+  const homesBit =
+    input.closedCount === 1
+      ? '1 sold single-family home has closed'
+      : `${input.closedCount.toLocaleString('en-US')} sold single-family homes have closed`
+  return `${homesBit} in ${input.placeName}${sinceBit}, not the homes for sale now.`
 }
 
 export function subdivisionFaceFieldTrace(
