@@ -160,11 +160,12 @@ checks.push({
 
 const about = src('app/about/page.tsx')
 checks.push({
-  label: 'about city ledger reads leftover overlays, not pulse city snapshots',
+  label: 'about does not publish a city inventory ledger',
   ok:
-    /getDetachedOverlays\(/.test(about) &&
-    /from ['"]@\/lib\/data\/market-truth\/getSellBendMarket['"]/.test(about) &&
-    !/getMarketPulseCitySnapshots\(/.test(about),
+    !/getDetachedOverlays\(/.test(about) &&
+    !/getMarketPulseCitySnapshots\(/.test(about) &&
+    !/V3Ledger/.test(about) &&
+    !/\bleftover\b/.test(about),
 })
 
 for (const surface of leftoverHudSurfaces) {

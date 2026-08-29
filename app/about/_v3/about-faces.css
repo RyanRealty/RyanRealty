@@ -154,3 +154,52 @@
     justify-content: center;
   }
 }
+
+/* /about first 390: H1 + three smaller face crops + names + 44px Call/Text.
+   Cookie chip is fixed bottom-end at --v3-tap; the section reserves that
+   row so Call/Text never sit under Cookies. Homepage / team stay lead-face. */
+.v3.about-faces.about-faces--trio {
+  padding-bottom: calc(var(--v3-tap) + var(--v3-space-xl));
+}
+
+.about-faces--trio .about-faces__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--v3-space-xs);
+}
+
+.about-faces--trio .about-faces__grid > li:not(:first-child) .about-faces__photo-link {
+  display: flex;
+  width: 100%;
+}
+
+.about-faces--trio .about-faces__photo-link {
+  width: 100%;
+  max-height: 9.5rem;
+}
+
+.about-faces--trio .about-faces__photo {
+  object-fit: cover;
+  object-position: 50% 12%;
+}
+
+.about-faces--trio .about-faces__row {
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.about-faces--trio .about-faces__name {
+  flex: 1 1 100%;
+  font-size: var(--v3-size-body-sm);
+}
+
+@media (min-width: 48rem) {
+  .about-faces--trio .about-faces__photo-link {
+    max-height: none;
+    width: min(100%, calc(48vh * 2 / 3));
+  }
+
+  .about-faces--trio .about-faces__row {
+    justify-content: center;
+  }
+}

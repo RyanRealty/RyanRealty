@@ -14,6 +14,7 @@ export function AboutFaces({
   people,
   heading,
   headingLevel = 1,
+  trio = false,
 }: {
   people: readonly AboutFace[]
   heading: string
@@ -24,6 +25,12 @@ export function AboutFaces({
    * callers byte-identical.
    */
   headingLevel?: 1 | 2
+  /**
+   * /about first 390: H1 plus all three faces (smaller crops), names, and
+   * 44px Call/Text, with cookie-chip space reserved. Homepage and /team keep
+   * the lead-face fold.
+   */
+  trio?: boolean
 }) {
   const [first, ...rest] = people
   if (!first) return null
@@ -32,7 +39,7 @@ export function AboutFaces({
   return (
     <section
       id="faces"
-      className={cn(V3_ROOT_CLASS, 'about-faces')}
+      className={cn(V3_ROOT_CLASS, 'about-faces', trio && 'about-faces--trio')}
       aria-labelledby="faces-heading"
     >
       <div className="about-faces__head">
@@ -52,7 +59,7 @@ export function AboutFaces({
                 alt={person.name}
                 width={800}
                 height={1200}
-                loading={index === 0 ? 'eager' : 'lazy'}
+                loading={trio || index === 0 ? 'eager' : 'lazy'}
                 fetchPriority={index === 0 ? 'high' : undefined}
                 decoding="async"
               />

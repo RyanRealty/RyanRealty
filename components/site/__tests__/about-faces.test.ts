@@ -19,11 +19,26 @@ describe('about faces fold', () => {
 })
 
 describe('about page copy', () => {
-  it('keeps the D11 mission out of How it started', () => {
+  it('keeps the boutique sentence and city ledger off About', () => {
     const src = readFileSync('app/about/page.tsx', 'utf8')
-    const origin = src.slice(src.indexOf('originItems'), src.indexOf('licenseFigures'))
+    const origin = src.slice(src.indexOf('originItems'), src.indexOf('recordItems'))
     expect(origin).not.toContain('ABOUT_MISSION')
     expect(origin).not.toMatch(/boutique|authentic|exceptional/)
+    expect(src).not.toContain('V3Instrument')
+    expect(src).not.toContain('V3Ledger')
+    expect(src).toContain('How it started')
+    expect(src).toContain('trio')
+  })
+})
+
+describe('about faces trio fold', () => {
+  it('shows all three faces on 390 and reserves cookie tap space', () => {
+    const css = readFileSync('app/about/_v3/about-faces.css', 'utf8')
+    expect(css).toMatch(/\.about-faces--trio \.about-faces__grid\s*\{[\s\S]*?repeat\(3/)
+    expect(css).toContain('padding-bottom: calc(var(--v3-tap) + var(--v3-space-xl))')
+    expect(css).toMatch(
+      /\.about-faces--trio \.about-faces__grid > li:not\(:first-child\) \.about-faces__photo-link\s*\{[\s\S]*?display:\s*flex/,
+    )
   })
 })
 
