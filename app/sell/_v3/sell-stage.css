@@ -39,7 +39,16 @@
   min-height: var(--v3-tap);
 }
 
-/* Cookie bar is 44px actions. Pad the page so the bar does not cover FAQ. */
-.v3.sell-page {
-  padding-bottom: calc(var(--v3-tap) * 3 + var(--v3-space-xl));
+/* Cookie bar is fixed: legal copy plus 44px actions (y 735–844 at 390).
+   Do not invent chrome. Reserve that band on Selling questions so the last
+   FAQ term and answer can scroll fully above the bar. Same family as the
+   listing/land bottom reserve. */
+.v3.sell-page #selling-questions {
+  padding-bottom: calc(
+    var(--v3-section-pad) + var(--v3-tap) + 6.5rem + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+.v3.sell-page #selling-questions .v3-quiet__item {
+  scroll-margin-bottom: calc(var(--v3-tap) + 6.5rem + env(safe-area-inset-bottom, 0px));
 }

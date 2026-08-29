@@ -29,6 +29,15 @@ describe('/sell three asks became one', () => {
     expect(css).toContain('.v3-btn')
   })
 
+  it('reserves cookie-bar space under Selling questions', () => {
+    expect(page).toContain('id="selling-questions"')
+    expect(css).toContain('#selling-questions')
+    expect(css).toContain('padding-bottom')
+    expect(css).toContain('var(--v3-tap)')
+    expect(css).toContain('safe-area-inset-bottom')
+    expect(css).not.toMatch(/data-cookie-notice/)
+  })
+
   it('address step is label + empty field + Value my home', () => {
     expect(form).toContain('Home address')
     expect(form).toContain('Value my home')
