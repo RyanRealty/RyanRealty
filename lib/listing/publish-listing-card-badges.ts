@@ -71,6 +71,8 @@ export function publishListingCardBadges(input: {
   if (input.hasVirtualTour === true) {
     badges.push({ kind: 'video', label: '3D tour' })
   }
+  // Coming Soon is in the MLS feed and MUST NOT print on public cards
+  // (lib/listing-status-public.ts). Hot Home is a Redfin product score, not ours.
 
   return badges.slice(0, 3)
 }

@@ -37,6 +37,9 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
 import { V3ListingRow, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
 import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
+import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
+import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
+import type { VideoEmbed } from '@/lib/data/types/video'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import './search-ledger.css'
 
@@ -142,7 +145,7 @@ function cardBadges(
     standardStatus: l.StandardStatus,
     onMarketDate: l.OnMarketDate,
     priceDropCount: l.price_drop_count ?? null,
-    hasVirtualTour: l.has_virtual_tour ?? null,
+    hasVirtualTour: l.has_virtual_tour === true || Boolean(l.tourUrl),
     openHouseLabel: key ? openHouseLabels[key] ?? null : null,
   })
 }
@@ -320,6 +323,7 @@ export default function MapSearchView({
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   /** Pin/list selection (stronger than hover) — map popup open ↔ list card ring + scroll. */
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [tour, setTour] = useState<VideoEmbed | null>(null)
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
   // List-first on mobile so the first 390 viewport shows a house, not a
   // map-only void. Map is one tap on the List/Map toggle.
@@ -884,7 +888,7 @@ export default function MapSearchView({
                   listingKey={key}
                   addressLine={addressLine}
                   onVisibilityChange={onHiddenChange}
-                  className="left-1 top-1 right-auto size-7"
+                  className="left-auto right-1 top-1 size-7"
                 />
                 <V3ListingRow
                   showPricePerSqft
@@ -910,9 +914,15 @@ export default function MapSearchView({
                     subdivisionName: l.SubdivisionName ?? null,
                     city: l.City ?? null,
                     listNumber: l.ListNumber ?? null,
+                    tourUrl: l.tourUrl ?? null,
                     badges,
                     badge: badges[0],
                   }}
+                  onOpenTour={
+                    l.tourUrl || l.has_virtual_tour
+                      ? () => setTour(publishTourEmbedFromUrl(l.tourUrl, l.PhotoURL))
+                      : undefined
+                  }
                 />
               </div>
             )
@@ -1105,6 +1115,12 @@ export default function MapSearchView({
           {listPanel}
         </div>
       </div>
+      <ListingTourOverlay
+        open={tour != null}
+        video={tour}
+        title="Listing tour"
+        onClose={() => setTour(null)}
+      />
     </div>
   )
 }

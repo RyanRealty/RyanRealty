@@ -4,6 +4,7 @@ import {
   publishListingHeroUnmute,
   publishListingHeroVideo,
   publishListingVirtualTour,
+  publishTourEmbedFromUrl,
 } from './publish-listing-hero-video'
 import type { VideoEmbed } from '@/lib/data/types/video'
 
@@ -43,5 +44,14 @@ describe('publishListingHeroVideo', () => {
     }
     expect(publishListingHeroVideo([vimeo])).toEqual(vimeo)
     expect(publishListingHeroUnmute(vimeo)).toBe(false)
+  })
+})
+
+describe('publishTourEmbedFromUrl', () => {
+  it('opens a Matterport URL in the on-site iframe overlay', () => {
+    const embed = publishTourEmbedFromUrl('https://my.matterport.com/show/?m=abc', 'https://img/p.jpg')
+    expect(embed?.embedType).toBe('iframe')
+    expect(embed?.isVirtualTour).toBe(true)
+    expect(embed?.url).toContain('matterport')
   })
 })

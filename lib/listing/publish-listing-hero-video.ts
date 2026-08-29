@@ -67,3 +67,22 @@ export function publishListingVirtualTour(
 export function publishListingHeroUnmute(video: VideoEmbed | null): boolean {
   return video?.embedType === 'video-tag'
 }
+
+/** Card 3D control → the same on-site tour overlay the listing page uses. */
+export function publishTourEmbedFromUrl(
+  url: string | null | undefined,
+  posterUrl?: string | null,
+): VideoEmbed | null {
+  const trimmed = url?.trim() ?? ''
+  if (!trimmed) return null
+  const lower = trimmed.toLowerCase()
+  const mp4 = /\.mp4(\?|$)/.test(lower)
+  return {
+    source: lower.includes('matterport') ? 'mls-matterport' : 'mls-other',
+    embedType: mp4 ? 'video-tag' : 'iframe',
+    url: trimmed,
+    posterUrl: posterUrl?.trim() || undefined,
+    professional: true,
+    isVirtualTour: isListingVirtualTour({ url: trimmed, isVirtualTour: true }) || !mp4,
+  }
+}

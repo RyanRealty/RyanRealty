@@ -74,11 +74,10 @@ export type V3ListingRowData = {
   subdivisionName: string | null
   city: string | null
   listNumber: string | null
+  tourUrl?: string | null
   badge?: { kind: V3ListingRowBadge; label: string }
   /** Redfin-style pills. When set, this is the whole set; `badge` is ignored. */
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>
-  /** Carried for shape compatibility with ListingCardData; the row links to detail. */
-  tourUrl?: string | null
 }
 
 /** Badge kinds that print solid navy; the rest are hairline outline tags. */
@@ -120,6 +119,7 @@ export function V3ListingRow({
   showPricePerSqft = false,
   priority = false,
   className,
+  onOpenTour,
 }: {
   listing: V3ListingRowData
   /** Opt-in: append "$X/sqft" to the figure column (search results). */
@@ -128,6 +128,8 @@ export function V3ListingRow({
   priority?: boolean
   /** Extra row classes — `is-hot` / `is-active` for the split view's map sync. */
   className?: string
+  /** Redfin parity: 3D badge opens the on-site tour viewer. */
+  onOpenTour?: () => void
 }) {
   // A row may not show a fractional ask unlabelled (decided 2026-08-19): the
   // share label is computed HERE from the subject the row already carries,
@@ -146,42 +148,80 @@ export function V3ListingRow({
   })
   const meta = metaParts(listing, showPricePerSqft)
   const splitThumb = typeof className === 'string' && className.includes('v3-lrow--split')
+  const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
+  const photoTags = tags.filter((tag) => tag.kind !== 'video')
+  const hasTour = Boolean(listing.tourUrl)
+
+  const photo = (
+    <>
+      {listing.photoUrl ? (
+        <Image
+          src={listing.photoUrl}
+          alt=""
+          fill
+          priority={priority}
+          sizes={splitThumb ? '200px' : '72px'}
+        />
+      ) : null}
+      {photoTags.length > 0 ? (
+        <span className="v3-lrow__photo-tags">
+          {photoTags.map((tag) => (
+            <span
+              key={`${tag.kind}-${tag.label}`}
+              className={cn('v3-lrow__tag', SOLID_BADGE[tag.kind] && 'v3-lrow__tag--solid')}
+            >
+              {tag.label}
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {hasTour ? (
+        onOpenTour ? (
+          <button
+            type="button"
+            className="v3-lrow__tour"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onOpenTour()
+            }}
+          >
+            3D tour
+          </button>
+        ) : (
+          <span className="v3-lrow__tour">3D tour</span>
+        )
+      ) : null}
+      <span className="v3-lrow__addr-tip">{listing.addressLine}</span>
+    </>
+  )
+
+  if (splitThumb) {
+    return (
+      <article className={cn(V3_ROOT_CLASS, 'v3-lrow', className)}>
+        <div className="v3-lrow__media" aria-hidden={!onOpenTour}>
+          {photo}
+        </div>
+        <Link href={listing.href} className="v3-lrow__copy">
+          <span className="v3-lrow__price">{ask ?? '—'}</span>
+          {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}
+          {meta.length > 0 ? <span className="v3-lrow__meta">{meta.join(' · ')}</span> : null}
+          <span className="v3-lrow__addr">{listing.addressLine}</span>
+          <span className="v3-lrow__city">{listing.cityLine}</span>
+        </Link>
+      </article>
+    )
+  }
 
   return (
     <Link href={listing.href} className={cn(V3_ROOT_CLASS, 'v3-lrow', className)}>
       <span className="v3-lrow__media" aria-hidden>
-        {listing.photoUrl ? (
-          /* Decorative by construction: the row is one link whose accessible
-             name is the address block, so the thumb takes alt="" — a second
-             name would make a screen reader read every row twice. */
-          <Image
-            src={listing.photoUrl}
-            alt=""
-            fill
-            priority={priority}
-            sizes={splitThumb ? '160px' : '72px'}
-          />
-        ) : null}
-        <span className="v3-lrow__addr-tip">{listing.addressLine}</span>
+        {photo}
       </span>
-
       <span className="v3-lrow__body">
-        {(listing.badges ?? (listing.badge ? [listing.badge] : [])).length > 0 ? (
-          <span className="v3-lrow__tags">
-            {(listing.badges ?? (listing.badge ? [listing.badge] : [])).map((tag) => (
-              <span
-                key={`${tag.kind}-${tag.label}`}
-                className={cn('v3-lrow__tag', SOLID_BADGE[tag.kind] && 'v3-lrow__tag--solid')}
-              >
-                {tag.label}
-              </span>
-            ))}
-          </span>
-        ) : null}
         <span className="v3-lrow__addr">{listing.addressLine}</span>
         <span className="v3-lrow__city">{listing.cityLine}</span>
       </span>
-
       <span className="v3-lrow__figures">
         <span className="v3-lrow__price">{ask ?? '—'}</span>
         {shareKind ? <span className="v3-lrow__tag">{shareKind}</span> : null}

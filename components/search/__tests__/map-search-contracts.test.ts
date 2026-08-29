@@ -96,6 +96,15 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/ · \{publishedCounts\.viewport\.phrase\}/)
   })
 
+  it('split cards overlay Redfin badges and open the on-site 3D viewer', () => {
+    const row = readSrc('components/site/v3/V3ListingRow.tsx')
+    const map = readSrc('components/search/MapSearchView.tsx')
+    expect(row).toMatch(/v3-lrow__photo-tags/)
+    expect(row).toMatch(/v3-lrow__tour/)
+    expect(map).toMatch(/ListingTourOverlay/)
+    expect(map).toMatch(/publishTourEmbedFromUrl/)
+  })
+
   it('place Split does not seed a drawable exclude area', () => {
     const place = readSrc('components/search/PlaceSplitView.tsx')
     expect(place).toMatch(/initialShapes=\{null\}/)
@@ -147,7 +156,7 @@ describe('split row and map chrome stay navy', () => {
   it('uses the 160px split thumb and a navy active ring', () => {
     const row = readSrc('components/site/v3/V3ListingRow.tsx')
     const css = readSrc('components/site/v3/V3ListingRow.css')
-    expect(row).toMatch(/sizes=\{splitThumb \? '160px' : '72px'\}/)
+    expect(row).toMatch(/sizes=\{splitThumb \? '200px' : '72px'\}/)
     expect(css).toMatch(/box-shadow: inset 0 0 0 2px var\(--v3-navy\)/)
     expect(css).toMatch(/v3-lrow__addr-tip/)
     expect(css).not.toMatch(/content: '‹'/)

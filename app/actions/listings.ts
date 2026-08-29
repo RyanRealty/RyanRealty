@@ -92,6 +92,9 @@ export type ListingTileRow = {
   ClosePrice?: number | null
   /** Optional: closed sale date when listing is Closed. */
   CloseDate?: string | null
+  has_virtual_tour?: boolean | null
+  price_drop_count?: number | null
+  tourUrl?: string | null
 }
 
 /** Details from Spark/Supabase: Videos = playable/embed only; VirtualTours = 3D/tour links (not played in hero). */
@@ -1111,6 +1114,7 @@ function tileToSearchRow(t: ListingTile): ListingTileRow {
     CloseDate: t.closeDate,
     has_virtual_tour: t.hasVirtualTour,
     price_drop_count: t.priceDropCount,
+    tourUrl: t.tourUrl,
   }
 }
 
