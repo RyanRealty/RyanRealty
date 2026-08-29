@@ -1,8 +1,12 @@
 /**
  * Park / trail LIST thumbs. Always a map. Never omitted.
  *
- * Uses existing geo only: a real boundary or trail line when the caller has
- * one, otherwise a point. Does not invent a polygon.
+ * Matt override (2026-08-29): a later "omit if no boundary/path" addendum
+ * does not win. Boundary or path when we already have that geo. Otherwise a
+ * navy pin on cream at the existing point. Do not invent a polygon.
+ *
+ * Detail pages keep the live map. This publisher is list-only and reusable
+ * so a later place PR can call it without ripping the listing extras out.
  */
 
 export type PlaceListThumbKind = 'boundary' | 'path' | 'point'

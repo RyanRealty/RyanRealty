@@ -154,6 +154,12 @@ describe('design directive contracts', () => {
     const css = readSrc('components/site/listing-detail/listing-detail.css')
     expect(css).toMatch(/\.listing-detail \.place-list__kind \{\s*display: block/)
     expect(css).toMatch(/\.listing-gallery__back/)
+    const parkDetail = readSrc('app/parks/[slug]/page.tsx')
+    const trailDetail = readSrc('app/central-oregon/trails/[slug]/page.tsx')
+    expect(parkDetail).not.toMatch(/PlaceListThumb|placeListThumbDataUri/)
+    expect(trailDetail).not.toMatch(/PlaceListThumb|placeListThumbDataUri/)
+    expect(parkDetail).toMatch(/PlaceFieldMap/)
+    expect(trailDetail).toMatch(/PlaceFieldMap/)
   })
 
   it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
