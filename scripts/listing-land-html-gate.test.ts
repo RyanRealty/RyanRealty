@@ -28,7 +28,7 @@ describe('listingLandHtmlGate', () => {
       This house
       This home sits inside
       rental analysis
-      Homes for sale
+      <nav class="v3-breadcrumb"><a>Homes for sale</a></nav>
       Get alerts for homes like this
       About this home
       0 beds

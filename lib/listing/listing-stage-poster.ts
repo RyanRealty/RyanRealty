@@ -4,7 +4,7 @@
  * on a pale house crop.
  */
 
-import { getSurfaceImage } from '@/lib/data'
+import { getSurfaceImage, getSurfaceImages } from '@/lib/data'
 import { preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { slugify } from '@/lib/slug'
 
@@ -30,10 +30,14 @@ function usableStageStill(url: string | null | undefined): string | null {
   return trimmed
 }
 
+function isImaginePlaceUrl(url: string): boolean {
+  return url.includes('imagine-place-') || url.includes('/grok-imagine/')
+}
+
 function imaginePlaceStill(...urls: Array<string | null | undefined>): string | null {
   for (const url of urls) {
     const trimmed = usableStageStill(url)
-    if (trimmed && trimmed.includes('imagine-place-')) return trimmed
+    if (trimmed && isImaginePlaceUrl(trimmed)) return trimmed
   }
   return null
 }
@@ -61,8 +65,31 @@ export async function listingStagePoster(input: {
       ? slugify(input.subdivisionName)
       : null
   const neighborhood = input.neighborhoodSlug?.trim() || null
-  const geoTags = [subdivision, neighborhood, city].filter((tag): tag is string => Boolean(tag))
+  const placeTags = [subdivision, neighborhood].filter((tag): tag is string => Boolean(tag))
+  const geoTags = [...placeTags, city].filter((tag): tag is string => Boolean(tag))
   if (geoTags.length === 0) return null
+
+  // Imagine stills live at /grok-imagine/ (source_id is imagine-place-*).
+  // Do not mix city into the same pick: a bend-only exact match beats a
+  // neighborhood still that also carries the city tag.
+  if (placeTags.length > 0) {
+    const pool = await getSurfaceImages('hero')
+    const wanted = new Set(placeTags.map((tag) => tag.toLowerCase()))
+    const imagineUrls = pool
+      .filter((image) => image.geoTags.some((tag) => wanted.has(tag.toLowerCase())))
+      .map((image) => image.url)
+    const imagine = listingStagePosterUrl(...imagineUrls)
+    if (imagine) return imagine
+
+    const place = listingStagePosterUrl(
+      await getSurfaceImage('hero', {
+        geoTags: placeTags,
+        seed: `listing-stage:${input.listingKey ?? placeTags.join(':')}`,
+        geoOnly: true,
+      }),
+    )
+    if (place) return place
+  }
 
   const library = await getSurfaceImage('hero', {
     geoTags,

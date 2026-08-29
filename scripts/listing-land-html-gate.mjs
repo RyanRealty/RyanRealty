@@ -17,7 +17,7 @@ export const LAND_HTML_ANTI_TELLS = [
   { id: 'this-house', re: /THIS HOUSE|This house/ },
   { id: 'this-home-sits', re: /This home sits/i },
   { id: 'rental-analysis', re: /rental analysis/i },
-  { id: 'homes-for-sale-crumb', re: /Homes for sale/ },
+  { id: 'homes-for-sale-crumb', re: /v3-breadcrumb[\s\S]{0,1600}Homes for sale/ },
   { id: 'homes-like-this', re: /Get alerts for homes like this|Get free alerts for homes/i },
   { id: 'about-this-home', re: /About this home/ },
   { id: 'zero-bed', re: /\b0\s*beds?\b/i },

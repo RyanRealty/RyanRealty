@@ -679,7 +679,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           hud={leftoverHud}
           pace={marketPace}
           publishedCharts={coreCharts ? toListingCoreChartSeries(coreCharts) : null}
-          thisListPrice={wholePropertyPrice}
+          thisListPrice={isLand ? publishedSaleAsk : wholePropertyPrice}
           refreshedAt={leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt}
           chartCitySlug={listing.citySlug ?? null}
           heading="The market"

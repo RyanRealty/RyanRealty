@@ -145,7 +145,8 @@ export function NeighborhoodMarketContext({
       <p className="listing-market-note">
         {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
           <>
-            {face === 'land' ? 'This lot is listed at' : 'This home is listed at'} <Price value={thisListPrice} />,{' '}
+            {face === 'land' ? 'This lot is listed at' : 'This home is listed at'}{' '}
+            <Price value={thisListPrice} exact={face === 'land'} />,{' '}
             <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow} the {geoName} median list
             price.{' '}
           </>
