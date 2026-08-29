@@ -20,6 +20,8 @@ export const MAP_EXCLUDE_RED = '#dc2626'
 
 export const MAP_NAVY = '#102742'
 export const MAP_WHITE = '#ffffff'
+/** Cream invert fill for selected/hovered pins (Maps overlay cannot read CSS vars). */
+export const MAP_CREAM = '#faf8f4'
 export const MAP_TEXT_DARK = '#1a1a1a'
 export const MAP_TEXT_MID = '#555555'
 export const MAP_TEXT_LIGHT = '#777777'

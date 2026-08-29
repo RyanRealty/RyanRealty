@@ -26,8 +26,6 @@ import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -313,7 +311,6 @@ export default function MapSearchView({
   // out of BOTH the card list AND the map pins here, from the signed-in user's
   // hidden_listings rows. Signed-out users get an empty set (no filtering).
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
-  const [searchAsMove, setSearchAsMove] = useState(false)
   const [areaDirty, setAreaDirty] = useState(false)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   /** Pin/list selection (stronger than hover) — map popup open ↔ list card ring + scroll. */
@@ -591,19 +588,10 @@ export default function MapSearchView({
       if (cameraUrl) router.replace(cameraUrl, { scroll: false })
       if (isInitialSettle === false) dropGeoScope()
       if (isInitialSettle) return
-      if (!searchAsMove) {
-        setAreaDirty(true)
-        return
-      }
-      setAreaDirty(false)
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-      // Single 350 ms debounce on pan (map idle delay reduced separately).
-      // Cap pan payload at 250 pins; SSR seed keeps full fidelity (no remount recap).
-      debounceRef.current = setTimeout(() => {
-        runViewportSearch(bounds, drawnShapes, { limit: 250 })
-      }, 350)
+      // Camera only. List + pins stay until Search this area.
+      setAreaDirty(true)
     },
-    [searchAsMove, drawnShapes, runViewportSearch, dropGeoScope, pathname, router, urlSearchParams]
+    [dropGeoScope, pathname, router, urlSearchParams]
   )
 
   /** Reflect the drawn shape set into the URL so reload/share reproduce it.
@@ -676,18 +664,6 @@ export default function MapSearchView({
     },
     [runViewportSearch, dropGeoScope, syncShapesToUrl]
   )
-
-  // When the user flips search-as-you-move ON, immediately sync to the current view.
-  const toggleSearchAsMove = useCallback(() => {
-    setSearchAsMove((prev) => {
-      const next = !prev
-      if (next) {
-        setAreaDirty(false)
-        runViewportSearch(lastBoundsRef.current, drawnShapes)
-      }
-      return next
-    })
-  }, [drawnShapes, runViewportSearch])
 
   const searchThisArea = useCallback(() => {
     setAreaDirty(false)
@@ -983,7 +959,7 @@ export default function MapSearchView({
           replaces the drawn shape set, so it rides the identical ?shapes=
           contract and is shareable + alert-savable like any drawn area. */}
       <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
-      {areaDirty && !searchAsMove ? (
+      {areaDirty ? (
         <Button
           type="button"
           variant="outline"
@@ -992,15 +968,7 @@ export default function MapSearchView({
         >
           Search this area
         </Button>
-      ) : (
-      <Label className="absolute left-1/2 top-3 z-[100] flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-none border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-none">
-        <Checkbox
-          checked={searchAsMove}
-          onCheckedChange={() => toggleSearchAsMove()}
-        />
-        Search as I move the map
-      </Label>
-      )}
+      ) : null}
       {/* Active place scope — visible until the first user map move, then the
           query is pure bounding-box. Tap the chip to drop the scope now. */}
       {scopeLabel && scopeDropped === false ? (

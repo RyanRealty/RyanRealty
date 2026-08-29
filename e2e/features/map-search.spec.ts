@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test'
  * map-search.spec.ts
  *
  * Exercises the map-search surface (/homes-for-sale):
- *   - "Search as I move" toggle is present (desktop)
+ *   - "Search this area" after a pan (desktop)
  *   - Mobile list/map view toggle switches views (mobile viewport)
  *   - Hovering a list card produces a highlighted marker on the map (desktop)
  *
@@ -42,7 +42,7 @@ test.describe('Map search', () => {
     await page.waitForSelector('body', { timeout: DATA_TIMEOUT })
 
     // /homes-for-sale uses MapSearchView (search/page.tsx) — check for its signals:
-    //   - "Search as I move the map" toggle label
+    //   - "Search this area" after a pan
     //   - "No homes in this part of the map." empty state
     //   - Listing card links (a[href*="/listing/"])
     //   - The map container itself

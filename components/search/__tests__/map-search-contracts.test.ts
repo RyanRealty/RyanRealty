@@ -55,14 +55,13 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
   })
 
-  it('search-as-you-move: bounds change triggers a debounced viewport refetch', () => {
-    expect(src).toMatch(/searchAsMove/)
+  it('search this area after pan, not auto-refetch', () => {
     expect(src).toMatch(/handleBoundsChanged/)
-    expect(src).toMatch(/runViewportSearch/)
-    expect(src).toMatch(/setTimeout/) // debounce
     expect(src).toMatch(/Search this area/)
-    expect(src).toMatch(/useState\(false\)/)
     expect(src).toMatch(/setAreaDirty\(true\)/)
+    expect(src).toMatch(/searchThisArea/)
+    expect(src).not.toMatch(/Search as I move the map/)
+    expect(src).not.toMatch(/searchAsMove/)
   })
 
   it('out-of-order viewport responses are dropped (no race on fast panning)', () => {
@@ -88,8 +87,9 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/useState<'list' \| 'map'>\('list'\)/)
   })
 
-  it('renders the search-as-you-move toggle control', () => {
-    expect(src).toMatch(/Search as I move the map/)
+  it('renders Search this area after the map moves', () => {
+    expect(src).toMatch(/Search this area/)
+    expect(src).toMatch(/areaDirty/)
   })
 })
 
@@ -457,6 +457,14 @@ describe('SearchMapClustered map primitive', () => {
     // (buildPricePillElement) instead of SVG data-URI icons (buildPricePillIcon).
     // The element builder must accept hover/active/saved options.
     expect(src).toMatch(/buildPricePillElement\([^)]*\bhover:/)
+  })
+
+  it('hovered pin enlarges and inverts navy on cream, not red', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    expect(map).toMatch(/MAP_CREAM/)
+    expect(map).toMatch(/active \|\| hover \? MAP_CREAM/)
+    expect(map).toMatch(/transform:scale\(1\.18\)/)
+    expect(map).not.toMatch(/#dc2626/)
   })
 
   it('marker popup is a brand card (not stock Google InfoWindow chrome)', () => {

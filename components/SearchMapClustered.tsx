@@ -20,6 +20,7 @@ import {
   getSearchMapOptions,
   MAP_NAVY,
   MAP_WHITE,
+  MAP_CREAM,
 } from '@/lib/maps/markers'
 
 // Map ID strategy (dual-path, P0-1 fix 2026-06-10):
@@ -180,8 +181,8 @@ function buildPricePillElement(
   const pill = document.createElement('div')
   // Cream edge + soft shadow: less "generic navy blob", more brand pin.
   pill.style.cssText = [
-    `background:${active || hover ? MAP_WHITE : MAP_NAVY}`,
-    `color:${active || hover ? MAP_NAVY : MAP_WHITE}`,
+    `background:${active || hover ? MAP_CREAM : MAP_NAVY}`,
+    `color:${active || hover ? MAP_NAVY : MAP_CREAM}`,
     'font-family:system-ui,-apple-system,"Segoe UI",sans-serif',
     `font-size:${hover || active ? '13px' : '12px'}`,
     'font-weight:700',
@@ -194,7 +195,7 @@ function buildPricePillElement(
     active || hover
       ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 4px 12px color-mix(in srgb, var(--v3-navy) 28%, transparent)`
       : 'box-shadow:0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)',
-    saved && !active ? `box-shadow:0 0 0 2px #dc2626,0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)` : '',
+    saved && !active && !hover ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)` : '',
     'line-height:1.25',
   ].join(';')
   pill.textContent = label + (saved ? ' ♥' : '')
@@ -210,7 +211,7 @@ function buildPricePillElement(
     'height:0',
     `border-left:6px solid transparent`,
     `border-right:6px solid transparent`,
-    `border-top:7px solid ${active || hover ? MAP_WHITE : MAP_NAVY}`,
+    `border-top:7px solid ${active || hover ? MAP_CREAM : MAP_NAVY}`,
   ].join(';')
 
   el.appendChild(pill)
@@ -255,16 +256,18 @@ function buildClusterElement(count: number): HTMLDivElement {
 function buildPhotoStampElement(
   photoURL: string | null | undefined,
   priceLabel: string,
-  opts?: { active?: boolean },
+  opts?: { active?: boolean; hover?: boolean },
 ): HTMLDivElement {
   const active = opts?.active ?? false
+  const hover = opts?.hover ?? false
+  const invert = active || hover
   const wrap = document.createElement('div')
   wrap.style.cssText = [
     'position:relative',
     'width:56px',
     'cursor:pointer',
     'transform-origin:50% 100%',
-    active ? 'transform:scale(1.12)' : 'transform:scale(1)',
+    invert ? 'transform:scale(1.18)' : 'transform:scale(1)',
     'filter:drop-shadow(0 3px 10px color-mix(in srgb, var(--v3-navy) 35%, transparent))',
     'transition:transform 120ms ease',
   ].join(';')
@@ -274,10 +277,10 @@ function buildPhotoStampElement(
     'width:56px',
     'height:56px',
     'border-radius:10px',
-    `border:2px solid ${active ? MAP_NAVY : MAP_WHITE}`,
+    `border:2px solid ${invert ? MAP_NAVY : MAP_WHITE}`,
     'overflow:hidden',
     `background:${MAP_NAVY}`,
-    active ? `box-shadow:0 0 0 2px ${MAP_WHITE}` : '',
+    invert ? `box-shadow:0 0 0 2px ${MAP_NAVY}` : '',
   ].join(';')
 
   if (photoURL) {
@@ -291,8 +294,8 @@ function buildPhotoStampElement(
 
   const cap = document.createElement('div')
   cap.style.cssText = [
-    `background:${MAP_NAVY}`,
-    `color:${MAP_WHITE}`,
+    `background:${invert ? MAP_CREAM : MAP_NAVY}`,
+    `color:${invert ? MAP_NAVY : MAP_CREAM}`,
     'font-family:system-ui,-apple-system,sans-serif',
     'font-size:10px',
     'font-weight:700',
@@ -980,7 +983,7 @@ export default function SearchMapClustered({
         const isSaved = savedSet.has(key)
         const newEl =
           zoomMode === 'photo' && listing?.PhotoURL
-            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive || isHover })
+            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive, hover: isHover })
             : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
         marker.content = newEl
         marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : 1
