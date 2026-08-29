@@ -1,16 +1,13 @@
-import { type V3ListingRowData } from '@/components/site/v3'
-import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
-import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
 import { CTAButton } from '@/components/site/primitives'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
-import { listingTileHref } from '../../../../lib/slug'
+import { SearchHomesField } from '../../_v3/SearchHomesField'
 import { type getListingsWithAdvanced } from '../../../actions/listings'
 import { type SearchParams } from '../page-filters'
 import { listingsResultsKind } from './listings-results-kind'
 
 export { listingsResultsKind } from './listings-results-kind'
 
-/** Listings grid (design-system ListingCard) + sort/pagination toolbar, with
+/** V3Field inventory (photo doors + map) + sort/pagination, with
  *  the no-scope / timeout / zero-result empty states (see page.tsx call site). */
 export function ListingsResults({
   city,
@@ -19,11 +16,11 @@ export function ListingsResults({
   totalCount,
   page,
   pageSize,
-  viewParam,
   perPageParam,
   sp,
   searchPagePath,
-  priceChangeKeys,
+  placeName,
+  boundary,
   degraded = false,
 }: {
   city: string | undefined
@@ -32,11 +29,11 @@ export function ListingsResults({
   totalCount: number
   page: number
   pageSize: number
-  viewParam: '1' | '2' | '3' | '4' | '5'
   perPageParam: string
   sp: SearchParams
   searchPagePath: string
-  priceChangeKeys: Set<string>
+  placeName: string
+  boundary?: unknown
   /** Timeout or data-layer error — do not paint as an empty market. */
   degraded?: boolean
 }) {
@@ -79,7 +76,6 @@ export function ListingsResults({
         totalCount={totalCount}
         page={page}
         pageSize={pageSize}
-        viewParam={viewParam}
         perPageParam={perPageParam}
         searchParams={{
           minPrice: sp.minPrice,
@@ -92,47 +88,23 @@ export function ListingsResults({
           statusFilter: sp.statusFilter ?? (sp.includeClosed === '1' ? 'all' : 'active'),
           includeClosed: sp.includeClosed,
           page: String(page),
-          view: viewParam,
           perPage: perPageParam,
         }}
       />
-      {/* HideAwareListingGrid: per-user hidden-home subtraction at the edge of render (W7.2); signed-out sees the full set. */}
-      <HideAwareListingGrid
-        items={listings.map((listing, i): HideAwareItem => {
-          const key = (listing.ListNumber ?? listing.ListingKey ?? `listing-${i}`).toString().trim()
-          const street = [listing.StreetNumber, listing.StreetName, listing.StreetSuffix].filter(Boolean).join(' ').trim()
-          const cityLine = [[listing.City ?? city, 'OR'].filter(Boolean).join(', '), listing.PostalCode].filter(Boolean).join(' ').trim()
-          const card: V3ListingRowData = {
-            listingKey: key,
-            href: listingTileHref({
-              listingKey: listing.ListingKey,
-              listNumber: listing.ListNumber,
-              streetNumber: listing.StreetNumber,
-              streetName: listing.StreetName,
-              city: listing.City,
-              subdivisionName: listing.SubdivisionName,
-            }),
-            photoUrl: listing.PhotoURL ?? null,
-            price: listing.ListPrice ?? null,
-            addressLine: street || 'Address available on request',
-            cityLine: cityLine || 'Central Oregon',
-            beds: listing.BedroomsTotal ?? null,
-            baths: listing.BathroomsTotal ?? null,
-            sqft: listing.TotalLivingAreaSqFt ?? null,
-            // The card publishes the ask and the $/sq ft; both publishers ask
-            // what kind of listing this is (a commercial lease carries rent in
-            // ListPrice, a fractional share buys part of the home).
-            propertyType: listing.PropertyType ?? null,
-            propertySubType: listing.PropertySubType ?? null,
-            subdivisionName: listing.SubdivisionName ?? null,
-            city: listing.City ?? null,
-            listNumber: listing.ListNumber ?? null,
-            badge:
-              publishListingStatusBadge(listing.StandardStatus) ??
-              (key && priceChangeKeys.has(key) ? { kind: 'drop' as const, label: 'Price drop' } : undefined),
-          }
-          return { card, ListingKey: listing.ListingKey ?? null, ListNumber: listing.ListNumber ?? null }
-        })}
+      <SearchHomesField
+        listings={listings}
+        placeName={placeName}
+        boundary={boundary}
+        count={
+          totalCount > 0
+            ? {
+                value: totalCount.toLocaleString('en-US'),
+                label: city ? `homes in ${placeName}` : 'homes in this search',
+                source: 'Regional MLS via listing_search_mv',
+              }
+            : undefined
+        }
+        emptyMessage={`No homes match this search in ${placeName} right now. Adjust the filters or try a related search below.`}
       />
     </div>
   )

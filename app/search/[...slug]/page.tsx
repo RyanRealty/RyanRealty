@@ -8,8 +8,11 @@ import {
 } from '../../actions/listings'
 import { getSession } from '../../actions/auth'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
+import { getCityBoundary } from '../../actions/cities'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
-import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath } from '../../../lib/slug'
+import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath, subdivisionEntityKey } from '../../../lib/slug'
+import { entityKeyToSlug } from '../../../lib/community-slug'
+import { getCommunityBySlug } from '../../actions/communities'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -109,13 +112,11 @@ export default async function SearchPage({
   const hasFilterOnly = !city && (Boolean(preset) || hasFilterOnlySearch(sp))
   const presetLabel = !city ? getPresetSearchLabel(sp) : null
 
-  const columns = [1, 2, 3, 4, 5].includes(Number(sp.view)) ? Number(sp.view) : 3
-  const viewParam = String(columns) as '1' | '2' | '3' | '4' | '5'
-  const ROWS = 3
-  const defaultPageSize = columns * ROWS
+  const viewParam = ['map', 'split', 'list'].includes(sp.view ?? '') ? (sp.view as string) : 'field'
+  const defaultPageSize = 24
   const perPageParam = sp.perPage ?? String(defaultPageSize)
   const requestedPageSize = Math.min(100, Math.max(1, parseInt(perPageParam, 10) || defaultPageSize))
-  const pageSize = IS_PRODUCTION_BUILD ? Math.min(requestedPageSize, 12) : requestedPageSize
+  const pageSize = IS_PRODUCTION_BUILD ? Math.min(requestedPageSize, 24) : requestedPageSize
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
   const offset = (page - 1) * pageSize
   const initialPolygon = decodeMapPolygon(sp.poly)
@@ -216,7 +217,7 @@ export default async function SearchPage({
   //   listings (grid + pagination), recent price-change keys, session
   //   (save-search), resort entity keys (JSON-LD + breadcrumb resort flag).
   const isPlainCityBrowse = !!(city && !subdivision && !preset)
-  const [listingsResult, priceChangeKeys, session, resortEntityKeys, citySfrTiles] = await Promise.all([
+  const [listingsResult, session, resortEntityKeys, citySfrTiles, placeBoundary] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
     // with an EXACT count so pagination/header stay right) and only falls back
@@ -231,12 +232,20 @@ export default async function SearchPage({
       { listings: [], totalCount: 0, degraded: true },
       LISTINGS_FETCH_TIMEOUT_MS,
     ),
-    IS_PRODUCTION_BUILD
-      ? Promise.resolve(new Set<string>())
-      : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
     isPlainCityBrowse && city ? loadCitySfrTilesForSearch(city) : Promise.resolve([]),
+    city
+      ? decodedSubdivision
+        ? withTimeout(
+            getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))).then(
+              (community) => community?.boundaryGeojson ?? null,
+            ),
+            null,
+            2000,
+          )
+        : withTimeout(getCityBoundary(city), null, 2000)
+      : Promise.resolve(null),
   ])
   // Fail loud: a timed-out or hard-errored listings fetch must NOT render — and
   // let ISR cache — an empty "no homes" grid (the poison-null pattern). Throwing
@@ -565,7 +574,7 @@ export default async function SearchPage({
         </Suspense>
       </div>
 
-      {/* 4 + 5. Listings grid (design-system ListingCard) + sort/pagination toolbar. */}
+      {/* 4 + 5. V3Field inventory (photo doors + place map) + pagination. */}
       <ListingsResults
         city={city}
         hasFilterOnly={hasFilterOnly}
@@ -573,11 +582,11 @@ export default async function SearchPage({
         totalCount={totalCount}
         page={page}
         pageSize={pageSize}
-        viewParam={viewParam}
         perPageParam={perPageParam}
         sp={sp}
         searchPagePath={searchPagePath}
-        priceChangeKeys={priceChangeKeys}
+        placeName={displayName}
+        boundary={placeBoundary}
         degraded={Boolean(listingsResult.degraded)}
       />
 

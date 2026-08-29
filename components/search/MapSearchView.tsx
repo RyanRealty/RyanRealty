@@ -19,8 +19,8 @@ import { fireSearchEvent } from '@/components/search/search-events.client'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import { publishSearchCountPair } from '@/lib/search/publish-search-count'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
-import { listingDetailPath, displaySubdivision } from '@/lib/slug'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { dedupeListingRows } from '@/app/search/_v3/search-field-items'
+import { MapSearchHomesField } from '@/components/search/MapSearchHomesField'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
@@ -34,11 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
-import { V3ListingRow, type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
-import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
-import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import './search-ledger.css'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
@@ -49,33 +45,6 @@ const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered
     </div>
   ),
 })
-
-/** Street line only (e.g. "2732 NW Ordway Ave") — matches ListingCard addressLine. */
-function cardStreet(l: ListingTileRow): string {
-  return (
-    publishStreetLine({
-      streetNumber: l.StreetNumber,
-      streetName: l.StreetName,
-      streetSuffix: l.StreetSuffix,
-    }) || (l.City ?? 'Listing')
-  )
-}
-
-/** "Bend, OR 97703 · Awbrey Butte" — city + state + zip, plus subdivision when
- *  the row carries one. Oregon-scoped, so "OR" is a safe constant when State is
- *  absent. Mirrors SearchResults cityLine so split + list views read identically. */
-function cardCity(l: ListingTileRow): string {
-  const cityZip = [l.City ? `${l.City}, ${l.State ?? 'OR'}` : null, l.PostalCode].filter(Boolean).join(' ').trim()
-  const sub = displaySubdivision(l.SubdivisionName)
-  return sub ? `${cityZip} · ${sub}` : cityZip
-}
-
-/** Whole-dollar list price per living sqft, or null when either input is missing. */
-function cardPricePerSqft(l: ListingTileRow): number | null {
-  const sqft = rowSqft(l)
-  if (l.ListPrice == null || sqft == null || sqft <= 0) return null
-  return Math.round(l.ListPrice / sqft)
-}
 
 /** Sort options for the list-pane count row (G2). Values match SearchFilters.SORT_OPTIONS. */
 const SORT_OPTIONS = [
@@ -125,33 +94,6 @@ type ViewportSearchFn = (
   polygon: Parameters<typeof getViewportSearch>[2],
   options?: ViewportSearchOptions
 ) => ReturnType<typeof getViewportSearch>
-
-const NEW_LISTING_WINDOW_DAYS = 7
-
-/**
- * Map viewport badge → ListingCard badge prop.
- * Non-active MLS status uses publishListingStatusBadge (Pending / Under
- * contract / Sold). `nowMs` is a server-passed wall-clock prop so SSR HTML
- * matches hydration (do not sample the clock inside this pure helper).
- */
-function cardBadge(
-  l: ListingTileRow,
-  nowMs: number
-): { kind: ListingBadge; label: string } | undefined {
-  const statusBadge = publishListingStatusBadge(l.StandardStatus)
-  if (statusBadge) return statusBadge
-  if (l.OnMarketDate) {
-    const days = (nowMs - new Date(l.OnMarketDate).getTime()) / 86_400_000
-    if (Number.isFinite(days) && days >= 0 && days <= NEW_LISTING_WINDOW_DAYS) {
-      return { kind: 'new', label: 'New' }
-    }
-  }
-  return undefined
-}
-
-function rowKey(l: ListingTileRow): string {
-  return String(l.ListNumber ?? l.ListingKey ?? '').trim()
-}
 
 /** ListingTileRow carries TotalLivingAreaSqFt at runtime from the viewport fetch even though the base type omits it. */
 function rowSqft(l: ListingTileRow): number | null {
@@ -283,7 +225,6 @@ export default function MapSearchView({
   boundaryGeojson,
   initialPolygon: initialPolygonProp = null,
   initialShapes = null,
-  nowMs,
   initialDegraded = false,
 }: MapSearchViewProps) {
   // One initial shape set, whichever URL spelling delivered it: ?shapes=
@@ -466,7 +407,7 @@ export default function MapSearchView({
   // The SSR payload is scoped again, so the scope-drop resets with it — the
   // chip re-appears and the next user move re-drops it.
   useEffect(() => {
-    setListings(initialListings)
+    setListings(dedupeListingRows(initialListings))
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
     setResultsDegraded(initialDegraded)
@@ -510,7 +451,7 @@ export default function MapSearchView({
             : await getViewportSearch(effectiveFilters, bounds, poly)
         // Ignore out-of-order responses (user kept panning).
         if (reqId !== reqIdRef.current) return
-        setListings(res.listings)
+        setListings(dedupeListingRows(res.listings))
         setTotalCount(res.totalCount)
         setCapped(res.capped)
         setResultsDegraded(false)
@@ -853,94 +794,7 @@ export default function MapSearchView({
             <p className="mt-2 text-muted-foreground">Zoom out or pan to a different area to see listings.</p>
           </div>
         )
-      ) : (
-        <>
-        <div className="v3-lrow-list px-4 py-2">
-          {visibleListings.slice(0, visibleCount).map((l, cardIndex) => {
-            const key = rowKey(l)
-            const href = listingDetailPath(
-              key,
-              { streetNumber: l.StreetNumber, streetName: l.StreetName, city: l.City, state: l.State, postalCode: l.PostalCode },
-              undefined,
-              { mlsNumber: l.ListNumber ?? null }
-            )
-            const isHovered = hoveredKey === key
-            const isSelected = selectedKey === key
-            const addressLine = cardStreet(l)
-            const badge = nowMs != null ? cardBadge(l, nowMs) : undefined
-            // V3ListingRow — the Ledger-register listing unit (same as
-            // SearchResults). Wrapper owns data-listing-key + hide control;
-            // the map hover/select state rides the row's own functional
-            // inset ring (`is-hot` / `is-active`), never an elevation shadow.
-            return (
-              <div
-                key={key}
-                data-listing-key={key}
-                className="group group/hide relative"
-                onMouseEnter={() => onListHover(key)}
-                onMouseLeave={() => onListHover(null)}
-                onClick={() => setSelectedKey(key)}
-              >
-                <ListingCardHideControl
-                  listingKey={key}
-                  addressLine={addressLine}
-                  onVisibilityChange={onHiddenChange}
-                  className="left-1 top-1 right-auto size-7"
-                />
-                <V3ListingRow
-                  showPricePerSqft
-                  priority={cardIndex < 4}
-                  className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}
-                  listing={{
-                    listingKey: key,
-                    href,
-                    photoUrl: l.PhotoURL,
-                    price: l.ListPrice,
-                    addressLine,
-                    cityLine: cardCity(l),
-                    beds: l.BedroomsTotal,
-                    baths: l.BathroomsTotal,
-                    sqft: rowSqft(l),
-                    pricePerSqft: cardPricePerSqft(l),
-                    // The card publishes the ask and the $/sq ft, and needs to
-                    // know what kind of listing it is drawing to do it: on a
-                    // commercial lease the price is rent, and on a fractional
-                    // share it buys part of the home.
-                    propertyType: l.PropertyType ?? null,
-                    propertySubType: l.PropertySubType ?? null,
-                    subdivisionName: l.SubdivisionName ?? null,
-                    city: l.City ?? null,
-                    listNumber: l.ListNumber ?? null,
-                    badge,
-                  }}
-                />
-              </div>
-            )
-          })}
-        </div>
-        {visibleListings.length > visibleCount && (
-          <div className="px-4 pb-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
-              className="srch-chip w-full"
-            >
-              Show more homes
-            </Button>
-          </div>
-        )}
-        {/* ODS Aug 2024 IDX display rules (G54): every rendered price/$-per-sqft
-            needs source attribution in view. Split/map is an app frame that
-            deliberately omits V3Footer, so it carries no attribution of its
-            own — this line mirrors V3Footer's ODS text verbatim (compact,
-            no broker-license line, since this is not the global chrome). */}
-        <p className="px-4 pb-4 text-xs text-muted-foreground">
-          Listing data comes from Oregon Data Share and Morgan Data Shuttle. Information deemed
-          reliable but not guaranteed.
-        </p>
-        </>
-      )}
+      ) : null}
     </div>
   )
 
@@ -1036,69 +890,65 @@ export default function MapSearchView({
     </div>
   )
 
+  const slicedListings = visibleListings.slice(0, visibleCount)
+
   return (
-    <div className="map-search-shell flex w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
-      {/* Mobile segmented toggle — list-first default; Map hides the sheet. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1 lg:hidden">
-        <ToggleGroup
-          type="single"
-          value={mobileView}
-          onValueChange={(v) => {
-            if (v === 'list' || v === 'map') {
-              setMobileView(v)
+    <div ref={listContainerRef} className="map-search-shell w-full">
+      {resultsDegraded || listings.length === 0 ? (
+        listPanel
+      ) : (
+        <>
+          <MapSearchHomesField
+            listings={slicedListings}
+            mapSlot={mapPanel}
+            activeId={hoveredKey ?? selectedKey}
+            onActiveChange={(id) => {
+              setHoveredKey(id)
+              if (id) onListHover(id)
+            }}
+            onHiddenChange={onHiddenChange}
+            count={{
+              value: totalCount.toLocaleString('en-US'),
+              label: 'homes in this map view',
+              source: 'Regional MLS via getViewportSearch',
+            }}
+            leadExtra={
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="srch-label hidden sm:inline">Sort</span>
+                <Select value={sortValue} onValueChange={handleSortChange}>
+                  <SelectTrigger className="srch-square h-9 w-[10.5rem]" aria-label="Sort results" size="sm">
+                    <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SORT_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             }
-          }}
-          className="min-w-0 flex-1 rounded-none border-0"
-          variant="outline"
-          size="sm"
-        >
-          <ToggleGroupItem value="list" className="flex-1 rounded-none border-0 py-2 text-sm font-medium" aria-label="List view">
-            List
-          </ToggleGroupItem>
-          <ToggleGroupItem value="map" className="flex-1 rounded-none border-0 py-2 text-sm font-medium" aria-label="Map view">
-            Map
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <p className="srch-figure min-w-0 shrink truncate text-xs font-semibold text-foreground" aria-live="polite">
-          {resultsDegraded ? 'Search delayed' : listCountPhrase}
-        </p>
-        <Select value={sortValue} onValueChange={handleSortChange}>
-          <SelectTrigger className="srch-square h-9 w-[7.5rem] shrink-0" aria-label="Sort results" size="sm">
-            <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: list-first
-          fills the shell so a house is in the first 390 viewport; Map hides the
-          list and shows the canvas. Never double-render panels. */}
-      <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Map — full-bleed under the list on mobile; flex-1 rail partner on desktop. */}
-        <div className="absolute inset-0 z-0 min-h-0 min-w-0 lg:static lg:relative lg:z-auto lg:order-2 lg:min-h-0 lg:flex-1">
-          {mapPanel}
-        </div>
-
-        {/* List rail / mobile list pane.
-            List mode: covers the map so overlays cannot sit on the photo.
-            Map mode: pane hidden (count pill on canvas). Desktop: left rail. */}
-        <div
-          className={cn(
-            'z-10 min-h-0 flex-col bg-card',
-            'absolute inset-0',
-            mobileView === 'list' ? 'flex' : 'hidden',
-            'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto'
-          )}
-        >
-          {listPanel}
-        </div>
-      </div>
+            emptyMessage="No homes in this part of the map. Zoom out or pan to a different area."
+          />
+          {visibleListings.length > visibleCount ? (
+            <div className="px-4 pb-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
+                className="srch-chip w-full"
+              >
+                Show more homes
+              </Button>
+            </div>
+          ) : null}
+          <p className="px-4 pb-4 text-xs text-muted-foreground">
+            Listing data comes from Oregon Data Share and Morgan Data Shuttle. Information deemed
+            reliable but not guaranteed.
+          </p>
+        </>
+      )}
     </div>
   )
 }

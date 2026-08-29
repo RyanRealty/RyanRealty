@@ -5,11 +5,9 @@ import Link from 'next/link'
 import type { ListingTileRow } from '@/app/actions/listings'
 import { getSearchListings, type SearchFilters } from '@/app/actions/search'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
-import { listingDetailPath, displaySubdivision } from '@/lib/slug'
-import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { SearchHomesField } from '@/app/search/_v3/SearchHomesField'
+import { dedupeListingRows } from '@/app/search/_v3/search-field-items'
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
-import { V3ListingRow } from '@/components/site/v3'
-import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import { Button } from '@/components/ui/button'
@@ -132,17 +130,8 @@ export default function SearchResults({
     }
   }, [])
 
-  const onHiddenChange = useCallback((key: string, hidden: boolean) => {
-    setHiddenKeys((prev) => {
-      const next = new Set(prev)
-      if (hidden) next.add(key)
-      else next.delete(key)
-      return next
-    })
-  }, [])
-
   useEffect(() => {
-    setListings(initialListings)
+    setListings(dedupeListingRows(initialListings))
     setPage(initialPage)
     setTotal(totalCount)
     setDegraded(initialDegraded)
@@ -157,7 +146,7 @@ export default function SearchResults({
         toSearchListingsFilters(filters),
         nextPage
       )
-      setListings((prev) => [...prev, ...nextListings])
+      setListings((prev) => dedupeListingRows([...prev, ...nextListings]))
       setTotal(nextTotal)
       setPage(nextPage)
     } finally {
@@ -178,7 +167,6 @@ export default function SearchResults({
     return () => io.disconnect()
   }, [loadMore])
 
-  const listingKey = (row: ListingTileRow) => row.ListNumber ?? row.ListingKey ?? ''
   const showDegradedState = degraded && total === 0 && listings.length === 0
   const showEmptyState = !showDegradedState && total === 0 && hasActiveFilters
   // Hidden homes drop out of the rendered grid only — `total` stays the shared
@@ -229,71 +217,20 @@ export default function SearchResults({
             <span className="srch-figure">{total.toLocaleString()}</span> home
             {total !== 1 ? 's' : ''} found
           </p>
-          <div className="v3-lrow-list">
-        {visibleListings.map((listing, cardIndex) => {
-          const key = String(listingKey(listing)).trim()
-          const href = listingDetailPath(key, {
-            streetNumber: listing.StreetNumber,
-            streetName: listing.StreetName,
-            city: listing.City,
-            state: listing.State,
-            postalCode: listing.PostalCode,
-          }, undefined, { mlsNumber: listing.ListNumber ?? null })
-          const cityParts = [listing.City, listing.State].filter(Boolean).join(', ')
-          const cityZip = [cityParts, listing.PostalCode].filter(Boolean).join(' ').trim()
-          const subdivision = displaySubdivision(listing.SubdivisionName)
-          const cityLine = subdivision ? `${cityZip} · ${subdivision}` : cityZip
-          const addressLine =
-            publishStreetLine({
-              streetNumber: listing.StreetNumber,
-              streetName: listing.StreetName,
-              streetSuffix: listing.StreetSuffix,
-            }) || cityParts || 'Listing'
-          // Wrapper carries data-listing-key for the map<->list hover sync
-          // (consumed by MapSearchView). V3ListingRow is the Ledger-register
-          // listing unit (THE LOOK §9). The hide control overlays at THIS
-          // layer (named group `group/hide`, positioned over the thumb) so
-          // the row itself stays lean.
-          return (
-            <div key={key} data-listing-key={key} className="relative group/hide">
-              <ListingCardHideControl
-                listingKey={key}
-                addressLine={addressLine}
-                onVisibilityChange={onHiddenChange}
-                className="left-1 top-1 right-auto size-7"
-              />
-              <V3ListingRow
-                showPricePerSqft
-                priority={cardIndex < 4}
-                listing={{
-                  listingKey: key,
-                  href,
-                  photoUrl: listing.PhotoURL,
-                  price: listing.ListPrice,
-                  addressLine,
-                  cityLine,
-                  beds: listing.BedroomsTotal,
-                  baths: listing.BathroomsTotal,
-                  sqft: listing.TotalLivingAreaSqFt ?? null,
-                  pricePerSqft:
-                    listing.ListPrice && listing.TotalLivingAreaSqFt
-                      ? listing.ListPrice / listing.TotalLivingAreaSqFt
-                      : null,
-                  // The card publishes the ask and the $/sq ft, and needs to
-                  // know what kind of listing it is drawing to do it: on a
-                  // commercial lease the price is rent, and on a fractional
-                  // share it buys part of the home.
-                  propertyType: listing.PropertyType ?? null,
-                  propertySubType: listing.PropertySubType ?? null,
-                  subdivisionName: listing.SubdivisionName ?? null,
-                  city: listing.City ?? null,
-                  listNumber: listing.ListNumber ?? null,
-                }}
-              />
-            </div>
-          )
-        })}
-      </div>
+          <SearchHomesField
+            listings={visibleListings}
+            placeName={filters.city?.trim() || 'Central Oregon'}
+            count={
+              total > 0
+                ? {
+                    value: total.toLocaleString('en-US'),
+                    label: 'homes in this search',
+                    source: 'Regional MLS via listing_search_mv',
+                  }
+                : undefined
+            }
+            emptyMessage="No homes match these filters. Loosen a filter, or view every Central Oregon listing."
+          />
       {listings.length < total && (
         <div ref={sentinelRef} className="flex justify-center py-8">
           {loading && <span className="text-muted-foreground">Loading more…</span>}

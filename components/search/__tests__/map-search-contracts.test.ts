@@ -52,7 +52,7 @@ describe('MapSearchView orchestrator', () => {
     // hidden home leaves the list and the map together (W7.2).
     expect(src).toMatch(/const visibleListings = useMemo\(\s*\(\) => excludeHiddenListings\(listings, hiddenKeys\)/)
     expect(src).toMatch(/const mapListings = useMemo\(\(\) => visibleListings\.map\(toMapListing\)/)
-    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
+    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)/)
   })
 
   it('search-as-you-move: bounds change triggers a debounced viewport refetch', () => {
@@ -70,19 +70,20 @@ describe('MapSearchView orchestrator', () => {
   it('list↔map hover sync is wired both directions', () => {
     expect(src).toMatch(/hoveredKey/)
     expect(src).toMatch(/onMarkerHover/)
-    expect(src).toMatch(/onMouseEnter=\{\(\) => onListHover/)
-    expect(src).toMatch(/data-listing-key=/)
+    expect(src).toMatch(/onActiveChange/)
+    expect(src).toMatch(/<MapSearchHomesField/)
   })
 
-  it('has a mobile list/map toggle (design-system ToggleGroup)', () => {
-    expect(src).toMatch(/mobileView/)
-    expect(src).toMatch(/setMobileView\(v\)/)
-    expect(src).toMatch(/ToggleGroupItem value="list"/)
-    expect(src).toMatch(/ToggleGroupItem value="map"/)
+  it('wears V3Field photo doors; Field owns list/map layout', () => {
+    expect(src).toMatch(/<MapSearchHomesField/)
+    expect(readSrc('components/search/MapSearchHomesField.tsx')).toMatch(/listAsDoors/)
+    expect(src).not.toMatch(/ToggleGroupItem value="list"/)
+    expect(src).not.toMatch(/V3ListingRow/)
   })
 
-  it('defaults mobile to list so 390 is not a map-only void', () => {
-    expect(src).toMatch(/useState<'list' \| 'map'>\('list'\)/)
+  it('defaults the Field stack so 390 is map then photo doors', () => {
+    expect(readSrc('components/search/MapSearchHomesField.tsx')).toMatch(/listAsDoors/)
+    expect(src).toMatch(/className="map-search-shell w-full"/)
   })
 
   it('renders the search-as-you-move toggle control', () => {
@@ -101,7 +102,7 @@ describe('hidden homes are excluded from the map split view (W7.2, 2026-07-22)',
   it('imports the shared hidden-exclusion primitives + the hide action + control', () => {
     expect(src).toMatch(/import \{ getHiddenListingKeys \} from '@\/app\/actions\/hidden-listings'/)
     expect(src).toMatch(/import \{ buildHiddenKeySet, excludeHiddenListings \} from '@\/components\/search\/hidden-exclusion'/)
-    expect(src).toMatch(/import ListingCardHideControl from '@\/components\/listing\/ListingCardHideControl'/)
+    expect(readSrc('components/search/MapSearchHomesField.tsx')).toMatch(/import ListingCardHideControl from '@\/components\/listing\/ListingCardHideControl'/)
   })
 
   it('loads the user hidden keys and builds the membership set (fail-open)', () => {
@@ -113,7 +114,7 @@ describe('hidden homes are excluded from the map split view (W7.2, 2026-07-22)',
     // The list slices from visibleListings and the pins map from it — proving a
     // hidden home cannot survive in either render.
     expect(src).toMatch(/excludeHiddenListings\(listings, hiddenKeys\)/)
-    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
+    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)/)
     expect(src).toMatch(/visibleListings\.map\(toMapListing\)/)
     // The raw `listings` state must NOT feed the pins directly anymore (that was
     // the leak). Guard against a regression that re-points mapListings at it.
@@ -121,10 +122,8 @@ describe('hidden homes are excluded from the map split view (W7.2, 2026-07-22)',
   })
 
   it('renders the hide control wired to the local visibility state', () => {
-    expect(src).toMatch(/<ListingCardHideControl/)
-    expect(src).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
-    // group/hide on the card wrapper drives the hover reveal.
-    expect(src).toMatch(/group group\/hide relative/)
+    expect(readSrc('components/search/MapSearchHomesField.tsx')).toMatch(/<ListingCardHideControl/)
+    expect(readSrc('components/search/MapSearchHomesField.tsx')).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
   })
 })
 
@@ -150,16 +149,14 @@ describe('hidden homes are excluded from the SSR city browse grid too (W7.2, 202
     'app/search/[...slug]/sections/SeoTail.tsx',
   ].map(readSrc).join('\n')
 
-  it('the browse grid renders through HideAwareListingGrid, not a raw ListingCard grid', () => {
-    expect(slug).toMatch(/import HideAwareListingGrid, \{ type HideAwareItem \} from '@\/components\/search\/HideAwareListingGrid'/)
-    expect(slug).toMatch(/<HideAwareListingGrid/)
-    // Each item carries BOTH identifiers so the dual-key match works.
-    expect(slug).toMatch(/ListingKey: listing\.ListingKey \?\? null, ListNumber: listing\.ListNumber \?\? null/)
-    // NO raw <ListingCard> element of any shape (the leak). This is the robust
-    // reintroduction guard — a differently-shaped raw grid (different cols/key)
-    // is caught, unlike a signature-specific regex. The ci:hidden-exclusion-
-    // surfaces gate enforces the same invariant across every browse-results page.
+  it('the browse grid renders through SearchHomesField photo doors, not a raw ListingCard grid', () => {
+    expect(slug).toMatch(/import \{ SearchHomesField \} from '\.\.\/\.\.\/_v3\/SearchHomesField'/)
+    expect(slug).toMatch(/<SearchHomesField/)
+    expect(readSrc('app/search/_v3/SearchHomesField.tsx')).toMatch(/listAsDoors/)
+    expect(readSrc('app/search/_v3/SearchHomesField.tsx')).toMatch(/isHiddenListing\(/)
     expect(slug).not.toMatch(/<ListingCard[\s/>]/)
+    expect(slug).not.toMatch(/HideAwareListingGrid/)
+    expect(readSrc('components/SearchListingsToolbar.tsx')).not.toMatch(/Columns/)
   })
 
   it('HideAwareListingGrid loads the user hidden set and subtracts on BOTH keys', () => {
@@ -234,9 +231,9 @@ describe('the city map/split view (MapSearchView via MapSplitView) subtracts hid
   })
 
   it('carries the hover hide control on each tile', () => {
-    expect(src).toMatch(/<ListingCardHideControl/)
-    expect(src).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
-    expect(src).toMatch(/group\/hide/)
+    const field = readSrc('components/search/MapSearchHomesField.tsx')
+    expect(field).toMatch(/<ListingCardHideControl/)
+    expect(field).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
   })
 })
 
@@ -610,12 +607,11 @@ describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHI
 describe('map craft: selection + zoom storytelling + basemap', () => {
   it('selects list card when a map pin opens (stronger than hover)', () => {
     const view = readSrc('components/search/MapSearchView.tsx')
+    const field = readSrc('components/site/v3/V3Field.tsx')
     expect(view).toMatch(/selectedKey/)
     expect(view).toMatch(/onMarkerClick/)
-    // Selection is the Ledger row's functional inset ring (`is-active`,
-    // 2px ink) — stronger than the hover wash (`is-hot`, 1px edge).
-    expect(view).toMatch(/is-active/)
-    expect(view).toMatch(/is-hot/)
+    expect(view).toMatch(/activeId=\{hoveredKey \?\? selectedKey\}/)
+    expect(field).toMatch(/is-active/)
     expect(view).toMatch(/in this map view/)
     expect(view).toMatch(/listCountPhrase/)
     expect(view).toMatch(/lg:hidden/)
@@ -681,13 +677,13 @@ describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
     expect(sheet).toMatch(/min-w-0/)
   })
 
-  it('P7: first four search cards request image priority for LCP', () => {
+  it('P7: Field photo doors stay the inventory surface (ListingCard still accepts priority)', () => {
     const card = readSrc('components/site/ListingCard.tsx')
     expect(card).toMatch(/priority\?: boolean/)
     expect(card).toMatch(/priority=\{priority\}/)
-    for (const rel of ['components/search/MapSearchView.tsx', 'components/search/SearchResults.tsx']) {
-      expect(readSrc(rel)).toMatch(/priority=\{cardIndex < 4\}/)
-    }
+    expect(readSrc('components/site/v3/V3Field.tsx')).toMatch(/listAsDoors/)
+    expect(readSrc('components/search/SearchResults.tsx')).toMatch(/<SearchHomesField/)
+    expect(readSrc('components/search/MapSearchView.tsx')).toMatch(/<MapSearchHomesField/)
   })
 })
 
