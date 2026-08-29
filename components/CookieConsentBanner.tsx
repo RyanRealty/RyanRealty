@@ -15,6 +15,12 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from '@/lib/utils'
 
+/** Sitewide cookie actions. Button default size is h-8 (32px); --v3-tap wins. */
+const COOKIE_ACTION_STYLE = {
+  minHeight: 'var(--v3-tap)',
+  height: 'var(--v3-tap)',
+} as const
+
 const COOKIE_CONSENT_KEY = 'ryan_realty_cookie_consent'
 const CONSENT_EXPIRY_YEARS = 1
 
@@ -231,8 +237,8 @@ export default function CookieConsentBanner() {
           <span className="text-sm">Marketing (Meta Pixel), to target ads to you</span>
         </Label>
         <DialogFooter>
-          <Button type="button" onClick={savePreferences}>Save</Button>
-          <Button type="button" variant="outline" onClick={() => setPrefsOpen(false)}>Cancel</Button>
+          <Button type="button" style={COOKIE_ACTION_STYLE} onClick={savePreferences}>Save</Button>
+          <Button type="button" variant="outline" style={COOKIE_ACTION_STYLE} onClick={() => setPrefsOpen(false)}>Cancel</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -246,7 +252,7 @@ export default function CookieConsentBanner() {
       <Button
         type="button"
         variant="outline"
-        className="min-h-11"
+        style={COOKIE_ACTION_STYLE}
         onClick={() => setSurface((current) => nextCookieNoticeSurface(current, 'open-bar', false))}
       >
         Cookies
@@ -275,9 +281,9 @@ export default function CookieConsentBanner() {
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>
         </p>
         <div className="mt-2 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-          <Button type="button" className="min-h-11" onClick={acceptAll}>Accept all</Button>
-          <Button type="button" variant="outline" className="min-h-11" onClick={essentialOnly}>Essential only</Button>
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => setPrefsOpen(true)}>Preferences</Button>
+          <Button type="button" style={COOKIE_ACTION_STYLE} onClick={acceptAll}>Accept all</Button>
+          <Button type="button" variant="outline" style={COOKIE_ACTION_STYLE} onClick={essentialOnly}>Essential only</Button>
+          <Button type="button" variant="outline" style={COOKIE_ACTION_STYLE} onClick={() => setPrefsOpen(true)}>Preferences</Button>
         </div>
       </div>
     </div>

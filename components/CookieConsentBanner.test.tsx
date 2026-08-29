@@ -279,4 +279,10 @@ describe('CookieConsentBanner source contract', () => {
     expect(src).not.toMatch(/<button/)
     expect(src).not.toMatch(/#[0-9a-fA-F]{3,8}/)
   })
+
+  it('sizes every cookie action to --v3-tap', () => {
+    expect(src).toContain("minHeight: 'var(--v3-tap)'")
+    expect(src).toContain("height: 'var(--v3-tap)'")
+    expect(src).toContain('style={COOKIE_ACTION_STYLE}')
+  })
 })

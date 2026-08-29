@@ -162,10 +162,8 @@
   border-bottom: var(--v3-rule-hairline);
 }
 
-/* Thumb minimum on the widths a thumb is used at. Above the wide stop the
-   footer is pointer territory and a 44px row in a twelve-row column would push
-   the legal line most of a viewport further down for no one's benefit; 2rem
-   still clears the WCAG 2.5.8 target minimum. */
+/* Thumb minimum at every width. Value my home and the rest of the sitemap
+   stay --v3-tap (44px). Do not shrink the row on the wide stop. */
 @layer base {
   .v3-footer__column-list a {
     display: flex;
@@ -185,12 +183,6 @@
 .v3-footer__column-list a:hover,
 .v3-footer__column-list a:focus-visible {
   text-decoration-color: currentColor;
-}
-
-@media (min-width: 56.25rem) {
-  .v3-footer__column-list a {
-    min-height: 2rem;
-  }
 }
 
 /* Base ----------------------------------------------------------------------
