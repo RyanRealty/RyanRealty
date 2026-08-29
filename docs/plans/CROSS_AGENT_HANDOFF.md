@@ -1,3 +1,11 @@
+# Current — 2026-08-29 (Cursor) — listing template PR 160, 390 sheet overflow
+
+**Surface:** branch `cursor/listing-template-c741` (PR 160). Do not merge. Do not deploy production.
+**Done:** Walker 390 FAIL — facts/CTAs/Field plot were ~734px in a 354px sheet (grid min-width:auto + Field disclosure max-content). Sheet children now `min-width:0`; Field is `width:100%`; facts 2-col; mobile CTAs stack; cookie bar still uses `--listing-sticky-height`.
+**Next:** Walker walk of the new preview (not `9eiw3io6c`). Proof listing `/homes-for-sale/redmond/4496-zenith-220226279`.
+**Skills read:** walkthrough-artifacts, frontend-design, tdd.
+**Do not:** invent a skin, ship Unsplash, enable all previews, dismiss cookies to "prove" CTAs.
+
 > **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Matt asked 2026-08-21 to re-arm the loop on current main.
 > **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**

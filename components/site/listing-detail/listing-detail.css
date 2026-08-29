@@ -198,6 +198,7 @@
 .listing-detail-shell {
   width: 100%;
   max-width: 1500px;
+  min-width: 0;
   margin: 0 auto;
   padding: 0 18px 3rem;
 }
@@ -214,7 +215,9 @@
 
 .listing-detail-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
+  min-width: 0;
 }
 @media (min-width: 1024px) {
   .listing-detail-grid.has-sidebar {
@@ -751,6 +754,9 @@
 .listing-detail .listing-price-cta--facts {
   display: grid;
   gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .listing-detail .listing-price-cta .v3-figure__label {
   position: absolute;
@@ -768,6 +774,9 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 @media (min-width: 760px) {
   .listing-detail .listing-price-cta-facts {
@@ -789,12 +798,29 @@
 .listing-detail .listing-price-cta-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex-direction: column;
+}
+.listing-detail .listing-price-cta-actions .v3-btn {
+  width: 100%;
+  max-width: 100%;
 }
 .listing-detail .listing-price-cta-icons {
   display: flex;
   gap: 0.5rem;
+}
+@media (min-width: 760px) {
+  .listing-detail .listing-price-cta-actions {
+    flex-direction: row;
+    align-items: center;
+  }
+  .listing-detail .listing-price-cta-actions .v3-btn {
+    width: auto;
+  }
 }
 .listing-detail .listing-icon-action {
   display: inline-flex;
@@ -876,6 +902,22 @@
   display: grid;
   gap: 1.25rem;
   padding-top: 1.5rem;
+}
+/* Nested Field is already inside the Sheet measure. Drop the page-width
+   padding so the plot is the sheet column, not 72rem of max-content. */
+.listing-detail .v3-sheet .v3.v3-field {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+  padding-inline: 0;
+  padding-block: 0;
+}
+.listing-detail .v3-sheet .v3-field__map,
+.listing-detail .v3-sheet .v3-field__plot {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 .listing-detail .listing-location-note,
 .listing-detail .listing-market-note,

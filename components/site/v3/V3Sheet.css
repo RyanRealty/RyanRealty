@@ -35,6 +35,15 @@
 .v3.v3-sheet.v3-sheet--page {
   max-width: var(--v3-measure);
   width: 100%;
+  min-width: 0;
+}
+
+/* Grid items default to min-width:auto. A long note or a Field plot
+   otherwise sizes the column to ~max-content (~734px) and the 390 sheet
+   clips facts, CTAs, and the location pin. */
+.v3.v3-sheet.v3-sheet--page > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .v3-sheet-head {

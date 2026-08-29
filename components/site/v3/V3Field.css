@@ -29,7 +29,9 @@
    on --v3-space-3xl); the top is what governs how two sections meet. */
 .v3.v3-field {
   display: block;
+  width: 100%;
   max-width: var(--v3-measure);
+  min-width: 0;
   margin-inline: auto;
   padding: var(--v3-section-pad) var(--v3-gutter);
 }
@@ -614,7 +616,10 @@
 /* The quiet lines: what the map is, and what the set does not show. */
 .v3-field__note {
   margin: 0;
+  max-width: 100%;
+  min-width: 0;
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
+  overflow-wrap: anywhere;
 }
