@@ -611,15 +611,14 @@ describe('design directive contracts', () => {
     expect(page).not.toMatch(/lookingAtWake|sendLookingAt/)
   })
 
-  it('D111 — sentence search writes existing filter params', () => {
+  it('D111 — search field writes existing filter params', () => {
     const page = readSrc('app/search/page.tsx')
-    const box = readSrc('components/search/SentenceSearch.tsx')
-    const parse = readSrc('lib/search/sentence-to-params.ts')
-    expect(page).toMatch(/<SentenceSearch/)
-    expect(box).toMatch(/sentenceToParams/)
-    expect(box).toMatch(/Search listings/)
-    expect(parse).toMatch(/parseSearchQuery/)
-    expect(parse).toMatch(/ALL_SEARCH_URL_PARAMS/)
+    const box = readSrc('components/search/SearchFilters.tsx')
+    const parse = readSrc('lib/parse-search-query.ts')
+    expect(page).toMatch(/<SearchFilters/)
+    expect(box).toMatch(/parseSearchQuery/)
+    expect(box).toMatch(/applyNaturalQuery/)
+    expect(parse).toMatch(/export function parseSearchQuery/)
   })
 
   it('D112 — listing HouseMe report is stamp-backed and refuses invention', () => {

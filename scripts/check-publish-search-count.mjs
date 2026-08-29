@@ -40,11 +40,13 @@ checks.push({
 
 const map = src('components/search/MapSearchView.tsx')
 checks.push({
-  label: 'split-view count row gates through publishSearchCountPair',
+  label: 'Field count is one map-viewport number',
   ok:
     /from ['"]@\/lib\/search\/publish-search-count['"]/.test(map) &&
-    /publishSearchCountPair\(/.test(map) &&
-    map.includes('countSearchListings('),
+    /publishSearchCount\(/.test(map) &&
+    map.includes("grain: 'map-viewport'") &&
+    map.includes('countSearchListings(') &&
+    map.includes('publishSearchCountPair(') === false,
 })
 
 const filters = src('components/search/SearchFilters.tsx')

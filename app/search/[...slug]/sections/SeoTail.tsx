@@ -1,22 +1,14 @@
-import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   v3Text,
   V3ChartCard,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
-  type V3InstrumentFigure,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { EMPTY_PUBLIC_PACE, publicPaceItems, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
-import {
-  publicSegmentBrowseHref,
-  publicSegmentDisplayBits,
-  publicSegmentNoun,
-  type PublicSegmentRow,
-} from '@/lib/data/market-truth/public-segments'
+import { type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
+import { type PublicSegmentRow } from '@/lib/data/market-truth/public-segments'
 import type { SearchPriceLadder } from '@/lib/search/price-ladder'
 import type { CityInventoryPublish } from '@/lib/market/publish-city-inventory'
 import { type buildMarketFaq } from '@/lib/site/market-faq'
@@ -24,9 +16,9 @@ import { type buildPresetFaq } from '@/lib/site/preset-faq'
 import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
 import { type SearchPreset } from '../resolve-slug'
 
-/** Below-fold SEO depth: market snapshot band, the asking-price ladder, city +
+/** Below-fold SEO depth: the asking-price ladder, city +
  *  preset FAQs, preset cross-links, and the related-searches link cloud (see
- *  page.tsx call site).
+ *  page.tsx call site). Leftover HUD / MarketSnapshot stays off this face.
  *
  *  FAQPage JSON-LD used to emit from FAQBlock. V3Quiet carries no structured
  *  data, so MetadataBlock emits the same items the Quiet renders.
@@ -39,10 +31,10 @@ export function SearchSeoTail({
   isPlainCityPage,
   relatedCitySlug,
   city,
-  published,
+  published: _published,
   priceLadder,
-  publicPace,
-  publicSegments,
+  publicPace: _publicPace,
+  publicSegments: _publicSegments,
   cityMarketFaq,
   presetDepth,
   presetBandLinks,
@@ -125,55 +117,10 @@ export function SearchSeoTail({
   }
   const [firstRelated, ...restRelated] = relatedRows
 
-  const leftoverFigures: V3InstrumentFigure[] = []
-  if (isPlainCityPage && relatedCitySlug && city) {
-    for (const row of publicSegments ?? []) {
-      if (row.activeCount == null || row.activeCount <= 0) continue
-      const bits = publicSegmentDisplayBits(row)
-      leftoverFigures.push({
-        value: v3Text(row.activeCount.toLocaleString('en-US')),
-        label: v3Text(
-          [`${publicSegmentNoun(row.segment, row.activeCount)} for sale`, ...bits].join(' · '),
-        ),
-        href: publicSegmentBrowseHref(relatedCitySlug, row.segment),
-      })
-    }
-    for (const item of publicPaceItems(publicPace ?? EMPTY_PUBLIC_PACE)) {
-      leftoverFigures.push({
-        value: v3Text(item.value),
-        label: v3Text(item.label),
-      })
-    }
-  }
-  const [firstLeftover, ...restLeftover] = leftoverFigures
-
   return (
     <>
       {isPlainCityPage && relatedCitySlug && city ? (
         <section id="search-seo" className="mt-12">
-          <MarketSnapshot
-            citySlug={relatedCitySlug}
-            cityName={city}
-            publishedActiveCount={published?.count ?? null}
-            publishedMedianListPrice={published?.medianListPrice ?? null}
-          />
-          {firstLeftover ? (
-            <V3Instrument
-              id="search-leftover"
-              level={2}
-              eyebrow={v3Text('Market Truth')}
-              headline={v3Text(`${city} leftover and other types`)}
-              figures={[firstLeftover, ...restLeftover]}
-              source={v3Text(
-                'Extra product-type inventory and 12-month leftover pace are leftover membership, sample-gated. The band above is the same leftover pile. A miss omits.',
-              )}
-              action={{
-                label: v3Text(`Open ${city} market report`),
-                href: `/housing-market/${relatedCitySlug}`,
-                variant: 'ghost',
-              }}
-            />
-          ) : null}
           {priceLadder ? (
             <div className="mx-auto mt-6 w-full max-w-3xl">
               <V3ChartCard

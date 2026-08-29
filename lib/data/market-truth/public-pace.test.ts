@@ -102,7 +102,8 @@ describe('public pace surfaces', () => {
     // count -- but it no longer prints pace items. /housing-market owns the run.
     expect(home).toMatch(/getPublicDetachedPace/)
     expect(home).not.toMatch(/publicPaceItems/)
-    expect(searchTail).toMatch(/publicPaceItems/)
+    expect(searchTail).not.toMatch(/publicPaceItems/)
+    expect(searchTail).not.toMatch(/Market Truth/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(
       resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),

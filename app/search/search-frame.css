@@ -14,9 +14,12 @@
   }
 
   .search-filter-dock {
-    position: sticky;
-    top: 3.5rem;
+    position: relative;
+    top: auto;
     z-index: 20;
+    background: var(--v3-surface);
+    border-bottom: 1px solid var(--v3-edge);
+    padding-bottom: var(--v3-space-sm);
   }
 
   /* App-frame already locks the viewport. Sticky here overlays the
@@ -33,5 +36,63 @@
       padding-top: 0.25rem;
       padding-bottom: 0;
     }
+  }
+}
+
+/* Unlayered so these beat V3Field.css. Search lists are long: when Map is
+   on, the map is the surface and tiles peek below. Bound the 390 list so
+   the email ask sits under the Field, not after every tile. */
+@media (max-width: 56.249rem) {
+  .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:first-of-type {
+    order: 0;
+  }
+
+  .search-field .v3.v3-field--map-toggle.v3-field--map-open .v3-field__frame > .v3-field__col:last-of-type {
+    order: 1;
+  }
+
+  .search-field .v3.v3-field--flow .v3-field__list {
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+  }
+}
+
+/* SearchWorkspace pins dock + Field under chrome after the H1 leaves
+   (390 and 1280). Cream so tiles and map cannot show through. Keep the
+   Field's 560px map/list bounds — do not stretch them to 100% or the
+   map collapses. The pin releases once the email ask reaches the
+   viewport so the overlay cannot cover it. */
+.search-workspace {
+  background: var(--v3-surface);
+}
+
+.search-workspace .search-filter-dock {
+  position: relative;
+  top: auto;
+  background: var(--v3-surface);
+}
+
+.search-workspace .search-field .v3.v3-field {
+  padding-top: var(--v3-space-md);
+}
+
+.search-workspace-slot {
+  height: 0;
+}
+
+.search-workspace--stuck {
+  position: fixed;
+  top: 3.5rem;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  isolation: isolate;
+  background: var(--v3-surface);
+}
+
+/* .v3 .v3-btn and .v3-field__lead .v3-btn outrank the barrel hide. */
+@media (min-width: 56.25rem) {
+  .search-field .v3-field__lead .v3-btn.v3-field__map-toggle {
+    display: none;
   }
 }

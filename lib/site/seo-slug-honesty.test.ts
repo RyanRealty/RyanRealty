@@ -79,7 +79,7 @@ describe('SEO search honesty contracts', () => {
     const gridFetch = page.indexOf('getListingsWithAdvanced({ ...filterOpts, limit: pageSize, offset })')
     expect(mapReturn).toBeGreaterThan(0)
     expect(gridFetch).toBeGreaterThan(mapReturn)
-    expect(page).toMatch(/const isMapSplitView = \(sp\.view === 'map' \|\| sp\.view === 'split'\)/)
+    expect(page).toMatch(/const isMapSplitView = Boolean\(city \|\| hasFilterOnly\)/)
   })
 
   it('prints the all-types caption on the city header intro', () => {

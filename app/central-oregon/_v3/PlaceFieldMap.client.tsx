@@ -15,18 +15,19 @@
  */
 
 import dynamic from 'next/dynamic'
-import type { ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
 import type { PlaceFieldMapImpl } from './PlaceFieldMapImpl'
 
 const Impl = dynamic(
   () => import('./PlaceFieldMapImpl').then((m) => m.PlaceFieldMapImpl),
   {
     ssr: false,
-    loading: () => <div className="v3-field__map-loading" aria-hidden="true" />,
+    loading: () => <div className="v3-field__map-pending" aria-hidden="true" />,
   },
 )
 
 export function PlaceFieldMap(props: ComponentProps<typeof PlaceFieldMapImpl>) {
+  const [generation, setGeneration] = useState(0)
   return (
     <div className="v3-field__map-frame">
       {props.posterSrc ? (
@@ -41,7 +42,11 @@ export function PlaceFieldMap(props: ComponentProps<typeof PlaceFieldMapImpl>) {
       ) : (
         <div className="v3-field__map-pending" aria-hidden="true" />
       )}
-      <Impl {...props} />
+      <Impl
+        key={generation}
+        {...props}
+        onRetry={() => setGeneration((n) => n + 1)}
+      />
     </div>
   )
 }

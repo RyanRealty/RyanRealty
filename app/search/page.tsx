@@ -7,9 +7,8 @@
 // breadcrumb rich result, and the deep trails that can (/homes-for-sale/<city>,
 // listing detail) still emit theirs.
 import type { Metadata } from 'next'
-import { getSearchListings, getSearchMapListings, getViewportSearch } from '@/app/actions/search'
+import { getViewportSearch } from '@/app/actions/search'
 import { getCityBoundary } from '@/app/actions/cities'
-import { getGeocodedListings } from '@/app/actions/geocode'
 import { getSession } from '@/app/actions/auth'
 import type { SearchFilters as SearchFiltersState } from '@/app/actions/search'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
@@ -23,9 +22,9 @@ import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
-  V3_LEDGER_CLASS,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3Heading,
 } from '@/components/site/v3'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
@@ -53,14 +52,12 @@ function bboxFromGeometry(
   return { west, south, east, north }
 }
 import SearchFilters from '@/components/search/SearchFilters'
-import SentenceSearch from '@/components/search/SentenceSearch'
-import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
-import HideAwareSearchMap from '@/components/search/HideAwareSearchMap'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
-import { SplitViewBodyLock } from '@/components/search/SplitViewBodyLock'
+import { SearchWorkspace } from '@/components/search/SearchWorkspace'
+import { SearchCensus } from '@/app/search/[...slug]/sections/SearchCensus'
 
 const DEFAULT_VIEW = 'split'
 
@@ -218,8 +215,6 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams
   const filters = parseFilters(sp)
-  const view = (sp.view === 'list' || sp.view === 'map' ? sp.view : 'split') as 'split' | 'list' | 'map'
-
   // Camera default only — never a city filter. List already skipped the silent
   // Bend inject (`view !== 'list' ? defaultCity`). Split/map now match that
   // honesty: no `filters.city = 'Bend'` unless the URL asked. Regional
@@ -231,20 +226,10 @@ export default async function SearchPage({
     subdivision: filters.subdivision,
   }
 
-  const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
-
-  // SPLIT (default, the mockup target): unified search-as-you-move. ONE viewport
-  // fetch seeds BOTH the list and the map markers so they can never diverge.
-  // Initial bounds come from the city's authoritative boundary bbox (DAL); the
-  // map refines to the real viewport on first idle.
-  //
-  // Perf (SEARCH_UX_WAVE3 P1): session and city boundary do not depend on each
-  // other — run them in parallel so anonymous TTFB is not auth+boundary serial.
-  // Saved/liked still wait on session (signed-in only).
   const citySlug = effectiveFilters.city ? slugify(effectiveFilters.city) : null
   const [session, cityBoundaryGeo] = await Promise.all([
     getSession(),
-    view !== 'list' && citySlug
+    citySlug
       ? withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
       : Promise.resolve(null),
   ])
@@ -263,79 +248,33 @@ export default async function SearchPage({
   // client-side (MapSearchView drops the geo scope on draw), so a reload or
   // shared link reproduces the identical post-draw result set.
   // getViewportSearch derives its effective bounds from the shapes themselves.
-  const legacyPoly = view === 'split' ? decodeMapPolygon(sp.poly) : null
+  const legacyPoly = decodeMapPolygon(sp.poly)
   const initialShapes: DrawnShape[] | null =
-    view === 'split'
-      ? decodeMapShapes(sp.shapes) ??
-        (legacyPoly ? [{ type: 'polygon', points: legacyPoly, exclude: false }] : null)
-      : null
-  const hasIncludeShape = initialShapes?.some((s) => !s.exclude) ?? false
-  // Split viewport + list inventory: settled timeout so timeout/error is not
-  // painted as "0 homes" (SEARCH_UX_WAVE3 P9). True empty → degraded false.
-  const viewportSettled =
-    view === 'split'
-      ? await withTimeoutSettled(
-          getViewportSearch(
-            hasIncludeShape ? stripGeoScope(effectiveFilters) : effectiveFilters,
-            initialBounds,
-            buildShapeSetForSearch(initialShapes, initialBounds)
-            // SSR seed uses default limit 500; client pan may pass { limit: 250 }.
-          ),
-          {
-            listings: [],
-            totalCount: 0,
-            capped: false,
-          }
-        )
-      : null
-  const viewport = viewportSettled?.data ?? null
-  const viewportDegraded = viewportSettled?.degraded ?? false
+    decodeMapShapes(sp.shapes) ??
+    (legacyPoly ? [{ type: 'polygon', points: legacyPoly, exclude: false }] : null)
+  const hasIncludeShape = initialShapes?.some((s) => s.exclude === false) ?? false
+  const viewportSettled = await withTimeoutSettled(
+    getViewportSearch(
+      hasIncludeShape ? stripGeoScope(effectiveFilters) : effectiveFilters,
+      initialBounds,
+      buildShapeSetForSearch(initialShapes, initialBounds)
+    ),
+    {
+      listings: [],
+      totalCount: 0,
+      capped: false,
+    }
+  )
+  const viewport = viewportSettled.data
+  const viewportDegraded = viewportSettled.degraded
 
-  // LIST: paginated infinite-scroll browse (unchanged fetch; honesty flag added).
-  const listSettled =
-    view === 'list'
-      ? await withTimeoutSettled(getSearchListings(effectiveFilters, page), {
-          listings: [],
-          totalCount: 0,
-        })
-      : null
-  const listings = listSettled?.data.listings ?? []
-  const totalCount = listSettled?.data.totalCount ?? 0
-  const listDegraded = listSettled?.degraded ?? false
-
-  // MAP: settled timeout so empty pins are not invented zero inventory.
-  const mapSettled =
-    view === 'map' ? await withTimeoutSettled(getSearchMapListings(effectiveFilters), []) : null
-  const mapListings = mapSettled?.data ?? []
-  const mapDegraded = mapSettled?.degraded ?? false
-  const mapListingsWithCoords =
-    !mapDegraded && mapListings.length > 0
-      ? await withTimeout(getGeocodedListings(mapListings), mapListings)
-      : mapListings
-
-  // Boundary polygon for the map, shared by split + map views. Prefer the
-  // authoritative boundaries-table geojson; fall back to the cities action
-  // only when the user actually scoped a city (never invent Bend).
   const boundaryGeojson =
-    view !== 'list'
-      ? (cityBoundaryGeo ??
-          (effectiveFilters.city
-            ? await withTimeout(getCityBoundary(effectiveFilters.city), null, 2000)
-            : null))
-      : null
+    cityBoundaryGeo ??
+    (effectiveFilters.city
+      ? await withTimeout(getCityBoundary(effectiveFilters.city), null, 2000)
+      : null)
 
-  const resultsCount =
-    view === 'split'
-      ? viewportDegraded
-        ? undefined
-        : (viewport?.totalCount ?? 0)
-      : view === 'map'
-        ? mapDegraded
-          ? undefined
-          : mapListings.length
-        : listDegraded
-          ? undefined
-          : totalCount
+  const resultsCount = viewportDegraded ? undefined : viewport.totalCount
 
   const placeQuery =
     filters.city && filters.subdivision
@@ -384,117 +323,59 @@ export default async function SearchPage({
     postalCode: sp.postalCode ?? '',
   }
 
-  const h1Text = [filters.subdivision, filters.city ? `${filters.city}` : null, 'Homes for Sale']
-    .filter(Boolean)
-    .join(' ')
-
-  // split/map are the viewport-fit "app frame" views — no document scroll,
-  // the shell fills whatever room is left below the chrome. list keeps
-  // normal scrollable document flow so the footer/newsletter stay reachable
-  // (design-audit P2: the frame's calc() height ignored the breadcrumb + the
-  // guest alert bar's variable height and ran the shell's bottom past the
-  // fold on page load).
-  const isAppFrame = view === 'map' || view === 'split'
+  const placeCaption = [filters.subdivision, filters.city].filter(Boolean).join(', ')
 
   return (
     <>
-    {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
-        (THE LOOK, PUBLIC_UI.md section 6). */}
-    <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
-      {/* V3Chrome is sticky in flow on app/layout.tsx. Do not remount it.
-          Search is the Homes Field (MapSearchView), not header chrome. */}
-      <SplitViewBodyLock active={isAppFrame} />
-      {/* @no-breadcrumb — see the file header. A Home > self trail conveys nothing
-          and cost ~11% of the mobile viewport on the site's highest-traffic page. */}
+    <main className={cn(V3_ROOT_CLASS, 'min-h-screen w-full')}>
       <ResultsStamp />
       <TrackSearchView
         city={filters.city ?? undefined}
         subdivision={filters.subdivision ?? undefined}
         resultsCount={resultsCount}
       />
-      <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
-        <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
-          {h1Text}
-        </h1>
-        <SentenceSearch />
+      <header className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6">
+        <V3Heading level={1} size="field">Homes for Sale</V3Heading>
+        {placeCaption ? <p className="v3-field__note mt-2">{placeCaption}</p> : null}
+      </header>
+      <SearchWorkspace>
+      <div className="search-filter-dock mx-auto w-full max-w-6xl px-4 sm:px-6">
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
-      {/* Guest listing-alert capture for all views.
-          List: sticky strip in document flow.
-          Map/split: compact non-sticky inline under filters (shrink-0) — sticky
-          on the app-frame previously overlapped the filter chip row. Guests also
-          keep SaveSearchButton in SearchFilters (navy mid-browse control). */}
-      <div className="hidden sm:block">
+      <MapSearchView
+        initialListings={viewport.listings}
+        initialTotalCount={viewport.totalCount}
+        initialCapped={viewport.capped}
+        initialBounds={initialBounds}
+        filters={initialFiltersFromUrl}
+        savedListingKeys={savedKeys}
+        likedListingKeys={likedKeys}
+        placeQuery={placeQuery}
+        boundaryGeojson={boundaryGeojson ?? undefined}
+        initialShapes={initialShapes}
+        nowMs={Date.now()}
+        initialDegraded={viewportDegraded}
+      />
+      </SearchWorkspace>
       <SearchAlertCapture
         signedIn={!!session?.user}
         defaultCity={effectiveFilters.city ?? ''}
-        variant={isAppFrame ? 'inline' : 'sticky'}
+        variant="inline"
       />
-      </div>
-      <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
-        {view === 'map' && (
-          <div className="map-search-shell w-full">
-            {/* HideAwareSearchMap subtracts the signed-in user's hidden homes
-                before the pins render (W7.2) — a home hidden on the list/split
-                view does not reappear as a map-only pin. */}
-            <HideAwareSearchMap
-              listings={mapListingsWithCoords}
-              savedListingKeys={savedKeys}
-              likedListingKeys={likedKeys}
-              placeQuery={placeQuery}
-              className="h-full w-full"
-              degraded={mapDegraded}
-            />
-          </div>
-        )}
-        {(view === 'split' || view === 'list') && (
-          <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
-            {view === 'split' ? (
-              <MapSearchView
-                initialListings={viewport?.listings ?? []}
-                initialTotalCount={viewport?.totalCount ?? 0}
-                initialCapped={viewport?.capped ?? false}
-                initialBounds={initialBounds}
-                filters={initialFiltersFromUrl}
-                savedListingKeys={savedKeys}
-                likedListingKeys={likedKeys}
-                placeQuery={placeQuery}
-                boundaryGeojson={boundaryGeojson ?? undefined}
-                initialShapes={initialShapes}
-                nowMs={Date.now()}
-                initialDegraded={viewportDegraded}
-              />
-            ) : (
-              <SearchResults
-                initialListings={listings}
-                totalCount={totalCount}
-                initialPage={page}
-                filters={initialFiltersFromUrl}
-                view="list"
-                hasActiveFilters={!!(
-                  filters.city ||
-                  filters.subdivision ||
-                  filters.status !== 'Active' ||
-                  filters.propertyType ||
-                  filters.postalCode ||
-                  filters.daysOnMarket ||
-                  ALL_SEARCH_URL_PARAMS.some((param) => {
-                    const value = sp[param]
-                    return value != null && value !== ''
-                  })
-                )}
-                initialDegraded={listDegraded}
-              />
-            )}
-          </div>
-        )}
-      </div>
+      <SearchCensus
+        city={filters.city || undefined}
+        subdivision={undefined}
+        decodedSubdivision={undefined}
+        displayName={placeCaption || 'Central Oregon'}
+        searchPagePath="/homes-for-sale"
+        listings={viewport.listings}
+        totalCount={viewport.totalCount}
+        preset={null}
+        placeName={filters.city || 'Central Oregon'}
+        searchParams={sp}
+      />
     </main>
-    {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
-        when it is NOT nested in sectioning content. Map/split is viewport-fit
-        and shows none. The V3Footer token stays in source for
-        ci:default-chrome-footer / ci:kb-shared-shell. */}
-    {isAppFrame ? null : <V3Footer columns={V3_FOOTER_COLUMNS} />}
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

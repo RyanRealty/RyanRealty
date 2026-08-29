@@ -53,8 +53,18 @@ export async function resolvePlaceBannerUrl({
               ),
         ])
       : [null, { url: null, attribution: null }]
-  // Prefer curated Central Oregon lifestyle image over generic Unsplash/AI banner
-  const { CITY_HERO_IMAGES } = await import('@/lib/central-oregon-images')
-  const curatedCityImage = city ? (CITY_HERO_IMAGES[city.toLowerCase().replace(/\s+/g, '-')] ?? null) : null
-  return curatedCityImage ?? listingHero?.url ?? bannerResult?.url ?? null
+  // Prefer a live listing photograph. Stock hosts (Unsplash / Pexels /
+  // Shutterstock) stay off the public search face and out of JSON-LD.
+  const listingUrl = listingHero?.url ?? null
+  const bannerUrl = bannerResult?.url ?? null
+  return firstNonStockUrl(listingUrl, bannerUrl)
+}
+
+const STOCK_HOST = /unsplash\.com|images\.unsplash|pexels\.com|shutterstock\.com/i
+
+function firstNonStockUrl(...urls: Array<string | null | undefined>): string | null {
+  for (const url of urls) {
+    if (url && STOCK_HOST.test(url) === false) return url
+  }
+  return null
 }

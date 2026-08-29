@@ -51,8 +51,8 @@ describe('MapSearchView orchestrator', () => {
     // viewport `listings` minus per-user hidden homes) — one dataset, so a
     // hidden home leaves the list and the map together (W7.2).
     expect(src).toMatch(/const visibleListings = useMemo\(\s*\(\) => excludeHiddenListings\(listings, hiddenKeys\)/)
-    expect(src).toMatch(/const mapListings = useMemo\(\(\) => visibleListings\.map\(toMapListing\)/)
-    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
+    expect(src).toMatch(/searchFieldItems\(visibleListings\.slice\(0, visibleCount\)\)/)
+    expect(src).toMatch(/searchFieldPins\(fieldItems\)/)
   })
 
   it('search-as-you-move: bounds change triggers a debounced viewport refetch', () => {
@@ -70,19 +70,17 @@ describe('MapSearchView orchestrator', () => {
   it('list↔map hover sync is wired both directions', () => {
     expect(src).toMatch(/hoveredKey/)
     expect(src).toMatch(/onMarkerHover/)
-    expect(src).toMatch(/onMouseEnter=\{\(\) => onListHover/)
+    expect(src).toMatch(/onListHover/)
+    expect(src).toMatch(/onActiveChange/)
     expect(src).toMatch(/data-listing-key=/)
   })
 
-  it('has a mobile list/map toggle (design-system ToggleGroup)', () => {
-    expect(src).toMatch(/mobileView/)
-    expect(src).toMatch(/setMobileView\(v\)/)
-    expect(src).toMatch(/ToggleGroupItem value="list"/)
-    expect(src).toMatch(/ToggleGroupItem value="map"/)
-  })
-
-  it('defaults mobile to list so 390 is not a map-only void', () => {
-    expect(src).toMatch(/useState<'list' \| 'map'>\('list'\)/)
+  it('uses the homepage Field list-first + Map toggle on 390', () => {
+    expect(src).toMatch(/listFlow/)
+    expect(src).toMatch(/listFirst/)
+    expect(src).toMatch(/mapToggle/)
+    expect(src).not.toMatch(/ToggleGroupItem value="list"/)
+    expect(src).not.toMatch(/useState<'list' \| 'map'>\('list'\)/)
   })
 
   it('renders the search-as-you-move toggle control', () => {
@@ -113,17 +111,14 @@ describe('hidden homes are excluded from the map split view (W7.2, 2026-07-22)',
     // The list slices from visibleListings and the pins map from it — proving a
     // hidden home cannot survive in either render.
     expect(src).toMatch(/excludeHiddenListings\(listings, hiddenKeys\)/)
-    expect(src).toMatch(/visibleListings\.slice\(0, visibleCount\)\.map/)
-    expect(src).toMatch(/visibleListings\.map\(toMapListing\)/)
-    // The raw `listings` state must NOT feed the pins directly anymore (that was
-    // the leak). Guard against a regression that re-points mapListings at it.
-    expect(src).not.toMatch(/mapListings = useMemo\(\(\) => listings\.map\(toMapListing\)/)
+    expect(src).toMatch(/searchFieldItems\(visibleListings\.slice\(0, visibleCount\)\)/)
+    expect(src).toMatch(/searchFieldPins\(fieldItems\)/)
+    expect(src).not.toMatch(/searchFieldPins\(listings\)/)
   })
 
   it('renders the hide control wired to the local visibility state', () => {
     expect(src).toMatch(/<ListingCardHideControl/)
     expect(src).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
-    // group/hide on the card wrapper drives the hover reveal.
     expect(src).toMatch(/group group\/hide relative/)
   })
 })
@@ -229,8 +224,8 @@ describe('the city map/split view (MapSearchView via MapSplitView) subtracts hid
   })
 
   it('BOTH the card list and the map pins render from the filtered set', () => {
-    expect(src).toMatch(/const mapListings = useMemo\(\(\) => visibleListings\.map\(toMapListing\)/)
-    expect(src).not.toMatch(/mapListings.*= listings\.map\(toMapListing\)/)
+    expect(src).toMatch(/searchFieldPins\(fieldItems\)/)
+    expect(src).not.toMatch(/searchFieldPins\(listings\)/)
   })
 
   it('carries the hover hide control on each tile', () => {
@@ -279,11 +274,10 @@ describe('the /search map-only pin layer subtracts hidden homes (W7.2, 2026-07-2
     expect(wrap).toMatch(/<SearchMapClustered\s+listings=\{visible\}/)
   })
 
-  it('the /search map-only branch renders HideAwareSearchMap, not a raw pin layer', () => {
-    expect(page).toMatch(/import HideAwareSearchMap from '@\/components\/search\/HideAwareSearchMap'/)
-    expect(page).toMatch(/<HideAwareSearchMap/)
-    // The page must not import the raw pin layer directly anymore.
+  it('the /search Field face does not import a raw pin layer', () => {
+    expect(page).toMatch(/<MapSearchView/)
     expect(page).not.toMatch(/import\s+\w+\s+from '@\/components\/(Lazy)?SearchMapClustered'/)
+    expect(page).not.toMatch(/<HideAwareSearchMap/)
   })
 })
 
@@ -338,17 +332,13 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
 
   it('map canvas shows a loading state while the viewport fetch is in flight', () => {
     expect(src).toMatch(/Updating results…/)
-    expect(src).toMatch(/animate-spin/)
   })
 
-  it('mobile map view shows the result count from the SAME query that renders the pins (§0)', () => {
-    // Viewport pins stay on getViewportSearch totalCount. The list phrase is
-    // the filter-match number; a different viewport count prints labeled.
-    // The pill is Ledger-register chrome now (`srch-count` carries the
-    // tabular numerals via components/search/search-ledger.css).
-    expect(src).toMatch(/srch-count[^'"]*lg:hidden/)
-    expect(src).toMatch(/publishSearchCountPair\(/)
+  it('prints one map-viewport count for the same query that renders the pins', () => {
+    expect(src).toMatch(/publishSearchCount\(/)
+    expect(src).toMatch(/grain: 'map-viewport'/)
     expect(src).toMatch(/countSearchListings\(/)
+    expect(src).not.toMatch(/publishSearchCountPair\(/)
   })
 })
 
@@ -386,6 +376,7 @@ describe('multi-shape draw tools (Phase 2 items 1+3, 2026-07-29)', () => {
     expect(view).toMatch(/buildShapeSetForSearch\(shapes, bounds\)/)
     expect(view).toMatch(/onShapesChange=\{handleShapesChange\}/)
     expect(view).toMatch(/shapes=\{drawnShapes\}/)
+    expect(view).toMatch(/<PlaceFieldMap/)
   })
 
   it('SearchMapClustered keeps the legacy single-polygon API for other callers while hosting the new tools', () => {
@@ -475,11 +466,10 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     expect(slug).toMatch(/defaultFilters=\{guestAlertFilters\}/)
   })
 
-  it('keeps the signed-in save-search button (now inside the shared SearchFilterBar)', () => {
-    expect(slug).toMatch(/<SearchFilterBar/)
-    expect(slug).toMatch(/signedIn=\{!!session\?\.user\}/)
-    const bar = readFileSync(resolve(__dirname, '../../SearchFilterBar.tsx'), 'utf8')
-    expect(bar).toMatch(/<SaveSearchButton user=\{!!props\.signedIn\} pathContext=\{props\.pathContext\}/)
+  it('keeps the signed-in save-search button on the Field face', () => {
+    expect(slug).toMatch(/pathContext=\{\{ \.\.\.resolved, city, citySlug: slug\[0\] \}\}/)
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} pathContext=\{pathContext\} guestCapture="scroll"/)
   })
 
   it('SaveSearchButton stays mid-browse for guests and signed-in (B2)', () => {
@@ -522,16 +512,15 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     expect(helper).toMatch(/input\.preset\?\.params/)
   })
 
-  it('links into the search-as-you-move map via view=split', () => {
-    // A reachable "Map view" CTA that flips the URL into the split branch.
-    expect(slug).toMatch(/view: 'split'/)
-    expect(slug).toMatch(/mapViewHref/)
-    expect(slug).toMatch(/href=\{mapViewHref\}/)
-  })
-
-  it('offers a grid-view return link from the map branch (bidirectional toggle)', () => {
-    expect(slug).toMatch(/gridViewHref/)
-    expect(slug).toMatch(/href=\{gridViewHref\}/)
+  it('opens the place search on the Field with the homepage list-first Map toggle', () => {
+    expect(slug).toMatch(/const isMapSplitView = Boolean\(city \|\| hasFilterOnly\)/)
+    expect(slug).toMatch(/renderMapSplitView\(/)
+    const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(split).toMatch(/<MapSearchView/)
+    const view = readSrc('components/search/MapSearchView.tsx')
+    expect(view).toMatch(/listFlow/)
+    expect(view).toMatch(/listFirst/)
+    expect(view).toMatch(/mapToggle/)
   })
 })
 
@@ -549,20 +538,21 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(src).toMatch(/isInline && 'shrink-0'/)
     expect(src).toMatch(/Sign in to manage alerts/)
     const searchIndex = readSrc('app/search/page.tsx')
-    expect(searchIndex).toMatch(/variant=\{isAppFrame \? 'inline' : 'sticky'\}/)
+    expect(searchIndex).toMatch(/variant="inline"/)
     const mapSplit = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
     expect(mapSplit).toMatch(/variant="inline"/)
-    expect(mapSplit).toMatch(/underFilterBar/)
   })
 
-  it('guest capture expands where there is room: collapsed on phones, email field open on sm+', () => {
-    // 2026-08-27 mobile audit: the always-open email form crowded the 390px
-    // filter area. SSR renders collapsed; a matchMedia effect expands on sm+.
-    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(false\)/)
+  it('guest capture shows the email field under Field results (inline), collapsed sticky on 390', () => {
+    // Inline is under the tiles, so the email field is the ask. Sticky in a
+    // filter dock still starts collapsed on 390.
+    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(variant === 'inline'\)/)
+    expect(src).toMatch(/if \(variant === 'inline'\) return/)
     expect(src).toMatch(/matchMedia\('\(min-width: 640px\)'\)/)
     expect(src).toMatch(/Get listing alerts/)
-    expect(src).toMatch(/\{!expanded \?/)
+    expect(src).toMatch(/expanded === false \?/)
     expect(src).toMatch(/name="company"/)
+    expect(src).toMatch(/type="email"/)
     expect(src).toMatch(/readRrSessionId\(\)/)
     expect(src).toMatch(/submitSearchAlertSignup/)
     expect(src).toMatch(/Free\. Unsubscribe any time/)
@@ -570,40 +560,116 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(src).not.toMatch(/<Dialog[\s>]/)
     expect(src).not.toMatch(/from '@\/components\/ui\/dialog'/)
     // inline must not pick up sticky/z-30 (layout-safe on the app frame)
-    expect(src).toMatch(/!isInline &&\s*\n\s*'sticky top-0 z-30/)
+    expect(src).toMatch(/isInline === false &&\s*\n\s*'sticky top-0 z-30/)
   })
 })
 
-describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () => {
+describe('search index H1 is Homes for Sale on the Field face', () => {
   const page = readSrc('app/search/page.tsx')
 
-  it('keeps one composed h1 that is not sr-only', () => {
-    expect(page).toMatch(
-      /const h1Text = \[filters\.subdivision, filters\.city \? `\$\{filters\.city\}` : null, 'Homes for Sale'\]/,
-    )
+  it('keeps one Homes for Sale heading that is not sr-only', () => {
+    expect(page).toMatch(/<V3Heading level=\{1\} size="field">Homes for Sale<\/V3Heading>/)
     expect(page).not.toMatch(/<h1 className="sr-only">/)
-    expect(page.match(/<h1\b/g)?.length).toBe(1)
+    expect(page.match(/<V3Heading level=\{1\}/g)?.length).toBe(1)
   })
 
-  it('puts that h1 in the filter dock as one compact line', () => {
+  it('puts that heading above one SearchFilters field', () => {
+    expect(page.indexOf('Homes for Sale')).toBeLessThan(page.indexOf('search-filter-dock'))
+    expect(page.indexOf('</header>')).toBeLessThan(page.indexOf('search-filter-dock'))
     const dock = page.slice(page.indexOf('search-filter-dock'))
-    const dockBlock = dock.slice(0, dock.indexOf('<SearchAlertCapture'))
-    expect(dockBlock).toMatch(/<h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">/)
-    expect(dockBlock).toMatch(/\{h1Text\}/)
-    expect(dockBlock).toMatch(/<SearchFilters /)
+    expect(dock).toMatch(/<SearchFilters /)
+    expect(dock).not.toMatch(/<V3Heading level=\{1\}/)
   })
 
-  it('does not force V3Footer onto map/split', () => {
-    expect(page).toMatch(/\{isAppFrame \? null : <V3Footer columns=\{V3_FOOTER_COLUMNS\} \/>\}/)
+  it('keeps the footer on the Field face', () => {
+    expect(page).toMatch(/<V3Footer columns=\{V3_FOOTER_COLUMNS\} \/>/)
+    expect(page).not.toMatch(/\{isAppFrame \? null : <V3Footer/)
+  })
+})
+
+describe('search filter dock and required map attribution (PR 163)', () => {
+  it('paints the sticky filter dock with opaque cream', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/\.search-filter-dock \{[\s\S]*background:\s*var\(--v3-surface\)/)
+    expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*background:\s*transparent/)
+    expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*bg-card\/95/)
+  })
+
+  it('shows the map above tiles when the 390 Map toggle is on, and hides the toggle at 1280', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(
+      /\.search-field \.v3\.v3-field--map-toggle\.v3-field--map-open \.v3-field__frame > \.v3-field__col:first-of-type/,
+    )
+    expect(css).toMatch(/\.search-field \.v3-field__lead \.v3-btn\.v3-field__map-toggle/)
+  })
+
+  it('bounds the 390 Field list so the email ask sits under the Field', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/\.search-field \.v3\.v3-field--flow \.v3-field__list/)
+    expect(css).toMatch(/max-height:\s*min\(70vh,\s*560px\)/)
+    const page = readSrc('app/search/page.tsx')
+    expect(page.indexOf('<MapSearchView')).toBeLessThan(page.indexOf('<SearchAlertCapture'))
+    const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(split.indexOf('<MapSearchView')).toBeLessThan(split.indexOf('<SearchAlertCapture'))
+  })
+
+  it('sticks dock plus Field as one cream unit at 390 and 1280 so the map and list stay clear', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/\.search-filter-dock \{[\s\S]*position:\s*relative/)
+    expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*position:\s*sticky/)
+    expect(css).toMatch(/\.search-workspace \{[\s\S]*background:\s*var\(--v3-surface\)/)
+    expect(css).toMatch(/\.search-workspace--stuck \{[\s\S]*position:\s*fixed/)
+    expect(css).toMatch(/\.search-workspace--stuck \{[\s\S]*background:\s*var\(--v3-surface\)/)
+    expect(css).toMatch(/\.search-workspace \.search-filter-dock \{[\s\S]*position:\s*relative/)
+    const wrap = readSrc('components/search/SearchWorkspace.tsx')
+    expect(wrap).toMatch(/search-workspace--stuck/)
+    expect(wrap).toMatch(/releasedRef/)
+    expect(wrap).toMatch(/shouldPinSearchWorkspace/)
+    expect(wrap).not.toMatch(/min-width: 56\.25rem/)
+    const page = readSrc('app/search/page.tsx')
+    expect(page).toMatch(/<SearchWorkspace>/)
+    expect(page.indexOf('<SearchWorkspace>')).toBeLessThan(page.indexOf('search-filter-dock'))
+    expect(page.indexOf('<SearchWorkspace>')).toBeLessThan(page.indexOf('<MapSearchView'))
+    const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(split).toMatch(/<SearchWorkspace>/)
+  })
+
+  it('keeps required Google attribution and only hides the decorative MAP chip', () => {
+    const css = readSrc('components/site/v3/V3Field.css')
+    expect(css).toMatch(/\.v3-field__map \.gm-style-mtc/)
+    expect(css).not.toMatch(/\.gm-style-cc/)
+    expect(css).not.toMatch(/gmnoprint/)
+    const map = readSrc('app/central-oregon/_v3/PlaceFieldMapImpl.tsx')
+    expect(map).not.toMatch(/attributionControl:\s*false/)
   })
 })
 
 describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHIP)', () => {
   it('keeps Save this search and drops the navy Get alerts chip', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} \/>/)
+    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} pathContext=\{pathContext\} guestCapture="scroll"/)
     expect(filters).not.toMatch(/>\s*Get alerts\s*</)
     expect(filters).not.toMatch(/focusSearchAlertCapture/)
+  })
+})
+
+describe('search Field taps use shared --v3-tap (PR 162 chrome)', () => {
+  it('sizes chips and the search panel to --v3-tap, not a 32px button height', () => {
+    const css = readSrc('components/search/search-ledger.css')
+    expect(css).toContain('.srch-chip')
+    expect(css).toContain('.srch-panel')
+    expect(css).toContain('min-height: var(--v3-tap')
+    expect(css).not.toContain('min-height: 2rem')
+  })
+
+  it('keeps the stacked footer tap floor from the parent chrome commit', () => {
+    const footer = readSrc('components/site/v3/V3Footer.css')
+    expect(footer).toContain('.v3-footer__column-list a')
+    expect(footer).toContain('min-height: var(--v3-tap)')
+    expect(footer).not.toContain('min-height: 2rem')
+    const cookie = readSrc('components/CookieConsentBanner.tsx')
+    expect(cookie).toContain('COOKIE_ACTION_STYLE')
+    expect(cookie).toContain("minHeight: 'var(--v3-tap)'")
   })
 })
 
@@ -612,13 +678,11 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     const view = readSrc('components/search/MapSearchView.tsx')
     expect(view).toMatch(/selectedKey/)
     expect(view).toMatch(/onMarkerClick/)
-    // Selection is the Ledger row's functional inset ring (`is-active`,
-    // 2px ink) — stronger than the hover wash (`is-hot`, 1px edge).
-    expect(view).toMatch(/is-active/)
-    expect(view).toMatch(/is-hot/)
     expect(view).toMatch(/in this map view/)
-    expect(view).toMatch(/listCountPhrase/)
-    expect(view).toMatch(/lg:hidden/)
+    expect(view).toMatch(/grain: 'map-viewport'/)
+    expect(view).toMatch(/listFlow/)
+    expect(view).toMatch(/listFirst/)
+    expect(view).toMatch(/mapToggle/)
   })
 
   it('uses SuperCluster maxZoom and photo stamps at close zoom', () => {
@@ -685,9 +749,8 @@ describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
     const card = readSrc('components/site/ListingCard.tsx')
     expect(card).toMatch(/priority\?: boolean/)
     expect(card).toMatch(/priority=\{priority\}/)
-    for (const rel of ['components/search/MapSearchView.tsx', 'components/search/SearchResults.tsx']) {
-      expect(readSrc(rel)).toMatch(/priority=\{cardIndex < 4\}/)
-    }
+    expect(readSrc('components/search/SearchResults.tsx')).toMatch(/priority=\{cardIndex < 4\}/)
+    expect(readSrc('components/search/MapSearchView.tsx')).toMatch(/<V3Field/)
   })
 })
 
@@ -695,10 +758,9 @@ describe('flagship map timeout + city honesty (runtime crosswalk 2026-08-18)', (
   const page = readSrc('app/search/page.tsx')
   const view = readSrc('components/search/MapSearchView.tsx')
 
-  it('view=map uses withTimeoutSettled and passes degraded into HideAwareSearchMap', () => {
-    expect(page).toMatch(/view === 'map' \? await withTimeoutSettled\(getSearchMapListings/)
-    expect(page).toMatch(/degraded=\{mapDegraded\}/)
-    expect(page).not.toMatch(/view === 'map' \? await withTimeout\(getSearchMapListings/)
+  it('Field seed uses withTimeoutSettled and passes degraded into MapSearchView', () => {
+    expect(page).toMatch(/await withTimeoutSettled\(/)
+    expect(page).toMatch(/initialDegraded=\{viewportDegraded\}/)
   })
 
   it('does not invent filters.city = Bend for split/map', () => {
@@ -712,7 +774,8 @@ describe('flagship map timeout + city honesty (runtime crosswalk 2026-08-18)', (
 
   it('does not say No homes while filter-match is still in flight', () => {
     expect(view).toMatch(/const \[matchCountReady, setMatchCountReady\] = useState\(false\)/)
-    expect(view).toMatch(/!matchCountReady && totalCount === 0\s*\n\s*\? 'Updating…'/)
+    expect(view).toMatch(/matchCountReady === false && listings\.length === 0/)
+    expect(view).toMatch(/This is not an empty market/)
     expect(view).not.toMatch(/totalCount === 0 && matchCount == null\s*\n\s*\? 'No homes'/)
   })
 
