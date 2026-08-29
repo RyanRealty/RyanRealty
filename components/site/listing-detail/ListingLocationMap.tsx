@@ -1,139 +1,62 @@
-'use client'
-
-import dynamic from 'next/dynamic'
+import { V3Field } from '@/components/site/v3'
+import { formatPriceExact } from '@/lib/format/money'
 import { cn } from '@/lib/utils'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
- * ListingLocationMap — 21:9 aspect map with the listing pin + optional
- * subdivision boundary overlay + lifestyle-line ("X min to Mt. Bachelor
- * · Y min downtown · Z min to Deschutes River trail").
- *
- * Spec source:
- *   design_system/ryan-realty/ui_kits/listing-detail/index.html §location
- *   docs/EXECUTION_PLAN.md §8 "What we BEAT" rank 6 — Bend lifestyle data
- *
- * Server-safe wrapper. The actual Google Maps client lives in
- * ListingLocationMap.client.tsx and loads via next/dynamic so the
- * @react-google-maps/api bundle only ships on listing-detail.
- *
- * Lifestyle line is caller-supplied (the page composes it from the
- * subdivisionName via a static lookup table OR via getCommunityMetadata
- * upstream). Renders nothing when no lat/lng is available.
+ * See location. V3 Field plot with a navy pin. Google static tiles
+ * stay out of the listing hero and out of this job.
  */
-
-const ListingLocationMapClient = dynamic(() => import('./ListingLocationMap.client'), {
-  ssr: false,
-  loading: () => (
-    <div
-      aria-hidden
-      className="h-full w-full animate-pulse"
-      style={{
-        background: 'var(--cream)',
-        border: '3px solid var(--navy)',
-      }}
-    />
-  ),
-})
-
-const ListingLot3D = dynamic(() => import('./ListingLot3D.client'), {
-  ssr: false,
-  loading: () => null,
-})
 
 type Props = {
   lat: number | null
   lng: number | null
-  /** Optional subdivision / neighborhood polygon overlay. */
-  boundary?: GeoJSON.Geometry | null
-  /** Free-form lifestyle bullets, rendered with middle-dot separators. */
   lifestyleLine?: string | null
-  zoom?: number
   className?: string
-  photoUrl?: string | null
-  price?: number | null
-  beds?: number | null
-  baths?: number | null
-  sqft?: number | null
+  addressLine?: string | null
   cityLine?: string | null
   href?: string | null
+  price?: number | null
+  heading?: string | false
 }
 
 export function ListingLocationMap({
   lat,
   lng,
-  boundary,
   lifestyleLine,
-  zoom,
   className,
   addressLine,
-  photoUrl,
-  price,
-  beds,
-  baths,
-  sqft,
   cityLine,
   href,
-}: Props & { addressLine?: string | null }) {
+  price,
+  heading = 'See location',
+}: Props) {
   if (lat == null || lng == null) return null
 
-  return (
-    <>
-    <section className={cn('section', className)}>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">Location</div>
-          <h2 className="sec-title display">Where this home sits</h2>
-        </div>
-      </div>
+  const dest = href?.trim() || '#listing-location'
+  const title = addressLine?.trim() || 'This home'
+  const priceLabel = price != null ? formatPriceExact(price) : 'Ask for price'
 
-      <div
-        className="relative w-full self-stretch"
-        style={{
-          aspectRatio: '21 / 9',
-          minHeight: 280,
-          marginTop: 'clamp(22px,3vw,36px)',
-        }}
-      >
-        <div className="absolute inset-0" style={{ minHeight: 280 }}>
-          <ListingLocationMapClient
-            lat={lat}
-            lng={lng}
-            boundary={boundary ?? null}
-            zoom={zoom}
-            popup={
-              addressLine
-                ? {
-                    price: price ?? null,
-                    photoURL: photoUrl ?? null,
-                    streetLine: addressLine,
-                    cityLine: cityLine?.trim() || '',
-                    beds: beds ?? null,
-                    baths: baths ?? null,
-                    sqft: sqft ?? null,
-                    href: href?.trim() || '#location',
-                  }
-                : null
-            }
-          />
-        </div>
-      </div>
+  return (
+    <section id="listing-location" className={cn('section', className)}>
+      <ListingSectionHead heading={heading} />
+      <V3Field
+        ariaLabel="See location"
+        items={[
+          {
+            id: dest,
+            href: dest,
+            priceLabel,
+            title,
+            meta: cityLine?.trim() || undefined,
+            lat,
+            lng,
+          },
+        ]}
+      />
       {lifestyleLine ? (
-        <div
-          className="tabular-nums"
-          style={{
-            marginTop: 14,
-            fontSize: '0.78rem',
-            fontWeight: 500,
-            letterSpacing: '0.02em',
-            color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
-          }}
-        >
-          {lifestyleLine}
-        </div>
+        <p className="listing-location-note">{lifestyleLine}</p>
       ) : null}
     </section>
-    {/* Photorealistic Google 3D mesh when available — fails open to null. */}
-    <ListingLot3D lat={lat} lng={lng} label={addressLine} />
-    </>
   )
 }

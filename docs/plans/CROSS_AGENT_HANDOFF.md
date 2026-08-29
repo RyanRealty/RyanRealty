@@ -1,3 +1,10 @@
+# Current — 2026-08-29 (Cursor) — listing template PR 160, 390 facts 100cqi
+
+**Surface:** branch `cursor/listing-template-c741` (PR 160). Do not merge. Do not deploy production.
+**Done:** Added to the in-flight overflow fix (do not restart): page sheet is `container-type: inline-size` / `listing-sheet`. At max-width 759px, facts `dl` and Field plot are `100cqi`. Local 390 SHA `09b3952cd`: sheet 354/354, facts 314 (Baths/DOM/Status at x 203-352, not 413+), plot 312, pin x 189, Ask x 38-352 stacked. Cookie 676-778 over sticky 778-844, overlap false. Cookie/sticky sources untouched.
+**Next:** Release refreshes one listing preview from this SHA. Walk that host, not `dcvdwu9wo` / `9eiw3io6c`. Proof `/homes-for-sale/redmond/4496-zenith-220226279`.
+**Do not:** invent a skin, merge, deploy production, touch cookie/sticky.
+
 > **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Matt asked 2026-08-21 to re-arm the loop on current main.
 > **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**

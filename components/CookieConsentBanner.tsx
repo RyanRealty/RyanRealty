@@ -258,26 +258,27 @@ export default function CookieConsentBanner() {
        no focus move or trap, so announcing it as a dialog misled screen readers
        (design-audit P3). Shown only after first scroll or after the visitor
        opens the delayed chip, so Accept all is never a first-viewport fill. */
-    /* z-90: above the listing-detail sticky mobile CTA bar (kb.css
-       .listing-mobile-cta, z-index 80) — the CTA used to slide up OVER the
-       banner's own Accept/Manage/Essential buttons (design-audit P2). */
+    /* Sit above the listing sticky (Schedule · Call) via --listing-sticky-height
+       so the cookie row never covers those 44px actions. One compact line of
+       copy plus one 44px action row. */
     <div
       role="region"
       aria-label="Cookie notice"
       data-cookie-notice="bar"
-      className="fixed bottom-0 left-0 right-0 z-[90] border-t border-border bg-card px-4 py-3 shadow-md sm:px-6"
+      className="fixed left-0 right-0 z-[90] border-t border-border bg-card px-4 py-2 sm:px-6"
+      style={{ bottom: 'var(--listing-sticky-height, 0px)' }}
     >
-      <div className="mx-auto max-w-3xl">
-        <p className="text-xs text-muted-foreground sm:text-sm">
+      <div className="mx-auto flex max-w-3xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs leading-snug text-muted-foreground sm:flex-1 sm:text-sm">
           We use cookies to measure site traffic and target ads.{' '}
           <Link href="/privacy" className="font-medium text-foreground underline hover:no-underline">Privacy and cookies</Link>
           {' · '}
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>
         </p>
-        <div className="mt-2 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-          <Button type="button" size="sm" onClick={acceptAll}>Accept all</Button>
-          <Button type="button" size="sm" variant="outline" onClick={essentialOnly}>Essential only</Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setPrefsOpen(true)}>Preferences</Button>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:flex-wrap sm:gap-3">
+          <Button type="button" className="min-h-11" onClick={acceptAll}>Accept all</Button>
+          <Button type="button" variant="outline" className="min-h-11" onClick={essentialOnly}>Essential only</Button>
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => setPrefsOpen(true)}>Preferences</Button>
         </div>
       </div>
     </div>

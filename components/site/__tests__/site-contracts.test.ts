@@ -126,18 +126,35 @@ describe('design directive contracts', () => {
       'PropertySpecs',
       'DescriptionBlock',
       'ListingLocationMap',
-      'NeighborhoodMarketContext',
       'SchoolsBlock',
       'ParksNearbyBlock',
       'PropertyHistory',
       'MortgageCalculator',
       'RentalAnalysis',
+      'NeighborhoodMarketContext',
       'ListingAttribution',
     ]
     const positions = order.map((name) => main.indexOf(`<${name}`))
     expect(positions.every((p) => p >= 0)).toBe(true)
     // Facts before prose, money before attribution, strictly increasing.
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
+  })
+
+  it('listing-detail HTML cannot carry leftover market labels', () => {
+    const faces = [
+      'components/site/listing-detail/NeighborhoodMarketContext.tsx',
+      'components/site/listing-detail/ListingLocationMap.tsx',
+      'components/site/listing-detail/PriceCtaStrip.tsx',
+      'app/listing/[listingKey]/page.tsx',
+      'lib/listing/listing-chart-source.ts',
+    ]
+    for (const rel of faces) {
+      const src = readSrc(rel)
+      expect(src).not.toMatch(/Market Truth leftover/)
+      expect(src).not.toMatch(/Other product types/)
+      expect(src).not.toMatch(/toPublicCoreChartSeries/)
+      expect(src).not.toMatch(/PublicProductTypes/)
+    }
   })
 
   it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
@@ -173,8 +190,8 @@ describe('design directive contracts', () => {
   it('listing like-this sheet keeps the capture contract', () => {
     const src = readSrc('components/site/listing-detail/ListingLikeThisSheet.client.tsx')
     expect(src).toMatch(/submitSearchAlertSignup/)
-    expect(src).toMatch(/trap=\{\{\s*name:\s*['"]company['"]/)
-    expect(src).toMatch(/company:\s*answers\.company/)
+    expect(src).toMatch(/name=["']company["']/)
+    expect(src).toMatch(/company:\s*String\(form\.get\('company'\)/)
     expect(src).toMatch(/One email per new listing/)
     expect(src).toMatch(/Unsubscribe any time/)
     expect(src).toMatch(/id=["']listing-like-alerts["']/)
@@ -583,16 +600,12 @@ describe('design directive contracts', () => {
     expect(vercel).toMatch(/\/api\/cron\/rebuild-analytics-marts-full/)
   })
 
-  it('D110 — listing map popup is the brand card, not a Google InfoWindow', () => {
+  it('D110 — listing location is the v3 navy-pin Field, not a Google InfoWindow', () => {
     const wrap = readSrc('components/site/listing-detail/ListingLocationMap.tsx')
-    const client = readSrc('components/site/listing-detail/ListingLocationMap.client.tsx')
     const page = readSrc('app/listing/[listingKey]/page.tsx')
-    expect(wrap).toMatch(/photoUrl/)
-    expect(wrap).toMatch(/MapListingPopup|popup=/)
-    expect(client).toMatch(/from '@\/components\/search\/MapListingPopup'/)
-    expect(client).toMatch(/<MapListingPopup/)
-    expect(client).not.toMatch(/<InfoWindow[\s>]/)
-    expect(page).toMatch(/photoUrl=\{photos\[0\]/)
+    expect(wrap).toMatch(/V3Field/)
+    expect(wrap).toMatch(/See location/)
+    expect(wrap).not.toMatch(/MapListingPopup|InfoWindow/)
     expect(page).toMatch(/href=\{listingHref\}/)
     expect(page).not.toMatch(/from ['"]twilio['"]/)
     expect(page).not.toMatch(/lookingAtWake|sendLookingAt/)

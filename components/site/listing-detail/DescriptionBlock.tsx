@@ -1,5 +1,6 @@
 import { publishListingRemarks } from '@/lib/listing/publish-listing-remarks'
 import { cn } from '@/lib/utils'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Listing-detail DescriptionBlock — renders the listing's public_remarks
@@ -14,21 +15,16 @@ import { cn } from '@/lib/utils'
 type Props = {
   publicRemarks: string | null
   className?: string
+  heading?: string | false
 }
 
-export function DescriptionBlock({ publicRemarks, className }: Props) {
+export function DescriptionBlock({ publicRemarks, className, heading = false }: Props) {
   const paragraphs = publishListingRemarks(publicRemarks)
   if (paragraphs.length === 0) return null
 
   return (
     <section className={cn('section', className)}>
-      {/* KB sec-head */}
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">About this home</div>
-          <h2 className="sec-title display">Description</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="About this home" />
 
       <div
         style={{

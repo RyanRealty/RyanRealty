@@ -8,7 +8,7 @@ type Props = {
   /** Override precomputed items (e.g. place centroid). */
   items?: LifestyleNearItem[]
   eyebrow?: string
-  title?: string
+  title?: string | false
 }
 
 /**
@@ -24,14 +24,17 @@ export function LifestyleNearSection({
 }: Props) {
   const items = itemsProp ?? lifestyleNearLatLng(lat, lng)
   if (items.length === 0) return null
+  const label = title === false ? 'Nearby' : title
 
   return (
-    <section className="section" aria-label={title}>
+    <section className="section" aria-label={label}>
       <div className="wrap">
-        <div className="sec-head">
-          <span className="sec-index">{eyebrow}</span>
-          <h2 className="sec-title display">{title}</h2>
-        </div>
+        {title === false ? null : (
+          <div className="sec-head">
+            <span className="sec-index">{eyebrow}</span>
+            <h2 className="sec-title display">{title}</h2>
+          </div>
+        )}
         <ul
           style={{
             listStyle: 'none',

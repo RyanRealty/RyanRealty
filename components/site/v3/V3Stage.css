@@ -236,3 +236,22 @@
     0 0 0 var(--v3-focus-offset) var(--v3-surface-inverse),
     var(--v3-media-shadow);
 }
+
+/* Full-frame media tap. Sits under the copy so the named 48px photos
+   control stays the visible action. */
+.v3 .v3-stage-media-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+/* Listing Stage: "36 photos" is 48px tall, not a 36px pill on the photo edge. */
+.v3.v3-stage .v3-stage-photos {
+  min-height: 48px;
+  padding-inline: 1.25rem;
+}

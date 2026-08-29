@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { findParksNear, type ParkType } from '@/data/co-parks'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * ParksNearbyBlock — KB section style: navy border sec-head, park cards
@@ -11,6 +12,7 @@ import type { ListingDetail } from '@/lib/data/types/listing'
 type Props = {
   listing: Pick<ListingDetail, 'lat' | 'lng'>
   className?: string
+  heading?: string | false
 }
 
 const TYPE_LABEL: Record<ParkType, string> = {
@@ -23,7 +25,7 @@ function formatMiles(miles: number): string {
   return `${miles.toFixed(1)} mi`
 }
 
-export function ParksNearbyBlock({ listing, className }: Props) {
+export function ParksNearbyBlock({ listing, className, heading = false }: Props) {
   const { lat, lng } = listing
   if (typeof lat !== 'number' || typeof lng !== 'number') return null
 
@@ -32,12 +34,7 @@ export function ParksNearbyBlock({ listing, className }: Props) {
 
   return (
     <section className={cn('section', className)}>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">Outdoors</div>
-          <h2 className="sec-title display">Parks nearby</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="Outdoors" />
 
       {/* flex-wrap, not a CSS grid: a grid's auto-fit still reserves full
           tracks for a partially-filled last row, so the container's

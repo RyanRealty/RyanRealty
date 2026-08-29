@@ -31,7 +31,7 @@
     },
     {
       "name": "ListingHero",
-      "section": "ld-photo-grid full-bleed hero (photo grid or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to photo grid otherwise.",
+      "section": "V3Stage opening. Imagine or library place still. Street-only H1. Tap opens the MLS gallery. Photos control is 48px.",
       "blocking": true,
       "notes": "Supersedes both PhotoGallery and ListingVideoEmbed for marketing video. Virtual tours still mount ListingVideoEmbed in the main column."
     },
@@ -52,7 +52,7 @@
     },
     {
       "name": "ListingLikeThisAlerts",
-      "section": "B1 capture wrapper. Mounts ListingLikeThisSheet and ListingAlertCoach. Jump target #listing-like-alerts.",
+      "section": "One alerts ask inside the listing Sheet. Jump target #listing-like-alerts. No coach.",
       "blocking": true
     },
     {
@@ -82,7 +82,7 @@
     },
     {
       "name": "ListingLocationMap",
-      "section": "Location map.",
+      "section": "See location. V3Field navy pin. No Google static chip.",
       "blocking": true
     },
     {
@@ -161,16 +161,16 @@
       "reason": "Embedded inside NeighborhoodMarketContext rather than a standalone primitive."
     },
     {
-      "name": "V3Stage",
-      "reason": "ListingHero already is the owned-media opening. A second Stage would be a fifth pattern and would put a filled overlay ask on top of Schedule a tour."
+      "name": "ListingAlertCoach",
+      "reason": "One alerts ask only. The Sheet owns Homes like this."
     },
     {
       "name": "V3Instrument",
       "reason": "The listing answer is the home itself (hero + price strip), not a market instrument. NeighborhoodMarketContext keeps the place stats in the listing-detail stack."
     },
     {
-      "name": "V3Field",
-      "reason": "Inventory-as-map belongs on Places nodes. This page is one home."
+      "name": "ListingHeroMap",
+      "reason": "Google static and hero map chip are retired. See location is the v3 navy pin."
     }
   ],
   "removedComponents": [
@@ -212,9 +212,7 @@
     "ListingTracker",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "ListingDetailShell (ListingHero, PriceCtaStrip, facts, DescriptionBlock, ListingLikeThisSheet, restyle, map, market, schools, parks, lifestyle, history, money, ListingAttribution, ListingBrokerCTA)",
-    "ListingFeaturedHomes (similar homes poster grid)",
-    "PlaceParentsSection",
+    "ListingDetailShell (ListingHero, ListingSheet, PriceCtaStrip, map, market, ListingFeaturedHomes, ListingLikeThisAlerts, ListingAttribution, ListingBrokerCTA)",
     "BuilderExploreSection (when the builder has other actives)",
     "V3Footer (outside main)"
   ],

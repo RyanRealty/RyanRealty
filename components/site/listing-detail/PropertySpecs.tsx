@@ -6,6 +6,7 @@ import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingHoa } from '@/lib/listing/publish-listing-hoa'
 import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { cn } from '@/lib/utils'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Listing-detail PropertySpecs — the full key-facts surface in KB section
@@ -87,6 +88,7 @@ type Props = {
     | 'highSchool'
   >
   className?: string
+  heading?: string | false
 }
 
 type Spec = {
@@ -295,8 +297,11 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
     <dl
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         gap: '1px',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
         background: 'var(--v3-navy)',
         border: '1px solid var(--v3-navy)',
       }}
@@ -310,6 +315,9 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
             display: 'flex',
             flexDirection: 'column',
             gap: 4,
+            minWidth: 0,
+            maxWidth: '100%',
+            overflowWrap: 'anywhere',
             ...(lastIsOrphan && i === specs.length - 1 ? { gridColumn: '1 / -1' } : null),
           }}
         >
@@ -341,18 +349,13 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
   )
 }
 
-export function PropertySpecs({ listing, className }: Props) {
+export function PropertySpecs({ listing, className, heading = false }: Props) {
   const groups = buildGroups(listing)
   if (groups.length === 0) return null
 
   return (
     <section className={cn('section', className)}>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">Facts</div>
-          <h2 className="sec-title display">Property details</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="Facts" />
 
       <div
         style={{
@@ -360,10 +363,12 @@ export function PropertySpecs({ listing, className }: Props) {
           display: 'flex',
           flexDirection: 'column',
           gap: 'clamp(22px,2.6vw,32px)',
+          minWidth: 0,
+          maxWidth: '100%',
         }}
       >
         {groups.map((group) => (
-          <div key={group.label}>
+          <div key={group.label} style={{ minWidth: 0, maxWidth: '100%' }}>
             <div
               className="mono-lab"
               style={{

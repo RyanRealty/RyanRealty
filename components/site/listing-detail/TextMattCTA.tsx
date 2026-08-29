@@ -59,6 +59,7 @@ export function TextMattCTA({
 
   return (
     <div
+      id="text-matt"
       className={className ?? undefined}
       style={{
         border: '3px solid var(--navy)',
@@ -123,7 +124,12 @@ export function TextMattCTA({
 
         {/* Actions */}
         <div className="flex flex-col gap-2.5 pt-1">
-          <a href={tourHref} className="btn alt" style={{ justifyContent: 'center' }}>
+          <a
+            id="listing-sheet-schedule"
+            href={tourHref}
+            className="btn alt"
+            style={{ justifyContent: 'center' }}
+          >
             {tourLabel}
           </a>
           <div className="grid grid-cols-2 gap-2.5">

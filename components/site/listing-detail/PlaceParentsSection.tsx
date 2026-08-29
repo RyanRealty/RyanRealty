@@ -4,7 +4,7 @@ import type { PlaceNode } from '@/lib/data/geo/resolvePlaceContext'
 type Props = {
   parents: PlaceNode[]
   eyebrow?: string
-  title?: string
+  title?: string | false
 }
 
 /**
@@ -16,14 +16,17 @@ export function PlaceParentsSection({
   title = 'This place sits inside',
 }: Props) {
   if (parents.length === 0) return null
+  const label = title === false ? 'Places this home sits inside' : title
 
   return (
-    <section className="section" aria-label={title}>
+    <section className="section listing-place-parents" aria-label={label}>
       <div className="wrap">
-        <div className="sec-head">
-          <span className="sec-index">{eyebrow}</span>
-          <h2 className="sec-title display">{title}</h2>
-        </div>
+        {title === false ? null : (
+          <div className="sec-head">
+            <span className="sec-index">{eyebrow}</span>
+            <h2 className="sec-title display">{title}</h2>
+          </div>
+        )}
         <ul
           style={{
             listStyle: 'none',

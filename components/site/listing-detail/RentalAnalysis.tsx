@@ -6,6 +6,7 @@ import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { publishRentalHoaMonthly } from '@/lib/listing/publish-listing-hoa'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Listing-detail RentalAnalysis — KB section style.
@@ -48,7 +49,13 @@ function isRentalEligible(propertyType: string | null): boolean {
   return !(lower.includes('land') || lower.includes('lot') || lower.includes('commercial') || lower.includes('acreage'))
 }
 
-export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
+export function RentalAnalysis({
+  listing,
+  heading = false,
+}: {
+  listing: ListingDetail
+  heading?: string | false
+}) {
   const price = publishWholePropertyAmount({
     price: listing.listPrice,
     propertyType: listing.propertyType,
@@ -100,12 +107,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
 
   return (
     <section>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">For investors</div>
-          <h2 className="sec-title display">Rental analysis</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="For investors" />
 
       <div className="tool-skin" style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Body size="small" tone="muted">

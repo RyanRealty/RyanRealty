@@ -1,11 +1,8 @@
 import { ListingLikeThisSheet } from '@/components/site/listing-detail/ListingLikeThisSheet.client'
-import { ListingAlertCoach } from '@/components/site/listing-detail/ListingAlertCoach.client'
 
 /**
- * Listing-detail B1 capture: city + price band (+ beds) for homes like this.
- * Server-safe wrapper so app/listing page stays under the file-size budget.
- * `#listing-like-alerts` is the anchor for PriceCtaStrip + RoomRestyle + coach.
- * The Sheet owns that id.
+ * One alerts ask on the listing Sheet. The coach and mid-page nags stay off.
+ * `#listing-like-alerts` lives on the form.
  */
 export function ListingLikeThisAlerts({
   city,
@@ -17,10 +14,5 @@ export function ListingLikeThisAlerts({
   beds: number | null | undefined
 }) {
   if (!city) return null
-  return (
-    <>
-      <ListingLikeThisSheet city={city} listPrice={listPrice} beds={beds} />
-      <ListingAlertCoach city={city} />
-    </>
-  )
+  return <ListingLikeThisSheet city={city} listPrice={listPrice} beds={beds} />
 }

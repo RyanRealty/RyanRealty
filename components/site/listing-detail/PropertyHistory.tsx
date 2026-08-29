@@ -4,6 +4,7 @@ import {
   publishListingHistoryDeltaLabel,
   publishListingHistoryDescription,
 } from '@/lib/listing/publish-listing-history'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Listing-detail PropertyHistory — KB section style.
@@ -24,6 +25,7 @@ type Props = {
   history: ReadonlyArray<ListingHistoryEvent>
   mode?: 'all' | 'meaningful-only'
   className?: string
+  heading?: string | false
 }
 
 // Canonical key = lowercased with every separator stripped, so the lowercase_under-
@@ -80,7 +82,7 @@ function isMeaningfulEvent(ev: ListingHistoryEvent): boolean {
   return false
 }
 
-export function PropertyHistory({ history, mode = 'all', className }: Props) {
+export function PropertyHistory({ history, mode = 'all', className, heading = 'Price history' }: Props) {
   const filtered = mode === 'meaningful-only' ? history.filter(isMeaningfulEvent) : history
   const events = [...filtered].sort((a, b) => {
     const ta = a.event_date ? Date.parse(a.event_date) : 0
@@ -91,12 +93,7 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
 
   return (
     <section className={className}>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">History</div>
-          <h2 className="sec-title display">Listing history</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="History" />
 
       <ol
         style={{
