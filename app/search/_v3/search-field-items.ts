@@ -8,6 +8,7 @@
 import type { ListingTileRow } from '@/app/actions/listings'
 import type { V3FieldItem } from '@/components/site/v3'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath, listingTileHref } from '@/lib/slug'
@@ -141,11 +142,13 @@ export function searchFieldItems(rows: readonly ListingTileRow[]): SearchFieldIt
       listNumber: row.ListNumber ?? null,
     })
     const sqft = row.TotalLivingAreaSqFt
+    const statusBadge = publishListingStatusBadge(row.StandardStatus)
     const meta = [
       row.BedroomsTotal != null ? `${row.BedroomsTotal} bd` : null,
       row.BathroomsTotal != null ? `${row.BathroomsTotal} ba` : null,
       sqft != null ? `${Math.round(sqft).toLocaleString('en-US')} sqft` : null,
       shareKind,
+      statusBadge?.label ?? null,
     ]
       .filter((part): part is string => Boolean(part))
       .join(' · ')

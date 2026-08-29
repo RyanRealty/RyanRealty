@@ -55,4 +55,11 @@ describe('searchFieldItems', () => {
   it('drops a row with no ask', () => {
     expect(searchFieldItems([row({ ListingKey: 'abc', ListPrice: null })])).toHaveLength(0)
   })
+
+  it('names Pending on the door when StandardStatus is pending', () => {
+    const items = searchFieldItems([
+      row({ ListingKey: 'abc', ListNumber: '22001111', StandardStatus: 'Pending' }),
+    ])
+    expect(items[0].meta).toMatch(/Pending/)
+  })
 })
