@@ -13,8 +13,6 @@ import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
-import { publishListingPriceChangeLine } from '@/lib/listing/publish-listing-price-change-line'
-import type { PublishedListingHistoryEvent } from '@/lib/listing/publish-listing-history'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
@@ -73,19 +71,6 @@ type Props = {
   scheduleHref?: string
   /** Override the default ask-question href. */
   askHref?: string
-  /** Prices already on the listing-history rail. Drop withholds without them. */
-  historyPrices?: ReadonlyArray<number | null | undefined>
-  /** History rows from the listing rail. Price-change copy reads these only. */
-  history?: ReadonlyArray<
-    | ({
-        event?: string | null
-        event_date?: string | null
-        price?: number | null
-        price_change?: number | null
-      } & Partial<PublishedListingHistoryEvent>)
-    | null
-    | undefined
-  > | null
   className?: string
 }
 
@@ -109,8 +94,6 @@ export function PriceCtaStrip({
   onShare,
   scheduleHref,
   askHref,
-  historyPrices: _historyPrices,
-  history,
   className,
 }: Props) {
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
@@ -152,20 +135,6 @@ export function PriceCtaStrip({
     propertyType: listing.propertyType,
     pricePerSqft: listing.pricePerSqft,
   })
-  const priceChangeLine = isClosed
-    ? null
-    : publishListingPriceChangeLine(
-        (history ?? [])
-          .filter((row): row is PublishedListingHistoryEvent =>
-            Boolean(row && row.event && row.event_date),
-          )
-          .map((row) => ({
-            event: row.event,
-            event_date: row.event_date,
-            price: row.price,
-            price_change: row.price_change,
-          })),
-      )
   const livingSqft = listing.sqft ?? listing.totalLivingAreaSqFt ?? null
   const factsLine = [
     listing.beds != null ? `${listing.beds} bd` : null,
@@ -274,12 +243,6 @@ export function PriceCtaStrip({
       {cityWithCommunity ? (
         <div className="mt-0.5 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           {cityWithCommunity}
-        </div>
-      ) : null}
-
-      {priceChangeLine ? (
-        <div className="mt-2 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
-          {priceChangeLine.text}
         </div>
       ) : null}
 

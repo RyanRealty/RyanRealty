@@ -114,13 +114,11 @@ describe('listing-detail CTA row accessible names', () => {
     expect(html).toMatch(/7,900,000/)
   })
 
-  it('prints an honest price-change line from history and never invents a drop', () => {
-    const html = render({
-      history: [
-        { event: 'listed', event_date: '2026-08-22', price: 298000, price_change: null },
-      ],
-    })
-    expect(html).toMatch(/Listed Aug 22 at \$298,000/)
+  it('does not paint price-change copy on the hero strip', () => {
+    const html = render()
+    expect(html).not.toMatch(/Listed Aug 22 at \$/)
+    expect(html).not.toMatch(/Reduced \$/)
+    expect(html).not.toMatch(/PRICE CHANGE/i)
     expect(html).not.toMatch(/Down /)
   })
 

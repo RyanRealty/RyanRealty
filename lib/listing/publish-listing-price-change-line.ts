@@ -1,9 +1,8 @@
 /**
- * One honest price-change line for the listing facts block.
+ * One honest price-change line from the published history rail.
  *
- * Reads the already-published listing-history rail. Does not invent a
- * listed date, a reduction, or a dollar amount. If history cannot support
- * the line, the caller prints nothing — the rail still carries the timeline.
+ * The listing hero does not paint this. Sale history is the buyer-facing
+ * place for PRICE CHANGE, and only when the dollar amount actually moved.
  *
  * Copy:
  *   "Reduced $X on {date}" when a negative price_change exists

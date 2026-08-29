@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import {
   getListingDetail,
   getListingPhotos,
+  getListingFloorPlans,
   getListingVideos,
   getListingDetailOpenHouses,
   getBrokers,
@@ -279,7 +280,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults, relatedGuides] =
+  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults, relatedGuides] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -304,6 +305,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ),
       readListingDetailHistory(listing.listingKey, listingHistorySeedFrom(listing)),
       withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
+      withTimeoutFallback(getListingFloorPlans(listingKey), [], 4000, 'listing:floor-plans'),
       withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
       withTimeoutFallback(getBrokers(), [], 3000, 'listing:brokers'),
       withTimeoutFallback(
@@ -475,6 +477,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const hero = (
     <ListingHero
       photos={photos}
+      floorPlans={floorPlans}
       videos={videos}
       addressLine={street}
     />
@@ -482,7 +485,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const main = (
     <>
-      <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} history={history} />
+      <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} />
       <PlaceIdentityLine place={placeContext} />
       <LivePricingRead
         read={pricingRead}

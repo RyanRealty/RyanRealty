@@ -159,7 +159,7 @@ export type { RepeatSale, RepeatSalesResult } from '@/lib/data/listings/getRepea
 
 // Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
 export { getListingDetail } from '@/lib/data/listings/getListingDetail'
-export { getListingPhotos } from '@/lib/data/listings/getListingPhotos'
+export { getListingPhotos, getListingFloorPlans } from '@/lib/data/listings/getListingPhotos'
 export { getListingRawRowByKey } from '@/lib/data/listings/getListingRawRow'
 export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 

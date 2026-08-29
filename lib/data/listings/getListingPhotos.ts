@@ -25,6 +25,11 @@ import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import type { ListingPhoto } from '@/lib/data/types/listing'
+import {
+  isListingFloorPlanCaption,
+  publishListingFloorPlans,
+  type SparkFloorPlanRow,
+} from '@/lib/listing/publish-listing-floor-plans'
 
 const InputSchema = z.object({ listingKey: z.string().min(1).max(100) })
 
@@ -56,11 +61,25 @@ function pickBestUri(p: DetailsPhotoJson): string | null {
   )
 }
 
-type DetailRow = { ListingKey?: string | null; details?: { Photos?: DetailsPhotoJson[] } | null; PhotoURL?: string | null; media_suppressed?: boolean | null }
+type DetailRow = {
+  ListingKey?: string | null
+  details?: { Photos?: DetailsPhotoJson[]; FloorPlans?: SparkFloorPlanRow[] } | null
+  PhotoURL?: string | null
+  media_suppressed?: boolean | null
+}
 
-async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
+type ListingGalleryMedia = {
+  photos: ListingPhoto[]
+  floorPlans: ListingPhoto[]
+}
+
+function asListingPhoto(row: { url: string; caption: string | null; order: number }): ListingPhoto {
+  return { url: row.url, caption: row.caption, order: row.order }
+}
+
+async function fetchGalleryMedia(listingKey: string): Promise<ListingGalleryMedia> {
   const sb = supabaseAnon()
-  if (!sb) return []
+  if (!sb) return { photos: [], floorPlans: [] }
 
   // Resolve the listings row by EITHER the MLS ListNumber (which the canonical
   // /homes-for-sale/<...>/<addr>-<listnum> URLs carry) OR the RETS ListingKey,
@@ -88,22 +107,41 @@ async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
   // migration 20260618121500_add_media_suppressed.sql. Checked here (not just by
   // emptying the data) because the Spark sync re-pulls details.Photos/PhotoURL on
   // every delta/full sync — the flag is the durable, sync-proof gate.
-  if (detail?.media_suppressed === true) return []
+  if (detail?.media_suppressed === true) return { photos: [], floorPlans: [] }
+
+  const sparkFloorPlans = Array.isArray(detail?.details?.FloorPlans)
+    ? detail.details.FloorPlans
+    : []
 
   // Tier 1 — our normalized listing_photos table (keyed by the canonical ListingKey).
   const { data: rows } = await sb
     .from('listing_photos')
-    .select('photo_url, cdn_url, sort_order, caption')
+    .select('photo_url, cdn_url, sort_order, caption, classification')
     .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true })
     .limit(50)
 
+  let photos: ListingPhoto[] = []
   if (rows && rows.length > 0) {
-    return (rows as unknown as Array<Record<string, unknown>>).map((r, i) => ({
+    photos = (rows as unknown as Array<Record<string, unknown>>).map((r, i) => ({
       url: (r.cdn_url as string | null) ?? (r.photo_url as string),
       caption: (r.caption as string | null) ?? null,
       order: (r.sort_order as number | null) ?? i,
     }))
+    const classifiedPlans = publishListingFloorPlans({
+      sparkFloorPlans,
+      photos: (rows as unknown as Array<Record<string, unknown>>).map((r, i) => ({
+        url: (r.cdn_url as string | null) ?? (r.photo_url as string),
+        caption: (r.caption as string | null) ?? null,
+        classification: (r.classification as string | null) ?? null,
+        order: (r.sort_order as number | null) ?? i,
+      })),
+    }).map(asListingPhoto)
+    const planUrls = new Set(classifiedPlans.map((p) => p.url))
+    return {
+      photos: photos.filter((p) => !planUrls.has(p.url)),
+      floorPlans: classifiedPlans,
+    }
   }
 
   // Tier 2 — listings.details.Photos JSONB (the raw MLS payload — most listings).
@@ -117,33 +155,49 @@ async function fetchPhotos(listingKey: string): Promise<ListingPhoto[]> {
       const caption = p.Caption && p.Caption.trim().length > 0 ? p.Caption : null
       out.push({ url, caption, order: i })
     }
-    if (out.length > 0) return out
+    if (out.length > 0) {
+      const floorPlans = publishListingFloorPlans({
+        sparkFloorPlans,
+        photos: out,
+      }).map(asListingPhoto)
+      const planUrls = new Set(floorPlans.map((p) => p.url))
+      return {
+        photos: out.filter((p) => !planUrls.has(p.url) && !isListingFloorPlanCaption(p.caption)),
+        floorPlans,
+      }
+    }
   }
+
+  const floorPlans = publishListingFloorPlans({ sparkFloorPlans }).map(asListingPhoto)
 
   // Tier 3 — single PhotoURL fallback.
   const heroUrl = detail?.PhotoURL
   if (heroUrl) {
-    return [{ url: heroUrl, caption: null, order: 0 }]
+    return { photos: [{ url: heroUrl, caption: null, order: 0 }], floorPlans }
   }
 
-  return []
+  return { photos: [], floorPlans }
 }
 
-export const getListingPhotos = (listingKey: string): Promise<ListingPhoto[]> => {
-  InputSchema.parse({ listingKey })
+function cachedGalleryMedia(listingKey: string): Promise<ListingGalleryMedia> {
   return unstable_cache(
-    () => fetchPhotos(listingKey),
-    // v2 cache-key bump 2026-05-28 — paired with getListingDetail v2
-    // bump to invalidate empty photo arrays cached during the
-    // column-quoting bug window.
-    // v3 bump 2026-06-08 — invalidate single-PhotoURL-fallback entries cached
-    // when the ListNumber lookup missed details.Photos (every pretty-URL listing).
-    // v4 bump 2026-06-18 — media_suppressed gate added (owner photo-removal
-    // requests); evicts entries cached before the suppression check existed.
-    ['listing-photos-v4', listingKey],
+    () => fetchGalleryMedia(listingKey),
+    // v5 bump 2026-08-29 — floor-plan stills split out of the house mosaic.
+    ['listing-gallery-media-v5', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingTile,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],
     },
   )()
+}
+
+export const getListingPhotos = (listingKey: string): Promise<ListingPhoto[]> => {
+  InputSchema.parse({ listingKey })
+  return cachedGalleryMedia(listingKey).then((media) => media.photos)
+}
+
+/** Spark FloorPlans URIs + caption-classified stills. Empty when none exist. */
+export const getListingFloorPlans = (listingKey: string): Promise<ListingPhoto[]> => {
+  InputSchema.parse({ listingKey })
+  return cachedGalleryMedia(listingKey).then((media) => media.floorPlans)
 }

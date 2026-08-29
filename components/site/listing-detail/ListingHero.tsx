@@ -19,6 +19,7 @@ import { publishListingMosaicPills } from '@/lib/listing/publish-listing-mosaic-
 
 type Props = {
   photos: ReadonlyArray<ListingPhoto>
+  floorPlans?: ReadonlyArray<ListingPhoto>
   videos: ReadonlyArray<VideoEmbed>
   addressLine?: string
   className?: string
@@ -57,18 +58,23 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
   }
 }
 
-export function ListingHero({ photos, videos, addressLine, className }: Props) {
+export function ListingHero({ photos, floorPlans = [], videos, addressLine, className }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
   const [tourOpen, setTourOpen] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
   const lead = publishListingLeadMedia(videos)
   const heroVideo = lead?.video ?? null
-  const hasLeadMedia = heroVideo != null || total > 0
+  const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0
   const canUnmute = publishListingHeroUnmute(publishListingHeroVideo(videos))
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
-  const mosaicPills = publishListingMosaicPills({ photoCount: total, videos })
+  const mosaicPills = publishListingMosaicPills({
+    photoCount: total,
+    videos,
+    floorPlanCount: floorPlans.length,
+  })
   const thumbs = photos.slice(heroVideo ? 0 : 1, heroVideo ? 4 : 5)
   const carouselStills = heroVideo ? photos : photos.slice(1)
 
@@ -77,14 +83,17 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
     const raw = new URLSearchParams(window.location.search).get('photo')
     const n = raw ? Number(raw) : Number.NaN
     if (!Number.isInteger(n) || n < 1 || total === 0) return
+    setGalleryPane('photos')
     setOpenIndex(Math.max(0, Math.min(n - 1, total - 1)))
   }, [total])
 
   if (!hasLeadMedia) return null
 
-  function openGallery(photoIndex: number) {
-    if (total === 0) return
-    setOpenIndex(Math.max(0, Math.min(photoIndex, total - 1)))
+  function openGallery(photoIndex: number, pane: 'photos' | 'floor' = 'photos') {
+    const pool = pane === 'floor' ? floorPlans : photos
+    if (pool.length === 0) return
+    setGalleryPane(pane)
+    setOpenIndex(Math.max(0, Math.min(photoIndex, pool.length - 1)))
   }
 
   function openTour() {
@@ -240,7 +249,13 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
               key={pill.id}
               type="button"
               className="listing-mosaic__badge"
-              onClick={() => (pill.action === 'tour' ? openTour() : openGallery(0))}
+              onClick={() => {
+                if (pill.action === 'tour') {
+                  openTour()
+                  return
+                }
+                openGallery(0, pill.action === 'floor' ? 'floor' : 'photos')
+              }}
               aria-label={pill.label}
             >
               {pill.label}
@@ -251,9 +266,12 @@ export function ListingHero({ photos, videos, addressLine, className }: Props) {
 
       <PhotoGalleryLightbox
         photos={photos.map((p) => ({ url: p.url, caption: p.caption }))}
+        floorPlans={floorPlans.map((p) => ({ url: p.url, caption: p.caption }))}
         videos={videos}
         openIndex={openIndex}
-        total={total}
+        pane={galleryPane}
+        onPaneChange={setGalleryPane}
+        total={galleryPane === 'floor' ? floorPlans.length : total}
         altBase={altBase}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}

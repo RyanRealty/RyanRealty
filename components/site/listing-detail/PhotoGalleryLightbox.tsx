@@ -4,29 +4,18 @@ import Image from 'next/image'
 import { useCallback, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
-import { publishListingGalleryTabs } from '@/lib/listing/publish-listing-mosaic-pills'
+import {
+  publishListingGalleryMobilePills,
+  publishListingGalleryTabs,
+} from '@/lib/listing/publish-listing-mosaic-pills'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import './listing-detail.css'
 
 /**
- * PhotoGalleryLightbox — site-wide fullscreen photo lightbox primitive.
- *
- * D75 (docs/DESIGN_DIRECTIVES.md): photo gallery nav must include
- *   - thumbnail strip
- *   - dot indicator
- *   - swipe on mobile
- *   - keyboard arrows + Escape
- *   - visible photo counter (`3 of 47`)
- *
- * Lifted out of ListingHero.tsx so every gallery surface in the site
- * uses the same UX. Adding a new gallery (search results lightbox,
- * map-search photo peek, broker portfolio) imports this — they
- * inherit the same nav contract automatically.
- *
- * Shell uses Dialog/DialogContent so focus-trap, Escape-to-close, and
- * scroll-lock come from Radix — no hand-rolled handling needed.
+ * Listing gallery. Desktop: 44px X top-left, tab row of media that exists,
+ * Esc, ?photo=1. Mobile: labeled Back 44px, stacked stills, pills that exist.
+ * Browser Back returns to the listing at the same scroll.
  */
 
 export type GalleryPhoto = {
@@ -34,10 +23,15 @@ export type GalleryPhoto = {
   caption?: string | null
 }
 
+type GalleryPane = 'photos' | 'floor'
+
 type Props = {
   photos: ReadonlyArray<GalleryPhoto>
+  floorPlans?: ReadonlyArray<GalleryPhoto>
   videos?: ReadonlyArray<VideoEmbed>
   openIndex: number | null
+  pane?: GalleryPane
+  onPaneChange?: (pane: GalleryPane) => void
   total?: number
   altBase?: string
   onClose: () => void
@@ -47,15 +41,19 @@ type Props = {
 
 export function PhotoGalleryLightbox({
   photos,
+  floorPlans = [],
   videos = [],
   openIndex,
+  pane = 'photos',
+  onPaneChange,
   total,
   altBase = 'Photo',
   onClose,
   onChange,
   onOpenTour,
 }: Props) {
-  const count = total ?? photos.length
+  const stills = pane === 'floor' ? floorPlans : photos
+  const count = total ?? stills.length
 
   const goNext = useCallback(() => {
     if (openIndex == null || count === 0) return
@@ -69,7 +67,6 @@ export function PhotoGalleryLightbox({
   useEffect(() => {
     if (openIndex == null) return
     function onKey(e: KeyboardEvent) {
-      // Escape is handled by the Dialog primitive; arrow keys are ours.
       if (e.key === 'ArrowRight') goNext()
       if (e.key === 'ArrowLeft') goPrev()
     }
@@ -114,26 +111,55 @@ export function PhotoGalleryLightbox({
     }
   }, [openIndex])
 
-  const isOpen = openIndex != null && photos.length > 0
+  const isOpen = openIndex != null && (photos.length > 0 || floorPlans.length > 0)
   const { dismiss } = useMediaOverlayHistory(
     isOpen,
     onClose,
     'gallery',
-    openIndex != null ? openIndex + 1 : null,
+    pane === 'photos' && openIndex != null ? openIndex + 1 : null,
   )
-  const tabs = publishListingGalleryTabs({ photoCount: photos.length, videos })
+  const tabs = publishListingGalleryTabs({
+    photoCount: photos.length,
+    videos,
+    floorPlanCount: floorPlans.length,
+  })
+  const mobilePills = publishListingGalleryMobilePills({
+    photoCount: photos.length,
+    videos,
+    floorPlanCount: floorPlans.length,
+  })
 
   if (!isOpen) return null
 
-  const current = photos[openIndex!]
-  const altText = current.caption ?? `${altBase} ${openIndex! + 1} of ${count}`
+  const current = stills[openIndex!] ?? stills[0]
+  const altText = current?.caption ?? `${altBase} ${openIndex! + 1} of ${count}`
+
+  function selectPane(next: GalleryPane) {
+    onPaneChange?.(next)
+    onChange(0)
+  }
+
+  function onTab(id: string) {
+    if (id === 'photos' || id === 'all') {
+      selectPane('photos')
+      return
+    }
+    if (id === 'floor') {
+      selectPane('floor')
+      return
+    }
+    if (id === 'video' || id === 'tour') {
+      if (onOpenTour) {
+        dismiss()
+        onOpenTour()
+      }
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) dismiss() }}>
       <DialogPortal>
-        <DialogOverlay className="bg-black/95 backdrop-blur-none" />
-        {/* Full-screen gallery content — overrides DialogContent defaults for a
-            dark immersive shell. showCloseButton=false so we supply our own. */}
+        <DialogOverlay className="listing-gallery__overlay" />
         <DialogContent
           showCloseButton={false}
           aria-label="Photo gallery"
@@ -157,109 +183,124 @@ export function PhotoGalleryLightbox({
               ×
             </button>
             {tabs.length > 1 ? (
-              <div className="flex min-h-11 flex-1 items-center justify-center gap-1 overflow-x-auto no-scrollbar">
+              <div className="listing-gallery__tabs" role="tablist" aria-label="Listing media">
                 {tabs.map((tab) => (
-                  <Button
+                  <button
                     key={tab.id}
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="min-h-11 text-primary-foreground"
-                    onClick={() => {
-                      if (tab.id === 'photos') return
-                      if (onOpenTour) {
-                        dismiss()
-                        onOpenTour()
-                      }
-                    }}
+                    role="tab"
+                    aria-selected={
+                      tab.id === 'floor' ? pane === 'floor' : tab.id === 'photos' ? pane === 'photos' : false
+                    }
+                    className={cn(
+                      'listing-gallery__tab',
+                      (tab.id === 'floor' && pane === 'floor') ||
+                        (tab.id === 'photos' && pane === 'photos')
+                        ? 'is-on'
+                        : null,
+                    )}
+                    onClick={() => onTab(tab.id)}
                   >
                     {tab.label}
-                  </Button>
+                  </button>
                 ))}
               </div>
             ) : null}
-            <div className="text-xs uppercase tracking-[0.08em] text-primary-foreground/75 tabular-nums">
-              {openIndex! + 1} of {count}
+            <div className="listing-gallery__count">
+              {stills.length > 0 ? <>{openIndex! + 1} of {count}</> : null}
             </div>
           </div>
 
-          {/* Main photo area */}
+          {mobilePills.length > 1 ? (
+            <div className="listing-gallery__pills">
+              {mobilePills.map((pill) => (
+                <button
+                  key={pill.id}
+                  type="button"
+                  className={cn(
+                    'listing-gallery__pill',
+                    (pill.id === 'floor' && pane === 'floor') ||
+                      (pill.id === 'all' && pane === 'photos')
+                      ? 'is-on'
+                      : null,
+                  )}
+                  onClick={() => onTab(pill.id)}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="listing-gallery__stack">
+            {stills.map((p, i) => (
+              <button
+                key={`stack-${i}-${p.url}`}
+                type="button"
+                className="listing-gallery__stack-item"
+                onClick={() => onChange(i)}
+                aria-label={`${altBase} ${i + 1} of ${stills.length}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={p.caption ?? `${altBase} ${i + 1}`} />
+              </button>
+            ))}
+          </div>
+
           <div
-            className="relative flex grow items-center justify-center px-4 sm:px-12"
+            className="listing-gallery__stage"
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
           >
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
+              type="button"
               onClick={goPrev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 text-white/90 hover:bg-white/15 hover:text-white sm:left-6 text-3xl"
+              className="listing-gallery__arrow listing-gallery__arrow--prev"
               aria-label="Previous photo"
             >
-              {'‹'}
-            </Button>
-            {/* Fill the whole stage via absolute inset-0 — a percentage-height
-                child (h-full) collapses inside this flex-grow parent, but an
-                absolutely-positioned box fills it reliably. object-contain keeps
-                the aspect ratio, so the photo is as large as the screen allows
-                instead of being capped at 1400px and looking tiny on big monitors. */}
-            <div className="absolute inset-0">
-              <Image
-                src={current.url}
-                alt={altText}
-                fill
-                sizes="100vw"
-                priority
-                className="object-contain"
-              />
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
+              ‹
+            </button>
+            {current ? (
+              <div className="listing-gallery__frame">
+                <Image
+                  src={current.url}
+                  alt={altText}
+                  fill
+                  sizes="100vw"
+                  priority
+                  className="object-contain"
+                />
+              </div>
+            ) : null}
+            <button
+              type="button"
               onClick={goNext}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 text-white/90 hover:bg-white/15 hover:text-white sm:right-6 text-3xl"
+              className="listing-gallery__arrow listing-gallery__arrow--next"
               aria-label="Next photo"
             >
-              {'›'}
-            </Button>
+              ›
+            </button>
           </div>
 
-          {/* Dot indicator (shown when <= 20 photos) */}
-          {count <= 20 ? (
-            <div
-              className="flex shrink-0 items-center justify-center gap-1.5 py-2"
-              aria-hidden
-            >
+          {count <= 20 && stills.length > 1 ? (
+            <div className="listing-gallery__dots" aria-hidden>
               {Array.from({ length: count }, (_, i) => (
                 <span
                   key={i}
-                  className={cn(
-                    'h-1.5 rounded-full bg-white/40 transition',
-                    i === openIndex ? 'w-6 bg-white' : 'w-1.5',
-                  )}
+                  className={cn('listing-gallery__dot', i === openIndex && 'is-on')}
                 />
               ))}
             </div>
           ) : null}
 
-          {/* Thumbnail strip */}
-          <div
-            ref={stripRef}
-            className="no-scrollbar flex shrink-0 gap-2 overflow-x-auto px-4 pb-4 sm:px-6"
-          >
-            {photos.map((p, i) => (
-              <Button
+          <div ref={stripRef} className="listing-gallery__thumbs">
+            {stills.map((p, i) => (
+              <button
                 key={`${i}-${p.url}`}
-                variant="ghost"
-                size="icon"
+                type="button"
                 data-thumb-index={i}
                 onClick={() => onChange(i)}
-                className={cn(
-                  'relative h-[72px] w-[108px] shrink-0 overflow-hidden rounded-md transition p-0',
-                  i === openIndex
-                    ? 'ring-2 ring-white opacity-100'
-                    : 'opacity-65 hover:opacity-100',
-                )}
+                className={cn('listing-gallery__thumb', i === openIndex && 'is-on')}
                 aria-label={`Jump to photo ${i + 1} of ${count}`}
                 aria-current={i === openIndex ? 'true' : undefined}
               >
@@ -270,7 +311,7 @@ export function PhotoGalleryLightbox({
                   sizes="108px"
                   className="object-cover"
                 />
-              </Button>
+              </button>
             ))}
           </div>
         </DialogContent>

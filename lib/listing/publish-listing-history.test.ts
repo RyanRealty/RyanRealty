@@ -117,6 +117,33 @@ describe('publishListingHistory', () => {
     expect(rows.some((row) => /price/i.test(row.event))).toBe(false)
   })
 
+  it('1225 Elgin: publishes PRICE CHANGE only when the ask actually moved', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      priceHistory: [
+        { old_price: 1650000, new_price: 1624000, changed_at: '2026-08-07T16:48:47.242+00:00' },
+        { old_price: 1624000, new_price: 1585000, changed_at: '2026-08-26T20:03:29.192+00:00' },
+      ],
+      onMarketDate: '2026-07-10T07:15:03+00:00',
+      listPrice: 1585000,
+    })
+    expect(rows.map((r) => r.event)).toEqual(['listed', 'pricechange', 'pricechange'])
+    expect(rows[1]).toMatchObject({ event: 'pricechange', price: 1624000, price_change: -26000 })
+    expect(rows[2]).toMatchObject({ event: 'pricechange', price: 1585000, price_change: -39000 })
+  })
+
+  it('1461 Elgin: listed only when original and ask are the same dollar', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      priceHistory: [],
+      onMarketDate: '2026-07-03',
+      listPrice: 1899900,
+    })
+    expect(rows).toEqual([
+      { event: 'listed', event_date: '2026-07-03', price: 1899900, price_change: null, description: null },
+    ])
+  })
+
   it('Zenith: same $889,000 on Aug 24 is listed history only, even if price_change is missing', () => {
     const rows = publishListingHistory({
       listingHistory: [

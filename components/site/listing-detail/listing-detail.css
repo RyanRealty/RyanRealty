@@ -1006,6 +1006,10 @@
 
 /* Gallery portals to document.body. Pin it to the viewport so 390 Back
    is not clipped by DialogContent's default center/translate. */
+.listing-gallery__overlay {
+  background: color-mix(in srgb, var(--v3-navy) 92%, transparent);
+}
+
 .listing-gallery {
   position: fixed;
   inset: 0;
@@ -1021,7 +1025,8 @@
   gap: 0;
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
   box-shadow: none;
 }
 
@@ -1035,7 +1040,10 @@
 }
 
 .listing-gallery__back,
-.listing-gallery__close {
+.listing-gallery__close,
+.listing-gallery__tab,
+.listing-gallery__pill,
+.listing-gallery__arrow {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1058,11 +1066,141 @@
   display: none;
 }
 
+.listing-gallery__tabs {
+  display: none;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  overflow-x: auto;
+}
+
+.listing-gallery__tab.is-on,
+.listing-gallery__pill.is-on {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  box-shadow: inset 0 0 0 2px var(--v3-cream);
+}
+
+.listing-gallery__count {
+  display: none;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-cream);
+  font-variant-numeric: tabular-nums;
+}
+
+.listing-gallery__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.listing-gallery__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--v3-navy);
+}
+
+.listing-gallery__stack-item {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--v3-navy);
+  cursor: zoom-in;
+}
+
+.listing-gallery__stack-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.listing-gallery__stage,
+.listing-gallery__dots,
+.listing-gallery__thumbs {
+  display: none;
+}
+
 @media (min-width: 40rem) {
-  .listing-gallery__back {
+  .listing-gallery__back,
+  .listing-gallery__pills,
+  .listing-gallery__stack {
     display: none;
   }
-  .listing-gallery__close {
-    display: inline-flex;
+  .listing-gallery__close,
+  .listing-gallery__tabs,
+  .listing-gallery__count {
+    display: flex;
+  }
+  .listing-gallery__stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+    padding: 0 3.5rem;
+  }
+  .listing-gallery__frame {
+    position: absolute;
+    inset: 0;
+  }
+  .listing-gallery__arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 10;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+  }
+  .listing-gallery__arrow--prev {
+    left: 0.75rem;
+  }
+  .listing-gallery__arrow--next {
+    right: 0.75rem;
+  }
+  .listing-gallery__dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0;
+  }
+  .listing-gallery__dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--v3-cream) 40%, transparent);
+  }
+  .listing-gallery__dot.is-on {
+    width: 1.5rem;
+    background: var(--v3-cream);
+  }
+  .listing-gallery__thumbs {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0 1.5rem 1rem;
+  }
+  .listing-gallery__thumb {
+    position: relative;
+    flex: 0 0 6.75rem;
+    height: 4.5rem;
+    padding: 0;
+    border: 0;
+    background: var(--v3-navy);
+    opacity: 0.65;
+    cursor: pointer;
+  }
+  .listing-gallery__thumb.is-on {
+    opacity: 1;
+    box-shadow: inset 0 0 0 2px var(--v3-cream);
   }
 }
