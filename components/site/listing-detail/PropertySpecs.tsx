@@ -297,8 +297,11 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
     <dl
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
         gap: '1px',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
         background: 'var(--v3-navy)',
         border: '1px solid var(--v3-navy)',
       }}
@@ -312,6 +315,9 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
             display: 'flex',
             flexDirection: 'column',
             gap: 4,
+            minWidth: 0,
+            maxWidth: '100%',
+            overflowWrap: 'anywhere',
             ...(lastIsOrphan && i === specs.length - 1 ? { gridColumn: '1 / -1' } : null),
           }}
         >
@@ -357,10 +363,12 @@ export function PropertySpecs({ listing, className, heading = false }: Props) {
           display: 'flex',
           flexDirection: 'column',
           gap: 'clamp(22px,2.6vw,32px)',
+          minWidth: 0,
+          maxWidth: '100%',
         }}
       >
         {groups.map((group) => (
-          <div key={group.label}>
+          <div key={group.label} style={{ minWidth: 0, maxWidth: '100%' }}>
             <div
               className="mono-lab"
               style={{

@@ -150,6 +150,8 @@
 
 .listing-detail .section {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
 }
 .listing-detail .sec-head {
   display: flex;
@@ -159,6 +161,8 @@
   padding: 46px 0 22px;
   border-bottom: var(--edge) solid currentColor;
   margin-bottom: 0;
+  min-width: 0;
+  max-width: 100%;
 }
 .listing-detail .sec-index {
   font-size: 0.72rem;
@@ -174,6 +178,9 @@
   font-size: clamp(1.9rem, 5.4vw, 3.6rem);
   line-height: 0.92;
   text-wrap: balance;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 760px) {
   .listing-detail .section .sec-head {
@@ -900,8 +907,11 @@
 }
 .listing-detail .listing-sheet-job {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   padding-top: 1.5rem;
+  min-width: 0;
+  max-width: 100%;
 }
 /* Nested Field is already inside the Sheet measure. Drop the page-width
    padding so the plot is the sheet column, not 72rem of max-content. */

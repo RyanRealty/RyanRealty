@@ -13,11 +13,22 @@ describe('listing sheet 390 overflow contract', () => {
       /\.v3\.v3-sheet\.v3-sheet--page\s*\{[^}]*min-width:\s*0/,
     )
     expect(SHEET).toMatch(
+      /\.v3\.v3-sheet\.v3-sheet--page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+    )
+    expect(SHEET).toMatch(
       /\.v3\.v3-sheet\.v3-sheet--page\s*>\s*\*\s*\{[^}]*min-width:\s*0/,
     )
     expect(SHEET).toMatch(
       /\.v3\.v3-sheet\.v3-sheet--page\s*>\s*\*\s*\{[^}]*max-width:\s*100%/,
     )
+  })
+
+  it('About this home spec cells shrink on 390', () => {
+    const specs = readFileSync(
+      join(ROOT, 'components/site/listing-detail/PropertySpecs.tsx'),
+      'utf8',
+    )
+    expect(specs).toContain("gridTemplateColumns: 'repeat(2, minmax(0, 1fr))'")
   })
 
   it('Field plot and disclosure cannot grow a parent past the sheet', () => {

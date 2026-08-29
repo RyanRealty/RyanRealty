@@ -131,7 +131,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
               style={KB_INPUT_STYLE}
             />
           </KbField>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 14 }}>
             <KbField label="Down payment %" id="mc-down">
               <input
                 id="mc-down"
@@ -153,7 +153,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
               />
             </KbField>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 14 }}>
             <KbField label="Term (years)" id="mc-term">
               <input
                 id="mc-term"
