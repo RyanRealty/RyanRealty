@@ -60,6 +60,7 @@ import { ListingLocationMap } from '@/components/site/listing-detail/ListingLoca
 import { ListingFeaturedHomes } from '@/components/site/listing-detail/ListingFeaturedHomes.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { leftoverListingGrains, resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
+import { listingFace, publishLandLineTwo } from '@/lib/listing/listing-face'
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
@@ -151,6 +152,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // common" badge that qualifies the price on the page, so they take the
   // whole-property price: a pasted link to MLS 220190868 read "$1 · 3 bed,
   // 2 bath · 1,405 sq ft" for a fractional interest at Eagle Crest.
+  const face = listingFace({
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    beds: listing.beds,
+  })
+  const isLand = face === 'land'
   const description = listingShareSummary({
     price: publishWholePropertyAmount({
       price: listing.listPrice,
@@ -160,9 +167,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       city: listing.city,
       listNumber: listing.listNumber,
     }),
-    beds: listing.beds,
-    baths: listing.baths,
-    sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
+    beds: isLand ? null : listing.beds,
+    baths: isLand ? null : listing.baths,
+    sqft: isLand ? null : (listing.sqft ?? listing.totalLivingAreaSqFt),
     address: addressFull || undefined,
     city: addressFull ? undefined : (listing.city ?? undefined),
   })
@@ -213,6 +220,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // ryan-realty.com because the shell had already flushed. See
   // ListingUnavailable.tsx for the measurement and the mechanism.
   if (!listing) return <ListingUnavailable />
+
+  const face = listingFace({
+    propertyType: listing.propertyType,
+    propertySubType: listing.propertySubType,
+    beds: listing.beds,
+  })
+  const isLand = face === 'land'
+  const isHouse = face === 'house'
 
   // The ONE published asking sale price for this page. Withheld on a lease
   // listing (MLS PropertyType 'G' — 735 Purcell, MLS 220174840, is a sublease
@@ -377,7 +392,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
   let marketPace = EMPTY_PUBLIC_PACE
   let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
   let leftoverGrain = leftoverGrains[leftoverGrains.length - 1] ?? null
-  for (let i = 0; i < leftoverGrains.length; i++) {
+  // Land Chart Room uses city first so the place name is not stamped twice.
+  const grainOrder = isLand
+    ? leftoverGrains.map((_, i) => leftoverGrains.length - 1 - i)
+    : leftoverGrains.map((_, i) => i)
+  for (const i of grainOrder) {
     const grain = leftoverGrains[i]!
     const slug = cityDetachedSlug(grain.geoSlug)
     const layers = leftoverOverlays.get(`${grain.geoType}:${slug}`)
@@ -463,9 +482,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { mlsNumber: listing.listNumber },
   )
 
+  const landLineTwo = isLand
+    ? publishLandLineTwo({
+        acres: listing.lotSizeAcres,
+        neighborhood: listing.boundaryNeighborhood ?? listing.neighborhoodName,
+        subdivision: listing.subdivisionName,
+        city: listing.city,
+      })
+    : null
+
   const breadcrumbs = [
     { label: 'Home', href: '/' },
-    { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
+    isLand
+      ? { label: 'Land for sale', href: '/homes-for-sale?propertyType=Land&view=list' }
+      : { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
     ...(listing.city && cityHref ? [{ label: listing.city, href: cityHref }] : []),
     { label: street || `Listing ${listingKey}` },
   ]
@@ -476,17 +506,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
   const hero = stagePoster ? (
-    <ListingHero posterSrc={stagePoster} addressLine={street || 'This home'} />
+    <ListingHero
+      posterSrc={stagePoster}
+      addressLine={street || (isLand ? 'This lot' : 'This home')}
+      face={face}
+    />
   ) : (
     <section className={V3_ROOT_CLASS} aria-labelledby="listing-street">
       <V3Heading level={1} id="listing-street">
-        {street || 'This home'}
+        {street || (isLand ? 'This lot' : 'This home')}
       </V3Heading>
     </section>
   )
 
   const main = (
-    <ListingSheet>
+    <ListingSheet face={face}>
       <PriceCtaStrip
         listingKey={listing.listingKey}
         mlsNumber={listing.listNumber}
@@ -494,13 +528,22 @@ export default async function ListingDetailPage({ params }: PageProps) {
         city={listing.city}
         subdivision={listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null}
         price={publishedSaleAsk}
-        beds={listing.beds}
-        baths={listing.baths}
-        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+        beds={isLand ? null : listing.beds}
+        baths={isLand ? null : listing.baths}
+        sqft={isLand ? null : (listing.sqft ?? listing.totalLivingAreaSqFt)}
         status={listing.status}
         daysOnMarket={listing.dom}
-        pricePerSqft={listing.pricePerSqft}
+        pricePerSqft={isLand ? null : listing.pricePerSqft}
         shareTitle={[street, listing.city].filter(Boolean).join(', ')}
+        face={face}
+        lineTwo={landLineTwo}
+        acres={listing.lotSizeAcres}
+        propertyType={listing.propertyType}
+        propertySubType={listing.propertySubType}
+        taxAnnualAmount={listing.taxAnnualAmount}
+        hoaMonthly={listing.hoaMonthly}
+        associationFee={listing.associationFee}
+        associationFeeFrequency={listing.associationFeeFrequency}
       />
       {ctaBroker ? <ListingBrokerCompact broker={ctaBroker} /> : null}
       <ListingPhotoStrip />
@@ -515,87 +558,107 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
         />
       ) : null}
-      <section className="listing-sheet-job">
-        <h2 className="sec-title display">About this home</h2>
-        <PropertySpecs listing={listingWithPhotos} heading={false} />
-        <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} heading={false} />
-        <LivePricingRead
-          read={pricingRead}
-          listPrice={wholePropertyPrice}
-          listingKey={listing.listingKey}
-          subjectAddress={street}
-          sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
-          dom={listing.dom}
-          placeMedianDays={leftoverHud?.daysToPending ?? null}
-          placeName={leftoverGrain?.name ?? listing.city ?? listing.subdivisionName ?? null}
-          hoaMonthly={listing.hoaMonthly}
-          associationFee={listing.associationFee}
-          associationFeeFrequency={listing.associationFeeFrequency}
-          taxAnnualAmount={listing.taxAnnualAmount}
-          propertySubType={listing.propertySubType}
-          propertyType={listing.propertyType}
-          subdivisionName={listing.subdivisionName}
-          city={listing.city}
-          listNumber={listing.listNumber}
-          hideCmaRequest={Boolean(publishedCma)}
-          hideHeading
-        />
-        {photos.some((p) => p.url) ? (
-          <RoomRestyle
-            photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
-            listingKey={contactKey}
-            city={listing.city}
+      {isHouse ? (
+        <section className="listing-sheet-job">
+          <h2 className="sec-title display">About this home</h2>
+          <PropertySpecs listing={listingWithPhotos} heading={false} />
+          <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} heading={false} />
+          <LivePricingRead
+            read={pricingRead}
             listPrice={wholePropertyPrice}
-            beds={listing.beds}
+            listingKey={listing.listingKey}
+            subjectAddress={street}
+            sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+            dom={listing.dom}
+            placeMedianDays={leftoverHud?.daysToPending ?? null}
+            placeName={leftoverGrain?.name ?? listing.city ?? listing.subdivisionName ?? null}
+            hoaMonthly={listing.hoaMonthly}
+            associationFee={listing.associationFee}
+            associationFeeFrequency={listing.associationFeeFrequency}
+            taxAnnualAmount={listing.taxAnnualAmount}
+            propertySubType={listing.propertySubType}
+            propertyType={listing.propertyType}
+            subdivisionName={listing.subdivisionName}
+            city={listing.city}
+            listNumber={listing.listNumber}
+            hideCmaRequest={Boolean(publishedCma)}
             hideHeading
-            hideAlertAsk
           />
-        ) : null}
-      </section>
+          {photos.some((p) => p.url) ? (
+            <RoomRestyle
+              photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
+              listingKey={contactKey}
+              city={listing.city}
+              listPrice={wholePropertyPrice}
+              beds={listing.beds}
+              hideHeading
+              hideAlertAsk
+            />
+          ) : null}
+        </section>
+      ) : (
+        <section className="listing-sheet-job">
+          <h2 className="sec-title display">The lot</h2>
+          <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} heading={false} face={face} />
+        </section>
+      )}
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingLocationMap
         lat={listing.lat}
         lng={listing.lng}
-        lifestyleLine={buildLifestyleLine({ city: listing.city })}
+        lifestyleLine={
+          isLand && listing.city
+            ? `This lot sits in ${listing.city}.`
+            : isLand
+              ? null
+              : buildLifestyleLine({ city: listing.city })
+        }
         addressLine={street}
         price={publishedSaleAsk}
         cityLine={listing.city}
         href={listingHref}
-        heading="See location"
+        heading={isLand ? 'Where this lot sits' : 'See location'}
+        face={face}
       />
-      <PlaceParentsSection
-        parents={placeContext.parents}
-        eyebrow="Keep exploring"
-        title={false}
-      />
-      {platDocuments ? (
+      {isHouse ? (
+        <PlaceParentsSection
+          parents={placeContext.parents}
+          eyebrow="Keep exploring"
+          title={false}
+        />
+      ) : null}
+      {isHouse && platDocuments ? (
         <GoverningDocumentsBlock
           platName={platDocuments.platName}
           platHref={`/subdivisions/${platDocuments.geoSlug}`}
           documents={platDocuments.documents}
         />
       ) : null}
-      <SchoolsBlock listing={listingWithPhotos} />
-      <section className="listing-sheet-job">
-        <h2 className="sec-title display">Nearby</h2>
-        <ParksNearbyBlock listing={listingWithPhotos} heading={false} />
-        <LifestyleNearSection
-          lat={listing.lat}
-          lng={listing.lng}
-          items={
-            listing.lat != null && listing.lng != null
-              ? [
-                  ...findTrailsNear(listing.lat, listing.lng, 10, 3),
-                  ...findGolfNear(listing.lat, listing.lng, 15, 3),
-                ]
-              : []
-          }
-          eyebrow="Lifestyle"
-          title={false}
-        />
-      </section>
-      {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" heading="Price history" /> : null}
-      {wholePropertyPrice != null || listing ? (
+      {isHouse ? <SchoolsBlock listing={listingWithPhotos} /> : null}
+      {isHouse ? (
+        <section className="listing-sheet-job">
+          <h2 className="sec-title display">Nearby</h2>
+          <ParksNearbyBlock listing={listingWithPhotos} heading={false} />
+          <LifestyleNearSection
+            lat={listing.lat}
+            lng={listing.lng}
+            items={
+              listing.lat != null && listing.lng != null
+                ? [
+                    ...findTrailsNear(listing.lat, listing.lng, 10, 3),
+                    ...findGolfNear(listing.lat, listing.lng, 15, 3),
+                  ]
+                : []
+            }
+            eyebrow="Lifestyle"
+            title={false}
+          />
+        </section>
+      ) : null}
+      {isHouse && history.length > 0 ? (
+        <PropertyHistory history={history} mode="meaningful-only" heading="Price history" />
+      ) : null}
+      {isHouse && (wholePropertyPrice != null || listing) ? (
         <section className="listing-sheet-job">
           <h2 className="sec-title display">What it costs</h2>
           {wholePropertyPrice != null ? (
@@ -616,13 +679,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
           hud={leftoverHud}
           pace={marketPace}
           publishedCharts={coreCharts ? toListingCoreChartSeries(coreCharts) : null}
-          thisListPrice={wholePropertyPrice}
+          thisListPrice={isLand ? publishedSaleAsk : wholePropertyPrice}
           refreshedAt={leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt}
           chartCitySlug={listing.citySlug ?? null}
           heading="The market"
+          face={face}
         />
       ) : null}
-      {featuredItems.length > 0 ? (
+      {isHouse && featuredItems.length > 0 ? (
         <ListingFeaturedHomes
           items={featuredItems}
           eyebrow={`${featuredGeoName} for sale`}
@@ -634,9 +698,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <ListingLikeThisAlerts
         city={listing.city}
         listPrice={wholePropertyPrice}
-        beds={listing.beds}
+        beds={isLand ? null : listing.beds}
+        face={face}
       />
-      <PublishedCmaSection cma={publishedCma} />
+      {isHouse ? <PublishedCmaSection cma={publishedCma} /> : null}
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
@@ -656,6 +721,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       listingKey={contactKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
+      face={face}
     />
   ) : null
 
@@ -663,6 +729,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     listingKey,
     street,
     wholePropertyPrice,
+    face,
     listing,
     photoUrls: photos.map((p) => p.url),
     // THE TRUE LISTING AGENT, never a substitute (2026-08-27 audit: this
@@ -688,19 +755,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
           price={listing.listPrice ?? undefined}
           community={listing.communityName ?? listing.subdivisionName ?? undefined}
           city={listing.city ?? undefined}
-          beds={listing.beds ?? undefined}
-          baths={listing.baths ?? undefined}
+          beds={isLand ? undefined : (listing.beds ?? undefined)}
+          baths={isLand ? undefined : (listing.baths ?? undefined)}
         />
         <V3SectionTracker />
         <V3Breadcrumb trail={breadcrumbs} />
-        <ListingGalleryProvider photos={photos} addressLine={street}>
+        <ListingGalleryProvider photos={photos} addressLine={street} face={face}>
           <ListingDetailShell
             hero={hero}
             main={main}
             sidebar={sidebar}
           />
         </ListingGalleryProvider>
-        {listing.builderName && builderTiles.length > 0 ? (
+        {isHouse && listing.builderName && builderTiles.length > 0 ? (
           <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
         ) : null}
       </main>

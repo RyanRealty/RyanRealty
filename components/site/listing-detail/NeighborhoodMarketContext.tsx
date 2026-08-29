@@ -8,6 +8,7 @@ import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { CoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
+import type { ListingFace } from '@/lib/listing/listing-face'
 import { ListingSectionHead } from './ListingSectionHead'
 
 /**
@@ -26,6 +27,7 @@ type Props = {
   className?: string
   chartCitySlug?: string | null
   heading?: string | false
+  face?: ListingFace
 }
 
 export function deriveCitySlugFromHubHref(hubHref: string): string | null {
@@ -78,6 +80,7 @@ export function NeighborhoodMarketContext({
   className,
   chartCitySlug,
   heading = 'The market',
+  face = 'house',
 }: Props) {
   if (!hud) return null
 
@@ -142,7 +145,8 @@ export function NeighborhoodMarketContext({
       <p className="listing-market-note">
         {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
           <>
-            This home is listed at <Price value={thisListPrice} />,{' '}
+            {face === 'land' ? 'This lot is listed at' : 'This home is listed at'}{' '}
+            <Price value={thisListPrice} exact={face === 'land'} />,{' '}
             <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow} the {geoName} median list
             price.{' '}
           </>

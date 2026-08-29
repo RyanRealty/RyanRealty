@@ -1,5 +1,6 @@
 import { publishListingRemarks } from '@/lib/listing/publish-listing-remarks'
 import { cn } from '@/lib/utils'
+import type { ListingFace } from '@/lib/listing/listing-face'
 import { ListingSectionHead } from './ListingSectionHead'
 
 /**
@@ -16,15 +17,16 @@ type Props = {
   publicRemarks: string | null
   className?: string
   heading?: string | false
+  face?: ListingFace
 }
 
-export function DescriptionBlock({ publicRemarks, className, heading = false }: Props) {
+export function DescriptionBlock({ publicRemarks, className, heading = false, face = 'house' }: Props) {
   const paragraphs = publishListingRemarks(publicRemarks)
   if (paragraphs.length === 0) return null
 
   return (
     <section className={cn('section', className)}>
-      <ListingSectionHead heading={heading} eyebrow="About this home" />
+      <ListingSectionHead heading={heading} eyebrow={face === 'land' ? 'About this lot' : 'About this home'} />
 
       <div
         style={{

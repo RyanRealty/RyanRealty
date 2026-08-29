@@ -17,6 +17,7 @@ import {
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 import { priceBandAroundListPrice } from '@/lib/search/price-band'
+import type { ListingFace } from '@/lib/listing/listing-face'
 import { ListingSectionHead } from './ListingSectionHead'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
@@ -25,20 +26,23 @@ export function ListingLikeThisSheet({
   city,
   listPrice,
   beds,
+  face = 'house',
 }: {
   city: string
   listPrice: number | null | undefined
   beds: number | null | undefined
+  face?: ListingFace
 }) {
   const [status, setStatus] = useState<Status>('asking')
   const [problem, setProblem] = useState('')
+  const isLand = face === 'land'
   const extraFilters = useMemo((): Record<string, string> => {
     return {
-      propertyType: 'A',
+      propertyType: isLand ? 'D' : 'A',
       ...priceBandAroundListPrice(listPrice),
-      ...(beds != null && beds > 0 ? { beds: String(beds) } : {}),
+      ...(isLand ? {} : beds != null && beds > 0 ? { beds: String(beds) } : {}),
     }
-  }, [listPrice, beds])
+  }, [listPrice, beds, isLand])
 
   const send = useCallback(
     async (answers: Readonly<Record<string, string>>) => {
@@ -87,15 +91,19 @@ export function ListingLikeThisSheet({
 
   return (
     <section id="listing-like-alerts" className="listing-alerts-ask">
-      <ListingSectionHead heading="Homes like this" />
+      <ListingSectionHead heading={isLand ? 'Get alerts for land like this' : 'Homes like this'} />
       {status === 'sent' ? (
         <V3Lede>
-          Set. Similar {city} listings land by email when they hit the market. One email per new listing. Pause or
-          unsubscribe from any alert email.
+          Set. Similar {city} {isLand ? 'lots' : 'listings'} land by email when they hit the market. One email per
+          new listing. Pause or unsubscribe from any alert email.
         </V3Lede>
       ) : (
         <form onSubmit={onSubmit} className="listing-alerts-form">
-          <p className="listing-alerts-copy">One email per new listing. Unsubscribe any time.</p>
+          <p className="listing-alerts-copy">
+            {isLand
+              ? 'Get alerts for land like this. One email per new listing. Unsubscribe any time.'
+              : 'One email per new listing. Unsubscribe any time.'}
+          </p>
           <label className="listing-alerts-label" htmlFor="listing-like-email">
             Email
           </label>

@@ -65,6 +65,29 @@ describe('listing-detail CTA row accessible names', () => {
     expect(html).not.toMatch(/Get free alerts/)
     expect(html).not.toMatch(/#listing-like-alerts/)
   })
+
+  it('the land face names the lot and lists acres, not beds', () => {
+    const html = render({
+      face: 'land',
+      lineTwo: '0.48 acres · Awbrey Butte · Bend',
+      acres: 0.48,
+      propertyType: 'D',
+      propertySubType: 'Residential Lots',
+      beds: null,
+      baths: null,
+      sqft: null,
+      price: 379900,
+    })
+    expect(html).toMatch(/aria-label="Save this lot"/)
+    expect(html).toMatch(/\$379,900/)
+    expect(html).toMatch(/0\.48 acres/)
+    expect(html).toMatch(/Residential lot/)
+    expect(html).toMatch(/Ask about this lot/)
+    expect(html).not.toMatch(/\$380K/)
+    expect(html).not.toMatch(/\bbeds?\b/i)
+    expect(html).not.toMatch(/Schedule a tour/)
+    expect(html).toMatch(/>Schedule</)
+  })
 })
 
 describe('F4 ListingAlertCoach source contract', () => {

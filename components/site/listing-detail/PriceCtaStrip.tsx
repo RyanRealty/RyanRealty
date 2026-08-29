@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { isListingSaved, toggleSavedListing } from '@/app/actions/saved-listings'
 import { formatPriceExact } from '@/lib/format/money'
 import { redirectToLoginForSave } from '@/lib/pending-save'
+import { publishLandFacts, type ListingFace } from '@/lib/listing/listing-face'
 
 type PriceCtaStripProps = {
   listingKey: string
@@ -24,6 +25,15 @@ type PriceCtaStripProps = {
   daysOnMarket?: number | null
   pricePerSqft?: number | null
   shareTitle?: string
+  face?: ListingFace
+  lineTwo?: string | null
+  acres?: number | null
+  propertyType?: string | null
+  propertySubType?: string | null
+  taxAnnualAmount?: number | null
+  hoaMonthly?: number | null
+  associationFee?: number | null
+  associationFeeFrequency?: string | null
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -74,23 +84,46 @@ export function PriceCtaStrip({
   daysOnMarket,
   pricePerSqft,
   shareTitle,
+  face = 'house',
+  lineTwo,
+  acres,
+  propertyType,
+  propertySubType,
+  taxAnnualAmount,
+  hoaMonthly,
+  associationFee,
+  associationFeeFrequency,
 }: PriceCtaStripProps) {
   const [saved, setSaved] = useState(false)
   const [pending, setPending] = useState(false)
-  const place = [subdivision, city].filter(Boolean).join(' · ')
+  const isLand = face === 'land'
+  const place = isLand
+    ? (lineTwo?.trim() || null)
+    : [subdivision, city].filter(Boolean).join(' · ') || null
   const title = shareTitle ?? [street, city].filter(Boolean).join(', ')
   const shareUrl = mlsNumber
     ? `/homes-for-sale/listing/${encodeURIComponent(mlsNumber)}`
     : `/listing/${listingKey}`
 
-  const facts = [
-    { label: 'Beds', value: formatBeds(beds) },
-    { label: 'Baths', value: formatBaths(baths) },
-    { label: 'Sqft', value: formatSqft(sqft) },
-    { label: 'DOM', value: formatDom(daysOnMarket) },
-    { label: '$/sqft', value: formatPpsf(pricePerSqft) },
-    { label: 'Status', value: status ?? null },
-  ].filter((row): row is { label: string; value: string } => Boolean(row.value))
+  const facts = isLand
+    ? publishLandFacts({
+        acres,
+        propertyType,
+        propertySubType,
+        daysOnMarket,
+        taxAnnualAmount,
+        hoaMonthly,
+        associationFee,
+        associationFeeFrequency,
+      })
+    : [
+        { label: 'Beds', value: formatBeds(beds) },
+        { label: 'Baths', value: formatBaths(baths) },
+        { label: 'Sqft', value: formatSqft(sqft) },
+        { label: 'DOM', value: formatDom(daysOnMarket) },
+        { label: '$/sqft', value: formatPpsf(pricePerSqft) },
+        { label: 'Status', value: status ?? null },
+      ].filter((row): row is { label: string; value: string } => Boolean(row.value))
 
   useEffect(() => {
     let cancelled = false
@@ -141,10 +174,10 @@ export function PriceCtaStrip({
 
       <div className="listing-price-cta-actions">
         <V3Button href="#listing-sheet-schedule" className="listing-sheet-schedule">
-          Schedule a tour
+          {isLand ? 'Schedule' : 'Schedule a tour'}
         </V3Button>
         <V3Button href="#text-matt" variant="ghost">
-          Ask about this home
+          {isLand ? 'Ask about this lot' : 'Ask about this home'}
         </V3Button>
         <div className="listing-price-cta-icons">
           <button
@@ -153,7 +186,15 @@ export function PriceCtaStrip({
             onClick={() => void handleSave()}
             disabled={pending}
             aria-pressed={saved}
-            aria-label={saved ? 'Remove from saved homes' : 'Save this home'}
+            aria-label={
+              saved
+                ? isLand
+                  ? 'Remove from saved lots'
+                  : 'Remove from saved homes'
+                : isLand
+                  ? 'Save this lot'
+                  : 'Save this home'
+            }
           >
             <Heart className={cn('size-5', saved && 'fill-current')} />
           </button>
