@@ -1,10 +1,9 @@
 # Current — 2026-08-29 (Cursor) — listing template PR 160, 390 sheet overflow
 
 **Surface:** branch `cursor/listing-template-c741` (PR 160). Do not merge. Do not deploy production.
-**Done:** Walker 390 FAIL: facts/CTAs/Field plot were ~734px in a 354px sheet (grid min-width:auto + Field disclosure max-content). Sheet children now `min-width:0`; Field is `width:100%`; facts 2-col; mobile CTAs stack; cookie bar still uses `--listing-sticky-height`.
-**Next:** Walker walk of the new preview (not `9eiw3io6c`). Proof listing `/homes-for-sale/redmond/4496-zenith-220226279`.
-**Skills read:** walkthrough-artifacts, frontend-design, tdd.
-**Do not:** invent a skin, ship Unsplash, enable all previews, dismiss cookies to "prove" CTAs.
+**Done:** Walker `dcvdwu9wo` was cookie-only SHA `b3cd2c17f`. Latest SHA still overflowed because PropertySpecs `repeat(2, 1fr)` sized About this home to 734px (sheet scrollWidth 754). Sheet now `grid-template-columns: minmax(0,1fr)`; spec cells `minmax(0,1fr)`. Local 390: sheet 354/354, facts 314, plot 312, pin x=195, all six facts on screen. Cookie-over-sticky unchanged (PASS).
+**Next:** Release refreshes one listing preview. Walk that host, not `dcvdwu9wo`. Proof `/homes-for-sale/redmond/4496-zenith-220226279`.
+**Do not:** invent a skin, merge, deploy production, touch cookie/sticky.
 
 > **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Matt asked 2026-08-21 to re-arm the loop on current main.
 > **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
