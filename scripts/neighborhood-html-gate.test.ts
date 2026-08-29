@@ -82,6 +82,7 @@ describe('neighborhoodHtmlGate', () => {
     expect(neighborhoodHtmlGate(opening)).toEqual({ ok: true, fails: [] })
     expect(neighborhoodHtmlGate(types)).toEqual({ ok: true, fails: [] })
     expect(types).toContain('Oregon Data Share')
+    expect(page).not.toMatch(/Market Truth/i)
     expect(page).toContain('${neighborhood.name} homes for sale')
     expect(page).toContain('How tight the market is')
     expect(page).toContain('<V3Stage')

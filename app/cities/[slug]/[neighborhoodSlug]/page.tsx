@@ -178,7 +178,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   // Boundary polygon slug for neighborhoods: "{citySlug}-{neighborhoodSlug}".
   const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`
-  // GIS / inventory / map stay on the prefixed boundary key. Market Truth
+  // GIS / inventory / map stay on the prefixed boundary key. The metric
   // neighborhood geo_slug is often the community slug (sunriver, not
   // sunriver-sunriver). Identity probe, not a published figure.
   const metricNeighborhoodSlug = await resolveNeighborhoodMetricSlug({
