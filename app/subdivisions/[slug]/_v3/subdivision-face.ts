@@ -17,17 +17,7 @@ export function subdivisionFaceFieldCaption(input: {
   if (input.count <= 0) return null
   return `${input.count.toLocaleString('en-US')} ${
     input.count === 1 ? 'home' : 'homes'
-  } for sale now in ${input.placeName}`
-}
-
-export function subdivisionFaceFieldCount(input: {
-  placeName: string
-  count: number
-}): { value: string; label: string } | null {
-  const caption = subdivisionFaceFieldCaption(input)
-  if (!caption) return null
-  const value = input.count.toLocaleString('en-US')
-  return { value, label: caption.slice(value.length).trim() }
+  } for sale in ${input.placeName}`
 }
 
 export function subdivisionFaceSchoolAssignment(input: {

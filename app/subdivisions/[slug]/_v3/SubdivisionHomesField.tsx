@@ -8,7 +8,6 @@
  */
 import { V3Field, V3Heading, V3SourceLine, type V3FieldItem, type V3Text } from '@/components/site/v3'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { subdivisionFaceFieldCount } from './subdivision-face'
 
 export function SubdivisionHomesField({
   placeName,
@@ -17,7 +16,6 @@ export function SubdivisionHomesField({
   inventoryOk,
   caption,
   source,
-  liveCount,
   ownsHeading = true,
   seeAll,
   boundary,
@@ -33,15 +31,10 @@ export function SubdivisionHomesField({
   inventoryOk: boolean
   caption: string | null
   source: string
-  liveCount?: number | null
   ownsHeading?: boolean
   seeAll?: { href: string; label: string }
   boundary?: unknown
 }) {
-  const fieldCount = subdivisionFaceFieldCount({
-    placeName,
-    count: liveCount ?? fieldItems.length,
-  })
   return (
     <>
       {ownsHeading ? (
@@ -53,7 +46,6 @@ export function SubdivisionHomesField({
         id="homes"
         ariaLabel={`Homes for sale in ${placeName}`}
         items={fieldItems}
-        count={fieldCount ? { ...fieldCount, source } : undefined}
         mapSlot={(binding) => {
           const pins = binding.items.flatMap((item) =>
             item.lat != null && item.lng != null
@@ -82,6 +74,7 @@ export function SubdivisionHomesField({
         }}
         listFirst
         mapToggle
+        mapNote={caption ?? undefined}
         action={seeAll}
         emptyMessage={
           inventoryOk
@@ -89,7 +82,7 @@ export function SubdivisionHomesField({
             : `The inventory query for ${placeName} did not return, so this is not a claim that nothing is for sale.`
         }
       />
-      {!caption && fieldItems.length > 0 ? <V3SourceLine source={source} /> : null}
+      {fieldItems.length > 0 ? <V3SourceLine source={source} /> : null}
     </>
   )
 }
