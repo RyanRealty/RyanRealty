@@ -3,6 +3,7 @@ import {
   subdivisionFaceClosedSalesCaption,
   subdivisionFaceClosedTotalsSentence,
   subdivisionFaceFieldCaption,
+  subdivisionFaceFieldCount,
   subdivisionFaceFieldTrace,
   subdivisionFaceHeadline,
   subdivisionFaceSchoolAssignment,
@@ -16,6 +17,12 @@ describe('subdivision face', () => {
     expect(
       subdivisionFaceFieldCaption({ placeName: 'Ridge At Eagle Crest', count: 15 }),
     ).toBe('15 homes for sale in Ridge At Eagle Crest')
+    expect(
+      subdivisionFaceFieldCount({ placeName: 'Ridge At Eagle Crest', count: 15 }),
+    ).toEqual({
+      value: '15',
+      label: 'homes for sale in Ridge At Eagle Crest',
+    })
     expect(subdivisionFaceClosedSalesCaption('Ridge At Eagle Crest')).toBe(
       'Closed single-family sales, Ridge At Eagle Crest.',
     )

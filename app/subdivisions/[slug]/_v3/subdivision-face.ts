@@ -20,6 +20,17 @@ export function subdivisionFaceFieldCaption(input: {
   } for sale in ${input.placeName}`
 }
 
+/** V3Field.count lives above the frame, so 390 can hide the map col without hiding this. */
+export function subdivisionFaceFieldCount(input: {
+  placeName: string
+  count: number
+}): { value: string; label: string } | null {
+  const caption = subdivisionFaceFieldCaption(input)
+  if (!caption) return null
+  const value = input.count.toLocaleString('en-US')
+  return { value, label: caption.slice(value.length).trim() }
+}
+
 export function subdivisionFaceSchoolAssignment(input: {
   schoolName: string
   modalCount: number

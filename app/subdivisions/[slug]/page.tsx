@@ -585,6 +585,7 @@ export default async function SubdivisionPage({ params }: Props) {
             fieldItems={fieldItems}
             inventoryOk={homesMode !== 'unknown'}
             caption={fieldCaption}
+            liveCount={liveHomeCount}
             source={fieldSource}
             seeAll={browseHref ? { href: browseHref, label: `See ${displayName} homes` } : undefined}
             boundary={mapPolygon}
