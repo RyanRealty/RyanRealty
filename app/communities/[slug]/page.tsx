@@ -81,7 +81,11 @@ import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
-import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
+import {
+  placeTypeCoverPhotos,
+  publishPlaceTypeCards,
+  searchParamsQuery,
+} from '@/lib/place/publish-place-type-cards'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -275,15 +279,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   })
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
-  const typeCards = publishPlaceTypeCards({
-    path: `/communities/${slug}`,
-    search: searchParamsQuery(sp),
-    placeName: publicName,
-    sfrCount: hud.active,
-    sfrMedian: hud.medianList,
-    sfrMos: null,
-    segments: publicSegments,
-  })
   const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
   const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   const headline = belongingHeadline(publicName, richContent)
@@ -445,6 +440,16 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   const splitListings =
     !boundaryReliable && fieldTiles.length > 0 ? communitySplitListings(fieldTiles) : undefined
   const hasMap = Boolean(mapPolygon) || fieldTiles.length > 0 || Boolean(splitListings?.length)
+  const typeCards = publishPlaceTypeCards({
+    path: `/communities/${slug}`,
+    search: searchParamsQuery(sp),
+    placeName: publicName,
+    sfrCount: hud.active,
+    sfrMedian: hud.medianList,
+    sfrMos: null,
+    segments: publicSegments,
+    covers: placeTypeCoverPhotos(splitListings ?? fieldTiles),
+  })
 
   const pageFaqs = reconcilePlaceHoaFaq(
     reconcileListedVsDetachedFaq(faqs, {
@@ -544,8 +549,8 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             eyebrow={`${publicName} · ${cityName}`}
             headline={headline}
             posterSrc={stagePosterSrc}
-            actionLabel={`See ${publicName} homes`}
             trail={trail}
+            stats={face.stats}
           />
         ) : (
           <V3Breadcrumb trail={trail} />
@@ -557,13 +562,15 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         ) : (
           <V3Quiet id="place" heading={headline} headingLevel={1} items={placeItems} />
         )}
-        {face.stats.length > 0 ? (
+        {stagePosterSrc ? (
+          <div className="place-opening">
+            <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
+          </div>
+        ) : (
           <section className={`${V3_ROOT_CLASS} place-face-block`} aria-label={`${publicName} live inventory`}>
-            <PlaceFaceStrip stats={face.stats} />
+            {face.stats.length > 0 ? <PlaceFaceStrip stats={face.stats} /> : null}
             <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
           </section>
-        ) : (
-          <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
         )}
 
         <PlaceSplitView

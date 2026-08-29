@@ -739,7 +739,7 @@ export default function SearchFilters({
               propertySubTypes={selectedSubTypes}
               onChange={({ propertyType, propertySubTypes }) => {
                 updateUrl({
-                  propertyType: propertyType || undefined,
+                  propertyType: propertyType || (hideLocation ? 'all' : undefined),
                   propertySubTypes:
                     propertySubTypes && propertySubTypes.length > 0
                       ? propertySubTypes.join(',')

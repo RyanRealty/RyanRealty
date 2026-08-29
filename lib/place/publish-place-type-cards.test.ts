@@ -30,7 +30,7 @@ describe('publishPlaceTypeCards', () => {
     })
     expect(cards[0]?.key).toBe('sfr')
     expect(cards[0]?.active).toBe(false)
-    expect(cards[0]?.href).toBe('/cities/redmond')
+    expect(cards[0]?.href).toContain('propertySubTypes=Single+Family+Residence')
     expect(cards.some((c) => c.key === 'land' && c.active)).toBe(true)
     expect(cards.find((c) => c.key === 'land')?.href).toContain('propertyType=Land')
   })

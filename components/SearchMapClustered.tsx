@@ -127,6 +127,8 @@ type Props = {
   onBoundsChanged?: (bounds: MapBounds) => void
   /** Optional GeoJSON boundary (Polygon/MultiPolygon) to draw for city/neighborhood/community. */
   boundaryGeojson?: unknown
+  /** Place pages keep the painted ring. Do not offer Remove boundary. */
+  hideBoundaryToggle?: boolean
   /** Called when user draws a polygon on the map. Returns the polygon path for filtering. */
   onPolygonDrawn?: (polygon: MapPolygonPoint[] | null) => void
   /** Initial polygon to render (e.g. from URL saved search). */
@@ -480,6 +482,7 @@ export default function SearchMapClustered({
   initialZoom = 11,
   onBoundsChanged,
   boundaryGeojson,
+  hideBoundaryToggle = false,
   onPolygonDrawn,
   initialPolygon,
   shapes,
@@ -1262,7 +1265,7 @@ export default function SearchMapClustered({
         </div>
       )}
 
-      {showBoundaryControls && (
+      {showBoundaryControls && !hideBoundaryToggle && (
         <div className="absolute right-3 top-14 z-[100] flex flex-col gap-2 rounded-lg border border-border bg-card p-1.5 shadow-md" aria-label="Map controls">
           {showBoundary && hasBoundary && (
             <Button

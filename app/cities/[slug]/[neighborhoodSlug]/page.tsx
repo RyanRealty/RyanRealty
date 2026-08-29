@@ -76,7 +76,11 @@ import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
-import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
+import {
+  placeTypeCoverPhotos,
+  publishPlaceTypeCards,
+  searchParamsQuery,
+} from '@/lib/place/publish-place-type-cards'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -302,6 +306,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     sfrMedian: inventoryOk ? inventory.medianListPrice : null,
     sfrMos: null,
     segments: publicSegments,
+    covers: placeTypeCoverPhotos(listingTiles),
   })
   const headline = neighborhoodHeadline(neighborhood.name)
   const trail = [
@@ -475,8 +480,8 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={`${neighborhood.name} · ${cityName}`}
             headline={headline}
             posterSrc={stagePosterSrc}
-            actionLabel={`See ${neighborhood.name} homes`}
             trail={trail}
+            stats={face.stats}
           />
         ) : (
           <V3Breadcrumb trail={trail} />
@@ -484,11 +489,13 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
 
         <div className="place-opening">
           {stagePosterSrc ? null : (
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
+            <>
+              <V3Heading level={1} size="field">
+                {headline}
+              </V3Heading>
+              <PlaceFaceStrip stats={face.stats} />
+            </>
           )}
-          <PlaceFaceStrip stats={face.stats} />
           <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
         </div>
 

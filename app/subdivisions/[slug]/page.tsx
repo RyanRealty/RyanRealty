@@ -146,7 +146,11 @@ import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
-import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
+import {
+  placeTypeCoverPhotos,
+  publishPlaceTypeCards,
+  searchParamsQuery,
+} from '@/lib/place/publish-place-type-cards'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
@@ -389,6 +393,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     sfrMedian: platFigures.medianListPrice,
     sfrMos: null,
     segments: [],
+    covers: placeTypeCoverPhotos(splitListings),
   })
   const headline = `${displayName} homes for sale`
   const stagePosterSrc = splitListings.find((row) => row.PhotoURL)?.PhotoURL ?? null
@@ -511,7 +516,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             eyebrow={splitCity ? `${displayName} · ${splitCity}` : displayName}
             headline={headline}
             posterSrc={stagePosterSrc}
-            actionLabel={`See ${displayName} homes`}
+            stats={face.stats}
             trail={[
               { label: 'Home', href: '/' },
               { label: 'Communities', href: '/communities' },
@@ -540,11 +545,13 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
 
         <div id="overview" className="place-opening">
           {stagePosterSrc ? null : (
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
+            <>
+              <V3Heading level={1} size="field">
+                {headline}
+              </V3Heading>
+              <PlaceFaceStrip stats={face.stats} />
+            </>
           )}
-          <PlaceFaceStrip stats={face.stats} />
           <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
           <V3SourceLine source={inventorySource} />
         </div>

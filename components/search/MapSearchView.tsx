@@ -268,6 +268,8 @@ export type MapSearchViewProps = {
    * state must NOT claim "no homes" — show a retry instead of inventing zero inventory.
    */
   initialDegraded?: boolean
+  /** Place pages: the city pin is the page. Do not offer "clear Redmond". */
+  lockPlace?: boolean
 }
 
 export default function MapSearchView({
@@ -284,6 +286,7 @@ export default function MapSearchView({
   initialShapes = null,
   nowMs,
   initialDegraded = false,
+  lockPlace = false,
 }: MapSearchViewProps) {
   // One initial shape set, whichever URL spelling delivered it: ?shapes=
   // (multi-shape) wins; a legacy ?poly= ring arrives as a single include
@@ -946,6 +949,7 @@ export default function MapSearchView({
         likedListingKeys={likedListingKeys}
         placeQuery={placeQuery}
         boundaryGeojson={boundaryGeojson}
+        hideBoundaryToggle={lockPlace}
         initialBounds={initialBounds}
         lockBounds
         relayoutKey={mobileView}
@@ -973,7 +977,7 @@ export default function MapSearchView({
       ) : null}
       {/* Active place scope — visible until the first user map move, then the
           query is pure bounding-box. Tap the chip to drop the scope now. */}
-      {scopeLabel && scopeDropped === false ? (
+      {scopeLabel && scopeDropped === false && !lockPlace ? (
         <Button
           type="button"
           variant="outline"

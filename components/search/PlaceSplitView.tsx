@@ -74,8 +74,13 @@ export async function PlaceSplitView(props: {
   const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
 
   const sp = props.searchParams ?? {}
-  const propertyType = firstParam(sp.propertyType)
-  const propertySubTypes = firstParam(sp.propertySubTypes)
+  const rawType = firstParam(sp.propertyType)
+  const rawSub = firstParam(sp.propertySubTypes)
+  const allTypes = rawType === 'all'
+  const propertyType = allTypes ? '' : rawType || (rawSub ? '' : 'A')
+  const propertySubTypes = allTypes
+    ? ''
+    : rawSub || (rawType ? '' : 'Single Family Residence')
   const minPrice = firstParam(sp.minPrice)
   const maxPrice = firstParam(sp.maxPrice)
   const beds = firstParam(sp.beds)
@@ -163,6 +168,7 @@ export async function PlaceSplitView(props: {
         initialShapes={null}
         nowMs={Date.now()}
         initialDegraded={degraded}
+        lockPlace
       />
     </div>
   )

@@ -118,6 +118,90 @@
   height: var(--v3-place-split-h, 37.5rem);
 }
 
+.place-hero {
+  position: relative;
+  min-height: 20rem;
+  height: 22rem;
+  overflow: hidden;
+  color: var(--v3-ink-on-media);
+  background: var(--v3-surface-inverse);
+}
+.place-hero__media,
+.place-hero__media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.place-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--v3-navy) 88%, transparent) 0%,
+    color-mix(in srgb, var(--v3-navy) 42%, transparent) 42%,
+    transparent 78%
+  );
+}
+.place-hero__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+}
+.place-hero__bar .v3-breadcrumb {
+  max-width: none;
+  width: 100%;
+}
+.place-hero__bar .v3-breadcrumb--on-media {
+  background: transparent;
+}
+.place-hero__copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-lg);
+}
+.place-hero__eyebrow {
+  margin: 0 0 var(--v3-space-2xs);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+.place-hero__title {
+  margin: 0 0 var(--v3-space-sm);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: 1.1;
+  color: var(--v3-ink-on-media);
+}
+.place-face--on-media {
+  color: var(--v3-ink-on-media);
+}
+.place-face--on-media .place-face__value {
+  color: var(--v3-ink-on-media);
+}
+.place-face--on-media .place-face__label {
+  color: var(--v3-ink-on-media);
+  opacity: 0.8;
+}
+.place-type-card__thumb {
+  aspect-ratio: 16 / 10;
+  margin: calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) var(--v3-space-sm);
+  overflow: hidden;
+  background: var(--v3-navy);
+}
+.place-type-card__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .place-type-slider {
   width: 100%;
 }
@@ -130,7 +214,7 @@
   -webkit-overflow-scrolling: touch;
 }
 .place-type-card {
-  flex: 0 0 16rem;
+  flex: 0 0 13.5rem;
   scroll-snap-align: start;
   padding: var(--v3-space-sm);
   border: 1px solid var(--v3-edge);

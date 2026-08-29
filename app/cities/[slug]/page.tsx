@@ -98,7 +98,11 @@ import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
-import { publishPlaceTypeCards, searchParamsQuery } from '@/lib/place/publish-place-type-cards'
+import {
+  placeTypeCoverPhotos,
+  publishPlaceTypeCards,
+  searchParamsQuery,
+} from '@/lib/place/publish-place-type-cards'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
@@ -289,6 +293,12 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video')
   const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
   const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
+  const typeThumbs = await withTimeoutFallback(
+    getCityListings(cityName, { status: 'active', sort: 'newest', limit: 80 }),
+    [],
+    3500,
+    'city:typeThumbs',
+  )
 
   const resortTiles = resortRead.value
 
@@ -309,6 +319,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
     sfrMedian: hud.medianList,
     sfrMos: hud.monthsSupply,
     segments: publicSegments,
+    covers: placeTypeCoverPhotos(typeThumbs),
   })
   const trail = [{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]
   const headline = `${cityName} homes for sale`
@@ -590,8 +601,8 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             eyebrow={`${cityName} · Oregon`}
             headline={headline}
             posterSrc={stagePosterSrc}
-            actionLabel={`See ${cityName} homes`}
             trail={trail}
+            stats={face.stats}
           />
         ) : (
           <V3Breadcrumb trail={trail} />
@@ -599,11 +610,13 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
 
         <div className="place-opening">
           {stagePosterSrc ? null : (
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
+            <>
+              <V3Heading level={1} size="field">
+                {headline}
+              </V3Heading>
+              <PlaceFaceStrip stats={face.stats} />
+            </>
           )}
-          <PlaceFaceStrip stats={face.stats} />
           <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
         </div>
 
