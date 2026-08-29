@@ -159,16 +159,13 @@ checks.push({
 })
 
 for (const surface of [
-  { path: 'app/communities/[slug]/page.tsx', label: 'community charts pass toPublicCoreChartSeries' },
-  { path: 'app/cities/[slug]/page.tsx', label: 'city charts pass toPublicCoreChartSeries' },
-  { path: 'components/site/listing-detail/NeighborhoodMarketContext.tsx', label: 'listing market charts pass toPublicCoreChartSeries' },
+  { path: 'app/communities/[slug]/page.tsx', label: 'community face prints one single-family median chart' },
+  { path: 'app/cities/[slug]/page.tsx', label: 'city face prints one single-family median chart' },
 ]) {
   const text = src(surface.path)
   checks.push({
     label: surface.label,
-    ok:
-      /from ['"]@\/lib\/market\/publish-public-chart-source['"]/.test(text) &&
-      /toPublicCoreChartSeries\(/.test(text),
+    ok: /placeMedianChart\(/.test(text) && text.includes('single-family') && !/Market Truth leftover/.test(text),
   })
 }
 

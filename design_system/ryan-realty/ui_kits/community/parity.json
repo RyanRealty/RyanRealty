@@ -2,7 +2,7 @@
   "route": "app/communities/[slug]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves — HOA, membership, drive times, course, builders, schools, and the second-home reality — beside the live inventory instead of on a separate marketing page.",
-  "note": "PUBLIC_UI.md §3 Master-plan, re-landed 2026-08-26 on the barrel. Opens Stage (owned place photo, and the approved area-guide clip plays ON the Stage as videoSrc — the one pattern for owned full-bleed media); no owned asset -> Instrument of belonging, then Field. Order is Stage (H1, belonging line, action is the first house) or Breadcrumb+Instrument(belonging) or Breadcrumb+Quiet, Field (the alias-matched or in-boundary set, list + the real Google map with the county plat union drawn when one exists, count as caption), Instrument level 2 (the market question as the headline when a verdict exists, the verdict sentence as the note, the leftover-HUD KPI row + pace + mix figures, the median-close year overlay with an honest city-scope caption on fallback, the core-trend switcher as a card), Quiet (belonging: buildPlaceKnowledge — overview prose, at-a-glance, drive times, amenities, course, membership, builders, schools, STR), Instrument enumeration (V3PlacePropertyTypes), Quiet (V3PlaceCharacter: build years + HOA), Sheet (community alert capture, honeypot intact), Quiet (FAQ answers + the recorded documents as legal doors + every outbound edge + the freshness sentence carrying the Dataset's own clock), Footer. FIVE OF SIX PATTERNS — Stage, Field, Instrument, Quiet, Sheet — under the 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt): THE FIFTH SLOT IS SPENT ON SHEET (the capture contract), and Ledger stays OUT — which is why the recorded governing documents render as Quiet legal doors (communityDocumentItems, carrying V3PlaceDocuments' R7 provenance rules item for item) while the plat and neighborhood nodes mount the V3PlaceDocuments Ledger. A sixth pattern stays a lock break. No two adjacent share a pattern when every section renders; THE DEGRADED-STATE CONFLICTS ARE DECLARED, NOT HIDDEN: an empty knowledge block puts the market Instrument beside the property-type Instrument run. The order is right when the data is present. THE PUBLIC NAME IS THE REGISTRY LABEL (Juniper Preserve): publicName = registryEntry?.label ?? community.name, on every visitor-facing string, while the slug stays the durable cache key. NO IN-PAGE REDIRECT: compound and wrong-city slugs canonicalize in middleware (resolveCanonicalCommunityPath) before anything streams. THE MARKET SECTION IS THE LEFTOVER HUD: leftoverHudKpis grain 'neighborhood' keyed by the bare community slug (the stats-cache closed figures are the alias-join under-count lib/market/geo-grain-trust.ts documents at this grain — the reverted draft's resolveLivePair pulse/snapshot tiers and its closed-sales Instrument were corrected, not restored), the hero count is hud.active, buildMarketFaq runs unconditionally with source 'market-truth', and MoS is classified raw. THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the market Instrument's level-2 headline asks it whenever the verdict answers it; the Stage carries the H1. ALIAS-AWARE LISTINGS: the Field's set is resortTilesForSlug over the uncapped multi-city SFR pull, gated on the read's own .ok; the Field caption counts the LISTED set and the Instrument's 'detached homes for sale' is the leftover membership count — two counts, two labels, each under its own trace.",
+  "note": "PUBLIC_UI.md §3 Master-plan, re-landed 2026-08-26 on the barrel. Opens Stage (owned place photo, and the approved area-guide clip plays ON the Stage as videoSrc — the one pattern for owned full-bleed media); no owned asset -> Instrument of belonging, then Field. Order is Stage (H1 Eagle Crest homes for sale, Imagine/library still, action is Search {place} homes) or Breadcrumb+Instrument(belonging) or Breadcrumb+Quiet, CommunityHomesField (the alias-matched or in-boundary set, list + the real Google map with the county plat union drawn when one exists, type chips not type H2s, list-first Map toggle at 390), CommunityAlertSheet (email after homes), Instrument level 2 (How tight the market is, one supply sentence, a few face figures, one V3Chart), Quiet (belonging: buildPlaceKnowledge), Quiet (V3PlaceCharacter: build years + HOA), Ledger (open houses + activity, city-scoped), Quiet (FAQ + doors + freshness), Footer. FIVE OF SIX PATTERNS — Stage, Field, Instrument, Quiet, Sheet — under the 2026-08-26 place-family exception (PUBLIC_UI.md §3, Matt): THE FIFTH SLOT IS SPENT ON SHEET (the capture contract), and Ledger stays OUT — which is why the recorded governing documents render as Quiet legal doors (communityDocumentItems, carrying V3PlaceDocuments' R7 provenance rules item for item) while the plat and neighborhood nodes mount the V3PlaceDocuments Ledger. A sixth pattern stays a lock break. No two adjacent share a pattern when every section renders; THE DEGRADED-STATE CONFLICTS ARE DECLARED, NOT HIDDEN: an empty knowledge block puts the market Instrument beside the property-type Instrument run. The order is right when the data is present. THE PUBLIC NAME IS THE REGISTRY LABEL (Juniper Preserve): publicName = registryEntry?.label ?? community.name, on every visitor-facing string, while the slug stays the durable cache key. NO IN-PAGE REDIRECT: compound and wrong-city slugs canonicalize in middleware (resolveCanonicalCommunityPath) before anything streams. THE MARKET SECTION IS THE LEFTOVER HUD: leftoverHudKpis grain 'neighborhood' keyed by the bare community slug (the stats-cache closed figures are the alias-join under-count lib/market/geo-grain-trust.ts documents at this grain — the reverted draft's resolveLivePair pulse/snapshot tiers and its closed-sales Instrument were corrected, not restored), the hero count is hud.active, buildMarketFaq runs unconditionally with source 'market-truth', and MoS is classified raw. THE MARKET HEADLINE IS TIGHTNESS (2026-08-29): How tight the market is, one supply sentence, buyer/seller H2s off the face. The Stage carries the H1. ALIAS-AWARE LISTINGS: the Field's set is resortTilesForSlug over the uncapped multi-city SFR pull, gated on the read's own .ok; the Field caption counts the LISTED set and the Instrument's 'detached homes for sale' is the leftover membership count — two counts, two labels, each under its own trace.",
   "dataChanges": {
     "figureCorrected": "The reliable-boundary branch published listings_in_boundary's pin count under the label 'Active single-family'. That RPC filters on status only and caps at 200 rows, so the number counted condos, land, and townhomes, and the median printed beside it came from a DIFFERENT set (the same listings narrowed to propertyType 'A'). The count is now the single-family actives inside the same boundary: the set the label claims and the set its median is computed from. On a community with no condos or land it is the same number.",
     "monthsOfSupplyPublicationRule": "REPAIR 2026-08-12. Months of supply, and the verdict clause it puts in the H1, publish ONLY when the market pulse row's own active_count equals the count this page publishes. Months of supply is actives over average monthly closings and this page prints that formula, so the reader can check it against the count beside it. The pulse row computed the ratio from ITS numerator (the literal-subdivision-name count for the slug) while the page publishes the alias-aware one, and on 2026-08-12 they differed on every community carrying a row: tetherow 20 against 36, vandevert-ranch 12 against 0, broken-top 205 against 21. The arithmetic refuted the page in both directions: vandevert-ranch printed 'a buyer's market' and '72.0 months of supply' over '0 homes for sale' (0 actives yields 0 months, and zero inventory is definitionally not a buyer's market), and tetherow printed 'a balanced market' where its own 36 actives against the same denominator give 9.0, a buyer's. The figure now publishes on exactly the communities whose count came FROM that row (three-rivers: 91 actives, 16.1 months, 'a buyer's market', self-consistent) and is cut everywhere else, in the Instrument, in the visible FAQ, and in the Dataset's variableMeasured, from the one buildMarketFaq call. Median days to pending survives the same disagreement: it is a timing median over homes that went pending, prints no formula, and drives no verdict, and its trace names the pulse row.",
@@ -32,22 +32,17 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1. Opening Instrument is BELONGING (HOA, membership tiers, acres) only when no owned Stage photo exists. Level 2 is rolling 365 days of closed sales. Live inventory is the Field caption, not the hero. Value my home is not this page's opening ask.",
+      "section": "Pattern 1. Opening Instrument is BELONGING (HOA, membership tiers, acres) only when no owned Stage photo exists. Level 2 is mid-page after Field and the email ask. Headline is How tight the market is (or The {place} market when no verdict). Note is the one supply sentence. Figures are the few face cells. One V3Chart (median close by month, single-family). Live inventory is the Field caption, not the hero.",
       "blocking": true
     },
     {
-      "name": "V3Field",
-      "section": "Pattern 2, once, and LARGE. The counted set as map plus list (PlaceFieldMap in mapSlot). Not a photo mosaic with an echo list of the same six houses. Photo is optional so the list and the map stay one population.",
+      "name": "CommunityHomesField",
+      "section": "The route-local Field wrapper: H1 only when Stage did not take it + V3Field with PlaceFieldMap in the map slot + type chips + the listed-set source line. V3Field and PlaceFieldMap are imported by THIS component, not the route file. Pattern 2: this community's houses as map plus list in one frame, under Stage when a still exists. 390 is list-first with a Map toggle. Caption is the listed-set count plus the MoS verdict when the one derivation has one. Pins use --v3-cat. The county plat union draws when one exists. Required map attribution stays.",
       "blocking": true
     },
     {
       "name": "V3Stage",
       "section": "Pattern 4. Owned community photo via communityImage(slug). Tetherow uses /lp/tetherow/img/tetherow-aerial-course.jpg. headingLevel 1. Never invented. Absent on communities with no dedicated asset.",
-      "blocking": true
-    },
-    {
-      "name": "PlaceFieldMap",
-      "section": "The real Google map in V3Field's mapSlot. Pins and list are the same counted set. Place.hasMap ships when pins or a drawn polygon exist.",
       "blocking": true
     },
     {
@@ -66,18 +61,13 @@
       "blocking": true
     },
     {
-      "name": "V3PlacePropertyTypes",
-      "section": "Pattern 1 as ONE enumeration (2026-08-26 amendment): one Instrument per other property type this community holds, from getPublicPlaceSegments at neighborhood grain (bare community slug).",
-      "blocking": true
-    },
-    {
       "name": "V3PlaceCharacter",
       "section": "Pattern 6: build years + HOA measured from member listings (neighborhood boundary membership). Renders null when nothing is publishable.",
       "blocking": true
     },
     {
       "name": "CommunityStage",
-      "section": "The route-local Stage wrapper: on-media breadcrumb + V3Stage (H1, owned photo, the area-guide clip as videoSrc, action is the first house).",
+      "section": "The route-local Stage wrapper: on-media breadcrumb + V3Stage (H1, owned Imagine/library still, action is Search {place} homes into the place browse filter, never a listing address).",
       "blocking": true
     }
   ],
@@ -117,7 +107,8 @@
     "The freestanding phone line and the second-home note — the phone is in the footer and the chrome; the second-home paragraph is a knowledge row with its own contact door.",
     "NOT removed, and it was undeclared while it was: the freestanding freshness signal (<p class=\"community-freshness-signal\">Market data updated {asOfLabel}</p>, old page.tsx:794). It is a sentence in the closing Quiet block's note now, off the same clock the Dataset's dateModified publishes.",
     "boundary-derived hero facts strip — folded into the Instrument's figures.",
-    "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + MarketCoreCharts - re-expressed, not dropped: the KPI row, pace items, and mix figures are the market Instrument's figures off the same leftoverHudKpis pile; the property-type panel is the V3PlacePropertyTypes enumeration; the core trend tabs are one V3ChartCard switcher (coreChartsCard through toPublicCoreChartSeries, city-relabeled on the sparse fallback). One market section per page (Matt 2026-07-29) holds because every chart rides inside the Instrument.",
+    "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + MarketCoreCharts - re-expressed, not dropped: the few face figures ride leftoverHudKpis through leftoverMarketFigures. Types that exist are Field chips (CommunityHomesField), not V3PlacePropertyTypes headings. One V3Chart (median close by month, single-family). One market section per page (Matt 2026-07-29).",
+    "V3PlacePropertyTypes (nine type H2s) - cut 2026-08-29. Types that exist are Field chips, not headings.",
     "V3PlaceDocuments (the Ledger form) - re-expressed as Quiet legal doors (communityDocumentItems): Ledger would be this route's sixth pattern, which stays a lock break even under the 2026-08-26 exception. Every document keeps its recording reference and county in the label and the R7 amendment caveat closes the list.",
     "KbResortOverview - the same config renders through buildPlaceKnowledge into the belonging Quiet (D100 on the barrel). The component and its publishFactValue helper left with their last mount; the surviving surface takes typed config values, so the em-dash-string class the helper guarded cannot reach it.",
     "resolveLivePair + buildLiveFigures + buildClosedFigures (the reverted draft's market core) - corrected, not restored: the pulse/snapshot tiers and the stats-cache closed figures are lower-trust sources than the leftover HUD at this grain (geo-grain-trust).",
@@ -181,13 +172,12 @@
     "CommunityPageTracker",
     "V3SectionTracker",
     "MetadataBlock",
-    "CommunityStage (Stage, H1 + owned photo + area-guide clip) or V3Breadcrumb + V3Instrument (belonging) or V3Breadcrumb + V3Quiet",
-    "V3Field (alias-matched or in-boundary set + PlaceFieldMap with the plat-union boundary, count as caption)",
-    "V3Instrument (level 2, the market question + leftover HUD + charts) or V3Quiet (stated absence)",
+    "CommunityStage (Stage, H1 + owned still) or V3Breadcrumb + V3Instrument (belonging) or V3Breadcrumb + V3Quiet",
+    "CommunityHomesField (alias-matched or in-boundary set + PlaceFieldMap with the plat-union boundary, type chips, list-first on 390)",
+    "CommunityAlertSheet (V3Sheet, capture contract intact, after homes)",
+    "V3Instrument (level 2, tightness headline + one supply sentence + few figures + one chart) or V3Quiet (stated absence)",
     "V3Quiet (belonging: buildPlaceKnowledge, D100)",
-    "V3PlacePropertyTypes (Instrument enumeration)",
     "V3PlaceCharacter (Quiet, build years + HOA)",
-    "CommunityAlertSheet (V3Sheet, capture contract intact)",
     "V3Ledger #open-houses -- city-scoped, eyebrow names the city (restored 2026-08-27 with the cap kill)",
     "V3Ledger #activity -- city-scoped live feed (restored 2026-08-27)",
     "V3Quiet (FAQ + recorded documents as legal doors + outbound edges + freshness sentence)",

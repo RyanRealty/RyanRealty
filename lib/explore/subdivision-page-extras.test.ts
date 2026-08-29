@@ -98,12 +98,14 @@ describe('place list wiring', () => {
     expect(src).toContain('CITY_PLACE_LIST_CAP')
   })
 
-  it('sends the community counted-set door to the on-page list', () => {
-    // v3 spelling (2026-08-26): the Stage's fallback action and the opening
-    // Instrument door both land on the on-page Field (#homes), which lists the
-    // counted set.
+  it('sends the community Stage CTA to search, not a listing address', () => {
+    // Community restyle (2026-08-29): Stage asks Search {place} homes and
+    // opens the place browse filter. The no-still fallback still lands on
+    // the on-page Field (#homes).
     const src = readFileSync('app/communities/[slug]/page.tsx', 'utf8')
-    expect(src).toContain("href: fieldItems[0]?.href || '#homes'")
+    expect(src).toContain('Search ${publicName} homes')
+    expect(src).toContain('href: browseHref')
+    expect(src).not.toContain('fieldItems[0]?.title')
     expect(src).toContain("href: '#homes'")
   })
 })

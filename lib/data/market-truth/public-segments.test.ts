@@ -429,9 +429,10 @@ describe('public place pages', () => {
       resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),
       'utf8',
     )
-    expect(community).toMatch(/getPublicPlaceSegments/)
-    // v3 community page (2026-08-26): the enumeration is the barrel section.
-    expect(community).toMatch(/V3PlacePropertyTypes/)
+    // Community restyle (2026-08-29): types are Field chips, not a type H2 run.
+    expect(community).not.toMatch(/getPublicPlaceSegments/)
+    expect(community).not.toMatch(/V3PlacePropertyTypes/)
+    expect(community).toMatch(/CommunityHomesField/)
     expect(neighborhood).toMatch(/getPublicPlaceSegments/)
     // v3 neighborhood page (2026-08-26): the enumeration is the barrel section.
     expect(neighborhood).toMatch(/V3PlacePropertyTypes/)

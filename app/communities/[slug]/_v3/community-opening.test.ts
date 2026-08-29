@@ -27,4 +27,13 @@ describe('master-plan Field see-all', () => {
     const items = communityFieldItems(tiles)
     expect(items).toHaveLength(36)
   })
+
+  it('tags each row with a type chip key', () => {
+    const items = communityFieldItems([
+      { ...tile('house-1', 900_000), propertySubType: 'Single Family Residence' },
+      { ...tile('lot-1', 200_000), propertySubType: 'Residential Lots' },
+    ])
+    expect(items.map((item) => item.typeLabel)).toEqual(['House', 'Land'])
+    expect(items.every((item) => item.cat === 0 || item.cat === 1)).toBe(true)
+  })
 })

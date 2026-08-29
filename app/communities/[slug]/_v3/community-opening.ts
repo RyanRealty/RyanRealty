@@ -1,9 +1,10 @@
 /**
  * Master-plan opening helpers. Stage uses an owned community photo when
- * one exists. The registered Imagine place still wins over a leftover live
- * crop, then live `hero_image_url`, then a geo-strict library still, then
+ * one exists. The registered Imagine place still wins over a live crop,
+ * then live `hero_image_url`, then a geo-strict library still, then
  * communityImage(). Area-guide clips stay off Stage (they are click-to-play
  * guides, never a silent looping hero). Nothing here invents a picture.
+ * Unsplash and Google map pixels never reach Stage.
  */
 
 import { v3Text, type V3FieldItem, type V3InstrumentFigure } from '@/components/site/v3'
@@ -19,10 +20,104 @@ import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
 
+const TYPE_ORDER = [
+  'house',
+  'condo',
+  'townhouse',
+  'manufactured',
+  'multi',
+  'land',
+  'commercial',
+  'other',
+] as const
+
+export type CommunityFieldTypeKey = (typeof TYPE_ORDER)[number]
+
+export type CommunityFieldItem = V3FieldItem & {
+  typeKey: CommunityFieldTypeKey
+  typeLabel: string
+  cat: 0 | 1 | 2 | 3 | 4
+}
+
+function classifyType(input: {
+  propertyType?: string | null
+  propertySubType?: string | null
+}): { typeKey: CommunityFieldTypeKey; typeLabel: string } {
+  const sub = (input.propertySubType ?? '').trim()
+  const cls = (input.propertyType ?? '').trim().toUpperCase()
+
+  switch (sub) {
+    case 'Single Family Residence':
+    case 'Tenancy in Common':
+    case 'Residential Leased Land':
+    case 'Stock Cooperative':
+    case 'Timeshare':
+      return { typeKey: 'house', typeLabel: 'House' }
+    case 'Condominium':
+      return { typeKey: 'condo', typeLabel: 'Condo' }
+    case 'Townhouse':
+      return { typeKey: 'townhouse', typeLabel: 'Townhouse' }
+    case 'Manufactured On Land':
+    case 'In Park':
+    case 'On Leased Land':
+      return { typeKey: 'manufactured', typeLabel: 'Manufactured' }
+    case 'Duplex':
+    case 'Triplex':
+    case 'Quadruplex':
+    case 'Multi Family':
+      return { typeKey: 'multi', typeLabel: 'Multi-family' }
+    case 'Residential Lots':
+    case 'Recreational':
+    case 'Agriculture':
+    case 'Rangeland':
+    case 'Investment':
+    case 'Industrial':
+      return { typeKey: 'land', typeLabel: 'Land' }
+    default:
+      break
+  }
+
+  if (cls === 'D' || cls === 'E') return { typeKey: 'land', typeLabel: 'Land' }
+  if (cls === 'C') return { typeKey: 'multi', typeLabel: 'Multi-family' }
+  if (cls === 'B') return { typeKey: 'manufactured', typeLabel: 'Manufactured' }
+  if (cls === 'F' || cls === 'G' || cls === 'H') {
+    return { typeKey: 'commercial', typeLabel: 'Commercial' }
+  }
+  return { typeKey: 'house', typeLabel: 'House' }
+}
+
+function withCats(items: readonly Omit<CommunityFieldItem, 'cat'>[]): CommunityFieldItem[] {
+  const present = TYPE_ORDER.filter((key) => items.some((item) => item.typeKey === key))
+  const catByKey = new Map(
+    present.map((key, index) => [key, (index % 5) as CommunityFieldItem['cat']]),
+  )
+  return items.map((item) => ({
+    ...item,
+    cat: catByKey.get(item.typeKey) ?? 0,
+  }))
+}
+
+function isImaginePlaceUrl(url: string): boolean {
+  return url.includes('imagine-place-') || url.includes('/grok-imagine/')
+}
+
+function isStockOrMapPixel(url: string): boolean {
+  return /unsplash|images\.unsplash|maps\.googleapis|maps\.gstatic|googleusercontent|lh3\.google|streetviewpixels|khms|mt[01]\.google/i.test(
+    url,
+  )
+}
+
+function usableStageStill(url: string | null | undefined): string | null {
+  const trimmed = url?.trim()
+  if (!trimmed) return null
+  if (isStockOrMapPixel(trimmed)) return null
+  return trimmed
+}
+
 function imaginePlaceStill(...urls: Array<string | null | undefined>): string | null {
   for (const url of urls) {
-    const trimmed = url?.trim()
-    if (trimmed && trimmed.includes('imagine-place-')) return trimmed
+    const trimmed = usableStageStill(url)
+    if (trimmed && isImaginePlaceUrl(trimmed)) return trimmed
   }
   return null
 }
@@ -42,7 +137,10 @@ export function stagePoster(
 ): string | null {
   return (
     imaginePlaceStill(libraryHero, liveHero) ??
-    preferPlaceHeroOrNull(liveHero, preferPlaceHeroOrNull(libraryHero, communityImage(slug)))
+    preferPlaceHeroOrNull(
+      usableStageStill(liveHero),
+      preferPlaceHeroOrNull(usableStageStill(libraryHero), usableStageStill(communityImage(slug))),
+    )
   )
 }
 
@@ -108,7 +206,7 @@ export function belongingTrace(name: string): string {
 }
 
 /** The counted set as Field rows. Photo is optional. Map and list are this set. */
-export function communityFieldItems(tiles: readonly ListingTile[], cap?: number): V3FieldItem[] {
+export function communityFieldItems(tiles: readonly ListingTile[], cap?: number): CommunityFieldItem[] {
   const items = [...tiles]
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .flatMap((tile) => {
@@ -134,6 +232,10 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
       ]
         .filter(Boolean)
         .join(' · ')
+      const type = classifyType({
+        propertyType: tile.propertyType,
+        propertySubType: tile.propertySubType,
+      })
       return [
         {
           id: tile.listingKey,
@@ -144,10 +246,13 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
           meta: meta || undefined,
           lat: tile.lat,
           lng: tile.lng,
-        } satisfies V3FieldItem,
+          typeKey: type.typeKey,
+          typeLabel: type.typeLabel,
+        } satisfies Omit<CommunityFieldItem, 'cat'>,
       ]
     })
-  return cap == null ? items : items.slice(0, cap)
+  const typed = withCats(items)
+  return cap == null ? typed : typed.slice(0, cap)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -159,7 +264,7 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap?: number)
  * list and the map render — and it names the community, never the parent city
  * (ci:place-hero-grain binds on the caption's own place interpolation here). The
  * membership count the market Instrument prints is a different population
- * (Market Truth leftover) and carries its own label there.
+ * and carries its own label there.
  */
 export function communityFieldCaption(input: {
   placeName: string

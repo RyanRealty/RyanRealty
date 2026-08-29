@@ -23,19 +23,18 @@
  * canonicalize in middleware via resolveCanonicalCommunityPath
  * (lib/routing/pre-render-hops.ts) BEFORE anything streams.
  *
- * THE MARKET SECTION IS THE LEFTOVER HUD (MARKET_TRUTH): leftoverHudKpis with
- * grain 'neighborhood' (market_pulse_live has no neighborhood rows; the
- * stats-cache closed figures are the alias-join under-count
- * lib/market/geo-grain-trust.ts documents), keyed by the bare community slug.
- * The hero count is hud.active; a missing cell is omitted; buildMarketFaq runs
- * UNCONDITIONALLY with source 'market-truth' so the Dataset/FAQPage JSON-LD
- * survives a miss at the cost of one figure, never the markup. The reverted
- * draft's resolveLivePair pulse/snapshot tiers and its stats-cache closed
- * Instrument predate that ruling and were corrected, not restored.
+ * THE MARKET SECTION READS leftoverHudKpis with grain 'neighborhood'
+ * (market_pulse_live has no neighborhood rows. The stats-cache closed figures
+ * are the alias-join under-count lib/market/geo-grain-trust.ts documents),
+ * keyed by the bare community slug. The face prints a few figures and one
+ * chart. A missing cell is omitted. buildMarketFaq runs UNCONDITIONALLY with
+ * source 'market-truth' so the Dataset/FAQPage JSON-LD survives a miss at the
+ * cost of one figure, never the markup.
  *
- * THE MARKET QUESTION STAYS (Matt 2026-08-26, all five place grains): the
- * market Instrument's level-2 headline asks it whenever the verdict answers
- * it, with the answer as the note beneath - the Stage carries the H1.
+ * THE MARKET HEADLINE IS TIGHTNESS (2026-08-29 community restyle): when a
+ * verdict exists the Instrument H2 is "How tight the market is" and the
+ * note is the one supply sentence. The Stage carries the H1. Buyer/seller
+ * H2s stay off the face.
  *
  * THE DATA INVARIANTS, preserved from both registers:
  *  1. ALIAS-AWARE RESORT LISTINGS. A resort's homes are MLS-tagged under many
@@ -48,7 +47,7 @@
  *  3. ABSENT IS NOT ZERO. Every read is guarded; when all are silent the page
  *     says it has no live figures rather than publishing 0.
  *  4. ONE POPULATION PER FIGURE, NAMED. The Field caption counts ITS OWN
- *     listed set; the Instrument's "detached homes for sale" is the leftover
+ *     listed set. The Instrument's "detached homes for sale" is the HUD
  *     membership count. Two counts, two labels, each under its own trace.
  *
  * Data ONLY through @/lib/data, @/app/actions/communities, and the in-repo
@@ -86,17 +85,13 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
   getPublicDetachedMonthly,
   leftoverNeighborhoodOrCityMonthly,
 } from '@/lib/data/market-truth/public-monthly'
-import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -104,32 +99,24 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { marketVerdict } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
-  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
   V3PlaceCharacter,
-  V3PlacePropertyTypes,
   V3Quiet,
-  V3SourceLine,
   V3Stage,
   V3SectionTracker,
-  type V3ChartCardProps,
-  type V3InstrumentFigure,
 } from '@/components/site/v3'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
-import { coreChartsCard } from '@/components/market/core-charts'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
 import {
@@ -145,21 +132,26 @@ import {
   belongingFigures,
   belongingHeadline,
   belongingTrace,
-  communityFieldCaption,
   communityFieldItems,
-  communityFieldTrace,
   communityLibraryHero,
   stagePoster,
   type CommunityFieldBranch,
 } from './_v3/community-opening'
+import {
+  communityFaceAbsenceItems,
+  communityFaceFaqs,
+  communityFaceFieldCaption,
+  communityFaceFieldTrace,
+  communityFaceMarketFigures,
+  communityFaceMarketTrace,
+} from './_v3/community-face'
+import { CommunityHomesField } from './_v3/CommunityHomesField'
 import { CommunityStage } from './_v3/CommunityStage'
 import { resortQuietItems } from '../_v3/resort-doors'
 import {
   leftoverMarketFigures,
-  CITY_PACE_KEYS_ON_THE_HUD,
   placeMedianChart,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the curated resort-community set (finite, in-repo registry) so the
@@ -265,13 +257,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     citySfrRead,
     richContent,
     cityPriceHist,
-    commCoreCharts,
-    cityCoreCharts,
     publicPace,
-    publicSegments,
     leftoverCityMonthly,
     leftoverNeighborhoodMonthly,
-    publicMix,
     commOverlays,
     placeDocuments,
     placeCharacter,
@@ -298,21 +286,11 @@ export default async function CommunityDetailPage({ params }: Props) {
     withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
     // Parent-city trend when this community's series is too thin. Relabeled. (§0)
     withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
-    // Tabbed core-chart series - this community's own scope, plus the parent
-    // city's as the sparse-community fallback, relabeled honestly when used. (§0)
-    withTimeoutFallback(getCoreChartSeries({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 4500, 'comm:coreCharts'),
-    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) }), null, 4500, 'comm:cityCoreCharts'),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
       EMPTY_PUBLIC_PACE,
       3000,
       'comm:publicPace',
-    ),
-    withTimeoutFallback(
-      getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
-      [],
-      3000,
-      'comm:publicSegments',
     ),
     withTimeoutFallback(
       getPublicDetachedMonthly({ geoType: 'city', geoSlug: citySlug, currentMonthKey }),
@@ -329,12 +307,6 @@ export default async function CommunityDetailPage({ params }: Props) {
       [],
       4500,
       'comm:leftoverNeighborhoodMonthly',
-    ),
-    withTimeoutFallback(
-      getPublicDetachedMix({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
-      EMPTY_PUBLIC_MIX,
-      3000,
-      'comm:publicMix',
     ),
     withTimeoutFallback(
       getDetachedOverlays([{ geoType: 'neighborhood', geoSlug: neighborhoodSlug }]),
@@ -448,9 +420,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const verdict = marketVerdict(mosRaw)
   const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
-  const marketHeadline = hasVerdict
-    ? `Is ${publicName} a buyer's or seller's market?`
-    : `The ${publicName} market`
+  const marketHeadline = hasVerdict ? 'How tight the market is' : `The ${publicName} market`
   const verdictSentence = hasVerdict
     ? `${publicName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
     : null
@@ -487,7 +457,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
     schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
   }
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(publicName, marketFaqInput)
+  const builtFaq = buildMarketFaq(publicName, marketFaqInput)
+  const faqs = communityFaceFaqs(builtFaq.faqs)
+  const { datasetVariables, asOfIso, asOfLabel } = builtFaq
 
   const placeLinks = getPlaceLinks({
     type: 'community',
@@ -498,36 +470,15 @@ export default async function CommunityDetailPage({ params }: Props) {
   const communityMarketHref = placeLinks.marketUrl
   const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
 
-  const figures: V3InstrumentFigure[] = leftoverMarketFigures(hud, {
-    browse: browseHref,
-    monthsOfSupply: '/months-of-supply',
-  })
-  for (const item of publicPaceItems(publicPace)) {
-    if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
-    figures.push({ value: v3Text(item.value), label: v3Text(item.label) })
-  }
-  for (const figure of buildPublicMixFigures(publicMix)) figures.push(figure)
-  // PUBLIC_UI.md §3 / parity.json V3Instrument (D103, 2026-08-27): "Level 2 is
-  // rolling 365 days of closed sales. Live inventory is the Field caption,
-  // not the hero." leftoverMarketFigures, publicPaceItems, and
-  // buildPublicMixFigures above build the SAME figure set as before; this
-  // reorders it only — every rolling-window / closed-sale figure (the
-  // "12 months" and "90 days" character stats, months of supply, sold count)
-  // opens the Instrument, and every current-snapshot figure (median list
-  // price, "for sale," "now," "30 days") - the Field's own caption - moves to
-  // the end. No figure is dropped or relabeled.
-  const isLiveInventoryFigure = (label: string): boolean =>
-    label === 'median list price' ||
-    label.includes('for sale') ||
-    label.includes('now') ||
-    label.includes('30 days')
-  const orderedMarketFigures = [
-    ...figures.filter((f) => !isLiveInventoryFigure(f.label)),
-    ...figures.filter((f) => isLiveInventoryFigure(f.label)),
-  ]
-  const [firstMarketFigure, ...restMarketFigures] = orderedMarketFigures
+  const figures = communityFaceMarketFigures(
+    leftoverMarketFigures(hud, {
+      browse: browseHref,
+      monthsOfSupply: '/months-of-supply',
+    }),
+  )
+  const [firstMarketFigure, ...restMarketFigures] = figures
 
-  // City-fallback for a too-sparse community series; the caption names the
+  // City-fallback for a too-sparse community series. The caption names the
   // scope so a city trend can never read as this community's (§0).
   const communityCacheSparse = isTrendSeriesTooSparse(priceHist)
   const chartMonths = leftoverNeighborhoodOrCityMonthly({
@@ -542,19 +493,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   const chartScope = chartIsCityLevel ? `${cityName} at city scope, not ${publicName}` : publicName
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${chartScope}`,
+    `Median close by month, single-family, ${chartScope}`,
   )
-
-  // Core-chart module scope mirrors the SAME sparse-community decision, and
-  // toPublicCoreChartSeries strips table names from every series source.
-  const coreChartsRaw = chartIsCityLevel ? cityCoreCharts : commCoreCharts
-  const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : null
-  const trendsCard = coreChartsCard(
-    coreCharts,
-    publicName,
-    chartIsCityLevel && cityName ? `${cityName} (city)` : undefined,
-  )
-  const marketCards: V3ChartCardProps[] = trendsCard ? [trendsCard] : []
 
   /* ── The Field ─────────────────────────────────────────────────────────── */
 
@@ -565,8 +505,13 @@ export default async function CommunityDetailPage({ params }: Props) {
       : 'subdivision-name'
   const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
   const fieldItems = communityFieldItems(fieldTiles)
-  const fieldCaption = communityFieldCaption({ placeName: publicName, count: fieldItems.length })
-  const mapPins = fieldMapPins(fieldItems)
+  const fieldCaption = communityFaceFieldCaption({
+    placeName: publicName,
+    count: fieldItems.length,
+    mosLabel,
+    verdictKind: verdict.kind,
+    verdictLabel: verdict.label,
+  })
 
   // D103 (2026-08-27). The Field's listed set (every property type across the
   // community's named subdivisions) and the Dataset/FAQ's detached count (the
@@ -587,7 +532,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   // The county plat union, when one exists, always draws; an unreliable stored
   // hull never does (invariant 2).
   const mapPolygon = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
-  const hasMap = mapPins.length > 0 || Boolean(mapPolygon)
+  const hasMap =
+    fieldItems.some((item) => item.lat != null && item.lng != null) || Boolean(mapPolygon)
 
   /* ── The opening ───────────────────────────────────────────────────────── */
 
@@ -677,18 +623,18 @@ export default async function CommunityDetailPage({ params }: Props) {
         <MetadataBlock schemas={communitySchemas} />
 
         {/* Pattern 4, Stage - the owned place photo, when one exists
-            (PUBLIC_UI §3 Master-plan). The Stage action is the first house. */}
+            (PUBLIC_UI §3 Master-plan). The Stage action is search, not a listing. */}
         {posterSrc ? (
           <CommunityStage
             Stage={V3Stage}
             trail={trail}
             name={publicName}
             cityName={cityName}
-            headline={belongingHeadline(publicName, richContent)}
+            headline={`${publicName} homes for sale`}
             posterSrc={posterSrc}
             action={{
-              label: fieldItems[0]?.title || `See ${publicName} houses`,
-              href: fieldItems[0]?.href || '#homes',
+              label: `Search ${publicName} homes`,
+              href: browseHref,
             }}
           />
         ) : firstBelong ? (
@@ -720,39 +666,28 @@ export default async function CommunityDetailPage({ params }: Props) {
           </>
         )}
 
-        {/* Pattern 2, Field - the homes as a spatial surface: the alias-matched
-            (or in-boundary) set, list and map one set, count as caption. */}
-        <V3Field
-          id="homes"
-          ariaLabel={`Homes for sale in ${publicName}`}
-          items={fieldItems}
-          mapSlot={
-            hasMap ? (
-              <PlaceFieldMap
-                pins={mapPins}
-                boundary={mapPolygon ?? undefined}
-                placeName={publicName}
-                centerLonLat={registryEntry?.center_lon_lat ?? undefined}
-              />
-            ) : undefined
-          }
-          mapNote={fieldCaption ?? undefined}
-          emptyMessage={
-            citySfrRead.ok || !isResortInCity
-              ? `No single-family home is listed for sale in ${publicName} right now.`
-              : 'The listing feed did not answer on this refresh, so this frame is not claiming an inventory.'
-          }
-          footNote={
-            fieldItems.length > 0
-              ? `Listed here: ${publicName} homes. Map and list are the same set.`
-              : undefined
-          }
+        <CommunityHomesField
+          placeName={publicName}
+          headline={v3Text(`${publicName} homes for sale`)}
+          ownsHeading={!posterSrc}
+          fieldItems={fieldItems}
+          inventoryOk={citySfrRead.ok || !isResortInCity}
+          caption={fieldCaption}
+          source={communityFaceFieldTrace(publicName, fieldBranch)}
+          seeAll={{
+            href: browseHref,
+            label: `Search ${publicName} homes`,
+          }}
+          boundary={mapPolygon ?? undefined}
+          centerLonLat={registryEntry?.center_lon_lat ?? undefined}
         />
-        {fieldItems.length > 0 ? (
-          <V3SourceLine source={communityFieldTrace(publicName, fieldBranch)} />
-        ) : null}
 
-        {/* Pattern 1, Instrument - the market question and the leftover pile. */}
+        <CommunityAlertSheet
+          communityName={publicName}
+          city={cityName}
+          subdivision={community.subdivision}
+        />
+
         {firstMarketFigure ? (
           <V3Instrument
             id="market"
@@ -761,38 +696,24 @@ export default async function CommunityDetailPage({ params }: Props) {
             headline={v3Text(marketHeadline)}
             note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
-            source={v3Text(
-              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-                `detached single-family houses assigned to ${publicName} by boundary membership. ` +
-                `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
-                (mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''),
-            )}
+            source={v3Text(communityFaceMarketTrace(publicName, mosLabel != null))}
             chart={medianChart}
-            cards={marketCards}
+            chartFirst
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
             action={{
               label: v3Text(`Search ${publicName} homes`),
               href: browseHref,
-              variant: 'primary',
+              variant: 'ghost',
             }}
           />
         ) : (
           <V3Quiet
             id="market"
             heading={`The ${publicName} market`}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No live market figures right now',
-                body: `The Market Truth metric layer published no figure for ${publicName} on this refresh, so this page is not printing a median, a supply figure, or a verdict.${fieldItems.length > 0 ? ' The homes above carry their own live list prices.' : ''}`,
-              },
-            ]}
+            items={communityFaceAbsenceItems(publicName, fieldItems.length > 0)}
           />
         )}
 
-        {/* Pattern 6, Quiet - the authored knowledge: overview prose,
-            at-a-glance, drive times, amenities, the course, membership,
-            builders, schools, STR (D100 on the barrel). */}
         {knowledgeItems.length > 0 ? (
           <V3Quiet
             id="belonging"
@@ -802,20 +723,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           />
         ) : null}
 
-        {/* Pattern 1 again, as ONE enumeration: one section per other property
-            type this community holds. */}
-        <V3PlacePropertyTypes placeName={publicName} citySlug={citySlug} rows={publicSegments} />
-
-        {/* Pattern 6 - build years + HOA, measured (renders null when nothing
-            is publishable). */}
         <V3PlaceCharacter placeName={publicName} character={placeCharacter} />
-
-        {/* Pattern 5, Sheet. Same server action, same payload, same honeypot. */}
-        <CommunityAlertSheet
-          communityName={publicName}
-          city={cityName}
-          subdivision={community.subdivision}
-        />
 
         {firstOh ? (
           <V3Ledger

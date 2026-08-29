@@ -112,9 +112,9 @@ describe('public pace surfaces', () => {
       'utf8',
     )
     expect(community).toMatch(/getPublicDetachedPace/)
-    // v3 community page (2026-08-26): the pace items print as Instrument
-    // figures through publicPaceItems.
-    expect(community).toMatch(/publicPaceItems/)
+    // Community restyle (2026-08-29): pace still feeds leftoverHudKpis.
+    // The pace run does not print. Same as the city / neighborhood face.
+    expect(community).not.toMatch(/publicPaceItems/)
     expect(neighborhood).toMatch(/getPublicDetachedPace/)
     // Neighborhood restyle (2026-08-29): pace still feeds leftoverHudKpis.
     // The pace run does not print. Same as the city face.

@@ -24,13 +24,13 @@ describe('community page leftover 12-month sold overlay', () => {
   })
 
   it('keeps leftover median sold and sale-to-list', () => {
-    // v3 spelling (2026-08-26): median close rides publicPaceItems (the
-    // 'median close · 12 months' item) and sale-to-list rides
-    // leftoverMarketFigures — both fed from the same leftover pace row this
-    // page reads. No cache fill exists to reach either.
-    expect(SRC).toMatch(/publicPaceItems\(publicPace\)/)
+    // Community restyle (2026-08-29): sale-to-list and the HUD pile still ride
+    // leftoverMarketFigures. Pace feeds leftoverHudKpis. The pace run does
+    // not print on the face.
+    expect(SRC).not.toMatch(/publicPaceItems\(publicPace\)/)
     expect(SRC).toMatch(/leftoverHudKpis/)
     expect(SRC).toMatch(/leftoverMarketFigures/)
+    expect(SRC).toMatch(/communityFaceMarketFigures/)
   })
 
   it('does not map leftover daysToContract onto median DOM', () => {

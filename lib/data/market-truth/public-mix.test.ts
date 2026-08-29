@@ -76,7 +76,9 @@ describe('public mix / feature floors', () => {
     // prints a few figures and a door, same as the homepage.
     expect(cities).not.toMatch(/getPublicDetachedMix/)
     expect(zip).toMatch(/getPublicDetachedMix/)
-    expect(comm).toMatch(/getPublicDetachedMix/)
+    // Community restyle (2026-08-29): mix stays on the report. The community
+    // face prints a few figures and a door, same as the city.
+    expect(comm).not.toMatch(/getPublicDetachedMix/)
     // Neighborhood restyle (2026-08-29): mix stays on the report. The
     // neighborhood face prints a few figures and a door, same as the city.
     expect(nbh).not.toMatch(/getPublicDetachedMix/)

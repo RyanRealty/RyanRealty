@@ -92,9 +92,9 @@ for (const { grain, page, local } of GRAINS) {
   const localTexts = routeLocalSources(local)
   const everywhere = [pageText, ...localTexts]
 
-  // City restyle (2026-08-29): the buyer/seller H2 is off the face. The
-  // Instrument headline is tightness, and the verdict is one sentence.
-  if (grain === 'city') {
+  // City / neighborhood / community restyle: the buyer/seller H2 is off the
+  // face. The Instrument headline is tightness, and the verdict is one sentence.
+  if (grain === 'city' || grain === 'neighborhood' || grain === 'community') {
     const verdictSentence = everywhere.some((t) => t.includes('months of supply, which is a'))
     const tightnessHeadline = pageText.includes('How tight the market is')
     const questionOffFace = !everywhere.some((t) => QUESTION.test(t))
