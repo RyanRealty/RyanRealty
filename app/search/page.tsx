@@ -56,6 +56,7 @@ import MapSearchView from '@/components/search/MapSearchView'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
+import { SearchWorkspace } from '@/components/search/SearchWorkspace'
 import { SearchCensus } from '@/app/search/[...slug]/sections/SearchCensus'
 
 const DEFAULT_VIEW = 'split'
@@ -337,7 +338,7 @@ export default async function SearchPage({
         <V3Heading level={1} size="field">Homes for Sale</V3Heading>
         {placeCaption ? <p className="v3-field__note mt-2">{placeCaption}</p> : null}
       </header>
-      <div className="search-workspace">
+      <SearchWorkspace>
       <div className="search-filter-dock mx-auto w-full max-w-6xl px-4 sm:px-6">
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
@@ -355,7 +356,7 @@ export default async function SearchPage({
         nowMs={Date.now()}
         initialDegraded={viewportDegraded}
       />
-      </div>
+      </SearchWorkspace>
       <SearchAlertCapture
         signedIn={!!session?.user}
         defaultCity={effectiveFilters.city ?? ''}

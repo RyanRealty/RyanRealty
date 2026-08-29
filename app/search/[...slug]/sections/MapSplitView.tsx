@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Footer, V3_FOOTER_COLUMNS, V3Heading } from '@/components/site/v3'
 import SearchFilters from '@/components/search/SearchFilters'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
+import { SearchWorkspace } from '@/components/search/SearchWorkspace'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
@@ -300,7 +301,7 @@ export async function renderMapSplitView(props: {
         <V3Heading level={1} size="field">Homes for Sale</V3Heading>
         {displayName ? <p className="v3-field__note mt-2">{displayName}</p> : null}
       </header>
-      <div className="search-workspace">
+      <SearchWorkspace>
       <div className="search-filter-dock mx-auto w-full max-w-6xl px-4 sm:px-6">
         <SearchFilters
           initialFilters={filters}
@@ -323,7 +324,7 @@ export async function renderMapSplitView(props: {
         nowMs={Date.now()}
         initialDegraded={viewportDegraded}
       />
-      </div>
+      </SearchWorkspace>
       <SearchAlertCapture
         signedIn={!!session?.user}
         defaultCity={city ?? ''}

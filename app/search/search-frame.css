@@ -57,20 +57,27 @@
   }
 }
 
-/* 1280: dock + Field stick as one cream unit under chrome. The map and
-   list stay below the filters instead of sliding under them. 390 keeps
-   the shorter filter dock sticky on its own. */
+/* 1280: SearchWorkspace pins this unit under chrome after the H1
+   leaves. Cream so the map cannot show through. 390 keeps the shorter
+   filter dock sticky on its own. */
 .search-workspace {
   background: var(--v3-surface);
 }
 
-@media (min-width: 56.25rem) {
-  .search-workspace {
-    position: sticky;
-    top: 3.5rem;
-    z-index: 10;
-  }
+.search-workspace-slot {
+  height: 0;
+}
 
+.search-workspace--stuck {
+  position: fixed;
+  top: 3.5rem;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: var(--v3-surface);
+}
+
+@media (min-width: 56.25rem) {
   .search-workspace .search-filter-dock {
     position: relative;
     top: auto;

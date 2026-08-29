@@ -616,14 +616,17 @@ describe('search filter dock and required map attribution (PR 163)', () => {
   it('sticks dock plus Field as one cream unit at 1280 so the map stays clear', () => {
     const css = readSrc('app/search/search-frame.css')
     expect(css).toMatch(/\.search-workspace \{[\s\S]*background:\s*var\(--v3-surface\)/)
-    expect(css).toMatch(/@media \(min-width: 56\.25rem\) \{[\s\S]*\.search-workspace \{[\s\S]*position:\s*sticky/)
+    expect(css).toMatch(/\.search-workspace--stuck \{[\s\S]*position:\s*fixed/)
     expect(css).toMatch(/\.search-workspace \.search-filter-dock \{[\s\S]*position:\s*relative/)
+    const wrap = readSrc('components/search/SearchWorkspace.tsx')
+    expect(wrap).toMatch(/search-workspace--stuck/)
+    expect(wrap).toMatch(/search-alert-capture/)
     const page = readSrc('app/search/page.tsx')
-    expect(page).toMatch(/search-workspace/)
-    expect(page.indexOf('search-workspace')).toBeLessThan(page.indexOf('search-filter-dock'))
-    expect(page.indexOf('search-workspace')).toBeLessThan(page.indexOf('<MapSearchView'))
+    expect(page).toMatch(/<SearchWorkspace>/)
+    expect(page.indexOf('<SearchWorkspace>')).toBeLessThan(page.indexOf('search-filter-dock'))
+    expect(page.indexOf('<SearchWorkspace>')).toBeLessThan(page.indexOf('<MapSearchView'))
     const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
-    expect(split).toMatch(/search-workspace/)
+    expect(split).toMatch(/<SearchWorkspace>/)
   })
 
   it('keeps required Google attribution and only hides the decorative MAP chip', () => {
