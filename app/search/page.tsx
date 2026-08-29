@@ -56,6 +56,7 @@ import MapSearchView from '@/components/search/MapSearchView'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { ResultsStamp } from '@/components/search/ResultsStamp.client'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
+import { SearchCensus } from '@/app/search/[...slug]/sections/SearchCensus'
 
 const DEFAULT_VIEW = 'split'
 
@@ -355,6 +356,18 @@ export default async function SearchPage({
         signedIn={!!session?.user}
         defaultCity={effectiveFilters.city ?? ''}
         variant="inline"
+      />
+      <SearchCensus
+        city={filters.city || undefined}
+        subdivision={undefined}
+        decodedSubdivision={undefined}
+        displayName={placeCaption || 'Central Oregon'}
+        searchPagePath="/homes-for-sale"
+        listings={viewport.listings}
+        totalCount={viewport.totalCount}
+        preset={null}
+        placeName={filters.city || 'Central Oregon'}
+        searchParams={sp}
       />
     </main>
     <V3Footer columns={V3_FOOTER_COLUMNS} />

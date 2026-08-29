@@ -518,7 +518,6 @@ export default function MapSearchView({
     capped,
   })
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
-  const countPhrase = publishedViewport?.phrase ?? (totalCount === 0 ? 'No homes in this map view' : `${totalCount.toLocaleString('en-US')} homes in this map view`)
   const selectedRow = selectedKey
     ? visibleListings.find((row) => searchFieldItemId(row) === selectedKey)
     : null
@@ -567,11 +566,13 @@ export default function MapSearchView({
         }
         lead={
           <>
+            {resultsDegraded || filtersSummary || loading ? (
             <p className="v3-field__note" aria-live="polite">
-              {resultsDegraded ? 'Search delayed' : countPhrase}
-              {filtersSummary ? ` · ${filtersSummary}` : ''}
+              {resultsDegraded ? 'Search delayed' : null}
+              {filtersSummary ? `${resultsDegraded ? ' · ' : ''}${filtersSummary}` : ''}
               {loading ? ' Updating results…' : ''}
             </p>
+            ) : null}
             <Label className="inline-flex min-h-11 items-center gap-2">
               <Checkbox
                 checked={searchAsMove}

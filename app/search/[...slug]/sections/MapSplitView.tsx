@@ -26,6 +26,7 @@ import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
 import { type SearchParams } from '../page-filters'
 import type { SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
+import { SearchCensus } from './SearchCensus'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -112,6 +113,8 @@ export async function renderMapSplitView(props: {
     perPageParam: _perPageParam,
     pathContext,
     tail,
+    resolved,
+    searchPagePath,
   } = props
   // priceChangeKeys + prefs: still accepted from page.tsx for call-site stability.
   // MapSearchView does not consume buying prefs or price-change badge keys.
@@ -323,6 +326,18 @@ export async function renderMapSplitView(props: {
         defaultSubdivision={decodedSubdivision ?? ''}
         defaultFilters={guestAlertFilters}
         variant="inline"
+      />
+      <SearchCensus
+        city={city}
+        subdivision={resolved.subdivisionSlug ?? undefined}
+        decodedSubdivision={decodedSubdivision}
+        displayName={displayName}
+        searchPagePath={searchPagePath}
+        listings={viewport.listings}
+        totalCount={viewport.totalCount}
+        preset={resolved.preset}
+        placeName={city ?? displayName}
+        searchParams={sp}
       />
       {tail}
     </main>

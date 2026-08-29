@@ -1,4 +1,3 @@
-import MarketSnapshot from '@/components/site/MarketSnapshot'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   v3Text,
@@ -17,9 +16,9 @@ import { type buildPresetFaq } from '@/lib/site/preset-faq'
 import { type getAllCityHomesLink } from '../../../../lib/popular-searches'
 import { type SearchPreset } from '../resolve-slug'
 
-/** Below-fold SEO depth: market snapshot band, the asking-price ladder, city +
+/** Below-fold SEO depth: the asking-price ladder, city +
  *  preset FAQs, preset cross-links, and the related-searches link cloud (see
- *  page.tsx call site).
+ *  page.tsx call site). Leftover HUD / MarketSnapshot stays off this face.
  *
  *  FAQPage JSON-LD used to emit from FAQBlock. V3Quiet carries no structured
  *  data, so MetadataBlock emits the same items the Quiet renders.
@@ -32,7 +31,7 @@ export function SearchSeoTail({
   isPlainCityPage,
   relatedCitySlug,
   city,
-  published,
+  published: _published,
   priceLadder,
   publicPace: _publicPace,
   publicSegments: _publicSegments,
@@ -122,12 +121,6 @@ export function SearchSeoTail({
     <>
       {isPlainCityPage && relatedCitySlug && city ? (
         <section id="search-seo" className="mt-12">
-          <MarketSnapshot
-            citySlug={relatedCitySlug}
-            cityName={city}
-            publishedActiveCount={published?.count ?? null}
-            publishedMedianListPrice={published?.medianListPrice ?? null}
-          />
           {priceLadder ? (
             <div className="mx-auto mt-6 w-full max-w-3xl">
               <V3ChartCard
