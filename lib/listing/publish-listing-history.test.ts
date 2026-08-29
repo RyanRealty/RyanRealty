@@ -116,4 +116,18 @@ describe('publishListingHistory', () => {
     expect(rows[0]).toMatchObject({ event: 'listed', event_date: '2026-07-31', price: 889000 })
     expect(rows.some((row) => /price/i.test(row.event))).toBe(false)
   })
+
+  it('Zenith: same $889,000 on Aug 24 is listed history only, even if price_change is missing', () => {
+    const rows = publishListingHistory({
+      listingHistory: [
+        { event: 'listed', event_date: '2026-07-31', price: 889000 },
+        { event: 'pricechange', event_date: '2026-08-24', price: 889000, price_change: null },
+      ],
+      onMarketDate: '2026-07-31T20:30:58+00:00',
+      listPrice: 889000,
+    })
+    expect(rows).toEqual([
+      { event: 'listed', event_date: '2026-07-31', price: 889000, price_change: null, description: null },
+    ])
+  })
 })

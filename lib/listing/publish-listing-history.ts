@@ -236,4 +236,13 @@ export function publishListingHistory(input: {
       return row.event_date >= listedCutoff
     })
     .sort((a, b) => a.event_date.localeCompare(b.event_date))
+    .filter((row, i, rows) => {
+      const key = normalizeEvent(row.event)
+      if (key !== 'pricechange' && key !== 'pricedrop' && key !== 'priceincrease') return true
+      const prev = [...rows.slice(0, i)].reverse().find((r) => r.price != null)
+      if (prev && prev.price === row.price && (row.price_change == null || row.price_change === 0)) {
+        return false
+      }
+      return true
+    })
 }

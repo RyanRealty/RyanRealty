@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
 import { publishListingGalleryTabs } from '@/lib/listing/publish-listing-mosaic-pills'
 import type { VideoEmbed } from '@/lib/data/types/video'
+import './listing-detail.css'
 
 /**
  * PhotoGalleryLightbox — site-wide fullscreen photo lightbox primitive.
@@ -136,28 +137,25 @@ export function PhotoGalleryLightbox({
         <DialogContent
           showCloseButton={false}
           aria-label="Photo gallery"
-          className="max-w-none sm:max-w-none w-screen h-dvh bg-transparent border-0 p-0 shadow-none rounded-none ring-0 flex flex-col items-stretch justify-between gap-0 translate-x-0 translate-y-0 top-0 left-0"
+          className="listing-gallery"
         >
-          {/* Mobile: labeled Back. Desktop: 44px X. Both top-left. */}
-          <div className="flex shrink-0 items-center justify-between gap-3 px-4 pt-4 sm:px-6">
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="listing-gallery__bar">
+            <button
+              type="button"
               onClick={dismiss}
-              className="min-h-11 min-w-11 sm:hidden bg-background/10 text-primary-foreground hover:bg-background/15 hover:text-primary-foreground"
+              className="listing-gallery__back"
               aria-label="Back"
             >
               ← Back
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
+            </button>
+            <button
+              type="button"
               onClick={dismiss}
-              className="hidden min-h-11 min-w-11 sm:inline-flex bg-background/10 text-primary-foreground hover:bg-background/15 hover:text-primary-foreground"
+              className="listing-gallery__close"
               aria-label="Close"
             >
               ×
-            </Button>
+            </button>
             {tabs.length > 1 ? (
               <div className="flex min-h-11 flex-1 items-center justify-center gap-1 overflow-x-auto no-scrollbar">
                 {tabs.map((tab) => (

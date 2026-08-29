@@ -962,9 +962,7 @@
 }
 
 .listing-detail .place-list__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   margin-top: 8px;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1003,5 +1001,68 @@
   .listing-detail .lst-grid .lst-card:nth-child(2) .lst-media,
   .listing-detail .lst-grid .lst-card:nth-child(3) .lst-media {
     aspect-ratio: 16/10;
+  }
+}
+
+/* Gallery portals to document.body. Pin it to the viewport so 390 Back
+   is not clipped by DialogContent's default center/translate. */
+.listing-gallery {
+  position: fixed;
+  inset: 0;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  transform: none;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.listing-gallery__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem;
+}
+
+.listing-gallery__back,
+.listing-gallery__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.75rem;
+  border: 0;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  z-index: 20;
+}
+
+.listing-gallery__close {
+  display: none;
+}
+
+@media (min-width: 40rem) {
+  .listing-gallery__back {
+    display: none;
+  }
+  .listing-gallery__close {
+    display: inline-flex;
   }
 }

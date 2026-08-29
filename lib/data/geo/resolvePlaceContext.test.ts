@@ -106,6 +106,18 @@ describe('resolvePlaceContextFromListing', () => {
     expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/Crr/i)
   })
 
+  it('keeps Forked Horn Butte when that is the listing plat', () => {
+    const ctx = resolvePlaceContextFromListing({
+      city: 'Redmond',
+      citySlug: 'redmond',
+      subdivisionName: 'Forked Horn Butte',
+      subdivisionSlug: 'forked-horn-butte',
+    })
+    expect(ctx.subdivision?.label).toBe('Forked Horn Butte')
+    expect(ctx.identityLine).toContain('Forked Horn Butte')
+    expect(ctx.identityLine).not.toMatch(/Cedar Creek|Orchard District/i)
+  })
+
   it('city-only listing has empty parents beyond city leaf', () => {
     const ctx = resolvePlaceContextFromListing({
       city: 'Redmond',

@@ -192,7 +192,7 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
   it('labels the control Back at 44px', () => {
     expect(gallery).toMatch(/aria-label="Back"/)
     expect(gallery).toMatch(/aria-label="Close"/)
-    expect(gallery).toMatch(/min-h-11/)
+    expect(gallery).toMatch(/listing-gallery__back/)
     expect(tour).toMatch(/aria-label="Back"/)
     expect(tour).toMatch(/min-h-11/)
     expect(gallery).not.toMatch(/Close gallery/)

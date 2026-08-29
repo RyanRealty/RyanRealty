@@ -151,6 +151,9 @@ describe('design directive contracts', () => {
     expect(life).toMatch(/<span className="place-list__kind">\{item\.kind\}<\/span>/)
     expect(life).toMatch(/<span className="place-list__name">\{item\.name\}<\/span>/)
     expect(life).not.toMatch(/place-list__kind">\{item\.kind\}<\/span>\s*\{item\.name\}/)
+    const css = readSrc('components/site/listing-detail/listing-detail.css')
+    expect(css).toMatch(/\.listing-detail \.place-list__kind \{\s*display: block/)
+    expect(css).toMatch(/\.listing-gallery__back/)
   })
 
   it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
