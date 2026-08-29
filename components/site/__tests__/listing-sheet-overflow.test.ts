@@ -16,6 +16,9 @@ describe('listing sheet 390 overflow contract', () => {
       /\.v3\.v3-sheet\.v3-sheet--page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
     )
     expect(SHEET).toMatch(
+      /\.v3\.v3-sheet\.v3-sheet--page\s*\{[^}]*container-type:\s*inline-size/,
+    )
+    expect(SHEET).toMatch(
       /\.v3\.v3-sheet\.v3-sheet--page\s*>\s*\*\s*\{[^}]*min-width:\s*0/,
     )
     expect(SHEET).toMatch(
@@ -47,6 +50,8 @@ describe('listing sheet 390 overflow contract', () => {
     expect(LISTING).toMatch(
       /\.listing-detail\s+\.listing-price-cta-facts\s*\{[^}]*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
     )
+    expect(LISTING).toMatch(/max-width:\s*759px[\s\S]*listing-price-cta-facts[\s\S]*100cqi/)
+    expect(LISTING).toMatch(/max-width:\s*759px[\s\S]*v3-field__plot[\s\S]*100cqi/)
     expect(LISTING).toMatch(
       /\.listing-detail\s+\.listing-price-cta-actions\s*\{[^}]*flex-direction:\s*column/,
     )

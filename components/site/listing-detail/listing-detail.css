@@ -785,6 +785,24 @@
   min-width: 0;
   max-width: 100%;
 }
+/* Walker 390: the facts dl was a 734px 2-col track (BATHS/DOM/STATUS at
+   x 413–772). Size the dl and plot to the sheet content box, not the
+   overflowed ancestor. Ask stays full-width stacked. */
+@media (max-width: 759px) {
+  .listing-detail .listing-price-cta-facts {
+    width: 100cqi;
+    max-width: 100cqi;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .listing-detail .v3-sheet .v3.v3-field,
+  .listing-detail .v3-sheet .v3-field__map,
+  .listing-detail .v3-sheet .v3-field__plot {
+    width: 100cqi;
+    max-width: 100cqi;
+    min-width: 0;
+  }
+}
 @media (min-width: 760px) {
   .listing-detail .listing-price-cta-facts {
     grid-template-columns: repeat(3, minmax(0, 1fr));

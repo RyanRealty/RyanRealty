@@ -41,6 +41,10 @@
      390 sheet clips. One shrinking track, then clip leftover overflow. */
   grid-template-columns: minmax(0, 1fr);
   overflow-x: clip;
+  /* Facts dl and Field plot size to THIS box (354 at 390), not a
+     734px max-content ancestor. 100cqi reads this content width. */
+  container-type: inline-size;
+  container-name: listing-sheet;
 }
 
 /* Grid items default to min-width:auto. A long note or a Field plot

@@ -1,8 +1,8 @@
-# Current — 2026-08-29 (Cursor) — listing template PR 160, 390 sheet overflow
+# Current — 2026-08-29 (Cursor) — listing template PR 160, 390 facts 100cqi
 
 **Surface:** branch `cursor/listing-template-c741` (PR 160). Do not merge. Do not deploy production.
-**Done:** Walker `dcvdwu9wo` was cookie-only SHA `b3cd2c17f`. Latest SHA still overflowed because PropertySpecs `repeat(2, 1fr)` sized About this home to 734px (sheet scrollWidth 754). Sheet now `grid-template-columns: minmax(0,1fr)`; spec cells `minmax(0,1fr)`. Local 390: sheet 354/354, facts 314, plot 312, pin x=195, all six facts on screen. Cookie-over-sticky unchanged (PASS).
-**Next:** Release refreshes one listing preview. Walk that host, not `dcvdwu9wo`. Proof `/homes-for-sale/redmond/4496-zenith-220226279`.
+**Done:** Added to the in-flight overflow fix (do not restart): page sheet is `container-type: inline-size` / `listing-sheet`. At max-width 759px, facts `dl` and Field plot are `100cqi` so they size to the 354 sheet box, not a 734px 2-col desktop grid. Ask stays stacked on screen. Cookie/sticky untouched (PASS).
+**Next:** Release refreshes one listing preview from this SHA. Walk that host, not `dcvdwu9wo` / `9eiw3io6c`. Proof `/homes-for-sale/redmond/4496-zenith-220226279`.
 **Do not:** invent a skin, merge, deploy production, touch cookie/sticky.
 
 > **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Matt asked 2026-08-21 to re-arm the loop on current main.
