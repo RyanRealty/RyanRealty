@@ -723,12 +723,13 @@ export default function SearchMapClustered({
         for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
         if (!bb.isEmpty()) {
           map.fitBounds(bb, padding)
-          const z = map.getZoom()
-          if (typeof z === 'number') {
-            if (z > 15) map.setZoom(15)
-            else if (z < 9) map.setZoom(9)
-          }
-          // idle listener above will fire reportBounds after tiles settle
+          google.maps.event.addListenerOnce(map, 'idle', () => {
+            const z = map.getZoom()
+            if (typeof z === 'number') {
+              if (z > 15) map.setZoom(15)
+              else if (z < 9) map.setZoom(9)
+            }
+          })
           return
         }
       }

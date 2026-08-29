@@ -141,7 +141,8 @@
 
   /* Photo-only Fields used to keep the two-column track and leave the second
      column empty cream. One track, full measure. */
-  .v3-field__frame--photos {
+  .v3-field__frame--photos,
+  .v3-field__frame--doors-only {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -469,6 +470,32 @@
 
 .v3-field__item {
   margin: 0;
+}
+
+/* Search Field: the list is the same photo door the mosaic already uses. */
+.v3-field__list--doors {
+  display: grid;
+  gap: var(--v3-space-md);
+  border: none;
+  background: transparent;
+  overflow: visible;
+}
+
+.v3-field__list--doors .v3-field__item {
+  position: relative;
+  min-width: 0;
+}
+
+.v3-field__list--doors .v3-field__item:first-child .v3-field__row,
+.v3-field__list--doors .v3-field__item:last-child .v3-field__row {
+  border-radius: 0;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-field__list--doors {
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+  }
 }
 
 .v3-field__row {

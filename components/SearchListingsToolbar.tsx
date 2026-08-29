@@ -8,15 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import '@/components/search/search-ledger.css'
 
-const COLUMN_OPTIONS = [1, 2, 3, 4] as const
-const PER_PAGE_OPTIONS = [6, 12, 24, 48] as const
+const PER_PAGE_OPTIONS = [12, 24, 48] as const
 
 type Props = {
   pathname: string
   totalCount: number
   page: number
   pageSize: number
-  viewParam: '1' | '2' | '3' | '4' | '5'
   perPageParam: string
   searchParams: Record<string, string | undefined>
 }
@@ -36,7 +34,6 @@ export default function SearchListingsToolbar({
   totalCount,
   page,
   pageSize,
-  viewParam,
   perPageParam,
   searchParams,
 }: Props) {
@@ -72,21 +69,6 @@ export default function SearchListingsToolbar({
                 title={`${n} per page`}
               >
                 {n}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="srch-label">Columns</span>
-          <div className="flex rounded-none border border-border p-0.5">
-            {COLUMN_OPTIONS.map((col) => (
-              <Link
-                key={col}
-                href={path + buildQuery(searchParams, { view: String(col), page: '1' })}
-                className={`rounded-none px-3 py-1.5 text-sm font-medium transition ${viewParam === String(col) ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-                title={`${col} column${col === 1 ? '' : 's'}`}
-              >
-                {col}
               </Link>
             ))}
           </div>

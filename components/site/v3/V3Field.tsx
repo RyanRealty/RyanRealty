@@ -152,6 +152,14 @@ export type V3FieldProps = {
   /** One line under the list, for whatever the set does not show. */
   footNote?: string
   /**
+   * Search inventory: the list is photo doors (the same `v3-field__photo`
+   * tile the no-map mosaic already uses), not tiny thumbs. Map + doors stay
+   * one frame. Homepage / city Fields omit this and keep the row list.
+   */
+  listAsDoors?: boolean
+  /** Optional overlay on a door or row (search hide control). */
+  itemChrome?: (item: V3FieldItem) => ReactNode
+  /**
    * Keep the list in document flow at every width. The barrel default at 900
    * makes the list its own 560px scroller beside a sticky map. A preview Field
    * (homepage) caps the set, stays in flow, and points See all at the rest.
@@ -305,6 +313,8 @@ export function V3Field({
   mapNote,
   lead,
   footNote,
+  listAsDoors = false,
+  itemChrome,
   listFlow = false,
   action,
   emptyMessage = 'No listings in this view.',
@@ -338,9 +348,11 @@ export function V3Field({
       : true
 
   const photoItems = useMemo(() => items.filter(hasListingPhoto), [items])
+  const useDoors = listAsDoors === true
   const usePhotoSurface =
-    hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
+    useDoors === false && hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
   const mosaic = usePhotoSurface ? photoItems.slice(0, PHOTO_SURFACE_MAX) : []
+  const showMapCol = useDoors === false || hasSlot === true
 
   const { pins, missing } = useMemo(
     () =>
@@ -367,6 +379,7 @@ export function V3Field({
           V3_ROOT_CLASS,
           'v3-field',
           usePhotoSurface && 'v3-field--photos',
+          useDoors && 'v3-field--doors',
           listFlow && 'v3-field--flow',
           className,
         )}
@@ -384,9 +397,11 @@ export function V3Field({
           className={cn(
             'v3-field__frame',
             usePhotoSurface && 'v3-field__frame--photos',
+            useDoors && hasSlot === false && 'v3-field__frame--doors-only',
           )}
           onMouseLeave={() => setActive(null)}
         >
+          {showMapCol ? (
           <div className="v3-field__col">
             <div
               className={cn(
@@ -473,46 +488,86 @@ export function V3Field({
               </p>
             ) : null}
           </div>
+          ) : null}
 
           {usePhotoSurface ? (
             footNote ? <p className="v3-field__note">{footNote}</p> : null
           ) : (
             <div className="v3-field__col">
-              <ul className="v3-field__list" role="list">
-                {items.map((item) => (
-                  <li key={item.id} className="v3-field__item">
+              <ul
+                className={cn('v3-field__list', useDoors && 'v3-field__list--doors')}
+                role="list"
+              >
+                {items.map((item) => {
+                  const door = useDoors && hasListingPhoto(item)
+                  return (
+                  <li
+                    key={item.id}
+                    className={cn('v3-field__item', itemChrome ? 'group/hide' : null)}
+                    data-listing-key={item.id}
+                  >
+                    {itemChrome?.(item)}
                     <Link
                       href={item.href}
                       className={cn(
-                        'v3-field__row',
-                        hasListingPhoto(item) && 'v3-field__row--has-photo',
-                        item.cat != null && `v3-field__row--cat-${item.cat}`,
+                        door ? 'v3-field__photo' : 'v3-field__row',
+                        door === false && hasListingPhoto(item) && 'v3-field__row--has-photo',
+                        door === false && item.cat != null && `v3-field__row--cat-${item.cat}`,
                         active === item.id && 'is-active',
                       )}
+                      aria-label={
+                        door
+                          ? item.meta
+                            ? `${item.priceLabel}, ${item.meta}, ${item.title}`
+                            : `${item.priceLabel}, ${item.title}`
+                          : undefined
+                      }
                       onMouseEnter={() => setActive(item.id)}
                       onFocus={() => setActive(item.id)}
                       onBlur={() => setActive(null)}
                     >
-                      {hasListingPhoto(item) ? (
-                        <img
-                          className="v3-field__thumb"
-                          src={item.photoSrc}
-                          alt=""
-                          width={120}
-                          height={120}
-                          loading="lazy"
-                        />
-                      ) : null}
-                      <span className="v3-field__copy">
-                        <span className="v3-field__price">{item.priceLabel}</span>
-                        <span className="v3-field__title">{item.title}</span>
-                        {item.meta ? (
-                          <span className="v3-field__meta">{item.meta}</span>
-                        ) : null}
-                      </span>
+                      {door ? (
+                        <>
+                          <img
+                            src={item.photoSrc}
+                            alt=""
+                            width={640}
+                            height={400}
+                            loading="lazy"
+                          />
+                          <span className="v3-field__photo-cap">
+                            <span className="v3-field__photo-price">{item.priceLabel}</span>
+                            {item.meta ? (
+                              <span className="v3-field__photo-meta">{item.meta}</span>
+                            ) : null}
+                            <span className="v3-field__photo-title">{item.title}</span>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {hasListingPhoto(item) ? (
+                            <img
+                              className="v3-field__thumb"
+                              src={item.photoSrc}
+                              alt=""
+                              width={120}
+                              height={120}
+                              loading="lazy"
+                            />
+                          ) : null}
+                          <span className="v3-field__copy">
+                            <span className="v3-field__price">{item.priceLabel}</span>
+                            <span className="v3-field__title">{item.title}</span>
+                            {item.meta ? (
+                              <span className="v3-field__meta">{item.meta}</span>
+                            ) : null}
+                          </span>
+                        </>
+                      )}
                     </Link>
                   </li>
-                ))}
+                  )
+                })}
                 {items.length === 0 ? (
                   <li className="v3-field__empty">{emptyMessage}</li>
                 ) : null}

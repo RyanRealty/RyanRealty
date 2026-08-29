@@ -37,21 +37,16 @@ checks.push({
     !/^\s+For Sale$/m.test(bar),
 })
 
-const results = src('app/search/[...slug]/sections/ListingsResults.tsx')
+/**
+ * Search inventory now prints status on the Field door via one mapper.
+ * Follow that builder; the wrappers no longer assemble card chrome.
+ */
+const searchField = src('app/search/_v3/search-field-items.ts')
 checks.push({
-  label: 'SEO list cards use publishListingStatusBadge',
+  label: 'search Field doors use publishListingStatusBadge',
   ok:
-    /from ['"]@\/lib\/search\/publish-search-status['"]/.test(results) &&
-    /publishListingStatusBadge\(listing\.StandardStatus\)/.test(results),
-})
-
-const map = src('components/search/MapSearchView.tsx')
-checks.push({
-  label: 'map cards use publishListingStatusBadge',
-  ok:
-    /from ['"]@\/lib\/search\/publish-search-status['"]/.test(map) &&
-    /publishListingStatusBadge\(l\.StandardStatus\)/.test(map) &&
-    !map.includes('No ListingBadge kind for pending'),
+    /from ['"]@\/lib\/search\/publish-search-status['"]/.test(searchField) &&
+    /publishListingStatusBadge\(row\.StandardStatus\)/.test(searchField),
 })
 
 const card = src('components/site/ListingCard.tsx')
