@@ -1,6 +1,6 @@
 # Current — 2026-08-29 (Grok Build) — bulk email signature + from-line
 
-**Surface:** `/admin/crm` Batch Email and `/admin/email/compose`. Goal: `docs/plans/BULK_EMAIL_SIGNATURE_AND_FROM.md`.
+**Surface:** `/admin/crm` Batch Email and `/admin/email/compose`. Goal: `docs/plans/ADMIN_REBUILD/BULK_EMAIL_SIGNATURE_AND_FROM.md`.
 
 Signature defaults on (Gmail-matched via `getSignatureForMailbox`). Preview, test send, and the cohort worker share `composeOutboundHtml`. Default From is the named identity on `mail.ryan-realty.com` with Reply-To the real mailbox. Sending from Gmail (`matt@ryan-realty.com`) is an explicit option with a daily-cap warning. Live test copy: From `"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>`, Reply-To `matt@ryan-realty.com`, signature in the body.
 
