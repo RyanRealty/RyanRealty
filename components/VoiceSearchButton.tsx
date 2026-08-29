@@ -90,7 +90,13 @@ export default function VoiceSearchButton({ onTranscript, className }: Props) {
         variant="outline"
         size="icon"
         onClick={listening ? stopListening : startListening}
-        className={cn('size-9 shrink-0', className)}
+        className={cn('shrink-0', className)}
+        style={{
+          minHeight: 'var(--v3-tap)',
+          minWidth: 'var(--v3-tap)',
+          height: 'var(--v3-tap)',
+          width: 'var(--v3-tap)',
+        }}
         aria-label={listening ? 'Stop listening' : 'Search by voice'}
         aria-pressed={listening}
       >

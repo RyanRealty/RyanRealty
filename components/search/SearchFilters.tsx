@@ -208,9 +208,8 @@ function FilterDropdown({
           size="sm"
           aria-haspopup="dialog"
           className={cn(
-            // Dense 32px Ledger control on fine pointers; the W-UI audit's
-            // 44px tap floor holds on touch (ci:publish-search-count).
-            'srch-chip h-11 min-h-11 min-w-11 shrink-0 gap-1 whitespace-nowrap px-3',
+            // Height comes from .srch-chip --v3-tap (shared chrome tap, PR 162).
+            'srch-chip shrink-0 gap-1 whitespace-nowrap px-3',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -461,7 +460,7 @@ export default function SearchFilters({ initialFilters, signedIn = false, pathCo
         {/* Location + Save share one 390 row so the first house address
             reaches the fold. Voice is sm+ only. */}
         <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <div className="srch-panel flex min-h-11 min-w-0 items-center gap-2 px-3.5 py-1.5 transition focus-within:ring-2 focus-within:ring-primary/30">
+          <div className="srch-panel flex min-w-0 items-center gap-2 px-3.5 py-1.5 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
@@ -495,7 +494,8 @@ export default function SearchFilters({ initialFilters, signedIn = false, pathCo
                 if (picked) handleSuggestPick(picked)
                 else applyNaturalQuery(locationQuery)
               }}
-              className="h-auto min-h-11 flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="h-auto flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              style={{ minHeight: 'var(--v3-tap)' }}
               aria-label="Search by address, city, community, zip, or broker"
               role="combobox"
               aria-expanded={locationOpen && suggestItems.length > 0}
@@ -764,7 +764,7 @@ export default function SearchFilters({ initialFilters, signedIn = false, pathCo
             setMoreSheetMounted(true)
             setMoreSheetOpen(true)
           }}
-          className="srch-chip h-11 min-h-11 shrink-0 gap-1 px-3"
+          className="srch-chip shrink-0 gap-1 px-3"
           aria-label="Open all filters"
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />

@@ -24,12 +24,14 @@
   color: var(--v3-ink-muted, color-mix(in srgb, var(--v3-navy) 70%, transparent));
 }
 
-/* Sunken in-flow panel: 3% navy wash inside a 12% edge. Still no shadow. */
+/* Sunken in-flow panel: 3% navy wash inside a 12% edge. Still no shadow.
+   Height floor is the shared --v3-tap (PR 162 chrome), not a search skin. */
 .srch-panel {
   background: var(--v3-panel-bg, color-mix(in srgb, var(--v3-navy) 3%, transparent));
   border: var(--v3-panel-border, 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent));
   border-radius: 0;
   box-shadow: none;
+  min-height: var(--v3-tap, 44px);
 }
 
 /* Floating panel (dropdown/popover/suggest list — often portaled). Opaque so
@@ -55,6 +57,9 @@
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   box-shadow: none;
+  min-height: var(--v3-tap, 44px);
+  min-width: var(--v3-tap, 44px);
+  height: var(--v3-tap, 44px);
 }
 
 /* Square any remaining control corner (inputs, selects, toggles) without

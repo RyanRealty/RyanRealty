@@ -586,6 +586,26 @@ describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHI
   })
 })
 
+describe('search Field taps use shared --v3-tap (PR 162 chrome)', () => {
+  it('sizes chips and the search panel to --v3-tap, not a 32px button height', () => {
+    const css = readSrc('components/search/search-ledger.css')
+    expect(css).toContain('.srch-chip')
+    expect(css).toContain('.srch-panel')
+    expect(css).toContain('min-height: var(--v3-tap')
+    expect(css).not.toContain('min-height: 2rem')
+  })
+
+  it('keeps the stacked footer tap floor from the parent chrome commit', () => {
+    const footer = readSrc('components/site/v3/V3Footer.css')
+    expect(footer).toContain('.v3-footer__column-list a')
+    expect(footer).toContain('min-height: var(--v3-tap)')
+    expect(footer).not.toContain('min-height: 2rem')
+    const cookie = readSrc('components/CookieConsentBanner.tsx')
+    expect(cookie).toContain('COOKIE_ACTION_STYLE')
+    expect(cookie).toContain("minHeight: 'var(--v3-tap)'")
+  })
+})
+
 describe('map craft: selection + zoom storytelling + basemap', () => {
   it('selects list card when a map pin opens (stronger than hover)', () => {
     const view = readSrc('components/search/MapSearchView.tsx')

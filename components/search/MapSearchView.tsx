@@ -573,7 +573,7 @@ export default function MapSearchView({
               {loading ? ' Updating results…' : ''}
             </p>
             ) : null}
-            <Label className="inline-flex min-h-11 items-center gap-2">
+            <Label className="inline-flex items-center gap-2" style={{ minHeight: 'var(--v3-tap)' }}>
               <Checkbox
                 checked={searchAsMove}
                 onCheckedChange={() => toggleSearchAsMove()}
@@ -586,13 +586,13 @@ export default function MapSearchView({
                 variant="outline"
                 onClick={clearGeoScope}
                 aria-label={`Showing ${scopeLabel} only. Clear to search the whole map area.`}
-                className="min-h-11"
+                style={{ minHeight: 'var(--v3-tap)', height: 'var(--v3-tap)' }}
               >
                 Showing <span className="font-semibold">{scopeLabel}</span> only
               </Button>
             ) : null}
             <Select value={sortValue} onValueChange={handleSortChange}>
-              <SelectTrigger className="min-h-11 w-[10.5rem]" aria-label="Sort results">
+              <SelectTrigger className="w-[10.5rem]" style={{ minHeight: 'var(--v3-tap)' }} aria-label="Sort results">
                 <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -606,7 +606,8 @@ export default function MapSearchView({
             {selectedRow ? (
               <div
                 data-listing-key={searchFieldItemId(selectedRow)}
-                className="group group/hide relative min-h-11"
+                className="group group/hide relative"
+                style={{ minHeight: 'var(--v3-tap)' }}
               >
                 <ListingCardHideControl
                   listingKey={searchFieldItemId(selectedRow)}
@@ -617,7 +618,7 @@ export default function MapSearchView({
             ) : null}
             <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
             {resultsDegraded ? (
-              <Button type="button" className="min-h-11" onClick={retryViewportSearch} disabled={loading}>
+              <Button type="button" style={{ minHeight: 'var(--v3-tap)', height: 'var(--v3-tap)' }} onClick={retryViewportSearch} disabled={loading}>
                 Try again
               </Button>
             ) : null}
@@ -625,7 +626,7 @@ export default function MapSearchView({
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
+                style={{ minHeight: 'var(--v3-tap)', height: 'var(--v3-tap)' }}
                 onClick={() => setVisibleCount((c) => c + CARD_PAGE)}
               >
                 Show more homes

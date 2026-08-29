@@ -210,7 +210,8 @@ export default function SaveSearchButton({ user, pathContext, guestCapture = 'in
     return (
       <Button
         type="button"
-        className="min-h-11 shrink-0"
+        className="shrink-0"
+        style={{ minHeight: 'var(--v3-tap)', height: 'var(--v3-tap)' }}
         onClick={() => {
           document.getElementById('search-alert-capture')?.scrollIntoView({
             behavior: 'smooth',
