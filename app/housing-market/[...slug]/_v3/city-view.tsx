@@ -119,10 +119,10 @@ export function CityMarketView({
   const traceParts = [
     live.figures.length > 0 ? live.trace.replace(/\.$/, '') : null,
     segmentFigures.length > 0
-      ? 'condo and townhome counts are Market Truth mt-v1, sample-gated, not the detached HUD'
+      ? 'condo and townhome counts are from the same regional MLS read, not the detached house figures'
       : null,
     paceFigures.length > 0
-      ? 'leftover pace stats are Market Truth mt-v1, labeled by window, not the live 30-day pulse'
+      ? 'pace stats are labeled by window, not the live 30-day pulse'
       : null,
     mixFigures.length > 0
       ? 'feature shares other than garage are Market Truth floors labeled at least'

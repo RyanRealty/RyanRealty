@@ -127,7 +127,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     })
   }
 
-  const clauses = [`leftover membership, active single-family houses in ${geoName}`]
+  const clauses = [`active single-family houses in ${geoName}`]
   const trace =
     `${clauses.join('. ')}.` + (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
 
@@ -487,7 +487,7 @@ export function buildCityMedianChart(
     return {
       caption: v3Text(
         leftoverUsed
-          ? 'Median close by month, Market Truth leftover, recent years'
+          ? 'Median close by month, recent years'
           : 'Median sale price by month, recent years',
       ),
       series: overlay,
@@ -495,6 +495,6 @@ export function buildCityMedianChart(
   }
   return buildMonthlyMedianChart(
     monthly,
-    leftoverUsed ? 'Median close, Market Truth leftover, completed months' : 'Median sale price, completed months',
+    leftoverUsed ? 'Median close, completed months' : 'Median sale price, completed months',
   )
 }

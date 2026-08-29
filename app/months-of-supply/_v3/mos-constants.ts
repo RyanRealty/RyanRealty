@@ -83,7 +83,7 @@ export const MOS_FAQ_REST: readonly MosFaq[] = [
   {
     question: 'Where does the number on this page come from?',
     answer:
-      'The figures above are leftover membership of single-family houses, the same pile as the leftover HUD. If leftover cannot publish a figure, this page omits it. We do not fill it from the live MLS snapshot.',
+      'The figures above are single-family houses, the same read as the city and region market pages. If a figure cannot publish, this page omits it. We do not fill it from a different snapshot.',
   },
 ]
 

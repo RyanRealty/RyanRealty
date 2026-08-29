@@ -104,7 +104,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE, publicSupplyVerdictLine } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import {
@@ -449,7 +449,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
   const marketHeadline = hasVerdict
-    ? `Is ${publicName} a buyer's or seller's market?`
+    ? publicSupplyVerdictLine(publicName, verdict.label)
     : `The ${publicName} market`
   const verdictSentence = hasVerdict
     ? `${publicName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
@@ -542,7 +542,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const chartScope = chartIsCityLevel ? `${cityName} at city scope, not ${publicName}` : publicName
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${chartScope}`,
+    `Median close by month, single-family, ${chartScope}`,
   )
 
   // Core-chart module scope mirrors the SAME sparse-community decision, and
@@ -762,9 +762,9 @@ export default async function CommunityDetailPage({ params }: Props) {
             note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
             source={v3Text(
-              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+              `regional MLS through Oregon Data Share: ` +
                 `detached single-family houses assigned to ${publicName} by boundary membership. ` +
-                `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+                `Every figure names its own window. A withheld figure is absent, not estimated.` +
                 (mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''),
             )}
             chart={medianChart}
@@ -784,7 +784,7 @@ export default async function CommunityDetailPage({ params }: Props) {
               {
                 kind: 'prose',
                 term: 'No live market figures right now',
-                body: `The Market Truth metric layer published no figure for ${publicName} on this refresh, so this page is not printing a median, a supply figure, or a verdict.${fieldItems.length > 0 ? ' The homes above carry their own live list prices.' : ''}`,
+                body: `No market figure published for ${publicName} on this refresh, so this page is not printing a median, a supply figure, or a verdict.${fieldItems.length > 0 ? ' The homes above carry their own live list prices.' : ''}`,
               },
             ]}
           />

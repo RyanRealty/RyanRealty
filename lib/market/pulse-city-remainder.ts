@@ -59,7 +59,7 @@ export function namePulseCityRemainder(input: {
   const facts: string[] = []
   if (omitted.length > 0) {
     facts.push(
-      `Also in the leftover regional count and not in the table: ${omitted
+      `Also in the regional count and not in the table: ${omitted
         .map((city) => `${city.label} ${formatCount(city.active)}`)
         .join(', ')}`,
     )
@@ -69,7 +69,7 @@ export function namePulseCityRemainder(input: {
   const remainder =
     region != null && region > 0 && input.allCities.length > 0 ? region - allCitySum : null
   if (remainder != null && remainder > 0) {
-    facts.push(`${formatCount(remainder)} more leftover houses sit outside these town rows`)
+    facts.push(`${formatCount(remainder)} more houses sit outside these town rows`)
     facts.push('Each house is counted once in its mapped city, not by city-limits pin')
   }
 
@@ -88,7 +88,7 @@ export function formatPulseCityRemainderPublic(named: PulseCityRemainder): strin
   }
   if (named.remainder != null && named.remainder > 0) {
     lines.push(
-      `${formatCount(named.remainder)} more leftover houses sit outside these town rows. Each house is counted once in its mapped city.`,
+      `${formatCount(named.remainder)} more houses sit outside these town rows. Each house is counted once in its mapped city.`,
     )
   }
   return lines

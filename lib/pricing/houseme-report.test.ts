@@ -189,7 +189,7 @@ describe('buildHouseMeRows', () => {
     expect(text).not.toMatch(BANNED)
     expect(text).toContain(PUBLIC_READ_TITLE)
     expect(housemeSourceLine(buildHouseMeRows(facts))).toBe(
-      'Stamp from listing_pricing_reads. Listing fields from Spark. Place median from the live pulse.',
+      'Pricing stamp for this listing. Listing fields from the MLS. Place median from the live market.',
     )
   })
 })

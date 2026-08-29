@@ -125,19 +125,9 @@ describe('ZIP page is on the v3 barrel', () => {
     expect(PAGE).toMatch(/Math\.round\(medianDom \* 10\) \/ 10/)
   })
 
-  it('leads the market section with the question heading (Matt, 2026-08-26)', () => {
-    // The KB HUD templated `Is ${geoName} a buyer's or seller's market?` on
-    // this page (geoName `ZIP ${zip}`), and Matt ruled the question stays on
-    // all five place grains. In v3 idiom it is the market Instrument's
-    // headline; the verdict sentence beneath it is the answer. Family-wide
-    // consistency is gated by ci:market-question; this pin holds the route's
-    // exact template and its §0 fallback.
-    expect(PAGE).toContain("`Is ZIP ${zip} a buyer's or seller's market?`")
-    // A question with no answer under it is worse than a label (§0): no
-    // publishable verdict falls back to the homes-for-sale headline.
-    expect(PAGE).toMatch(
-      /const marketHeadline =\s*\n\s*verdict && mosText != null\s*\n\s*\? `Is ZIP \$\{zip\} a buyer's or seller's market\?`\s*\n\s*: `Homes for sale in \$\{zip\}`/,
-    )
+  it('leads the market section with a one-line supply verdict', () => {
+    expect(PAGE).toContain('publicSupplyVerdictLine(`ZIP ${zip}`')
+    expect(PAGE).not.toMatch(/Is ZIP \$\{zip\} a buyer's or seller's market\?/)
     expect(PAGE).toMatch(/headline=\{v3Text\(marketHeadline\)\}/)
   })
 

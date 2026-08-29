@@ -25,7 +25,7 @@ checks.push({
     /export function namePulseCityRemainder/.test(helper) &&
     /omitted leftover cities/i.test(helper) &&
     helper.includes('mapped city') &&
-    helper.includes('Also in the leftover regional count and not in the table'),
+    helper.includes('Also in the regional count and not in the table'),
 })
 
 const surfaces = [

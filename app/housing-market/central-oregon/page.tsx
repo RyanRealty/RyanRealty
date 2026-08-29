@@ -298,7 +298,7 @@ export default async function CentralOregonRegionPage() {
   const liveTrace =
     region.live.trace +
     (extraLive.length > 0
-      ? ' Extra product-type inventory and 12-month pace are leftover membership, sample-gated.'
+      ? ' Extra product-type inventory and 12-month pace use the same read. A missing figure is omitted.'
       : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
@@ -479,7 +479,7 @@ export default async function CentralOregonRegionPage() {
             // this Ledger replaces printed only the count and the median, so the
             // inherited source line was never written to cover a pace figure.
             source={v3Text(
-              'leftover membership, one row per city. The count and the median list price are leftover active houses. Months of supply is leftover membership',
+              'One row per city. The count and the median list price are active single-family houses. Months of supply uses the same read',
             )}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}

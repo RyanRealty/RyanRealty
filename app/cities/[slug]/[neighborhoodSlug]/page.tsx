@@ -89,7 +89,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict } from '@/lib/market/classify'
+import { marketVerdict, publicSupplyVerdictLine } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
@@ -426,7 +426,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     : neighborhood.name
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${chartScope}`,
+    `Median close by month, single-family, ${chartScope}`,
   )
 
   // The approved chart-room forms (Unit NEIGHBORHOOD 2026-08-19), as Instrument
@@ -726,7 +726,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow="Common questions"
           heading={
             hasVerdict
-              ? `Is ${neighborhood.name} a buyer's or seller's market?`
+              ? publicSupplyVerdictLine(neighborhood.name, verdict.label)
               : `Questions about ${neighborhood.name}`
           }
           items={faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer }))}

@@ -309,7 +309,7 @@ export default async function CommunitiesPage() {
             eyebrow={v3Text('Live market')}
             headline={v3Text('Communities across Central Oregon.')}
             note={v3Text(
-              'Resorts, master-planned communities, and the plats between them. Bend, Redmond, Sisters, Sunriver, and the high desert towns in between. Live single-family inventory from the regional MLS.',
+              'Resorts and master-planned communities across Bend, Redmond, Sisters, Sunriver, and the high desert towns. Live single-family inventory from the regional MLS.',
             )}
             figures={[leadFigure, ...restFigures]}
             source={v3Text(PULSE_TRACE)}
@@ -367,7 +367,7 @@ export default async function CommunitiesPage() {
           items={[
             { label: 'Search all listings', href: '/search' },
             { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' },
-            { label: 'Recorded plats', href: '/subdivisions' },
+            { label: 'Subdivisions', href: '/subdivisions' },
             { label: 'Value my home', href: '/sell/valuation' },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
           ]}

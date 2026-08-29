@@ -29,7 +29,7 @@ describe('buildMarketFaq', () => {
     expect(price?.answer).toContain('$894,750')
     expect(price?.answer).not.toContain('$895,000')
     expect(price?.answer).toContain('as of May 2026')
-    const mos = r.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const mos = r.faqs.find((f) => f.question.includes("is a seller's market"))
     expect(mos?.answer).toContain('3.3 months of supply') // 3.25 -> 1 decimal
     expect(mos?.answer).toContain("seller's market") // <= 4 months
   })
@@ -48,7 +48,7 @@ describe('buildMarketFaq', () => {
       monthsOfSupply: 4.02,
       refreshedAt: null,
     })
-    const over = justOverFour.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const over = justOverFour.faqs.find((f) => f.question.includes('is a balanced market'))
     expect(over?.answer).toContain('4.1 months of supply') // 4.02 never prints as 4.0
     expect(over?.answer).not.toContain('4 months of supply, which')
     // Assert the VERDICT clause, not a bare substring: the shared threshold
@@ -68,7 +68,7 @@ describe('buildMarketFaq', () => {
       monthsOfSupply: 5.97,
       refreshedAt: null,
     })
-    const under = justUnderSix.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const under = justUnderSix.faqs.find((f) => f.question.includes('is a balanced market'))
     expect(under?.answer).toContain('5.9 months of supply') // 5.97 never prints as 6.0
     expect(under?.answer).not.toContain('6 months of supply, which')
     expect(under?.answer).toContain('which is a balanced market') // classified raw: 5.97 < 6
@@ -126,7 +126,7 @@ describe('buildMarketFaq', () => {
       soldCount12mo: 36,
       refreshedAt: null,
     })
-    expect(r.faqs.find((f) => f.question.includes("buyer's or seller's"))).toBeUndefined()
+    expect(r.faqs.find((f) => /is a (buyer's|seller's|balanced) market/.test(f.question))).toBeUndefined()
     expect(r.datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
     expect(r.faqs.find((f) => f.question.includes('sold in Tetherow'))?.answer).toContain('36 single-family')
   })
@@ -153,7 +153,7 @@ describe('buildMarketFaq', () => {
     })
     expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toContain('980')
     expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).not.toContain('475')
-    expect(r.faqs.find((f) => f.question.includes("buyer's or seller's"))).toBeUndefined()
+    expect(r.faqs.find((f) => /is a (buyer's|seller's|balanced) market/.test(f.question))).toBeUndefined()
     expect(r.datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
   })
 
@@ -251,7 +251,7 @@ describe('buildMarketFaq at an untrusted grain', () => {
       pulseActiveCount: 56,
       monthsOfSupply: 7.47,
     })
-    const mos = faqs.find((f) => f.question.includes("buyer's or seller's"))
+    const mos = faqs.find((f) => f.question.includes("is a buyer's market"))
     expect(mos?.answer).toContain('7.5 months of supply')
     expect(mos?.answer).toContain("which is a buyer's market")
     expect(datasetVariables.find((v) => v.name === 'Months of Supply')?.value).toBe(7.5)

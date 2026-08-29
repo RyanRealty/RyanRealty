@@ -184,7 +184,10 @@ export function buildMarketNarrative(s: NarrativeStats): MarketNarrative {
       a: `The median single-family sale price ${s.periodLabel} was ${median}, ${yoyArrow(s.yoyMedianPriceDeltaPct)}.`,
     },
     {
-      q: `Is ${s.geoLabel} a buyer's or a seller's market?`,
+      q:
+        verdict != null
+          ? `${s.geoLabel} is a ${verdict === 'seller' ? "seller's" : verdict === 'buyer' ? "buyer's" : 'balanced'} market`
+          : `What is the ${s.geoLabel} market like?`,
       a:
         verdict != null
           ? `At ${mosStr} of supply, ${s.geoLabel} is a ${verdict === 'seller' ? "seller's" : verdict === 'buyer' ? "buyer's" : 'balanced'} market. Four months or less favors sellers, four to six is balanced, six or more favors buyers.`

@@ -40,10 +40,10 @@ export function publishPublicChartSource(input: {
 }): string {
   const place = publicChartPlaceLabel(input.geoType, input.geoSlug)
   if (input.leftover && input.metric === 'closedVolume') {
-    return `Market Truth leftover, ${place}, monthly closed sales`
+    return `Oregon Data Share, ${place}, monthly closed sales`
   }
   if (input.leftover) {
-    return `Market Truth leftover, ${place}, monthly median close`
+    return `Oregon Data Share, ${place}, monthly median close`
   }
   if (input.metric === 'priceCutShare') {
     return `Oregon Data Share, ${place}, weekly price-cut share`

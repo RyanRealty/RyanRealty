@@ -88,8 +88,8 @@ export function fieldTrace(scope: PlatScope): string {
  */
 export function platCountsTrace(displayName: string): string {
   return (
-    `regional MLS through the Market Truth metric layer, detached homes on the recorded ` +
-    `${displayName} plat. Each figure names its own window; a figure the layer withheld is ` +
+    `regional MLS through Oregon Data Share, detached homes on the recorded ` +
+    `${displayName} plat. Each figure names its own window. A withheld figure is ` +
     `absent, not estimated.`
   )
 }

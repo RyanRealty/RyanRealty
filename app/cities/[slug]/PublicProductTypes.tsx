@@ -23,7 +23,7 @@ export function PublicProductTypes({
     <div className="mkt-panel" aria-label={`${cityName} other product types`}>
       <div className="mkt-phead">
         <span className="mono-lab">
-          ▸ Other product types · Market Truth
+          ▸ Other property types
           <MetricHowLink anchor={PANEL_HOW.products} label="Other product types" />
         </span>
       </div>

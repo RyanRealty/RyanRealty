@@ -305,7 +305,7 @@ export default async function MonthsOfSupplyPage() {
 
   // The region trace: the query, then the two canonical clauses, printed verbatim.
   const regionTrace =
-    'Months of supply is leftover membership, the same pile as the leftover HUD. Extra product-type months of supply and 12-month pace are leftover, sample-gated. A miss omits. ' +
+    'Months of supply is single-family houses, the same figures as the city and region market pages. Extra product-type months of supply and 12-month pace use the same read. A missing figure is omitted. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
@@ -387,7 +387,7 @@ export default async function MonthsOfSupplyPage() {
   // listings - so the same two imported clauses the region trace carries are appended
   // here. Same string in both branches, because it is the same query either way.
   const cityTrace =
-    'Leftover membership, active single-family houses, one leftover count per city. A miss omits. ' +
+    'Active single-family houses, one count per city. A missing figure is omitted. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE

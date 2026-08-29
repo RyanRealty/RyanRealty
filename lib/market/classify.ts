@@ -46,3 +46,8 @@ export const MOS_METHODOLOGY_CLAUSE =
  */
 export const MOS_THRESHOLD_CLAUSE =
   "4 months of supply or less is a seller's market, above 4 and under 6 is balanced, 6 or more is a buyer's market."
+
+/** One-line supply verdict for public H2 / FAQ. Never the banned question form. */
+export function publicSupplyVerdictLine(placeName: string, verdictLabel: string): string {
+  return `${placeName} is a ${verdictLabel}`
+}

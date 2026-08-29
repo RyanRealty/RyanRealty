@@ -124,7 +124,7 @@ export function buildRegionInstruments(
   }
 
   const liveClauses = [
-    'leftover membership, active single-family houses across the Central Oregon region',
+    'active single-family houses across the Central Oregon region',
   ]
   // The two canonical clauses append whole, never edited, and only when the figure they
   // govern is on the screen. lib/market/classify.ts owns that wording and
@@ -154,11 +154,11 @@ export function buildRegionInstruments(
   }
 
   const paceClauses = [
-    'leftover membership, closed single-family houses across the Central Oregon region',
+    'closed single-family houses across the Central Oregon region',
   ]
   if (daysToPending != null) {
     paceClauses.push(
-      'Median to pending is leftover 90-day list-to-pending',
+      'Median to pending is 90-day list-to-pending',
     )
   }
   if (closedLast30Days != null) {

@@ -103,7 +103,7 @@ import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeo
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE, publicSupplyVerdictLine } from '@/lib/market/classify'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
@@ -438,15 +438,15 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     : `ZIP ${zip}`
   const scopedChart = zipMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${chartScope}`,
+    `Median close by month, single-family, ${chartScope}`,
   )
 
   const marketTrace =
     (mtHit
-      ? `regional MLS through Oregon Data Share, read through the Market Truth metric layer: detached single-family houses inside ZIP ${zip} (${area}). `
+      ? `regional MLS through Oregon Data Share: detached single-family houses inside ZIP ${zip} (${area}). `
       : `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}). `) +
     'Medians over list price exclude fractional-interest listings, whose price buys a share rather than the home. ' +
-    'Every figure names its own window; a figure the layer withheld is absent, not estimated.' +
+    'Every figure names its own window. A withheld figure is absent, not estimated.' +
     (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
 
   const verdictSentence =
@@ -467,7 +467,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // homes-for-sale form. Family consistency is gated: ci:market-question.
   const marketHeadline =
     verdict && mosText != null
-      ? `Is ZIP ${zip} a buyer's or seller's market?`
+      ? publicSupplyVerdictLine(`ZIP ${zip}`, verdict.label.toLowerCase())
       : `Homes for sale in ${zip}`
 
   // ── THE FIELD ────────────────────────────────────────────────────────────

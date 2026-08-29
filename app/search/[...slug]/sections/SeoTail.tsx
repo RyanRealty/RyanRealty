@@ -161,11 +161,11 @@ export function SearchSeoTail({
             <V3Instrument
               id="search-leftover"
               level={2}
-              eyebrow={v3Text('Market Truth')}
-              headline={v3Text(`${city} leftover and other types`)}
+              eyebrow={v3Text('Other property types')}
+              headline={v3Text(`${city} condos, townhomes, and more`)}
               figures={[firstLeftover, ...restLeftover]}
               source={v3Text(
-                'Extra product-type inventory and 12-month leftover pace are leftover membership, sample-gated. The band above is the same leftover pile. A miss omits.',
+                'Condo, townhome, and other product-type inventory plus 12-month pace. A missing figure is omitted.',
               )}
               action={{
                 label: v3Text(`Open ${city} market report`),
