@@ -33,9 +33,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { renderCrmMerge } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { composeOutboundHtml } from '@/lib/crm/email-body'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { loadEmailAttachments } from '@/lib/crm/attachments'
 import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
+import {
+  brokerSlugFromActorEmail,
+  freezeBulkEmailSendParams,
+} from '@/lib/crm/bulk-email-identity'
 import {
   getEmailCohortRecipients,
   getCrmTemplateForSend,
@@ -63,10 +68,14 @@ export async function sendBatchTestEmail(input: {
     person: recipient,
     senderSlug: recipient.assigned_broker ?? null,
   })
+  const frozen = freezeBulkEmailSendParams(to, params)
+  const signatureHtml = frozen.includeSignature
+    ? (await getSignatureForMailbox(to))?.html ?? null
+    : null
   const subject = renderCrmMerge(content.subject, recipient, mergeContext)
   const merged = composeOutboundHtml(
     renderCrmMerge(content.body, recipient, mergeContext),
-    null,
+    signatureHtml,
     'auto',
   )
   // attributeOutbound too, or the test is not the send. Without it the links
@@ -104,16 +113,32 @@ export async function sendBatchTestEmail(input: {
   const res = await sendGovernedEmail({
     personId: brokerPersonId,
     purpose: 'crm:batch-email-test',
-    initiator: { kind: 'broker', broker: to, source: 'batch-email-test' },
-    payload: {
-      rail: 'resend',
-      to,
-      subject: `[TEST] ${subject}`,
-      html: body,
-      replyTo: to,
-      attachments,
-      timelineTitle: `[TEST] ${subject}`,
-    },
+    initiator: { kind: 'broker', broker: brokerSlugFromActorEmail(to), source: 'batch-email-test' },
+    payload:
+      frozen.sendVia === 'gmail'
+        ? {
+            rail: 'gmail',
+            to: [to],
+            subject: `[TEST] ${subject}`,
+            bodyText: body,
+            bodyFormat: 'html',
+            withSignature: false,
+            attachments: attachments?.map((a) => ({
+              filename: a.filename,
+              content: a.content,
+              mimeType: 'application/octet-stream',
+            })),
+          }
+        : {
+            rail: 'resend',
+            to,
+            subject: `[TEST] ${subject}`,
+            html: body,
+            from: frozen.fromIdentity,
+            replyTo: frozen.replyTo,
+            attachments,
+            timelineTitle: `[TEST] ${subject}`,
+          },
   })
   if (!res.ok) {
     // The chokepoint names the stage that refused (hard-stop, suppression,

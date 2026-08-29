@@ -49,6 +49,12 @@ import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import { loadEmailAttachments } from '@/lib/crm/attachments'
 import { composeOutboundHtml } from '@/lib/crm/email-body'
 import { buildMergeContext } from '@/lib/crm/merge-context'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
+import {
+  brokerSlugFromActorEmail,
+  freezeBulkEmailSendParams,
+} from '@/lib/crm/bulk-email-identity'
 import {
   getEmailCohortRecipients,
   getCrmTemplateForSend,
@@ -72,10 +78,22 @@ export type EmailCohortParams = {
   subject?: string | null
   /** Inline HTML body (used when no templateId). */
   body?: string | null
-  /** Verified From address; falls back to RESEND_FROM in lib/resend when omitted. */
+  /** Verified From address; falls back to the named broker identity, never noreply. */
   fromIdentity?: string | null
-  /** Where replies go; falls back to the acting broker frozen on the job. */
+  /** Where replies go; falls back to the acting broker's real mailbox. */
   replyTo?: string | null
+  /**
+   * Append the actor's Gmail-matched signature (lib/crm/email-signature).
+   * Default ON — the 1:1 composer already does this; a batch that omitted it
+   * was the defect. Explicit false is the off toggle.
+   */
+  includeSignature?: boolean | null
+  /**
+   * 'gmail' sends from the actor's Workspace mailbox (true From). Default
+   * 'resend' uses the named mail.ryan-realty.com identity with Reply-To the
+   * real mailbox — the volume-safe path for a list of thousands.
+   */
+  sendVia?: 'resend' | 'gmail' | null
   /**
    * Files to attach to every recipient's copy, as crm-files storage refs the
    * enqueue action already validated. The bytes are loaded ONCE per chunk and
@@ -193,8 +211,15 @@ export async function sendOneCohortEmail(
   content: ResolvedCohortContent,
   params: EmailCohortParams,
   ctx: BulkContext,
-  /** Attachment bytes, loaded once for the whole chunk by the handler. */
-  attachments?: Array<{ filename: string; content: Buffer }>,
+  extras?: {
+    /** Attachment bytes, loaded once for the whole chunk by the handler. */
+    attachments?: Array<{ filename: string; content: Buffer }>
+    /**
+     * Pre-resolved signature HTML (one fetch per chunk). Undefined means
+     * "resolve here"; null means "signature off / none on file".
+     */
+    signatureHtml?: string | null
+  },
 ): Promise<SendOneOutcome> {
   const email = recipient.email.trim()
   if (!email) return { kind: 'skipped', bucket: 'no-email' }
@@ -222,9 +247,16 @@ export async function sendOneCohortEmail(
   // invisible to click tracking, while the composer preview showed the wrapped
   // version. 'auto' is the shared default: a crm_templates HTML body passes
   // through untouched, a typed message gets the wrapper.
+  const frozen = freezeBulkEmailSendParams(ctx.actorEmail, params)
+  let signatureHtml: string | null = extras?.signatureHtml ?? null
+  if (frozen.includeSignature && extras?.signatureHtml === undefined) {
+    signatureHtml = (await getSignatureForMailbox(ctx.actorEmail))?.html ?? null
+  } else if (!frozen.includeSignature) {
+    signatureHtml = null
+  }
   const renderedBody = composeOutboundHtml(
     renderCrmMerge(content.body, recipient, mergeContext),
-    null,
+    signatureHtml,
     'auto',
   )
 
@@ -272,13 +304,52 @@ export async function sendOneCohortEmail(
 
   // 6) SEND.
   //
-  // REPLY-TO. The cohort goes out over Resend from the verified RESEND_FROM
-  // sender (a noreply@ on the sending subdomain) — not from a broker's Gmail.
-  // Without an explicit Reply-To, a contact who hits Reply is writing to a
-  // mailbox nobody reads. The job froze the acting broker's address at enqueue,
-  // and that broker is the one who pressed Send, so replies go to them.
-  const fromIdentity = params.fromIdentity?.trim() || undefined
-  const replyTo = params.replyTo?.trim() || ctx.actorEmail?.trim() || undefined
+  // Default rail is Resend from the named broker identity on the verified
+  // send domain, with Reply-To the real Workspace mailbox. A bare RESEND_FROM
+  // (noreply@) is how replies used to vanish and how Gmail filed the mail as
+  // machine bulk. The Gmail rail is the explicit "send from my mailbox"
+  // option — true From, but Workspace will not send a multi-thousand list in
+  // one day, so it is never the silent default.
+  const fromIdentity = params.fromIdentity?.trim() || frozen.fromIdentity
+  const replyTo = params.replyTo?.trim() || frozen.replyTo
+  const attachments = extras?.attachments
+
+  if (frozen.sendVia === 'gmail') {
+    const gmailRes = await sendGovernedEmail({
+      personId: recipient.id,
+      purpose: 'crm:bulk-email-cohort',
+      initiator: {
+        kind: 'broker',
+        broker: brokerSlugFromActorEmail(ctx.actorEmail),
+        source: 'email-cohort',
+      },
+      payload: {
+        rail: 'gmail',
+        to: [email],
+        subject: prepared.subject,
+        bodyText: prepared.html,
+        bodyFormat: 'html',
+        withSignature: false,
+        attachments: attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          mimeType: 'application/octet-stream',
+        })),
+      },
+    })
+    if (!gmailRes.ok) {
+      await deleteEmailEventByDedupeKey(dedupeKey)
+      console.error('[email-cohort] gmail send failed', {
+        jobId: ctx.jobId,
+        personId: recipient.id,
+        error: gmailRes.error,
+      })
+      return { kind: 'skipped', bucket: 'send-error' }
+    }
+    if (gmailRes.providerId) await stampEmailEventMessageId(dedupeKey, gmailRes.providerId)
+    return { kind: 'processed' }
+  }
+
   const res = await sendEmail({
     to: email,
     subject: prepared.subject,
@@ -355,6 +426,14 @@ export async function emailCohortHandler(
   const recipients = await getEmailCohortRecipients(ids)
   const byId = new Map(recipients.map((r) => [r.id, r]))
 
+  // Signature HTML once per chunk, never per recipient — getBrokers is cached
+  // but 18k identical lookups in a tight loop is still a waste, and the
+  // bytes must be the same for every person in the cohort.
+  const frozen = freezeBulkEmailSendParams(ctx.actorEmail, params)
+  const signatureHtml = frozen.includeSignature
+    ? (await getSignatureForMailbox(ctx.actorEmail))?.html ?? null
+    : null
+
   for (const id of ids) {
     const recipient = byId.get(id)
     if (!recipient) {
@@ -367,7 +446,10 @@ export async function emailCohortHandler(
       bump(result, 'no-content')
       continue
     }
-    const outcome = await sendOneCohortEmail(recipient, content, params, ctx, attachmentBytes)
+    const outcome = await sendOneCohortEmail(recipient, content, params, ctx, {
+      attachments: attachmentBytes,
+      signatureHtml,
+    })
     if (outcome.kind === 'processed') {
       result.processed += 1
       bump(result, 'sent')

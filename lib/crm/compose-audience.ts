@@ -84,6 +84,8 @@ export type ComposeContentInput = {
   templateId?: string
   subject?: string
   body?: string
+  includeSignature?: boolean
+  sendVia?: 'resend' | 'gmail'
 }
 
 export type ComposeValidationResult = { ok: true } | { ok: false; error: string }

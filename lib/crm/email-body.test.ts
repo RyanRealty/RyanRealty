@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { htmlToPlainText, looksLikeHtml, prepareOutboundEmailBody, wrapPlainTextHtml } from '@/lib/crm/email-body'
+import { composeOutboundHtml, htmlToPlainText, looksLikeHtml, prepareOutboundEmailBody, wrapPlainTextHtml } from '@/lib/crm/email-body'
 import { renderCrmMerge } from '@/lib/crm/merge'
 
 describe('crm email-body', () => {
@@ -32,6 +32,24 @@ describe('renderCrmMerge', () => {
       custom: { customSellerPropertyAddress: '123 Main St, Bend' },
     })
     expect(out).toBe('Audit for 123 Main St, Bend')
+  })
+})
+
+describe('composeOutboundHtml — preview is byte-equal to what sends', () => {
+  it('appends the signature after an HTML body', () => {
+    const html = composeOutboundHtml('<p>Hello Jane</p>', '<div id="sig">Matt</div>', 'html')
+    expect(html).toBe('<p>Hello Jane</p><div id="sig">Matt</div>')
+  })
+
+  it('omits the signature when it is null (the off toggle)', () => {
+    expect(composeOutboundHtml('<p>Hello Jane</p>', null, 'html')).toBe('<p>Hello Jane</p>')
+  })
+
+  it('wraps a plain-text body the same way the send path does, then appends the signature', () => {
+    const html = composeOutboundHtml('Hello Jane', '<div id="sig">Matt</div>', 'text')
+    expect(html.startsWith('<div style="font-family:')).toBe(true)
+    expect(html).toContain('Hello Jane')
+    expect(html.endsWith('<div id="sig">Matt</div>')).toBe(true)
   })
 })
 

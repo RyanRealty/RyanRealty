@@ -48,6 +48,12 @@ import {
   type BulkSelection,
 } from '@/lib/crm/bulk-jobs'
 import { getCrmAccess, type CrmAccess } from '@/app/actions/crm'
+import {
+  canSendFromMailbox,
+  displayNameFromIdentity,
+  freezeBulkEmailSendParams,
+  type BulkEmailSendVia,
+} from '@/lib/crm/bulk-email-identity'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
   CRM_STAGES,
@@ -362,9 +368,24 @@ export async function bulkAssignSavedSearchAction(
  * estimate so the UI warns first. params carries the template / subject the
  * handler renders.
  */
+export type BulkEmailContentInput = {
+  templateId?: string
+  subject?: string
+  body?: string
+  attachments?: string
+  includeSignature?: boolean
+  sendVia?: BulkEmailSendVia
+}
+
+function gmailMailboxError(accessEmail: string, sendVia: string | undefined): string | null {
+  if (sendVia !== 'gmail') return null
+  if (canSendFromMailbox(accessEmail)) return null
+  return 'Your login is not a CRM mailbox, so this cannot send from Gmail.'
+}
+
 export async function bulkEmailCohortAction(
   selection: BulkActionSelection,
-  params: { templateId?: string; subject?: string; body?: string; attachments?: string },
+  params: BulkEmailContentInput,
 ): Promise<BulkEnqueueResult> {
   const templateIdRaw = typeof params?.templateId === 'string' ? params.templateId.trim() : ''
   const subject = typeof params?.subject === 'string' ? params.subject.trim() : ''
@@ -378,6 +399,8 @@ export async function bulkEmailCohortAction(
   // clears, so a batch can never attach a file the caller does not own.
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const gmailErr = gmailMailboxError(access.email, params.sendVia)
+  if (gmailErr) return { ok: false, error: gmailErr }
   const refs = parseAttachmentRefsFor(params?.attachments, 'email', {
     kind: 'batch',
     actorKey: actorKeyFor(access.email),
@@ -387,12 +410,54 @@ export async function bulkEmailCohortAction(
   // EmailCohortParams.templateId is number|null — coerce from the UI's string input.
   const parsed = templateIdRaw ? parseInt(templateIdRaw, 10) : NaN
   const templateId: number | null = Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  const frozen = freezeBulkEmailSendParams(access.email, {
+    includeSignature: params.includeSignature,
+    sendVia: params.sendVia,
+  })
   return enqueue('email-cohort', selection, {
     templateId,
     subject: subject || null,
     body: body || null,
     attachments: refs.items.length ? refs.items : null,
+    includeSignature: frozen.includeSignature,
+    sendVia: frozen.sendVia,
+    fromIdentity: frozen.fromIdentity,
+    replyTo: frozen.replyTo,
   })
+}
+
+/**
+ * From line, Reply-To, and Gmail-matched signature for the batch composer.
+ * The client never supplies a From address — it only picks resend vs gmail
+ * and whether the signature is on. Preview uses this HTML so what you see
+ * is what sendOneCohortEmail will compose.
+ */
+export async function getBulkEmailSendOptionsAction(): Promise<
+  | {
+      ok: true
+      actorEmail: string
+      signatureHtml: string | null
+      resendFrom: string
+      resendFromLabel: string
+      replyTo: string
+      canSendFromMailbox: boolean
+    }
+  | { ok: false; error: string }
+> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const frozen = freezeBulkEmailSendParams(access.email)
+  const { getSignatureForMailbox } = await import('@/lib/crm/email-signature')
+  const signature = await getSignatureForMailbox(access.email)
+  return {
+    ok: true,
+    actorEmail: access.email,
+    signatureHtml: signature?.html ?? null,
+    resendFrom: frozen.fromIdentity,
+    resendFromLabel: displayNameFromIdentity(frozen.fromIdentity),
+    replyTo: frozen.replyTo,
+    canSendFromMailbox: canSendFromMailbox(access.email),
+  }
 }
 
 /**
@@ -685,10 +750,12 @@ export async function searchBulkRecipientsAction(
  */
 export async function sendBatchEmailTestAction(
   selection: BulkActionSelection,
-  params: { templateId?: string; subject?: string; body?: string; attachments?: string },
+  params: BulkEmailContentInput,
 ): Promise<{ ok: true; sentTo: string; mergedAgainst: string } | { ok: false; error: string }> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  const gmailErr = gmailMailboxError(access.email, params.sendVia)
+  if (gmailErr) return { ok: false, error: gmailErr }
 
   const preview = await previewBulkRecipientsAction(selection)
   if (!preview.ok) return { ok: false, error: preview.error }
@@ -701,6 +768,10 @@ export async function sendBatchEmailTestAction(
   })
   if (!refs.ok) return { ok: false, error: refs.error }
 
+  const frozen = freezeBulkEmailSendParams(access.email, {
+    includeSignature: params.includeSignature,
+    sendVia: params.sendVia,
+  })
   const { sendBatchTestEmail } = await import('@/lib/crm/bulk-handlers/email-cohort-test')
   return sendBatchTestEmail({
     to: access.email,
@@ -710,6 +781,10 @@ export async function sendBatchEmailTestAction(
       subject: params.subject ?? null,
       body: params.body ?? null,
       attachments: refs.items.length ? refs.items : null,
+      includeSignature: frozen.includeSignature,
+      sendVia: frozen.sendVia,
+      fromIdentity: frozen.fromIdentity,
+      replyTo: frozen.replyTo,
     },
   })
 }
@@ -734,7 +809,7 @@ export async function sendBatchEmailTestAction(
  */
 export async function scheduleBulkEmailCohortAction(
   selection: BulkActionSelection,
-  params: { templateId?: string; subject?: string; body?: string; attachments?: string },
+  params: BulkEmailContentInput,
   scheduledAt: string,
 ): Promise<{ ok: true; id: number; count: number; sendsAt: string } | { ok: false; error: string }> {
   const access = await getCrmAccess()
@@ -749,6 +824,8 @@ export async function scheduleBulkEmailCohortAction(
 
   const when = normalizeScheduledAt(scheduledAt, Date.now())
   if (!when.ok) return { ok: false, error: when.error }
+  const gmailErr = gmailMailboxError(access.email, params.sendVia)
+  if (gmailErr) return { ok: false, error: gmailErr }
 
   // Same attachment ownership + limit check the immediate send clears.
   const refs = parseAttachmentRefsFor(params?.attachments, 'email', {
@@ -770,6 +847,10 @@ export async function scheduleBulkEmailCohortAction(
 
   const parsedTid = templateIdRaw ? parseInt(templateIdRaw, 10) : NaN
   const templateId: number | null = Number.isFinite(parsedTid) && parsedTid > 0 ? parsedTid : null
+  const frozenSend = freezeBulkEmailSendParams(access.email, {
+    includeSignature: params.includeSignature,
+    sendVia: params.sendVia,
+  })
 
   const { data, error } = await sb
     .from('crm_scheduled_sends')
@@ -784,6 +865,10 @@ export async function scheduleBulkEmailCohortAction(
         subject: subject || null,
         body: body || null,
         attachments: refs.items.length ? refs.items : null,
+        includeSignature: frozenSend.includeSignature,
+        sendVia: frozenSend.sendVia,
+        fromIdentity: frozenSend.fromIdentity,
+        replyTo: frozenSend.replyTo,
       },
       actor_email: access.email,
       broker_scope: brokerScope,
