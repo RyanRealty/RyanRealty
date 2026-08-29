@@ -299,14 +299,14 @@ export async function renderMapSplitView(props: {
       <header className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6">
         <V3Heading level={1} size="field">Homes for Sale</V3Heading>
         {displayName ? <p className="v3-field__note mt-2">{displayName}</p> : null}
-        <div className="search-filter-dock">
-          <SearchFilters
-            initialFilters={filters}
-            signedIn={!!session?.user}
-            pathContext={pathContext}
-          />
-        </div>
       </header>
+      <div className="search-filter-dock mx-auto w-full max-w-6xl px-4 sm:px-6">
+        <SearchFilters
+          initialFilters={filters}
+          signedIn={!!session?.user}
+          pathContext={pathContext}
+        />
+      </div>
       <MapSearchView
         initialListings={viewport.listings}
         initialTotalCount={viewport.totalCount}

@@ -575,6 +575,7 @@ describe('search index H1 is Homes for Sale on the Field face', () => {
 
   it('puts that heading above one SearchFilters field', () => {
     expect(page.indexOf('Homes for Sale')).toBeLessThan(page.indexOf('search-filter-dock'))
+    expect(page.indexOf('</header>')).toBeLessThan(page.indexOf('search-filter-dock'))
     const dock = page.slice(page.indexOf('search-filter-dock'))
     expect(dock).toMatch(/<SearchFilters /)
     expect(dock).not.toMatch(/<V3Heading level=\{1\}/)

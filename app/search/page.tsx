@@ -336,10 +336,10 @@ export default async function SearchPage({
       <header className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6">
         <V3Heading level={1} size="field">Homes for Sale</V3Heading>
         {placeCaption ? <p className="v3-field__note mt-2">{placeCaption}</p> : null}
-        <div className="search-filter-dock">
-          <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
-        </div>
       </header>
+      <div className="search-filter-dock mx-auto w-full max-w-6xl px-4 sm:px-6">
+        <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
+      </div>
       <MapSearchView
         initialListings={viewport.listings}
         initialTotalCount={viewport.totalCount}
