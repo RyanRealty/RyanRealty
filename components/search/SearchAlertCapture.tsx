@@ -33,8 +33,8 @@ import {
  *
  * Variants:
  * - sticky — list view: docks under filters in normal document flow (sticky bar)
- * - inline — map/split: compact non-sticky strip under filters (layout-safe;
- *   sticky on app-frame overlapped the filter chip row)
+ * - inline — under Field results, compact, not sticky (layout-safe; sticky on
+ *   app-frame overlapped the filter chip row)
  *
  * Guest default shows the email field so save-search collects an address.
  * Collapse stays available after the visitor dismisses.
@@ -128,7 +128,7 @@ export function SearchAlertCapture({
   defaultFilters?: Record<string, string>
   /**
    * sticky = list document flow (default).
-   * inline = map/split compact non-sticky under filters — must stay shrink-0 and
+   * inline = under Field results, compact, not sticky — must stay shrink-0 and
    * not use sticky/z-30 so it cannot overlap the filter chip row.
    */
   variant?: 'sticky' | 'inline'
@@ -139,15 +139,15 @@ export function SearchAlertCapture({
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
   const [dismissed, setDismissed] = useState(false)
-  // Collapsed on phones, expanded on sm+ (2026-08-27 mobile audit: the open
-  // email form crowded the 390px filter area with a second unrelated job).
-  // SSR renders collapsed; the effect expands only where there is room.
-  const [expanded, setExpanded] = useState(false)
-  useEffect(() => {
-    if (window.matchMedia('(min-width: 640px)').matches) setExpanded(true)
-  }, [])
-  const [pending, startTransition] = useTransition()
   const isInline = variant === 'inline'
+  // Inline sits under the Field results, so the email field is the ask at every
+  // width. Sticky still starts collapsed on 390 so it cannot crowd a filter dock.
+  const [expanded, setExpanded] = useState(variant === 'inline')
+  useEffect(() => {
+    if (variant === 'inline') return
+    if (window.matchMedia('(min-width: 640px)').matches) setExpanded(true)
+  }, [variant])
+  const [pending, startTransition] = useTransition()
   const rootRef = useRef<HTMLDivElement>(null)
   /** F2 residual from a prior guest signup in this browser (no PII). */
   const [priorWatch, setPriorWatch] = useState<GuestWatchResidual | null>(null)
@@ -189,8 +189,13 @@ export function SearchAlertCapture({
     setPriorWatch(readGuestWatch()) // hydration-safe: event/effect storage only
   }, [signedIn])
 
+  const skipInitialFocus = useRef(variant === 'inline')
   useEffect(() => {
-    if (!expanded) return
+    if (expanded === false) return
+    if (skipInitialFocus.current) {
+      skipInitialFocus.current = false
+      return
+    }
     const emailField = rootRef.current?.querySelector<HTMLInputElement>('input[name="email"]')
     emailField?.focus()
   }, [expanded])
@@ -255,7 +260,7 @@ export function SearchAlertCapture({
         id="search-alert-capture"
         className={cn(
           'w-full border-b border-border bg-card',
-          !isInline &&
+          isInline === false &&
             'sticky top-0 z-30 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90',
           isInline && 'shrink-0 bg-card'
         )}
@@ -343,13 +348,13 @@ export function SearchAlertCapture({
       className={cn(
         'w-full border-b border-border bg-card',
         // sticky list: docks under filters in document flow
-        !isInline &&
+        isInline === false &&
           'sticky top-0 z-30 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90',
-        // inline map/split: never sticky — occupies flex chrome only (layout-safe)
+        // inline: never sticky — occupies flex chrome only (layout-safe)
         isInline && 'shrink-0 bg-card'
       )}
     >
-      {!expanded ? (
+      {expanded === false ? (
         <div
           className={cn(
             'mx-auto flex max-w-7xl items-center px-4 py-1 sm:px-6',
@@ -383,10 +388,10 @@ export function SearchAlertCapture({
             <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
               {isInline ? 'Email me new matches' : 'Get new homes for this search by email.'}
             </p>
-            {/* "for $90M, Bend" read as nonsense (matches FOR a price?) — "matching"
-                works grammatically no matter what the filter-shorthand contains
-                (design-audit P3). */}
-            {!isInline ? (
+            {/* "for $7,500,000, Bend" read as nonsense (matches FOR a price?) —
+                "matching" works grammatically no matter what the filter-shorthand
+                contains (design-audit P3). */}
+            {isInline === false ? (
               <p className="line-clamp-2 text-xs text-muted-foreground">
                 New homes matching {target}.
               </p>
@@ -452,7 +457,7 @@ export function SearchAlertCapture({
           </Button>
         </form>
       </div>
-      {!isInline ? (
+      {isInline === false ? (
         <p className="mx-auto max-w-7xl px-4 pb-2 text-xs text-muted-foreground sm:px-6">
           Free. One email per new match. Unsubscribe any time.
         </p>

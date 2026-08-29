@@ -75,8 +75,10 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/data-listing-key=/)
   })
 
-  it('keeps the map in the Field on 390 (no List/Map hide toggle)', () => {
+  it('uses the homepage Field list-first + Map toggle on 390', () => {
     expect(src).toMatch(/listFlow/)
+    expect(src).toMatch(/listFirst/)
+    expect(src).toMatch(/mapToggle/)
     expect(src).not.toMatch(/ToggleGroupItem value="list"/)
     expect(src).not.toMatch(/useState<'list' \| 'map'>\('list'\)/)
   })
@@ -510,12 +512,15 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     expect(helper).toMatch(/input\.preset\?\.params/)
   })
 
-  it('opens the place search on the Field, not behind a Map view toggle', () => {
+  it('opens the place search on the Field with the homepage list-first Map toggle', () => {
     expect(slug).toMatch(/const isMapSplitView = Boolean\(city \|\| hasFilterOnly\)/)
     expect(slug).toMatch(/renderMapSplitView\(/)
     const split = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
     expect(split).toMatch(/<MapSearchView/)
-    expect(readSrc('components/search/MapSearchView.tsx')).toMatch(/listFlow/)
+    const view = readSrc('components/search/MapSearchView.tsx')
+    expect(view).toMatch(/listFlow/)
+    expect(view).toMatch(/listFirst/)
+    expect(view).toMatch(/mapToggle/)
   })
 })
 
@@ -538,14 +543,16 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(mapSplit).toMatch(/variant="inline"/)
   })
 
-  it('guest capture expands where there is room: collapsed on phones, email field open on sm+', () => {
-    // 2026-08-27 mobile audit: the always-open email form crowded the 390px
-    // filter area. SSR renders collapsed; a matchMedia effect expands on sm+.
-    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(false\)/)
+  it('guest capture shows the email field under Field results (inline), collapsed sticky on 390', () => {
+    // Inline is under the tiles, so the email field is the ask. Sticky in a
+    // filter dock still starts collapsed on 390.
+    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(variant === 'inline'\)/)
+    expect(src).toMatch(/if \(variant === 'inline'\) return/)
     expect(src).toMatch(/matchMedia\('\(min-width: 640px\)'\)/)
     expect(src).toMatch(/Get listing alerts/)
-    expect(src).toMatch(/\{!expanded \?/)
+    expect(src).toMatch(/expanded === false \?/)
     expect(src).toMatch(/name="company"/)
+    expect(src).toMatch(/type="email"/)
     expect(src).toMatch(/readRrSessionId\(\)/)
     expect(src).toMatch(/submitSearchAlertSignup/)
     expect(src).toMatch(/Free\. Unsubscribe any time/)
@@ -553,7 +560,7 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(src).not.toMatch(/<Dialog[\s>]/)
     expect(src).not.toMatch(/from '@\/components\/ui\/dialog'/)
     // inline must not pick up sticky/z-30 (layout-safe on the app frame)
-    expect(src).toMatch(/!isInline &&\s*\n\s*'sticky top-0 z-30/)
+    expect(src).toMatch(/isInline === false &&\s*\n\s*'sticky top-0 z-30/)
   })
 })
 
@@ -574,6 +581,24 @@ describe('search index H1 is Homes for Sale on the Field face', () => {
   it('keeps the footer on the Field face', () => {
     expect(page).toMatch(/<V3Footer columns=\{V3_FOOTER_COLUMNS\} \/>/)
     expect(page).not.toMatch(/\{isAppFrame \? null : <V3Footer/)
+  })
+})
+
+describe('search filter dock and required map attribution (PR 163)', () => {
+  it('paints the sticky filter dock with opaque cream', () => {
+    const css = readSrc('app/search/search-frame.css')
+    expect(css).toMatch(/\.search-filter-dock \{[\s\S]*background:\s*var\(--v3-surface\)/)
+    expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*background:\s*transparent/)
+    expect(css).not.toMatch(/\.search-filter-dock \{[\s\S]*bg-card\/95/)
+  })
+
+  it('keeps required Google attribution and only hides the decorative MAP chip', () => {
+    const css = readSrc('components/site/v3/V3Field.css')
+    expect(css).toMatch(/\.v3-field__map \.gm-style-mtc/)
+    expect(css).not.toMatch(/\.gm-style-cc/)
+    expect(css).not.toMatch(/gmnoprint/)
+    const map = readSrc('app/central-oregon/_v3/PlaceFieldMapImpl.tsx')
+    expect(map).not.toMatch(/attributionControl:\s*false/)
   })
 })
 
@@ -614,6 +639,8 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(view).toMatch(/in this map view/)
     expect(view).toMatch(/grain: 'map-viewport'/)
     expect(view).toMatch(/listFlow/)
+    expect(view).toMatch(/listFirst/)
+    expect(view).toMatch(/mapToggle/)
   })
 
   it('uses SuperCluster maxZoom and photo stamps at close zoom', () => {

@@ -546,6 +546,8 @@ export default function MapSearchView({
         id="homes-for-sale-field"
         ariaLabel="Homes for sale in this map view"
         listFlow
+        listFirst
+        mapToggle
         items={fieldItems}
         count={
           publishedViewport

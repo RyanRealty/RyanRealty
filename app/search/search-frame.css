@@ -17,6 +17,9 @@
     position: sticky;
     top: 3.5rem;
     z-index: 20;
+    background: var(--v3-surface);
+    border-bottom: 1px solid var(--v3-edge);
+    padding-bottom: var(--v3-space-sm);
   }
 
   /* App-frame already locks the viewport. Sticky here overlays the
