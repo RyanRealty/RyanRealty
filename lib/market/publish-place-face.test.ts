@@ -67,6 +67,20 @@ describe('publishPlaceFace', () => {
     expect(face.monthsOfSupply).toBeNull()
   })
 
+  it('subdivision face with hud null is inventory count + median only', () => {
+    const face = publishPlaceFace({
+      grain: 'subdivision',
+      hud: null,
+      active: 12,
+      medianList: 909_950,
+    })
+    expect(face.stats.map((s) => s.id)).toEqual(['active', 'medianList'])
+    expect(face.stats.find((s) => s.id === 'active')?.value).toBe('12')
+    expect(face.monthsOfSupply).toBeNull()
+    expect(face.verdict).toBeNull()
+    expect(face.stats.some((s) => s.id === 'daysToPending')).toBe(false)
+  })
+
   it('omits a missing cell rather than printing zero', () => {
     const face = publishPlaceFace({
       grain: 'city',

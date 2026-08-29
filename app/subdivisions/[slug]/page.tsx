@@ -2,18 +2,12 @@
 /**
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 (locked 2026-08-11).
- * "Subdivision → Ledger of this plat's homes. Field only when the plat has
- * enough pins to be a map. A short plat is a list." Giant 0 is forbidden: an
- * empty Ledger states the reason. The parent community or city is the back
- * door. Schools sit on the first path. Section order is the parity contract at
- * design_system/ryan-realty/ui_kits/subdivision/parity.json.
- *
- * FOUR PATTERNS, WHICH IS THE CAP. Field or Ledger (the homes) · Quiet (the
- * assigned schools and every outbound edge) · Instrument (the plat's own
- * market, then once per other property type the plat holds) · Ledger (the sales
- * history, then the recorded documents). The property-type run is ONE logical
- * section under the 2026-08-26 enumeration amendment.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. First screen is
+ * H1 "{Name} homes for sale" + plat-inventory PlaceFaceStrip + PlaceSplitView.
+ * Do not cage that screen in V3Stage or V3Field. Never say "plat" in visitor
+ * copy. Giant 0 is forbidden on a timed-out read. Schools sit after the Split
+ * when the MLS modal actually publishes. Section order is the parity contract
+ * at design_system/ryan-realty/ui_kits/subdivision/parity.json.
  *
  * THE RHYTHM RULE AND CONDITIONAL SECTIONS, DECLARED RATHER THAN HIDDEN. Four
  * of this page's sections render only when their data exists, and no ordering
@@ -108,7 +102,6 @@ import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './Subd
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
 import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
-import { getSubdivisionVideoTours } from '@/lib/data'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import {
   EMPTY_SUBDIVISION_COUNTS,
@@ -127,6 +120,7 @@ import { getSubdivisionSchools } from '@/lib/data/subdivisions/getSubdivisionSch
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -137,21 +131,19 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
-  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3Heading,
   V3Instrument,
-  V3Ledger,
   V3PlaceCharacter,
   V3PlacePropertyTypes,
-  V3Quiet,
   V3SectionTracker,
-  type V3FieldItem,
+  V3SourceLine,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
+import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
@@ -159,9 +151,8 @@ import { SubdivisionMarketCharts } from './_v3/SubdivisionMarketCharts'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
 import { platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
-import { platHomesMode, toFieldEntry, toLedgerRows, type FieldEntry } from './_v3/subdivision-rows'
+import { boundsFromListingPins, hasRealPlatPolygon, toSplitListing } from './_v3/subdivision-split'
 import {
-  fieldTrace,
   homesLedgerTrace,
   PERIOD_LABEL,
   platCountsTrace,
@@ -295,7 +286,7 @@ const loadSubdivisionCore = cache(async (slug: string) => {
 export default async function SubdivisionPage({ params }: Props) {
   const { slug } = await params
 
-  const { boundaryRead, inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused } =
+  const { inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, mapTiles, refused } =
     await loadSubdivisionCore(slug)
   if (refused) return <SubdivisionUnavailable />
 
@@ -324,10 +315,6 @@ export default async function SubdivisionPage({ params }: Props) {
   const resortSlug = registryMatch?.resortSlug ?? null
   const placeCity = cityName === 'Central Oregon' ? null : cityName
 
-  const eyebrow = resortLabel
-    ? `${displayName} · ${resortLabel} · ${cityName}`
-    : `${displayName} · ${cityName}`
-
   // §0 UNKNOWN IS NOT ZERO. The inventory read is the only source for this
   // count; a read that did not answer leaves null, and null suppresses the claim
   // rather than publishing a zero under a live-MLS trace.
@@ -339,34 +326,14 @@ export default async function SubdivisionPage({ params }: Props) {
       ? { kind: 'registry', subdivisionName: registryMatch.canonicalName, city: registryMatch.city }
       : { kind: 'pins', displayName }
 
-  // ── VIDEO TOURS, SCOPED TO THIS PLAT ─────────────────────────────────────
-  // No registry match means no MLS subdivision name to scope on, and the
-  // unscoped feed answers with top-priced Central Oregon listings from anywhere,
-  // so the probe is skipped rather than answered with out-of-area homes (§0).
-  const subdivisionVideoTours = registryMatch
-    ? await withTimeoutFallback(
-        getSubdivisionVideoTours(registryMatch.canonicalName, registryMatch.city, 12),
-        [],
-        4500,
-        'sub:video-tours',
-      )
-    : []
-  const videoKeys = new Set(
-    subdivisionVideoTours
-      .filter((r) => r.listing_key && (r.video_url ?? '').trim())
-      .map((r) => r.listing_key),
-  )
-
-  // ── FIELD ROWS AND MAP PINS, BUILT ONCE ──────────────────────────────────
-  const plotted: FieldEntry[] = []
-  for (const tile of mapTiles) {
-    const entry = toFieldEntry(tile, videoKeys.has(tile.listingKey))
-    if (entry) plotted.push(entry)
-  }
-  const mapPins = fieldMapPins(plotted)
-  const fieldItems: V3FieldItem[] = plotted
-  const mapPolygon = hasBoundary && boundary.polygon ? boundary.polygon : undefined
-  const hasMap = plotted.length > 0 || Boolean(mapPolygon)
+  // Split listings are the counted plat inventory, not a viewport fetch.
+  // Seed a ring only when GIS actually stored a usable polygon. Ridge has
+  // none historically — pin bbox is the camera, never a convex hull.
+  const seedRing = hasRealPlatPolygon(boundary.polygon)
+  const splitListings = mapTiles.map(toSplitListing)
+  const pinBounds = boundsFromListingPins(mapTiles)
+  const hasMap =
+    seedRing || splitListings.some((row) => row.Latitude != null && row.Longitude != null)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
   const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter] =
@@ -401,6 +368,12 @@ export default async function SubdivisionPage({ params }: Props) {
   // publishPlatFigures is the whole rule: the counted set's median may publish,
   // days-to-pending and 30-day sold withhold rather than borrow.
   const platFigures = publishPlatFigures({ platMedianListPrice: inventory?.medianListPrice })
+  const face = publishPlaceFace({
+    grain: 'subdivision',
+    hud: null,
+    active: activeCount,
+    medianList: platFigures.medianListPrice,
+  })
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -504,19 +477,10 @@ export default async function SubdivisionPage({ params }: Props) {
     },
   ]
 
-  const homesMode = platHomesMode({
-    activeCount,
-    homeRows: fieldItems.length,
-    pinCount: plotted.length,
-  })
-  const homeRows = toLedgerRows(fieldItems)
-  const [firstHome, ...restHomes] = homeRows
-  const parentHref = resortSlug
-    ? `/communities/${resortSlug}`
-    : citySlug
-      ? `/cities/${citySlug}`
-      : '/communities'
-  const parentLabel = resortLabel ?? cityName
+  const inventorySource = homesLedgerTrace(platScope)
+  const splitCity = placeCity ?? undefined
+  const splitSubdivision = registryMatch?.canonicalName ?? displayName
+  const placeQuery = splitCity ? `${displayName} ${splitCity} Oregon` : `${displayName} Oregon`
 
   return (
     <>
@@ -537,64 +501,27 @@ export default async function SubdivisionPage({ params }: Props) {
           ]}
         />
 
-        {/* Pattern 2, Field — only when the plat has enough pins to BE a map.
-            A short plat is a list, which is the next branch. */}
-        {homesMode === 'field' ? (
-          <>
-            <V3Quiet
-              id="overview"
-              heading={`Homes for sale in ${displayName}`}
-              headingLevel={1}
-              eyebrow={eyebrow}
-              items={[{ label: parentLabel, href: parentHref }]}
-            />
-            <V3Field
-              id="homes"
-              ariaLabel={`Homes for sale in ${displayName}`}
-              items={fieldItems}
-              mapSlot={
-                <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
-              }
-              count={{
-                value: fieldItems.length.toLocaleString('en-US'),
-                label: fieldItems.length === 1 ? 'home shown here' : 'homes shown here',
-                source: fieldTrace(platScope),
-              }}
-              mapNote={
-                mapPolygon
-                  ? `The outline is the recorded ${displayName} plat boundary.`
-                  : undefined
-              }
-            />
-          </>
-        ) : firstHome ? (
-          /* Pattern 3, Ledger. Every row is a door. */
-          <V3Ledger
-            id="homes"
-            headingLevel={1}
-            eyebrow={v3Text(eyebrow)}
-            heading={v3Text(`Homes for sale in ${displayName}`)}
-            rows={[firstHome, ...restHomes]}
-            source={v3Text(homesLedgerTrace(platScope))}
-            action={{ label: v3Text(parentLabel), href: parentHref, variant: 'ghost' }}
+        <div id="overview" className="place-opening">
+          <V3Heading level={1} size="field">
+            {`${displayName} homes for sale`}
+          </V3Heading>
+          <PlaceFaceStrip stats={face.stats} />
+          <V3SourceLine source={inventorySource} />
+        </div>
+
+        <div id="homes">
+          <PlaceSplitView
+            city={splitCity}
+            subdivision={splitSubdivision}
+            boundaryGeojson={seedRing ? boundary.polygon : null}
+            seedRing={seedRing}
+            placeQuery={placeQuery}
+            listings={splitListings}
+            totalCount={activeCount ?? splitListings.length}
+            bounds={seedRing ? undefined : pinBounds ?? undefined}
+            degraded={!inventoryRead.ok}
           />
-        ) : (
-          /* Giant 0 is forbidden. An empty Ledger states WHICH of the two
-             things happened: nothing is listed, or nothing answered. */
-          <V3Ledger
-            id="homes"
-            headingLevel={1}
-            eyebrow={v3Text(eyebrow)}
-            heading={v3Text(`Homes for sale in ${displayName}`)}
-            rows={[]}
-            emptyMessage={v3Text(
-              homesMode === 'unknown'
-                ? `The inventory query for ${displayName} did not return, so this is not a claim that nothing is for sale.`
-                : `No single-family home is listed in ${displayName} right now.`,
-            )}
-            action={{ label: v3Text(parentLabel), href: parentHref, variant: 'ghost' }}
-          />
-        )}
+        </div>
 
         {/* Pattern 6, Quiet — the assigned schools and every outbound edge this
             page carries. ci:subdivision-stats-integrity requires this component
