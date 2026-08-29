@@ -260,6 +260,27 @@
   cursor: pointer;
 }
 
+.listing-mosaic__open-tour {
+  position: absolute;
+  left: var(--v3-space-sm);
+  top: var(--v3-space-sm);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 0;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  cursor: pointer;
+}
+
 @media (min-width: 64rem) {
   .listing-mosaic__carousel {
     display: none;
@@ -388,7 +409,6 @@
   display: flex;
   align-items: center;
   min-height: var(--v3-tap);
-  color: var(--v3-ink);
 }
 
 /* Mobile broker bar. Was .kb-root .listing-mobile-cta. Conversion-critical. */
@@ -857,6 +877,97 @@
   .listing-detail .lst-price {
     font-size: 8vw !important;
   }
+}
+
+/* Park / trail list thumbs — always a map, never omitted. */
+.listing-detail .place-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+  margin-top: clamp(22px, 3vw, 36px);
+}
+
+.listing-detail .place-list--rows {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0;
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+}
+
+.listing-detail .place-list--rows > li {
+  border-bottom: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+}
+
+.listing-detail .place-list__row {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  flex: 1 1 200px;
+  padding: 12px 16px;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  text-decoration: none;
+}
+
+.listing-detail .place-list-thumb {
+  display: block;
+  width: 5.5rem;
+  height: 4.125rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.listing-detail .place-list-thumb svg {
+  display: block;
+}
+
+.listing-detail .place-list__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.listing-detail .place-list__name {
+  display: block;
+  font-family: var(--v3-font-display);
+  font-size: clamp(1.1rem, 2.2vw, 1.45rem);
+  line-height: 0.94;
+  color: var(--v3-navy);
+}
+
+.listing-detail .place-list__kind {
+  display: inline-block;
+  margin-right: 0.65rem;
+  font-family: var(--v3-font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy-70);
+}
+
+.listing-detail .place-list__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+}
+
+.listing-detail .place-list__dist {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--navy-70);
 }
 
 /* ===== Desktop density pass (≥1024px) — kb.css's 2026-07-30 measurement pass,

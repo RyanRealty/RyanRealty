@@ -16,7 +16,8 @@
  */
 
 import type { Metadata } from 'next'
-import { getParks, getParksCount } from '@/lib/data'
+import { getParks, getParksCount, getParkBoundaryGeoJSON } from '@/lib/data'
+import { placeListThumbDataUri } from '@/lib/place/publish-place-list-thumb'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -52,12 +53,22 @@ export function generateMetadata(): Metadata {
   })
 }
 
-export default function ParksIndexPage() {
+export default async function ParksIndexPage() {
   const cities = getParks()
   const total = getParksCount()
   const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'park' : 'parks'}`
 
-  const rows: V3LedgerPlainRow[] = []
+  const drafted: Array<{
+    href: string
+    when: ReturnType<typeof v3Text>
+    what: ReturnType<typeof v3Text>
+    detail: ReturnType<typeof v3Text>
+    id: string
+    lat: number
+    lng: number
+    slug: string
+    hasPolygon: boolean
+  }> = []
   for (const group of cities) {
     const city = group.city.trim()
     if (!city) continue
@@ -69,15 +80,35 @@ export default function ParksIndexPage() {
       if (typeof park.acres === 'number') {
         parts.push(`${park.acres.toLocaleString('en-US')} acres`)
       }
-      rows.push({
+      drafted.push({
         href: `/parks/${slug}`,
         when: v3Text(city),
         what: v3Text(name),
         detail: v3Text(parts.join(' · ')),
         id: slug,
+        lat: park.lat,
+        lng: park.lng,
+        slug,
+        hasPolygon: park.hasPolygon,
       })
     }
   }
+  const thumbs = await Promise.all(
+    drafted.map(async (row) => {
+      const geometry = row.hasPolygon
+        ? await getParkBoundaryGeoJSON(row.slug).catch(() => null)
+        : null
+      return placeListThumbDataUri({ lat: row.lat, lng: row.lng, geometry })
+    }),
+  )
+  const rows: V3LedgerPlainRow[] = drafted.map((row, i) => ({
+    href: row.href,
+    when: row.when,
+    what: row.what,
+    detail: row.detail,
+    id: row.id,
+    media: { src: thumbs[i]! },
+  }))
   const [firstRow, ...restRows] = rows
 
   return (

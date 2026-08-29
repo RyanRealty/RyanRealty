@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import { lifestyleNearLatLng } from '@/lib/explore/lifestyle-near'
+import { getParkBySlug } from '@/data/co-parks'
+import { getTrailBySlug } from '@/data/co-trails'
+import { getParkBoundaryGeoJSON, getTrailLineGeoJSON } from '@/lib/data'
+import { PlaceListThumb } from '@/components/site/PlaceListThumb'
 
 type Props = {
   lat: number | null | undefined
@@ -11,11 +15,17 @@ type Props = {
   title?: string
 }
 
+function slugFromHref(href: string, prefix: string): string | null {
+  if (!href.startsWith(prefix)) return null
+  const slug = href.slice(prefix.length).split('/')[0]?.trim()
+  return slug || null
+}
+
 /**
- * Parks · trails · golf near a point — ledger rows, not a tile wall.
- * Exploration System lifestyle chapter.
+ * Parks · trails · golf near a point. Park and trail rows always carry a map
+ * thumb from existing geo. Detail pages keep the live map.
  */
-export function LifestyleNearSection({
+export async function LifestyleNearSection({
   lat,
   lng,
   items: itemsProp,
@@ -25,6 +35,28 @@ export function LifestyleNearSection({
   const items = itemsProp ?? lifestyleNearLatLng(lat, lng)
   if (items.length === 0) return null
 
+  const thumbs = await Promise.all(
+    items.map(async (item) => {
+      if (item.kind === 'park') {
+        const slug = slugFromHref(item.href, '/parks/')
+        const park = slug ? getParkBySlug(slug) : undefined
+        if (!park) return null
+        const geometry = park.hasPolygon
+          ? await getParkBoundaryGeoJSON(park.slug).catch(() => null)
+          : null
+        return { lat: park.lat, lng: park.lng, geometry }
+      }
+      if (item.kind === 'trail') {
+        const slug = slugFromHref(item.href, '/central-oregon/trails/')
+        const trail = slug ? getTrailBySlug(slug) : undefined
+        if (!trail || trail.lat == null || trail.lng == null) return null
+        const geometry = slug ? await getTrailLineGeoJSON(slug).catch(() => null) : null
+        return { lat: trail.lat, lng: trail.lng, geometry }
+      }
+      return null
+    }),
+  )
+
   return (
     <section className="section" aria-label={title}>
       <div className="wrap">
@@ -32,71 +64,29 @@ export function LifestyleNearSection({
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">{title}</h2>
         </div>
-        <ul
-          style={{
-            listStyle: 'none',
-            margin: '1.5rem 0 0',
-            padding: 0,
-            borderTop: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
-          }}
-        >
-          {items.map((item) => (
-            <li
-              key={`${item.kind}-${item.href}`}
-              style={{
-                borderBottom: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
-              }}
-            >
-              <Link
-                href={item.href}
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  padding: '0.85rem 0',
-                  color: 'var(--navy)',
-                  textDecoration: 'none',
-                }}
-                className="hover:opacity-80"
-              >
-                <span>
-                  <span
-                    style={{
-                      fontSize: '0.68rem',
-                      fontWeight: 600,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: 'var(--navy-70)',
-                      marginRight: '0.65rem',
-                    }}
-                  >
-                    {item.kind}
-                  </span>
-                  <span style={{ fontWeight: 600 }}>{item.name}</span>
-                  {item.meta ? (
-                    <span
-                      style={{
-                        marginLeft: '0.5rem',
-                        fontSize: '0.85rem',
-                        color: 'var(--navy-70)',
-                      }}
-                    >
-                      {item.meta}
+        <ul className="place-list place-list--rows">
+          {items.map((item, i) => {
+            const thumb = thumbs[i]
+            return (
+              <li key={`${item.kind}-${item.href}`}>
+                <Link href={item.href} className="place-list__row">
+                  {thumb ? <PlaceListThumb lat={thumb.lat} lng={thumb.lng} geometry={thumb.geometry} /> : null}
+                  <span className="place-list__copy">
+                    <span className="place-list__name">
+                      <span className="place-list__kind">{item.kind}</span>
+                      {item.name}
                     </span>
-                  ) : null}
-                </span>
-                <span
-                  className="mono-num"
-                  style={{ fontSize: '0.85rem', color: 'var(--navy-70)', flexShrink: 0 }}
-                >
-                  {item.distanceMiles < 10
-                    ? `${item.distanceMiles.toFixed(1)} mi`
-                    : `${Math.round(item.distanceMiles)} mi`}
-                </span>
-              </Link>
-            </li>
-          ))}
+                    {item.meta ? <span className="place-list__meta">{item.meta}</span> : null}
+                  </span>
+                  <span className="place-list__dist tabular-nums">
+                    {item.distanceMiles < 10
+                      ? `${item.distanceMiles.toFixed(1)} mi`
+                      : `${Math.round(item.distanceMiles)} mi`}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       </div>
     </section>

@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { findParksNear, type ParkType } from '@/data/co-parks'
+import { getParkBoundaryGeoJSON } from '@/lib/data'
+import { PlaceListThumb } from '@/components/site/PlaceListThumb'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
- * ParksNearbyBlock — KB section style: navy border sec-head, park cards
- * with hard edge borders in cream/navy palette.
+ * Parks nearby — Redfin slot on listing detail. List thumbs are always a map
+ * from existing geo (boundary when we have it, otherwise the park point).
  */
 
 type Props = {
@@ -23,12 +25,18 @@ function formatMiles(miles: number): string {
   return `${miles.toFixed(1)} mi`
 }
 
-export function ParksNearbyBlock({ listing, className }: Props) {
+export async function ParksNearbyBlock({ listing, className }: Props) {
   const { lat, lng } = listing
   if (typeof lat !== 'number' || typeof lng !== 'number') return null
 
   const parks = findParksNear(lat, lng, 3, 6)
   if (parks.length === 0) return null
+
+  const geos = await Promise.all(
+    parks.map((park) =>
+      park.hasPolygon ? getParkBoundaryGeoJSON(park.slug).catch(() => null) : Promise.resolve(null),
+    ),
+  )
 
   return (
     <section className={cn('section', className)}>
@@ -39,63 +47,18 @@ export function ParksNearbyBlock({ listing, className }: Props) {
         </div>
       </div>
 
-      {/* flex-wrap, not a CSS grid: a grid's auto-fit still reserves full
-          tracks for a partially-filled last row, so the container's
-          navy-tinted background painted through the empty cells as a solid
-          gray slab (design-audit P3). flex-wrap leaves genuinely no box
-          where there is no card; each card carries its own border instead of
-          the container background supplying the "grout" between cells. */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '3px',
-          border: '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
-          marginTop: 'clamp(22px,3vw,36px)',
-        }}
-      >
-        {parks.map((park) => (
-          <Link
-            key={park.slug}
-            href={`/parks/${park.slug}`}
-            style={{
-              display: 'block',
-              flex: '1 1 200px',
-              background: 'var(--v3-cream)',
-              padding: '18px 20px',
-              textDecoration: 'none',
-              color: 'var(--v3-navy)',
-            }}
-            className="hover:bg-[color-mix(in srgb, var(--v3-navy) 4%, transparent)] transition-colors"
-          >
-            <div
-              style={{
-                fontFamily: 'var(--font-amboqia-safe, serif)',
-                fontSize: 'clamp(1.1rem,2.2vw,1.45rem)',
-                lineHeight: 0.94,
-                color: 'var(--v3-navy)',
-                overflow: 'visible',
-                marginBottom: 8,
-              }}
-            >
-              {park.name}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                fontSize: '0.68rem',
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
-              }}
-            >
-              <span>{TYPE_LABEL[park.type]}</span>
-              <span aria-hidden>·</span>
-              <span className="tabular-nums">{formatMiles(park.distanceMiles)}</span>
-            </div>
+      <div className="place-list">
+        {parks.map((park, i) => (
+          <Link key={park.slug} href={`/parks/${park.slug}`} className="place-list__row">
+            <PlaceListThumb lat={park.lat} lng={park.lng} geometry={geos[i]} />
+            <span className="place-list__copy">
+              <span className="place-list__name">{park.name}</span>
+              <span className="place-list__meta">
+                <span>{TYPE_LABEL[park.type]}</span>
+                <span aria-hidden>·</span>
+                <span className="tabular-nums">{formatMiles(park.distanceMiles)}</span>
+              </span>
+            </span>
           </Link>
         ))}
       </div>

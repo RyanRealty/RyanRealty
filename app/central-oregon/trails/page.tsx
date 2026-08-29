@@ -10,7 +10,8 @@
  */
 
 import type { Metadata } from 'next'
-import { getTrailsForIndex, getTrailsCount } from '@/lib/data'
+import { getTrailsForIndex, getTrailsCount, getTrailLineGeoJSON } from '@/lib/data'
+import { placeListThumbDataUri } from '@/lib/place/publish-place-list-thumb'
 import { TRAIL_USE_LABEL } from '@/data/co-trails'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -41,7 +42,7 @@ export function generateMetadata(): Metadata {
   })
 }
 
-export default function TrailsIndexPage() {
+export default async function TrailsIndexPage() {
   const { hiking, biking } = getTrailsForIndex()
   const total = getTrailsCount()
   const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'trail' : 'trails'}`
@@ -49,23 +50,39 @@ export default function TrailsIndexPage() {
     (t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i,
   )
 
-  const rows: V3LedgerPlainRow[] = []
-  for (const trail of listed) {
+  const drafted = listed.flatMap((trail) => {
     const name = trail.name.trim()
     const slug = trail.slug.trim()
-    if (!name || !slug) continue
+    if (!name || !slug) return []
     const dist =
       typeof trail.lengthMiles === 'number'
         ? `${trail.lengthMiles} mi${trail.distanceNote ? ` ${trail.distanceNote}` : ''}`
         : trail.landManager
-    rows.push({
+    return [{
       href: `/central-oregon/trails/${slug}`,
       when: v3Text(TRAIL_USE_LABEL[trail.use]),
       what: v3Text(name),
       detail: v3Text(`${trail.city} · ${dist}`),
       id: slug,
-    })
-  }
+      lat: trail.lat,
+      lng: trail.lng,
+      slug,
+    }]
+  })
+  const thumbs = await Promise.all(
+    drafted.map(async (row) => {
+      const geometry = await getTrailLineGeoJSON(row.slug).catch(() => null)
+      return placeListThumbDataUri({ lat: row.lat, lng: row.lng, geometry })
+    }),
+  )
+  const rows: V3LedgerPlainRow[] = drafted.map((row, i) => ({
+    href: row.href,
+    when: row.when,
+    what: row.what,
+    detail: row.detail,
+    id: row.id,
+    media: { src: thumbs[i]! },
+  }))
   const [firstRow, ...restRows] = rows
 
   const schemas: SchemaInput[] = [

@@ -140,6 +140,15 @@ describe('design directive contracts', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
+  it('park and trail list thumbs are always a map from existing geo', () => {
+    const parks = readSrc('components/site/listing-detail/ParksNearbyBlock.tsx')
+    const life = readSrc('components/site/listing-detail/LifestyleNearSection.tsx')
+    expect(parks).toMatch(/<PlaceListThumb/)
+    expect(parks).toMatch(/getParkBoundaryGeoJSON/)
+    expect(life).toMatch(/<PlaceListThumb/)
+    expect(life).toMatch(/getTrailLineGeoJSON/)
+  })
+
   it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
     // v3 chrome (P9 roll, 2026-08-27): one main mounting the v3 token scope

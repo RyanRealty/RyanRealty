@@ -72,7 +72,7 @@
     },
     {
       "name": "ParksNearbyBlock",
-      "section": "Parks near this house. Same parks read as before — layout only.",
+      "section": "Parks near this house. Same parks read as before. List thumbs are always a map from existing geo (boundary or point). Detail pages keep the live map.",
       "blocking": true
     },
     {
