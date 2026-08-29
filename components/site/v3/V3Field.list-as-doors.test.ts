@@ -11,6 +11,7 @@ describe('V3Field search photo-door hook', () => {
     expect(field).toMatch(/listAsDoors = false/)
     expect(field).toMatch(/useDoors && 'v3-field--doors'/)
     expect(field).toMatch(/door \? 'v3-field__photo' : 'v3-field__row'/)
+    expect(field).toMatch(/itemChrome \? 'group\/hide' : null/)
   })
 
   it('keeps the no-map photo mosaic off when search asks for doors plus a map', () => {
