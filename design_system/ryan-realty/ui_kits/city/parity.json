@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, once, level 1, BELOW the fold. Headline is '{City} homes for sale' plus the verdict when there is one (ci:seo-shell). Figures are median list price, months of supply, and median days to pending. Homes for sale is NOT among them: it is the Field caption. The first-screen tap is a house. This ask is the later-viewport browse door.",
+      "section": "Pattern 1, once, level 2, MID-PAGE after Stage, Field, and the email ask. Headline is 'How tight the market is' (or 'The {City} market' when no verdict). Note is the one supply sentence. Figures are the few face cells (median list, detached homes for sale, months of supply, median to pending, sale to original list). One V3Chart (median close by month). Chart Room is not the first fold. The first-screen tap is a house.",
       "blocking": true
     },
     {
@@ -55,13 +55,8 @@
       "blocking": true
     },
     {
-      "name": "V3PlacePropertyTypes",
-      "section": "Pattern 1 as ONE enumeration (2026-08-26 amendment): one Instrument per other property type the city holds, from getPublicPlaceSegments at city grain. A type with nothing publishable is absent, never an empty section and never a zero.",
-      "blocking": true
-    },
-    {
       "name": "CityHomesField",
-      "section": "The route-local Field wrapper: H1 only when Stage did not take it + V3Field with PlaceFieldMap in the map slot + the listed-set source line. V3Field and PlaceFieldMap are imported by THIS component, not the route file, so this entry is the one the import gate binds on. Pattern 2: this city's houses as map plus list in one frame, under Stage when a still exists. Caption is the listed-set count plus the MoS verdict when the one derivation has one. No V3Figure inventory hero. PlaceFieldMap is in the slot so the photo mosaic (two lists of the same houses) does not render. List thumbs are photographed, not tap-size stamps. hasMap ships when at least one pin plots.",
+      "section": "The route-local Field wrapper: H1 only when Stage did not take it + V3Field with PlaceFieldMap in the map slot + type chips + the listed-set source line. V3Field and PlaceFieldMap are imported by THIS component, not the route file, so this entry is the one the import gate binds on. Pattern 2: this city's houses as map plus list in one frame, under Stage when a still exists. 390 is list-first with a Map toggle (homepage Field). Caption is the listed-set count plus the MoS verdict when the one derivation has one. No V3Figure inventory hero. PlaceFieldMap is in the slot so the photo mosaic (two lists of the same houses) does not render. Pins use --v3-cat, not Google house pins. List thumbs are photographed, not tap-size stamps. hasMap ships when at least one pin plots.",
       "blocking": true
     }
   ],
@@ -101,7 +96,8 @@
     "The 'Sign in to manage alerts' link inside the capture confirmation - V3Sheet's terminal step is text, not markup. The account door is in the chrome, and the confirmation still states that any alert email can pause the alert.",
     "KbExploreTowns x3, KbCommunities, KbActivity, KbArticles - RESTORED 2026-08-12 as V3Ledger sections, not deleted. The first revision of this migration cut all six on the rhythm rule and took D80, D83, D84, D85, D88 and D93 down with them. The KB components themselves stay off this route (the barrel law and the register ratchet both forbid re-importing them); the data wiring they carried is back in full: getCommunitiesForIndex, getAllCitySnapshots, getCityCommunitySnapshots, getRecentBlogPosts, getActivityFeedWithFallbackMulti, fetchAllCityActiveSfr, resortActiveSfrCounts, resortLabelToSlug, assignNeighborhoodPhotos, RESORT_IMG, CITY_MARQUEE_COMMUNITIES, communityVideoUrl, and the bend-neighborhood-polygons import. lib/kb/neighborhood-photos.ts and lib/kb/city-page-config.ts were deleted by that revision and are restored with them - they are the lowest reusable units D88 and D89 name.",
     "withTimeoutFallback on the four answer reads - unchanged. The SIX ledger reads ARE wrapped: a slow community index must not hold the market answer above the fold, and a ledger whose count read degraded has a defined behaviour (keep the rows, drop the value column). fetchAllCityActiveSfr uses the Result variant, because an empty array from a timeout is indistinguishable from a city with no inventory and the zero-filled count map that follows would put '0 active' under a live-MLS trace on every resort in the city.",
-    "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + MarketCoreCharts + CityMarketCharts (the KB market section and its nested panels) - re-expressed, not dropped: the KPI row, pace items, and mix figures are the Instrument's figures off the same leftoverHudKpis pile; the property-type panel is the V3PlacePropertyTypes enumeration; the core trend tabs are one V3ChartCard switcher (coreChartsCard, fed through toPublicCoreChartSeries); the town comparison cards are cityMarketChartCards on the Instrument's cards slot. One market section per page (Matt 2026-07-29) holds on the barrel because every chart rides inside the Instrument.",
+    "V3PlacePropertyTypes (nine type H2s) - cut 2026-08-29. Types that exist are Field chips, not headings. The Field lists every type in one frame.",
+    "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + MarketCoreCharts + CityMarketCharts (the KB market section and its nested panels) - re-expressed, not dropped: the KPI row is the few face figures off leftoverHudKpis; type chips sit on the Field; one median-close V3Chart is the mid-page Chart Room. Pace, mix, mart composition, and the 35-figure run stay off this face.",
     "KbSell + publishSellMedian - the v3 page publishes no sell median at all; the valuation door is the 'Value my home' edge in the closing Quiet, built by valuationHref so ?from= attribution survives. ci:publish-median-caption's city arm moved to the no-median-surface form on CityAlertSheet (2026-08-26).",
     "KbAreaGuideVideo - the silent Area Guide clip plays on the community node it belongs to; the communities-rail rows keep their clip marker and poster. A Stage on the city page would be a sixth pattern, which stays a lock break.",
     "KbOpenHouses - the open-houses surface is /open-houses/[city]; the closing Quiet keeps the 'Open houses in {city}' door. The interactive rail (D94) lives on with KbOpenHouses' remaining mounts.",
@@ -143,14 +139,13 @@
     "MetadataBlock",
     "V3Breadcrumb",
     "V3Stage (owned library still + H1) when a place-owned poster exists",
-    "CityHomesField (H1 only when Stage is absent + map plus list, caption is the listed-set count plus verdict)",
-    "V3Instrument (level 2, the market question + leftover HUD + charts) or V3Quiet (stated absence)",
+    "CityHomesField (H1 only when Stage is absent + map plus list, type chips, caption is the listed-set count plus verdict)",
+    "CityAlertSheet (V3Sheet, city-scoped listing alert, after homes)",
+    "V3Instrument (level 2, tightness headline + one sentence + few figures + one chart) or V3Quiet (stated absence)",
     "V3Ledger (designated Bend neighborhoods, D83/D89)",
     "V3Quiet (the city in plain words + place facts)",
     "V3Ledger (all city communities, marquee first, D88)",
-    "V3PlacePropertyTypes (Instrument enumeration, one per other property type)",
     "V3Ledger (golf and master-planned, D85/D90/D92)",
-    "CityAlertSheet (V3Sheet, city-scoped listing alert)",
     "V3Ledger (Latest market activity, D93)",
     "V3Quiet (market FAQ)",
     "V3Ledger (city guides, D80)",

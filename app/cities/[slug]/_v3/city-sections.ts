@@ -444,9 +444,9 @@ const FEED = 'live MLS through Oregon Data Share'
  */
 export function cityMarketTrace(cityName: string, hasMos: boolean): string {
   return (
-    `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-    `detached single-family houses inside the ${cityName} city boundary. ` +
-    `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
+    `regional MLS through Oregon Data Share. ` +
+    `Detached single-family houses inside the ${cityName} city boundary. ` +
+    `Every figure names its own window. A figure the feed withheld is absent, not estimated.` +
     (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )
 }
@@ -474,7 +474,7 @@ export function cityActivityTrace(cityName: string): string {
 export function marketAbsenceItems(cityName: string, hasRows: boolean): V3QuietItem[] {
   const tail = hasRows ? ' The homes above carry their own live list prices.' : ''
   const body =
-    `The Market Truth metric layer published no figure for ${cityName} on this refresh, ` +
+    `Oregon Data Share published no figure for ${cityName} on this refresh, ` +
     `so this page is not printing a median, a supply figure, or a verdict.${tail}`
   return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }
@@ -509,15 +509,15 @@ export function cityFieldCaption(input: {
  */
 export function cityFieldTrace(cityName: string): string {
   return (
-    `${FEED}, the newest active single-family homes ` +
-    `with a ${cityName} address, a list price, and a street. The map plots this same set; ` +
-    `the Instrument below carries the full inventory count under its own trace`
+    `${FEED}, the newest active homes ` +
+    `with a ${cityName} address, a list price, and a street. The map plots this same set. ` +
+    `A type chip filters this same list.`
   )
 }
 
 export function cityFieldEmptyMessage(cityName: string, tilesReturned: number): string {
   return tilesReturned === 0
-    ? `No single-family home in ${cityName} is listed in the active feed on this refresh.`
+    ? `No home in ${cityName} is listed in the active feed on this refresh.`
     : `Every active ${cityName} listing this refresh returned was missing a list price or a street address, so none of them is shown as a row.`
 }
 

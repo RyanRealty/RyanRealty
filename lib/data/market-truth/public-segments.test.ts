@@ -370,9 +370,10 @@ describe('public place pages', () => {
       'utf8',
     )
     const hub = readFileSync(resolve('app/housing-market/page.tsx'), 'utf8')
-    expect(city).toMatch(/getPublicPlaceSegments/)
-    // v3 city page (2026-08-26): the enumeration is the shared barrel section.
-    expect(city).toMatch(/V3PlacePropertyTypes/)
+    // City restyle (2026-08-29): types are Field chips, not a type H2 run.
+    expect(city).not.toMatch(/getPublicPlaceSegments/)
+    expect(city).not.toMatch(/V3PlacePropertyTypes/)
+    expect(city).toMatch(/CityHomesField/)
     expect(strip).toMatch(/publicSegmentBrowseHref/)
     expect(strip).toMatch(/publicSegmentDisplayBits/)
     expect(market).toMatch(/getPublicPlaceSegments/)

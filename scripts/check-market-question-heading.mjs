@@ -92,6 +92,19 @@ for (const { grain, page, local } of GRAINS) {
   const localTexts = routeLocalSources(local)
   const everywhere = [pageText, ...localTexts]
 
+  // City restyle (2026-08-29): the buyer/seller H2 is off the face. The
+  // Instrument headline is tightness, and the verdict is one sentence.
+  if (grain === 'city') {
+    const verdictSentence = everywhere.some((t) => t.includes('months of supply, which is a'))
+    const tightnessHeadline = pageText.includes('How tight the market is')
+    const questionOffFace = !everywhere.some((t) => QUESTION.test(t))
+    checks.push({
+      label: `${grain} grain (${page}) renders the supply verdict without a buyer/seller H2`,
+      ok: verdictSentence && tightnessHeadline && questionOffFace,
+    })
+    continue
+  }
+
   const kbIdiom = /<KbMarketHud[\s\S]{0,400}?geoName=/.test(pageText)
   const v3Idiom = everywhere.some((t) => QUESTION.test(t))
   const faqIdiom =

@@ -116,7 +116,7 @@ describe('D26 leftover housing instrument and leftover as-of', () => {
     const city = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
     // v3 spelling (2026-08-26): the Instrument's `updated` stamp is the
     // leftover membership computed_at, formatted once. Pulse cannot fill it.
-    expect(city).toMatch(/updated=\{leftoverStamp \? v3Text\(formatDate\(leftoverStamp\)\)/)
+    expect(city).toMatch(/updated=\{hudStamp \? v3Text\(formatDate\(hudStamp\)\)/)
     expect(city).toMatch(/detached\?\.computedAt \?\? detachedInv\?\.computedAt/)
     expect(city).not.toMatch(/asOf=\{pulse\?\.refreshedAt/)
     expect(city).not.toMatch(/updated=\{pulse/)

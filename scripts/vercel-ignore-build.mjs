@@ -29,7 +29,8 @@ if (
   commitRef === 'cursor/homepage-restyle-e216' ||
   commitRef === 'cursor/search-field-restyle-f6ee' ||
   commitRef === 'cursor/sell-restyle-8b1d' ||
-  commitRef === 'cursor/valuation-restyle-942b'
+  commitRef === 'cursor/valuation-restyle-942b' ||
+  commitRef === 'cursor/city-restyle-ba64'
 ) {
   console.log(`[vercel-ignore-build] BUILD — allowlisted preview branch (${commitRef})`)
   process.exit(1)

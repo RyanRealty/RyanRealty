@@ -60,10 +60,10 @@ checks.push({
     /activeCount(?::[^=]*)?=\s*hud\.active/.test(cityPage) &&
     /CITY_TILE_FETCH_LIMIT/.test(cityPage) &&
     // The v3 Field replaced KbHero (2026-08-26): the opening count sentence is
-    // cityFieldCaption's, which interpolates the city name itself — the same
+    // cityFaceFieldCaption's, which interpolates the city name itself — the same
     // grain rule placeHeroLead carried, asserted by ci:place-hero-grain's v3
     // arm on the builder's own literal.
-    /cityFieldCaption\(\{/.test(cityPage),
+    /cityFaceFieldCaption\(\{/.test(cityPage),
 })
 
 // lib/market/publish-place-hero.ts was deleted with its last consumer when

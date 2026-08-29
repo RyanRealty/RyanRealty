@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { cityFieldItems } from './city-field-items'
-import { cityFieldCaption } from './city-sections'
+import { cityFieldItems, cityFieldPool } from './city-field-items'
+import { cityFaceFieldCaption } from './city-face'
 
 function tile(partial: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): ListingTile {
   return {
@@ -51,34 +51,34 @@ describe('cityFieldItems', () => {
   })
 })
 
-describe('cityFieldCaption', () => {
+describe('cityFaceFieldCaption', () => {
   it('names the listed set and the one MoS verdict', () => {
     expect(
-      cityFieldCaption({
+      cityFaceFieldCaption({
         cityName: 'Bend',
         count: 248,
         mosLabel: '3.6',
         verdictKind: 'sellers',
         verdictLabel: "seller's market",
       }),
-    ).toBe('The 248 newest single-family listings in Bend · 3.6 months of supply · a seller\'s market')
+    ).toBe('The 248 newest listings in Bend · 3.6 months of supply · a seller\'s market')
   })
 
   it('omits a verdict when MoS is absent', () => {
     expect(
-      cityFieldCaption({
+      cityFaceFieldCaption({
         cityName: 'Bend',
         count: 12,
         mosLabel: null,
         verdictKind: 'unknown',
         verdictLabel: 'unknown',
       }),
-    ).toBe('The 12 newest single-family listings in Bend')
+    ).toBe('The 12 newest listings in Bend')
   })
 
   it('prints nothing for an empty set', () => {
     expect(
-      cityFieldCaption({
+      cityFaceFieldCaption({
         cityName: 'Bend',
         count: 0,
         mosLabel: '3.6',
@@ -86,5 +86,19 @@ describe('cityFieldCaption', () => {
         verdictLabel: "seller's market",
       }),
     ).toBeNull()
+  })
+})
+
+describe('cityFieldPool', () => {
+  it('classifies types and interleaves so a house-heavy feed cannot hide a lot', () => {
+    const tiles = [
+      tile({ listingKey: 'h1', propertySubType: 'Single Family Residence' }),
+      tile({ listingKey: 'h2', propertySubType: 'Single Family Residence', streetNumber: '101' }),
+      tile({ listingKey: 'c1', propertySubType: 'Condominium', streetNumber: '200' }),
+      tile({ listingKey: 'l1', propertySubType: 'Residential Lots', streetNumber: '300' }),
+    ]
+    const items = cityFieldPool(tiles, 3)
+    expect(items.map((item) => item.typeKey)).toEqual(['house', 'condo', 'land'])
+    expect(items[0]?.typeLabel).toBe('House')
   })
 })

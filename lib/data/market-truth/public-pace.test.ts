@@ -60,9 +60,9 @@ describe('public pace surfaces', () => {
     const zip = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
     const sell = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
     expect(city).toMatch(/getPublicDetachedPace/)
-    // v3 city page (2026-08-26): the pace items print as Instrument figures
-    // through publicPaceItems, the same builder PublicPaceStats renders from.
-    expect(city).toMatch(/publicPaceItems/)
+    // City restyle (2026-08-29): pace still feeds leftoverHudKpis. The
+    // pace run does not print. Same as /sell.
+    expect(city).not.toMatch(/publicPaceItems/)
     expect(market).toMatch(/getPublicDetachedPace/)
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)

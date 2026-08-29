@@ -70,8 +70,8 @@ const pages = [
     // page is cityFieldCaption's, and that builder interpolates the city name
     // itself, so the caption cannot hang the count on a coarser parent.
     v3: {
-      module: 'app/cities/[slug]/_v3/city-sections.ts',
-      builder: 'cityFieldCaption',
+      module: 'app/cities/[slug]/_v3/city-face.ts',
+      builder: 'cityFaceFieldCaption',
       names: 'in ${input.cityName}',
     },
   },
