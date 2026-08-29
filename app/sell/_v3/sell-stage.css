@@ -20,6 +20,18 @@
     padding-top: var(--v3-space-md);
     padding-bottom: var(--v3-space-lg);
   }
+
+  /* Cookie bar is fixed at 390: legal copy plus 44px actions (y 735–844).
+     1280 already clears FAQ — do not add this reserve there. */
+  .v3.sell-page #selling-questions {
+    padding-bottom: calc(
+      var(--v3-section-pad) + var(--v3-tap) + 6.5rem + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .v3.sell-page #selling-questions .v3-quiet__item {
+    scroll-margin-bottom: calc(var(--v3-tap) + 6.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* Address field + Value my home at 44px, cream face. */
@@ -37,18 +49,4 @@
 
 .v3.v3-sheet.sell-value-sheet button[type='submit'] {
   min-height: var(--v3-tap);
-}
-
-/* Cookie bar is fixed: legal copy plus 44px actions (y 735–844 at 390).
-   Do not invent chrome. Reserve that band on Selling questions so the last
-   FAQ term and answer can scroll fully above the bar. Same family as the
-   listing/land bottom reserve. */
-.v3.sell-page #selling-questions {
-  padding-bottom: calc(
-    var(--v3-section-pad) + var(--v3-tap) + 6.5rem + env(safe-area-inset-bottom, 0px)
-  );
-}
-
-.v3.sell-page #selling-questions .v3-quiet__item {
-  scroll-margin-bottom: calc(var(--v3-tap) + 6.5rem + env(safe-area-inset-bottom, 0px));
 }
