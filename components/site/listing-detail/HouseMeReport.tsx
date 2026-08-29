@@ -223,6 +223,7 @@ type Props = HouseMeReportFacts & {
   listingKey: string
   subjectAddress: string
   hideCmaRequest?: boolean
+  hideHeading?: boolean
   className?: string
 }
 
@@ -230,6 +231,7 @@ export function HouseMeReport({
   listingKey,
   subjectAddress,
   hideCmaRequest,
+  hideHeading,
   className,
   ...facts
 }: Props) {
@@ -241,12 +243,14 @@ export function HouseMeReport({
 
   return (
     <section className={cn('section', className)} data-testid="houseme-report">
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">{HOUSEME_EYEBROW}</div>
-          <h2 className="sec-title display">{title}</h2>
+      {hideHeading ? null : (
+        <div className="sec-head">
+          <div>
+            <div className="eyebrow sec-index">{HOUSEME_EYEBROW}</div>
+            <h2 className="sec-title display">{title}</h2>
+          </div>
         </div>
-      </div>
+      )}
       {/* houseme-rows: kb.css re-inks .mono-lab for this cream ledger — the
           shared kb class paints labels cream-on-navy, which left every row
           label invisible (cream on cream) on the listing surface. */}

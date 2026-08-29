@@ -81,6 +81,8 @@ type Props = {
   city?: string | null
   listPrice?: number | null
   beds?: number | null
+  hideHeading?: boolean
+  hideAlertAsk?: boolean
 }
 
 type CompareMode = 'after' | 'before' | 'split'
@@ -93,7 +95,7 @@ type CompareMode = 'after' | 'before' | 'split'
  * Exterior photos are refused with a clear reason. Post-success is a quiet
  * conversion row (alert + broker + tour), not a second full form card.
  */
-export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props) {
+export function RoomRestyle({ photos, listingKey, city, listPrice, beds, hideHeading, hideAlertAsk }: Props) {
   const safePhotos = useMemo(
     () => photos.filter((p) => typeof p.url === 'string' && p.url.startsWith('http')).slice(0, 12),
     [photos],
@@ -220,6 +222,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       >
         AI visualization
       </p>
+      {hideHeading ? null : (
       <h2
         id="room-restyle-heading"
         className="display mt-1.5 text-2xl leading-tight tracking-tight"
@@ -227,6 +230,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       >
         Imagine this room
       </h2>
+      )}
       <p className="mt-1.5 max-w-prose text-sm leading-relaxed" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
         See how an interior could feel in a different finish. Architecture stays the same.
         This is a visualization, not the listed condition, and not a renovation quote.
@@ -536,7 +540,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               </button>
             </div>
 
-            {city ? (
+            {city && !hideAlertAsk ? (
               <div className="mt-4">
                 {alertState === 'done' ? (
                   <p className="text-sm" style={{ color: 'var(--navy)' }}>

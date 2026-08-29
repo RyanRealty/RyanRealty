@@ -1,15 +1,11 @@
-import {
-  Price,
-  TabularNumber,
-  TextLink,
-} from '@/components/site/primitives'
+import type { ReactNode } from 'react'
+import { Price, TabularNumber, TextLink } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { slugify } from '@/lib/slug'
 import { parseCommunitySlug } from '@/lib/community-slug'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
 import {
   EMPTY_PUBLIC_PACE,
@@ -17,20 +13,12 @@ import {
   type PublicPaceRow,
 } from '@/lib/data/market-truth/public-pace'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { PublicProductTypes } from '@/app/cities/[slug]/PublicProductTypes'
+import { toListingCoreChartSeries } from '@/lib/listing/listing-chart-source'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
- * NeighborhoodMarketContext — THE Zillow beater. KB section style:
- * navy surface, Amboqia heading, mono KPI cells, and the tabbed core-chart
- * module (MarketCoreCharts) under the KPI cells at the listing's CITY scope
- * (city monthly cache series are dense; subdivision series are too sparse to
- * chart honestly).
- *
- * Server component: it fetches the core-chart series itself (timeout-guarded,
- * fails soft to no module — the KPI cells never depend on it).
- *
- * Spec: design_system/ryan-realty/ui_kits/listing-detail/index.html §nbhd-context
+ * Chart Room for this listing's place. Cream surface. V3Chart via
+ * MarketCoreCharts. Source line is Oregon Data Share. No leftover labels.
  */
 
 type Props = {
@@ -41,16 +29,10 @@ type Props = {
   thisListPrice: number | null
   refreshedAt?: string
   className?: string
-  /**
-   * The listing's city slug (hyphenated, e.g. "la-pine") for the chart module
-   * scope. Optional: when absent it is derived from hubHref ("/cities/<slug>"
-   * directly, "/communities/<slug>" via the community registry). Underivable →
-   * the module is simply omitted.
-   */
   chartCitySlug?: string | null
+  heading?: string | false
 }
 
-/** Derive the city slug behind this market context from its hub link. */
 export function deriveCitySlugFromHubHref(hubHref: string): string | null {
   const city = hubHref.match(/^\/cities\/([^/?#]+)/)
   if (city) return city[1]!
@@ -99,14 +81,12 @@ export async function NeighborhoodMarketContext({
   refreshedAt,
   className,
   chartCitySlug,
+  heading = 'The market',
 }: Props) {
   if (!hud) return null
 
-  // Tabbed core-chart module at the listing's CITY scope. City cache rows key
-  // multi-word cities space-separated ("la pine"). Fails soft: no derivable
-  // city, a timeout, or zero chartable series → no module, KPI cells unharmed.
   const citySlug = chartCitySlug ?? deriveCitySlugFromHubHref(hubHref)
-  const [coreCharts, leftover, publicSegments] = await Promise.all([
+  const [coreCharts, pace] = await Promise.all([
     citySlug
       ? withTimeoutFallback(
           getCoreChartSeries({ geoType: 'city', geoSlug: citySlug.replace(/-/g, ' ') }),
@@ -125,138 +105,85 @@ export async function NeighborhoodMarketContext({
             'listing:pace',
           )
         : Promise.resolve(EMPTY_PUBLIC_PACE),
-    citySlug
-      ? withTimeoutFallback(
-          getPublicPlaceSegments({ geoType: 'city', geoSlug: citySlug }),
-          [],
-          3000,
-          'listing:segments',
-        )
-      : Promise.resolve([]),
   ])
   const cityLabel = citySlug ? cityDisplayName(citySlug) : null
-  const chartScopeLabel = cityLabel && cityLabel !== geoName ? `${cityLabel} (city)` : undefined
+  const chartScopeLabel = cityLabel && cityLabel !== geoName ? `${cityLabel} city` : undefined
+  const publishedCharts = coreCharts ? toListingCoreChartSeries(coreCharts) : null
 
   const activeCount = hud.active
   const medianList = hud.medianList
   const daysToPending = hud.daysToPending
   const mos = hud.monthsSupply
-  const freshness = refreshedAt ?? null
-  const freshnessLabel = formatFreshness(freshness)
+  const freshnessLabel = formatFreshness(refreshedAt ?? null)
   const diffPct = diffPctVsMedian(thisListPrice, medianList)
   const aboveOrBelow = diffPct == null ? null : diffPct >= 0 ? 'above' : 'below'
 
   return (
-    <section className={cn('section mkt', className)} style={{ padding: 0 }}>
-      <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
-        {/* KB navy sec-head inside the mkt surface */}
-        <div className="sec-head" style={{ borderBottomColor: 'color-mix(in srgb, var(--v3-cream) 28%, transparent)' }}>
-          <div>
-            <div className="eyebrow sec-index" style={{ color: 'color-mix(in srgb, var(--v3-cream) 55%, transparent)' }}>
-              Live market context
-            </div>
-            <h2 className="sec-title display" style={{ color: 'var(--v3-cream)' }}>
-              {geoName} market
-            </h2>
-          </div>
-          {freshnessLabel ? (
-            <div
-              className="mkt-live"
-              style={{ flexShrink: 0 }}
-            >
-              <span className="dot" aria-hidden />
-              <span className="txt">Updated {freshnessLabel}</span>
-            </div>
-          ) : null}
-        </div>
+    <section className={cn('section listing-market', className)}>
+      <ListingSectionHead heading={heading} eyebrow={freshnessLabel ? `Updated ${freshnessLabel}` : undefined} />
 
-        {/* KPI cells — column count drives the desktop layout via a CSS var so
-            the responsive rule in kb.css can collapse to 2-up on mobile (an inline
-            grid-template-columns would override that and overflow at 375px). */}
-        <div
-          className="mkt-kpis"
-          style={{ ['--kpi-cols' as string]: [activeCount, hud.pending, medianList, daysToPending, mos, leftover.daysToContract].filter(v => v != null).length }}
-        >
-          {activeCount != null ? (
-            <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
-          ) : null}
-          {hud.pending != null ? (
-            <KpiCell label="Pending · now" value={<TabularNumber value={hud.pending} />} />
-          ) : null}
-          {medianList != null ? (
-            <KpiCell label="Median list" value={<Price value={medianList} compact />} />
-          ) : null}
-          {daysToPending != null ? (
-            <KpiCell
-              label="Median to pending · 90 days"
-              value={<><TabularNumber value={daysToPending} /> days</>}
-            />
-          ) : null}
-          {mos != null ? (
-            <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
-          ) : null}
-          {leftover.daysToContract != null ? (
-            <KpiCell
-              label="Days to contract · 12 months"
-              value={<TabularNumber value={leftover.daysToContract} />}
-            />
-          ) : null}
-        </div>
-
-        {/* Tabbed core-chart module under the KPI cells — city-scope trends,
-            labeled when the scope differs from this section's subject. Renders
-            nothing when no series is chartable. (§0) */}
-        {citySlug && publicSegments.length > 0 ? (
-          <div className="mt-4 mb-2">
-            <PublicProductTypes
-              cityName={cityLabel ?? geoName}
-              citySlug={citySlug}
-              rows={publicSegments}
-            />
-          </div>
+      <div
+        className="listing-market-kpis"
+        style={{
+          ['--kpi-cols' as string]: [activeCount, hud.pending, medianList, daysToPending, mos, pace.daysToContract].filter(
+            (v) => v != null,
+          ).length,
+        }}
+      >
+        {activeCount != null ? (
+          <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
         ) : null}
-
-        {coreCharts ? (
-          <div className="mt-6 mb-2">
-            <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} scopeLabel={chartScopeLabel} />
-          </div>
+        {hud.pending != null ? (
+          <KpiCell label="Pending · now" value={<TabularNumber value={hud.pending} />} />
         ) : null}
-
-        {/* Comparison line */}
-        <div style={{ paddingBottom: 'clamp(22px,3vw,36px)' }}>
-          {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
-            <p className="mkt-fine" style={{ marginTop: 0 }}>
-              This home is listed at{' '}
-              <b style={{ color: 'var(--v3-cream)' }}>
-                <Price value={thisListPrice} />
-              </b>
-              {', '}
-              <span style={{ color: 'var(--v3-cream)', fontVariantNumeric: 'tabular-nums' }}>
-                <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
-              </span>{' '}
-              the {geoName} median list price.{' '}
-              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
-                See full {geoName} market →
-              </TextLink>
-            </p>
-          ) : (
-            <p className="mkt-fine" style={{ marginTop: 0 }}>
-              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
-                See full {geoName} market →
-              </TextLink>
-            </p>
-          )}
-        </div>
+        {medianList != null ? (
+          <KpiCell label="Median list" value={<Price value={medianList} />} />
+        ) : null}
+        {daysToPending != null ? (
+          <KpiCell
+            label="Median to pending, 90 days"
+            value={
+              <>
+                <TabularNumber value={daysToPending} /> days
+              </>
+            }
+          />
+        ) : null}
+        {mos != null ? (
+          <KpiCell label="Months of supply" value={<TabularNumber value={mos} fractionDigits={1} />} />
+        ) : null}
+        {pace.daysToContract != null ? (
+          <KpiCell label="Days to contract, 12 months" value={<TabularNumber value={pace.daysToContract} />} />
+        ) : null}
       </div>
+
+      {publishedCharts ? (
+        <div className="listing-market-chart">
+          <MarketCoreCharts data={publishedCharts} scopeLabel={chartScopeLabel} />
+        </div>
+      ) : null}
+
+      <p className="listing-market-note">
+        {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
+          <>
+            This home is listed at <Price value={thisListPrice} />,{' '}
+            <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow} the {geoName} median list
+            price.{' '}
+          </>
+        ) : null}
+        <TextLink href={hubHref} underline="on-hover">
+          See the {geoName} market
+        </TextLink>
+      </p>
     </section>
   )
 }
 
-function KpiCell({ label, value }: { label: string; value: React.ReactNode }) {
+function KpiCell({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="mkt-kpi">
-      <div className="mkt-kpi-lbl">{label}</div>
-      <div className="mkt-kpi-val">{value}</div>
+    <div className="listing-market-kpi">
+      <div className="listing-market-kpi-lbl">{label}</div>
+      <div className="listing-market-kpi-val">{value}</div>
     </div>
   )
 }

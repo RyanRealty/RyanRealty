@@ -1,4 +1,5 @@
-import { Eyebrow, H2, Stack } from '@/components/site/primitives'
+import { Stack } from '@/components/site/primitives'
+import { ListingSectionHead } from './ListingSectionHead'
 import { publishOpenHouseDay } from '@/lib/listing/publish-calendar-day'
 
 /**
@@ -26,6 +27,7 @@ export type ListingOpenHouse = {
 type Props = {
   events: ReadonlyArray<ListingOpenHouse>
   className?: string
+  heading?: string | false
 }
 
 function formatDay(iso: string | null | undefined): string {
@@ -49,7 +51,7 @@ function formatRange(start: string | null | undefined, end: string | null | unde
   return a || b
 }
 
-export function OpenHouses({ events, className }: Props) {
+export function OpenHouses({ events, className, heading = 'Open house' }: Props) {
   if (events.length === 0) return null
 
   const upcoming = [...events]
@@ -60,10 +62,7 @@ export function OpenHouses({ events, className }: Props) {
 
   return (
     <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Visit</Eyebrow>
-        <H2 className="mt-1.5">Open houses</H2>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="Visit" />
       <ul className="flex flex-col gap-3">
         {upcoming.map((e, i) => {
           const range = formatRange(e.start_time, e.end_time)

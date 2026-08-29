@@ -314,33 +314,32 @@
   gap: 7px;
   flex: 0 0 auto;
 }
-.listing-detail .listing-mobile-cta-actions .lmc-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 2px solid var(--navy);
-  color: var(--navy);
-  background: transparent;
-}
-.listing-detail .listing-mobile-cta-actions .lmc-icon:active {
-  background: var(--navy-12);
-}
+.listing-detail .listing-mobile-cta-actions .lmc-call,
 .listing-detail .listing-mobile-cta-actions .lmc-tour {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  padding: 0 13px;
-  background: var(--navy);
-  color: var(--cream);
-  font-size: 0.74rem;
+  min-height: var(--v3-tap);
+  height: var(--v3-tap);
+  padding: 0 16px;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
-.listing-detail .listing-mobile-cta-actions .lmc-tour:active {
+.listing-detail .listing-mobile-cta-actions .lmc-tour {
+  background: var(--navy);
+  color: var(--cream);
+  flex: 1 1 auto;
+}
+.listing-detail .listing-mobile-cta-actions .lmc-call {
+  border: 2px solid var(--navy);
+  color: var(--navy);
+  background: transparent;
+  min-width: var(--v3-tap);
+}
+.listing-detail .listing-mobile-cta-actions .lmc-tour:active,
+.listing-detail .listing-mobile-cta-actions .lmc-call:active {
   opacity: 0.9;
 }
 
@@ -746,4 +745,196 @@
   .listing-detail .lst-grid .lst-card:nth-child(3) .lst-media {
     aspect-ratio: 16/10;
   }
+}
+
+/* Listing Sheet: facts, gallery, jobs. Same v3 tokens. */
+.listing-detail .listing-price-cta--facts {
+  display: grid;
+  gap: 1rem;
+}
+.listing-detail .listing-price-cta .v3-figure__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.listing-detail .listing-price-cta-place {
+  font-family: var(--v3-font-sans);
+  font-size: 1rem;
+  color: var(--navy);
+}
+.listing-detail .listing-price-cta-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+}
+@media (min-width: 760px) {
+  .listing-detail .listing-price-cta-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.listing-detail .listing-price-cta-fact-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+}
+.listing-detail .listing-price-cta-fact-value {
+  font-family: var(--v3-font-sans);
+  font-size: 1rem;
+  color: var(--navy);
+}
+.listing-detail .listing-price-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.listing-detail .listing-price-cta-icons {
+  display: flex;
+  gap: 0.5rem;
+}
+.listing-detail .listing-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  border: 2px solid var(--navy);
+  background: transparent;
+  color: var(--navy);
+  padding: 0;
+}
+@media (min-width: 1024px) {
+  .listing-detail .listing-sheet-schedule {
+    display: none;
+  }
+}
+.listing-detail .listing-broker-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--v3-tap);
+}
+.listing-detail .listing-broker-compact-photo {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+}
+.listing-detail .listing-broker-compact-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+}
+.listing-detail .listing-broker-compact-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+@media (min-width: 1024px) {
+  .listing-detail .listing-broker-compact {
+    display: none;
+  }
+}
+.listing-detail .listing-sheet-gallery {
+  margin: 1.25rem 0;
+}
+.listing-detail .listing-sheet-gallery-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+@media (min-width: 760px) {
+  .listing-detail .listing-sheet-gallery-row {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+.listing-detail .listing-sheet-gallery-cell,
+.listing-detail .listing-sheet-gallery-more {
+  position: relative;
+  min-height: var(--v3-tap);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 2px solid var(--navy);
+  background: var(--cream);
+  color: var(--navy);
+}
+.listing-detail .listing-sheet-gallery-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.listing-detail .listing-sheet-job {
+  display: grid;
+  gap: 1.25rem;
+  padding-top: 1.5rem;
+}
+.listing-detail .listing-location-note,
+.listing-detail .listing-market-note,
+.listing-detail .listing-alerts-copy {
+  font-family: var(--v3-font-sans);
+  font-size: 0.95rem;
+  color: color-mix(in srgb, var(--v3-navy) 78%, transparent);
+}
+.listing-detail .listing-market-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+@media (min-width: 760px) {
+  .listing-detail .listing-market-kpis {
+    grid-template-columns: repeat(var(--kpi-cols, 3), minmax(0, 1fr));
+  }
+}
+.listing-detail .listing-market-kpi-lbl {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+}
+.listing-detail .listing-market-kpi-val {
+  font-size: 1.25rem;
+  color: var(--navy);
+}
+.listing-detail .listing-market-chart {
+  margin: 1.25rem 0;
+}
+.listing-detail .listing-market-chart [role='tab'] {
+  min-height: var(--v3-tap);
+}
+.listing-detail .listing-alerts-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+.listing-detail .listing-alerts-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.listing-detail .listing-alerts-input {
+  min-height: var(--v3-tap);
+  border: 2px solid var(--navy);
+  background: var(--cream);
+  color: var(--navy);
+  padding: 0 12px;
+  font-size: 1rem;
+}
+.listing-detail .listing-alerts-problem {
+  color: var(--navy);
+  font-size: 0.875rem;
+}
+.listing-detail .listing-place-parents .wrap {
+  padding-inline: 0;
 }

@@ -7,6 +7,7 @@ import {
 } from '@/components/site/primitives'
 import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
 import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Listing-detail MortgageCalculator — KB section style.
@@ -19,6 +20,7 @@ type Props = {
   listPrice: number | null
   taxAnnualAmount?: number | null
   className?: string
+  heading?: string | false
   /**
    * Seed rate in PERCENT (6.67 = 6.67%), resolved server-side from
    * getCalculatorDefaults() — which reads the ingested 30-yr series, not a
@@ -61,7 +63,7 @@ function parsePercent(raw: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-export function MortgageCalculator({ listPrice, taxAnnualAmount, className, ratePct }: Props) {
+export function MortgageCalculator({ listPrice, taxAnnualAmount, className, ratePct, heading = false }: Props) {
   const seedRatePct =
     typeof ratePct === 'number' && Number.isFinite(ratePct) && ratePct > 0 ? ratePct : DEFAULT_RATE_PCT
   const [priceInput, setPriceInput] = useState(listPrice ? String(listPrice) : '')
@@ -102,12 +104,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
 
   return (
     <section className={className}>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">Estimate</div>
-          <h2 className="sec-title display">Monthly payment</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="Estimate" />
 
       <div style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Body size="small" tone="muted">

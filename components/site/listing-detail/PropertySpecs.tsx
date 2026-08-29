@@ -6,6 +6,7 @@ import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingHoa } from '@/lib/listing/publish-listing-hoa'
 import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { cn } from '@/lib/utils'
+import { ListingSectionHead } from './ListingSectionHead'
 
 /**
  * Listing-detail PropertySpecs — the full key-facts surface in KB section
@@ -87,6 +88,7 @@ type Props = {
     | 'highSchool'
   >
   className?: string
+  heading?: string | false
 }
 
 type Spec = {
@@ -341,18 +343,13 @@ function SpecGrid({ specs }: { specs: Spec[] }) {
   )
 }
 
-export function PropertySpecs({ listing, className }: Props) {
+export function PropertySpecs({ listing, className, heading = false }: Props) {
   const groups = buildGroups(listing)
   if (groups.length === 0) return null
 
   return (
     <section className={cn('section', className)}>
-      <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">Facts</div>
-          <h2 className="sec-title display">Property details</h2>
-        </div>
-      </div>
+      <ListingSectionHead heading={heading} eyebrow="Facts" />
 
       <div
         style={{

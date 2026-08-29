@@ -30,6 +30,13 @@
   padding: var(--v3-section-pad) var(--v3-gutter);
 }
 
+/* Listing / plan-detail surface: one Sheet at the page measure so facts,
+   gallery, and Chart Room share the same working frame. */
+.v3.v3-sheet.v3-sheet--page {
+  max-width: var(--v3-measure);
+  width: 100%;
+}
+
 .v3-sheet-head {
   display: grid;
   gap: var(--v3-space-xs);

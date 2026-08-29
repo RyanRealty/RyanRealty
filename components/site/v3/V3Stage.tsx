@@ -129,6 +129,13 @@ export type V3StageProps = {
    * is the Stage action, omit `action` so a second button does not ship.
    */
   children?: ReactNode
+  /**
+   * Media tap. Listing Stage opens the gallery. The copy stack stays above
+   * this hit so the visible action remains the named control.
+   */
+  onMediaActivate?: () => void
+  /** Accessible name for the media tap. Required when onMediaActivate is set. */
+  mediaActivateLabel?: string
   id?: string
   className?: string
 }
@@ -189,6 +196,8 @@ export function V3Stage<H extends string, L extends string>({
   headingLevel = 2,
   height = 'standard',
   children,
+  onMediaActivate,
+  mediaActivateLabel,
   id,
   className,
 }: V3StageProps & {
@@ -200,6 +209,11 @@ export function V3Stage<H extends string, L extends string>({
   const showVideo = Boolean(videoSrc) && motionAllowed
 
   assertNamed(headline, action?.label)
+  if (process.env.NODE_ENV !== 'production' && onMediaActivate && isBlank(mediaActivateLabel ?? '')) {
+    throw new Error(
+      'V3Stage: `onMediaActivate` needs `mediaActivateLabel`. The media tap is a control, so it needs an accessible name.',
+    )
+  }
 
   return (
     <section
@@ -245,6 +259,15 @@ export function V3Stage<H extends string, L extends string>({
       </div>
 
       <div className="v3-stage-scrim" aria-hidden="true" />
+
+      {onMediaActivate && mediaActivateLabel ? (
+        <button
+          type="button"
+          className="v3-stage-media-hit"
+          onClick={onMediaActivate}
+          aria-label={mediaActivateLabel}
+        />
+      ) : null}
 
       <div className="v3-stage-copy">
         {eyebrow ? <V3Eyebrow onMedia>{eyebrow}</V3Eyebrow> : null}

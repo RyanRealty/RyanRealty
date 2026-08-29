@@ -62,17 +62,19 @@ export function ListingFeaturedHomes({
   viewAllLabel = 'See homes for sale',
   viewAllPlace,
   totalCount = null,
+  heading = 'More homes',
 }: {
   items: ListingFeaturedItem[]
   eyebrow?: string
-  /** Where "see everything for sale here" goes — the caller's scoped URL. */
+  /** Where "see everything for sale here" goes - the caller's scoped URL. */
   viewAllHref?: string
   /** Shown when there is no count to fold in. */
   viewAllLabel?: string
   /** The geography this rail belongs to, composed with the count in the CTA. */
   viewAllPlace?: string
-  /** Active listing count for this geography — renders as the real number. */
+  /** Active listing count for this geography - renders as the real number. */
   totalCount?: number | null
+  heading?: string | false
 }) {
   const root = useRef<HTMLElement>(null)
   const { inViewKey, register } = useInViewAutoplay()
@@ -122,13 +124,12 @@ export function ListingFeaturedHomes({
   return (
     <section className="section listings" id="listings" ref={root}>
       <div className="wrap">
-        <div className="sec-head">
-          <span className="sec-index">{eyebrow}</span>
-          <h2 className="sec-title display">
-            On the <br />
-            market
-          </h2>
-        </div>
+        {heading === false ? null : (
+          <div className="sec-head">
+            <span className="sec-index">{eyebrow}</span>
+            <h2 className="sec-title display">{heading}</h2>
+          </div>
+        )}
         <div className="lst-grid">
           {shown.map((it) => {
             const playing = activeHref === it.href && !!it.video

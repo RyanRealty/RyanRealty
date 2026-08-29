@@ -28,6 +28,7 @@ type Props = {
   city: string | null
   listNumber: string | null
   hideCmaRequest?: boolean
+  hideHeading?: boolean
   className?: string
 }
 
@@ -51,6 +52,7 @@ export function LivePricingRead({
   city,
   listNumber,
   hideCmaRequest,
+  hideHeading,
   className,
 }: Props) {
   const facts = {
@@ -78,6 +80,7 @@ export function LivePricingRead({
         listingKey={listingKey}
         subjectAddress={subjectAddress}
         hideCmaRequest={hideCmaRequest}
+        hideHeading={hideHeading}
         {...facts}
       />
     </div>

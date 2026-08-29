@@ -275,9 +275,9 @@ export default function CookieConsentBanner() {
           <Link href="/privacy#donotsell" className="font-medium text-foreground underline hover:no-underline">Do Not Sell My Personal Information</Link>
         </p>
         <div className="mt-2 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-          <Button type="button" size="sm" onClick={acceptAll}>Accept all</Button>
-          <Button type="button" size="sm" variant="outline" onClick={essentialOnly}>Essential only</Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setPrefsOpen(true)}>Preferences</Button>
+          <Button type="button" className="min-h-11" onClick={acceptAll}>Accept all</Button>
+          <Button type="button" variant="outline" className="min-h-11" onClick={essentialOnly}>Essential only</Button>
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => setPrefsOpen(true)}>Preferences</Button>
         </div>
       </div>
     </div>
