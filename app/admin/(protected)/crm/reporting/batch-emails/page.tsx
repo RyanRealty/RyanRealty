@@ -15,8 +15,13 @@ import type { CSSProperties } from 'react'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getBatchEmailsReport, type BatchEmailRow } from '@/lib/data/crm/getBatchEmailsReport'
+import {
+  getRecentCrmBulkJobs,
+  inFlightEmailCohortJobs,
+} from '@/lib/data/crm/getCrmBulkJob'
 import { formatDate } from '@/lib/format/date'
 import { Button, SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import BulkProgress from '@/components/admin/crm/BulkProgress'
 import { ReportingSubNav } from '../_components/ReportingSubNav'
 import { refreshBatchEmailsAction } from './actions'
 
@@ -173,6 +178,9 @@ export default async function BatchEmailsPage({
   })
   const rows: BatchEmailRow[] = result?.rows ?? []
   const unreadable = result === null || result.unreadable
+  const inFlight = inFlightEmailCohortJobs(
+    await getRecentCrmBulkJobs(scope ? access.email : undefined),
+  )
 
   const finished = rows.filter((r) => r.status === 'finished').length
 
@@ -201,6 +209,18 @@ export default async function BatchEmailsPage({
           <Button type="submit">Refresh</Button>
         </form>
       </div>
+
+      {inFlight.length > 0 ? (
+        <>
+          <SectionHead>In flight</SectionHead>
+          <p style={{ ...MUTED, marginTop: 8, marginBottom: 4 }}>
+            Queued and running batch sends. These numbers update live — you do not need to Refresh.
+          </p>
+          {inFlight.map((job) => (
+            <BulkProgress key={job.id} jobId={job.id} />
+          ))}
+        </>
+      ) : null}
 
       <SectionHead>Recent batch emails</SectionHead>
 

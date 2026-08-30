@@ -3,6 +3,7 @@ import {
   normalizeBulkJobStatus,
   computeProgress,
   buildBulkJobView,
+  inFlightEmailCohortJobs,
 } from './getCrmBulkJob'
 
 describe('normalizeBulkJobStatus', () => {
@@ -95,5 +96,36 @@ describe('buildBulkJobView', () => {
     expect(v.status).toBe('failed')
     expect(v.error).toBe('handler threw')
     expect(v.isTerminal).toBe(true)
+  })
+})
+
+describe('inFlightEmailCohortJobs', () => {
+  const row = {
+    id: 7,
+    kind: 'email-cohort',
+    status: 'running',
+    total: 538,
+    processed: 0,
+    skipped: 0,
+    breakdown: {},
+    error: null,
+    actor_email: 'matt@ryan-realty.com',
+    created_at: '2026-08-30T20:00:00Z',
+    started_at: null,
+    finished_at: null,
+  }
+
+  it('keeps queued and running email-cohort jobs', () => {
+    const queued = buildBulkJobView({ ...row, id: 28, status: 'queued' })
+    const running = buildBulkJobView({ ...row, id: 27, status: 'running' })
+    const done = buildBulkJobView({ ...row, id: 26, status: 'done', finished_at: '2026-08-30T20:10:00Z' })
+    const tag = buildBulkJobView({ ...row, id: 9, kind: 'add_tag', status: 'running' })
+    expect(inFlightEmailCohortJobs([queued, running, done, tag]).map((j) => j.id)).toEqual([28, 27])
+  })
+
+  it('drops failed and canceled cohort jobs', () => {
+    const failed = buildBulkJobView({ ...row, status: 'failed', error: 'boom' })
+    const canceled = buildBulkJobView({ ...row, status: 'canceled' })
+    expect(inFlightEmailCohortJobs([failed, canceled])).toEqual([])
   })
 })

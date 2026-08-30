@@ -47,6 +47,13 @@ export type CrmBulkJobView = {
   isTerminal: boolean
 }
 
+/** Email-cohort jobs still draining — the live strip on Batch Emails. PURE. */
+export function inFlightEmailCohortJobs(
+  jobs: readonly CrmBulkJobView[],
+): CrmBulkJobView[] {
+  return jobs.filter((j) => j.kind === 'email-cohort' && !j.isTerminal)
+}
+
 const TERMINAL: ReadonlySet<CrmBulkJobStatus> = new Set(['done', 'failed', 'canceled'])
 
 /** Coerce a raw status string to a valid status (default 'queued'). PURE. */
