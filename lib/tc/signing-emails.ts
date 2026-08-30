@@ -57,11 +57,15 @@ export async function sendSigningInvite(params: {
     <p style="margin:0 0 12px;">${escapeHtml(copy.body)}</p>
     <p style="margin:0;">Tap the button below to review and sign. You do not need an account or a password. The link is unique to you.</p>
   `
+  const { resolveTrackablePersonId } = await import('@/lib/email/auto-track')
+  const personId = await resolveTrackablePersonId(params.to)
   return sendEmail({
     to: params.to,
     subject: copy.subject,
     html: shell({ heading: copy.heading, bodyHtml: body, cta: { label: 'Review and sign', url: params.signUrl } }),
     replyTo: params.replyTo,
+    personId: personId ?? undefined,
+    emailKey: personId != null ? `tc-sign:${personId}` : undefined,
   })
 }
 
@@ -88,6 +92,8 @@ export async function sendCompletionCopy(params: {
     <p style="margin:0 0 12px;">Every party has signed the documents for ${escapeHtml(params.propertyAddress)}. A completed copy is attached for your records.</p>
     <p style="margin:0;">The attached PDF includes a certificate of completion with the signing record.</p>
   `
+  const { resolveTrackablePersonId } = await import('@/lib/email/auto-track')
+  const personId = await resolveTrackablePersonId(params.to)
   return sendEmail({
     to: params.to,
     subject: otherSide
@@ -101,6 +107,8 @@ export async function sendCompletionCopy(params: {
     }),
     replyTo: params.replyTo,
     attachments: [{ filename: params.pdfName, content: params.pdf }],
+    personId: personId ?? undefined,
+    emailKey: personId != null ? `tc-complete:${personId}` : undefined,
   })
 }
 

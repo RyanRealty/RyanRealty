@@ -17,11 +17,17 @@ export async function sendAdminEmail(params: {
     return { error: `Recipient is suppressed for email and cannot be sent (${sup.reasons.join(', ')})` }
   }
 
+  const to = params.to.trim()
+  const { getPersonIdsByEmail } = await import('@/lib/data/crm/getPersonIdsByEmail')
+  const ids = await getPersonIdsByEmail(to)
+  const personId = ids.length === 1 ? ids[0] : null
   const result = await sendEmail({
-    to: params.to.trim(),
+    to,
     subject: params.subject.trim(),
     html: params.body.trim() || undefined,
     text: params.body.trim() || undefined,
+    personId: personId ?? undefined,
+    emailKey: personId != null ? `admin-one-off:${personId}` : undefined,
   })
   if (result.error) return result
 

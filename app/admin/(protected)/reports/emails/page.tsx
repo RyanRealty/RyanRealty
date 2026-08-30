@@ -130,7 +130,16 @@ function toCsvRow(r: EmailSendLogRow): EmailLogCsvRow {
     latestEvent: r.latestEvent,
     latestAt: formatDateTime(r.latestAtIso),
     messageId: r.messageId ?? '',
+    openedAt: r.openedAtIso ? formatDateTime(r.openedAtIso) : '',
+    clickedAt: r.clickedAtIso ? formatDateTime(r.clickedAtIso) : '',
+    bouncedAt: r.bouncedAtIso ? formatDateTime(r.bouncedAtIso) : '',
+    siteAfter: r.visitedAfterSend && r.lastSiteAt ? formatDateTime(r.lastSiteAt) : '',
   }
+}
+
+function campaignHref(emailKey: string | null): string | null {
+  const m = /^bulk:email-cohort:(\d+)$/.exec(emailKey ?? '')
+  return m ? `/admin/crm/reporting/batch-emails/${m[1]}` : null
 }
 
 export default async function AdminEmailReportingPage({
@@ -220,35 +229,58 @@ export default async function AdminEmailReportingPage({
   const logColumns: ReportColumn[] = [
     { key: 'recipient', label: 'Recipient' },
     { key: 'subject', label: 'Subject' },
-    { key: 'broker', label: 'Broker' },
     { key: 'type', label: 'Type' },
-    { key: 'event', label: 'Latest event' },
-    { key: 'at', label: 'When' },
+    { key: 'event', label: 'Status' },
+    { key: 'opened', label: 'Opened' },
+    { key: 'clicked', label: 'Clicked' },
+    { key: 'bounced', label: 'Bounced' },
+    { key: 'site', label: 'On the site after' },
   ]
 
   const muted = { color: 'var(--a-text-2)' }
 
-  const logGrid: ReportGridRow[] = log.rows.map((r) => ({
-    key: r.key,
-    cells: [
-      r.personId != null ? (
-        <Link key="r" href={`/admin/people/${r.personId}`} style={{ color: 'var(--a-accent)' }}>
-          {r.recipientEmail}
-        </Link>
-      ) : (
-        r.recipientEmail
-      ),
-      r.subject ?? '—',
-      r.broker ?? '—',
-      r.sendType ?? '—',
-      <StateWord key="e" state={eventTone(r.latestEvent)}>
-        {r.latestEvent}
-      </StateWord>,
-      <span key="w" style={{ ...muted, whiteSpace: 'nowrap' }}>
-        {formatDateTime(r.latestAtIso)}
-      </span>,
-    ],
-  }))
+  const logGrid: ReportGridRow[] = log.rows.map((r) => {
+    const bulkHref = campaignHref(r.emailKey)
+    return {
+      key: r.key,
+      cells: [
+        r.personId != null ? (
+          <Link key="r" href={`/admin/people/${r.personId}`} style={{ color: 'var(--a-accent)' }}>
+            {r.recipientEmail}
+          </Link>
+        ) : (
+          r.recipientEmail
+        ),
+        bulkHref ? (
+          <Link key="s" href={bulkHref} style={{ color: 'var(--a-accent)' }}>
+            {r.subject ?? '—'}
+          </Link>
+        ) : (
+          (r.subject ?? '—')
+        ),
+        r.sendType ?? '—',
+        <StateWord key="e" state={eventTone(r.latestEvent)}>
+          {r.latestEvent}
+        </StateWord>,
+        <span key="o" style={{ ...muted, whiteSpace: 'nowrap' }}>
+          {r.openedAtIso ? formatDateTime(r.openedAtIso) : '—'}
+        </span>,
+        <span key="c" style={{ ...muted, whiteSpace: 'nowrap' }}>
+          {r.clickedAtIso ? formatDateTime(r.clickedAtIso) : '—'}
+        </span>,
+        <span key="b" style={{ ...muted, whiteSpace: 'nowrap' }}>
+          {r.bouncedAtIso ? formatDateTime(r.bouncedAtIso) : '—'}
+        </span>,
+        <span key="w" style={{ ...muted, whiteSpace: 'nowrap' }}>
+          {r.visitedAfterSend && r.lastSiteAt
+            ? formatDateTime(r.lastSiteAt)
+            : r.lastSiteAt
+              ? 'Earlier visit'
+              : '—'}
+        </span>,
+      ],
+    }
+  })
 
   const unreadable = summary.unreadable || log.unreadable
 
@@ -350,8 +382,8 @@ export default async function AdminEmailReportingPage({
         <ReportGrid
           label="Sent email log"
           columns={logColumns}
-          template="minmax(180px, 1.8fr) minmax(180px, 2fr) minmax(96px, 0.8fr) minmax(96px, 0.8fr) minmax(104px, 0.8fr) minmax(150px, 1.1fr)"
-          minWidth={900}
+          template="minmax(160px, 1.5fr) minmax(160px, 1.6fr) minmax(88px, 0.7fr) minmax(88px, 0.7fr) minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(130px, 1fr)"
+          minWidth={1080}
           rows={logGrid}
           empty={<>No sends match this filter yet. Email engagement appears here as the engine sends.</>}
         />

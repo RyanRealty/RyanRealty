@@ -10,6 +10,7 @@ import {
   summarizeCampaign,
   recoverSendTypes,
   filterBySendType,
+  inheritEmailKeys,
   type RawEmailEventRow,
 } from './getEmailReporting'
 
@@ -49,10 +50,45 @@ describe('formatRate', () => {
 
 // ── sendKey — stable per-send identity ────────────────────────────────────────
 
+describe('inheritEmailKeys', () => {
+  it('copies email_key from the sent row onto later message_id matches', () => {
+    const [sent, delivered] = inheritEmailKeys([
+      {
+        message_id: 're_1',
+        recipient_email: 'a@b.com',
+        person_id: 7,
+        broker: 'matt',
+        send_type: 'campaign',
+        event: 'sent',
+        email_key: 'bulk:email-cohort:26',
+        subject: 'Hi',
+        occurred_at: '2026-08-29T21:00:00.000Z',
+      },
+      {
+        message_id: 're_1',
+        recipient_email: 'a@b.com',
+        person_id: 7,
+        broker: null,
+        send_type: 'other',
+        event: 'delivered',
+        email_key: null,
+        subject: null,
+        occurred_at: '2026-08-29T21:00:02.000Z',
+      },
+    ])
+    expect(sent.email_key).toBe('bulk:email-cohort:26')
+    expect(delivered.email_key).toBe('bulk:email-cohort:26')
+    expect(delivered.send_type).toBe('campaign')
+    expect(delivered.broker).toBe('matt')
+    expect(delivered.subject).toBe('Hi')
+  })
+})
+
 describe('sendKey', () => {
-  it('prefers message_id, then email_key, then recipient+subject', () => {
-    expect(sendKey({ message_id: 'm1', recipient_email: 'a@b.com' })).toBe('mid:m1')
+  it('prefers email_key+recipient, then message_id, then recipient+subject', () => {
     expect(sendKey({ email_key: 'k1', recipient_email: 'a@b.com' })).toBe('ek:k1|a@b.com')
+    expect(sendKey({ message_id: 'm1', email_key: 'k1', recipient_email: 'a@b.com' })).toBe('ek:k1|a@b.com')
+    expect(sendKey({ message_id: 'm1', recipient_email: 'a@b.com' })).toBe('mid:m1')
     expect(sendKey({ recipient_email: 'A@B.com', subject: 'Hi' })).toBe('rs:a@b.com|hi')
   })
 
@@ -130,6 +166,27 @@ describe('collapseSendLog', () => {
   it('ignores unrecognized events', () => {
     const out = collapseSendLog([ev({ event: 'nonsense' })])
     expect(out).toHaveLength(0)
+  })
+
+  it('joins a Gmail sent row to a pixel open that only has email_key', () => {
+    const rows = collapseSendLog([
+      ev({
+        message_id: 'gmail-1',
+        email_key: 'manual:7:1',
+        event: 'sent',
+        occurred_at: '2026-08-30T10:00:00.000Z',
+      }),
+      ev({
+        message_id: null,
+        email_key: 'manual:7:1',
+        event: 'open',
+        occurred_at: '2026-08-30T10:05:00.000Z',
+      }),
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].latestEvent).toBe('open')
+    expect(rows[0].sentAtIso).toBe('2026-08-30T10:00:00.000Z')
+    expect(rows[0].openedAtIso).toBe('2026-08-30T10:05:00.000Z')
   })
 })
 

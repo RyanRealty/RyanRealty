@@ -59,12 +59,20 @@ export type EmailSendLogRow = {
   broker: string | null
   sendType: string | null
   subject: string | null
+  emailKey: string | null
   /** The latest lifecycle event observed for this send. */
   latestEvent: EmailEvent
   /** ISO timestamp of the latest event. */
   latestAtIso: string
   /** ISO timestamp of the earliest (sent) event, when known. */
   firstAtIso: string
+  sentAtIso: string | null
+  deliveredAtIso: string | null
+  openedAtIso: string | null
+  clickedAtIso: string | null
+  bouncedAtIso: string | null
+  lastSiteAt: string | null
+  visitedAfterSend: boolean
 }
 
 export type EmailSendLogResult = {
@@ -154,7 +162,7 @@ export function formatRate(rate: number | null): string {
   return `${(rate * 100).toFixed(1)}%`
 }
 
-/** The stable per-send key: message_id, else email_key, else recipient+subject. PURE. */
+/** The stable per-send key: email_key+recipient, else message_id, else recipient+subject. PURE. */
 export function sendKey(row: {
   message_id?: string | null
   email_key?: string | null
@@ -162,17 +170,55 @@ export function sendKey(row: {
   subject?: string | null
 }): string {
   const recip = (row.recipient_email ?? '').trim().toLowerCase()
+  const ek = (row.email_key ?? '').trim()
+  // An email_key identifies a CAMPAIGN. Pair it with the recipient so a 6,000-
+  // person cohort is one row per person, not one row for the whole list. Prefer
+  // this over message_id so a Gmail open pixel (email_key, no provider id) still
+  // joins the `sent` row that carried the same key.
+  if (ek) return `ek:${ek}|${recip}`
   const mid = (row.message_id ?? '').trim()
   if (mid) return `mid:${mid}`
-  const ek = (row.email_key ?? '').trim()
-  // The recipient is part of the key, not just a fallback. An email_key
-  // identifies a CAMPAIGN, and a batch campaign shares one key across every
-  // recipient — keying on it alone collapsed a 6,000-person cohort into a
-  // single "send", so sent/delivered/open/click all capped at 1 and every rate
-  // computed off that. One send is one message to one person.
-  if (ek) return `ek:${ek}|${recip}`
   const subj = (row.subject ?? '').trim().toLowerCase()
   return `rs:${recip}|${subj}`
+}
+
+/**
+ * Copy campaign identity from a `sent` row onto later lifecycle rows that only
+ * have message_id (the Resend webhook historically wrote those with email_key
+ * null and send_type 'other'). PURE — exported for tests and the bulk reader.
+ */
+export function inheritEmailKeys<
+  T extends {
+    message_id: string | null
+    email_key: string | null
+    event?: string | null
+    send_type?: string | null
+    broker?: string | null
+    person_id?: number | null
+    subject?: string | null
+  },
+>(rows: T[]): T[] {
+  const sentByMid = new Map<string, T>()
+  for (const r of rows) {
+    const mid = (r.message_id ?? '').trim()
+    if (!mid || r.event !== 'sent') continue
+    if (!sentByMid.has(mid)) sentByMid.set(mid, r)
+  }
+  if (sentByMid.size === 0) return rows
+  return rows.map((r) => {
+    if (r.event === 'sent') return r
+    const mid = (r.message_id ?? '').trim()
+    const sent = mid ? sentByMid.get(mid) : undefined
+    if (!sent) return r
+    return {
+      ...r,
+      email_key: (r.email_key ?? '').trim() || sent.email_key,
+      send_type: (r.send_type && r.send_type !== 'other' ? r.send_type : sent.send_type) ?? r.send_type,
+      broker: r.broker ?? sent.broker,
+      person_id: r.person_id ?? sent.person_id,
+      subject: r.subject ?? sent.subject,
+    }
+  })
 }
 
 /** A raw email_events row as the readers select it. */
@@ -241,6 +287,14 @@ export function filterBySendType(
  * for the test. Rows come in newest-first; we keep the highest-ranked event and
  * track the first/last timestamps seen.
  */
+function stampStage(rec: EmailSendLogRow, ev: EmailEvent, at: string): void {
+  if (ev === 'sent' && (!rec.sentAtIso || at < rec.sentAtIso)) rec.sentAtIso = at
+  if (ev === 'delivered' && (!rec.deliveredAtIso || at < rec.deliveredAtIso)) rec.deliveredAtIso = at
+  if (ev === 'open' && (!rec.openedAtIso || at < rec.openedAtIso)) rec.openedAtIso = at
+  if (ev === 'click' && (!rec.clickedAtIso || at < rec.clickedAtIso)) rec.clickedAtIso = at
+  if (ev === 'bounce' && (!rec.bouncedAtIso || at < rec.bouncedAtIso)) rec.bouncedAtIso = at
+}
+
 export function collapseSendLog(rows: RawEmailEventRow[]): EmailSendLogRow[] {
   const byKey = new Map<string, EmailSendLogRow>()
   for (const r of rows) {
@@ -250,7 +304,7 @@ export function collapseSendLog(rows: RawEmailEventRow[]): EmailSendLogRow[] {
     const at = r.occurred_at
     const existing = byKey.get(key)
     if (!existing) {
-      byKey.set(key, {
+      const rec: EmailSendLogRow = {
         key,
         messageId: r.message_id,
         recipientEmail: r.recipient_email,
@@ -258,15 +312,27 @@ export function collapseSendLog(rows: RawEmailEventRow[]): EmailSendLogRow[] {
         broker: r.broker,
         sendType: r.send_type,
         subject: r.subject,
+        emailKey: r.email_key,
         latestEvent: ev,
         latestAtIso: at,
         firstAtIso: at,
-      })
+        sentAtIso: null,
+        deliveredAtIso: null,
+        openedAtIso: null,
+        clickedAtIso: null,
+        bouncedAtIso: null,
+        lastSiteAt: null,
+        visitedAfterSend: false,
+      }
+      stampStage(rec, ev, at)
+      byKey.set(key, rec)
       continue
     }
     // Track the time window across all events of the send.
     if (at < existing.firstAtIso) existing.firstAtIso = at
     if (at > existing.latestAtIso) existing.latestAtIso = at
+    stampStage(existing, ev, at)
+    existing.emailKey = existing.emailKey ?? r.email_key
     // Promote the headline event when this one ranks higher, or ranks equal but
     // happened later.
     const better =
@@ -401,7 +467,7 @@ async function readSendLog(params: GetEmailSendLogParams): Promise<EmailSendLogR
   // Recover the true send_type (join lifecycle rows to their `sent` row by
   // message_id) BEFORE the optional type filter, so the type-filtered send log
   // shows true open/click/bounce for the selected type instead of dropping them.
-  const recovered = recoverSendTypes(data as RawEmailEventRow[])
+  const recovered = recoverSendTypes(inheritEmailKeys(data as RawEmailEventRow[]))
   const scoped = filterBySendType(recovered, params.sendType)
 
   // Collapse the event fan to one row per send, then page in memory. We scan a
@@ -409,6 +475,20 @@ async function readSendLog(params: GetEmailSendLogParams): Promise<EmailSendLogR
   // the count is the distinct-send total within that window.
   const collapsed = collapseSendLog(scoped)
   const page = collapsed.slice(offset, offset + limit)
+  const personIds = [
+    ...new Set(page.map((r) => r.personId).filter((id): id is number => id != null && id > 0)),
+  ]
+  if (personIds.length > 0) {
+    const { readLastSiteByPerson } = await import('./getVisitorLastSeen')
+    const sites = await readLastSiteByPerson(sb, personIds)
+    for (const rec of page) {
+      if (rec.personId == null) continue
+      rec.lastSiteAt = sites.get(rec.personId) ?? null
+      rec.visitedAfterSend = Boolean(
+        rec.lastSiteAt && rec.sentAtIso && rec.lastSiteAt >= rec.sentAtIso,
+      )
+    }
+  }
   return { rows: page, count: collapsed.length, unreadable: false }
 }
 
@@ -434,7 +514,7 @@ async function readEngagement(params: GetEmailEngagementParams): Promise<EmailEn
       unreadable: true,
     }
   }
-  const recovered = recoverSendTypes(data as RawEmailEventRow[])
+  const recovered = recoverSendTypes(inheritEmailKeys(data as RawEmailEventRow[]))
   return summarizeEngagement(filterBySendType(recovered, params.sendType))
 }
 
@@ -451,7 +531,7 @@ async function readBrokerEngagement(params: GetEmailEngagementParams): Promise<B
 
   // Recover true send_type then apply the optional type filter before bucketing,
   // so per-broker rates reflect the selected send type's real lifecycle events.
-  const recovered = recoverSendTypes(data as RawEmailEventRow[])
+  const recovered = recoverSendTypes(inheritEmailKeys(data as RawEmailEventRow[]))
   const scoped = filterBySendType(recovered, params.sendType)
 
   // Bucket the events by broker, then summarize each bucket honestly.
@@ -658,7 +738,7 @@ async function readCampaignEngagement(
 
   // Bucket events by their message id, then summarize each bucket.
   const buckets = new Map<string, RawEmailEventRow[]>()
-  for (const r of data as RawEmailEventRow[]) {
+  for (const r of inheritEmailKeys(data as RawEmailEventRow[])) {
     const mid = (r.message_id ?? '').trim()
     if (!mid) continue
     const arr = buckets.get(mid)

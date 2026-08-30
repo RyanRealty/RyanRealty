@@ -15,6 +15,7 @@
     "ci:dal-internal-discipline",
     "ci:db-timeout-guard",
     "ci:deliverable-send-chokepoint",
+    "ci:email-link-tracking",
     "ci:email-send-gated",
     "ci:entity-scope",
     "ci:gates-wired",
@@ -1145,6 +1146,11 @@
       "lib/crm/**",
       "lib/sms/**",
       "app/api/**"
+    ],
+    "ci:email-link-tracking": [
+      "app/**",
+      "lib/**",
+      "scripts/check-email-link-tracking.mjs"
     ],
     "ci:ssg-budget": [
       "app/**"

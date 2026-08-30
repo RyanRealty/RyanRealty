@@ -298,7 +298,7 @@ export async function GET(request: Request) {
         if (emailClaim === 'claimed') {
           const sent = await sendCrmEmail({
             fromMailbox: mailbox.email, to, subject, bodyText: body, withSignature: true,
-            track: { personId: person.id, emailKey: `seq:${seq.name}:${en.step_index}`, label: subject },
+            track: { personId: person.id, emailKey: `seq:${seq.name}:${en.step_index}`, label: subject, broker: mailbox.slug },
           })
           if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
           await recordSequenceOutbound(sb, {
@@ -438,7 +438,19 @@ export async function GET(request: Request) {
             if (fbClaim === 'claimed') {
               const fbSubject = renderMerge(step.fallbackEmailSubject ?? 'A quick note from Ryan Realty', person, mergeCtx)
               const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
-              const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to: fbTo, subject: fbSubject, bodyText: fbBody, withSignature: true })
+              const sent = await sendCrmEmail({
+                fromMailbox: mailbox.email,
+                to: fbTo,
+                subject: fbSubject,
+                bodyText: fbBody,
+                withSignature: true,
+                track: {
+                  personId: person.id,
+                  emailKey: `seq:${seq.name}:${en.step_index}:sms-fallback`,
+                  label: fbSubject,
+                  broker: mailbox.slug,
+                },
+              })
               if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
               await recordSequenceOutbound(sb, {
                 personId: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,

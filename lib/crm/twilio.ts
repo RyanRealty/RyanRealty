@@ -307,6 +307,21 @@ function appendMediaUrls(form: URLSearchParams, mediaUrls?: string[]): void {
  * send only when the messaging service isn't configured. Pass mediaUrls (public
  * HTTPS URLs) to send as MMS.
  */
+async function maybeInstrumentSmsBody(to: string, body: string): Promise<string> {
+  if (!/https?:\/\//i.test(body)) return body
+  try {
+    const { isUntrackableLink, instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
+    const urls = body.match(/https?:\/\/[^\s"'<)\]]+/g) ?? []
+    const needsWrap = urls.some((u) => !isUntrackableLink(u.replace(/[.,;:!?)\]'"]+$/, '')))
+    if (!needsWrap) return body
+    const person = await lookupPersonByPhone(to)
+    if (!person) return body
+    return instrumentSmsLinks(body, { personId: person.personId, broker: person.broker })
+  } catch {
+    return body
+  }
+}
+
 export async function sendSms(params: { from: string; to: string; body: string; mediaUrls?: string[] }): Promise<{ ok: true; sid: string } | { ok: false; error: string }> {
   const to = toE164(params.to)
   if (!to) return { ok: false, error: 'Invalid phone number' }
@@ -314,11 +329,12 @@ export async function sendSms(params: { from: string; to: string; body: string; 
   if (a2pBlocked(a2p)) {
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
+  const body = await maybeInstrumentSmsBody(to, params.body)
   const ms = process.env.TWILIO_MESSAGING_SERVICE_SID?.trim()
   const form = new URLSearchParams(
     ms
-      ? { MessagingServiceSid: ms, From: params.from, To: to, Body: params.body }
-      : { From: params.from, To: to, Body: params.body },
+      ? { MessagingServiceSid: ms, From: params.from, To: to, Body: body }
+      : { From: params.from, To: to, Body: body },
   )
   appendMediaUrls(form, params.mediaUrls)
   const r = await postMessage(form)
@@ -335,7 +351,8 @@ export async function sendSmsViaMessagingService(params: { to: string; body: str
   if (a2pBlocked(a2p)) {
     return { ok: false, error: formatTwilioSendError(30034, null, a2p) }
   }
-  const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: params.body })
+  const body = await maybeInstrumentSmsBody(to, params.body)
+  const form = new URLSearchParams({ MessagingServiceSid: ms, To: to, Body: body })
   appendMediaUrls(form, params.mediaUrls)
   const r = await postMessage(form)
   return r.ok ? r : { ok: false, error: r.error }

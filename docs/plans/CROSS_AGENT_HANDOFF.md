@@ -1,3 +1,11 @@
+# Current — 2026-08-29 (Grok Build) — bulk email signature + from-line
+
+**Surface:** `/admin/crm` Batch Email and `/admin/email/compose`. Goal: `docs/plans/ADMIN_REBUILD/BULK_EMAIL_SIGNATURE_AND_FROM.md`.
+
+Signature defaults on (Gmail-matched via `getSignatureForMailbox`). Preview, test send, and the cohort worker share `composeOutboundHtml`. Default From is the named identity on `mail.ryan-realty.com` with Reply-To the real mailbox. Sending from Gmail (`matt@ryan-realty.com`) is an explicit option with a daily-cap warning. Live test copy: From `"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>`, Reply-To `matt@ryan-realty.com`, signature in the body.
+
+Skills read: `endtoend`, `tdd`, `frontend-design` (admin v2 only). Do not fire the 2,714-person River West send from an agent session.
+
 > **GROK BOTS:** start at `docs/GROK_BOT_BRAIN.md`. Do not load this whole file. Matt asked 2026-08-21 to re-arm the loop on current main.
 > **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**

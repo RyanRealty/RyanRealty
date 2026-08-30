@@ -4,10 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // orchestration is tested without standing up Supabase. The pure helpers
 // (buildDedupeKey, normalizeEvent) are unaffected by these mocks.
 const mockInsert = vi.fn()
+const mockGetSent = vi.fn()
 const mockGetPersonIds = vi.fn()
 const mockGetPrimaryEmail = vi.fn()
 vi.mock('@/lib/data/crm/insertEmailEvent', () => ({
   insertEmailEvent: (...args: unknown[]) => mockInsert(...args),
+  getSentEventByMessageId: (...args: unknown[]) => mockGetSent(...args),
 }))
 vi.mock('@/lib/data/crm/getPersonIdsByEmail', () => ({
   getPersonIdsByEmail: (...args: unknown[]) => mockGetPersonIds(...args),
@@ -166,8 +168,10 @@ describe('resolvePersonIdByEmail (fail-closed)', () => {
 describe('recordEmailEvent', () => {
   beforeEach(() => {
     mockInsert.mockReset()
+    mockGetSent.mockReset()
     mockGetPersonIds.mockReset()
     mockGetPrimaryEmail.mockReset()
+    mockGetSent.mockResolvedValue(null)
   })
 
   it('writes a normalized row and reports inserted=true (the new-row path)', async () => {
@@ -279,5 +283,30 @@ describe('recordEmailEvent', () => {
     mockInsert.mockResolvedValue({ ok: false, error: 'db down' })
     const res = await recordEmailEvent({ recipientEmail: 'a@b.com', sendType: 'alert', event: 'bounce' })
     expect(res).toEqual({ ok: false, error: 'db down' })
+  })
+
+  it('inherits email_key and send_type from the sent row when the webhook omits them', async () => {
+    mockGetPersonIds.mockResolvedValue([7])
+    mockGetSent.mockResolvedValue({
+      email_key: 'bulk:email-cohort:26',
+      send_type: 'campaign',
+      person_id: 7,
+      broker: 'matt',
+      recipient_email: 'lead@example.com',
+      subject: 'Hi Jane',
+    })
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    await recordEmailEvent({
+      messageId: 're_1',
+      recipientEmail: 'lead@example.com',
+      sendType: 'other',
+      event: 'delivered',
+    })
+    expect(mockGetSent).toHaveBeenCalledWith('re_1')
+    const row = mockInsert.mock.calls[0][0]
+    expect(row.email_key).toBe('bulk:email-cohort:26')
+    expect(row.send_type).toBe('campaign')
+    expect(row.broker).toBe('matt')
+    expect(row.subject).toBe('Hi Jane')
   })
 })

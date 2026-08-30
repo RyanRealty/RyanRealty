@@ -83,6 +83,10 @@ export type TimelineItem = {
   payload: Record<string, unknown>
   opens?: number
   clicks?: number
+  delivered?: boolean
+  bounced?: boolean
+  visitedAfterSend?: boolean
+  campaignHref?: string | null
 }
 
 type ComposeMode = 'note' | 'email' | 'text' | 'call' | null
@@ -383,6 +387,13 @@ function EventCard({ item }: { item: TimelineItem }) {
             {isAutomationEmail ? (
               <TimelineChip className="ml-2 uppercase">Archived</TimelineChip>
             ) : null}
+            {item.bounced ? (
+              <TimelineChip tone="danger" className="ml-2">
+                Bounced
+              </TimelineChip>
+            ) : item.delivered ? (
+              <TimelineChip className="ml-2">Delivered</TimelineChip>
+            ) : null}
             {typeof item.opens === 'number' && item.opens > 0 ? (
               <TimelineChip tone="ok" className="ml-2">
                 {item.opens} opens
@@ -390,6 +401,16 @@ function EventCard({ item }: { item: TimelineItem }) {
             ) : null}
             {typeof item.clicks === 'number' && item.clicks > 0 ? (
               <TimelineChip className="ml-1">{item.clicks} clicks</TimelineChip>
+            ) : null}
+            {item.visitedAfterSend ? (
+              <TimelineChip tone="ok" className="ml-1">
+                On the site after
+              </TimelineChip>
+            ) : null}
+            {item.campaignHref ? (
+              <Link href={item.campaignHref} className="ml-2 text-xs" style={{ color: 'var(--a-accent)' }}>
+                Batch send
+              </Link>
             ) : null}
             {item.kind === 'sms_out' ? <SmsDeliveryBadge item={item} /> : null}
             {group ? (
@@ -403,14 +424,16 @@ function EventCard({ item }: { item: TimelineItem }) {
             <span className="text-xs tabular-nums" style={MUTED}>
               {cardTimestamp(item.ts, now)}
             </span>
-            <IconButton
-              label={starred ? 'Unstar' : 'Star'}
-              onClick={toggleStar}
-              className={cn(!starred && 'opacity-0 group-hover:opacity-100')}
-              style={{ width: 22, height: 22, color: starred ? 'var(--a-warn)' : undefined }}
-            >
-              <Star className={cn('h-3.5 w-3.5', starred && 'fill-current')} />
-            </IconButton>
+            {item.id > 0 ? (
+              <IconButton
+                label={starred ? 'Unstar' : 'Star'}
+                onClick={toggleStar}
+                className={cn(!starred && 'opacity-0 group-hover:opacity-100')}
+                style={{ width: 22, height: 22, color: starred ? 'var(--a-warn)' : undefined }}
+              >
+                <Star className={cn('h-3.5 w-3.5', starred && 'fill-current')} />
+              </IconButton>
+            ) : null}
           </div>
         </div>
 

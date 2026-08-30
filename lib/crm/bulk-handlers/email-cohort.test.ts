@@ -35,6 +35,16 @@ vi.mock('@/lib/data/crm/getEmailCohortRecipients', () => ({
   getCrmTemplateForSend: (...args: unknown[]) => mockGetTemplate(...args),
 }))
 
+const mockGetSignature = vi.fn()
+vi.mock('@/lib/crm/email-signature', () => ({
+  getSignatureForMailbox: (...args: unknown[]) => mockGetSignature(...args),
+}))
+
+const mockSendGoverned = vi.fn()
+vi.mock('@/lib/comms/sendGovernedEmail', () => ({
+  sendGovernedEmail: (...args: unknown[]) => mockSendGoverned(...args),
+}))
+
 // buildMergeContext reads server-only cached DALs (brokers/telephony/company) —
 // mock it thin; renderCrmMerge itself runs unmocked against this context.
 vi.mock('@/lib/crm/merge-context', () => ({
@@ -182,9 +192,14 @@ describe('sendOneCohortEmail — suppression + claim-before-send + record shape'
     mockSendEmail.mockReset()
     mockInsertEmailEvent.mockReset()
     mockDeleteEmailEvent.mockReset()
+    mockGetSignature.mockReset()
+    mockSendGoverned.mockReset()
     // Default: the claim wins (a fresh row landed).
     mockInsertEmailEvent.mockResolvedValue({ ok: true, inserted: true })
     mockDeleteEmailEvent.mockResolvedValue({ ok: true })
+    // Signature off the wire unless a test opts in — keeps existing HTML
+    // assertions byte-stable. Default-on is covered in its own cases.
+    mockGetSignature.mockResolvedValue(null)
   })
 
   it('skips + buckets a suppressed recipient WITHOUT claiming or sending', async () => {
@@ -232,6 +247,7 @@ describe('sendOneCohortEmail — suppression + claim-before-send + record shape'
     expect(sendArg.subject).toBe('Hi Jane') // %first% merged
     expect(sendArg.html).toBe('PREP(ATTR(<p>Hello Jane</p>))') // attributed then prepared
     expect(sendArg.from).toBe('x@ryan-realty.com')
+    expect(sendArg.replyTo).toBe('matt@ryan-realty.com')
     expect(sendArg.headers).toEqual({ 'List-Unsubscribe': '<u>' })
 
     // No rollback on success.
@@ -267,6 +283,55 @@ describe('sendOneCohortEmail — suppression + claim-before-send + record shape'
     expect(mockDeleteEmailEvent).toHaveBeenCalledTimes(1)
     expect(mockDeleteEmailEvent).toHaveBeenCalledWith(cohortSendDedupeKey(42, 7))
   })
+
+  it('appends the Gmail-matched signature by default (preview = send)', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    mockSendEmail.mockResolvedValue({ id: 'msg-sig' })
+    mockGetSignature.mockResolvedValue({ html: '<div id="sig">Matt</div>', plain: 'Matt' })
+
+    await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
+    const html = mockSendEmail.mock.calls[0][0].html as string
+    expect(html).toBe('PREP(ATTR(<p>Hello Jane</p><div id="sig">Matt</div>))')
+    expect(mockGetSignature).toHaveBeenCalledWith('matt@ryan-realty.com')
+  })
+
+  it('omits the signature when includeSignature is false', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    mockSendEmail.mockResolvedValue({ id: 'msg-off' })
+    mockGetSignature.mockResolvedValue({ html: '<div id="sig">Matt</div>', plain: 'Matt' })
+
+    await sendOneCohortEmail(recipient(), CONTENT, { includeSignature: false }, CTX)
+    expect(mockSendEmail.mock.calls[0][0].html).toBe('PREP(ATTR(<p>Hello Jane</p>))')
+    expect(mockGetSignature).not.toHaveBeenCalled()
+  })
+
+  it('uses the named from-line and real reply-to when the job omitted them (never noreply)', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    mockSendEmail.mockResolvedValue({ id: 'msg-from' })
+
+    await sendOneCohortEmail(recipient(), CONTENT, {}, CTX)
+    const sendArg = mockSendEmail.mock.calls[0][0]
+    expect(sendArg.from).toBe('"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>')
+    expect(sendArg.replyTo).toBe('matt@ryan-realty.com')
+    expect(String(sendArg.from).toLowerCase()).not.toContain('noreply')
+  })
+
+  it('sends from the actor mailbox on the Gmail rail and does not call Resend', async () => {
+    mockIsSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    mockSendGoverned.mockResolvedValue({ ok: true, providerId: 'gmail-1' })
+
+    const out = await sendOneCohortEmail(recipient(), CONTENT, { sendVia: 'gmail' }, CTX)
+    expect(out).toEqual({ kind: 'processed' })
+    expect(mockSendEmail).not.toHaveBeenCalled()
+    expect(mockSendGoverned).toHaveBeenCalledTimes(1)
+    const req = mockSendGoverned.mock.calls[0][0]
+    expect(req.payload.rail).toBe('gmail')
+    expect(req.payload.to).toEqual(['lead@example.com'])
+    expect(req.payload.withSignature).toBe(false)
+    expect(req.recordSentEvent).toBe(false)
+    expect(req.initiator.broker).toBe('matt')
+    expect(mockStampMessageId).toHaveBeenCalledWith(cohortSendDedupeKey(42, 7), 'gmail-1')
+  })
 })
 
 describe('emailCohortHandler — chunk tally', () => {
@@ -277,8 +342,11 @@ describe('emailCohortHandler — chunk tally', () => {
     mockDeleteEmailEvent.mockReset()
     mockGetRecipients.mockReset()
     mockGetTemplate.mockReset()
+    mockGetSignature.mockReset()
+    mockSendGoverned.mockReset()
     mockInsertEmailEvent.mockResolvedValue({ ok: true, inserted: true })
     mockDeleteEmailEvent.mockResolvedValue({ ok: true })
+    mockGetSignature.mockResolvedValue(null)
   })
 
   it('returns empty for an empty chunk', async () => {

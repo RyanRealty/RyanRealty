@@ -29,6 +29,7 @@ import { recordConversationMessage } from '@/lib/crm/record-message'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { sendEmail } from '@/lib/resend'
 import { checkSendGuards } from './guards'
+import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 import type {
   GovernedEmailRequest,
   GovernedEmailResult,
@@ -36,18 +37,85 @@ import type {
   GovernedResendPayload,
 } from './types'
 
+async function recordSentEvents(
+  req: GovernedEmailRequest,
+  providerId: string | undefined,
+  track?: { personId: number; emailKey: string; label?: string; broker?: string },
+): Promise<void> {
+  if (req.recordSentEvent === false || !providerId) return
+  try {
+    const broker = track?.broker ?? req.initiator.broker ?? null
+    if (req.payload.rail === 'gmail') {
+      const payload = req.payload
+      const sendType = sendTypeFromEmailKey(track?.emailKey ?? payload.track?.emailKey)
+      const emails = [...payload.to, ...(payload.cc ?? []), ...(payload.bcc ?? [])]
+      const seen = new Set<string>()
+      for (const raw of emails) {
+        const email = raw.trim().toLowerCase()
+        if (!email || seen.has(email)) continue
+        seen.add(email)
+        await recordEmailEvent({
+          messageId: providerId,
+          recipientEmail: email,
+          personId: email === (payload.to[0] ?? '').trim().toLowerCase() ? req.personId : null,
+          broker,
+          sendType,
+          event: 'sent',
+          emailKey: track?.emailKey ?? payload.track?.emailKey ?? null,
+          subject: payload.subject,
+        })
+      }
+      return
+    }
+    await recordEmailEvent({
+      messageId: providerId,
+      recipientEmail: req.payload.to,
+      personId: req.personId,
+      broker,
+      sendType: sendTypeFromEmailKey(track?.emailKey),
+      event: 'sent',
+      emailKey: track?.emailKey ?? null,
+      subject: req.payload.subject,
+    })
+  } catch (e) {
+    console.warn('[comms] email_events sent write failed', e)
+  }
+}
+
+function defaultTrack(
+  req: GovernedEmailRequest,
+  subject: string,
+  broker: string,
+): { personId: number; emailKey: string; label: string; broker: string } {
+  return {
+    personId: req.personId,
+    emailKey: `gov:${req.purpose}:${req.personId}`,
+    label: subject,
+    broker,
+  }
+}
+
 async function sendViaGmail(
   req: GovernedEmailRequest,
   payload: GovernedGmailPayload,
 ): Promise<GovernedEmailResult> {
   const actingSlug = req.initiator.broker ?? 'matt'
   const mailbox = CRM_MAILBOXES.find((m) => m.slug === actingSlug) ?? CRM_MAILBOXES[0]
+  // Always instrument. A caller that forgot `track` still gets open/click +
+  // ?_pid= — brokers never opt into tracking. Already-instrumented HTML
+  // (bulk cohort) is a no-op inside attributeOutbound.
+  const track = {
+    personId: payload.track?.personId ?? req.personId,
+    emailKey: payload.track?.emailKey ?? `gov:${req.purpose}:${req.personId}`,
+    label: payload.track?.label ?? payload.subject,
+    broker: payload.track?.broker ?? actingSlug,
+  }
   const sent = await sendCrmEmail({
     fromMailbox: mailbox.email, to: payload.to, cc: payload.cc, bcc: payload.bcc,
     subject: payload.subject, bodyText: payload.bodyText,
     withSignature: payload.withSignature ?? true,
     attachments: payload.attachments, bodyFormat: payload.bodyFormat,
-    track: payload.track,
+    track,
   })
   if (!sent.ok) return { ok: false, error: sent.error, stage: 'provider' }
 
@@ -86,6 +154,7 @@ async function sendViaGmail(
       ],
     })
   } catch (e) { console.warn('[comms] conversation shadow-write (email) failed', e) }
+  await recordSentEvents(req, sent.gmailId, track)
   return { ok: true, providerId: sent.gmailId }
 }
 
@@ -104,6 +173,8 @@ async function sendViaResend(
   // Inbox-placement preflight — CAN-SPAM footer + postal address, RFC 8058
   // one-click unsubscribe headers, deliverability report. The one rail every
   // automated email must ride (lib/email/prepare contract).
+  const slug = req.initiator.broker ?? 'matt'
+  const track = defaultTrack(req, payload.subject, slug)
   const prepared = prepareDeliverableEmail({
     subject: payload.subject,
     html: payload.html,
@@ -111,6 +182,8 @@ async function sendViaResend(
     personId: req.personId,
     unsubscribeUrl: payload.unsubscribeUrl,
   })
+  // Prepare first so the CAN-SPAM footer exists, then the send chokepoint
+  // wraps every site link (unsubscribe stays plain — isComplianceLink).
   const res = await sendEmail({
     to: payload.to,
     subject: prepared.subject,
@@ -120,6 +193,9 @@ async function sendViaResend(
     from: payload.from,
     replyTo: payload.replyTo,
     attachments: payload.attachments,
+    personId: req.personId,
+    emailKey: track.emailKey,
+    brokerSlug: slug,
   })
   if (res.error || !res.id) {
     return { ok: false, error: res.error ?? 'Email send failed', stage: 'provider' }
@@ -150,6 +226,7 @@ async function sendViaResend(
       participants: [{ personId: req.personId, address: payload.to }],
     })
   } catch (e) { console.warn('[comms] conversation shadow-write (resend email) failed', e) }
+  await recordSentEvents(req, res.id, track)
   return { ok: true, providerId: res.id }
 }
 

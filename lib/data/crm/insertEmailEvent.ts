@@ -106,3 +106,40 @@ export async function stampEmailEventMessageId(
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
 }
+
+export type SentEmailEventLookup = {
+  email_key: string | null
+  send_type: string | null
+  person_id: number | null
+  broker: string | null
+  recipient_email: string | null
+  subject: string | null
+}
+
+/**
+ * The `sent` row for a provider message id, if one exists. Used by
+ * recordEmailEvent so a Resend delivered/bounce webhook (which does not know
+ * our email_key) still joins to the campaign that claimed the send.
+ *
+ * Never throws — a lookup miss is null, same as "no sent row yet."
+ */
+export async function getSentEventByMessageId(
+  messageId: string,
+): Promise<SentEmailEventLookup | null> {
+  const mid = messageId.trim()
+  if (!mid) return null
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('email_events')
+      .select('email_key,send_type,person_id,broker,recipient_email,subject')
+      .eq('message_id', mid)
+      .eq('event', 'sent')
+      .limit(1)
+    if (error) return null
+    const row = (data ?? [])[0] as SentEmailEventLookup | undefined
+    return row ?? null
+  } catch {
+    return null
+  }
+}

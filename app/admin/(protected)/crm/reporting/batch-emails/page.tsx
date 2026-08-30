@@ -44,10 +44,10 @@ function subjectDisplay(subject: string | null): string {
 
 // ── Presentation constants (v2 tokens only) ───────────────────────────────────
 
-// Nine columns that must fit a 1280px window without sideways scroll: the
-// minimums below sum to 844px + 64px of gaps + 32px of padding = 940px.
+// Ten columns: subject, from, created, recipients, sent, delivered, bounced,
+// opens, clicks, status.
 const COLS =
-  'minmax(170px,2fr) minmax(92px,0.9fr) minmax(72px,0.7fr) minmax(80px,0.7fr) minmax(62px,0.6fr) minmax(78px,0.7fr) minmax(78px,0.7fr) minmax(92px,0.7fr) minmax(120px,1fr)'
+  'minmax(170px,2fr) minmax(92px,0.9fr) minmax(72px,0.7fr) minmax(72px,0.6fr) minmax(62px,0.5fr) minmax(78px,0.6fr) minmax(72px,0.6fr) minmax(72px,0.6fr) minmax(72px,0.6fr) minmax(120px,1fr)'
 
 const PAGE: CSSProperties = { maxWidth: 1120, margin: '0 auto', padding: 16 }
 const TOOLBAR: CSSProperties = {
@@ -132,17 +132,20 @@ function EventCell({ count, rate, tracked }: { count: number; rate: number | nul
 
 /** The send's state — and, when it finished, the door to its detail. */
 function StatusCell({ row }: { row: BatchEmailRow }) {
-  if (row.status === 'finished') {
-    return (
-      <span style={{ display: 'flex', gap: 'var(--a-s2)', alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <StateWord state="ok">Finished</StateWord>
-        <Link href={`/admin/crm/emails?campaign=${row.id}`} style={{ ...LINK, fontSize: 'var(--a-text-sm)' }}>
-          Details
-        </Link>
-      </span>
-    )
-  }
-  return <StateWord state="waiting">Draft</StateWord>
+  const href =
+    row.jobId != null
+      ? `/admin/crm/reporting/batch-emails/${row.jobId}`
+      : `/admin/reports/emails?q=${encodeURIComponent(row.subject ?? '')}`
+  return (
+    <span style={{ display: 'flex', gap: 'var(--a-s2)', alignItems: 'baseline', flexWrap: 'wrap' }}>
+      <StateWord state={row.status === 'finished' ? 'ok' : 'waiting'}>
+        {row.status === 'finished' ? 'Finished' : 'Sending'}
+      </StateWord>
+      <Link href={href} style={{ ...LINK, fontSize: 'var(--a-text-sm)' }}>
+        Recipients
+      </Link>
+    </span>
+  )
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -222,9 +225,10 @@ export default async function BatchEmailsPage({
               <span style={HEAD_CELL} role="columnheader">Created</span>
               <span style={HEAD_NUM} role="columnheader">Recipients</span>
               <span style={HEAD_NUM} role="columnheader">Sent</span>
+              <span style={HEAD_NUM} role="columnheader">Delivered</span>
+              <span style={HEAD_NUM} role="columnheader">Bounced</span>
               <span style={HEAD_NUM} role="columnheader">Opens</span>
               <span style={HEAD_NUM} role="columnheader">Clicks</span>
-              <span style={HEAD_NUM} role="columnheader">Unsubscribes</span>
               <span style={HEAD_CELL} role="columnheader">Status</span>
             </div>
 
@@ -233,7 +237,17 @@ export default async function BatchEmailsPage({
                 {/* Subject — the campaign's own "Details" door lives in Status;
                     it is the one link this row has ever carried, kept verbatim. */}
                 <span role="cell" style={{ fontWeight: 500, overflowWrap: 'anywhere' }}>
-                  <span title={row.subject ?? undefined}>{subjectDisplay(row.subject)}</span>
+                  <Link
+                    href={
+                      row.jobId != null
+                        ? `/admin/crm/reporting/batch-emails/${row.jobId}`
+                        : `/admin/reports/emails?q=${encodeURIComponent(row.subject ?? '')}`
+                    }
+                    style={LINK}
+                    title={row.subject ?? undefined}
+                  >
+                    {subjectDisplay(row.subject)}
+                  </Link>
                 </span>
                 <span role="cell" style={MUTED}>{row.fromBrokerName ?? '—'}</span>
                 <span role="cell" style={{ ...MUTED, fontVariantNumeric: 'tabular-nums' }}>
@@ -254,17 +268,16 @@ export default async function BatchEmailsPage({
                   )}
                 </span>
                 <span role="cell">
+                  <EventCell count={row.delivered} rate={null} tracked={row.tracked} />
+                </span>
+                <span role="cell">
+                  <EventCell count={row.bounced} rate={null} tracked={row.tracked} />
+                </span>
+                <span role="cell">
                   <EventCell count={row.opens} rate={row.openRate} tracked={row.tracked} />
                 </span>
                 <span role="cell">
                   <EventCell count={row.clicks} rate={row.clickRate} tracked={row.tracked} />
-                </span>
-                <span role="cell">
-                  {row.unsubscribes > 0 ? (
-                    <span style={NUM}>{row.unsubscribes.toLocaleString('en-US')}</span>
-                  ) : (
-                    <span style={NUM_MUTED}>{row.tracked ? '0' : '—'}</span>
-                  )}
                 </span>
                 <span role="cell"><StatusCell row={row} /></span>
               </div>

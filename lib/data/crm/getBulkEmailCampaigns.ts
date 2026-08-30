@@ -1,11 +1,164 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
+import type { EmailEvent } from '@/lib/crm/email-events'
 import {
+  inheritEmailKeys,
   summarizeCampaign,
   type CampaignEngagement,
   type RawEmailEventRow,
 } from './getEmailReporting'
+import { readLastSiteByPerson } from './getVisitorLastSeen'
+
+const EVENT_SELECT =
+  'message_id,recipient_email,person_id,broker,send_type,event,email_key,subject,occurred_at,meta'
+const PAGE = 1000
+const IN_CHUNK = 200
+
+type EventRow = RawEmailEventRow & { meta?: { url?: string; clickUrl?: string } | null }
+
+/** PostgREST caps a select at 1000 rows. A 2,714-person send is more than that. */
+async function readEventPages(
+  apply: (from: number, to: number) => Promise<{ data: EventRow[] | null; error: { message: string } | null }>,
+): Promise<{ rows: EventRow[]; unreadable: boolean }> {
+  const out: EventRow[] = []
+  for (let from = 0; from < 80_000; from += PAGE) {
+    const { data, error } = await apply(from, from + PAGE - 1)
+    if (error) return { rows: [], unreadable: true }
+    const page = (data ?? []) as EventRow[]
+    out.push(...page)
+    if (page.length < PAGE) break
+  }
+  return { rows: out, unreadable: false }
+}
+
+async function eventsForEmailKeys(
+  sb: ReturnType<typeof createServiceClient>,
+  keys: string[],
+): Promise<{ rows: EventRow[]; unreadable: boolean }> {
+  if (keys.length === 0) return { rows: [], unreadable: false }
+  const keyed: EventRow[] = []
+  for (let i = 0; i < keys.length; i += IN_CHUNK) {
+    const slice = keys.slice(i, i + IN_CHUNK)
+    const page = await readEventPages(async (from, to) => {
+      const r = await sb
+        .from('email_events')
+        .select(EVENT_SELECT)
+        .in('email_key', slice)
+        .order('occurred_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data: r.data as EventRow[] | null, error: r.error }
+    })
+    if (page.unreadable) return page
+    keyed.push(...page.rows)
+  }
+
+  const keyByMessageId = new Map<string, string>()
+  for (const r of keyed) {
+    const mid = (r.message_id ?? '').trim()
+    const key = (r.email_key ?? '').trim()
+    if (mid && key) keyByMessageId.set(mid, key)
+  }
+  const messageIds = [...keyByMessageId.keys()]
+  const extras: EventRow[] = []
+  for (let i = 0; i < messageIds.length; i += IN_CHUNK) {
+    const slice = messageIds.slice(i, i + IN_CHUNK)
+    const page = await readEventPages(async (from, to) => {
+      const r = await sb
+        .from('email_events')
+        .select(EVENT_SELECT)
+        .in('message_id', slice)
+        .is('email_key', null)
+        .order('occurred_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data: r.data as EventRow[] | null, error: r.error }
+    })
+    if (page.unreadable) return page
+    extras.push(...page.rows)
+  }
+  return { rows: inheritEmailKeys([...keyed, ...extras]), unreadable: false }
+}
+
+const LATEST_RANK: Record<string, number> = {
+  sent: 0,
+  delivered: 1,
+  open: 2,
+  click: 3,
+  unsubscribe: 4,
+  complaint: 5,
+  bounce: 6,
+}
+
+export type CampaignRecipient = {
+  email: string
+  personId: number | null
+  name: string | null
+  subject: string | null
+  sentAt: string | null
+  deliveredAt: string | null
+  openedAt: string | null
+  clickedAt: string | null
+  bouncedAt: string | null
+  unsubscribedAt: string | null
+  latestEvent: EmailEvent
+  clickUrl: string | null
+  lastSiteAt: string | null
+  visitedAfterSend: boolean
+}
+
+/**
+ * One row per recipient for a campaign's event fan. PURE. Site visits and
+ * display names are joined after this, so those fields stay empty here.
+ */
+export function foldCampaignRecipients(rows: EventRow[]): CampaignRecipient[] {
+  const byEmail = new Map<string, CampaignRecipient>()
+  for (const r of rows) {
+    const email = (r.recipient_email ?? '').trim().toLowerCase()
+    if (!email) continue
+    const ev = r.event as EmailEvent
+    if (!(ev in LATEST_RANK)) continue
+    let rec = byEmail.get(email)
+    if (!rec) {
+      rec = {
+        email,
+        personId: r.person_id,
+        name: null,
+        subject: r.subject,
+        sentAt: null,
+        deliveredAt: null,
+        openedAt: null,
+        clickedAt: null,
+        bouncedAt: null,
+        unsubscribedAt: null,
+        latestEvent: ev,
+        clickUrl: null,
+        lastSiteAt: null,
+        visitedAfterSend: false,
+      }
+      byEmail.set(email, rec)
+    }
+    rec.personId = rec.personId ?? r.person_id
+    rec.subject = rec.subject ?? r.subject
+    const at = r.occurred_at
+    if (ev === 'sent' && (!rec.sentAt || at < rec.sentAt)) rec.sentAt = at
+    if (ev === 'delivered' && (!rec.deliveredAt || at < rec.deliveredAt)) rec.deliveredAt = at
+    if (ev === 'open' && (!rec.openedAt || at < rec.openedAt)) rec.openedAt = at
+    if (ev === 'click' && (!rec.clickedAt || at < rec.clickedAt)) rec.clickedAt = at
+    if (ev === 'bounce' && (!rec.bouncedAt || at < rec.bouncedAt)) rec.bouncedAt = at
+    if (ev === 'unsubscribe' && (!rec.unsubscribedAt || at < rec.unsubscribedAt)) rec.unsubscribedAt = at
+    if (ev === 'click') {
+      const url = r.meta?.url || r.meta?.clickUrl
+      if (url) rec.clickUrl = url
+    }
+    const better =
+      LATEST_RANK[ev] > LATEST_RANK[rec.latestEvent] ||
+      (LATEST_RANK[ev] === LATEST_RANK[rec.latestEvent] && at >= (rec.clickedAt || rec.openedAt || rec.deliveredAt || rec.sentAt || ''))
+    if (better) rec.latestEvent = ev
+  }
+  return [...byEmail.values()].sort((a, b) => a.email.localeCompare(b.email))
+}
 
 /**
  * Batch emails sent from the CRM People list, for the Batch Emails report.
@@ -85,51 +238,23 @@ async function readBulkEmailCampaigns(
   if (jobRows.length === 0) return { rows: [], unreadable: false }
 
   const keys = jobRows.map((j) => cohortEmailKeyForJob(j.id))
-  const SELECT = 'message_id,recipient_email,person_id,broker,send_type,event,email_key,subject,occurred_at'
+  const fetched = await eventsForEmailKeys(sb, keys)
+  if (fetched.unreadable) return { rows: [], unreadable: true }
 
-  // Pass 1 — everything the send path and the trackers wrote, which all carry
-  // the campaign's email_key: sent, open, click.
-  const { data: keyed, error: evErr } = await sb
-    .from('email_events')
-    .select(SELECT)
-    .in('email_key', keys)
-  if (evErr) return { rows: [], unreadable: true }
-  const keyedRows = (keyed ?? []) as RawEmailEventRow[]
-
-  const buckets = new Map<string, RawEmailEventRow[]>()
   const keyByMessageId = new Map<string, string>()
-  for (const r of keyedRows) {
-    const key = (r.email_key ?? '').trim()
+  for (const r of fetched.rows) {
+    const k = (r.email_key ?? '').trim()
+    const mid = (r.message_id ?? '').trim()
+    if (k && mid) keyByMessageId.set(mid, k)
+  }
+  const buckets = new Map<string, RawEmailEventRow[]>()
+  for (const r of fetched.rows) {
+    const key =
+      (r.email_key ?? '').trim() || keyByMessageId.get((r.message_id ?? '').trim()) || ''
     if (!key) continue
     const arr = buckets.get(key)
     if (arr) arr.push(r)
     else buckets.set(key, [r])
-    const mid = (r.message_id ?? '').trim()
-    if (mid) keyByMessageId.set(mid, key)
-  }
-
-  // Pass 2 — the provider webhooks. Resend posts delivered / bounce / complaint
-  // keyed on the message id ONLY: those rows have a null email_key, so pass 1
-  // cannot see them and a campaign would read zero deliveries (and therefore a
-  // "—" open rate, since the denominator is deliveries). The sent rows carry the
-  // message id, so they are the bridge back to the campaign.
-  const messageIds = [...keyByMessageId.keys()]
-  if (messageIds.length > 0) {
-    const { data: byMid, error: midErr } = await sb
-      .from('email_events')
-      .select(SELECT)
-      .in('message_id', messageIds)
-      .is('email_key', null)
-    if (midErr) return { rows: [], unreadable: true }
-    for (const r of (byMid ?? []) as RawEmailEventRow[]) {
-      const key = keyByMessageId.get((r.message_id ?? '').trim())
-      if (!key) continue
-      // summarizeEngagement keys a send on (message_id) when present, so these
-      // rows tally per recipient exactly like the keyed ones.
-      const arr = buckets.get(key)
-      if (arr) arr.push(r)
-      else buckets.set(key, [r])
-    }
   }
 
   const rows = jobRows.map((j): BulkEmailCampaign => {
@@ -160,6 +285,87 @@ export async function getBulkEmailCampaigns(
   const cached = unstable_cache(
     () => readBulkEmailCampaigns(cap, brokerScope),
     ['crm-bulk-email-campaigns', String(cap), brokerScope ?? 'all'],
+    { tags: ['crm-email-reporting'], revalidate: 60 },
+  )
+  return cached()
+}
+
+export type BulkEmailCampaignDetail =
+  | { unreadable: true }
+  | { unreadable: false; campaign: BulkEmailCampaign; recipients: CampaignRecipient[] }
+
+async function readNamesByPerson(
+  sb: ReturnType<typeof createServiceClient>,
+  personIds: number[],
+): Promise<Map<number, string>> {
+  const out = new Map<number, string>()
+  if (personIds.length === 0) return out
+  for (let i = 0; i < personIds.length; i += IN_CHUNK) {
+    const slice = personIds.slice(i, i + IN_CHUNK)
+    const { data, error } = await sb.from('crm_people').select('id,name').in('id', slice)
+    if (error) continue
+    for (const r of (data ?? []) as Array<{ id: number; name: string | null }>) {
+      const name = (r.name ?? '').trim()
+      if (name) out.set(r.id, name)
+    }
+  }
+  return out
+}
+
+async function readBulkEmailCampaignDetail(
+  jobId: number,
+  brokerScope: string | null,
+): Promise<BulkEmailCampaignDetail | null> {
+  const sb = createServiceClient()
+  let jobQuery = sb
+    .from('crm_bulk_jobs')
+    .select('id,params,actor_email,broker_scope,status,total,processed,created_at,finished_at')
+    .eq('id', jobId)
+    .eq('kind', 'email-cohort')
+  if (brokerScope) jobQuery = jobQuery.eq('broker_scope', brokerScope)
+  const { data: job, error: jobErr } = await jobQuery.maybeSingle()
+  if (jobErr) return { unreadable: true }
+  if (!job) return null
+  const j = job as JobRow
+  const emailKey = cohortEmailKeyForJob(j.id)
+  const fetched = await eventsForEmailKeys(sb, [emailKey])
+  if (fetched.unreadable) return { unreadable: true }
+  const campaign: BulkEmailCampaign = {
+    jobId: j.id,
+    emailKey,
+    subject: j.params?.subject?.trim() || null,
+    actorEmail: j.actor_email,
+    brokerScope: j.broker_scope,
+    status: j.status,
+    createdAtIso: j.created_at,
+    finishedAtIso: j.finished_at,
+    total: j.total ?? j.processed,
+    engagement: summarizeCampaign(fetched.rows),
+  }
+  const recipients = foldCampaignRecipients(fetched.rows)
+  const personIds = [...new Set(recipients.map((r) => r.personId).filter((id): id is number => id != null && id > 0))]
+  const [names, sites] = await Promise.all([readNamesByPerson(sb, personIds), readLastSiteByPerson(sb, personIds)])
+  for (const rec of recipients) {
+    if (rec.personId != null) {
+      rec.name = names.get(rec.personId) ?? null
+      rec.lastSiteAt = sites.get(rec.personId) ?? null
+      rec.visitedAfterSend = Boolean(
+        rec.lastSiteAt && rec.sentAt && rec.lastSiteAt >= rec.sentAt,
+      )
+    }
+  }
+  return { unreadable: false, campaign, recipients }
+}
+
+export async function getBulkEmailCampaignDetail(
+  jobId: number,
+  brokerScope: string | null = null,
+): Promise<BulkEmailCampaignDetail | null> {
+  const id = Math.floor(jobId)
+  if (!Number.isFinite(id) || id <= 0) return null
+  const cached = unstable_cache(
+    () => readBulkEmailCampaignDetail(id, brokerScope),
+    ['crm-bulk-email-campaign-detail', String(id), brokerScope ?? 'all'],
     { tags: ['crm-email-reporting'], revalidate: 60 },
   )
   return cached()

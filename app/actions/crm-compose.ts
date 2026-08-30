@@ -45,6 +45,7 @@ import {
   type ComposePreview,
 } from '@/lib/crm/compose-audience'
 import { createServiceClient } from '@/lib/supabase/service'
+import { freezeBulkEmailSendParams } from '@/lib/crm/bulk-email-identity'
 
 // ── Options ──────────────────────────────────────────────────────────────────
 
@@ -138,6 +139,8 @@ export async function dispatchComposeCohortAction(
     templateId: input.content.templateId,
     subject: input.content.subject,
     body: input.content.body,
+    includeSignature: input.content.includeSignature,
+    sendVia: input.content.sendVia,
   })
 }
 
@@ -214,7 +217,19 @@ export async function scheduleComposeCohortAction(
   const parsedTid = templateIdRaw ? parseInt(templateIdRaw, 10) : NaN
   const templateId: number | null =
     Number.isFinite(parsedTid) && parsedTid > 0 ? parsedTid : null
-  const params = { templateId, subject: subject || null, body: body || null }
+  const frozenSend = freezeBulkEmailSendParams(access.email, {
+    includeSignature: input.content.includeSignature,
+    sendVia: input.content.sendVia,
+  })
+  const params = {
+    templateId,
+    subject: subject || null,
+    body: body || null,
+    includeSignature: frozenSend.includeSignature,
+    sendVia: frozenSend.sendVia,
+    fromIdentity: frozenSend.fromIdentity,
+    replyTo: frozenSend.replyTo,
+  }
 
   const { data, error } = await sb
     .from('crm_scheduled_sends')

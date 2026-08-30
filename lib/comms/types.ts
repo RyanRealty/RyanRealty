@@ -85,7 +85,7 @@ export type GovernedGmailPayload = {
   bodyFormat?: EmailBodyFormat
   attachments?: CrmEmailAttachment[]
   /** Open/click instrumentation (lib/email-tracking) — same contract as sendCrmEmail. */
-  track?: { personId: number; emailKey: string; label?: string }
+  track?: { personId: number; emailKey: string; label?: string; broker?: string }
   /** Broker-signature append (client-facing sends). Defaults to true. */
   withSignature?: boolean
   /** Extra CRM contacts (spouse on Cc, co-buyer on To) that get their own timeline row. */
@@ -125,4 +125,10 @@ export type GovernedEmailRequest = {
   /** At-most-once key. Wrapped as `email:{personId}:{key}` (the existing pattern). */
   idempotencyKey?: string
   initiator: GovernedInitiator
+  /**
+   * Write a `sent` email_events row after the provider accepts the mail.
+   * Default true. Bulk email-cohort sets this false because it already claimed
+   * the sent row before the wire (double-send safety).
+   */
+  recordSentEvent?: boolean
 }

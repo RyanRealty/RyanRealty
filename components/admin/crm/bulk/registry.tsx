@@ -31,6 +31,8 @@ import {
   sendBatchEmailTestAction,
   scheduleBulkEmailCohortAction,
 } from '@/app/actions/crm-bulk'
+import { BulkEmailSendOptions } from '@/components/admin/crm/bulk/EmailSendOptions'
+import type { BulkEmailSendVia } from '@/lib/crm/bulk-email-identity'
 import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
 import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 import { getFiltersSummary } from '@/lib/search-filters'
@@ -251,6 +253,8 @@ type EmailCohortValue = {
   recipients: BatchRecipientsState
   /** Empty = send on Run. Set = hand it to the scheduled-sends cron. */
   scheduledAt: string
+  includeSignature: boolean
+  sendVia: BulkEmailSendVia
 }
 
 function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohortValue>) {
@@ -270,6 +274,7 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
   onChangeRef.current = onChange
   const valueRef = useRef(value)
   valueRef.current = value
+  const [signatureHtml, setSignatureHtml] = useState<string | null>(null)
   useEffect(() => {
     if (valueRef.current.attachments !== readyJson) {
       onChangeRef.current({ ...valueRef.current, attachments: readyJson })
@@ -309,14 +314,9 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
           onSubjectChange={(v) => onChange({ ...value, subject: v })}
           body={value.body}
           onBodyChange={(v) => onChange({ ...value, body: v })}
-          signatureHtml={null}
+          signatureHtml={value.includeSignature ? signatureHtml : null}
           mergeMode="template"
-          // The editor's default placeholder describes the one-to-one composer,
-          // which does send from the broker's own mailbox. A batch goes out over
-          // Resend from the verified sending domain, with the sender set as the
-          // reply address. Saying otherwise on a send surface is worse than
-          // saying nothing.
-          bodyPlaceholder="Message. Sends from Ryan Realty's sending address; replies come back to you."
+          bodyPlaceholder="Message. Preview is the email that sends, signature included."
         />
       ) : null}
       {/* Outside the template branch on purpose: a template send needs to be
@@ -330,6 +330,12 @@ function EmailCohortFields({ value, onChange, ctx }: BulkFieldsProps<EmailCohort
         </span>
       </div>
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
+      <BulkEmailSendOptions
+        value={{ includeSignature: value.includeSignature, sendVia: value.sendVia }}
+        onChange={(next) => onChange({ ...value, ...next })}
+        onSignatureHtml={setSignatureHtml}
+        recipientCount={value.recipients.total}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <BatchTestSend selection={ctx.selection} value={value} />
         {/* Same dialog the one-to-one composer uses, so a batch you built once
@@ -380,6 +386,8 @@ function BatchTestSend({
             subject: value.subject.trim() || undefined,
             body: value.body || undefined,
             attachments: value.attachments && value.attachments !== UPLOADING ? value.attachments : undefined,
+            includeSignature: value.includeSignature,
+            sendVia: value.sendVia,
           })
           setState(res.ok
             ? { kind: 'done', msg: `Sent to ${res.sentTo}, merged against ${res.mergedAgainst}.` }
@@ -407,7 +415,16 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
   id: 'email_cohort',
   title: 'Batch Email',
   jobKind: 'email-cohort',
-  initialValue: { templateId: '', subject: '', body: '', attachments: '', recipients: EMPTY_RECIPIENTS, scheduledAt: '' },
+  initialValue: {
+    templateId: '',
+    subject: '',
+    body: '',
+    attachments: '',
+    recipients: EMPTY_RECIPIENTS,
+    scheduledAt: '',
+    includeSignature: true,
+    sendVia: 'resend',
+  },
   Fields: EmailCohortFields,
   validate: (v) => {
     const tId = v.templateId.trim()
@@ -430,6 +447,8 @@ const emailCohort = defineBulkAction<EmailCohortValue>({
       subject: v.subject.trim() || undefined,
       body: v.body || undefined,
       attachments: v.attachments && v.attachments !== UPLOADING ? v.attachments : undefined,
+      includeSignature: v.includeSignature,
+      sendVia: v.sendVia,
     }
     // Untouched, the original selection passes through so a saved-view or
     // "all matching" send still resolves at run time. Edited, the send becomes

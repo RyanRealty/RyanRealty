@@ -579,7 +579,7 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
       to: toList, cc: ccList, bcc: bccList,
       subject: mergedSubject, bodyText: mergedBody, bodyFormat,
       attachments: emailAttachments,
-      track: { personId, emailKey, label: mergedSubject },
+      track: { personId, emailKey, label: mergedSubject, broker: actingSlugForLinks },
       extraPersonIds,
       attachmentRefs: refs.items,
       primaryAddress: primaryEmail ?? null,

@@ -53,6 +53,8 @@ import type {
 import { validateComposeContent, type ComposePreview } from '@/lib/crm/compose-audience'
 import BulkProgress from '@/components/admin/crm/BulkProgress'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
+import { BulkEmailSendOptions } from '@/components/admin/crm/bulk/EmailSendOptions'
+import type { BulkEmailSendVia } from '@/lib/crm/bulk-email-identity'
 import { Button, FilterChip, SectionHead, SelectField, TextField } from '@/components/admin/v2'
 
 type AudienceKind = 'view' | 'stage'
@@ -81,6 +83,9 @@ export default function ComposeToCohort() {
   const [templateId, setTemplateId] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  const [includeSignature, setIncludeSignature] = useState(true)
+  const [sendVia, setSendVia] = useState<BulkEmailSendVia>('resend')
+  const [signatureHtml, setSignatureHtml] = useState<string | null>(null)
 
   // Scheduling.
   const [sendMode, setSendMode] = useState<SendMode>('now')
@@ -146,9 +151,10 @@ export default function ComposeToCohort() {
   }
 
   function buildContent() {
+    const send = { includeSignature, sendVia }
     return contentMode === 'template'
-      ? { templateId }
-      : { subject, body }
+      ? { templateId, ...send }
+      : { subject, body, ...send }
   }
 
   function handleSend() {
@@ -314,12 +320,23 @@ export default function ComposeToCohort() {
             onSubjectChange={setSubject}
             body={body}
             onBodyChange={setBody}
-            signatureHtml={null}
+            signatureHtml={includeSignature ? signatureHtml : null}
             hideMergeFields
             subjectPlaceholder="Subject line"
-            bodyPlaceholder="Write the email. Merge fields like {{first_name}} are supported."
+            bodyPlaceholder="Write the email. Preview is the email that sends, signature included."
           />
         )}
+        <div style={{ marginTop: 'var(--a-s3)' }}>
+          <BulkEmailSendOptions
+            value={{ includeSignature, sendVia }}
+            onChange={(next) => {
+              setIncludeSignature(next.includeSignature)
+              setSendVia(next.sendVia)
+            }}
+            onSignatureHtml={setSignatureHtml}
+            recipientCount={preview?.willSend}
+          />
+        </div>
       </section>
 
       {/* Preview */}

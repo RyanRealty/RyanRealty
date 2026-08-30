@@ -324,6 +324,29 @@ describe('other bulk actions validate input', () => {
     expect((await bulkEmailCohortAction(sel, { templateId: 'welcome' })).ok).toBe(true)
   })
 
+  it('freezes named from, reply-to, and signature-on onto the job', async () => {
+    const res = await bulkEmailCohortAction(sel, { subject: 'Hi', body: 'Hello' })
+    expect(res.ok).toBe(true)
+    expect(enqueued[0].params).toMatchObject({
+      includeSignature: true,
+      sendVia: 'resend',
+      replyTo: 'matt@ryan-realty.com',
+    })
+    expect(String(enqueued[0].params.fromIdentity)).toContain('matt@mail.ryan-realty.com')
+    expect(String(enqueued[0].params.fromIdentity).toLowerCase()).not.toContain('noreply')
+  })
+
+  it('freezes the Gmail rail when asked, still with a real reply-to', async () => {
+    const res = await bulkEmailCohortAction(sel, { subject: 'Hi', body: 'Hello', sendVia: 'gmail' })
+    expect(res.ok).toBe(true)
+    expect(enqueued[0].params).toMatchObject({
+      sendVia: 'gmail',
+      fromIdentity: 'matt@ryan-realty.com',
+      replyTo: 'matt@ryan-realty.com',
+      includeSignature: true,
+    })
+  })
+
   it('enqueue failure surfaces a stable error', async () => {
     enqueueThrows = true
     const res = await bulkSetStageAction(sel, 'Pending')

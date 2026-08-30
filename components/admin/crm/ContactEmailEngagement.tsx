@@ -11,9 +11,15 @@
  * Card -> av2-pane, Badge -> StateWord (deliverability flags are system states,
  * not broker-typed data), every shadcn semantic class -> its var(--a-*) token.
  */
+import Link from 'next/link'
 import { StateWord } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
-import type { ContactEmailEngagement as Engagement } from '@/lib/data/crm/getContactEmailEngagement'
+import {
+  emailSendCampaignHref,
+  emailSendStatusLabel,
+  type ContactEmailEngagement as Engagement,
+  type ContactEmailSend,
+} from '@/lib/data/crm/getContactEmailEngagement'
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
@@ -31,19 +37,27 @@ function Stat({ label, value }: { label: string; value: number }) {
   )
 }
 
+function sendState(s: ContactEmailSend): 'ok' | 'down' | 'waiting' {
+  if (s.bouncedAt) return 'down'
+  if (s.clickedAt || s.openedAt || s.visitedAfterSend) return 'ok'
+  return 'waiting'
+}
+
 export default function ContactEmailEngagement({ engagement }: { engagement: Engagement }) {
-  const { sent, opens, clicks, bounces, complaints, unsubscribes, lastOpenAt, lastClickAt, hasAny } = engagement
+  const { sent, delivered, opens, clicks, bounces, complaints, unsubscribes, lastOpenAt, lastClickAt, hasAny, sends } =
+    engagement
 
   return (
-    <div className="av2-pane">
+    <div id="emails" className="av2-pane">
       <div style={{ fontSize: 'var(--a-text-lg)', fontWeight: 500, color: 'var(--a-text)' }}>Email engagement</div>
       <div>
         {!hasAny ? (
           <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>No email activity recorded yet.</p>
         ) : (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Stat label="Sent" value={sent} />
+              <Stat label="Delivered" value={delivered} />
               <Stat label="Opens" value={opens} />
               <Stat label="Clicks" value={clicks} />
             </div>
@@ -86,6 +100,39 @@ export default function ContactEmailEngagement({ engagement }: { engagement: Eng
                   </StateWord>
                 ) : null}
               </div>
+            ) : null}
+
+            {sends.length > 0 ? (
+              <ul className="space-y-1.5">
+                {sends.slice(0, 8).map((s) => {
+                  const href = emailSendCampaignHref(s)
+                  const title = s.subject?.trim() || 'Untitled send'
+                  return (
+                    <li
+                      key={s.key}
+                      className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2"
+                      style={{ border: '1px solid var(--a-border)' }}
+                    >
+                      <div className="min-w-0">
+                        {href ? (
+                          <Link href={href} style={{ color: 'var(--a-accent)', fontSize: 'var(--a-text-md)', fontWeight: 500 }}>
+                            {title}
+                          </Link>
+                        ) : (
+                          <p style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>{title}</p>
+                        )}
+                        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                          {s.sentAt ? <span className="tabular-nums">{formatDate(s.sentAt)}</span> : null}
+                          {s.visitedAfterSend ? ' · On the site after' : null}
+                        </p>
+                      </div>
+                      <span style={{ flexShrink: 0 }}>
+                        <StateWord state={sendState(s)}>{emailSendStatusLabel(s)}</StateWord>
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
             ) : null}
           </div>
         )}

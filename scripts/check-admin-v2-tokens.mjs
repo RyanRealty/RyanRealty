@@ -531,6 +531,7 @@ const SCAN_DIRS = [
   'components/admin/crm/ai-email-draft.ts',
   'components/admin/crm/bulk/FormSelect.tsx',
   'components/admin/crm/bulk/BatchRecipients.tsx',
+  'components/admin/crm/bulk/EmailSendOptions.tsx',
   'components/admin/crm/bulk/TagCombo.tsx',
   'components/admin/crm/bulk/registry.tsx',
   'components/admin/crm/bulk/types.ts',

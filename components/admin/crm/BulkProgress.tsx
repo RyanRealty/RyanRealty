@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { CheckCircle2, Loader2, AlertTriangle } from 'lucide-react'
 import { fetchBulkJobStatus } from '@/app/actions/crm-bulk-status'
 import type { CrmBulkJobView } from '@/lib/data/crm/getCrmBulkJob'
@@ -132,6 +133,13 @@ export default function BulkProgress({ jobId }: { jobId: number }) {
         {isError && view.error ? view.error : summarizeBreakdown(view)}
         {view.total !== null ? ` (of ${view.total})` : ''}
       </p>
+      {view.kind === 'email-cohort' ? (
+        <p className="mt-2 text-xs">
+          <Link href={`/admin/crm/reporting/batch-emails/${view.id}`} style={{ color: 'var(--a-accent)' }}>
+            Who it reached, opens, clicks, and site visits
+          </Link>
+        </p>
+      ) : null}
     </div>
   )
 }
