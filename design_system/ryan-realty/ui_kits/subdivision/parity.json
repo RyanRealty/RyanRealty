@@ -110,13 +110,13 @@
     "V3SectionTracker",
     "V3Breadcrumb",
     "V3Heading #overview ({Name} homes for sale) + PlaceFaceStrip",
+    "PlaceTypeSlider (horizontal leftover type cards)",
     "PlaceSplitView #homes",
     "SubdivisionSchools (Quiet: assigned schools when published, then every outbound edge)",
     "V3Instrument #market-report (own market, conditional)",
     "SubdivisionSalesHistory (yearly counts) with SubdivisionMarketCharts inside it",
     "V3PlaceCharacter (Quiet, conditional)",
     "SubdivisionDocuments (conditional)",
-    "V3PlacePropertyTypes (conditional)",
     "V3Footer, outside <main>"
   ],
   "removedComponents": [

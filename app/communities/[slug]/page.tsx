@@ -68,7 +68,6 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
-  V3Button,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
