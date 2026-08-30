@@ -32,7 +32,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 }
 
 export default function ContactEmailEngagement({ engagement }: { engagement: Engagement }) {
-  const { sent, opens, clicks, bounces, complaints, unsubscribes, lastOpenAt, lastClickAt, hasAny } = engagement
+  const { sent, delivered, opens, clicks, bounces, complaints, unsubscribes, lastOpenAt, lastClickAt, hasAny } = engagement
 
   return (
     <div className="av2-pane">
@@ -42,8 +42,9 @@ export default function ContactEmailEngagement({ engagement }: { engagement: Eng
           <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>No email activity recorded yet.</p>
         ) : (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Stat label="Sent" value={sent} />
+              <Stat label="Delivered" value={delivered} />
               <Stat label="Opens" value={opens} />
               <Stat label="Clicks" value={clicks} />
             </div>

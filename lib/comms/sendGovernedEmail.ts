@@ -29,12 +29,56 @@ import { recordConversationMessage } from '@/lib/crm/record-message'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { sendEmail } from '@/lib/resend'
 import { checkSendGuards } from './guards'
+import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 import type {
   GovernedEmailRequest,
   GovernedEmailResult,
   GovernedGmailPayload,
   GovernedResendPayload,
 } from './types'
+
+async function recordSentEvents(
+  req: GovernedEmailRequest,
+  providerId: string | undefined,
+): Promise<void> {
+  if (req.recordSentEvent === false || !providerId) return
+  try {
+    const broker = req.initiator.broker ?? null
+    if (req.payload.rail === 'gmail') {
+      const payload = req.payload
+      const sendType = sendTypeFromEmailKey(payload.track?.emailKey)
+      const emails = [...payload.to, ...(payload.cc ?? []), ...(payload.bcc ?? [])]
+      const seen = new Set<string>()
+      for (const raw of emails) {
+        const email = raw.trim().toLowerCase()
+        if (!email || seen.has(email)) continue
+        seen.add(email)
+        await recordEmailEvent({
+          messageId: providerId,
+          recipientEmail: email,
+          personId: email === (payload.to[0] ?? '').trim().toLowerCase() ? req.personId : null,
+          broker,
+          sendType,
+          event: 'sent',
+          emailKey: payload.track?.emailKey ?? null,
+          subject: payload.subject,
+        })
+      }
+      return
+    }
+    await recordEmailEvent({
+      messageId: providerId,
+      recipientEmail: req.payload.to,
+      personId: req.personId,
+      broker,
+      sendType: 'other',
+      event: 'sent',
+      subject: req.payload.subject,
+    })
+  } catch (e) {
+    console.warn('[comms] email_events sent write failed', e)
+  }
+}
 
 async function sendViaGmail(
   req: GovernedEmailRequest,
@@ -86,6 +130,7 @@ async function sendViaGmail(
       ],
     })
   } catch (e) { console.warn('[comms] conversation shadow-write (email) failed', e) }
+  await recordSentEvents(req, sent.gmailId)
   return { ok: true, providerId: sent.gmailId }
 }
 
@@ -150,6 +195,7 @@ async function sendViaResend(
       participants: [{ personId: req.personId, address: payload.to }],
     })
   } catch (e) { console.warn('[comms] conversation shadow-write (resend email) failed', e) }
+  await recordSentEvents(req, res.id)
   return { ok: true, providerId: res.id }
 }
 

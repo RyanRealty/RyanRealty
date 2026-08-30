@@ -6,6 +6,7 @@ describe('summarizeEmailEngagement', () => {
     const s = summarizeEmailEngagement([])
     expect(s).toEqual({
       sent: 0,
+      delivered: 0,
       opens: 0,
       clicks: 0,
       bounces: 0,
@@ -20,6 +21,7 @@ describe('summarizeEmailEngagement', () => {
   it('counts each event type', () => {
     const s = summarizeEmailEngagement([
       { event: 'sent', occurred_at: '2026-06-01T00:00:00Z' },
+      { event: 'delivered', occurred_at: '2026-06-01T00:00:02Z' },
       { event: 'open', occurred_at: '2026-06-01T01:00:00Z' },
       { event: 'open', occurred_at: '2026-06-02T01:00:00Z' },
       { event: 'click', occurred_at: '2026-06-02T02:00:00Z' },
@@ -28,6 +30,7 @@ describe('summarizeEmailEngagement', () => {
       { event: 'unsubscribe', occurred_at: '2026-06-03T02:00:00Z' },
     ])
     expect(s.sent).toBe(1)
+    expect(s.delivered).toBe(1)
     expect(s.opens).toBe(2)
     expect(s.clicks).toBe(1)
     expect(s.bounces).toBe(1)
@@ -54,6 +57,7 @@ describe('summarizeEmailEngagement', () => {
       { event: 'open', occurred_at: null },
       { event: 'totally-unknown', occurred_at: '2026-06-01T00:00:00Z' },
     ])
+    expect(s.delivered).toBe(1)
     expect(s.opens).toBe(1)
     expect(s.lastOpenAt).toBeNull()
     expect(s.hasAny).toBe(true)

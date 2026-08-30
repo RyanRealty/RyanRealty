@@ -318,6 +318,9 @@ export async function sendOneCohortEmail(
     const gmailRes = await sendGovernedEmail({
       personId: recipient.id,
       purpose: 'crm:bulk-email-cohort',
+      // The claim row above IS the sent measurement. A second sent row here
+      // would double-count the recipient on the campaign report.
+      recordSentEvent: false,
       initiator: {
         kind: 'broker',
         broker: brokerSlugFromActorEmail(ctx.actorEmail),

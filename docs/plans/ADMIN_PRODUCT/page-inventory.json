@@ -242,6 +242,10 @@
    "process": "reporting-truth",
    "destination": "Reports"
   },
+  "/admin/crm/reporting/batch-emails/[jobId]": {
+   "process": "reporting-truth",
+   "destination": "Reports"
+  },
   "/admin/crm/reporting/call-logs": {
    "process": "reporting-truth",
    "destination": "Reports"

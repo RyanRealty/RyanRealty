@@ -28,6 +28,7 @@ const h = vi.hoisted(() => ({
   sendCrmEmail: vi.fn(),
   prepareDeliverableEmail: vi.fn(),
   resendSendEmail: vi.fn(),
+  recordEmailEvent: vi.fn(),
   inserts: [] as Array<{ table: string; rows: unknown }>,
   fileCommsToVault: vi.fn(),
 }))
@@ -60,6 +61,10 @@ vi.mock('@/lib/crm/gmail', () => ({
 }))
 vi.mock('@/lib/email/prepare', () => ({ prepareDeliverableEmail: h.prepareDeliverableEmail }))
 vi.mock('@/lib/resend', () => ({ sendEmail: h.resendSendEmail }))
+vi.mock('@/lib/crm/email-events', () => ({
+  recordEmailEvent: (...a: unknown[]) => h.recordEmailEvent(...a),
+  sendTypeFromEmailKey: (key?: string | null) => (key ? 'one-off' : 'other'),
+}))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
     from: (table: string) => ({
@@ -115,6 +120,7 @@ beforeEach(() => {
   // Idempotency default: transparent pass-through (the ledger is exercised by
   // its own unit tests in lib/crm) — these tests assert WHEN it is consulted.
   h.withSendIdempotency.mockImplementation(async (_args: unknown, run: () => Promise<unknown>) => run())
+  h.recordEmailEvent.mockResolvedValue({ ok: true, inserted: true, event: 'sent', personId: 7 })
 })
 
 describe('sendGovernedSms — guard order', () => {
@@ -357,6 +363,34 @@ describe('sendGovernedEmail — guard order', () => {
     expect(h.inserts[0].rows).toMatchObject({
       person_id: 7, kind: 'email_out', source: 'automation', dedupe_key: 'resend:re_1:p7',
     })
+  })
+
+  it('gmail rail: records a sent email_events row for the primary recipient', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    h.sendCrmEmail.mockResolvedValue({ ok: true, gmailId: 'g1', plainBody: 'plain' })
+    h.recordConversationMessage.mockResolvedValue({ ok: true, conversationId: 'c1', messageId: 'm1', deduped: false })
+    await sendGovernedEmail({
+      ...gmailReq,
+      payload: { ...gmailReq.payload, track: { personId: 7, emailKey: 'manual:7:1', label: 'Subject line' } },
+    })
+    expect(h.recordEmailEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageId: 'g1',
+        recipientEmail: 'lead@example.com',
+        personId: 7,
+        event: 'sent',
+        emailKey: 'manual:7:1',
+        sendType: 'one-off',
+      }),
+    )
+  })
+
+  it('gmail rail: bulk claim path does not write a second sent row', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    h.sendCrmEmail.mockResolvedValue({ ok: true, gmailId: 'g1', plainBody: 'plain' })
+    h.recordConversationMessage.mockResolvedValue({ ok: true, conversationId: 'c1', messageId: 'm1', deduped: false })
+    await sendGovernedEmail({ ...gmailReq, recordSentEvent: false })
+    expect(h.recordEmailEvent).not.toHaveBeenCalled()
   })
 
   it('resend rail: a suppressed person never reaches prepare or the provider', async () => {

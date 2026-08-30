@@ -23,6 +23,10 @@ export type EmailLogCsvRow = {
   latestEvent: string
   latestAt: string
   messageId: string
+  openedAt: string
+  clickedAt: string
+  bouncedAt: string
+  siteAfter: string
 }
 
 const HEADERS = [
@@ -34,6 +38,10 @@ const HEADERS = [
   'Latest event',
   'Latest at',
   'Message id',
+  'Opened at',
+  'Clicked at',
+  'Bounced at',
+  'On the site after',
 ] as const
 
 /** Quote a CSV cell, escaping embedded quotes. */
@@ -56,6 +64,10 @@ function toCsv(rows: EmailLogCsvRow[]): string {
         r.latestEvent,
         r.latestAt,
         r.messageId,
+        r.openedAt,
+        r.clickedAt,
+        r.bouncedAt,
+        r.siteAfter,
       ]
         .map(cell)
         .join(','),

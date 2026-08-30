@@ -244,10 +244,36 @@ export async function recordEmailEvent(
     personId = await resolvePersonIdByEmail(recipient)
   }
 
+  let emailKey = input.emailKey ?? null
+  let broker = input.broker ?? null
+  let sendType = input.sendType
+  let subject = input.subject ?? null
+  const messageId = input.messageId ?? null
+
+  // Resend's delivered/bounce webhook knows the provider message id and the
+  // recipient, not our campaign email_key. Inherit the `sent` row so those
+  // events join the same send in reporting.
+  if (messageId && !(emailKey ?? '').trim()) {
+    const { getSentEventByMessageId } = await import('@/lib/data/crm/insertEmailEvent')
+    const sent = await getSentEventByMessageId(messageId)
+    if (sent) {
+      emailKey = sent.email_key
+      if (!broker) broker = sent.broker
+      if ((!sendType || sendType === 'other') && sent.send_type) {
+        sendType = sent.send_type as EmailSendType
+      }
+      if (!hasPersonId && sent.person_id) personId = personId ?? sent.person_id
+      if (!recipient && sent.recipient_email) {
+        recipient = sent.recipient_email.trim().toLowerCase()
+      }
+      if (!subject) subject = sent.subject
+    }
+  }
+
   const occurredAt = toIso(input.occurredAt)
   const dedupeKey = buildDedupeKey({
-    messageId: input.messageId ?? null,
-    emailKey: input.emailKey ?? null,
+    messageId,
+    emailKey,
     event,
     recipientEmail: recipient,
     personId,
@@ -255,14 +281,14 @@ export async function recordEmailEvent(
 
   const { insertEmailEvent } = await import('@/lib/data/crm/insertEmailEvent')
   const res = await insertEmailEvent({
-    message_id: input.messageId ?? null,
+    message_id: messageId,
     recipient_email: recipient,
     person_id: personId,
-    broker: input.broker ?? null,
-    send_type: input.sendType,
+    broker,
+    send_type: sendType,
     event,
-    email_key: input.emailKey ?? null,
-    subject: input.subject ?? null,
+    email_key: emailKey,
+    subject,
     occurred_at: occurredAt,
     meta: input.meta ?? {},
     dedupe_key: dedupeKey,

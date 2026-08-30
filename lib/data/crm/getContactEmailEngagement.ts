@@ -21,6 +21,8 @@ import type { EmailEvent } from '@/lib/crm/email-events'
 export type ContactEmailEngagement = {
   /** Distinct emails this contact was sent (counts 'sent' rows). */
   sent: number
+  /** Provider-confirmed deliveries. */
+  delivered: number
   /** Total opens recorded (one row per email per person, idempotent). */
   opens: number
   /** Total clicks recorded. */
@@ -39,6 +41,7 @@ export type ContactEmailEngagement = {
 
 const EMPTY: ContactEmailEngagement = {
   sent: 0,
+  delivered: 0,
   opens: 0,
   clicks: 0,
   bounces: 0,
@@ -64,6 +67,9 @@ export function summarizeEmailEngagement(rows: EngagementRow[]): ContactEmailEng
     switch (ev) {
       case 'sent':
         out.sent++
+        break
+      case 'delivered':
+        out.delivered++
         break
       case 'open':
         out.opens++

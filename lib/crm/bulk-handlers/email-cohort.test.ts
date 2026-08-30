@@ -328,6 +328,7 @@ describe('sendOneCohortEmail — suppression + claim-before-send + record shape'
     expect(req.payload.rail).toBe('gmail')
     expect(req.payload.to).toEqual(['lead@example.com'])
     expect(req.payload.withSignature).toBe(false)
+    expect(req.recordSentEvent).toBe(false)
     expect(req.initiator.broker).toBe('matt')
     expect(mockStampMessageId).toHaveBeenCalledWith(cohortSendDedupeKey(42, 7), 'gmail-1')
   })

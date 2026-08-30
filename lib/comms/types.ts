@@ -125,4 +125,10 @@ export type GovernedEmailRequest = {
   /** At-most-once key. Wrapped as `email:{personId}:{key}` (the existing pattern). */
   idempotencyKey?: string
   initiator: GovernedInitiator
+  /**
+   * Write a `sent` email_events row after the provider accepts the mail.
+   * Default true. Bulk email-cohort sets this false because it already claimed
+   * the sent row before the wire (double-send safety).
+   */
+  recordSentEvent?: boolean
 }

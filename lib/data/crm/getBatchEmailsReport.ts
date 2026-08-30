@@ -32,12 +32,18 @@ export type BatchEmailRow = {
    * matching email_events rows (tracked:false).
    */
   sent: number
+  /** Count of 'delivered' events for this campaign (from email_events). */
+  delivered: number
+  /** Count of 'bounce' events for this campaign (from email_events). */
+  bounced: number
   /** Count of 'open' events for this campaign (from email_events). */
   opens: number
   /** Count of 'click' events for this campaign (from email_events). */
   clicks: number
   /** Count of 'unsubscribe' events for this campaign (from email_events). */
   unsubscribes: number
+  /** Bulk job id when source is crm-batch. */
+  jobId: number | null
   /**
    * Open rate = opens / delivered. NULL when no deliveries exist — never a
    * fake 0% (CLAUDE.md §0 data accuracy rule).
@@ -157,6 +163,7 @@ async function readBatchEmailsReport(
       const opens = eng?.opened ?? 0
       const clicks = eng?.clicked ?? 0
       const unsubscribes = eng?.unsubscribed ?? 0
+      const bounced = eng?.bounced ?? 0
       // Real sent count from events when tracked; fall back to stored sent_count.
       const sent = eng?.tracked ? eng.sent : c.sentCount
       // Use delivered as the rate denominator when available (more accurate).
@@ -177,9 +184,12 @@ async function readBatchEmailsReport(
         sentAtIso: c.sentAtIso,
         recipientCount: c.sentCount,
         sent,
+        delivered,
+        bounced,
         opens,
         clicks,
         unsubscribes,
+        jobId: null,
         openRate,
         clickRate,
         status: c.sentAtIso ? 'finished' : 'draft',
@@ -225,9 +235,12 @@ function bulkRowToBatchRow(
     sentAtIso: b.finishedAtIso,
     recipientCount: b.total,
     sent,
+    delivered: eng.tracked ? eng.delivered : 0,
+    bounced: eng.tracked ? eng.bounced : 0,
     opens: eng.opened,
     clicks: eng.clicked,
     unsubscribes: eng.unsubscribed,
+    jobId: b.jobId,
     openRate: delivered > 0 ? eng.opened / delivered : null,
     clickRate: delivered > 0 ? eng.clicked / delivered : null,
     status: b.finishedAtIso ? 'finished' : 'draft',
@@ -270,7 +283,7 @@ export async function getBatchEmailsReport(
     () => readBatchEmailsReport(brokerSlug),
     // v2: the reader gained the crm-batch source and a `source` field on
     // every row, so a v1 entry cached before this change is a different shape.
-    ['crm-batch-emails-report-v2', brokerSlug ?? 'all'],
+    ['crm-batch-emails-report-v4', brokerSlug ?? 'all'],
     {
       tags: ['crm-batch-emails', 'crm-reporting', 'crm-email-reporting'],
       revalidate: 600,
