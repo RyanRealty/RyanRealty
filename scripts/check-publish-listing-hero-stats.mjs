@@ -41,20 +41,20 @@ checks.push({
     helper.includes('1.35'),
 })
 
-const hero = src('components/site/listing-detail/ListingHero.tsx')
+const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
 checks.push({
-  label: 'ListingHero publishes compact price + key stats',
+  label: 'PriceCtaStrip publishes key stats including land acres',
   ok:
-    /from ['"]@\/lib\/listing\/publish-listing-hero-stats['"]/.test(hero) &&
-    /publishListingHeroCompactPrice\(/.test(hero) &&
-    /publishListingHeroKeyStats\(/.test(hero) &&
-    !/function formatPrice\(/.test(hero),
+    /from ['"]@\/lib\/listing\/publish-listing-hero-stats['"]/.test(strip) &&
+    /publishListingHeroKeyStats\(/.test(strip) &&
+    /acres:\s*listing\.lotSizeAcres/.test(strip) &&
+    /lotSizeAcres/.test(strip),
 })
 
-const page = src('app/listing/[listingKey]/page.tsx')
+const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'listing detail passes lotSizeAcres into the hero',
-  ok: /acres=\{listing\.lotSizeAcres\}/.test(page),
+  label: 'ListingHero is media-only — no local price formatter',
+  ok: !/function formatPrice\(/.test(hero),
 })
 
 const failed = checks.filter((c) => !c.ok)

@@ -66,7 +66,8 @@ checks.push({
   ok:
     /seedListingDetailHistory/.test(reader) &&
     /getListingDetailHistory/.test(reader) &&
-    /4500/.test(reader),
+    /HISTORY_TIMEOUT_MS/.test(reader) &&
+    /seedListingDetailHistory\(listingKey, seed\)/.test(reader),
 })
 
 const mapper = src('lib/listing/map-published-history-event.ts')

@@ -44,13 +44,8 @@ checks.push({
 
 const hero = src('components/site/listing-detail/ListingHero.tsx')
 checks.push({
-  label: 'ListingHero publishes share kind next to the ask, from the whole subject',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-listing-share['"]/.test(hero) &&
-    /publishListingShareKind\(\{[^}]*propertySubType,[\s\S]{0,120}?subdivisionName,[\s\S]{0,120}?city,[\s\S]{0,120}?listNumber,?\s*\}\)/.test(
-      hero,
-    ) &&
-    /\{shareKind\}/.test(hero),
+  label: 'ListingHero is media-only — share kind lives on the ask strip',
+  ok: !/publishListingShareKind\(/.test(hero),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')

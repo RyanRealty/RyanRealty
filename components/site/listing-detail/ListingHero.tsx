@@ -82,7 +82,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
   const lead = publishListingLeadMedia(videos)
   const heroVideo = lead?.kind === 'video' ? lead.video : null
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0
-  const canUnmute = publishListingHeroUnmute(reel)
+  const canUnmute = publishListingHeroUnmute(heroVideo)
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
   const hasStreetView =
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)

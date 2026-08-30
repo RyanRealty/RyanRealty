@@ -11,7 +11,8 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingEstPaymentLabel, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingEstPaymentLabel, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingHeroKeyStats } from '@/lib/listing/publish-listing-hero-stats'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
@@ -63,6 +64,7 @@ type Props = {
     | 'baths'
     | 'sqft'
     | 'totalLivingAreaSqFt'
+    | 'lotSizeAcres'
     | 'estimatedMonthlyPiti'
     | 'listAgentName'
     | 'listOfficeName'
@@ -155,13 +157,17 @@ export function PriceCtaStrip({
     pricePerSqft: listing.pricePerSqft,
   })
   const livingSqft = listing.sqft ?? listing.totalLivingAreaSqFt ?? null
-  const factsLine = [
-    listing.beds != null ? `${listing.beds} bd` : null,
-    listing.baths != null ? `${listing.baths} ba` : null,
-    livingSqft != null ? `${Math.round(livingSqft).toLocaleString('en-US')} sqft` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  const factsLine = publishListingHeroKeyStats({
+    beds: listing.beds,
+    baths: listing.baths,
+    sqft: livingSqft,
+    acres: listing.lotSizeAcres,
+  }).join(' · ')
+  const publishedDrop = publishListingDrop({
+    listPrice: isClosed ? listing.closePrice : listing.listPrice,
+    originalListPrice: listing.originalListPrice,
+    historyPrices: history?.map((row) => row.price) ?? [],
+  })
   const contactKey = publishListingContactKey({
     listNumber: listing.listNumber,
     listingKey: listing.listingKey,
@@ -271,7 +277,12 @@ export function PriceCtaStrip({
           </span>
         ) : null}
       </div>
-      {lastDrop ? (
+      {publishedDrop ? (
+        <div className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--navy)' }}>
+          Down <Price value={publishedDrop.drop} exact /> from{' '}
+          <Price value={publishedDrop.original} exact />
+        </div>
+      ) : lastDrop ? (
         <div className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--navy)' }}>
           {lastDrop.label}
         </div>
