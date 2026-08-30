@@ -94,7 +94,7 @@ const PLAN_GROUPS: { title: string; items: string[] }[] = [
     title: 'Where your home shows up',
     items: [
       'Central Oregon MLS',
-      'Zillow, Redfin, Trulia and the national feeds',
+      'the national listing feeds',
       'Its own page on ryan-realty.com',
       'Vetted lender, title, mover and contractor network',
     ],

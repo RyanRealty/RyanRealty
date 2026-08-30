@@ -77,7 +77,7 @@ export type V3ListingRowData = {
   tourUrl?: string | null
   hasTour?: boolean
   badge?: { kind: V3ListingRowBadge; label: string }
-  /** Redfin-style pills. When set, this is the whole set; `badge` is ignored. */
+  /** Overlay pills. When set, this is the whole set; `badge` is ignored. */
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>
 }
 
@@ -129,7 +129,7 @@ export function V3ListingRow({
   priority?: boolean
   /** Extra row classes — `is-hot` / `is-active` for the split view's map sync. */
   className?: string
-  /** Redfin parity: 3D badge opens the on-site tour viewer. */
+  /** 3D badge opens the on-site tour viewer. */
   onOpenTour?: () => void
 }) {
   // A row may not show a fractional ask unlabelled (decided 2026-08-19): the

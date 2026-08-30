@@ -6,7 +6,7 @@ import { PlaceListThumb } from '@/components/site/PlaceListThumb'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
- * Parks nearby — Redfin slot on listing detail. List thumbs are always a map
+ * Parks nearby on listing detail. List thumbs are always a map
  * from existing geo (boundary when we have it, otherwise the park point).
  */
 
@@ -43,7 +43,7 @@ export async function ParksNearbyBlock({ listing, className }: Props) {
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">Outdoors</div>
-          <h2 className="sec-title display">Parks nearby</h2>
+          <h2 className="sec-title">Parks nearby</h2>
         </div>
       </div>
 

@@ -64,7 +64,7 @@ export const posts: BlogPostSeed[] = [
 
 <ul>
 <li><strong>Pricing based on what you need rather than what the market supports.</strong> Buyers don't care what you owe on your mortgage or what you spent on renovations. They care about comparable sales.</li>
-<li><strong>Overweighting Zillow or Redfin estimates.</strong> Automated valuations can be off by 5% to 15% in Central Oregon because they can't account for condition, views, trail access, or the specific micro-neighborhood.</li>
+<li><strong>Overweighting automated estimates.</strong> Automated valuations can be off by 5% to 15% in Central Oregon because they can't account for condition, views, trail access, or the specific micro-neighborhood.</li>
 <li><strong>Ignoring days on market for current listings.</strong> If similar homes have been sitting for 60 days, pricing at the same level means your home will likely sit too.</li>
 </ul>
 
@@ -102,7 +102,7 @@ export const posts: BlogPostSeed[] = [
 
 <h3>Online and Offline Presence</h3>
 
-<p>Your home should be syndicated to every major real estate portal: Zillow, Realtor.com, Redfin, and Homes.com. But the listing description matters as much as distribution. A well-written description highlights what makes your home and location special without resorting to breathless superlatives. Browse our <a href="/homes-for-sale">current listings</a> to see how we present properties.</p>
+<p>Your home should be syndicated to every major real estate portal. But the listing description matters as much as distribution. A well-written description highlights what makes your home and location special without resorting to breathless superlatives. Browse our <a href="/homes-for-sale">current listings</a> to see how we present properties.</p>
 
 <h2>Showings and Open Houses</h2>
 

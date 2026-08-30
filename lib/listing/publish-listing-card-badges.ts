@@ -1,5 +1,5 @@
 /**
- * Redfin-style listing card badges. One publisher so search Split, area
+ * Listing card badges. One publisher so search Split, area
  * pages, and any other card show the same facts.
  *
  * Order (max 3): status · Open · New · Reduced · 3D tour.
@@ -27,7 +27,7 @@ function hourLabel(time: string | null | undefined): string | null {
   return `${hour}${suffix}`
 }
 
-/** Short Redfin-style open label: "Open Sat" or "Open Sat 1pm". */
+/** Short open-house label: "Open Sat" or "Open Sat 1pm". */
 export function publishOpenHouseBadgeLabel(
   dateIso: string | null | undefined,
   startTime?: string | null,
@@ -83,7 +83,7 @@ export function publishListingCardBadges(input: {
     badges.push({ kind: 'video', label: '3D Walkthrough' })
   }
   // Coming Soon is in the MLS feed and MUST NOT print on public cards
-  // (lib/listing-status-public.ts). Hot Home is a Redfin product score, not ours.
+  // (lib/listing-status-public.ts). We do not invent a demand score.
 
   return badges.slice(0, 3)
 }

@@ -477,7 +477,7 @@ function classifyPost(post) {
     topic = 'market_data'; topic_confidence = 0.82
   }
   // National housing news
-  else if (/\b(fed|federal reserve|interest rate|mortgage rate|national|nationwide|housing market|nар|redfin report|zillow report|case.shiller)\b/.test(caption)) {
+  else if (/\b(fed|federal reserve|interest rate|mortgage rate|national|nationwide|housing market|nар|zillow report|case.shiller)\b/.test(caption)) {
     topic = 'national_housing_news'; topic_confidence = 0.75
   }
   // National economy

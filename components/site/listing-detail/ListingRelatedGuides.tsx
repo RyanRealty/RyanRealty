@@ -15,7 +15,9 @@ export function ListingRelatedGuides({
   if (posts.length === 0) return null
   return (
     <section id="guides" className="listing-guides">
-      <h2>{city ? `${city} guides` : 'Guides'}</h2>
+      <div className="sec-head">
+        <h2 className="sec-title">{city ? `${city} guides` : 'Guides'}</h2>
+      </div>
       <ul>
         {posts.map((post) => (
           <li key={post.id}>

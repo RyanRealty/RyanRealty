@@ -198,8 +198,8 @@ export function LeadCaptureBlock({
           <form
             onSubmit={handleSubmit}
             className={cn(
-              'tool-skin rounded-[14px] p-6 shadow-sm border',
-              onNavy ? 'bg-white border-transparent' : 'bg-card border-border',
+              'tool-skin p-6 border',
+              onNavy ? 'bg-cream border-transparent' : 'bg-cream border-navy',
             )}
           >
             <div className="grid gap-4">

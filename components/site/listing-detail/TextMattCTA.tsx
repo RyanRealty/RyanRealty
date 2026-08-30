@@ -61,9 +61,9 @@ export function TextMattCTA({
     <div
       className={className ?? undefined}
       style={{
-        border: '3px solid var(--navy)',
-        background: 'var(--cream)',
-        padding: 'clamp(20px,3vw,26px)',
+        border: 'var(--v3-panel-border)',
+        background: 'var(--v3-panel-bg)',
+        padding: 'var(--v3-space-md)',
       }}
     >
       <Stack gap="default">

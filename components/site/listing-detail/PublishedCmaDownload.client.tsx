@@ -13,7 +13,7 @@ import { CONTACT } from '@/lib/brand/contact'
  * Progressive disclosure, which is how the strong players run gated valuation
  * content: the visitor gets real, useful information first (our value range,
  * the property's capability facts, how many sales we used), and the form only
- * appears after they ask for more. Redfin's Owner Dashboard and Zillow's "claim
+ * appears after they ask for more. Portal owner dashboards and "claim
  * your home" both order it that way, and the reason is well documented in
  * conversion research on gated content: a gate placed AFTER demonstrated value
  * converts, a gate placed in front of it bounces.

@@ -3,6 +3,7 @@ import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
 import { V3Chrome } from "@/components/site/v3/V3Chrome";
+import { V3_ROOT_CLASS } from "@/components/site/v3/atoms";
 import { RootProvider } from "../components/site/providers";
 import HideOnLP from "../components/layout/HideOnLP";
 // PublicClientLayer bundles the interactive public client components (prompts,
@@ -122,7 +123,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://cdn.resize.sparkplatform.com" />
         <link rel="dns-prefetch" href="https://cdn.resize.sparkplatform.com" />
       </head>
-      <body className="min-h-screen overflow-x-hidden antialiased">
+      <body className={cn(V3_ROOT_CLASS, "min-h-screen overflow-x-hidden antialiased")}>
         {/* Evict any stale service worker left by the pre-cutover site on this
             domain. Runs on every route (outside HideOnLP). No-op for the 99%
             of visitors with a clean browser. */}
@@ -161,7 +162,7 @@ export default function RootLayout({
               bridges, and the comparison tray — is code-split behind
               PublicClientLayer so /admin never loads their chunks. Non-admin
               behavior is byte-identical (each keeps its HideOnLP / Suspense gate). */}
-          <PublicClientLayer />
+          <PublicClientLayer googleClientId={process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() || null} />
         </RootProvider>
       </body>
     </html>

@@ -64,7 +64,7 @@ function groupsForClass(scope: readonly PropertySubTypeClass[] | null) {
 /** Classes implied by current propertyType param (null = all A–D subtypes). */
 function classScope(propertyType: string | undefined): readonly PropertySubTypeClass[] | null {
   const v = (propertyType ?? '').trim()
-  if (!v) return null
+  if (!v || v === 'all') return null
   if (/^a$/i.test(v) || v.toLowerCase() === 'residential') return ['A']
   if (/^b$/i.test(v) || v.toLowerCase() === 'manufactured') return ['B']
   if (/^c$/i.test(v) || /multi/i.test(v) || v.toLowerCase() === 'income') return ['C']
@@ -126,7 +126,8 @@ export default function HomeTypeFilterPanel({
       </p>
       <div className="flex flex-wrap gap-1.5">
         {PROPERTY_TYPES.map(({ value, label }) => {
-          const isActive = (activeClassValue || '') === value
+          const isAll = !activeClassValue || activeClassValue === 'all'
+          const isActive = value === '' ? isAll : activeClassValue === value
           return (
             <Button
               key={value || 'all'}
@@ -210,7 +211,7 @@ export function homeTypeChipLabel(
   if (propertySubTypes.length > 1) {
     return `${propertySubTypes.length} home types`
   }
-  if (!propertyType?.trim()) return null
+  if (!propertyType?.trim() || propertyType === 'all') return 'All types'
   // Prefer PROPERTY_TYPES label, then class-prevalence helper (codes / multi-family).
   const fromList = PROPERTY_TYPES.find((t) => t.value === propertyType)?.label
   if (fromList) return fromList

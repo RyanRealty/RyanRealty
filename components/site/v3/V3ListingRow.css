@@ -212,6 +212,18 @@
 
 .v3-lrow.v3-lrow--split .v3-lrow__addr-tip {
   display: none;
+  position: absolute;
+  left: 0.35rem;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  z-index: 2;
+  padding: 0.2rem 0.35rem;
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: 0.68rem;
+  line-height: 1.2;
+  pointer-events: none;
 }
 
 .v3-lrow__photo-tags {
@@ -301,19 +313,6 @@
 
 .v3-lrow--split {
   grid-template-columns: var(--v3-card-photo-w) minmax(0, 1fr);
-}
-  position: absolute;
-  left: 0.35rem;
-  right: 0.35rem;
-  bottom: 0.35rem;
-  z-index: 2;
-  padding: 0.2rem 0.35rem;
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  font-family: var(--v3-font-body);
-  font-size: 0.68rem;
-  line-height: 1.2;
-  pointer-events: none;
 }
 
 .v3-lrow.v3-lrow--split.is-hot .v3-lrow__addr-tip,

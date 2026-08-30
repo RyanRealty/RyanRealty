@@ -107,7 +107,6 @@ function classifyReferrer(ref: string | null): string {
     if (host.includes('twitter.') || host === 'x.com' || host.includes('t.co')) return 'x_twitter'
     if (host.includes('pinterest.')) return 'pinterest'
     if (host.includes('zillow.')) return 'zillow'
-    if (host.includes('redfin.')) return 'redfin'
     if (host.includes('realtor.com')) return 'realtor_com'
     if (host.includes('mail') || host.includes('outlook')) return 'email'
     return host

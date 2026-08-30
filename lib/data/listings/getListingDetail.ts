@@ -47,9 +47,11 @@ const DETAIL_SELECT = [
   'TotalLivingAreaSqFt',
   'StreetNumber',
   'StreetName',
-  // Suffix (Loop/Rd/Ct) lives only in the raw feed payload — without it no
-  // address matches Zillow/county records (design-audit P1, trust).
+  // Directional + suffix live only in the raw feed payload — without them
+  // 909 Delaware Avenue is missing NW (Spark StreetDirPrefix).
+  'StreetDirPrefix:details->>StreetDirPrefix',
   'StreetSuffix:details->>StreetSuffix',
+  'StreetDirSuffix:details->>StreetDirSuffix',
   'City',
   'State',
   'PostalCode',
@@ -163,7 +165,9 @@ type ListingRow = {
   TotalLivingAreaSqFt: number | null
   StreetNumber: string | null
   StreetName: string | null
+  StreetDirPrefix?: string | null
   StreetSuffix?: string | null
+  StreetDirSuffix?: string | null
   City: string | null
   State: string | null
   PostalCode: string | null
@@ -285,7 +289,9 @@ function rowToDetail(row: ListingRow): ListingDetail {
     sqft: row.TotalLivingAreaSqFt,
     streetNumber: row.StreetNumber,
     streetName: row.StreetName,
+    streetDirPrefix: row.StreetDirPrefix ?? null,
     streetSuffix: row.StreetSuffix ?? null,
+    streetDirSuffix: row.StreetDirSuffix ?? null,
     city: row.City,
     citySlug: slug(row.City),
     postalCode: row.PostalCode,
@@ -530,7 +536,8 @@ const getListingDetailUncoalesced = async (listingKey: string): Promise<GetListi
     // cached null during a transient blip stay "Listing Not Found" until TTL.
     // v4 bump 2026-06-18 — media_suppressed gate nulls photoUrl (owner media-removal
     // requests); evicts entries cached before the suppression check existed.
-    ['listing-detail-v5', listingKey],
+    // v6 bump 2026-08-29 — StreetDirPrefix / StreetDirSuffix from details JSONB.
+    ['listing-detail-v6', listingKey],
     {
       revalidate: CACHE_WINDOWS.listingDetail,
       tags: [cacheTag.listings, cacheTag.listing(listingKey)],

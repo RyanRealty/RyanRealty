@@ -39,6 +39,7 @@ import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { communityImage, preferPlaceHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
+import { cityLibraryHero, cityStagePoster } from '@/app/cities/[slug]/_v3/city-opening'
 import { buildYearSeries } from '@/lib/kb/year-series'
 // Row-to-prop shaping shared with the city + community place pages - one copy,
 // so a fix cannot land on one of the three and drift on the others.
@@ -314,7 +315,16 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     { label: cityName, href: `/cities/${citySlug}` },
     { label: neighborhood.name },
   ]
-  const stagePosterSrc = preferPlaceHeroOrNull(null, communityImage(neighborhoodSlug) ?? communityImage(neighborhood.name))
+  const cityLibraryHeroUrl = await withTimeoutFallback(
+    cityLibraryHero(citySlug),
+    null,
+    3000,
+    'nbh:cityLibraryHero',
+  )
+  const stagePosterSrc = preferPlaceHeroOrNull(
+    communityImage(neighborhoodSlug) ?? communityImage(neighborhood.name),
+    cityStagePoster(indexCities[citySlug], cityLibraryHeroUrl),
+  )
 
   /* ── The market, off the ONE leftover pile ─────────────────────────────── */
 

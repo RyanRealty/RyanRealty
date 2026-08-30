@@ -37,7 +37,7 @@ describe('publishListingCardBadges', () => {
     expect(badges.some((b) => b.kind === 'open')).toBe(true)
   })
 
-  it('prints Redfin Price reduced copy with the dollar drop when we have it', () => {
+  it('prints Price reduced copy with the dollar drop when we have it', () => {
     const badges = publishListingCardBadges({
       nowMs,
       priceDropCount: 1,

@@ -33,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
 import { type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
 import { SplitListingCard } from '@/components/search/SplitListingCard'
@@ -240,7 +239,7 @@ function toSearchFilters(f: SearchFiltersInitial): SearchFilters {
     lotAcresMax: f.lotAcresMax != null && f.lotAcresMax !== '' ? Number(f.lotAcresMax) : undefined,
     yearBuiltMin: f.yearBuiltMin ? Number(f.yearBuiltMin) : undefined,
     yearBuiltMax: f.yearBuiltMax ? Number(f.yearBuiltMax) : undefined,
-    propertyType: f.propertyType || undefined,
+    propertyType: f.propertyType && f.propertyType !== 'all' ? f.propertyType : undefined,
     postalCode: f.postalCode || undefined,
     garageMin: f.garageMin ? Number(f.garageMin) : undefined,
     daysOnMarket: f.daysOnMarket || undefined,
@@ -329,9 +328,12 @@ export default function MapSearchView({
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [tour, setTour] = useState<VideoEmbed | null>(null)
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
-  // List-first on mobile so the first 390 viewport shows a house, not a
-  // map-only void. Map is one tap on the List/Map toggle.
-  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  const [layoutView, setLayoutView] = useState<'list' | 'map' | 'split'>(
+    filters.view === 'list' || filters.view === 'map' || filters.view === 'split' ? filters.view : 'split',
+  )
+  const [mobileView, setMobileView] = useState<'list' | 'map'>(
+    filters.view === 'map' || filters.view === 'split' ? 'map' : 'list',
+  )
   // Window the CARD list so the SSR payload + hydration cost stays small even
   // when the viewport returns hundreds of homes. The MAP still gets every pin
   // (mapListings below) — only the heavy cards are paged in. "Show more" reveals
@@ -396,6 +398,22 @@ export default function MapSearchView({
   const router = useRouter()
   const pathname = usePathname()
   const urlSearchParams = useSearchParams()
+  const applyView = useCallback(
+    (next: 'list' | 'map' | 'split') => {
+      setLayoutView(next)
+      setMobileView(next === 'list' ? 'list' : 'map')
+      const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
+      params.set('view', next)
+      router.push(`${pathname ?? '/homes-for-sale'}?${params.toString()}`, { scroll: false })
+    },
+    [pathname, router, urlSearchParams],
+  )
+  useEffect(() => {
+    if (filters.view === 'list' || filters.view === 'map' || filters.view === 'split') {
+      setLayoutView(filters.view)
+      setMobileView(filters.view === 'list' ? 'list' : 'map')
+    }
+  }, [filters.view])
   // Once-per-distinct-query guard for search_zero_results — a pan across the
   // same empty search must not re-fire; a CHANGED query that dead-ends must.
   const zeroResultsFiredKeyRef = useRef<string | null>(null)
@@ -1065,42 +1083,40 @@ export default function MapSearchView({
 
   return (
     <div className="map-search-shell flex min-h-0 flex-1 w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
-      {/* Mobile segmented toggle — list-first default; Map hides the sheet. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1 lg:hidden">
-        <ToggleGroup
-          type="single"
-          value={mobileView}
-          onValueChange={(v) => {
-            if (v === 'list' || v === 'map') {
-              setMobileView(v)
-            }
-          }}
-          className="min-w-0 flex-1 rounded-none border-0"
-          variant="outline"
-          size="sm"
-        >
-          <ToggleGroupItem value="list" className="flex-1 rounded-none border-0 py-2 text-sm font-medium" aria-label="List view">
-            List
-          </ToggleGroupItem>
-          <ToggleGroupItem value="map" className="flex-1 rounded-none border-0 py-2 text-sm font-medium" aria-label="Map view">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1">
+        <div className="map-search-views" role="radiogroup" aria-label="View">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={layoutView === 'map'}
+            aria-label="Map view"
+            onClick={() => applyView('map')}
+          >
             Map
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <p className="srch-figure min-w-0 shrink truncate text-xs font-semibold text-foreground" aria-live="polite">
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={layoutView === 'split'}
+            aria-label="Split view"
+            className="max-lg:hidden"
+            onClick={() => applyView('split')}
+          >
+            Split
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={layoutView === 'list'}
+            aria-label="List view"
+            onClick={() => applyView('list')}
+          >
+            List
+          </button>
+        </div>
+        <p className="srch-figure min-w-0 flex-1 truncate text-xs font-semibold text-foreground" aria-live="polite">
           {resultsDegraded ? 'Search delayed' : listCountPhrase}
         </p>
-        <Select value={sortValue} onValueChange={handleSortChange}>
-          <SelectTrigger className="srch-square h-9 w-[7.5rem] shrink-0" aria-label="Sort results" size="sm">
-            <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: list-first
@@ -1108,19 +1124,26 @@ export default function MapSearchView({
           list and shows the canvas. Never double-render panels. */}
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Map — full-bleed under the list on mobile; flex-1 rail partner on desktop. */}
-        <div className="absolute inset-0 z-0 min-h-0 min-w-0 lg:static lg:relative lg:z-auto lg:order-2 lg:min-h-0 lg:flex-1">
+        <div
+          className={cn(
+            'absolute inset-0 z-0 min-h-0 min-w-0 lg:static lg:relative lg:z-auto lg:order-2 lg:min-h-0 lg:flex-1',
+            layoutView === 'list' ? 'lg:hidden' : null,
+          )}
+        >
           {mapPanel}
         </div>
 
         {/* List rail / mobile list pane.
             List mode: covers the map so overlays cannot sit on the photo.
-            Map mode: pane hidden (count pill on canvas). Desktop: left rail. */}
+            Map mode: pane hidden (count pill on canvas). Desktop split: left rail. */}
         <div
           className={cn(
             'z-10 min-h-0 flex-col bg-card',
             'absolute inset-0',
             mobileView === 'list' ? 'flex' : 'hidden',
-            'map-search-list lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto'
+            'map-search-list lg:static lg:order-1 lg:z-auto lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto',
+            layoutView === 'map' ? 'lg:hidden' : 'lg:flex',
+            layoutView === 'list' ? 'lg:w-full lg:flex-1' : null,
           )}
         >
           {listPanel}

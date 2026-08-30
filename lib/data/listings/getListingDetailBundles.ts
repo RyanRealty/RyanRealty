@@ -10,7 +10,10 @@ import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { toIsoDate, to24hTime } from '@/lib/data/open-houses/getUpcomingOpenHouses'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
-import { publishListingHistory } from '@/lib/listing/publish-listing-history'
+import {
+  publishListingHistory,
+  type PriceHistorySourceRow,
+} from '@/lib/listing/publish-listing-history'
 
 export type ListingDetailPhotoRow = {
   id: string
@@ -329,6 +332,7 @@ export async function getListingKeysWithPriceChangeSince(sinceIso: string): Prom
 export type ListingHistorySeed = {
   onMarketDate?: string | null
   listPrice?: number | null
+  originalListPrice?: number | null
 }
 
 function asPublishedHistoryRows(
@@ -359,8 +363,26 @@ export function seedListingDetailHistory(
     publishListingHistory({
       onMarketDate: seed.onMarketDate ?? null,
       listPrice: seed.listPrice ?? null,
+      originalListPrice: seed.originalListPrice ?? null,
     }),
   )
+}
+
+/** Price cuts only — small, indexed, enough to publish listed ask + last drop. */
+export async function getListingPriceHistory(
+  listingKey: string,
+): Promise<PriceHistorySourceRow[]> {
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('price_history')
+    .select('old_price, new_price, changed_at, change_pct')
+    .eq('listing_key', canonicalKey)
+    .order('changed_at', { ascending: true })
+    .limit(100)
+  if (error) throw new Error(`[getListingPriceHistory] ${canonicalKey}: ${error.message}`)
+  return (data ?? []) as PriceHistorySourceRow[]
 }
 
 /** Full listing_history events for the timeline view (capped at 100). */
@@ -375,7 +397,7 @@ export async function getListingDetailHistory(
   const [historyRes, statusRes, priceRes, listingRes] = await Promise.all([
     sb
       .from('listing_history')
-      .select('id, listing_key, event, event_date, price, price_change, description, raw')
+      .select('id, listing_key, event, event_date, price, price_change, description')
       .eq('listing_key', canonicalKey)
       .order('event_date', { ascending: true })
       .limit(100),
@@ -396,15 +418,20 @@ export async function getListingDetailHistory(
           data: {
             OnMarketDate: seed.onMarketDate ?? null,
             ListPrice: seed.listPrice ?? null,
+            OriginalListPrice: seed.originalListPrice ?? null,
           },
         })
       : sb
           .from('listings')
-          .select('OnMarketDate, ListPrice')
+          .select('OnMarketDate, ListPrice, OriginalListPrice')
           .eq('ListingKey', canonicalKey)
           .maybeSingle(),
   ])
-  const listingRow = listingRes.data as { OnMarketDate?: string | null; ListPrice?: number | null } | null
+  const listingRow = listingRes.data as {
+    OnMarketDate?: string | null
+    ListPrice?: number | null
+    OriginalListPrice?: number | null
+  } | null
   return asPublishedHistoryRows(
     canonicalKey,
     publishListingHistory({
@@ -413,6 +440,7 @@ export async function getListingDetailHistory(
       priceHistory: priceRes.data ?? [],
       onMarketDate: listingRow?.OnMarketDate ?? seed?.onMarketDate ?? null,
       listPrice: listingRow?.ListPrice ?? seed?.listPrice ?? null,
+      originalListPrice: listingRow?.OriginalListPrice ?? seed?.originalListPrice ?? null,
     }),
   )
 }

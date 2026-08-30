@@ -27,9 +27,11 @@ type Props = {
   lng: number
   /** Optional address for aria. */
   label?: string | null
+  /** Overlay fill: no section chrome, just the mesh. */
+  fill?: boolean
 }
 
-export default function ListingLot3D({ lat, lng, label }: Props) {
+export default function ListingLot3D({ lat, lng, label, fill = false }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const { ready } = useGoogleMapsReady()
   const [status, setStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading')
@@ -114,6 +116,26 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
 
   if (status === 'unavailable') return null
 
+  const mesh = (
+        <div
+          className="relative w-full overflow-hidden"
+          style={{ height: fill ? '100%' : 'min(52vh, 420px)', background: 'var(--v3-cream)' }}
+        >
+          {status === 'loading' ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center text-sm"
+              style={{ color: 'var(--navy-70)' }}
+              aria-live="polite"
+            >
+              Loading 3D map…
+            </div>
+          ) : null}
+          <div ref={hostRef} className="absolute inset-0" />
+        </div>
+  )
+
+  if (fill) return mesh
+
   return (
     <section
       className="section"
@@ -128,20 +150,8 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
           Photorealistic Google 3D tiles for this block when coverage exists. Drag to
           orbit. This is the neighborhood mesh, not an interior tour of the house.
         </p>
-        <div
-          className="relative mt-6 w-full overflow-hidden rounded-sm border-[3px] border-[color:var(--navy)] bg-[color:var(--cream)]"
-          style={{ height: 'min(52vh, 420px)' }}
-        >
-          {status === 'loading' ? (
-            <div
-              className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center text-sm"
-              style={{ color: 'var(--navy-70)' }}
-              aria-live="polite"
-            >
-              Loading 3D map…
-            </div>
-          ) : null}
-          <div ref={hostRef} className="absolute inset-0" />
+        <div className="mt-6 w-full" style={{ height: 'min(52vh, 420px)', border: '3px solid var(--navy)' }}>
+          {mesh}
         </div>
       </div>
     </section>

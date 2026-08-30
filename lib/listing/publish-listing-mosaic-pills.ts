@@ -7,18 +7,19 @@
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { publishListingHeroVideo, publishListingVirtualTour } from './publish-listing-hero-video'
 
-export type ListingMosaicPillId = 'photos' | 'video' | 'tour' | 'floor'
+export type ListingMosaicPillId = 'photos' | 'video' | 'tour' | 'floor' | 'street'
 
 export type ListingMosaicPill = {
   id: ListingMosaicPillId
   label: string
-  action: 'gallery' | 'video' | 'tour' | 'floor'
+  action: 'gallery' | 'video' | 'tour' | 'floor' | 'street'
 }
 
 export function publishListingMosaicPills(input: {
   photoCount: number
   videos: ReadonlyArray<VideoEmbed>
   floorPlanCount?: number
+  hasStreetView?: boolean
 }): ListingMosaicPill[] {
   const pills: ListingMosaicPill[] = []
   const video = publishListingHeroVideo(input.videos)
@@ -28,6 +29,7 @@ export function publishListingMosaicPills(input: {
   if ((input.floorPlanCount ?? 0) > 0) {
     pills.push({ id: 'floor', label: 'Floor plan', action: 'floor' })
   }
+  if (input.hasStreetView) pills.push({ id: 'street', label: 'Street view', action: 'street' })
   if (input.photoCount > 0) {
     pills.push({
       id: 'photos',
@@ -74,7 +76,7 @@ export function publishListingGalleryTabs(input: {
   return tabs
 }
 
-export type ListingGalleryMobilePillId = 'all' | 'video' | 'floor' | 'tour'
+export type ListingGalleryMobilePillId = 'all' | 'video' | 'floor' | 'tour' | 'street'
 
 export type ListingGalleryMobilePill = {
   id: ListingGalleryMobilePillId
@@ -86,11 +88,13 @@ export function publishListingGalleryMobilePills(input: {
   photoCount: number
   videos: ReadonlyArray<VideoEmbed>
   floorPlanCount?: number
+  hasStreetView?: boolean
 }): ListingGalleryMobilePill[] {
   const pills: ListingGalleryMobilePill[] = []
   if (input.photoCount > 0) pills.push({ id: 'all', label: 'All' })
   if (publishListingHeroVideo(input.videos)) pills.push({ id: 'video', label: 'Video Tour' })
   if ((input.floorPlanCount ?? 0) > 0) pills.push({ id: 'floor', label: 'Floor plans' })
   if (publishListingVirtualTour(input.videos)) pills.push({ id: 'tour', label: '3D' })
+  if (input.hasStreetView) pills.push({ id: 'street', label: 'Street view' })
   return pills
 }

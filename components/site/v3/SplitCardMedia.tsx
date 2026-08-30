@@ -15,7 +15,7 @@ const SOLID: Record<V3ListingRowBadge, boolean> = {
   video: false,
 }
 
-/** Redfin search-card media: photo stack, overlay badges, 3D/Video control. */
+/** Search-card media: photo stack, overlay badges, 3D/Video control. */
 export function SplitCardMedia({
   urls,
   tags,

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import {
-  DisplayHeading,
   MiddleDot,
   Price,
   TabularNumber,
@@ -12,11 +11,14 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingEstPaymentLabel, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
+import { publishListingFaceMapSrc } from '@/lib/listing/publish-listing-face-map'
+import { publishListingLastDrop } from '@/lib/listing/publish-listing-history'
+import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
 
 /**
  * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
@@ -48,8 +50,10 @@ type Props = {
     | 'propertySubType'
     | 'propertyType'
     | 'streetNumber'
+    | 'streetDirPrefix'
     | 'streetName'
     | 'streetSuffix'
+    | 'streetDirSuffix'
     | 'city'
     | 'postalCode'
     | 'subdivisionName'
@@ -59,7 +63,21 @@ type Props = {
     | 'baths'
     | 'sqft'
     | 'totalLivingAreaSqFt'
+    | 'estimatedMonthlyPiti'
+    | 'listAgentName'
+    | 'listOfficeName'
+    | 'listAgentPhone'
+    | 'listOfficePhone'
+    | 'lat'
+    | 'lng'
   >
+  /** Published listing-history rail — last drop on the face comes from here. */
+  history?: ReadonlyArray<{
+    event?: string | null
+    event_date?: string | null
+    price?: number | null
+    price_change?: number | null
+  }>
   /** Save handler — caller wires to saved_listings table. Returns needsAuth=true
    *  for a signed-out visitor so the strip can route them to sign-in. */
   onSave?: (listingKey: string) => Promise<{ saved: boolean; needsAuth?: boolean }>
@@ -89,6 +107,7 @@ const PILL_TONE: Record<string, { filled: boolean }> = {
 
 export function PriceCtaStrip({
   listing,
+  history,
   onSave,
   initialSaved = false,
   onShare,
@@ -147,10 +166,29 @@ export function PriceCtaStrip({
     listNumber: listing.listNumber,
     listingKey: listing.listingKey,
   })
-  const street = publishStreetLine({ streetNumber: listing.streetNumber, streetName: listing.streetName, streetSuffix: listing.streetSuffix }) ?? ''
+  const street = publishStreetLine({
+    streetNumber: listing.streetNumber,
+    streetDirPrefix: listing.streetDirPrefix,
+    streetName: listing.streetName,
+    streetSuffix: listing.streetSuffix,
+    streetDirSuffix: listing.streetDirSuffix,
+  }) ?? ''
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')
+  const estPayment = publishListingEstPaymentLabel(listing.estimatedMonthlyPiti)
+  const lastDrop = history ? publishListingLastDrop(history) : null
+  const listedBy = publishListingListedBy({
+    listAgentName: listing.listAgentName,
+    listOfficeName: listing.listOfficeName,
+    listAgentPhone: listing.listAgentPhone,
+    listOfficePhone: listing.listOfficePhone,
+  })
+  const faceMapSrc = publishListingFaceMapSrc({
+    lat: listing.lat,
+    lng: listing.lng,
+    key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  })
   // MLS feeds mask private fields with `********` and stamp absent ones as
   // "N/A"; displaySubdivision() collapses every such sentinel to null so the
   // address never renders "Bend, OR 97703 · N/A".
@@ -217,32 +255,43 @@ export function PriceCtaStrip({
   }
 
   return (
-    <div
-      className={cn(className)}
-      style={{
-        borderBottom: '3px solid var(--navy)',
-        paddingBottom: '1.5rem',
-        paddingTop: '1.25rem',
-      }}
-    >
-      <DisplayHeading
-        as="h1"
-        className="text-4xl leading-none tracking-tight sm:text-5xl"
-        style={{ color: 'var(--navy)' }}
+    <div className={cn('listing-face', className)}>
+      <div>
+      <div
+        className="listing-ask"
+        style={{ color: 'var(--navy)', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0.55rem 1rem' }}
       >
-        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
-      </DisplayHeading>
-      <div className="listing-ask mt-2" style={{ color: 'var(--navy)' }}>
         <Price value={headlinePrice} exact />
+        {estPayment ? (
+          <span
+            className="text-base font-medium sm:text-lg"
+            style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}
+          >
+            {estPayment}
+          </span>
+        ) : null}
       </div>
+      {lastDrop ? (
+        <div className="mt-1.5 text-sm font-semibold" style={{ color: 'var(--navy)' }}>
+          {lastDrop.label}
+        </div>
+      ) : null}
       {factsLine ? (
         <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
           {factsLine}
         </div>
       ) : null}
+      <h1 className="listing-address mt-1">
+        {street || `Listing ${listing.listNumber ?? listing.listingKey}`}
+      </h1>
       {cityWithCommunity ? (
         <div className="mt-0.5 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
           {cityWithCommunity}
+        </div>
+      ) : null}
+      {listedBy ? (
+        <div className="mt-1 text-sm" style={{ color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)' }}>
+          {listedBy}
         </div>
       ) : null}
 
@@ -269,7 +318,18 @@ export function PriceCtaStrip({
           </Pill>
         ) : null}
       </div>
-
+      </div>
+      {faceMapSrc ? (
+        <a
+          className="listing-face__map"
+          href="#location"
+          aria-label={`Map of ${propertyName}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={faceMapSrc} alt="" />
+        </a>
+      ) : null}
+      <div className="listing-face__actions">
       {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
           Desktop keeps the inline wrap. */}
       <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-stretch">
@@ -322,6 +382,7 @@ export function PriceCtaStrip({
           ? 'Free email when a new home lists in this city near this price. Unsubscribe any time.'
           : 'Free email when a new home lists in this city. Unsubscribe any time.'}
       </p>
+      </div>
     </div>
   )
 }

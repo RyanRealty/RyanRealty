@@ -34,9 +34,11 @@ type Props = {
   onPaneChange?: (pane: GalleryPane) => void
   total?: number
   altBase?: string
+  hasStreetView?: boolean
   onClose: () => void
   onChange: (nextIndex: number) => void
   onOpenEmbed?: (kind: 'video' | 'tour') => void
+  onOpenStreet?: () => void
 }
 
 export function PhotoGalleryLightbox({
@@ -48,9 +50,11 @@ export function PhotoGalleryLightbox({
   onPaneChange,
   total,
   altBase = 'Photo',
+  hasStreetView = false,
   onClose,
   onChange,
   onOpenEmbed,
+  onOpenStreet,
 }: Props) {
   const stills = pane === 'floor' ? floorPlans : photos
   const count = total ?? stills.length
@@ -122,11 +126,13 @@ export function PhotoGalleryLightbox({
     photoCount: photos.length,
     videos,
     floorPlanCount: floorPlans.length,
+    hasStreetView,
   })
   const mobilePills = publishListingGalleryMobilePills({
     photoCount: photos.length,
     videos,
     floorPlanCount: floorPlans.length,
+    hasStreetView,
   })
 
   if (!isOpen) return null
@@ -155,6 +161,11 @@ export function PhotoGalleryLightbox({
         closeInPlace()
         onOpenEmbed(id)
       }
+      return
+    }
+    if (id === 'street') {
+      closeInPlace()
+      onOpenStreet?.()
     }
   }
 

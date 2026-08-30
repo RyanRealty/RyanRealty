@@ -143,7 +143,7 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
       else if (/youtube/.test(host))       { src.utm_source = 'youtube';   src.utm_medium ||= 'social' }
       else if (/linkedin/.test(host))      { src.utm_source = 'linkedin';  src.utm_medium ||= 'social' }
       else if (/tiktok/.test(host))        { src.utm_source = 'tiktok';    src.utm_medium ||= 'social' }
-      else if (/zillow|realtor|trulia|redfin/.test(host)) { src.utm_source = host.replace(/^www\./, '').split('.')[0]; src.utm_medium ||= 'portal' }
+      else if (/zillow|realtor|trulia/.test(host)) { src.utm_source = host.replace(/^www\./, '').split('.')[0]; src.utm_medium ||= 'portal' }
       else if (host && host !== window.location.hostname) { src.utm_source = host; src.utm_medium ||= 'referral' }
     } catch {}
   }

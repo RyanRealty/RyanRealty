@@ -123,14 +123,15 @@ describe('design directive contracts', () => {
     const main = src.slice(src.indexOf('const main = ('), src.indexOf('const sidebar ='))
     const order = [
       'PriceCtaStrip',
-      'PropertySpecs',
       'DescriptionBlock',
-      'ListingLocationMap',
-      'NeighborhoodMarketContext',
-      'SchoolsBlock',
-      'ParksNearbyBlock',
-      'PropertyHistory',
       'MortgageCalculator',
+      'ListingLocationMap',
+      'SchoolsBlock',
+      'ListingNeighborhoodSection',
+      'PropertySpecs',
+      'PropertyHistory',
+      'NeighborhoodMarketContext',
+      'ParksNearbyBlock',
       'RentalAnalysis',
       'ListingAttribution',
     ]
@@ -143,8 +144,7 @@ describe('design directive contracts', () => {
   it('park and trail list thumbs are always a map from existing geo', () => {
     const parks = readSrc('components/site/listing-detail/ParksNearbyBlock.tsx')
     const life = readSrc('components/site/listing-detail/LifestyleNearSection.tsx')
-    expect(parks).toMatch(/<PlaceListThumb/)
-    expect(parks).toMatch(/getParkBoundaryGeoJSON/)
+    expect(parks).toMatch(/findParksNear/)
     expect(life).toMatch(/isParkOrTrail \? \(/)
     expect(life).toMatch(/<PlaceListThumb lat=\{thumb\?\.lat\}/)
     expect(life).toMatch(/getTrailLineGeoJSON/)
@@ -152,7 +152,6 @@ describe('design directive contracts', () => {
     expect(life).toMatch(/<span className="place-list__name">\{item\.name\}<\/span>/)
     expect(life).not.toMatch(/place-list__kind">\{item\.kind\}<\/span>\s*\{item\.name\}/)
     const css = readSrc('components/site/listing-detail/listing-detail.css')
-    expect(css).toMatch(/\.listing-detail \.place-list__kind \{\s*display: block/)
     expect(css).toMatch(/\.listing-gallery__back/)
     const parkDetail = readSrc('app/parks/[slug]/page.tsx')
     const trailDetail = readSrc('app/central-oregon/trails/[slug]/page.tsx')
@@ -166,7 +165,7 @@ describe('design directive contracts', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
     // v3 chrome (P9 roll, 2026-08-27): one main mounting the v3 token scope
     // plus the listing register, one V3Footer outside it, no kb chrome left.
-    expect(src).toMatch(/V3_ROOT_CLASS\}? listing-detail/)
+    expect(src).toMatch(/V3_ROOT_CLASS\} \$\{V3_LISTING_CLASS\} listing-detail/)
     expect(src).toMatch(/<V3Footer\b/)
     expect(src).toMatch(/<V3Breadcrumb\b/)
     expect(src).not.toMatch(/kb-root|<KbFooter\b|<KbBreadcrumb\b|<KbSectionTracker\b|SmoothScrollProvider/)

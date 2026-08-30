@@ -1,17 +1,17 @@
 /**
  * Pending-save resume (RC7 consumer funnel).
  *
- * A logged-out visitor who clicks "Save" on a listing is bounced to
- * /login?next=<page>. Without this, the save intent is lost — they return signed
- * in but the listing isn't saved, and the save→account→lead-capture path silently
- * drops. Every save control stashes the intended listing before redirecting, and
- * every save control resumes it on return (via useResumePendingSave), so the save
- * completes itself exactly once.
+ * A logged-out visitor who clicks "Save" stays on this page. The Google
+ * continue sheet opens here. Without the stash, the save intent is lost after
+ * sign-in. Every save control stashes the listing and resumes it
+ * (useResumePendingSave) so the save completes once.
  *
  * sessionStorage is tab+origin scoped, so the flag survives the OAuth round-trip
  * back to our origin. Private mode / storage-denied degrades gracefully (no
  * resume, but the redirect still works).
  */
+
+import { RR_OPEN_SIGNIN, RR_OPEN_SIGNIN_FLAG } from '@/lib/auth/google-gis'
 
 const PENDING_SAVE_KEY = 'rr_pending_save_listing'
 
@@ -41,10 +41,14 @@ export function consumePendingSave(listingKey: string): boolean {
   }
 }
 
-/** Stash the intent and send an anonymous saver to sign-in, returning to this page. */
+/** Stash the intent and open the on-page Google continue sheet. Stay here. */
 export function redirectToLoginForSave(listingKey: string): void {
   if (typeof window === 'undefined') return
   stashPendingSave(listingKey)
-  const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
-  window.location.href = `/login?next=${returnUrl}`
+  try {
+    window.sessionStorage.setItem(RR_OPEN_SIGNIN_FLAG, '1')
+  } catch {
+    /* ignore */
+  }
+  window.dispatchEvent(new CustomEvent(RR_OPEN_SIGNIN, { detail: { listingKey } }))
 }

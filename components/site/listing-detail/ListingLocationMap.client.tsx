@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { GoogleMap, Marker, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions } from '@/lib/maps/markers'
@@ -44,7 +44,7 @@ function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
 export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13, popup }: Props) {
   const { ready, error } = useGoogleMapsReady()
   const [map, setMap] = useState<google.maps.Map | null>(null)
-  const [popupOpen, setPopupOpen] = useState(true)
+  const [popupOpen, setPopupOpen] = useState(false)
 
   // Intrinsic height: clamp from viewport so GoogleMaps never inits at 0px.
   const containerStyle = useMemo(
@@ -124,6 +124,15 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13
   }
 
   const paths = boundary ? geojsonToPaths(boundary) : []
+
+  useEffect(() => {
+    if (!map || paths.length === 0) return
+    const bounds = new google.maps.LatLngBounds()
+    for (const ring of paths) {
+      for (const point of ring) bounds.extend(point)
+    }
+    if (!bounds.isEmpty()) map.fitBounds(bounds, 32)
+  }, [map, paths])
 
   return (
     <div className="h-full w-full overflow-hidden" style={{ minHeight: 280, border: '3px solid var(--navy)' }}>

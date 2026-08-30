@@ -1,10 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  Body,
-  Price,
-} from '@/components/site/primitives'
+import { Price } from '@/components/site/primitives'
 import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
 import { PROPERTY_TAX_RATE_PCT } from '@/lib/property-tax-rate'
 
@@ -100,74 +97,91 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
 
   const insuranceSeedPerYear = Math.round((parseCurrency(priceInput) / 300_000) * INSURANCE_PER_300K)
 
+  const barSum = result.pi + result.taxesMonthly + result.insuranceMonthly || 1
+
   return (
     <section className={className}>
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">Estimate</div>
-          <h2 className="sec-title display">Monthly payment</h2>
+          <h2 className="sec-title">Payment calculator</h2>
         </div>
       </div>
 
-      <div style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Body size="small" tone="muted">
-          A rough estimate, not a quote. Your lender gives you the real number.
-        </Body>
+      <div className="listing-pay">
+        <div className="listing-pay__total">
+          <Price value={Math.round(result.piti)} exact /> per month
+        </div>
+        <div className="listing-pay__bar" aria-hidden>
+          <span className="listing-pay__bar-seg listing-pay__bar-seg--pi" style={{ flexGrow: result.pi / barSum, flexBasis: 0 }} />
+          <span className="listing-pay__bar-seg listing-pay__bar-seg--tax" style={{ flexGrow: result.taxesMonthly / barSum, flexBasis: 0 }} />
+          <span className="listing-pay__bar-seg listing-pay__bar-seg--ins" style={{ flexGrow: result.insuranceMonthly / barSum, flexBasis: 0 }} />
+        </div>
+        <dl className="listing-pay__breakdown">
+          <div className="listing-pay__row">
+            <dt>Principal and interest</dt>
+            <dd><Price value={Math.round(result.pi)} exact /></dd>
+          </div>
+          <div className="listing-pay__row">
+            <dt>Property taxes</dt>
+            <dd><Price value={Math.round(result.taxesMonthly)} exact /></dd>
+          </div>
+          <div className="listing-pay__row">
+            <dt>Homeowners insurance</dt>
+            <dd><Price value={Math.round(result.insuranceMonthly)} exact /></dd>
+          </div>
+        </dl>
+        <p className="listing-pay__note">
+          A rough estimate, not a quote. Loan amount <Price value={result.principal} exact /> ·{' '}
+          <Price value={result.down} exact /> down · {termInput} year term.
+        </p>
 
-        {/* Input fields */}
-        <div
-          style={{
-            border: '3px solid var(--navy)',
-            padding: '22px 24px',
-            display: 'grid',
-            gap: 16,
-            background: 'var(--cream)',
-          }}
-        >
-          <KbField label="Home price" id="mc-price">
+        <div className="listing-pay__fields">
+          <div className="listing-pay__field">
+            <label htmlFor="mc-price">Home price</label>
             <input
               id="mc-price"
               type="text"
               inputMode="numeric"
               value={formatPriceForDisplay(priceInput)}
               onChange={(e) => setPriceInput(e.target.value.replace(/[^\d]/g, ''))}
-              style={KB_INPUT_STYLE}
             />
-          </KbField>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <KbField label="Down payment %" id="mc-down">
+          </div>
+          <div className="listing-pay__field-row">
+            <div className="listing-pay__field">
+              <label htmlFor="mc-down">Down payment %</label>
               <input
                 id="mc-down"
                 type="text"
                 inputMode="decimal"
                 value={downPctInput}
                 onChange={(e) => setDownPctInput(e.target.value)}
-                style={KB_INPUT_STYLE}
               />
-            </KbField>
-            <KbField label="Rate %" id="mc-rate">
+            </div>
+            <div className="listing-pay__field">
+              <label htmlFor="mc-rate">Rate %</label>
               <input
                 id="mc-rate"
                 type="text"
                 inputMode="decimal"
                 value={rateInput}
                 onChange={(e) => setRateInput(e.target.value)}
-                style={KB_INPUT_STYLE}
               />
-            </KbField>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <KbField label="Term (years)" id="mc-term">
+          <div className="listing-pay__field-row">
+            <div className="listing-pay__field">
+              <label htmlFor="mc-term">Term (years)</label>
               <input
                 id="mc-term"
                 type="text"
                 inputMode="numeric"
                 value={termInput}
                 onChange={(e) => setTermInput(e.target.value)}
-                style={KB_INPUT_STYLE}
               />
-            </KbField>
-            <KbField label="Insurance $/yr" id="mc-insurance">
+            </div>
+            <div className="listing-pay__field">
+              <label htmlFor="mc-insurance">Insurance $/yr</label>
               <input
                 id="mc-insurance"
                 type="text"
@@ -175,138 +189,14 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
                 value={formatPriceForDisplay(insuranceInput)}
                 onChange={(e) => setInsuranceInput(e.target.value.replace(/[^\d]/g, ''))}
                 placeholder={insuranceSeedPerYear > 0 ? insuranceSeedPerYear.toLocaleString('en-US') : ''}
-                style={KB_INPUT_STYLE}
               />
-            </KbField>
+            </div>
           </div>
-          <Body size="small" tone="muted">
+          <p className="listing-pay__note">
             Insurance starts at $1,000 per $300K of price each year. Type your quote to replace it.
-          </Body>
-        </div>
-
-        {/* Results */}
-        <div
-          style={{
-            background: 'var(--navy)',
-            color: 'var(--cream)',
-            padding: '22px 24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-          }}
-        >
-          <KpiRow label="Principal + interest" value={<Price value={Math.round(result.pi)} exact />} />
-          <KpiRow label="Property taxes" value={<Price value={Math.round(result.taxesMonthly)} exact />} />
-          <KpiRow label="Homeowners insurance" value={<Price value={Math.round(result.insuranceMonthly)} exact />} />
-          <div
-            style={{
-              borderTop: '1px solid color-mix(in srgb, var(--v3-cream) 28%, transparent)',
-              marginTop: 6,
-              paddingTop: 12,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)',
-              }}
-            >
-              Total monthly (PITI)
-            </span>
-            <span
-              style={{
-                fontFamily: 'var(--font-amboqia-safe, serif)',
-                fontSize: 'clamp(1.6rem,3.5vw,2.2rem)',
-                lineHeight: 1,
-                color: 'var(--cream)',
-                fontVariantNumeric: 'tabular-nums',
-                overflow: 'visible',
-              }}
-            >
-              <Price value={Math.round(result.piti)} exact />
-            </span>
-          </div>
-          <p
-            style={{
-              fontSize: '0.68rem',
-              color: 'color-mix(in srgb, var(--v3-cream) 50%, transparent)',
-              letterSpacing: '0.02em',
-              lineHeight: 1.5,
-              marginTop: 4,
-            }}
-          >
-            Loan amount <Price value={result.principal} exact /> · <Price value={result.down} exact /> down · {termInput} year term
           </p>
         </div>
       </div>
     </section>
-  )
-}
-
-/** KB cream field: 2px navy edge, navy text, no rounding. */
-const KB_INPUT_STYLE: React.CSSProperties = {
-  width: '100%',
-  background: 'var(--cream)',
-  border: '2px solid var(--navy)',
-  borderRadius: 0,
-  padding: '10px 12px',
-  fontFamily: 'inherit',
-  fontSize: '0.95rem',
-  fontWeight: 600,
-  color: 'var(--navy)',
-  fontVariantNumeric: 'tabular-nums',
-  outline: 'none',
-}
-
-function KbField({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label
-        htmlFor={id}
-        style={{
-          fontSize: '0.6rem',
-          fontWeight: 600,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
-          fontFamily: 'var(--font-sans, sans-serif)',
-        }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-function KpiRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span
-        style={{
-          fontSize: '0.78rem',
-          color: 'color-mix(in srgb, var(--v3-cream) 62%, transparent)',
-          letterSpacing: '0.04em',
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          color: 'var(--cream)',
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {value}/mo
-      </span>
-    </div>
   )
 }

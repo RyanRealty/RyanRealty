@@ -1,6 +1,7 @@
+import { V3Button } from '@/components/site/v3'
+
 /**
- * Desktop sticky tour card. Starts below the mosaic. Actions only —
- * no second price. Same .btn register as PriceCtaStrip.
+ * Desktop sticky tour card. Ledger-register buttons — no 3px uppercase slabs.
  */
 export function ListingTourCard({
   tourHref,
@@ -15,21 +16,21 @@ export function ListingTourCard({
 }) {
   return (
     <div className="listing-tour-card">
-      <a href={tourHref} className="btn alt">
-        Schedule a tour
-      </a>
-      <a href={askHref} className="btn">
-        Ask
-      </a>
+      <V3Button href={tourHref} variant="primary">
+        Request a showing
+      </V3Button>
+      <V3Button href={askHref} variant="ghost">
+        Ask a question
+      </V3Button>
       {tel ? (
-        <a href={`tel:${tel}`} className="btn">
+        <V3Button href={`tel:${tel}`} variant="text">
           Call
-        </a>
+        </V3Button>
       ) : null}
       {sms ? (
-        <a href={`sms:${sms}`} className="btn">
+        <V3Button href={`sms:${sms}`} variant="text">
           Text
-        </a>
+        </V3Button>
       ) : null}
     </div>
   )

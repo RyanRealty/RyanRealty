@@ -47,6 +47,21 @@ describe('publishListingMosaicPills', () => {
     const noPlan = publishListingMosaicPills({ photoCount: 6, videos: [] })
     expect(noPlan.map((p) => p.id)).toEqual(['photos'])
   })
+
+  it('909 Delaware: Street view pill only when this home has a point', () => {
+    const withStreet = publishListingMosaicPills({
+      photoCount: 46,
+      videos: [tour],
+      floorPlanCount: 1,
+      hasStreetView: true,
+    })
+    expect(withStreet.map((p) => p.id)).toEqual(['tour', 'floor', 'street', 'photos'])
+    expect(withStreet.find((p) => p.id === 'street')?.label).toBe('Street view')
+    expect(publishListingMosaicPills({ photoCount: 46, videos: [tour] }).map((p) => p.id)).toEqual([
+      'tour',
+      'photos',
+    ])
+  })
 })
 
 describe('publishListingGalleryTabs', () => {

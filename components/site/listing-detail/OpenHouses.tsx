@@ -1,4 +1,3 @@
-import { Eyebrow, H2, Stack } from '@/components/site/primitives'
 import { publishOpenHouseDay } from '@/lib/listing/publish-calendar-day'
 
 /**
@@ -59,34 +58,27 @@ export function OpenHouses({ events, className }: Props) {
   if (upcoming.length === 0) return null
 
   return (
-    <Stack gap="default" className={className}>
-      <div>
-        <Eyebrow>Visit</Eyebrow>
-        <H2 className="mt-1.5">Open houses</H2>
+    <section className={className}>
+      <div className="sec-head">
+        <div>
+          <div className="eyebrow sec-index">Visit</div>
+          <h2 className="sec-title">Open houses</h2>
+        </div>
       </div>
-      <ul className="flex flex-col gap-3">
+      <ul className="listing-ledger">
         {upcoming.map((e, i) => {
           const range = formatRange(e.start_time, e.end_time)
           return (
-            <li
-              key={e.open_house_key ?? `${i}-${e.event_date}`}
-              className="flex items-baseline gap-3 border-t border-border pt-3 first:border-t-0 first:pt-0"
-            >
-              <span className="text-sm font-semibold text-foreground">
+            <li key={e.open_house_key ?? `${i}-${e.event_date}`}>
+              <span>
                 {formatDay(e.event_date)}
+                {range ? ` · ${range}` : ''}
               </span>
-              {range ? (
-                <span className="text-sm text-muted-foreground tabular-nums">{range}</span>
-              ) : null}
-              {e.notes ? (
-                <span className="text-xs text-muted-foreground ml-auto truncate max-w-[24ch]">
-                  {e.notes}
-                </span>
-              ) : null}
+              {e.notes ? <span>{e.notes}</span> : null}
             </li>
           )
         })}
       </ul>
-    </Stack>
+    </section>
   )
 }

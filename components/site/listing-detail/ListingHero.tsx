@@ -7,6 +7,7 @@ import type { ListingPhoto } from '@/lib/data/types/listing'
 import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from './PhotoGalleryLightbox'
 import { ListingTourOverlay } from './ListingTourOverlay'
+import { ListingStreetViewOverlay } from './ListingStreetViewOverlay'
 import {
   publishListingHeroUnmute,
   publishListingHeroVideo,
@@ -14,6 +15,8 @@ import {
 } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingLeadMedia } from '@/lib/listing/publish-listing-lead-media'
 import { publishListingMosaicPills } from '@/lib/listing/publish-listing-mosaic-pills'
+import { publishListingMosaicThumbs } from '@/lib/listing/publish-listing-mosaic'
+import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 
 /**
  * Listing media mosaic. Media 1 is a VIDEO reel when one exists,
@@ -26,6 +29,9 @@ type Props = {
   floorPlans?: ReadonlyArray<ListingPhoto>
   videos: ReadonlyArray<VideoEmbed>
   addressLine?: string
+  lat?: number | null
+  lng?: number | null
+  openHouseLabel?: string | null
   className?: string
 }
 
@@ -62,10 +68,12 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
   }
 }
 
-export function ListingHero({ photos, floorPlans = [], videos, addressLine, className }: Props) {
+export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat, lng, openHouseLabel, className }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
   const [embed, setEmbed] = useState<VideoEmbed | null>(null)
+  const [tourOpen, setTourOpen] = useState(false)
+  const [streetOpen, setStreetOpen] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
@@ -76,15 +84,20 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0
   const canUnmute = publishListingHeroUnmute(reel)
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
+  const hasStreetView =
+    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
   const mosaicPills = publishListingMosaicPills({
     photoCount: total,
     videos,
     floorPlanCount: floorPlans.length,
+    hasStreetView,
   })
-  const thumbs = photos.slice(heroVideo ? 0 : 1, heroVideo ? 4 : 5)
-  const emptyThumbSlots = Math.max(0, 4 - thumbs.length)
+  const thumbs = publishListingMosaicThumbs(photos, heroVideo != null)
+  const emptyThumbSlots = Math.max(0, 2 - thumbs.length)
   const carouselStills = heroVideo ? photos : photos.slice(1)
   const leadOpenLabel = lead?.kind === 'video' ? 'Open video' : null
+  const mediaPills = mosaicPills.filter((p) => p.id !== 'photos')
+  const photoPill = mosaicPills.find((p) => p.id === 'photos')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -94,6 +107,16 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
     setGalleryPane('photos')
     setOpenIndex(Math.max(0, Math.min(n - 1, total - 1)))
   }, [total])
+
+  useEffect(() => {
+    if (!heroVideo || heroVideo.embedType !== 'video-tag') return
+    if (typeof window === 'undefined') return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const el = videoRef.current
+    if (!el) return
+    el.muted = true
+    void el.play().catch(() => {})
+  }, [heroVideo])
 
   if (!hasLeadMedia) return null
 
@@ -105,9 +128,14 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
   }
 
   function openEmbed(kind: 'video' | 'tour') {
-    const target = kind === 'video' ? reel : virtualTour
-    if (!target) return
-    setEmbed(target)
+    if (kind === 'tour') {
+      setEmbed(null)
+      setTourOpen(true)
+      return
+    }
+    if (!reel) return
+    setTourOpen(false)
+    setEmbed(reel)
   }
 
   function openLead() {
@@ -257,25 +285,46 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
         </div>
       </div>
 
+      {openHouseLabel ? (
+        <div className="listing-mosaic__open-house">{openHouseLabel}</div>
+      ) : null}
       {mosaicPills.length > 0 ? (
         <div className="listing-mosaic__pills">
-          {mosaicPills.map((pill) => (
-            <button
-              key={pill.id}
-              type="button"
-              className="listing-mosaic__badge"
-              onClick={() => {
-                if (pill.action === 'video' || pill.action === 'tour') {
-                  openEmbed(pill.action)
-                  return
-                }
-                openGallery(0, pill.action === 'floor' ? 'floor' : 'photos')
-              }}
-              aria-label={pill.label}
-            >
-              {pill.label}
-            </button>
-          ))}
+          <div className="listing-mosaic__pills-media">
+            {mediaPills.map((pill) => (
+              <button
+                key={pill.id}
+                type="button"
+                className="listing-mosaic__badge"
+                onClick={() => {
+                  if (pill.action === 'video' || pill.action === 'tour') {
+                    openEmbed(pill.action)
+                    return
+                  }
+                  if (pill.action === 'street') {
+                    setStreetOpen(true)
+                    return
+                  }
+                  openGallery(0, pill.action === 'floor' ? 'floor' : 'photos')
+                }}
+                aria-label={pill.label}
+              >
+                {pill.label}
+              </button>
+            ))}
+          </div>
+          {photoPill ? (
+            <div className="listing-mosaic__pills-count">
+              <button
+                type="button"
+                className="listing-mosaic__badge"
+                onClick={() => openGallery(0)}
+                aria-label={photoPill.label}
+              >
+                {photoPill.label}
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -288,16 +337,36 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, clas
         onPaneChange={setGalleryPane}
         total={galleryPane === 'floor' ? floorPlans.length : total}
         altBase={altBase}
+        hasStreetView={hasStreetView}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}
         onOpenEmbed={reel || virtualTour ? openEmbed : undefined}
+        onOpenStreet={hasStreetView ? () => setStreetOpen(true) : undefined}
       />
       <ListingTourOverlay
-        open={embed != null}
-        video={embed}
+        open={tourOpen || embed != null}
+        video={
+          embed ??
+          (virtualTour && !isOffsiteTourHost(virtualTour.url) ? virtualTour : null)
+        }
+        floorPlans={floorPlans}
+        lat={lat}
+        lng={lng}
         title={`Listing tour for ${altBase}`}
-        onClose={() => setEmbed(null)}
+        onClose={() => {
+          setTourOpen(false)
+          setEmbed(null)
+        }}
       />
+      {hasStreetView ? (
+        <ListingStreetViewOverlay
+          open={streetOpen}
+          lat={lat!}
+          lng={lng!}
+          title={`Street view of ${addressLine ?? 'this home'}`}
+          onClose={() => setStreetOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }
@@ -334,7 +403,7 @@ function VideoLayer({
       src={video.url}
       poster={video.posterUrl ?? posterUrl}
       muted
-      autoPlay={typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches}
+      autoPlay
       loop
       playsInline
       onClick={onTap}
@@ -401,7 +470,7 @@ function IframeHeroLayer({
           allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
           allowFullScreen
           onError={() => setFailed(true)}
-          style={{ opacity: ready ? 1 : 0, pointerEvents: 'none' }}
+          style={{ opacity: ready || !posterUrl ? 1 : 0.01, pointerEvents: 'none' }}
         />
       )}
       <button

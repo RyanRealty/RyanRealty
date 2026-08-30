@@ -4,6 +4,7 @@ import {
   formatPublishedAsk,
   publishListingAsk,
   publishListingDrop,
+  publishListingEstPaymentLabel,
   publishListingHistoryPrices,
 } from './publish-listing-ask'
 
@@ -86,5 +87,16 @@ describe('publishListingDrop', () => {
       original: 9_800_000,
       drop: 1_900_000,
     })
+  })
+})
+
+describe('publishListingEstPaymentLabel', () => {
+  it('prints the leftover PITI as Est. $6,030/mo', () => {
+    expect(publishListingEstPaymentLabel(6030)).toBe('Est. $6,030/mo')
+  })
+
+  it('withholds a missing or non-positive payment', () => {
+    expect(publishListingEstPaymentLabel(null)).toBeNull()
+    expect(publishListingEstPaymentLabel(0)).toBeNull()
   })
 })

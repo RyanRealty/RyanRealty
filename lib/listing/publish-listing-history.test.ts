@@ -3,6 +3,7 @@ import {
   publishListingHistory,
   publishListingHistoryDeltaLabel,
   publishListingHistoryDescription,
+  publishListingLastDrop,
 } from './publish-listing-history'
 
 describe('publishListingHistory', () => {
@@ -81,6 +82,7 @@ describe('publishListingHistory', () => {
     expect(rows.map((r) => r.event)).toEqual(['pricechange', 'pricechange', 'listed'])
     expect(rows.find((r) => r.event === 'pending')).toBeUndefined()
     expect(rows.at(-1)).toMatchObject({ event: 'listed', event_date: '2026-08-16', price: 1395000 })
+    expect(publishListingLastDrop(rows)).toBeNull()
   })
 
   it('Swalley: withholds raw ListPrice dump on the published row', () => {
@@ -128,8 +130,42 @@ describe('publishListingHistory', () => {
       listPrice: 1585000,
     })
     expect(rows.map((r) => r.event)).toEqual(['listed', 'pricechange', 'pricechange'])
+    expect(rows[0]).toMatchObject({ event: 'listed', price: 1650000, event_date: '2026-07-10' })
     expect(rows[1]).toMatchObject({ event: 'pricechange', price: 1624000, price_change: -26000 })
     expect(rows[2]).toMatchObject({ event: 'pricechange', price: 1585000, price_change: -39000 })
+  })
+
+  it('seed without price_history uses OriginalListPrice for listed', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      onMarketDate: '2026-06-04',
+      listPrice: 999_000,
+      originalListPrice: 1_195_000,
+    })
+    expect(rows).toEqual([
+      { event: 'listed', event_date: '2026-06-04', price: 1_195_000, price_change: null, description: null },
+    ])
+    expect(publishListingLastDrop(rows)).toBeNull()
+  })
+
+  it('909 Delaware: listed is the first old_price, not the current ask', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      priceHistory: [
+        { old_price: 1_195_000, new_price: 1_175_000, changed_at: '2026-06-20T12:00:00Z' },
+        { old_price: 1_175_000, new_price: 1_075_000, changed_at: '2026-07-11T12:00:00Z' },
+        { old_price: 1_075_000, new_price: 999_000, changed_at: '2026-08-15T12:00:00Z' },
+      ],
+      onMarketDate: '2026-06-04T07:15:00+00:00',
+      listPrice: 999_000,
+    })
+    expect(rows.map((r) => r.event)).toEqual(['listed', 'pricechange', 'pricechange', 'pricechange'])
+    expect(rows[0]).toMatchObject({ event: 'listed', event_date: '2026-06-04', price: 1_195_000 })
+    expect(rows.at(-1)).toMatchObject({ event: 'pricechange', price: 999_000, price_change: -76_000 })
+    expect(publishListingLastDrop(rows)).toEqual({
+      amount: 76_000,
+      label: 'Price drop $76K',
+    })
   })
 
   it('1461 Elgin: listed only when original and ask are the same dollar', () => {

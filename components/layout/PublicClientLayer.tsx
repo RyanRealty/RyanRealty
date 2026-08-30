@@ -38,7 +38,11 @@ const GuestWatchingBanner = dynamic(
   { ssr: false },
 )
 
-export default function PublicClientLayer() {
+export default function PublicClientLayer({
+  googleClientId = null,
+}: {
+  googleClientId?: string | null
+}) {
   const pathname = usePathname()
   // Admin never loads any of these chunks. (Return BEFORE touching the dynamic
   // components so their imports are never triggered on an admin route.)
@@ -46,7 +50,7 @@ export default function PublicClientLayer() {
   return (
     <>
       <HideOnLP>
-        <SignInPromptWithSession />
+        <SignInPromptWithSession googleClientId={googleClientId} />
       </HideOnLP>
       <HideOnLP>
         <InstallPrompt />

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 
-export type MediaOverlayHash = 'gallery' | 'tour'
+export type MediaOverlayHash = 'gallery' | 'tour' | 'street'
 
 /**
  * Gallery and tour overlays must occupy a history entry so browser Back
@@ -114,6 +114,7 @@ function overlayDest(url: URL, hash: MediaOverlayHash, photoOneBased?: number | 
     if (photoOneBased != null && photoOneBased > 0) return galleryUrl(url, photoOneBased)
     return listingUrlWithoutPhoto(url)
   }
+  if (hash === 'street') return `${listingUrlWithoutPhoto(url)}#street`
   return `${listingUrlWithoutPhoto(url)}#tour`
 }
 
@@ -122,7 +123,8 @@ function overlayMatches(url: URL, hash: MediaOverlayHash, photoOneBased?: number
     if (photoOneBased != null && photoOneBased > 0) {
       return url.searchParams.get('photo') === String(photoOneBased)
     }
-    return !url.searchParams.has('photo') && url.hash !== '#tour'
+    return !url.searchParams.has('photo') && url.hash !== '#tour' && url.hash !== '#street'
   }
+  if (hash === 'street') return url.hash === '#street'
   return url.hash === '#tour'
 }

@@ -10,7 +10,11 @@ import { useEffect, useState } from 'react'
 import type { AuthUser } from '@/app/actions/auth'
 import SignInPrompt from '../SignInPrompt'
 
-export default function SignInPromptWithSession() {
+export default function SignInPromptWithSession({
+  googleClientId = null,
+}: {
+  googleClientId?: string | null
+}) {
   const [user, setUser] = useState<AuthUser | null>(null)
   useEffect(() => {
     let active = true
@@ -24,5 +28,5 @@ export default function SignInPromptWithSession() {
       active = false
     }
   }, [])
-  return <SignInPrompt user={user} />
+  return <SignInPrompt user={user} googleClientId={googleClientId} />
 }

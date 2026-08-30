@@ -55,6 +55,28 @@ describe('publishStreetLine', () => {
       }),
     ).toBe('Kouns Drive')
   })
+
+  it('909 Delaware: prints StreetDirPrefix between the number and the name', () => {
+    expect(
+      publishStreetLine({
+        streetNumber: '909',
+        streetDirPrefix: 'NW',
+        streetName: 'Delaware',
+        streetSuffix: 'Avenue',
+      }),
+    ).toBe('909 NW Delaware Avenue')
+  })
+
+  it('does not double a directional already on the street name', () => {
+    expect(
+      publishStreetLine({
+        streetNumber: '909',
+        streetDirPrefix: 'NW',
+        streetName: 'NW Delaware',
+        streetSuffix: 'Ave',
+      }),
+    ).toBe('909 NW Delaware Ave')
+  })
 })
 
 describe('listingMlsAddressFull', () => {

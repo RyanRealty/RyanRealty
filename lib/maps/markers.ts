@@ -55,7 +55,7 @@ export function getBaseMapOptions(): google.maps.MapOptions {
     opts.zoomControlOptions = { position: google.maps.ControlPosition.RIGHT_TOP }
   }
   if (typeof google !== 'undefined' && google.maps?.MapTypeId && google.maps?.MapTypeControlStyle) {
-    // Offer roadmap / satellite / hybrid / terrain like Zillow/Redfin. The
+    // Offer roadmap / satellite / hybrid / terrain. The
     // dropdown style keeps the control compact on the search map's chrome.
     opts.mapTypeControlOptions = {
       style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
@@ -204,7 +204,7 @@ export function buildPricePillIcon(
   const hPad = 12
   const vPad = hover ? 8 : 6
   // Active (clicked / InfoWindow-open) pills get a white outline ring so the
-  // selected home reads clearly on the map, Zillow/Redfin style. The ring lives
+  // selected home reads clearly on the map. The ring lives
   // inside an outer stroke padding so the pill geometry (and caret) is unchanged.
   const ring = active ? 2 : 0
   // Approximate character width at the given font size.

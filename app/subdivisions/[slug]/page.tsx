@@ -101,7 +101,8 @@ import type { Metadata } from 'next'
 import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
-import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { getGeoBoundaryMapData, getListingTiles, getMarketStats, getCityHeroUrlsBySlug } from '@/lib/data'
+import { cityLibraryHero, cityStagePoster } from '@/app/cities/[slug]/_v3/city-opening'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import {
   EMPTY_SUBDIVISION_COUNTS,
@@ -396,7 +397,15 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     covers: placeTypeCoverPhotos(splitListings),
   })
   const headline = `${displayName} homes for sale`
-  const stagePosterSrc = splitListings.find((row) => row.PhotoURL)?.PhotoURL ?? null
+  const [cityHeroes, cityLibraryHeroUrl] = citySlug
+    ? await Promise.all([
+        withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'sub:cityHeroes'),
+        withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'sub:cityLibraryHero'),
+      ])
+    : [{}, null]
+  const stagePosterSrc =
+    splitListings.find((row) => row.PhotoURL)?.PhotoURL ??
+    cityStagePoster(cityHeroes[citySlug ?? ''], cityLibraryHeroUrl)
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so

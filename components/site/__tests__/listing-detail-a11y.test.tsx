@@ -120,6 +120,36 @@ describe('listing-detail CTA row accessible names', () => {
     expect(html).not.toMatch(/Reduced \$/)
     expect(html).not.toMatch(/PRICE CHANGE/i)
     expect(html).not.toMatch(/Down /)
+    expect(html).not.toMatch(/Price drop /)
+  })
+
+  it('909 Delaware: last drop, est. payment, listed-by, and NW on the face', () => {
+    const html = render({
+      listing: {
+        ...LISTING,
+        listingKey: '20260529155754426962000000',
+        listNumber: '220222734',
+        listPrice: 999_000,
+        streetNumber: '909',
+        streetDirPrefix: 'NW',
+        streetName: 'Delaware',
+        streetSuffix: 'Avenue',
+        postalCode: '97703',
+        estimatedMonthlyPiti: 6030,
+        listAgentName: 'Matt Johnson',
+        listOfficeName: 'RE/MAX Key Properties',
+        listAgentPhone: '541-480-2153',
+      } as unknown as Parameters<typeof PriceCtaStrip>[0]['listing'],
+      history: [
+        { event: 'listed', event_date: '2026-06-04', price: 1_195_000, price_change: null },
+        { event: 'pricechange', event_date: '2026-08-15', price: 999_000, price_change: -76_000 },
+      ],
+    })
+    expect(html).toMatch(/<h1[^>]*>909 NW Delaware Avenue<\/h1>/)
+    expect(html).toMatch(/\$999,000/)
+    expect(html).toMatch(/Est\. \$6,030\/mo/)
+    expect(html).toMatch(/Price drop \$76K/)
+    expect(html).toMatch(/Listed by Matt Johnson, RE\/MAX Key Properties · 541-480-2153/)
   })
 
   it('uses the street as the H1 and keeps one exact ask', () => {
@@ -127,6 +157,23 @@ describe('listing-detail CTA row accessible names', () => {
     expect(html).toMatch(/<h1[^>]*>1265 Saginaw Ave<\/h1>/)
     expect(html).toMatch(/\$895,000/)
     expect(html).not.toMatch(/\$895K/)
+  })
+
+  it('puts a map peek on the face when leftover has a point', () => {
+    const html = render({
+      listing: {
+        ...LISTING,
+        lat: 44.058,
+        lng: -121.315,
+      } as unknown as Parameters<typeof PriceCtaStrip>[0]['listing'],
+    })
+    const hasKey = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
+    if (hasKey) {
+      expect(html).toMatch(/listing-face__map/)
+      expect(html).toMatch(/href="#location"/)
+    } else {
+      expect(html).not.toMatch(/listing-face__map/)
+    }
   })
 
   it('offers a clear path to the listing alert strip', () => {
@@ -163,7 +210,7 @@ describe('F4 ListingAlertCoach source contract', () => {
   })
 })
 
-describe('gallery and tour occupy history so Back stays on the listing', () => {
+describe('gallery, tour, and street view occupy history so Back stays on the listing', () => {
   const { readFileSync } = require('node:fs') as typeof import('node:fs')
   const { join } = require('node:path') as typeof import('node:path')
   const root = join(__dirname, '../../..')
@@ -173,6 +220,10 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
   )
   const tour = readFileSync(
     join(root, 'components/site/listing-detail/ListingTourOverlay.tsx'),
+    'utf8',
+  )
+  const street = readFileSync(
+    join(root, 'components/site/listing-detail/ListingStreetViewOverlay.tsx'),
     'utf8',
   )
   const hook = readFileSync(join(root, 'lib/listing/use-media-overlay-history.ts'), 'utf8')
@@ -185,6 +236,7 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
     expect(gallery).toMatch(/useMediaOverlayHistory\(/)
     expect(gallery).toMatch(/'gallery'/)
     expect(tour).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'tour'\)/)
+    expect(street).toMatch(/useMediaOverlayHistory\(isOpen, onClose, 'street'\)/)
   })
 
   it('labels the control Back at 44px', () => {
@@ -194,14 +246,18 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
     expect(tour).toMatch(/aria-label="Back"/)
     expect(tour).toMatch(/listing-gallery__back/)
     expect(tour).toMatch(/listing-gallery__close/)
+    expect(street).toMatch(/aria-label="Back"/)
+    expect(street).toMatch(/listing-gallery__back/)
     expect(gallery).not.toMatch(/Close gallery/)
   })
 
   it('sits above chrome via overlayClassName z-110', () => {
     expect(gallery).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(tour).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
+    expect(street).toMatch(/overlayClassName="listing-gallery__overlay z-\[110\]"/)
     expect(gallery).toMatch(/className="listing-gallery z-\[110\]/)
     expect(tour).toMatch(/className="listing-gallery z-\[110\]/)
+    expect(street).toMatch(/className="listing-gallery z-\[110\]/)
   })
 
   it('pins the gallery to the viewport instead of the dialog center translate', () => {
@@ -209,6 +265,8 @@ describe('gallery and tour occupy history so Back stays on the listing', () => {
     expect(gallery).toMatch(/translate-y-0/)
     expect(tour).toMatch(/translate-x-0/)
     expect(tour).toMatch(/translate-y-0/)
+    expect(street).toMatch(/translate-x-0/)
+    expect(street).toMatch(/translate-y-0/)
   })
 })
 
@@ -233,6 +291,19 @@ describe('listing mosaic lead and empty thumbs', () => {
     expect(hero).not.toMatch(/lead\?\.kind === 'tour' \? 'Open tour'/)
     expect(hero).toMatch(/emptyThumbSlots/)
     expect(hero).toMatch(/empty-thumb-/)
+    expect(hero).toMatch(/ListingStreetViewOverlay/)
+    expect(hero).toMatch(/hasStreetView/)
+    expect(hero).toMatch(/publishListingMosaicThumbs/)
+    expect(hero).toMatch(/autoPlay/)
+    expect(css).toMatch(/grid-template-columns: 2fr 1fr/)
+    expect(hero).toMatch(/isOffsiteTourHost/)
+    const overlay = readFileSync(
+      join(__dirname, '../../..', 'components/site/listing-detail/ListingTourOverlay.tsx'),
+      'utf8',
+    )
+    expect(overlay).toMatch(/Floor plan/)
+    expect(overlay).toMatch(/isOffsiteTourHost/)
+    expect(overlay).not.toMatch(/zillow\.com\/view-imx/)
   })
 
   it('pins the gallery above 64px chrome', () => {

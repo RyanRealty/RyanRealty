@@ -66,7 +66,7 @@ const COMPARISON_ROWS: Array<{ criterion: string; solo: string; withUs: string }
   {
     criterion: 'MLS + portal syndication',
     solo: 'Flat-fee MLS entry or yard sign and Craigslist',
-    withUs: 'Full MLS listing syndicated to Zillow, Realtor.com, Redfin',
+    withUs: 'Full MLS listing syndicated to the national portals',
   },
   {
     criterion: 'Buyer screening',

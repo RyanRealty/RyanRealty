@@ -47,9 +47,13 @@ export {
    * which register each surface wears.
    */
   V3_LEDGER_CLASS,
+  V3_LISTING_CLASS,
+  V3_LOOK,
   /** Builds a V3Text. Throws on a blank string; `v3Text('')` does not compile. */
   v3Text,
 } from './atoms'
+
+export type { V3LookName } from './atoms'
 
 export type {
   /** A string known to be non-empty, for anything that computes an accessible name. */

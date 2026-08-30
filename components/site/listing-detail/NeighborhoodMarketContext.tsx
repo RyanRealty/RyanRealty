@@ -149,15 +149,11 @@ export async function NeighborhoodMarketContext({
   return (
     <section className={cn('section mkt', className)} style={{ padding: 0 }}>
       <div className="wrap" style={{ paddingTop: 0, paddingBottom: 0 }}>
-        {/* KB navy sec-head inside the mkt surface */}
-        <div className="sec-head" style={{ borderBottomColor: 'color-mix(in srgb, var(--v3-cream) 28%, transparent)' }}>
+        {/* Leftover HUD as compact fact rows. */}
+        <div className="sec-head">
           <div>
-            <div className="eyebrow sec-index" style={{ color: 'color-mix(in srgb, var(--v3-cream) 55%, transparent)' }}>
-              Live market context
-            </div>
-            <h2 className="sec-title display" style={{ color: 'var(--v3-cream)' }}>
-              {geoName} market
-            </h2>
+            <div className="eyebrow sec-index">Live market context</div>
+            <h2 className="sec-title">{geoName} market</h2>
           </div>
           {freshnessLabel ? (
             <div
@@ -227,21 +223,21 @@ export async function NeighborhoodMarketContext({
           {thisListPrice != null && medianList != null && diffPct != null && aboveOrBelow ? (
             <p className="mkt-fine" style={{ marginTop: 0 }}>
               This home is listed at{' '}
-              <b style={{ color: 'var(--v3-cream)' }}>
+              <b>
                 <Price value={thisListPrice} />
               </b>
               {', '}
-              <span style={{ color: 'var(--v3-cream)', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
                 <TabularNumber value={Math.abs(diffPct)} fractionDigits={1} />% {aboveOrBelow}
               </span>{' '}
               the {geoName} median list price.{' '}
-              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
+              <TextLink href={hubHref} underline="on-hover" className="text-sm">
                 See full {geoName} market →
               </TextLink>
             </p>
           ) : (
             <p className="mkt-fine" style={{ marginTop: 0 }}>
-              <TextLink href={hubHref} underline="on-hover" className="text-sm" style={{ color: 'color-mix(in srgb, var(--v3-cream) 70%, transparent)' }}>
+              <TextLink href={hubHref} underline="on-hover" className="text-sm">
                 See full {geoName} market →
               </TextLink>
             </p>

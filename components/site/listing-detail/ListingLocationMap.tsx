@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 /**
@@ -29,15 +30,10 @@ const ListingLocationMapClient = dynamic(() => import('./ListingLocationMap.clie
       className="h-full w-full animate-pulse"
       style={{
         background: 'var(--cream)',
-        border: '3px solid var(--navy)',
+        border: '1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent)',
       }}
     />
   ),
-})
-
-const ListingLot3D = dynamic(() => import('./ListingLot3D.client'), {
-  ssr: false,
-  loading: () => null,
 })
 
 type Props = {
@@ -56,6 +52,8 @@ type Props = {
   sqft?: number | null
   cityLine?: string | null
   href?: string | null
+  inventoryHref?: string | null
+  inventoryLabel?: string | null
 }
 
 export function ListingLocationMap({
@@ -73,25 +71,27 @@ export function ListingLocationMap({
   sqft,
   cityLine,
   href,
+  inventoryHref,
+  inventoryLabel,
 }: Props & { addressLine?: string | null }) {
   if (lat == null || lng == null) return null
 
   return (
     <>
-    <section className={cn('section listing-map', className)}>
+    <section id="location" className={cn('section listing-map', className)}>
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">Location</div>
-          <h2 className="sec-title display">Where this home sits</h2>
+          <h2 className="sec-title">Around this home</h2>
         </div>
       </div>
 
       <div
         className="relative w-full self-stretch"
         style={{
-          aspectRatio: '21 / 9',
+          aspectRatio: '16 / 9',
           minHeight: 'var(--v3-map-min)',
-          marginTop: 'clamp(22px,3vw,36px)',
+          marginTop: 'var(--v3-space-sm)',
         }}
       >
         <div className="absolute inset-0" style={{ minHeight: 'var(--v3-map-min)' }}>
@@ -117,6 +117,13 @@ export function ListingLocationMap({
           />
         </div>
       </div>
+      {inventoryHref && inventoryLabel ? (
+        <p style={{ marginTop: 'var(--v3-space-sm)' }}>
+          <Link href={inventoryHref} className="listing-map__inventory">
+            {`See everything for sale in ${inventoryLabel}`}
+          </Link>
+        </p>
+      ) : null}
       {lifestyleLine ? (
         <div
           className="tabular-nums"
@@ -132,8 +139,6 @@ export function ListingLocationMap({
         </div>
       ) : null}
     </section>
-    {/* Photorealistic Google 3D mesh when available — fails open to null. */}
-    <ListingLot3D lat={lat} lng={lng} label={addressLine} />
     </>
   )
 }

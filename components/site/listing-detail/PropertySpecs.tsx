@@ -286,55 +286,12 @@ function buildGroups(listing: Props['listing']): Group[] {
 }
 
 function SpecGrid({ specs }: { specs: Spec[] }) {
-  // The grid sits on a navy ground that shows through the 1px gaps as cell
-  // borders. An odd-count group would leave the trailing 2nd column empty —
-  // the navy ground would then read as a solid void. Span the last cell across
-  // both columns so every track is a cream cell.
-  const lastIsOrphan = specs.length % 2 === 1
   return (
-    <dl
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1px',
-        background: 'var(--v3-navy)',
-        border: '1px solid var(--v3-navy)',
-      }}
-    >
-      {specs.map((spec, i) => (
-        <div
-          key={spec.label}
-          style={{
-            background: 'var(--v3-cream)',
-            padding: '14px 18px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            ...(lastIsOrphan && i === specs.length - 1 ? { gridColumn: '1 / -1' } : null),
-          }}
-        >
-          <dt
-            className="mono-lab"
-            style={{
-              fontSize: '0.6rem',
-              fontWeight: 600,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
-            }}
-          >
-            {spec.label}
-          </dt>
-          <dd
-            style={{
-              fontSize: 'clamp(1rem,1.8vw,1.15rem)',
-              fontWeight: 600,
-              color: 'var(--v3-navy)',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {spec.value}
-          </dd>
+    <dl className="listing-spec-grid">
+      {specs.map((spec) => (
+        <div key={spec.label} className="listing-spec-row">
+          <dt>{spec.label}</dt>
+          <dd>{spec.value}</dd>
         </div>
       ))}
     </dl>
@@ -350,35 +307,14 @@ export function PropertySpecs({ listing, className }: Props) {
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">Facts</div>
-          <h2 className="sec-title display">Property details</h2>
+          <h2 className="sec-title">Property details</h2>
         </div>
       </div>
 
-      <div
-        style={{
-          marginTop: 'clamp(22px,3vw,36px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'clamp(22px,2.6vw,32px)',
-        }}
-      >
+      <div style={{ marginTop: 'var(--v3-space-sm)' }}>
         {groups.map((group) => (
           <div key={group.label}>
-            <div
-              className="mono-lab"
-              style={{
-                fontSize: '0.66rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: 'var(--v3-navy)',
-                paddingBottom: 10,
-                marginBottom: 12,
-                borderBottom: '1px solid var(--v3-navy)',
-              }}
-            >
-              {group.label}
-            </div>
+            <div className="listing-spec-group">{group.label}</div>
             <SpecGrid specs={group.specs} />
           </div>
         ))}

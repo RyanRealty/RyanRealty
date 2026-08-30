@@ -62,7 +62,7 @@ export async function LifestyleNearSection({
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
-          <h2 className="sec-title display">{title}</h2>
+          <h2 className="sec-title">{title}</h2>
         </div>
         <ul className="place-list place-list--rows">
           {items.map((item, i) => {

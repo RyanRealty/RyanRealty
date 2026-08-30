@@ -5,6 +5,7 @@
 
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
+import type { BoundaryGeoJSONInput } from '@/lib/data/geo/getBoundaryGeoJSON'
 
 const NOISE_SLUGS = new Set(['na', 'none', 'unknown', 'outside-city-limits'])
 
@@ -138,4 +139,36 @@ export function leftoverListingGrains(
   }
 
   return grains
+}
+
+/** Finest leftover place door for inventory in this listing's boundary. */
+export function listingInventoryDoor(placeContext: PlaceContext): { href: string; name: string } | null {
+  const node =
+    placeContext.neighborhood ??
+    placeContext.curatedCommunity ??
+    placeContext.subdivision ??
+    placeContext.city
+  if (!node?.href || !node.label) return null
+  return { href: `${node.href}#homes`, name: node.label }
+}
+
+/** GIS polygon lookups, finest first. Never invent a hull. */
+export function listingBoundaryAttempts(
+  listing: ListingPlaceFields,
+  placeContext: PlaceContext,
+): BoundaryGeoJSONInput[] {
+  const seen = new Set<string>()
+  const out: BoundaryGeoJSONInput[] = []
+  const push = (geoType: BoundaryGeoJSONInput['geoType'], geoSlug: string | null | undefined) => {
+    const slug = geoSlug?.trim()
+    if (!slug || NOISE_SLUGS.has(slug)) return
+    const key = `${geoType}:${slug}`
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push({ geoType, geoSlug: slug })
+  }
+  push('neighborhood', placeContext.neighborhood?.slug ?? listing.neighborhoodSlug)
+  push('subdivision', placeContext.subdivision?.slug ?? listing.subdivisionSlug)
+  push('city', placeContext.city?.slug ?? listing.citySlug)
+  return out
 }

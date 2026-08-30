@@ -329,7 +329,7 @@ const REALTOR_KEYWORDS = [
   'kw.com', 'kellerwilliams', 'remax', 're/max', 'century21',
   'sothebys', 'sotheby', 'compass.com', 'coldwell', 'cbre',
   'berkshirehathaway', 'exp realty', 'expworld', 'windermere',
-  'johnlscott', 'redfin.com',
+  'johnlscott',
 ]
 
 function detectPossibleRealtor(firstName: string | null, lastName: string | null, email: string | null): boolean {

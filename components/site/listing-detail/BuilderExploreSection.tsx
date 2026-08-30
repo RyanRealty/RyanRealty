@@ -20,7 +20,7 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-index">Builder</span>
-          <h2 className="sec-title display">More by {builderName}</h2>
+          <h2 className="sec-title">More by {builderName}</h2>
         </div>
         {/* No "see all" link: /builders/:slug permanently redirects to a generic
             new-construction search, and the search field registry has no builder

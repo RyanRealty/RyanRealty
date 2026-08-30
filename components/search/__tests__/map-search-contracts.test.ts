@@ -76,15 +76,16 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/data-listing-key=/)
   })
 
-  it('has a mobile list/map toggle (design-system ToggleGroup)', () => {
+  it('has a compact Map/List switch in the map shell', () => {
     expect(src).toMatch(/mobileView/)
-    expect(src).toMatch(/setMobileView\(v\)/)
-    expect(src).toMatch(/ToggleGroupItem value="list"/)
-    expect(src).toMatch(/ToggleGroupItem value="map"/)
+    expect(src).toMatch(/applyView/)
+    expect(src).toMatch(/map-search-views/)
+    expect(src).toMatch(/aria-label="Map view"/)
+    expect(src).toMatch(/aria-label="List view"/)
   })
 
-  it('defaults mobile to list so 390 is not a map-only void', () => {
-    expect(src).toMatch(/useState<'list' \| 'map'>\('list'\)/)
+  it('defaults mobile to map when the page asked for map', () => {
+    expect(src).toMatch(/filters.view === 'map' \|\| filters.view === 'split' \? 'map' : 'list'/)
   })
 
   it('renders Search this area after the map moves', () => {
@@ -96,7 +97,7 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/ · \{publishedCounts\.viewport\.phrase\}/)
   })
 
-  it('split cards overlay Redfin badges and open the on-site 3D viewer', () => {
+  it('split cards overlay tour badges and open the on-site 3D viewer', () => {
     const media = readSrc('components/site/v3/SplitCardMedia.tsx')
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(media).toMatch(/v3-lrow__photo-tags/)
@@ -110,8 +111,23 @@ describe('MapSearchView orchestrator', () => {
   it('place Split does not seed a drawable exclude area', () => {
     const place = readSrc('components/search/PlaceSplitView.tsx')
     expect(place).toMatch(/initialShapes=\{null\}/)
-    expect(place).toMatch(/hideViewToggle/)
     expect(place).toMatch(/Home type|SearchFilters/)
+  })
+
+  it('place Split defaults to map; view switch lives in the map shell', () => {
+    const place = readSrc('components/search/PlaceSplitView.tsx')
+    expect(place).toMatch(/viewRaw === 'list' \|\| viewRaw === 'split' \|\| viewRaw === 'map' \? viewRaw : 'map'/)
+    expect(place).toMatch(/hideViewToggle/)
+    const map = readSrc('components/search/MapSearchView.tsx')
+    expect(map).toMatch(/applyView/)
+    expect(map).toMatch(/map-search-views/)
+  })
+
+  it('place Split opens on every property type in the boundary', () => {
+    const place = readSrc('components/search/PlaceSplitView.tsx')
+    expect(place).toMatch(/allTypes/)
+    expect(place).not.toMatch(/Single Family Residence/)
+    expect(place).toMatch(/propertyType: allTypes \? 'all'/)
   })
 
   it('clears Search this area when filters re-seed the list', () => {
@@ -135,12 +151,12 @@ describe('390 Map uses one camera', () => {
     expect(src).toMatch(/hidden h-11 overflow-hidden rounded-none border border-border\/60 bg-muted\/40 lg:flex/)
   })
 
-  it('MapSearchView keeps the in-shell List/Map toggle', () => {
+  it('MapSearchView keeps the in-shell Map/List toggle', () => {
     const src = readSrc('components/search/MapSearchView.tsx')
     expect(src).toMatch(/mobileView/)
-    expect(src).toMatch(/ToggleGroupItem value="list"/)
-    expect(src).toMatch(/ToggleGroupItem value="map"/)
-    expect(src).toMatch(/className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1 lg:hidden"/)
+    expect(src).toMatch(/map-search-views/)
+    expect(src).toMatch(/aria-label="Map view"/)
+    expect(src).toMatch(/aria-label="List view"/)
   })
 
   it('resizes the Google map after mobile Map layout and keeps lockBounds', () => {

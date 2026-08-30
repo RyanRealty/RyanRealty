@@ -104,7 +104,7 @@ const RULES: Array<{ test: (s: string) => boolean; id: CaptureDoorId }> = [
   { id: 'inbound-sms', test: (s) => /inbound text|\bsms\b/.test(s) },
   { id: 'portal-realtor', test: (s) => /realtor com|realtorcom/.test(s) },
   { id: 'portal-zillow', test: (s) => /\bzillow\b|\btrulia\b/.test(s) },
-  { id: 'portal-other', test: (s) => /homes com|\bredfin\b/.test(s) },
+  { id: 'portal-other', test: (s) => /homes com/.test(s) },
   { id: 'agent-referral', test: (s) => /word of mouth|referr|past client|repeat client/.test(s) },
   { id: 'newsletter', test: (s) => /newsletter|blog email|blog-email/.test(s) },
   { id: 'exit-intent', test: (s) => /exit intent/.test(s) },

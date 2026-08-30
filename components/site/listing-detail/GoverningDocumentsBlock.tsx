@@ -47,7 +47,7 @@ export function GoverningDocumentsBlock({ platName, platHref, documents, classNa
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">{platName}</div>
-          <h2 className="sec-title display">CC&amp;Rs and governing documents</h2>
+          <h2 className="sec-title">CC&amp;Rs and governing documents</h2>
         </div>
       </div>
 

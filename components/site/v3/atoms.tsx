@@ -38,6 +38,21 @@ export const V3_ROOT_CLASS = 'v3'
  */
 export const V3_LEDGER_CLASS = 'v3--ledger'
 
+/**
+ * Listing look: product-detail chrome (paper, cream panels, 1px rules).
+ * Same brand colors and fonts. Mount beside V3_ROOT_CLASS. Swap looks by
+ * changing this class — never by re-skinning leftover sections one at a time.
+ */
+export const V3_LISTING_CLASS = 'v3--listing'
+
+/** The three looks. Brand stays on :root. A page mounts one look class. */
+export const V3_LOOK = {
+  broadside: '',
+  ledger: V3_LEDGER_CLASS,
+  listing: V3_LISTING_CLASS,
+} as const
+export type V3LookName = keyof typeof V3_LOOK
+
 /* -------------------------------------------------------------------------- */
 /* The accessible name, in the type                                            */
 /* -------------------------------------------------------------------------- */

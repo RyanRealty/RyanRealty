@@ -95,7 +95,7 @@ export function PublishedCmaSection({ cma, extraHighlights, className }: Props) 
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">Our opinion of value</div>
-          <h2 className="sec-title display">What we think this home is worth</h2>
+          <h2 className="sec-title">What we think this home is worth</h2>
         </div>
       </div>
 

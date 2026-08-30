@@ -1,28 +1,62 @@
 'use client'
 
+import { useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useMediaOverlayHistory } from '@/lib/listing/use-media-overlay-history'
+import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 import type { VideoEmbed } from '@/lib/data/types/video'
+import type { ListingPhoto } from '@/lib/data/types/listing'
+import { cn } from '@/lib/utils'
 import './listing-detail.css'
 
+const ListingLot3D = dynamic(() => import('./ListingLot3D.client'), { ssr: false, loading: () => null })
+
+type Pane = 'walkthrough' | 'floor' | 'lot'
+
 /**
- * Fullscreen video or 3D. Same Back / X / history contract as the photo
- * gallery so browser Back returns to the listing at the same scroll.
+ * On-site 3D / tour overlay. Matterport and native reels play here.
+ * Zillow view-imx and brochure sites do not — leftover floor-plan stills
+ * and the lot mesh do.
  */
 export function ListingTourOverlay({
   open,
   video,
+  floorPlans = [],
+  lat,
+  lng,
   title,
   onClose,
 }: {
   open: boolean
   video: VideoEmbed | null
+  floorPlans?: ReadonlyArray<ListingPhoto>
+  lat?: number | null
+  lng?: number | null
   title: string
   onClose: () => void
 }) {
-  const isOpen = open && video != null
+  const framable =
+    video != null &&
+    (video.embedType === 'iframe' || video.embedType === 'video-tag') &&
+    !isOffsiteTourHost(video.url)
+  const hasFloor = floorPlans.length > 0
+  const hasLot = lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+  const isOpen = open && (framable || hasFloor || hasLot)
   const { dismiss } = useMediaOverlayHistory(isOpen, onClose, 'tour')
-  if (!isOpen || !video) return null
+  const initialPane: Pane = framable ? 'walkthrough' : hasFloor ? 'floor' : 'lot'
+  const [pane, setPane] = useState<Pane>(initialPane)
+  const [floorIndex, setFloorIndex] = useState(0)
+  const active = useMemo(() => {
+    if (pane === 'walkthrough' && framable) return 'walkthrough'
+    if (pane === 'floor' && hasFloor) return 'floor'
+    if (pane === 'lot' && hasLot) return 'lot'
+    return initialPane
+  }, [pane, framable, hasFloor, hasLot, initialPane])
+
+  if (!isOpen) return null
+  const still = floorPlans[Math.max(0, Math.min(floorIndex, floorPlans.length - 1))]
 
   return (
     <Dialog open={isOpen} onOpenChange={(next) => { if (!next) dismiss() }}>
@@ -52,24 +86,89 @@ export function ListingTourOverlay({
               ×
             </button>
           </div>
+          <div className="listing-gallery__tabs" role="tablist" aria-label="On-site tour">
+            {framable ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={active === 'walkthrough'}
+                className={cn('listing-gallery__tab', active === 'walkthrough' && 'is-on')}
+                onClick={() => setPane('walkthrough')}
+              >
+                3D
+              </button>
+            ) : null}
+            {hasFloor ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={active === 'floor'}
+                className={cn('listing-gallery__tab', active === 'floor' && 'is-on')}
+                onClick={() => setPane('floor')}
+              >
+                Floor plan
+              </button>
+            ) : null}
+            {hasLot ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={active === 'lot'}
+                className={cn('listing-gallery__tab', active === 'lot' && 'is-on')}
+                onClick={() => setPane('lot')}
+              >
+                Lot
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="listing-gallery__embed">
-          {video.embedType === 'iframe' ? (
-            <iframe
-              src={video.url}
-              title={title}
-              allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
-              allowFullScreen
-            />
-          ) : (
-            <video
-              src={video.url}
-              poster={video.posterUrl}
-              controls
-              autoPlay
-              playsInline
-            />
-          )}
+          {active === 'walkthrough' && framable && video ? (
+            video.embedType === 'iframe' ? (
+              <iframe
+                src={video.url}
+                title={title}
+                allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
+                allowFullScreen
+              />
+            ) : (
+              <video
+                src={video.url}
+                poster={video.posterUrl}
+                controls
+                autoPlay
+                playsInline
+              />
+            )
+          ) : null}
+          {active === 'floor' && still ? (
+            <div className="listing-gallery__frame">
+              <Image
+                src={still.url}
+                alt={still.caption ?? 'Floor plan'}
+                fill
+                sizes="100vw"
+                className="object-contain"
+              />
+              {floorPlans.length > 1 ? (
+                <div className="listing-gallery__count">
+                  {floorIndex + 1} of {floorPlans.length}
+                  <button
+                    type="button"
+                    className="listing-gallery__tab"
+                    onClick={() => setFloorIndex((i) => (i + 1) % floorPlans.length)}
+                  >
+                    Next
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {active === 'lot' && hasLot ? (
+            <div className="listing-gallery__frame">
+              <ListingLot3D lat={lat!} lng={lng!} label={title} fill />
+            </div>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

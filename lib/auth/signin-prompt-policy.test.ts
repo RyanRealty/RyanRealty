@@ -104,10 +104,14 @@ describe('shouldAutoOpenSignInPrompt', () => {
 })
 
 describe('SignInPrompt close control', () => {
-  it('keeps a visible dialog X (not showCloseButton false)', () => {
+  it('keeps a visible dialog X on the leftover fallback (not showCloseButton false)', () => {
     const src = readFileSync(join(__dirname, '../../components/SignInPrompt.tsx'), 'utf8')
     expect(src).not.toMatch(/showCloseButton=\{false\}/)
     expect(src).toMatch(/closeButtonVariant="outline"/)
     expect(src).toMatch(/onOpenChange/)
+    expect(src).toMatch(/promptGoogleOneTap/)
+    expect(src).toMatch(/RR_OPEN_SIGNIN/)
+    expect(src).toMatch(/showFallback/)
+    expect(src).toMatch(/cancelTap\.current/)
   })
 })

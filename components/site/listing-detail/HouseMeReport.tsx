@@ -244,7 +244,7 @@ export function HouseMeReport({
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">{HOUSEME_EYEBROW}</div>
-          <h2 className="sec-title display">{title}</h2>
+          <h2 className="sec-title">{title}</h2>
         </div>
       </div>
       {/* houseme-rows: kb.css re-inks .mono-lab for this cream ledger — the
@@ -263,7 +263,7 @@ export function HouseMeReport({
               <p
                 className={cn(
                   'text-foreground',
-                  row.emphasis && 'display text-2xl leading-none md:text-3xl',
+                  row.emphasis && 'font-semibold',
                 )}
               >
                 {row.value}

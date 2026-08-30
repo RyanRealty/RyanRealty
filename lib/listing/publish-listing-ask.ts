@@ -93,6 +93,15 @@ export function formatListingAsk(ask: number): string {
   return `$${ask.toLocaleString('en-US')}`
 }
 
+/** Face estimate next to the ask. Leftover PITI only — miss omits. */
+export function publishListingEstPaymentLabel(
+  piti: number | null | undefined,
+): string | null {
+  const amount = asPositivePrice(piti)
+  if (amount == null) return null
+  return `Est. $${amount.toLocaleString('en-US')}/mo`
+}
+
 /** Place-page listing cards and map pins. Null when there is no ask. */
 export function formatPublishedAsk(listPrice: number | null | undefined): string | null {
   const published = publishListingAsk(listPrice)

@@ -77,17 +77,17 @@ export async function PlaceSplitView(props: {
   const sp = props.searchParams ?? {}
   const rawType = firstParam(sp.propertyType)
   const rawSub = firstParam(sp.propertySubTypes)
-  const allTypes = rawType === 'all'
-  const propertyType = allTypes ? '' : rawType || (rawSub ? '' : 'A')
-  const propertySubTypes = allTypes
-    ? ''
-    : rawSub || (rawType ? '' : 'Single Family Residence')
+  const allTypes = rawType === 'all' || (!rawType && !rawSub)
+  const propertyType = allTypes ? '' : rawType
+  const propertySubTypes = allTypes ? '' : rawSub
   const minPrice = firstParam(sp.minPrice)
   const maxPrice = firstParam(sp.maxPrice)
   const beds = firstParam(sp.beds)
   const baths = firstParam(sp.baths)
   const status = firstParam(sp.status) || 'Active'
   const sort = firstParam(sp.sort) || 'newest'
+  const viewRaw = firstParam(sp.view)
+  const view = viewRaw === 'list' || viewRaw === 'split' || viewRaw === 'map' ? viewRaw : 'map'
 
   const viewportFilters: ViewportFilters = {
     city: props.city || undefined,
@@ -105,8 +105,8 @@ export async function PlaceSplitView(props: {
 
   const empty = { listings: [] as ListingTileRow[], totalCount: 0, capped: false }
   const hasTypeFilter = Boolean(propertyType || propertySubTypes)
-  let listings = hasTypeFilter ? undefined : props.listings
-  let totalCount = hasTypeFilter ? undefined : props.totalCount
+  let listings = allTypes || hasTypeFilter ? undefined : props.listings
+  let totalCount = allTypes || hasTypeFilter ? undefined : props.totalCount
   let capped = false
   let degraded = props.degraded ?? false
 
@@ -138,8 +138,8 @@ export async function PlaceSplitView(props: {
     neighborhood: props.neighborhood ?? '',
     status,
     sort,
-    view: 'split',
-    propertyType,
+    view,
+    propertyType: allTypes ? 'all' : propertyType,
     propertySubTypes,
     minPrice,
     maxPrice,

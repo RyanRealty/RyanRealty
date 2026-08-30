@@ -65,7 +65,7 @@ export const OUTREACH_CHANNELS: ReadonlySet<LeadChannel> = new Set<LeadChannel>(
  */
 const RULES: ReadonlyArray<{ channel: LeadChannel; test: (s: string) => boolean }> = [
   // Portals — a portal source (realtor.com/zillow) always wins.
-  { channel: 'portal', test: (s) => /realtor com|realtorcom|\bzillow\b|trulia|homes com|redfin/.test(s) },
+  { channel: 'portal', test: (s) => /realtor com|realtorcom|\bzillow\b|trulia|homes com/.test(s) },
   // Social — Meta lead forms + paid/organic social. Before the web-form rule so
   // "meta-lead-form" classifies as social, not web.
   { channel: 'social', test: (s) => /facebook|instagram|\bmeta\b|\bfb\b|\big\b|tiktok|linkedin|youtube|social/.test(s) },

@@ -69,7 +69,7 @@ const FIVE_CAUSES: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Syndication reach',
-    body: 'Where the listing actually showed up (Zillow, Realtor.com, Redfin), how often it was updated, and whether it stayed featured or fell to page three. The audit pulls the syndication history.',
+    body: 'Where the listing actually showed up on the national portals, how often it was updated, and whether it stayed featured or fell to page three. The audit pulls the syndication history.',
   },
   {
     title: 'Showing access',
@@ -85,7 +85,7 @@ const AUDIT_COVERAGE = [
   'Pricing against the comps that closed while your home was active',
   'Photo and staging quality, frame by frame',
   'The MLS description and feature list that ran',
-  'Syndication history across Zillow, Realtor.com, and Redfin',
+  'Syndication history across the national portals',
   'Showing access and how inquiries were handled',
 ]
 

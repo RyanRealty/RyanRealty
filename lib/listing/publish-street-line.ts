@@ -30,17 +30,32 @@ export function streetNameHasSuffix(streetName: string, streetSuffix: string): b
   return last.localeCompare(suffix, undefined, { sensitivity: 'accent' }) === 0
 }
 
+/** True when the street name already starts with this directional (NW NW). */
+export function streetNameHasDir(streetName: string, dir: string): boolean {
+  const name = streetName.trim()
+  const prefix = dir.trim()
+  if (!name || !prefix) return false
+  const first = name.split(/\s+/)[0] ?? ''
+  return first.localeCompare(prefix, undefined, { sensitivity: 'accent' }) === 0
+}
+
 export function publishStreetLine(input: {
   streetNumber?: string | number | null
+  streetDirPrefix?: string | null
   streetName?: string | null
   streetSuffix?: string | null
+  streetDirSuffix?: string | null
 }): string | null {
   const name = publishStreetPart(input.streetName)
   const suffix = publishStreetPart(input.streetSuffix)
+  const dirPrefix = publishStreetPart(input.streetDirPrefix)
+  const dirSuffix = publishStreetPart(input.streetDirSuffix)
   const line = [
     publishStreetNumber(input.streetNumber),
+    name && dirPrefix && streetNameHasDir(name, dirPrefix) ? null : dirPrefix,
     name,
     name && suffix && streetNameHasSuffix(name, suffix) ? null : suffix,
+    dirSuffix,
   ]
     .filter((part): part is string => part != null)
     .join(' ')
@@ -50,8 +65,10 @@ export function publishStreetLine(input: {
 
 type ListingStreetBits = {
   streetNumber?: string | number | null
+  streetDirPrefix?: string | null
   streetName?: string | null
   streetSuffix?: string | null
+  streetDirSuffix?: string | null
   city?: string | null
   postalCode?: string | null
 }

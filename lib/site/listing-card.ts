@@ -19,8 +19,10 @@ export function tileToCardData(
   const addressLine =
     publishStreetLine({
       streetNumber: t.streetNumber,
+      streetDirPrefix: t.streetDirPrefix,
       streetName: t.streetName,
       streetSuffix: t.streetSuffix,
+      streetDirSuffix: t.streetDirSuffix,
     }) || 'Address on request'
   const cityParts: string[] = []
   if (t.city) cityParts.push(`${t.city}, OR`)

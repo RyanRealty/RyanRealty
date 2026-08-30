@@ -1,14 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import { publishListingRemarks } from '@/lib/listing/publish-listing-remarks'
 import { cn } from '@/lib/utils'
 
 /**
- * Listing-detail DescriptionBlock — renders the listing's public_remarks
- * in the KB (kinetic-brutalist) section style: navy border-bottom sec-head,
- * eyebrow mono label, cream/navy surface.
- *
- * Per CLAUDE.md §0.5 brand voice: public_remarks IS user-facing prose. The
- * remarks come from the MLS. Mid-sentence blank-line splits are joined by
- * publishListingRemarks; words are never invented.
+ * Listing-detail DescriptionBlock — MLS public_remarks. Compact body chrome:
+ * 23px sentence-case head, clamped copy with Show more. Words are never invented.
  */
 
 type Props = {
@@ -18,41 +16,34 @@ type Props = {
 
 export function DescriptionBlock({ publicRemarks, className }: Props) {
   const paragraphs = publishListingRemarks(publicRemarks)
+  const [open, setOpen] = useState(false)
   if (paragraphs.length === 0) return null
+  const long = paragraphs.join(' ').length > 280
 
   return (
-    <section className={cn('section', className)}>
-      {/* KB sec-head */}
+    <section className={cn('section listing-about', open && 'is-open', className)}>
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">About this home</div>
-          <h2 className="sec-title display">Description</h2>
+          <h2 className="sec-title">About this home</h2>
         </div>
       </div>
 
-      <div
-        style={{
-          paddingTop: 'clamp(22px,3vw,36px)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          maxWidth: '68ch',
-        }}
-      >
+      <div className="listing-about__copy">
         {paragraphs.map((p, i) => (
-          <p
-            key={i}
-            style={{
-              fontSize: 'clamp(0.95rem,1.8vw,1.08rem)',
-              lineHeight: 1.65,
-              color: 'color-mix(in srgb, var(--v3-navy) 78%, transparent)',
-              fontWeight: 400,
-            }}
-          >
-            {p}
-          </p>
+          <p key={i}>{p}</p>
         ))}
       </div>
+      {long ? (
+        <button
+          type="button"
+          className="listing-about__more"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          {open ? 'Show less' : 'Show more'}
+        </button>
+      ) : null}
     </section>
   )
 }

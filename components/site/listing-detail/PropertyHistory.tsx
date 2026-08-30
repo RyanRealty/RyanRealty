@@ -94,121 +94,57 @@ export function PropertyHistory({ history, mode = 'all', className }: Props) {
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">History</div>
-          <h2 className="sec-title display">Listing history</h2>
+          <h2 className="sec-title">Sale and tax history</h2>
         </div>
       </div>
 
-      <ol
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 0,
-          marginTop: 'clamp(22px,3vw,36px)',
-        }}
-      >
-        {events.map((ev, i) => {
-          // Derive the price move from the actual sequence (newest-first), not the
-          // unreliable MLS price_change field (often 0 on a field-change row).
-          const prevPrice = events.slice(i + 1).find((e) => e.price != null)?.price ?? null
-          // Only a REAL delta (from the price sequence) drives the up/down amount.
-          // The oldest row has no prior price, so it shows just its price, no "0 down".
-          const delta = ev.price != null && prevPrice != null ? ev.price - prevPrice : null
-          const norm = normalizeEvent(ev.event)
-          const isPriceEvent =
-            norm === 'pricechange' || norm === 'pricedrop' || norm === 'priceincrease'
-          const storedDelta = ev.price_change != null && ev.price_change !== 0 ? ev.price_change : null
-          if (isPriceEvent && (delta == null || delta === 0) && storedDelta == null) return null
-          // A generic/unknown event that's here because it moved the price reads as a
-          // price event, not the raw "FieldChange".
-          let label = eventLabel(ev.event)
-          if (!EVENT_LABEL[norm]) {
-            if (delta && delta < 0) label = 'Price drop'
-            else if (delta && delta > 0) label = 'Price increase'
-            else if (ev.price != null && (delta == null || delta === 0)) return null
-          }
-          const dropAmount = delta && delta < 0 ? Math.abs(delta) : null
-          const increaseAmount = delta && delta > 0 ? delta : null
-          const publishedDescription = publishListingHistoryDescription(ev.description)
-          const dropLabel = publishListingHistoryDeltaLabel(dropAmount, 'down')
-          const increaseLabel = publishListingHistoryDeltaLabel(increaseAmount, 'up')
-          return (
-            <li
-              key={`${i}-${ev.event}-${ev.event_date}`}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 16,
-                padding: '14px 0',
-                borderTop: i === 0 ? 'none' : '1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent)',
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <div
-                  style={{
-                    fontSize: '0.68rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'var(--v3-navy)',
-                  }}
-                >
+      <table className="listing-hist">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Event</th>
+            <th className="listing-hist__price">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.map((ev, i) => {
+            const prevPrice = events.slice(i + 1).find((e) => e.price != null)?.price ?? null
+            const delta = ev.price != null && prevPrice != null ? ev.price - prevPrice : null
+            const norm = normalizeEvent(ev.event)
+            const isPriceEvent =
+              norm === 'pricechange' || norm === 'pricedrop' || norm === 'priceincrease'
+            const storedDelta = ev.price_change != null && ev.price_change !== 0 ? ev.price_change : null
+            if (isPriceEvent && (delta == null || delta === 0) && storedDelta == null) return null
+            let label = eventLabel(ev.event)
+            if (!EVENT_LABEL[norm]) {
+              if (delta && delta < 0) label = 'Price drop'
+              else if (delta && delta > 0) label = 'Price increase'
+              else if (ev.price != null && (delta == null || delta === 0)) return null
+            }
+            const dropAmount = delta && delta < 0 ? Math.abs(delta) : null
+            const increaseAmount = delta && delta > 0 ? delta : null
+            const publishedDescription = publishListingHistoryDescription(ev.description)
+            const dropLabel = publishListingHistoryDeltaLabel(dropAmount, 'down')
+            const increaseLabel = publishListingHistoryDeltaLabel(increaseAmount, 'up')
+            return (
+              <tr key={`${i}-${ev.event}-${ev.event_date}`}>
+                <td className="mono-num">{formatDate(ev.event_date)}</td>
+                <td>
                   {label}
-                </div>
-                <div
-                  className="mono-num"
-                  style={{
-                    fontSize: '0.72rem',
-                    color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {formatDate(ev.event_date)}
-                </div>
-                {publishedDescription ? (
-                  <p
-                    style={{
-                      marginTop: 4,
-                      fontSize: '0.82rem',
-                      lineHeight: 1.5,
-                      color: 'color-mix(in srgb, var(--v3-navy) 65%, transparent)',
-                      maxWidth: '60ch',
-                    }}
-                  >
-                    {publishedDescription}
-                  </p>
-                ) : null}
-              </div>
-              <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {ev.price ? (
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-amboqia-safe, serif)',
-                      fontSize: 'clamp(1rem,2vw,1.3rem)',
-                      lineHeight: 1,
-                      color: 'var(--v3-navy)',
-                      fontVariantNumeric: 'tabular-nums',
-                      overflow: 'visible',
-                    }}
-                  >
-                    <Price value={ev.price} />
-                  </div>
-                ) : null}
-                {dropLabel ? (
-                  <div style={{ fontSize: '0.72rem', color: 'color-mix(in srgb, var(--v3-navy) 72%, transparent)', fontVariantNumeric: 'tabular-nums' }}>
-                    {dropLabel}
-                  </div>
-                ) : null}
-                {increaseLabel ? (
-                  <div style={{ fontSize: '0.72rem', color: 'var(--v3-navy)', fontVariantNumeric: 'tabular-nums' }}>
-                    {increaseLabel}
-                  </div>
-                ) : null}
-              </div>
-            </li>
-          )
-        })}
-      </ol>
+                  {publishedDescription ? (
+                    <span className="listing-hist__desc">{publishedDescription}</span>
+                  ) : null}
+                </td>
+                <td className="listing-hist__price">
+                  {ev.price ? <Price value={ev.price} /> : '—'}
+                  {dropLabel ? <span className="listing-hist__delta">{dropLabel}</span> : null}
+                  {increaseLabel ? <span className="listing-hist__delta">{increaseLabel}</span> : null}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </section>
   )
 }

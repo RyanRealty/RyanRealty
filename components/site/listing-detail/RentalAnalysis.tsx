@@ -87,7 +87,13 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
     listing.taxAnnualAmount && listing.taxAnnualAmount > 0
       ? listing.taxAnnualAmount
       : Math.round(price * PROPERTY_TAX_RATE_FRACTION)
-  const label = publishStreetLine({ streetNumber: listing.streetNumber, streetName: listing.streetName, streetSuffix: listing.streetSuffix }) || undefined
+  const label = publishStreetLine({
+    streetNumber: listing.streetNumber,
+    streetDirPrefix: listing.streetDirPrefix,
+    streetName: listing.streetName,
+    streetSuffix: listing.streetSuffix,
+    streetDirSuffix: listing.streetDirSuffix,
+  }) || undefined
   const hud = getAreaRentEstimate(listing.city, listing.beds)
   const rent = hud
     ? { value: hud.value, low: hud.low, high: hud.high, source: hud.label }
@@ -103,7 +109,7 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
       <div className="sec-head">
         <div>
           <div className="eyebrow sec-index">For investors</div>
-          <h2 className="sec-title display">Rental analysis</h2>
+          <h2 className="sec-title">Rental analysis</h2>
         </div>
       </div>
 

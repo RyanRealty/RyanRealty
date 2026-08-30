@@ -30,9 +30,13 @@ export type ListingTile = {
   sqft: number | null
   streetNumber: string | null
   streetName: string | null
+  /** Street directional prefix (NW, SE) from the raw feed. */
+  streetDirPrefix?: string | null
   /** Street suffix (Loop, Rd, Ct) from the raw feed — display surfaces join
    *  number + name + suffix so addresses match county records. */
   streetSuffix?: string | null
+  /** Street directional suffix when the feed puts it after the name. */
+  streetDirSuffix?: string | null
   city: string | null
   citySlug: string | null
   postalCode: string | null

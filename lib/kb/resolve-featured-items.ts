@@ -19,6 +19,60 @@ import type { ListingTile } from '@/lib/data'
  * Homes sort background-video first, then tour, then photo-only, so the grid leads
  * with motion. Every figure stays live (§0); failure-safe per listing.
  */
+
+/** Photo-only featured tiles. Timeout fallback when video hydration stalls. */
+export function tilesToFeaturedItems(tiles: ListingTile[], limit = 6): KbFeaturedItem[] {
+  const seenAddresses = new Set<string>()
+  const sanitized = tiles.filter((t) => {
+    if (!t.photoUrl) return false
+    if (t.sqft != null && t.sqft > 20_000) return false
+    const key = [t.streetNumber, t.streetDirPrefix, t.streetName]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .trim()
+    if (key && seenAddresses.has(key)) return false
+    if (key) seenAddresses.add(key)
+    return true
+  })
+  return sanitized.slice(0, limit).map((t) => featuredItemFromTile(t, { bg: null, hasMedia: t.hasVirtualTour === true }))
+}
+
+function featuredItemFromTile(
+  t: ListingTile,
+  m: { bg: { url: string; embedType: 'iframe' | 'video-tag' } | null; hasMedia: boolean },
+): KbFeaturedItem {
+  return {
+    price: publishSaleAskAmount({ price: t.listPrice, propertyType: t.propertyType }),
+    address:
+      publishStreetLine({
+        streetNumber: t.streetNumber,
+        streetDirPrefix: t.streetDirPrefix,
+        streetName: t.streetName,
+        streetSuffix: t.streetSuffix,
+        streetDirSuffix: t.streetDirSuffix,
+      }) ?? '',
+    sub: displaySubdivision(t.subdivisionName) ?? '',
+    city: t.city ?? '',
+    beds: t.beds,
+    baths: t.baths,
+    sqft: t.sqft,
+    acres: t.lotSizeAcres ?? null,
+    img: t.photoUrl ?? '',
+    href: listingDetailPath(
+      t.listingKey,
+      { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
+      { city: t.city, subdivision: t.subdivisionName },
+      { mlsNumber: t.listNumber },
+    ),
+    video: m.bg,
+    tour: !m.bg && m.hasMedia,
+    propertySubType: t.propertySubType,
+    subdivisionName: t.subdivisionName,
+    listNumber: t.listNumber,
+  }
+}
+
 export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Promise<KbFeaturedItem[]> {
   // Dedupe by normalized street address + sanity-filter land-scale outliers
   // BEFORE slicing to 12: a duplicate MLS entry for the same physical
@@ -31,7 +85,11 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
   const sanitized = tiles.filter((t) => {
     if (!t.photoUrl) return false
     if (t.sqft != null && t.sqft > 20_000) return false
-    const key = [t.streetNumber, t.streetName].filter(Boolean).join(' ').toLowerCase().trim()
+    const key = [t.streetNumber, t.streetDirPrefix, t.streetName]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .trim()
     if (key && seenAddresses.has(key)) return false
     if (key) seenAddresses.add(key)
     return true
@@ -59,40 +117,5 @@ export async function resolveFeaturedItems(tiles: ListingTile[], limit = 6): Pro
     .map((t, i) => ({ t, m: media[i]! }))
     .sort((a, b) => rank(a.m) - rank(b.m))
     .slice(0, limit)
-    .map(({ t, m }) => ({
-      // The PUBLISHED sale ask, never the raw ListPrice. This rail is the one
-      // source for the homepage, every city and community page, and the
-      // listing page's "homes for sale nearby" band, and KbFeatured prints
-      // this number as an ask. On MLS PropertyType 'G' (Commercial Lease) the
-      // field is rent per square foot: 725 Broadway Street, Bend published
-      // "$2" in the rail on 735 Purcell's own page (2026-08-19). Withheld
-      // rather than converted — there is no sale price to state.
-      price: publishSaleAskAmount({ price: t.listPrice, propertyType: t.propertyType }),
-      address:
-        publishStreetLine({
-          streetNumber: t.streetNumber,
-          streetName: t.streetName,
-          streetSuffix: t.streetSuffix,
-        }) ?? '',
-      sub: displaySubdivision(t.subdivisionName) ?? '',
-      city: t.city ?? '',
-      beds: t.beds,
-      baths: t.baths,
-      sqft: t.sqft,
-      acres: t.lotSizeAcres ?? null,
-      img: t.photoUrl ?? '',
-      href: listingDetailPath(
-        t.listingKey,
-        { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city, postalCode: t.postalCode },
-        { city: t.city, subdivision: t.subdivisionName },
-        { mlsNumber: t.listNumber },
-      ),
-      video: m.bg,
-      tour: !m.bg && m.hasMedia,
-      // Share-subject passthrough: the rail resolves publishListingShareKind
-      // from these so a fractional ask never prints unlabeled.
-      propertySubType: t.propertySubType,
-      subdivisionName: t.subdivisionName,
-      listNumber: t.listNumber,
-    }))
+    .map(({ t, m }) => featuredItemFromTile(t, m))
 }

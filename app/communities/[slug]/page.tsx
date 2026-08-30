@@ -27,7 +27,9 @@ import {
   getPriceHistory,
   getDetachedOverlays,
   cityDetachedSlug,
+  getCityHeroUrlsBySlug,
 } from '@/lib/data'
+import { cityLibraryHero, cityStagePoster } from '@/app/cities/[slug]/_v3/city-opening'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
@@ -280,7 +282,13 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
   const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
-  const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
+  const [cityHeroes, cityLibraryHeroUrl] = await Promise.all([
+    withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'comm:cityHeroes'),
+    withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'comm:cityLibraryHero'),
+  ])
+  const stagePosterSrc =
+    stagePoster(slug, community.heroImageUrl, libraryHero) ??
+    cityStagePoster(cityHeroes[citySlug], cityLibraryHeroUrl)
   const headline = belongingHeadline(publicName, richContent)
 
   const amenityBlogSlugs = (richContent?.amenities ?? [])

@@ -58,6 +58,7 @@ export type ListingFeaturedItem = {
 export function ListingFeaturedHomes({
   items,
   eyebrow = 'Active listings',
+  heading = 'Nearby similar homes',
   viewAllHref = publishRegionalSearchHref(),
   viewAllLabel = 'See homes for sale',
   viewAllPlace,
@@ -65,6 +66,7 @@ export function ListingFeaturedHomes({
 }: {
   items: ListingFeaturedItem[]
   eyebrow?: string
+  heading?: string
   /** Where "see everything for sale here" goes — the caller's scoped URL. */
   viewAllHref?: string
   /** Shown when there is no count to fold in. */
@@ -117,21 +119,18 @@ export function ListingFeaturedHomes({
   // then uniform thirds. Cap to a count whose final row of thirds is FULL so the
   // grid never leaves an orphan tiny tile + dead whitespace: hero(1) + pair(2) +
   // multiples of 3 thirds -> 3, 6, 9, 12. Show the largest that fits.
-  const shown = items.slice(0, [12, 9, 6, 3].find((c) => items.length >= c) ?? items.length)
+  const shown = items.slice(0, 6)
 
   return (
     <section className="section listings" id="listings" ref={root}>
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
-          <h2 className="sec-title display">
-            On the <br />
-            market
-          </h2>
+          <h2 className="sec-title">{heading}</h2>
         </div>
         <div className="lst-grid">
           {shown.map((it) => {
-            const playing = activeHref === it.href && !!it.video
+            const playing = activeHref === it.href && it.video?.embedType === 'video-tag'
             // A fractional ask never prints unlabeled: the share label rides
             // beside the price (the Camp Sherman quarter-share rule).
             const shareKind = publishListingShareKind({
@@ -197,22 +196,17 @@ export function ListingFeaturedHomes({
                   {it.tour && !playing ? <span className="lst-tour">▶ Tour</span> : null}
                 </div>
                 <div className="lst-info">
-                  <div>
-                    <div className="lst-price mono-num">{formatPublishedAsk(it.price)}</div>
-                    <div className="lst-addr">
-                      {it.address}
-                      <span className="sub">
-                        {shareKind ? shareKind + ' · ' : ''}
-                        {it.sub ? it.sub + ' · ' : ''}
-                        {it.city}
-                      </span>
-                    </div>
-                  </div>
+                  <div className="lst-price mono-num">{formatPublishedAsk(it.price)}</div>
                   <div className="lst-specs">
-                    {it.beds != null ? <span>{it.beds} bd</span> : null}
-                    {it.baths != null ? <span>{it.baths} ba</span> : null}
-                    {it.sqft ? <span>{Number(it.sqft).toLocaleString('en-US')} sf</span> : null}
+                    {it.beds != null ? <span>{it.beds} beds</span> : null}
+                    {it.baths != null ? <span>{it.baths} baths</span> : null}
+                    {it.sqft ? <span>{Number(it.sqft).toLocaleString('en-US')} sq ft</span> : null}
                     {it.acres != null && it.acres >= 1 ? <span>{Number(it.acres.toFixed(it.acres >= 10 ? 0 : 1)).toLocaleString('en-US')} ac</span> : null}
+                  </div>
+                  <div className="lst-addr">
+                    {it.address}
+                    {it.city ? <span className="sub">{it.city}</span> : null}
+                    {shareKind ? <span className="sub">{shareKind}</span> : null}
                   </div>
                 </div>
               </a>

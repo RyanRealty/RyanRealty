@@ -1,5 +1,5 @@
 /**
- * Extra leftover fields Redfin prints on search cards that listing_tile_mv
+ * Extra leftover fields on search cards that listing_tile_mv
  * does not project: original ask (for Price reduced $X), virtual tour URL,
  * office name, and extra photo URIs for the card carousel.
  */
