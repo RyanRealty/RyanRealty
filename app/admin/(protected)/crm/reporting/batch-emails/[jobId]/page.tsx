@@ -265,7 +265,7 @@ export default async function BatchEmailRecipientsPage({
               <div style={ROW} role="row" key={r.email}>
                 <span role="cell">
                   {r.personId != null ? (
-                    <Link href={`/admin/people/${r.personId}`} style={LINK}>
+                    <Link href={`/admin/people/${r.personId}#emails`} style={LINK}>
                       {r.name || r.email}
                     </Link>
                   ) : (

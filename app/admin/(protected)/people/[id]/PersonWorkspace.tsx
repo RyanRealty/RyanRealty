@@ -31,6 +31,14 @@ import {
   getTwilioSmsStatus,
 } from '@/app/actions/crm'
 import { SectionHead, StateWord, ThreadBubble } from '@/components/admin/v2'
+import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
+import {
+  emailSendCampaignHref,
+  emailSendStatusLabel,
+  getContactEmailEngagement,
+  matchEmailSend,
+  payloadMessageId,
+} from '@/lib/data/crm/getContactEmailEngagement'
 import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { PersonDeals } from './PersonDeals'
 import { stripHtml, tsLabel } from './person-format'
@@ -83,6 +91,7 @@ export async function PersonWorkspace({
     fieldDefs,
     behaviorSummary,
     personDeals,
+    emailTracking,
   ] = await Promise.all([
     getContactActivityFeed(idNum, 30),
     getContactCmas({ crmPersonId: idNum, emails: card.email ? [card.email] : [] }),
@@ -100,6 +109,7 @@ export async function PersonWorkspace({
     getCrmFieldDefinitions(),
     getContactBehaviorSummary(idNum),
     getDealsForPerson(idNum),
+    getContactEmailEngagement(idNum),
   ])
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
   const kicked = sp.kicked === '1'
@@ -220,33 +230,99 @@ export async function PersonWorkspace({
             </div>
           ) : null}
           <div className="av2-pane av2-pane--thread" style={{ marginBottom: 12 }}>
-            {conversation.items.map((m) => {
-              const chan = m.kind.startsWith('sms') ? ('SMS' as const) : m.kind.startsWith('email') ? ('Email' as const) : null
-              const dir = m.kind.endsWith('_in') ? ('in' as const) : m.kind.endsWith('_out') ? ('out' as const) : null
-              if (!chan || !dir) {
+            {(() => {
+              const used = new Set<string>()
+              const bubbles = conversation.items.map((m) => {
+                const chan = m.kind.startsWith('sms') ? ('SMS' as const) : m.kind.startsWith('email') ? ('Email' as const) : null
+                const dir = m.kind.endsWith('_in') ? ('in' as const) : m.kind.endsWith('_out') ? ('out' as const) : null
+                const send =
+                  m.kind === 'email_out'
+                    ? matchEmailSend(emailTracking.sends, {
+                        messageId: payloadMessageId(m.payload),
+                        subject: m.title,
+                      })
+                    : null
+                if (send) used.add(send.key)
+                if (!chan || !dir) {
+                  return (
+                    <div key={m.id} className="av2-sysnote">
+                      {(m.title ?? m.kind).slice(0, 140)} · {tsLabel(m.ts)}
+                    </div>
+                  )
+                }
+                const raw =
+                  chan === 'Email'
+                    ? `${m.title ? `${m.title} — ` : ''}${stripHtml(m.body ?? '')}`
+                    : (m.body ?? m.title ?? '')
+                const text = raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
+                const campaignHref = send ? emailSendCampaignHref(send) : null
+                const status = send && dir === 'out' ? emailSendStatusLabel(send) : null
                 return (
-                  <div key={m.id} className="av2-sysnote">
-                    {(m.title ?? m.kind).slice(0, 140)} · {tsLabel(m.ts)}
-                  </div>
+                  <ThreadBubble
+                    key={m.id}
+                    direction={dir}
+                    channel={chan}
+                    stamp={[
+                      tsLabel(m.ts),
+                      dir === 'out' && m.broker ? m.broker : null,
+                      status,
+                      send?.visitedAfterSend ? 'on the site after' : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  >
+                    {text}
+                    {campaignHref ? (
+                      <>
+                        {' '}
+                        <Link href={campaignHref} style={{ color: 'var(--a-accent)' }}>
+                          Batch send
+                        </Link>
+                      </>
+                    ) : null}
+                  </ThreadBubble>
                 )
+              })
+              const extras = emailTracking.sends
+                .filter((s) => !used.has(s.key))
+                .map((s) => {
+                  const href = emailSendCampaignHref(s)
+                  const title = s.subject?.trim() || 'Untitled send'
+                  return (
+                    <ThreadBubble
+                      key={s.key}
+                      direction="out"
+                      channel="Email"
+                      stamp={[
+                        s.sentAt ? tsLabel(s.sentAt) : null,
+                        emailSendStatusLabel(s),
+                        s.visitedAfterSend ? 'on the site after' : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    >
+                      {title}
+                      {href ? (
+                        <>
+                          {' '}
+                          <Link href={href} style={{ color: 'var(--a-accent)' }}>
+                            Batch send
+                          </Link>
+                        </>
+                      ) : null}
+                    </ThreadBubble>
+                  )
+                })
+              if (bubbles.length === 0 && extras.length === 0) {
+                return <div className="av2-sysnote">No messages yet.</div>
               }
-              const raw =
-                chan === 'Email'
-                  ? `${m.title ? `${m.title} — ` : ''}${stripHtml(m.body ?? '')}`
-                  : (m.body ?? m.title ?? '')
-              const text = raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
               return (
-                <ThreadBubble
-                  key={m.id}
-                  direction={dir}
-                  channel={chan}
-                  stamp={`${tsLabel(m.ts)}${dir === 'out' && m.broker ? ` · ${m.broker}` : ''}`}
-                >
-                  {text}
-                </ThreadBubble>
+                <>
+                  {bubbles}
+                  {extras}
+                </>
               )
-            })}
-            {conversation.items.length === 0 ? <div className="av2-sysnote">No messages yet.</div> : null}
+            })()}
           </div>
           <CommsSection
             personId={idNum}
@@ -294,6 +370,11 @@ export async function PersonWorkspace({
               bpos={bpos}
             />
           </Suspense>
+          {emailTracking.hasAny ? (
+            <div style={{ marginTop: 12 }}>
+              <ContactEmailEngagement engagement={emailTracking} />
+            </div>
+          ) : null}
         </section>
 
         <TasksSection

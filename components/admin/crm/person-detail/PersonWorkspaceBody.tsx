@@ -52,6 +52,7 @@ import {
   resolveDisplayName,
   resolveInquiryDate,
 } from '@/app/admin/(protected)/crm/[id]/person-view-model'
+import { getContactEmailEngagement, mergeEmailSendsIntoTimeline } from '@/lib/data/crm/getContactEmailEngagement'
 import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { listActiveSequences } from '@/lib/crm/enroll'
 import { PersonHomesRegion } from './PersonHomesRegion'
@@ -181,6 +182,7 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
     signature,
     mergeCtx,
     conversation,
+    emailTracking,
   ] = await Promise.all([
     getContactMemberships(person.id),
     getContactRelationships(person.id),
@@ -201,6 +203,7 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
       ? buildMergeContext({ person: personLike, senderSlug: actingSlug })
       : Promise.resolve(undefined),
     getContactConversation(person.id, { limit: 50 }),
+    getContactEmailEngagement(person.id),
   ])
 
   const emailInitialSubject = activeTpl?.subject ? renderCrmMerge(activeTpl.subject, personLike, mergeCtx) : ''
@@ -292,7 +295,10 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
     lastCommunicationAt: conversation.items[0]?.ts ?? null,
   })
 
-  const timelineItems = buildTimelineItems(full.timeline, emailEngagement)
+  const timelineItems = mergeEmailSendsIntoTimeline(
+    buildTimelineItems(full.timeline, emailEngagement),
+    emailTracking.sends,
+  )
 
   const mobileSmsComposer = primaryPhone ? (
     twilioStatus.canSend ? (
