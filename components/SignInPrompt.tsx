@@ -41,7 +41,7 @@ function wasDismissed(): boolean {
     if (!raw) return false
     const t = Number(raw)
     if (Number.isNaN(t)) return false
-    return Date.now() - t < DISMISS_HOURS * 60 * 60 * 1000
+    return Date.now() - t < DISMISS_HOURS * 60 * 60 * 1000 // hydration-safe: effect/handler dismiss clock, not render
   } catch {
     return false
   }
@@ -49,7 +49,7 @@ function wasDismissed(): boolean {
 
 function setDismissed() {
   try {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    localStorage.setItem(DISMISS_KEY, String(Date.now())) // hydration-safe: effect/handler storage only
   } catch {
     /* ignore */
   }
