@@ -52,14 +52,22 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     expect(files.city, 'city').toMatch(/publishPlaceFace\(\{\s*grain:\s*'city'/)
     expect(files.city, 'city').not.toMatch(/pending:\s*pulse/)
     expect(files.city, 'city').not.toMatch(/getMarketPulse/)
-    // Same v3 rule for the neighborhood and community pages (2026-08-26):
-    // their figures come from the same shared builder, and no pulse read
-    // exists to fill from.
-    for (const [name, src] of Object.entries({ nbh: files.nbh, community: files.community })) {
-      expect(src, name).toMatch(/leftoverMarketFigures/)
-      expect(src, name).not.toMatch(/pending:\s*pulse/)
-      expect(src, name).not.toMatch(/getMarketPulse/)
-    }
+    // Neighborhood face is expert-six grain: polygon count + median list
+    // via publishPlaceFace. leftoverHudKpis still feeds FAQ/JSON-LD. MOS /
+    // pending / verdict do not print on the face, so leftoverMarketFigures
+    // (city HUD builder) is not the neighborhood figure source.
+    expect(files.nbh, 'nbh').toMatch(/leftoverHudKpis/)
+    expect(files.nbh, 'nbh').toMatch(/publishPlaceFace\(\{\s*grain:\s*'neighborhood'/)
+    expect(files.nbh, 'nbh').toMatch(/neighborhoodFaceFigures/)
+    expect(files.nbh, 'nbh').not.toMatch(/leftoverMarketFigures/)
+    expect(files.nbh, 'nbh').not.toMatch(/pending:\s*pulse/)
+    expect(files.nbh, 'nbh').not.toMatch(/getMarketPulse/)
+    // Community still builds leftover figures from the shared city builder
+    // (below the face). Pulse still must not fill them.
+    expect(files.community, 'community').toMatch(/leftoverHudKpis/)
+    expect(files.community, 'community').toMatch(/leftoverMarketFigures/)
+    expect(files.community, 'community').not.toMatch(/pending:\s*pulse/)
+    expect(files.community, 'community').not.toMatch(/getMarketPulse/)
     // The v3 spelling, MOVED not dropped (2026-08-26). /zip/[zip] left the KB
     // register: there is no KbMarketData literal to key, so the same rule is
     // asserted on the figure the market Instrument actually prints — the value

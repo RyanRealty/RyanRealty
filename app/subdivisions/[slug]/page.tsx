@@ -397,15 +397,16 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     covers: placeTypeCoverPhotos(splitListings),
   })
   const headline = `${displayName} homes for sale`
+  const emptyHeroes: Record<string, string> = {}
   const [cityHeroes, cityLibraryHeroUrl] = citySlug
     ? await Promise.all([
-        withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'sub:cityHeroes'),
+        withTimeoutFallback(getCityHeroUrlsBySlug(), emptyHeroes, 3000, 'sub:cityHeroes'),
         withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'sub:cityLibraryHero'),
       ])
-    : [{}, null]
+    : [emptyHeroes, null]
   const stagePosterSrc =
     splitListings.find((row) => row.PhotoURL)?.PhotoURL ??
-    cityStagePoster(cityHeroes[citySlug ?? ''], cityLibraryHeroUrl)
+    cityStagePoster(citySlug ? cityHeroes[citySlug] : null, cityLibraryHeroUrl)
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so

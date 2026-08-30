@@ -48,7 +48,7 @@ export async function attachListingCardExtras(
   const { data, error } = await sb
     .from('listings')
     .select('ListingKey, original_list_price, virtual_tour_url, ListOfficeName, PhotoURL, details')
-    .in('ListingKey', slice)
+    .in('ListingKey', slice) // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
   if (error || !data) return out
   for (const raw of data as Array<{
     ListingKey?: string | null

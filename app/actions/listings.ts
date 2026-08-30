@@ -98,6 +98,7 @@ export type ListingTileRow = {
   photoUrls?: string[]
   originalListPrice?: number | null
   price_drop_amount?: number | null
+  ListOfficeName?: string | null
 }
 
 /** Details from Spark/Supabase: Videos = playable/embed only; VirtualTours = 3D/tour links (not played in hero). */

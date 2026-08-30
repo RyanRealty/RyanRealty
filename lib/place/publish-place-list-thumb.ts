@@ -63,7 +63,7 @@ export function readPlaceListThumbGeo(value: unknown): PlaceListThumbGeo | null 
     return { type: 'Polygon', coordinates: rings }
   }
   if (type === 'MultiPolygon' && Array.isArray(coords)) {
-    const polys: number[][][] = []
+    const polys: [number, number][][][] = []
     for (const poly of coords) {
       if (!Array.isArray(poly)) continue
       const rings = poly.map(asRing).filter((r): r is [number, number][] => r != null && r.length >= 3)

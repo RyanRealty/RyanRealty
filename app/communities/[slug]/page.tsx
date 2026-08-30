@@ -282,8 +282,9 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
   const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
+  const emptyHeroes: Record<string, string> = {}
   const [cityHeroes, cityLibraryHeroUrl] = await Promise.all([
-    withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'comm:cityHeroes'),
+    withTimeoutFallback(getCityHeroUrlsBySlug(), emptyHeroes, 3000, 'comm:cityHeroes'),
     withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'comm:cityLibraryHero'),
   ])
   const stagePosterSrc =

@@ -107,7 +107,7 @@ describe('listing-detail CTA row accessible names', () => {
         streetName: 'Mariposa',
         streetSuffix: 'Lane',
       } as unknown as Parameters<typeof PriceCtaStrip>[0]['listing'],
-      historyPrices: [7_900_000],
+      history: [{ event: 'PriceChange', price: 7_900_000 }],
     })
     expect(html).not.toMatch(/9,800,000/)
     expect(html).not.toMatch(/1,900,000/)
