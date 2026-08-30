@@ -46,11 +46,14 @@ checks.push({
 })
 
 const map = src('components/search/MapSearchView.tsx')
+const cardBadges = src('lib/listing/publish-listing-card-badges.ts')
 checks.push({
   label: 'map cards use publishListingStatusBadge',
   ok:
-    /from ['"]@\/lib\/search\/publish-search-status['"]/.test(map) &&
-    /publishListingStatusBadge\(l\.StandardStatus\)/.test(map) &&
+    /from ['"]@\/lib\/listing\/publish-listing-card-badges['"]/.test(map) &&
+    /publishListingCardBadges\(/.test(map) &&
+    /standardStatus:\s*l\.StandardStatus/.test(map) &&
+    /publishListingStatusBadge\(input\.standardStatus\)/.test(cardBadges) &&
     !map.includes('No ListingBadge kind for pending'),
 })
 

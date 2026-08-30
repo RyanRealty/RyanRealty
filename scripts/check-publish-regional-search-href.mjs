@@ -85,7 +85,7 @@ const frame = src('app/globals.css')
 checks.push({
   label: 'search app-frame does not double-count a 64px fixed header',
   ok:
-    /height:\s*calc\(100dvh - 3\.5rem\)/.test(frame) &&
+    /height:\s*calc\(100dvh - var\(--v3-chrome-h/.test(frame) &&
     /margin-top:\s*0/.test(frame) &&
     !/\.search-app-frame \{[^}]*margin-top:\s*64px/.test(frame),
 })
