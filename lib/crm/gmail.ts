@@ -514,9 +514,8 @@ export async function sendCrmEmail(params: {
   /** Append the sending broker's HTML signature (client-facing sends only —
    *  internal alerts to broker mailboxes stay signature-free). */
   withSignature?: boolean
-  /** When set, instrument the HTML with an open pixel + click-tracked links so
-   *  opens/clicks log to the comms chain. Omit for internal/broker emails. */
-  track?: { personId: number; emailKey: string; label?: string }
+  /** Optional. sendCrmEmail also resolves To to a CRM person and wraps links when omitted. Internal broker mail is skipped. */
+  track?: { personId: number; emailKey: string; label?: string; broker?: string }
   attachments?: CrmEmailAttachment[]
   /** Composer's explicit Text/HTML choice. Omit ('auto') everywhere else. */
   bodyFormat?: EmailBodyFormat
@@ -539,13 +538,21 @@ export async function sendCrmEmail(params: {
     }
   }
 
-  if (params.track && html) {
-    const { instrumentEmailHtml } = await import('@/lib/email-tracking')
-    html = instrumentEmailHtml(html, params.track)
-  }
-
   const toList = Array.isArray(params.to) ? params.to : [params.to]
   if (toList.length === 0) return { ok: false, error: 'No recipient' }
+
+  if (html) {
+    // Always-on. A forgotten `track` still wraps when To maps to one CRM
+    // person. Already-instrumented HTML (bulk cohort) is a no-op.
+    const { instrumentLeadHtml } = await import('@/lib/email/auto-track')
+    html = await instrumentLeadHtml(html, {
+      to: toList,
+      subject: params.subject,
+      personId: params.track?.personId,
+      emailKey: params.track?.emailKey,
+      brokerSlug: params.track?.broker,
+    })
+  }
   const hasAttachments = !!params.attachments && params.attachments.length > 0
   const headers = [
     `From: ${params.fromMailbox}`,

@@ -26,7 +26,7 @@
 
 import { renderCmaPdfBuffer, CmaNotFoundError } from '@/lib/cma-pdf'
 import { createGmailDraft } from '@/lib/gmail-draft'
-import { instrumentEmailHtml } from '@/lib/email-tracking'
+import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { sendEmail } from '@/lib/resend'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -314,7 +314,8 @@ export async function finalizeAndDeliverCma(
   // records opens/clicks no matter how this is sent (Gmail draft or Resend).
   let bodyHtml = built.html
   if (recipientPersonId) {
-    bodyHtml = instrumentEmailHtml(bodyHtml, {
+    bodyHtml = attributeOutbound(bodyHtml, {
+      brokerSlug: 'matt',
       personId: recipientPersonId,
       emailKey: `cma:${safeSlug}`,
       label: emailSubject,

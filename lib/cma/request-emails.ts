@@ -148,6 +148,9 @@ export async function sendLeadConfirmation(params: {
   // Sent folder, and replies thread straight to his inbox. No Resend-verified
   // sending domain required. (Matt 2026-06-05: "email is matt@ryan-realty.com" —
   // not the noreply, not the mail. subdomain.)
+  const { getPersonIdsByEmail } = await import('@/lib/data/crm/getPersonIdsByEmail')
+  const ids = await getPersonIdsByEmail(params.leadEmail)
+  const personId = ids.length === 1 ? ids[0] : null
   const gmailRes = await sendGmailMessage({
     impersonateAs: signEmail,
     to: params.leadEmail,
@@ -155,6 +158,9 @@ export async function sendLeadConfirmation(params: {
     bodyText: text,
     bodyHtml: html,
     replyTo: signEmail,
+    personId: personId ?? undefined,
+    emailKey: personId != null ? `cma-request:${personId}` : undefined,
+    brokerSlug: 'matt',
   })
   if (!gmailRes.ok) {
     // Suppression chokepoint (fails closed) — re-checked in this scope so the
@@ -173,6 +179,9 @@ export async function sendLeadConfirmation(params: {
       text,
       html,
       replyTo: signEmail,
+      personId: personId ?? undefined,
+      emailKey: personId != null ? `cma-request:${personId}` : undefined,
+      brokerSlug: 'matt',
     })
   }
 }

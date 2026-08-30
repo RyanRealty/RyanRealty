@@ -337,11 +337,15 @@ async function runValuationFollowUp(ctx: {
         await assertPdfPageSafety(Buffer.from(buffer), 'home valuation CMA', {
           runningMarksInBody: true,
         })
+        const greetingName = name ? ` ${name.split(/\s+/)[0]}` : ''
         const sent = await sendEmail({
           to: email,
           subject: `Your Home Valuation - ${fullAddress || 'Property'}`,
-          text: `Hi${name ? ` ${name.split(/\s+/)[0]}` : ''},\n\nAttached is your Comparative Market Analysis for ${fullAddress || 'your property'}.\n\nIf you have questions or want to discuss next steps, reply to this email or give us a call.\n\nBest,\nRyan Realty`,
+          text: `Hi${greetingName},\n\nAttached is your Comparative Market Analysis for ${fullAddress || 'your property'}.\n\nIf you have questions or want to discuss next steps, reply to this email or give us a call.\n\nBest,\nRyan Realty`,
+          html: `<p>Hi${greetingName},</p><p>Attached is your Comparative Market Analysis for ${fullAddress || 'your property'}.</p><p>If you have questions or want to discuss next steps, reply to this email or give us a call.</p><p>Best,<br/>Ryan Realty<br/><a href="https://ryan-realty.com">ryan-realty.com</a></p>`,
           attachments: [{ filename: 'home-valuation.pdf', content: Buffer.from(buffer) }],
+          personId: capturedPersonId ?? undefined,
+          emailKey: capturedPersonId != null ? `home-valuation:${capturedPersonId}` : undefined,
         })
         cmaSent = !sent.error
       }
@@ -382,6 +386,9 @@ async function runValuationFollowUp(ctx: {
         CONTACT.phoneDirect,
         'ryan-realty.com',
       ].join('\n'),
+      html: `<p>${greeting}</p><p>Thank you for requesting a value estimate on your home. We have it, and someone on our team is pulling the numbers now.</p><p>We do these by hand. Instead of an automated guess, we look at recent comparable sales and what is actually happening in your neighborhood right now, so the figure you get is one you can use. You will hear back from us shortly.</p><p>If there is anything we should know about the home, recent updates, your timeline, or any questions, just reply to this email.</p><p>Thanks again,<br/>Matt Ryan<br/>Ryan Realty<br/>${CONTACT.phoneDirect}<br/><a href="https://ryan-realty.com">ryan-realty.com</a></p>`,
+      personId: capturedPersonId ?? undefined,
+      emailKey: capturedPersonId != null ? `home-valuation-ack:${capturedPersonId}` : undefined,
     }).catch((err) => console.warn('[valuation] acknowledgment email failed (non-blocking):', err))
     }
   }

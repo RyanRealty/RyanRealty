@@ -317,6 +317,7 @@ describe('sendGovernedEmail — guard order', () => {
       subject: 'Subject line',
       bodyText: 'Body text',
       withSignature: true,
+      track: { personId: 7, emailKey: 'gov:test:7', label: 'Subject line', broker: 'matt' },
     })
     expect(h.inserts).toHaveLength(1)
     const rows = h.inserts[0].rows as Array<Record<string, unknown>>
@@ -357,7 +358,13 @@ describe('sendGovernedEmail — guard order', () => {
     expect(res).toEqual({ ok: true, providerId: 're_1' })
     expect(h.prepareDeliverableEmail).toHaveBeenCalledTimes(1)
     expect(h.resendSendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ to: 'lead@example.com', headers: { 'List-Unsubscribe': '<u>' } }),
+      expect.objectContaining({
+        to: 'lead@example.com',
+        headers: { 'List-Unsubscribe': '<u>' },
+        personId: 7,
+        emailKey: 'gov:cma:delivery:7',
+        brokerSlug: 'matt',
+      }),
     )
     expect(h.inserts).toHaveLength(1)
     expect(h.inserts[0].rows).toMatchObject({

@@ -85,7 +85,7 @@ export type GovernedGmailPayload = {
   bodyFormat?: EmailBodyFormat
   attachments?: CrmEmailAttachment[]
   /** Open/click instrumentation (lib/email-tracking) — same contract as sendCrmEmail. */
-  track?: { personId: number; emailKey: string; label?: string }
+  track?: { personId: number; emailKey: string; label?: string; broker?: string }
   /** Broker-signature append (client-facing sends). Defaults to true. */
   withSignature?: boolean
   /** Extra CRM contacts (spouse on Cc, co-buyer on To) that get their own timeline row. */

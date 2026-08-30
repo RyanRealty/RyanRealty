@@ -43,6 +43,10 @@ export type SendEmailOptions = {
   attachments?: { filename: string; content: Buffer }[]
   /** Custom SMTP headers, e.g. List-Unsubscribe for one-click unsubscribe. */
   headers?: Record<string, string>
+  /** Optional. sendEmail also resolves the To address to a CRM person and wraps links when omitted. Internal broker mail is skipped. */
+  personId?: number
+  emailKey?: string
+  brokerSlug?: string
 }
 
 export async function sendEmail(options: SendEmailOptions): Promise<{ id?: string; error?: string }> {
@@ -62,12 +66,23 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id?: strin
     console.error('[Resend] ' + msg)
     return { error: msg }
   }
+  let html = options.html
+  if (html) {
+    const { instrumentLeadHtml } = await import('@/lib/email/auto-track')
+    html = await instrumentLeadHtml(html, {
+      to: options.to,
+      subject: options.subject,
+      personId: options.personId,
+      emailKey: options.emailKey,
+      brokerSlug: options.brokerSlug,
+    })
+  }
   try {
     const { data, error } = await client.emails.send({
       from,
       to,
       subject: options.subject,
-      html: options.html,
+      html,
       text: options.text,
       replyTo: options.replyTo,
       react: options.react,

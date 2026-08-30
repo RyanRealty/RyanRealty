@@ -57,6 +57,10 @@ export interface CreateGmailDraftParams {
   /** Mailbox to create the draft in. Defaults to DEFAULT_DRAFT_USER (matt@ryan-realty.com). */
   impersonateAs?: string
   attachments?: GmailDraftAttachment[]
+  /** Optional. sendGmailMessage also resolves the To address to a CRM person and wraps links when omitted. Drafts skip this. */
+  personId?: number
+  emailKey?: string
+  brokerSlug?: string
 }
 
 export interface GmailDraftResult {
@@ -274,7 +278,21 @@ export async function sendGmailMessage(
 
   try {
     const gmail = google.gmail({ version: 'v1', auth: jwt })
-    const raw = toBase64Url(buildMimeMessage(params, from))
+    let sendParams = params
+    if (params.bodyHtml) {
+      const { instrumentLeadHtml } = await import('@/lib/email/auto-track')
+      sendParams = {
+        ...params,
+        bodyHtml: await instrumentLeadHtml(params.bodyHtml, {
+          to: params.to,
+          subject: params.subject,
+          personId: params.personId,
+          emailKey: params.emailKey,
+          brokerSlug: params.brokerSlug,
+        }),
+      }
+    }
+    const raw = toBase64Url(buildMimeMessage(sendParams, from))
     const res = await gmail.users.messages.send({
       userId: 'me',
       requestBody: { raw },
