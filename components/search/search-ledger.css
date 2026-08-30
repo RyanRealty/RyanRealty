@@ -118,7 +118,7 @@
   height: 1.75rem;
   flex-shrink: 0;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-  background: var(--v3-cream, #faf8f4);
+  background: var(--v3-cream);
 }
 @layer base {
   .map-search-views button {
@@ -137,7 +137,7 @@
   }
   .map-search-views button[aria-checked='true'] {
     background: var(--v3-navy);
-    color: var(--v3-cream, #faf8f4);
+    color: var(--v3-cream);
   }
 }
 .map-search-views button + button {
