@@ -887,14 +887,16 @@
   padding: 0;
 }
 
-.listing-guides a {
-  display: flex;
-  align-items: center;
-  min-height: var(--v3-tap);
-  padding: 0.7rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
-  font-size: var(--v3-size-body);
-  color: var(--v3-navy);
+@layer base {
+  .listing-guides a {
+    display: flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    padding: 0.7rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+    font-size: var(--v3-size-body);
+    color: var(--v3-navy);
+  }
 }
 
 /* Mobile broker bar. Was .kb-root .listing-mobile-cta. Conversion-critical. */
