@@ -40,16 +40,16 @@ async function eventsForEmailKeys(
   const keyed: EventRow[] = []
   for (let i = 0; i < keys.length; i += IN_CHUNK) {
     const slice = keys.slice(i, i + IN_CHUNK)
-    const page = await readEventPages((from, to) =>
-      sb
+    const page = await readEventPages(async (from, to) => {
+      const r = await sb
         .from('email_events')
         .select(EVENT_SELECT)
         .in('email_key', slice)
         .order('occurred_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to)
-        .then((r) => ({ data: r.data as EventRow[] | null, error: r.error })),
-    )
+      return { data: r.data as EventRow[] | null, error: r.error }
+    })
     if (page.unreadable) return page
     keyed.push(...page.rows)
   }
@@ -64,8 +64,8 @@ async function eventsForEmailKeys(
   const extras: EventRow[] = []
   for (let i = 0; i < messageIds.length; i += IN_CHUNK) {
     const slice = messageIds.slice(i, i + IN_CHUNK)
-    const page = await readEventPages((from, to) =>
-      sb
+    const page = await readEventPages(async (from, to) => {
+      const r = await sb
         .from('email_events')
         .select(EVENT_SELECT)
         .in('message_id', slice)
@@ -73,8 +73,8 @@ async function eventsForEmailKeys(
         .order('occurred_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to)
-        .then((r) => ({ data: r.data as EventRow[] | null, error: r.error })),
-    )
+      return { data: r.data as EventRow[] | null, error: r.error }
+    })
     if (page.unreadable) return page
     extras.push(...page.rows)
   }
