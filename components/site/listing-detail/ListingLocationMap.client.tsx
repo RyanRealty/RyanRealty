@@ -91,6 +91,20 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13
     return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
   }, [lat, lng, zoom])
 
+  const paths = useMemo(
+    () => (boundary ? geojsonToPaths(boundary) : []),
+    [boundary],
+  )
+
+  useEffect(() => {
+    if (!map || paths.length === 0) return
+    const bounds = new google.maps.LatLngBounds()
+    for (const ring of paths) {
+      for (const point of ring) bounds.extend(point)
+    }
+    if (!bounds.isEmpty()) map.fitBounds(bounds, 32)
+  }, [map, paths])
+
   if (error) {
     if (staticFallback) {
       return (
@@ -122,17 +136,6 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 13
       />
     )
   }
-
-  const paths = boundary ? geojsonToPaths(boundary) : []
-
-  useEffect(() => {
-    if (!map || paths.length === 0) return
-    const bounds = new google.maps.LatLngBounds()
-    for (const ring of paths) {
-      for (const point of ring) bounds.extend(point)
-    }
-    if (!bounds.isEmpty()) map.fitBounds(bounds, 32)
-  }, [map, paths])
 
   return (
     <div className="h-full w-full overflow-hidden" style={{ minHeight: 280, border: '3px solid var(--navy)' }}>
