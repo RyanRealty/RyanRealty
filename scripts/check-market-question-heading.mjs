@@ -20,9 +20,10 @@
  *      question itself, e.g. as the market Instrument's headline (the ZIP
  *      page) or a section heading.
  *   c. FAQ idiom — the page builds `buildMarketFaq(…)` and renders its items
- *      visibly through the route's `buildFaqItems(faqs…)` view helper (the
- *      /housing-market geo templates). The template is pinned inside
- *      lib/site/market-faq.ts below.
+ *      visibly: either `buildFaqItems(faqs…)` (housing-market geo) or
+ *      `faqs.map(` into a V3Quiet (neighborhood face is count + median, so
+ *      the question lives in the FAQ, not the Instrument headline). The
+ *      template is pinned inside lib/site/market-faq.ts below.
  *
  * FALSIFIED both ways on 2026-08-26: removing the question template from
  * app/zip/[zip]/page.tsx fails the zip row; restoring it passes.
@@ -95,7 +96,8 @@ for (const { grain, page, local } of GRAINS) {
   const kbIdiom = /<KbMarketHud[\s\S]{0,400}?geoName=/.test(pageText)
   const v3Idiom = everywhere.some((t) => QUESTION.test(t))
   const faqIdiom =
-    pageText.includes('buildMarketFaq(') && everywhere.some((t) => /buildFaqItems\(\s*faqs/.test(t))
+    pageText.includes('buildMarketFaq(') &&
+    everywhere.some((t) => /buildFaqItems\(\s*faqs/.test(t) || /faqs\.map\(/.test(t))
 
   checks.push({
     label: `${grain} grain (${page}) renders the market question`,
