@@ -165,7 +165,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     readCityOpenHouses(cityName),
     getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }).catch(() => []),
   ])
-  const [firstOh, ...restOh] = openHouseRows(openHouses)
   const [firstAct, ...restAct] = activityRows(buildActivityItems(communityActivity, { staleNewAfterDays: 21 }))
   const citySlug = community.citySlug
 
@@ -185,6 +184,16 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     ? childAliasesOf(registryEntry, registryEntry.subdivision_aliases)
     : []
   const publicName = registryEntry?.label ?? community.name
+  const placeAliases = [community.subdivision, publicName, ...childAliases]
+  const placeOpenHouses = openHouses.filter((oh) => {
+    const sub = oh.subdivisionName?.trim().toLowerCase()
+    if (!sub) return false
+    return placeAliases.some((alias) => {
+      const name = alias.trim().toLowerCase()
+      return Boolean(name) && (sub === name || sub.includes(name) || name.includes(sub))
+    })
+  })
+  const [firstOh, ...restOh] = openHouseRows(placeOpenHouses)
 
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
   const neighborhoodSlug = slug
@@ -406,7 +415,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     if (item.key === 'medClose') continue
     restMarket.push({ value: v3Text(item.value), label: v3Text(item.label) })
   }
-  for (const figure of buildPublicMixFigures(publicMix)) restMarket.push(figure)
+  for (const figure of buildPublicMixFigures(publicMix)) {
+    if (String(figure.value).startsWith('at least')) continue
+    restMarket.push(figure)
+  }
   const marketFigures = [...soldHistory, ...restMarket]
   const [firstMarketFigure, ...restMarketFigures] = marketFigures
 
@@ -440,7 +452,11 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     !boundaryReliable && fieldTiles.length > 0 ? communitySplitListings(fieldTiles) : undefined
   const hasMap = Boolean(mapPolygon) || fieldTiles.length > 0 || Boolean(splitListings?.length)
   const typeCovers = await withTimeoutFallback(
-    loadPlaceTypeCoverPhotos({ city: cityName, subdivision: community.subdivision }),
+    loadPlaceTypeCoverPhotos({
+      city: cityName,
+      subdivision: community.subdivision,
+      aliases: [community.subdivision, publicName, ...childAliases],
+    }),
     {},
     4500,
     'comm:typeThumbs',
@@ -471,14 +487,11 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       ? richContent.aboutProse
       : [community.description ?? registryEntry?.description ?? ''].filter((p): p is string => Boolean(p && p.trim())))
   const faceAbout = firstAboutParagraph(aboutParagraphs)
-  const knowledgeAbout = faceAbout
-    ? aboutParagraphs.filter((paragraph) => paragraph.trim() !== faceAbout)
-    : aboutParagraphs
 
   const knowledgeItems = buildPlaceKnowledge({
     name: publicName,
     city: cityName,
-    aboutParagraphs: knowledgeAbout,
+    aboutParagraphs: aboutParagraphs,
     content: richContent,
     registry: registryEntry ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
@@ -559,11 +572,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         ) : (
           <V3Breadcrumb trail={trail} />
         )}
-        {stagePosterSrc ? (
-          faceAbout ? (
-            <V3Quiet id="place-about" heading={`${publicName}`} headingLevel={2} items={placeItems.filter((item) => item.kind === 'prose')} />
-          ) : null
-        ) : (
+        {stagePosterSrc ? null : (
           <V3Quiet id="place" heading={headline} headingLevel={1} items={placeItems} />
         )}
         {stagePosterSrc ? null : (
@@ -577,7 +586,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           id="homes"
           city={cityName}
           subdivision={community.subdivision}
-          boundaryGeojson={mapPolygon}
+          boundaryGeojson={seedRing ? mapPolygon : null}
           seedRing={seedRing}
           placeQuery={publicName}
           listings={splitListings}
@@ -593,6 +602,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             eyebrow={v3Text(`${publicName} · Sold`)}
             headline={v3Text(marketHeadline)}
             figures={[firstMarketFigure, ...restMarketFigures]}
+            foldAfter={5}
             source={v3Text(
               `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
                 `detached single-family houses assigned to ${publicName} by boundary membership. ` +

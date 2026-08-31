@@ -113,6 +113,8 @@ describe('MapSearchView orchestrator', () => {
     expect(place).toMatch(/initialShapes=\{null\}/)
     expect(place).toMatch(/getViewportSearch\(viewportFilters, fetchBounds, seedPoly\)/)
     expect(place).toMatch(/seed\?\.searchRing/)
+    expect(place).toMatch(/pinBounds/)
+    expect(place).toMatch(/props\.seedRing === false \? null/)
     expect(place).toMatch(/initialPolygon=\{null\}/)
     expect(place).not.toMatch(/initialPolygon=\{seedPoly\}/)
     expect(place).toMatch(/Home type|SearchFilters/)

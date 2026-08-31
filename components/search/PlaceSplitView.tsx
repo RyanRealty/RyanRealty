@@ -70,9 +70,10 @@ export async function PlaceSplitView(props: {
   degraded?: boolean
   searchParams?: Record<string, string | string[] | undefined>
 }) {
+  const pinBounds = props.bounds ?? boundsFromListings(props.listings ?? [])
   const seed =
     props.seedRing === false ? null : publishPlaceSplitSeed(props.boundaryGeojson ?? null)
-  const seedBounds = props.bounds ?? seed?.bounds ?? null
+  const seedBounds = seed?.bounds ?? pinBounds
   const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
   const seedPoly =
     seed?.searchRing && seed.searchRing.length >= 3
@@ -112,12 +113,13 @@ export async function PlaceSplitView(props: {
 
   const empty = { listings: [] as ListingTileRow[], totalCount: 0, capped: false }
   const hasTypeFilter = Boolean(propertyType || propertySubTypes)
-  let listings = allTypes || hasTypeFilter ? undefined : props.listings
-  let totalCount = allTypes || hasTypeFilter ? undefined : props.totalCount
+  let listings: ListingTileRow[] | undefined
+  let totalCount: number | undefined
   let capped = false
   let degraded = props.degraded ?? false
 
-  if (listings == null) {
+  const mustSearch = hasTypeFilter || allTypes || props.listings == null
+  if (mustSearch) {
     const settled = await withTimeoutFallbackResult(
       getViewportSearch(viewportFilters, fetchBounds, seedPoly),
       empty,
@@ -128,6 +130,16 @@ export async function PlaceSplitView(props: {
     totalCount = settled.value.totalCount
     capped = settled.value.capped
     degraded = !settled.ok
+    if ((listings?.length ?? 0) === 0 && props.listings?.length) {
+      listings = props.listings
+      totalCount = props.totalCount ?? props.listings.length
+      degraded = props.degraded ?? degraded
+    }
+  } else {
+    // mustSearch was false, so props.listings is non-null — but tsc cannot
+    // narrow through the aliased condition, so coalesce for the compiler.
+    listings = props.listings ?? []
+    totalCount = props.totalCount ?? listings.length
   }
 
   const initialBounds = seedBounds ?? boundsFromListings(listings ?? []) ?? BEND_DEFAULT_BOUNDS

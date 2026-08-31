@@ -73,6 +73,10 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/isBoundaryReliable\(slug\)/)
     expect(SRC).toMatch(/!boundaryReliable && fieldTiles\.length > 0 \? communitySplitListings\(fieldTiles\)/)
     expect(SRC).toMatch(/resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
+    expect(SRC).toMatch(/boundaryGeojson=\{seedRing \? mapPolygon : null\}/)
+    expect(SRC).toMatch(/foldAfter=\{5\}/)
+    expect(SRC).toMatch(/startsWith\('at least'\)/)
+    expect(SRC).not.toMatch(/id="place-about"/)
   })
 
   it('prints Redmond 2J for Eagle Crest and does not invent an elementary', () => {
