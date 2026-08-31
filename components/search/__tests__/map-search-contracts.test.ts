@@ -111,6 +111,8 @@ describe('MapSearchView orchestrator', () => {
   it('place Split does not seed a drawable exclude area', () => {
     const place = readSrc('components/search/PlaceSplitView.tsx')
     expect(place).toMatch(/initialShapes=\{null\}/)
+    expect(place).toMatch(/getViewportSearch\(viewportFilters, fetchBounds, seedPoly\)/)
+    expect(place).toMatch(/initialPolygon=\{seedPoly\}/)
     expect(place).toMatch(/Home type|SearchFilters/)
   })
 

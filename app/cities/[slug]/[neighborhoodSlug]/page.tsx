@@ -38,8 +38,8 @@ import {
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
-import { communityImage, preferPlaceHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
-import { cityLibraryHero, cityStagePoster } from '@/app/cities/[slug]/_v3/city-opening'
+import { communityImage, preferPlaceHero } from '@/lib/geo-images'
+import { cityLibraryHero, cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
 import { buildYearSeries } from '@/lib/kb/year-series'
 // Row-to-prop shaping shared with the city + community place pages - one copy,
 // so a fix cannot land on one of the three and drift on the others.
@@ -315,20 +315,23 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     { label: cityName, href: `/cities/${citySlug}` },
     { label: neighborhood.name },
   ]
-  const cityLibraryHeroUrl = await withTimeoutFallback(
-    cityLibraryHero(citySlug),
-    null,
-    3000,
-    'nbh:cityLibraryHero',
-  )
-  const stagePosterSrc = preferPlaceHeroOrNull(
-    communityImage(neighborhoodSlug) ?? communityImage(neighborhood.name),
-    cityStagePoster(indexCities[citySlug], cityLibraryHeroUrl),
-  )
+  const ownedStill = communityImage(neighborhoodSlug) ?? communityImage(neighborhood.name)
+  const [cityLibraryHeroUrl, nbhLibraryHeroUrl] = await Promise.all([
+    withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'nbh:cityLibraryHero'),
+    withTimeoutFallback(
+      (async () =>
+        (await placeLibraryHero('neighborhood', neighborhoodSlug)) ??
+        (await placeLibraryHero('neighborhood', boundaryNeighborhoodSlug)))(),
+      null,
+      3000,
+      'nbh:libraryHero',
+    ),
+  ])
+  const stagePosterSrc =
+    cityStagePoster(ownedStill, nbhLibraryHeroUrl) ??
+    cityStagePoster(indexCities[citySlug], cityLibraryHeroUrl)
 
   /* ── The market, off the ONE leftover pile ─────────────────────────────── */
-
-  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
 
   const leftoverStamp = nbhMt?.headlines?.computedAt ?? nbhMt?.inventory?.computedAt ?? null
   const marketFaqInput: MarketFaqInput = {
@@ -337,7 +340,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     activeCount: hud.active,
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
-    monthsOfSupply: mosRaw,
+    monthsOfSupply: null,
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: publicPace.closedCount ?? null,
     refreshedAt: leftoverStamp,

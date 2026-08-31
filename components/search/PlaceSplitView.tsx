@@ -73,6 +73,8 @@ export async function PlaceSplitView(props: {
     props.seedRing === false ? null : publishPlaceSplitSeed(props.boundaryGeojson ?? null)
   const seedBounds = props.bounds ?? seed?.bounds ?? null
   const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
+  const seedPoly =
+    seed?.shapes[0]?.type === 'polygon' ? seed.shapes[0].points : null
 
   const sp = props.searchParams ?? {}
   const rawType = firstParam(sp.propertyType)
@@ -112,7 +114,7 @@ export async function PlaceSplitView(props: {
 
   if (listings == null) {
     const settled = await withTimeoutFallbackResult(
-      getViewportSearch(viewportFilters, fetchBounds, null),
+      getViewportSearch(viewportFilters, fetchBounds, seedPoly),
       empty,
       4000,
       'place-split-viewport',
@@ -167,6 +169,7 @@ export async function PlaceSplitView(props: {
         likedListingKeys={session?.user ? likedKeys : []}
         placeQuery={props.placeQuery}
         boundaryGeojson={props.boundaryGeojson ?? undefined}
+        initialPolygon={seedPoly}
         initialShapes={null}
         nowMs={Date.now()}
         initialDegraded={degraded}

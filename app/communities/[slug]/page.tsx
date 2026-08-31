@@ -61,8 +61,6 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
@@ -351,16 +349,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
 
   const activeCount: number | null = hud.active
 
-  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
-  const verdict = marketVerdict(mosRaw)
-  const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
-  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
-  const marketHeadline = hasVerdict
-    ? `Is ${publicName} a buyer's or seller's market?`
-    : `The ${publicName} market`
-  const verdictSentence = hasVerdict
-    ? `${publicName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
-    : null
+  const marketHeadline = `The ${publicName} market`
 
   const leftoverStamp =
     commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null
@@ -373,7 +362,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     activeCount: hud.active,
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
-    monthsOfSupply: mosRaw,
+    monthsOfSupply: null,
     medianDaysToPending: hud.daysToPending,
     medianDaysOnMarket: null,
     refreshedAt: leftoverStamp,
@@ -596,13 +585,11 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             level={2}
             eyebrow={v3Text(`${publicName} · Sold`)}
             headline={v3Text(marketHeadline)}
-            note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
             source={v3Text(
               `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
                 `detached single-family houses assigned to ${publicName} by boundary membership. ` +
-                `Sold history is leftover, not a city monthly chart.` +
-                (mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''),
+                `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
             )}
             chart={medianChart}
             cards={marketCards}

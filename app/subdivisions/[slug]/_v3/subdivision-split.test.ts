@@ -135,4 +135,9 @@ describe('subdivision page first screen', () => {
     expect(code).toMatch(/seedRing=\{seedRing\}/)
     expect(code).toMatch(/hasRealPlatPolygon\(/)
   })
+
+  it('Stage is a place-owned still, not a listing photo of one house', () => {
+    expect(code).toMatch(/placeLibraryHero\('subdivision'/)
+    expect(code).not.toMatch(/splitListings\.find\(\(row\) => row\.PhotoURL\)\?\.PhotoURL/)
+  })
 })

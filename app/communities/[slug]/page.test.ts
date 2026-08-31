@@ -52,6 +52,9 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/leftoverSoldHistoryFigures\(hud, publicPace\)/)
     expect(SRC).not.toMatch(/<PlaceFaceStrip[^>]*>[\s\S]{0,80}monthsOfSupply/)
     expect(SRC).not.toMatch(/publishPlaceFace\([\s\S]{0,120}grain: 'city'/)
+    expect(SRC).toMatch(/monthsOfSupply:\s*null/)
+    expect(SRC).toMatch(/The \$\{publicName\} market/)
+    expect(SRC).not.toMatch(/has \$\{mosLabel\} months of supply/)
   })
 
   it('opens on Split, not V3Stage/V3Field as the cage', () => {

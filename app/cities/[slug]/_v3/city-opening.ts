@@ -24,6 +24,18 @@ export async function cityLibraryHero(slug: string): Promise<string | null> {
   })
 }
 
+/** Geo-strict library still for a neighborhood, community, or plat. No parent city. */
+export async function placeLibraryHero(
+  grain: 'neighborhood' | 'community' | 'subdivision',
+  slug: string,
+): Promise<string | null> {
+  return getSurfaceImage('hero', {
+    geoTags: [slug],
+    seed: `${grain}:${slug}`,
+    geoOnly: true,
+  })
+}
+
 export function cityStagePoster(liveHero?: string | null, libraryHero?: string | null): string | null {
   return imaginePlaceStill(libraryHero, liveHero) ?? preferPlaceHeroOrNull(liveHero, libraryHero)
 }

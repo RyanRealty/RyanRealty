@@ -102,7 +102,8 @@ import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './Subd
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
 import { getGeoBoundaryMapData, getListingTiles, getMarketStats, getCityHeroUrlsBySlug } from '@/lib/data'
-import { cityLibraryHero, cityStagePoster } from '@/app/cities/[slug]/_v3/city-opening'
+import { cityLibraryHero, cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
+import { communityImage } from '@/lib/geo-images'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import {
   EMPTY_SUBDIVISION_COUNTS,
@@ -398,14 +399,19 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   })
   const headline = `${displayName} homes for sale`
   const emptyHeroes: Record<string, string> = {}
-  const [cityHeroes, cityLibraryHeroUrl] = citySlug
+  const [cityHeroes, cityLibraryHeroUrl, platLibraryHeroUrl] = citySlug
     ? await Promise.all([
         withTimeoutFallback(getCityHeroUrlsBySlug(), emptyHeroes, 3000, 'sub:cityHeroes'),
         withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'sub:cityLibraryHero'),
+        withTimeoutFallback(placeLibraryHero('subdivision', slug), null, 3000, 'sub:libraryHero'),
       ])
-    : [emptyHeroes, null]
+    : [
+        emptyHeroes,
+        null,
+        await withTimeoutFallback(placeLibraryHero('subdivision', slug), null, 3000, 'sub:libraryHero'),
+      ]
   const stagePosterSrc =
-    splitListings.find((row) => row.PhotoURL)?.PhotoURL ??
+    cityStagePoster(communityImage(slug), platLibraryHeroUrl) ??
     cityStagePoster(citySlug ? cityHeroes[citySlug] : null, cityLibraryHeroUrl)
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref

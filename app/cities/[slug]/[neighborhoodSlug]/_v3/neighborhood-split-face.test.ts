@@ -98,6 +98,8 @@ describe('neighborhood page first screen', () => {
     expect(code).toMatch(/boundaryGeojson=\{boundaryMapData\.polygon\}/)
     expect(code).toMatch(/cityStagePoster\(indexCities\[citySlug\]/)
     expect(code).toMatch(/cityLibraryHero\(citySlug\)/)
+    expect(code).toMatch(/placeLibraryHero\('neighborhood'/)
+    expect(code).toMatch(/monthsOfSupply:\s*null/)
     expect(code).not.toMatch(/<V3Field\b/)
     expect(code).not.toMatch(/<V3Stage\b/)
     expect(code).toMatch(/neighborhoodHeadline\(\s*neighborhood\.name\s*\)/)
