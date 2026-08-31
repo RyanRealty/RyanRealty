@@ -137,6 +137,12 @@ export function marketAreaName(slug: string | null): string | null {
   return COMMUNITIES.find((c) => c.slug === slug)?.name ?? null
 }
 
+/** GIS polygon for a Bend neighborhood mesh slug, or null. */
+export function marketAreaGeometry(slug: string | null): Geometry | null {
+  if (!slug) return null
+  return COMMUNITIES.find((c) => c.slug === slug)?.geometry ?? null
+}
+
 const EARTH_RADIUS_MILES = 3958.7613
 
 /** Straight-line miles between two coordinates — the distance Fannie Mae requires be reported. */

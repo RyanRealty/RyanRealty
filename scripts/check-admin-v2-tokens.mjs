@@ -520,6 +520,7 @@ const SCAN_DIRS = [
   'components/admin/crm/EmailComposer.tsx',
   'components/admin/crm/MergeContactDialog.tsx',
   'components/admin/crm/OwnedHomeCard.tsx',
+  'components/admin/crm/OwnedHomeMap.client.tsx',
   'components/admin/crm/RecipientField.tsx',
   'components/admin/crm/ReportSubscriptionsPanel.tsx',
   'components/admin/crm/SaveAsTemplateDialog.tsx',

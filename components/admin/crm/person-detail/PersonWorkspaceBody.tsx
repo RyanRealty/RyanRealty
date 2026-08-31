@@ -161,6 +161,9 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
   const homeLat = typeof geo?.latitude === 'number' ? geo.latitude : null
   const homeLng = typeof geo?.longitude === 'number' ? geo.longitude : null
   const homeAddress = geo?.formatted_address ?? geo?.source_address ?? null
+  const personPlace = person as { neighborhood_slug?: string | null; subdivision?: string | null }
+  const neighborhoodSlug = personPlace.neighborhood_slug ?? null
+  const subdivision = personPlace.subdivision ?? geo?.subdivision ?? null
 
   // Critical path only: SendPanel + composers + conversation + sidebar chrome.
   // Homes / engagement / mobile calendar stream in nested Suspense regions.
@@ -565,6 +568,8 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
                 homeLat={homeLat}
                 homeLng={homeLng}
                 homeAddress={homeAddress}
+                neighborhoodSlug={neighborhoodSlug}
+                subdivision={subdivision}
                 contactCmas={contactCmas}
                 contactBpos={contactBpos}
                 reviewableCmaId={reviewableCmaId}

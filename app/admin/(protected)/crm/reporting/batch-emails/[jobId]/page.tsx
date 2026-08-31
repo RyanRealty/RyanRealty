@@ -12,6 +12,7 @@ import { requireCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
   getBulkEmailCampaignDetail,
+  sortCampaignRecipients,
   type CampaignRecipient,
 } from '@/lib/data/crm/getBulkEmailCampaigns'
 import { formatDate, formatDateTime } from '@/lib/format/date'
@@ -103,6 +104,15 @@ function stamp(iso: string | null): string {
   return iso ? formatDateTime(iso) : '—'
 }
 
+function clickHost(url: string | null): string | null {
+  if (!url) return null
+  try {
+    return new URL(url).host.replace(/^www\./, '')
+  } catch {
+    return null
+  }
+}
+
 export default async function BatchEmailRecipientsPage({
   params,
   searchParams,
@@ -162,12 +172,15 @@ export default async function BatchEmailRecipientsPage({
   }
 
   const { campaign, recipients } = detail
-  const filtered = recipients.filter((r) => {
-    if (!matchesWho(r, who)) return false
-    if (!q) return true
-    const name = (r.name ?? '').toLowerCase()
-    return r.email.includes(q) || name.includes(q)
-  })
+  const filtered = sortCampaignRecipients(
+    recipients.filter((r) => {
+      if (!matchesWho(r, who)) return false
+      if (!q) return true
+      const name = (r.name ?? '').toLowerCase()
+      return r.email.includes(q) || name.includes(q)
+    }),
+  )
+  const clickers = recipients.filter((r) => r.clickCount > 0).length
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageSafe = Math.min(page, pageCount)
   const shown = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE)
@@ -202,11 +215,10 @@ export default async function BatchEmailRecipientsPage({
       <VerdictLine tone="ok">
         <b>{campaign.subject?.trim() || 'Untitled send'}</b>
         {'. '}
-        {eng.sent.toLocaleString('en-US')} sent
-        {eng.delivered > 0 ? `, ${eng.delivered.toLocaleString('en-US')} delivered` : ''}
-        {eng.bounced > 0 ? `, ${eng.bounced.toLocaleString('en-US')} bounced` : ''}
+        <b>{clickers.toLocaleString('en-US')} clicked</b>
         {eng.opened > 0 ? `, ${eng.opened.toLocaleString('en-US')} opened` : ''}
-        {eng.clicked > 0 ? `, ${eng.clicked.toLocaleString('en-US')} clicked` : ''}
+        {eng.sent > 0 ? `, ${eng.sent.toLocaleString('en-US')} sent` : ''}
+        {eng.bounced > 0 ? `, ${eng.bounced.toLocaleString('en-US')} bounced` : ''}
         {'. '}
         {formatDate(campaign.createdAtIso)}
       </VerdictLine>
@@ -244,6 +256,8 @@ export default async function BatchEmailRecipientsPage({
 
       <SectionHead>
         {filtered.length.toLocaleString('en-US')} recipient{filtered.length === 1 ? '' : 's'}
+        {' · '}
+        clickers first
       </SectionHead>
 
       {shown.length === 0 ? (
@@ -265,9 +279,20 @@ export default async function BatchEmailRecipientsPage({
               <div style={ROW} role="row" key={r.email}>
                 <span role="cell">
                   {r.personId != null ? (
-                    <Link href={`/admin/people/${r.personId}#emails`} style={LINK}>
-                      {r.name || r.email}
-                    </Link>
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Link href={`/admin/people/${r.personId}#activity`} style={LINK}>
+                        {r.name || r.email}
+                      </Link>
+                      <span style={{ ...MUTED, fontSize: 'var(--a-text-xs)' }}>
+                        <Link href={`/admin/people/${r.personId}#activity`} style={LINK}>
+                          Activity
+                        </Link>
+                        {' · '}
+                        <Link href={`/admin/people/${r.personId}#home`} style={LINK}>
+                          Home
+                        </Link>
+                      </span>
+                    </span>
                   ) : (
                     r.name || '—'
                   )}
@@ -284,17 +309,22 @@ export default async function BatchEmailRecipientsPage({
                 <span role="cell" style={{ ...MUTED, fontVariantNumeric: 'tabular-nums' }}>
                   {stamp(r.openedAt)}
                 </span>
-                <span role="cell" style={{ ...MUTED, fontVariantNumeric: 'tabular-nums' }}>
-                  {r.clickedAt ? (
-                    r.clickUrl ? (
-                      <a href={r.clickUrl} style={LINK}>
-                        {stamp(r.clickedAt)}
-                      </a>
-                    ) : (
-                      stamp(r.clickedAt)
-                    )
+                <span role="cell" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {r.clickCount > 0 ? (
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <span style={{ fontWeight: 600, color: 'var(--a-text)' }}>
+                        {r.clickCount.toLocaleString('en-US')} click{r.clickCount === 1 ? '' : 's'}
+                      </span>
+                      {r.clickUrl ? (
+                        <a href={r.clickUrl} style={{ ...LINK, fontSize: 'var(--a-text-xs)' }}>
+                          {clickHost(r.clickUrl) ?? stamp(r.clickedAt)}
+                        </a>
+                      ) : (
+                        <span style={MUTED}>{stamp(r.clickedAt)}</span>
+                      )}
+                    </span>
                   ) : (
-                    '—'
+                    <span style={MUTED}>—</span>
                   )}
                 </span>
                 <span role="cell" style={{ ...MUTED, fontVariantNumeric: 'tabular-nums' }}>

@@ -14,7 +14,7 @@ import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
 import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
 import { ContactProspectHistoryCard } from '@/components/admin/crm/ContactProspectHistoryCard'
-import { getOwnedHomeMatches, type OwnedHomeMatch } from '@/lib/data'
+import { getOwnedHomeMatches, getOwnedHomePlace, type OwnedHomeMatch } from '@/lib/data'
 import { getOwnedHomeMedia } from '@/lib/crm/owned-home-media'
 import { getContactProspectStory } from '@/lib/data/crm/getContactProspectStory'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
@@ -27,6 +27,8 @@ export async function PersonHomesRegion({
   homeLat,
   homeLng,
   homeAddress,
+  neighborhoodSlug,
+  subdivision,
   contactCmas,
   contactBpos,
   reviewableCmaId,
@@ -36,18 +38,26 @@ export async function PersonHomesRegion({
   homeLat: number | null
   homeLng: number | null
   homeAddress: string | null
+  neighborhoodSlug: string | null
+  subdivision: string | null
   contactCmas: ContactCma[]
   contactBpos: ContactBpo[]
   /** Ready CMA delivery id from identity core; only applied when next step is CMA. */
   reviewableCmaId: string | null
 }) {
-  const [nextStep, homeMedia, homeMatches, prospectStories] = await Promise.all([
+  const [nextStep, homeMedia, homeMatches, prospectStories, place] = await Promise.all([
     getContactNextStep(personId),
     homeLat !== null && homeLng !== null ? getOwnedHomeMedia(homeLat, homeLng) : Promise.resolve(null),
     homeLat !== null && homeLng !== null
       ? getOwnedHomeMatches(homeLat, homeLng, homeAddress)
       : Promise.resolve([] as OwnedHomeMatch[]),
     getContactProspectStory({ personId, fubLegacyId }),
+    getOwnedHomePlace({
+      lat: homeLat,
+      lng: homeLng,
+      neighborhoodSlug,
+      subdivision,
+    }),
   ])
 
   const confirmedMatches = homeMatches.filter((m) => m.addressMatched)
@@ -61,7 +71,7 @@ export async function PersonHomesRegion({
 
   return (
     <>
-      {nextStep.ownsHome && homeAddress ? (
+      {homeAddress ? (
         <OwnedHomeCard
           address={homeAddress}
           photoUrl={homeMlsPhoto ?? homeMedia?.streetViewUrl ?? null}
@@ -75,6 +85,17 @@ export async function PersonHomesRegion({
               .join(' · ') || null
           }
           mapsLink={homeMedia?.googleMapsLink ?? null}
+          mapUrl={homeMedia?.mapUrl ?? null}
+          lat={homeLat}
+          lng={homeLng}
+          placeLabel={
+            place
+              ? place.kind === 'subdivision'
+                ? `${place.label} subdivision`
+                : `${place.label} neighborhood`
+              : null
+          }
+          boundary={place?.geometry ?? null}
           onMarket={
             homeActiveListing
               ? `${homeActiveListing.status}${usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}`
@@ -86,11 +107,11 @@ export async function PersonHomesRegion({
         />
       ) : null}
       {contactCmas.length > 0 ? (
-        <div className={nextStep.ownsHome && homeAddress ? 'mt-2.5' : undefined}>
+        <div className={homeAddress ? 'mt-2.5' : undefined}>
           <ContactCmaCard personId={personId} cmas={contactCmas} />
         </div>
       ) : null}
-      <div className={nextStep.ownsHome && homeAddress ? 'mt-2.5' : undefined}>
+      <div className={homeAddress ? 'mt-2.5' : undefined}>
         <ContactBpoCard bpos={contactBpos} generateAction={startBpoForm.bind(null, personId)} />
       </div>
       {prospectStories.length > 0 ? (

@@ -19,6 +19,13 @@
  */
 import { createServiceClient } from '@/lib/data/client'
 import { addressMatches, parseStreetAddress } from '@/lib/data/crm/addressMatch'
+import {
+  marketAreaGeometry,
+  marketAreaName,
+  resolveMarketArea,
+} from '@/lib/cma/market-area'
+
+const SUBDIVISION_SENTINEL = /^(n\.?\/?a\.?|none|no|null|other|unknown|tbd|[-.*]+)$/i
 
 export type OwnedHomeMatch = {
   listingKey: string | null
@@ -94,4 +101,45 @@ export async function getOwnedHomeMatches(
       addressMatched,
     }
   })
+}
+
+export type OwnedHomePlace = {
+  kind: 'subdivision' | 'neighborhood'
+  label: string
+  geometry: { type: string; coordinates: unknown } | null
+}
+
+/**
+ * Place outline for the home they own: subdivision polygon when the MLS name
+ * maps to a community boundary, otherwise the Bend GIS neighborhood mesh.
+ */
+export async function getOwnedHomePlace(args: {
+  lat: number | null
+  lng: number | null
+  neighborhoodSlug: string | null
+  subdivision: string | null
+}): Promise<OwnedHomePlace | null> {
+  const sub = args.subdivision?.trim() ?? ''
+  if (sub && !SUBDIVISION_SENTINEL.test(sub)) {
+    const sb = createServiceClient()
+    const { data } = await sb
+      .from('communities')
+      .select('name, boundary_geojson')
+      .ilike('name', sub)
+      .maybeSingle()
+    const geo = (data as { name?: string; boundary_geojson?: unknown } | null)?.boundary_geojson
+    if (geo && typeof geo === 'object' && (geo as { type?: string }).type) {
+      return {
+        kind: 'subdivision',
+        label: (data as { name?: string }).name?.trim() || sub,
+        geometry: geo as { type: string; coordinates: unknown },
+      }
+    }
+  }
+
+  const slug = (args.neighborhoodSlug ?? '').trim() || resolveMarketArea(args.lat, args.lng)
+  const geometry = marketAreaGeometry(slug)
+  const label = marketAreaName(slug)
+  if (!geometry || !label) return null
+  return { kind: 'neighborhood', label, geometry }
 }

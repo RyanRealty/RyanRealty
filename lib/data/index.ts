@@ -137,8 +137,8 @@ export {
 export type { ListingScope } from '@/lib/data/listings/service-area'
 
 // CRM — owned-home proximity match (person page)
-export { getOwnedHomeMatches } from '@/lib/data/crm/getOwnedHome'
-export type { OwnedHomeMatch } from '@/lib/data/crm/getOwnedHome'
+export { getOwnedHomeMatches, getOwnedHomePlace } from '@/lib/data/crm/getOwnedHome'
+export type { OwnedHomeMatch, OwnedHomePlace } from '@/lib/data/crm/getOwnedHome'
 export { getViewedListingsForLead } from '@/lib/data/crm/getViewedListings'
 export type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 

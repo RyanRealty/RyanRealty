@@ -100,12 +100,28 @@ export type CampaignRecipient = {
   deliveredAt: string | null
   openedAt: string | null
   clickedAt: string | null
+  /** Distinct click events for this send. 0 when they never clicked. */
+  clickCount: number
   bouncedAt: string | null
   unsubscribedAt: string | null
   latestEvent: EmailEvent
   clickUrl: string | null
   lastSiteAt: string | null
   visitedAfterSend: boolean
+}
+
+/** Clickers first, then site visits after the send, then opens. PURE. */
+export function recipientHeat(r: CampaignRecipient): number {
+  return r.clickCount * 1_000_000 + (r.visitedAfterSend ? 10_000 : 0) + (r.openedAt ? 100 : 0) + (r.deliveredAt ? 1 : 0)
+}
+
+/** Hottest engagement first so "who clicked" is the top of the list. PURE. */
+export function sortCampaignRecipients(rows: CampaignRecipient[]): CampaignRecipient[] {
+  return [...rows].sort((a, b) => {
+    const heat = recipientHeat(b) - recipientHeat(a)
+    if (heat !== 0) return heat
+    return (a.name ?? a.email).localeCompare(b.name ?? b.email)
+  })
 }
 
 /**
@@ -130,6 +146,7 @@ export function foldCampaignRecipients(rows: EventRow[]): CampaignRecipient[] {
         deliveredAt: null,
         openedAt: null,
         clickedAt: null,
+        clickCount: 0,
         bouncedAt: null,
         unsubscribedAt: null,
         latestEvent: ev,
@@ -145,7 +162,10 @@ export function foldCampaignRecipients(rows: EventRow[]): CampaignRecipient[] {
     if (ev === 'sent' && (!rec.sentAt || at < rec.sentAt)) rec.sentAt = at
     if (ev === 'delivered' && (!rec.deliveredAt || at < rec.deliveredAt)) rec.deliveredAt = at
     if (ev === 'open' && (!rec.openedAt || at < rec.openedAt)) rec.openedAt = at
-    if (ev === 'click' && (!rec.clickedAt || at < rec.clickedAt)) rec.clickedAt = at
+    if (ev === 'click') {
+      rec.clickCount += 1
+      if (!rec.clickedAt || at > rec.clickedAt) rec.clickedAt = at
+    }
     if (ev === 'bounce' && (!rec.bouncedAt || at < rec.bouncedAt)) rec.bouncedAt = at
     if (ev === 'unsubscribe' && (!rec.unsubscribedAt || at < rec.unsubscribedAt)) rec.unsubscribedAt = at
     if (ev === 'click') {
@@ -157,7 +177,7 @@ export function foldCampaignRecipients(rows: EventRow[]): CampaignRecipient[] {
       (LATEST_RANK[ev] === LATEST_RANK[rec.latestEvent] && at >= (rec.clickedAt || rec.openedAt || rec.deliveredAt || rec.sentAt || ''))
     if (better) rec.latestEvent = ev
   }
-  return [...byEmail.values()].sort((a, b) => a.email.localeCompare(b.email))
+  return sortCampaignRecipients([...byEmail.values()])
 }
 
 /**
@@ -354,7 +374,7 @@ async function readBulkEmailCampaignDetail(
       )
     }
   }
-  return { unreadable: false, campaign, recipients }
+  return { unreadable: false, campaign, recipients: sortCampaignRecipients(recipients) }
 }
 
 export async function getBulkEmailCampaignDetail(

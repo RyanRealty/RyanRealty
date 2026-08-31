@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { foldCampaignRecipients, cohortEmailKeyForJob } from './getBulkEmailCampaigns'
+import {
+  foldCampaignRecipients,
+  cohortEmailKeyForJob,
+  sortCampaignRecipients,
+  recipientHeat,
+} from './getBulkEmailCampaigns'
 import { inheritEmailKeys } from './getEmailReporting'
 import type { RawEmailEventRow } from './getEmailReporting'
 
@@ -43,10 +48,37 @@ describe('foldCampaignRecipients', () => {
       deliveredAt: '2026-08-29T21:00:02.000Z',
       openedAt: '2026-08-29T21:05:00.000Z',
       clickedAt: '2026-08-29T21:06:00.000Z',
+      clickCount: 1,
       bouncedAt: null,
       latestEvent: 'click',
       clickUrl: 'https://ryan-realty.com/cities/bend',
     })
+  })
+
+  it('counts every click event, not just the first', () => {
+    const rows = foldCampaignRecipients([
+      ev({ event: 'sent' }),
+      ev({ event: 'click', occurred_at: '2026-08-29T21:06:00.000Z', meta: { url: 'https://ryan-realty.com/a' } }),
+      ev({ event: 'click', occurred_at: '2026-08-29T21:07:00.000Z', meta: { url: 'https://ryan-realty.com/b' } }),
+    ])
+    expect(rows[0]?.clickCount).toBe(2)
+  })
+
+  it('sorts clickers above visitors above opens', () => {
+    const opened = foldCampaignRecipients([ev({ recipient_email: 'open@x.com', event: 'open' })])[0]!
+    const clicked = foldCampaignRecipients([
+      ev({ recipient_email: 'click@x.com', event: 'click', occurred_at: '2026-08-29T21:06:00.000Z' }),
+      ev({ recipient_email: 'click@x.com', event: 'click', occurred_at: '2026-08-29T21:07:00.000Z' }),
+    ])[0]!
+    const visited = {
+      ...opened,
+      email: 'visit@x.com',
+      visitedAfterSend: true,
+      clickCount: 0,
+    }
+    const ranked = sortCampaignRecipients([opened, visited, clicked])
+    expect(ranked.map((r) => r.email)).toEqual(['click@x.com', 'visit@x.com', 'open@x.com'])
+    expect(recipientHeat(clicked)).toBeGreaterThan(recipientHeat(visited))
   })
 
   it('keeps two people as two rows even when they share an email_key', () => {
