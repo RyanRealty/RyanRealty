@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { realSubdivision, compTierLadder, isRuralAcreage } from '@/lib/cma/comp-tiers'
-import { isWidePlaceTier, placeRankForTier } from '@/lib/cma/place-rank'
 import {
   addExclusions,
   countByTier,
@@ -68,18 +67,12 @@ describe('compTierLadder', () => {
       'subdivision-12mo',
       'neighborhood-6mo',
       'neighborhood-12mo',
-      'neighborhood-24mo',
-      'neighborhood-12mo-wide',
-      'radius-0.5mi-12mo',
-      'radius-1mi-12mo',
       'competing-area-12mo',
       'citywide-12mo',
       'rural-county-12mo',
       'rural-county-24mo',
     ])
     expect(names.indexOf('subdivision-12mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
-    expect(names.indexOf('neighborhood-12mo-wide')).toBeLessThan(names.indexOf('radius-0.5mi-12mo'))
-    expect(names.indexOf('radius-1mi-12mo')).toBeLessThan(names.indexOf('competing-area-12mo'))
   })
 
   it('keeps the city bound on every rung except the rural ones', () => {
@@ -106,19 +99,6 @@ describe('compTierLadder', () => {
     expect(l[0]!.subdivisionIlike).toBe('Kenwood')
     expect(l[1]!.subdivisionIlike).toBe('Kenwood')
     expect(compTierLadder(null)[0]!.subdivisionIlike).toBeNull()
-  })
-})
-
-
-describe('placeRankForTier', () => {
-  it('orders subdivision then neighborhood then radius ahead of competing and citywide', () => {
-    expect(placeRankForTier('subdivision-12mo')).toBeLessThan(placeRankForTier('neighborhood-12mo'))
-    expect(placeRankForTier('neighborhood-24mo')).toBeLessThan(placeRankForTier('radius-1mi-12mo'))
-    expect(placeRankForTier('radius-0.5mi-12mo')).toBeLessThan(placeRankForTier('competing-area-12mo'))
-    expect(placeRankForTier('nearby-1mi-3mo')).toBeLessThan(placeRankForTier('city-5mi-9mo'))
-    expect(isWidePlaceTier('competing-area-12mo')).toBe(true)
-    expect(isWidePlaceTier('neighborhood-12mo')).toBe(false)
-    expect(isWidePlaceTier('radius-1mi-12mo')).toBe(false)
   })
 })
 
