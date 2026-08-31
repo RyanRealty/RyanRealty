@@ -1,6 +1,6 @@
 /**
- * Place-page Split seed. GeoJSON ring → DrawnShape[] + bbox.
- * Pass as MapSearchView initialShapes. Do not write ?shapes= onto the place URL.
+ * Place-page Split seed. GeoJSON ring → camera bbox + search ring.
+ * Do not seed a drawable Area. Do not write ?shapes= onto the place URL.
  */
 import type { DrawnShape, MapPolygonPoint } from '@/lib/map-polygon'
 import type { MapBounds } from '@/app/actions/listings'
@@ -8,6 +8,8 @@ import type { MapBounds } from '@/app/actions/listings'
 export type PlaceSplitSeed = {
   shapes: DrawnShape[]
   bounds: MapBounds
+  /** Evenly sampled outer ring for the viewport fetch. Not a drawable Area. */
+  searchRing: MapPolygonPoint[]
 }
 
 function visitLngLat(node: unknown, visit: (lng: number, lat: number) => void): void {
@@ -20,7 +22,17 @@ function visitLngLat(node: unknown, visit: (lng: number, lat: number) => void): 
   }
 }
 
-function ringToPoints(ring: unknown): MapPolygonPoint[] {
+function downsampleRing(points: MapPolygonPoint[], max: number): MapPolygonPoint[] {
+  if (points.length <= max) return points
+  const out: MapPolygonPoint[] = []
+  const last = points.length - 1
+  for (let i = 0; i < max; i++) {
+    out.push(points[Math.round((i / (max - 1)) * last)])
+  }
+  return out
+}
+
+function ringToPoints(ring: unknown, maxPoints: number): MapPolygonPoint[] {
   if (!Array.isArray(ring)) return []
   const points: MapPolygonPoint[] = []
   for (const pair of ring) {
@@ -36,7 +48,7 @@ function ringToPoints(ring: unknown): MapPolygonPoint[] {
     const last = points[points.length - 1]
     if (first.lat === last.lat && first.lng === last.lng) points.pop()
   }
-  return points.slice(0, 80)
+  return downsampleRing(points, maxPoints)
 }
 
 /** First outer ring of a Polygon or MultiPolygon. Miss returns null. */
@@ -49,9 +61,19 @@ export function geoJsonToDrawnShapes(geom: { type?: string; coordinates?: unknow
     const first = geom.coordinates[0]
     ring = Array.isArray(first) ? first[0] : null
   } else return null
-  const points = ringToPoints(ring)
+  const points = ringToPoints(ring, 80)
   if (points.length < 3) return null
   return [{ type: 'polygon', points, exclude: false }]
+}
+
+function outerRing(geom: { type?: string; coordinates?: unknown } | null | undefined): unknown {
+  if (!geom || !Array.isArray(geom.coordinates)) return null
+  if (geom.type === 'Polygon') return geom.coordinates[0]
+  if (geom.type === 'MultiPolygon') {
+    const first = geom.coordinates[0]
+    return Array.isArray(first) ? first[0] : null
+  }
+  return null
 }
 
 export function bboxFromGeometry(
@@ -77,6 +99,7 @@ export function publishPlaceSplitSeed(
 ): PlaceSplitSeed | null {
   const shapes = geoJsonToDrawnShapes(geom)
   const bounds = bboxFromGeometry(geom)
-  if (!shapes || !bounds) return null
-  return { shapes, bounds }
+  const searchRing = ringToPoints(outerRing(geom), 200)
+  if (!shapes || !bounds || searchRing.length < 3) return null
+  return { shapes, bounds, searchRing }
 }

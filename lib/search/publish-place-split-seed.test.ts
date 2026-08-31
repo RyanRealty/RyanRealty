@@ -27,4 +27,17 @@ describe('publishPlaceSplitSeed', () => {
     expect(publishPlaceSplitSeed(null)).toBeNull()
     expect(geoJsonToDrawnShapes({ type: 'Point', coordinates: [-121, 44] })).toBeNull()
   })
+
+  it('samples a long ring evenly instead of keeping only the first vertices', () => {
+    const ring: number[][] = []
+    for (let i = 0; i <= 400; i++) {
+      ring.push([-121.4 + i * 0.001, 44 + (i % 2) * 0.001])
+    }
+    ring.push(ring[0])
+    const seed = publishPlaceSplitSeed({ type: 'Polygon', coordinates: [ring] })
+    expect(seed?.searchRing.length).toBe(200)
+    expect(seed?.searchRing[0]?.lng).toBeCloseTo(-121.4)
+    expect(seed?.searchRing.at(-1)?.lng).toBeCloseTo(-121.4 + 400 * 0.001)
+    expect(seed?.shapes[0] && seed.shapes[0].type === 'polygon' ? seed.shapes[0].points.length : 0).toBe(80)
+  })
 })

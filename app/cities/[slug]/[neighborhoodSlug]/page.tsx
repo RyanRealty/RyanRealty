@@ -80,8 +80,8 @@ import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
-  searchParamsQuery,
 } from '@/lib/place/publish-place-type-cards'
+import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -104,6 +104,7 @@ import {
   PLACE_COUNT_TRACE,
   placeFigureRows,
   placeMedianChart,
+  placeMedianChartCaption,
   type CityPlaceItem,
 } from '@/app/cities/[slug]/_v3/city-sections'
 
@@ -292,6 +293,12 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         )
       : []
   const splitListings = inventoryOk ? neighborhoodSplitListings(listingTiles) : undefined
+  const typeCovers = await withTimeoutFallback(
+    loadPlaceTypeCoverPhotos({ city: cityName, neighborhood: neighborhood.name }),
+    {},
+    4500,
+    'nbh:typeThumbs',
+  )
 
   const face = publishPlaceFace({
     grain: 'neighborhood',
@@ -300,14 +307,13 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     medianList: inventoryOk ? inventory.medianListPrice : null,
   })
   const typeCards = publishPlaceTypeCards({
-    path: `/cities/${citySlug}/${neighborhoodSlug}`,
-    search: searchParamsQuery(sp),
+    browsePath: subdivisionListingsPath(cityName, neighborhood.name),
     placeName: neighborhood.name,
     sfrCount: inventoryOk ? inventory.activeCount : null,
     sfrMedian: inventoryOk ? inventory.medianListPrice : null,
     sfrMos: null,
     segments: publicSegments,
-    covers: placeTypeCoverPhotos(listingTiles),
+    covers: { ...placeTypeCoverPhotos(listingTiles), ...typeCovers },
   })
   const headline = neighborhoodHeadline(neighborhood.name)
   const trail = [
@@ -363,7 +369,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
   const medianChart = placeMonthly
     ? placeMedianChart(
         buildYearSeries(chartMonths.months, 5),
-        `Median close by month, Market Truth leftover, ${neighborhood.name}`,
+        placeMedianChartCaption(neighborhood.name),
       )
     : undefined
 
@@ -585,6 +591,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {firstAct ? (
           <V3Ledger
             id="activity"
+            layout="pulse"
             eyebrow={v3Text(activityEyebrow)}
             heading={v3Text('Latest market activity')}
             rows={[firstAct, ...restAct]}
@@ -598,6 +605,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {firstOh ? (
           <V3Ledger
             id="open-houses"
+            layout="walk"
             eyebrow={v3Text(`This week · ${cityName}`)}
             heading={v3Text('Open houses you can walk through')}
             rows={[firstOh, ...restOh]}
@@ -613,6 +621,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {firstGuide ? (
           <V3Ledger
             id="guides"
+            layout="magazine"
             eyebrow={v3Text('Guides and news')}
             heading={v3Text(`${neighborhood.name} guides`)}
             rows={[firstGuide, ...restGuide]}
@@ -636,6 +645,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {firstPeer ? (
           <V3Ledger
             id="peer-neighborhoods"
+            layout="places"
             eyebrow={v3Text(`${cityName} · Other neighborhoods`)}
             heading={v3Text('Explore nearby neighborhoods')}
             rows={[firstPeer, ...restPeer]}
@@ -655,6 +665,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {firstOther ? (
           <V3Ledger
             id="nearby"
+            layout="places"
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Other cities on the list')}
             rows={[firstOther, ...restOther]}

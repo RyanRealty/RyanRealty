@@ -144,7 +144,7 @@ describe('homepage Field stays on the barrel', () => {
   })
 
   it('does not print MARKET TRUTH LEFTOVER on the market chart', () => {
-    expect(PAGE).toContain('Median close by month, single-family, Central Oregon')
+    expect(PAGE).toContain("placeMedianChartCaption('Central Oregon')")
     expect(PAGE).not.toContain('Market Truth leftover')
   })
 

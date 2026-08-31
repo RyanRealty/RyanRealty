@@ -65,6 +65,14 @@ describe('city opening', () => {
     expect(page).toMatch(/getCityDetachedInventory\(slug\)/)
     expect(page).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'city',\s*geoSlug:\s*slug/)
   })
+
+  it('does not re-ask the market question the hero already answered', () => {
+    expect(page).toMatch(/const marketHeadline = `The \$\{cityName\} market`/)
+    expect(page).not.toMatch(/Is \$\{cityName\} a buyer's or seller's market\?/)
+    expect(page).toMatch(/placeMedianChartCaption\(cityName\)/)
+    expect(page).toMatch(/browsePath: homesForSalePath\(cityName\)/)
+    expect(page).toMatch(/layout="pulse"/)
+  })
 })
 
 describe('neighborhood pace', () => {

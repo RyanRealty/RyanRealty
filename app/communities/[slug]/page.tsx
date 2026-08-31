@@ -83,8 +83,9 @@ import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
-  searchParamsQuery,
 } from '@/lib/place/publish-place-type-cards'
+import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
+import { homesForSalePath } from '@/lib/slug'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -114,6 +115,7 @@ import {
   leftoverMarketFigures,
   CITY_PACE_KEYS_ON_THE_HUD,
   placeMedianChart,
+  placeMedianChartCaption,
 } from '@/app/cities/[slug]/_v3/city-sections'
 import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 
@@ -422,7 +424,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     ? undefined
     : placeMedianChart(
         buildYearSeries(chartMonths.months, 5),
-        `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${publicName}`,
+        placeMedianChartCaption(publicName),
       )
 
   const coreChartsRaw = chartIsCityLevel ? null : commCoreCharts
@@ -437,15 +439,20 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   const splitListings =
     !boundaryReliable && fieldTiles.length > 0 ? communitySplitListings(fieldTiles) : undefined
   const hasMap = Boolean(mapPolygon) || fieldTiles.length > 0 || Boolean(splitListings?.length)
+  const typeCovers = await withTimeoutFallback(
+    loadPlaceTypeCoverPhotos({ city: cityName, subdivision: community.subdivision }),
+    {},
+    4500,
+    'comm:typeThumbs',
+  )
   const typeCards = publishPlaceTypeCards({
-    path: `/communities/${slug}`,
-    search: searchParamsQuery(sp),
+    browsePath: homesForSalePath(cityName, community.subdivision),
     placeName: publicName,
     sfrCount: hud.active,
     sfrMedian: hud.medianList,
     sfrMos: null,
     segments: publicSegments,
-    covers: placeTypeCoverPhotos(splitListings ?? fieldTiles),
+    covers: { ...placeTypeCoverPhotos(splitListings ?? fieldTiles), ...typeCovers },
   })
 
   const pageFaqs = reconcilePlaceHoaFaq(
@@ -634,6 +641,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         {firstOh ? (
           <V3Ledger
             id="open-houses"
+            layout="walk"
             eyebrow={v3Text(`This week · ${cityName}`)}
             heading={v3Text('Open houses you can walk through')}
             rows={[firstOh, ...restOh]}
@@ -645,6 +653,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         {firstAct ? (
           <V3Ledger
             id="activity"
+            layout="pulse"
             eyebrow={v3Text(`Live · ${cityName}`)}
             heading={v3Text('Latest market activity')}
             rows={[firstAct, ...restAct]}

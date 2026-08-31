@@ -195,6 +195,9 @@ components/SearchMapClustered.tsx
 # isolates these from Tailwind/CSS-var inheritance. Canonical source of
 # truth for all inline hex on map surfaces; all map components import from here.
 lib/maps/markers.ts
+# Place-type pin fills. Same Maps-overlay isolation as markers.ts.
+# Duplicated as --place-type-* in components/site/v3/tokens.css for type cards.
+lib/place/place-type-style.ts
 
 # NeighborhoodMap — the InfoWindow renders inside Google Maps' isolated DOM
 # context and therefore needs literal hex for brand colors, same pattern as

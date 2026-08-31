@@ -44,7 +44,7 @@ describe('homepage market figures stay on the leftover pile', () => {
   })
 
   it('does not print MARKET TRUTH LEFTOVER on the year overlay caption', () => {
-    expect(SRC).toContain('Median close by month, single-family, Central Oregon')
+    expect(SRC).toContain("placeMedianChartCaption('Central Oregon')")
     expect(SRC).not.toContain('Market Truth leftover')
   })
 })

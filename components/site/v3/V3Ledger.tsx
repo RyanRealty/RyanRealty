@@ -199,6 +199,12 @@ type V3LedgerBase = {
   /** Sets the section id and, from it, the heading id used by aria-labelledby. */
   id?: string
   className?: string
+  /**
+   * Visual rhythm only. Rows stay doors. Default `list` is the hairline
+   * column. Place extras use the others so activity, open houses, guides,
+   * and other cities are not four copies of one row.
+   */
+  layout?: 'list' | 'pulse' | 'walk' | 'magazine' | 'places'
 }
 
 /**
@@ -280,6 +286,7 @@ export function V3Ledger(props: V3LedgerProps) {
     footnote,
     id,
     className,
+    layout = 'list',
   } = props
 
   const rows: readonly V3LedgerRow[] = props.rows
@@ -305,7 +312,12 @@ export function V3Ledger(props: V3LedgerProps) {
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-ledger', className)}
+      className={cn(
+        V3_ROOT_CLASS,
+        'v3-ledger',
+        layout !== 'list' && `v3-ledger--${layout}`,
+        className,
+      )}
       aria-labelledby={headingId}
       aria-label={headingId ? undefined : heading}
     >

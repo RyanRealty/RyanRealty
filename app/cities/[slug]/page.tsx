@@ -73,7 +73,6 @@ import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict } from '@/lib/market/classify'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -101,8 +100,8 @@ import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
-  searchParamsQuery,
 } from '@/lib/place/publish-place-type-cards'
+import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
@@ -123,6 +122,7 @@ import {
   marketAbsenceItems,
   placeFigureRows,
   placeMedianChart,
+  placeMedianChartCaption,
   type CityCommunityItem,
   type CityPlaceItem,
 } from './_v3/city-sections'
@@ -293,10 +293,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video')
   const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
   const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
-  const typeThumbs = await withTimeoutFallback(
-    getCityListings(cityName, { status: 'active', sort: 'newest', limit: 80 }),
-    [],
-    3500,
+  const typeCovers = await withTimeoutFallback(
+    loadPlaceTypeCoverPhotos({ city: cityName }),
+    {},
+    4500,
     'city:typeThumbs',
   )
 
@@ -312,14 +312,13 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   })
   const face = publishPlaceFace({ grain: 'city', hud })
   const typeCards = publishPlaceTypeCards({
-    path: `/cities/${slug}`,
-    search: searchParamsQuery(sp),
+    browsePath: homesForSalePath(cityName),
     placeName: cityName,
     sfrCount: hud.active,
     sfrMedian: hud.medianList,
     sfrMos: hud.monthsSupply,
     segments: publicSegments,
-    covers: placeTypeCoverPhotos(typeThumbs),
+    covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
   })
   const trail = [{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]
   const headline = `${cityName} homes for sale`
@@ -328,10 +327,8 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   // never a snapshot all-count, never a `?? 0`.
   const activeCount: number | null = hud.active
 
-  // THE ONE VERDICT DERIVATION. hud.monthsSupply is the published raw value;
-  // classify raw, format only for display.
+  // Face already classifies MOS. Keep the formatted label for the source line.
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
-  const verdict = marketVerdict(mosRaw)
   const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
 
   // The as-of stamp is leftover membership's own computed_at, so it names the
@@ -389,22 +386,16 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   figures.push(...placeMartFigures(mart, `/housing-market/history?year=${PLACE_MART_YEAR}`))
   const [firstMarketFigure, ...restMarketFigures] = figures
 
-  // THE MARKET QUESTION (Matt 2026-08-26: it stays on all five place grains).
-  // Question only when the verdict answers it; the answer is the note beneath.
-  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
-  const marketHeadline = hasVerdict
-    ? `Is ${cityName} a buyer's or seller's market?`
-    : `The ${cityName} market`
-  const verdictSentence = hasVerdict
-    ? `${cityName} has ${mosLabel} months of supply, which is a ${verdict.label}.`
-    : null
+  // Face already prints the verdict. Do not ask the same question here.
+  // The FAQ still carries "buyer's or seller's" as a question.
+  const marketHeadline = `The ${cityName} market`
 
   // Median-close year overlay - leftover months first, cache months otherwise,
   // in-progress month dropped so a partial month never plots as a decline.
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${cityName}`,
+    placeMedianChartCaption(cityName),
   )
 
   // The chart room: the tabbed core trends plus the approved town-comparison
@@ -627,16 +618,14 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           searchParams={sp}
         />
 
-        {/* Pattern 1, Instrument. The market question is the section headline,
-            the verdict sentence is the answer beneath it, the KPI row is the
-            leftover pile, and the chart room rides as cards. */}
+        {/* Pattern 1, Instrument. Face already answers the market question.
+            This section is leftover figures + charts, not the question again. */}
         {firstMarketFigure ? (
           <V3Instrument
             id="market"
             level={2}
             eyebrow={v3Text(`${cityName} · The market`)}
             headline={v3Text(marketHeadline)}
-            note={verdictSentence ? v3Text(verdictSentence) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
             /* The HUD answers the market question; the ~26-figure long tail
                (pace, mix, finance, bed-count shares) folds behind "All N
@@ -690,6 +679,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {firstRail ? (
           <V3Ledger
             id="communities"
+            layout="places"
             eyebrow={v3Text(`${cityName} · Communities`)}
             heading={v3Text('Communities and subdivisions')}
             rows={[firstRail, ...restRail]}
@@ -709,6 +699,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {firstGolf ? (
           <V3Ledger
             id="communities-ledger"
+            layout="places"
             eyebrow={v3Text(`${cityName} · Communities`)}
             heading={v3Text('Golf and master-planned communities')}
             rows={[firstGolf, ...restGolf]}
@@ -724,6 +715,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {firstAct ? (
           <V3Ledger
             id="activity"
+            layout="pulse"
             eyebrow={v3Text(`Live · ${cityName}`)}
             heading={v3Text('Latest market activity')}
             rows={[firstAct, ...restAct]}
@@ -735,6 +727,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {firstOh ? (
           <V3Ledger
             id="open-houses"
+            layout="walk"
             eyebrow={v3Text(`This week · ${cityName}`)}
             heading={v3Text('Open houses you can walk through')}
             rows={[firstOh, ...restOh]}
@@ -754,6 +747,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {firstGuide ? (
           <V3Ledger
             id="guides"
+            layout="magazine"
             eyebrow={v3Text('Guides and news')}
             heading={v3Text(`${cityName} guides`)}
             rows={[firstGuide, ...restGuide]}
@@ -767,6 +761,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         {firstOther ? (
           <V3Ledger
             id="nearby"
+            layout="places"
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Explore other cities')}
             rows={[firstOther, ...restOther]}

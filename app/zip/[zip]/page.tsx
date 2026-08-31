@@ -438,7 +438,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     : `ZIP ${zip}`
   const scopedChart = zipMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    `Median close by month, ${chartMonths.leftoverUsed ? 'Market Truth leftover' : 'single-family'}, ${chartScope}`,
+    `Median sale price by month in ${chartScope}`,
   )
 
   const marketTrace =

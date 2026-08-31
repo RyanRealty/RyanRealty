@@ -22,6 +22,7 @@ import {
   MAP_WHITE,
   MAP_CREAM,
 } from '@/lib/maps/markers'
+import { placeTypePinFill } from '@/lib/place/place-type-style'
 
 // Map ID strategy (dual-path, P0-1 fix 2026-06-10):
 //   - With NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID set (Vercel env): vector map via
@@ -83,6 +84,8 @@ export type ListingForMap = {
   TotalLivingAreaSqFt?: number | null
   /** When true, marker label shows "video" instead of "showcase". */
   hasVideo?: boolean
+  PropertyType?: string | null
+  PropertySubType?: string | null
 }
 
 function getBounds(listings: ListingForMap[]) {
@@ -163,11 +166,13 @@ type Props = {
  */
 function buildPricePillElement(
   label: string,
-  opts?: { hover?: boolean; active?: boolean; saved?: boolean },
+  opts?: { hover?: boolean; active?: boolean; saved?: boolean; fill?: string },
 ): HTMLDivElement {
   const hover = opts?.hover ?? false
   const active = opts?.active ?? false
   const saved = opts?.saved ?? false
+  const fill = opts?.fill ?? MAP_NAVY
+  const invert = hover || active
 
   const el = document.createElement('div')
   el.style.cssText = [
@@ -177,29 +182,28 @@ function buildPricePillElement(
     'cursor:pointer',
     'transition:transform 120ms ease,box-shadow 120ms ease',
     'transform-origin:50% 100%',
-    hover || active ? 'transform:scale(1.18)' : 'transform:scale(1)',
+    invert ? 'transform:scale(1.18)' : 'transform:scale(1)',
     'filter:drop-shadow(0 2px 6px color-mix(in srgb, var(--v3-navy) 32%, transparent))',
   ].join(';')
   el.setAttribute('data-price-pill', '1')
 
   const pill = document.createElement('div')
-  // Cream edge + soft shadow: less "generic navy blob", more brand pin.
   pill.style.cssText = [
-    `background:${active || hover ? MAP_CREAM : MAP_NAVY}`,
-    `color:${active || hover ? MAP_NAVY : MAP_CREAM}`,
+    `background:${invert ? MAP_CREAM : fill}`,
+    `color:${invert ? fill : MAP_CREAM}`,
     'font-family:system-ui,-apple-system,"Segoe UI",sans-serif',
-    `font-size:${hover || active ? '13px' : '12px'}`,
+    `font-size:${invert ? '13px' : '12px'}`,
     'font-weight:700',
     'padding:4px 10px',
     'border-radius:999px',
     'white-space:nowrap',
     'letter-spacing:-0.02em',
     'font-variant-numeric:tabular-nums',
-    `border:1.5px solid ${active || hover ? MAP_NAVY : 'color-mix(in srgb, var(--v3-cream) 92%, transparent)'}`,
-    active || hover
-      ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 4px 12px color-mix(in srgb, var(--v3-navy) 28%, transparent)`
+    `border:1.5px solid ${invert ? fill : MAP_CREAM}`,
+    invert
+      ? `box-shadow:0 0 0 2px ${fill},0 4px 12px color-mix(in srgb, var(--v3-navy) 28%, transparent)`
       : 'box-shadow:0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)',
-    saved && !active && !hover ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)` : '',
+    saved && !invert ? `box-shadow:0 0 0 2px ${fill},0 2px 8px color-mix(in srgb, var(--v3-navy) 28%, transparent)` : '',
     'line-height:1.25',
   ].join(';')
   pill.textContent = label + (saved ? ' ♥' : '')
@@ -215,7 +219,7 @@ function buildPricePillElement(
     'height:0',
     `border-left:6px solid transparent`,
     `border-right:6px solid transparent`,
-    `border-top:7px solid ${active || hover ? MAP_CREAM : MAP_NAVY}`,
+    `border-top:7px solid ${invert ? MAP_CREAM : fill}`,
   ].join(';')
 
   el.appendChild(pill)
@@ -260,11 +264,12 @@ function buildClusterElement(count: number): HTMLDivElement {
 function buildPhotoStampElement(
   photoURL: string | null | undefined,
   priceLabel: string,
-  opts?: { active?: boolean; hover?: boolean },
+  opts?: { active?: boolean; hover?: boolean; fill?: string },
 ): HTMLDivElement {
   const active = opts?.active ?? false
   const hover = opts?.hover ?? false
   const invert = active || hover
+  const fill = opts?.fill ?? MAP_NAVY
   const wrap = document.createElement('div')
   wrap.style.cssText = [
     'position:relative',
@@ -281,10 +286,10 @@ function buildPhotoStampElement(
     'width:56px',
     'height:56px',
     'border-radius:10px',
-    `border:2px solid ${invert ? MAP_NAVY : MAP_WHITE}`,
+    `border:2px solid ${invert ? fill : MAP_WHITE}`,
     'overflow:hidden',
-    `background:${MAP_NAVY}`,
-    invert ? `box-shadow:0 0 0 2px ${MAP_NAVY}` : '',
+    `background:${fill}`,
+    invert ? `box-shadow:0 0 0 2px ${fill}` : '',
   ].join(';')
 
   if (photoURL) {
@@ -298,8 +303,8 @@ function buildPhotoStampElement(
 
   const cap = document.createElement('div')
   cap.style.cssText = [
-    `background:${invert ? MAP_CREAM : MAP_NAVY}`,
-    `color:${invert ? MAP_NAVY : MAP_CREAM}`,
+    `background:${invert ? MAP_CREAM : fill}`,
+    `color:${invert ? fill : MAP_CREAM}`,
     'font-family:system-ui,-apple-system,sans-serif',
     'font-size:10px',
     'font-weight:700',
@@ -872,11 +877,12 @@ export default function SearchMapClustered({
       const price = Number(l.ListPrice ?? 0)
       const label = formatPriceLabel(price)
       const isSaved = savedSetRef.current.has(listingKey)
+      const fill = placeTypePinFill(l.PropertyType, l.PropertySubType)
 
       const contentEl =
         mode === 'photo' && l.PhotoURL
-          ? buildPhotoStampElement(l.PhotoURL, label, { active: false })
-          : buildPricePillElement(label, { saved: isSaved })
+          ? buildPhotoStampElement(l.PhotoURL, label, { active: false, fill })
+          : buildPricePillElement(label, { saved: isSaved, fill })
       const title = `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`
       const handleClick = () => {
         // Multi-shape draw armed: MapDrawTools consumes the tap (a vertex in
@@ -1007,10 +1013,11 @@ export default function SearchMapClustered({
         const price = Number(listing?.ListPrice ?? 0)
         const label = formatPriceLabel(price)
         const isSaved = savedSet.has(key)
+        const fill = placeTypePinFill(listing?.PropertyType, listing?.PropertySubType)
         const newEl =
           zoomMode === 'photo' && listing?.PhotoURL
-            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive, hover: isHover })
-            : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
+            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive, hover: isHover, fill })
+            : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved, fill })
         marker.content = newEl
         marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : 1
         newEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(key))

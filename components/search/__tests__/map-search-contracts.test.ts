@@ -112,7 +112,9 @@ describe('MapSearchView orchestrator', () => {
     const place = readSrc('components/search/PlaceSplitView.tsx')
     expect(place).toMatch(/initialShapes=\{null\}/)
     expect(place).toMatch(/getViewportSearch\(viewportFilters, fetchBounds, seedPoly\)/)
-    expect(place).toMatch(/initialPolygon=\{seedPoly\}/)
+    expect(place).toMatch(/seed\?\.searchRing/)
+    expect(place).toMatch(/initialPolygon=\{null\}/)
+    expect(place).not.toMatch(/initialPolygon=\{seedPoly\}/)
     expect(place).toMatch(/Home type|SearchFilters/)
   })
 
@@ -123,6 +125,11 @@ describe('MapSearchView orchestrator', () => {
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(map).toMatch(/applyView/)
     expect(map).toMatch(/map-search-views/)
+  })
+
+  it('place Split keeps the city filter on pan so Search this area stays in the place', () => {
+    const map = readSrc('components/search/MapSearchView.tsx')
+    expect(map).toMatch(/isInitialSettle === false && !lockPlace/)
   })
 
   it('place Split opens on every property type in the boundary', () => {
@@ -432,7 +439,7 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
   it('a non-initial bounds report (a real pan/zoom) drops the geo scope', () => {
     expect(src).toMatch(/firstBoundsReportRef/)
     expect(src).toMatch(/initialSettleUntilRef/)
-    expect(src).toMatch(/if \(isInitialSettle === false\) dropGeoScope\(\)/)
+    expect(src).toMatch(/if \(isInitialSettle === false && !lockPlace\) dropGeoScope\(\)/)
   })
 
   it('a user-drawn polygon also drops the geo scope', () => {
@@ -559,10 +566,11 @@ describe('SearchMapClustered map primitive', () => {
     expect(src).toMatch(/buildPricePillElement\([^)]*\bhover:/)
   })
 
-  it('hovered pin enlarges and inverts navy on cream, not red', () => {
+  it('hovered pin enlarges and inverts type color on cream, not red', () => {
     const map = readSrc('components/SearchMapClustered.tsx')
     expect(map).toMatch(/MAP_CREAM/)
-    expect(map).toMatch(/active \|\| hover \? MAP_CREAM/)
+    expect(map).toMatch(/invert \? MAP_CREAM : fill/)
+    expect(map).toMatch(/placeTypePinFill/)
     expect(map).toMatch(/transform:scale\(1\.18\)/)
     expect(map).not.toMatch(/#dc2626/)
   })

@@ -180,6 +180,8 @@ function toMapListing(l: ListingTileRow): ListingForMap {
     BathroomsTotal: l.BathroomsTotal,
     PhotoURL: l.PhotoURL,
     TotalLivingAreaSqFt: rowSqft(l),
+    PropertyType: l.PropertyType,
+    PropertySubType: l.PropertySubType,
   }
 }
 
@@ -618,12 +620,12 @@ export default function MapSearchView({
         bounds,
       )
       if (cameraUrl) router.replace(cameraUrl, { scroll: false })
-      if (isInitialSettle === false) dropGeoScope()
+      if (isInitialSettle === false && !lockPlace) dropGeoScope()
       if (isInitialSettle) return
       // Camera only. List + pins stay until Search this area.
       setAreaDirty(true)
     },
-    [dropGeoScope, pathname, router, urlSearchParams]
+    [dropGeoScope, pathname, router, urlSearchParams, lockPlace]
   )
 
   /** Reflect the drawn shape set into the URL so reload/share reproduce it.

@@ -50,9 +50,10 @@ function firstParam(value: string | string[] | undefined): string {
 /**
  * Flagship Split on a place page.
  *
- * Camera + painted boundary only. Do not seed a drawable Area that can flip
- * to Exclude and empty the list. Home type / price / beds ride SearchFilters
- * so area maps have the same type picker as /homes-for-sale.
+ * Camera + painted GIS boundary + pins. The seed ring filters the SSR
+ * viewport; it is not a drawable Area (Area 1 / Exclude empties the map).
+ * Home type / price / beds ride SearchFilters so area maps have the same
+ * type picker as /homes-for-sale.
  */
 export async function PlaceSplitView(props: {
   id?: string
@@ -74,7 +75,11 @@ export async function PlaceSplitView(props: {
   const seedBounds = props.bounds ?? seed?.bounds ?? null
   const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
   const seedPoly =
-    seed?.shapes[0]?.type === 'polygon' ? seed.shapes[0].points : null
+    seed?.searchRing && seed.searchRing.length >= 3
+      ? seed.searchRing
+      : seed?.shapes[0]?.type === 'polygon'
+        ? seed.shapes[0].points
+        : null
 
   const sp = props.searchParams ?? {}
   const rawType = firstParam(sp.propertyType)
@@ -169,7 +174,7 @@ export async function PlaceSplitView(props: {
         likedListingKeys={session?.user ? likedKeys : []}
         placeQuery={props.placeQuery}
         boundaryGeojson={props.boundaryGeojson ?? undefined}
-        initialPolygon={seedPoly}
+        initialPolygon={null}
         initialShapes={null}
         nowMs={Date.now()}
         initialDegraded={degraded}

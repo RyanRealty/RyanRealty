@@ -18,8 +18,8 @@ export function PlaceTypeSlider({
           <Link
             key={card.key}
             href={card.href}
-            scroll={false}
             className={card.active ? 'place-type-card is-active' : 'place-type-card'}
+            data-type={card.key}
           >
             <div className="place-type-card__thumb" aria-hidden="true">
               {card.photoUrl ? (
@@ -27,6 +27,7 @@ export function PlaceTypeSlider({
                 <img src={card.photoUrl} alt="" />
               ) : null}
             </div>
+            <span className="place-type-card__swatch" aria-hidden="true" />
             {card.count ? <div className="place-type-card__count">{card.count}</div> : null}
             <div className="place-type-card__title">{card.title}</div>
             {card.bits.map((bit) => (

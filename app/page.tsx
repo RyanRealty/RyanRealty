@@ -18,6 +18,7 @@ import {
   marketAbsenceItems,
   leftoverMarketFigures,
   placeMedianChart,
+  placeMedianChartCaption,
   PLACE_COUNT_TRACE,
   type CityPlaceItem,
   type CityCommunityItem,
@@ -210,7 +211,7 @@ export default async function Home() {
   const [firstMarketFigure, ...restMarketFigures] = figures
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
-    'Median close by month, single-family, Central Oregon',
+    placeMedianChartCaption('Central Oregon'),
   )
   const marketSource = `${HOME_MARKET_TRACE}${mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`
 

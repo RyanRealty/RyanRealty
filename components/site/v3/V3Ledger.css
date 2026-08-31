@@ -225,3 +225,95 @@
   display: flex;
   margin-top: var(--v3-space-lg);
 }
+
+/* Extra-section rhythms. Same rows, different structure, so four leftovers
+   on a place page are not one hairline list four times. */
+.v3-ledger--pulse .v3-ledger__item:first-child .v3-ledger__row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-sm);
+}
+.v3-ledger--pulse .v3-ledger__item:first-child .v3-ledger__what--media {
+  flex-direction: column;
+  align-items: stretch;
+}
+.v3-ledger--pulse .v3-ledger__item:first-child .v3-ledger__thumb {
+  width: 100%;
+  height: 14rem;
+}
+.v3-ledger--pulse .v3-ledger__thumb {
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.v3-ledger--walk .v3-ledger__when {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--v3-ink);
+}
+.v3-ledger--walk .v3-ledger__thumb {
+  width: 6.5rem;
+  height: 6.5rem;
+}
+
+.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__row {
+  grid-template-columns: minmax(0, 1fr);
+}
+.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__what--media {
+  flex-direction: column;
+  align-items: stretch;
+}
+.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__thumb {
+  width: 100%;
+  height: 16rem;
+}
+.v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__label {
+  font-size: var(--v3-size-heading);
+  font-family: var(--v3-font-display);
+  font-style: normal;
+}
+.v3-ledger--magazine .v3-ledger__thumb {
+  width: 5rem;
+  height: 3.5rem;
+}
+
+.v3-ledger--places .v3-ledger__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-sm);
+  border-bottom: 0;
+}
+.v3-ledger--places .v3-ledger__item {
+  margin: 0;
+}
+.v3-ledger--places .v3-ledger__row,
+.v3-ledger--places .v3-ledger__row--no-when {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  padding: 0 0 var(--v3-space-sm);
+  border-top: 0;
+  gap: var(--v3-space-xs);
+}
+.v3-ledger--places .v3-ledger__what--media {
+  flex-direction: column;
+  align-items: stretch;
+}
+.v3-ledger--places .v3-ledger__thumb {
+  width: 100%;
+  height: 10rem;
+}
+.v3-ledger--places .v3-ledger__value {
+  justify-self: start;
+  font-family: var(--v3-font-display);
+}
+@media (min-width: 48rem) {
+  .v3-ledger--places .v3-ledger__list {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--v3-space-lg);
+  }
+  .v3-ledger--pulse .v3-ledger__item:first-child .v3-ledger__thumb,
+  .v3-ledger--magazine .v3-ledger__item:first-child .v3-ledger__thumb {
+    height: 18rem;
+  }
+}

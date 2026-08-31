@@ -364,6 +364,11 @@ const MONTH_TICK = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ] as const
 
+/** Chart title a buyer can read. Source line under the Instrument traces the pile. */
+export function placeMedianChartCaption(placeName: string): string {
+  return `Median sale price by month in ${placeName}`
+}
+
 /**
  * The median-close year overlay for a place Instrument — the same construction
  * the ZIP node ships (zipMedianChart), one copy for the place family. Absent

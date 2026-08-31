@@ -151,8 +151,8 @@ import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import {
   placeTypeCoverPhotos,
   publishPlaceTypeCards,
-  searchParamsQuery,
 } from '@/lib/place/publish-place-type-cards'
+import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
@@ -387,15 +387,22 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     active: activeCount,
     medianList: platFigures.medianListPrice,
   })
+  const typeCovers = placeCity
+    ? await withTimeoutFallback(
+        loadPlaceTypeCoverPhotos({ city: placeCity, subdivision: displayName }),
+        {},
+        4500,
+        'sub:typeThumbs',
+      )
+    : {}
   const typeCards = publishPlaceTypeCards({
-    path: `/subdivisions/${slug}`,
-    search: searchParamsQuery(sp),
+    browsePath: placeCity ? subdivisionListingsPath(placeCity, displayName) : '/homes-for-sale',
     placeName: displayName,
     sfrCount: activeCount,
     sfrMedian: platFigures.medianListPrice,
     sfrMos: null,
     segments: [],
-    covers: placeTypeCoverPhotos(splitListings),
+    covers: { ...placeTypeCoverPhotos(splitListings), ...typeCovers },
   })
   const headline = `${displayName} homes for sale`
   const emptyHeroes: Record<string, string> = {}
