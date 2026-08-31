@@ -27,7 +27,6 @@ export function PlaceTypeSlider({
                 <img src={card.photoUrl} alt="" />
               ) : null}
             </div>
-            <span className="place-type-card__swatch" aria-hidden="true" />
             {card.count ? <div className="place-type-card__count">{card.count}</div> : null}
             <div className="place-type-card__title">{card.title}</div>
             {card.bits.map((bit) => (

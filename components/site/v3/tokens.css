@@ -60,19 +60,6 @@
   --v3-cream: #faf8f4;
   --v3-white: #ffffff;
 
-  /* Map + type-card colors. Same hex as lib/place/place-type-style.ts
-     (Maps overlays cannot read these variables). */
-  --place-type-sfr: #102742;
-  --place-type-condo: #1f5c66;
-  --place-type-townhome: #3d5a3c;
-  --place-type-manufactured-land: #7a5c2e;
-  --place-type-manufactured-park: #6e3f2d;
-  --place-type-multifamily: #3f3a5c;
-  --place-type-land: #4d6a45;
-  --place-type-farm: #5c6b32;
-  --place-type-commercial: #3a4654;
-  --place-type-business: #5a4638;
-
   /* Muted stops. PUBLIC_UI.md section 4 computed these: navy-70 on cream is
      8.2:1 (AAA) and cream-60 on navy is 5.99:1 (AA, body >= 16px only).
      navy-50 and cream-40 failed AA and are deliberately absent. */

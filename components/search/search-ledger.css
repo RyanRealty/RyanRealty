@@ -248,7 +248,6 @@
   height: 0;
 }
 .place-type-card {
-  --place-type-color: var(--place-type-sfr);
   display: flex;
   flex-direction: column;
   flex: 0 0 14rem;
@@ -260,46 +259,12 @@
   color: var(--v3-navy);
   text-decoration: none;
 }
-.place-type-card[data-type='condo'] {
-  --place-type-color: var(--place-type-condo);
-}
-.place-type-card[data-type='townhome'] {
-  --place-type-color: var(--place-type-townhome);
-}
-.place-type-card[data-type='manufactured_land'] {
-  --place-type-color: var(--place-type-manufactured-land);
-}
-.place-type-card[data-type='manufactured_park'] {
-  --place-type-color: var(--place-type-manufactured-park);
-}
-.place-type-card[data-type='multifamily_2_4'] {
-  --place-type-color: var(--place-type-multifamily);
-}
-.place-type-card[data-type='land'] {
-  --place-type-color: var(--place-type-land);
-}
-.place-type-card[data-type='farm'] {
-  --place-type-color: var(--place-type-farm);
-}
-.place-type-card[data-type='commercial_sale'] {
-  --place-type-color: var(--place-type-commercial);
-}
-.place-type-card[data-type='business'] {
-  --place-type-color: var(--place-type-business);
-}
 .place-type-card__thumb {
   aspect-ratio: 16 / 10;
   margin: calc(var(--v3-space-sm) * -1) calc(var(--v3-space-sm) * -1) var(--v3-space-sm);
   overflow: hidden;
-  background: color-mix(in srgb, var(--place-type-color) 28%, var(--v3-cream));
+  background: color-mix(in srgb, var(--v3-navy) 12%, var(--v3-cream));
   flex: 0 0 auto;
-}
-.place-type-card__swatch {
-  display: block;
-  width: 2.5rem;
-  height: 4px;
-  margin: 0 0 var(--v3-space-xs);
-  background: var(--place-type-color);
 }
 .place-type-card.is-active .place-type-card__thumb {
   background: color-mix(in srgb, var(--v3-cream) 12%, var(--v3-navy));
