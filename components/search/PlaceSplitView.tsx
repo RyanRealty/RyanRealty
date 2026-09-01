@@ -63,6 +63,16 @@ export async function PlaceSplitView(props: {
   boundaryGeojson?: { type?: string; coordinates?: unknown } | null
   /** When false, do not fit the camera to an untrusted hull. */
   seedRing?: boolean
+  /**
+   * Subordinate boundary cells drawn inside the main ring — a community's
+   * recorded plats, each a door to its own place page. County-GIS geometry
+   * only; the map draws them lighter than the seed ring.
+   */
+  overlayBoundaries?: Array<{
+    label: string
+    href?: string
+    geojson: { type?: string; coordinates?: unknown }
+  }>
   placeQuery: string
   listings?: ListingTileRow[]
   totalCount?: number
@@ -75,12 +85,18 @@ export async function PlaceSplitView(props: {
     props.seedRing === false ? null : publishPlaceSplitSeed(props.boundaryGeojson ?? null)
   const seedBounds = seed?.bounds ?? pinBounds
   const fetchBounds = seedBounds ?? BEND_DEFAULT_BOUNDS
+  // A multi-part footprint (a county plat-union) must scope as ALL its parts:
+  // the legacy single searchRing is only the first part, which scoped Black
+  // Butte Ranch to one plat cell. Pass the full include set when there is
+  // more than one part; the single-ring path is unchanged for simple places.
   const seedPoly =
-    seed?.searchRing && seed.searchRing.length >= 3
-      ? seed.searchRing
-      : seed?.shapes[0]?.type === 'polygon'
-        ? seed.shapes[0].points
-        : null
+    seed && seed.shapes.length > 1
+      ? { include: seed.shapes.filter((s) => s.type === 'polygon').map((s) => ({ type: 'polygon' as const, coords: s.points.map((p) => [p.lng, p.lat] as [number, number]) })) }
+      : seed?.searchRing && seed.searchRing.length >= 3
+        ? seed.searchRing
+        : seed?.shapes[0]?.type === 'polygon'
+          ? seed.shapes[0].points
+          : null
 
   const sp = props.searchParams ?? {}
   const rawType = firstParam(sp.propertyType)
@@ -98,6 +114,9 @@ export async function PlaceSplitView(props: {
   const view = viewRaw === 'list' || viewRaw === 'split' || viewRaw === 'map' ? viewRaw : 'map'
 
   const viewportFilters: ViewportFilters = {
+    // City + subdivision only: the query layer (toSearchAllFilter) expands a
+    // registry community's aliases and widens city to its mls_cities, so
+    // every counter on the page derives from the same rule.
     city: props.city || undefined,
     subdivision: props.neighborhood ? undefined : props.subdivision || undefined,
     neighborhood: props.neighborhood || undefined,
@@ -186,6 +205,7 @@ export async function PlaceSplitView(props: {
         likedListingKeys={session?.user ? likedKeys : []}
         placeQuery={props.placeQuery}
         boundaryGeojson={props.boundaryGeojson ?? undefined}
+        overlayBoundaries={props.overlayBoundaries}
         initialPolygon={null}
         initialShapes={null}
         nowMs={Date.now()}

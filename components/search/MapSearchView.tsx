@@ -264,6 +264,8 @@ export type MapSearchViewProps = {
   likedListingKeys: string[]
   placeQuery: string
   boundaryGeojson?: unknown
+  /** Subordinate boundary cells (a community's plats), drawn lighter than the seed ring; href makes a cell a door. */
+  overlayBoundaries?: Array<{ label: string; href?: string; geojson: unknown }>
   initialPolygon?: MapPolygonPoint[] | null
   /** Multi-shape draw set from ?shapes= (falls back to ?poly= via initialPolygon). */
   initialShapes?: DrawnShape[] | null
@@ -291,6 +293,7 @@ export default function MapSearchView({
   likedListingKeys,
   placeQuery,
   boundaryGeojson,
+  overlayBoundaries,
   initialPolygon: initialPolygonProp = null,
   initialShapes = null,
   nowMs,
@@ -993,6 +996,7 @@ export default function MapSearchView({
         likedListingKeys={likedListingKeys}
         placeQuery={placeQuery}
         boundaryGeojson={boundaryGeojson}
+        overlayBoundaries={overlayBoundaries}
         hideBoundaryToggle={lockPlace}
         initialBounds={initialBounds}
         lockBounds

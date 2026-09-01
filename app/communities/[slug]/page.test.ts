@@ -61,14 +61,17 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/<PlaceSplitView/)
     expect(SRC).toMatch(/id="homes"/)
     expect(SRC).toMatch(/seedRing=\{seedRing\}/)
-    expect(SRC).toMatch(/const seedRing = boundaryReliable/)
+    // seedRing keys on having a TRUSTED polygon (county plat-union first,
+    // reliable stored boundary second) — not on hull reliability alone, which
+    // left Black Butte Ranch's verified union undrawn (2026-09-01).
+    expect(SRC).toMatch(/const seedRing = mapPolygon != null/)
     expect(SRC).not.toMatch(/<V3Stage/)
     expect(SRC).not.toMatch(/<V3Field/)
     expect(SRC).not.toMatch(/<CommunityStage/)
     expect(SRC).not.toMatch(/V3PlacePropertyTypes/)
   })
 
-  it('does not seed Eagle Crest’s unreliable hull, and passes alias tiles only then', () => {
+  it('never seeds an unreliable hull — only the plat union or a reliable boundary — and passes alias tiles', () => {
     expect(SRC).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
     expect(SRC).toMatch(/isBoundaryReliable\(slug\)/)
     expect(SRC).toMatch(/!boundaryReliable && fieldTiles\.length > 0 \? communitySplitListings\(fieldTiles\)/)

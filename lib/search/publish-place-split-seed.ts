@@ -51,19 +51,31 @@ function ringToPoints(ring: unknown, maxPoints: number): MapPolygonPoint[] {
   return downsampleRing(points, maxPoints)
 }
 
-/** First outer ring of a Polygon or MultiPolygon. Miss returns null. */
+/**
+ * Every outer ring of a Polygon or MultiPolygon as include shapes. Miss
+ * returns null. A MultiPolygon keeps EVERY part: a resort footprint built as
+ * a county plat-union is dozens of disjoint parts, and taking only the first
+ * scoped Black Butte Ranch's search to one plat cell — the map said "3 homes"
+ * over a face counting 33 (2026-09-01). Parts capped so a pathological union
+ * cannot flood the shapes RPC.
+ */
 export function geoJsonToDrawnShapes(geom: { type?: string; coordinates?: unknown } | null | undefined): DrawnShape[] | null {
   if (!geom || !Array.isArray(geom.coordinates)) return null
   const type = geom.type
-  let ring: unknown = null
-  if (type === 'Polygon') ring = geom.coordinates[0]
+  let rings: unknown[] = []
+  if (type === 'Polygon') rings = [geom.coordinates[0]]
   else if (type === 'MultiPolygon') {
-    const first = geom.coordinates[0]
-    ring = Array.isArray(first) ? first[0] : null
+    rings = (geom.coordinates as unknown[])
+      .slice(0, 120)
+      .map((part) => (Array.isArray(part) ? part[0] : null))
+      .filter((r) => r != null)
   } else return null
-  const points = ringToPoints(ring, 80)
-  if (points.length < 3) return null
-  return [{ type: 'polygon', points, exclude: false }]
+  const shapes: DrawnShape[] = []
+  for (const ring of rings) {
+    const points = ringToPoints(ring, 80)
+    if (points.length >= 3) shapes.push({ type: 'polygon', points, exclude: false })
+  }
+  return shapes.length > 0 ? shapes : null
 }
 
 function outerRing(geom: { type?: string; coordinates?: unknown } | null | undefined): unknown {

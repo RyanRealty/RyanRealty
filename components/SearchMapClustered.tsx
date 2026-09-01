@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useMemo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import {
@@ -130,6 +131,12 @@ type Props = {
   onBoundsChanged?: (bounds: MapBounds) => void
   /** Optional GeoJSON boundary (Polygon/MultiPolygon) to draw for city/neighborhood/community. */
   boundaryGeojson?: unknown
+  /**
+   * Subordinate boundary cells inside the main ring — a community's recorded
+   * plats. Drawn lighter than the seed ring; a cell with an href navigates to
+   * its place page on click and names itself in the cursor title.
+   */
+  overlayBoundaries?: Array<{ label: string; href?: string; geojson: unknown }>
   /** Place pages keep the painted ring. Do not offer Remove boundary. */
   hideBoundaryToggle?: boolean
   /** Called when user draws a polygon on the map. Returns the polygon path for filtering. */
@@ -487,6 +494,7 @@ export default function SearchMapClustered({
   initialZoom = 11,
   onBoundsChanged,
   boundaryGeojson,
+  overlayBoundaries,
   hideBoundaryToggle = false,
   onPolygonDrawn,
   initialPolygon,
@@ -588,7 +596,19 @@ export default function SearchMapClustered({
     [savedListingKeys, likedListingKeys]
   )
 
+  const router = useRouter()
   const boundaryPaths = useMemo(() => geojsonToPaths(boundaryGeojson), [boundaryGeojson])
+
+  // Subordinate cells (a community's plats). Paths computed once per prop; a
+  // cell keeps its label + href beside its rings so the click handler and the
+  // renderer read one structure.
+  const overlayCells = useMemo(
+    () =>
+      (overlayBoundaries ?? [])
+        .map((cell) => ({ label: cell.label, href: cell.href, paths: geojsonToPaths(cell.geojson) }))
+        .filter((cell) => cell.paths.flat().length > 0),
+    [overlayBoundaries],
+  )
 
   useEffect(() => {
     setActivePolygon(initialPolygon && initialPolygon.length >= 3 ? initialPolygon : null)
@@ -1166,6 +1186,26 @@ export default function SearchMapClustered({
                   }}
                 />
               ))}
+            {/* Subordinate plat cells — lighter than the seed ring, and each
+                one with an href is a door to its own place page. */}
+            {showBoundary &&
+              overlayCells.map((cell, ci) =>
+                cell.paths.map((path, pi) => (
+                  <Polygon
+                    key={`cell-${ci}-${pi}`}
+                    paths={path}
+                    onClick={cell.href ? () => router.push(cell.href!) : undefined}
+                    options={{
+                      fillColor: MAP_NAVY,
+                      fillOpacity: 0.02,
+                      strokeColor: MAP_NAVY,
+                      strokeWeight: 1.25,
+                      strokeOpacity: 0.45,
+                      clickable: Boolean(cell.href),
+                    }}
+                  />
+                )),
+              )}
             {/* Brand popup (not stock Google InfoWindow — no white balloon / scroll chrome). */}
             {mapInstance && openInfo && openListing && openKey ? (
               <MapListingPopup

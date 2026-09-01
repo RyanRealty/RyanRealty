@@ -22,6 +22,7 @@ import {
   getListingTiles,
   getGeoSnapshot,
   getGeoBoundaryMapData,
+  getCommunitySubdivisions,
   getResortBoundaryGeoJSON,
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
@@ -206,6 +207,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     priceHist,
     boundaryRead,
     resortBoundary,
+    platCells,
     citySfrRead,
     richContent,
     cityPriceHist,
@@ -223,6 +225,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     withTimeoutFallback(getPriceHistory('neighborhood', neighborhoodSlug, 'monthly', 60), [], 4500, 'comm:priceHistory'),
     withTimeoutFallbackResult(getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), { polygon: null, pins: [] }, 4500, 'comm:boundary'),
     withTimeoutFallback(getResortBoundaryGeoJSON(slug), null, 4500, 'comm:resortBoundary'),
+    withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: slug }), [], 4500, 'comm:platCells'),
     isResortInCity
       ? withTimeoutFallbackResult(
           Promise.all(
@@ -493,10 +496,25 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
   const listedCount = fieldTiles.length
   const mapPolygon = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
-  const seedRing = boundaryReliable
+  // Seed and draw whenever a TRUSTED polygon exists: the county plat-union
+  // outranks the stored hull's reliability verdict (it exists precisely
+  // because the hull was bad — see getResortBoundaryGeoJSON). Before this,
+  // seedRing keyed on hull reliability alone, so Black Butte Ranch had a
+  // verified-good union polygon and drew nothing (Matt, 2026-09-01). An
+  // unreliable hull with no union still draws nothing — mapPolygon is null.
+  const seedRing = mapPolygon != null
   const splitListings =
     !boundaryReliable && fieldTiles.length > 0 ? communitySplitListings(fieldTiles) : undefined
   const hasMap = Boolean(mapPolygon) || fieldTiles.length > 0 || Boolean(splitListings?.length)
+  // The community's recorded plats as subordinate map cells, each a door to
+  // its own page — the "broken out" rendering getCommunitySubdivisions was
+  // built for. Spatial membership (centroid in polygon), county-GIS geometry
+  // only, capped so a plat-dense resort cannot flood the map with paths.
+  const platCellOverlays = platCells.slice(0, 80).map((cell) => ({
+    label: cell.label,
+    href: `/subdivisions/${cell.slug}`,
+    geojson: cell.geometry,
+  }))
   const typeCovers = await withTimeoutFallback(
     loadPlaceTypeCoverPhotos({
       city: cityName,
@@ -633,6 +651,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           city={cityName}
           subdivision={community.subdivision}
           boundaryGeojson={seedRing ? mapPolygon : null}
+          overlayBoundaries={platCellOverlays}
           seedRing={seedRing}
           placeQuery={publicName}
           listings={splitListings}

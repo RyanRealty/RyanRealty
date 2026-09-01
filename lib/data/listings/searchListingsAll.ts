@@ -262,7 +262,10 @@ const FilterSchema = z.object({
    * Alias set for a community with multiple MLS spellings (subdivision-aliases
    * getSubdivisionMatchNames) — matched via IN on subdivision_lower.
    */
-  subdivisions: z.array(z.string().min(1).max(120)).max(20).optional(),
+  // Cap sized to the callers: Sunriver carries 31 registry aliases, and a
+  // place page passing its members' concrete filed plat names can carry more
+  // (a cap of 20 rejected the whole filter at parse).
+  subdivisions: z.array(z.string().min(1).max(120)).max(80).optional(),
   postalCode: z.string().regex(/^\d{5}$/).optional().catch(undefined),
   /** Bend neighborhood LABEL (boundary_neighborhood on the MV). */
   neighborhood: z.string().min(1).max(120).optional(),
