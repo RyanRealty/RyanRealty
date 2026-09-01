@@ -6,17 +6,11 @@ export const dynamic = 'force-dynamic'
 
 /**
  * People-list fold (Matt lock 2026-09-01, decisions.md "UX CONSOLIDATION
- * LOCKS" #2): one list surface. The search-first quick lookup and the full
- * list served the same job from two routes; /admin/crm (search on top, saved
- * views, bulk actions) survives. Person ENTITY pages stay under
- * /admin/people/[id]* — this bridge covers only the list route, and carries
- * the search query across.
+ * LOCKS" #2): one list surface — /admin/crm survives. The real hop is the
+ * next.config.ts redirects() entry (it runs above the streamed admin shell
+ * and carries ?q= across); this SYNC body is the belt for any render path
+ * that slips past it. Person ENTITY pages stay under /admin/people/[id]*.
  */
-export default async function PeopleListBridge({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>
-}) {
-  const q = ((await searchParams).q ?? '').trim()
-  redirect(q ? `/admin/crm?q=${encodeURIComponent(q)}` : '/admin/crm')
+export default function PeopleListBridge() {
+  redirect('/admin/crm')
 }

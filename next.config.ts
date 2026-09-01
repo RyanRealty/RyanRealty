@@ -241,6 +241,11 @@ const nextConfig: NextConfig = {
       // links) carrying an unsourced market stat (CLAUDE.md §0). Superseded by the
       // contracted /sell hub. 301 so any held position transfers rather than 404s.
       { source: '/sell/plan', destination: '/sell', permanent: true },
+      // People-list fold (Matt lock 2026-09-01, decisions.md): one list
+      // surface — the fold's hop lives here so it emits a real 3xx above the
+      // admin loading shell (ci:streamed-redirect). Query (?q=) carries over
+      // automatically. Person ENTITY pages under /admin/people/:id stay live.
+      { source: '/admin/people', destination: '/admin/crm', permanent: false },
       { source: '/sign-in', destination: '/login', permanent: true },
       { source: '/sign-in/:path*', destination: '/login/:path*', permanent: true },
       { source: '/agents', destination: '/team', permanent: true },
