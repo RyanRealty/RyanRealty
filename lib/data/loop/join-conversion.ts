@@ -3,6 +3,7 @@
  * Packet recruit-retain stops being UNKNOWN when the probe reads this DAL.
  * reachability: collectCompanyScoreboardSignals, /admin/today, contact form
  */
+import { revalidateTag, unstable_cache } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const JOIN_CONVERT_EVENT = 'join_convert'
@@ -118,22 +119,55 @@ export function summarizeJoinEvents(
   }
 }
 
-async function fetchJoinFunnelRows(
-  sb: SupabaseClient,
+async function pageAll(
+  build: (from: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
 ): Promise<{ rows: EventRow[]; error: string | null }> {
   const rows: EventRow[] = []
   for (let from = 0; ; from += PAGE) {
-    const { data, error } = await sb
-      .from('visitor_events')
-      .select('session_id,event_type,event_at,page_url,metadata')
-      .or(`page_url.ilike.%/join%,event_type.eq.${JOIN_CONVERT_EVENT}`)
-      .order('event_at', { ascending: false })
-      .range(from, from + PAGE - 1)
+    const { data, error } = await build(from)
     if (error) return { rows: [], error: error.message }
     const batch = (data ?? []) as EventRow[]
     rows.push(...batch)
     if (batch.length < PAGE) return { rows, error: null }
   }
+}
+
+/**
+ * The old single query OR'd a leading-wildcard ilike with an event_type match —
+ * un-indexable, so every OFFSET page re-ran a full visitor_events scan (the
+ * /admin/today ~15s class, 2026-09-01). Split into the two branches
+ * summarizeJoinEvents actually reads — conversions (event_type=join_convert)
+ * and visit-shaped rows (page_view/section_view on a /join URL; line 98 ignores
+ * every other event_type, so the narrower SQL returns the identical input set —
+ * the branches cannot overlap because their event_types differ). Each branch is
+ * a small result, so the pagination loop exits on page one instead of
+ * re-scanning history per page.
+ */
+async function fetchJoinFunnelRows(
+  sb: SupabaseClient,
+): Promise<{ rows: EventRow[]; error: string | null }> {
+  const [converts, visits] = await Promise.all([
+    pageAll((from) =>
+      sb
+        .from('visitor_events')
+        .select('session_id,event_type,event_at,page_url,metadata')
+        .eq('event_type', JOIN_CONVERT_EVENT)
+        .order('event_at', { ascending: false })
+        .range(from, from + PAGE - 1),
+    ),
+    pageAll((from) =>
+      sb
+        .from('visitor_events')
+        .select('session_id,event_type,event_at,page_url,metadata')
+        .ilike('page_url', '%/join%')
+        .in('event_type', ['page_view', 'section_view'])
+        .order('event_at', { ascending: false })
+        .range(from, from + PAGE - 1),
+    ),
+  ])
+  if (converts.error) return { rows: [], error: converts.error }
+  if (visits.error) return { rows: [], error: visits.error }
+  return { rows: [...converts.rows, ...visits.rows], error: null }
 }
 
 export async function readJoinConversionStats(
@@ -164,11 +198,22 @@ async function serviceClient(): Promise<SupabaseClient> {
   return createServiceClient()
 }
 
-export async function getJoinConversionStats(
-  now: Date = new Date(),
-): Promise<JoinConversionStats> {
+/**
+ * Dashboard-cadence cache (5 min, tag join-conversion): the stat rides the
+ * /admin/today critical path, and a recorded conversion busts the tag so a
+ * fresh one still shows immediately. An explicit `now` (tests, scoreboard
+ * re-reads) bypasses the cache.
+ */
+const readJoinConversionStatsCached = unstable_cache(
+  async (): Promise<JoinConversionStats> => readJoinConversionStats(await serviceClient()),
+  ['join-conversion-stats-v1'],
+  { revalidate: 300, tags: ['join-conversion'] },
+)
+
+export async function getJoinConversionStats(now?: Date): Promise<JoinConversionStats> {
   try {
-    return await readJoinConversionStats(await serviceClient(), now)
+    if (now) return await readJoinConversionStats(await serviceClient(), now)
+    return await readJoinConversionStatsCached()
   } catch (err) {
     console.error('[getJoinConversionStats]', err)
     return {
@@ -240,6 +285,13 @@ export async function recordJoinConversion(params: {
       error = retry.error
     }
     if (error) return { ok: false, error: error.message }
+    try {
+      // Bust the dashboard cache so the conversion shows on the next read.
+      revalidateTag('join-conversion', 'max')
+    } catch {
+      // Outside a request context (scripts/tests) revalidateTag throws; the
+      // 5-minute revalidate window covers it.
+    }
     return { ok: true, error: null }
   } catch (err) {
     console.error('[recordJoinConversion]', err)

@@ -306,6 +306,19 @@ export default async function AdminEmailReportingPage({
             <>
               <b>The email-events store could not be read.</b> Nothing below is a measurement.
             </>
+          ) : summary.delivered > summary.sent ? (
+            <>
+              {/* Lifecycle coverage is partial for some sends (a delivery or
+                  open webhook landed without its sent row), so "X of Y sent"
+                  would invert. State each tally on its own basis instead. */}
+              <b>
+                {summary.delivered.toLocaleString('en-US')} deliveries and{' '}
+                {summary.sent.toLocaleString('en-US')} sent events recorded
+              </b>{' '}
+              — some sends are missing their sent row, so the two tallies have
+              different coverage. Open rate {formatRate(summary.openRate)}, click
+              rate {formatRate(summary.clickRate)}, against implied deliveries.
+            </>
           ) : (
             <>
               <b>

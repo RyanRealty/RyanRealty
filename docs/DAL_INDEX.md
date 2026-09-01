@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-01T21:18:19.809Z
+**Generated:** 2026-09-01T21:51:52.538Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2920,7 +2920,9 @@ Companion files:
 
 **Selected columns:** `session_id`, `event_type`, `event_at`, `page_url`, `metadata`, `tags`
 
-**Cache tags:** `...tags, RECRUIT_JOIN_TAG`
+**Cache keys:** `join-conversion-stats-v1`
+
+**Cache tags:** `'join-conversion'`, `...tags, RECRUIT_JOIN_TAG`
 
 ---
 

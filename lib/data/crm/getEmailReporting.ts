@@ -368,10 +368,21 @@ export function summarizeEngagement(rows: RawEmailEventRow[]): EmailEngagementSu
   let bounced = 0
   let complained = 0
   let unsubscribed = 0
+  // Lifecycle coverage in the store is partial for some sends (a provider
+  // webhook recorded an open with no delivered/sent row), so raw event tallies
+  // can invert (delivered > sent, opens > delivered) and rates computed on
+  // them exceed 100% — the 2026-09-01 "287 of 242 sent, open rate 136.9%"
+  // class. Rates therefore use IMPLIED denominators: an open or click implies
+  // the send was delivered, and any lifecycle event implies it was sent.
+  const impliedDelivered = new Set<string>()
+  const impliedSent = new Set<string>()
   for (const r of rows) {
     const ev = r.event as EmailEvent
     if (!(ev in EVENT_RANK)) continue
-    const dk = `${sendKey(r)}|${ev}`
+    const key = sendKey(r)
+    impliedSent.add(key)
+    if (ev === 'delivered' || ev === 'open' || ev === 'click') impliedDelivered.add(key)
+    const dk = `${key}|${ev}`
     if (seen.has(dk)) continue
     seen.add(dk)
     switch (ev) {
@@ -398,9 +409,12 @@ export function summarizeEngagement(rows: RawEmailEventRow[]): EmailEngagementSu
         break
     }
   }
-  // Rate denominators: opens/clicks measured against deliveries (an undelivered
-  // email can't be opened). Bounce measured against sends. Guard-to-null so an
-  // empty window never reads a fake 0%.
+  // Rate denominators: opens/clicks measured against IMPLIED deliveries (an
+  // undelivered email can't be opened, so an open with a missing delivered row
+  // still counts in the denominator — rates stay ≤ 100% and mean what they
+  // say). Bounce measured against implied sends. On sends with complete
+  // lifecycle coverage the implied sets equal the raw tallies, so consistent
+  // data is unchanged. Guard-to-null so an empty window never reads a fake 0%.
   return {
     sent,
     delivered,
@@ -409,9 +423,9 @@ export function summarizeEngagement(rows: RawEmailEventRow[]): EmailEngagementSu
     bounced,
     complained,
     unsubscribed,
-    openRate: safeRate(opened, delivered),
-    clickRate: safeRate(clicked, delivered),
-    bounceRate: safeRate(bounced, sent),
+    openRate: safeRate(opened, Math.max(delivered, impliedDelivered.size)),
+    clickRate: safeRate(clicked, Math.max(delivered, impliedDelivered.size)),
+    bounceRate: safeRate(bounced, Math.max(sent, impliedSent.size)),
     unreadable: false,
   }
 }

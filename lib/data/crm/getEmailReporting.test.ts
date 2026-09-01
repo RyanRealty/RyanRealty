@@ -308,7 +308,11 @@ describe('filterBySendType', () => {
     const s = summarizeEngagement(out)
     expect(s.sent).toBe(1)
     expect(s.opened).toBe(1)
-    expect(s.openRate).toBeNull() // 1 open / 0 deliveries -> honest null
+    // Implied-denominator rule (2026-09-01, the ">100% open rate" class): an
+    // open proves the send was delivered even when its delivered row is
+    // missing, so this is 1 open / 1 implied delivery — a real measurement,
+    // no longer the old "no deliveries -> null".
+    expect(s.openRate).toBe(1)
   })
 })
 

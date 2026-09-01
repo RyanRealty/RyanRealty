@@ -69,17 +69,20 @@ export async function getPrincipalSignOffQueue(): Promise<SignOffQueue> {
     .select('item_id, document_id')
     .in('item_id', itemIds)
   const docIds = Array.from(new Set((assignments ?? []).map((a: DbRow) => a.document_id)))
-  const { data: docs } = docIds.length
-    ? await supabase.from('tc_documents').select('id, name').in('id', docIds)
-    : { data: [] as DbRow[] }
-  const docById = new Map((docs ?? []).map((d: DbRow) => [d.id, d]))
-
   const thumbPaths = docIds.map((id) => `tc-thumbs/${id}__plast.jpg`)
+  // Doc names and signed thumb URLs both key off docIds alone — run them
+  // concurrently instead of stacking two more round trips on the chain.
+  const [docsRes, signedRes] = await Promise.all([
+    docIds.length
+      ? supabase.from('tc_documents').select('id, name').in('id', docIds)
+      : Promise.resolve({ data: [] as DbRow[] }),
+    thumbPaths.length
+      ? supabase.storage.from('tc-documents').createSignedUrls(thumbPaths, 600)
+      : Promise.resolve({ data: [] as Array<{ path: string | null; signedUrl: string; error: string | null }> }),
+  ])
+  const docById = new Map(((docsRes.data ?? []) as DbRow[]).map((d: DbRow) => [d.id, d]))
   const thumbByPath = new Map<string, string>()
-  if (thumbPaths.length) {
-    const { data: signed } = await supabase.storage.from('tc-documents').createSignedUrls(thumbPaths, 600)
-    for (const s of signed ?? []) if (s.signedUrl && !s.error) thumbByPath.set(s.path ?? '', s.signedUrl)
-  }
+  for (const s of signedRes.data ?? []) if (s.signedUrl && !s.error) thumbByPath.set(s.path ?? '', s.signedUrl)
 
   const docsByItem = new Map<string, Array<{ id: string; name: string; thumbUrl: string | null }>>()
   for (const a of (assignments ?? []) as DbRow[]) {

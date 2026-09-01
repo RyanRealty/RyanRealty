@@ -124,13 +124,18 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
   if (!deals?.length) return { deals: [], unreadable: false }
 
   const dealIds = deals.map((d) => d.id as string)
-  const namesByDeal = await getPartyNamesByDealIds(dealIds)
-  const cyclesRes = await sb
-    .from('tc_cycles')
-    .select(
-      'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, created_at, mls_number, escrow_number, buyers, sellers',
-    )
-    .in('deal_id', dealIds)
+  // Party names and cycles both key off dealIds alone — independent reads,
+  // so they run concurrently instead of stacking round trips (Today ~15s
+  // class, 2026-09-01).
+  const [namesByDeal, cyclesRes] = await Promise.all([
+    getPartyNamesByDealIds(dealIds),
+    sb
+      .from('tc_cycles')
+      .select(
+        'id, deal_id, kind, contract_acceptance_date, escrow_closing_date, actual_closing_date, sale_price, listing_price, expiration_date, created_at, mls_number, escrow_number, buyers, sellers',
+      )
+      .in('deal_id', dealIds),
+  ])
   if (cyclesRes.error) {
     console.error('[closings] tc_cycles read failed:', cyclesRes.error.message)
     return { deals: [], unreadable: true }
