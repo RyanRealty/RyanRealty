@@ -1,4 +1,52 @@
-# Current — 2026-08-29 (Grok Build) — bulk email signature + from-line
+# Current — 2026-09-01 (Claude Code, main) — Grok place-page leftovers rescued + shipped
+
+**What shipped.** The 2026-08-30 Grok session died on credits with its final commit stranded
+locally AND non-compiling: G46 failed on `components/search/PlaceSplitView.tsx` (tsc cannot
+narrow `props.listings` through the aliased `mustSearch` condition). Fixed with a coalesce in
+the else branch, amended into the same commit, full gates 150/150, pushed as `f5336df1`
+("Eagle Crest map camera, lots thumbs, and leftover extras") — **production deploy verified
+READY on Vercel.** Follow-up `054e1062`: `publicSegmentVerdictLabel` now returns
+"buyer's market" / "seller's market" / "balanced market", because a segment with MoS
+null/0 printed the verdict alone (Redmond Townhomes card read "BUYER'S" with nothing after
+it). Push pending the gates re-stamp (this session).
+
+**Open questions Matt raised (Grok session died before answering), with the analysis:**
+
+1. *"We ask what type of market but display the answer in the hero."* Verified on live
+   `/cities/redmond`: `publish-place-face.ts:81` puts the verdict in the hero face strip in
+   the same Amboqia numeral treatment as the price, while the Quiet FAQ below asks "Is
+   Redmond a buyer's or seller's market?". The FAQ restating hero figures is deliberate
+   (FAQPage JSON-LD + the MoS reasoning). The hero treatment is the deviation:
+   PUBLIC_UI.md §3 city row says **"Verdict is a caption, never a number hero."** The
+   in-flight Cursor city-restyle (PR 166) already moves this way ("Kill the buyer/seller
+   H2... mid-page tightness sentence"). Recommendation: demote the verdict from a face-strip
+   numeral to a caption; do it inside the restyle PRs rather than on main to avoid a
+   collision. NOT done — Matt's call on whether main gets it before PR 166 lands.
+
+2. *"Is it normal for some content to go full width and others constrained on the same
+   page?"* Yes, and it is the spec: Broadside runs Stage/Field/photography full-bleed and
+   unframed; everything else sits on `--v3-measure` (72rem), prose on `--v3-measure-text`
+   (44rem). The Eagle Crest about-paragraph-with-empty-right-column is the 44rem text
+   measure inside a 72rem section — the Stripe/Linear "large quiet margins" foundation, not
+   a bug.
+
+**Verified-not-bugs (do not fix):** place-type-card "clipping" on `/cities/redmond` is JPEG
+screenshot illegibility — DOM shows every bit intact and wrapped (`scrollWidth ==
+clientWidth`). The blank cream bottom-of-page screenshots are unpainted-capture artifacts —
+sections tile contiguously (measured, no gaps).
+
+**Context a follow-on needs:** the live restyle program is the Cursor PRs 165–169
+(`cursor/city-restyle-ba64`, `cursor/community-restyle-0404`,
+`cursor/neighborhood-restyle-cfa4`, `cursor/subdivision-restyle-3f5a`,
+`cursor/valuation-restyle-942b`) — Stage then one Field, fewer H2 stacks, tightness
+sentence. Do not build a competing direction on main. Matt's standing directives this
+session: LOOK at rendered screens after building (screenshot + read it, tests are not
+verification), work inside the v3 system + THE LOOP, no one-offs.
+
+Skills read: `frontend-design`, PUBLIC_UI.md, loop-brief. Commits: `f5336df1` (deployed),
+`054e1062` (pending push).
+
+# Prior — 2026-08-29 (Grok Build) — bulk email signature + from-line
 
 **Surface:** `/admin/crm` Batch Email and `/admin/email/compose`. Goal: `docs/plans/ADMIN_REBUILD/BULK_EMAIL_SIGNATURE_AND_FROM.md`.
 
