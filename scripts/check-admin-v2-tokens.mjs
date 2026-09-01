@@ -110,8 +110,8 @@ const SCAN_DIRS = [
   'app/admin/(protected)/crm/import/new/page.tsx',
   'app/admin/(protected)/crm/import/new/preview/page.tsx',
   'app/admin/(protected)/crm/import/page.tsx',
-  'app/admin/(protected)/crm/new/page.tsx',
   'app/admin/(protected)/crm/referrals/page.tsx',
+  'app/admin/(protected)/crm/referrals/RecordHandoffButton.tsx',
   // 11F (2026-08-08) — the reporting family, BARE DIR (not file-form): its
   // mounted islands migrated with it, so there is nothing left in the subtree to
   // carve around, and a new file under it is covered the day it lands. The
