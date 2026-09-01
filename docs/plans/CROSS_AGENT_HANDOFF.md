@@ -48,6 +48,12 @@ refining continuously; and NO FRANKENSTEIN: one style system, all pages same loo
 **Coordination:** concurrent ADMIN session shares this checkout (admin v2 work, db126181+).
 File-ownership agreed in-session; the misleading "other-session TEMP-DIAG" stash was dropped.
 
+**RESTYLE DISPOSITION EXECUTED (2026-09-01, Matt's continuous-work directive):** PRs 166–169
+closed by deleting their branches after archiving every tip as `archive/cursor-{city,
+neighborhood,community,subdivision}-restyle-*` tags — all commits recoverable, main is the one
+restyle direction. The valuation branch/PR stays open: its 3 own commits cherry-pick clean and
+whether that look ships is Matt's call. Verdict details below.
+
 **RESTYLE PR REVIEW VERDICT (2026-09-01, full three-way analysis, both reviewing agents'
 reports in this session).** The "five PRs" are ONE serial stack off base 2eba920b (Aug 28):
 listing → land-face → homepage → search → sell → valuation → city → neighborhood → community
