@@ -1,3 +1,5 @@
+import { unstable_rethrow } from 'next/navigation'
+
 /**
  * The outcome of a guarded read. `ok: false` means `value` is the FALLBACK — the
  * read timed out or threw, so the real value is UNKNOWN, not empty.
@@ -47,7 +49,7 @@ export function withTimeoutFallback<T>(
   timeoutMs: number,
   logLabel?: string
 ): Promise<T> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     // A timeout is a silent no-op elsewhere in this file's history — a slow
     // (not failing) query degraded a whole page section to nothing with no
     // trace anywhere, e.g. the listing-detail "Similar homes" rail going
@@ -64,6 +66,17 @@ export function withTimeoutFallback<T>(
       })
       .catch((err: unknown) => {
         clearTimeout(t)
+        // Next.js control-flow errors (redirect, notFound, dynamic-usage
+        // bailout) are the framework talking to itself. Swallowing one into
+        // `fallback` breaks the render protocol — a redirect never fires, or a
+        // static pass dies later as an unexplained DYNAMIC_SERVER_USAGE 500.
+        // Rethrow those; only real data failures degrade to the fallback.
+        try {
+          unstable_rethrow(err)
+        } catch (frameworkErr) {
+          reject(frameworkErr)
+          return
+        }
         if (logLabel) console.error(`[withTimeoutFallback:${logLabel}]`, err)
         resolve(fallback)
       })

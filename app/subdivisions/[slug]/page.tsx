@@ -39,8 +39,8 @@
  * the plat's real city, so a non-registry plat titles itself with a city that
  * exists instead of "Central Oregon, Oregon"), MetadataBlock JSON-LD
  * (BreadcrumbList + Place, same payloads, same hasMap condition), the section
- * tracker, revalidate 60, dynamicParams true, generateStaticParams returning [],
- * and maxDuration 60. MetadataBlock stays on the legacy register: JSON-LD is not
+ * tracker, force-dynamic rendering (see the route-config comment), dynamicParams
+ * true, generateStaticParams returning [], and maxDuration 60. MetadataBlock stays on the legacy register: JSON-LD is not
  * visual language and ci:ai-structured-data pins this route to it by name.
  *
  * FOUR POPULATIONS, FOUR TRACES (CLAUDE.md §0). Every sentence that describes
@@ -171,7 +171,20 @@ import {
 } from './_v3/subdivision-traces'
 
 export const dynamicParams = true
-export const revalidate = 60
+// FORCE-DYNAMIC, NOT ISR — this is the fix for the fleet's oldest silent 500.
+// PlaceSplitView reads the visitor's session (cookies) on every place page, so
+// no place page can complete a STATIC render. The sibling routes (/cities,
+// /communities) survive only by accident: their generateStaticParams returns
+// real slugs, the build-time prerender trips the cookies() bailout, and Next
+// silently reclassifies them fully dynamic. This route prerenders nothing
+// (ci:ssg-budget), so under `revalidate` Next classified it SSG and every
+// runtime request attempted a static render — cookies() threw
+// DYNAMIC_SERVER_USAGE, and every /subdivisions/* URL served a 500 from
+// 2026-07-15 to 2026-09-01. Declaring force-dynamic states what the render
+// tree already requires. Do NOT restore `revalidate` here while the split view
+// reads per-visitor state during server render; real ISR for place pages means
+// moving session-dependent reads behind a client/Suspense boundary first.
+export const dynamic = 'force-dynamic'
 // Worst-case first render chains sequential timeout-capped stages, above
 // Vercel's 15s default function cap.
 export const maxDuration = 60
@@ -180,7 +193,7 @@ export const maxDuration = 60
 // pages each chain sequential timeout-capped Supabase stages; prerendering them
 // was the largest single cost of `next build` on Vercel and, when queries timed
 // out under build concurrency, baked empty rails into the deployed HTML. With
-// dynamicParams=true and revalidate=60 every URL still serves.
+// dynamicParams=true and force-dynamic rendering every URL still serves.
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return []
 }

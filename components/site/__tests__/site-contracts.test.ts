@@ -780,13 +780,26 @@ describe('place-family indexes', () => {
   it('plat detail holds the G70 zero build-time fan-out and still serves every slug', () => {
     // Deliberately inverted from the neighborhood contract above: build-time
     // prerender of ~100 plat pages was the top Vercel build cost and baked
-    // empty rails into deployed HTML (ci:ssg-budget). On-demand ISR needs the
-    // resolution path + dynamicParams, so those stay asserted.
+    // empty rails into deployed HTML (ci:ssg-budget). Serving every slug needs
+    // the resolution path + dynamicParams, so those stay asserted.
     const plat = readSrc('app/subdivisions/[slug]/page.tsx')
     expect(plat).toMatch(/resolveSubdivisionAreaRedirect/)
     expect(plat).toMatch(/export const dynamicParams = true/)
-    expect(plat).toMatch(/export const revalidate = 60/)
     expect(plat).toMatch(/generateStaticParams[\s\S]{0,80}return\s*\[\s*\]/)
+  })
+
+  it('plat detail renders force-dynamic, never ISR, while the split view reads the session', () => {
+    // `revalidate` on this route was the fleet's oldest silent 500: with an
+    // empty generateStaticParams Next classified the route SSG, every request
+    // attempted a static render, and PlaceSplitView's cookies() read threw
+    // DYNAMIC_SERVER_USAGE — every /subdivisions/* URL 500ed in production
+    // 2026-07-15..2026-09-01. The sibling place routes dodge it only because
+    // their build-time prerender trips the bailout and Next reclassifies them
+    // dynamic. Do not restore `revalidate` here until session-dependent reads
+    // move behind a client/Suspense boundary.
+    const plat = readSrc('app/subdivisions/[slug]/page.tsx')
+    expect(plat).toMatch(/export const dynamic = 'force-dynamic'/)
+    expect(plat).not.toMatch(/export const revalidate/)
   })
 })
 

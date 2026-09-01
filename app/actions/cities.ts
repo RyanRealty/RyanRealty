@@ -722,5 +722,10 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
       isResort,
     })
   }
+  // Liveliest first: the neighborhood page caps this ledger at 12 cards, so an
+  // unsorted list buried the subdivisions with active homes under empty ones.
+  result.sort(
+    (a, b) => (b.activeCount ?? 0) - (a.activeCount ?? 0) || a.subdivision.localeCompare(b.subdivision)
+  )
   return result
 }

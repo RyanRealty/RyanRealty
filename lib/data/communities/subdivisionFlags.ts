@@ -12,6 +12,7 @@
 import { supabaseAnon } from '@/lib/data/client'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { displaySubdivision } from '@/lib/slug'
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -204,7 +205,21 @@ export async function getCommunitiesInNeighborhoodLite(
     .from('communities')
     .select('name, slug, hero_image_url, is_resort')
     .eq('neighborhood_id', neighborhoodId)
-  return (data ?? []) as Array<{ name: string; slug: string; hero_image_url?: string | null; is_resort?: boolean }>
+  const rows = (data ?? []) as Array<{ name: string; slug: string; hero_image_url?: string | null; is_resort?: boolean }>
+  // The `communities` table carries one row per recorded plat filing, so a
+  // neighborhood can hold several rows with the same visitor-facing name
+  // (Larkspur held four "Cessna" rows) plus MLS "no subdivision" sentinels
+  // ("********" rendered as a card linking to /subdivisions/unknown).
+  // displaySubdivision is the single source of truth for the sentinel set;
+  // dedupe keeps the first row that carries a hero image so cards stay dressed.
+  const byName = new Map<string, { name: string; slug: string; hero_image_url?: string | null; is_resort?: boolean }>()
+  for (const row of rows) {
+    if (displaySubdivision(row.name) === null) continue
+    const key = row.name.trim().toLowerCase()
+    const kept = byName.get(key)
+    if (!kept || (!kept.hero_image_url && row.hero_image_url)) byName.set(key, row)
+  }
+  return [...byName.values()]
 }
 
 /** Find one community row by slug ilike (for OG image / SEO surfaces). */
