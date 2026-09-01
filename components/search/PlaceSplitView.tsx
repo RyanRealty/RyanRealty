@@ -1,6 +1,3 @@
-import { getSession } from '@/app/actions/auth'
-import { getSavedListingKeys } from '@/app/actions/saved-listings'
-import { getLikedListingKeys } from '@/app/actions/likes'
 import { getViewportSearch, type SearchFilters as ViewportFilters } from '@/app/actions/search'
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import MapSearchView from '@/components/search/MapSearchView'
@@ -163,12 +160,12 @@ export async function PlaceSplitView(props: {
 
   const initialBounds = seedBounds ?? boundsFromListings(listings ?? []) ?? BEND_DEFAULT_BOUNDS
 
-  const [session, savedKeys, likedKeys, openHouseLabels] = await Promise.all([
-    getSession(),
-    getSavedListingKeys(),
-    getLikedListingKeys(),
-    loadOpenHouseBadgeLabels(props.city),
-  ])
+  // NO PER-VISITOR READS IN THIS SHELL. getSession/saved/liked were awaited
+  // here until 2026-09-01, which put cookies() inside every place page's
+  // server render — the read behind the plat route's seven-week production
+  // 500 and the reason no place page could be CDN-cached. The client hydrates
+  // the personal layer (useViewerListingState) after mount instead.
+  const openHouseLabels = await loadOpenHouseBadgeLabels(props.city)
 
   const filters: SearchFiltersInitial = {
     city: props.city ?? '',
@@ -190,7 +187,7 @@ export async function PlaceSplitView(props: {
       <div className="place-split__filters">
         <SearchFilters
           initialFilters={filters}
-          signedIn={!!session?.user}
+          signedIn={false}
           hideViewToggle
           hideLocation
         />
@@ -201,8 +198,8 @@ export async function PlaceSplitView(props: {
         initialCapped={capped}
         initialBounds={initialBounds}
         filters={filters}
-        savedListingKeys={session?.user ? savedKeys : []}
-        likedListingKeys={session?.user ? likedKeys : []}
+        savedListingKeys={[]}
+        likedListingKeys={[]}
         placeQuery={props.placeQuery}
         boundaryGeojson={props.boundaryGeojson ?? undefined}
         overlayBoundaries={props.overlayBoundaries}

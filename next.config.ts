@@ -204,6 +204,12 @@ const nextConfig: NextConfig = {
       { source: '/zip/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
       { source: '/listing/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
       { source: '/homes-for-sale/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      // Place pages are visitor-independent shells as of 2026-09-01 (the
+      // per-visitor layer hydrates client-side via useViewerListingState), so
+      // the CDN may serve them cached — the fleet's biggest TTFB/compute win.
+      { source: '/cities/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/communities/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
+      { source: '/subdivisions/:path*', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=600' }] },
       { source: '/about', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
       { source: '/team', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },
       { source: '/team/:slug', headers: [{ key: 'Cache-Control', value: 'public, s-maxage=300, stale-while-revalidate=3600' }] },

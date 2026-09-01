@@ -23,6 +23,7 @@ import {
   useParsedSearchConfirm,
 } from '@/components/search/registry-filter-chrome'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
+import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
 import './search-ledger.css'
 
 /** P6: load the ~1k-LOC registry sheet only after first open (not on cold search). */
@@ -247,13 +248,16 @@ type OpenPanel = 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
 export default function SearchFilters({
   initialFilters,
-  signedIn = false,
+  signedIn: signedInSeed = false,
   hideViewToggle = false,
   hideLocation = false,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  // Hydrated after mount so a cacheable signed-out shell still shows the
+  // signed-in save flow to a signed-in visitor (see use-viewer-listing-state).
+  const viewerState = useViewerListingState({ signedIn: signedInSeed })
 
   // Dropdown panel state
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
@@ -767,7 +771,7 @@ export default function SearchFilters({
           {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
         </Button>
         <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
-        <SaveSearchButton user={signedIn} />
+        <SaveSearchButton user={viewerState.signedIn} />
         {hideViewToggle ? null : (
         <ToggleGroup
           type="single"

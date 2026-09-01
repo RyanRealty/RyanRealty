@@ -23,6 +23,7 @@ import { nextSearchUrlWithBbox } from '@/lib/search/publish-map-bbox'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
+import { useViewerListingState } from '@/components/search/use-viewer-listing-state'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -260,6 +261,7 @@ export type MapSearchViewProps = {
   initialCapped: boolean
   initialBounds: MapBounds
   filters: SearchFiltersInitial
+  /** SSR seed only — the hydrated value comes from useViewerListingState so a cacheable (visitor-independent) shell still shows the right saves after mount. */
   savedListingKeys: string[]
   likedListingKeys: string[]
   placeQuery: string
@@ -289,8 +291,8 @@ export default function MapSearchView({
   initialCapped,
   initialBounds,
   filters,
-  savedListingKeys,
-  likedListingKeys,
+  savedListingKeys: savedListingKeysSeed,
+  likedListingKeys: likedListingKeysSeed,
   placeQuery,
   boundaryGeojson,
   overlayBoundaries,
@@ -351,6 +353,10 @@ export default function MapSearchView({
   const lastBoundsRef = useRef<MapBounds>(initialBounds)
   const reqIdRef = useRef(0)
 
+  const viewerState = useViewerListingState({
+    savedListingKeys: savedListingKeysSeed,
+    likedListingKeys: likedListingKeysSeed,
+  })
   const searchFilters = useMemo(() => toSearchFilters(filters), [filters])
   const filtersSnapshot = JSON.stringify(filters)
   useEffect(() => {
@@ -992,8 +998,8 @@ export default function MapSearchView({
     <div className="relative h-full min-h-0 min-w-0 flex-1">
       <SearchMapClustered
         listings={mapListings}
-        savedListingKeys={savedListingKeys}
-        likedListingKeys={likedListingKeys}
+        savedListingKeys={viewerState.savedListingKeys}
+        likedListingKeys={viewerState.likedListingKeys}
         placeQuery={placeQuery}
         boundaryGeojson={boundaryGeojson}
         overlayBoundaries={overlayBoundaries}

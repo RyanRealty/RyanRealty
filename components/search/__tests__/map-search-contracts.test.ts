@@ -736,7 +736,7 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
 describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHIP)', () => {
   it('keeps Save this search and drops the navy Get alerts chip', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} \/>/)
+    expect(filters).toMatch(/<SaveSearchButton user=\{viewerState\.signedIn\} \/>/)
     expect(filters).not.toMatch(/>\s*Get alerts\s*</)
     expect(filters).not.toMatch(/focusSearchAlertCapture/)
   })
