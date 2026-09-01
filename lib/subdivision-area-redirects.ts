@@ -92,11 +92,19 @@ function buildRedirectMap(): Map<string, string> {
   //                     inside the recorded City Of Cline Falls plat (CSNUM
   //                     11058). Too thin to be its own boundary; the containing
   //                     plat is the honest home.
+  //   first-on-the-hill-sites / pace-estates -> the 1:1 W1 cases
+  //                     (data/subdivision-alias-plats.json): the county-named
+  //                     page renders a polygon with ZERO listings because every
+  //                     listing files under the MLS spelling, so the thin page
+  //                     yields to the one with the inventory and sold history
+  //                     (PLACE_MEMBERSHIP_MISSION step 2, 2026-09-01).
   for (const [alias, dest] of [
     ['the-farm', '/subdivisions/farm-the'],
     ['shevlin-bluffs', '/homes-for-sale/bend/shevlin-bluffs'],
     ['campbell-road', '/subdivisions/campbell-road-subdivision'],
     ['cline-falls-mob-park', '/subdivisions/city-of-cline-falls'],
+    ['first-on-the-hill-sites', '/subdivisions/1st-on-the-hillsites'],
+    ['pace-estates', '/subdivisions/pace-estate'],
   ] as const) {
     if (!map.has(alias)) map.set(alias, dest)
   }

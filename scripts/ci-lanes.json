@@ -1265,6 +1265,11 @@
       "app/housing-market/**",
       "lib/site/market-faq.ts",
       "scripts/check-market-question-heading.mjs"
+    ],
+    "ci:alias-plats": [
+      "data/subdivision-alias-plats.json",
+      "lib/subdivision-area-redirects.ts",
+      "scripts/check-subdivision-alias-plats.mjs"
     ]
   },
   "nightly": [

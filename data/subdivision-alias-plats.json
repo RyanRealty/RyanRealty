@@ -1,0 +1,337 @@
+{
+  "$comment": "MLS SubdivisionName alias → recorded county plats (PLACE_MEMBERSHIP_MISSION W1/W2). Each entry is the reviewed evidence behind a boundaries row (geo_type='subdivision') at the alias slug whose polygon is the ST_Union of memberPlats. Membership is decided by GEOMETRY (mls_subdivision_plat_coverage(): sampled listing coordinates inside the plat polygons), never by name-prefix inference — the fuzzy prefix rule is FORBIDDEN (C-21: it over-matched 'Triple' to triple-ridge-* and cannot see MLS abbreviations). Gated by scripts/check-subdivision-alias-plats.mjs. The canonical URL is the MLS slug because that is where the listings and sold history live; a 1:1 county-named slug 308s to it (lib/routing/pre-render-hops.ts).",
+  "entries": [
+    {
+      "aliasSlug": "1st-on-the-hillsites",
+      "mlsName": "1st On The Hillsites",
+      "city": "Redmond",
+      "shape": "1:1",
+      "memberPlats": [
+        {
+          "slug": "first-on-the-hill-sites",
+          "name": "FIRST ON THE HILLSITE",
+          "csnum": "07198"
+        }
+      ],
+      "evidence": "Geometry 2026-08-26: 18/18 sampled listings inside CS 07198. Plat filed 1965-04-08, TRS 181112, developer North Century Seven Inc., original CC&Rs Deed vol. 143 pg. 18. The assessor/GIS spell it 'FIRST ON THE HILL SITES', the deed 'FIRST ON THE HILLSITE', the MLS '1st On The Hillsites' — why substring probes for 'Hillsites' return nothing. CENTURY HEIGHTS (CS 16944) is nested wholly inside; join on the CS 07198 polygon, never the assessor string.",
+      "redirectCountySlugToAlias": true
+    },
+    {
+      "aliasSlug": "pace-estate",
+      "mlsName": "Pace Estate",
+      "city": "Bend",
+      "shape": "1:1",
+      "memberPlats": [
+        {
+          "slug": "pace-estates",
+          "name": "PACE ESTATES",
+          "csnum": "08718"
+        }
+      ],
+      "evidence": "Geometry 2026-08-26 via mls_subdivision_plat_coverage(): 3/3 sampled listings inside. TRS 201106. The county pluralises; the MLS files the singular.",
+      "redirectCountySlugToAlias": true
+    },
+    {
+      "aliasSlug": "westbrook-meadows",
+      "mlsName": "Westbrook Meadows",
+      "city": "Bend",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "westbrook-meadows-p-u-d-phases-1-and-2",
+          "name": "WESTBROOK MEADOWS P.U.D. PHASES 1 AND 2",
+          "csnum": "13961",
+          "hits": 11
+        },
+        {
+          "slug": "westbrook-meadows-p-u-d-phase-3",
+          "name": "WESTBROOK MEADOWS P.U.D. PHASE 3",
+          "csnum": "14255",
+          "hits": 6
+        }
+      ],
+      "evidence": "Geometry 2026-08-26 via mls_subdivision_plat_coverage().",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "sunrise-village",
+      "mlsName": "Sunrise Village",
+      "city": "Bend",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "sunrise-village-river-bluff",
+          "name": "SUNRISE VILLAGE RIVER BLUFF",
+          "csnum": "10007"
+        },
+        {
+          "slug": "sunrise-village-river-bluff-blocks-2-3-and-5-15-replat",
+          "name": "SUNRISE VILLAGE RIVER BLUFF BLOCKS 2/3/5-15 REPLAT",
+          "csnum": "10009"
+        },
+        {
+          "slug": "sunrise-village-outback",
+          "name": "SUNRISE VILLAGE OUTBACK",
+          "csnum": "10003"
+        },
+        {
+          "slug": "sunrise-village-west-knoll-section",
+          "name": "SUNRISE VILLAGE WEST KNOLL SECTION",
+          "csnum": "10016"
+        },
+        {
+          "slug": "sunrise-village-east-knoll-section",
+          "name": "SUNRISE VILLAGE EAST KNOLL SECTION",
+          "csnum": "09995"
+        }
+      ],
+      "evidence": "Geometry 2026-08-26 via mls_subdivision_plat_coverage(). 2 listings tagged 'Sunrise Village' sit in the Bachelor Sunrise plat and are noise, not members.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "cline-falls-oasis",
+      "mlsName": "Cline Falls Oasis",
+      "city": "Redmond",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "cline-falls-oasis-subdivision",
+          "name": "CLINE FALLS OASIS SUBDIVISION",
+          "csnum": "06448",
+          "hits": 7
+        },
+        {
+          "slug": "cline-falls-oasis-2-subdivision",
+          "name": "CLINE FALLS OASIS #2 SUBDIVISION",
+          "csnum": "06451",
+          "hits": 8
+        }
+      ],
+      "evidence": "Geometry 2026-08-26 via mls_subdivision_plat_coverage(). The Coppermill plat (CSNUM 19818) holds 5 listings tagged this name and is deliberately EXCLUDED — its own recorded plat, not a Cline Falls Oasis phase.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "petrosa",
+      "mlsName": "Petrosa",
+      "city": "Bend",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "petrosa-phase-1",
+          "name": "PETROSA PHASE 1",
+          "csnum": "20443"
+        },
+        {
+          "slug": "petrosa-phase-2",
+          "name": "PETROSA PHASE 2",
+          "csnum": "20542"
+        },
+        {
+          "slug": "petrosa-phase-3",
+          "name": "PETROSA PHASE 3",
+          "csnum": "20722"
+        },
+        {
+          "slug": "petrosa-phase-4",
+          "name": "PETROSA PHASE 4",
+          "csnum": "21042"
+        },
+        {
+          "slug": "petrosa-phase-5a-pz-20-0235",
+          "name": "PETROSA PHASE 5A",
+          "csnum": "21338"
+        },
+        {
+          "slug": "petrosa-phase-5b-pz-20-0235",
+          "name": "PETROSA PHASE 5B",
+          "csnum": "21374"
+        },
+        {
+          "slug": "petrosa-phase-6a-pz-20-0235",
+          "name": "PETROSA PHASE 6A",
+          "csnum": "21566"
+        },
+        {
+          "slug": "petrosa-phase-6b-pz-20-0235",
+          "name": "PETROSA PHASE 6B",
+          "csnum": "21678"
+        }
+      ],
+      "evidence": "Geometry 2026-08-27: every sampled parcel falls inside a Petrosa phase and no other plat. All TRS 171223. 109.4 acres.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "easton",
+      "mlsName": "Easton",
+      "city": "Bend",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "easton-phase-i-plld20200979",
+          "name": "EASTON PHASE I",
+          "csnum": "20876"
+        },
+        {
+          "slug": "easton-phase-2-plld20200979",
+          "name": "EASTON PHASE 2",
+          "csnum": "21347"
+        },
+        {
+          "slug": "easton-phase-3-plld20220219",
+          "name": "EASTON PHASE 3",
+          "csnum": "21490"
+        },
+        {
+          "slug": "easton-commercial-plld20220219",
+          "name": "EASTON COMMERCIAL",
+          "csnum": "21176"
+        }
+      ],
+      "evidence": "Geometry 2026-08-27. All TRS 181215. The Commercial plat is included because a sampled Easton-tagged listing sits inside it. 76.8 acres.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "stone-creek",
+      "mlsName": "Stone Creek",
+      "city": "Bend",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "stone-creek-phase-1",
+          "name": "STONE CREEK PHASE 1",
+          "csnum": "19077"
+        },
+        {
+          "slug": "stone-creek-phase-2",
+          "name": "STONE CREEK PHASE 2",
+          "csnum": "19543"
+        },
+        {
+          "slug": "stone-creek-phase-3",
+          "name": "STONE CREEK PHASE 3",
+          "csnum": "20024"
+        },
+        {
+          "slug": "stone-creek-phase-4",
+          "name": "STONE CREEK PHASE 4",
+          "csnum": "20117"
+        },
+        {
+          "slug": "stone-creek-phase-5",
+          "name": "STONE CREEK PHASE 5",
+          "csnum": "20289"
+        },
+        {
+          "slug": "stone-creek-phase-6",
+          "name": "STONE CREEK PHASE 6",
+          "csnum": "20390"
+        },
+        {
+          "slug": "stone-creek-phase-7",
+          "name": "STONE CREEK PHASE 7",
+          "csnum": "20628"
+        },
+        {
+          "slug": "stone-creek-phase-8",
+          "name": "STONE CREEK PHASE 8",
+          "csnum": "20698"
+        },
+        {
+          "slug": "stone-creek-phase-9",
+          "name": "STONE CREEK PHASE 9",
+          "csnum": "20793"
+        },
+        {
+          "slug": "stone-creek-phases-10-and-11",
+          "name": "STONE CREEK PHASES 10 AND 11",
+          "csnum": "20794"
+        },
+        {
+          "slug": "south-village-of-stone-creek-pldd20210220",
+          "name": "SOUTH VILLAGE OF STONE CREEK",
+          "csnum": "21096"
+        }
+      ],
+      "evidence": "Geometry 2026-08-27. TRS 181209 and 181204. 63.2 acres.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "stevens-ranch",
+      "mlsName": "Stevens Ranch",
+      "city": "Bend",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "stevens-ranch-phase-rs-1-plld20211070",
+          "name": "STEVENS RANCH PHASE RS-1",
+          "csnum": "21332"
+        },
+        {
+          "slug": "stevens-ranch-phase-rs-2-plld20211070",
+          "name": "STEVENS RANCH PHASE RS-2",
+          "csnum": "21482"
+        },
+        {
+          "slug": "stevens-ranch-phase-rm-1-plld20240427",
+          "name": "STEVENS RANCH PHASE RM-1",
+          "csnum": "21704"
+        },
+        {
+          "slug": "stevens-ranch-phase-rm-2-plld20230341",
+          "name": "STEVENS RANCH PHASE RM-2",
+          "csnum": "21567"
+        }
+      ],
+      "evidence": "Geometry 2026-08-27. All TRS 181211. STILL BUILDING OUT: 3 of 6 sampled parcels fall in no recorded plat yet — the union is the recorded footprint, smaller than the community, never larger. Re-run as phases record. 52.1 acres.",
+      "redirectCountySlugToAlias": false
+    },
+    {
+      "aliasSlug": "sisters-woodlands",
+      "mlsName": "Sisters Woodlands",
+      "city": "Sisters",
+      "shape": "1:many",
+      "memberPlats": [
+        {
+          "slug": "sisters-woodlands-phase-1-sub-21-01",
+          "name": "SISTERS WOODLANDS PHASE 1",
+          "csnum": "20903"
+        },
+        {
+          "slug": "sisters-woodlands-phase-2-sub-21-01",
+          "name": "SISTERS WOODLANDS PHASE 2",
+          "csnum": "21168"
+        },
+        {
+          "slug": "sisters-woodlands-phase-3-sub-24-01",
+          "name": "SISTERS WOODLANDS PHASE 3",
+          "csnum": "21623"
+        },
+        {
+          "slug": "sisters-woodlands-habitat-sub-24-01",
+          "name": "SISTERS WOODLANDS HABITAT",
+          "csnum": "21528"
+        }
+      ],
+      "evidence": "Geometry 2026-08-27. All TRS 151005. The Habitat plat is a Habitat for Humanity phase of the same development. STILL BUILDING OUT: 1 of 4 sampled parcels falls in no recorded plat yet. 31.6 acres.",
+      "redirectCountySlugToAlias": false
+    }
+  ],
+  "deferred": [
+    {
+      "aliasSlug": "campbell-road",
+      "reason": "RESOLVED (Matt 2026-08-27, 'fold into their parent plats'): /subdivisions/campbell-road 308s to /subdivisions/campbell-road-subdivision (CSNUM 16724, nested inside First On The Hill Sites) via lib/subdivision-area-redirects.ts. No union polygon is minted."
+    },
+    {
+      "aliasSlug": "cline-falls-mob-park",
+      "reason": "RESOLVED (Matt 2026-08-27, 'fold into their parent plats'): 3 unique coordinates, all inside City Of Cline Falls (CSNUM 11058); /subdivisions/cline-falls-mob-park 308s there via lib/subdivision-area-redirects.ts."
+    },
+    {
+      "aliasSlug": "ironhorse",
+      "reason": "Prineville = Crook County; boundaries carries Deschutes plats only. Blocked on Crook County GIS ingestion."
+    },
+    {
+      "aliasSlug": "ochoco-pointe",
+      "reason": "Prineville = Crook County; boundaries carries Deschutes plats only. Blocked on Crook County GIS ingestion."
+    }
+  ]
+}
