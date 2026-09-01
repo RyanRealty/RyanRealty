@@ -17,15 +17,19 @@ master-plan community ⊃ subdivisions) + listing↔place flow is the competitiv
 refining continuously; and NO FRANKENSTEIN: one style system, all pages same look and behavior.
 
 **Place-flow punch list (found by browsing prod + local prod build, in priority order):**
-1. Card-vs-page population mismatch: Larkspur's card says "Pettigrew Place · 1 active" but
-   `/subdivisions/pettigrew-place` serves the honest refusal — the card bins ALL residential
-   actives while the plat page's third resolution path is SFR-only and it has no boundary/alias.
-   Fix the class: a place card may only advertise the population its destination page can serve.
+1. ~~Card-vs-page population mismatch~~ **SHIPPED `cd837385`, live-verified**: cards bin SFR
+   (matching their printed trace and the destination's counted set), unresolvable plats are
+   dropped, and the plat page gained path 3b (direct SFR tile read by MLS name) so plain
+   recorded plats like Pettigrew Place render instead of refusing. Live check 2026-09-01:
+   all 12 Larkspur cards land on rendering pages, zero dead ends.
 2. Place pages run per-request with `revalidate=60` theater fleet-wide — real ISR means moving
    session-dependent reads (session/saved/liked in PlaceSplitView) behind a client or Suspense
    boundary. Big TTFB/cost win; belongs WITH the restyle program, not against it.
-3. Community pages have no first-class child-subdivisions Ledger (neighborhood pages do);
-   `getCommunitySubdivisions` (RPC `community_subdivisions`) is exported and consumed by nothing.
+3. ~~Community child-subdivisions Ledger~~ **SHIPPED `6ccabc03`, live-verified**: registry
+   children counted from the same city SFR set as the face, named via publishPlatDisplayName,
+   Quiet keeps prose only (duplicate links + local ALIAS_DISPLAY map deleted), sectionOrder
+   contract updated with the page. `getCommunitySubdivisions` RPC remains unconsumed — still
+   available for a spatial (non-registry) enumeration later.
 4. MLS alias → recorded plat mapping incomplete (PLACE_MEMBERSHIP_MISSION W1, soft-404 class).
 5. Vercel error noise: `pages/500.html` ENOENT when a 500 is served (app-router error page gap).
 
