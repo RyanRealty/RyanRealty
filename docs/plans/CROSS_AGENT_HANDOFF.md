@@ -22,7 +22,14 @@ refining continuously; and NO FRANKENSTEIN: one style system, all pages same loo
    dropped, and the plat page gained path 3b (direct SFR tile read by MLS name) so plain
    recorded plats like Pettigrew Place render instead of refusing. Live check 2026-09-01:
    all 12 Larkspur cards land on rendering pages, zero dead ends.
-2. Place pages run per-request with `revalidate=60` theater fleet-wide — real ISR means moving
+2. **PARTIALLY SHIPPED (c1cc10d3):** place-page shells are now visitor-independent — the
+   cookies() reads moved client-side (useViewerListingState), killing the 500-class risk for
+   good and cutting per-render work. MEASURED RESULT on prod: Vercel still serves
+   `cache-control: private, no-cache` on dynamic renders — the next.config s-maxage headers
+   are overridden for dynamic routes (the /homes-for-sale one always was, too). Actual CDN
+   caching needs the routes to stop reading searchParams during SSR (client-read URL filters)
+   or Next 16 cacheComponents / 'use cache' adoption — that refactor is the remaining half.
+   Old framing: place pages run per-request with `revalidate=60` theater fleet-wide — real ISR means moving
    session-dependent reads (session/saved/liked in PlaceSplitView) behind a client or Suspense
    boundary. Big TTFB/cost win; belongs WITH the restyle program, not against it.
 3. ~~Community child-subdivisions Ledger~~ **SHIPPED `6ccabc03`, live-verified**: registry

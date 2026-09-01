@@ -83,6 +83,14 @@ export type MatrixGeo = {
    * MLS aliases — mirrors the page's getSubdivisionMatchNames IN-match.
    */
   subdivisionNamesLower?: readonly string[]
+  /**
+   * Extra city_lower values whose rows may satisfy this geo, beside cityLower.
+   * A registry community can file under its OWN MLS City (Black Butte Ranch
+   * homes carry City 'Black Butte Ranch' while the geo's city is Sisters) —
+   * the same mls_cities rule the search counters apply, so the matrix's
+   * verified-zero noindex judges the same population the page shows.
+   */
+  extraCityLowers?: readonly string[]
   /** Editorial depth exists (description / blurb) — emission gate #2. */
   hasDepthContent: boolean
 }
@@ -313,11 +321,14 @@ export function buildSearchMatrix(
       if (list) list.push(geo)
       else byNeighborhood.set(key, [geo])
     } else {
+      const cityKeys = [geo.cityLower, ...(geo.extraCityLowers ?? [])]
       for (const name of geo.subdivisionNamesLower ?? []) {
-        const key = `${geo.cityLower}|${name}`
-        const list = bySubdivision.get(key)
-        if (list) list.push(geo)
-        else bySubdivision.set(key, [geo])
+        for (const cityKey of cityKeys) {
+          const key = `${cityKey}|${name}`
+          const list = bySubdivision.get(key)
+          if (list) list.push(geo)
+          else bySubdivision.set(key, [geo])
+        }
       }
     }
   }

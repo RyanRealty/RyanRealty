@@ -37,7 +37,7 @@ import {
   getSubdivisionDescriptionKeys,
   getMatrixNeighborhoods,
 } from '@/lib/data/listings/getSearchMatrixInventory'
-import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getAllResortCommunities, getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
 import { SUBDIVISION_INDEX_MIN_LIFETIME_SALES } from '@/lib/data/subdivisions/subdivision-index'
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import { getSubdivisionBlurb } from '@/lib/city-content'
@@ -91,6 +91,9 @@ async function buildSubdivisionGeos(descriptionKeys: ReadonlySet<string>): Promi
           areaSlug,
           cityLower: citySlugToLowerName(citySlug),
           subdivisionNamesLower: getSubdivisionMatchNames(name).map((n) => n.toLowerCase()),
+          extraCityLowers: (getResortCommunityBySubdivisionName(name)?.mls_cities ?? [])
+            .map((c) => c.toLowerCase().trim())
+            .filter(Boolean),
           hasDepthContent,
         })
       }
@@ -238,6 +241,9 @@ const assembleSearchMatrix = async (): Promise<MatrixBuildResult | null> => {
       areaSlug: slugify(resort.label),
       cityLower: citySlugToLowerName(resort.city_slug),
       subdivisionNamesLower: [...names],
+      // A resort's homes can file under its own MLS City (mls_cities) — count
+      // them, or the matrix noindexes a page that plainly has inventory.
+      extraCityLowers: (resort.mls_cities ?? []).map((c) => c.toLowerCase().trim()).filter(Boolean),
       hasDepthContent: Boolean(resort.description?.trim() || resort.character?.trim()),
     })
   }
