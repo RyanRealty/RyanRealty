@@ -1,4 +1,41 @@
-# Current — 2026-09-01 (Claude Code, main) — Grok place-page leftovers rescued + shipped
+# Current — 2026-09-01 (Claude Code UX session, main) — subdivision 500 P0 killed + place-flow punch list
+
+**Shipped `c83043a7`, production READY, live-verified.** Every `/subdivisions/[slug]` URL had
+served a 500 to every visitor since 2026-07-15 (5,448 errors / 764 users in Vercel's window):
+empty `generateStaticParams` left the route classified SSG, every request attempted a static
+render, and PlaceSplitView's session read (`cookies()` via `getSession`) threw
+DYNAMIC_SERVER_USAGE with no build-time bailout to absorb it. Fix: `force-dynamic` on the plat
+route (the sibling place routes are already de facto dynamic — their build-time prerenders trip
+the bailout and Next silently reclassifies), `withTimeoutFallback` now `unstable_rethrow`s Next
+control-flow errors, and the G70 contract in `site-contracts.test.ts` pins the new truth. Same
+commit: neighborhood subdivision ledgers dedupe through `displaySubdivision` at
+`getCommunitiesInNeighborhoodLite` (Larkspur showed four Cessna cards and a `********` card
+linking `/subdivisions/unknown`) and sort actives-first before the 12-card cap.
+
+**Matt's directives this session (standing):** the place hierarchy (neighborhood ⊃ subdivisions,
+master-plan community ⊃ subdivisions) + listing↔place flow is the competitive moat — keep
+refining continuously; and NO FRANKENSTEIN: one style system, all pages same look and behavior.
+
+**Place-flow punch list (found by browsing prod + local prod build, in priority order):**
+1. Card-vs-page population mismatch: Larkspur's card says "Pettigrew Place · 1 active" but
+   `/subdivisions/pettigrew-place` serves the honest refusal — the card bins ALL residential
+   actives while the plat page's third resolution path is SFR-only and it has no boundary/alias.
+   Fix the class: a place card may only advertise the population its destination page can serve.
+2. Place pages run per-request with `revalidate=60` theater fleet-wide — real ISR means moving
+   session-dependent reads (session/saved/liked in PlaceSplitView) behind a client or Suspense
+   boundary. Big TTFB/cost win; belongs WITH the restyle program, not against it.
+3. Community pages have no first-class child-subdivisions Ledger (neighborhood pages do);
+   `getCommunitySubdivisions` (RPC `community_subdivisions`) is exported and consumed by nothing.
+4. MLS alias → recorded plat mapping incomplete (PLACE_MEMBERSHIP_MISSION W1, soft-404 class).
+5. Vercel error noise: `pages/500.html` ENOENT when a 500 is served (app-router error page gap).
+
+**Coordination:** concurrent ADMIN session shares this checkout (admin v2 work, db126181+).
+File-ownership agreed in-session; the misleading "other-session TEMP-DIAG" stash was dropped.
+Restyle PRs 165–169 remain open/unmerged (community PR says "stacked, do not merge, do not
+deploy"); still no competing restyle on main. Open on Matt's desk: land order for the restyle
+PRs + the hero-verdict demotion (below).
+
+# Prior — 2026-09-01 (Claude Code, main) — Grok place-page leftovers rescued + shipped
 
 **What shipped.** The 2026-08-30 Grok session died on credits with its final commit stranded
 locally AND non-compiling: G46 failed on `components/search/PlaceSplitView.tsx` (tsc cannot
