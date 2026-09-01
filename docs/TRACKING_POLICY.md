@@ -33,7 +33,7 @@ anonymous visit ──► first-party visitor_id (cookie/localStorage, PII-free)
 | 1 | Durable **first-party, PII-free visitor_id**; stitch anonymous→known via a **deterministic shared id (hashed email)**, never fingerprinting | ✅ live (`visitor_sessions`, `rr_session_id`, identity bridge) | gate item 4/5 + DAL |
 | 2 | **First-party, server-side** event collection preferred over client-only pixels | ✅ live (`/api/visitors/track`, `/api/meta-capi`, same-origin) | `ci:csp` host allowlist |
 | 3 | Consent gates event firing; **Consent Mode v2 = 4 params** (`analytics_storage`, `ad_storage`, `ad_user_data`, `ad_personalization`) denied-by-default | ✅ live (`GoogleAnalytics.tsx`) | **G48 item 1** |
-| 4 | Analytics/marketing tags **gated on a consent helper** | ✅ live (GTM + FUB pixel gate on `hasAnalyticsConsent`) | **G48 item 2** |
+| 4 | Analytics/marketing tags **gated on a consent helper** | ✅ live — Consent Mode v2: tags always load with `denied` defaults, `hasAnalyticsConsent`/`hasMarketingConsent` drive `consent update` (2026-09-01: GTM moved from load-suppression to this pattern after suppression made all non-consenting traffic invisible to GA4 since 2026-08-18) | **G48 item 2** |
 | 5 | **PII SHA-256 hashed before transmission** to ad platforms (email lowercased+trimmed; phone digits-only) | ✅ live (`meta-capi` `em`/`ph` only) | **G48 item 3** |
 | 6 | Pixel↔CAPI **dedup via one server-generated `event_id`** (same id + same event_name; Meta 48h merge) | ✅ live (seller LP `generateEventId`) | **G48 item 4** |
 | 7 | **Persist click IDs (fbclid/gclid) + UTMs on the lead path** so offline conversions can be uploaded | ✅ live (seller LP captures utm + fbclid) | **G48 item 5** |

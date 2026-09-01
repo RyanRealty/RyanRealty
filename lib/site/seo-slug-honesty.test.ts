@@ -128,9 +128,20 @@ describe('GTM and gtag do not both configure GA4', () => {
     expect(ga).toMatch(/const hasGA4 = !!GA4_ID && !hasGTM/)
   })
 
-  it('loads GTM only after analytics consent', () => {
+  // Re-pinned 2026-09-01: load-suppression ("only after consent") made every
+  // non-consenting visitor invisible to GA4 from 2026-08-18 on, because the
+  // GA4 config tag lives inside the GTM container. The policy-correct shape is
+  // Consent Mode v2 — always load on production with denied defaults pushed
+  // BEFORE gtm.js, consent updates on the banner event.
+  it('loads GTM with Consent Mode v2, never load-suppression', () => {
     expect(gtm).toMatch(/hasAnalyticsConsent/)
-    expect(gtm).toMatch(/if \(!GTM_ID \|\| !consent\) return null/)
+    expect(gtm).toMatch(/consent','default'|consent','default'/)
+    expect(gtm).toMatch(/wait_for_update/)
+    expect(gtm).not.toMatch(/if \(!GTM_ID \|\| !consent\) return null/)
+    // The defaults must be in the same inline script, ahead of the gtm.js bootstrap.
+    const inline = gtm.slice(gtm.indexOf('__html'))
+    expect(inline.indexOf("consent','default'")).toBeGreaterThan(-1)
+    expect(inline.indexOf("consent','default'")).toBeLessThan(inline.indexOf('gtm.js'))
   })
 })
 

@@ -62,9 +62,23 @@ async function latestListingViewForPerson(
   }
   const ev = events?.[0]
   if (!ev?.event_at) return null
+  let street = ((ev.listing_street as string | null) ?? '').trim() || null
+  const mls = ((ev.listing_mls as string | null) ?? '').trim() || null
+  // Events usually carry only the MLS number — resolve the street the same
+  // way the Today lane does, so the line (and the ask) can name the home.
+  if (!street && mls) {
+    const { data: listing } = await sb
+      .from('listings')
+      .select('StreetNumber,StreetName')
+      .eq('ListNumber', mls)
+      .limit(1)
+      .maybeSingle()
+    const addr = [listing?.StreetNumber, listing?.StreetName].filter(Boolean).join(' ').trim()
+    street = addr || null
+  }
   return {
-    listingStreet: ((ev.listing_street as string | null) ?? '').trim() || null,
-    listingMls: ((ev.listing_mls as string | null) ?? '').trim() || null,
+    listingStreet: street,
+    listingMls: mls,
     eventAt: String(ev.event_at),
   }
 }
