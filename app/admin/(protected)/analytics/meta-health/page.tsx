@@ -144,7 +144,7 @@ async function MetaHealthContent() {
     fb(`${PAGE_ID}/leadgen_forms?fields=id,name,status,leads_count,questions,privacy_policy_url,legal_content,follow_up_action_url&limit=100`) as Promise<FbList<LeadForm>>,
     fb(`${PAGE_ID}/subscribed_apps?fields=id,name,subscribed_fields`) as Promise<FbList<Subscription>>,
     fb(`${accountId}/campaigns?fields=id,name,objective,status,effective_status,created_time&limit=50`) as Promise<FbList<CampaignRow>>,
-    supabase.from('processed_meta_leads').select('id, created_at, status, campaign_name, audience, intent', { count: 'exact' }).order('created_at', { ascending: false }).limit(20),
+    supabase.from('processed_meta_leads').select('id, created_at, status, campaign_name, audience, intent, fub_person_id', { count: 'exact' }).order('created_at', { ascending: false }).limit(20),
     supabase.from('marketing_channel_daily').select('date, metric, value').eq('channel', 'meta_ads').eq('scope', 'account').gte('date', sinceDate),
   ])
 
@@ -512,11 +512,26 @@ async function MetaHealthContent() {
         </p>
         <DataList
           label="Recent inbound leads"
-          rows={processedLeads as Array<{ id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null }>}
+          rows={processedLeads as Array<{ id: string; created_at: string; status: string | null; campaign_name: string | null; audience: string | null; intent: string | null; fub_person_id: number | null }>}
           cap={10}
           rowKey={(row) => row.id}
           columns={[
-            { key: 'campaign', header: 'Campaign', lead: true, cell: (row) => row.campaign_name ?? '—' },
+            {
+              key: 'campaign',
+              header: 'Campaign',
+              lead: true,
+              // The processed lead's person record is the entity behind the row
+              // (bar rule 3) — same /admin/people/<fub_person_id> door social
+              // uses; the person route resolves legacy ids.
+              cell: (row) =>
+                row.fub_person_id != null ? (
+                  <Link href={`/admin/people/${row.fub_person_id}`} style={{ color: 'var(--a-accent)' }}>
+                    {row.campaign_name ?? '—'}
+                  </Link>
+                ) : (
+                  row.campaign_name ?? '—'
+                ),
+            },
             { key: 'when', header: 'When', num: true, cell: (row) => formatRelative(row.created_at) },
             { key: 'audience', header: 'Audience', cell: (row) => row.audience ?? '—' },
             { key: 'intent', header: 'Intent', cell: (row) => row.intent ?? '—' },

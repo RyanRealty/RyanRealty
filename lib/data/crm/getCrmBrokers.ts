@@ -22,6 +22,8 @@ import { supabaseAnon } from '@/lib/data/client'
  * degrades to "no brokers" rather than crashing.
  */
 export type CrmBroker = {
+  /** brokers.id — the entity door (/admin/brokers/edit?id=). Null on legacy rows without one. */
+  id: number | null
   /** Short CRM slug (matt/rebecca/paul) — matches crm_people.assigned_broker. */
   slug: string
   /** Display name (brokers.display_name). */
@@ -42,6 +44,7 @@ export type CrmBroker = {
 }
 
 type RawBrokerRow = {
+  id?: number | null
   crm_slug: string | null
   display_name: string | null
   email: string | null
@@ -60,6 +63,7 @@ export function mapCrmBrokerRow(r: RawBrokerRow): CrmBroker | null {
   const slug = (r.crm_slug ?? '').trim()
   if (!slug) return null
   return {
+    id: r.id ?? null,
     slug,
     name: (r.display_name ?? '').trim(),
     email: r.email ?? null,
@@ -91,7 +95,7 @@ export const getCrmBrokers = unstable_cache(
     if (!sb) return []
     const { data, error } = await sb
       .from('brokers')
-      .select('crm_slug,display_name,email,phone,title,crm_active,routing_eligible,sms_agent_enabled')
+      .select('id,crm_slug,display_name,email,phone,title,crm_active,routing_eligible,sms_agent_enabled')
       .not('crm_slug', 'is', null)
       .order('sort_order', { ascending: true })
       .order('crm_slug', { ascending: true })
@@ -101,7 +105,7 @@ export const getCrmBrokers = unstable_cache(
     }
     return mapCrmBrokerRows(data as RawBrokerRow[])
   },
-  ['crm-brokers-v3'],
+  ['crm-brokers-v4'],
   { revalidate: 300, tags: ['crm-brokers'] },
 )
 

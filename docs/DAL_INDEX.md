@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-31T02:29:41.383Z
+**Generated:** 2026-09-01T21:18:19.809Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -1328,7 +1328,7 @@ Companion files:
 
 **Tables:** `brokers`
 
-**Selected columns:** `crm_slug`, `display_name`, `email`, `phone`, `title`, `crm_active`, `routing_eligible`, `sms_agent_enabled`
+**Selected columns:** `id`, `crm_slug`, `display_name`, `email`, `phone`, `title`, `crm_active`, `routing_eligible`, `sms_agent_enabled`
 
 **Cache tags:** `'crm-brokers'`
 
@@ -3931,6 +3931,16 @@ Companion files:
 **Tables:** `listing_tile_mv`
 
 **Selected columns:** `subdivision_name`, `standard_status`
+
+**TTL windows:** `CACHE_WINDOWS.marketStats`
+
+**Cache tags:** `cacheTag.market, 'boundaries'`
+
+---
+
+### `lib/data/subdivisions/getSubdivisionBoundarySlugs.ts`
+
+**Exports:** `getSubdivisionBoundarySlugs`
 
 **TTL windows:** `CACHE_WINDOWS.marketStats`
 

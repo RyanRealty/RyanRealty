@@ -215,10 +215,23 @@ export default async function AdminEmailReportingPage({
     { key: 'bouncerate', label: 'Bounce rate', numeric: true },
   ]
 
+  // Broker name → the broker's entity page (bar rule 3); brokers is already
+  // fetched, so the slug→id map costs nothing.
+  const brokerIdBySlug = new Map(brokers.filter((b) => b.id != null).map((b) => [b.slug, b.id as number]))
+  const brokerCell = (slug: string) => {
+    const id = brokerIdBySlug.get(slug)
+    return id != null ? (
+      <Link key="b" href={`/admin/brokers/edit?id=${id}`} style={{ color: 'var(--a-accent)' }}>
+        {slug}
+      </Link>
+    ) : (
+      slug
+    )
+  }
   const brokerGrid: ReportGridRow[] = brokerEngagement.map((b) => ({
     key: b.broker,
     cells: [
-      b.broker,
+      brokerCell(b.broker),
       b.sent.toLocaleString('en-US'),
       b.delivered.toLocaleString('en-US'),
       formatRate(b.openRate),

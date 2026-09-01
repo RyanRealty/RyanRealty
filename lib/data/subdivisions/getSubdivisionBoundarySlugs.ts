@@ -47,4 +47,8 @@ export const getSubdivisionBoundarySlugs = makeResilientCached(
     revalidate: CACHE_WINDOWS.marketStats,
     tags: [cacheTag.market, 'boundaries'],
   },
+  // Fallback empty: callers treat a failed read as "unknown", never as "no
+  // plats" — the consumer guards with withTimeoutFallbackResult and keeps
+  // every card when the read did not answer.
+  [],
 )

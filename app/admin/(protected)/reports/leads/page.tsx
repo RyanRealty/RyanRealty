@@ -32,6 +32,7 @@
 // A failed read now leads, and the zeros are labelled as not a measurement.
 import Link from 'next/link'
 import { getLeadIntake } from '@/lib/data'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import {
   SectionHead,
   VerdictLine,
@@ -55,7 +56,11 @@ export default async function AdminLeadsReportPage() {
   const nowMs = new Date().getTime()
   const startIso = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString()
   const endIso = new Date(nowMs).toISOString()
-  const intake = await getLeadIntake({ startIso, endIso })
+  const [intake, brokers] = await Promise.all([
+    getLeadIntake({ startIso, endIso }),
+    getCrmBrokers(),
+  ])
+  const brokerIdBySlug = new Map(brokers.filter((b) => b.id != null).map((b) => [b.slug, b.id as number]))
 
   const topChannel = intake.byChannel.find((c) => c.attributable) ?? null
   const unreadable = intake.unreadable
@@ -91,15 +96,24 @@ export default async function AdminLeadsReportPage() {
     cells: [r.label, countCell(r.count)],
   }))
 
-  const brokerGrid: ReportGridRow[] = brokerRows.map((r) => ({
-    key: r.broker,
-    cells: [
-      <span key="b" style={{ textTransform: 'capitalize' }}>
-        {r.broker}
-      </span>,
-      countCell(r.count),
-    ],
-  }))
+  const brokerGrid: ReportGridRow[] = brokerRows.map((r) => {
+    const id = brokerIdBySlug.get(r.broker)
+    return {
+      key: r.broker,
+      cells: [
+        id != null ? (
+          <Link key="b" href={`/admin/brokers/edit?id=${id}`} style={{ textTransform: 'capitalize', color: 'var(--a-accent)' }}>
+            {r.broker}
+          </Link>
+        ) : (
+          <span key="b" style={{ textTransform: 'capitalize' }}>
+            {r.broker}
+          </span>
+        ),
+        countCell(r.count),
+      ],
+    }
+  })
 
   const sourceGrid: ReportGridRow[] = sourceRows.map((r) => ({
     key: r.source,

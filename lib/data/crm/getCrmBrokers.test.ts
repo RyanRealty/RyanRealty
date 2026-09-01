@@ -11,6 +11,7 @@ describe('mapCrmBrokerRow', () => {
       routing_eligible: true,
     })
     expect(b).toEqual({
+      id: null,
       slug: 'matt',
       name: 'Matt Ryan',
       email: 'matt@ryan-realty.com',
@@ -81,6 +82,7 @@ describe('mapCrmBrokerRow', () => {
       routing_eligible: false,
     })
     expect(b).toEqual({
+      id: null,
       slug: 'rebecca',
       name: 'Rebecca Peterson',
       email: null,

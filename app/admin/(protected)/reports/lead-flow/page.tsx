@@ -37,6 +37,7 @@ import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
 import type { GA4Summary } from '@/app/actions/ga4-report'
 import { countCmasInRange } from '@/lib/data/sync/syncWrites'
 import { getLeadIntake } from '@/lib/data'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
 import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
 import {
@@ -256,6 +257,7 @@ async function LeadFlowContent({
     listingInquiriesRes,
     cmaCount,
     visitRows,
+    crmBrokers,
   ] = await Promise.all([
     getGA4Summary(startDate, endDate),
     // Day-granular ISO bounds match the analytics pages' rangeToIso exactly,
@@ -277,7 +279,9 @@ async function LeadFlowContent({
       .lte('created_at', untilIso),
     countCmasInRange({ fromIso: cutoffIso, toIso: untilIso }),
     fetchAllVisitPaths(),
+    getCrmBrokers(),
   ])
+  const brokerIdBySlug = new Map(crmBrokers.filter((b) => b.id != null).map((b) => [b.slug, b.id as number]))
 
   const ga4Ok = ga4Result.ok
   const ga4: GA4Summary | null = ga4Ok ? ga4Result.data : null
@@ -402,14 +406,23 @@ async function LeadFlowContent({
     .sort((a, b) => b[1] - a[1])
     .map(([channel, count]) => ({ channel, count }))
 
-  const brokerGrid: ReportGridRow[] = brokerRows.slice(0, CAP_SPLIT).map((r) => ({
-    key: r.broker,
-    cells: [
-      <span key="b" style={{ textTransform: 'capitalize' }}>{r.broker}</span>,
-      formatInt(r.count),
-      <span key="s" style={MUTED}>{formatPct(r.count, totalAssignments)}</span>,
-    ],
-  }))
+  const brokerGrid: ReportGridRow[] = brokerRows.slice(0, CAP_SPLIT).map((r) => {
+    const brokerId = brokerIdBySlug.get(r.broker)
+    return {
+      key: r.broker,
+      cells: [
+        brokerId != null ? (
+          <Link key="b" href={`/admin/brokers/edit?id=${brokerId}`} style={{ textTransform: 'capitalize', color: 'var(--a-accent)' }}>
+            {r.broker}
+          </Link>
+        ) : (
+          <span key="b" style={{ textTransform: 'capitalize' }}>{r.broker}</span>
+        ),
+        formatInt(r.count),
+        <span key="s" style={MUTED}>{formatPct(r.count, totalAssignments)}</span>,
+      ],
+    }
+  })
 
   const channelGrid: ReportGridRow[] = channelRows.slice(0, CAP_SPLIT).map((r) => ({
     key: r.channel,

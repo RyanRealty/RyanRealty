@@ -713,7 +713,10 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
   const boundaryRead = await withTimeoutFallbackResult(getSubdivisionBoundarySlugs(), [], 3500, 'nbh:plat-boundaries')
   const boundarySlugSet = new Set(boundaryRead.value)
   const platResolves = (name: string, sfrActives: number): boolean => {
-    if (!boundaryRead.ok) return true
+    // Empty set = failed read, never a real answer: the underlying fetch
+    // throws on 0 rows (3,213 plats exist), so makeResilientCached's []
+    // fallback is only reachable on failure. Unknown must not delete cards.
+    if (!boundaryRead.ok || boundarySlugSet.size === 0) return true
     if (sfrActives > 0) return true
     if (boundarySlugSet.has(slugify(name))) return true
     return getResortCommunityBySubdivisionName(name) != null
