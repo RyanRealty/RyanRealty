@@ -16,14 +16,15 @@
  * correct when the data is present and degrades to at worst one repeated pair;
  * the alternative is dropping a section the data supports, which §0 forbids.
  *
- * NO-404 CONTRACT, CARRIED ACROSS UNCHANGED. For each incoming slug the page
- * tries three resolution paths in order and renders when ANY succeeds:
+ * NO-404 CONTRACT. For each incoming slug the page tries the resolution paths
+ * in order and renders when ANY succeeds:
  *   1. GIS boundary — getGeoBoundaryMapData geoType='subdivision' returns a polygon.
  *   2. Registry alias — data/resort-communities.json subdivision_aliases holds a
  *      match (slugify(alias) === slug).
- *   3. Active listings — getPlatPublicInventory finds SFR + PUBLIC_ACTIVE homes
- *      filed under that MLS SubdivisionName in the parent city.
- * notFound fires ONLY when all three return empty AND both reads succeeded.
+ *   3. Active listings — getPlatPublicInventory (REGISTRY plats only) or, for a
+ *      plain recorded plat, a direct SFR + PUBLIC_ACTIVE tile read on the
+ *      slug's MLS SubdivisionName (path 3b in loadSubdivisionCore).
+ * The refusal fires ONLY when every path is empty AND every read succeeded.
  *
  * THE REDIRECT IS NOT HERE, AND MUST NOT COME BACK. middleware.ts runs
  * resolveSubdivisionAreaRedirect(slug) on every /subdivisions/<slug> request
@@ -293,13 +294,44 @@ const loadSubdivisionCore = cache(async (slug: string) => {
     mapTiles = mapTiles.filter((t) => allowed.has(t.listingKey))
   }
 
+  // PATH 3b — plain recorded plats. getPlatPublicInventory serves REGISTRY
+  // plats only (getRegistryPlatPublicInventory), so the docblock's third
+  // resolution path could never rescue a DB-only plat: one with live SFR
+  // homes but no polygon and no alias refused as "No subdivision at this
+  // address" while its neighborhood card advertised the active (Pettigrew
+  // Place, 2026-09-01). Query the MLS name directly — the slug's only real
+  // transform is spaces→hyphens, so hyphens→spaces inverts it for every
+  // unpunctuated name; a name that does not round-trip (its own hyphen,
+  // an ampersand) simply is not rescued, which refuses rather than guesses.
+  // Same population as every other path: SFR, PUBLIC_ACTIVE.
+  let nameTilesRead: { value: Awaited<ReturnType<typeof getListingTiles>>; ok: boolean } | null = null
+  if (!hasBoundary && !registryMatch && mapTiles.length === 0) {
+    nameTilesRead = await withTimeoutFallbackResult(
+      getListingTiles({
+        subdivision: slug.replace(/-/g, ' '),
+        propertySubType: 'Single Family Residence',
+        status: 'active',
+        limit: 250,
+      }),
+      [],
+      4500,
+      'sub:name-tiles',
+    )
+    if (nameTilesRead.ok && nameTilesRead.value.length > 0) mapTiles = nameTilesRead.value
+  }
+
   // REFUSAL, not notFound(): under the streamed shell a throw ships a hollow
   // 200 with no <h1> — see SubdivisionUnavailable.tsx. Refuse only when all
-  // three paths are empty AND both reads actually answered (§0: unknown is not
-  // empty — a degraded read must not delete a real plat).
+  // resolution paths are empty AND every read actually answered (§0: unknown
+  // is not empty — a degraded read must not delete a real plat).
   const hasListings = mapTiles.length > 0
   const refused =
-    !hasBoundary && !registryMatch && !hasListings && inventoryRead.ok && boundaryRead.ok
+    !hasBoundary &&
+    !registryMatch &&
+    !hasListings &&
+    inventoryRead.ok &&
+    boundaryRead.ok &&
+    (nameTilesRead == null || nameTilesRead.ok)
 
   return { boundaryRead, inventoryRead, mtCounts, boundary, inventory, hasBoundary, registryMatch, inventoryOk, countedKeys, mapTiles, refused }
 })

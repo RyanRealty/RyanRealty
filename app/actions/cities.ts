@@ -15,6 +15,9 @@ import { entityKeyToSlug } from '@/lib/community-slug'
 import type { CommunityForIndex } from '@/lib/communities'
 import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
+import { getSubdivisionBoundarySlugs } from '@/lib/data/subdivisions/getSubdivisionBoundarySlugs'
+import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/registry'
+import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { getResortCommunityImage } from '@/lib/resort-community-images'
 import {
   getAllCitySnapshots,
@@ -676,16 +679,22 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
     limit: 5000,
   })
 
+  // SFR-only, matching BOTH the page's printed trace ("active single-family
+  // listings, counted per place") and the destination plat page's counted set
+  // (getPlatPublicInventory: property_sub_type='Single Family Residence').
+  // The old residential-bucket bin advertised "1 active" for plats whose page
+  // then served the refusal — the Pettigrew Place dead end (2026-09-01).
+  // Keyed lowercased so an MLS spelling-case variant still bins to its card.
   const bySub = new Map<string, number[]>()
   for (const t of cityTilesForBin) {
-    if (!isResidentialInventoryType(t.propertyType ?? null)) continue
+    if (t.propertySubType !== 'Single Family Residence') continue
     const sub = (t.subdivisionName ?? '').trim()
     if (!sub || sub.toLowerCase() === 'n/a') continue
     if (!communityNamesLower.has(sub.toLowerCase())) continue
-    const arr = bySub.get(sub) ?? []
+    const arr = bySub.get(sub.toLowerCase()) ?? []
     const p = Number(t.listPrice)
     if (Number.isFinite(p) && p > 0) arr.push(p)
-    bySub.set(sub, arr)
+    bySub.set(sub.toLowerCase(), arr)
   }
 
   const resortSet = new Set(
@@ -695,9 +704,25 @@ export async function getCommunitiesInNeighborhood(neighborhoodId: string, cityN
   const entityKeys = communityRows.map((comm) => entityKey(cityName, comm.name))
   const bannerMap = await getBannersBatch('subdivision', entityKeys)
 
+  // A card may only advertise a destination that will render. The plat page
+  // resolves through exactly three paths (GIS boundary, registry alias, SFR
+  // actives) and refuses otherwise — a card for an unresolvable plat is a
+  // guaranteed "No subdivision at this address" dead end, so it is dropped
+  // here rather than dressed up. Boundary read is timeout-guarded: if it did
+  // not answer, every card stays (§0 — a degraded read must not delete rows).
+  const boundaryRead = await withTimeoutFallbackResult(getSubdivisionBoundarySlugs(), [], 3500, 'nbh:plat-boundaries')
+  const boundarySlugSet = new Set(boundaryRead.value)
+  const platResolves = (name: string, sfrActives: number): boolean => {
+    if (!boundaryRead.ok) return true
+    if (sfrActives > 0) return true
+    if (boundarySlugSet.has(slugify(name))) return true
+    return getResortCommunityBySubdivisionName(name) != null
+  }
+
   const result: CommunityForIndex[] = []
   for (const comm of communityRows) {
-    const prices = bySub.get(comm.name) ?? []
+    const prices = bySub.get(comm.name.toLowerCase()) ?? []
+    if (!platResolves(comm.name, prices.length)) continue
     prices.sort((a, b) => a - b)
     const medianPrice =
       prices.length === 0
