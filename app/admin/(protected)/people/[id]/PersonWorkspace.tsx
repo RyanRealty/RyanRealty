@@ -51,6 +51,7 @@ import {
   sendSmsFromPerson,
 } from '../actions'
 import { CommsSection } from './CommsSection'
+import { timelineArtifactDoor } from '@/lib/crm/timeline-artifacts'
 import { HomesSection } from './HomesSection'
 import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
@@ -280,6 +281,17 @@ export async function PersonWorkspace({
                         </Link>
                       </>
                     ) : null}
+                    {(() => {
+                      const door = timelineArtifactDoor(m.payload, m.body)
+                      return door ? (
+                        <>
+                          {' '}
+                          <Link href={door.href} style={{ color: 'var(--a-accent)' }}>
+                            {door.label}
+                          </Link>
+                        </>
+                      ) : null
+                    })()}
                   </ThreadBubble>
                 )
               })

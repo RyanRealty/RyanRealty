@@ -68,6 +68,7 @@ import { Button, IconButton, Menu, SearchField, ToolbarSelect } from '@/componen
 import { cn } from '@/lib/utils'
 import { TimelineMediaStrip } from '@/components/admin/crm/StoredAttachments'
 import { partitionNotes } from '@/lib/crm/note-classify'
+import { timelineArtifactDoor } from '@/lib/crm/timeline-artifacts'
 import { addCrmNoteAction, startCrmCallAction } from '@/app/actions/crm'
 import { logCrmCallAction, quickFollowUpAction, toggleTimelineStarAction, refreshSmsDeliveryStatusAction } from '@/app/actions/crm-person-detail'
 
@@ -335,26 +336,6 @@ function SmsDeliveryBadge({ item }: { item: TimelineItem }) {
 
 // ── Timeline event card (§07b 7) ─────────────────────────────────────────────
 
-/**
- * A valuation send is an ARTIFACT event, not just an email: the row's chip
- * doors to the document (surface bar rule 4 — "every artifact state is a
- * door"). New sends stamp payload.artifact ('cma' | 'bpo', 2026-09-01); older
- * rows are recognized by the send body their writers have always produced.
- */
-function artifactDoor(
-  payload: Record<string, unknown> | null,
-  body: string | null,
-): { label: string; href: string } | null {
-  const p = payload ?? {}
-  const slug = typeof p.slug === 'string' && p.slug ? p.slug : null
-  if (!slug) return null
-  const isCma = p.artifact === 'cma' || /^CMA sent /.test(body ?? '')
-  const isBpo = p.artifact === 'bpo' || /^Broker price opinion sent /.test(body ?? '')
-  if (isCma) return { label: 'CMA · open', href: `/admin/cmas/${slug}` }
-  if (isBpo) return { label: 'Price opinion · open', href: `/admin/bpo/${slug}` }
-  return null
-}
-
 function EventCard({ item }: { item: TimelineItem }) {
   const now = useClientNow()
   const [expanded, setExpanded] = useState(false)
@@ -433,7 +414,7 @@ function EventCard({ item }: { item: TimelineItem }) {
               </Link>
             ) : null}
             {(() => {
-              const door = artifactDoor(item.payload, item.body)
+              const door = timelineArtifactDoor(item.payload, item.body)
               return door ? (
                 <Link href={door.href} className="ml-2 text-xs" style={{ color: 'var(--a-accent)' }}>
                   {door.label}
