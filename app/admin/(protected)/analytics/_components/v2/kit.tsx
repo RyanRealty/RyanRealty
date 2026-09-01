@@ -112,19 +112,33 @@ export type Figure = {
   value: string
   caption?: string | null
   tone?: 'ok' | 'warn'
+  /** Door to the filtered list/section that explains this figure (bar rule 4). */
+  href?: string
 }
 
-/** Figure strip: data is typographic, tabular, and never a clickable tile. */
+/**
+ * Figure strip: data is typographic and tabular. A figure with an `href` is a
+ * quiet door to the rows that explain it — never a navigation tile.
+ */
 export function Figures({ figures }: { figures: Figure[] }) {
   return (
     <div className="av2-figs">
-      {figures.map((f) => (
-        <div key={f.label}>
-          <div className={`av2-fig__n${f.tone ? ` av2-fig__n--${f.tone}` : ''}`}>{f.value}</div>
-          <div className="av2-fig__l">{f.label}</div>
-          {f.caption ? <div className="av2-fig__c">{f.caption}</div> : null}
-        </div>
-      ))}
+      {figures.map((f) => {
+        const body = (
+          <>
+            <div className={`av2-fig__n${f.tone ? ` av2-fig__n--${f.tone}` : ''}`}>{f.value}</div>
+            <div className="av2-fig__l">{f.label}</div>
+            {f.caption ? <div className="av2-fig__c">{f.caption}</div> : null}
+          </>
+        )
+        return f.href ? (
+          <a key={f.label} href={f.href} style={{ color: 'inherit', textDecoration: 'none' }}>
+            {body}
+          </a>
+        ) : (
+          <div key={f.label}>{body}</div>
+        )
+      })}
     </div>
   )
 }

@@ -223,9 +223,9 @@ async function CostPerLead({ range }: { range: { startDate: string; endDate: str
         items={[
           { label: 'Cost / lead (wk)', value: last7Cpl == null ? null : formatUsd(last7Cpl), caption: last4Cpl != null ? `4-wk avg ${formatUsd(last4Cpl)}` : undefined },
           { label: 'Paid spend this week', value: formatUsd(last7Spend), caption: `Meta ${formatUsd(weeks[0]?.[1].metaSpend ?? 0)} · Google ${formatUsd(weeks[0]?.[1].googleSpend ?? 0)}` },
-          { label: 'New leads (wk)', value: formatInt(last7Qualified) },
+          { label: 'New leads (wk)', value: formatInt(last7Qualified), href: '/admin/reports/leads' },
           { label: 'FB identified (wk)', value: formatInt(last7FbIdentified), caption: last7CplIdentified != null ? `${formatUsd(last7CplIdentified)} / id` : undefined },
-          { label: 'Closed deals (90d)', value: closedDataAvailable ? formatInt(totals90.closedWon) : null, caption: closedDataAvailable ? `${formatUsd(totals90.closedVolume)} volume` : 'ledger reconnecting' },
+          { label: 'Closed deals (90d)', value: closedDataAvailable ? formatInt(totals90.closedWon) : null, caption: closedDataAvailable ? `${formatUsd(totals90.closedVolume)} volume` : 'ledger reconnecting', href: '/admin/closings' },
           { label: 'Spend / closing (90d)', value: closedDataAvailable && costPerClosed90 != null ? formatUsd(costPerClosed90) : null, caption: closedDataAvailable ? 'blended, all sources' : 'ledger reconnecting' },
         ]}
       />

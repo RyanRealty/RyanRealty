@@ -212,11 +212,14 @@ export default async function VisitorSessionPage({
         ev.page_category ?? '-',
         <span key="page" style={{ fontFamily: 'var(--a-font-mono)', overflowWrap: 'anywhere' }}>
           {shortenUrl(ev.page_url)}
-          {listingLabel ? (
-            <span style={{ fontFamily: 'var(--a-font)', color: 'var(--a-text-2)' }}>
+          {listingLabel && ev.listing_mls ? (
+            <Link
+              href={`/admin/listings/${encodeURIComponent(ev.listing_mls)}`}
+              style={{ fontFamily: 'var(--a-font)', color: 'var(--a-accent)', textDecoration: 'none' }}
+            >
               {' '}
               {listingLabel}
-            </span>
+            </Link>
           ) : null}
         </span>,
         ev.scroll_depth_pct != null ? `${ev.scroll_depth_pct}%` : '-',

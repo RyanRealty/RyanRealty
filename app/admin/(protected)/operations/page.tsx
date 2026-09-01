@@ -121,6 +121,7 @@ export default async function AdminDashboardPage() {
       label: 'Active listings',
       value: nf.format(syncData.counts.activeCount),
       delta: { direction: 'flat', text: 'every property type' },
+      aux: { href: '/admin/listings', label: 'Open listings' },
     },
     {
       key: 'sessions',
@@ -131,18 +132,21 @@ export default async function AdminDashboardPage() {
         direction: 'flat',
         text: ga4.ok ? `${nf.format(ga4.socialSessions)} from social · FP = visitor_sessions` : 'GA4 offline · use visitor_sessions',
       },
+      aux: { href: '/admin/reports/traffic-sources', label: 'Traffic sources' },
     },
     {
       key: 'leadevents',
       label: 'Lead events, 30 days',
       value: ga4.ok ? nf.format(ga4.facebookLeadEvents) : '—',
       delta: { direction: 'flat', text: ga4.ok ? 'from Facebook' : 'GA4 offline' },
+      aux: { href: '/admin/reports/lead-flow', label: 'Lead flow' },
     },
     {
       key: 'valuations',
       label: 'Valuation requests',
       value: nf.format(marketingData.website.valuationRequests30d),
       delta: { direction: 'flat', text: 'last 30 days' },
+      aux: { href: '/admin/valuations', label: 'Open valuations' },
     },
     {
       key: 'identified',
@@ -152,6 +156,7 @@ export default async function AdminDashboardPage() {
         direction: 'flat',
         text: `${nf.format(leadData.visitsWithUser)} of ${nf.format(leadData.totalVisits)}, all time`,
       },
+      aux: { href: '/admin/visitors/live', label: 'Live visitors' },
     },
     {
       key: 'photos',

@@ -347,9 +347,13 @@ function CycleSection({
       </p>
       {cycle.sellers.length || cycle.buyers.length ? (
         <p style={{ ...tiny, margin: '4px 0 0' }}>
-          {cycle.sellers.length ? `Sellers: ${cycle.sellers.join(', ')}` : ''}
-          {cycle.sellers.length && cycle.buyers.length ? ' · ' : ''}
-          {cycle.buyers.length ? `Buyers: ${cycle.buyers.join(', ')}` : ''}
+          {/* Names here carry no person ids — the linked rows live in the
+              parties pane, so the summary line doors there. */}
+          <a href="#parties" style={{ color: 'inherit', textDecoration: 'none' }}>
+            {cycle.sellers.length ? `Sellers: ${cycle.sellers.join(', ')}` : ''}
+            {cycle.sellers.length && cycle.buyers.length ? ' · ' : ''}
+            {cycle.buyers.length ? `Buyers: ${cycle.buyers.join(', ')}` : ''}
+          </a>
         </p>
       ) : null}
 

@@ -323,10 +323,10 @@ async function AdRoi({ range }: { range: { startDate: string; endDate: string } 
         <SectionHead>The money funnel ({windowLabel})</SectionHead>
         <NumberStrip
           items={[
-            { label: 'Ad spend (tracked)', value: formatUsd(totalSpend), caption: `${formatUsd(metaSpend)} Meta · ${formatUsd(googleSpend)} Google` },
-            { label: 'Visitors from paid ads', value: formatInt(paidSessions), caption: `of ${formatInt(totalSessions)} total visitors` },
-            { label: 'New leads (all sources)', value: formatInt(newLeads), caption: 'real inbound leads, getLeadIntake' },
-            { label: 'Visitors matched to a name', value: formatInt(totalIdentified), caption: 'the "put a name to the number" count' },
+            { label: 'Ad spend (tracked)', value: formatUsd(totalSpend), caption: `${formatUsd(metaSpend)} Meta · ${formatUsd(googleSpend)} Google`, href: '/admin/analytics/cost-per-lead' },
+            { label: 'Visitors from paid ads', value: formatInt(paidSessions), caption: `of ${formatInt(totalSessions)} total visitors`, href: '/admin/reports/traffic-sources' },
+            { label: 'New leads (all sources)', value: formatInt(newLeads), caption: 'real inbound leads, getLeadIntake', href: '/admin/reports/leads' },
+            { label: 'Visitors matched to a name', value: formatInt(totalIdentified), caption: 'the "put a name to the number" count', href: '/admin/visitors/live' },
             {
               label: 'Blended cost per new lead',
               value: usdOrDash(blendedCostPerLead),

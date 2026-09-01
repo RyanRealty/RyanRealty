@@ -105,7 +105,7 @@ export function DealParties({
   }
 
   return (
-    <section aria-label="People on this deal" className="av2-pane" style={{ marginTop: 16 }}>
+    <section id="parties" aria-label="People on this deal" className="av2-pane" style={{ marginTop: 16 }}>
       <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-md)', fontWeight: 500 }}>
         People on this deal
       </p>

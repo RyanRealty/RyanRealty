@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "2026-08-10T05:06:52Z \u2014 P12 residual queue CLEARED for phase items. Audit wired (bulk/TC/approval/blog/sends); measurement full (first-touch + CMA SLA + backfill cron); full-sync stale attention; ReportGrid already converged; primitive ids already unique; FUB TRACK3 ratcheted (no new identifiers). Pricing backlog stays parked. Phase DoD: correctness substrate + compliance logging + ops visibility.",
+  "current_process": "2026-09-01 \u2014 Admin UX simplification sweep (Matt override). Wave 1 pushed db126181; wave 2 in tree; queue top = ux-simplify-wave3.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-10T05:06:52Z"
+  "updated_at": "2026-09-01T20:05:00Z"
 }

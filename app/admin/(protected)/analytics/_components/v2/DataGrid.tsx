@@ -171,27 +171,47 @@ export function LaneNote({ children }: { children: ReactNode }) {
   )
 }
 
-/** The numbers strip (pattern 3, week strip) — labelled figures, tabular. */
+/**
+ * The numbers strip (pattern 3, week strip) — labelled figures, tabular.
+ * An item with an `href` doors to the filtered rows that explain it.
+ */
 export function NumberStrip({
   items,
 }: {
-  items: Array<{ label: string; value: string | null; caption?: string | null }>
+  items: Array<{ label: string; value: string | null; caption?: string | null; href?: string }>
 }) {
   return (
     <div className="av2-week" style={{ marginBottom: 'var(--a-s5)' }}>
-      {items.map((it) => (
-        <span key={it.label} className="av2-wk" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-          <span className="av2-wk__n" style={{ color: it.value === null ? 'var(--a-text-2)' : 'var(--a-text)' }}>
-            {it.value ?? '—'}
-          </span>
-          <span className="av2-wk__l">{it.label}</span>
-          {it.caption ? (
-            <span className="av2-wk__l" style={{ fontSize: 'var(--a-text-xs)' }}>
-              {it.caption}
+      {items.map((it) => {
+        const body = (
+          <>
+            <span className="av2-wk__n" style={{ color: it.value === null ? 'var(--a-text-2)' : 'var(--a-text)' }}>
+              {it.value ?? '—'}
             </span>
-          ) : null}
-        </span>
-      ))}
+            <span className="av2-wk__l">{it.label}</span>
+            {it.caption ? (
+              <span className="av2-wk__l" style={{ fontSize: 'var(--a-text-xs)' }}>
+                {it.caption}
+              </span>
+            ) : null}
+          </>
+        )
+        const style = { flexDirection: 'column', alignItems: 'flex-start', gap: 0 } as const
+        return it.href ? (
+          <a
+            key={it.label}
+            href={it.href}
+            className="av2-wk"
+            style={{ ...style, color: 'inherit', textDecoration: 'none' }}
+          >
+            {body}
+          </a>
+        ) : (
+          <span key={it.label} className="av2-wk" style={style}>
+            {body}
+          </span>
+        )
+      })}
     </div>
   )
 }

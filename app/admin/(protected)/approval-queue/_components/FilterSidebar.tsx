@@ -100,52 +100,67 @@ export function FilterSidebar({ categories, actionTypePrefixes }: FilterSidebarP
       </div>
 
       {categories.length > 0 && (
-        <div className="space-y-2">
-          <p style={GROUP_LABEL_STYLE}>Producer category</p>
-          {categories.map((cat) => (
-            <div key={cat} className="flex items-center gap-2">
-              <ToolbarCheck
-                id={`cat-${cat}`}
-                label={cat}
-                checked={isChecked('cat', cat)}
-                onChange={(e) => updateParam('cat', cat, e.target.checked)}
-              />
-            </div>
-          ))}
-        </div>
+        <details open={searchParams.getAll('cat').length > 0}>
+          <summary style={GROUP_LABEL_STYLE}>
+            Producer category
+            {searchParams.getAll('cat').length > 0 ? ` · ${searchParams.getAll('cat').length}` : ''}
+          </summary>
+          <div className="mt-2 space-y-2">
+            {categories.map((cat) => (
+              <div key={cat} className="flex items-center gap-2">
+                <ToolbarCheck
+                  id={`cat-${cat}`}
+                  label={cat}
+                  checked={isChecked('cat', cat)}
+                  onChange={(e) => updateParam('cat', cat, e.target.checked)}
+                />
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       <Rule />
 
-      <div className="space-y-2">
-        <p style={GROUP_LABEL_STYLE}>Action type</p>
-        {actionTypePrefixes.map((prefix) => (
-          <div key={prefix} className="flex items-center gap-2">
-            <ToolbarCheck
-              id={`prefix-${prefix}`}
-              label={`${prefix}:*`}
-              checked={isChecked('prefix', prefix)}
-              onChange={(e) => updateParam('prefix', prefix, e.target.checked)}
-            />
-          </div>
-        ))}
-      </div>
+      <details open={searchParams.getAll('prefix').length > 0}>
+        <summary style={GROUP_LABEL_STYLE}>
+          Action type
+          {searchParams.getAll('prefix').length > 0 ? ` · ${searchParams.getAll('prefix').length}` : ''}
+        </summary>
+        <div className="mt-2 space-y-2">
+          {actionTypePrefixes.map((prefix) => (
+            <div key={prefix} className="flex items-center gap-2">
+              <ToolbarCheck
+                id={`prefix-${prefix}`}
+                label={`${prefix}:*`}
+                checked={isChecked('prefix', prefix)}
+                onChange={(e) => updateParam('prefix', prefix, e.target.checked)}
+              />
+            </div>
+          ))}
+        </div>
+      </details>
 
       <Rule />
 
-      <div className="space-y-2">
-        <p style={GROUP_LABEL_STYLE}>Urgency</p>
-        {URGENCY_OPTIONS.map((opt) => (
-          <div key={opt.value} className="flex items-center gap-2">
-            <ToolbarCheck
-              id={`urgency-${opt.value}`}
-              label={opt.label}
-              checked={isChecked('urgency', opt.value)}
-              onChange={(e) => updateParam('urgency', opt.value, e.target.checked)}
-            />
-          </div>
-        ))}
-      </div>
+      <details open={searchParams.getAll('urgency').length > 0}>
+        <summary style={GROUP_LABEL_STYLE}>
+          Urgency
+          {searchParams.getAll('urgency').length > 0 ? ` · ${searchParams.getAll('urgency').length}` : ''}
+        </summary>
+        <div className="mt-2 space-y-2">
+          {URGENCY_OPTIONS.map((opt) => (
+            <div key={opt.value} className="flex items-center gap-2">
+              <ToolbarCheck
+                id={`urgency-${opt.value}`}
+                label={opt.label}
+                checked={isChecked('urgency', opt.value)}
+                onChange={(e) => updateParam('urgency', opt.value, e.target.checked)}
+              />
+            </div>
+          ))}
+        </div>
+      </details>
     </aside>
   )
 }
