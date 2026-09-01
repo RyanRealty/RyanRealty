@@ -2,7 +2,7 @@
   {
     "id": "fold-inbox-into-messages",
     "phase": "P12",
-    "note": "Matt lock 2026-09-01 #1 \u2014 slices 1-3 SHIPPED: folders as one select on Messages (recent default), unknown-caller add/link in the thread, ?m= channel deep links honored, ALL ~10 entrances repointed to /admin/messages (/admin/inbox bridge included), tour retargeted. REMAINING (final slice): port conversation status (open/handled/closed), assign, and bulk triage into Messages, then hard-redirect /admin/crm/inbox and delete its page tree. Until then crm/inbox stays URL-reachable but doorless for those residual tools."
+    "note": "Matt lock 2026-09-01 #1 \u2014 slices 1-4 SHIPPED: folders as one select, unknown-caller add/link in thread, ?m= deep links, all entrances repointed, per-thread status+assign controls (MessagesThreadControls via getConversationTriageState), per-row Done sweep in folder views. FINAL: convert crm/inbox/page.tsx to a redirect + retire its tree. Recon done \u2014 cascade to handle: check-email-quality.mjs lists inbox/page.tsx; check-admin-v2-tokens SCAN_DIRS lists page + 8 _components (keep AddPersonForm \u2014 Messages imports it; settings/account imports mobile-data); reachable-exports will flag bulkConversationStateAction/saveDraft/aiSmsDraft/renderSmsTemplate + mobile components once the page body goes; check-crm-mobile-track PENDING text mentions the route (text-only). Multi-select bulk triage is the one capability without a Messages equivalent \u2014 confirm unmissed or add multi-select before deleting."
   },
   {
     "id": "looking-at-identity-leg",

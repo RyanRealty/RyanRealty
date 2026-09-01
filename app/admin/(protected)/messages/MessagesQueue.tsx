@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getRecentMessageConversations } from '@/lib/data/crm/getMessagesInbox'
 import { getInboxFolderQueue, type InboxFolderKey } from '@/lib/data/crm/getInboxQueue'
 import { MessagesFolderSelect } from './MessagesFolderSelect'
+import { QueueQuickDone } from './QueueQuickDone'
 
 export type MessagesFolder = 'recent' | InboxFolderKey
 
@@ -74,18 +75,25 @@ export async function MessagesQueue({
         </Link>
       </div>
       {rows.map((c) => (
-        <Link
-          key={c.key}
-          href={threadHref(c.personId)}
-          className={`av2-conv${c.personId === selectedId ? ' av2-conv--current' : ''}`}
-        >
-          <span className="av2-conv__name">
-            {c.unread ? <span className="av2-conv__unread" aria-label="Unread" /> : null}
-            {c.name ?? 'Unknown contact'}
-          </span>
-          <span className="av2-conv__ts">{c.lastKindLabel}</span>
-          <span className="av2-conv__snippet">{c.snippet ?? ''}</span>
-        </Link>
+        <div key={c.key} style={{ display: 'flex', alignItems: 'center' }}>
+          <Link
+            href={threadHref(c.personId)}
+            className={`av2-conv${c.personId === selectedId ? ' av2-conv--current' : ''}`}
+            style={{ flex: 1, minWidth: 0 }}
+          >
+            <span className="av2-conv__name">
+              {c.unread ? <span className="av2-conv__unread" aria-label="Unread" /> : null}
+              {c.name ?? 'Unknown contact'}
+            </span>
+            <span className="av2-conv__ts">{c.lastKindLabel}</span>
+            <span className="av2-conv__snippet">{c.snippet ?? ''}</span>
+          </Link>
+          {folder !== 'recent' && folder !== 'closed' ? (
+            <span style={{ paddingRight: 8 }}>
+              <QueueQuickDone personId={c.personId} />
+            </span>
+          ) : null}
+        </div>
       ))}
       {rows.length === 0 ? (
         <div className="av2-sysnote" style={{ padding: 24 }}>

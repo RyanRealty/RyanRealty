@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-01T23:27:38.862Z
+**Generated:** 2026-09-01T23:59:07.655Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -1295,6 +1295,16 @@ Companion files:
 **Tables:** `crm_people`
 
 **Selected columns:** `id`, `fub_legacy_id`, `name`, `emails`, `phones`, `assigned_broker`
+
+---
+
+### `lib/data/crm/getConversationTriageState.ts`
+
+**Exports:** `getConversationTriageState`
+
+**Tables:** `crm_conversation_state`
+
+**Selected columns:** `status`, `assigned_broker`
 
 ---
 
@@ -4366,7 +4376,7 @@ Companion files:
 | `crm_company_settings` | `DEFAULT_COMPANY_SETTINGS()`, `getCrmCompanySettings()` <br /> `lib/data/crm/getCrmCompanySettings.ts` |
 | `crm_contact_points` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getGroupReplyParticipants()`, `getLookingAtNow()`, `getPersonIdsByEmail()`, `getPersonPrimaryEmail()`, `getSendTarget()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `searchCrmPeople()`, `ROW_COLS()`, `resolveCrmPersonId()`, `upsertListingAlert()`, `createListingAlertForLead()`, `getListingAlertsForLead()`, `getActiveListingAlertsDue()`, `updateListingAlert()`, `setListingAlertActive()`, `deleteListingAlertById()`, `markListingAlertNotified()`, `claimListingAlertSend()`, `restoreListingAlertCursor()`, `getListingAlertById()`, `getListingAlertsByIds()`, `updateListingAlertEngineSettings()`, `updateListingAlertRecipients()`, `deactivateListingAlertByToken()`, `stampListingAlertsCrmPerson()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getGroupReplyParticipants.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getPersonIdsByEmail.ts` · `lib/data/crm/getPersonPrimaryEmail.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/crm/searchCrmPeople.ts` · `lib/data/leads/listingAlerts.ts` · `lib/data/tc/oref-packet-reads.ts` |
 | `crm_conversation` | `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()`, `getRecentMessageConversations()` <br /> `lib/data/crm/getInboxQueue.ts` · `lib/data/crm/getMessagesInbox.ts` |
-| `crm_conversation_state` | `TRIAGE_WEIGHTS()`, `TRIAGE_HALF_LIFE_HOURS()`, `SEQUENCE_RANK()`, `triageRank()`, `rankTriageItems()`, `mergeNeedsAction()`, `replySignal()`, `classifyDocEvent()`, `docSignal()`, `visitSignal()`, `isTriageTaskCandidate()`, `taskSignal()`, `formatTriageAge()`, `isSuppressedByStateTouch()`, `isUnreadStatus()`, `TRIAGE_WINDOW_HOURS()`, `getInboundTriage()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()` <br /> `lib/data/crm/getInboundTriage.ts` · `lib/data/crm/getInboxQueue.ts` |
+| `crm_conversation_state` | `getConversationTriageState()`, `TRIAGE_WEIGHTS()`, `TRIAGE_HALF_LIFE_HOURS()`, `SEQUENCE_RANK()`, `triageRank()`, `rankTriageItems()`, `mergeNeedsAction()`, `replySignal()`, `classifyDocEvent()`, `docSignal()`, `visitSignal()`, `isTriageTaskCandidate()`, `taskSignal()`, `formatTriageAge()`, `isSuppressedByStateTouch()`, `isUnreadStatus()`, `TRIAGE_WINDOW_HOURS()`, `getInboundTriage()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()` <br /> `lib/data/crm/getConversationTriageState.ts` · `lib/data/crm/getInboundTriage.ts` · `lib/data/crm/getInboxQueue.ts` |
 | `crm_deal_stages` | `fetchClosedDealsByBroker()`, `getAgentGoalsReport()`, `getDealPipelines()`, `pipelineHasStage()`, `getMarketingUtmReport()` <br /> `lib/data/crm/agentActivityClosedDeals.ts` · `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getDealPipelines.ts` · `lib/data/crm/getMarketingUtmReport.ts` |
 | `crm_deals` | `ACTIVE_STAGE_ORDER()`, `parseStageChange()`, `getBookConversion()`, `rangeToIso()`, `personName()`, `personHref()`, `readPeople()`, `readSessions()`, `countAudienceSessions()`, `readAccountSnapshots()`, `readDeals()`, `readWorkingPersonIds()`, `sellerClientPersonIds()`, `readActiveBrokers()`, `readJoinConverts()`, `namesForIds()`, `fetchClosedDealsByBroker()`, `getAgentGoalsReport()`, `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentsForPerson()`, `getCalendarExtras()`, `getCalendarContactOptions()`, `getPersonNamesByIds()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getDealScopeRow()`, `getMarketingUtmReport()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()`, `mergeTagOptions()` <br /> `lib/data/analytics/bookConversion.ts` · `lib/data/analytics/salesFunnelRead.ts` · `lib/data/crm/agentActivityClosedDeals.ts` · `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getAppointments.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getDealScopeRow.ts` · `lib/data/crm/getMarketingUtmReport.ts` · `lib/data/crm/getPersonDetailExtras.ts` |
 | `crm_field_definitions` | `CRM_FIELD_TYPES()`, `CRM_FIELD_DEFINITIONS_TAG()`, `normalizeFieldType()`, `normalizeFieldOptions()`, `mapFieldDefinitionRow()`, `getCrmFieldValue()`, `getCrmFieldDefinitions()` <br /> `lib/data/crm/getCrmFieldDefinitions.ts` |

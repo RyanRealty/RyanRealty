@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import { getConversationThreadFull, getInboxContactCard } from '@/lib/data/crm/getInboxThread'
+import { getConversationTriageState } from '@/lib/data/crm/getConversationTriageState'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
+import { MessagesThreadControls } from './MessagesThreadControls'
 import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { requirePersonInScope } from '@/app/actions/crm'
 import { addUnknownCallerPersonAction } from '@/app/actions/crm-inbox'
@@ -50,10 +53,13 @@ export async function MessagesThread({
     )
   }
 
-  const [thread, card, drafts] = await Promise.all([
+  const canAssign = access.role === 'superuser'
+  const [thread, card, drafts, triage, brokers] = await Promise.all([
     getConversationThreadFull(personId, 80),
     getInboxContactCard(personId),
     getDraftsForPerson(personId, access.brokerSlug),
+    getConversationTriageState(personId),
+    canAssign ? getCrmBrokers() : Promise.resolve([]),
   ])
   const quiet = inSmsQuietHours()
 
@@ -98,7 +104,14 @@ export async function MessagesThread({
                 .join(' · ')}
             </div>
           </div>
-          <span style={{ marginLeft: 'auto' }}>
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            <MessagesThreadControls
+              personId={personId}
+              status={triage.status}
+              assignee={triage.assignedBroker ?? ''}
+              brokerOptions={brokers.filter((b) => b.crmActive).map((b) => ({ value: b.slug, label: b.name || b.slug }))}
+              canAssign={canAssign}
+            />
             <Link href={`/admin/people/${personId}`}>
               <Button variant="quiet">Person</Button>
             </Link>
