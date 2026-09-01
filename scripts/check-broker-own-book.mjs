@@ -65,10 +65,12 @@ checks.push({
     /getDayOneChecklist/.test(today),
 })
 
-const people = src('app/admin/(protected)/people/page.tsx')
+// People-list fold (Matt lock 2026-09-01): /admin/people is a redirect bridge;
+// the surviving list at /admin/crm carries the scope duty.
+const people = src('app/admin/(protected)/crm/page.tsx')
 checks.push({
   label: 'People uses scopeBroker',
-  ok: /scopeBroker\(ctx\)/.test(people) && !/ctx\.role === 'superuser' \? null : ctx\.brokerSlug/.test(people),
+  ok: /scopeBroker\(access\)/.test(people) && !/role === 'superuser' \? null : /.test(people),
 })
 
 const messages = src('app/admin/(protected)/messages/page.tsx')
@@ -77,13 +79,15 @@ checks.push({
   ok: /scopeBroker\(ctx\)/.test(messages) && !/ctx\.role === 'superuser' \? null : ctx\.brokerSlug/.test(messages),
 })
 
-const batch = src('app/admin/(protected)/crm/reporting/batch-emails/page.tsx')
+// Email-performance fold (Matt lock 2026-09-01): the batch list lives inside
+// /admin/reports/emails via BatchSendsSection; the old list route is a bridge.
+const batch = src('app/admin/(protected)/reports/emails/BatchSendsSection.tsx')
 checks.push({
   label: 'Batch emails uses scopeBroker without a fail-open ternary',
   ok:
-    /scopeBroker\(access\)/.test(batch) &&
     /getBatchEmailsReport\(scope\)/.test(batch) &&
-    !/role === 'superuser' \? null : scope/.test(batch),
+    !/role === 'superuser' \? null : scope/.test(batch) &&
+    /scopeBroker\(access\)/.test(src('app/admin/(protected)/reports/emails/page.tsx')),
 })
 
 const dayOne = src('lib/crm/day-one.ts')
