@@ -2,9 +2,13 @@ import Link from 'next/link'
 import { getConversationThreadFull, getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { getDraftsForPerson } from '@/lib/data/crm/drafts'
 import { requirePersonInScope } from '@/app/actions/crm'
+import { addUnknownCallerPersonAction } from '@/app/actions/crm-inbox'
+import { searchPeopleForMergeAction, linkUnknownCallerToPersonAction } from '@/app/actions/crm-person-gaps'
+import { isUnknownCaller } from '@/lib/crm/display-name'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { Button, ThreadBubble } from '@/components/admin/v2'
 import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
+import AddPersonForm from '@/app/admin/(protected)/crm/inbox/_components/AddPersonForm'
 import type { CrmAccess } from '@/app/actions/crm'
 
 function tsLabel(iso: string): string {
@@ -49,6 +53,32 @@ export async function MessagesThread({
     getDraftsForPerson(personId, access.brokerSlug),
   ])
   const quiet = inSmsQuietHours()
+
+  // Unknown-caller naming (Messages-fold slice 2): the same inline add/link
+  // affordance the inbox reading pane carried, so an unidentified caller can
+  // be named or merged without leaving the thread.
+  const isUnknown = isUnknownCaller(card?.name ?? null)
+  async function addPersonFor(
+    firstName: string,
+    lastName: string,
+    email: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const res = await addUnknownCallerPersonAction(personId, firstName, lastName, email)
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
+  }
+  async function searchExistingFor(
+    query: string,
+  ): Promise<Array<{ id: number; name: string | null; email: string | null; phone: string | null }>> {
+    'use server'
+    const hits = await searchPeopleForMergeAction(query, personId)
+    return hits.map((h) => ({ id: h.id, name: h.name, email: h.email, phone: h.phone }))
+  }
+  async function linkExistingFor(existingId: number): Promise<{ ok: boolean; error?: string }> {
+    'use server'
+    const res = await linkUnknownCallerToPersonAction(existingId, personId)
+    return res.ok ? { ok: true } : { ok: false, error: res.error }
+  }
 
   return (
     <>
@@ -99,6 +129,17 @@ export async function MessagesThread({
           })}
           {thread.length === 0 ? <div className="av2-sysnote">No messages yet.</div> : null}
         </div>
+
+        {isUnknown ? (
+          <div style={{ padding: '8px 16px', borderTop: '1px solid var(--a-border)' }}>
+            <AddPersonForm
+              phone={card?.phone ?? null}
+              addAction={addPersonFor}
+              searchAction={searchExistingFor}
+              linkAction={linkExistingFor}
+            />
+          </div>
+        ) : null}
 
         <div className="av2-composer">
           <ComposeSurface
