@@ -32,6 +32,18 @@ refining continuously; and NO FRANKENSTEIN: one style system, all pages same loo
    available for a spatial (non-registry) enumeration later.
 4. MLS alias → recorded plat mapping incomplete (PLACE_MEMBERSHIP_MISSION W1, soft-404 class).
 5. Vercel error noise: `pages/500.html` ENOENT when a 500 is served (app-router error page gap).
+6. **Matt 2026-09-01 — per-type breakdown per child place:** on a neighborhood/community page,
+   each subdivision cell/card should break out its property types ("Subdivision 1: 5 townhomes,
+   Subdivision 2: none…") — the map cells shipped in f10ee055 carry activeHomes; extend the
+   community_subdivisions RPC (or bin from tiles) to per-type counts and surface on cell
+   hover/click and the Subdivisions ledger rows.
+7. **Matt 2026-09-01 — place+type SEO landing pages:** the type cards ("33 Single-family in
+   Black Butte Ranch") land on `/homes-for-sale/...?propertyType=A&propertySubTypes=...` — a
+   query-string search result. Matt wants a dedicated crawlable page per place+type with real
+   content and onward exploration links (no dead ends — every page keeps the visitor moving to
+   sibling types, child/parent places, market context). Design consideration: SSG budget +
+   sitemap cost (thousands of place×type combos — index only combos with inventory or sales
+   history; the rest render on demand, noindex). Also carries f10ee055's one-source count rule.
 
 **Coordination:** concurrent ADMIN session shares this checkout (admin v2 work, db126181+).
 File-ownership agreed in-session; the misleading "other-session TEMP-DIAG" stash was dropped.
