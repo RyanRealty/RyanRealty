@@ -339,6 +339,7 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
       id="files"
       icon={<Paperclip className="h-4 w-4" />}
       title="Files"
+      defaultOpen={files.length > 0}
       headerRight={
         <Menu
           label="Add file"
@@ -549,6 +550,7 @@ export function PersonRightRail({
           id="action-plans"
           icon={<Play className="h-4 w-4" />}
           title="Action Plans"
+          defaultOpen={enrollments.length > 0}
           collapsedIndicator={runningPlans.length > 0 ? <RailChip tone="ok">{runningPlans.length}</RailChip> : null}
           headerRight={
             <ApplyAutomationDialog
@@ -623,6 +625,7 @@ export function PersonRightRail({
           id="activity"
           icon={<Footprints className="h-4 w-4" />}
           title="Activity"
+          defaultOpen={false}
           headerRight={
             lastSeenAt ? (
               <span className="text-xs" style={MUTED}>
@@ -646,6 +649,7 @@ export function PersonRightRail({
           id="tasks"
           icon={<ListChecks className="h-4 w-4" />}
           title={`Tasks (${openTasks.length})`}
+          defaultOpen={openTasks.length > 0}
           collapsedIndicator={openTasks.length > 0 ? <RailChip>{openTasks.length}</RailChip> : null}
           headerRight={
             <>
@@ -742,6 +746,7 @@ export function PersonRightRail({
           id="appointments"
           icon={<Calendar className="h-4 w-4" />}
           title="Appointments"
+          defaultOpen={upcomingAppts.length > 0}
           collapsedIndicator={upcomingAppts.length > 0 ? <RailChip>{upcomingAppts.length}</RailChip> : null}
           headerRight={
             <a href={`/admin/crm/calendar?person=${personId}`} aria-label="Add appointment">
@@ -784,6 +789,7 @@ export function PersonRightRail({
           id="deals"
           icon={<Briefcase className="h-4 w-4" />}
           title="Deals"
+          defaultOpen={deals.length > 0}
           headerRight={
             <Link href="/admin/crm/deals" aria-label="Add deal">
               <AddButton label="Add deal" />
@@ -850,6 +856,7 @@ export function PersonRightRail({
           id="collaborators"
           icon={<Users className="h-4 w-4" />}
           title="Collaborators"
+          defaultOpen={false}
           headerRight={
             <CollaboratorsDialog personId={personId} collaborators={collaborators} brokerOptions={brokerOptions} assignedBroker={assignedBroker} />
           }

@@ -56,9 +56,12 @@ describe('lookingAtTodayTitle', () => {
 })
 
 describe('lookingAtAskBody', () => {
-  it('is the locked D1 ask: names the home, wants a comparison', () => {
+  // Offer set re-locked by Matt 2026-09-01: the ask names what a broker can
+  // actually deliver on the spot — a price opinion or a CMA. D1 (no watch
+  // narration) and D11 (punctuation) hold unchanged below.
+  it('is the locked ask: names the home, offers a price opinion or a CMA', () => {
     expect(lookingAtAskBody('123 Main St')).toBe(
-      '123 Main St. Want a short comparison and what to think about offering?',
+      '123 Main St. Want my opinion on the price, or a full CMA?',
     )
   })
 

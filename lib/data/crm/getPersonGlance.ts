@@ -8,9 +8,11 @@ import { getPersonAwaitingBrokerStep } from '@/lib/data/crm/getBrokerActionQueue
 import {
   composePersonNextStep,
   composePersonNowLine,
+  listingViewIsRecent,
   unrepliedInboundFromMessages,
   type PersonListingView,
 } from '@/lib/crm/person-header-lines'
+import { lookingAtAskHrefIfRecent } from '@/lib/crm/looking-at'
 
 const MESSAGE_KINDS = ['sms_in', 'sms_out', 'email_in', 'email_out'] as const
 const VIEW_KINDS = ['property_view', 'page_view'] as const
@@ -18,6 +20,12 @@ const VIEW_KINDS = ['property_view', 'page_view'] as const
 export type PersonGlance = {
   nextLine: string
   nowLine: string
+  /**
+   * One-tap composer deep link when the now-line names a home they are looking
+   * at (Matt 2026-09-01: "I see you're on the site… want my opinion on the
+   * price, or a CMA?"). Null when the view is stale or has no street.
+   */
+  askHref: string | null
 }
 
 function listingViewFromRow(row: {
@@ -38,7 +46,7 @@ function listingViewFromRow(row: {
 
 export async function getPersonGlance(personId: number): Promise<PersonGlance> {
   if (!Number.isFinite(personId) || personId <= 0) {
-    return { nextLine: 'No next step queued.', nowLine: 'Not on the site.' }
+    return { nextLine: 'No next step queued.', nowLine: 'Not on the site.', askHref: null }
   }
   const sb = createServiceClient()
   const [messages, awaiting, view, tasks] = await Promise.all([
@@ -77,6 +85,7 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       payload: (row.payload ?? null) as Record<string, unknown> | null,
     })),
   )
+  const latestView = listingViewFromRow(view.data)
   const triage = (tasks.data ?? []).find((t) =>
     isTriageTaskCandidate({
       name: (t.name as string | null) ?? null,
@@ -91,6 +100,7 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       triageTask: triage ? { name: (triage.name as string | null) ?? null, type: (triage.type as string | null) ?? null } : null,
       sequenceWaiting: awaiting,
     }),
-    nowLine: composePersonNowLine({ latestListingView: listingViewFromRow(view.data) }),
+    nowLine: composePersonNowLine({ latestListingView: latestView }),
+    askHref: lookingAtAskHrefIfRecent(personId, latestView?.listingStreet, listingViewIsRecent(latestView)),
   }
 }

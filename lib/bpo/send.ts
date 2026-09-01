@@ -421,7 +421,7 @@ export async function sendBpoToLead(opts: {
     body: `Broker price opinion sent to ${target.email} for ${(row.subject_address as string) ?? slug}${includeOffer ? ' (with offer strategy)' : ''}.`,
     broker: crmBrokerSlug,
     dedupeKey: `bpo:sent:${slug}:${sentAt.slice(0, 10)}`,
-    payload: { slug, transport, includeOfferStrategy: includeOffer },
+    payload: { artifact: 'bpo', slug, transport, includeOfferStrategy: includeOffer },
   })
 
   return { ok: true, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, personId }

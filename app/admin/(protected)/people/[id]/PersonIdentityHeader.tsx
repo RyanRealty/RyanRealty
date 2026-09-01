@@ -8,6 +8,8 @@ type PersonIdentityHeaderProps = {
   assignedBroker: string | null
   nextLine?: string | null
   nowLine?: string | null
+  /** One-tap composer deep link when they are looking at a home right now. */
+  nowAskHref?: string | null
   phone: string | null
   email: string | null
   addressLine?: string | null
@@ -24,6 +26,7 @@ export function PersonIdentityHeader({
   assignedBroker,
   nextLine,
   nowLine,
+  nowAskHref,
   phone,
   email,
   addressLine,
@@ -67,6 +70,15 @@ export function PersonIdentityHeader({
             <div>
               <span style={{ color: 'var(--a-text-2)' }}>Now </span>
               {nowLine}
+              {nowAskHref ? (
+                <a
+                  href={nowAskHref}
+                  className="av2-btn av2-btn--touch"
+                  style={{ marginLeft: 10, textDecoration: 'none' }}
+                >
+                  Text them about it
+                </a>
+              ) : null}
             </div>
           ) : null}
         </div>

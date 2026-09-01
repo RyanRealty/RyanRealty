@@ -53,14 +53,16 @@ export function lookingAtTodayTitle(name: string, address: string): string {
 }
 
 /**
- * Locked lead ask (D1 / A5). Names the home. Does not narrate the watch.
+ * Locked lead ask (D1 / A5; offer set per Matt 2026-09-01). Names the home and
+ * offers the two things a broker can actually send — a price opinion or a
+ * CMA. Still does not narrate the watch (D1 holds).
  * Public-facing: D11 — one person, no em dash / semicolon / !.
  * Composer preload only. Never a send.
  */
 export function lookingAtAskBody(address: string): string {
   const home = address.trim()
   if (!home) return ''
-  return `${home}. Want a short comparison and what to think about offering?`
+  return `${home}. Want my opinion on the price, or a full CMA?`
 }
 
 /** Composer deep link. Fills the SMS box. Does not send. */

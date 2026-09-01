@@ -93,6 +93,7 @@ export default async function PersonPage({
         assignedBroker={card.assignedBroker}
         nextLine={glance.nextLine}
         nowLine={glance.nowLine}
+        nowAskHref={glance.askHref}
         phone={card.phone}
         email={card.email}
         addressLine={addressLine}

@@ -385,7 +385,7 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
       // re-send is always logged as its own timeline row. A date-keyed dedupe
       // silently swallowed the second same-day send, hiding a real delivery.
       dedupeKey: `cma:sent:${slug}:${sentAt}`,
-      payload: { slug, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId: gmailMessageId ?? null, resendId: resendId ?? null },
+      payload: { artifact: 'cma', slug, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId: gmailMessageId ?? null, resendId: resendId ?? null },
     })
   }
   return { ok: true, transport, mailbox: transport === 'gmail' ? brokerMailbox : null, gmailMessageId, resendId, personId }
