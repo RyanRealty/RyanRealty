@@ -394,3 +394,18 @@ Skip pure navigation/reads. Also: `logAdminAction` must **not** discard insert e
 
 FUB renames (3b) and CMA pricing backlog stay parked.
 
+
+## UX CONSOLIDATION LOCKS — Matt 2026-09-01 (AskUserQuestion, admin UX sweep)
+
+1. **Messages is THE conversation surface.** /admin/crm/inbox becomes a redirect to
+   /admin/messages; the inbox's folder tools fold into Messages over time. Deep links
+   (?c= etc.) must survive the redirect.
+2. **People list folds into /admin/crm.** One list surface with search on top;
+   /admin/people (the LIST route only) redirects to /admin/crm. Person entity pages
+   stay at /admin/people/[id]* untouched. Nav label stays "People", pointing at the
+   surviving list.
+3. **One email-performance home under Reports.** Batch Emails reporting + the
+   reports/emails send log merge into one report with campaign/batch/broker filter
+   dimensions; /admin/email/campaigns becomes compose history only and links there.
+4. **Program order after the folds:** wave-3 polish → speed pass (every admin page
+   toward ~3s) → mobile pass (phone-width walk of every key surface).

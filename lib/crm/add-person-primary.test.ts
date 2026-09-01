@@ -5,10 +5,14 @@ describe('People new-contact primary path', () => {
   // Matt 2026-09-01: the always-visible add form is out — the list surface
   // leads with search, and the form lives in AddPersonDialog behind one
   // compact opener (same collapse rule as relationships, Matt 2026-08-25).
-  it('People page leads with search and a compact New contact opener', () => {
+  // Later the same day: the People LIST folded into /admin/crm entirely
+  // (decisions.md "UX CONSOLIDATION LOCKS" #2) — /admin/people bridges there.
+  it('People list route is a pure redirect bridge to /admin/crm', () => {
     const src = readFileSync('app/admin/(protected)/people/page.tsx', 'utf8')
-    expect(src).toContain('NewContactButton')
+    expect(src).toContain("redirect(")
+    expect(src).toContain('/admin/crm')
     expect(src).not.toContain('AddPersonCard')
+    expect(src).not.toContain('NewContactButton')
   })
 
   it('CRM People page has no inline add form; the toolbar opens the dialog', () => {
@@ -28,10 +32,9 @@ describe('People new-contact primary path', () => {
     expect(list).toMatch(/#add-person/)
   })
 
-  it('People loading paints the search row + New contact instead of a blank page', () => {
-    const src = readFileSync('app/admin/(protected)/people/loading.tsx', 'utf8')
-    expect(src).toContain('New contact')
-    expect(src).toContain('av2-input')
+  it('the surviving list (/admin/crm) keeps its loading skeleton', () => {
+    const src = readFileSync('app/admin/(protected)/crm/loading.tsx', 'utf8')
+    expect(src.length).toBeGreaterThan(0)
   })
 
   it('list header labels New contact before New List', () => {

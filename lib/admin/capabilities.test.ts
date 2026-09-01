@@ -127,11 +127,13 @@ describe('shell projection (one nav source for every surface)', () => {
   //
   // This budget is a ratchet against nav sprawl. Moving it is allowed; moving it
   // silently is not, so a new number here comes with the reason.
-  it('renders the nav budget: 41 superuser items, 29 broker items (Production + Signing + Sign-off on Closings)', () => {
+  // 41→40 / 29→28 on 2026-09-01: the People-list fold removed the duplicate
+  // 'Full list' child (Matt lock, decisions.md "UX CONSOLIDATION LOCKS" #2).
+  it('renders the nav budget: 40 superuser items, 28 broker items (Production + Signing + Sign-off on Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(41)
-    expect(count('broker')).toBe(29)
+    expect(count('superuser')).toBe(40)
+    expect(count('broker')).toBe(28)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {
@@ -147,11 +149,12 @@ describe('shell projection (one nav source for every surface)', () => {
     for (const role of ['superuser', 'broker'] as const) {
       const tabs = buildMobileTabs(buildNav(ctx(role)))
       expect(tabs.map((t) => t.label)).toEqual(['Today', 'Messages', 'Prospecting', 'People', 'Oversight'])
+      // People tab → /admin/crm since the list fold (Matt lock 2026-09-01).
       expect(tabs.map((t) => t.href)).toEqual([
         '/admin/today',
         '/admin/messages',
         '/admin/prospecting',
-        '/admin/people',
+        '/admin/crm',
         '/admin/oversight',
       ])
       expect(tabs.find((t) => t.label === 'Messages')?.badge).toBe('inbox')

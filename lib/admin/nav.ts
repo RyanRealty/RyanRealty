@@ -113,8 +113,9 @@ export const DESTINATIONS: NavDestination[] = [
   {
     key: 'people',
     label: 'People',
-    // P9 roll:people (IA lock 2026-08-05): search-first lookup is the landing.
-    href: '/admin/people',
+    // People-list fold (Matt lock 2026-09-01): one list surface — /admin/crm
+    // (search on top, saved views, bulk actions). /admin/people redirects.
+    href: '/admin/crm',
     icon: 'users',
     capability: 'people.view',
     defaultOpen: true,
@@ -122,7 +123,7 @@ export const DESTINATIONS: NavDestination[] = [
       // Locked phone bar (IA lock 2026-08-05): Today · Messages · Prospecting ·
       // People · Oversight. Deals + Activity lost their tabs to Prospecting and
       // Oversight (menu children remain until their families roll).
-      { label: 'Search', href: '/admin/people', icon: 'users', capability: 'people.view', tab: { order: 4, label: 'People' } },
+      { label: 'List', href: '/admin/crm', icon: 'users', capability: 'people.view', tab: { order: 4, label: 'People' } },
       // Pipeline (/admin/crm/deals) folded into Closings — one deal entity.
       // Activity moved to Oversight (P9 roll:oversight — it is a supervision
       // feed, not a people job; reachable under Oversight's All tools).
@@ -131,7 +132,6 @@ export const DESTINATIONS: NavDestination[] = [
       { label: 'Approvals', href: '/admin/crm/approvals', icon: 'clipboard-check', capability: 'people.view' },
       { label: 'Referrals', href: '/admin/crm/referrals', icon: 'handshake', capability: 'people.view' },
       { label: 'Reporting', href: '/admin/crm/reporting', icon: 'bar-chart', capability: 'people.view' },
-      { label: 'Full list', href: '/admin/crm', icon: 'list-todo', capability: 'people.view' },
       // Cut from the menu, still linked live: New contact (FAB quick action),
       // Compose email (FAB + campaigns page), Alerts & reports (dashboard
       // delivery panel + per-contact panel), Import (CRM settings hub + people list).
@@ -335,11 +335,18 @@ export function toShellSections(sections: NavSection[]): AdminNavSection[] {
  * route — only the section owning the LONGEST matching item href may light.
  */
 export function bestShellNavHref(pathname: string, sections: AdminNavSection[]): string {
+  // People-list fold (Matt lock 2026-09-01): person ENTITY pages still live
+  // under /admin/people/[id]; their nav door is the /admin/crm list, so those
+  // paths match as if they lived under it.
+  const path =
+    pathname === '/admin/people' || pathname.startsWith('/admin/people/')
+      ? pathname.replace(/^\/admin\/people/, '/admin/crm')
+      : pathname
   let best = ''
   for (const s of sections) {
     for (const i of s.items) {
       const base = i.href.split('?')[0]
-      if ((pathname === base || pathname.startsWith(base + '/')) && base.length > best.length) best = base
+      if ((path === base || path.startsWith(base + '/')) && base.length > best.length) best = base
     }
   }
   return best

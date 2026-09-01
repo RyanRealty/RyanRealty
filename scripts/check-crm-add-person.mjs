@@ -22,7 +22,6 @@ function read(path) {
 }
 
 const peoplePage = read('app/admin/(protected)/people/page.tsx')
-const peopleLoading = read('app/admin/(protected)/people/loading.tsx')
 const peopleError = read('app/admin/(protected)/people/error.tsx')
 const listView = read('components/admin/shared/people-list/PeopleListView.tsx')
 const addDialog = read('components/admin/shared/people-list/AddPersonDialog.tsx')
@@ -41,8 +40,10 @@ const fab = read('components/console/ConsoleQuickAction.tsx')
 // AddPersonDialog behind ONE labeled opener. Same reversal shape as Related
 // people (Matt 2026-08-25). What still has to be true: New contact is one
 // click away on every door, and the #add-person deep link opens the dialog.
-if (!/NewContactButton/.test(peoplePage) || /AddPersonCard/.test(peoplePage)) {
-  fails.push('app/admin/(protected)/people/page.tsx must mount the compact NewContactButton (dialog), never an inline AddPersonCard')
+// People-list fold (Matt lock 2026-09-01, decisions.md): /admin/people (list
+// route only) is a pure bridge to /admin/crm — one list surface.
+if (!/redirect\(/.test(peoplePage) || !/\/admin\/crm/.test(peoplePage) || /AddPersonCard|NewContactButton/.test(peoplePage)) {
+  fails.push('app/admin/(protected)/people/page.tsx must be a pure redirect bridge to /admin/crm (the one list surface)')
 }
 if (/AddPersonCard/.test(crmPage)) {
   fails.push('/admin/crm must not mount an inline add form — PeopleListView\'s toolbar opens AddPersonDialog')
@@ -65,9 +66,8 @@ if (!/\/admin\/crm#add-person/.test(fab)) {
 if (!/#add-person/.test(listView)) {
   fails.push('PeopleListView must open AddPersonDialog when the URL carries #add-person (the FAB deep link)')
 }
-if (!/New contact/.test(peopleLoading)) {
-  fails.push('app/admin/(protected)/people/loading.tsx must paint New contact chrome (no blank white page)')
-}
+// people/loading.tsx deleted with the list fold — the redirect bridge paints
+// nothing; /admin/crm/loading.tsx carries the skeleton duty for the survivor.
 if (!/New contact/.test(peopleError)) {
   fails.push('app/admin/(protected)/people/error.tsx must keep New contact reachable after a load failure')
 }

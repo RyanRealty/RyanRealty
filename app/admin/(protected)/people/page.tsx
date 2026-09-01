@@ -1,105 +1,22 @@
 // @no-parity — internal admin surface, no public mockup contract
-// People: search-first lookup. New contact lives behind the toolbar button. No book-wide dump.
-import { Suspense } from 'react'
-import Link from 'next/link'
-import { requireAdminPage } from '@/lib/admin/require-admin'
-import { scopeBroker } from '@/lib/crm/scope'
-import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
-import { getPeopleListSignals } from '@/lib/data/crm/getPeopleListSignals'
-import { SectionHead, StateWord } from '@/components/admin/v2'
-import { NewContactButton } from '@/components/admin/shared/people-list/AddPersonDialog'
-import '@/components/admin/v2/admin-v2.css'
+// @data-free — redirect only, no data fetch.
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-async function RecentlyTouched({
-  q,
-  brokerScope,
-}: {
-  q: string | null
-  brokerScope: string | null
-}) {
-  const hits = await searchCrmPeople({ q, brokerScope, limit: 25 })
-  const signals = await getPeopleListSignals(hits.map((p) => p.id))
-
-  return (
-    <>
-      <SectionHead>{q ? `Results for "${q}"` : 'Recently touched'}</SectionHead>
-      <ul className="av2-queue">
-        {hits.map((p) => {
-          const next = signals.get(p.id)?.nextLine
-          const nextLine = next && next !== 'No next step queued.' ? next : null
-          return (
-          <li key={p.id} className="av2-qrow">
-            <span className="av2-qrow__kind">
-              <StateWord state="accent">{p.stage ?? 'Lead'}</StateWord>
-            </span>
-            <div className="av2-qrow__body">
-              <div className="av2-qrow__title">
-                <Link href={`/admin/people/${p.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  {p.name ?? 'Unknown contact'}
-                </Link>
-              </div>
-              <div className="av2-qrow__ctx">
-                {[nextLine, p.phones?.[0]?.value, p.emails?.[0]?.value].filter(Boolean).join(' · ')}
-              </div>
-            </div>
-            <span className="av2-qrow__act">
-              <Link href={`/admin/people/${p.id}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                Open
-              </Link>
-            </span>
-          </li>
-          )
-        })}
-        {hits.length === 0 ? (
-          <li className="av2-sysnote" style={{ padding: 16 }}>
-            {q ? 'No one matches. Try fewer letters, or a phone fragment.' : 'No people yet.'}
-          </li>
-        ) : null}
-      </ul>
-    </>
-  )
-}
-
-function RecentlyTouchedFallback() {
-  return (
-    <div aria-busy="true" style={{ padding: '8px 0' }}>
-      <SectionHead>Recently touched</SectionHead>
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Loading recent people.</p>
-    </div>
-  )
-}
-
-export default async function PeoplePage({
+/**
+ * People-list fold (Matt lock 2026-09-01, decisions.md "UX CONSOLIDATION
+ * LOCKS" #2): one list surface. The search-first quick lookup and the full
+ * list served the same job from two routes; /admin/crm (search on top, saved
+ * views, bulk actions) survives. Person ENTITY pages stay under
+ * /admin/people/[id]* — this bridge covers only the list route, and carries
+ * the search query across.
+ */
+export default async function PeopleListBridge({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>
 }) {
-  const ctx = await requireAdminPage('people.view')
-  const brokerScope = scopeBroker(ctx)
-  const q = ((await searchParams).q ?? '').trim() || null
-
-  return (
-    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <div style={{ display: 'flex', gap: 8, margin: '0 0 20px' }}>
-        <form method="GET" style={{ flex: 1, margin: 0 }}>
-          <input
-            className="av2-input"
-            style={{ width: '100%' }}
-            type="search"
-            name="q"
-            defaultValue={q ?? ''}
-            placeholder="Search by name, phone, or email"
-            aria-label="Search people"
-          />
-        </form>
-        <NewContactButton />
-      </div>
-
-      <Suspense fallback={<RecentlyTouchedFallback />}>
-        <RecentlyTouched q={q} brokerScope={brokerScope} />
-      </Suspense>
-    </div>
-  )
+  const q = ((await searchParams).q ?? '').trim()
+  redirect(q ? `/admin/crm?q=${encodeURIComponent(q)}` : '/admin/crm')
 }

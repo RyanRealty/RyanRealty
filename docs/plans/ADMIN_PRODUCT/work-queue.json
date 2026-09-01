@@ -1,5 +1,15 @@
 [
   {
+    "id": "fold-inbox-into-messages",
+    "phase": "P12",
+    "note": "Matt lock 2026-09-01 #1: Messages is THE conversation surface. DO NOT hard-redirect yet \u2014 port first: (a) inbox folders (scope/folder/view params) as one compact filter in Messages, (b) unknown-caller AddPersonForm into the Messages thread pane, (c) ?compose= deep links used by CMA/BPO/Prospect send dialogs + FAB ?c=&m=. THEN crm/inbox becomes a param-preserving redirect and its ~10 inbound doors repoint. Entrances list: ConsoleQuickAction, CmaSendDialog, BpoSendDialog, ProspectSendDialog, MobileTasksScreen, MobileContactPointsSection, reporting/texts, settings/account, tours, /admin/inbox bridge."
+  },
+  {
+    "id": "email-reporting-one-home",
+    "phase": "P12",
+    "note": "Matt lock 2026-09-01 #3: one email-performance home under Reports \u2014 merge reports/emails (send log + rates) and crm/reporting/batch-emails (per-send funnels) into one report with campaign/batch/broker filter dimensions; /admin/email/campaigns becomes compose history only, linking there."
+  },
+  {
     "id": "ux-simplify-wave3",
     "phase": "P12",
     "note": "Matt 2026-09-01 standing override: admin-wide UX simplification. Wave 1 landed db126181, wave 2 in tree. Next: remaining queue in progress.txt 2026-09-01 entry \u2014 D-class id threading (meta-health, broker names, cma-performance personId), E-class aux/href batches, competition selects, Today stream profiling. Three F-class consolidations need Matt: messages-vs-inbox, crm-vs-people, three email surfaces."

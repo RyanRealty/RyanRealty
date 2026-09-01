@@ -197,15 +197,3 @@ export default function AddPersonDialog({
   )
 }
 
-/** Compact opener for list toolbars. The form lives in the dialog, not the page. */
-export function NewContactButton() {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Button data-tour="crm-add-person" onClick={() => setOpen(true)} touch>
-        New contact
-      </Button>
-      <AddPersonDialog open={open} onOpenChange={setOpen} />
-    </>
-  )
-}

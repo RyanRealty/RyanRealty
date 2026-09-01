@@ -27,7 +27,10 @@ const CUTLIST = readFileSync(join(ROOT, 'docs/plans/ADMIN_PRODUCT/cut-list.md'),
 const DESTINATIONS = {
   Today: '/admin/today',
   Messages: '/admin/messages',
-  People: '/admin/people',
+  // People-list fold (Matt lock 2026-09-01, decisions.md): the People
+  // destination's canonical URL is the surviving list at /admin/crm;
+  // /admin/people (list route) is a redirect bridge.
+  People: '/admin/crm',
   Prospecting: '/admin/prospecting',
   Valuations: '/admin/valuations',
   Closings: '/admin/closings',
