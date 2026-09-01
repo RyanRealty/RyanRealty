@@ -10,12 +10,13 @@ import {
   composePersonNowLine,
   listingViewIsRecent,
   unrepliedInboundFromMessages,
+  RECENT_LISTING_VIEW_MS,
   type PersonListingView,
 } from '@/lib/crm/person-header-lines'
 import { lookingAtAskHrefIfRecent } from '@/lib/crm/looking-at'
+import { resolveLeadSessionIds } from '@/lib/data/crm/getViewedListings'
 
 const MESSAGE_KINDS = ['sms_in', 'sms_out', 'email_in', 'email_out'] as const
-const VIEW_KINDS = ['property_view', 'page_view'] as const
 
 export type PersonGlance = {
   nextLine: string
@@ -28,19 +29,43 @@ export type PersonGlance = {
   askHref: string | null
 }
 
-function listingViewFromRow(row: {
-  ts?: string | null
-  title?: string | null
-  payload?: Record<string, unknown> | null
-} | null): PersonListingView | null {
-  if (!row?.ts) return null
-  const payload = row.payload ?? {}
-  const street = String(payload.listing_street ?? payload.street ?? row.title ?? '').trim()
-  const mls = String(payload.listing_mls ?? payload.mls ?? '').trim()
+/**
+ * Latest listing view from the REAL source: the person's sessions (full
+ * native identity chain — direct person keys, identity map, rr_vid; the same
+ * resolution the engagement panels use, request-memoized since 2026-09-01 so
+ * this costs one execution per request) → listing_view visitor_events in the
+ * 24h window. Two dead/narrow reads preceded this (both found 2026-09-01):
+ * crm_timeline property_view/page_view rows that NO writer has ever produced
+ * (zero all time), and a crm_person_id-only session leg that missed everyone
+ * stitched via visitor_identity_map or rr_vid — e.g. batch-email clickers.
+ */
+async function latestListingViewForPerson(
+  sb: ReturnType<typeof createServiceClient>,
+  personId: number,
+): Promise<PersonListingView | null> {
+  const cutoffIso = new Date(Date.now() - RECENT_LISTING_VIEW_MS).toISOString()
+  const sessionIds = await resolveLeadSessionIds(sb, { crmPersonId: personId })
+  const ids = sessionIds.slice(0, 200)
+  if (ids.length === 0) return null
+  const { data: events, error: evErr } = await sb
+    .from('visitor_events')
+    .select('listing_mls,listing_street,event_at')
+    .eq('event_type', 'listing_view')
+    .in('session_id', ids)
+    .not('listing_mls', 'is', null)
+    .gte('event_at', cutoffIso)
+    .order('event_at', { ascending: false })
+    .limit(1)
+  if (evErr) {
+    console.error('[getPersonGlance] events', evErr.message)
+    return null
+  }
+  const ev = events?.[0]
+  if (!ev?.event_at) return null
   return {
-    listingStreet: street || null,
-    listingMls: mls || null,
-    eventAt: String(row.ts),
+    listingStreet: ((ev.listing_street as string | null) ?? '').trim() || null,
+    listingMls: ((ev.listing_mls as string | null) ?? '').trim() || null,
+    eventAt: String(ev.event_at),
   }
 }
 
@@ -58,14 +83,7 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       .order('ts', { ascending: false })
       .limit(20),
     getPersonAwaitingBrokerStep(personId),
-    sb
-      .from('crm_timeline')
-      .select('ts,title,payload')
-      .eq('person_id', personId)
-      .in('kind', VIEW_KINDS as unknown as string[])
-      .order('ts', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    latestListingViewForPerson(sb, personId),
     sb
       .from('crm_tasks')
       .select('name,type,origin')
@@ -75,7 +93,6 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       .limit(8),
   ])
   if (messages.error) console.error('[getPersonGlance] messages', messages.error.message)
-  if (view.error) console.error('[getPersonGlance] view', view.error.message)
   if (tasks.error) console.error('[getPersonGlance] tasks', tasks.error.message)
 
   const unreplied = unrepliedInboundFromMessages(
@@ -85,7 +102,7 @@ export async function getPersonGlance(personId: number): Promise<PersonGlance> {
       payload: (row.payload ?? null) as Record<string, unknown> | null,
     })),
   )
-  const latestView = listingViewFromRow(view.data)
+  const latestView = view
   const triage = (tasks.data ?? []).find((t) =>
     isTriageTaskCandidate({
       name: (t.name as string | null) ?? null,

@@ -5,6 +5,11 @@
     "note": "Matt lock 2026-09-01 #1: Messages is THE conversation surface. DO NOT hard-redirect yet \u2014 port first: (a) inbox folders (scope/folder/view params) as one compact filter in Messages, (b) unknown-caller AddPersonForm into the Messages thread pane, (c) ?compose= deep links used by CMA/BPO/Prospect send dialogs + FAB ?c=&m=. THEN crm/inbox becomes a param-preserving redirect and its ~10 inbound doors repoint. Entrances list: ConsoleQuickAction, CmaSendDialog, BpoSendDialog, ProspectSendDialog, MobileTasksScreen, MobileContactPointsSection, reporting/texts, settings/account, tours, /admin/inbox bridge."
   },
   {
+    "id": "looking-at-identity-leg",
+    "phase": "P12",
+    "note": "2026-09-01: getLookingAtNow (Today lane + broker looking-at SMS, lib/crm/broker-alerts queue) keys sessions ONLY on visitor_sessions.crm_person_id \u2014 misses identity_map/rr_vid-stitched sessions (e.g. batch-email clickers; verified: newest identified session Aug 31 while stitched clickers were on site Sep 1). Widen the window scan to join visitor_identity_map (bounded), so the alert fires for stitched visitors too. SEND PATH \u2014 draft-first discipline, test on the queue not live sends. Person-page glance already widened via resolveLeadSessionIds."
+  },
+  {
     "id": "email-reporting-one-home",
     "phase": "P12",
     "note": "Matt lock 2026-09-01 #3: one email-performance home under Reports \u2014 merge reports/emails (send log + rates) and crm/reporting/batch-emails (per-send funnels) into one report with campaign/batch/broker filter dimensions; /admin/email/campaigns becomes compose history only, linking there."
