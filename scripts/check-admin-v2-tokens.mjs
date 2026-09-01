@@ -325,6 +325,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/reports/cma-performance/page.tsx',
   'app/admin/(protected)/reports/custom/page.tsx',
   'app/admin/(protected)/reports/emails/page.tsx',
+  'app/admin/(protected)/reports/emails/BatchSendsSection.tsx',
   'app/admin/(protected)/reports/lead-flow/page.tsx',
   'app/admin/(protected)/reports/leads/page.tsx',
   'app/admin/(protected)/reports/market/page.tsx',

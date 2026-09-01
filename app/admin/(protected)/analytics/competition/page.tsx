@@ -9,6 +9,7 @@
 import Link from 'next/link'
 import { SectionHead } from '@/components/admin/v2'
 import { DataGrid } from '../_components/v2/DataGrid'
+import { CompetitionControls } from '../_components/v2/CompetitionControls'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoOfficeShare } from '@/lib/data/analytics/getCoOfficeShare'
 import {
@@ -109,67 +110,10 @@ export default async function CompetitionAnalyticsPage({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2 text-sm">
-        <Link
-          href={competitionHref({ year, side: 'list', view, office: officeFilter })}
-          className={
-            side === 'list'
-              ? 'rounded bg-neutral-900 px-3 py-1.5 text-white'
-              : 'rounded border border-neutral-300 px-3 py-1.5'
-          }
-        >
-          List side
-        </Link>
-        <Link
-          href={competitionHref({ year, side: 'buy', view, office: officeFilter })}
-          className={
-            side === 'buy'
-              ? 'rounded bg-neutral-900 px-3 py-1.5 text-white'
-              : 'rounded border border-neutral-300 px-3 py-1.5'
-          }
-        >
-          Buy side
-        </Link>
-        {[2022, 2023, 2024, 2025].map((y) => (
-          <Link
-            key={y}
-            href={competitionHref({ year: y, side, view, office: officeFilter })}
-            className={
-              y === year
-                ? 'rounded bg-neutral-700 px-3 py-1.5 text-white'
-                : 'rounded border border-neutral-300 px-3 py-1.5'
-            }
-          >
-            {y}
-          </Link>
-        ))}
-        <span className="mx-1 self-center text-neutral-300">|</span>
-        {(
-          [
-            ['brand', 'Brand family'],
-            ['entity', 'Office entity'],
-            ['raw', 'Raw string'],
-          ] as const
-        ).map(([v, label]) => (
-          <Link
-            key={v}
-            href={competitionHref({ year, side, view: v, office: officeFilter })}
-            className={
-              view === v
-                ? 'rounded bg-amber-800 px-3 py-1.5 text-white'
-                : 'rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-amber-950'
-            }
-            title={
-              v === 'brand'
-                ? 'Sum mart volume by brand_family (advisory franchise umbrella)'
-                : v === 'entity'
-                  ? 'Sum mart volume by dim office_id / alias group'
-                  : 'String-level MLS office names (mart ranks as stored)'
-            }
-          >
-            {label}
-          </Link>
-        ))}
+      {/* One compact control per facet (surface bar rule 2 — the pill rows
+          this replaces were the 2026-08-05 banned pattern). */}
+      <div className="flex flex-wrap items-end gap-3 text-sm">
+        <CompetitionControls side={side} year={year} view={view} years={[2022, 2023, 2024, 2025]} />
         <a
           href={exportOfficesHref}
           className="rounded border border-neutral-300 px-3 py-1.5 text-neutral-700"
