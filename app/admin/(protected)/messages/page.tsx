@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/admin/v2'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
-import { MessagesQueue } from './MessagesQueue'
+import { MessagesQueue, type MessagesFolder } from './MessagesQueue'
 import { MessagesThread } from './MessagesThread'
 
 export const dynamic = 'force-dynamic'
@@ -39,17 +39,22 @@ function ThreadFallback() {
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string }>
+  searchParams: Promise<{ c?: string; f?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.view')
   const access = { email: ctx.email, role: ctx.role, brokerSlug: ctx.brokerSlug }
   const brokerScope = scopeBroker(ctx)
-  const selectedId = Number((await searchParams).c) || null
+  const sp = await searchParams
+  const selectedId = Number(sp.c) || null
+  const folder: MessagesFolder =
+    sp.f === 'inbox' || sp.f === 'assigned' || sp.f === 'drafts' || sp.f === 'sent' || sp.f === 'closed'
+      ? sp.f
+      : 'recent'
 
   return (
     <div className={`av2-scope av2-msgs ${selectedId ? 'av2-msgs--thread' : 'av2-msgs--list'}`}>
       <Suspense fallback={<QueueFallback />}>
-        <MessagesQueue brokerScope={brokerScope} selectedId={selectedId} />
+        <MessagesQueue brokerScope={brokerScope} actingBroker={ctx.brokerSlug} selectedId={selectedId} folder={folder} />
       </Suspense>
 
       {selectedId && access ? (
