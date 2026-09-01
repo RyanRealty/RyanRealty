@@ -15,6 +15,7 @@
  * implementation (keep the richer one, point the record card at it). This file
  * is the minimal record-card reader so the card is not blocked on that piece.
  */
+import { cache as reactCache } from 'react'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { EmailEvent } from '@/lib/crm/email-events'
 import {
@@ -332,9 +333,9 @@ function toSend(
  * summary (all zeros, hasAny:false) when the contact has no recorded email
  * events — never a fabricated metric.
  */
-export async function getContactEmailEngagement(
+export const getContactEmailEngagement = reactCache(async (
   personId: number,
-): Promise<ContactEmailEngagement> {
+): Promise<ContactEmailEngagement> => {
   if (!Number.isFinite(personId) || personId <= 0) return EMPTY
   const sb = createServiceClient()
   const rows = await readPersonEmailEvents(sb, personId)
@@ -343,4 +344,4 @@ export async function getContactEmailEngagement(
   if (!summary.hasAny) return EMPTY
   const lastSiteAt = (await readLastSiteByPerson(sb, [personId])).get(personId) ?? null
   return { ...summary, sends: collapseSendLog(rows).map((r) => toSend(r, lastSiteAt)) }
-}
+})

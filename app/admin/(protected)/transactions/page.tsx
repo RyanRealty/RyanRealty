@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Canonical §B1 route bridge (D9.3, admin rebuild spec 01 §13.4):
- * /admin/transactions is the spec-era canonical Transactions path; the live
- * page is /admin/deals until spec 05 moves it. Menus link the live page
- * directly (no hop) — this bridge keeps canonical deep links working.
+ * /admin/transactions is the spec-era canonical Transactions path. Spec 05
+ * moved the live page to /admin/closings — point straight there (the old
+ * /admin/deals target is itself just a redirect to closings; no double hop).
  */
 export default function TransactionsBridge() {
-  redirect('/admin/deals')
+  redirect('/admin/closings')
 }

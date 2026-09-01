@@ -389,11 +389,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
           <div className="flex shrink-0 items-center gap-2">
             <Button
               data-tour="crm-add-person"
-              onClick={() => {
-                const el = document.getElementById('add-person')
-                if (el) el.scrollIntoView({ block: 'start' })
-                else setAddOpen(true)
-              }}
+              onClick={() => setAddOpen(true)}
               style={BAR_BTN}
             >
               <UserRoundPlus className="h-4 w-4" aria-hidden />

@@ -130,20 +130,28 @@ export function CmaFilters({
         </ToolbarSelect>
       </div>
 
-      {/* Status pills. */}
+      {/* Status — one compact control, same idiom as City (bar rule 2: no chip walls). */}
       <div className="flex flex-wrap items-center gap-2">
         <span style={facetLabelStyle}>Status</span>
-        <div className="flex flex-wrap gap-1.5">
-          {STATUS_OPTIONS.map((opt) => {
-            const active = (filters.status ?? 'all') === opt.value
-            const nextParams = { ...params, status: opt.value === 'all' ? undefined : opt.value }
-            return (
-              <Link key={opt.value} href={buildHref(basePath, nextParams)} className="av2-chip" aria-pressed={active}>
-                {opt.label}
-              </Link>
+        <ToolbarSelect
+          aria-label="Status"
+          value={filters.status ?? 'all'}
+          onChange={(e) =>
+            router.push(
+              buildHref(basePath, {
+                ...params,
+                status: e.target.value === 'all' ? undefined : e.target.value,
+              }),
             )
-          })}
-        </div>
+          }
+          style={{ width: '100%', maxWidth: 224 }}
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </ToolbarSelect>
       </div>
     </div>
   )

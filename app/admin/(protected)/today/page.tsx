@@ -153,18 +153,6 @@ export default async function TodayPage() {
         </VerdictLine>
       </div>
 
-      {join.status === 'ok' ? (
-        <div style={{ margin: '0 0 14px' }}>
-          <VerdictLine tone={join.conversions7d > 0 ? 'attention' : 'ok'}>
-            <b>
-              /join {join.visits7d} visit{join.visits7d === 1 ? '' : 's'} · {join.conversions7d} conversation
-              {join.conversions7d === 1 ? '' : 's'} this week.
-            </b>{' '}
-            {join.visitsAll} visits all-time. Same figure as the company packet.
-          </VerdictLine>
-        </div>
-      ) : null}
-
       {signOff.authorized && signOff.totalItems > 0 ? (
         <section aria-label="Sign-off">
           <SectionHead>Sign-off</SectionHead>
@@ -174,7 +162,14 @@ export default async function TodayPage() {
                 key={d.propertyKey}
                 kind={signOff.overdueItems > 0 && d.items.some((i) => i.deadline?.overdue) ? 'Overdue' : 'Sign-off'}
                 kindTone={d.items.some((i) => i.deadline?.overdue) ? 'down' : 'slow'}
-                title={d.address}
+                title={
+                  <Link
+                    href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`}
+                    style={{ color: 'inherit', textDecoration: 'none' }}
+                  >
+                    {d.address}
+                  </Link>
+                }
                 context={`${d.items.length} item${d.items.length === 1 ? '' : 's'} · ${d.broker ?? '—'}`}
                 action={
                   <Link href="/admin/sign-off" className="av2-btn" style={{ textDecoration: 'none' }}>
@@ -196,7 +191,14 @@ export default async function TodayPage() {
                 key={d.id}
                 kind="Incomplete"
                 kindTone="slow"
-                title={d.address}
+                title={
+                  <Link
+                    href={`/admin/deals/${encodeURIComponent(d.propertyKey)}`}
+                    style={{ color: 'inherit', textDecoration: 'none' }}
+                  >
+                    {d.address}
+                  </Link>
+                }
                 context={`${d.itemsRequired} required · ${d.brokerName ?? '—'}`}
                 action={
                   <Link
@@ -235,11 +237,6 @@ export default async function TodayPage() {
           </VerdictLine>
         </div>
       ) : null}
-
-      <section aria-label="Produce a draft">
-        <SectionHead>Produce a draft</SectionHead>
-        <ProduceDraftForm />
-      </section>
 
       {lookingAt.length > 0 && (
         <section aria-label="Looking at a home">
@@ -321,7 +318,17 @@ export default async function TodayPage() {
                 key={p.enrollmentId}
                 kind="Parked"
                 kindTone="waiting"
-                title={`${p.personName} — ${p.sequenceName}`}
+                title={
+                  <>
+                    <Link
+                      href={`/admin/people/${p.personId}`}
+                      style={{ color: 'inherit', textDecoration: 'none' }}
+                    >
+                      {p.personName}
+                    </Link>
+                    {` — ${p.sequenceName}`}
+                  </>
+                }
                 context={p.holdReason ?? p.preview}
                 action={
                   p.unresolved.length > 0 ? (
@@ -406,7 +413,18 @@ export default async function TodayPage() {
                 kind="Task"
                 kindTone="waiting"
                 title={t.name}
-                context={t.personName ?? undefined}
+                context={
+                  t.personName && t.personId ? (
+                    <Link
+                      href={`/admin/people/${t.personId}`}
+                      style={{ color: 'inherit' }}
+                    >
+                      {t.personName}
+                    </Link>
+                  ) : (
+                    t.personName ?? undefined
+                  )
+                }
                 action={
                   <form action={completeTaskToday}>
                     <input type="hidden" name="taskId" value={t.id} />
@@ -420,6 +438,19 @@ export default async function TodayPage() {
           </ul>
         </section>
       )}
+
+      <section aria-label="Produce a draft">
+        <SectionHead>Produce a draft</SectionHead>
+        <ProduceDraftForm />
+      </section>
+
+      {join.status === 'ok' ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '14px 0 0' }}>
+          /join this week: {join.visits7d} visit{join.visits7d === 1 ? '' : 's'} ·{' '}
+          {join.conversions7d} conversation{join.conversions7d === 1 ? '' : 's'} · {join.visitsAll}{' '}
+          visits all-time. Same figure as the company packet.
+        </p>
+      ) : null}
     </div>
   )
 }

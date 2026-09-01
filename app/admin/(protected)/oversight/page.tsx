@@ -386,28 +386,28 @@ export default async function OversightPage() {
       <section aria-label="The week">
         <h2 className="av2-lane-head">The week</h2>
         <div className="av2-week">
-          <span className="av2-wk">
+          <Link href="/admin/crm/reporting/speed-to-lead" className="av2-wk" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="av2-wk__n">
               {s2l.totals.medianSeconds == null ? '—' : `${Math.round(s2l.totals.medianSeconds / 60)} min`}
             </span>
             <span className="av2-wk__l">median first response</span>
-          </span>
-          <span className="av2-wk">
+          </Link>
+          <Link href="/admin/reports/leads" className="av2-wk" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="av2-wk__n">{s2l.totals.totalLeads}</span>
             <span className="av2-wk__l">new leads</span>
-          </span>
-          <span className="av2-wk">
+          </Link>
+          <Link href="/admin/crm/reporting/speed-to-lead" className="av2-wk" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="av2-wk__n">{s2l.totals.totalLeads - s2l.totals.contactedLeads}</span>
             <span className="av2-wk__l">not yet contacted</span>
-          </span>
-          <span className="av2-wk">
+          </Link>
+          <Link href="/admin/crm/tasks" className="av2-wk" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="av2-wk__n">{tasks.counts.overdue}</span>
             <span className="av2-wk__l">overdue tasks</span>
-          </span>
-          <span className="av2-wk">
+          </Link>
+          <Link href="/admin/today" className="av2-wk" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="av2-wk__n">{parked.length}</span>
             <span className="av2-wk__l">parked steps — in Today</span>
-          </span>
+          </Link>
         </div>
       </section>
 

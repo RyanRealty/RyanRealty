@@ -302,6 +302,9 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
       }}
     >
       <SectionHead>Report by city & period</SectionHead>
+      <details className="av2-rcols">
+        <summary>Build a report — any city, any period</summary>
+        <div className="av2-rcols__body">
       <p style={HINT_STYLE}>
         Full customization: any city, optional subdivision, any period, property type (SFR + condos/manufactured/acreage), and price range. All sales data available in the database.
       </p>
@@ -446,6 +449,8 @@ export default function CityReportSection({ cities }: { cities: string[] }) {
           {loading ? 'Loading…' : 'Generate report'}
         </Button>
       </div>
+        </div>
+      </details>
 
       {error && (
         <div

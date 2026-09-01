@@ -2,27 +2,36 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 describe('People new-contact primary path', () => {
-  it('People page mounts the always-visible add form', () => {
+  // Matt 2026-09-01: the always-visible add form is out — the list surface
+  // leads with search, and the form lives in AddPersonDialog behind one
+  // compact opener (same collapse rule as relationships, Matt 2026-08-25).
+  it('People page leads with search and a compact New contact opener', () => {
     const src = readFileSync('app/admin/(protected)/people/page.tsx', 'utf8')
-    expect(src).toContain('AddPersonCard')
+    expect(src).toContain('NewContactButton')
+    expect(src).not.toContain('AddPersonCard')
   })
 
-  it('CRM People page mounts the add form above the hanging list', () => {
+  it('CRM People page has no inline add form; the toolbar opens the dialog', () => {
     const src = readFileSync('app/admin/(protected)/crm/page.tsx', 'utf8')
-    expect(src).toContain('AddPersonCard')
+    expect(src).not.toContain('AddPersonCard')
     expect(src).not.toContain('href="/admin/people?add=1"')
+    const list = readFileSync('components/admin/shared/people-list/PeopleListView.tsx', 'utf8')
+    expect(list).toContain('onClick={() => setAddOpen(true)}')
   })
 
-  it('People FAB jumps to the form instead of Quick actions', () => {
+  it('People FAB opens the add dialog via the #add-person deep link', () => {
     const src = readFileSync('components/console/ConsoleQuickAction.tsx', 'utf8')
-    expect(src).toContain('href="#add-person"')
     expect(src).toContain('/admin/crm#add-person')
+    // The anchor no longer scrolls to an inline card — PeopleListView reads the
+    // hash and opens AddPersonDialog instead.
+    const list = readFileSync('components/admin/shared/people-list/PeopleListView.tsx', 'utf8')
+    expect(list).toMatch(/#add-person/)
   })
 
-  it('People loading paints New contact instead of a blank page', () => {
+  it('People loading paints the search row + New contact instead of a blank page', () => {
     const src = readFileSync('app/admin/(protected)/people/loading.tsx', 'utf8')
-    expect(src).toContain('id="add-person"')
     expect(src).toContain('New contact')
+    expect(src).toContain('av2-input')
   })
 
   it('list header labels New contact before New List', () => {
@@ -53,11 +62,10 @@ describe('People new-contact primary path', () => {
   })
 
   it('create lands on person detail', () => {
+    // /admin/crm/new was an orphaned duplicate of the dialog and is deleted
+    // (2026-09-01); the dialog is the one create path.
     const dialog = readFileSync('components/admin/shared/people-list/AddPersonDialog.tsx', 'utf8')
-    const crmNew = readFileSync('app/admin/(protected)/crm/new/page.tsx', 'utf8')
     expect(dialog).toContain('router.push(`/admin/people/${res.personId}`)')
-    expect(dialog).toContain('Opening')
-    expect(crmNew).toContain('redirect(`/admin/people/${r.personId}`)')
   })
 
   it('person detail first-paints identity then streams the workspace', () => {

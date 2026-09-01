@@ -100,24 +100,21 @@ export function BpoFilters({
 
   return (
     <div className="space-y-4">
-      {/* Posture toggle — Buyer · Seller (offer_strategy.mode), no "all" state. */}
+      {/* Posture — Buyer · Seller (offer_strategy.mode), one compact control, no "all" state. */}
       <div className="flex flex-wrap items-center gap-2">
         <span style={facetLabelStyle}>Posture</span>
-        <div className="flex gap-1.5">
-          {POSTURE_OPTIONS.map((opt) => {
-            const active = params.posture === opt.value
-            return (
-              <Link
-                key={opt.value}
-                href={buildHref(basePath, { ...params, posture: opt.value })}
-                className="av2-chip"
-                aria-pressed={active}
-              >
-                {opt.label}
-              </Link>
-            )
-          })}
-        </div>
+        <ToolbarSelect
+          aria-label="Posture"
+          value={params.posture ?? ''}
+          onChange={(e) => router.push(buildHref(basePath, { ...params, posture: e.target.value }))}
+          style={{ width: '100%', maxWidth: 224 }}
+        >
+          {POSTURE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </ToolbarSelect>
       </div>
 
       {/* Free text — address / subdivision. */}
@@ -163,20 +160,28 @@ export function BpoFilters({
         </ToolbarSelect>
       </div>
 
-      {/* Status pills. */}
+      {/* Status — one compact control (bar rule 2: no chip walls). */}
       <div className="flex flex-wrap items-center gap-2">
         <span style={facetLabelStyle}>Status</span>
-        <div className="flex flex-wrap gap-1.5">
-          {STATUS_OPTIONS.map((opt) => {
-            const active = (filters.status ?? 'all') === opt.value
-            const nextParams = { ...params, status: opt.value === 'all' ? undefined : opt.value }
-            return (
-              <Link key={opt.value} href={buildHref(basePath, nextParams)} className="av2-chip" aria-pressed={active}>
-                {opt.label}
-              </Link>
+        <ToolbarSelect
+          aria-label="Status"
+          value={filters.status ?? 'all'}
+          onChange={(e) =>
+            router.push(
+              buildHref(basePath, {
+                ...params,
+                status: e.target.value === 'all' ? undefined : e.target.value,
+              }),
             )
-          })}
-        </div>
+          }
+          style={{ width: '100%', maxWidth: 224 }}
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </ToolbarSelect>
       </div>
     </div>
   )

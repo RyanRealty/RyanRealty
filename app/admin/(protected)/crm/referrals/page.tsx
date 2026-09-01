@@ -44,7 +44,8 @@ import {
   listReferralReceivables,
   recordReferralReceivable,
 } from '@/lib/data/crm/referralReceivables'
-import { Button, SectionHead, StateWord, TextField, VerdictLine } from '@/components/admin/v2'
+import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import { RecordHandoffButton } from './RecordHandoffButton'
 import { formatDate } from '@/lib/format/date'
 
 export const metadata = { title: 'Referral queue | CRM | Admin' }
@@ -180,33 +181,12 @@ export default async function CrmReferralsPage() {
                   <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDate(c.createdAt)}</span>
                   {c.source ? <span>{c.source}</span> : null}
                 </div>
-                <form action={recordReferralForm} className="av2-inline-form">
-                  <TextField
-                    label="Referred to"
-                    name="referredTo"
-                    required
-                    placeholder="Broker, brokerage"
-                  />
-                  <TextField
-                    label="Fee %"
-                    name="feeBasisPct"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.5"
-                    placeholder="25"
-                    hint="Blank means 25"
-                    style={{ maxWidth: 120 }}
-                  />
-                  <Button
-                    type="submit"
-                    name="personId"
-                    value={c.personId}
-                    disabled={!receivables.available}
-                  >
-                    Record handoff
-                  </Button>
-                </form>
+                <RecordHandoffButton
+                  personId={c.personId}
+                  personName={c.name}
+                  action={recordReferralForm}
+                  disabled={!receivables.available}
+                />
               </li>
             ))}
           </ul>

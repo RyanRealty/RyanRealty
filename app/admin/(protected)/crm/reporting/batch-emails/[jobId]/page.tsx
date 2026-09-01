@@ -19,7 +19,6 @@ import { formatDate, formatDateTime } from '@/lib/format/date'
 import {
   Button,
   SectionHead,
-  SelectField,
   StateWord,
   TextField,
   VerdictLine,
@@ -57,6 +56,42 @@ const HEAD_CELL: CSSProperties = {
 const MUTED: CSSProperties = { color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }
 const LINK: CSSProperties = { color: 'var(--a-accent)' }
 const PAGE_SIZE = 100
+
+const TILES: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(128px, 1fr))',
+  gap: 8,
+  margin: '12px 0 16px',
+}
+const TILE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+  padding: '10px 12px',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  color: 'inherit',
+  textDecoration: 'none',
+}
+const TILE_ON: CSSProperties = {
+  borderColor: 'var(--a-accent)',
+  boxShadow: 'inset 0 0 0 1px var(--a-accent)',
+}
+const TILE_NUM: CSSProperties = {
+  fontSize: 20,
+  fontWeight: 600,
+  fontVariantNumeric: 'tabular-nums',
+  lineHeight: 1.2,
+}
+const TILE_LABEL: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const TILE_SUB: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
 
 type Who = 'all' | 'delivered' | 'bounced' | 'opened' | 'clicked' | 'visited'
 
@@ -102,6 +137,10 @@ function latestState(r: CampaignRecipient): 'ok' | 'down' | 'waiting' {
 
 function stamp(iso: string | null): string {
   return iso ? formatDateTime(iso) : '—'
+}
+
+function withBasis(rate: string | null, basis: string): string | null {
+  return rate ? `${rate} ${basis}` : null
 }
 
 function clickHost(url: string | null): string | null {
@@ -180,11 +219,30 @@ export default async function BatchEmailRecipientsPage({
       return r.email.includes(q) || name.includes(q)
     }),
   )
-  const clickers = recipients.filter((r) => r.clickCount > 0).length
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageSafe = Math.min(page, pageCount)
   const shown = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE)
   const eng = campaign.engagement
+
+  const counts = {
+    all: recipients.length,
+    delivered: recipients.filter((r) => r.deliveredAt && !r.bouncedAt).length,
+    bounced: recipients.filter((r) => r.bouncedAt).length,
+    opened: recipients.filter((r) => r.openedAt).length,
+    clicked: recipients.filter((r) => r.clickedAt).length,
+    visited: recipients.filter((r) => r.visitedAfterSend).length,
+  }
+  // Rates follow the list-page convention: delivery against provider sends,
+  // opens and clicks against delivered. No denominator → no rate, never 0%.
+  const pct = (n: number, d: number) => (d > 0 ? `${((n / d) * 100).toFixed(1)}%` : null)
+  const funnel: { who: Who; label: string; count: number; sub: string | null }[] = [
+    { who: 'all', label: 'Everyone', count: counts.all, sub: 'on this send' },
+    { who: 'delivered', label: 'Delivered', count: counts.delivered, sub: withBasis(pct(counts.delivered, eng.sent), 'of sent') },
+    { who: 'bounced', label: 'Bounced', count: counts.bounced, sub: withBasis(pct(counts.bounced, eng.sent), 'of sent') },
+    { who: 'opened', label: 'Opened', count: counts.opened, sub: withBasis(pct(counts.opened, counts.delivered), 'of delivered') },
+    { who: 'clicked', label: 'Clicked', count: counts.clicked, sub: withBasis(pct(counts.clicked, counts.delivered), 'of delivered') },
+    { who: 'visited', label: 'On the site', count: counts.visited, sub: 'after the send' },
+  ]
 
   const hrefFor = (next: { who?: Who; q?: string; page?: number }) => {
     const params = new URLSearchParams()
@@ -214,35 +272,29 @@ export default async function BatchEmailRecipientsPage({
 
       <VerdictLine tone="ok">
         <b>{campaign.subject?.trim() || 'Untitled send'}</b>
-        {'. '}
-        <b>{clickers.toLocaleString('en-US')} clicked</b>
-        {eng.opened > 0 ? `, ${eng.opened.toLocaleString('en-US')} opened` : ''}
-        {eng.sent > 0 ? `, ${eng.sent.toLocaleString('en-US')} sent` : ''}
-        {eng.bounced > 0 ? `, ${eng.bounced.toLocaleString('en-US')} bounced` : ''}
+        {eng.sent > 0 ? `. ${eng.sent.toLocaleString('en-US')} sent` : ''}
         {'. '}
         {formatDate(campaign.createdAtIso)}
       </VerdictLine>
 
+      <nav aria-label="How this send did — each number filters the list" style={TILES}>
+        {funnel.map((t) => (
+          <Link
+            key={t.who}
+            href={hrefFor({ who: t.who, page: 1 })}
+            aria-current={who === t.who ? 'page' : undefined}
+            style={who === t.who ? { ...TILE, ...TILE_ON } : TILE}
+          >
+            <span style={TILE_LABEL}>{t.label}</span>
+            <span style={TILE_NUM}>{t.count.toLocaleString('en-US')}</span>
+            <span style={TILE_SUB}>{t.sub ?? ' '}</span>
+          </Link>
+        ))}
+      </nav>
+
       <form method="get" action={`/admin/crm/reporting/batch-emails/${jobId}`} className="av2-rfilters">
         <div className="av2-inline-form" style={{ maxWidth: 720 }}>
-          <SelectField label="Show" name="who" defaultValue={who}>
-            <option value="all">Everyone ({recipients.length.toLocaleString('en-US')})</option>
-            <option value="delivered">
-              Delivered ({recipients.filter((r) => r.deliveredAt && !r.bouncedAt).length.toLocaleString('en-US')})
-            </option>
-            <option value="bounced">
-              Bounced ({recipients.filter((r) => r.bouncedAt).length.toLocaleString('en-US')})
-            </option>
-            <option value="opened">
-              Opened ({recipients.filter((r) => r.openedAt).length.toLocaleString('en-US')})
-            </option>
-            <option value="clicked">
-              Clicked ({recipients.filter((r) => r.clickedAt).length.toLocaleString('en-US')})
-            </option>
-            <option value="visited">
-              Visited the site after ({recipients.filter((r) => r.visitedAfterSend).length.toLocaleString('en-US')})
-            </option>
-          </SelectField>
+          {who !== 'all' ? <input type="hidden" name="who" value={who} /> : null}
           <TextField
             label="Find"
             type="search"
@@ -250,7 +302,7 @@ export default async function BatchEmailRecipientsPage({
             defaultValue={q}
             placeholder="Name or email"
           />
-          <Button type="submit">Show</Button>
+          <Button type="submit">Find</Button>
         </div>
       </form>
 
@@ -288,7 +340,7 @@ export default async function BatchEmailRecipientsPage({
                           Activity
                         </Link>
                         {' · '}
-                        <Link href={`/admin/people/${r.personId}#home`} style={LINK}>
+                        <Link href={`/admin/people/${r.personId}/tools#home`} style={LINK}>
                           Home
                         </Link>
                       </span>

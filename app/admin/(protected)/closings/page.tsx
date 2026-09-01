@@ -173,18 +173,21 @@ export default async function ClosingsPage({
         </p>
       ) : null}
 
-      <form method="GET" className="av2-rfilters" style={{ margin: '0 0 14px' }}>
-        {mineOnly ? <HiddenField name="mine" value="1" /> : null}
-        <TextField
-          label="Search deals"
-          name="q"
-          defaultValue={q ?? ''}
-          placeholder="Address, MLS, escrow, agent, or party…"
-        />
-        <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
-          Search
-        </Button>
-      </form>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, margin: '0 0 14px' }}>
+        <form method="GET" className="av2-rfilters" style={{ flex: 1, margin: 0 }}>
+          {mineOnly ? <HiddenField name="mine" value="1" /> : null}
+          <TextField
+            label="Search deals"
+            name="q"
+            defaultValue={q ?? ''}
+            placeholder="Address, MLS, escrow, agent, or party…"
+          />
+          <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
+            Search
+          </Button>
+        </form>
+        <NewFileForm />
+      </div>
       {q?.trim() ? (
         <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
           {visible.length} match{visible.length === 1 ? '' : 'es'} for “{q.trim()}”.{' '}
@@ -193,8 +196,6 @@ export default async function ClosingsPage({
           </Link>
         </p>
       ) : null}
-
-      <NewFileForm />
 
       {incomplete.length > 0 && (
         <section aria-label="Incomplete checklists">

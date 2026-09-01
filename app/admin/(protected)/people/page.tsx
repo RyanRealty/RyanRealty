@@ -1,5 +1,5 @@
 // @no-parity — internal admin surface, no public mockup contract
-// People: new-contact first, then lookup. Search by name or contact. No book-wide dump.
+// People: search-first lookup. New contact lives behind the toolbar button. No book-wide dump.
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -7,7 +7,7 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
 import { getPeopleListSignals } from '@/lib/data/crm/getPeopleListSignals'
 import { SectionHead, StateWord } from '@/components/admin/v2'
-import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
+import { NewContactButton } from '@/components/admin/shared/people-list/AddPersonDialog'
 import '@/components/admin/v2/admin-v2.css'
 
 export const dynamic = 'force-dynamic'
@@ -82,19 +82,20 @@ export default async function PeoplePage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <AddPersonCard />
-
-      <form method="GET" style={{ margin: '0 0 20px' }}>
-        <input
-          className="av2-input"
-          style={{ width: '100%' }}
-          type="search"
-          name="q"
-          defaultValue={q ?? ''}
-          placeholder="Search by name, phone, or email"
-          aria-label="Search people"
-        />
-      </form>
+      <div style={{ display: 'flex', gap: 8, margin: '0 0 20px' }}>
+        <form method="GET" style={{ flex: 1, margin: 0 }}>
+          <input
+            className="av2-input"
+            style={{ width: '100%' }}
+            type="search"
+            name="q"
+            defaultValue={q ?? ''}
+            placeholder="Search by name, phone, or email"
+            aria-label="Search people"
+          />
+        </form>
+        <NewContactButton />
+      </div>
 
       <Suspense fallback={<RecentlyTouchedFallback />}>
         <RecentlyTouched q={q} brokerScope={brokerScope} />

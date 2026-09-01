@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { createQuickContactAction } from '@/app/actions/crm-quick-add'
 import { canSubmitCreateContact, createContactRequirement } from '@/lib/crm/create-contact'
-import { Button, Dialog, SectionHead, TextField } from '@/components/admin/v2'
+import { Button, Dialog, TextField } from '@/components/admin/v2'
 
 function useAddPersonForm(onCreated: () => void) {
   const router = useRouter()
@@ -197,39 +197,15 @@ export default function AddPersonDialog({
   )
 }
 
-/** Always-visible add form for /admin/people. The primary path. */
-export function AddPersonCard() {
-  const form = useAddPersonForm(() => undefined)
-
+/** Compact opener for list toolbars. The form lives in the dialog, not the page. */
+export function NewContactButton() {
+  const [open, setOpen] = useState(false)
   return (
-    <section
-      id="add-person"
-      data-tour="crm-add-person"
-      aria-label="New contact"
-      style={{
-        border: '1px solid var(--a-border)',
-        borderRadius: 'var(--a-r-lg)',
-        background: 'var(--a-surface)',
-        padding: 16,
-        marginBottom: 20,
-      }}
-    >
-      <SectionHead flush>New contact</SectionHead>
-      {form.created ? (
-        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', fontWeight: 500, margin: '8px 0 0' }}>
-          Opening {form.created.name}. Stage, tags, related people, and notes are on that page.
-        </p>
-      ) : (
-        <>
-          <AddPersonFields form={form} />
-          <div style={{ marginTop: 12 }}>
-            <Button onClick={form.submit} disabled={form.isPending || !form.canSubmit} touch>
-              {form.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
-              {form.isPending ? 'Saving' : 'New contact'}
-            </Button>
-          </div>
-        </>
-      )}
-    </section>
+    <>
+      <Button data-tour="crm-add-person" onClick={() => setOpen(true)} touch>
+        New contact
+      </Button>
+      <AddPersonDialog open={open} onOpenChange={setOpen} />
+    </>
   )
 }

@@ -77,6 +77,7 @@ import type { PersonAppointment, PersonDeal, PersonFile } from '@/lib/data/crm/g
 
 export type RailEnrollment = {
   enrollmentId: number
+  sequenceId: number
   sequenceName: string
   stepIndex: number
   totalSteps: number
@@ -566,7 +567,13 @@ export function PersonRightRail({
               {enrollments.map((e) => (
                 <div key={e.enrollmentId} className="space-y-0.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium">{e.sequenceName}</span>
+                    <Link
+                      href={`/admin/crm/sequences/${e.sequenceId}/edit`}
+                      className="truncate text-sm font-medium"
+                      style={{ color: 'inherit', textDecoration: 'none' }}
+                    >
+                      {e.sequenceName}
+                    </Link>
                     <span className="capitalize">
                       <RailChip tone={e.status === 'running' ? 'ok' : 'neutral'}>
                         {e.status.replace(/_/g, ' ')}
@@ -815,7 +822,13 @@ export function PersonRightRail({
             <div className="space-y-1">
               {runningPlans.map((e) => (
                 <div key={e.enrollmentId} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="truncate">{e.sequenceName}</span>
+                  <Link
+                    href={`/admin/crm/sequences/${e.sequenceId}/edit`}
+                    className="truncate"
+                    style={{ color: 'inherit', textDecoration: 'none' }}
+                  >
+                    {e.sequenceName}
+                  </Link>
                   <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--a-ok)' }}>
                     <span
                       className="inline-block h-1.5 w-1.5 rounded-full"

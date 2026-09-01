@@ -33,6 +33,7 @@
  *
  * DAL boundary (G1): the raw .from() reads live here, inside lib/data/.
  */
+import { cache as reactCache } from 'react'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export type PersonIdentity = {
@@ -110,9 +111,10 @@ function unionIds<T>(a: Iterable<T>, b: Iterable<T>): T[] {
 /**
  * Resolve a crm_people.id into its full CRM-independent identity bundle.
  * Single source of truth — every Contact-360 enrichment panel calls this
- * instead of threading a bare fub id around.
+ * instead of threading a bare fub id around. Request-memoized (React cache):
+ * several streamed workspace regions resolve the same person per request.
  */
-export async function resolvePersonIdentity(crmPersonId: number): Promise<PersonIdentity> {
+export const resolvePersonIdentity = reactCache(async (crmPersonId: number): Promise<PersonIdentity> => {
   const empty: PersonIdentity = {
     crmPersonId,
     fubLegacyId: null,
@@ -197,4 +199,4 @@ export async function resolvePersonIdentity(crmPersonId: number): Promise<Person
     authUserId,
     sessionIds,
   }
-}
+})

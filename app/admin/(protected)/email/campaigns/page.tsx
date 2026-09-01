@@ -159,9 +159,24 @@ export default async function AdminEmailCampaignsPage() {
             <>
               <b>The campaigns table could not be read.</b> Nothing below is a measurement.
             </>
+          ) : rows.length === 0 && summary.delivered > 0 ? (
+            <>
+              <b>The campaigns table holds no rows, but the event store holds{' '}
+              {summary.delivered.toLocaleString('en-US')} delivered campaign sends.</b>{' '}
+              The two stores disagree — treat the strip below as event-store truth, not a
+              campaign list.{' '}
+              <Link href="/admin/crm/reporting/batch-emails" style={{ color: 'var(--a-accent)' }}>
+                Batch sends report separately
+              </Link>
+              .
+            </>
           ) : rows.length === 0 ? (
             <>
-              <b>No campaign has been sent yet.</b>
+              <b>No campaign has been sent yet.</b>{' '}
+              <Link href="/admin/crm/reporting/batch-emails" style={{ color: 'var(--a-accent)' }}>
+                Batch sends report separately
+              </Link>
+              .
             </>
           ) : (
             <>

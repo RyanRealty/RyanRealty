@@ -69,7 +69,7 @@ export default async function AdminMarketReportPage() {
           {cities.map((city) => (
             <li key={city} className="av2-quiet">
               <Link
-                href={`/reports/city/${encodeURIComponent(city)}`}
+                href={`/housing-market/${encodeURIComponent(city.toLowerCase().replace(/\s+/g, '-'))}`}
                 className="av2-quiet__name"
                 style={{ textDecoration: 'none', color: 'var(--a-accent)' }}
               >

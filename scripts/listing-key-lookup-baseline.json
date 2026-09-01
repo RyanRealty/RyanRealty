@@ -4,8 +4,8 @@
   "total": 7,
   "violations": [
     "app/actions/likes.ts:28",
-    "lib/data/crm/getContactSavedHomes.ts:203",
-    "lib/data/crm/getViewedListings.ts:175",
+    "lib/data/crm/getContactSavedHomes.ts:217",
+    "lib/data/crm/getViewedListings.ts:229",
     "lib/data/engagement/index.ts:171",
     "lib/data/engagement/index.ts:50",
     "lib/data/listings/getListingVideoCandidates.ts:42",

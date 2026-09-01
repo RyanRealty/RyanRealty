@@ -70,7 +70,6 @@ import ContactsSearch from './_components/ContactsSearch'
 import { MobilePeopleRoot } from '@/components/admin/shared/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/shared/people-list/PeopleSidebar'
 import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
-import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
 import PeopleListView, { type PeopleRow } from '@/components/admin/shared/people-list/PeopleListView'
 import {
   groupSavedViews, groupSystemByCollection, type SavedViewItem,
@@ -115,7 +114,6 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const sp = await searchParams
   return (
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
-      <AddPersonCard />
       <Suspense fallback={<CrmListFallback />}>
         <CrmPeopleBody access={access} sp={sp} />
       </Suspense>

@@ -164,11 +164,19 @@ export default async function NewsletterSubscribersPage({
         ]}
       />
 
-      <SectionHead>Add subscriber</SectionHead>
-      <AddSubscriberForm />
+      <details className="av2-rcols">
+        <summary>Add subscriber</summary>
+        <div className="av2-rcols__body">
+          <AddSubscriberForm />
+        </div>
+      </details>
 
-      <SectionHead>Bulk add subscribers</SectionHead>
-      <BulkEnrollForm />
+      <details className="av2-rcols">
+        <summary>Bulk add subscribers</summary>
+        <div className="av2-rcols__body">
+          <BulkEnrollForm />
+        </div>
+      </details>
 
       <SectionHead>Subscriber list</SectionHead>
       <div className="av2-rfilters">

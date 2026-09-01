@@ -26,6 +26,7 @@
  *
  * DAL boundary (G1): the raw .from() reads live here, inside lib/data/.
  */
+import { cache as reactCache } from 'react'
 import { createServiceClient } from '@/lib/data/client'
 import type { ViewedListing } from '@/lib/data/crm/getViewedListings'
 
@@ -162,7 +163,20 @@ export async function getContactSavedHomes(params: {
   /** Normalized (lowercased) emails — strengthens the identity-map match. */
   emails?: string[]
 }): Promise<ContactSavedHome[]> {
-  const { crmPersonId, fubLegacyId, emails } = params
+  return getContactSavedHomesCached(
+    params.crmPersonId,
+    params.fubLegacyId ?? null,
+    (params.emails ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean).sort().join(' '),
+  )
+}
+
+/** Request-memoized (React cache): desktop and mobile regions both read this store. */
+const getContactSavedHomesCached = reactCache(async (
+  crmPersonId: number,
+  fubLegacyId: number | null,
+  emailsKey: string,
+): Promise<ContactSavedHome[]> => {
+  const emails = emailsKey ? emailsKey.split(' ') : []
   if (!Number.isFinite(crmPersonId) || crmPersonId <= 0) return []
   const sb = createServiceClient()
 
@@ -226,4 +240,4 @@ export async function getContactSavedHomes(params: {
 
   out.sort((a, b) => (a.savedAt < b.savedAt ? 1 : -1))
   return out
-}
+})

@@ -1,5 +1,4 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { AddPersonCard } from '@/components/admin/shared/people-list/AddPersonDialog'
 import '@/components/admin/v2/admin-v2.css'
 
 /**
@@ -12,7 +11,6 @@ export default function CrmPeopleLoading() {
   const HEADERS = ['Name', 'Lead Score', 'Agent', 'Last Visit', 'Phone', 'Email', 'Last Activity', 'Tags']
   return (
     <div className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6" aria-busy>
-      <AddPersonCard />
       {/* Mobile: simple list skeleton */}
       <div className="mt-1 space-y-3 md:hidden">
         <Skeleton className="h-7 w-32" />

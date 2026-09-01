@@ -10,7 +10,6 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import {
   Button,
-  HiddenField,
   ReportGrid,
   ReportNumbers,
   SectionHead,
@@ -225,56 +224,16 @@ export default async function TcFormsPage({ searchParams }: Props) {
             )
           })}
         </SelectField>
-        {fresh !== 'all' ? <HiddenField name="fresh" value={fresh} /> : null}
+        <SelectField label="Freshness" name="fresh" defaultValue={fresh === 'all' ? '' : fresh}>
+          <option value="">All</option>
+          <option value="updated">Updates ({updatedCount})</option>
+          <option value="new">New ({newCount})</option>
+          <option value="retired">Retired ({retiredCount})</option>
+        </SelectField>
         <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
           Search
         </Button>
       </form>
-
-      <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 8px' }}>
-        Filter results by:{' '}
-        {libFilter === 'all' ? (
-          <b>All libraries</b>
-        ) : (
-          <Link href={buildHref({ lib: null })} style={{ color: 'var(--a-accent)' }}>
-            All libraries
-          </Link>
-        )}
-        {filterableCodes.map((code) => {
-          const library = libraries.find((l) => l.code === code)
-          const label = `${library?.name ?? code} (${library?.forms.length ?? 0})`
-          return (
-            <span key={code}>
-              {' · '}
-              {libFilter === code ? (
-                <b>{label}</b>
-              ) : (
-                <Link href={buildHref({ lib: code })} style={{ color: 'var(--a-accent)' }}>
-                  {label}
-                </Link>
-              )}
-            </span>
-          )
-        })}
-      </p>
-
-      <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
-        <Link href={buildHref({ fresh: 'all' })} style={{ color: 'var(--a-accent)' }}>
-          All
-        </Link>
-        {' · '}
-        <Link href={buildHref({ fresh: 'updated' })} style={{ color: 'var(--a-accent)' }}>
-          Updates ({updatedCount})
-        </Link>
-        {' · '}
-        <Link href={buildHref({ fresh: 'new' })} style={{ color: 'var(--a-accent)' }}>
-          New ({newCount})
-        </Link>
-        {' · '}
-        <Link href={buildHref({ fresh: 'retired' })} style={{ color: 'var(--a-accent)' }}>
-          Retired ({retiredCount})
-        </Link>
-      </p>
 
       {scoped.length === 0 ? (
         <>

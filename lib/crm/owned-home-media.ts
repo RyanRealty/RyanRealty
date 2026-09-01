@@ -46,6 +46,8 @@ export async function getOwnedHomeMedia(lat: number, lng: number): Promise<Owned
     const metaParams = new URLSearchParams({ location: `${lat},${lng}`, radius: '50', source: 'outdoor', key })
     const res = await fetch(`${MAPS_BASE}/streetview/metadata?${metaParams.toString()}`, {
       next: { revalidate: 86400 },
+      // A slow Google endpoint must not stall the whole streamed region.
+      signal: AbortSignal.timeout(3000),
     })
     const meta = (await res.json()) as { status?: string }
     if (meta.status === 'OK') {
