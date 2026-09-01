@@ -18,6 +18,7 @@ import {
 import { formatDate, formatDateTime } from '@/lib/format/date'
 import {
   Button,
+  HiddenField,
   SectionHead,
   StateWord,
   TextField,
@@ -294,7 +295,7 @@ export default async function BatchEmailRecipientsPage({
 
       <form method="get" action={`/admin/crm/reporting/batch-emails/${jobId}`} className="av2-rfilters">
         <div className="av2-inline-form" style={{ maxWidth: 720 }}>
-          {who !== 'all' ? <input type="hidden" name="who" value={who} /> : null}
+          {who !== 'all' ? <HiddenField name="who" value={who} /> : null}
           <TextField
             label="Find"
             type="search"

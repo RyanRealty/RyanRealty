@@ -29,7 +29,7 @@ export function NewFileForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} touch>
+      <Button variant="quiet" onClick={() => setOpen(true)} touch>
         New file
       </Button>
       <Dialog open={open} onClose={() => setOpen(false)} title="New file">
