@@ -95,7 +95,7 @@ describe('community leftover face vs alias tiles', () => {
       'bend',
     )
     expect(items).toEqual([
-      { key: 'townhome', href: '/homes-for-sale/bend?propertySubTypes=Townhouse', label: '3 townhomes' },
+      { key: 'townhome', href: '/homes-for-sale/bend/townhomes', label: '3 townhomes' },
     ])
     expect(items[0]?.label).not.toMatch(/months/)
   })

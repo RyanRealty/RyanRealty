@@ -176,6 +176,41 @@ const PRESET_COPY: Record<string, PresetCopy> = {
       `Listings in ${city} whose MLS records list gated access among the community or parking features.`,
   },
   // Property types
+  'single-family': {
+    plural: 'single-family homes',
+    singular: 'single-family home',
+    criteria: (city) => `Listings in ${city} with a single family residence property subtype in the MLS. Detached houses only, no condos, townhomes, or manufactured homes.`,
+  },
+  'manufactured-on-land': {
+    plural: 'manufactured homes on land',
+    singular: 'manufactured home on land',
+    criteria: (city) =>
+      `Listings in ${city} with a manufactured on land property subtype in the MLS. The home and the lot sell together. Lender rules differ from site-built houses, so confirm financing early.`,
+  },
+  'manufactured-in-park': {
+    plural: 'manufactured homes in parks',
+    singular: 'manufactured home in a park',
+    criteria: (city) =>
+      `Listings in ${city} with an in park property subtype in the MLS. The home sells and the ground under it rents, so ask for the park's space rent and rules before writing an offer.`,
+  },
+  farms: {
+    plural: 'farms and ranches',
+    singular: 'farm or ranch',
+    criteria: (city) =>
+      `Listings in ${city} with the MLS farm and ranch property type. Water rights, irrigation districts, and land-use zoning drive value here, so verify each with the county before relying on them.`,
+  },
+  commercial: {
+    plural: 'commercial properties',
+    singular: 'commercial property',
+    criteria: (city) =>
+      `Listings in ${city} with the MLS commercial sale property type. Income and expense figures come from the listing agent, so verify them during due diligence.`,
+  },
+  businesses: {
+    plural: 'businesses',
+    singular: 'business',
+    criteria: (city) =>
+      `Listings in ${city} with the MLS business opportunity property type. The sale can include equipment, inventory, or a lease rather than real property, so read the listing terms closely.`,
+  },
   condos: {
     plural: 'condos',
     singular: 'condo',

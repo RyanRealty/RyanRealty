@@ -41,8 +41,8 @@ describe('publishPlaceTypeCards', () => {
     })
     expect(cards[0]?.key).toBe('sfr')
     expect(cards[0]?.active).toBe(false)
-    expect(cards[0]?.href).toContain('/homes-for-sale/redmond')
-    expect(cards[0]?.href).toContain('propertySubTypes=Single+Family+Residence')
+    // Place+type landing path (2026-09-01): a crawlable page, not a query search.
+    expect(cards[0]?.href).toBe('/homes-for-sale/redmond/single-family')
     expect(cards[0]?.photoUrl).toBe('https://cdn.example/sfr.jpg')
     expect(cards.find((c) => c.key === 'land')?.href).toBe('/homes-for-sale/redmond/lots-and-land')
     expect(cards.find((c) => c.key === 'condo')?.href).toBe('/homes-for-sale/redmond/condos')
@@ -66,15 +66,19 @@ describe('placeTypeSearchHref', () => {
     )
   })
 
-  it('keeps a defined query for types without a preset', () => {
+  it('every type key resolves a landing path; unknown keys keep a defined query', () => {
     expect(
       placeTypeSearchHref('/homes-for-sale/redmond', 'farm', { propertyType: 'farm' }),
-    ).toBe('/homes-for-sale/redmond?propertyType=farm')
+    ).toBe('/homes-for-sale/redmond/farms')
     expect(
       placeTypeSearchHref('/homes-for-sale/redmond', 'manufactured_park', {
         propertySubTypes: 'In Park',
       }),
-    ).toBe('/homes-for-sale/redmond?propertySubTypes=In+Park')
+    ).toBe('/homes-for-sale/redmond/manufactured-in-park')
+    // The query fallback survives for a key outside the preset map.
+    expect(
+      placeTypeSearchHref('/homes-for-sale/redmond', 'not-a-key', { propertyType: 'farm' }),
+    ).toBe('/homes-for-sale/redmond?propertyType=farm')
   })
 })
 

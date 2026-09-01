@@ -130,6 +130,15 @@ export const SEARCH_PRESETS: SearchPreset[] = [
   // Property types — exact enumerated sub-type sets (plan §4.4, 2026-07-30).
   // Slugs unchanged (live SEO routes); only the filter contract moved from
   // the substring scalar to explicit canonical value sets.
+  // Place+type landing slugs (Matt 2026-09-01): every property-type card on a
+  // place page links a crawlable PATH (/homes-for-sale/{city}/{place}/{slug}),
+  // never a query-string search — so each place+type is a real page.
+  { slug: 'single-family', shortLabel: 'Single-Family', label: 'Single-Family Homes', params: { propertySubTypes: ['Single Family Residence'], sort: 'newest' } },
+  { slug: 'manufactured-on-land', shortLabel: 'Manufactured on Land', label: 'Manufactured Homes on Land', params: { propertySubTypes: ['Manufactured On Land'], sort: 'newest' } },
+  { slug: 'manufactured-in-park', shortLabel: 'Manufactured in Park', label: 'Manufactured Homes in Parks', params: { propertySubTypes: ['In Park'], sort: 'newest' } },
+  { slug: 'farms', shortLabel: 'Farms & Ranches', label: 'Farms and Ranches for Sale', params: { propertyType: 'farm', sort: 'newest' } },
+  { slug: 'commercial', shortLabel: 'Commercial', label: 'Commercial Properties for Sale', params: { propertyType: 'commercial', sort: 'newest' } },
+  { slug: 'businesses', shortLabel: 'Businesses', label: 'Businesses for Sale', params: { propertyType: 'business', sort: 'newest' } },
   { slug: 'condos', shortLabel: 'Condos', label: 'Condos for Sale', params: { propertySubTypes: ['Condominium'], sort: 'newest' } },
   { slug: 'townhomes', shortLabel: 'Townhomes', label: 'Townhomes for Sale', params: { propertySubTypes: ['Townhouse'], sort: 'newest' } },
   // Multi-family / income (MLS PropertyType C — duplex/triplex/fourplex,

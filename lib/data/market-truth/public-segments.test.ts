@@ -140,24 +140,19 @@ describe('getPublicPlaceSegments', () => {
   })
 
   it('names browse URLs and display bits without fabricating 0', () => {
-    expect(publicSegmentBrowseHref('bend', 'condo')).toBe(
-      '/homes-for-sale/bend?propertySubTypes=Condominium',
-    )
-    expect(publicSegmentBrowseHref('la-pine', 'townhome')).toBe(
-      '/homes-for-sale/la-pine?propertySubTypes=Townhouse',
-    )
-    expect(publicSegmentBrowseHref(null, 'condo')).toBe(
-      '/homes-for-sale?propertySubTypes=Condominium',
-    )
+    // Place+type landing paths (2026-09-01); a zip pin keeps the query form.
+    expect(publicSegmentBrowseHref('bend', 'condo')).toBe('/homes-for-sale/bend/condos')
+    expect(publicSegmentBrowseHref('la-pine', 'townhome')).toBe('/homes-for-sale/la-pine/townhomes')
+    expect(publicSegmentBrowseHref(null, 'condo')).toBe('/homes-for-sale/condos')
     expect(publicSegmentBrowseHref('bend', 'condo', { postalCode: '97701' })).toBe(
       '/homes-for-sale/bend?postalCode=97701&propertySubTypes=Condominium',
     )
     expect(publicSegmentNoun('condo', 1)).toBe('condo')
     expect(publicSegmentNoun('condo', 66)).toBe('condos')
     expect(publicSegmentNoun('townhome', 78)).toBe('townhomes')
-    expect(publicSegmentBrowseHref('bend', 'land')).toBe('/homes-for-sale/bend?propertyType=Land')
+    expect(publicSegmentBrowseHref('bend', 'land')).toBe('/homes-for-sale/bend/lots-and-land')
     expect(publicSegmentBrowseHref('bend', 'manufactured_land')).toBe(
-      '/homes-for-sale/bend?propertySubTypes=Manufactured+On+Land',
+      '/homes-for-sale/bend/manufactured-on-land',
     )
     expect(publicSegmentNoun('land', 198)).toBe('lots')
     expect(publicSegmentDisplayBits({
@@ -240,7 +235,7 @@ describe('getPublicPlaceSegments', () => {
     expect(items[0]?.key).toBe('condo')
     expect(items[0]?.value).toBe('66')
     expect(items[0]?.noun).toBe('condos')
-    expect(items[0]?.href).toBe('/homes-for-sale/bend?propertySubTypes=Condominium')
+    expect(items[0]?.href).toBe('/homes-for-sale/bend/condos')
     expect(items[0]?.label).toContain('condos for sale')
   })
 

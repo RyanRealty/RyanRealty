@@ -85,6 +85,14 @@ describe('presetMatrixMatcher — derivability rule', () => {
       'lots-and-land',
       'residential-lots',
       'gated-community',
+      // Place+type landing presets (2026-09-01): every property-type card on a
+      // place page links a crawlable path; all six evaluate on matrix columns.
+      'single-family',
+      'manufactured-on-land',
+      'manufactured-in-park',
+      'farms',
+      'commercial',
+      'businesses',
       'condos',
       'townhomes',
       'multi-family',

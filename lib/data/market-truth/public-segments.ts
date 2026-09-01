@@ -102,6 +102,19 @@ export function publicSegmentFilterParams(
   }
 }
 
+/** Each segment's place+type landing preset slug (lib/search-presets.ts). */
+const SEGMENT_PRESET_SLUG: Record<PublicPlaceSegment, string> = {
+  condo: 'condos',
+  townhome: 'townhomes',
+  manufactured_land: 'manufactured-on-land',
+  manufactured_park: 'manufactured-in-park',
+  multifamily_2_4: 'multi-family',
+  land: 'lots-and-land',
+  farm: 'farms',
+  commercial_sale: 'commercial',
+  business: 'businesses',
+}
+
 export function publicSegmentBrowseHref(
   citySlug: string | null,
   segment: string,
@@ -109,8 +122,13 @@ export function publicSegmentBrowseHref(
 ): string {
   const spec = BROWSE[segment as PublicPlaceSegment]
   const path = citySlug?.trim() ? `/homes-for-sale/${hyphenSlug(citySlug)}` : '/homes-for-sale'
-  const params = new URLSearchParams()
+  // A crawlable PATH per place+type (Matt 2026-09-01) — query-string filters
+  // only when no preset slug covers the segment (a zip pin keeps the params
+  // form, since zip is not a path segment on this route).
+  const presetSlug = SEGMENT_PRESET_SLUG[segment as PublicPlaceSegment]
   const zip = opts?.postalCode?.replace(/\D/g, '').slice(0, 5)
+  if (presetSlug && !(zip && zip.length === 5)) return `${path}/${presetSlug}`
+  const params = new URLSearchParams()
   if (zip && zip.length === 5) params.set('postalCode', zip)
   if (spec?.propertySubTypes) params.set('propertySubTypes', spec.propertySubTypes)
   if (spec?.propertyType) params.set('propertyType', spec.propertyType)

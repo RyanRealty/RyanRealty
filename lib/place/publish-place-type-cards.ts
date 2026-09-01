@@ -46,10 +46,16 @@ export const PLACE_TYPE_COVER_SPECS: ReadonlyArray<{
 
 /** Existing indexable search presets that match a leftover type card 1:1. */
 const PLACE_TYPE_SEARCH_PRESET: Partial<Record<PlaceTypeKey, string>> = {
+  sfr: 'single-family',
   condo: 'condos',
   townhome: 'townhomes',
   multifamily_2_4: 'multi-family',
   land: 'lots-and-land',
+  manufactured_land: 'manufactured-on-land',
+  manufactured_park: 'manufactured-in-park',
+  farm: 'farms',
+  commercial_sale: 'commercial',
+  business: 'businesses',
 }
 
 export function placeTypeCoverPhotos(
