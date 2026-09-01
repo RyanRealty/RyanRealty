@@ -31,9 +31,25 @@ refining continuously; and NO FRANKENSTEIN: one style system, all pages same loo
 
 **Coordination:** concurrent ADMIN session shares this checkout (admin v2 work, db126181+).
 File-ownership agreed in-session; the misleading "other-session TEMP-DIAG" stash was dropped.
-Restyle PRs 165–169 remain open/unmerged (community PR says "stacked, do not merge, do not
-deploy"); still no competing restyle on main. Open on Matt's desk: land order for the restyle
-PRs + the hero-verdict demotion (below).
+
+**RESTYLE PR REVIEW VERDICT (2026-09-01, full three-way analysis, both reviewing agents'
+reports in this session).** The "five PRs" are ONE serial stack off base 2eba920b (Aug 28):
+listing → land-face → homepage → search → sell → valuation → city → neighborhood → community
+→ subdivision. `cursor/subdivision-restyle-3f5a` is the tip and contains everything.
+Findings: main has independently shipped its own restyle of the same pages since Aug 29
+(PlaceFaceStrip + PlaceAreaHero + PlaceSplitView + publishPlaceFace — the Grok/Claude work,
+f5336df1 and after), so the stack and main are two mutually exclusive architectures, not a
+rebase. Landing the stack would (1) resurrect `revalidate = 60` on the plat page — the exact
+production 500 fixed in c83043a7; (2) revert the Eagle Crest camera fix and displace the
+Redfin-badge and listing-map work; (3) fail ci:mockup-parity/grain gates on any partial mix
+(parity.json + page.tsx must come from one side). Rebase effort is a re-implementation.
+**Recommendation: close PRs 166–169 (keep branches for intent-mining — the Stage/HomesField
+modules, ListingGallery consolidation, and the *-html-gate scripts are ideas worth
+harvesting), and treat main as the one restyle direction.** Exception: the valuation branch's
+OWN work is exactly 3 commits (075229ca, 1bbbb141, c770cd31 — /sell/valuation Stage + cream
+address sheet + html gate) that cherry-pick onto main with zero conflicts; land or skip on
+look alone. Matt's hero-verdict demotion rides with whatever restyle work lands on main next.
+Matt directed the review 2026-09-01; PR disposition awaits his read of this verdict.
 
 # Prior — 2026-09-01 (Claude Code, main) — Grok place-page leftovers rescued + shipped
 
