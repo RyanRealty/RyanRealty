@@ -26,20 +26,6 @@ import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { PlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { measuredPlaceHoaInput } from './place-hoa-measured'
-import { slugify } from '@/lib/slug'
-
-/**
- * One MLS subdivision string whose raw form is not a readable name. Copied, with
- * its reason, from the KB overview that owned it: the slug must still be built
- * from the RAW alias because /subdivisions/[slug] filters listings by that exact
- * string, so only the visible text is corrected. It is duplicated rather than
- * imported because the only copy lives inside components/site/kb, which this
- * register may not import. The correction belongs in lib/ and that gap is
- * reported. "Lodges at Bachelor V" stays unmapped rather than guessed (§0).
- */
-const ALIAS_DISPLAY: Record<string, string> = {
-  Triple: 'Triple Knot',
-}
 
 type Registry = {
   subdivision_aliases?: string[]
@@ -58,7 +44,12 @@ function childPlatItems(input: {
   countIsAliasAware: boolean
 }): V3QuietItem[] {
   if (input.aliases.length === 0) return []
-  const items: V3QuietItem[] = [
+  // Prose only. The per-subdivision doors moved to the page's own
+  // "Subdivisions" Ledger (2026-09-01), which counts each child from the same
+  // city SFR set as the face and names it through publishPlatDisplayName —
+  // this row keeps the knowledge (why several MLS names count as one place)
+  // without duplicating the navigation.
+  return [
     {
       kind: 'prose',
       term: `Subdivisions in ${input.name}`,
@@ -67,10 +58,6 @@ function childPlatItems(input: {
         : `The MLS files these homes under more than one subdivision name.`,
     },
   ]
-  for (const alias of input.aliases) {
-    items.push({ label: ALIAS_DISPLAY[alias] ?? alias, href: `/subdivisions/${slugify(alias)}` })
-  }
-  return items
 }
 
 /**

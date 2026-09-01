@@ -14,7 +14,8 @@ import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { buildActivityItems } from '@/lib/kb/place-sections'
-import { activityRows } from '@/app/cities/[slug]/_v3/city-sections'
+import { activityRows, placeFigureRows, PLACE_COUNT_TRACE, type CityPlaceItem } from '@/app/cities/[slug]/_v3/city-sections'
+import { communityImage } from '@/lib/geo-images'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
 import {
@@ -52,6 +53,7 @@ import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
@@ -85,7 +87,7 @@ import {
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
-import { homesForSalePath } from '@/lib/slug'
+import { homesForSalePath, slugify } from '@/lib/slug'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -359,6 +361,50 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   const aliasAwareCount = haveCityTiles ? resortSfrCounts.get(resortSlug) ?? null : null
 
   const activeCount: number | null = hud.active
+
+  // Child subdivisions — the registry's own named subdivisions of this
+  // community (childAliasesOf already excludes the community's current and
+  // former names), counted from the SAME city SFR set the alias-aware count
+  // uses, so the ledger and the face can never disagree about a member.
+  // Destination safety: every href resolves through the plat page's registry
+  // path, so no card here can serve the refusal. §0: when the city SFR read
+  // did not answer, counts are null ("not measured"), never zero.
+  const childSubdivisionItems: CityPlaceItem[] = childAliases
+    .flatMap((alias) => {
+      // The MLS alias stays the ingest key (href + count bin); the visitor
+      // name goes through the one display publisher (Triple → Triple Knot,
+      // and an MLS abbreviation like BBR publishes nothing rather than junk).
+      const displayName = publishPlatDisplayName(alias)
+      if (!displayName) return []
+      const aliasLc = alias.trim().toLowerCase()
+      const prices = haveCityTiles
+        ? citySfrTiles
+            .filter((t) => (t.subdivisionName ?? '').trim().toLowerCase() === aliasLc)
+            .map((t) => Number(t.listPrice))
+            .filter((p) => Number.isFinite(p) && p > 0)
+            .sort((a, b) => a - b)
+        : null
+      const medianPrice =
+        prices == null || prices.length === 0
+          ? null
+          : prices.length % 2
+            ? prices[Math.floor(prices.length / 2)]!
+            : Math.round((prices[prices.length / 2 - 1]! + prices[prices.length / 2]!) / 2)
+      return [
+        {
+          name: displayName,
+          href: `/subdivisions/${slugify(alias)}`,
+          activeCount: prices == null ? null : prices.length,
+          medianPrice,
+          img: communityImage(slugify(alias)) ?? '',
+        },
+      ]
+    })
+    .sort((a, b) => (b.activeCount ?? 0) - (a.activeCount ?? 0) || a.name.localeCompare(b.name))
+  const [firstChildSub, ...restChildSub] = placeFigureRows(
+    childSubdivisionItems,
+    `${publicName} subdivision`,
+  )
 
   const marketHeadline = `The ${publicName} market`
 
@@ -641,6 +687,19 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         ) : null}
 
         <V3PlaceCharacter placeName={publicName} character={placeCharacter} />
+
+        {/* Subdivisions inside the community - every row is a door, mirroring
+            the neighborhood page's ledger so the two grains read the same. */}
+        {firstChildSub ? (
+          <V3Ledger
+            id="subdivisions"
+            eyebrow={v3Text(`${publicName} · Subdivisions`)}
+            heading={v3Text('Subdivisions')}
+            rows={[firstChildSub, ...restChildSub]}
+            source={v3Text(PLACE_COUNT_TRACE)}
+            action={{ label: v3Text(`All ${publicName} homes`), href: browseHref }}
+          />
+        ) : null}
 
         <CommunityAlertSheet
           communityName={publicName}

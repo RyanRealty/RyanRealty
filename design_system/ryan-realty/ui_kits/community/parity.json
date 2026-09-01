@@ -190,6 +190,7 @@
     "V3Instrument #market (leftover sold history as own series) or V3Quiet (stated absence)",
     "V3Quiet #belonging",
     "V3PlaceCharacter",
+    "V3Ledger #subdivisions (registry child subdivisions, SFR-counted from the same city set as the face; omitted when the registry names none)",
     "CommunityAlertSheet",
     "V3Ledger #open-houses",
     "V3Ledger #activity",

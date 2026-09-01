@@ -80,7 +80,11 @@ describe('master-plan belonging Quiet', () => {
     expect(first && 'body' in first ? first.body : null).toMatch(/median of the 6 current listings that report dues/)
   })
 
-  it('lists child plats as subdivision doors', () => {
+  it('explains multi-name filing as prose and carries no subdivision doors', () => {
+    // The doors moved to the page's "Subdivisions" Ledger (2026-09-01), which
+    // counts and names each child through the publish layer. The Quiet keeps
+    // only the knowledge row; duplicated navigation is how one page grows two
+    // disagreeing subdivision lists.
     const items = buildPlaceKnowledge({
       name: 'Tetherow',
       city: 'Bend',
@@ -96,9 +100,9 @@ describe('master-plan belonging Quiet', () => {
       contactHref: '/contact',
       amenityPosts: {},
     })
+    const terms = items.flatMap((item) => ('term' in item ? [item.term] : []))
+    expect(terms).toContain('Subdivisions in Tetherow')
     const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
-    expect(hrefs).toContain('/subdivisions/sunrise-village')
-    expect(hrefs).toContain('/subdivisions/roald-west')
-    expect(hrefs).not.toContain('/subdivisions/tetherow')
+    expect(hrefs.filter((h) => typeof h === 'string' && h.startsWith('/subdivisions/'))).toEqual([])
   })
 })
