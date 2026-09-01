@@ -51,6 +51,7 @@ import {
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
+import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -388,13 +389,18 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
   const [firstDaily, ...restDaily] = dailyRows
 
   // Subdivisions inside the boundary. §0: a count the index read did not carry
-  // stays null, never a zero.
-  const subdivisionItems: CityPlaceItem[] = neighborhoodCommunities.slice(0, 12).map((c) => ({
+  // stays null, never a zero. Each row's other-type bits are the destination
+  // subdivision's own Market Truth segment counts (one source — the same rows
+  // its page prints).
+  const neighborhoodChildren = neighborhoodCommunities.slice(0, 12)
+  const childTypeBits = await loadSubdivisionTypeBits(neighborhoodChildren.map((c) => slugify(c.subdivision)))
+  const subdivisionItems: CityPlaceItem[] = neighborhoodChildren.map((c) => ({
     name: c.subdivision,
     href: `/subdivisions/${slugify(c.subdivision)}`,
     activeCount: c.activeCount ?? null,
     medianPrice: c.medianPrice ?? null,
     img: preferPlaceHero(c.heroImageUrl, communityImage(c.slug) ?? ''),
+    typeBits: childTypeBits.get(slugify(c.subdivision)) ?? null,
   }))
   const [firstSub, ...restSub] = placeFigureRows(subdivisionItems, `${neighborhood.name} subdivision`)
 
@@ -570,7 +576,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={v3Text(`${neighborhood.name} · Subdivisions`)}
             heading={v3Text('Subdivisions')}
             rows={[firstSub, ...restSub]}
-            source={v3Text(PLACE_COUNT_TRACE)}
+            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
             action={{ label: v3Text(`All ${cityName} homes`), href: `/homes-for-sale/${citySlug}` }}
           />
         ) : null}

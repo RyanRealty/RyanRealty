@@ -50,7 +50,9 @@ describe('subdivision counts-only grain', () => {
 
   it('reader goes through getMetric, never pulse', () => {
     const src = readFileSync(resolve('lib/data/market-truth/subdivision-counts.ts'), 'utf8')
-    expect(src).toMatch(/getMetric\(/)
+    // getMetrics (the batch spelling of the same read path) — one IN-clause
+    // round trip instead of 21 getMetric calls per plat (2026-09-01).
+    expect(src).toMatch(/getMetrics\(/)
     expect(src).toMatch(/geoType: 'subdivision'/)
     expect(src).toMatch(/segment: 'detached'/)
     expect(src).not.toMatch(/market_pulse_live/)

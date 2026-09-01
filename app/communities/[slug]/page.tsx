@@ -55,6 +55,7 @@ import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
@@ -372,6 +373,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // Destination safety: every href resolves through the plat page's registry
   // path, so no card here can serve the refusal. §0: when the city SFR read
   // did not answer, counts are null ("not measured"), never zero.
+  const childAliasTypeBits = await loadSubdivisionTypeBits(childAliases.map((a) => slugify(a)))
   const childSubdivisionItems: CityPlaceItem[] = childAliases
     .flatMap((alias) => {
       // The MLS alias stays the ingest key (href + count bin); the visitor
@@ -400,6 +402,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           activeCount: prices == null ? null : prices.length,
           medianPrice,
           img: communityImage(slugify(alias)) ?? '',
+          typeBits: childAliasTypeBits.get(slugify(alias)) ?? null,
         },
       ]
     })
@@ -715,7 +718,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             eyebrow={v3Text(`${publicName} · Subdivisions`)}
             heading={v3Text('Subdivisions')}
             rows={[firstChildSub, ...restChildSub]}
-            source={v3Text(PLACE_COUNT_TRACE)}
+            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
             action={{ label: v3Text(`All ${publicName} homes`), href: browseHref }}
           />
         ) : null}

@@ -3,7 +3,7 @@
  * verdict stay off this grain. getMetric is the read path. Miss omits.
  * Extra product types overlay active / pending / closed counts.
  */
-import { getMetric } from '@/lib/data/market-truth/getMetric'
+import { getMetrics, type GetMetricInput, type MetricResult } from '@/lib/data/market-truth/getMetric'
 import {
   PUBLIC_PLACE_SEGMENTS,
   publicSegmentNoun,
@@ -132,52 +132,22 @@ export function subdivisionCountsHasRow(row: SubdivisionCounts): boolean {
   return subdivisionCountItems(row).length > 0 || subdivisionExtraItems(row.extras ?? []).length > 0
 }
 
-export async function getSubdivisionCounts(geoSlug: string): Promise<SubdivisionCounts> {
-  const slug = geoSlug.trim().toLowerCase()
-  if (!slug) return EMPTY_SUBDIVISION_COUNTS
-
-  const [active, pending, closed, ...extraRows] = await Promise.all([
-    getMetric({
-      stat: 'active_count',
-      geoType: 'subdivision',
-      geoSlug: slug,
-      segment: 'detached',
-    }),
-    getMetric({
-      stat: 'pending_count',
-      geoType: 'subdivision',
-      geoSlug: slug,
-      segment: 'detached',
-    }),
-    getMetric({
-      stat: 'closed_count',
-      geoType: 'subdivision',
-      geoSlug: slug,
-      segment: 'detached',
-      windowMonths: 12,
-    }),
-    ...PUBLIC_PLACE_SEGMENTS.flatMap((segment) => [
-      getMetric({
-        stat: 'active_count',
-        geoType: 'subdivision',
-        geoSlug: slug,
-        segment,
-      }),
-      getMetric({
-        stat: 'pending_count',
-        geoType: 'subdivision',
-        geoSlug: slug,
-        segment,
-      }),
-      getMetric({
-        stat: 'closed_count',
-        geoType: 'subdivision',
-        geoSlug: slug,
-        segment,
-        windowMonths: 12,
-      }),
+/** The metric inputs for one plat, in a fixed order parseCounts understands. */
+function subdivisionCountInputs(slug: string): GetMetricInput[] {
+  return [
+    { stat: 'active_count', geoType: 'subdivision', geoSlug: slug, segment: 'detached' },
+    { stat: 'pending_count', geoType: 'subdivision', geoSlug: slug, segment: 'detached' },
+    { stat: 'closed_count', geoType: 'subdivision', geoSlug: slug, segment: 'detached', windowMonths: 12 },
+    ...PUBLIC_PLACE_SEGMENTS.flatMap((segment): GetMetricInput[] => [
+      { stat: 'active_count', geoType: 'subdivision', geoSlug: slug, segment },
+      { stat: 'pending_count', geoType: 'subdivision', geoSlug: slug, segment },
+      { stat: 'closed_count', geoType: 'subdivision', geoSlug: slug, segment, windowMonths: 12 },
     ]),
-  ])
+  ]
+}
+
+function parseSubdivisionCounts(results: readonly (MetricResult | null)[]): SubdivisionCounts {
+  const [active, pending, closed, ...extraRows] = results
 
   const extras: SubdivisionExtraCount[] = []
   PUBLIC_PLACE_SEGMENTS.forEach((segment, i) => {
@@ -204,4 +174,35 @@ export async function getSubdivisionCounts(geoSlug: string): Promise<Subdivision
     closedCount: publishedCount(closed?.isPublishable ? closed.value : null),
     extras,
   }
+}
+
+export async function getSubdivisionCounts(geoSlug: string): Promise<SubdivisionCounts> {
+  const slug = geoSlug.trim().toLowerCase()
+  if (!slug) return EMPTY_SUBDIVISION_COUNTS
+  // ONE getMetrics round trip (it batches by IN-clause) — this used to fire
+  // 21 individual getMetric queries per plat, and a parent ledger calling it
+  // per child multiplied that into a 250-query storm that held the page
+  // stream open for minutes (Larkspur, 2026-09-01).
+  const results = await getMetrics(subdivisionCountInputs(slug))
+  return parseSubdivisionCounts(results)
+}
+
+/**
+ * Counts for MANY plats in ONE metric read — the parent-ledger path
+ * ("Subdivision 1 has 5 townhomes" needs every child's counts). Returns a map
+ * keyed by the normalized slug; a slug with no rows maps to empty counts.
+ */
+export async function getSubdivisionCountsForSlugs(
+  geoSlugs: readonly string[],
+): Promise<Map<string, SubdivisionCounts>> {
+  const slugs = [...new Set(geoSlugs.map((s) => s.trim().toLowerCase()).filter(Boolean))]
+  const out = new Map<string, SubdivisionCounts>()
+  if (slugs.length === 0) return out
+  const perSlug = subdivisionCountInputs(slugs[0]!).length
+  const inputs = slugs.flatMap((slug) => subdivisionCountInputs(slug))
+  const results = await getMetrics(inputs)
+  slugs.forEach((slug, i) => {
+    out.set(slug, parseSubdivisionCounts(results.slice(i * perSlug, (i + 1) * perSlug)))
+  })
+  return out
 }

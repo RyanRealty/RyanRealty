@@ -54,6 +54,12 @@ export type CityPlaceItem = {
   activeCount: number | null
   medianPrice: number | null
   img: string
+  /**
+   * "2 townhomes · 1 condo" — the destination plat's OWN Market Truth segment
+   * counts (publish-subdivision-type-bits), so the row and the page it opens
+   * can never disagree. Absent when the plat publishes no other types.
+   */
+  typeBits?: string | null
 }
 
 /**
@@ -111,7 +117,8 @@ export function placeFigureRows(
     const name = item.name?.trim()
     const href = item.href?.trim()
     if (!name || !href) return []
-    const detail = medianDetail(item.medianPrice)
+    const median = medianDetail(item.medianPrice)
+    const detail = [median, item.typeBits ?? null].filter(Boolean).join(' · ') || null
     return [
       {
         id: href,
@@ -148,7 +155,8 @@ export function placePlainRows(
     const name = item.name?.trim()
     const href = item.href?.trim()
     if (!name || !href) return []
-    const detail = medianDetail(item.medianPrice)
+    const median = medianDetail(item.medianPrice)
+    const detail = [median, item.typeBits ?? null].filter(Boolean).join(' · ') || null
     return [
       {
         id: href,
