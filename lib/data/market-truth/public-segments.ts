@@ -119,9 +119,9 @@ export function publicSegmentBrowseHref(
 }
 
 export function publicSegmentVerdictLabel(verdict: string | null): string | null {
-  if (verdict === 'seller') return "seller's"
-  if (verdict === 'buyer') return "buyer's"
-  if (verdict === 'balanced') return 'balanced'
+  if (verdict === 'seller') return "seller's market"
+  if (verdict === 'buyer') return "buyer's market"
+  if (verdict === 'balanced') return 'balanced market'
   return null
 }
 
