@@ -49,7 +49,7 @@ const GROUPS: ReportGroup[] = [
     title: 'Email',
     reports: [
       { name: 'Email performance', href: '/admin/reports/emails', question: 'Are our emails landing and getting read?' },
-      { name: 'Batch emails', href: '/admin/crm/reporting/batch-emails', question: 'How did each bulk send perform?' },
+      { name: 'Batch emails', href: '/admin/reports/emails', question: 'How did each bulk send perform?' },
       { name: 'Campaigns', href: '/admin/email/campaigns', question: 'What campaigns ran and to whom?' },
       { name: 'Newsletter analytics', href: '/admin/newsletters/analytics', question: 'How is the newsletter performing?' },
     ],

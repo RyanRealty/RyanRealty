@@ -49,6 +49,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
+import { BatchSendsSection } from './BatchSendsSection'
 import { scopeBroker } from '@/lib/crm/scope'
 import {
   getEmailSendLog,
@@ -309,6 +310,10 @@ export default async function AdminEmailReportingPage({
       {unreadable ? <ReportError what="Email engagement" href="/admin/reports/emails" /> : null}
 
       <ReportNumbers items={figures} />
+
+      {/* One email-performance home (Matt lock 2026-09-01): batch sends live
+          here too; the old standalone Batch Emails list bridges to this page. */}
+      <BatchSendsSection scope={scopedBroker} scopedEmail={access.email} />
 
       {/* Filters — native GET form, the canonical CRM filter pattern. */}
       <form method="get" action="/admin/reports/emails" className="av2-rfilters">

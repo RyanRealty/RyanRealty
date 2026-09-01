@@ -193,8 +193,8 @@ export default async function BatchEmailRecipientsPage({
         <ReportingSubNav active="batch-emails" />
         <VerdictLine tone="attention">
           <b>No bulk send #{jobId}.</b>{' '}
-          <Link href="/admin/crm/reporting/batch-emails" style={LINK}>
-            Back to batch emails
+          <Link href="/admin/reports/emails" style={LINK}>
+            Back to email performance
           </Link>
         </VerdictLine>
       </div>
@@ -264,8 +264,8 @@ export default async function BatchEmailRecipientsPage({
       <ReportingSubNav active="batch-emails" />
 
       <p style={{ ...MUTED, margin: '0 0 8px' }}>
-        <Link href="/admin/crm/reporting/batch-emails" style={LINK}>
-          Batch emails
+        <Link href="/admin/reports/emails" style={LINK}>
+          Email performance
         </Link>
         {' / '}
         send #{campaign.jobId}

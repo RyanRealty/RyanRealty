@@ -49,7 +49,10 @@ const BASE_TABS: Tab[] = [
   { key: 'lead-sources', label: 'Lead Sources', href: '/admin/crm/reporting/lead-sources' },
   { key: 'calls', label: 'Calls', href: '/admin/crm/reporting/calls' },
   { key: 'texts', label: 'Texts', href: '/admin/crm/reporting/texts' },
-  { key: 'batch-emails', label: 'Batch Emails', href: '/admin/crm/reporting/batch-emails' },
+  // One email-performance home (Matt lock 2026-09-01): the batch list lives
+  // inside /admin/reports/emails; the per-send funnel detail stays under
+  // /admin/crm/reporting/batch-emails/[jobId] and keeps this tab lit.
+  { key: 'batch-emails', label: 'Batch Emails', href: '/admin/reports/emails' },
   { key: 'marketing', label: 'Marketing', href: '/admin/crm/reporting/marketing' },
   { key: 'deals', label: 'Deals', href: '/admin/crm/reporting/deals' },
   { key: 'appointments', label: 'Appointments', href: '/admin/crm/reporting/appointments' },

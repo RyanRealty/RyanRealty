@@ -47,7 +47,6 @@ import { formatDate } from '@/lib/format/date'
 import {
   ReportError,
   ReportGrid,
-  ReportNumbers,
   SectionHead,
   VerdictLine,
   type ReportColumn,
@@ -165,16 +164,16 @@ export default async function AdminEmailCampaignsPage() {
               {summary.delivered.toLocaleString('en-US')} delivered campaign sends.</b>{' '}
               The two stores disagree — treat the strip below as event-store truth, not a
               campaign list.{' '}
-              <Link href="/admin/crm/reporting/batch-emails" style={{ color: 'var(--a-accent)' }}>
-                Batch sends report separately
+              <Link href="/admin/reports/emails" style={{ color: 'var(--a-accent)' }}>
+                Email performance lives under Reports
               </Link>
               .
             </>
           ) : rows.length === 0 ? (
             <>
               <b>No campaign has been sent yet.</b>{' '}
-              <Link href="/admin/crm/reporting/batch-emails" style={{ color: 'var(--a-accent)' }}>
-                Batch sends report separately
+              <Link href="/admin/reports/emails" style={{ color: 'var(--a-accent)' }}>
+                Email performance lives under Reports
               </Link>
               .
             </>
@@ -202,19 +201,13 @@ export default async function AdminEmailCampaignsPage() {
           className="av2-btn av2-btn--quiet"
           style={{ textDecoration: 'none' }}
         >
-          Email reporting
+          Email performance
         </Link>
       </div>
 
-      <ReportNumbers
-        items={[
-          { key: 'campaigns', label: 'Campaigns', value: String(campaigns.length) },
-          { key: 'delivered', label: 'Delivered', value: summary.delivered.toLocaleString('en-US') },
-          { key: 'openrate', label: 'Open rate', value: formatRate(summary.openRate) },
-          { key: 'clickrate', label: 'Click rate', value: formatRate(summary.clickRate) },
-        ]}
-      />
-
+      {/* One email-performance home (Matt lock 2026-09-01): this page is
+          compose HISTORY only — the numbers strip moved to
+          /admin/reports/emails with the rest of email performance. */}
       <SectionHead>Campaigns</SectionHead>
       <ReportGrid
         label="Sent email campaigns"

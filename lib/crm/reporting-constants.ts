@@ -217,7 +217,7 @@ export const HUB_MARKETING_REPORTS: ReportHubCard[] = [
     icon: '💌',
     title: 'Batch Emails',
     description: 'See the results of your email campaigns, opens & clicks.',
-    href: '/admin/crm/reporting/batch-emails',
+    href: '/admin/reports/emails',
   },
   {
     icon: '🏠',

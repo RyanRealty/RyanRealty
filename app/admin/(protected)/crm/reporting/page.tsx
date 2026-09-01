@@ -66,7 +66,7 @@ const GROUPS: ReportGroup[] = [
   {
     label: 'Marketing',
     doors: [
-      { title: 'Batch Emails', description: 'Campaign results: sends, opens, and clicks.', href: '/admin/crm/reporting/batch-emails' },
+      { title: 'Batch Emails', description: 'Campaign results: sends, opens, and clicks.', href: '/admin/reports/emails' },
       { title: 'Properties', description: 'Which listings drew the most inquiries, ranked, with the city each sits in.', href: '/admin/crm/reporting/properties' },
       { title: 'Marketing', description: 'UTM and campaign metrics through to appointments and closed deals.', href: '/admin/crm/reporting/marketing' },
     ],
