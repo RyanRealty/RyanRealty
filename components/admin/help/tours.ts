@@ -165,7 +165,7 @@ export const TOURS: Tour[] = [
   {
     id: 'inbox-orientation',
     label: 'Work your inbox',
-    routes: ['/admin/crm/inbox'],
+    routes: ['/admin/messages'],
     steps: [
       {
         selector: '[data-tour="inbox-compose"]',

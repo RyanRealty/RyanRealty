@@ -39,7 +39,7 @@ function ThreadFallback() {
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string; f?: string }>
+  searchParams: Promise<{ c?: string; f?: string; m?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.view')
   const access = { email: ctx.email, role: ctx.role, brokerSlug: ctx.brokerSlug }
@@ -50,6 +50,9 @@ export default async function MessagesPage({
     sp.f === 'inbox' || sp.f === 'assigned' || sp.f === 'drafts' || sp.f === 'sent' || sp.f === 'closed'
       ? sp.f
       : 'recent'
+  // Inbox deep-link compat (fold slice 3): ?m=sms|email preselects the
+  // composer channel — the FAB and mobile links carried this into the inbox.
+  const initialChannel = sp.m === 'email' ? ('email' as const) : ('text' as const)
 
   return (
     <div className={`av2-scope av2-msgs ${selectedId ? 'av2-msgs--thread' : 'av2-msgs--list'}`}>
@@ -59,7 +62,7 @@ export default async function MessagesPage({
 
       {selectedId && access ? (
         <Suspense fallback={<ThreadFallback />}>
-          <MessagesThread personId={selectedId} access={access} />
+          <MessagesThread personId={selectedId} access={access} initialChannel={initialChannel} />
         </Suspense>
       ) : (
         <section className="av2-thread" aria-label="No conversation selected">

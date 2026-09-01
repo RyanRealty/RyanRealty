@@ -2,7 +2,7 @@
   {
     "id": "fold-inbox-into-messages",
     "phase": "P12",
-    "note": "Matt lock 2026-09-01 #1: Messages is THE conversation surface. DO NOT hard-redirect yet \u2014 port first: (a) inbox folders (scope/folder/view params) as one compact filter in Messages, (b) unknown-caller AddPersonForm into the Messages thread pane, (c) ?compose= deep links used by CMA/BPO/Prospect send dialogs + FAB ?c=&m=. THEN crm/inbox becomes a param-preserving redirect and its ~10 inbound doors repoint. Entrances list: ConsoleQuickAction, CmaSendDialog, BpoSendDialog, ProspectSendDialog, MobileTasksScreen, MobileContactPointsSection, reporting/texts, settings/account, tours, /admin/inbox bridge."
+    "note": "Matt lock 2026-09-01 #1 \u2014 slices 1-3 SHIPPED: folders as one select on Messages (recent default), unknown-caller add/link in the thread, ?m= channel deep links honored, ALL ~10 entrances repointed to /admin/messages (/admin/inbox bridge included), tour retargeted. REMAINING (final slice): port conversation status (open/handled/closed), assign, and bulk triage into Messages, then hard-redirect /admin/crm/inbox and delete its page tree. Until then crm/inbox stays URL-reachable but doorless for those residual tools."
   },
   {
     "id": "looking-at-identity-leg",

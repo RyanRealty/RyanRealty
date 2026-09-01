@@ -80,7 +80,7 @@ export default function ConsoleQuickAction() {
   // §26: the mobile inbox owns its own FAB (compose sheet) — a second generic
   // FAB there violates the single-FAB rule (§25.12 / mob-02). Hooks above run
   // unconditionally; bail before render only.
-  const suppressed = pathname.startsWith('/admin/crm/inbox')
+  const suppressed = pathname.startsWith('/admin/crm/inbox') || pathname.startsWith('/admin/messages')
   // §29: the mobile Calendar (Screen A) + Tasks (Screen C) own their FABs at
   // < md; the desktop layouts keep this quick action (they have no §29 FAB).
   const mobileSuppressed =
@@ -114,12 +114,12 @@ export default function ConsoleQuickAction() {
         { label: 'Call', href: '#overview', icon: Phone },
         {
           label: 'Send text',
-          href: isMobile ? `/admin/crm/inbox?c=${leadId}&m=sms` : '#comms',
+          href: isMobile ? `/admin/messages?c=${leadId}&m=sms` : '#comms',
           icon: MessageSquare,
         },
         {
           label: 'Send email',
-          href: isMobile ? `/admin/crm/inbox?c=${leadId}&m=email` : '#comms',
+          href: isMobile ? `/admin/messages?c=${leadId}&m=email` : '#comms',
           icon: Mail,
         },
         // #notes: the mobile detail has a dedicated Notes tab (the mobile map

@@ -327,7 +327,7 @@ export default async function TextsReportPage({
           Refresh results
         </Link>
         . Read and reply to individual conversations in the{' '}
-        <Link href="/admin/crm/inbox" style={{ color: 'var(--a-accent)' }}>
+        <Link href="/admin/messages" style={{ color: 'var(--a-accent)' }}>
           Inbox
         </Link>
         .

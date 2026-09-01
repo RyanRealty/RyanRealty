@@ -10,11 +10,11 @@
  *
  * Action circles (Matt punch list #4, 2026-07-02 — "I need to be able to text
  * from my CRM not open up my messaging app"):
- *   SMS   → the IN-APP thread composer (/admin/crm/inbox?c=<id>&m=sms) —
+ *   SMS   → the IN-APP thread composer (/admin/messages?c=<id>&m=sms) —
  *           compliance-gated sendCrmSmsAction, never the native sms: app.
  *   Call  → the S8 calling-method sheet (Twilio bridge via startCrmCallAction,
  *           recorded + logged; honest direct-dial tel: fallback).
- *   Email → the IN-APP email composer (/admin/crm/inbox?c=<id>&m=email).
+ *   Email → the IN-APP email composer (/admin/messages?c=<id>&m=email).
  */
 
 import { useState, useTransition } from 'react'
@@ -155,7 +155,7 @@ export function MobileContactPointsSection({
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Link
-                href={`/admin/crm/inbox?c=${personId}&m=sms`}
+                href={`/admin/messages?c=${personId}&m=sms`}
                 aria-label="Send text"
                 className={CIRCLE_CLS}
                 style={CIRCLE_STYLE}
@@ -202,7 +202,7 @@ export function MobileContactPointsSection({
               </p>
             </div>
             <Link
-              href={`/admin/crm/inbox?c=${personId}&m=email`}
+              href={`/admin/messages?c=${personId}&m=email`}
               aria-label="Email"
               className={CIRCLE_CLS}
               style={CIRCLE_STYLE}

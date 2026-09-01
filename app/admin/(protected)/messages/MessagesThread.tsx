@@ -32,9 +32,12 @@ function channelLabel(kind: string): 'SMS' | 'Email' | null {
 export async function MessagesThread({
   personId,
   access,
+  initialChannel = 'text',
 }: {
   personId: number
   access: CrmAccess
+  /** Inbox deep-link compat (?m=email): preselect the composer channel. */
+  initialChannel?: 'text' | 'email'
 }) {
   const scoped = await requirePersonInScope(personId, access)
   if (!scoped.ok) {
@@ -143,6 +146,7 @@ export async function MessagesThread({
 
         <div className="av2-composer">
           <ComposeSurface
+            initialChannel={initialChannel}
             initialPeople={
               card
                 ? [
