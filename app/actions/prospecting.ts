@@ -282,9 +282,13 @@ export async function sendProspectingIntro(
       return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.`, code: 'merge-unresolved' }
     }
 
-    // 12. Short-link (fail-open to the untracked body).
+    // 12. Attribute then short-link (sendGovernedSms order, audit 2026-09-01) —
+    // the stored target carries ?_pid=/?agent= so a click stitches the site
+    // session. Fail-open to the untracked body.
     const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
-    const body = await instrumentSmsLinks(merged, { personId: lead.personId, broker: 'matt' }).catch(() => merged)
+    const { attributeSiteLinks } = await import('@/lib/crm/merge')
+    const attributed = attributeSiteLinks(merged, 'matt', null, lead.personId)
+    const body = await instrumentSmsLinks(attributed, { personId: lead.personId, broker: 'matt' }).catch(() => attributed)
 
     // 10. CLAIM — the at-most-once gate, right before the irreversible send.
     const claim = await claimProspectSend(kind, id, args.idempotencyKey)

@@ -8,7 +8,11 @@
  * homepage on any unknown/invalid code so a mistyped link never dead-ends.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { resolveAndLogShortLinkClick, isLikelyBotUserAgent } from '@/lib/data/crm/shortLinks'
+import {
+  resolveAndLogShortLinkClick,
+  isLikelyBotUserAgent,
+  stampIdentityOnOwnSite,
+} from '@/lib/data/crm/shortLinks'
 
 export const runtime = 'nodejs'
 export const revalidate = 0
@@ -25,7 +29,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   if (clean) {
     try {
       const resolved = await resolveAndLogShortLinkClick(clean, { log })
-      if (resolved?.targetUrl && /^https?:\/\//i.test(resolved.targetUrl)) target = resolved.targetUrl
+      if (resolved?.targetUrl && /^https?:\/\//i.test(resolved.targetUrl)) {
+        target = stampIdentityOnOwnSite(resolved.targetUrl, resolved.personId, resolved.broker)
+      }
     } catch (err) {
       console.warn('[r/code] resolve error:', err)
     }

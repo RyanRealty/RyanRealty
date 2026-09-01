@@ -22,7 +22,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCrmEmail, CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { isSuppressed } from '@/lib/crm/suppressions'
-import { referencesCmaLink, findUnresolvedMergeTokens } from '@/lib/crm/merge'
+import { referencesCmaLink, findUnresolvedMergeTokens, attributeSiteLinks } from '@/lib/crm/merge'
 import { isArchivedPlaceholder, laHour, inSmsQuietHours, nextSendWindow, renderMerge, type Step } from './helpers'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber, getA2pCampaignStatus } from '@/lib/crm/twilio'
@@ -408,6 +408,10 @@ export async function GET(request: Request) {
           if (smsClaim === 'error') { await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Sequence SMS claim failed, retrying in 30m'); errored++; continue }
           if (smsClaim === 'claimed') {
             // W1.4: track sequence-SMS link clicks per person (parity with composer/prospecting sends).
+            // Attribute BEFORE instrumenting (sendGovernedSms order, audit
+            // 2026-09-01): the stored short-link target then carries
+            // ?_pid=/?agent= so the click stitches the site session.
+            body = attributeSiteLinks(body, mailbox.slug, person.fub_legacy_id, person.id)
             body = await instrumentSmsLinks(body, { personId: person.id, broker: mailbox.slug })
             const sent = seqFrom
               ? await sendSms({ from: seqFrom, to: toPhone, body })

@@ -135,6 +135,32 @@ export async function instrumentSmsLinks(
 export type ResolvedShortLink = { targetUrl: string; personId: number; broker: string | null; channel: string }
 
 /**
+ * Stamp the clicker's identity onto OUR OWN site URLs so the visit stitches
+ * (PersonIdentityBridge reads ?_pid=; AgentAttributionBridge reads ?agent=).
+ * The short link knows exactly who it was texted to, so the /r/<code> redirect
+ * closes the attribution loop for every SMS sender — including any call site
+ * that forgot the attributeSiteLinks pass before instrumenting (the 2026-09-01
+ * audit found two). Never stamps a third-party target: a person id must not
+ * leak off-site.
+ */
+export function stampIdentityOnOwnSite(
+  target: string,
+  personId: number,
+  broker: string | null,
+): string {
+  try {
+    const u = new URL(target)
+    const host = u.hostname.toLowerCase().replace(/^www\./, '')
+    if (host !== 'ryan-realty.com') return target
+    if (personId > 0 && !u.searchParams.has('_pid')) u.searchParams.set('_pid', String(personId))
+    if (broker && !u.searchParams.has('agent')) u.searchParams.set('agent', broker)
+    return u.toString()
+  } catch {
+    return target
+  }
+}
+
+/**
  * Resolve a short code, log the click as an `sms_click` engagement event, bump
  * the click counters, and return the redirect target. The timeline event is
  * deduped per person+code (repeat clicks of the SAME link collapse to one row,
