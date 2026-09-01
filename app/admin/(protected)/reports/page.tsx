@@ -41,6 +41,7 @@ const GROUPS: ReportGroup[] = [
       { name: 'Texts', href: '/admin/crm/reporting/texts', question: 'What text conversations happened?' },
       { name: 'Appointments', href: '/admin/crm/reporting/appointments', question: 'What appointments were set and kept?' },
       { name: 'Properties', href: '/admin/crm/reporting/properties', question: 'Which properties do leads care about?' },
+      { name: 'Place popularity', href: '/admin/reports/place-popularity', question: 'Which subdivisions, communities, and cities are visitors looking at?' },
       { name: 'Westside cohort', href: '/admin/crm/reporting/westside', question: 'How is the westside audience performing?' },
       { name: 'Marketing touches', href: '/admin/crm/reporting/marketing', question: 'What marketing reached whom?' },
     ],

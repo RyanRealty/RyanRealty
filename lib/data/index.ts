@@ -861,3 +861,5 @@ export type {
   FormFreshness,
   CatalogApplyResult,
 } from './tc/form-catalog'
+export { getPlacePopularity } from '@/lib/data/analytics/getPlacePopularity'
+export type { PlacePopularityResult, PlacePopularityRow, PlaceKind } from '@/lib/data/analytics/getPlacePopularity'
