@@ -3,18 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { signInWithEmailPassword } from '@/app/actions/auth'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { GoogleCommsCard, GoogleContinueButton, useGoogleCommsConsent } from '@/components/auth/GoogleCommsCard'
+import GoogleOneTap from '@/components/auth/GoogleOneTap'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 
-type Props = { next: string }
+type Props = { next: string; googleClientId?: string | null }
 
-export default function LoginForm({ next }: Props) {
+export default function LoginForm({ next, googleClientId = null }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +33,29 @@ export default function LoginForm({ next }: Props) {
       setLoading(null)
       setError(result.error)
     }
+  }
+
+  // One Tap / GIS button path — same signInWithIdToken contract as the
+  // save-gate modal and the admin door, same post-login redirect as the
+  // email/password submit below.
+  async function handleGoogleCredential(rawNonce: string, credential: string) {
+    setLoading('google')
+    setError(null)
+    await comms.persist()
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: credential,
+      nonce: rawNonce,
+    })
+    if (error) {
+      setLoading(null)
+      setError(error.message)
+      return
+    }
+    router.refresh()
+    if (next && next !== '/') window.location.href = next
+    else router.push('/account')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,16 +80,21 @@ export default function LoginForm({ next }: Props) {
   return (
     <div className="mt-6 space-y-4">
       <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
-      {/* Outline style, matching Facebook below — visually distinct from the
-          filled navy primary submit (design-audit P2: both read as the same
-          weighted action). */}
-      <GoogleContinueButton
-        loading={loading === 'google'}
-        disabled={!!loading}
-        onClick={() => handleOAuth('google')}
-        variant="outline"
-        className="w-full"
-      />
+      {/* Google's own rendered button (GIS) when a client id is configured —
+          the native "Continue as <name>" chip prompts alongside it for a
+          visitor already signed in with Google in this browser. Falls back
+          to the redirect-based button only when GIS has no client id. */}
+      {googleClientId ? (
+        <GoogleOneTap clientId={googleClientId} onCredential={handleGoogleCredential} prompt />
+      ) : (
+        <GoogleContinueButton
+          loading={loading === 'google'}
+          disabled={!!loading}
+          onClick={() => handleOAuth('google')}
+          variant="outline"
+          className="w-full"
+        />
+      )}
       <Button
         type="button"
         onClick={() => handleOAuth('facebook')}

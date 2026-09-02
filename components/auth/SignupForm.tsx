@@ -2,18 +2,20 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { signUpWithEmailPassword } from '@/app/actions/auth'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { GoogleCommsCard, GoogleContinueButton, useGoogleCommsConsent } from '@/components/auth/GoogleCommsCard'
+import GoogleOneTap from '@/components/auth/GoogleOneTap'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 
-type Props = { next: string }
+type Props = { next: string; googleClientId?: string | null }
 
-export default function SignupForm({ next }: Props) {
+export default function SignupForm({ next, googleClientId = null }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +46,29 @@ export default function SignupForm({ next }: Props) {
       setLoading(null)
       setError(result.error)
     }
+  }
+
+  // One Tap / GIS button path — same signInWithIdToken contract as the login
+  // page and the save-gate modal; Supabase creates the account on first
+  // sign-in, so the post-auth redirect matches handleSubmit's success path.
+  async function handleGoogleCredential(rawNonce: string, credential: string) {
+    setLoading('google')
+    setError(null)
+    await comms.persist()
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: credential,
+      nonce: rawNonce,
+    })
+    if (error) {
+      setLoading(null)
+      setError(error.message)
+      return
+    }
+    router.refresh()
+    if (next && next !== '/') window.location.href = next
+    else window.location.href = '/account?welcome=1'
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -82,13 +107,20 @@ export default function SignupForm({ next }: Props) {
   return (
     <div className="mt-6 space-y-4">
       <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
-      <GoogleContinueButton
-        loading={loading === 'google'}
-        disabled={!!loading}
-        onClick={() => handleOAuth('google')}
-        variant="outline"
-        className="w-full"
-      />
+      {/* Google's own rendered button (GIS) when a client id is configured.
+          Falls back to the redirect-based button only when GIS has no
+          client id. */}
+      {googleClientId ? (
+        <GoogleOneTap clientId={googleClientId} onCredential={handleGoogleCredential} />
+      ) : (
+        <GoogleContinueButton
+          loading={loading === 'google'}
+          disabled={!!loading}
+          onClick={() => handleOAuth('google')}
+          variant="outline"
+          className="w-full"
+        />
+      )}
       <Button
         type="button"
         onClick={() => handleOAuth('facebook')}

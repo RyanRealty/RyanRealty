@@ -17,6 +17,17 @@ interface GoogleIdConfig {
   use_fedcm_for_prompt?: boolean
 }
 
+/** Options for the official Google-rendered button (accounts.id.renderButton). */
+export interface GoogleButtonOptions {
+  type?: string
+  theme?: string
+  size?: string
+  text?: string
+  shape?: string
+  logo_alignment?: string
+  width?: number
+}
+
 interface GisPromptNotification {
   isNotDisplayed?: () => boolean
   isSkippedMoment?: () => boolean
@@ -28,10 +39,21 @@ interface GisGoogle {
   accounts: {
     id: {
       initialize: (c: GoogleIdConfig) => void
+      renderButton: (el: HTMLElement, o: GoogleButtonOptions) => void
       prompt: (cb?: (n: GisPromptNotification) => void) => void
       cancel: () => void
     }
   }
+}
+
+const DEFAULT_BUTTON_OPTIONS: GoogleButtonOptions = {
+  type: 'standard',
+  theme: 'outline',
+  size: 'large',
+  text: 'continue_with',
+  shape: 'pill',
+  logo_alignment: 'left',
+  width: 320,
 }
 
 function gis(): GisGoogle | undefined {
@@ -120,4 +142,43 @@ export async function promptGoogleOneTap(input: {
     if (googlePromptUnavailable(notification)) unavailable()
   })
   return cancel
+}
+
+/**
+ * Initialize GIS once and render Google's OWN button — the streamlined,
+ * unmistakably-Google control (not a lookalike we drew) — into `buttonEl`.
+ * Optionally also fires the One Tap avatar prompt in the same beat, for
+ * surfaces (login) where there is no separate silent-prompt-then-fallback
+ * dance already running. Returns a cancel function; call it on unmount so a
+ * stale nonce cannot fire the callback after the caller stopped caring.
+ */
+export async function renderGoogleButton(input: {
+  clientId: string
+  buttonEl: HTMLElement
+  onCredential: (rawNonce: string, credential: string) => void
+  prompt?: boolean
+  options?: GoogleButtonOptions
+}): Promise<() => void> {
+  const rawNonce = crypto.randomUUID()
+  const hashedNonce = await sha256Hex(rawNonce)
+  await loadGis()
+  const g = gis()
+  if (!g) return () => {}
+  g.accounts.id.initialize({
+    client_id: input.clientId,
+    callback: (resp) => input.onCredential(rawNonce, resp.credential),
+    nonce: hashedNonce,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+    use_fedcm_for_prompt: true,
+  })
+  g.accounts.id.renderButton(input.buttonEl, { ...DEFAULT_BUTTON_OPTIONS, ...input.options })
+  if (input.prompt) g.accounts.id.prompt()
+  return () => {
+    try {
+      g.accounts.id.cancel()
+    } catch {
+      /* noop */
+    }
+  }
 }

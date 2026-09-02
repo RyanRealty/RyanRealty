@@ -47,6 +47,10 @@ export default async function LoginPage({ searchParams }: Props) {
   const nextPath = next && next.startsWith('/') ? next : '/account'
   const signupHref =
     nextPath !== '/account' ? `/signup?next=${encodeURIComponent(nextPath)}` : '/signup'
+  // Same GIS client id the save-gate modal and admin door already read
+  // server-side — not a NEXT_PUBLIC_ var, just a plain string prop; a Google
+  // OAuth client id is not a secret.
+  const googleClientId = process.env.GOOGLE_OAUTH_CLIENT_ID?.trim() || null
 
   return (
     <>
@@ -64,7 +68,7 @@ export default async function LoginPage({ searchParams }: Props) {
         />
         {/* Leftover shadcn island. Do not rebuild LoginForm this lease. */}
         <div className="mx-auto max-w-md px-4 pb-16">
-          <LoginForm next={nextPath} />
+          <LoginForm next={nextPath} googleClientId={googleClientId} />
         </div>
       </main>
 

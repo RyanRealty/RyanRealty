@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
 import { GoogleContinueButton, useGoogleCommsConsent } from '@/components/auth/GoogleCommsCard'
+import GoogleOneTap from '@/components/auth/GoogleOneTap'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
 const DISMISS_HOURS = 24
@@ -230,12 +231,20 @@ function SignInPromptInner({ user, searchParams, googleClientId }: InnerProps) {
           Save homes and get alerts. Phone and updates are optional.
         </DialogDescription>
         <div className="mt-4 space-y-3">
-          <GoogleContinueButton
-            loading={loading === 'google'}
-            disabled={!!loading}
-            onClick={() => handleSignIn('google')}
-            className="w-full"
-          />
+          {/* Google's own rendered button — the silent One Tap attempt above
+              already ran and came up empty, so this is button-only (no
+              second prompt() call stacking on top of it). Falls back to the
+              redirect-based button only when GIS has no client id. */}
+          {googleClientId ? (
+            <GoogleOneTap clientId={googleClientId} onCredential={onGoogleCredential} />
+          ) : (
+            <GoogleContinueButton
+              loading={loading === 'google'}
+              disabled={!!loading}
+              onClick={() => handleSignIn('google')}
+              className="w-full"
+            />
+          )}
           <Button
             type="button"
             disabled={!!loading}
