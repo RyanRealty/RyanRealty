@@ -74,14 +74,10 @@ type BrokerRow = { id: string; slug: string; display_name: string; yearly?: Year
 
 export default async function AdminBrokerReportsPage() {
   const supabase = await createClient()
-  const { data: brokers, error: brokersError } = await supabase
-    .from('brokers')
-    .select('id, slug, display_name')
-    .eq('is_active', true)
-    .order('sort_order')
-  const { data: stats, error: statsError } = await supabase
-    .from('broker_stats')
-    .select('broker_id, period_type, period_start, metrics')
+  const [{ data: brokers, error: brokersError }, { data: stats, error: statsError }] = await Promise.all([
+    supabase.from('brokers').select('id, slug, display_name').eq('is_active', true).order('sort_order'),
+    supabase.from('broker_stats').select('broker_id, period_type, period_start, metrics'),
+  ])
   if (brokersError) console.error('[reports/brokers] brokers read failed:', brokersError.message)
   if (statsError) console.error('[reports/brokers] broker_stats read failed:', statsError.message)
 

@@ -65,7 +65,7 @@ export default function AddPersonForm({
         setError(res.error ?? 'Could not link the contact')
         return
       }
-      router.push(`/admin/crm/inbox?scope=company&folder=inbox&c=${existingId}`)
+      router.push(`/admin/messages?f=inbox&c=${existingId}`)
       router.refresh()
     })
   }

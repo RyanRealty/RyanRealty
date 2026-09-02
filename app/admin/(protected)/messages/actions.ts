@@ -74,12 +74,16 @@ export async function sendComposeAction(
     .split(',')
     .map((s) => Number(s.trim()))
     .filter((n) => Number.isFinite(n) && n > 0 && n !== personId)
-  for (const extra of extras) {
-    const extraScope = await requirePersonInScope(extra, {
-      email: auth.ctx.email,
-      role: auth.ctx.role,
-      brokerSlug: auth.ctx.brokerSlug,
-    })
+  const extraScopes = await Promise.all(
+    extras.map((extra) =>
+      requirePersonInScope(extra, {
+        email: auth.ctx.email,
+        role: auth.ctx.role,
+        brokerSlug: auth.ctx.brokerSlug,
+      }),
+    ),
+  )
+  for (const extraScope of extraScopes) {
     if (!extraScope.ok) return { ok: false, error: extraScope.error }
   }
 
