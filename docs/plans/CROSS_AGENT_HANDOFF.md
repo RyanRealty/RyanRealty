@@ -43,13 +43,28 @@ communities repeats the towns ledger and discards its video posters, footer is 2
 Matt's reaction to the shipped top of page: "is this supposed to wow me?" — it is not, and he
 is right: the opening is a stock hero plus three text doors.
 
+**IN FLIGHT — the living map (worktree, NOT on main):** branch `wt/home-opening-20260901` at
+`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, tip `d08d596e`, dev server
+`wt-home-opening-dev` (port 3321). `V3Atlas` (new barrel pattern, `components/site/v3/
+V3Atlas.client.tsx` + `.css`, projection in `lib/geo/project-svg.ts`) replaces the photo
+Stage on the homepage: 3,290 active + 896 pending listings as points on a flat SVG
+projection, 6 towns + 14 communities + 13 Bend neighborhoods as touchable silhouettes, a
+navy heat field (502 closes of the last 30 days in a lighter tint), pulses on real events,
+a three-count live claim, a live line of the newest listed/pending/sold, type toggles, a
+price scrubber. Three variants behind `?opening=dots|heat|split` on a decision sheet for
+Matt (artifact "The Living Map"); the losers are deleted in the commit that records his
+pick, then the branch merges to main. Matt's asks driving it: "look alive like real
+activity happening", "heat maps on every page, not just home", "menus everything
+upgraded", "our chart library can also go max". NEXT after the pick: (1) merge, evaluator
+receipt in homepage parity.json; (2) the Atlas takes a `scope` (a place's boundary + its
+listings + closes) and lands on every city/neighborhood/community/subdivision page — the
+heat-map-everywhere ask; (3) V3Chart goes max: marks + crosshair scrubber + claim caption
++ emphasis series on every chart; (4) the chrome menus get live data (counts, a heat
+thumbnail per place); (5) the remaining homepage evaluator defects (towns encoding,
+reviews proof band, homes map pins, communities media, footer).
+
 **Next program (the place-page class), in order:**
-1. The homepage OPENING as a real interactive data experience, built as 2–3 rendered
-   variants for Matt to pick (not another quiet iteration): the live Central Oregon map as
-   the first screen — every town, community, and neighborhood boundary touchable with count,
-   median, and pace; property-type toggles; a price scrubber — so "Buying" means "find your
-   place," not "see every home." Then the remaining form-level defects above through the
-   evaluator loop, and the first `tasteReview` receipt.
+1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
 2. Design the place-page class as a composed page, not stacked sections: an interactive
    property-type × subdivision display (hover/toggle/scrub reveals the cube), the closed-sales
    moat made visible, the map cells carrying per-type counts (punch-list item 6), and the
