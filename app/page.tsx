@@ -300,6 +300,13 @@ export default async function Home() {
           />
         )}
 
+        {/* Seller ask sits right after the market verdict spoke to sellers
+            (Matt 2026-09-01: "move it up"). Sheet after Instrument keeps the
+            rhythm rule; reviews and brokers close the page instead. */}
+        <section id="sell" className={V3_ROOT_CLASS}>
+          <SellValueForm pagePath="/" formId="home-get-value" />
+        </section>
+
         {firstCommunityRow ? (
           <V3Ledger
             id="communities"
@@ -326,9 +333,6 @@ export default async function Home() {
           <AboutFaces people={faces} heading="The brokers" headingLevel={2} />
         ) : null}
 
-        <section id="sell" className={V3_ROOT_CLASS}>
-          <SellValueForm pagePath="/" formId="home-get-value" />
-        </section>
       </main>
 
       <V3Footer

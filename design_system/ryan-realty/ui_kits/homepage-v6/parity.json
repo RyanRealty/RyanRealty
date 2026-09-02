@@ -140,11 +140,11 @@
     "HomeHomesField -- the houses and the map in one frame, type chips, listFlow, See all",
     "V3Ledger #towns -- each town's active count and median list price",
     "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
+    "section #sell -- the seller ask, directly after the market verdict speaks to sellers (Matt 2026-09-01: moved up from last)",
     "V3Ledger #communities -- resorts and master-planned communities",
     "HomeAlertSheet -- the ask",
     "V3Quiet #reviews -- Google reviews",
     "AboutFaces -- the three brokers",
-    "section #sell -- the seller ask",
     "V3Footer"
   ]
 }
