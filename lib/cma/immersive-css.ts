@@ -98,6 +98,16 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .rival-meta{font-size:13px;opacity:.7;margin-top:4px}
 .pin-map-wrap{margin:12px 0 20px}
 .pin-map{width:100%;height:auto;display:block;border:1px solid var(--ink12)}
+.lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}
+.lot-tile{margin:0}
+.lot-tile svg{width:100%;height:auto;display:block;border:1px solid var(--ink12);border-radius:10px}
+.lot-tile.is-subject svg{border-width:2px}
+.lot-tile figcaption{display:block;margin-top:7px;font-size:13px;line-height:1.4}
+.lot-badge{font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;margin-right:7px}
+.lot-addr{font-weight:500}
+.lot-acres,.lot-ppa{display:block;opacity:.72}
+.lot-tile abbr{text-decoration:none;border-bottom:1px dotted currentColor}
+.lot-scale{width:150px;height:auto;display:block;margin:4px 0 10px}
 .comp-row.is-on,.pin-sale.is-on,.pin-subject.is-on{outline:3px solid var(--navy)}
 .szn{margin:16px 0 8px}
 .szn svg{width:100%;height:auto;display:block}

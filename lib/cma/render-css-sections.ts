@@ -401,6 +401,21 @@ export function cmaSectionStyles(): string {
   .rival-meta { font-size: 10.5px; opacity: 0.7; margin-top: 3px; }
   .pin-map-wrap { margin: 10px 0 14px; }
   .pin-map { width: 100%; height: auto; display: block; border: 1px solid var(--navy-line); }
+
+  /* The land: recorded lots at one shared scale. A tile never splits across a
+     page break — half an outline reads as a different lot. */
+  .lot-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 10px 0 6px; }
+  .lot-tile { margin: 0; break-inside: avoid; page-break-inside: avoid; }
+  .lot-tile svg { width: 100%; height: auto; display: block; border: 1px solid var(--navy-line); border-radius: 8px; }
+  .lot-tile.is-subject svg { border-width: 2px; }
+  .lot-tile figcaption { display: block; margin-top: 5px; font-size: 8.5pt; line-height: 1.35; }
+  /* A label, not a capsule. The seller CMA carries no pills or chips
+     (ci:cma-opinion-spine), so the comp number is set in type. */
+  .lot-badge { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 7.5pt; margin-right: 5px; }
+  .lot-addr { font-weight: 500; }
+  .lot-acres, .lot-ppa { display: block; color: rgba(16, 39, 66, 0.7); }
+  .lot-tile abbr { text-decoration: none; border-bottom: 1px dotted rgba(16, 39, 66, 0.5); }
+  .lot-scale { width: 148px; height: auto; display: block; margin: 2px 0 8px; }
   .comp-row.is-on, .pin-sale.is-on, .pin-subject.is-on { outline: 2px solid var(--navy); }
 
   /* ── Print + PDF fidelity ─────────────────────────────────────────────── */

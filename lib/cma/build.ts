@@ -36,6 +36,7 @@ import { alignNarrativeToPricedSet } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
+import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCmaExtras } from '@/lib/cma/extras'
 import { computeEquityPosition } from '@/lib/cma/equity'
 import { buildListingPlan } from '@/lib/cma/listing-plan'
@@ -737,9 +738,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // instead of calling buildCma again — which re-selects comps and re-runs
     // judgeComps + auditCma, and can therefore change the recommended list
     // price when only the signer changed (CLAUDE.md section 0).
+    const renderComps = applyCompVerdicts(adjusted, judgment?.verdicts ?? [])
+
+    // The recorded lot under the subject and under each kept sale. Resolved
+    // from the SAME array the document renders, so a tile numbered 3 is the
+    // comp numbered 3 in the grid. Fail-open: no parcel simply means the
+    // document carries no land section.
+    const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
+
     const renderArgs = {
       subject,
-      comps: applyCompVerdicts(adjusted, judgment?.verdicts ?? []),
+      comps: renderComps,
       market,
       pricing,
       client: input.client,
@@ -749,6 +758,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       excludedOutliers: selection.excludedOutliers,
       sellerImprovementsText: input.sellerImprovementsText ?? null,
       site,
+      parcels,
       expiredAudit,
       development,
       rental,

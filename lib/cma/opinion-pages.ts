@@ -40,6 +40,9 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaMarketArea, CmaSoldBand } from '@/lib/cma/market-status'
 import { subjectPossessive, subjectSectionTitle } from '@/lib/cma/land-pricing'
+import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
+import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/getTaxlots'
+import { renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
 
 const esc = escapeHtml
 
@@ -57,6 +60,8 @@ export type OpinionPageArgs = {
   equity?: CmaEquityPosition | null
   expiredAudit?: ExpiredAuditData | null
   site?: CmaSiteData | null
+  /** Recorded lot polygons for the subject and its comps. Null when unavailable. */
+  parcels?: CmaParcelSet | null
 }
 
 function kvTable(rows: Array<[string, string]>): string {
@@ -171,6 +176,20 @@ export function factsPage(a: OpinionPageArgs): CmaPageDef {
   if (stories) rows.push(['Stories', stories])
   if (overlay?.fireplaces != null) rows.push(['Fireplaces', int(overlay.fireplaces)])
   if (s.lotAcres != null) rows.push(['Lot', `${dec(s.lotAcres, 2)} acres`])
+  // The county's own acreage, measured off the recorded polygon, printed as its
+  // own figure rather than folded into the MLS one. When the two disagree the
+  // row says so: a broker pricing on land has to see that the records differ,
+  // and nothing here picks a winner (CLAUDE.md §0).
+  const parcelAcres = a.parcels?.subject.acres ?? a.site?.parcelAcres ?? null
+  if (parcelAcres != null) {
+    const mls = s.lotAcres ?? null
+    const differs =
+      mls != null && mls > 0 && Math.abs(mls - parcelAcres) / Math.min(mls, parcelAcres) > 0.1
+    rows.push([
+      'Lot, county record',
+      `${dec(parcelAcres, 2)} acres${differs ? ' — the county record and the MLS listing disagree on this lot' : ''}`,
+    ])
+  }
   return {
     meta: `${esc(s.streetAddress)} · Property facts`,
     toc: 'Property facts',
@@ -441,6 +460,29 @@ export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
   }
 }
 
+/**
+ * The land, drawn. The comp grid states a lot size in a cell; this puts the
+ * recorded outlines beside each other at one scale, where a flag lot and a
+ * square quarter acre stop looking like the same number.
+ *
+ * Returns null when there is nothing to compare — the section never appears as
+ * an empty frame.
+ */
+export function lotLinesPage(a: OpinionPageArgs): CmaPageDef | null {
+  const strip = renderParcelSilhouettesHtml(a.parcels ?? null)
+  if (!strip) return null
+  const taxlot = a.parcels?.subject.taxlot?.trim()
+  return {
+    meta: `${esc(a.subject.streetAddress)} · The land`,
+    toc: 'The land',
+    body: `
+  <h2 class="section">The land</h2>
+  ${strip}
+  ${taxlot ? `<p class="fine">Subject tax lot ${esc(taxlot)}.</p>` : ''}
+  <p class="fine">${esc(TAXLOT_DISCLAIMER)}</p>`,
+  }
+}
+
 export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
   const st = a.subdivisionStory
   if (!st) return null
@@ -535,6 +577,10 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
   rest.push(salesAndMapPage(a))
+  // Straight after the sales, while the comp numbers on the tiles still refer
+  // to the grid the reader just read.
+  const lotLines = lotLinesPage(a)
+  if (lotLines) rest.push(lotLines)
   rest.push(...assembleCompFlyerPages(a.comps, subjectPossessive(a.subject)))
   const subdivision = subdivisionChapterPage(a)
   if (subdivision) rest.push(subdivision)

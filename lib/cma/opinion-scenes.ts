@@ -20,6 +20,9 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
 import { formatDate } from '@/lib/format/date'
 import { subjectPossessive } from '@/lib/cma/land-pricing'
+import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
+import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/getTaxlots'
+import { renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
 
 const esc = escapeHtml
 
@@ -37,6 +40,8 @@ export type OpinionSceneArgs = {
   generatedAtIso: string
   clientName?: string | null
   client?: { name?: string | null }
+  /** Recorded lot polygons for the subject and its comps; drives "The land". */
+  parcels?: CmaParcelSet | null
 }
 
 function whyScene(a: OpinionSceneArgs): string {
@@ -105,6 +110,26 @@ function salesScene(a: OpinionSceneArgs): string {
       <div class="r">${renderCompMatrixHtml(a.subject, a.comps)}</div>
       ${pinMap ? `<div class="pin-map-wrap r">${pinMap}</div>` : ''}
       <div class="r">${renderCompStripHtml(a.comps, subjectPossessive(a.subject))}</div>
+    </div>
+  </section>`
+}
+
+/**
+ * The land, drawn to one scale. The web mirror of lotLinesPage — same strip,
+ * same disclaimer, so the document a client reads on screen and the one they
+ * print say the same thing about the lot.
+ */
+function lotLinesScene(a: OpinionSceneArgs): string {
+  const strip = renderParcelSilhouettesHtml(a.parcels ?? null)
+  if (!strip) return ''
+  const taxlot = a.parcels?.subject.taxlot?.trim()
+  return `
+  <section class="sc sc-cream" id="land">
+    <div class="in wide">
+      <div class="kick r">The land</div>
+      <h2 class="h r">What each sale actually sat on</h2>
+      <div class="r">${strip}</div>
+      <p class="src r">${taxlot ? `Subject tax lot ${esc(taxlot)}. ` : ''}${esc(TAXLOT_DISCLAIMER)}</p>
     </div>
   </section>`
 }
@@ -226,6 +251,7 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
     whyScene(a),
     competitionScene(a),
     salesScene(a),
+    lotLinesScene(a),
     subdivisionScene(a),
     seasonalityScene(a),
     immersiveWiderMarketChapters(a),

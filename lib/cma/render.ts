@@ -29,6 +29,7 @@ import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
+import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { composeInboundCoverLine } from '@/lib/cma/inbound-packet'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
@@ -63,6 +64,8 @@ export interface RenderCmaArgs {
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
   site?: CmaSiteData | null
+  /** Recorded lot polygons for the subject and its comps; drives "The land". */
+  parcels?: CmaParcelSet | null
   expiredAudit?: ExpiredAuditData | null
   development?: DevelopmentOpportunities | null
   rental?: RentalPotential | null
