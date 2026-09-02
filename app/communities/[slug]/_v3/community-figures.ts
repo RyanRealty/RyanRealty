@@ -135,6 +135,18 @@ export function buildExploreEdges(input: {
   cityReportHref: string
   /** This page's own path, e.g. '/communities/tetherow'. The valuation origin. */
   pagePath: string
+  /**
+   * The verified questions used to render V3Answers, kept in the signature so
+   * the two lists cannot drift: the answers block and the edges block are built
+   * from one call, and a caller cannot render the doors while forgetting the
+   * questions they close.
+   *
+   * They are no longer folded INTO this array. Both used to sit inside one
+   * V3Quiet with the recorded documents and twenty navigation doors — three
+   * jobs under one heading, 3,405px at 1440 and 4,250px at 375, with 49 list
+   * rows and not one disclosure. A question set belongs in the primitive built
+   * for question sets.
+   */
   faqs: readonly { question: string, answer: string }[]
   /** The recorded governing documents, already shaped as Quiet items. They sit
    *  between the answers and the outbound edges — legal content is one of the
@@ -148,7 +160,6 @@ export function buildExploreEdges(input: {
 }): V3QuietItem[] {
   const { citySlug, cityName } = input
   return [
-    ...input.faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer })),
     ...input.documentItems,
     { label: `Search ${input.communityName} homes`, href: input.browseHref },
     { label: `${input.communityName} market report`, href: input.communityMarketHref },

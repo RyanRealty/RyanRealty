@@ -76,6 +76,7 @@ import {
   V3Instrument,
   V3Ledger,
   V3PlaceCharacter,
+  V3Answers,
   V3Quiet,
   V3Atlas,
   type AtlasRegion,
@@ -829,11 +830,29 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           />
         ) : null}
 
-        <V3Quiet
+        {/*
+          The questions fold, and the doors sit under them.
+
+          This was one V3Quiet holding three jobs: eight verified questions set
+          as a flat description list, the recorded governing documents, and
+          twenty outbound links — 3,405px at 1440 and 4,250px at 375, 49 rows,
+          zero disclosures, under a heading that promised only questions.
+          TASTE bans a wall of prose and bans a scrolling list as the design;
+          this was both, on the page the whole community class is judged by.
+
+          V3Answers already existed and already folded, and until now ran on
+          exactly one route. Nothing new was built: the questions become its
+          rows, and the documents and edges become its doors, so a reader who
+          wants one answer opens one answer instead of scrolling past seven.
+        */}
+        <V3Answers
           id="faq"
           eyebrow="Common questions"
           heading={`${publicName} real estate questions`}
-          items={exploreItems}
+          questions={pageFaqs.map((faq) => ({ question: faq.question, body: faq.answer }))}
+          doors={exploreItems.flatMap((item) =>
+            'href' in item && item.href ? [{ label: item.label, href: item.href }] : [],
+          )}
           note={`Market figures on this page come from the regional MLS through Oregon Data Share.${
             asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
           }`}

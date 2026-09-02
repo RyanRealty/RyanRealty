@@ -51,7 +51,10 @@
     grid-area: list;
   }
 
-  .v3-answers__doors {
+  /* The doors sit in the left rail whether they are folded or not, so both
+     the disclosure wrapper and the bare list claim the area. */
+  .v3-answers__doors,
+  .v3-answers__edges {
     grid-area: doors;
   }
 }
@@ -189,7 +192,53 @@
   margin-top: var(--v3-space-sm);
 }
 
-/* Doors -------------------------------------------------------------------- */
+/* Doors --------------------------------------------------------------------
+   Past six, the set folds behind one summary, built like a question row and
+   carrying the SAME +/- mark the questions use. The footer's chevron would be
+   a second disclosure glyph inside one section; matching the siblings beats
+   matching the chrome here. */
+
+.v3-answers__edges-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) 0;
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.v3-answers__edges-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3-answers__edges-summary:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
+}
+
+.v3-answers__edges[open] .v3-answers__edges-summary {
+  border-bottom-color: transparent;
+}
+
+.v3-answers__edges-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-answers__edges[open] .v3-answers__mark::after {
+  transform: rotate(0deg);
+}
 
 .v3-answers__doors {
   margin: 0;

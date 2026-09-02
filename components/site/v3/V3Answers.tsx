@@ -78,8 +78,21 @@ export type V3AnswersProps = {
   doors?: readonly V3AnswersDoor[]
   /** One quiet line under the left rail: a caveat, a basis. Plain text. */
   note?: string
+  /**
+   * What the folded door set is called, when there are enough doors to fold.
+   * Defaults to "Where to go next" — a promise about destinations, not about
+   * the questions above it.
+   */
+  doorsLabel?: string
   className?: string
 }
+
+/**
+ * Doors stay in the flow up to this many; past it they fold behind one summary.
+ * Six is the ceiling TASTE puts on an unencoded list before it becomes "a table
+ * wearing hairlines", and a set of exits is exactly that kind of list.
+ */
+const FOLD_DOORS_PAST = 6
 
 /** Trimmed text, or nothing. An empty string is not a label and not a name. */
 function text(value: string | undefined): string | undefined {
@@ -135,6 +148,7 @@ export function V3Answers({
   questions,
   doors,
   note,
+  doorsLabel,
   className,
 }: V3AnswersProps) {
   const rows = toRenderable(questions)
@@ -208,18 +222,61 @@ export function V3Answers({
         ) : null}
 
         {edges.length > 0 ? (
-          <ul className="v3-answers__doors">
-            {edges.map((door) => (
-              <li key={door.href} className="v3-answers__door-item">
-                <Link href={door.href} className="v3-answers__door">
-                  <span className="v3-answers__door-label">{door.label}</span>
-                  <span aria-hidden="true" className="v3-answers__door-mark">
-                    →
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          /*
+           * Past a handful, the doors fold.
+           *
+           * A community page closed on FORTY-ONE of these — every recorded
+           * governing document, every golf course, every sibling resort, plus
+           * the generic site edges — as one flat list about 2,000px tall. That
+           * is TASTE's "scrolling list as the design" and it was the largest
+           * single block on the page after the prose.
+           *
+           * Folding rather than cutting, deliberately: these edges are the
+           * node's outbound graph, the internal-link gates read them, and a
+           * closed native disclosure keeps every anchor in the HTML for a
+           * crawler while showing the reader a count they can act on. The
+           * summary names how many, so the fold is an offer and not a place to
+           * hide destinations — the same rule the footer's fold follows, with
+           * the same chevron.
+           */
+          edges.length > FOLD_DOORS_PAST ? (
+            <details className="v3-answers__edges">
+              <summary className="v3-answers__edges-summary">
+                {text(doorsLabel) ?? 'Where to go next'}
+                <span className="v3-answers__edges-count">
+                  {edges.length}
+                  {/* The same +/- mark the questions beside it use. A chevron
+                      here would put two disclosure glyphs in one section. */}
+                  <span aria-hidden="true" className="v3-answers__mark" />
+                </span>
+              </summary>
+              <ul className="v3-answers__doors">
+                {edges.map((door) => (
+                  <li key={door.href} className="v3-answers__door-item">
+                    <Link href={door.href} className="v3-answers__door">
+                      <span className="v3-answers__door-label">{door.label}</span>
+                      <span aria-hidden="true" className="v3-answers__door-mark">
+                        →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : (
+            <ul className="v3-answers__doors">
+              {edges.map((door) => (
+                <li key={door.href} className="v3-answers__door-item">
+                  <Link href={door.href} className="v3-answers__door">
+                    <span className="v3-answers__door-label">{door.label}</span>
+                    <span aria-hidden="true" className="v3-answers__door-mark">
+                      →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
         ) : null}
       </div>
     </section>
