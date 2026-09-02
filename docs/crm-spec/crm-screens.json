@@ -48,35 +48,29 @@
   {
     "id": "inbox-desktop",
     "specRef": "docs/crm-spec/08-inbox.md",
-    "route": "app/admin/(protected)/crm/inbox/page.tsx",
+    "route": "app/admin/(protected)/messages/page.tsx",
     "status": "done",
     "requiredComponents": [
-      "InboxFolderRail",
-      "InboxThreadList",
-      "InboxThreadView",
-      "ThreadHeader",
-      "InlineReply",
-      "NoteTray",
-      "ContactSidebar",
-      "AddPersonForm",
-      "getInboxFolderQueue",
-      "getConversationThreadFull",
-      "getInboxContactCard"
+      "MessagesQueue",
+      "MessagesThread"
     ],
-    "verify": "docs/crm-spec/_verify/screen-inbox-desktop.png"
+    "verify": "docs/crm-spec/_verify/screen-inbox-desktop.png",
+    "note": "Folded into /admin/messages (Messages fold FINAL 2026-09-01)."
   },
   {
     "id": "inbox-mobile",
     "specRef": "docs/crm-spec/26-mobile-inbox-and-conversations.md",
-    "route": "app/admin/(protected)/crm/inbox/_components/mobile/MobileBranch.tsx",
+    "route": "app/admin/(protected)/messages/MessagesThread.tsx",
     "status": "done",
     "requiredComponents": [
-      "MobileInbox",
-      "MobileThread",
-      "MobileComposeSheet",
-      "AddPersonForm"
+      "getConversationThreadFull",
+      "getInboxContactCard",
+      "AddPersonForm",
+      "MessagesThreadControls",
+      "ComposeSurface"
     ],
-    "verify": "docs/crm-spec/_verify/mob-inbox.png"
+    "verify": "docs/crm-spec/_verify/mob-inbox.png",
+    "note": "Folded into /admin/messages (Messages fold FINAL 2026-09-01)."
   },
   {
     "id": "contacts-list-desktop",
@@ -116,7 +110,7 @@
       "scopeBroker"
     ],
     "verify": "docs/crm-spec/_verify/screen-deals.png",
-    "supersededBy": "/admin/closings (one deal entity) — Track 2 P3, docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md; /admin/crm/deals* are redirect bridges"
+    "supersededBy": "/admin/closings (one deal entity) \u2014 Track 2 P3, docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md; /admin/crm/deals* are redirect bridges"
   },
   {
     "id": "automations-desktop",
@@ -215,17 +209,16 @@
   {
     "id": "mobile-compose",
     "specRef": "docs/crm-spec/27-mobile-compose-email-text-call.md",
-    "route": "app/admin/(protected)/crm/inbox/_components/mobile/MobileComposeSheet.tsx",
+    "route": "components/admin/crm/ComposeSurface.tsx",
     "status": "done",
     "requiredComponents": [
-      "MobileAiPills",
-      "EmailComposer",
-      "sendSmsAction",
-      "sendEmailAction",
-      "aiDraftAction",
-      "searchAction"
+      "TextDraftTools",
+      "saveComposeDraftAction",
+      "sendComposeAction",
+      "searchComposePeopleAction"
     ],
-    "verify": "docs/crm-spec/_verify/mob-compose.png"
+    "verify": "docs/crm-spec/_verify/mob-compose.png",
+    "note": "Folded into /admin/messages (Messages fold FINAL 2026-09-01)."
   },
   {
     "id": "mobile-activity-people",

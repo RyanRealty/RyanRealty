@@ -613,6 +613,31 @@ export async function getCcSelfAddressAction(): Promise<
 }
 
 /**
+ * SMS templates usable by the acting broker in the Messages composer — the
+ * same active + shared-or-own filter the retired inbox compose sheet applied.
+ * List-only (name + raw body); the composer renders tokens per contact via
+ * renderSmsTemplateAction before filling the textarea.
+ */
+export async function getSmsComposeTemplatesAction(): Promise<
+  { ok: true; templates: Array<{ key: string; name: string; body: string }> } | { ok: false; error: string }
+> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  const { getCrmTemplatesAdmin } = await import('@/lib/data/crm/getCrmTemplatesAdmin')
+  const all = await getCrmTemplatesAdmin()
+  const actingSlug = access.brokerSlug ?? ''
+  const templates = all
+    .filter(
+      (t) =>
+        t.channel === 'sms' &&
+        t.isActive &&
+        (t.isShared || !t.ownerBroker || t.ownerBroker === actingSlug),
+    )
+    .map((t) => ({ key: t.key, name: t.name, body: t.body }))
+  return { ok: true, templates }
+}
+
+/**
  * Render an SMS template body for a specific contact — merge tokens resolved
  * server-side (same renderCrmMerge + buildMergeContext path the send uses) so
  * the mobile compose sheet shows WHAT WILL SEND, not raw %tokens%

@@ -11,7 +11,7 @@ import { isUnknownCaller } from '@/lib/crm/display-name'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { Button, ThreadBubble } from '@/components/admin/v2'
 import { ComposeSurface } from '@/components/admin/crm/ComposeSurface'
-import AddPersonForm from '@/app/admin/(protected)/crm/inbox/_components/AddPersonForm'
+import AddPersonForm from './AddPersonForm'
 import type { CrmAccess } from '@/app/actions/crm'
 
 function tsLabel(iso: string): string {

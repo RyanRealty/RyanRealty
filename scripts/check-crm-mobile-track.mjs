@@ -113,8 +113,8 @@ const SHIPPED = [
  *  moving to SHIPPED with real markers. This list may ONLY shrink. */
 const PENDING = [
   'M2 rest — pull-to-refresh, sheet swipe-down dismiss (§23 AC 20–21) [shell, all routes]',
-  'M3 mobile inbox — sub-tabs + threads (§26): /admin/crm/inbox',
-  'M4 mobile compose — email/text/call sheets (§27) [lead detail + inbox]',
+  'M3 mobile threads — folder queue + threads (§26): /admin/messages (inbox fold 2026-09-01)',
+  'M4 mobile compose — email/text/call sheets (§27) [lead detail + messages]',
   'M5 rest (§24): swipe-left row actions + long-press multi-select + team-filter header sheet; /admin/broker-dashboard · /admin/console · /admin/console/leads · /admin/crm/new · /admin/crm/approvals',
   'M6 mobile calendar + tasks (§29): /admin/crm/calendar · /admin/crm/tasks',
   'M7 remaining pickers — Source, Time frame, relationships, §25.10 tags full-screen, §25.11 address map, header Edit mode, per-tab FAB sheets [lead detail]',

@@ -61,7 +61,6 @@ const NON_SENDER = new Set([
   // No contact/lead recipient, no list targeting — CAN-SPAM footers and
   // List-Unsubscribe would be misleading on an internal team ping. The page's
   // client-facing sends still route through the gated sendCrmEmailAction.
-  'app/admin/(protected)/crm/inbox/page.tsx',
   // §09 appointment invitation (spec 09 §2.11): a broker-initiated 1:1
   // transactional email — the broker explicitly checks "Send invitation" on ONE
   // appointment and it goes from the broker's own Gmail to that appointment's

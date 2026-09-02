@@ -21,6 +21,7 @@ import {
   useComposerAttachments,
 } from '@/components/admin/crm/ComposerAttachments'
 import { MMS_ACCEPT_ATTR } from '@/lib/crm/attachment-limits'
+import { TextDraftTools } from '@/components/admin/crm/TextDraftTools'
 import {
   composeRecipientPayload,
   emailsForCompose,
@@ -262,6 +263,13 @@ export function ComposeSurface({
 
       {channel === 'email' ? (
         <TextField label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+      ) : null}
+
+      {channel === 'text' && primaryId && people.length === 1 && !brokerSelf ? (
+        // Drafting tools ported from the retired inbox compose sheet
+        // (Messages-fold final slice): AI pills + per-contact template render.
+        // Single-recipient only — a template renders THIS contact's tokens.
+        <TextDraftTools personId={primaryId} onDraft={setBody} />
       ) : null}
 
       <TextAreaField

@@ -39,17 +39,18 @@ function ThreadFallback() {
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string; f?: string; m?: string }>
+  searchParams: Promise<{ c?: string; f?: string; m?: string; folder?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.view')
   const access = { email: ctx.email, role: ctx.role, brokerSlug: ctx.brokerSlug }
   const brokerScope = scopeBroker(ctx)
   const sp = await searchParams
   const selectedId = Number(sp.c) || null
+  // ?folder= is the retired /admin/crm/inbox param (same keys) — deep links in
+  // old texts/emails arrive here via the config redirect with query intact.
+  const f = sp.f ?? sp.folder
   const folder: MessagesFolder =
-    sp.f === 'inbox' || sp.f === 'assigned' || sp.f === 'drafts' || sp.f === 'sent' || sp.f === 'closed'
-      ? sp.f
-      : 'recent'
+    f === 'inbox' || f === 'assigned' || f === 'drafts' || f === 'sent' || f === 'closed' ? f : 'recent'
   // Inbox deep-link compat (fold slice 3): ?m=sms|email preselects the
   // composer channel — the FAB and mobile links carried this into the inbox.
   const initialChannel = sp.m === 'email' ? ('email' as const) : ('text' as const)

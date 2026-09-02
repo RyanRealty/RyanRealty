@@ -55,7 +55,7 @@ const TOURS = [
   { slug: 'crm', route: '/admin/crm', label: 'Find anyone in your contacts' },
   { slug: 'subscriptions', route: '/admin/crm/subscriptions', label: 'Alerts and reports: who gets what' },
   { slug: 'person', route: '/admin/console/leads/13168', label: 'Everything about one person' },
-  { slug: 'inbox', route: '/admin/crm/inbox', label: 'Work your inbox' },
+  { slug: 'inbox', route: '/admin/messages', label: 'Work your messages' },
 ]
 
 for (const tour of TOURS) {

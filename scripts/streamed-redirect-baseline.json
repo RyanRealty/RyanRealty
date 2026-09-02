@@ -1,10 +1,10 @@
 {
   "_comment": [
-    "ci:streamed-redirect — the auth-redirect population still redirecting from a page body under a streaming boundary.",
+    "ci:streamed-redirect \u2014 the auth-redirect population still redirecting from a page body under a streaming boundary.",
     "These pages call redirect() to a login URL after awaiting the session, so under Next 16 they serve HTTP 200 with layout chrome and no <h1> instead of a 3xx. Measured on ryan-realty.com 2026-08-19 (browser UA, redirect:manual): /account, /account/profile, /account/saved-homes, /admin, /admin/crm and /team/matt-ryan/edit all returned 200 with Location: null and 0 <h1>.",
     "They are NOT an SEO liability the way /communities/<compound> was: app/robots.ts disallows /admin/, /account/ and /dashboard/, and the /account pages carry robots noindex,nofollow. They ARE a UX defect for a signed-out deep link with no JS.",
-    "Eliminating them means resolving the session in middleware.ts before render (the documented Supabase + Next pattern). That changes how every broker request is authorized, so it needs its own unit and Matt review — it is not a side effect of the /communities fix.",
-    "RULES ENFORCED BY THE GATE: every entry must be under /admin, /account, /dashboard or /team/[slug]/edit; a route outside those prefixes can never be parked here. An entry that no longer fires is a failure — remove it. THE COUNT MAY ONLY SHRINK. Never add a route to this list to make the gate pass."
+    "Eliminating them means resolving the session in middleware.ts before render (the documented Supabase + Next pattern). That changes how every broker request is authorized, so it needs its own unit and Matt review \u2014 it is not a side effect of the /communities fix.",
+    "RULES ENFORCED BY THE GATE: every entry must be under /admin, /account, /dashboard or /team/[slug]/edit; a route outside those prefixes can never be parked here. An entry that no longer fires is a failure \u2014 remove it. THE COUNT MAY ONLY SHRINK. Never add a route to this list to make the gate pass."
   ],
   "measured": "2026-08-19",
   "count": 114,
@@ -46,7 +46,6 @@
     "/admin/crm/deals/pipelines",
     "/admin/crm/health",
     "/admin/crm/import",
-    "/admin/crm/inbox",
     "/admin/crm/reporting",
     "/admin/crm/reporting/agent-activity",
     "/admin/crm/reporting/agent-goals",

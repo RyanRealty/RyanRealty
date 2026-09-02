@@ -3,6 +3,7 @@ import { getRecentMessageConversations } from '@/lib/data/crm/getMessagesInbox'
 import { getInboxFolderQueue, type InboxFolderKey } from '@/lib/data/crm/getInboxQueue'
 import { MessagesFolderSelect } from './MessagesFolderSelect'
 import { QueueQuickDone } from './QueueQuickDone'
+import { QueueDoneAll } from './QueueDoneAll'
 
 export type MessagesFolder = 'recent' | InboxFolderKey
 
@@ -70,6 +71,9 @@ export async function MessagesQueue({
         <div style={{ flex: 1 }}>
           <MessagesFolderSelect current={folder} />
         </div>
+        {folder !== 'recent' && folder !== 'closed' ? (
+          <QueueDoneAll personIds={[...new Set(rows.map((r) => r.personId))]} />
+        ) : null}
         <Link href="/admin/messages/new" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
           New message
         </Link>

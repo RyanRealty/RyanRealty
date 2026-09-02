@@ -169,7 +169,7 @@ await tryCheck('web.home', async () => {
 // contact data (leak markers below only render with real rows).
 for (const [id, url] of [
   ['web.admin-crm', 'https://ryan-realty.com/admin/crm'],
-  ['web.admin-crm-inbox', 'https://ryan-realty.com/admin/crm/inbox'],
+  ['web.admin-crm-inbox', 'https://ryan-realty.com/admin/messages'],
   ['web.admin-crm-deals', 'https://ryan-realty.com/admin/crm/deals'],
 ]) {
   await tryCheck(id, async () => {

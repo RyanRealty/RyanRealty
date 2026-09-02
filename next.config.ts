@@ -252,6 +252,10 @@ const nextConfig: NextConfig = {
       // admin loading shell (ci:streamed-redirect). Query (?q=) carries over
       // automatically. Person ENTITY pages under /admin/people/:id stay live.
       { source: '/admin/people', destination: '/admin/crm', permanent: false },
+      // Messages fold FINAL (Matt lock 2026-09-01 #1): the inbox tree is
+      // retired, Messages is THE conversation surface. Query carries over —
+      // /admin/messages maps legacy ?folder= itself, and ?c= matches.
+      { source: '/admin/crm/inbox', destination: '/admin/messages', permanent: false },
       { source: '/sign-in', destination: '/login', permanent: true },
       { source: '/sign-in/:path*', destination: '/login/:path*', permanent: true },
       { source: '/agents', destination: '/team', permanent: true },

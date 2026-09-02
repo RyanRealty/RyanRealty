@@ -30,7 +30,7 @@ const COOKIE = process.env.ADMIN_SMOKE_COOKIE
 
 const ROUTES = [
   '/admin/crm',
-  '/admin/crm/inbox',
+  '/admin/messages',
   '/admin/crm/tasks',
   '/admin/crm/deals',
   '/admin/crm/sequences',
