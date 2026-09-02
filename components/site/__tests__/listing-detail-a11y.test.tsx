@@ -167,13 +167,10 @@ describe('listing-detail CTA row accessible names', () => {
         lng: -121.315,
       } as unknown as Parameters<typeof PriceCtaStrip>[0]['listing'],
     })
-    const hasKey = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
-    if (hasKey) {
-      expect(html).toMatch(/listing-face__map/)
-      expect(html).toMatch(/href="#location"/)
-    } else {
-      expect(html).not.toMatch(/listing-face__map/)
-    }
+    // A listing page carries the living map only (Matt 2026-09-02): no Google
+    // raster of the same house above it, with or without an API key.
+    expect(html).not.toMatch(/listing-face__map/)
+    expect(html).not.toMatch(/maps\.googleapis\.com/)
   })
 
   it('offers a clear path to the listing alert strip', () => {

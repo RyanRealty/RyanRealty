@@ -622,20 +622,6 @@
   }
 }
 
-.listing-face__map {
-  display: block;
-  width: var(--v3-map-peek);
-  height: var(--v3-map-peek);
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-}
-
-.listing-face__map img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .listing-address {
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-lg);

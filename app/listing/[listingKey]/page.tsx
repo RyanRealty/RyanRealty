@@ -582,7 +582,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
           fit={listingAtlas.dotsFrame ? 'dots' : 'regions'}
           className="is-stacked"
         >
-          <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
+          {buildLifestyleLine({ city: listing.city }) ? (
+            <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
+          ) : null}
           {listingAtlas.frameHref ? (
             <p className="v3-atlas__door">
               <a href={listingAtlas.frameHref}>Every home for sale in {listingAtlas.frameName}</a>

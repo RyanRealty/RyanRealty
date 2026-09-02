@@ -18,7 +18,6 @@ import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
-import { publishListingFaceMapSrc } from '@/lib/listing/publish-listing-face-map'
 import { publishListingLastDrop } from '@/lib/listing/publish-listing-history'
 import { publishListingListedBy } from '@/lib/listing/publish-listing-listed-by'
 
@@ -192,11 +191,6 @@ export function PriceCtaStrip({
     listAgentPhone: listing.listAgentPhone,
     listOfficePhone: listing.listOfficePhone,
   })
-  const faceMapSrc = publishListingFaceMapSrc({
-    lat: listing.lat,
-    lng: listing.lng,
-    key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-  })
   // MLS feeds mask private fields with `********` and stamp absent ones as
   // "N/A"; displaySubdivision() collapses every such sentinel to null so the
   // address never renders "Bend, OR 97703 · N/A".
@@ -334,16 +328,10 @@ export function PriceCtaStrip({
         ) : null}
       </div>
       </div>
-      {faceMapSrc ? (
-        <a
-          className="listing-face__map"
-          href="#location"
-          aria-label={`Map of ${propertyName}`}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={faceMapSrc} alt="" />
-        </a>
-      ) : null}
+      {/* No Google raster of this house here. Matt 2026-09-02: a listing page
+          carries the living map only, and a 118px roadmap thumbnail above it
+          was a second visual language for the same house — plus a paid static
+          map request per view (evaluator round five, LISTING-NOBOUNDARY-6). */}
       <div className="listing-face__actions">
       {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
           Desktop keeps the inline wrap. */}

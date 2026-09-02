@@ -154,6 +154,17 @@
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: var(--v3-underline-offset);
+  /* A one-line event link measured 22px tall — half the tap floor (evaluator
+     round five, ABOUT-7, LISTING-BEND-10). The text keeps its size; the
+     target grows around it. */
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+}
+
+/* The event marks sit beside a target that is now taller than the text. */
+.v3-atlas__live-item::before {
+  align-self: center;
 }
 
 .v3-atlas__live-link:hover,
