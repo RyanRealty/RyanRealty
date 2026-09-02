@@ -21,9 +21,6 @@
     "app/admin/(protected)/oversight/page.tsx": {
       "h2": 4
     },
-    "app/admin/(protected)/people/page.tsx": {
-      "input": 1
-    },
     "app/admin/(protected)/prospecting/FilterSelect.tsx": {
       "select": 1
     },
@@ -57,17 +54,8 @@
     "app/admin/(protected)/sync/SyncHistoryButtons.tsx": {
       "h2": 1
     },
-    "app/admin/(protected)/sync/SyncHistoryTable.tsx": {
-      "h2": 2
-    },
-    "app/admin/(protected)/sync/SyncHistoryTest.tsx": {
-      "h2": 1
-    },
     "app/admin/(protected)/sync/SyncLiveStatusAndTerminal.tsx": {
       "h2": 3
-    },
-    "app/admin/(protected)/sync/SyncRunLog.tsx": {
-      "h2": 2
     },
     "app/admin/(protected)/sync/SyncSmart.tsx": {
       "h2": 1
@@ -86,5 +74,5 @@
   "extraPrimaryButtons": {
     "app/admin/(protected)/today/page.tsx": 1
   },
-  "distinctWidths": 6
+  "distinctWidths": 5
 }
