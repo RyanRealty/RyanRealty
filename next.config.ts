@@ -218,6 +218,11 @@ const nextConfig: NextConfig = {
   // SEO: canonical URLs use /homes-for-sale (keyword-rich). Old /search links redirect.
   async redirects() {
     return [
+      // The "Today" launchpad at /admin/console was folded into the broker
+      // dashboard (Matt 2026-06-16). A page-body redirect under
+      // app/admin/loading.tsx cannot set Location once the shell has flushed
+      // (ci:streamed-redirect), so the hop lives here as a real 307.
+      { source: '/admin/console', destination: '/admin/today', permanent: false },
       // /cities/tumalo is a pulse-only city door (not an MLS City). Do not
       // send it to Bend — that published Bend's inventory under a Tumalo
       // label (fleet 68e429f53384684f4bff707cec907db9). getGeoSnapshot

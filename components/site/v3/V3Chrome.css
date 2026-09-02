@@ -551,3 +551,136 @@
     text-underline-offset: var(--v3-underline-offset);
   }
 }
+
+/* Live menus ------------------------------------------------------------------
+   A panel with a live model is two columns: the destinations, then what is
+   true right now (Matt 2026-09-01, "menus, everything upgraded"). The figures
+   wear the display face at a size that reads as a fact, not a headline; the
+   dot field is the region's listings, alive at a glance. Everything is navy on
+   the raised surface; nothing here competes with the page. */
+/* An absolutely positioned panel shrinks to its minimum width, which put a
+   two-column link list under the live column. max-content lets the panel be
+   as wide as what it holds, capped so it never leaves the viewport. */
+.v3-chrome__panel--live {
+  display: grid;
+  grid-template-columns: max-content minmax(16rem, 19rem);
+  gap: var(--v3-space-2xs);
+  width: max-content;
+  max-width: min(92vw, 46rem);
+}
+
+.v3-chrome__panel-caption {
+  grid-column: 1 / -1;
+  margin: var(--v3-space-3xs) 0 0;
+  padding: 0 var(--v3-space-sm);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-chrome__live-note {
+  margin: auto 0 0;
+  font-size: var(--v3-size-eyebrow);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3-chrome__panel-link {
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+}
+
+.v3-chrome__panel-value,
+.v3-chrome__menu-value {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.v3-chrome__live {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-sm);
+  border-inline-start: 1px solid var(--v3-edge);
+}
+
+.v3-chrome__live-eyebrow {
+  margin: 0;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-chrome__field {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 11rem;
+  border-radius: var(--v3-radius-sm);
+  background: color-mix(in srgb, var(--v3-navy) 3%, transparent);
+}
+
+.v3-chrome__field-dots {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 46%, transparent);
+  stroke-width: 2.4px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-chrome__live-facts {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  margin: 0;
+}
+
+.v3-chrome__live-fact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-chrome__live-figure {
+  margin: 0;
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-chrome__live-label {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  color: var(--v3-ink-muted);
+}
+
+/* The overlay carries the same facts as one line under each group. */
+.v3-chrome__menu-live {
+  margin: 0 0 var(--v3-space-2xs);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-chrome__menu-live strong {
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+
+.v3-chrome__menu-list a {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+}

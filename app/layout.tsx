@@ -3,6 +3,7 @@ import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
 import { V3Chrome } from "@/components/site/v3/V3Chrome";
+import { getChromeLive } from '@/lib/site/chrome-live'
 import { V3_ROOT_CLASS } from "@/components/site/v3/atoms";
 import { RootProvider } from "../components/site/providers";
 import HideOnLP from "../components/layout/HideOnLP";
@@ -82,11 +83,13 @@ export const viewport: Viewport = {
  * read, no Suspense wrapper required. V3Chrome is the single public header;
  * SiteFooter is route-owned. Static shell stays cacheable at the edge. */
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The chrome's live facts: cached 15 min, capped at 4s, null on any failure.
+  const live = await getChromeLive()
   const envCheck = validateEnv();
   if (!envCheck.ok) {
     console.error('[env] Missing required build vars:', envCheck.missing.join(', '));
@@ -145,7 +148,7 @@ export default function RootLayout({
               Market · Sell · About). Self-hides on LP / admin / sign / account /
               dashboard. SiteFooter stays route-owned (check-default-chrome-footer)
               — never mount a hidden global footer. */}
-          <V3Chrome />
+          <V3Chrome live={live} />
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
           {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
           <WebVitalsReporter />

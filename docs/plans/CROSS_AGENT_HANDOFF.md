@@ -75,6 +75,16 @@ touch, arrow keys, live region). `placeMedianChart` (homepage + every city page)
 Other chart builders (housing-market hub/region/annual, neighborhood, subdivision, chart-room
 cards) still pass none of the new props — NEXT: give each a claim, ticks, and emphasis.
 
+**MENUS WENT LIVE (this commit):** `V3Chrome` takes `live?: V3ChromeLive` (site-nav group key →
+eyebrow, facts, values-by-href, dot field, read stamp), composed by `lib/site/chrome-live.ts`
+(`composeChromeLive` pure + tested; `getChromeLive` reads the place atlas, the region pulse, and
+`getAllCitySnapshots` — the same city snapshot the homepage ledger prints — under a 4s cap and a
+15-min `unstable_cache`, null on failure) and passed from `app/layout.tsx` (now async). Homes: dot
+field + for-sale/pending/sold; Places: detached count beside each town; Market: median list, MoS +
+verdict, days to pending; Sell: sold 30d + days to pending. The phone overlay prints the same facts
+under each group. About carries links only (no honest aggregate for reviews in the repo yet — the
+reviews page deliberately prints no aggregateRating).
+
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
 2. Design the place-page class as a composed page, not stacked sections: an interactive

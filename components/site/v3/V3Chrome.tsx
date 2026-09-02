@@ -113,6 +113,29 @@ export type V3ChromeGroup = {
 /** A group that is also a destination, so it can head the bar. */
 type V3ChromeTopGroup = V3ChromeGroup & { href: string }
 
+/** One live figure with the words that make it true. */
+export type V3ChromeLiveFact = { figure: string; label: string }
+
+/**
+ * What a group's menu says is true right now. Composed on the server
+ * (lib/site/chrome-live.ts) from the DAL and the place atlas; the chrome only
+ * prints it. Every figure arrives formatted, so the chrome never rounds.
+ */
+export type V3ChromeLiveGroup = {
+  /** The scope the figures belong to: "Central Oregon right now". */
+  eyebrow: string
+  facts: readonly V3ChromeLiveFact[]
+  /** A value beside a destination, keyed by its href: "/cities/bend" → "1,204". */
+  values?: Readonly<Record<string, string>>
+  /** A dot field: the listings as one path of zero-length strokes in a w×h box. */
+  field?: { w: number; h: number; d: string }
+  /** When the figures were read: "Read Sep 2, 2026, 12:07 AM". */
+  note?: string
+}
+
+/** Live groups keyed by the site-nav group key (Buy, Areas, Market, Sell). */
+export type V3ChromeLive = Readonly<Record<string, V3ChromeLiveGroup>>
+
 /**
  * Trimmed, named, deduped. A link with no href is not a door and a link with no
  * label would ship an anchor with no accessible name (WCAG 2.4.4), so both are
@@ -356,6 +379,41 @@ function isCurrentPath(pathname: string | null, href: string): boolean {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * The live column of a panel: the scope, the dot field when the group has
+ * one, then the figures. Reads top to bottom as one sentence the visitor did
+ * not have to ask for. Only what the server could read is printed; a group
+ * with no live model renders no column at all.
+ */
+function V3ChromeLivePanel({ live }: { live: V3ChromeLiveGroup }) {
+  return (
+    <div className="v3-chrome__live" aria-label={live.eyebrow}>
+      <p className="v3-chrome__live-eyebrow">{live.eyebrow}</p>
+      {live.field ? (
+        <svg
+          className="v3-chrome__field"
+          viewBox={`0 0 ${live.field.w} ${live.field.h}`}
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d={live.field.d} className="v3-chrome__field-dots" />
+        </svg>
+      ) : null}
+      {live.facts.length > 0 ? (
+        <dl className="v3-chrome__live-facts">
+          {live.facts.map((f) => (
+            <div key={`${f.figure} ${f.label}`} className="v3-chrome__live-fact">
+              <dt className="v3-chrome__live-figure">{f.figure}</dt>
+              <dd className="v3-chrome__live-label">{f.label}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {live.note ? <p className="v3-chrome__live-note">{live.note}</p> : null}
+    </div>
+  )
+}
+
+/**
  * WAI-ARIA APG "disclosure navigation menu with top-level links": a real link
  * to the group's own page, plus an adjacent caret button that owns the expanded
  * state. Pointer users get hover; keyboard users tab across five link and caret
@@ -371,9 +429,11 @@ function isCurrentPath(pathname: string | null, href: string): boolean {
 function V3ChromeDestination({
   group,
   currentPath,
+  live,
 }: {
   group: V3ChromeTopGroup
   currentPath: string
+  live?: V3ChromeLiveGroup
 }) {
   // The open state is stored as the path it was opened ON, and read back by
   // comparing. A panel left open across a navigation would hang over the page
@@ -386,6 +446,9 @@ function V3ChromeDestination({
   const caretRef = useRef<HTMLButtonElement>(null)
   const panelId = `${useId()}-panel`
   const current = isCurrentPath(currentPath, group.href)
+  // A live model with figures or a field earns the second column; one that
+  // only carries values beside the links (Places) captions the list instead.
+  const column = live != null && (live.facts.length > 0 || live.field != null)
 
   // Native focusout rather than React's onBlur: collapse once focus leaves the
   // group entirely, so tabbing out of the last child closes the panel behind it.
@@ -434,20 +497,26 @@ function V3ChromeDestination({
       >
         <IconChevron />
       </button>
-      <div className="v3-chrome__panel" id={panelId}>
+      <div className={cn('v3-chrome__panel', column && 'v3-chrome__panel--live')} id={panelId}>
+        {live && !column ? <p className="v3-chrome__panel-caption">{live.eyebrow}</p> : null}
         <ul className="v3-chrome__panel-list">
-          {group.featured.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className="v3-chrome__panel-link"
-                onClick={() => setOpenPath(null)}
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
+          {group.featured.map((link) => {
+            const value = live?.values?.[link.href]
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="v3-chrome__panel-link"
+                  onClick={() => setOpenPath(null)}
+                >
+                  <span>{link.label}</span>
+                  {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
+        {column ? <V3ChromeLivePanel live={live} /> : null}
       </div>
     </div>
   )
@@ -466,9 +535,11 @@ export type V3ChromeProps = {
   currentPath?: string
   id?: string
   className?: string
+  /** What each group's menu says is true right now; absent groups print links only. */
+  live?: V3ChromeLive | null
 }
 
-export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
+export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
   const pathname = usePathname()
   const path = currentPath ?? pathname ?? ''
   // The menu remembers the path it was opened ON, so a route change closes it
@@ -543,7 +614,7 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
 
         <nav className="v3-chrome__nav" aria-label={NAME.primary}>
           {TOP_GROUPS.map((group) => (
-            <V3ChromeDestination key={group.key} group={group} currentPath={path} />
+            <V3ChromeDestination key={group.key} group={group} currentPath={path} live={live?.[group.key]} />
           ))}
         </nav>
 
@@ -626,6 +697,7 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
         <nav className="v3-chrome__menu-nav" aria-label={NAME.sections}>
           {NAV_GROUPS.map((group, index) => {
             const headingId = `${menuId}-group-${index}`
+            const lg = live?.[group.key]
             return (
               <div className="v3-chrome__menu-group" key={group.key}>
                 <h2 className="v3-chrome__menu-title" id={headingId}>
@@ -637,14 +709,28 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
                     group.label
                   )}
                 </h2>
+                {lg && lg.facts.length > 0 ? (
+                  <p className="v3-chrome__menu-live">
+                    {lg.facts.map((f, i) => (
+                      <span key={`${f.figure} ${f.label}`}>
+                        {i > 0 ? ' · ' : ''}
+                        <strong>{f.figure}</strong> {f.label}
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
                 <ul className="v3-chrome__menu-list" aria-labelledby={headingId}>
-                  {group.links.map((link) => (
-                    <li key={link.href}>
-                      <Link href={link.href} onClick={close}>
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {group.links.map((link) => {
+                    const value = lg?.values?.[link.href]
+                    return (
+                      <li key={link.href}>
+                        <Link href={link.href} onClick={close}>
+                          <span>{link.label}</span>
+                          {value ? <span className="v3-chrome__menu-value">{value}</span> : null}
+                        </Link>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )
