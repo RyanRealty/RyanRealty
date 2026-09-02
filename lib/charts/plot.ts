@@ -440,13 +440,20 @@ export function buildBarPlot(
     layout?: 'vertical' | 'horizontal'
     highlightTicks?: readonly string[]
     baselineLabel?: string
+    /**
+     * Keep a zero as a zero-height bar. True for a run over time, where a step
+     * with no value is part of the axis; false for categories, where a
+     * category with nothing in it has no bar to draw.
+     */
+    keepZeros?: boolean
   },
 ): BarPlot | null {
   const layout = opts?.layout ?? 'vertical'
   const highlight = new Set(opts?.highlightTicks ?? [])
   const source = series[0]
   if (!source) return null
-  const points = source.points.filter((p) => isFiniteNumber(p.value) && p.value > 0)
+  const floor = opts?.keepZeros ? 0 : Number.MIN_VALUE
+  const points = source.points.filter((p) => isFiniteNumber(p.value) && p.value >= floor)
   if (points.length < 1) return null
 
   let yMax = 0

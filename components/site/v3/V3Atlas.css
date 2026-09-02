@@ -284,18 +284,84 @@
   color: var(--v3-ink-muted);
 }
 
+/* A switch, not a colour key: the mark says on or off, and a reader who
+   matches it against the map finds no ink that belongs to this type alone. */
 .v3-atlas__type-mark {
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 0.7rem;
+  height: 0.7rem;
   flex: none;
-  border-radius: 50%;
+  border-radius: var(--v3-radius-sm);
   background: var(--v3-ink);
   border: 1px solid var(--v3-ink);
+  position: relative;
+}
+
+.v3-atlas__type-mark::after {
+  content: '';
+  position: absolute;
+  left: 0.16rem;
+  top: 0.05rem;
+  width: 0.22rem;
+  height: 0.38rem;
+  border: solid var(--v3-cream);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
 }
 
 .v3-atlas__type[aria-pressed='false'] .v3-atlas__type-mark {
   background: transparent;
   border-color: var(--v3-ink-muted);
+}
+
+.v3-atlas__type[aria-pressed='false'] .v3-atlas__type-mark::after {
+  content: none;
+}
+
+/* The key to the map's own ink: the three states the claim counts, drawn with
+   the marks the map draws (evaluator round five, HOMEPAGE-2). */
+.v3-atlas__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-atlas__key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-atlas__key-mark {
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+.v3-atlas__key-mark--pending {
+  background: color-mix(in srgb, var(--v3-navy) 38%, transparent);
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.v3-atlas__key-mark--sold {
+  background: none;
+  border: 1.5px solid color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  width: 0.48rem;
+  height: 0.48rem;
+}
+
+.v3-atlas__key-mark--closed {
+  background: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  width: 0.66rem;
+  height: 0.66rem;
 }
 
 .v3-atlas__scrub {
@@ -474,8 +540,12 @@
 
 .v3-atlas__place:focus-visible {
   --atlas-stroke-d: var(--v3-navy);
-  --atlas-width-d: 2.2px;
-  outline: none;
+  --atlas-width-d: 3px;
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  /* A stroke that thickens by a pixel is not an indicator: keep the ring the
+     browser draws, in the register's own wash. */
+  outline: 3px solid color-mix(in srgb, var(--v3-navy) 45%, transparent);
+  outline-offset: 2px;
 }
 
 .v3-atlas__place.is-empty {
@@ -525,12 +595,19 @@
   transition: opacity var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3-atlas__dot--condo { stroke: color-mix(in srgb, var(--v3-navy) 42%, transparent); }
-.v3-atlas__dot--townhouse { stroke: color-mix(in srgb, var(--v3-navy) 48%, transparent); }
-.v3-atlas__dot--land { stroke: color-mix(in srgb, var(--v3-navy) 26%, transparent); }
-.v3-atlas__dot--commercial { stroke: color-mix(in srgb, var(--v3-navy) 36%, transparent); }
-.v3-atlas__dot--multi { stroke: var(--v3-navy); }
-.v3-atlas__dot--pending { stroke: color-mix(in srgb, var(--v3-navy) 32%, transparent); stroke-width: 5px; }
+/* A dot says its STATE, and only its state: for sale, pending, sold. Three
+   ordered steps of one ink, which is what a two-colour palette can carry and
+   what the sentence above the map counts.
+
+   It used to say its property type as well — seven categories on the same
+   alpha ramp as the three states, with manufactured and house resolving to the
+   identical navy and pending sitting between commercial and land. Seven inks
+   nobody could separate, keyed by seven identical swatches (evaluator round
+   five, HOMEPAGE-2). Type is a filter now, not an encoding. */
+.v3-atlas__dot--pending {
+  stroke: color-mix(in srgb, var(--v3-navy) 38%, transparent);
+  stroke-width: 5.6px;
+}
 /* The home a listing page is about: held above the rest, full ink, a ring. */
 .v3-atlas__dot.is-home {
   stroke: var(--v3-navy);
@@ -850,17 +927,21 @@
    stage like every other variant. */
 
 
-/* Place chips: on a phone most silhouettes are under 20px, so every place is
-   also a pill under the map, by count. Tapping one pins its card from the
-   place's own centre. Desktop has the map and the rail; the chips stay hidden. */
+/* Place chips: every place as a pill, by count — on a phone because most
+   silhouettes are under 20px, and on a desktop because the left column was
+   otherwise 400px of empty cream beside a map full of places nobody could
+   read the name of (evaluator round five, TEAM-MATT-5). Tapping one pins its
+   card from the place's own centre. Wrapped here, a scroll rail on a phone. */
 .v3-atlas__chips {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs);
+  margin-top: var(--v3-space-2xs);
 }
 
 @media (max-width: 47.99rem) {
   .v3-atlas__chips {
-    display: flex;
-    gap: var(--v3-space-3xs);
+    flex-wrap: nowrap;
     margin: var(--v3-space-2xs) calc(-1 * var(--v3-gutter)) 0;
     padding: 0 var(--v3-gutter) var(--v3-space-3xs);
     overflow-x: auto;
@@ -871,42 +952,47 @@
   .v3-atlas__chips::-webkit-scrollbar {
     display: none;
   }
+}
 
-  .v3-atlas__chip {
-    flex: none;
-    display: inline-flex;
-    align-items: baseline;
-    gap: var(--v3-space-3xs);
-    min-height: var(--v3-tap);
-    padding: 0 var(--v3-space-xs);
-    border: 1px solid var(--v3-edge);
-    border-radius: var(--v3-radius-pill);
-    background: none;
-    color: var(--v3-ink);
-    font-family: inherit;
-    font-size: var(--v3-size-body-sm);
-    font-weight: var(--v3-weight-medium);
-    line-height: var(--v3-leading-control);
-    cursor: pointer;
-    scroll-snap-align: start;
-    transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
-  }
+.v3-atlas__chip {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--v3-space-3xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-pill);
+  background: none;
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
+}
 
-  .v3-atlas__chip.is-active {
-    background: var(--v3-navy);
-    border-color: var(--v3-navy);
-    color: var(--v3-cream);
-  }
+.v3-atlas__chip.is-active {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+  color: var(--v3-cream);
+}
 
-  .v3-atlas__chip-n {
-    color: var(--v3-ink-muted);
-    font-size: var(--v3-size-eyebrow);
-    font-variant-numeric: tabular-nums;
-  }
+.v3-atlas__chip:focus-visible {
+  outline: var(--v3-focus-ring, 3px solid color-mix(in srgb, var(--v3-navy) 45%, transparent));
+  outline-offset: 2px;
+}
 
-  .v3-atlas__chip.is-active .v3-atlas__chip-n {
-    color: color-mix(in srgb, var(--v3-cream) 80%, transparent);
-  }
+.v3-atlas__chip-n {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-atlas__chip.is-active .v3-atlas__chip-n {
+  color: color-mix(in srgb, var(--v3-cream) 80%, transparent);
 }
 
 /* A mount inside a narrow column (a listing page's main column) stacks at

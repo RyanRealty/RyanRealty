@@ -234,6 +234,10 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
     return buildBarPlot(series, {
       layout: props.layout ?? 'vertical',
       baselineLabel: props.baselineLabel,
+      // A run is a time axis: a year with no closings is an empty bar, never a
+      // year the chart skips. Dropping it drew a nine-year gap the same width
+      // as a one-year gap (evaluator round five, TEAM-MATT-1).
+      keepZeros: props.run === true,
     })
   }
   if (kind === 'mix') return buildMixPlot(series)

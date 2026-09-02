@@ -14,7 +14,7 @@
 import near from '@/data/basemap/central-oregon-near.json'
 import region from '@/data/basemap/central-oregon-region.json'
 import { clipBasemap, thinBasemap, type Basemap } from './basemap'
-import { bboxOfRings, outerRings, type Bbox, type Ring } from './project-svg'
+import { outerRings, type Bbox } from './project-svg'
 import { recordFrame } from './record-frame'
 import { streetsForFrame } from './basemap-streets'
 
@@ -34,10 +34,62 @@ export type BasemapFrame = {
   pad?: number
 }
 
-/** The bounding box of a boundary, for a page that has geometry but no frame. */
+/**
+ * The bounding box of a geometry, WITHOUT materialising its rings.
+ *
+ * `outerRings` copies every coordinate into new arrays; a city page hands over
+ * eighty plats, and doing that once per page cost the static build about a
+ * tenth of a second each and pushed thirty-one reads past their rail timeout
+ * (build telemetry, 304422f4). This walks the source arrays and allocates
+ * nothing, and the answer is memoised per geometry object.
+ */
+const BBOX_MEMO = new WeakMap<object, Bbox | null>()
+
 export function bboxOfGeometry(geometry: GeoJSON.Geometry | null | undefined): Bbox | null {
-  const rings: Ring[] = outerRings(geometry)
-  return rings.length > 0 ? bboxOfRings(rings) : null
+  if (!geometry || typeof geometry !== 'object') return null
+  const memo = BBOX_MEMO.get(geometry)
+  if (memo !== undefined) return memo
+
+  let minLon = Infinity
+  let minLat = Infinity
+  let maxLon = -Infinity
+  let maxLat = -Infinity
+  const visit = (node: unknown): void => {
+    if (!Array.isArray(node)) return
+    if (typeof node[0] === 'number' && typeof node[1] === 'number') {
+      const lon = node[0]
+      const lat = node[1]
+      if (lon < minLon) minLon = lon
+      if (lat < minLat) minLat = lat
+      if (lon > maxLon) maxLon = lon
+      if (lat > maxLat) maxLat = lat
+      return
+    }
+    for (const child of node) visit(child)
+  }
+  visit((geometry as { coordinates?: unknown }).coordinates)
+
+  const box = Number.isFinite(minLon) && Number.isFinite(minLat) ? { minLon, minLat, maxLon, maxLat } : null
+  BBOX_MEMO.set(geometry, box)
+  return box
+}
+
+/** The box holding every geometry in a set, allocating nothing per ring. */
+function bboxOfGeometries(regions: readonly { geometry: GeoJSON.Geometry | null | undefined }[]): Bbox | null {
+  let out: Bbox | null = null
+  for (const r of regions) {
+    const b = bboxOfGeometry(r.geometry)
+    if (!b) continue
+    out = out
+      ? {
+          minLon: Math.min(out.minLon, b.minLon),
+          minLat: Math.min(out.minLat, b.minLat),
+          maxLon: Math.max(out.maxLon, b.maxLon),
+          maxLat: Math.max(out.maxLat, b.maxLat),
+        }
+      : b
+  }
+  return out
 }
 
 export function basemapForFrame({ bbox, tier, pad = 0.15 }: BasemapFrame): Basemap {
@@ -75,14 +127,18 @@ export function basemapForRegions(
   opts: { dots?: readonly FrameDot[]; fit?: 'regions' | 'dots'; tier?: BasemapTier; pad?: number } = {},
 ): Basemap {
   const { dots = [], fit = 'regions', tier, pad } = opts
-  const ringsOf = (r: FrameRegion): Ring[] => outerRings(r.geometry)
   const bbox =
     fit === 'dots'
-      ? recordFrame(
+      ? // A record frame needs real rings — it asks which town holds a dot —
+        // but only for the towns, which are a handful of shapes, never the
+        // hundreds of plats a place page hands over.
+        recordFrame(
           dots,
-          regions.filter((r) => r.kind === 'town').map((r, i) => ({ id: String(i), rings: ringsOf(r) })),
+          regions
+            .filter((r) => r.kind === 'town')
+            .map((r, i) => ({ id: String(i), rings: outerRings(r.geometry) })),
         ).bbox
-      : bboxOfRings(regions.flatMap(ringsOf))
+      : bboxOfGeometries(regions)
   if (!bbox) return EMPTY_FRAME
   return basemapForFrame({ bbox, tier, pad })
 }

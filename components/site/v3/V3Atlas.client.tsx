@@ -354,6 +354,10 @@ export function V3Atlas({
     [dots, shapes],
   )
 
+  /* The map is one tab stop: the roving index says which place holds it. */
+  const placesRef = useRef<SVGGElement>(null)
+  const [roving, setRoving] = useState(0)
+
   /* The measured view: where the viewBox lands inside the stage (meet fit). */
   const stageRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState<View | null>(null)
@@ -486,6 +490,14 @@ export function V3Atlas({
     return { keys: new Set(onKeys), label: onlyLots ? 'median lot price' : 'median price' }
   }, [typesOn, closingsMap])
 
+  /* The smallest shape among a set of ids: the place a reader would name. */
+  const areaById = useMemo(() => new Map(shapes.map((s) => [s.id, s.area])), [shapes])
+  const smallestOf = useCallback(
+    (ids: readonly string[]): string =>
+      ids.reduce((best, id) => ((areaById.get(id) ?? Infinity) < (areaById.get(best) ?? Infinity) ? id : best), ids[0]!),
+    [areaById],
+  )
+
   /* Per-place figures over the listed dots on screen — the card's numbers. */
   const regionStats = useMemo(() => {
     const acc = new Map<string, { n: number; prices: number[] }>()
@@ -495,7 +507,11 @@ export function V3Atlas({
       // holds it (places are sorted largest first), so six chips reading 1
       // never sum above a map claiming four (pass three, D4).
       const ids = membership[i] ?? []
-      const owners = closingsMap && ids.length > 1 ? [ids[ids.length - 1]!] : ids
+      // `membership` walks the unsorted shapes, so the last id was whatever the
+      // page listed last — a city, often, which is why the map named Century
+      // West where the ledger and the listing's own URL said Broken Top
+      // (evaluator round five, TEAM-REBECCA-3). Pick the smallest by area.
+      const owners = closingsMap && ids.length > 1 ? [smallestOf(ids)] : ids
       for (const rid of owners) {
         const rec = acc.get(rid) ?? { n: 0, prices: [] }
         rec.n += 1
@@ -506,7 +522,7 @@ export function V3Atlas({
     const out = new Map<string, { n: number; median: number | null }>()
     for (const [rid, rec] of acc) out.set(rid, { n: rec.n, median: median(rec.prices) })
     return out
-  }, [counts.listed, membership, dots, medianScope, closingsMap])
+  }, [counts.listed, membership, dots, medianScope, closingsMap, smallestOf])
 
 
 
@@ -519,20 +535,45 @@ export function V3Atlas({
     () => (closingsMap ? places.filter((s) => (regionStats.get(s.id)?.n ?? 0) > 0) : places),
     [places, closingsMap, regionStats],
   )
+  /* A filter can shrink the drawn set under the tab stop: keep it in range, or
+     the map loses its one keyboard entry. */
+  useEffect(() => {
+    setRoving((r) => (r < drawnPlaces.length ? r : 0))
+  }, [drawnPlaces.length])
 
+  /* What the source line may claim: the outlines actually on screen. A record
+     map draws a subset, and a frame clips what falls outside it, so counting
+     the regions the page handed over overstated it by two to one (evaluator
+     round five, TEAM-MATT-2). */
+  const drawnCount = towns.length + drawnPlaces.length
+
+
+  /* What the numbers are filtered to, in the reader's words. A claim that says
+     only "under $700K" while three of four types are switched off is counting
+     one thing and describing another (evaluator round five, TEAM-MATT-3). */
+  const filterPhrase = useMemo(() => {
+    if (allTypesOn) return ''
+    const on = typesOn.map((t) => t.label.toLowerCase())
+    if (on.length === 0) return ''
+    if (on.length === 1) return `${on[0]} `
+    return `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]!} `
+  }, [allTypesOn, typesOn])
 
   const claim = useMemo(() => {
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
+    // "Tap a place" is an instruction only where places are drawn: under a
+    // filter that leaves none, it pointed at nothing (TEAM-MATT-4).
+    const how = drawnPlaces.length > 0 ? ' Tap a place for its numbers, or slide the price.' : ' Slide the price, or switch a type back on.'
     const every = allTypesOn ? ' of every type' : ''
     if (closingsMap) {
-      return `${counts.closed.toLocaleString('en-US')} ${noun(counts.closed)}${every}${ceiling}. Tap a place for its numbers, or slide the price.`
+      return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${every}${ceiling}.${how}`
     }
-    const parts = [`${counts.forSale.toLocaleString('en-US')} ${noun(counts.forSale)}${every} for sale${ceiling}`]
+    const parts = [`${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)}${every} for sale${ceiling}`]
     if (counts.pending > 0) parts.push(`${counts.pending.toLocaleString('en-US')} pending`)
     if (counts.sold > 0) parts.push(`${counts.sold.toLocaleString('en-US')} sold in the last 30 days`)
-    return `${parts.join(', ')}. Tap a place for its numbers, or slide the price.`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, allTypesOn, closingsMap])
+    return `${parts.join(', ')}.${how}`
+  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap, drawnPlaces.length])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */
@@ -738,8 +779,34 @@ export function V3Atlas({
       </div>
     ) : null
 
+  /* The key: one entry per state the map actually draws, with the mark it
+     draws it in. A reader matches a dot to a word without guessing. */
+  const keyItems = useMemo(() => {
+    if (incomplete) return []
+    if (closingsMap) {
+      return counts.closed > 0
+        ? [{ kind: 'closed', label: `${counts.closed.toLocaleString('en-US')} ${noun(counts.closed)}` }]
+        : []
+    }
+    const out: { kind: string; label: string }[] = []
+    if (counts.forSale > 0) out.push({ kind: 'active', label: `${counts.forSale.toLocaleString('en-US')} for sale` })
+    if (counts.pending > 0) out.push({ kind: 'pending', label: `${counts.pending.toLocaleString('en-US')} pending` })
+    if (counts.sold > 0) out.push({ kind: 'sold', label: `${counts.sold.toLocaleString('en-US')} sold in 30 days` })
+    return out
+  }, [counts, closingsMap, noun, incomplete])
+
   const dock = (
     <div className="v3-atlas__dock">
+      {keyItems.length > 0 ? (
+        <ul className="v3-atlas__key" aria-label="What the marks mean">
+          {keyItems.map((k) => (
+            <li key={k.kind} className="v3-atlas__key-item">
+              <span className={`v3-atlas__key-mark v3-atlas__key-mark--${k.kind}`} aria-hidden="true" />
+              {k.label}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="v3-atlas__types" role="group" aria-label="Property types">
         {types.map((t) => (
           <button
@@ -769,22 +836,6 @@ export function V3Atlas({
           aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
         />
       </label>
-      {chipPlaces.length > 0 ? (
-        <div className="v3-atlas__chips" role="group" aria-label="Places on this map">
-          {chipPlaces.map((r) => (
-            <button
-              key={r.shape.id}
-              type="button"
-              className={cn('v3-atlas__chip', active === r.shape.id && 'is-active')}
-              aria-pressed={active === r.shape.id}
-              onClick={() => pinFromChip(r.shape)}
-            >
-              <span className="v3-atlas__chip-name">{r.shape.name}</span>
-              {r.n > 0 ? <span className="v3-atlas__chip-n">{r.n.toLocaleString('en-US')}</span> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </div>
   )
 
@@ -829,8 +880,8 @@ export function V3Atlas({
                   incomplete
                     ? 'Map of listings'
                     : closingsMap
-                      ? `Map with ${counts.closed.toLocaleString('en-US')} ${noun(counts.closed)}`
-                      : `Map with ${counts.forSale.toLocaleString('en-US')} listings for sale`
+                      ? `Map with ${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}`
+                      : `Map with ${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)} for sale`
                 }
               >
                 {/* 0. The basemap: the highway skeleton, the named rivers and
@@ -899,6 +950,13 @@ export function V3Atlas({
                       key={`t-${s.id}`}
                       href={`#${uid}-p-${i}`}
                       className="v3-atlas__hit"
+                      /* A `use` clones a focusable path, so the clone becomes a
+                         tab stop of its own — twenty-seven silent, invisible
+                         stops before the keyboard reached a real door
+                         (evaluator round five, HOMEPAGE-1). The clones are
+                         pointer targets and nothing else. */
+                      focusable="false"
+                      tabIndex={-1}
                       onPointerEnter={() => setHover(s.id)}
                       onClick={() => pin(s)}
                     />
@@ -908,12 +966,12 @@ export function V3Atlas({
                     reads over the field. */}
                 <g className="v3-atlas__halos" aria-hidden="true">
                   {drawnPlaces.map((s, i) => (
-                    <use key={`h-${s.id}`} href={`#${uid}-p-${i}`} />
+                    <use key={`h-${s.id}`} href={`#${uid}-p-${i}`} focusable="false" tabIndex={-1} />
                   ))}
                 </g>
                 {/* 5. Places: the doors, and the one copy of every path. A place
                     with nothing on it stays a door but wears less ink. */}
-                <g className="v3-atlas__places">
+                <g className="v3-atlas__places" ref={placesRef}>
                   {drawnPlaces.map((s, i) => (
                     <path
                       key={s.id}
@@ -925,15 +983,36 @@ export function V3Atlas({
                         (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
                         active === s.id && 'is-active',
                       )}
-                      tabIndex={0}
+                      /* One tab stop for the whole map; arrows walk the places.
+                         Twenty-seven stops here plus twenty-four chips below
+                         put fifty-one presses between the chrome and the search
+                         box (evaluator round five, HOMEPAGE-1). */
+                      tabIndex={i === roving ? 0 : -1}
                       role="button"
                       aria-label={s.name}
-                      onFocus={() => setHover(s.id)}
+                      onFocus={() => {
+                        setHover(s.id)
+                        setRoving(i)
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
                           pin(s)
+                          return
                         }
+                        const step =
+                          e.key === 'ArrowRight' || e.key === 'ArrowDown'
+                            ? 1
+                            : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+                              ? -1
+                              : 0
+                        if (step === 0 && e.key !== 'Home' && e.key !== 'End') return
+                        e.preventDefault()
+                        const last = drawnPlaces.length - 1
+                        const next =
+                          e.key === 'Home' ? 0 : e.key === 'End' ? last : (i + step + drawnPlaces.length) % drawnPlaces.length
+                        setRoving(next)
+                        placesRef.current?.querySelectorAll<SVGPathElement>('.v3-atlas__place')[next]?.focus()
                       }}
                       onPointerEnter={() => setHover(s.id)}
                       onClick={() => pin(s)}
@@ -1026,15 +1105,36 @@ export function V3Atlas({
             </ul>
           ) : null}
           {children ? <div className="v3-atlas__search">{children}</div> : null}
+          {/* Every place as a door, under the search: on a phone because the
+              silhouettes are too small to tap, on a desktop because this
+              column was otherwise empty beside a map full of unnamed shapes
+              (evaluator round five, TEAM-MATT-5). It sits AFTER the search so
+              it fills the column rather than pushing the search off screen. */}
+          {chipPlaces.length > 0 ? (
+            <div className="v3-atlas__chips" role="group" aria-label="Places on this map">
+              {chipPlaces.map((r) => (
+                <button
+                  key={r.shape.id}
+                  type="button"
+                  className={cn('v3-atlas__chip', active === r.shape.id && 'is-active')}
+                  aria-pressed={active === r.shape.id}
+                  onClick={() => pinFromChip(r.shape)}
+                >
+                  <span className="v3-atlas__chip-name">{r.shape.name}</span>
+                  {r.n > 0 ? <span className="v3-atlas__chip-n">{r.n.toLocaleString('en-US')}</span> : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {source ? (
             <details className="v3-atlas__source">
               <summary className="v3-atlas__source-summary">Source{stamp ? ` · updated ${stamp}` : ''}</summary>
               <p className="v3-atlas__source-body">
                 {source}
-                {towns.length + places.length > 1
-                  ? outlinedOf != null && outlinedOf > towns.length + places.length
-                    ? ` The map outlines ${towns.length + places.length} of the ${outlinedOf.toLocaleString('en-US')} places with a recorded boundary here; listings outside an outline are counted and drawn as dots with no outline to tap.`
-                    : ` The map outlines the ${towns.length + places.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
+                {drawnCount > 1
+                  ? outlinedOf != null && outlinedOf > drawnCount
+                    ? ` The map outlines ${drawnCount} of the ${outlinedOf.toLocaleString('en-US')} places with a recorded boundary here; listings outside an outline are counted and drawn as dots with no outline to tap.`
+                    : ` The map outlines the ${drawnCount} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
                   : ''}
                 {beyond.n > 0
                   ? ` ${beyond.n} of the ${beyond.on.toLocaleString('en-US')} ${beyond.n === 1 ? 'sits' : 'sit'} beyond the frame's edges: counted in every figure, not drawn.`
