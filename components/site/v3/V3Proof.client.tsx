@@ -16,7 +16,7 @@
  * marks are the reviews themselves, one each; there is no aggregate rating
  * markup on the page (self-serving reviews carry none).
  */
-import { useCallback, useId, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from './atoms'
 import './tokens.css'
@@ -90,6 +90,15 @@ export function V3Proof({
   const uid = useId()
   const [year, setYear] = useState<number | null>(null)
   const [focus, setFocus] = useState<string | null>(null)
+  // A click on a mark scrolls the page; the card that slides under the
+  // stationary pointer must not steal the focus the click just set.
+  const scrollLock = useRef(false)
+  const hoverCard = useCallback((qid: string) => {
+    if (scrollLock.current) return
+    setFocus(qid)
+  }, [])
+  const showMarks = useMemo(() => quotes.some((q) => q.rating < 5), [quotes])
+  const layerRef = useRef<HTMLDivElement>(null)
 
   const years = useMemo(() => {
     const set = new Set(quotes.map((q) => q.year))
@@ -114,8 +123,36 @@ export function V3Proof({
 
   const shown = useMemo(() => (year == null ? quotes : quotes.filter((q) => q.year === year)), [quotes, year])
 
+  /* The mark whose centre is nearest the pointer, in screen pixels: marks in
+     dense months overlap, and the topmost box is not the one under the eye. */
+  const nearestMark = useCallback(
+    (clientX: number, clientY: number): string | null => {
+      const el = layerRef.current
+      if (!el || marks.length === 0) return null
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) return null
+      let best: string | null = null
+      let bestD = Infinity
+      for (const m of marks) {
+        const mx = r.left + (m.x / STRIP_W) * r.width
+        const my = r.top + (m.y / STRIP_H) * r.height
+        const d = (mx - clientX) ** 2 + (my - clientY) ** 2
+        if (d < bestD) {
+          bestD = d
+          best = m.q.id
+        }
+      }
+      return bestD <= 28 * 28 ? best : null
+    },
+    [marks],
+  )
+
   const open = useCallback(
     (qid: string) => {
+      scrollLock.current = true
+      window.setTimeout(() => {
+        scrollLock.current = false
+      }, 1500)
       setFocus(qid)
       const q = quotes.find((x) => x.id === qid)
       if (q && year != null && q.year !== year) setYear(null)
@@ -173,25 +210,50 @@ export function V3Proof({
                 y2={STRIP_H}
               />
             ))}
+          </svg>
+          {/* The marks are buttons placed over the strip, not SVG shapes: a
+              true dot at every width, a real tap target, and keyboard reach
+              by nature (evaluator B4, B8). */}
+          <div
+            ref={layerRef}
+            className="v3-proof__marks-layer"
+            onPointerMove={(e) => {
+              const id = nearestMark(e.clientX, e.clientY)
+              if (id) setFocus(id)
+            }}
+            onPointerLeave={() => {
+              // The page scrolls out from under the pointer after a click;
+              // that leave must not clear the focus the click just set.
+              if (!scrollLock.current) setFocus(null)
+            }}
+            onClick={(e) => {
+              const id = nearestMark(e.clientX, e.clientY)
+              if (id) open(id)
+            }}
+          >
             {marks.map(({ q, x, y }) => (
-              <circle
+              <button
                 key={q.id}
+                type="button"
                 className={cn(
                   'v3-proof__dot',
                   (year != null && q.year !== year) && 'is-off',
                   focus === q.id && 'is-focus',
                 )}
-                cx={x}
-                cy={y}
-                r={MARK_R}
-                onPointerEnter={() => setFocus(q.id)}
-                onPointerLeave={() => setFocus((f) => (f === q.id ? null : f))}
-                onClick={() => open(q.id)}
-              >
-                <title>{`${q.author}, ${q.attribution}`}</title>
-              </circle>
+                style={{ left: `${(x / STRIP_W) * 100}%`, top: `${(y / STRIP_H) * 100}%` }}
+                aria-label={`${q.author}, ${q.attribution}`}
+                title={`${q.author}, ${q.attribution}`}
+                onFocus={() => setFocus(q.id)}
+                onClick={(e) => {
+                  // Keyboard activation reaches the button; pointer clicks are
+                  // resolved by the layer to the nearest mark, so dense months
+                  // never hand a tap to a neighbour.
+                  e.stopPropagation()
+                  open(q.id)
+                }}
+              />
             ))}
-          </svg>
+          </div>
           <div className="v3-proof__years" aria-hidden="true">
             {years.map((y) => (
               <span key={y} className="v3-proof__year" style={{ left: `${((y - first) / span) * 100}%` }}>
@@ -226,18 +288,25 @@ export function V3Proof({
         </div>
       ) : null}
 
-      <ul className="v3-proof__list" aria-live="polite">
+      {record ? (
+        <p className="v3-proof__status" aria-live="polite">
+          {year == null ? `Showing all ${quotes.length} reviews` : `Showing ${shown.length} reviews from ${year}`}
+        </p>
+      ) : null}
+      <ul className={cn('v3-proof__list', !record && 'v3-proof__list--compact')}>
         {shown.map((q) => (
           <li
             key={q.id}
             id={`${uid}-q-${q.id}`}
             className={cn('v3-proof__item', focus === q.id && 'is-focus')}
-            onPointerEnter={() => setFocus(q.id)}
-            onPointerLeave={() => setFocus((f) => (f === q.id ? null : f))}
+            onPointerEnter={() => hoverCard(q.id)}
+            onPointerLeave={() => {
+              if (!scrollLock.current) setFocus((f) => (f === q.id ? null : f))
+            }}
           >
             <figure className="v3-proof__quote">
               <blockquote className="v3-proof__words">
-                <p className={cn('v3-proof__pull', q.pull.length > 90 && 'is-long')}>{q.pull}</p>
+                <p className={cn('v3-proof__pull', (!record || q.pull.length > 90) && 'is-long')}>{q.pull}</p>
                 {q.rest.map((para) => (
                   <p key={para.slice(0, 48)} className="v3-proof__para">
                     {para}
@@ -247,7 +316,7 @@ export function V3Proof({
               <figcaption className="v3-proof__who">
                 <cite className="v3-proof__author">{q.author}</cite>
                 <span className="v3-proof__meta">{q.attribution}</span>
-                <Marks rating={q.rating} />
+                {showMarks ? <Marks rating={q.rating} /> : null}
               </figcaption>
             </figure>
           </li>

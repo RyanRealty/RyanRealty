@@ -74,8 +74,12 @@ export type AtlasDot = {
   t: string
   /** Days since the listing went on market; null when the feed withheld it. */
   age: number | null
-  /** active · pending · sold — the dot's own status, for the activity layer. */
-  s: 'active' | 'pending' | 'sold'
+  /**
+   * active · pending · sold — the dot's own status, for the activity layer.
+   * closed: a historical closing (a broker's record), drawn as a dot, counted
+   * as a closing, never pulsed.
+   */
+  s: 'active' | 'pending' | 'sold' | 'closed'
   /** Days since close for a sold dot; null otherwise. */
   soldAgo?: number | null
 }
@@ -119,6 +123,17 @@ export type V3AtlasProps = {
   /** The newest real events, already formatted, for the live line. */
   events?: readonly AtlasEvent[]
   /** The search control, rendered in the aside under the live line. */
+  /**
+   * The word for one dot: "closing" / "closings" on a broker's record map.
+   * Absent, the map speaks of listings (or the single type on).
+   */
+  noun?: { one: string; many: string }
+  /**
+   * What the frame fits: every region (the default), or the dots' own extent
+   * — a broker's closings sit in two towns and should fill the frame, not a
+   * corner of the whole region. Regions outside the frame are clipped.
+   */
+  fit?: 'regions' | 'dots'
   children?: ReactNode
   className?: string
 }
@@ -203,6 +218,8 @@ export function V3Atlas({
   types,
   source,
   stamp,
+  fit = 'regions',
+  noun: nounProp,
   incomplete,
   events,
   children,
@@ -238,10 +255,10 @@ export function V3Atlas({
             [quantile(lons, 0.99), quantile(lats, 0.99)],
           ]
         : []
-    const b = bboxOfRings(core.length > 0 ? [...baseRings, core] : baseRings)
+    const b = bboxOfRings(fit === 'dots' && core.length > 0 ? [core] : core.length > 0 ? [...baseRings, core] : baseRings)
     const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
     return makeProjection(padded, 1000)
-  }, [shapes, dots])
+  }, [shapes, dots, fit])
 
   const paths = useMemo<PlacedShape[]>(
     () => shapes.map((s) => ({ ...s, d: ringsToPath(s.rings, proj) })),
@@ -344,30 +361,38 @@ export function V3Atlas({
     let pending = 0
     let sold = 0
     const listed: number[] = []
+    let closed = 0
     dots.forEach((d, i) => {
       if (!isOn(d)) return
       if (d.s === 'sold') sold += 1
       else {
         listed.push(i)
         if (d.s === 'pending') pending += 1
+        else if (d.s === 'closed') closed += 1
         else forSale += 1
       }
     })
-    return { forSale, pending, sold, listed }
+    return { forSale, pending, sold, closed, listed }
   }, [dots, isOn])
+  /* A record map: every dot is a closing, none is for sale. */
+  const closingsMap = counts.closed > 0 && counts.forSale === 0 && counts.pending === 0
 
   const typesOn = useMemo(() => types.filter((t) => !offTypes.has(t.key)), [types, offTypes])
   const allTypesOn = typesOn.length === types.length
-  const noun = useCallback((n: number) => nounFor(n, typesOn, types), [typesOn, types])
+  const noun = useCallback(
+    (n: number) => (nounProp ? (n === 1 ? nounProp.one : nounProp.many) : nounFor(n, typesOn, types)),
+    [nounProp, typesOn, types],
+  )
   /* The median is of HOMES unless the reader chose lots or commercial alone:
      a lot's price beside a house's is not one median. */
   const medianScope = useMemo(() => {
     const onKeys = typesOn.map((t) => t.key)
     const residentialOn = onKeys.some((k) => RESIDENTIAL.has(k))
+    if (closingsMap) return { keys: new Set(onKeys), label: 'median close' }
     if (residentialOn) return { keys: RESIDENTIAL, label: 'median home price' }
     const onlyLots = onKeys.length > 0 && onKeys.every((k) => k === 'land')
     return { keys: new Set(onKeys), label: onlyLots ? 'median lot price' : 'median price' }
-  }, [typesOn])
+  }, [typesOn, closingsMap])
 
   /* Per-place figures over the listed dots on screen — the card's numbers. */
   const regionStats = useMemo(() => {
@@ -396,11 +421,14 @@ export function V3Atlas({
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
     const every = allTypesOn ? ' of every type' : ''
+    if (closingsMap) {
+      return `${counts.closed.toLocaleString('en-US')} ${noun(counts.closed)}${every}${ceiling}. Tap a place for its numbers, or slide the price.`
+    }
     const parts = [`${counts.forSale.toLocaleString('en-US')} ${noun(counts.forSale)}${every} for sale${ceiling}`]
     if (counts.pending > 0) parts.push(`${counts.pending.toLocaleString('en-US')} pending`)
     if (counts.sold > 0) parts.push(`${counts.sold.toLocaleString('en-US')} sold in the last 30 days`)
     return `${parts.join(', ')}. Tap a place for its numbers, or slide the price.`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, allTypesOn])
+  }, [counts, atCeiling, maxPrice, noun, incomplete, allTypesOn, closingsMap])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */
@@ -559,7 +587,7 @@ export function V3Atlas({
   useLayoutEffect(() => {
     const el = cardRef.current
     if (el) setCardH(el.offsetHeight)
-  })
+  }, [active, pinned, view])
 
   const toggleType = (key: string) =>
     setOffTypes((prev) => {
@@ -704,7 +732,13 @@ export function V3Atlas({
                 viewBox={`0 0 ${proj.width} ${proj.height}`}
                 preserveAspectRatio="xMidYMid meet"
                 role="img"
-                aria-label={incomplete ? 'Map of listings' : `Map with ${counts.forSale.toLocaleString('en-US')} listings for sale`}
+                aria-label={
+                  incomplete
+                    ? 'Map of listings'
+                    : closingsMap
+                      ? `Map with ${counts.closed.toLocaleString('en-US')} ${noun(counts.closed)}`
+                      : `Map with ${counts.forSale.toLocaleString('en-US')} listings for sale`
+                }
               >
                 <g className="v3-atlas__towns">
                   {towns.map((s) => (
@@ -732,6 +766,7 @@ export function V3Atlas({
                             'v3-atlas__dot',
                             `v3-atlas__dot--${d.t}`,
                             d.s === 'pending' && 'v3-atlas__dot--pending',
+                            d.s === 'closed' && 'v3-atlas__dot--closed',
                             !isOn(d) && 'is-off',
                           )}
                         />

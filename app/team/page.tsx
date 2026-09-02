@@ -75,8 +75,6 @@ export default async function TeamPage() {
     .filter((row): row is V3LedgerPlainRow => row !== null)
   const [firstBroker, ...restBrokers] = brokerRows
 
-  const namesMatt = (text: string) => /\bmatt(hew)?\b/i.test(text)
-  const namesOtherBroker = (text: string) => /\brebecca\b/i.test(text) || /\bpaul\b/i.test(text)
 
   // The newest verified reviews as a Proof band (record off: a strip of four
   // must not sit beside a figure that says twenty-five); the same shaping

@@ -33,11 +33,9 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atla
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
-import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { formatDate } from '@/lib/format/date'
-import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath, teamPath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { BRAND, BROKERS } from '@/lib/brand/contact'
@@ -51,15 +49,12 @@ import {
   V3Quiet,
   V3SectionTracker,
   type V3InstrumentFigure,
-  type V3LedgerFigureRow,
   type V3QuietItem,
   V3Atlas,
   V3Proof,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
-  ABOUT_CITY_LABELS,
-  ABOUT_CITY_SLUG,
   ABOUT_FAQ_ITEMS,
   ABOUT_MISSION,
   FIRM_LICENSE,
@@ -89,15 +84,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 3600
 
 export default async function AboutPage() {
-  const [overlays, brokers] = await Promise.all([
-    getDetachedOverlays(
-      ABOUT_CITY_LABELS.map((label) => ({
-        geoType: 'city' as const,
-        geoSlug: ABOUT_CITY_SLUG[label],
-      })),
-    ),
-    getBrokers(),
-  ])
+  const brokers = await getBrokers()
 
   // The service area as the living map, from the same population the
   // homepage hero reads, plus the newest verified reviews with their record.
@@ -112,48 +99,7 @@ export default async function AboutPage() {
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
   const newestReview = quotes.find((q) => q.date)?.date ?? null
-  const cityRows: V3LedgerFigureRow[] = []
-  const rowed = new Set<string>()
-  const leftoverStamps: string[] = []
-  for (const label of ABOUT_CITY_LABELS) {
-    const slug = ABOUT_CITY_SLUG[label]
-    const layers = overlays.get(`city:${slug}`)
-    const active = layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null
-    const median = layers?.headlines?.medianListPrice ?? layers?.inventory?.medianListPrice ?? null
-    const stamp = layers?.headlines?.computedAt ?? layers?.inventory?.computedAt
-    if (stamp) leftoverStamps.push(stamp)
-    if (!slug || active == null || median == null) continue
-    rowed.add(label)
-    // Exact, matching every market surface (the audit found $940,000 here vs
-    // $939,900 on three other routes for the same figure, same day).
-    const price = formatPriceExact(median)
-    if (price === '\u2014') continue
-    cityRows.push({
-      href: `/cities/${slug}`,
-      when: v3Text(`${active.toLocaleString('en-US')} for sale`),
-      what: v3Text(label),
-      value: v3Text(price),
-      id: slug,
-    })
-  }
 
-  const cityFootnotes = ABOUT_CITY_LABELS.filter((label) => !rowed.has(label)).map((label) => {
-    const slug = ABOUT_CITY_SLUG[label]
-    const layers = overlays.get(`city:${slug}`)
-    const active = layers?.headlines?.activeCount ?? layers?.inventory?.activeCount ?? null
-    if (active == null) {
-      return { label, fact: `${label} has no published leftover active count` }
-    }
-    if (active === 0) {
-      return { label, fact: `${label} shows no leftover active houses` }
-    }
-    return {
-      label,
-      fact: `${label} shows ${active.toLocaleString('en-US')} leftover active with no published median`,
-    }
-  })
-
-  const cityRefreshedAt = leftoverStamps.sort().at(-1)
 
   const orderedBrokers = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
@@ -202,17 +148,6 @@ export default async function AboutPage() {
     { label: 'Homes for sale', href: listingsBrowsePath() },
     { label: 'Central Oregon housing market', href: '/housing-market' },
   ]
-  for (const city of cityFootnotes) {
-    faqItems.push({
-      kind: 'prose',
-      term: `${city.label} inventory`,
-      body: city.fact,
-    })
-    faqItems.push({
-      label: `${city.label} homes`,
-      href: `/cities/${ABOUT_CITY_SLUG[city.label]}`,
-    })
-  }
 
   const schemas: SchemaInput[] = [
     {

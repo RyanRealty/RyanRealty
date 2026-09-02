@@ -81,23 +81,77 @@
   vector-effect: non-scaling-stroke;
 }
 
-.v3-proof__dot {
-  fill: var(--v3-navy);
-  fill-opacity: 0.78;
-  stroke: var(--v3-cream);
-  stroke-width: 1.5px;
-  vector-effect: non-scaling-stroke;
+.v3-proof__marks-layer {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6rem;
   cursor: pointer;
-  transition: fill-opacity var(--v3-dur-state) var(--v3-ease-out), r var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3-proof__dot.is-off {
-  fill-opacity: 0.16;
+/* A mark: an 11px dot inside a 24px target, centred on its month. */
+.v3-proof__dot {
+  position: absolute;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.75rem 0 0 -0.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: none;
 }
 
-.v3-proof__dot.is-focus {
-  fill-opacity: 1;
-  r: 8;
+.v3-proof__dot::before {
+  content: '';
+  position: absolute;
+  inset: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin: -0.35rem 0 0 -0.35rem;
+  border-radius: 50%;
+  background: var(--v3-navy);
+  opacity: 0.78;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out), transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-proof__dot.is-off::before {
+  opacity: 0.16;
+}
+
+.v3-proof__dot.is-focus::before,
+.v3-proof__dot:focus-visible::before {
+  opacity: 1;
+  transform: scale(1.35);
+}
+
+.v3-proof__dot:focus-visible {
+  outline: 3px solid var(--v3-wash);
+  outline-offset: 0;
+}
+
+.v3-proof__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A subset band (the newest four beside a figure): rows aligned in a grid,
+   every opening sentence in the same face, so four cards read as one set. */
+.v3-proof__list--compact {
+  columns: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 var(--v3-space-lg);
+}
+
+@media (min-width: 64rem) {
+  .v3-proof__list--compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .v3-proof__years {
@@ -271,7 +325,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .v3-proof__dot,
+  .v3-proof__dot::before,
   .v3-proof__item,
   .v3-proof__chip {
     transition: none;

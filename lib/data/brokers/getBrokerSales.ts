@@ -24,7 +24,12 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 
 export type BrokerSaleSide = 'listed' | 'represented-buyer'
-export type BrokerSaleTile = PriceDropTile & { saleSide: BrokerSaleSide }
+export type BrokerSaleTile = PriceDropTile & {
+  saleSide: BrokerSaleSide
+  /** The MLS class and sub type, so a closing can be typed on the broker's map. */
+  PropertyType?: string | null
+  property_sub_type?: string | null
+}
 
 // Verified MLS agent ids (listings.list_agent_mls_id / buyer_agent_mls_id),
 // confirmed 2026-06-14. brokers.mls_id is unpopulated and a broker's lone
@@ -44,6 +49,9 @@ const SALE_PROJECTION = [
   'has_virtual_tour, virtual_tour_url',
   'year_built, price_per_sqft, lot_size_acres, garage_spaces, pool_yn',
   'estimated_monthly_piti, price_drop_count, DaysOnMarket, total_price_change_pct',
+  // The broker's closings are drawn on the living map: coordinates and the
+  // class/sub type each dot is typed by (2026-09-02, broker profile rebuild).
+  'Latitude, Longitude, PropertyType, property_sub_type',
 ].join(', ')
 
 // SELL side — listings the broker listed. list_agent_email is indexed
@@ -103,8 +111,8 @@ async function resolveMlsId(emailLc: string, supplied: string): Promise<string> 
 }
 
 const cacheOpts = { revalidate: CACHE_WINDOWS.brokers, tags: [cacheTag.brokers, cacheTag.listings] }
-const cachedSellSide = makeResilientCached(fetchSellSide, ['broker-sell-v1'], cacheOpts, [])
-const cachedBuySide = makeResilientCached(fetchBuySide, ['broker-buy-v1'], cacheOpts, [])
+const cachedSellSide = makeResilientCached(fetchSellSide, ['broker-sell-v2'], cacheOpts, [])
+const cachedBuySide = makeResilientCached(fetchBuySide, ['broker-buy-v2'], cacheOpts, [])
 
 /**
  * A broker's recent closed sales, both sides, newest close first.

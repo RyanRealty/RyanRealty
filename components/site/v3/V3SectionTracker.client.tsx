@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { trackEvent, getOrCreateRrSessionId } from '@/lib/tracking'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
 
 export type V3SectionTrackerProps = Record<string, never>
@@ -23,10 +23,11 @@ export function V3SectionTracker(_props?: V3SectionTrackerProps) {
 
   useEffect(() => {
     /** Best-effort dual-sink to our internal store. Lives inside the effect so
-     *  hydration-safety does not see `readRrSessionId` in the render body. */
+     *  hydration-safety does not see `getOrCreateRrSessionId` in the render body. */
     function internalTrack(eventType: 'section_view' | 'scroll_depth', extra?: Record<string, unknown>) {
       try {
-        const sessionId = readRrSessionId()
+        const sessionId = getOrCreateRrSessionId() // hydration-safe: event/effect storage only
+        if (!sessionId) return
         // The /api/visitors/track endpoint REQUIRES a full http(s) URL (it 400s a bare
         // path and uses new URL(pageUrl).hostname for source-domain attribution). Send
         // location.href, matching VisitTracker — a bare pathname silently dropped every

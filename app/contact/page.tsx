@@ -129,6 +129,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
 
   const listingHref = listingTile ? listingTileHref(listingTile) : null
   const introItems: V3QuietItem[] = [
+    // The H1 lives on this Quiet; with no rows it would not render at all
+    // (V3Quiet returns null on empty items — evaluator B2). One true line.
+    { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. A broker answers, not a desk.' },
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
       : []),

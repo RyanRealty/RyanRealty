@@ -123,8 +123,29 @@ year chips, two-column cards with the first sentence in the display face); `/con
 `V3Ask` (one screen) with `V3Doors` above it (call / write / book) and `ContactSheet` deleted;
 `/about` (21382948) mounts the regional `V3Atlas` in place of its city ledger plus a `V3Proof` band of
 the newest four reviews (`record={false}`), and `app/_v3/region-atlas.ts` is now the ONE region
-assembly the homepage and About share. NEXT: an evaluator pass over the three (running), then the
-broker profile pages `/team/[slug]`.
+assembly the homepage and About share. `/team` index shows the newest reviews as a Proof band (47e55230). **Evaluator pass one over the
+brokerage pages** (scratchpad `brokerage-eval-1.md`): /reviews 78, /contact 60, /about 80 (ships);
+all data checks passed (every figure reconciles to the page's JSON-LD, no review text altered).
+Closed in this commit: B1 (a strip click no longer lets the card sliding under the pointer steal the
+focus — a timer-released scroll lock, pointer resolved to the NEAREST mark by the layer), B2 (the
+contact H1 returned: the head Quiet carries one line, since V3Quiet returns null on empty items), B3
+(row partners' controls align: the control sits at the foot of its cell), B4/B8 (strip marks are
+positioned buttons — true dots at every width, 24px targets, keyboard by nature), B5 (the consent
+block wears the form's ink and size via `.v3-ask__consent`), B6 (a subset band is a 2-column grid
+with uniform pulls: `.v3-proof__list--compact`), B7 (`getOrCreateRrSessionId` in lib/tracking; the
+section tracker mints the id when VisitTracker has not yet — no more 400 on first load), B9 (no
+permanent live region; a status line announces the filter), B10 (rating marks only when a rating
+under 5 exists), B11 (the About page's dead market query and latent "leftover" footnote strings are
+gone), B13 (sentence-case option). Open: B12 (the two legal links are tab stops before the button).
+
+**`/team/[slug]` REBUILT (this commit):** the broker's record from `getBrokerSales` (projection now
+carries Latitude/Longitude/PropertyType/property_sub_type; cache keys bumped to v2) —
+`app/team/[slug]/_v3/broker-record.ts` (pure, 12 tests): V3Instrument figures (closed sales, span on
+the MLS, median close, listed · represented, so far this year) with the closings-by-year bar chart
+(partial year stands alone), then V3Atlas "Where Matt has closed" (every closing a dot, `s: 'closed'`,
+`noun={{ one: 'closing', many: 'closings' }}` — the Atlas learned both), the 8 newest closings, a
+V3Proof band of reviews naming the broker (record off), and V3Doors (call / text / email). Measured:
+21 closings for Matt, 21 dots, claim "21 closings of every type", page 6,570px (was 10,196).
 
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.

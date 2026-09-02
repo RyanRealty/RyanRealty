@@ -17,7 +17,7 @@ const BASE_INQUIRY_OPTIONS = [
   { value: 'Buying', label: 'Buying' },
   { value: 'Selling', label: 'Selling' },
   { value: 'Both', label: 'Both' },
-  { value: 'General Inquiry', label: 'General Inquiry' },
+  { value: 'General Inquiry', label: 'General inquiry' },
   { value: 'Relocation', label: 'Relocation' },
   { value: 'Join the team', label: 'Join the team' },
 ] as const
