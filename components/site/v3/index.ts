@@ -120,6 +120,15 @@ export { V3ChartHover } from './V3ChartHover.client'
 
 export type { V3ChartHoverProps, V3ChartHoverColumn, V3ChartHoverReading } from './V3ChartHover.client'
 
+/**
+ * Proof: verified third-party words with their record — figures the source
+ * supports, every review as a mark on its month, year chips, and the quotes
+ * as cards whose first sentence wears the display face. The reviews page.
+ */
+export { V3Proof } from './V3Proof.client'
+
+export type { V3ProofProps, V3ProofQuote, V3ProofFigure } from './V3Proof.client'
+
 export { V3ChartSwitch } from './V3ChartSwitch.client'
 
 export type { V3ChartSwitchProps, V3ChartSwitchItem } from './V3ChartSwitch.client'

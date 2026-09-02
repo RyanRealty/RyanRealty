@@ -1,0 +1,279 @@
+/* V3Proof — verified third-party words with their record. Tokens only. */
+
+.v3-proof {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-2xl);
+}
+
+.v3-proof__head {
+  max-width: var(--v3-measure-text);
+}
+
+.v3-proof__headline {
+  margin: var(--v3-space-3xs) 0 0;
+}
+
+.v3-proof__claim {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+/* Figures: the record's numbers, in the num face. */
+.v3-proof__figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--v3-space-md) var(--v3-space-lg);
+  margin: var(--v3-space-lg) 0 0;
+  padding: var(--v3-space-md) 0;
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-proof__figure {
+  margin: 0;
+}
+
+.v3-proof__figure-value {
+  margin: 0;
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-weight: var(--v3-weight-display);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-proof__figure-label {
+  margin: var(--v3-space-3xs) 0 0;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* The record strip: one mark per review on its month. */
+.v3-proof__record {
+  position: relative;
+  margin: var(--v3-space-lg) 0 0;
+}
+
+.v3-proof__strip {
+  display: block;
+  width: 100%;
+  height: 6rem;
+  overflow: visible;
+}
+
+.v3-proof__strip-base {
+  stroke: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-proof__strip-tick {
+  stroke: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3-proof__dot {
+  fill: var(--v3-navy);
+  fill-opacity: 0.78;
+  stroke: var(--v3-cream);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill-opacity var(--v3-dur-state) var(--v3-ease-out), r var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-proof__dot.is-off {
+  fill-opacity: 0.16;
+}
+
+.v3-proof__dot.is-focus {
+  fill-opacity: 1;
+  r: 8;
+}
+
+.v3-proof__years {
+  position: relative;
+  height: 1.4rem;
+  margin-top: var(--v3-space-3xs);
+}
+
+.v3-proof__year {
+  position: absolute;
+  top: 0;
+  transform: translateX(0.25rem);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-proof__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs);
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-proof__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--v3-space-3xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-pill);
+  background: none;
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out), color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-proof__chip[aria-pressed='true'] {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+.v3-proof__chip-n {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-proof__chip[aria-pressed='true'] .v3-proof__chip-n {
+  color: color-mix(in srgb, var(--v3-cream) 80%, transparent);
+}
+
+/* The words: cards in columns, the opening sentence in the display face. */
+.v3-proof__list {
+  margin: var(--v3-space-lg) 0 0;
+  padding: 0;
+  list-style: none;
+  columns: 1;
+  column-gap: var(--v3-space-lg);
+}
+
+@media (min-width: 64rem) {
+  .v3-proof__list {
+    columns: 2;
+  }
+}
+
+.v3-proof__item {
+  break-inside: avoid;
+  padding: var(--v3-space-md) 0;
+  border-top: var(--v3-rule-hairline);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-proof__item.is-focus {
+  background: var(--v3-wash);
+  box-shadow: 0 0 0 var(--v3-space-2xs) var(--v3-wash);
+}
+
+.v3-proof__quote {
+  margin: 0;
+}
+
+.v3-proof__words {
+  margin: 0;
+}
+
+.v3-proof__pull {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-ink);
+  text-wrap: balance;
+}
+
+.v3-proof__pull.is-long {
+  font-size: var(--v3-size-body-lg);
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0;
+  text-wrap: pretty;
+}
+
+.v3-proof__para {
+  margin: var(--v3-space-xs) 0 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3-proof__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-3xs) var(--v3-space-sm);
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-proof__author {
+  font-style: normal;
+  font-weight: var(--v3-weight-medium);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
+}
+
+.v3-proof__meta {
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.v3-proof__marks {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-inline-start: auto;
+}
+
+.v3-proof__mark {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  border: 1px solid var(--v3-navy);
+  background: transparent;
+}
+
+.v3-proof__mark.is-on {
+  background: var(--v3-navy);
+}
+
+.v3-proof__source {
+  margin: var(--v3-space-lg) 0 0;
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+@layer base {
+  .v3-proof__source a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-proof__dot,
+  .v3-proof__item,
+  .v3-proof__chip {
+    transition: none;
+  }
+}
