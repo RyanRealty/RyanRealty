@@ -358,6 +358,10 @@ export function V3Proof({
             id={`${uid}-q-${q.id}`}
             className={cn('v3-proof__item', focus === q.id && 'is-focus')}
             onPointerEnter={() => hoverCard(q.id)}
+            /* A touch has no hover: tapping a card lit nothing, so on a phone
+               the field answered nothing at all (evaluator round six). A tap
+               lights its mark on the strip above, which is sticky. */
+            onClick={() => hoverCard(q.id)}
             onPointerLeave={() => {
               if (!scrollLock.current) setFocus((f) => (f === q.id ? null : f))
             }}

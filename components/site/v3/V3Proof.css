@@ -83,9 +83,24 @@
 }
 
 /* The record strip: one mark per review on its month. */
+/* The record stays with the reader. Below it sit twenty-five quotes — three
+   viewport heights at 1440, nine at 375 — and with the strip scrolled away
+   that field was a list with nothing to work and nothing to read it against
+   (evaluator round six, REVIEWS-R6). Sticky, the timeline is the instrument
+   the cards are read through: hovering or focusing a card lights its mark, and
+   the year chips stay in reach. */
 .v3-proof__record {
-  position: relative;
+  position: sticky;
+  top: var(--v3-chrome-h);
+  z-index: 2;
   margin: var(--v3-space-lg) 0 0;
+  padding-bottom: var(--v3-space-2xs);
+  background: var(--v3-surface);
+}
+
+/* A quote answers a pointer: its mark lights on the strip above it. */
+.v3-proof__item {
+  scroll-margin-top: calc(var(--v3-chrome-h) + 9rem);
 }
 
 .v3-proof__how {
