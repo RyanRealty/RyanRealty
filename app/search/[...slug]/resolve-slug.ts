@@ -6,6 +6,24 @@ import {
 } from '../../actions/listings'
 import { homesForSalePath, listingsBrowsePath } from '../../../lib/slug'
 import { getPresetBySlug, isPresetSlug } from '../../../lib/search-presets'
+import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
+
+/**
+ * Name for a subdivision slug the listings-derived lookup could not resolve.
+ * The DB lookup scans subdivisions of listings whose MLS City equals the page
+ * city, so a registry community whose listings carry a different MLS City
+ * (Caldera Springs: page city Sunriver, MLS City Bend) always misses it. The
+ * registry label is the curated answer; title-casing the slug is the floor —
+ * a hyphenated slug must never render as a place name.
+ */
+function subdivisionNameFromSlugFallback(subSlug: string): string {
+  const registry = getResortCommunityBySlug(subSlug)
+  if (registry?.label) return registry.label
+  return decodeURIComponent(subSlug)
+    .trim()
+    .replace(/-+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
 export type SearchPreset = ReturnType<typeof getPresetBySlug>
 
@@ -67,13 +85,13 @@ async function resolveSlugImpl(slug: string[]): Promise<{
     if (isPresetSlug(second)) {
       return { city, subdivisionSlug: null, subdivisionDisplayName: null, presetSlug: second, preset: getPresetBySlug(second), neighborhoodName: null }
     }
-    const subdivisionDisplayName = city ? (await getSubdivisionNameFromSlug(city, second)) ?? decodeURIComponent(second) : null
+    const subdivisionDisplayName = city ? (await getSubdivisionNameFromSlug(city, second)) ?? subdivisionNameFromSlugFallback(second) : null
     return { city, subdivisionSlug: second, subdivisionDisplayName, presetSlug: null, preset: null, neighborhoodName: null }
   }
   // slug.length >= 3: [city, subdivision-or-neighborhood, preset]
   const subSlug = slug[1]!
   const nbhd3 = citySlug ? await getNeighborhoodNameForCitySlug(citySlug, subSlug) : null
-  const subdivisionDisplayName = nbhd3 ?? (city ? (await getSubdivisionNameFromSlug(city, subSlug)) ?? decodeURIComponent(subSlug) : null)
+  const subdivisionDisplayName = nbhd3 ?? (city ? (await getSubdivisionNameFromSlug(city, subSlug)) ?? subdivisionNameFromSlugFallback(subSlug) : null)
   const presetSlug = slug[2] ?? null
   const preset = presetSlug ? getPresetBySlug(presetSlug) : null
   return { city, subdivisionSlug: subSlug, subdivisionDisplayName, presetSlug, preset, neighborhoodName: nbhd3 }
