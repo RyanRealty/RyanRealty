@@ -688,7 +688,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         {(
           <V3Atlas
             id="atlas"
-            variant="dots"
             headingLevel={2}
             headline={v3Text(`${publicName} right now`)}
             dots={atlasView.dots}

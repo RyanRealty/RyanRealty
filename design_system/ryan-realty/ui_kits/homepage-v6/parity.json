@@ -147,5 +147,11 @@
     "V3Quiet #reviews -- Google reviews",
     "AboutFaces -- the three brokers",
     "V3Footer"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-02",
+    "score": 86,
+    "beats": "Zillow's Bend, OR homes page and every Bend brokerage homepage on the front door: live inventory as a map of the region with every place a door, pulses for what just listed, went pending, and sold, a price scrub and type toggles, and one sourced sentence — not a photo over a search box. Six evaluator passes (atlas-eval-1..6.md), dots 52 → 86.",
+    "evaluator": "separate Claude evaluator agent (general-purpose, opus), pass six report scratchpad atlas-eval-6.md, commit 6f4bc753; Matt picked dots 2026-09-02"
+  }
 }

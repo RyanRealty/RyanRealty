@@ -552,7 +552,6 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {(
           <V3Atlas
             id="atlas"
-            variant="dots"
             headingLevel={2}
             headline={v3Text(`${neighborhood.name} right now`)}
             dots={atlasView.dots}

@@ -1,5 +1,5 @@
 {
-  "note": "ci:taste-canon — SHRINK-ONLY. Public routes whose parity.json has no tasteReview block yet. A route leaves by earning an evaluator pass (design_system/public/TASTE.md); no route may be added.",
+  "note": "ci:taste-canon \u2014 SHRINK-ONLY. Public routes whose parity.json has no tasteReview block yet. A route leaves by earning an evaluator pass (design_system/public/TASTE.md); no route may be added.",
   "generatedAt": "2026-09-02T03:49:30.976Z",
   "routes": [
     "design_system/ryan-realty/ui_kits/about/parity.json",
@@ -8,7 +8,6 @@
     "design_system/ryan-realty/ui_kits/city/parity.json",
     "design_system/ryan-realty/ui_kits/community/parity.json",
     "design_system/ryan-realty/ui_kits/compare/parity.json",
-    "design_system/ryan-realty/ui_kits/homepage-v6/parity.json",
     "design_system/ryan-realty/ui_kits/invest/parity.json",
     "design_system/ryan-realty/ui_kits/listing-detail/parity.json",
     "design_system/ryan-realty/ui_kits/market-report-annual/parity.json",

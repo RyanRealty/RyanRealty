@@ -212,7 +212,6 @@ export default async function AboutPage() {
 
         <V3Atlas
           id="service-area"
-          variant="dots"
           headingLevel={2}
           headline={v3Text('Where we work')}
           dots={atlas.dots}

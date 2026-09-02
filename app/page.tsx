@@ -30,7 +30,6 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Atlas,
-  type V3AtlasVariant,
   type AtlasRegion,
   V3Doors,
   V3Instrument,
@@ -112,23 +111,7 @@ const COMM_FEATURED = [
   { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
 ]
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
-  // The Atlas composition. The three candidates (dots | heat | split) live on
-  // the decision sheet as renders. In DEVELOPMENT only, ?opening=heat|split
-  // renders the alternates for those captures; production never reads
-  // searchParams, so the page stays ISR — reading it made the page dynamic
-  // and ran every read on every request (58 rail timeouts in the 2026-09-01
-  // build). The losers are deleted on Matt's pick.
-  let opening: V3AtlasVariant = 'dots'
-  if (process.env.NODE_ENV === 'development') {
-    const sp = await searchParams
-    const raw = typeof sp.opening === 'string' ? sp.opening : ''
-    if (raw === 'heat' || raw === 'split') opening = raw
-  }
+export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, regionAtlas, investSegments, atlas] = await Promise.all([
     getCitiesForIndex().catch(() => []),
@@ -301,7 +284,6 @@ export default async function Home({
 
         <V3Atlas
           id="hero"
-          variant={opening}
           headingLevel={1}
           headline={v3Text('Homes for Sale in Central Oregon')}
           dots={atlasDots}

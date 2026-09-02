@@ -236,7 +236,7 @@ export type {
 
 export { V3Doors } from './V3Doors'
 export { V3Atlas } from './V3Atlas.client'
-export type { V3AtlasProps, V3AtlasVariant, AtlasDot, AtlasEvent, AtlasRegion, AtlasType } from './V3Atlas.client'
+export type { V3AtlasProps, AtlasDot, AtlasEvent, AtlasRegion, AtlasType } from './V3Atlas.client'
 export type { V3Door, V3DoorsProps } from './V3Doors'
 
 export { V3Quiet } from './V3Quiet'

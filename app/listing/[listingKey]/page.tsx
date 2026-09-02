@@ -438,6 +438,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
     neighborhoodSlug: listing.neighborhoodSlug ?? null,
     neighborhoodName: placeContext.neighborhood?.label ?? listing.neighborhoodName ?? null,
     boundary: placeBoundary,
+    lat: listing.lat ?? null,
+    lng: listing.lng ?? null,
   }).catch(() => null)
 
   const { isListingSaved } = await import('@/app/actions/saved-listings')
@@ -555,7 +557,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       {listingAtlas ? (
         <V3Atlas
           id="location"
-          variant="dots"
           headingLevel={2}
           headline={v3Text(`${listingAtlas.frameName} around this home`)}
           dots={listingAtlas.atlas.dots}
@@ -566,10 +567,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
           stamp={listingAtlas.atlas.stamp}
           incomplete={!listingAtlas.atlas.complete}
           highlight={{ key: listing.listingKey, label: 'This home' }}
+          outlinedOf={listingAtlas.outlinedOf}
+          fit={listingAtlas.dotsFrame ? 'dots' : 'regions'}
+          className="is-stacked"
         >
           <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
           {listingAtlas.frameHref ? (
-            <p className="listing-detail__lifestyle">
+            <p className="v3-atlas__door">
               <a href={listingAtlas.frameHref}>Every home for sale in {listingAtlas.frameName}</a>
             </p>
           ) : null}

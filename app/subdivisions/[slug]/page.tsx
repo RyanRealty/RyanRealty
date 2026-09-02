@@ -643,7 +643,6 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         {(
           <V3Atlas
             id="atlas"
-            variant="dots"
             headingLevel={2}
             headline={v3Text(`${displayName} right now`)}
             dots={atlasView.dots}

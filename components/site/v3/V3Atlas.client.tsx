@@ -20,10 +20,9 @@
  * Atlas then prints NO counts: a partial count is a wrong number.
  *
  * Three compositions behind one prop for the decision sheet; the losers are
- * deleted in the commit that records Matt's pick (TASTE.md variants rule):
- *   dots  — a point per listing over a soft heat field.
- *   heat  — the heat field alone, places filled by how much is for sale.
- *   split — the dots map beside a live ranked list of places, hover-synced.
+ *   The map: a point per listing over a soft density field, every place a
+ *   touchable silhouette. (Heat and split variants were graded and deleted
+ *   2026-09-02; the decision sheet holds the record.)
  *
  * LAYERS (evaluator passes one to three):
  *   canvas   the heat field — radial kernels, one bitmap, no DOM nodes. The
@@ -102,11 +101,9 @@ export type AtlasRegion = {
 
 export type AtlasType = { key: string; label: string }
 
-export type V3AtlasVariant = 'dots' | 'heat' | 'split'
 
 export type V3AtlasProps = {
   id: string
-  variant: V3AtlasVariant
   /** The page H1 (D11 lock on the homepage), or the section title. */
   headline: V3Text
   headingLevel?: 1 | 2
@@ -139,6 +136,11 @@ export type V3AtlasProps = {
    * Matched by the dot's key; absent from the dots, nothing is drawn.
    */
   highlight?: { key: string; label: string }
+  /**
+   * How many places with a recorded boundary the frame holds when the
+   * outlines are a subset (a plat cap): the source line says "N of M".
+   */
+  outlinedOf?: number
   children?: ReactNode
   className?: string
 }
@@ -215,7 +217,6 @@ type View = { w: number; h: number; scale: number; ox: number; oy: number }
 
 export function V3Atlas({
   id,
-  variant,
   headline,
   headingLevel = 1,
   dots,
@@ -225,6 +226,7 @@ export function V3Atlas({
   stamp,
   fit = 'regions',
   highlight,
+  outlinedOf,
   noun: nounProp,
   incomplete,
   events,
@@ -294,16 +296,6 @@ export function V3Atlas({
     return makeProjection(padded, 1000)
   }, [shapes, dots, fit])
 
-  /* Dots the frame does not hold: counted in every figure, named in the
-     source line, never silently missing. */
-  const beyond = useMemo(() => {
-    let n = 0
-    for (const d of dots) {
-      const [x, y] = proj.toXY(d.lng, d.lat)
-      if (x < 0 || y < 0 || x > proj.width || y > proj.height) n += 1
-    }
-    return n
-  }, [dots, proj])
 
   const paths = useMemo<PlacedShape[]>(
     () => shapes.map((s) => ({ ...s, d: ringsToPath(s.rings, proj) })),
@@ -419,6 +411,20 @@ export function V3Atlas({
     })
     return { forSale, pending, sold, closed, listed }
   }, [dots, isOn])
+  /* Dots the frame does not hold: counted in every figure, named in the
+     source line, never silently missing. */
+  const beyond = useMemo(() => {
+    let n = 0
+    let on = 0
+    for (const d of dots) {
+      if (!isOn(d)) continue
+      on += 1
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      if (x < 0 || y < 0 || x > proj.width || y > proj.height) n += 1
+    }
+    return { n, on }
+  }, [dots, proj, isOn])
+
   /* A record map: every dot is a closing, none is for sale. Read from the
      whole population, never the filtered counts: an empty price filter must
      not turn a broker's record into a for-sale map (pass three, D1). */
@@ -449,7 +455,12 @@ export function V3Atlas({
     const acc = new Map<string, { n: number; prices: number[] }>()
     for (const i of counts.listed) {
       const d = dots[i]!
-      for (const rid of membership[i] ?? []) {
+      // On a record map a closing counts in ONE place, the smallest that
+      // holds it (places are sorted largest first), so six chips reading 1
+      // never sum above a map claiming four (pass three, D4).
+      const ids = membership[i] ?? []
+      const owners = closingsMap && ids.length > 1 ? [ids[ids.length - 1]!] : ids
+      for (const rid of owners) {
         const rec = acc.get(rid) ?? { n: 0, prices: [] }
         rec.n += 1
         if (d.p != null && d.p > 0 && medianScope.keys.has(d.t)) rec.prices.push(d.p)
@@ -459,13 +470,20 @@ export function V3Atlas({
     const out = new Map<string, { n: number; median: number | null }>()
     for (const [rid, rec] of acc) out.set(rid, { n: rec.n, median: median(rec.prices) })
     return out
-  }, [counts.listed, membership, dots, medianScope])
+  }, [counts.listed, membership, dots, medianScope, closingsMap])
 
-  const maxPlaceCount = useMemo(() => {
-    let m = 0
-    for (const s of places) m = Math.max(m, regionStats.get(s.id)?.n ?? 0)
-    return m
-  }, [places, regionStats])
+
+
+  /* Every place as a door a thumb can hit: on a phone most silhouettes are
+     under 20px, so the chips carry the reach the map cannot (pass five, R2).
+     Places with listings first, by count; empty ones after, still doors. */
+  /* A record map draws only the places the record touches; an outline with
+     nothing in it would open a card reading 0 closings (pass three, D5). */
+  const drawnPlaces = useMemo(
+    () => (closingsMap ? places.filter((s) => (regionStats.get(s.id)?.n ?? 0) > 0) : places),
+    [places, closingsMap, regionStats],
+  )
+
 
   const claim = useMemo(() => {
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
@@ -498,15 +516,6 @@ export function V3Atlas({
     return out
   }, [dots, isOn])
 
-  const ranked = useMemo(
-    () =>
-      (incomplete ? [] : places)
-        .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0, median: regionStats.get(s.id)?.median ?? null }))
-        .filter((r) => r.n > 0)
-        .sort((a, b) => b.n - a.n)
-        .slice(0, 10),
-    [places, regionStats, incomplete],
-  )
 
   /* The heat field, on a canvas. Kernel alpha scales with 1/√N and the field
      is composited under a ceiling, so density reads as darkness without ever
@@ -528,11 +537,10 @@ export function V3Atlas({
     if (!octx) return
     octx.setTransform(dpr, 0, 0, dpr, 0, 0)
     const [r, g, b] = readNavy(stage)
-    const heat = variant === 'heat'
     const on = dots.filter((d) => isOn(d)).length
-    const base = heat ? 0.9 : 0.55
+    const base = 0.55
     const alpha = Math.min(0.12, Math.max(0.012, base / Math.sqrt(Math.max(on, 1))))
-    const radius = heat ? 19 : 15
+    const radius = 15
     const paint = (x: number, y: number, a: number, rad: number) => {
       const grad = octx.createRadialGradient(x, y, 0, x, y, rad)
       grad.addColorStop(0, `rgba(${r},${g},${b},${a})`)
@@ -550,11 +558,11 @@ export function V3Atlas({
     })
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.globalAlpha = heat ? 0.8 : 0.62
+    ctx.globalAlpha = 0.62
     ctx.drawImage(off, 0, 0)
     ctx.globalAlpha = 1
     canvas.dataset.painted = '1'
-  }, [dots, xy, isOn, view, variant, toPx])
+  }, [dots, xy, isOn, view, toPx])
 
   const active = pinned?.id ?? hover
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
@@ -603,7 +611,9 @@ export function V3Atlas({
             // A record map lists only the places the record touches; a rail
             // of zeros is brokerage chrome on a personal page (C5).
             .filter((r) => !closingsMap || r.n > 0)
-            .sort((a, b) => b.n - a.n || a.shape.name.localeCompare(b.shape.name)),
+            .sort((a, b) => b.n - a.n || a.shape.name.localeCompare(b.shape.name))
+            // A rail, not a list: the twenty-four fullest places (E5).
+            .slice(0, 24),
     [places, regionStats, incomplete, closingsMap],
   )
 
@@ -651,12 +661,6 @@ export function V3Atlas({
     })
 
   /* Choropleth fill step, 0..4, by share of the strongest place. */
-  const fillStep = (rid: string) => {
-    if (maxPlaceCount === 0) return 0
-    const n = regionStats.get(rid)?.n ?? 0
-    if (n === 0) return 0
-    return Math.min(4, 1 + Math.floor((n / maxPlaceCount) * 3.999))
-  }
 
   const cardAnchor = pinned ? pinned.at : pointer ? ([pointer.x, pointer.y] as const) : null
   const cardStyle =
@@ -752,7 +756,7 @@ export function V3Atlas({
     <section
       ref={sectionRef}
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-atlas', `v3-atlas--${variant}`, wide && 'is-wide', !inView && 'is-offscreen', className)}
+      className={cn(V3_ROOT_CLASS, 'v3-atlas', wide && 'is-wide', !inView && 'is-offscreen', className)}
       aria-labelledby={`${uid}-h`}
     >
       <div className="v3-atlas__grid">
@@ -806,10 +810,9 @@ export function V3Atlas({
                 </g>
                 {/* 2. Dots: the listings, UNDER the places so no outline is
                     ever painted over (pass four, Q1). */}
-                {variant !== 'heat' ? (
+                {(
                   <g className="v3-atlas__dots" aria-hidden="true">
                     {dots.map((d, i) => {
-                      if (d.s === 'sold') return null
                       const [x, y] = xy[i]!
                       return (
                         <path
@@ -819,6 +822,7 @@ export function V3Atlas({
                             'v3-atlas__dot',
                             `v3-atlas__dot--${d.t}`,
                             d.s === 'pending' && 'v3-atlas__dot--pending',
+                            d.s === 'sold' && 'v3-atlas__dot--sold',
                             d.s === 'closed' && 'v3-atlas__dot--closed',
                             highlight && d.k === highlight.key && 'is-home',
                             !isOn(d) && 'is-off',
@@ -827,12 +831,12 @@ export function V3Atlas({
                       )
                     })}
                   </g>
-                ) : null}
+                )}
                 {/* 3. Hit clones UNDER the places: a wide transparent edge that
                     takes the taps landing in the gaps between fills on a phone.
                     An interior tap reaches the place itself first (R1). */}
                 <g className="v3-atlas__hits" aria-hidden="true">
-                  {places.map((s, i) => (
+                  {drawnPlaces.map((s, i) => (
                     <use
                       key={`t-${s.id}`}
                       href={`#${uid}-p-${i}`}
@@ -845,14 +849,14 @@ export function V3Atlas({
                 {/* 4. Halos: the same places cloned in cream, so every outline
                     reads over the field. */}
                 <g className="v3-atlas__halos" aria-hidden="true">
-                  {places.map((s, i) => (
+                  {drawnPlaces.map((s, i) => (
                     <use key={`h-${s.id}`} href={`#${uid}-p-${i}`} />
                   ))}
                 </g>
                 {/* 5. Places: the doors, and the one copy of every path. A place
                     with nothing on it stays a door but wears less ink. */}
                 <g className="v3-atlas__places">
-                  {places.map((s, i) => (
+                  {drawnPlaces.map((s, i) => (
                     <path
                       key={s.id}
                       id={`${uid}-p-${i}`}
@@ -860,10 +864,19 @@ export function V3Atlas({
                       className={cn(
                         'v3-atlas__place',
                         `v3-atlas__place--${s.kind}`,
-                        variant === 'heat' && `v3-atlas__place--step-${fillStep(s.id)}`,
                         (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
                         active === s.id && 'is-active',
                       )}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={s.name}
+                      onFocus={() => setHover(s.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          pin(s)
+                        }
+                      }}
                       onPointerEnter={() => setHover(s.id)}
                       onClick={() => pin(s)}
                     />
@@ -901,7 +914,11 @@ export function V3Atlas({
                         .map((d) => {
                           const [x, y] = toPx(...proj.toXY(d.lng, d.lat))
                           return (
-                            <span key="home" className="v3-atlas__label v3-atlas__label--home" style={{ left: x, top: y - 14 }}>
+                            <span
+                              key="home"
+                              className="v3-atlas__label v3-atlas__label--home"
+                              style={{ left: view ? Math.min(Math.max(x, 48), view.w - 48) : x, top: y - 14 }}
+                            >
                               {highlight.label}
                             </span>
                           )
@@ -924,35 +941,6 @@ export function V3Atlas({
             </div>
           </div>
 
-          {variant === 'split' ? (
-            <div className="v3-atlas__rail">
-              <div className="v3-atlas__rail-card" aria-live="polite">
-                {card ?? <p className="v3-atlas__rail-empty">Hover or tap a place for its numbers.</p>}
-              </div>
-              <ol className="v3-atlas__rank" aria-label="Places with the most for sale">
-                {ranked.map((r) => (
-                  <li key={r.shape.id} className={cn('v3-atlas__rank-row', active === r.shape.id && 'is-active')}>
-                    <Link
-                      href={r.shape.href}
-                      className="v3-atlas__rank-link"
-                      onPointerEnter={() => setHover(r.shape.id)}
-                      onFocus={() => setHover(r.shape.id)}
-                    >
-                      <span className="v3-atlas__rank-name">{r.shape.name}</span>
-                      <span className="v3-atlas__rank-bar" aria-hidden="true">
-                        <span
-                          className="v3-atlas__rank-fill"
-                          style={{ width: `${Math.max(2, (r.n / (ranked[0]?.n ?? 1)) * 100)}%` }}
-                        />
-                      </span>
-                      <span className="v3-atlas__rank-n">{r.n.toLocaleString('en-US')}</span>
-                      <span className="v3-atlas__rank-median">{r.median != null ? fmtShort(r.median) : ''}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ) : null}
         </div>
 
         {/* The legend: type toggles and the price scrubber. Under the map on a
@@ -979,10 +967,12 @@ export function V3Atlas({
               <p className="v3-atlas__source-body">
                 {source}
                 {towns.length + places.length > 1
-                  ? ` The map outlines the ${towns.length + places.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
+                  ? outlinedOf != null && outlinedOf > towns.length + places.length
+                    ? ` The map outlines ${towns.length + places.length} of the ${outlinedOf.toLocaleString('en-US')} places with a recorded boundary here; listings outside an outline are counted and drawn as dots with no outline to tap.`
+                    : ` The map outlines the ${towns.length + places.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
                   : ''}
-                {beyond > 0
-                  ? ` ${beyond} of the ${dots.length.toLocaleString('en-US')} ${beyond === 1 ? 'sits' : 'sit'} beyond the frame's edges: counted in every figure, not drawn.`
+                {beyond.n > 0
+                  ? ` ${beyond.n} of the ${beyond.on.toLocaleString('en-US')} ${beyond.n === 1 ? 'sits' : 'sit'} beyond the frame's edges: counted in every figure, not drawn.`
                   : ''}
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
               </p>

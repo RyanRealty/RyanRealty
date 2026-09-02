@@ -147,6 +147,32 @@ the MLS, median close, listed · represented, so far this year) with the closing
 V3Proof band of reviews naming the broker (record off), and V3Doors (call / text / email). Measured:
 21 closings for Matt, 21 dots, claim "21 closings of every type", page 6,570px (was 10,196).
 
+**MATT'S DECISIONS (2026-09-02, asked and answered):** (1) the homepage living map ships as DOTS —
+heat and split get deleted (variant prop, heat canvas, choropleth steps, split rail, the `?opening`
+switch, their CSS and tests; the decision sheet closes); (2) listing pages carry the living map
+ONLY, no Google parcel map beside it, no street view strip (the Google map remains only as the
+fallback when the read fails); (3) the next class is the rest of the listing page — one instrument
+for the ask-vs-nearby figures and the market context, the long tail as doors, similar homes as a
+strip; (4) the separate evaluator pass runs after EVERY build round until a surface ships; (5) Matt
+2026-09-02, mid-round: "we do need to have some map features like roads for context but should
+match the style" — the living map gets a BASEMAP LAYER drawn in the register (navy hairlines on
+cream, our own projection): primary/secondary roads and linear water from the public TIGER/Line
+files for Deschutes (41017), Crook (41013), Jefferson (41031), ingested to Supabase (PostGIS,
+simplified per class), a DAL read by bbox + class, and an Atlas layer under the dots (highways at
+the region frame; arterials + local streets + the river inside a neighborhood frame). Never a
+Google/Mapbox tile layer under the SVG (different projection, per-view cost, foreign style).
+
+**PASS FOUR (scratchpad `brokerage-eval-4.md`): listing map 74 (E1 label covers the dot), team 85
+(D4), reviews 89 ships.** Fixed in the next commit: E1/E9 (the home label wins its transform, clamped
+inside the stage), E2 (the home's own plat is always outlined, cap or no cap), E3 (`outlinedOf`: "outlines
+N of the M places with a recorded boundary"), E4/E12 (`is-stacked` mount for a narrow column), E5 (chips
+rail capped at 24), E6 (`.v3-atlas__door`), E7 (sold dots drawn, lighter), E8 (a second dedupe pass
+falls back to the recorder's raw string), E10 (the held home dims under a filter but keeps its mark),
+E11 (places take keyboard focus; Enter pins), E13 (a city with no recorded boundary frames its own
+listings — one section for every listing), E14 (phone tick thinning from four ticks), D4 (a closing
+counts in the smallest place holding it), D5 (a record map draws only the places it touches), D9 (the
+beyond-frame sentence follows the filter).
+
 **BROKERAGE PASS TWO (scratchpad `brokerage-eval-2.md`): /reviews 87 · /contact 72 · /about 85 —
 all three SHIP; /team/[slug] 74, no ship.** All 13 pass-two claims verified TRUE. Closed in
 9177b29b (evaluator pass three is measuring it): C1 (a record map frames its dense core by an IQR fence per axis; dots beyond the frame

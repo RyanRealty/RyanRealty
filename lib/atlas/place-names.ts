@@ -50,9 +50,18 @@ export function atlasRegionNames(raws: readonly (string | null | undefined)[]): 
   const stripped = raws.map((r) => atlasRegionName(r))
   const seen = new Map<string, number>()
   for (const n of stripped) if (n) seen.set(n, (seen.get(n) ?? 0) + 1)
-  return stripped.map((n, i) => {
+  const restored = stripped.map((n, i) => {
     if (!n || (seen.get(n) ?? 0) < 2) return n
     const full = (publishPlatDisplayName(raws[i]) ?? raws[i] ?? '').trim()
     return full.length > 0 ? full : n
+  })
+  // Still colliding after the published name (three plats recorded as one
+  // string): the recorder's own string, untouched, tells them apart.
+  const again = new Map<string, number>()
+  for (const n of restored) if (n) again.set(n, (again.get(n) ?? 0) + 1)
+  return restored.map((n, i) => {
+    if (!n || (again.get(n) ?? 0) < 2) return n
+    const raw = (raws[i] ?? '').trim()
+    return raw.length > 0 ? raw : n
   })
 }

@@ -276,7 +276,6 @@ export default async function TeamMemberPage({ params }: Props) {
         {record.dots.length > 0 ? (
           <V3Atlas
             id="closings"
-            variant="dots"
             headingLevel={2}
             headline={v3Text(`Where ${firstName} has closed`)}
             dots={record.dots}

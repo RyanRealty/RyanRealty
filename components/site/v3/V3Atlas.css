@@ -358,7 +358,7 @@
   /* A wide boundary (Larkspur, a river plat) stacks: the map takes the full
      width above, the legend and the aside share the row below. A tall
      boundary keeps the side-by-side (pass five, Q14). */
-  .v3-atlas.is-wide:not(.v3-atlas--split) .v3-atlas__grid {
+  .v3-atlas.is-wide .v3-atlas__grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     grid-template-areas:
@@ -367,52 +367,14 @@
       'dock aside';
   }
 
-  .v3-atlas.is-wide:not(.v3-atlas--split) .v3-atlas__frame {
+  .v3-atlas.is-wide .v3-atlas__frame {
     border-left: 0;
     border-top: var(--v3-rule-hairline);
     border-bottom: var(--v3-rule-hairline);
   }
 
-  .v3-atlas.is-wide:not(.v3-atlas--split) .v3-atlas__stage {
+  .v3-atlas.is-wide .v3-atlas__stage {
     max-height: min(70vh, 48rem);
-  }
-
-  /* Split from 64rem: the card lives in the rail slot, not the stage. */
-  .v3-atlas--split .v3-atlas__stage .v3-atlas__card {
-    display: none;
-  }
-
-  /* Split: head + legend + aside, map, rail — three columns. */
-  .v3-atlas--split .v3-atlas__grid {
-    grid-template-columns: minmax(20rem, 3.6fr) minmax(0, 5fr) minmax(15rem, 2.8fr);
-    grid-template-areas:
-      'head body body'
-      'dock body body'
-      'aside body body';
-  }
-
-  .v3.v3-atlas--split .v3-atlas__headline {
-    font-size: clamp(1.9rem, 2.6vw, 2.5rem);
-  }
-
-  .v3-atlas--split .v3-atlas__search .home-hero-search__row {
-    flex-wrap: wrap;
-  }
-
-  .v3-atlas--split .v3-atlas__search .home-hero-search__go {
-    flex: 1 1 auto;
-  }
-
-  .v3-atlas--split .v3-atlas__body {
-    grid-template-columns: minmax(0, 5fr) minmax(15rem, 2.8fr);
-    column-gap: var(--v3-space-lg);
-    align-items: start;
-  }
-
-  .v3-atlas--split .v3-atlas__rail {
-    padding-top: var(--v3-space-md);
-    position: sticky;
-    top: 5rem;
   }
 }
 
@@ -429,10 +391,6 @@
 .v3-atlas__town:hover,
 .v3-atlas__town.is-active {
   fill: color-mix(in srgb, var(--v3-navy) 8%, transparent);
-}
-
-.v3-atlas--heat .v3-atlas__town {
-  stroke: color-mix(in srgb, var(--v3-navy) 65%, transparent);
 }
 
 /* The halo: cream under every place outline, so it reads over the field. */
@@ -462,6 +420,12 @@
   --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 18%, transparent);
   --atlas-stroke-d: var(--v3-navy);
   --atlas-width-d: 1.6px;
+}
+
+.v3-atlas__place:focus-visible {
+  --atlas-stroke-d: var(--v3-navy);
+  --atlas-width-d: 2.2px;
+  outline: none;
 }
 
 .v3-atlas__place.is-empty {
@@ -495,15 +459,6 @@
   }
 }
 
-/* Choropleth steps: one hue, light to dark (dataviz sequential rule). */
-.v3-atlas--heat .v3-atlas__place--step-0 { --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 4%, transparent); }
-.v3-atlas--heat .v3-atlas__place--step-1 { --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 14%, transparent); }
-.v3-atlas--heat .v3-atlas__place--step-2 { --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 30%, transparent); }
-.v3-atlas--heat .v3-atlas__place--step-3 { --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 52%, transparent); }
-.v3-atlas--heat .v3-atlas__place--step-4 { --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 78%, transparent); }
-.v3-atlas--heat .v3-atlas__place:hover,
-.v3-atlas--heat .v3-atlas__place.is-active { --atlas-stroke-d: var(--v3-navy); --atlas-width-d: 2px; }
-
 /* Dots ---------------------------------------------------------------------
    Zero-length stroked paths: the diameter is screen pixels at any scale, so
    the server-rendered map is the final map. */
@@ -534,16 +489,23 @@
 }
 
 .v3-atlas__dot.is-home.is-off {
-  opacity: 1;
+  opacity: 0.38;
 }
 
-.v3-atlas__label--home {
+.v3-atlas__label.v3-atlas__label--home {
   transform: translate(-50%, -100%);
   padding: 0.1rem 0.4rem;
   background: var(--v3-navy);
   color: var(--v3-cream);
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
+}
+
+/* A listing sold in the last 30 days: counted in the claim, so drawn — a
+   hollow, lighter mark; its pulse says when. */
+.v3-atlas__dot--sold {
+  stroke: color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  stroke-width: 3.6px;
 }
 
 /* A closing on a broker's record map: fuller ink, a little larger, no pulse. */
@@ -834,34 +796,9 @@
   min-width: 3.5rem;
 }
 
-/* The rail's card slot: fixed height ABOVE the list, so the reveal is in
-   view and hovering never shifts the rows. */
-.v3-atlas__rail-card {
-  min-height: 17rem;
-  margin-bottom: var(--v3-space-sm);
-}
-
-.v3-atlas__rail-card .v3-atlas__card {
-  position: relative;
-  max-width: none;
-  box-shadow: none;
-  pointer-events: auto;
-}
-
-.v3-atlas__rail-empty {
-  margin: 0;
-  padding: var(--v3-space-sm) 0;
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body-sm);
-}
-
 /* Under 64rem the split rail sits under the map and the card lives in the
    stage like every other variant. */
-@media (max-width: 63.99rem) {
-  .v3-atlas--split .v3-atlas__rail {
-    display: none;
-  }
-}
+
 
 /* Place chips: on a phone most silhouettes are under 20px, so every place is
    also a pill under the map, by count. Tapping one pins its card from the
@@ -919,5 +856,45 @@
 
   .v3-atlas__chip.is-active .v3-atlas__chip-n {
     color: color-mix(in srgb, var(--v3-cream) 80%, transparent);
+  }
+}
+
+/* A mount inside a narrow column (a listing page's main column) stacks at
+   every width: head, map, dock, aside. The two-column desktop grid assumes
+   the full page width (pass four, E4/E12). */
+@media (min-width: 64rem) {
+  .v3-atlas.is-stacked .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      'head'
+      'body'
+      'dock'
+      'aside';
+  }
+
+  .v3-atlas.is-stacked .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .v3-atlas.is-stacked .v3-atlas__stage {
+    max-height: min(70vh, 44rem);
+  }
+}
+
+/* A door under the map's aside: the same underline every door wears. */
+.v3-atlas__door {
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body);
+}
+
+@layer base {
+  .v3-atlas__door a {
+    color: var(--v3-ink);
+    font-weight: var(--v3-weight-medium);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
   }
 }
