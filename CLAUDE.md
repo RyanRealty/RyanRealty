@@ -4,7 +4,8 @@ This file is loaded into every session. It holds the rules that outrank convenie
 nothing else. Anything longer than a rule lives in the doc it points at.
 
 **Read order:** §0 data accuracy → §1 approval → §2 brand voice → then whichever of §3–§9
-your task touches.
+your task touches. **Before executing:** [`docs/LEARNINGS.md`](docs/LEARNINGS.md) — every
+rule born from a real mistake, authority, stop points. A Matt correction goes there same session.
 
 **Fleet start (mandatory before subject tunnels):** read
 [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md)
