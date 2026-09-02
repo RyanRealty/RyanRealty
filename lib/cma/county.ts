@@ -125,6 +125,16 @@ export interface CmaSiteData {
   trs: string | null
   /** Authoritative acreage (MLS lot size, cross-checked vs the parcel record). */
   acreage: number | null
+  /**
+   * The county assessor's own acreage for this parcel, from public.taxlots —
+   * computed from the recorded polygon on the spheroid, not copied from a
+   * field. Held BESIDE the MLS figure rather than replacing it: when the two
+   * disagree, a broker pricing the property needs to see both, and the
+   * document says so rather than picking a winner (§0).
+   */
+  parcelAcres?: number | null
+  /** True when the two acreages differ by more than a tenth of the smaller. */
+  acreageDisagrees?: boolean
   zone: string | null
   /** Base-zone code + every applicable overlay's effect. Populated live. */
   zoneOverlays: string[]
@@ -394,6 +404,8 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
     taxlot: null,
     trs: null,
     acreage: num(subject.lotAcres ?? null),
+    parcelAcres: null,
+    acreageDisagrees: false,
     zone: null,
     zoneOverlays: [],
     overlays: [],
@@ -436,6 +448,26 @@ export async function resolveCmaSiteData(subject: CmaSubject): Promise<CmaSiteDa
   // query would miss it). Also yields the authoritative taxlot id + TRS.
   const taxlot = await taxlotAt(lng, lat)
   const parcelGeometry = taxlot?.geometry ?? null
+
+  // The county's own acreage for this lot, from our parcel table rather than
+  // another live county call: one indexed read, already simplified, and the
+  // same figure the listing page prints. Fail-open like the rest of this
+  // resolver — a CMA never waits on a lot line.
+  try {
+    const { getTaxlotsNear } = await import('@/lib/data/geo/getTaxlots')
+    const lots = await getTaxlotsNear({ lat, lng, radiusMeters: 5, maxLots: 1 })
+    const subjectLot = lots.find((l) => l.isSubject) ?? null
+    if (subjectLot?.acres != null) {
+      site.parcelAcres = subjectLot.acres
+      const mls = num(subject.lotAcres ?? null)
+      if (mls != null && mls > 0) {
+        const smaller = Math.min(mls, subjectLot.acres)
+        site.acreageDisagrees = Math.abs(mls - subjectLot.acres) / smaller > 0.1
+      }
+    }
+  } catch {
+    /* the parcel table is optional context, never a reason a CMA fails */
+  }
 
   // One parallel wave of authoritative queries.
   const [

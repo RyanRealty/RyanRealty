@@ -191,7 +191,11 @@ export async function auditCma(args: {
 
   const subjectLine = [
     `${subject.streetAddress}, ${subject.city} (subdivision: ${subject.subdivision ?? 'none'})`,
-    `beds ${subject.beds ?? 'unknown'} · baths ${subject.baths ?? 'unknown'} · living area ${subject.sqft ?? 'unknown'} sqft · lot ${subject.lotAcres ?? 'unknown'} acres · year built ${subject.yearBuilt ?? 'unknown'}`,
+    `beds ${subject.beds ?? 'unknown'} · baths ${subject.baths ?? 'unknown'} · living area ${subject.sqft ?? 'unknown'} sqft · lot ${subject.lotAcres ?? 'unknown'} acres${
+      site?.parcelAcres != null
+        ? ` (county assessor: ${site.parcelAcres} acres${site.acreageDisagrees ? ' — THESE DISAGREE, price on the one you can verify' : ''})`
+        : ''
+    } · year built ${subject.yearBuilt ?? 'unknown'}`,
     subject.lastListPrice
       ? `FAILED LISTING at $${Math.round(subject.lastListPrice).toLocaleString()} (${subject.standardStatus ?? 'off market'})`
       : null,
