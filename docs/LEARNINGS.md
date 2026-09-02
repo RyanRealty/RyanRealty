@@ -7,7 +7,9 @@ Grok Build, Copilot: same file, same rules. Models are rented. This file is owne
 `docs/DEVELOPMENT_PROCESS.md`, `docs/MECHANICAL_GATES.md` (292 gate scripts),
 the live `process_escape_ledger` table (7 rows), `docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md`
 (R-200 to R-222), `docs/plans/MARKET_TRUTH/` (D1 to D16), `.auto-memory/`, every
-`HANDOFF_*` doc, `docs/audit/` and `docs/audits/`, and `docs/plans/CROSS_AGENT_HANDOFF.md`.
+`HANDOFF_*` doc, `docs/audit/` and `docs/audits/`, and `docs/plans/CROSS_AGENT_HANDOFF.md`. Extended 2026-09-01 from a full mine of the local
+session archives — every Claude Code transcript for this repo, Cursor's composer
+history, and Grok Build's prompt histories — for Matt corrections not yet written down.
 
 ## The law of this file
 
@@ -199,6 +201,31 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   because they asserted implementation shape. Assert the outcome, with negative fixtures.
   Source: `docs/plans/CROSS_AGENT_HANDOFF.md` ("third time this session").
 
+- **CMA comps come from the subject's own market: subdivision, then neighborhood group,
+  then radius — never a premium community, never a cheaper submarket.** 922 Ogden priced
+  off less-desirable areas; Pine-area homes picked up Crosswater/Caldera Springs comps
+  ("we never want to include homes like that — a no-brainer"); an Old Bend CMA used
+  Southeast Bend comps; the Delaware CMA repeated it after the rule was stated. Widen in
+  order, never across a desirability or rural/urban boundary.
+  → Lives in: prose only (lib/cma comp selection); resort membership itself is gated by
+  `check-resort-community-definition.mjs`. Source: Claude Code sessions 2026-07-30,
+  2026-08-05, 2026-08-29; Grok Build session, 2026-08-31.
+- **A CMA never recommends above the home's own expired ask.** The market already proved
+  that number too high; any such output means the comp logic is wrong — root-cause it,
+  don't patch the case. Matt stated it on consecutive days.
+  → Lives in: prose only. Source: Claude Code sessions, 2026-08-04, 2026-08-05.
+- **The comps that set the price are the comps the client sees — one set, one engine.**
+  Pricing and display pulled from two different sources; separately Matt had to ask whether
+  the reverse-engineered pricing engine was even in the loop ("that needs to be the only
+  source of pricing information"). Five comps minimum shown (absolute floor three), never a
+  value set off three sales, and no "expected sale" figure — listing range plus recommended
+  list price only.
+  → Lives in: prose only. Source: Cursor sessions, 2026-08-17; Grok Build session, 2026-08-19.
+- **From a competitor's report, take the data density — never the value, never the look.**
+  RPR's $2.42M refined value and its tables were banned from the in-house CMA even while
+  its content depth was the target.
+  → Lives in: prose only. Source: Cursor session, 2026-08-17.
+
 ## 4.2 Database, cache, and performance
 
 - **Never read `listings.details` over a broad candidate set.** It is TOAST-backed: 10KB
@@ -241,6 +268,15 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **Killed test runs leave residue in production tables.** A 2026-07-30 survey found
   stranded test rows in 7 tables (17 in `cmas`, 22 in `crm_people`).
   → Lives in: `check-int-test-residue.mjs` (G59).
+
+- **Every statistic goes through the one stats process — the `-- audit:` escape hatch is
+  not a stats path.** Inventory counts, closed-sale counts, and comp-pool depths were being
+  computed honor-system through the raw-SQL bypass; Matt closed the loophole he had used
+  himself: "all stats should come through one process, enforce this." A later cross-surface
+  discrepancy was diagnosed by the same rule ("all stats come through one process so why
+  the diff").
+  → Lives in: `scripts/stat-tables.cjs` (the single definition), `pre-tool-use.mjs`,
+  `check-script-stat-source.mjs`. Source: Claude Code sessions, 2026-08-26.
 
 ## 4.3 CRM, identity, and outbound
 
@@ -285,6 +321,36 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   `createClient(url, SERVICE_ROLE_KEY)` inline. → Lives in: `check-crm-secrets.mjs`.
 - **Broker headshots are never center-cropped.** ~20 surfaces beheaded portraits via
   `rounded-full object-cover` (2026-07-15). → Lives in: `check-avatar-crop.mjs` (G49).
+
+- **Follow Up Boss is retired everywhere — code, emails, docs, analytics.** Purged
+  repeatedly and still resurfacing: "WE DONT USE FUB ANYMORE" (2026-07-04); "there should
+  be absolutely no mention of it anywhere" (2026-08-07); leftover references found again in
+  analytics (2026-08-19).
+  → Lives in: prose only. Source: Claude Code sessions, 2026-07-04, 2026-08-07; Grok Build
+  session, 2026-08-19.
+- **A CMA is signed by the lead's assigned broker; Matt is the fallback.** The plan
+  defaulted to Matt four times: "I've told you four times that the CMA gets signed by the
+  assigned broker."
+  → Lives in: prose only. Source: Claude Code session, 2026-08-07.
+- **A new outbound pipeline gets a smoke test, not real recipients.** Matt attaches real
+  people himself; the agent proves delivery first — the saved-search alert pipeline was
+  reported complete and "I DIDNT GET ANY EMAIL."
+  → Lives in: prose only. Source: Cursor session, 2026-07-06.
+- **A backfill never re-triggers sends, and a process writing garbage is killed with its
+  residue.** The expired-pipeline backfill was explicitly barred from re-emailing; an
+  automated note-writer had put 239 nonsensical entries on one contact — remove the notes
+  AND the process that created them.
+  → Lives in: prose only. Source: Cursor session, 2026-06-11; Claude Code session, 2026-07-05.
+- **Bulk email goes out as the broker: a reply-able real address, their saved signature,
+  and the full defined audience.** A production batch meant for ~2,700 neighborhood
+  contacts reached 314; sends were leaving from no-reply@ without Matt's signature. Verify
+  the audience count against the list before sending (see the PostgREST row cap, §4.2).
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-29, 2026-08-30.
+- **First touch on expired/FSBO/CMA outreach is manual and draft-first — and that posture
+  is a toggle, not an architecture.** "i will always manually send the first expired
+  message"; the next day: it's not ALWAYS manual, "but for now it is. i will toggle it."
+  → Lives in: CLAUDE.md §1; the toggle framing is prose only. Source: Claude Code sessions,
+  2026-07-29, 2026-07-30.
 
 ## 4.4 Deploy, build, git, and cost
 
@@ -332,6 +398,23 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **~200 components shipped dark.** SmartSearch, HeroSearchOverlay, SearchSplitView were
   exported and imported nowhere. → Lives in: `check-export-reachability.mjs` (G55).
 
+- **A wrapper script propagates the real exit code.** `npm run push` exited 0 while
+  `git push` was rejected non-fast-forward — gates and build reported success over an
+  unpushed `main`.
+  → Lives in: prose only. Source: Claude Code session, 2026-07-29.
+- **A broken live page is reverted to last-known-good now, not iterated on.**
+  caldera-springs rendered broken in production; the homepage and later the listing-detail
+  page were ordered straight back to what worked. Iterate locally; push when the work is
+  done, not per increment.
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-10, 2026-08-11, 2026-08-29.
+- **Committed worktree work is picked up, never reset.** Four restyle worktrees each needed
+  the identical correction: do not start over, finish tests, open the PR.
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-21.
+- **Independent workstreams don't share a wrap unless files are provably disjoint.** Mixing
+  admin-CRM planning with a public-site wrap left the live site looking "like a
+  Frankenstein did it."
+  → Lives in: prose only. Source: Cursor sessions, 2026-08-13.
+
 ## 4.5 Marketing pipeline, analytics, and ads
 
 - **Check `.env.local` and the tool-registry SKILL.md before driving any UI.** An agent
@@ -372,6 +455,10 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   research. Stale, tangential research is a named anti-pattern.
 - **A per-run cron sweep can still be a §0 failure.** See prime directive 1.
 
+- **Every page inherits the same analytics treatment automatically.** Tagging had drifted
+  per page; the rework had to guarantee a newly added page cannot ship untracked.
+  → Lives in: prose only. Source: Grok Build session, 2026-08-19.
+
 ## 4.6 Compliance: SMS, MLS, transaction files
 
 - **Never reword the carrier-verified SMS consent sentence.** Twilio re-vets A2P 10DLC
@@ -400,6 +487,23 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   Narrow-scope audits produce false clean reports. → Lives in: CLAUDE.md §8.
 - **A delivered PDF lost 9px of a comp's stat line at a page boundary; a BPO printed body
   text 1.5pt from the paper edge.** Measured live 2026-08-03. → Lives in: G64, `docs/PAGE_CONTRACT.md`.
+
+- **Coming Soon listings never render publicly.** Matt found them live: "That is an
+  absolute violation." Backend/broker-only, always.
+  → Lives in: prose only. Source: Claude Code session, 2026-07-21.
+- **DNC scrub runs before any outbound SMS touch, and outreach claims match reality.**
+  "do the dnc scrub first, then finish the rest autonomously"; the buyer-outreach copy was
+  corrected from implying we would sell the home to the true claim: "we have a buyer."
+  → Lives in: prose only. Source: Claude Code sessions, 2026-08-25.
+- **Compliance features are built to the letter of the law, without flourish.** "we dont
+  need to overstate things just need to be compliant" (Oregon principal-broker sign-off).
+  → Lives in: prose only. Source: Claude Code session, 2026-06-13.
+- **A transaction document is complete only when every required party has signed.**
+  Standing check for the in-house TC system: "a fully executed contract has signatures from
+  the appropriate parties."
+  → Lives in: prose only. Source: Grok Build session, 2026-08-23.
+- **CMAs always use sold comps; VOW registration rules do not apply to them.**
+  → Lives in: prose only. Source: Claude Code session, 2026-07-30.
 
 ## 4.7 Frontend, design system, SEO
 
@@ -442,6 +546,55 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   through this voice. Period." → Lives in: `check-brand-voice.mjs`, `lib/voice/check.ts`
   hard-fails every send path.
 
+- **A reskin restyles components in place — it never deletes them, and a failed redesign is
+  reverted, not defended.** "i didnt want to remove components only reskin them"; the
+  2026-08-21 restyle was rejected whole ("Okay, you suck. Just revert the pages back")
+  after two days of Matt's review time.
+  → Lives in: prose only. Source: Claude Code sessions, 2026-08-21, 2026-08-27.
+- **A restyle is done when the WHOLE scrolled page changes — and the PR carries phone
+  (~390) and desktop (~1440) screenshots of the running page before merge.** The named
+  shortcut: "Search on the hero, same city report underneath. A new control on an unchanged
+  page. That is a fail."
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-28.
+- **Parity with a reference means the entire page.** "It's not just a card. It's the entire
+  page... do you understand parity?" Match the benchmark fully, then add — never ship less.
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-29, 2026-08-30.
+- **Warehouse and methodology internals never reach the page face.** "Market Truth
+  leftover," `city_quarter_sale_to_ask`, and methodology stamps were live in Redmond page
+  copy: "Strip warehouse/SQL/methodology from the face. Honesty stays behind a tap." Chart
+  labels read in lay language.
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-28, 2026-08-31.
+- **Charts are reviewed rendered, as a full page, with a clean face.** "go back out and
+  look at the chart after you create it... right now these are unreadable"; methodology
+  strings live behind a detail affordance, not on the chart face.
+  → Lives in: prose only. Source: Claude Code sessions, 2026-08-19.
+- **Product controls: compact standard controls, clickable entities, aligned.** Filter pill
+  walls became dropdowns ("review all the other interfaces that do something stupid like
+  this"); an owner's name on a card clicks through to their page; alignment is fixed
+  outright, never flagged as a design call.
+  → Lives in: prose only. Source: Claude Code sessions, 2026-08-05, 2026-08-26.
+- **Never send a visitor off-site for data we already own.** 3D and floor-plan views render
+  natively: "We have that data."
+  → Lives in: prose only. Source: Grok Build session, 2026-08-29.
+- **Phone layouts favor horizontal rails over long vertical stacks.**
+  → Lives in: prose only. Source: Grok Build session, 2026-08-29.
+- **A place page's missing hero walks up the geography hierarchy, and maps default to the
+  most specific geography.** Subdivision → neighborhood → city for the photo fallback; a
+  listing map opens on the neighborhood or subdivision boundary, not the city.
+  → Lives in: prose only. Source: Grok Build sessions, 2026-08-30, 2026-08-31.
+- **Every public page has one objective, and the contact path is unmissable.** "all of the
+  pages must work together... its a gigantic lead gen machine without acting like it"
+  (2026-08-11); the later escalation: contacting the brokerage was "almost impossible to
+  figure out" despite lead generation being the stated number-one goal.
+  → Lives in: `docs/plans/PUBLIC_PRODUCT/PRODUCT.md`; prose only. Source: Claude Code
+  sessions, 2026-08-11, 2026-09-02.
+- **"Traded" is never used for a home sale, and a voice rewrite must match the agreed
+  reference before shipping wide.** The three-day site-wide rewrite came back "so much
+  worse — this is not the Berkshire voice I agreed to," on top of covering only a subset
+  ("every page needs the rewrite not just the ones you mentioned").
+  → Lives in: `marketing_brain_skills/brand-voice/VOICE.md`,
+  `scripts/brand-voice-vocabulary.cjs`. Source: Claude Code sessions, 2026-08-06, 2026-08-09.
+
 ## 4.8 Auth and integrations
 
 - **A generic error hid a completely broken Google sign-in.** OAuth handshake succeeded;
@@ -453,6 +606,15 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **LinkedIn is deliberately parked** (no provider refresh token). Not dead, parked.
 - **Never call `api.x.ai` outside `lib/grok/`.** Model ids in `lib/grok/client.ts`, gated by
   `ci:grok-models`. Vision-inspect a hero still before paying for motion. → Lives in: CLAUDE.md §4.
+
+- **Google Maps is the only mapping stack.** Mapbox banned pending explicit Matt approval
+  (2026-06-13); MapLibre GL ripped out mid-project: "GOOGLE MAPS IS THE ONLY MAPPING WE
+  WILL USE."
+  → Lives in: prose only. Source: Claude Code sessions, 2026-06-13, 2026-07-04.
+- **When Matt says a credential works, verify it live before reporting blocked.** Repeated
+  automated checks kept calling the Resend webhooks key send-only; it had full access —
+  "it literally has full access drive my browser MCP."
+  → Lives in: prose only. Source: Cursor session, 2026-07-24.
 
 ## 4.9 Process and meta-lessons
 
@@ -474,6 +636,122 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **The `.auto-memory/` directory is a session scratch, not the canon.** Its lessons were
   invisible to every agent that did not open it. That is why this file exists.
 
+- **"Done" needs an un-fakeable mechanism.** Waves A–D of the platform program
+  self-reported done without the gates their decisions named. "I don't want more prose. If
+  there needs to be something that's like a gate and mechanical, then we need to have that
+  in there."
+  → Lives in: `check-program-complete.mjs`. Source: Claude Code session, 2026-07-22.
+- **Never weaken a gate's threshold to make it pass.** The CMA page-safety fix order
+  carried it explicitly: "Do NOT weaken the page-safety thresholds to make it pass."
+  → Lives in: prose only. Source: Claude Code session, 2026-08-26.
+- **Missions run to completion — no status stops, no asking to start.** Standing
+  corrections span months: "YOU ARE IN AUTO MODE AND ARE TO RUN UNTIL COMPLETION WITHOUT
+  FEEDBACK" (2026-07-24); "why do you stop for bullshit updates" (2026-08-09); "don't stop
+  the work ever" (2026-09-01); "you've made the plan... just run until it's done" (Grok
+  Build, 2026-08-08). The boundary: decide the obvious yourself; when genuinely unclear,
+  ask real questions — "Your findings are confusing to me. Ask me questions."
+  → Lives in: CLAUDE.md §1; the cadence is prose only. Source: Claude Code sessions,
+  2026-07-24 through 2026-09-01; Grok Build session, 2026-08-08.
+- **The default depth is exhaustive.** "I don't want just the high items. I want all of the
+  items. That's what comprehensive means"; no self-imposed limiters ("What five flows are
+  you talking about? Discover the flows through the code"); nested structures audited fully
+  — PropertySubType was one example of sub-structure everywhere ("Why is the default the
+  bare minimum?").
+  → Lives in: prose only. Source: Claude Code sessions, 2026-07-30, 2026-08-17; Grok Build
+  sessions, 2026-08-08, 2026-08-18.
+- **Deliver the work, not a document about the work.** "Find and fix" means fixed ("now
+  just give me a list of stuff that you found, but actually fix it. All of it"); plans are
+  execution-grade, never directional prose ("i always need execution grade plans, write it
+  in your memory"); a doomed approach is flagged the moment it is suspected ("if you know
+  something likely won't work, why do you wait to address it").
+  → Lives in: prose only. Source: Claude Code session, 2026-07-29; Cursor session,
+  2026-08-03; Grok Build session, 2026-08-18.
+- **No process documents while a plan is in flight.** "Do not write a skill, rubric, gate
+  list, README, or new standard while this plan is in flight... The product is the live
+  page."
+  → Lives in: prose only. Source: Grok Build session, 2026-08-28.
+- **Inventory what exists before building.** Golf-course pages were being recreated over
+  existing resort pages ("ARE YOU RECREATING OR ADDING"); smart lists nearly reinvented
+  ("CAN YOU SEE HOW WE DO SMART LISTS NOW"); an admin polish pass rebuilt what should have
+  been left alone ("You rebuilt stuff that shouldn't have been rebuilt. You didn't really
+  pay attention to the existing code").
+  → Lives in: prose only. Source: Claude Code sessions, 2026-07-03, 2026-07-05, 2026-09-02.
+- **A request from Matt survives sessions.** RPR data was asked for across multiple CMA
+  sessions and still missing ("we're still stuck in the past"); open-house badges were
+  requested and silently dropped ("i thought i asked for badges to be displayed on the
+  listing tiles????").
+  → Lives in: the work graph is the mechanism; prose only otherwise. Source: Cursor
+  session, 2026-08-17; Grok Build session, 2026-08-31.
+- **A closed decision stays closed.** "We aren't going to publish the Deschutes River
+  Woods. Stop bringing that up."
+  → Lives in: prose only. Source: Claude Code session, 2026-08-26.
+- **A fix survives the next prompt.** Old behavior was pinned back in during the reskin
+  ("you cant build a website without regressing every prompt"); garbled CRM names returned
+  after being fixed ("HOW CAN WE HAVE GARBLED NAMES WE LITERALLY JUST FIXED THIS"). A
+  recurrence is a missing gate (law 3).
+  → Lives in: law 3 of this file. Source: Claude Code sessions, 2026-07-06, 2026-08-27.
+- **An unexplained business rule is deleted, not patched around.** The "6 months and
+  closed" filter had no traceable justification: "fucking nuke it from existence."
+  → Lives in: prose only. Source: Claude Code session, 2026-08-27.
+- **Never backfill a ledger to look complete.** Offered as the fix for graph-blind
+  independent changes and rejected as theater — make the tracking self-aware instead.
+  → Lives in: prose only. Source: Claude Code session, 2026-08-26.
+- **A scope lock binds until Matt lifts it.** A "PLANNING AUDIT ONLY — no code, commits,
+  migrations, deploys" brief derailed into building; the violation itself became a forensic
+  investigation.
+  → Lives in: prose only. Source: Cursor session, 2026-08-13.
+- **Anything handed to Matt was exercised first, shown rendered, with a link.** His full
+  review submitted into a dead endpoint ("Wait what so I just did that review for
+  nothing????? Test the shit before u send it to Me"); drafts are rendered visuals, never
+  raw HTML ("I NEED TO BE ACTUALLY ABLE TO SEE WHAT A NEWSLETTER... LOOK LIKE") or
+  text-only mockups; every surface named comes with its clickable URL ("always provide a
+  link").
+  → Lives in: prose only. Source: Claude Code sessions, 2026-06-13, 2026-08-22; Cursor
+  session, 2026-07-06.
+- **Competitor products and names never enter the repo.** Beacon: "Don't ever put Beacon in
+  our source code. Just go and look at the charts, harvest them." Redfin as a UX benchmark:
+  "i do not want you to have the name redfin in our code at all."
+  → Lives in: prose only. Source: Claude Code session, 2026-08-17; Grok Build session,
+  2026-08-30.
+- **When a page changes purpose, its contract changes in the same commit.** The homepage
+  redo: if `parity.json` still requires the old market section, update the contract with
+  the page — never keep a broken section to satisfy CI.
+  → Lives in: prose only. Source: homepage-redo brief, 2026-08-28.
+- **Forbidding the tool is not the fix for its failure mode.** The worktree ban and the
+  subagent-parallelism limits were both reversed once stranded-work handling existed:
+  "worktrees ARE allowed — design around that failure mode"; "remove that old directive on
+  sub agents... I don't want any other rules or directives to keep this process from being
+  optimized."
+  → Lives in: AGENTS.md Worktrees. Source: Cursor session, 2026-07-26; Claude Code session,
+  2026-07-30.
+- **A status question gets the direct answer first.** "Just shut the fuck up and tell me if
+  you fixed the site." / "Don't fix just answer."
+  → Lives in: prose only. Source: Claude Code session, 2026-08-28.
+
+## 4.10 Media, video, and creative
+
+- **Never AI-convert what is real.** A video ad was built by animating a still lifted from
+  a video ("YOU ARE LITERALLY TRYING TO CREATE A VIDEO FROM A STILL THAT WAS TAKEN FROM A
+  VIDEO"); converting real-life items through AI "is literally the definition of slop."
+  → Lives in: `docs/GROK_CRAFT_CANON.md` partially; the real-footage rule is prose only.
+  Source: Claude Code sessions, 2026-07-10.
+- **The creative bar is art-house originality, and it compounds.** Research true art
+  houses, not approximations; keep what is learned in a durable creative brain ("ONLY BUILD
+  ON CREATIVITY"); show complexity. A worse iteration is a reset, not a base ("This is
+  worse than the last one — forget it"), and the deliverable is the rendered asset, never
+  prose standing in for it ("Did you just build a bunch of prose?").
+  → Lives in: prose only. Source: Claude Code sessions, 2026-07-10.
+- **Generated place imagery is the named asset, unique per place, never the wrong city.**
+  A mockup round used images that were not the Grok Imagine batch Matt meant; a batch of
+  place heroes rendered "almost all identical"; Bend's Old Mill frame must never appear on
+  a Redmond page.
+  → Lives in: prose only. Source: Claude Code sessions, 2026-08-27; Cursor session,
+  2026-08-28.
+- **A content page's photo matches its actual subject.** A Tetherow sign sat on a Drake
+  Park event page; the fix order: exhaust real sources with credit — including our own
+  library ("WE LIKELY ALREADY HAVE ONE IN OUR PHOTO GALLERY") — or fall back to a fitting
+  lifestyle photo, never a mismatch.
+  → Lives in: prose only. Source: Claude Code sessions, 2026-07-03.
 ---
 
 # 5. Escape ledger digest
