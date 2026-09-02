@@ -287,7 +287,7 @@ export default async function Home() {
               // told a would-be seller it is a seller's market — the one action
               // answers that reader at that moment. Buyer's/balanced/unknown
               // keep the market-report door. Same single ghost action either way.
-              hasVerdict && verdict.kind === 'seller'
+              hasVerdict && verdict.kind === 'sellers'
                 ? { label: v3Text('See what your home is worth'), href: valuationHref('/'), variant: 'ghost' as const }
                 : { label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' as const }
             }
