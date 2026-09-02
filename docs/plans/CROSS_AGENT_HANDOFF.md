@@ -43,27 +43,22 @@ communities repeats the towns ledger and discards its video posters, footer is 2
 Matt's reaction to the shipped top of page: "is this supposed to wow me?" — it is not, and he
 is right: the opening is a stock hero plus three text doors.
 
-**LIVE ON MAIN (33ae8f0a, production READY) — the living map:** built on branch
-`wt/home-opening-20260901` (`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, dev server
-`wt-home-opening-dev`, port 3321); `npm run push` from the worktree pushed it onto main before
-Matt's pick, so production serves variant `dots` by default and `?opening=heat|split` for the
-others. Matt picks from the decision sheet; the losers are deleted on main. `V3Atlas` (new barrel pattern, `components/site/v3/
-V3Atlas.client.tsx` + `.css`, projection in `lib/geo/project-svg.ts`) replaces the photo
-Stage on the homepage: 3,290 active + 896 pending listings as points on a flat SVG
-projection, 6 towns + 14 communities + 13 Bend neighborhoods as touchable silhouettes, a
-navy heat field (502 closes of the last 30 days in a lighter tint), pulses on real events,
-a three-count live claim, a live line of the newest listed/pending/sold, type toggles, a
-price scrubber. Three variants behind `?opening=dots|heat|split` on a decision sheet for
-Matt (artifact "The Living Map"); the losers are deleted in the commit that records his
-pick, then the branch merges to main. Matt's asks driving it: "look alive like real
-activity happening", "heat maps on every page, not just home", "menus everything
-upgraded", "our chart library can also go max". NEXT after the pick: (1) merge, evaluator
-receipt in homepage parity.json; (2) the Atlas takes a `scope` (a place's boundary + its
-listings + closes) and lands on every city/neighborhood/community/subdivision page — the
-heat-map-everywhere ask; (3) V3Chart goes max: marks + crosshair scrubber + claim caption
-+ emphasis series on every chart; (4) the chrome menus get live data (counts, a heat
-thumbnail per place); (5) the remaining homepage evaluator defects (towns encoding,
-reviews proof band, homes map pins, communities media, footer).
+**LIVE ON MAIN (3efc802c) — the living map, rebuilt through two evaluator passes:** `V3Atlas`
+(`components/site/v3/V3Atlas.client.tsx` + `.css`) is the homepage opening and, scoped to the
+recorded boundary, the `#atlas` section of every community page. Population through ONE builder,
+`lib/atlas/build-place-atlas.ts` (paged tile reads, close_date window, boundary filter, dots,
+events, types, source, stamp, `complete`). Layers after pass two: canvas heat (radial kernels),
+dots as zero-length stroked paths with non-scaling-stroke (screen-pixel size, no hydration
+flash), HTML town labels, pulses on their own overlay capped at 40 and paused off-screen, the dock
+in flow under the stage, pinned card with Escape/outside dismissal, largest-first place painting,
+home-only medians when lots are on, a short-read notice in the claim. Evaluator scores (separate
+agent): pass one dots 52 / heat 49 / split 57; pass two 62 / 57 / 67; pass three running on the
+rebuild. Production is ISR (300s) after a searchParams variant switch made the page dynamic and
+put 58 rail timeouts in a build (fixed 44d5351c; 0 timeouts since). `?opening=heat|split` renders
+only in development, for the decision-sheet captures. Matt picks A/B/C from the sheet (artifact
+"The Living Map"); the losers are deleted on the pick. Built on `wt/home-opening-20260901`
+(`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, dev server `wt-home-opening-dev`,
+port 3321); every commit is on main.
 
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
