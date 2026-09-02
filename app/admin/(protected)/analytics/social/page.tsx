@@ -13,18 +13,25 @@
  * the two surfaces report consistent numbers.
  *
  * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
- * Presentation only — classifySocial, every window (7d / today / 5-minute live /
- * 30-minute feed / GA4 range), every aggregation and the GA4 cross-reference are
- * carried over verbatim. The per-platform brand colours are gone: in the admin,
- * colour is a reserved status vocabulary and never decorates a label.
+ * Data access moved into lib/data/analytics/getSocialChannels.ts (G1 DAL
+ * boundary) — classifySocial, every window (7d / today / 5-minute live /
+ * 30-minute feed), and every aggregation are carried over verbatim, just
+ * relocated. The GA4 range stays on lib/ga4-cache.ts (already a shared cached
+ * module, not a raw client in the page). The per-platform brand colours are
+ * gone: in the admin, colour is a reserved status vocabulary and never
+ * decorates a label.
  */
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
-import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
+import {
+  classifySocial,
+  getSocialChannelBreakdown,
+  getSocialHeadlineSummary,
+  getSocialLiveFeed,
+} from '@/lib/data/analytics/getSocialChannels'
 import { resolveDateRange } from '../_lib/queries'
 import { RangeControl } from '../_components/v2/RangeControl'
 
@@ -37,34 +44,6 @@ function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
   const out: Record<string, string | undefined> = {}
   for (const [k, v] of Object.entries(sp)) out[k] = Array.isArray(v) ? v[0] : v
   return out
-}
-
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key)
-}
-
-// ─── Channel classification ─────────────────────────────────────────────────
-// Maps a free-form source string (utm_source value or sessionSourceMedium)
-// onto a canonical social channel name. Returns null for non-social sources.
-// Mirrors the auto-inference logic in the WordPress snippet so server-side
-// dashboards report the same buckets the client tags.
-function classifySocial(source: string | null | undefined): string | null {
-  if (!source) return null
-  const s = source.toLowerCase()
-  if (/(^|[/_.\s-])(facebook|fb)([/_.\s-]|$)/.test(s) || s === 'fb' || s === 'facebook') return 'Facebook'
-  if (/instagram|insta(\b|gram)/.test(s)) return 'Instagram'
-  if (/tiktok/.test(s)) return 'TikTok'
-  if (/youtube|^yt$/.test(s)) return 'YouTube'
-  if (/linkedin/.test(s)) return 'LinkedIn'
-  if (/\b(x|twitter|t\.co)\b/.test(s)) return 'X / Twitter'
-  if (/pinterest/.test(s)) return 'Pinterest'
-  if (/threads/.test(s)) return 'Threads'
-  if (/reddit/.test(s)) return 'Reddit'
-  if (/snapchat/.test(s)) return 'Snapchat'
-  return null
 }
 
 function formatInt(n: number): string {
@@ -86,58 +65,40 @@ function formatRelative(iso: string): string {
 
 // ─── Headline summary ───────────────────────────────────────────────────────
 async function HeadlineSummary() {
-  const supabase = getServiceSupabase()
-  const now = new Date()
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const fiveMinAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
-
-  // Pull recent sessions; classify in JS. Paged read — PostgREST caps single
-  // responses at 1,000 rows, so the old .limit(5000) silently truncated there.
-  const { rows: data, error } = await fetchPagedRows(
-    (from, to) =>
-      supabase
-        .from('visitor_sessions')
-        .select('session_id, utm_source, last_seen_at, first_seen_at, identified_at, hot_lead_fired_at')
-        .gte('first_seen_at', sevenDaysAgo)
-        .order('session_id', { ascending: true })
-        .range(from, to),
-    5000,
-  )
-  if (error) {
-    return <Trouble>Could not load summary: {error?.message}. Retry — until it reads, treat the figures below as unknown, not as zero.</Trouble>
+  const s = await getSocialHeadlineSummary()
+  if (s.unreadable) {
+    return (
+      <Trouble>
+        Could not load summary{s.errorMessage ? `: ${s.errorMessage}` : ''}. Retry — until it reads, treat the
+        figures below as unknown, not as zero.
+      </Trouble>
+    )
   }
-
-  const social = data.filter((r) => classifySocial((r as { utm_source: string | null }).utm_source) !== null)
-  const today      = social.filter((r) => (r as { first_seen_at: string }).first_seen_at >= todayStart)
-  const liveNow    = social.filter((r) => (r as { last_seen_at: string }).last_seen_at >= fiveMinAgo)
-  const identified = social.filter((r) => (r as { identified_at: string | null }).identified_at !== null)
-  const hot        = social.filter((r) => (r as { hot_lead_fired_at: string | null }).hot_lead_fired_at !== null)
 
   return (
     <>
-      <VerdictLine tone={liveNow.length > 0 || hot.length > 0 ? 'attention' : 'ok'}>
-        {liveNow.length > 0 ? (
+      <VerdictLine tone={s.liveNow > 0 || s.hot7d > 0 ? 'attention' : 'ok'}>
+        {s.liveNow > 0 ? (
           <>
-            <b>{formatInt(liveNow.length)} social visitor{liveNow.length === 1 ? '' : 's'} on the site now.</b>{' '}
-            {formatInt(hot.length)} hot lead{hot.length === 1 ? '' : 's'} from social in the last 7 days.
+            <b>{formatInt(s.liveNow)} social visitor{s.liveNow === 1 ? '' : 's'} on the site now.</b>{' '}
+            {formatInt(s.hot7d)} hot lead{s.hot7d === 1 ? '' : 's'} from social in the last 7 days.
           </>
-        ) : hot.length > 0 ? (
+        ) : s.hot7d > 0 ? (
           <>
-            <b>{formatInt(hot.length)} hot lead{hot.length === 1 ? '' : 's'} from social in the last 7 days.</b> Nobody from social is on the site right now.
+            <b>{formatInt(s.hot7d)} hot lead{s.hot7d === 1 ? '' : 's'} from social in the last 7 days.</b> Nobody from social is on the site right now.
           </>
         ) : (
           <>
-            <b>Nothing needs you from social.</b> {formatInt(social.length)} session{social.length === 1 ? '' : 's'} in the last 7 days, no hot leads.
+            <b>Nothing needs you from social.</b> {formatInt(s.last7d)} session{s.last7d === 1 ? '' : 's'} in the last 7 days, no hot leads.
           </>
         )}
       </VerdictLine>
       <Figures
         figures={[
-          { label: 'Social active now (5m)', value: formatInt(liveNow.length) },
-          { label: 'Social today', value: formatInt(today.length) },
-          { label: 'Social last 7 days', value: formatInt(social.length), caption: `${formatPct(identified.length, social.length)} identified` },
-          { label: 'Social hot leads (7d)', value: formatInt(hot.length), tone: hot.length > 0 ? 'ok' : undefined },
+          { label: 'Social active now (5m)', value: formatInt(s.liveNow) },
+          { label: 'Social today', value: formatInt(s.today) },
+          { label: 'Social last 7 days', value: formatInt(s.last7d), caption: `${formatPct(s.identified7d, s.last7d)} identified` },
+          { label: 'Social hot leads (7d)', value: formatInt(s.hot7d), tone: s.hot7d > 0 ? 'ok' : undefined },
         ]}
       />
     </>
@@ -146,56 +107,15 @@ async function HeadlineSummary() {
 
 // ─── Per-channel breakdown from visitor_sessions ───────────────────────────
 async function ChannelBreakdown() {
-  const supabase = getServiceSupabase()
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const { rows: data, error } = await fetchPagedRows(
-    (from, to) =>
-      supabase
-        .from('visitor_sessions')
-        .select('session_id, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, ip_city, engagement_score')
-        .gte('first_seen_at', sevenDaysAgo)
-        .order('session_id', { ascending: true })
-        .range(from, to),
-    5000,
-  )
-  if (error) {
-    return <Trouble>Could not load channel breakdown: {error?.message}. Retry before reading anything into the channel mix.</Trouble>
+  const { rows, unreadable, errorMessage } = await getSocialChannelBreakdown()
+  if (unreadable) {
+    return (
+      <Trouble>
+        Could not load channel breakdown{errorMessage ? `: ${errorMessage}` : ''}. Retry before reading anything into
+        the channel mix.
+      </Trouble>
+    )
   }
-
-  type ChannelAgg = { sessions: number; identified: number; hot: number; campaigns: Set<string>; topCity: Map<string, number>; engagedSum: number }
-  const byChannel = new Map<string, ChannelAgg>()
-  for (const raw of data) {
-    const row = raw as { utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; identified_at: string | null; hot_lead_fired_at: string | null; ip_city: string | null; engagement_score: number }
-    const ch = classifySocial(row.utm_source)
-    if (!ch) continue
-    const a = byChannel.get(ch) ?? { sessions: 0, identified: 0, hot: 0, campaigns: new Set<string>(), topCity: new Map<string, number>(), engagedSum: 0 }
-    a.sessions += 1
-    if (row.identified_at) a.identified += 1
-    if (row.hot_lead_fired_at) a.hot += 1
-    if (row.utm_campaign) a.campaigns.add(row.utm_campaign)
-    if (row.ip_city) a.topCity.set(row.ip_city, (a.topCity.get(row.ip_city) ?? 0) + 1)
-    a.engagedSum += (row.engagement_score ?? 0)
-    byChannel.set(ch, a)
-  }
-
-  const rows = Array.from(byChannel.entries())
-    .map(([channel, a]) => {
-      let topCity = ''
-      let topCityCount = 0
-      for (const [c, n] of a.topCity) { if (n > topCityCount) { topCity = c; topCityCount = n } }
-      return {
-        channel,
-        sessions: a.sessions,
-        identified: a.identified,
-        hot: a.hot,
-        identifyRate: a.sessions ? a.identified / a.sessions : 0,
-        hotRate: a.sessions ? a.hot / a.sessions : 0,
-        avgScore: a.sessions ? a.engagedSum / a.sessions : 0,
-        campaignCount: a.campaigns.size,
-        topCity,
-      }
-    })
-    .sort((x, y) => y.sessions - x.sessions)
 
   return (
     <section aria-label="Per-channel breakdown">
@@ -223,21 +143,20 @@ async function ChannelBreakdown() {
 
 // ─── Live "right now from social" feed ──────────────────────────────────────
 async function LiveSocialFeed() {
-  const supabase = getServiceSupabase()
-  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
-  const { data } = await supabase
-    .from('visitor_sessions')
-    .select('session_id, utm_source, utm_medium, utm_campaign, last_seen_at, engagement_score, intent_tags, ip_city, identified_email, fub_person_id')
-    .gte('last_seen_at', thirtyMinAgo)
-    .order('last_seen_at', { ascending: false })
-    .limit(40)
-  type FeedRow = { session_id: string; utm_source: string | null; utm_campaign: string | null; last_seen_at: string; engagement_score: number; intent_tags: string[]; ip_city: string | null; identified_email: string | null; fub_person_id: number | null }
-  const rows = (data ?? []).filter((r) => classifySocial((r as { utm_source: string | null }).utm_source) !== null) as FeedRow[]
+  const { rows, unreadable, errorMessage } = await getSocialLiveFeed()
+  if (unreadable) {
+    return (
+      <Trouble>
+        Could not load the live social feed{errorMessage ? `: ${errorMessage}` : ''}. Retry before trusting this
+        section.
+      </Trouble>
+    )
+  }
 
-  const identifiedCell = (r: FeedRow) =>
-    r.fub_person_id ? (
-      <Link href={`/admin/people/${r.fub_person_id}`} style={{ color: 'var(--a-accent)' }}>
-        {r.identified_email ?? `Legacy #${r.fub_person_id}`}
+  const identifiedCell = (r: (typeof rows)[number]) =>
+    r.fubPersonId ? (
+      <Link href={`/admin/people/${r.fubPersonId}`} style={{ color: 'var(--a-accent)' }}>
+        {r.identifiedEmail ?? `Legacy #${r.fubPersonId}`}
       </Link>
     ) : (
       <span style={{ color: 'var(--a-text-2)' }}>anonymous</span>
@@ -250,15 +169,15 @@ async function LiveSocialFeed() {
         label="Right now from social"
         rows={rows}
         cap={8}
-        rowKey={(r) => r.session_id}
+        rowKey={(r) => r.sessionId}
         columns={[
-          { key: 'channel', header: 'Channel', lead: true, cell: (r) => classifySocial(r.utm_source) || '—' },
-          { key: 'campaign', header: 'Campaign', cell: (r) => r.utm_campaign ?? '—' },
-          { key: 'city', header: 'City', cell: (r) => r.ip_city ?? '—' },
-          { key: 'score', header: 'Score', num: true, cell: (r) => r.engagement_score },
-          { key: 'intent', header: 'Intent', cell: (r) => (r.intent_tags ?? []).map((t) => t.replace(/_/g, ' ')).join(', ') || '—' },
+          { key: 'channel', header: 'Channel', lead: true, cell: (r) => classifySocial(r.utmSource) || '—' },
+          { key: 'campaign', header: 'Campaign', cell: (r) => r.utmCampaign ?? '—' },
+          { key: 'city', header: 'City', cell: (r) => r.ipCity ?? '—' },
+          { key: 'score', header: 'Score', num: true, cell: (r) => r.engagementScore },
+          { key: 'intent', header: 'Intent', cell: (r) => r.intentTags.map((t) => t.replace(/_/g, ' ')).join(', ') || '—' },
           { key: 'identified', header: 'Identified', cell: identifiedCell },
-          { key: 'lastSeen', header: 'Last seen', num: true, cell: (r) => formatRelative(r.last_seen_at) },
+          { key: 'lastSeen', header: 'Last seen', num: true, cell: (r) => formatRelative(r.lastSeenAt) },
         ]}
         empty={<>No social visitors in the last 30 minutes.</>}
       />
