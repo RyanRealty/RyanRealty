@@ -41,6 +41,8 @@ import {
   getCityHeroUrlsBySlug,
   getBoundaryGeoJSON,
   getCityBoundaryGeoJSON,
+  getCommunitySubdivisions,
+  getAllNeighborhoodsWithCity,
 } from '@/lib/data'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
@@ -94,6 +96,9 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
+import { publishRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -286,6 +291,63 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   ])
 
   const cityGeojson = asPlaceBoundary(cityBoundary) ?? asPlaceBoundary(cityBoundaryFallback)
+  // The living map, scoped to the city (Matt 2026-09-01: heat maps on every
+  // page). Population = every active, pending, and 30-day-closed listing
+  // inside the recorded city boundary, through the same builder the homepage
+  // uses. Bend's places are its neighborhoods; every other city's are its
+  // busiest recorded plats.
+  // The Atlas wants a typed geometry; asPlaceBoundary's loose shape is
+  // narrowed here to a Polygon/MultiPolygon or nothing.
+  const atlasBoundary: GeoJSON.Geometry | null =
+    cityGeojson && (cityGeojson.type === 'Polygon' || cityGeojson.type === 'MultiPolygon') && Array.isArray(cityGeojson.coordinates)
+      ? (cityGeojson as GeoJSON.Geometry)
+      : null
+  const [atlas, atlasChildren] = atlasBoundary
+    ? await Promise.all([
+        withTimeoutFallback(buildPlaceAtlas({ cities: [cityName], boundary: atlasBoundary, label: cityName }), null, 6000, 'city:atlas'),
+        isBend
+          ? withTimeoutFallback(
+              getAllNeighborhoodsWithCity().then((rows) =>
+                Promise.all(
+                  rows
+                    .filter((r) => {
+                      const c = Array.isArray(r.cities) ? r.cities[0] : r.cities
+                      return (c?.slug ?? '').toLowerCase() === 'bend' && r.slug && r.name
+                    })
+                    .map((r) =>
+                      getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: `bend-${(r.slug ?? '').toLowerCase().trim()}` })
+                        .then((geometry): AtlasRegion | null =>
+                          geometry
+                            ? { id: `neighborhood:${r.slug}`, kind: 'neighborhood', name: r.name as string, href: `/cities/bend/${(r.slug ?? '').toLowerCase().trim()}`, geometry }
+                            : null,
+                        )
+                        .catch(() => null),
+                    ),
+                ),
+              ),
+              [] as (AtlasRegion | null)[],
+              6000,
+              'city:atlasNeighborhoods',
+            )
+          : withTimeoutFallback(
+              getCommunitySubdivisions({ geoType: 'city', geoSlug: slug }).then((cells) =>
+                [...cells]
+                  .sort((a, b) => b.activeHomes - a.activeHomes)
+                  .slice(0, 60)
+                  .map((cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'neighborhood', kindLabel: 'Subdivision', name: publishRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry })),
+              ),
+              [] as (AtlasRegion | null)[],
+              6000,
+              'city:atlasPlats',
+            ),
+      ])
+    : [null, [] as (AtlasRegion | null)[]]
+  const atlasRegions: AtlasRegion[] = atlasBoundary
+    ? [
+        { id: `city:${slug}`, kind: 'town', kindLabel: 'City', name: cityName, href: `/cities/${slug}`, geometry: atlasBoundary },
+        ...atlasChildren.filter((r): r is AtlasRegion => r !== null),
+      ]
+    : []
 
   // The approved area-guide clip - a guides-Ledger door on this node (the
   // pattern set holds no mid-page media slot here); it plays full-bleed on the
@@ -607,6 +669,22 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             <PlaceFaceStrip stats={face.stats} />
           </div>
         )}
+        {atlas && atlas.dots.length > 0 ? (
+          <V3Atlas
+            id="atlas"
+            variant="dots"
+            headingLevel={2}
+            headline={v3Text(`${cityName} right now`)}
+            dots={atlas.dots}
+            regions={atlasRegions}
+            types={atlas.types}
+            events={atlas.events}
+            source={atlas.source}
+            stamp={atlas.stamp}
+            incomplete={!atlas.complete}
+          />
+        ) : null}
+
         <PlaceTypeSlider cards={typeCards} label={`${cityName} property types`} />
 
         <PlaceSplitView

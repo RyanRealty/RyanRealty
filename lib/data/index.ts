@@ -329,6 +329,8 @@ export type {
 // subdivision map polygons + the subdivisions-within section) via the
 // community_subdivisions RPC. Spatial membership; cached on the geo window.
 export { getCommunitySubdivisions } from '@/lib/data/geo/getCommunitySubdivisions'
+export { getAtlasTiles } from '@/lib/data/listings/getAtlasTiles'
+export type { AtlasTile, AtlasTilesInput } from '@/lib/data/listings/getAtlasTiles'
 export type {
   CommunitySubdivisionInput,
   CommunitySubdivision,

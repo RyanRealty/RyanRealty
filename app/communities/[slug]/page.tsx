@@ -539,12 +539,12 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     : null
   const atlasRegions: AtlasRegion[] = mapPolygon
     ? [
-        { id: `community:${slug}`, kind: 'town', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
+        { id: `community:${slug}`, kind: 'town', kindLabel: 'Community', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
         ...platCells.slice(0, 80).map(
           (cell): AtlasRegion => ({
-            id: `plat:${cell.slug}`,
+            id: `subdivision:${cell.slug}`,
             kind: 'neighborhood',
-            name: cell.label,
+            name: publishPlatDisplayName(cell.label) ?? cell.label,
             href: `/subdivisions/${cell.slug}`,
             geometry: cell.geometry,
           }),

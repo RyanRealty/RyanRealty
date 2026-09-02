@@ -146,6 +146,8 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -388,6 +390,21 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // Seed a ring only when GIS actually stored a usable polygon. Ridge has
   // none historically — pin bbox is the camera, never a convex hull.
   const seedRing = hasRealPlatPolygon(boundary.polygon)
+  // The living map, scoped to the plat: every listing inside its recorded
+  // polygon. Needs a real polygon and a known city (the read is city-scoped).
+  const atlas =
+    seedRing && boundary.polygon && placeCity
+      ? await withTimeoutFallback(
+          buildPlaceAtlas({ cities: [placeCity], boundary: boundary.polygon, label: displayName }),
+          null,
+          6000,
+          'sub:atlas',
+        )
+      : null
+  const atlasRegions: AtlasRegion[] =
+    seedRing && boundary.polygon
+      ? [{ id: `subdivision:${slug}`, kind: 'town', kindLabel: 'Subdivision', name: displayName, href: `/subdivisions/${slug}`, geometry: boundary.polygon }]
+      : []
   const splitListings = mapTiles.map(toSplitListing)
   const pinBounds = boundsFromListingPins(mapTiles)
   const hasMap =
@@ -620,6 +637,22 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             <V3SourceLine source={inventorySource} />
           </div>
         )}
+        {atlas && atlas.dots.length > 0 ? (
+          <V3Atlas
+            id="atlas"
+            variant="dots"
+            headingLevel={2}
+            headline={v3Text(`${displayName} right now`)}
+            dots={atlas.dots}
+            regions={atlasRegions}
+            types={atlas.types}
+            events={atlas.events}
+            source={atlas.source}
+            stamp={atlas.stamp}
+            incomplete={!atlas.complete}
+          />
+        ) : null}
+
         <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
 
         <div id="homes">

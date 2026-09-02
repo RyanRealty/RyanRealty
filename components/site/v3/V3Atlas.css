@@ -3,8 +3,8 @@
    Styles for V3Atlas.client.tsx and nothing else. Every value resolves from
    ./tokens.css: navy tints for the marks, hairlines for the silhouettes, the
    one exception hue nowhere. Motion: the heat fades in once; the pulses
-   breathe on a 2.4s loop on their own layer and pause off-screen; reduced
-   motion resolves both to stills.
+   breathe on their own layer and pause off-screen; reduced motion resolves
+   both to stills.
    =========================================================================== */
 
 .v3.v3-atlas {
@@ -14,32 +14,28 @@
   background: var(--v3-surface);
 }
 
-/* The grid. Phone: head, map, aside. From 64rem: head + aside in a left
-   column, the map a tall panel on the right (the basin is portrait). */
+/* The grid. Phone: head, map, legend, aside. From 64rem: head, legend and
+   aside in a left column, the map a tall panel on the right (the basin is
+   portrait, so the map takes the whole frame height). */
 .v3-atlas__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     'head'
     'body'
+    'dock'
     'aside';
 }
 
-.v3-atlas__head {
-  grid-area: head;
-}
-
-.v3-atlas__body {
-  grid-area: body;
-}
-
-.v3-atlas__aside {
-  grid-area: aside;
-}
+.v3-atlas__head { grid-area: head; }
+.v3-atlas__body { grid-area: body; }
+.v3-atlas__dock { grid-area: dock; }
+.v3-atlas__aside { grid-area: aside; }
 
 /* Head ---------------------------------------------------------------------- */
 .v3-atlas__head,
-.v3-atlas__aside {
+.v3-atlas__aside,
+.v3-atlas__dock {
   max-width: var(--v3-measure);
   margin: 0 auto;
   width: 100%;
@@ -171,8 +167,7 @@
 }
 
 /* Body ----------------------------------------------------------------------
-   The frame is a column: the stage (canvas + svg + labels + pulses + card),
-   then the dock IN FLOW — it can never cover the basin's south end. */
+   The frame holds the stage (canvas + svg + labels + pulses + card). */
 .v3-atlas__body {
   display: grid;
   gap: 0;
@@ -189,7 +184,7 @@
 .v3-atlas__stage {
   position: relative;
   flex: 1 1 auto;
-  min-height: clamp(22rem, 62vh, 44rem);
+  min-height: clamp(24rem, 66vh, 46rem);
   background: color-mix(in srgb, var(--v3-navy) 2%, var(--v3-cream));
   overflow: hidden;
   touch-action: pan-y;
@@ -226,59 +221,72 @@
   overflow: visible;
 }
 
-/* The dock: in flow. Chips wrap from 48rem; scroll with a fade under it. */
+/* The legend ----------------------------------------------------------------
+   Text toggles with the type mark, one wrapping row, the scrubber under. */
 .v3-atlas__dock {
-  flex: none;
-  display: grid;
-  gap: var(--v3-space-sm);
-  padding: var(--v3-space-sm) var(--v3-gutter);
-  background: var(--v3-surface);
-  border-top: var(--v3-rule-hairline);
+  padding-top: var(--v3-space-sm);
+  padding-bottom: var(--v3-space-xs);
+  gap: var(--v3-space-xs);
 }
 
 .v3-atlas__types {
   display: flex;
-  flex-wrap: nowrap;
-  gap: var(--v3-space-xs);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
-  mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-sm);
 }
 
-.v3-atlas__types::-webkit-scrollbar {
-  display: none;
-}
-
-.v3.v3-atlas .v3-atlas__type {
+.v3-atlas__type {
   display: inline-flex;
-  flex: none;
   align-items: center;
   gap: var(--v3-space-2xs);
   min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-3xs);
+  border: 0;
+  background: none;
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: color var(--v3-dur-state) var(--v3-ease-out), text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3.v3-atlas .v3-atlas__type[aria-pressed='false'] {
+.v3-atlas__type:hover,
+.v3-atlas__type:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.v3-atlas__type:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-atlas__type[aria-pressed='false'] {
   color: var(--v3-ink-muted);
-  border-color: transparent;
 }
 
 .v3-atlas__type-mark {
-  width: var(--v3-space-xs);
-  height: var(--v3-space-xs);
+  width: 0.55rem;
+  height: 0.55rem;
   flex: none;
   border-radius: 50%;
   background: var(--v3-ink);
+  border: 1px solid var(--v3-ink);
 }
 
 .v3-atlas__type[aria-pressed='false'] .v3-atlas__type-mark {
-  background: var(--v3-hairline);
+  background: transparent;
+  border-color: var(--v3-ink-muted);
 }
 
 .v3-atlas__scrub {
   display: grid;
   gap: var(--v3-space-3xs);
-  max-width: 24rem;
+  max-width: 22rem;
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink-muted);
   font-variant-numeric: tabular-nums;
@@ -297,28 +305,14 @@
   cursor: pointer;
 }
 
-@media (min-width: 48rem) {
-  .v3-atlas__types {
-    flex-wrap: wrap;
-    overflow: visible;
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
-
-  .v3-atlas__dock {
-    grid-template-columns: minmax(0, 1fr) minmax(11rem, 13rem);
-    align-items: end;
-    column-gap: var(--v3-space-lg);
-  }
-}
-
-/* Two columns from 64rem. */
+/* Two columns from 64rem: the map takes the whole frame height. */
 @media (min-width: 64rem) {
   .v3-atlas__grid {
     grid-template-columns: minmax(20rem, 5fr) minmax(0, 7fr);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       'head body'
+      'dock body'
       'aside body';
     max-width: var(--v3-measure);
     margin: 0 auto;
@@ -326,7 +320,8 @@
   }
 
   .v3-atlas__head,
-  .v3-atlas__aside {
+  .v3-atlas__aside,
+  .v3-atlas__dock {
     padding-right: var(--v3-space-xl, 2.5rem);
   }
 
@@ -335,7 +330,7 @@
   }
 
   .v3-atlas__frame {
-    height: min(88vh, 60rem);
+    height: min(92vh, 64rem);
     border-top: 0;
     border-bottom: 0;
     border-left: var(--v3-rule-hairline);
@@ -345,11 +340,12 @@
     min-height: 0;
   }
 
-  /* Split: head + aside, map, rail — three columns. */
+  /* Split: head + legend + aside, map, rail — three columns. */
   .v3-atlas--split .v3-atlas__grid {
     grid-template-columns: minmax(20rem, 3.6fr) minmax(0, 5fr) minmax(15rem, 2.8fr);
     grid-template-areas:
       'head body body'
+      'dock body body'
       'aside body body';
   }
 
@@ -371,11 +367,6 @@
     align-items: start;
   }
 
-  .v3-atlas--split .v3-atlas__dock {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-  }
-
   .v3-atlas--split .v3-atlas__rail {
     padding-top: var(--v3-space-md);
     position: sticky;
@@ -386,7 +377,7 @@
 /* Silhouettes ------------------------------------------------------------- */
 .v3-atlas__town {
   fill: color-mix(in srgb, var(--v3-navy) 5%, transparent);
-  stroke: color-mix(in srgb, var(--v3-navy) 48%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
   stroke-width: 1.2;
   vector-effect: non-scaling-stroke;
   cursor: pointer;
@@ -399,13 +390,26 @@
 }
 
 .v3-atlas--heat .v3-atlas__town {
-  stroke: color-mix(in srgb, var(--v3-navy) 60%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 65%, transparent);
+}
+
+/* The halo: cream under every place outline, so it reads over the field. */
+.v3-atlas__halos {
+  pointer-events: none;
+}
+
+.v3-atlas__halo {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-cream) 85%, transparent);
+  stroke-width: 3.5;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
 }
 
 .v3-atlas__place {
-  fill: color-mix(in srgb, var(--v3-navy) 8%, transparent);
-  stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
-  stroke-width: 1;
+  fill: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 72%, transparent);
+  stroke-width: 1.1;
   vector-effect: non-scaling-stroke;
   cursor: pointer;
   transition: fill var(--v3-dur-state) var(--v3-ease-out);
@@ -415,6 +419,7 @@
 .v3-atlas__place.is-active {
   fill: color-mix(in srgb, var(--v3-navy) 18%, transparent);
   stroke: var(--v3-navy);
+  stroke-width: 1.6;
 }
 
 /* Choropleth steps: one hue, light to dark (dataviz sequential rule). */
@@ -428,27 +433,26 @@
 
 /* Dots ---------------------------------------------------------------------
    Zero-length stroked paths: the diameter is screen pixels at any scale, so
-   the server-rendered map is the final map. Navy at alpha so density reads
-   as darkness where homes stack. */
+   the server-rendered map is the final map. */
 .v3-atlas__dots {
   pointer-events: none;
 }
 
 .v3-atlas__dot {
   fill: none;
-  stroke: color-mix(in srgb, var(--v3-navy) 52%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
   stroke-width: 4.2px;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   transition: opacity var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3-atlas__dot--condo { stroke: color-mix(in srgb, var(--v3-navy) 40%, transparent); }
-.v3-atlas__dot--townhouse { stroke: color-mix(in srgb, var(--v3-navy) 46%, transparent); }
-.v3-atlas__dot--land { stroke: color-mix(in srgb, var(--v3-navy) 24%, transparent); }
-.v3-atlas__dot--commercial { stroke: color-mix(in srgb, var(--v3-navy) 34%, transparent); }
+.v3-atlas__dot--condo { stroke: color-mix(in srgb, var(--v3-navy) 42%, transparent); }
+.v3-atlas__dot--townhouse { stroke: color-mix(in srgb, var(--v3-navy) 48%, transparent); }
+.v3-atlas__dot--land { stroke: color-mix(in srgb, var(--v3-navy) 26%, transparent); }
+.v3-atlas__dot--commercial { stroke: color-mix(in srgb, var(--v3-navy) 36%, transparent); }
 .v3-atlas__dot--multi { stroke: var(--v3-navy); }
-.v3-atlas__dot--pending { stroke: color-mix(in srgb, var(--v3-navy) 30%, transparent); stroke-width: 5px; }
+.v3-atlas__dot--pending { stroke: color-mix(in srgb, var(--v3-navy) 32%, transparent); stroke-width: 5px; }
 
 .v3-atlas__dot.is-off {
   opacity: 0.06;
@@ -456,7 +460,7 @@
 
 /* Pulses --------------------------------------------------------------------
    Stroked points whose stroke grows in screen pixels and fades: a ring on
-   a real event. Own layer, capped, paused off-screen. */
+   a real event. Own layer, slots per kind, paused off-screen. */
 .v3-atlas__pulse {
   fill: none;
   stroke: var(--v3-navy);
@@ -468,7 +472,7 @@
 }
 
 .v3-atlas__pulse--sold {
-  stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 60%, transparent);
   animation-duration: 3.4s;
 }
 
@@ -521,9 +525,10 @@
 }
 
 /* The card ----------------------------------------------------------------
-   Follows the pointer on dots/heat, pinned where the reader tapped, clamped
-   inside the stage; docks over the stage's foot under 48rem with a close
-   control; on split from 64rem it lives in a fixed slot under the rail. */
+   Follows the pointer, pinned where the reader tapped, clamped inside the
+   stage. Under 48rem it is a strip along the stage's foot — name, count,
+   median, door — so the tapped place stays in view. On split from 64rem
+   it lives in a fixed slot above the rail. */
 .v3-atlas__card {
   position: absolute;
   z-index: 3;
@@ -559,21 +564,6 @@
   display: block;
 }
 
-@media (max-width: 47.99rem) {
-  .v3-atlas__card {
-    left: 0 !important;
-    right: 0;
-    top: auto !important;
-    bottom: 0;
-    max-width: none;
-    pointer-events: auto;
-  }
-
-  .v3-atlas__card-close {
-    display: block;
-  }
-}
-
 .v3-atlas__card-kind {
   margin: 0;
   color: var(--v3-ink-muted);
@@ -588,6 +578,10 @@
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-display-2);
   line-height: var(--v3-leading-heading);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .v3-atlas__card-figures {
@@ -609,6 +603,7 @@
 .v3-atlas__card-label {
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
+  white-space: nowrap;
 }
 
 .v3-atlas__card-door {
@@ -621,6 +616,60 @@
   text-decoration: underline;
   text-underline-offset: var(--v3-underline-offset);
   pointer-events: auto;
+}
+
+@media (max-width: 47.99rem) {
+  .v3-atlas__card {
+    left: 0 !important;
+    right: 0;
+    top: auto !important;
+    bottom: 0;
+    max-width: none;
+    padding: var(--v3-space-xs) var(--v3-gutter);
+    padding-right: var(--v3-tap);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'kind kind'
+      'name figures'
+      'door figures';
+    column-gap: var(--v3-space-md);
+    row-gap: 0;
+    pointer-events: auto;
+  }
+
+  .v3-atlas__card-close {
+    display: block;
+  }
+
+  .v3-atlas__card-kind { grid-area: kind; }
+
+  .v3-atlas__card-name {
+    grid-area: name;
+    padding-right: 0;
+    font-size: var(--v3-size-body-lg);
+    -webkit-line-clamp: 1;
+  }
+
+  .v3-atlas__card-figures {
+    grid-area: figures;
+    margin: 0;
+    grid-template-columns: auto auto;
+    column-gap: var(--v3-space-2xs);
+    align-self: center;
+  }
+
+  .v3-atlas__card-n {
+    font-size: var(--v3-size-body-lg);
+  }
+
+  .v3-atlas__card-door {
+    grid-area: door;
+    margin-top: 0;
+    min-height: 2rem;
+    line-height: 2rem;
+    font-size: var(--v3-size-body-sm);
+  }
 }
 
 /* The rail (split) --------------------------------------------------------- */
@@ -690,10 +739,11 @@
   min-width: 3.5rem;
 }
 
-/* The rail's card slot: fixed height, so hovering never shifts the rows. */
+/* The rail's card slot: fixed height ABOVE the list, so the reveal is in
+   view and hovering never shifts the rows. */
 .v3-atlas__rail-card {
-  min-height: 12.5rem;
-  margin-top: var(--v3-space-sm);
+  min-height: 11rem;
+  margin-bottom: var(--v3-space-sm);
 }
 
 .v3-atlas__rail-card .v3-atlas__card {

@@ -29,6 +29,7 @@ import {
   getAreaGuideVideo,
   getListingTiles,
   getGeoBoundaryMapData,
+  getCommunitySubdivisions,
   getAllCitySnapshots,
   getRecentBlogPosts,
   getDetachedOverlays,
@@ -75,6 +76,9 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
+import { publishRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -276,6 +280,28 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
   })
 
   const boundaryMapData = boundaryRead.value
+  // The living map, scoped to the neighborhood: every listing inside the
+  // recorded boundary, its plats as the touchable places. Same builder as
+  // the homepage (one source).
+  const [atlas, atlasPlats] = boundaryMapData.polygon
+    ? await Promise.all([
+        withTimeoutFallback(
+          buildPlaceAtlas({ cities: [cityName], boundary: boundaryMapData.polygon, label: neighborhood.name }),
+          null,
+          6000,
+          'nbh:atlas',
+        ),
+        withTimeoutFallback(getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), [], 4500, 'nbh:atlasPlats'),
+      ])
+    : [null, []]
+  const atlasRegions: AtlasRegion[] = boundaryMapData.polygon
+    ? [
+        { id: `neighborhood:${neighborhoodSlug}`, kind: 'town', kindLabel: 'Neighborhood', name: neighborhood.name, href: `/cities/${citySlug}/${neighborhoodSlug}`, geometry: boundaryMapData.polygon },
+        ...atlasPlats.slice(0, 80).map(
+          (cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'neighborhood', kindLabel: 'Subdivision', name: publishRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry }),
+        ),
+      ]
+    : []
   const inventory = inventoryRead
   // Counted set = SFR + PUBLIC_ACTIVE inside the recorded boundary. Same
   // payload as /neighborhoods and /cities/bend tiles. Do not fall back to pin
@@ -520,6 +546,22 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             <PlaceFaceStrip stats={face.stats} />
           </div>
         )}
+        {atlas && atlas.dots.length > 0 ? (
+          <V3Atlas
+            id="atlas"
+            variant="dots"
+            headingLevel={2}
+            headline={v3Text(`${neighborhood.name} right now`)}
+            dots={atlas.dots}
+            regions={atlasRegions}
+            types={atlas.types}
+            events={atlas.events}
+            source={atlas.source}
+            stamp={atlas.stamp}
+            incomplete={!atlas.complete}
+          />
+        ) : null}
+
         <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
 
         <div id="homes">
