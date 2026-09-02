@@ -112,6 +112,14 @@ export type {
  * one figure (range, sort, comparison). A client island; the panels arrive
  * server-rendered as children. An atom, not a seventh pattern.
  */
+/**
+ * The hover layer V3Chart mounts over a line plot: crosshair, a dot per
+ * series, the reading. Exported so the barrel stays whole; V3Chart mounts it.
+ */
+export { V3ChartHover } from './V3ChartHover.client'
+
+export type { V3ChartHoverProps, V3ChartHoverColumn, V3ChartHoverReading } from './V3ChartHover.client'
+
 export { V3ChartSwitch } from './V3ChartSwitch.client'
 
 export type { V3ChartSwitchProps, V3ChartSwitchItem } from './V3ChartSwitch.client'

@@ -27,10 +27,12 @@ import {
   buildLinePlot,
   buildMixPlot,
   buildRangePlot,
+  lineTicks,
   type AnyPlot,
   type PlotSeriesIn,
   type RangeBandIn,
 } from '@/lib/charts/plot'
+import { V3ChartHover, type V3ChartHoverColumn } from './V3ChartHover.client'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Chart.css'
@@ -143,6 +145,24 @@ export type V3ChartProps = {
   refLabel?: V3Text
   /** Per-point dots with a native <title> reading. Lines only. */
   marks?: boolean
+  /**
+   * The claim: one formatted sentence the chart exists to show, under the
+   * caption ("Median sale price $666K in Aug, up 3% from Aug 2025"). The
+   * headline is the hypothesis; the reader knows what to look for first.
+   */
+  claim?: V3Text
+  /** Y gridlines and their formatted labels. Lines only; out-of-domain ticks are dropped. */
+  yTicks?: readonly { value: number; label: V3Text }[]
+  /** X tick labels keyed like the points (`at`, or order). Lines only. */
+  xTicks?: readonly { at: number; label: V3Text }[]
+  /**
+   * Emphasis over categorical (TASTE.md): the first or last series in full
+   * ink with marks, the rest in navy tints. On a yoy overlay this replaces
+   * the five-hue run.
+   */
+  emphasize?: 'first' | 'last'
+  /** The crosshair-and-reading layer. On for lines unless turned off. */
+  hover?: boolean
   /**
    * Range rows only. Names what every row's `sample` counted, drawn ONCE
    * above the rows ("detached closes in the quarter"). A bare n is not a
@@ -282,6 +302,11 @@ export function V3Chart({
   refValue,
   refLabel,
   marks,
+  claim,
+  yTicks,
+  xTicks,
+  emphasize,
+  hover,
   sampleKey,
   rangeKeyLabel,
   rangeBaseKeyLabel,
@@ -336,6 +361,65 @@ export function V3Chart({
   })
   const captionId = id ? `${id}-caption` : undefined
   const yoy = overlay === 'yoy'
+  const lineCount = plot && plot.kind === 'line' ? plot.lines.length : 0
+  const emphasisIndex =
+    emphasize == null || lineCount === 0 ? null : emphasize === 'last' ? lineCount - 1 : 0
+  /* Which class a line (and its legend key) wears. Emphasis: full ink for
+     one series, tints by distance for the rest. Otherwise the yoy hue run or
+     the two-context ladder. */
+  const rankFrom = (i: number) => (emphasisIndex == null ? 0 : Math.min(Math.abs(i - emphasisIndex), 4))
+  const lineClass = (i: number) =>
+    emphasisIndex != null
+      ? i === emphasisIndex
+        ? 'v3-chart__line--em'
+        : `v3-chart__line--ctx${rankFrom(i)}`
+      : yoy
+        ? `v3-chart__line--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
+        : `v3-chart__line--${Math.min(i, 2)}`
+  const markClass = (i: number) =>
+    emphasisIndex != null
+      ? i === emphasisIndex
+        ? 'v3-chart__mark--em'
+        : `v3-chart__mark--ctx${rankFrom(i)}`
+      : yoy
+        ? `v3-chart__line--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
+        : `v3-chart__mark--${Math.min(i, 2)}`
+  const keyClass = (i: number) =>
+    emphasisIndex != null
+      ? i === emphasisIndex
+        ? 'v3-chart__key--em'
+        : `v3-chart__key--ctx${rankFrom(i)}`
+      : yoy
+        ? `v3-chart__key--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
+        : `v3-chart__key--${Math.min(i, V3_CHART_SEGMENT_SLOTS - 1)}`
+  const ticks =
+    plot && plot.kind === 'line'
+      ? lineTicks(
+          plot,
+          yTicks?.map((t) => ({ value: t.value, label: t.label })),
+          xTicks?.map((t) => ({ at: t.at, label: t.label })),
+        )
+      : { y: [], x: [] }
+  /* Hover columns: every series' reading at each plotted x, as fractions of
+     the plot box, in x order. */
+  const hoverColumns: V3ChartHoverColumn[] =
+    plot && plot.kind === 'line' && hover !== false
+      ? (() => {
+          const { l, t, w, h } = plot.scale
+          const byX = new Map<string, V3ChartHoverColumn>()
+          plot.lines.forEach((line, i) => {
+            for (const p of line.points) {
+              if (!p.plot) continue
+              const frac = (p.x - l) / (w || 1)
+              const key = frac.toFixed(3)
+              const col = byX.get(key) ?? { frac, tick: p.tick, readings: [] }
+              col.readings.push({ name: line.name, label: p.label, frac: (p.y - t) / (h || 1), emphasis: i === emphasisIndex })
+              byX.set(key, col)
+            }
+          })
+          return [...byX.values()].sort((a, b) => a.frac - b.frac)
+        })()
+      : []
 
   if (!plot) {
     if (!emptyReason || emptyReason.trim().length === 0) return null
@@ -385,18 +469,14 @@ export function V3Chart({
       <figcaption id={captionId} className="v3-chart__caption">
         {caption}
       </figcaption>
+      {claim ? <p className="v3-chart__claim">{claim}</p> : null}
 
       {keys.length > 1 ? (
         <ul className="v3-chart__legend">
           {keys.map((name, i) => (
             <li
               key={`${i}-${name}`}
-              className={cn(
-                'v3-chart__key',
-                yoy
-                  ? `v3-chart__key--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
-                  : `v3-chart__key--${Math.min(i, V3_CHART_SEGMENT_SLOTS - 1)}`,
-              )}
+              className={cn('v3-chart__key', keyClass(i))}
             >
               <span className="v3-chart__swatch" aria-hidden="true" />
               {name}
@@ -430,10 +510,20 @@ export function V3Chart({
 
       {plot.kind === 'line' ? (
         <div className="v3-chart__frame">
-          <div className="v3-chart__y" aria-hidden="true">
-            <span>{plot.yMaxLabel}</span>
-            <span>{plot.yMinLabel}</span>
-          </div>
+          {ticks.y.length >= 2 ? (
+            <div className="v3-chart__y v3-chart__y--ticks" aria-hidden="true">
+              {ticks.y.map((tk) => (
+                <span key={tk.label} className="v3-chart__ytick" style={{ top: `${tk.frac * 100}%` }}>
+                  {tk.label}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="v3-chart__y" aria-hidden="true">
+              <span>{plot.yMaxLabel}</span>
+              <span>{plot.yMinLabel}</span>
+            </div>
+          )}
           <div className="v3-chart__plot">
             <svg
               className="v3-chart__svg"
@@ -452,23 +542,21 @@ export function V3Chart({
                   height={b.h}
                 />
               ))}
+              {ticks.y.map((tk) => (
+                <line key={`g-${tk.label}`} className="v3-chart__grid" x1={2} y1={tk.y} x2={318} y2={tk.y} />
+              ))}
               <line className="v3-chart__axis-line" x1={2} y1={8} x2={2} y2={132} />
               <line className="v3-chart__axis-line" x1={2} y1={132} x2={318} y2={132} />
               {plot.lines.map((line, i) => (
                 <path
                   key={`${i}-${line.name}`}
-                  className={cn(
-                    'v3-chart__line',
-                    yoy
-                      ? `v3-chart__line--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
-                      : `v3-chart__line--${Math.min(i, 2)}`,
-                  )}
+                  className={cn('v3-chart__line', lineClass(i))}
                   d={line.d}
                 />
               ))}
-              {marks
+              {marks || emphasisIndex != null
                 ? plot.lines.map((line, i) =>
-                    line.points
+                    (marks || i === emphasisIndex ? line.points : [])
                       .filter((p) => p.plot)
                       .map((p, j) => (
                         // A zero-length round-capped stroke with
@@ -477,12 +565,7 @@ export function V3Chart({
                         // here would draw as an ellipse.
                         <path
                           key={`m-${i}-${j}`}
-                          className={cn(
-                            'v3-chart__mark',
-                            yoy
-                              ? `v3-chart__line--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
-                              : `v3-chart__mark--${Math.min(i, 2)}`,
-                          )}
+                          className={cn('v3-chart__mark', markClass(i))}
                           d={`M${p.x.toFixed(2)},${p.y.toFixed(2)} l0.01,0`}
                         >
                           <title>{`${line.name} — ${p.tick}: ${p.label}`}</title>
@@ -491,11 +574,22 @@ export function V3Chart({
                   )
                 : null}
             </svg>
+            {hoverColumns.length > 0 ? <V3ChartHover columns={hoverColumns} label={caption} /> : null}
           </div>
-          <div className="v3-chart__x" aria-hidden="true">
-            <span>{plot.xStart}</span>
-            <span>{plot.xEnd}</span>
-          </div>
+          {ticks.x.length >= 2 ? (
+            <div className="v3-chart__x v3-chart__x--ticks" aria-hidden="true">
+              {ticks.x.map((tk) => (
+                <span key={`${tk.label}-${tk.frac.toFixed(3)}`} className="v3-chart__xtick" style={{ left: `${tk.frac * 100}%` }}>
+                  {tk.label}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="v3-chart__x" aria-hidden="true">
+              <span>{plot.xStart}</span>
+              <span>{plot.xEnd}</span>
+            </div>
+          )}
         </div>
       ) : null}
 

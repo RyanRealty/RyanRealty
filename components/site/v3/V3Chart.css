@@ -553,3 +553,203 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   The claim. One formatted sentence under the caption: what the chart is
+   for, before the reader looks (TASTE.md, the claim-first habit).
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__claim {
+  margin: 0 0 var(--v3-space-xs);
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-body);
+}
+
+/* ---------------------------------------------------------------------------
+   Ticks and gridlines. Labels are HTML placed by percentage; the gridline is
+   a hairline in the SVG at the same y. Never more than the caller passed.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__grid {
+  fill: none;
+  stroke: var(--v3-hairline);
+  stroke-width: 1px;
+  stroke-dasharray: 2 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3 .v3-chart__y--ticks {
+  position: relative;
+  display: block;
+  min-width: 3.2rem;
+  padding: 0;
+}
+
+.v3 .v3-chart__ytick {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-chart__x--ticks {
+  position: relative;
+  display: block;
+  height: 1.2em;
+}
+
+.v3 .v3-chart__xtick {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-chart__xtick:first-child {
+  transform: translateX(0);
+}
+
+.v3 .v3-chart__xtick:last-child {
+  transform: translateX(-100%);
+}
+
+/* ---------------------------------------------------------------------------
+   Emphasis. One series in full ink with marks; the others by distance, in
+   navy tints and a thinner stroke. Replaces the five-hue run when a chart
+   asks for it — the house rule is emphasis over categorical.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__line--em {
+  stroke: var(--v3-ink);
+  stroke-width: var(--v3-chart-stroke);
+}
+
+.v3 .v3-chart__line--ctx1 { stroke: color-mix(in srgb, var(--v3-ink) 48%, transparent); stroke-width: var(--v3-chart-stroke-context); }
+.v3 .v3-chart__line--ctx2 { stroke: color-mix(in srgb, var(--v3-ink) 34%, transparent); stroke-width: var(--v3-chart-stroke-context); }
+.v3 .v3-chart__line--ctx3 { stroke: color-mix(in srgb, var(--v3-ink) 24%, transparent); stroke-width: var(--v3-chart-stroke-context); }
+.v3 .v3-chart__line--ctx4 { stroke: color-mix(in srgb, var(--v3-ink) 16%, transparent); stroke-width: var(--v3-chart-stroke-context); }
+
+.v3 .v3-chart__mark--em { stroke: var(--v3-ink); }
+.v3 .v3-chart__mark--ctx1,
+.v3 .v3-chart__mark--ctx2,
+.v3 .v3-chart__mark--ctx3,
+.v3 .v3-chart__mark--ctx4 { stroke: var(--v3-ink-muted); }
+
+.v3 .v3-chart__key--em .v3-chart__swatch { border-top-style: solid; border-top-color: var(--v3-ink); }
+.v3 .v3-chart__key--ctx1 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 48%, transparent); }
+.v3 .v3-chart__key--ctx2 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 34%, transparent); }
+.v3 .v3-chart__key--ctx3 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 24%, transparent); }
+.v3 .v3-chart__key--ctx4 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 16%, transparent); }
+
+/* ---------------------------------------------------------------------------
+   The hover layer. Over the plot, never in the SVG. A crosshair, a dot per
+   series, and the reading in a small cream panel that flips sides past the
+   right third. Keyboard: the layer is focusable and reads on arrow keys.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__plot {
+  position: relative;
+}
+
+.v3 .v3-chart__hover {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: pan-y;
+  outline: none;
+}
+
+.v3 .v3-chart__hover:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-chart__crosshair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--v3-ink) 40%, transparent);
+  pointer-events: none;
+}
+
+.v3 .v3-chart__hoverdot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--v3-ink-muted);
+  border: 2px solid var(--v3-cream);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.v3 .v3-chart__hoverdot--em {
+  width: 10px;
+  height: 10px;
+  background: var(--v3-ink);
+}
+
+.v3 .v3-chart__tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(10px);
+  min-width: 9rem;
+  padding: var(--v3-space-2xs) var(--v3-space-xs);
+  background: var(--v3-cream);
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  box-shadow: var(--v3-media-shadow);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.v3 .v3-chart__tip--flip {
+  transform: translateX(calc(-100% - 10px));
+}
+
+.v3 .v3-chart__tip-tick {
+  margin: 0 0 var(--v3-space-3xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3 .v3-chart__tip-list {
+  margin: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.v3 .v3-chart__tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__tip-row dt,
+.v3 .v3-chart__tip-row dd {
+  margin: 0;
+}
+
+.v3 .v3-chart__tip-row--em {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3 .v3-chart__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}

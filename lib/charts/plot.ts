@@ -34,9 +34,16 @@ export type PlottedPoint = {
   tick: string
 }
 
+/** A y tick the caller formatted: where it sits and what it says. */
+export type PlotTickIn = { value: number; label: string }
+/** An x tick keyed the way the points are (`at`, or order when no `at`). */
+export type PlotXTickIn = { at: number; label: string }
+
 export type LinePlot = {
   kind: 'line'
   lines: { name: string; d: string; points: PlottedPoint[] }[]
+  /** The plot box in viewBox units and the value scale that filled it. */
+  scale: { l: number; t: number; w: number; h: number; y0: number; y1: number; xMin: number; xMax: number; useAt: boolean }
   /** Threshold zones behind the lines, clamped to the data's y-domain. */
   bands: { y: number; h: number; label: string }[]
   yMinLabel: string
@@ -293,6 +300,7 @@ export function buildLinePlot(
   return {
     kind: 'line',
     lines,
+    scale: { l: PAD.l, t: PAD.t, w: plotW, h: plotH, y0, y1, xMin, xMax, useAt },
     bands,
     yMinLabel,
     yMaxLabel,
@@ -560,4 +568,31 @@ export function buildMixPlot(
     vbW: VB_W,
     vbH: MIX_H,
   }
+}
+
+/**
+ * Tick positions for a line plot, from the caller's formatted ticks. Ticks
+ * outside the plotted domain are dropped; the atom never invents a label.
+ */
+export function lineTicks(
+  plot: LinePlot,
+  yTicks: readonly PlotTickIn[] | undefined,
+  xTicks: readonly PlotXTickIn[] | undefined,
+): { y: { y: number; frac: number; label: string }[]; x: { x: number; frac: number; label: string }[] } {
+  const { l, t, w, h, y0, y1, xMin, xMax } = plot.scale
+  const yRange = y1 - y0 || 1
+  const xSpan = xMax - xMin || 1
+  const y = (yTicks ?? [])
+    .filter((tk) => isFiniteNumber(tk.value) && tk.value >= y0 && tk.value <= y1 && tk.label.trim().length > 0)
+    .map((tk) => {
+      const frac = 1 - (tk.value - y0) / yRange
+      return { y: t + frac * h, frac, label: tk.label }
+    })
+  const x = (xTicks ?? [])
+    .filter((tk) => isFiniteNumber(tk.at) && tk.at >= xMin && tk.at <= xMax && tk.label.trim().length > 0)
+    .map((tk) => {
+      const frac = (tk.at - xMin) / xSpan
+      return { x: l + frac * w, frac, label: tk.label }
+    })
+  return { y, x }
 }
