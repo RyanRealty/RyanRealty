@@ -15,7 +15,7 @@
  * Disclosure stays on the asking step: "One email per new listing. Unsubscribe
  * any time." Confirmation repeats frequency and how to stop.
  *
- * `#listing-like-alerts` is the jump target for PriceCtaStrip and
+ * `#listing-like-alerts` is the jump target for PriceCtaStrip, RoomRestyle, and
  * ListingAlertCoach. It lives on this Sheet.
  */
 
