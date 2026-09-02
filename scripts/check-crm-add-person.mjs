@@ -27,6 +27,10 @@ const listView = read('components/admin/shared/people-list/PeopleListView.tsx')
 const addDialog = read('components/admin/shared/people-list/AddPersonDialog.tsx')
 const crmPage = read('app/admin/(protected)/crm/page.tsx')
 const listAction = read('app/actions/crm.ts')
+// createCrmContactAction (app/actions/crm.ts) was deleted 2026-09-01 as a
+// zero-caller duplicate — the dialog's ONE create path is
+// createQuickContactAction in crm-quick-add.ts, which the create checks pin.
+const createAction = read('app/actions/crm-quick-add.ts')
 const savedViews = read('lib/data/crm/getCrmSavedViews.ts')
 const personPage = read('app/admin/(protected)/people/[id]/page.tsx')
 const personLoading = read('app/admin/(protected)/people/[id]/loading.tsx')
@@ -102,14 +106,14 @@ if (
 if (!/input\.email\.trim\(\) \|\| input\.phone\.trim\(\)/.test(createContact)) {
   fails.push('canSubmitCreateContact must accept an email-only contact (email OR phone), never require both')
 }
-if (!/createContactAddress/.test(listAction) || !/persistCreatedContactAddress/.test(listAction)) {
-  fails.push('createCrmContactAction must persist the structured address after create')
+if (!/createContactAddress/.test(createAction) || !/persistCreatedContactAddress/.test(createAction)) {
+  fails.push('createQuickContactAction must persist the structured address after create')
 }
 if (!/update\(\{ addresses:/.test(persistCreated) || !/crm_people/.test(persistCreated)) {
   fails.push('persistCreatedContactAddress must write crm_people.addresses')
 }
-if (/message: note/.test(listAction) || /Added manually in the CRM/.test(listAction)) {
-  fails.push('createCrmContactAction must not write the address or a default line as a note')
+if (/message: note/.test(createAction) || /Added manually in the CRM/.test(createAction)) {
+  fails.push('createQuickContactAction must not write the address or a default line as a note')
 }
 if (!/includeCounts:\s*false/.test(crmPage)) {
   fails.push('/admin/crm must load saved views without per-list exact counts on first paint')
