@@ -85,6 +85,19 @@ verdict, days to pending; Sell: sold 30d + days to pending. The phone overlay pr
 under each group. About carries links only (no honest aggregate for reviews in the repo yet — the
 reviews page deliberately prints no aggregateRating).
 
+**ATLAS PASS FIVE GRADED, PASS SIX BUILT:** evaluator pass five (scratchpad `atlas-eval-5.md`):
+dots 83 · split 77 · heat 66 · Tetherow 69 · Bend 79 · Larkspur 64 · chart 77. Twelve of thirteen
+pass-five claims verified. Pass six closes R1 (hit strokes stole interior taps → hits are `<use>`
+clones UNDER the places; halos are `<use>` clones too, so the geometry ships once, not three times
+— R4), R3 (five more recorder-residue classes in `lib/atlas/place-names.ts`, tested), R5 (desktop
+card names clamp at 4 lines), R6 (the source details reconcile counted cities with drawn outlines),
+R7 (place pages render the Atlas with `EMPTY_PLACE_ATLAS` instead of deleting the section), R8
+(wide boundary on a phone takes its aspect), R9/R10 (chart touch reading holds after the finger
+lifts; the tooltip is a strip under the plot on phones), R11 (rail card labels wrap). Open: R2
+(a phone cannot reach 13/27 homepage places under 20px — needs a zoom or a list door), R12 (claim
+percentage from the printed values — do it in `lib/charts/ticks.ts` `yoyClaim` after the chart
+rollout merge).
+
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
 2. Design the place-page class as a composed page, not stacked sections: an interactive

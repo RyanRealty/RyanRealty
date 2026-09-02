@@ -753,3 +753,47 @@
   border: 0;
   clip-path: inset(50%);
 }
+
+/* On a phone the reading is one line in a band reserved above the plot, never
+   a card over it: a 144px card on a 276px plot hid half the chart and clipped
+   at the right (pass five, R10). The crosshair and dots still mark the column;
+   the band is part of the plot box, so the layer's top: 0 lands in it. */
+@media (max-width: 47.99rem) {
+  .v3 .v3-chart__plot {
+    padding-top: 1.75rem;
+  }
+
+  .v3 .v3-chart__tip,
+  .v3 .v3-chart__tip--flip {
+    top: 0;
+    left: 0 !important;
+    right: 0;
+    min-width: 0;
+    padding: 0.1rem 0.25rem;
+    transform: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--v3-space-xs);
+    border: 0;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--v3-cream) 94%, transparent);
+    font-size: var(--v3-size-eyebrow);
+    line-height: 1.35;
+  }
+
+  .v3 .v3-chart__tip-tick {
+    margin: 0;
+  }
+
+  .v3 .v3-chart__tip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--v3-space-xs);
+  }
+
+  .v3 .v3-chart__tip-row {
+    display: inline-flex;
+    gap: var(--v3-space-3xs);
+  }
+}

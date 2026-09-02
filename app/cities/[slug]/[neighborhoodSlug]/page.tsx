@@ -77,7 +77,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
-import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
+import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { atlasRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -520,6 +520,9 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     })
   }
 
+  // The read may not have completed: render the Atlas anyway, with its
+  // honest sentence, instead of deleting the section (pass five, R7).
+  const atlasView = atlas ?? EMPTY_PLACE_ATLAS
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -546,21 +549,21 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             <PlaceFaceStrip stats={face.stats} />
           </div>
         )}
-        {atlas && atlas.dots.length > 0 ? (
+        {(
           <V3Atlas
             id="atlas"
             variant="dots"
             headingLevel={2}
             headline={v3Text(`${neighborhood.name} right now`)}
-            dots={atlas.dots}
+            dots={atlasView.dots}
             regions={atlasRegions}
-            types={atlas.types}
-            events={atlas.events}
-            source={atlas.source}
-            stamp={atlas.stamp}
-            incomplete={!atlas.complete}
+            types={atlasView.types}
+            events={atlasView.events}
+            source={atlasView.source}
+            stamp={atlasView.stamp}
+            incomplete={!atlasView.complete}
           />
-        ) : null}
+        )}
 
         <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
 

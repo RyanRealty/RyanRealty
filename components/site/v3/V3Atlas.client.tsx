@@ -697,18 +697,34 @@ export function V3Atlas({
                     })}
                   </g>
                 ) : null}
-                {/* 3. Halos under every place outline, so it reads over the field. */}
-                <g className="v3-atlas__halos" aria-hidden="true">
-                  {places.map((s) => (
-                    <path key={`h-${s.id}`} d={s.d} className="v3-atlas__halo" />
+                {/* 3. Hit clones UNDER the places: a wide transparent edge that
+                    takes the taps landing in the gaps between fills on a phone.
+                    An interior tap reaches the place itself first (R1). */}
+                <g className="v3-atlas__hits" aria-hidden="true">
+                  {places.map((s, i) => (
+                    <use
+                      key={`t-${s.id}`}
+                      href={`#${uid}-p-${i}`}
+                      className="v3-atlas__hit"
+                      onPointerEnter={() => setHover(s.id)}
+                      onClick={() => pin(s)}
+                    />
                   ))}
                 </g>
-                {/* 4. Places: the doors. A place with nothing on it stays a
-                    door but wears less ink. */}
+                {/* 4. Halos: the same places cloned in cream, so every outline
+                    reads over the field. */}
+                <g className="v3-atlas__halos" aria-hidden="true">
+                  {places.map((s, i) => (
+                    <use key={`h-${s.id}`} href={`#${uid}-p-${i}`} />
+                  ))}
+                </g>
+                {/* 5. Places: the doors, and the one copy of every path. A place
+                    with nothing on it stays a door but wears less ink. */}
                 <g className="v3-atlas__places">
-                  {places.map((s) => (
+                  {places.map((s, i) => (
                     <path
                       key={s.id}
+                      id={`${uid}-p-${i}`}
                       d={s.d}
                       className={cn(
                         'v3-atlas__place',
@@ -717,19 +733,6 @@ export function V3Atlas({
                         (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
                         active === s.id && 'is-active',
                       )}
-                      onPointerEnter={() => setHover(s.id)}
-                      onClick={() => pin(s)}
-                    />
-                  ))}
-                </g>
-                {/* 5. Hit strokes: a wide transparent edge on phones, so a
-                    silhouette narrower than a thumb still takes the tap. */}
-                <g className="v3-atlas__hits" aria-hidden="true">
-                  {places.map((s) => (
-                    <path
-                      key={`t-${s.id}`}
-                      d={s.d}
-                      className="v3-atlas__hit"
                       onPointerEnter={() => setHover(s.id)}
                       onClick={() => pin(s)}
                     />
@@ -831,6 +834,9 @@ export function V3Atlas({
               <summary className="v3-atlas__source-summary">Source{stamp ? ` · updated ${stamp}` : ''}</summary>
               <p className="v3-atlas__source-body">
                 {source}
+                {towns.length > 1
+                  ? ` The map outlines the ${towns.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
+                  : ''}
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
               </p>
             </details>

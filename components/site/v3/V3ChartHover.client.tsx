@@ -11,7 +11,7 @@
  * interactive (TASTE.md: a chart the reader cannot interrogate is a picture
  * of a chart); this is the interrogation.
  */
-import { useCallback, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export type V3ChartHoverReading = { name: string; label: string; frac: number; emphasis: boolean }
@@ -26,6 +26,9 @@ export type V3ChartHoverProps = {
 
 export function V3ChartHover({ columns, label }: V3ChartHoverProps) {
   const [active, setActive] = useState<number | null>(null)
+  // A touch reading stays after the finger lifts (a phone has no hover to
+  // hold it); the next tap outside the plot clears it.
+  const [held, setHeld] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const uid = useId()
   const fracs = useMemo(() => columns.map((c) => c.frac), [columns])
@@ -55,9 +58,23 @@ export function V3ChartHover({ columns, label }: V3ChartHoverProps) {
     (e: React.PointerEvent) => {
       const i = nearest(e.clientX)
       if (i != null) setActive(i)
+      if (e.pointerType === 'touch') setHeld(true)
     },
     [nearest],
   )
+
+  useEffect(() => {
+    if (!held) return
+    const el = ref.current
+    const onDown = (e: PointerEvent) => {
+      if (el && !el.contains(e.target as Node)) {
+        setHeld(false)
+        setActive(null)
+      }
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [held])
 
   const onKey = (e: React.KeyboardEvent) => {
     if (columns.length === 0) return
@@ -91,8 +108,12 @@ export function V3ChartHover({ columns, label }: V3ChartHoverProps) {
       tabIndex={0}
       onPointerMove={onMove}
       onPointerDown={onMove}
-      onPointerLeave={() => setActive(null)}
-      onBlur={() => setActive(null)}
+      onPointerLeave={(e) => {
+        if (e.pointerType !== 'touch' && !held) setActive(null)
+      }}
+      onBlur={() => {
+        if (!held) setActive(null)
+      }}
       onKeyDown={onKey}
     >
       {col ? (

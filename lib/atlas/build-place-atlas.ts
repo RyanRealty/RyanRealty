@@ -209,6 +209,22 @@ function hashGeometry(g: GeoJSON.Geometry | null | undefined): string {
 }
 
 /** The whole population for a scope, in one call — the compact form. */
+/**
+ * The population a page renders when the read did not complete: no dots, no
+ * counts, `complete: false`, so the Atlas prints its one honest sentence
+ * instead of the page deleting the section (pass five, R7).
+ */
+export const EMPTY_PLACE_ATLAS: AtlasPopulation = {
+  dots: [],
+  types: [],
+  events: [],
+  source: 'The listing read did not complete on this refresh.',
+  stamp: '',
+  counts: { forSale: 0, pending: 0, sold: 0, cities: 0 },
+  tiles: [],
+  complete: false,
+}
+
 async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promise<Omit<AtlasPopulation, 'tiles'>> {
   const { tiles: all, complete, readAt } = await readAtlasTiles(scope.cities, nowMs)
   const tiles = tilesInside(all, scope.boundary)
