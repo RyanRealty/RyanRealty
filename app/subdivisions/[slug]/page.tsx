@@ -147,6 +147,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, V3Quiet, type AtlasRegion } from '@/components/site/v3'
+import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -404,6 +405,16 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // failed read prints — a plat with no boundary and no listings has nothing
   // to draw, and nothing failed.
   const canMapAtlas = placeCity != null && (Boolean(seedRing && boundary.polygon) || mapTiles.length > 0)
+  // The lots inside the plat: what a plat actually is. Capped, simplified
+  // server-side, and only where the county has a recorded boundary to clip to.
+  const platLots = hasBoundary
+    ? await withTimeoutFallback(
+        getTaxlotsInBoundary({ geoType: 'subdivision', geoSlug: slug, maxLots: 320 }).catch(() => []),
+        [],
+        5000,
+        'sub:taxlots',
+      )
+    : []
   const atlas = canMapAtlas && placeCity != null
     ? await withTimeoutFallback(
         buildPlaceAtlas(
@@ -666,9 +677,10 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
               dots: atlasView.dots,
               fit: atlasRegions.length > 0 ? 'regions' : 'dots',
             })}
+            parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
             types={atlasView.types}
             events={atlasView.events}
-            source={atlasView.source}
+            source={platLots.length > 0 ? `${atlasView.source} ${TAXLOT_DISCLAIMER}` : atlasView.source}
             stamp={atlasView.stamp}
             incomplete={!atlasView.complete}
             {...(atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}

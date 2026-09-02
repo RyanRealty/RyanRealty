@@ -1634,3 +1634,25 @@
     box-shadow: inset 0 0 0 2px var(--v3-cream);
   }
 }
+
+/* The lot line's own words. A drawn boundary invites a reader to rely on it,
+   so the acreage and the disclaimer sit beside the map rather than in a
+   footer — the county's data is an assessor's map, not a survey. */
+.listing-detail__lot {
+  margin-top: var(--v3-space-xs);
+}
+
+.listing-detail__lot-figure {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.listing-detail__lot-note {
+  margin: var(--v3-space-3xs) 0 0;
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}

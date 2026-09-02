@@ -559,6 +559,31 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* Lot lines. The assessor's recorded parcel shape, never a survey: the subject
+   lot in full ink so a reader knows which one the page is about, its
+   neighbours as hairlines so the subject reads as part of a fabric rather than
+   a claim we drew on its own. */
+.v3-atlas__parcels {
+  pointer-events: none;
+}
+
+.v3-atlas__parcel {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 20%, transparent);
+  stroke-width: 0.7;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The subject lot has to be findable at the frame the page actually draws: a
+   0.18-acre lot on a two-kilometre map is about eight pixels across, so the
+   line alone is not enough. A fill gives the eye something to land on. */
+.v3-atlas__parcel.is-subject {
+  fill: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  stroke: var(--v3-navy);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
 .v3-atlas__town {
   fill: color-mix(in srgb, var(--v3-navy) 5%, transparent);
   stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);

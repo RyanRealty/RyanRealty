@@ -869,3 +869,8 @@ export type {
 } from './tc/form-catalog'
 export { getPlacePopularity } from '@/lib/data/analytics/getPlacePopularity'
 export type { PlacePopularityResult, PlacePopularityRow, PlaceKind } from '@/lib/data/analytics/getPlacePopularity'
+
+/* Lot lines: the county assessor's recorded parcel shapes. Never a survey —
+   a surface that draws one carries TAXLOT_DISCLAIMER beside the map. */
+export { getTaxlotsNear, getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from './geo/getTaxlots'
+export type { Taxlot, TaxlotsNearInput, TaxlotsInBoundaryInput } from './geo/getTaxlots'

@@ -11,7 +11,7 @@
 import type { AtlasRegion } from '@/components/site/v3'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS, type AtlasPopulation } from '@/lib/atlas/build-place-atlas'
 import { atlasRegionNames } from '@/lib/atlas/place-names'
-import { getBoundaryGeoJSON, getCommunitySubdivisions } from '@/lib/data'
+import { getBoundaryGeoJSON, getCommunitySubdivisions, getTaxlotsNear, type Taxlot } from '@/lib/data'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { outerRings, pointInRings } from '@/lib/geo/project-svg'
 import {
@@ -42,6 +42,10 @@ export type ListingAtlasScope = {
 export type ListingAtlas = {
   atlas: AtlasPopulation
   regions: AtlasRegion[]
+  /** The lot this home sits on, and the lots around it. Empty off the map. */
+  parcels: Taxlot[]
+  /** The subject lot, when the county has one under this home's coordinate. */
+  subjectParcel: Taxlot | null
   /** How many places with a recorded boundary the frame holds (the outlines are a subset). */
   outlinedOf: number
   /** True when the frame is the dots' own extent: a city with no recorded boundary. */
@@ -85,7 +89,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   // No recorded boundary (a city outside the mapped set): the frame is the
   // city's own listings, no outlines — one section for every listing, never a
   // different map by city (pass four, E13).
-  const [atlasRead, plats] = await Promise.all([
+  const [atlasRead, plats, parcels] = await Promise.all([
     withTimeoutFallback(
       buildPlaceAtlas(boundary ? { cities: [scope.city], boundary, label: frameName } : { cities: [scope.city], label: frameName }).catch(() => null),
       null,
@@ -103,6 +107,16 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
       READ_MS,
       'listing:atlasPlats',
     ),
+    // Lot lines: the county's recorded shape of this parcel and the ones it
+    // touches. A read that fails costs the page nothing but the lot line.
+    scope.lat != null && scope.lng != null
+      ? withTimeoutFallback(
+          getTaxlotsNear({ lat: scope.lat, lng: scope.lng, radiusMeters: 140, maxLots: 20 }).catch(() => []),
+          [],
+          READ_MS,
+          'listing:taxlots',
+        )
+      : Promise.resolve([] as Taxlot[]),
   ])
 
   const withGeometry = plats.filter((c) => !!c.geometry)
@@ -147,6 +161,8 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   return {
     atlas: atlasRead ?? EMPTY_PLACE_ATLAS,
     regions,
+    parcels,
+    subjectParcel: parcels.find((p) => p.isSubject) ?? null,
     frameName,
     frameHref,
     outlinedOf: (boundary ? 1 : 0) + withGeometry.length,

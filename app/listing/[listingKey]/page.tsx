@@ -95,7 +95,8 @@ import {
   V3Atlas,
   v3Text,
 } from '@/components/site/v3'
-import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { basemapForRegions, basemapForFrame, bboxOfGeometry } from '@/lib/geo/basemap-source'
+import { TAXLOT_DISCLAIMER } from '@/lib/data'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
@@ -561,6 +562,47 @@ export default async function ListingDetailPage({ params }: PageProps) {
           ratePct={calcDefaults?.mortgageRate ?? null}
         />
       ) : null}
+      {listingAtlas?.subjectParcel ? (
+        <V3Atlas
+          id="lot"
+          headingLevel={2}
+          headline={v3Text('The lot')}
+          dots={listingAtlas.atlas.dots.filter((d) => d.k === listing.listingKey)}
+          regions={[]}
+          frame={listingAtlas.subjectParcel.geometry}
+          basemap={basemapForFrame({ bbox: bboxOfGeometry(listingAtlas.subjectParcel.geometry) })}
+          quiet
+          types={[]}
+          events={[]}
+          source={`${listingAtlas.subjectParcel.acres != null ? `${listingAtlas.subjectParcel.acres.toLocaleString('en-US', { maximumFractionDigits: 2 })} acres on the county assessor's map. ` : ''}Tax lot ${listingAtlas.subjectParcel.taxlot}, Deschutes County Assessor. ${TAXLOT_DISCLAIMER}`}
+          highlight={{ key: listing.listingKey, label: 'This home' }}
+          parcels={listingAtlas.parcels.map((lot) => ({
+            id: lot.taxlot,
+            subject: lot.isSubject,
+            name: lot.isSubject ? 'This lot' : undefined,
+            geometry: lot.geometry,
+          }))}
+          className="is-stacked"
+        >
+          <p className="listing-detail__lot-figure">
+            <strong>
+              {listingAtlas.subjectParcel.acres != null
+                ? `${listingAtlas.subjectParcel.acres.toLocaleString('en-US', { maximumFractionDigits: 2 })} acres`
+                : 'Lot outlined'}
+            </strong>{' '}
+            on the county assessor&rsquo;s map, tax lot {listingAtlas.subjectParcel.taxlot}
+            {listingAtlas.subjectParcel.dialUrl ? (
+              <>
+                {' · '}
+                <a href={listingAtlas.subjectParcel.dialUrl} rel="nofollow noreferrer" target="_blank">
+                  County record
+                </a>
+              </>
+            ) : null}
+          </p>
+          <p className="listing-detail__lot-note">{TAXLOT_DISCLAIMER}</p>
+        </V3Atlas>
+      ) : null}
       {listingAtlas ? (
         <V3Atlas
           id="location"
@@ -580,6 +622,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
           highlight={{ key: listing.listingKey, label: 'This home' }}
           outlinedOf={listingAtlas.outlinedOf}
           fit={listingAtlas.dotsFrame ? 'dots' : 'regions'}
+          parcels={listingAtlas.parcels.map((lot) => ({
+            id: lot.taxlot,
+            subject: lot.isSubject,
+            name: lot.isSubject ? 'This lot' : undefined,
+            geometry: lot.geometry,
+          }))}
           className="is-stacked"
         >
           {buildLifestyleLine({ city: listing.city }) ? (

@@ -177,6 +177,41 @@ simplified per class), a DAL read by bbox + class, and an Atlas layer under the 
 the region frame; arterials + local streets + the river inside a neighborhood frame). Never a
 Google/Mapbox tile layer under the SVG (different projection, per-view cost, foreign style).
 
+**LOT LINES ARE IN (Matt asked for them 2026-09-02, and answered the four scoping questions:
+Deschutes free first, subject parcel plus faint neighbours, also subdivision + CMA + land, and
+publish the assessor's acreage as its own figure).**
+
+- **Source.** Deschutes County's own open layer, `OpenData/LandFD/MapServer/2` — 109,505 parcels,
+  and the one endpoint of three where TAXLOT is unique (the county's hosted AGOL copy has 39
+  duplicate ids; `Dial2_Taxlots` inflates to 112,381 rows through a one-to-many mailing join).
+  Licence on the county's own item: "Free to download and use", attribution "Deschutes County -
+  Assessor's Office".
+- **Storage.** `public.taxlots` (PostGIS MultiPolygon, GIST, unique on county+taxlot, acres
+  computed on the spheroid at ingest). RLS on, no anon policy: reads go through SECURITY DEFINER
+  `taxlots_near_point()` and `taxlots_in_boundary()`, which CLIP and SIMPLIFY server-side to the
+  resolution the frame can draw. That is the whole efficiency answer — a listing frame ships 20
+  lots at 186 bytes each, about 4 KB, rather than the 333 KB the raw fabric would cost.
+- **Ingest.** `scripts/gis/import-taxlots.mjs --bulk` uses the county's whole-layer export: 123 MB
+  in twelve seconds, against 438 paged requests the service serves very slowly through the
+  large-lot ranges. The export is EPSG:3857, so `upsert_taxlots` takes a source SRID and PostGIS
+  reprojects. The paged walk survives for a county with no bulk item.
+- **Staying current.** NOT a re-ingest. The county stamps every lot with an edit date, and the
+  churn is tiny: 3 lots in the week to 2026-09-02, 31 in the month, 1,462 year to date. So
+  `/api/cron/taxlot-refresh` (nightly, 09:20 UTC, registered in vercel.json) asks what changed
+  since the last clean run and pulls only those. The cutoff lives in `public.taxlot_refreshes`,
+  not in code, and a run that could not read part of its window is marked not-ok so the next one
+  re-covers it.
+- **Where it draws.** `V3Atlas` takes `parcels`: the subject lot in full navy, its neighbours as
+  hairlines. The listing page prints the assessor's acreage, the tax lot id and a link to the
+  county record; the subdivision page draws the lots inside the plat. Both carry
+  `TAXLOT_DISCLAIMER` — an assessor's map is not a survey, and it sits beside the map, never in a
+  footer.
+- **Not done yet:** the CMA and valuation surfaces (Matt asked for a comp's parcel beside the
+  subject's, and an acreage cross-check against the MLS figure), and the other seven counties.
+  Jackson and Klamath both publish taxlots; Crook, Jefferson and Josephine surfaced no county
+  layer in a catalog search. Regrid is the one-integration commercial option if Matt wants
+  uniform coverage.
+
 **ROUND SIX IS IN (all seven surfaces).** Scores: reviews 66, subdivision 41, team-matt 62,
 listing-bend 63, listing-noboundary 55, homepage 65, about 64. It caught FOUR regressions in the
 round-five fixes, all now fixed and pushed:

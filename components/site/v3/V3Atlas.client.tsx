@@ -104,6 +104,14 @@ export type AtlasRegion = {
 
 export type AtlasType = { key: string; label: string }
 
+/** One lot line. `subject` is the lot the page's own home sits on. */
+export type AtlasParcel = {
+  id: string
+  subject: boolean
+  name?: string
+  geometry: GeoJSON.Geometry
+}
+
 
 export type V3AtlasProps = {
   id: string
@@ -150,6 +158,26 @@ export type V3AtlasProps = {
    * frame by the page (lib/geo/basemap-source.ts); absent, the map draws none.
    */
   basemap?: Basemap | null
+  /**
+   * Lot lines: the parcel the page is about, and the parcels around it. From
+   * the county assessor's cadastral layer, so it is the recorded shape of a
+   * lot and NOT a survey — a page drawing these carries the disclaimer beside
+   * the map (lib/data/geo/getTaxlots.ts, TAXLOT_DISCLAIMER).
+   */
+  parcels?: readonly AtlasParcel[]
+  /**
+   * Frame the map on this geometry and nothing else. Not drawn — it only sets
+   * the projection. A lot view needs it: a 0.18-acre parcel on a map framed by
+   * its neighborhood renders four pixels across, which is a line nobody can
+   * read.
+   */
+  frame?: GeoJSON.Geometry | null
+  /**
+   * This map is one object, not a population: no type switches, no price
+   * scrubber, no count claim. A lot view has one dot and one polygon, and
+   * "1 listing of every type for sale, slide the price" is noise on it.
+   */
+  quiet?: boolean
   children?: ReactNode
   className?: string
 }
@@ -243,6 +271,9 @@ export function V3Atlas({
   highlight,
   outlinedOf,
   basemap,
+  parcels,
+  frame,
+  quiet,
   noun: nounProp,
   incomplete,
   events,
@@ -266,6 +297,11 @@ export function V3Atlas({
   }, [regions])
 
   const proj = useMemo(() => {
+    // An explicit frame wins: the caller has told the map what it is about.
+    if (frame) {
+      const framed = bboxOfRings(outerRings(frame))
+      if (framed) return makeProjection(padBbox(framed, 0.6), 1000)
+    }
     // Frame the basin, not the outliers: the base silhouettes plus the dots'
     // 1st–99th percentile in each axis. A lone listing an hour into the high
     // desert stays counted (the source says so) without shrinking the map.
@@ -297,13 +333,22 @@ export function V3Atlas({
     const b = bboxOfRings(core.length > 0 ? [...baseRings, core] : baseRings)
     const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
     return makeProjection(padded, 1000)
-  }, [shapes, dots, fit])
+  }, [shapes, dots, fit, frame])
 
 
   const paths = useMemo<PlacedShape[]>(
     () => shapes.map((s) => ({ ...s, d: ringsToPath(s.rings, proj) })),
     [shapes, proj],
   )
+
+  /* Lot lines, projected the same way as every other geometry on this map, so
+     a parcel edge meets the plat outline it actually sits inside. */
+  const parcelPaths = useMemo(() => {
+    if (!parcels || parcels.length === 0) return []
+    return parcels
+      .map((p) => ({ id: p.id, subject: p.subject, name: p.name, d: ringsToPath(outerRings(p.geometry), proj) }))
+      .filter((p) => p.d.length > 0)
+  }, [parcels, proj])
 
   /* The basemap, decoded once and projected with the same functions the
      recorded boundaries use — one projection, so a road meets the city limit
@@ -952,9 +997,11 @@ export function V3Atlas({
           <Heading id={`${uid}-h`} className="v3-atlas__headline">
             {headline}
           </Heading>
-          <p className="v3-atlas__claim" aria-live="polite">
-            {claim}
-          </p>
+          {quiet ? null : (
+            <p className="v3-atlas__claim" aria-live="polite">
+              {claim}
+            </p>
+          )}
         </div>
 
         <div className="v3-atlas__body">
@@ -1147,6 +1194,22 @@ export function V3Atlas({
                     />
                   ))}
                 </g>
+                {/* 6. Lot lines. The assessor's recorded shape of a parcel:
+                    the subject in full ink, its neighbours as hairlines, and
+                    a disclaimer beside the map because this is not a survey. */}
+                {parcelPaths.length > 0 ? (
+                  <g className="v3-atlas__parcels" aria-hidden="true">
+                    {parcelPaths.map((p) => (
+                      <path
+                        key={`lot-${p.id}`}
+                        d={p.d}
+                        className={cn('v3-atlas__parcel', p.subject && 'is-subject')}
+                      >
+                        {p.name ? <title>{p.name}</title> : null}
+                      </path>
+                    ))}
+                  </g>
+                ) : null}
               </svg>
 
               {/* Pulses: their own layer, slots per kind, paused off-screen. */}
@@ -1222,7 +1285,7 @@ export function V3Atlas({
 
         {/* The legend: type toggles and the price scrubber. Under the map on a
             phone; under the head in the desktop column. */}
-        {dock}
+        {quiet ? null : dock}
 
         {/* The aside: the live line, the search, the source. */}
         <div className="v3-atlas__aside">

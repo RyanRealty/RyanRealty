@@ -36,6 +36,10 @@ export const CACHE_WINDOWS = {
   blog: 600,
   assets: 86400,
   reviews: 86400,
+  /* Lot lines. The county edits a handful of parcels a day — 3 in the week to
+     2026-09-02, 31 in the month — and the refresh job writes them, so a page
+     may hold a day-old shape without being wrong. */
+  taxlots: 86400,
 } as const
 
 /**
