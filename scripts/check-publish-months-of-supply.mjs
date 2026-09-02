@@ -160,11 +160,15 @@ checks.push({
 
 const about = src('app/about/page.tsx')
 checks.push({
-  label: 'about city ledger reads leftover overlays, not pulse city snapshots',
+  // 2026-09-02: the About page's city ledger became the regional V3Atlas (one
+  // population, buildPlaceAtlas). A city ledger, if it ever returns, must read
+  // leftover overlays; pulse city snapshots are out either way.
+  label: 'about page never reads pulse city snapshots; any city ledger reads leftover overlays',
   ok:
-    /getDetachedOverlays\(/.test(about) &&
-    /from ['"]@\/lib\/data\/market-truth\/getSellBendMarket['"]/.test(about) &&
-    !/getMarketPulseCitySnapshots\(/.test(about),
+    !/getMarketPulseCitySnapshots\(/.test(about) &&
+    (!/<V3Ledger\b/.test(about) ||
+      (/getDetachedOverlays\(/.test(about) &&
+        /from ['"]@\/lib\/data\/market-truth\/getSellBendMarket['"]/.test(about))),
 })
 
 for (const surface of leftoverHudSurfaces) {
