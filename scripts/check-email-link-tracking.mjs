@@ -37,6 +37,7 @@ const EXEMPT = new Map([
   ['app/api/twilio/recording/route.ts', 'broker notification that a recording is ready'],
   ['lib/digest-email-templates.tsx', 'react-email templates consumed by the broker digest, not a send site'],
   ['app/actions/crm-template-test.ts', "broker self-test template preview to the calling broker's own mailbox — not a lead-facing send (same reason as the SMS self-test EXEMPT)"],
+  ['app/actions/newsletter.ts', 'only adminTestSendNewsletterAction remains after the 2026-09-01 export trim — a [TEST] copy to the calling admin\'s own inbox (gate.email); the real subscriber send rides the instrumented newsletter queue'],
   ['app/api/cma/[slug]/gmail-draft/route.ts', 'Resend fallback emails the PDF to the BROKER when Gmail draft creation fails — never auto-sends to the lead'],
   ['app/api/cron/broker-agent-digest/route.ts', 'internal digest to the broker mailbox, no lead recipient'],
   ['app/api/cron/weekly-pipeline-digest/route.ts', 'internal pipeline digest to the broker mailbox, no lead recipient'],
