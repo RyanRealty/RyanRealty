@@ -233,18 +233,20 @@ function SignInPromptInner({ user, searchParams, googleClientId }: InnerProps) {
         <div className="mt-4 space-y-3">
           {/* Google's own rendered button — the silent One Tap attempt above
               already ran and came up empty, so this is button-only (no
-              second prompt() call stacking on top of it). Falls back to the
-              redirect-based button only when GIS has no client id. */}
-          {googleClientId ? (
-            <GoogleOneTap clientId={googleClientId} onCredential={onGoogleCredential} />
-          ) : (
-            <GoogleContinueButton
-              loading={loading === 'google'}
-              disabled={!!loading}
-              onClick={() => handleSignIn('google')}
-              className="w-full"
-            />
-          )}
+              second prompt() call stacking on top of it). Falls back to the redirect-based
+              button when GIS has no client id or never sizes its control. */}
+          <GoogleOneTap
+            clientId={googleClientId}
+            onCredential={onGoogleCredential}
+            fallback={
+              <GoogleContinueButton
+                loading={loading === 'google'}
+                disabled={!!loading}
+                onClick={() => handleSignIn('google')}
+                className="w-full"
+              />
+            }
+          />
           <Button
             type="button"
             disabled={!!loading}

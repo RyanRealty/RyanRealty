@@ -82,19 +82,22 @@ export default function LoginForm({ next, googleClientId = null }: Props) {
       <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
       {/* Google's own rendered button (GIS) when a client id is configured —
           the native "Continue as <name>" chip prompts alongside it for a
-          visitor already signed in with Google in this browser. Falls back
-          to the redirect-based button only when GIS has no client id. */}
-      {googleClientId ? (
-        <GoogleOneTap clientId={googleClientId} onCredential={handleGoogleCredential} prompt />
-      ) : (
-        <GoogleContinueButton
-          loading={loading === 'google'}
-          disabled={!!loading}
-          onClick={() => handleOAuth('google')}
-          variant="outline"
-          className="w-full"
-        />
-      )}
+          visitor already signed in with Google in this browser. Falls back to the redirect-based button
+          when GIS has no client id or never sizes its control. */}
+      <GoogleOneTap
+        clientId={googleClientId}
+        onCredential={handleGoogleCredential}
+        prompt
+        fallback={
+          <GoogleContinueButton
+            loading={loading === 'google'}
+            disabled={!!loading}
+            onClick={() => handleOAuth('google')}
+            variant="outline"
+            className="w-full"
+          />
+        }
+      />
       <Button
         type="button"
         onClick={() => handleOAuth('facebook')}

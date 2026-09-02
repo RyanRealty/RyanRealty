@@ -108,19 +108,21 @@ export default function SignupForm({ next, googleClientId = null }: Props) {
     <div className="mt-6 space-y-4">
       <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
       {/* Google's own rendered button (GIS) when a client id is configured.
-          Falls back to the redirect-based button only when GIS has no
-          client id. */}
-      {googleClientId ? (
-        <GoogleOneTap clientId={googleClientId} onCredential={handleGoogleCredential} />
-      ) : (
-        <GoogleContinueButton
-          loading={loading === 'google'}
-          disabled={!!loading}
-          onClick={() => handleOAuth('google')}
-          variant="outline"
-          className="w-full"
-        />
-      )}
+          Falls back to the redirect-based button when GIS has no client id
+          or never sizes its control (the fallback prop). */}
+      <GoogleOneTap
+        clientId={googleClientId}
+        onCredential={handleGoogleCredential}
+        fallback={
+          <GoogleContinueButton
+            loading={loading === 'google'}
+            disabled={!!loading}
+            onClick={() => handleOAuth('google')}
+            variant="outline"
+            className="w-full"
+          />
+        }
+      />
       <Button
         type="button"
         onClick={() => handleOAuth('facebook')}
