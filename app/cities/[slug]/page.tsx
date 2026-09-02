@@ -98,7 +98,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
 import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
-import { publishRegionName } from '@/lib/atlas/place-names'
+import { atlasRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -334,7 +334,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
                 [...cells]
                   .sort((a, b) => b.activeHomes - a.activeHomes)
                   .slice(0, 60)
-                  .map((cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'neighborhood', kindLabel: 'Subdivision', name: publishRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry })),
+                  .map((cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'neighborhood', kindLabel: 'Subdivision', name: atlasRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry })),
               ),
               [] as (AtlasRegion | null)[],
               6000,

@@ -42,7 +42,7 @@
  *            the map on a phone, under the head in the desktop column — so
  *            the map keeps its full height.
  */
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -180,7 +180,12 @@ function readNavy(el: Element): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
-type RegionShape = AtlasRegion & { rings: Ring[]; anchor: readonly [number, number] | null; area: number }
+type RegionShape = AtlasRegion & {
+  rings: Ring[]
+  anchor: readonly [number, number] | null
+  area: number
+  bbox: ReturnType<typeof bboxOfRings>
+}
 type PlacedShape = RegionShape & { d: string }
 type View = { w: number; h: number; scale: number; ox: number; oy: number }
 
@@ -215,7 +220,7 @@ export function V3Atlas({
       const area = b ? (b.maxLon - b.minLon) * (b.maxLat - b.minLat) : 0
       // Label under the silhouette's bottom edge so the dense centre stays clean.
       const labelAt = anchor && b ? ([anchor[0], b.minLat] as const) : anchor
-      return { ...r, rings, anchor: labelAt, area }
+      return { ...r, rings, anchor: labelAt, area, bbox: b }
     })
   }, [regions])
 
@@ -246,6 +251,19 @@ export function V3Atlas({
   /* Largest first, so a community inside a neighborhood is painted on top
      and takes the pointer. */
   const places = useMemo(() => paths.filter((s) => s.kind !== 'town').sort((a, b) => b.area - a.area), [paths])
+  /* A town whose silhouette spans most of the frame IS the frame (a scoped
+     page's own place): the headline names it, so its label would only clip
+     at the edge (pass five). */
+  const isFrame = useCallback(
+    (s: RegionShape) => {
+      if (!s.bbox) return false
+      const [x0, y0] = proj.toXY(s.bbox.minLon, s.bbox.maxLat)
+      const [x1, y1] = proj.toXY(s.bbox.maxLon, s.bbox.minLat)
+      return Math.abs(x1 - x0) / proj.width > 0.8 || Math.abs(y1 - y0) / proj.height > 0.8
+    },
+    [proj],
+  )
+  const wide = proj.width / proj.height > 1.35
 
   const xy = useMemo(() => dots.map((d) => proj.toXY(d.lng, d.lat)), [dots, proj])
 
@@ -312,6 +330,8 @@ export function V3Atlas({
   const [hover, setHover] = useState<string | null>(null)
   const [pinned, setPinned] = useState<{ id: string; at: readonly [number, number] } | null>(null)
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [cardH, setCardH] = useState(240)
 
   /* ONE filter for every layer, sold included. */
   const isOn = useCallback(
@@ -402,12 +422,12 @@ export function V3Atlas({
 
   const ranked = useMemo(
     () =>
-      places
+      (incomplete ? [] : places)
         .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0, median: regionStats.get(s.id)?.median ?? null }))
         .filter((r) => r.n > 0)
         .sort((a, b) => b.n - a.n)
         .slice(0, 10),
-    [places, regionStats],
+    [places, regionStats, incomplete],
   )
 
   /* The heat field, on a canvas. Kernel alpha scales with 1/√N and the field
@@ -510,6 +530,11 @@ export function V3Atlas({
     }
   }, [pinned, dismiss])
 
+  useLayoutEffect(() => {
+    const el = cardRef.current
+    if (el) setCardH(el.offsetHeight)
+  })
+
   const toggleType = (key: string) =>
     setOffTypes((prev) => {
       const next = new Set(prev)
@@ -526,37 +551,40 @@ export function V3Atlas({
     return Math.min(4, 1 + Math.floor((n / maxPlaceCount) * 3.999))
   }
 
-  const cardInStage = variant !== 'split'
   const cardAnchor = pinned ? pinned.at : pointer ? ([pointer.x, pointer.y] as const) : null
   const cardStyle =
-    cardInStage && cardAnchor && view
+    cardAnchor && view
       ? {
           left: Math.min(cardAnchor[0] + 16, Math.max(0, view.w - 270)),
-          top: Math.max(0, Math.min(cardAnchor[1] + 16, view.h - 300)),
+          top: Math.max(0, Math.min(cardAnchor[1] + 16, view.h - cardH - 8)),
         }
       : undefined
 
   const card =
     activeShape && activeStats ? (
-      <div className={cn('v3-atlas__card', pinned && 'is-pinned')} role="status" style={cardStyle}>
+      <div ref={cardRef} className={cn('v3-atlas__card', pinned && 'is-pinned')} role="status" style={cardStyle}>
         <button type="button" className="v3-atlas__card-close" onClick={dismiss} aria-label="Close">
           ×
         </button>
         <p className="v3-atlas__card-kind">{activeShape.kindLabel ?? KIND_LABEL[activeShape.kind]}</p>
         <p className="v3-atlas__card-name">{activeShape.name}</p>
-        <p className="v3-atlas__card-figures">
-          <span className="v3-atlas__card-n">{activeStats.n.toLocaleString('en-US')}</span>
-          <span className="v3-atlas__card-label">
-            {noun(activeStats.n)}
-            {atCeiling ? '' : ` under ${fmtShort(maxPrice)}`}
-          </span>
-          {activeStats.median != null ? (
-            <>
-              <span className="v3-atlas__card-n">{fmtShort(activeStats.median)}</span>
-              <span className="v3-atlas__card-label">{medianScope.label}</span>
-            </>
-          ) : null}
-        </p>
+        {incomplete ? (
+          <p className="v3-atlas__card-label">Counts unavailable right now</p>
+        ) : (
+          <p className="v3-atlas__card-figures">
+            <span className="v3-atlas__card-n">{activeStats.n.toLocaleString('en-US')}</span>
+            <span className="v3-atlas__card-label">
+              {noun(activeStats.n)}
+              {atCeiling ? '' : ` under ${fmtShort(maxPrice)}`}
+            </span>
+            {activeStats.median != null ? (
+              <>
+                <span className="v3-atlas__card-n">{fmtShort(activeStats.median)}</span>
+                <span className="v3-atlas__card-label">{medianScope.label}</span>
+              </>
+            ) : null}
+          </p>
+        )}
         <Link href={activeShape.href} className="v3-atlas__card-door">
           See {activeShape.name}
         </Link>
@@ -601,7 +629,7 @@ export function V3Atlas({
     <section
       ref={sectionRef}
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-atlas', `v3-atlas--${variant}`, !inView && 'is-offscreen', className)}
+      className={cn(V3_ROOT_CLASS, 'v3-atlas', `v3-atlas--${variant}`, wide && 'is-wide', !inView && 'is-offscreen', className)}
       aria-labelledby={`${uid}-h`}
     >
       <div className="v3-atlas__grid">
@@ -620,6 +648,7 @@ export function V3Atlas({
             <div
               ref={stageRef}
               className="v3-atlas__stage"
+              style={{ aspectRatio: `${proj.width} / ${proj.height}` }}
               onPointerMove={onMove}
               onPointerLeave={() => {
                 setHover(null)
@@ -633,7 +662,7 @@ export function V3Atlas({
                 viewBox={`0 0 ${proj.width} ${proj.height}`}
                 preserveAspectRatio="xMidYMid meet"
                 role="img"
-                aria-label={`Map with ${counts.forSale.toLocaleString('en-US')} listings for sale`}
+                aria-label={incomplete ? 'Map of listings' : `Map with ${counts.forSale.toLocaleString('en-US')} listings for sale`}
               >
                 <g className="v3-atlas__towns">
                   {towns.map((s) => (
@@ -646,28 +675,8 @@ export function V3Atlas({
                     />
                   ))}
                 </g>
-                {/* Halos under every place, so the outline reads over the field. */}
-                <g className="v3-atlas__halos" aria-hidden="true">
-                  {places.map((s) => (
-                    <path key={`h-${s.id}`} d={s.d} className="v3-atlas__halo" />
-                  ))}
-                </g>
-                <g className="v3-atlas__places">
-                  {places.map((s) => (
-                    <path
-                      key={s.id}
-                      d={s.d}
-                      className={cn(
-                        'v3-atlas__place',
-                        `v3-atlas__place--${s.kind}`,
-                        variant === 'heat' && `v3-atlas__place--step-${fillStep(s.id)}`,
-                        active === s.id && 'is-active',
-                      )}
-                      onPointerEnter={() => setHover(s.id)}
-                      onClick={() => pin(s)}
-                    />
-                  ))}
-                </g>
+                {/* 2. Dots: the listings, UNDER the places so no outline is
+                    ever painted over (pass four, Q1). */}
                 {variant !== 'heat' ? (
                   <g className="v3-atlas__dots" aria-hidden="true">
                     {dots.map((d, i) => {
@@ -688,6 +697,44 @@ export function V3Atlas({
                     })}
                   </g>
                 ) : null}
+                {/* 3. Halos under every place outline, so it reads over the field. */}
+                <g className="v3-atlas__halos" aria-hidden="true">
+                  {places.map((s) => (
+                    <path key={`h-${s.id}`} d={s.d} className="v3-atlas__halo" />
+                  ))}
+                </g>
+                {/* 4. Places: the doors. A place with nothing on it stays a
+                    door but wears less ink. */}
+                <g className="v3-atlas__places">
+                  {places.map((s) => (
+                    <path
+                      key={s.id}
+                      d={s.d}
+                      className={cn(
+                        'v3-atlas__place',
+                        `v3-atlas__place--${s.kind}`,
+                        variant === 'heat' && `v3-atlas__place--step-${fillStep(s.id)}`,
+                        (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
+                        active === s.id && 'is-active',
+                      )}
+                      onPointerEnter={() => setHover(s.id)}
+                      onClick={() => pin(s)}
+                    />
+                  ))}
+                </g>
+                {/* 5. Hit strokes: a wide transparent edge on phones, so a
+                    silhouette narrower than a thumb still takes the tap. */}
+                <g className="v3-atlas__hits" aria-hidden="true">
+                  {places.map((s) => (
+                    <path
+                      key={`t-${s.id}`}
+                      d={s.d}
+                      className="v3-atlas__hit"
+                      onPointerEnter={() => setHover(s.id)}
+                      onClick={() => pin(s)}
+                    />
+                  ))}
+                </g>
               </svg>
 
               {/* Pulses: their own layer, slots per kind, paused off-screen. */}
@@ -714,7 +761,7 @@ export function V3Atlas({
               {view ? (
                 <div className="v3-atlas__labels" aria-hidden="true">
                   {towns
-                    .filter((s) => s.anchor)
+                    .filter((s) => s.anchor && !isFrame(s))
                     .map((s) => {
                       const [x, y] = toPx(...proj.toXY(s.anchor![0], s.anchor![1]))
                       return (
@@ -726,7 +773,7 @@ export function V3Atlas({
                 </div>
               ) : null}
 
-              {cardInStage ? card : null}
+              {card}
             </div>
           </div>
 

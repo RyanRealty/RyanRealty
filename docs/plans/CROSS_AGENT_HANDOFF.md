@@ -66,6 +66,15 @@ deleted on the pick. Production is ISR (300s); `?opening=` renders only in devel
 `wt/home-opening-20260901` (`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, dev server
 `wt-home-opening-dev`, port 3321); every commit is on main.
 
+**CHART ATOM WENT MAX (e740644f):** `V3Chart` gained `claim` (one formatted sentence under the
+caption), `yTicks`/`xTicks` (gridlines + labels the caller formats; `lib/charts/plot.ts` exposes
+the line scale and `lineTicks`), `emphasize: 'first'|'last'` (one series in ink with marks, the
+rest in navy tints — emphasis over the five-hue yoy run), and a hover layer
+(`V3ChartHover.client.tsx`: crosshair, dot per series, the reading at the nearest x; pointer,
+touch, arrow keys, live region). `placeMedianChart` (homepage + every city page) passes all four.
+Other chart builders (housing-market hub/region/annual, neighborhood, subdivision, chart-room
+cards) still pass none of the new props — NEXT: give each a claim, ticks, and emphasis.
+
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
 2. Design the place-page class as a composed page, not stacked sections: an interactive

@@ -174,6 +174,7 @@
 }
 
 .v3-atlas__frame {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -183,8 +184,14 @@
 
 .v3-atlas__stage {
   position: relative;
-  flex: 1 1 auto;
-  min-height: clamp(24rem, 66vh, 46rem);
+  width: 100%;
+  /* min-width 0 stops min-height transferring through the aspect ratio into
+     a minimum width wider than the column (a 1000/554 frame at 375px grew to
+     520px and scrolled the page sideways). */
+  min-width: 0;
+  max-width: 100%;
+  min-height: 18rem;
+  max-height: min(72vh, 46rem);
   background: color-mix(in srgb, var(--v3-navy) 2%, var(--v3-cream));
   overflow: hidden;
   touch-action: pan-y;
@@ -330,14 +337,41 @@
   }
 
   .v3-atlas__frame {
-    height: min(92vh, 64rem);
     border-top: 0;
     border-bottom: 0;
     border-left: var(--v3-rule-hairline);
   }
 
   .v3-atlas__stage {
-    min-height: 0;
+    min-height: 22rem;
+    max-height: min(92vh, 64rem);
+  }
+
+  /* A wide boundary (Larkspur, a river plat) stacks: the map takes the full
+     width above, the legend and the aside share the row below. A tall
+     boundary keeps the side-by-side (pass five, Q14). */
+  .v3-atlas.is-wide:not(.v3-atlas--split) .v3-atlas__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'head head'
+      'body body'
+      'dock aside';
+  }
+
+  .v3-atlas.is-wide:not(.v3-atlas--split) .v3-atlas__frame {
+    border-left: 0;
+    border-top: var(--v3-rule-hairline);
+    border-bottom: var(--v3-rule-hairline);
+  }
+
+  .v3-atlas.is-wide:not(.v3-atlas--split) .v3-atlas__stage {
+    max-height: min(70vh, 48rem);
+  }
+
+  /* Split from 64rem: the card lives in the rail slot, not the stage. */
+  .v3-atlas--split .v3-atlas__stage .v3-atlas__card {
+    display: none;
   }
 
   /* Split: head + legend + aside, map, rail — three columns. */
@@ -420,6 +454,35 @@
   fill: color-mix(in srgb, var(--v3-navy) 18%, transparent);
   stroke: var(--v3-navy);
   stroke-width: 1.6;
+}
+
+.v3-atlas__place.is-empty {
+  fill: color-mix(in srgb, var(--v3-navy) 2%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 34%, transparent);
+}
+
+/* Hit strokes: invisible, wide, and only where a thumb needs them. */
+.v3-atlas__hits {
+  pointer-events: none;
+}
+
+.v3-atlas__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+@media (max-width: 47.99rem) {
+  .v3-atlas__hits {
+    pointer-events: auto;
+  }
+
+  .v3-atlas__hit {
+    pointer-events: stroke;
+    cursor: pointer;
+  }
 }
 
 /* Choropleth steps: one hue, light to dark (dataviz sequential rule). */
@@ -647,8 +710,9 @@
   .v3-atlas__card-name {
     grid-area: name;
     padding-right: 0;
-    font-size: var(--v3-size-body-lg);
-    -webkit-line-clamp: 1;
+    font-size: var(--v3-size-body);
+    line-height: 1.15;
+    -webkit-line-clamp: 2;
   }
 
   .v3-atlas__card-figures {
@@ -742,7 +806,7 @@
 /* The rail's card slot: fixed height ABOVE the list, so the reveal is in
    view and hovering never shifts the rows. */
 .v3-atlas__rail-card {
-  min-height: 11rem;
+  min-height: 17rem;
   margin-bottom: var(--v3-space-sm);
 }
 
@@ -764,13 +828,6 @@
    stage like every other variant. */
 @media (max-width: 63.99rem) {
   .v3-atlas--split .v3-atlas__rail {
-    max-width: var(--v3-measure);
-    margin: 0 auto;
-    width: 100%;
-    padding: var(--v3-space-md) var(--v3-gutter) 0;
-  }
-
-  .v3-atlas--split .v3-atlas__rail-card {
     display: none;
   }
 }

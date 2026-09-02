@@ -161,6 +161,18 @@ export default async function Home({
       ),
     ),
   ])
+  // Every indexed city with a recorded boundary is a town silhouette, not
+  // just the six featured ones: Prineville, Madras, and the rest were blobs
+  // of listings with nothing to tap (pass four, Q2).
+  const extraTowns = await Promise.all(
+    cities
+      .filter((c) => !TOWN_ORDER.includes(c.slug))
+      .map((c) =>
+        getBoundaryGeoJSON({ geoType: 'city', geoSlug: c.slug })
+          .then((geometry) => ({ c, geometry }))
+          .catch(() => ({ c, geometry: null })),
+      ),
+  )
   const registrySlugs = new Set(getAllResortCommunities().map((c) => c.slug))
   const bendNeighborhoods = neighborhoodRows.filter((r) => {
     const city = Array.isArray(r.cities) ? r.cities[0] : r.cities
@@ -244,6 +256,9 @@ export default async function Home({
       if (!geometry) return []
       return [{ id: `town:${slug}`, kind: 'town', name: cityBySlug.get(slug)?.name ?? titleCaseName(slug.replace(/-/g, ' ')), href: `/cities/${slug}`, geometry }]
     }),
+    ...extraTowns.flatMap(({ c, geometry }): AtlasRegion[] =>
+      geometry ? [{ id: `town:${c.slug}`, kind: 'town', name: c.name, href: `/cities/${c.slug}`, geometry }] : [],
+    ),
     ...communityBoundaries.flatMap(({ c, geometry }): AtlasRegion[] =>
       geometry ? [{ id: `community:${c.slug}`, kind: 'community', name: c.label, href: `/communities/${c.slug}`, geometry }] : [],
     ),

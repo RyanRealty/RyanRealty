@@ -55,6 +55,7 @@ import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { atlasRegionName } from '@/lib/atlas/place-names'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
@@ -544,7 +545,8 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           (cell): AtlasRegion => ({
             id: `subdivision:${cell.slug}`,
             kind: 'neighborhood',
-            name: publishPlatDisplayName(cell.label) ?? cell.label,
+            kindLabel: 'Subdivision',
+            name: atlasRegionName(cell.label) ?? cell.label,
             href: `/subdivisions/${cell.slug}`,
             geometry: cell.geometry,
           }),
