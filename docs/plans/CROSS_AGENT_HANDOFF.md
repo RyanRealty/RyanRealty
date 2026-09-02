@@ -43,22 +43,28 @@ communities repeats the towns ledger and discards its video posters, footer is 2
 Matt's reaction to the shipped top of page: "is this supposed to wow me?" — it is not, and he
 is right: the opening is a stock hero plus three text doors.
 
-**LIVE ON MAIN (3efc802c) — the living map, rebuilt through two evaluator passes:** `V3Atlas`
-(`components/site/v3/V3Atlas.client.tsx` + `.css`) is the homepage opening and, scoped to the
-recorded boundary, the `#atlas` section of every community page. Population through ONE builder,
-`lib/atlas/build-place-atlas.ts` (paged tile reads, close_date window, boundary filter, dots,
-events, types, source, stamp, `complete`). Layers after pass two: canvas heat (radial kernels),
-dots as zero-length stroked paths with non-scaling-stroke (screen-pixel size, no hydration
-flash), HTML town labels, pulses on their own overlay capped at 40 and paused off-screen, the dock
-in flow under the stage, pinned card with Escape/outside dismissal, largest-first place painting,
-home-only medians when lots are on, a short-read notice in the claim. Evaluator scores (separate
-agent): pass one dots 52 / heat 49 / split 57; pass two 62 / 57 / 67; pass three running on the
-rebuild. Production is ISR (300s) after a searchParams variant switch made the page dynamic and
-put 58 rail timeouts in a build (fixed 44d5351c; 0 timeouts since). `?opening=heat|split` renders
-only in development, for the decision-sheet captures. Matt picks A/B/C from the sheet (artifact
-"The Living Map"); the losers are deleted on the pick. Built on `wt/home-opening-20260901`
-(`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, dev server `wt-home-opening-dev`,
-port 3321); every commit is on main.
+**LIVE ON MAIN (8af091f6) — the living map after three evaluator passes, on every place page:**
+`V3Atlas` (`components/site/v3/V3Atlas.client.tsx` + `.css`) opens the homepage and, scoped to the
+recorded boundary, is `#atlas` on every city, neighborhood, community, and subdivision page
+(Bend's places are its 13 neighborhoods; other cities' are their busiest recorded plats;
+neighborhoods and communities show their plats; a plat shows itself). Population through ONE
+builder, `lib/atlas/build-place-atlas.ts`, over ONE lean read, `lib/data/listings/getAtlasTiles.ts`
+(on-market rows keyset-paged from listing_tile_mv on its city+status indexes; the 30-day closed
+window from `listings` on `idx_listings_closed_close_date`, because the tile MV has no close_date
+index and 550K closed rows; sixteen columns; THROWS on error). The compact population (~400KB) is
+what unstable_cache holds — the raw rows are 2.2MB, over Next's 2MB per-entry ceiling. A short
+read is never cached: the instance's last good population draws, and the Atlas prints NO counts
+("Live counts are unavailable right now"). Layers: canvas heat with 1/√N kernel alpha under a
+ceiling, cream halos under every place outline (pass three found the field hid all 27 places),
+non-scaling-stroke dots (no hydration flash), HTML labels, pulses on their own layer with slots
+per kind (16 new / 6 pending / 18 sold) paused off-screen, a text-toggle legend in flow, pinned
+card released by empty-map tap / Escape / outside click, a phone strip that keeps the tapped place
+visible. Evaluator (separate agent) scores: pass one 52/49/57, pass two 62/57/67, pass three
+72/58/71 (dots/heat/split); pass four is grading the current build. The decision sheet (artifact
+"The Living Map") carries the pass-three renders and all scores; Matt picks A/B/C; the losers are
+deleted on the pick. Production is ISR (300s); `?opening=` renders only in development. Branch
+`wt/home-opening-20260901` (`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, dev server
+`wt-home-opening-dev`, port 3321); every commit is on main.
 
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
