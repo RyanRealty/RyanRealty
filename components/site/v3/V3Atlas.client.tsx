@@ -1,34 +1,44 @@
 'use client'
 /**
- * PATTERN 8: ATLAS. The living map — every home on the market as a point on
- * Central Oregon, every place as a touchable silhouette, one price scrubber,
- * one row of type toggles, and a card that answers "what is here" on hover
- * or tap. The page's opening, replacing the photo-and-headline Stage.
+ * PATTERN 8: ATLAS. The living map — every listing on the market as a point on
+ * Central Oregon, every place as a touchable silhouette, a heat field where
+ * homes crowd, pulses on real events, one price scrubber, one row of type
+ * toggles, and a card that answers "what is here" on hover or tap. The
+ * page's opening, replacing the photo-and-headline Stage.
  *
  * Why it exists (Matt 2026-09-01): "a buyer does not want every home in
  * Central Oregon" — a buyer wants THEIR place, price, and type, and the site's
- * moat is that it knows every one of them. The Atlas lets the reader find
- * their place by looking, not by reading. It is the first section on the
- * site that is data the reader can DO something with (TASTE.md ritual 3).
+ * moat is that it knows every one of them. "Look alive like real activity
+ * happening." The Atlas lets the reader find their place by looking.
  *
  * Honest by construction (section 0): every number the Atlas prints is a
- * count or a median of the dots on screen — the active listings the caller
- * passed, already filtered by the visitor's own price and type choices. One
- * population, one source, and the reader can see it. Nothing is estimated.
+ * count or a median of the dots on screen — the listings the caller passed,
+ * filtered by the visitor's own price and type choices, sold dots included
+ * in the same filter. One population, one source, named in the source line
+ * the caller passes. Nothing is estimated.
  *
  * Three compositions behind one prop for the decision sheet; the losers are
  * deleted in the commit that records Matt's pick (TASTE.md variants rule):
- *   dots  — full-bleed map, a point per home over a soft heat field.
- *   heat  — the heat field alone (a navy glow where homes crowd, sales in a
- *           lighter tint), places filled by how much is for sale in them.
+ *   dots  — full-bleed map, a point per listing over a soft heat field.
+ *   heat  — the heat field alone; places filled by how much is for sale.
  *   split — the dots map beside a live ranked list of places with a bar per
  *           row, hover-synced both ways.
  *
- * CLIENT BOUNDARY: the scrubber, the toggles, and the hover card are visitor
- * state. The SVG itself is plain markup and renders on the server for the
- * first paint; only the interaction hydrates.
+ * SCREEN-SPACE SIZING. The projection is a portrait viewBox that renders at
+ * a third of its unit size on a laptop, so every radius, stroke, blur, and
+ * label reads the rendered scale (`k` = viewBox units per CSS pixel, from a
+ * ResizeObserver) and stays the same size on screen at any viewport. The
+ * 2026-09-01 evaluator measured 5px labels and 1.2px dots without it.
+ *
+ * WEIGHT. The heat field is ONE `<use>` of the dots group behind a blur, not
+ * a second set of circles; dots carry no hrefs (they are not doors, places
+ * are); pulses are capped to the newest events. The dots group fades in
+ * once, as a group.
+ *
+ * CLIENT BOUNDARY: the scrubber, the toggles, the card, and the scale are
+ * visitor state. The SVG renders on the server for the first paint.
  */
-import { useCallback, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
@@ -50,27 +60,24 @@ import './V3Atlas.css'
 /* -------------------------------------------------------------------------- */
 
 export type AtlasDot = {
-  /** Listing key — the React key and the door. */
+  /** Listing key — the React key. Dots are not doors; places are. */
   k: string
   lat: number
   lng: number
-  /** List price in dollars, null when the feed withheld it. */
+  /** List price (close price for a sold dot) in dollars; null when withheld. */
   p: number | null
-  /** Type key: house · condo · townhouse · land · multi · other. */
+  /** Type key: house · condo · townhouse · manufactured · land · multi · other. */
   t: string
-  href: string
   /** Days since the listing went on market; null when the feed withheld it. */
   age: number | null
   /** active · pending · sold — the dot's own status, for the activity layer. */
   s: 'active' | 'pending' | 'sold'
   /** Days since close for a sold dot; null otherwise. */
   soldAgo?: number | null
-  /** The list price has been cut since it went on market. */
-  cut?: boolean
 }
 
-/** A recent, real event on the map: what pulses. */
-export type AtlasEvent = { key: string; kind: 'new' | 'pending' | 'sold' | 'cut'; label: string; href: string }
+/** A recent, real event: what the live line prints. */
+export type AtlasEvent = { key: string; kind: 'new' | 'pending' | 'sold'; label: string; href: string }
 
 export type AtlasRegionKind = 'town' | 'community' | 'neighborhood'
 
@@ -96,11 +103,13 @@ export type V3AtlasProps = {
   regions: readonly AtlasRegion[]
   /** Type toggles, in display order. Keys match AtlasDot.t. */
   types: readonly AtlasType[]
-  /** "Updated Sep 1, 8:40 PM" — the dots' own stamp, already formatted. */
+  /** The section 0 trace: what the dots are and where they come from. */
+  source?: string
+  /** "Sep 1, 2026, 9:40 PM" — when the dots were read, already formatted. */
   stamp?: string
   /** The newest real events, already formatted, for the live line. */
   events?: readonly AtlasEvent[]
-  /** The search control, rendered in the head beside the claim. */
+  /** The search control, rendered in the head under the claim. */
   children?: ReactNode
   className?: string
 }
@@ -132,7 +141,23 @@ function quantile(sorted: number[], q: number): number {
   return sorted[lo]! + (sorted[hi]! - sorted[lo]!) * (pos - lo)
 }
 
-type RegionShape = AtlasRegion & { rings: Ring[]; d: string; anchor: readonly [number, number] | null }
+/** The noun for a count, honest to the types on screen: lots are not homes. */
+const NOUNS: Record<string, readonly [string, string]> = {
+  house: ['house', 'houses'],
+  condo: ['condo', 'condos'],
+  townhouse: ['townhome', 'townhomes'],
+  manufactured: ['manufactured home', 'manufactured homes'],
+  land: ['lot', 'lots'],
+  multi: ['multi-family building', 'multi-family buildings'],
+}
+function nounFor(count: number, typesOn: readonly AtlasType[], allTypes: readonly AtlasType[]): string {
+  const single = typesOn.length === 1 && typesOn.length !== allTypes.length ? NOUNS[typesOn[0]!.key] : null
+  if (single) return count === 1 ? single[0] : single[1]
+  return count === 1 ? 'listing' : 'listings'
+}
+
+type RegionShape = AtlasRegion & { rings: Ring[]; anchor: readonly [number, number] | null }
+type PlacedShape = RegionShape & { d: string }
 
 /* -------------------------------------------------------------------------- */
 /* V3Atlas                                                                     */
@@ -146,6 +171,7 @@ export function V3Atlas({
   dots,
   regions,
   types,
+  source,
   stamp,
   events,
   children,
@@ -153,8 +179,10 @@ export function V3Atlas({
 }: V3AtlasProps) {
   const uid = useId()
   const Heading = headingLevel === 1 ? 'h1' : 'h2'
+  const dotsId = `${uid}-dots`
+  const blurId = `${uid}-blur`
 
-  /* Geometry: rings, bbox, projection — once per data set. */
+  /* Geometry: rings, label anchors, projection — once per data set. */
   const shapes = useMemo<RegionShape[]>(() => {
     return regions.map((r) => {
       const rings = outerRings(r.geometry)
@@ -162,7 +190,7 @@ export function V3Atlas({
       const b = bboxOfRings(rings)
       // Label under the silhouette's bottom edge so the dense centre stays clean.
       const labelAt = anchor && b ? ([anchor[0], b.minLat] as const) : anchor
-      return { ...r, rings, d: '', anchor: labelAt }
+      return { ...r, rings, anchor: labelAt }
     })
   }, [regions])
 
@@ -186,25 +214,50 @@ export function V3Atlas({
     return makeProjection(padded, 1000)
   }, [shapes, dots])
 
-  const paths = useMemo(
+  const paths = useMemo<PlacedShape[]>(
     () => shapes.map((s) => ({ ...s, d: ringsToPath(s.rings, proj) })),
     [shapes, proj],
   )
+  const towns = useMemo(() => paths.filter((s) => s.kind === 'town'), [paths])
+  const places = useMemo(() => paths.filter((s) => s.kind !== 'town'), [paths])
 
-  /* Membership: which regions hold each dot. Computed once; ~1.7K dots × ~40
-     silhouettes of ray casts is a few milliseconds. */
-  const membership = useMemo(() => {
-    return dots.map((d) => {
-      const ids: string[] = []
-      for (const s of shapes) if (pointInRings(d.lng, d.lat, s.rings)) ids.push(s.id)
-      return ids
-    })
-  }, [dots, shapes])
+  /* Projected dot positions, once. */
+  const xy = useMemo(() => dots.map((d) => proj.toXY(d.lng, d.lat)), [dots, proj])
+
+  /* Membership: which places hold each dot. ~4K dots × ~30 silhouettes of
+     ray casts is a few milliseconds, once. */
+  const membership = useMemo(
+    () =>
+      dots.map((d) => {
+        const ids: string[] = []
+        for (const s of shapes) if (pointInRings(d.lng, d.lat, s.rings)) ids.push(s.id)
+        return ids
+      }),
+    [dots, shapes],
+  )
+
+  /* Screen-space scale: viewBox units per CSS pixel of the rendered SVG. */
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [k, setK] = useState(1)
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const measure = () => {
+      const r = el.getBoundingClientRect()
+      if (r.width > 0 && r.height > 0) setK(Math.max(proj.width / r.width, proj.height / r.height))
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    measure()
+    return () => ro.disconnect()
+  }, [proj.width, proj.height])
 
   /* Price scale: the scrubber runs from the 5th to the 95th percentile of the
-     dots' own prices, rounded outward to a clean step. */
+     listed dots' own prices, rounded outward to a clean step. */
   const priceScale = useMemo(() => {
-    const sorted = dots.flatMap((d) => (d.p != null && d.p > 0 ? [d.p] : [])).sort((a, b) => a - b)
+    const sorted = dots
+      .flatMap((d) => (d.s !== 'sold' && d.p != null && d.p > 0 ? [d.p] : []))
+      .sort((a, b) => a - b)
     const lo = Math.floor(quantile(sorted, 0.05) / 50_000) * 50_000
     const hi = Math.ceil(quantile(sorted, 0.95) / 100_000) * 100_000
     return { min: Math.max(lo, 50_000), max: Math.max(hi, lo + 100_000), step: 25_000 }
@@ -213,82 +266,105 @@ export function V3Atlas({
   /* Visitor state. */
   const [maxPriceRaw, setMaxPriceRaw] = useState<number | null>(null)
   const maxPrice = maxPriceRaw ?? priceScale.max
+  const atCeiling = maxPrice >= priceScale.max
   const setMaxPrice = (v: number) => setMaxPriceRaw(v >= priceScale.max ? null : v)
   const [offTypes, setOffTypes] = useState<ReadonlySet<string>>(() => new Set())
   const [hover, setHover] = useState<string | null>(null)
   const [pinned, setPinned] = useState<string | null>(null)
-  /* Pointer position inside the frame plus the frame's width, captured in the
-     move handler so render never reads the ref (react-hooks/refs). */
-  const [pointer, setPointer] = useState<{ x: number; y: number; w: number } | null>(null)
+  const [pointer, setPointer] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const frameRef = useRef<HTMLDivElement>(null)
 
-  const atCeiling = maxPrice >= priceScale.max
-  const visible = useMemo(() => {
-    const out: number[] = []
-    dots.forEach((d, i) => {
-      if (d.s === 'sold') return
-      if (offTypes.has(d.t)) return
-      if (!atCeiling && d.p != null && d.p > maxPrice) return
-      out.push(i)
-    })
-    return out
-  }, [dots, offTypes, maxPrice, atCeiling])
+  /* ONE filter for every layer, sold included (section 0: the sold count in
+     the claim and the sold glow on the map are the same set). */
+  const isOn = useCallback(
+    (d: AtlasDot) => !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice),
+    [offTypes, atCeiling, maxPrice],
+  )
 
-  /* Per-region figures over the VISIBLE dots — the numbers the card prints. */
+  const counts = useMemo(() => {
+    let forSale = 0
+    let pending = 0
+    let sold = 0
+    const listed: number[] = []
+    dots.forEach((d, i) => {
+      if (!isOn(d)) return
+      if (d.s === 'sold') sold += 1
+      else {
+        listed.push(i)
+        if (d.s === 'pending') pending += 1
+        else forSale += 1
+      }
+    })
+    return { forSale, pending, sold, listed }
+  }, [dots, isOn])
+
+  /* Per-place figures over the listed dots on screen — the card's numbers. */
   const regionStats = useMemo(() => {
-    const counts = new Map<string, { n: number; prices: number[] }>()
-    for (const i of visible) {
+    const acc = new Map<string, { n: number; prices: number[] }>()
+    for (const i of counts.listed) {
       for (const rid of membership[i] ?? []) {
-        const rec = counts.get(rid) ?? { n: 0, prices: [] }
+        const rec = acc.get(rid) ?? { n: 0, prices: [] }
         rec.n += 1
         const p = dots[i]!.p
         if (p != null && p > 0) rec.prices.push(p)
-        counts.set(rid, rec)
+        acc.set(rid, rec)
       }
     }
     const out = new Map<string, { n: number; median: number | null }>()
-    for (const [rid, rec] of counts) out.set(rid, { n: rec.n, median: median(rec.prices) })
+    for (const [rid, rec] of acc) out.set(rid, { n: rec.n, median: median(rec.prices) })
     return out
-  }, [visible, membership, dots])
+  }, [counts.listed, membership, dots])
 
-  const maxRegionCount = useMemo(() => {
+  const maxPlaceCount = useMemo(() => {
     let m = 0
-    for (const s of paths) if (s.kind !== 'town') m = Math.max(m, regionStats.get(s.id)?.n ?? 0)
+    for (const s of places) m = Math.max(m, regionStats.get(s.id)?.n ?? 0)
     return m
-  }, [paths, regionStats])
+  }, [places, regionStats])
+
+  const typesOn = useMemo(() => types.filter((t) => !offTypes.has(t.key)), [types, offTypes])
+  const noun = useCallback((n: number) => nounFor(n, typesOn, types), [typesOn, types])
+
+  const claim = useMemo(() => {
+    const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
+    const parts = [`${counts.forSale.toLocaleString('en-US')} ${noun(counts.forSale)} for sale${ceiling}`]
+    if (counts.pending > 0) parts.push(`${counts.pending.toLocaleString('en-US')} pending`)
+    if (counts.sold > 0) parts.push(`${counts.sold.toLocaleString('en-US')} sold in the last 30 days`)
+    return `${parts.join(', ')}. Tap a place for its numbers, or slide the price.`
+  }, [counts, atCeiling, maxPrice, noun])
+
+  /* The pulses: real recent events, newest first, capped so the map breathes
+     instead of shimmering — and so 4K animated nodes never hit the main thread. */
+  const pulses = useMemo(() => {
+    const out: { i: number; kind: 'new' | 'pending' | 'sold'; recency: number }[] = []
+    dots.forEach((d, i) => {
+      if (!isOn(d)) return
+      if (d.s === 'sold' && d.soldAgo != null && d.soldAgo <= 30) out.push({ i, kind: 'sold', recency: d.soldAgo })
+      else if (d.s === 'active' && d.age != null && d.age <= 7) out.push({ i, kind: 'new', recency: d.age })
+      else if (d.s === 'pending' && d.age != null && d.age <= 14) out.push({ i, kind: 'pending', recency: d.age })
+    })
+    out.sort((a, b) => a.recency - b.recency)
+    return out.slice(0, 160)
+  }, [dots, isOn])
+
+  const ranked = useMemo(
+    () =>
+      places
+        .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0, median: regionStats.get(s.id)?.median ?? null }))
+        .filter((r) => r.n > 0)
+        .sort((a, b) => b.n - a.n)
+        .slice(0, 12),
+    [places, regionStats],
+  )
 
   const active = pinned ?? hover
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
   const activeStats = active ? regionStats.get(active) ?? { n: 0, median: null } : null
 
-  const claim = useMemo(() => {
-    let forSale = 0
-    let pending = 0
-    for (const i of visible) {
-      if (dots[i]!.s === 'pending') pending += 1
-      else forSale += 1
-    }
-    let sold = 0
-    for (const d of dots) if (d.s === 'sold' && !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice)) sold += 1
-    const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
-    const typesOn = types.filter((t) => !offTypes.has(t.key))
-    const typeWord =
-      typesOn.length === types.length
-        ? ''
-        : typesOn.length === 1
-          ? ` ${typesOn[0]!.label.toLowerCase()}s`
-          : ' of the types you picked'
-    const parts = [`${forSale.toLocaleString('en-US')}${typeWord} for sale${ceiling}`]
-    if (pending > 0) parts.push(`${pending.toLocaleString('en-US')} pending`)
-    if (sold > 0) parts.push(`${sold.toLocaleString('en-US')} sold in the last 30 days`)
-    return `${parts.join(', ')}. Tap a place for its numbers, or slide the price.`
-  }, [visible, dots, atCeiling, maxPrice, types, offTypes])
-
   const onMove = useCallback((e: React.PointerEvent) => {
     const el = frameRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
-    setPointer({ x: e.clientX - r.left, y: e.clientY - r.top, w: r.width })
+    setPointer({ x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, h: r.height })
   }, [])
 
   const toggleType = (key: string) =>
@@ -301,41 +377,41 @@ export function V3Atlas({
 
   /* Choropleth fill step, 0..4, by share of the strongest place. */
   const fillStep = (rid: string) => {
-    if (maxRegionCount === 0) return 0
+    if (maxPlaceCount === 0) return 0
     const n = regionStats.get(rid)?.n ?? 0
     if (n === 0) return 0
-    return Math.min(4, 1 + Math.floor((n / maxRegionCount) * 3.999))
+    return Math.min(4, 1 + Math.floor((n / maxPlaceCount) * 3.999))
   }
 
-  const ranked = useMemo(() => {
-    return paths
-      .filter((s) => s.kind !== 'town')
-      .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0, median: regionStats.get(s.id)?.median ?? null }))
-      .filter((r) => r.n > 0)
-      .sort((a, b) => b.n - a.n)
-      .slice(0, 12)
-  }, [paths, regionStats])
+  const dismiss = () => {
+    setPinned(null)
+    setHover(null)
+  }
 
-  const listId = `${uid}-list`
-  const cardId = `${uid}-card`
+  const cardStyle =
+    variant !== 'split' && pointer && !pinned
+      ? {
+          left: Math.min(pointer.x + 16, Math.max(0, pointer.w - 270)),
+          top: Math.max(0, Math.min(pointer.y + 16, pointer.h - 330)),
+        }
+      : undefined
 
   const card =
     activeShape && activeStats ? (
-      <div
-        id={cardId}
-        className="v3-atlas__card"
-        role="status"
-        style={
-          variant !== 'split' && pointer && !pinned
-            ? { left: Math.min(pointer.x + 16, Math.max(0, pointer.w - 260)), top: pointer.y + 16 }
-            : undefined
-        }
-      >
-        <p className="v3-atlas__card-kind">{activeShape.kind === 'town' ? 'Town' : activeShape.kind === 'community' ? 'Community' : 'Neighborhood'}</p>
+      <div className="v3-atlas__card" role="status" style={cardStyle}>
+        <button type="button" className="v3-atlas__card-close" onClick={dismiss} aria-label="Close">
+          ×
+        </button>
+        <p className="v3-atlas__card-kind">
+          {activeShape.kind === 'town' ? 'Town' : activeShape.kind === 'community' ? 'Community' : 'Neighborhood'}
+        </p>
         <p className="v3-atlas__card-name">{activeShape.name}</p>
         <p className="v3-atlas__card-figures">
           <span className="v3-atlas__card-n">{activeStats.n.toLocaleString('en-US')}</span>
-          <span className="v3-atlas__card-label">{activeStats.n === 1 ? 'home' : 'homes'}{atCeiling ? '' : ` under ${fmtShort(maxPrice)}`}</span>
+          <span className="v3-atlas__card-label">
+            {noun(activeStats.n)}
+            {atCeiling ? '' : ` under ${fmtShort(maxPrice)}`}
+          </span>
           {activeStats.median != null ? (
             <>
               <span className="v3-atlas__card-n">{fmtShort(activeStats.median)}</span>
@@ -349,6 +425,9 @@ export function V3Atlas({
       </div>
     ) : null
 
+  const dotR = 2.1 * k
+  const labelSize = 12 * k
+
   return (
     <section
       id={id}
@@ -356,47 +435,60 @@ export function V3Atlas({
       aria-labelledby={`${uid}-h`}
     >
       <div className="v3-atlas__grid">
-      <div className="v3-atlas__head">
-        <Heading id={`${uid}-h`} className="v3-atlas__headline">
-          {headline}
-        </Heading>
-        <p className="v3-atlas__claim" aria-live="polite">
-          {claim}
-          {stamp ? <span className="v3-atlas__stamp"> {stamp}.</span> : null}
-        </p>
-        {events && events.length > 0 ? (
-          <ul className="v3-atlas__live" aria-label="Latest activity">
-            {events.slice(0, 3).map((e) => (
-              <li key={e.key} className={`v3-atlas__live-item v3-atlas__live-item--${e.kind}`}>
-                <Link href={e.href} className="v3-atlas__live-link">{e.label}</Link>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {children ? <div className="v3-atlas__search">{children}</div> : null}
-      </div>
+        <div className="v3-atlas__head">
+          <Heading id={`${uid}-h`} className="v3-atlas__headline">
+            {headline}
+          </Heading>
+          <p className="v3-atlas__claim" aria-live="polite">
+            {claim}
+          </p>
+          {events && events.length > 0 ? (
+            <ul className="v3-atlas__live" aria-label="Latest activity">
+              {events.slice(0, 3).map((e) => (
+                <li key={e.key} className={`v3-atlas__live-item v3-atlas__live-item--${e.kind}`}>
+                  <Link href={e.href} className="v3-atlas__live-link">
+                    {e.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {source ? (
+            <p className="v3-atlas__source">
+              {source}
+              {stamp ? ` Updated ${stamp}.` : ''}
+            </p>
+          ) : null}
+          {children ? <div className="v3-atlas__search">{children}</div> : null}
+        </div>
 
-      <div className="v3-atlas__body">
-        <div
-          ref={frameRef}
-          className="v3-atlas__frame"
-          onPointerMove={onMove}
-          onPointerLeave={() => {
-            setHover(null)
-            setPointer(null)
-          }}
-        >
-          <svg
-            className="v3-atlas__svg"
-            viewBox={`0 0 ${proj.width} ${proj.height}`}
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-label={`Map of Central Oregon with ${visible.length.toLocaleString('en-US')} homes for sale`}
+        <div className="v3-atlas__body">
+          <div
+            ref={frameRef}
+            className="v3-atlas__frame"
+            onPointerMove={onMove}
+            onPointerLeave={() => {
+              setHover(null)
+              setPointer(null)
+            }}
           >
-            <g className="v3-atlas__towns">
-              {paths
-                .filter((s) => s.kind === 'town')
-                .map((s) => (
+            <svg
+              ref={svgRef}
+              className="v3-atlas__svg"
+              viewBox={`0 0 ${proj.width} ${proj.height}`}
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label={`Map of Central Oregon with ${counts.forSale.toLocaleString('en-US')} listings for sale`}
+            >
+              <defs>
+                <filter id={blurId} x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation={(variant === 'heat' ? 7 : 5) * k} />
+                </filter>
+              </defs>
+
+              {/* 1. Towns: the base map. */}
+              <g className="v3-atlas__towns">
+                {towns.map((s) => (
                   <path
                     key={s.id}
                     d={s.d}
@@ -405,11 +497,24 @@ export function V3Atlas({
                     onClick={() => setPinned((p) => (p === s.id ? null : s.id))}
                   />
                 ))}
-            </g>
-            <g className="v3-atlas__places">
-              {paths
-                .filter((s) => s.kind !== 'town')
-                .map((s) => (
+              </g>
+
+              {/* 2. HEAT: one blurred copy of the dots group plus the month's
+                  closes. Under the places, and never a pointer target. */}
+              <g className="v3-atlas__heat" filter={`url(#${blurId})`} aria-hidden="true">
+                <use href={`#${dotsId}`} className="v3-atlas__heat-use" style={{ strokeWidth: 9 * k }} />
+                <g className="v3-atlas__heat-sold">
+                  {dots.map((d, i) => {
+                    if (d.s !== 'sold' || !isOn(d)) return null
+                    const [x, y] = xy[i]!
+                    return <circle key={`s-${d.k}`} cx={x.toFixed(1)} cy={y.toFixed(1)} r={5 * k} />
+                  })}
+                </g>
+              </g>
+
+              {/* 3. Places: the doors. */}
+              <g className="v3-atlas__places">
+                {places.map((s) => (
                   <path
                     key={s.id}
                     d={s.d}
@@ -423,150 +528,135 @@ export function V3Atlas({
                     onClick={() => setPinned((p) => (p === s.id ? null : s.id))}
                   />
                 ))}
-            </g>
-            {/* HEAT: the same points, blurred and stacked at alpha, so where
-                homes crowd the map glows darker. One hue, light to dark. */}
-            <defs>
-              <filter id={`${uid}-heat`} x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation={variant === 'heat' ? 9 : 6} />
-              </filter>
-            </defs>
-            <g className="v3-atlas__heat" filter={`url(#${uid}-heat)`} aria-hidden="true">
-              {dots.map((d) => {
-                const on = d.s === 'sold' ? true : !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice)
-                if (!on) return null
-                const [x, y] = proj.toXY(d.lng, d.lat)
-                return (
-                  <circle
-                    key={`h-${d.k}`}
-                    cx={x.toFixed(1)}
-                    cy={y.toFixed(1)}
-                    r={variant === 'heat' ? 9 : 6}
-                    className={cn('v3-atlas__heat-dot', d.s === 'sold' && 'v3-atlas__heat-dot--sold')}
-                  />
-                )
-              })}
-            </g>
-            {variant !== 'heat' ? (
-              <g className="v3-atlas__dots">
-                {dots.map((d, i) => {
-                  if (d.s === 'sold') return null
-                  const [x, y] = proj.toXY(d.lng, d.lat)
-                  const on = !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice)
+              </g>
+
+              {/* 4. Dots: the listings. Ghosted (not removed) in the heat
+                  variant so the heat <use> still has something to blur. */}
+              <g className={cn('v3-atlas__crisp', variant === 'heat' && 'v3-atlas__crisp--ghost')} aria-hidden="true">
+                <g id={dotsId} className="v3-atlas__dots">
+                  {dots.map((d, i) => {
+                    if (d.s === 'sold') return null
+                    const [x, y] = xy[i]!
+                    return (
+                      <circle
+                        key={d.k}
+                        cx={x.toFixed(1)}
+                        cy={y.toFixed(1)}
+                        r={d.s === 'pending' ? dotR * 1.15 : dotR}
+                        className={cn(
+                          'v3-atlas__dot',
+                          `v3-atlas__dot--${d.t}`,
+                          d.s === 'pending' && 'v3-atlas__dot--pending',
+                          !isOn(d) && 'is-off',
+                        )}
+                      />
+                    )
+                  })}
+                </g>
+              </g>
+
+              {/* 5. ALIVE: the newest real events pulse. */}
+              <g className="v3-atlas__pulses" aria-hidden="true">
+                {pulses.map(({ i, kind }, n) => {
+                  const [x, y] = xy[i]!
                   return (
                     <circle
-                      key={d.k}
+                      key={`p-${dots[i]!.k}`}
                       cx={x.toFixed(1)}
                       cy={y.toFixed(1)}
-                      r={d.s === 'pending' ? 2.2 : 1.8}
-                      className={cn(
-                        'v3-atlas__dot',
-                        `v3-atlas__dot--${d.t}`,
-                        d.s === 'pending' && 'v3-atlas__dot--pending',
-                        !on && 'is-off',
-                      )}
-                      style={{ animationDelay: `${(i % 60) * 8}ms` }}
+                      r={3 * k}
+                      className={`v3-atlas__pulse v3-atlas__pulse--${kind}`}
+                      style={{ animationDelay: `${(n % 41) * 140}ms` }}
                     />
                   )
                 })}
               </g>
-            ) : null}
-            {/* ALIVE: real recent events pulse — listed this week, gone pending,
-                a price cut, a sale closed. Nothing pulses that did not happen. */}
-            <g className="v3-atlas__pulses" aria-hidden="true">
-              {dots.map((d, i) => {
-                const isNew = d.s === 'active' && d.age != null && d.age <= 7
-                const isSold = d.s === 'sold' && d.soldAgo != null && d.soldAgo <= 30
-                const isPending = d.s === 'pending' && d.age != null && d.age <= 14
-                if (!isNew && !isSold && !isPending && !d.cut) return null
-                const on = d.s === 'sold' ? true : !offTypes.has(d.t) && (atCeiling || d.p == null || d.p <= maxPrice)
-                if (!on) return null
-                const [x, y] = proj.toXY(d.lng, d.lat)
-                const kind = isSold ? 'sold' : isNew ? 'new' : isPending ? 'pending' : 'cut'
-                return (
-                  <circle
-                    key={`p-${d.k}`}
-                    cx={x.toFixed(1)}
-                    cy={y.toFixed(1)}
-                    r={3}
-                    className={`v3-atlas__pulse v3-atlas__pulse--${kind}`}
-                    style={{ animationDelay: `${(i % 37) * 160}ms` }}
-                  />
-                )
-              })}
-            </g>
-            <g className="v3-atlas__labels" aria-hidden="true">
-              {paths
-                .filter((s) => s.kind === 'town' && s.anchor)
-                .map((s) => {
-                  const [x, y] = proj.toXY(s.anchor![0], s.anchor![1])
-                  return (
-                    <text key={s.id} x={x} y={y + 14} className="v3-atlas__label">
-                      {s.name}
-                    </text>
-                  )
-                })}
-            </g>
-          </svg>
-          {variant !== 'split' ? card : null}
-          <div className="v3-atlas__dock">
-            <div className="v3-atlas__types" role="group" aria-label="Property types">
-              {types.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  className="v3-btn v3-btn--ghost v3-atlas__type"
-                  aria-pressed={!offTypes.has(t.key)}
-                  onClick={() => toggleType(t.key)}
-                >
-                  <span className={`v3-atlas__type-mark v3-atlas__type-mark--${t.key}`} aria-hidden="true" />
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <label className="v3-atlas__scrub">
-              <span className="v3-atlas__scrub-label">
-                Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
-              </span>
-              <input
-                className="v3-atlas__range"
-                type="range"
-                min={priceScale.min}
-                max={priceScale.max}
-                step={priceScale.step}
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
-              />
-            </label>
-          </div>
-        </div>
 
-        {variant === 'split' ? (
-          <div className="v3-atlas__rail">
-            {card}
-            <ol id={listId} className="v3-atlas__rank" aria-label="Places with the most homes for sale">
-              {ranked.map((r) => (
-                <li key={r.shape.id} className={cn('v3-atlas__rank-row', active === r.shape.id && 'is-active')}>
-                  <Link
-                    href={r.shape.href}
-                    className="v3-atlas__rank-link"
-                    onPointerEnter={() => setHover(r.shape.id)}
-                    onFocus={() => setHover(r.shape.id)}
+              {/* 6. Town labels, in screen space. */}
+              <g className="v3-atlas__labels" aria-hidden="true">
+                {towns
+                  .filter((s) => s.anchor)
+                  .map((s) => {
+                    const [x, y] = proj.toXY(s.anchor![0], s.anchor![1])
+                    return (
+                      <text
+                        key={s.id}
+                        x={x}
+                        y={y + labelSize * 1.2}
+                        fontSize={labelSize}
+                        strokeWidth={4 * k}
+                        className="v3-atlas__label"
+                      >
+                        {s.name}
+                      </text>
+                    )
+                  })}
+              </g>
+            </svg>
+
+            {variant !== 'split' ? card : null}
+
+            <div className="v3-atlas__dock">
+              <div className="v3-atlas__types" role="group" aria-label="Property types">
+                {types.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className="v3-btn v3-btn--ghost v3-atlas__type"
+                    aria-pressed={!offTypes.has(t.key)}
+                    onClick={() => toggleType(t.key)}
                   >
-                    <span className="v3-atlas__rank-name">{r.shape.name}</span>
-                    <span className="v3-atlas__rank-bar" aria-hidden="true">
-                      <span className="v3-atlas__rank-fill" style={{ width: `${Math.max(2, (r.n / (ranked[0]?.n ?? 1)) * 100)}%` }} />
-                    </span>
-                    <span className="v3-atlas__rank-n">{r.n.toLocaleString('en-US')}</span>
-                    <span className="v3-atlas__rank-median">{r.median != null ? fmtShort(r.median) : ''}</span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
+                    <span className={`v3-atlas__type-mark v3-atlas__type-mark--${t.key}`} aria-hidden="true" />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <label className="v3-atlas__scrub">
+                <span className="v3-atlas__scrub-label">
+                  Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
+                </span>
+                <input
+                  className="v3-atlas__range"
+                  type="range"
+                  min={priceScale.min}
+                  max={priceScale.max}
+                  step={priceScale.step}
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
+                />
+              </label>
+            </div>
           </div>
-        ) : null}
-      </div>
+
+          {variant === 'split' ? (
+            <div className="v3-atlas__rail">
+              {card}
+              <ol className="v3-atlas__rank" aria-label="Places with the most for sale">
+                {ranked.map((r) => (
+                  <li key={r.shape.id} className={cn('v3-atlas__rank-row', active === r.shape.id && 'is-active')}>
+                    <Link
+                      href={r.shape.href}
+                      className="v3-atlas__rank-link"
+                      onPointerEnter={() => setHover(r.shape.id)}
+                      onFocus={() => setHover(r.shape.id)}
+                    >
+                      <span className="v3-atlas__rank-name">{r.shape.name}</span>
+                      <span className="v3-atlas__rank-bar" aria-hidden="true">
+                        <span
+                          className="v3-atlas__rank-fill"
+                          style={{ width: `${Math.max(2, (r.n / (ranked[0]?.n ?? 1)) * 100)}%` }}
+                        />
+                      </span>
+                      <span className="v3-atlas__rank-n">{r.n.toLocaleString('en-US')}</span>
+                      <span className="v3-atlas__rank-median">{r.median != null ? fmtShort(r.median) : ''}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </div>
       </div>
     </section>
   )

@@ -27,7 +27,7 @@ import {
   type CityPlaceItem,
   type CityCommunityItem,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { zonedDateKey } from '@/lib/format/date'
+import { zonedDateKey, formatDateTime } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -165,8 +165,14 @@ export default async function Home({
       ...[0, 1000, 2000, 3000, 4000].map((offset) =>
         getListingTiles({ status: 'active-and-pending', limit: 1000, offset, sort: 'newest' }).catch(() => []),
       ),
-      // The month's closed sales, for the heat field and the live line.
-      getListingTiles({ status: 'closed', limit: 1000, sort: 'newest' }).catch(() => []),
+      // The month's closed sales (a close_date window, newest close first),
+      // for the heat field and the live line.
+      getListingTiles({
+        status: 'closed',
+        closedFromDate: new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10),
+        limit: 1000,
+        sort: 'close-newest',
+      }).catch(() => []),
     ]).then((pages) => {
       const seen = new Set<string>()
       return pages.flat().filter((t) => (seen.has(t.listingKey) ? false : (seen.add(t.listingKey), true)))
@@ -276,22 +282,16 @@ export default async function Home({
     // Sold dots carry only the month's closes; older closes are not activity.
     if (s === 'sold' && (soldAgo == null || soldAgo > 30)) return []
     const { typeKey } = classifyType({ propertyType: tile.propertyType, propertySubType: tile.propertySubType })
-    const price = tile.listPrice != null ? Number(tile.listPrice) : null
+    const raw = s === 'sold' && tile.closePrice != null ? Number(tile.closePrice) : tile.listPrice != null ? Number(tile.listPrice) : null
     return [{
       k: tile.listingKey,
-      lat: Number(tile.lat.toFixed(5)),
-      lng: Number(tile.lng.toFixed(5)),
-      p: price != null && Number.isFinite(price) && price > 0 ? price : null,
+      lat: Number(tile.lat.toFixed(4)),
+      lng: Number(tile.lng.toFixed(4)),
+      p: raw != null && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null,
       t: typeKey,
       s,
       age: daysAgo(tile.onMarketDate),
       ...(soldAgo != null ? { soldAgo } : {}),
-      href: listingDetailPath(
-        tile.listingKey,
-        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-        { city: tile.city, subdivision: tile.subdivisionName },
-        { mlsNumber: tile.listNumber },
-      ),
     }]
   })
   // The live line: the newest real events, one line each. Place is the
@@ -326,6 +326,11 @@ export default async function Home({
     newestPending ? eventOf(newestPending, 'pending', 'Went pending') : null,
     newestSold ? eventOf(newestSold, 'sold', 'Sold') : null,
   ].filter((e): e is AtlasEvent => e !== null)
+  const atlasStamp = formatDateTime(new Date(nowMs))
+  const atlasCities = new Set(atlasTiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size
+  const atlasSource =
+    `Every active and pending listing of every property type on the regional MLS through Oregon Data Share, ` +
+    `across ${atlasCities} Central Oregon cities, plus the closes of the last 30 days. Counts and medians are of the listings on this map.`
   const presentTypes = new Set(atlasDots.filter((d) => d.s !== 'sold').map((d) => d.t))
   const atlasTypes = ATLAS_TYPES.filter((t) => presentTypes.has(t.key))
   const atlasRegions: AtlasRegion[] = [
@@ -380,7 +385,7 @@ export default async function Home({
 
   const seeAllLabel =
     hud.active != null
-      ? `See all ${hud.active.toLocaleString('en-US')} homes`
+      ? `See all ${hud.active.toLocaleString('en-US')} single-family homes`
       : 'See all homes'
 
   // The three routes (Matt 2026-09-01). Each fact is the same live figure its
@@ -430,6 +435,8 @@ export default async function Home({
           regions={atlasRegions}
           types={atlasTypes}
           events={atlasEvents}
+          source={atlasSource}
+          stamp={atlasStamp}
         >
           <HomeHeroSearch />
         </V3Atlas>
