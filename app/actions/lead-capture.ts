@@ -1,6 +1,8 @@
 'use server'
 
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
+import { cookies } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
@@ -63,6 +65,24 @@ function websiteSource(): string {
  * Submit a contextual page CTA lead (email/phone capture from city, community, or content pages).
  * Creates a General Inquiry in the CRM.
  */
+
+/**
+ * First-party identity stitch for a captured lead (G2): link the durable
+ * rr_vid cookie to the person sendEvent returned, so this browser's prior and
+ * future browsing lands on their CRM trail. Restored 2026-09-01 — the only
+ * stitch call in this file rode the removed submitExitIntentLead, leaving the
+ * three live doors capturing leads with no identity link. Non-blocking.
+ */
+async function stitchCapturedLead(personId: number | null | undefined, email: string | null | undefined): Promise<void> {
+  try {
+    if (!personId || !email) return
+    const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+    await stitchFormSubmitIdentity({ personId, email, rrVid, sessionId: null })
+  } catch (err) {
+    console.warn('[lead-capture] identity stitch failed (non-blocking):', err)
+  }
+}
+
 export async function submitPageCTA(input: {
   email?: string
   phone?: string
@@ -136,6 +156,8 @@ export async function submitPageCTA(input: {
     } catch (err) {
       console.warn('[page-cta] canonical tagging failed (non-blocking):', err)
     }
+
+    await stitchCapturedLead(result.ok ? result.personId : null, email)
 
     // GA4 Measurement Protocol mirror.
     await fireLeadGenerated({
@@ -250,6 +272,8 @@ export async function submitRentalLead(input: {
     } catch (err) {
       console.warn('[rental-lead] canonical tagging failed (non-blocking):', err)
     }
+
+    await stitchCapturedLead(result.ok ? result.personId : null, email)
 
     await fireLeadGenerated({
       lp_variant: 'rental-calculator',
@@ -381,6 +405,8 @@ export async function submitTetherowLead(input: {
     } catch (err) {
       console.warn('[tetherow-lead] canonical tagging failed (non-blocking):', err)
     }
+
+    await stitchCapturedLead(result.ok ? result.personId : null, email)
 
     await fireLeadGenerated({
       lp_variant: 'tetherow-landing-v1',

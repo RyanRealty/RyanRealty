@@ -62,11 +62,9 @@ checks.push({
   ok: /crmPersonId: nativeCrmPersonId\(eventResult\.ok \? eventResult\.personId : null\)/.test(lp),
 })
 
-const bulk = src('app/actions/newsletter.ts')
-checks.push({
-  label: 'admin bulk assign passes crmPersonId: pid',
-  ok: /createListingAlertForLead\(\{ email: contact\.email, crmPersonId: pid/.test(bulk),
-})
+// The newsletter.ts admin bulk-assign duplicate was deleted 2026-09-01 as a
+// zero-caller export; the LIVE bulk path is the assign-saved-search handler
+// pinned by the next check.
 
 const assign = src('lib/crm/bulk-handlers/assign-saved-search.ts')
 checks.push({
