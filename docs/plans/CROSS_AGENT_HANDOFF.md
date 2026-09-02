@@ -47,6 +47,61 @@ pushing if the other has uncommitted work in your path.
 
 ---
 
+# Current — 2026-09-01 (Claude Code admin/delivery session, main, through `b583dc63`) — Messages fold FINAL, CMA send queue, gap-audit sweep
+
+**Shipped on origin/main, production READY, live-verified in Matt's browser:**
+- Messages fold FINAL: `/admin/crm/inbox` 307s to `/admin/messages` (config redirect, legacy
+  `?folder=` mapped in the page), 19-file tree deleted. Capability parity held: SMS AI pills +
+  per-contact template render ported into `ComposeSurface` text mode
+  (`components/admin/crm/TextDraftTools.tsx` + `getSmsComposeTemplatesAction`); multi-select
+  bulk triage became folder-level Done-all (`QueueDoneAll`). Gate cascade updated
+  (admin-v2-tokens scan list, email-quality, crm-mobile-track, help/smoke/e2e route lists,
+  streamed-redirect baseline, crm-screens contracts repointed).
+- CMA delivery (Matt: review-first until he flips automation): `/admin/cmas` fronts
+  "N people asked for a value and never got it" as a door to the new `?status=asked` facet
+  (seller-lp/lead-form undelivered, oldest first); the send dialog prefill is AI-drafted
+  source-aware via `lib/grok` textFast (form ask = "here is what you asked for" + apology when
+  old; expired = sorry-it-didn't-sell; FSBO stays templated; template fallback on any model
+  failure). Nothing sends without Matt in the dialog.
+- `parseCmaAddress` strips trailing unit designators (Unit/Apt/Ste/#) — two form-asker
+  addresses now resolve (pinned in subject.test.ts); `rebuildCmaAction` preserves the original
+  `request_source` (was stamping admin-rebuild, ejecting rows from the asked queue).
+  `cma-1617-nw-8th` REBUILT successfully via the marketing_brain_actions rail → the asked
+  queue now holds 9 sendable documents.
+- Identity: rr_vid carryover at session birth (`/api/visitors/track`) + map-first widening in
+  `getLookingAtNow` — stitched returners reach the looking-at SMS wake and Today lane.
+  Guest listing-save capture auto-absorbs into the verified account person on sign-in
+  (`lib/crm/absorb-guest-capture.ts`, P12 fail-closed posture; Matt confirmed keep).
+- Google sign-in: official GIS control on /login//signup/save-gate with a REQUIRED visible
+  fallback (`GoogleOneTap` `fallback` prop) — GIS pins its iframe 0x0 for Google-signed-out
+  visitors (memory: gis-button-zero-size). Personalized "Continue as Matthew" verified live.
+- Admin gap-audit sweep: 5 orphaned expired/fsbo dashboard actions + 4 dead sync components +
+  `testListingHistory` deleted; calls report's fabricated "0 calls made" now says "not
+  tracked"; 6 serial-await pages batched; `/admin/users` migrated to admin-v2 ReportGrid
+  (shadcn burndown 78→75); 4 analytics pages' raw reads moved into `lib/data/analytics/*`
+  (agent worktree, cherry-picked as `17f2322c`).
+
+**In flight, resume these:**
+1. DEAD-CODE SWEEP AGENT (worktree `.claude/worktrees/agent-aba84bded80d98abd`): deleting 18
+   fully-orphaned `app/actions/*` files (16 zero-importer + crm-deals.ts/listing-views.ts
+   transitive chains), full audit report in this session's task log. When its commit lands:
+   review the diff, cherry-pick to main, run full gates, push. The same audit's §3 list
+   (~100 orphaned VALUE exports across 41 live action files) is a queued follow-up slice.
+2. TWO CONDO ASKED ROWS refuse comps after the parser fix ("0 qualifying closed comps"):
+   `cma-141-sw-15th-unit-21`, `cma-1833-sw-canal-unit-24-redmond-97756` — actions sit
+   'pending' on the rail and will retry+refail. Engine question (comp selection for condo
+   units), engine lane's call whether to widen or leave the honest refusal + a manual note.
+3. Remaining asked-queue classes: 9 sendable now at `/admin/cmas?status=asked` (Matt reviews
+   each send in the dialog); 5 rural comp-refusals need a product answer (honest "no
+   defensible comp value" letter?); 2 never-MLS-listed + 1 out-of-area are correct refusals
+   pending D2 (assessor-backed resolver).
+
+**Queue (docs/plans/ADMIN_PRODUCT/work-queue.json):** tablet-width CRM layout, phone-width
+walk via dev harness, gclid capture, cma-performance personId threading, and the
+app/actions §3 export-trim slice.
+
+---
+
 # Prior — 2026-09-01 (Claude Code UX session, main) — subdivision 500 P0 killed + place-flow punch list
 
 **Shipped `c83043a7`, production READY, live-verified.** Every `/subdivisions/[slug]` URL had
