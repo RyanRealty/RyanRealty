@@ -120,9 +120,11 @@ boundary) vs "7 closed · 30 days" (detached, by plat name) pairing wants an exp
 
 **BROKERAGE WAVE:** `/reviews` rebuilt on the new barrel primitive `V3Proof` (figures, record strip,
 year chips, two-column cards with the first sentence in the display face); `/contact` rebuilt on
-`V3Ask` (one screen) with `V3Doors` above it (call / write / book) and `ContactSheet` deleted. NEXT:
-`/about` — replace the "Where we work" ledger with the regional `V3Atlas` and add a Proof band of the
-newest reviews; then the broker profile pages; then an evaluator pass over the three.
+`V3Ask` (one screen) with `V3Doors` above it (call / write / book) and `ContactSheet` deleted;
+`/about` (21382948) mounts the regional `V3Atlas` in place of its city ledger plus a `V3Proof` band of
+the newest four reviews (`record={false}`), and `app/_v3/region-atlas.ts` is now the ONE region
+assembly the homepage and About share. NEXT: an evaluator pass over the three (running), then the
+broker profile pages `/team/[slug]`.
 
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
