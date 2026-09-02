@@ -369,13 +369,49 @@ function priorInSameSeries(s: ClaimSeries, point: ClaimPoint): ClaimPoint | null
  * its change in points, which is also how the trade writes it. Every other
  * unit states a percent change.
  */
-function comparison(latest: number, prior: number, unit: ChartUnit, priorWhen: string): string {
+/**
+ * The number a printed label states: "$666K" → 666000, "$1.25M" → 1250000,
+ * "$1,900,000" → 1900000, "5,021" → 5021, "27 days" → 27, "12.4%" → 12.4.
+ * Null when the label carries no number.
+ */
+export function numberOfLabel(label: string): number | null {
+  const m = label.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/)
+  if (!m) return null
+  const n = Number(m[0])
+  if (!Number.isFinite(n)) return null
+  const rest = label.slice((m.index ?? 0) + m[0].length).trim()
+  if (/^[kK]\b/.test(rest)) return n * 1_000
+  if (/^[mM]\b/.test(rest)) return n * 1_000_000
+  if (/^[bB]\b/.test(rest)) return n * 1_000_000_000
+  return n
+}
+
+/**
+ * The change is computed from the values AS PRINTED, so a reader can check
+ * the percentage against the two figures the sentence names: $666K against
+ * $689K is 3.3%, and the sentence says 3.3%, never the 3.4% the unrounded
+ * values give (evaluator pass five, R12; CLAUDE.md section 0's per-figure
+ * trace). A label that carries no number falls back to the raw value.
+ */
+function comparison(
+  latest: number,
+  prior: number,
+  unit: ChartUnit,
+  priorWhen: string,
+  latestLabel?: string,
+  priorLabel?: string,
+): string {
+  // The label a point carries is what the page prints ("4.4 months"); only a
+  // point without one is printed through formatUnit, so that is the fallback.
+  latest = numberOfLabel(latestLabel?.trim() || formatUnit(latest, unit)) ?? latest
+  prior = numberOfLabel(priorLabel?.trim() || formatUnit(prior, unit)) ?? prior
   if (unit === 'percent') {
     const points = Math.round((latest - prior) * 10) / 10
     if (points === 0) return `flat against ${priorWhen}`
     const size = Math.abs(points)
     return `${points > 0 ? 'up' : 'down'} ${size} ${size === 1 ? 'point' : 'points'} from ${priorWhen}`
   }
+  if (prior === 0) return `from nothing in ${priorWhen}`
   const pct = Math.round(((latest - prior) / prior) * 1000) / 10
   if (pct === 0) return `flat against ${priorWhen}`
   return `${pct > 0 ? 'up' : 'down'} ${Math.abs(pct)}% from ${priorWhen}`
@@ -492,5 +528,5 @@ function writeClaim(
   if (!prior || !(prior.point.value > 0)) return `${head}.`
   const priorWhen = input.priorLabel?.trim() || periodLabel(prior.series, prior.point)
   if (!priorWhen) return `${head}.`
-  return `${head}, ${comparison(latest.point.value, prior.point.value, input.unit, priorWhen)}.`
+  return `${head}, ${comparison(latest.point.value, prior.point.value, input.unit, priorWhen, latest.point.label, prior.point.label)}.`
 }

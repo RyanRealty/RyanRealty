@@ -7,13 +7,14 @@ import {
   moneyTicks,
   monthTicks,
   niceStep,
+  numberOfLabel,
   percentTicks,
   seriesClaim,
   spacedTicks,
+  type ClaimSeries,
   windowClaim,
   yearTicks,
   yoyClaim,
-  type ClaimSeries,
 } from './ticks'
 
 /** A year-overlay series: one line per year, keyed by month number. */
@@ -447,5 +448,31 @@ describe('seriesClaim', () => {
     expect(seriesClaim({ metric: 'Median sale price', unit: 'money', series: trailing })).toBe(
       'Median sale price $520K in Aug 2026, up 4% from Sep 2025.',
     )
+  })
+})
+
+describe('the comparison is computed from the printed figures (R12)', () => {
+  it('reads the number a label states', () => {
+    expect(numberOfLabel('$666K')).toBe(666_000)
+    expect(numberOfLabel('$1.25M')).toBe(1_250_000)
+    expect(numberOfLabel('$1,900,000')).toBe(1_900_000)
+    expect(numberOfLabel('5,021')).toBe(5_021)
+    expect(numberOfLabel('27 days')).toBe(27)
+    expect(numberOfLabel('12.4%')).toBe(12.4)
+    expect(numberOfLabel('—')).toBeNull()
+  })
+
+  it('states the percentage a reader can check against the two printed values', () => {
+    // Unrounded: 665,900 vs 689,400 is 3.41%. Printed: $666K vs $689K is 3.3%.
+    const claim = yoyClaim({
+      metric: 'Median sale price',
+      unit: 'money',
+      series: [
+        { name: '2025', points: [{ value: 689_400, at: 8, tick: 'Aug', label: '$689K' }] },
+        { name: '2026', points: [{ value: 665_900, at: 8, tick: 'Aug', label: '$666K' }] },
+      ],
+    })
+    expect(claim).toContain('$666K')
+    expect(claim).toContain('down 3.3% from Aug 2025')
   })
 })
