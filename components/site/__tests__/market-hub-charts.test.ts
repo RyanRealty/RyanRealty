@@ -50,6 +50,46 @@ describe('buildMonthlyMedianChart', () => {
     ).toBeUndefined()
   })
 
+  it('claims the same month a year back, and the window when that month is not in it', () => {
+    const yearApart = buildMonthlyMedianChart(
+      [
+        { periodStart: '2025-02-01', medianSalePrice: 500000 },
+        { periodStart: '2025-08-01', medianSalePrice: 510000 },
+        { periodStart: '2026-02-01', medianSalePrice: 520000 },
+      ],
+      'Median sale price, completed months',
+    )
+    expect(yearApart?.claim).toBe('Median sale price $520K in Feb 2026, up 4% from Feb 2025.')
+
+    const shortWindow = buildMonthlyMedianChart(
+      [
+        { periodStart: '2025-09-01', medianSalePrice: 500000 },
+        { periodStart: '2026-02-01', medianSalePrice: 520000 },
+      ],
+      'Median sale price, completed months',
+    )
+    expect(shortWindow?.claim).toBe('Median sale price $520K in Feb 2026, up 4% from Sep 2025.')
+  })
+
+  it('draws round-money gridlines and month labels that sit inside the plotted range', () => {
+    const chart = buildMonthlyMedianChart(
+      [
+        { periodStart: '2025-01-01', medianSalePrice: 500000 },
+        { periodStart: '2025-06-01', medianSalePrice: 560000 },
+        { periodStart: '2025-12-01', medianSalePrice: 620000 },
+      ],
+      'Median sale price, completed months',
+    )
+    const yTicks = chart?.yTicks ?? []
+    expect(yTicks.length).toBeGreaterThanOrEqual(2)
+    for (const tick of yTicks) {
+      expect(tick.value).toBeGreaterThanOrEqual(500000)
+      expect(tick.value).toBeLessThanOrEqual(620000)
+    }
+    const ticksOnChart = new Set((chart?.series?.[0]?.points ?? []).map((p) => p.at))
+    for (const tick of chart?.xTicks ?? []) expect(ticksOnChart.has(tick.at)).toBe(true)
+  })
+
   it('skips null, zero, and non-finite prices', () => {
     const chart = buildMonthlyMedianChart(
       [

@@ -21,6 +21,7 @@ import type { MarketHistoryWeeklyPoint } from '@/lib/data/market/getMarketHistor
 import {
   MIN_POINTS_PER_TAB,
   buildCoreChartTabs,
+  coreChartForTab,
   formatCoreChartAxis,
   formatCoreChartValue,
 } from './core-charts'
@@ -281,6 +282,48 @@ describe('buildCoreChartTabs', () => {
     expect(buyer.find((t) => t.metric === 'monthsOfSupply')!.verdictLabel).toBe("Buyer's market")
     // Non-MoS tabs never carry a verdict.
     expect(seller.find((t) => t.metric === 'medianClosePrice')!.verdictLabel).toBeNull()
+  })
+
+  it('reads every months-of-supply point as ITSELF, never as the tab latest', () => {
+    const tab = buildCoreChartTabs(seriesFixture()).find((t) => t.metric === 'monthsOfSupply')!
+    const labels = coreChartForTab(tab).series![0]!.points.map((p) => String(p.label))
+    expect(labels).toEqual(['3.6 mo', '4.1 mo', '4.4 mo'])
+  })
+
+  it('claims each panel from its own series, a share in points and a price in percent', () => {
+    const by = Object.fromEntries(
+      buildCoreChartTabs(seriesFixture()).map((t) => [t.metric, coreChartForTab(t)]),
+    )
+    expect(by.medianClosePrice!.claim).toBe(
+      'Median close price $752,000 in Mar 2026, up 1.6% from Jan 2026.',
+    )
+    expect(by.monthsOfSupply!.claim).toBe(
+      'Months of supply 4.4 months in Mar 2026, up 22.2% from Jan 2026.',
+    )
+    expect(by.priceCutShare!.claim).toBe(
+      'Share of listings with a price cut 31.2% in Mar 2026, up 2.8 points from Jan 2026.',
+    )
+    expect(by.closedVolume!.claim).toBe('Homes sold 49 in Mar 2026, down 15.5% from Jan 2026.')
+    for (const chart of Object.values(by)) expect(String(chart.claim)).not.toMatch(/[;—–!]/)
+  })
+
+  it('gives the line panels gridlines and x labels that sit on the chart', () => {
+    const chart = coreChartForTab(
+      buildCoreChartTabs(seriesFixture()).find((t) => t.metric === 'medianClosePrice')!,
+    )
+    expect((chart.yTicks ?? []).length).toBeGreaterThanOrEqual(2)
+    for (const tick of chart.yTicks ?? []) {
+      expect(tick.value).toBeGreaterThanOrEqual(740_000)
+      expect(tick.value).toBeLessThanOrEqual(752_000)
+    }
+    // No `at` on these points, so x is the point order and every label is a
+    // tick that is really on the axis.
+    const ticks = chart.series![0]!.points.map((p) => String(p.tick))
+    for (const tick of chart.xTicks ?? []) expect(ticks[tick.at]).toBe(String(tick.label))
+    // A bar panel gets neither: the atom draws no gridlines under bars.
+    const bars = coreChartForTab(buildCoreChartTabs(seriesFixture()).find((t) => t.metric === 'closedVolume')!)
+    expect(bars.yTicks).toBeUndefined()
+    expect(bars.xTicks).toBeUndefined()
   })
 
   it('formats latest values by brand number rules', () => {

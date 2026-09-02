@@ -177,6 +177,68 @@ describe('V3Chart atom', () => {
     expect(html).toContain('Prior year')
     expect((html.match(/<path/g) ?? []).length).toBe(2)
   })
+
+  it('prints the claim under the caption, once', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median close by month'),
+        claim: v3Text('Median sale price $475K in Dec 2024, up 13.1% from Dec 2023.'),
+        series: [MEDIAN],
+      }),
+    )
+    expect(html).toContain('v3-chart__claim')
+    expect((html.match(/up 13\.1% from Dec 2023/g) ?? []).length).toBe(1)
+  })
+
+  it('draws a gridline per y tick and drops any tick outside the plotted domain', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median close by month'),
+        series: [MEDIAN],
+        // The plotted range is 420K–475K, padded 6% either way by buildLinePlot.
+        // $300K and $900K are outside it and must not draw.
+        yTicks: [
+          { value: 300_000, label: v3Text('$300K') },
+          { value: 425_000, label: v3Text('$425K') },
+          { value: 450_000, label: v3Text('$450K') },
+          { value: 900_000, label: v3Text('$900K') },
+        ],
+        xTicks: [
+          { at: 1, label: v3Text('Jan') },
+          { at: 6, label: v3Text('Jun') },
+          { at: 99, label: v3Text('Nope') },
+        ],
+      }),
+    )
+    expect(html).toContain('$425K')
+    expect(html).toContain('$450K')
+    expect(html).not.toContain('$300K')
+    expect(html).not.toContain('$900K')
+    expect(html).not.toContain('Nope')
+    expect((html.match(/v3-chart__grid/g) ?? []).length).toBe(2)
+    expect((html.match(/v3-chart__xtick/g) ?? []).length).toBe(2)
+  })
+
+  it('emphasize puts one series in ink with marks and the rest in tints', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median close by month, recent years'),
+        overlay: 'yoy',
+        emphasize: 'last',
+        series: [
+          series('2023', [point(420_000, 'Jan', '$420K', 1), point(440_000, 'Dec', '$440K', 12)]),
+          series('2024', [point(450_000, 'Jan', '$450K', 1), point(475_000, 'Dec', '$475K', 12)]),
+        ],
+      }),
+    )
+    expect(html).toContain('v3-chart__line--em')
+    expect(html).toContain('v3-chart__line--ctx1')
+    expect(html).toContain('v3-chart__mark--em')
+    // The categorical hue run gives way to the emphasis pattern.
+    expect(html).not.toContain('v3-chart__line--cat0')
+    // Only the emphasized series carries marks.
+    expect(html).not.toContain('v3-chart__mark--ctx1')
+  })
 })
 
 describe('V3Instrument mounts the chart atom', () => {

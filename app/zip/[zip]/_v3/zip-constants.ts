@@ -44,6 +44,7 @@ import {
   type V3FieldItem,
 } from '@/components/site/v3'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { moneyTicks, monthTicks, yoyClaim } from '@/lib/charts/ticks'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
@@ -360,7 +361,20 @@ export function zipMedianChart(
     overlay.push({ name: v3Text(String(year.year)), points })
   }
   if (overlay.length === 0) return undefined
-  return { caption: v3Text(caption), series: overlay, overlay: 'yoy' }
+  // Same three helpers the place family calls (placeMedianChart), so the ZIP
+  // node and the city node round one series the same way and write the same
+  // sentence about it.
+  const claim = yoyClaim({ metric: 'Median sale price', unit: 'money', series: overlay })
+  const yTicks = moneyTicks(overlay)
+  return {
+    caption: v3Text(caption),
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series: overlay,
+    overlay: 'yoy',
+    emphasize: 'last',
+    ...(yTicks.length ? { yTicks } : {}),
+    xTicks: monthTicks(MONTH_TICK),
+  }
 }
 
 /**

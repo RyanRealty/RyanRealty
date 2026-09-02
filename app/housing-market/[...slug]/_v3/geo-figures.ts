@@ -19,6 +19,7 @@ import type { KbYearSeries } from '@/lib/kb/year-series'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice, formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { moneyTicks, monthTicks, seriesClaim, spacedTicks, yoyClaim } from '@/lib/charts/ticks'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
   publicSegmentBrowseHref,
@@ -455,9 +456,18 @@ export function buildMonthlyMedianChart(
     if (point) points.push(point)
   }
   if (points.length < 2) return undefined
+  const series = [{ name: v3Text('Median sale'), points }]
+  // Ticks read "Aug 2026": the claim takes last August when the window holds
+  // it and the window's own first month when it does not.
+  const claim = seriesClaim({ metric: 'Median sale price', unit: 'money', series })
+  const yTicks = moneyTicks(series)
+  const xTicks = spacedTicks(series, 3)
   return {
     caption: v3Text(caption),
-    series: [{ name: v3Text('Median sale'), points }],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }
 
@@ -484,13 +494,19 @@ export function buildCityMedianChart(
     overlay.push({ name: v3Text(String(year.year)), points })
   }
   if (overlay.length > 0) {
+    const claim = yoyClaim({ metric: 'Median sale price', unit: 'money', series: overlay })
+    const yTicks = moneyTicks(overlay)
     return {
       caption: v3Text(
         leftoverUsed
           ? 'Median close by month, Market Truth leftover, recent years'
           : 'Median sale price by month, recent years',
       ),
+      ...(claim ? { claim: v3Text(claim) } : {}),
       series: overlay,
+      emphasize: 'last',
+      ...(yTicks.length ? { yTicks } : {}),
+      xTicks: monthTicks(MONTH_TICK),
     }
   }
   return buildMonthlyMedianChart(

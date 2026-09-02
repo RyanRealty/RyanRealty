@@ -45,6 +45,7 @@ import {
   type NeighborhoodYearPricingRow,
 } from '@/lib/data/geo/getNeighborhoodYearPricing'
 import { formatPriceExact } from '@/lib/format/money'
+import { customTicks, moneyTicks, windowClaim, yearTicks } from '@/lib/charts/ticks'
 
 /** Closings under this floor get "small sample" in the row's reading. */
 export const SMALL_YEAR_CLOSINGS_FLOOR = 10
@@ -92,6 +93,17 @@ export type NeighborhoodChartView = {
   run?: boolean
   baselineLabel?: string
   /**
+   * One formatted sentence under the caption. Set on SWITCHER panels, where
+   * one card title cannot describe several measures. A single-chart card
+   * leaves it empty because there the title is already the claim.
+   */
+  claim?: string
+  /** Line views only: gridlines and axis labels, already formatted. */
+  yTicks?: { value: number; label: string }[]
+  xTicks?: { at: number; label: string }[]
+  /** Line views only: the subject series in ink, context series in tints. */
+  emphasize?: 'first' | 'last'
+  /**
    * Names what the rows' sample counts. Required by the atom whenever a row
    * carries one — a bare n names no population.
    */
@@ -100,6 +112,11 @@ export type NeighborhoodChartView = {
 
 function money(n: number): string {
   return formatPriceExact(Math.round(n))
+}
+
+/** Spread a claim only when the builder could write one. */
+function claimOf(claim: string | undefined): { claim?: string } {
+  return claim ? { claim } : {}
 }
 
 function ppsf(n: number): string {
@@ -173,12 +190,18 @@ export function buildDistrictHistoryCard(
     },
   ]
 
+  // Every panel of a switcher states its own claim, computed off that panel's
+  // own series: the card's one title cannot say what three measures are doing,
+  // and the reader needs to know which measure is on screen.
   const panels: NeighborhoodChartView[] = [
     {
       caption: `Median close price per year, ${span}`,
       kind: 'line',
       marks: true,
       series: priceSeries,
+      ...claimOf(windowClaim({ metric: 'Median close price', unit: 'money', series: priceSeries })),
+      yTicks: moneyTicks(priceSeries),
+      xTicks: yearTicks(priceSeries),
     },
   ]
   const items = [{ key: 'price', label: 'Price' }]
@@ -188,6 +211,17 @@ export function buildDistrictHistoryCard(
       kind: 'line',
       marks: true,
       series: ppsfSeries,
+      // `value` without the "per sq ft" the metric name already carries.
+      ...claimOf(
+        windowClaim({
+          metric: 'Median price per square foot',
+          unit: 'money',
+          series: ppsfSeries,
+          value: `$${ppsfRows[ppsfRows.length - 1]!.medianPpsf!.toFixed(0)}`,
+        }),
+      ),
+      yTicks: customTicks(ppsfSeries, (v) => ppsf(v)),
+      xTicks: yearTicks(ppsfSeries),
     })
     items.push({ key: 'ppsf', label: 'Per sq ft' })
   }
@@ -197,6 +231,14 @@ export function buildDistrictHistoryCard(
     run: true,
     baselineLabel: v3Text('0 sold'),
     series: soldSeries,
+    ...claimOf(
+      windowClaim({
+        metric: 'Homes sold',
+        unit: 'count',
+        series: soldSeries,
+        value: count(last.closings),
+      }),
+    ),
   })
   items.push({ key: 'sold', label: 'Homes sold' })
 
@@ -281,10 +323,17 @@ export function buildIndexedCard(
     title: `${mineMultiple.toFixed(1)}x here, ${allMultiple.toFixed(1)}x across Bend`,
     displayLine: `Median close indexed to ${baseYear} = 100, this district against all thirteen.`,
     view: {
+      // NO CLAIM: the title states both multiples off these same points.
+      // `emphasize: 'first'` puts this district in full ink and the
+      // thirteen-district line behind it as context, which is the TASTE
+      // emphasis pattern for a subject-against-context chart.
       caption: `Median close price indexed to ${baseYear} = 100, ${baseYear}–${lastYear}`,
       kind: 'line',
       marks: true,
       series,
+      emphasize: 'first',
+      yTicks: customTicks(series, (v) => v.toFixed(0)),
+      xTicks: yearTicks(series),
     },
     source:
       `${CLOSED_POPULATION_CLAUSE} Both lines come from that one table. ${opts.allLabel} is the union of the ` +
