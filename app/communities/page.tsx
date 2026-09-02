@@ -26,6 +26,7 @@
  * (the same set /communities/{slug} prints), never the snapshot's own count.
  */
 
+import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getRegistryResortPublicFigures } from '@/lib/kb/registry-resort-public-figures'
@@ -368,7 +369,7 @@ export default async function CommunitiesPage() {
             { label: 'Search all listings', href: '/search' },
             { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' },
             { label: 'Recorded plats', href: '/subdivisions' },
-            { label: 'Value my home', href: '/sell/valuation' },
+            { label: 'Value my home', href: valuationHref('/communities') },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
           ]}
           note="Search active listings across every community, with filters for price, beds, and place. Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."

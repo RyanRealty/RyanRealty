@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils'
 import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
+import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingDrop, publishListingEstPaymentLabel, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
@@ -118,6 +119,7 @@ export function PriceCtaStrip({
   className,
 }: Props) {
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
+  const [guestSaveOpen, setGuestSaveOpen] = useState(false)
 
   // RC7 resume: complete a save this listing was bounced to login for (the hook
   // owns the idempotent save + re-stash; this is the detail page's real save CTA).
@@ -227,9 +229,11 @@ export function PriceCtaStrip({
     try {
       const res = await onSave(listing.listingKey)
       if (res.needsAuth) {
-        // Signed-out: stash the intent + send them to sign in (and back), so the
-        // save→account capture path completes itself on return (RC7).
-        redirectToLoginForSave(listing.listingKey) // hydration-safe: click handler only
+        // Signed-out: email-first (funnel audit 2026-09-01). The guest sheet
+        // captures the lead with one field; "Save with Google instead" inside
+        // it keeps the OAuth + pending-save resume path exactly as before.
+        setSaveState('idle')
+        setGuestSaveOpen(true)
         return
       }
       setSaveState(res.saved ? 'saved' : 'idle')
@@ -394,6 +398,15 @@ export function PriceCtaStrip({
           : 'Free email when a new home lists in this city. Unsubscribe any time.'}
       </p>
       </div>
+      {guestSaveOpen && saveState !== 'saved' ? (
+        <div style={{ marginTop: '0.75rem' }}>
+          <ListingGuestSaveSheet
+            listingKey={listing.listingKey}
+            addressLine={street || null}
+            onUseGoogle={() => redirectToLoginForSave(listing.listingKey)}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }

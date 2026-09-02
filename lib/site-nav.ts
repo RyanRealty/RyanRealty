@@ -170,7 +170,6 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       VALUATION_FORM,
       { href: '/sell/valuation', label: 'Written valuation' },
       { href: '/our-homes', label: 'Our listings' },
-      { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
   },
   {
@@ -258,7 +257,6 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/sell', label: 'Sell your home' },
       VALUATION_FORM,
       { href: '/our-homes', label: 'Our listings' },
-      { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
   },
   {
@@ -335,7 +333,6 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/sell', label: 'Sell your home' },
       VALUATION_FORM,
       { href: '/our-homes', label: 'Our listings' },
-      { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
   },
   {

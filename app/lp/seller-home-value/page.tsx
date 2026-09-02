@@ -468,7 +468,7 @@ export default async function SellerHomeValuePage({
               <ProcessStep num="2" title="A broker pulls the comps" body="Recent closed sales near you, adjusted for your home." />
             </ScrollReveal>
             <ScrollReveal delayMs={150}>
-              <ProcessStep num="3" title="Your number lands in your inbox" body="Within one business day. Questions go to the broker who built it." />
+              <ProcessStep num="3" title="Your number lands in your inbox" body="Within 24 hours. Questions go to the broker who built it." />
             </ScrollReveal>
           </div>
         </div>
@@ -559,7 +559,7 @@ export default async function SellerHomeValuePage({
             <FAQ
               value="faq-timing"
               q="How fast does it arrive?"
-              a="Your report lands in your inbox within one business day. If your home or timeline is unusual, the broker preparing it may call first to get a detail right."
+              a="Your report lands in your inbox within 24 hours. If your home or timeline is unusual, the broker preparing it may call first to get a detail right."
             />
             <FAQ
               value="faq-list"
@@ -586,7 +586,7 @@ export default async function SellerHomeValuePage({
               Enter the address for your number
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-cream/85">
-              A broker builds the report from closed sales near you and sends it within one business day.
+              A broker builds the report from closed sales near you and sends it within 24 hours.
             </p>
           </ScrollReveal>
           <div className="mt-8 text-left">

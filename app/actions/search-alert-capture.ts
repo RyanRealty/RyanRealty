@@ -188,3 +188,124 @@ export async function submitSearchAlertSignup(input: {
 
   return { ok: true }
 }
+
+/**
+ * Anonymous "save this home" capture (public listing pages).
+ *
+ * The signed-out Save click was the one high-intent action with no guest
+ * path — it hard-gated behind full OAuth while every alert surface offered
+ * email-only capture (funnel audit 2026-09-01). Same hardened shape as
+ * submitSearchAlertSignup: honeypot, per-IP limit, email validation, native
+ * dedup, compliance-gated tagging, browser stitch. The visitor's saved-home
+ * STATE still lives behind sign-in (lib/pending-save.ts resumes it); this
+ * captures the lead the moment the intent fires.
+ */
+export async function submitListingSaveCapture(input: {
+  email: string
+  listingKey: string
+  /** Street line for the broker task + want text; server caps it, never trusts it for routing. */
+  addressLine?: string
+  /** Honeypot, a hidden field humans never fill. */
+  company?: string
+  /** VisitTracker session id. READ on the client, never minted here. */
+  sessionId?: string
+}): Promise<SearchAlertResult> {
+  if (typeof input.company === 'string' && input.company.trim() !== '') {
+    return { ok: true }
+  }
+  const isProd = process.env.NODE_ENV === 'production'
+  try {
+    const limiter = getAuthLimiter()
+    if (!limiter) {
+      if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
+    } else {
+      const h = await headers()
+      const ip =
+        h.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        h.get('x-real-ip') ||
+        h.get('cf-connecting-ip') ||
+        '127.0.0.1'
+      const { success } = await limiter.limit(`search-alert:${ip}`)
+      if (!success) return { ok: false, error: 'Too many requests. Please try again in a minute.' }
+    }
+  } catch {
+    if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
+  }
+
+  const email = (input.email ?? '').trim().toLowerCase()
+  if (email.length > 254 || !EMAIL_RE.test(email)) {
+    return { ok: false, error: 'Please enter a valid email address.' }
+  }
+  const listingKey = (input.listingKey ?? '').trim()
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(listingKey)) {
+    return { ok: false, error: 'That listing could not be identified. Try again from the listing page.' }
+  }
+  const addressLine = (input.addressLine ?? '').trim().slice(0, 120)
+  const homeLabel = addressLine || 'this home'
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  // Server-built canonical URL — the client never supplies a URL.
+  const listingUrl = `${base}/homes-for-sale/listing/${encodeURIComponent(listingKey)}`
+
+  try {
+    const result = await sendEvent({
+      type: 'Saved Property',
+      person: { emails: [{ value: email }] },
+      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      system: 'Ryan Realty Website',
+      sourceUrl: listingUrl,
+      message: `Saved a home: ${homeLabel} (${listingKey})`,
+    })
+    const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
+    if (nativeId) {
+      try {
+        await canonicallyTagLead({
+          fubPersonId: nativeId,
+          audience: 'buyer',
+          source: 'idx-registration',
+          tier: 'warm',
+          originContext: {
+            source: 'listing-save',
+            sourceLabel: 'Saved a home (guest)',
+            landingPage: listingUrl,
+            audience: 'buyer',
+            tier: 'warm',
+            want: `Saved ${homeLabel}`,
+          },
+        })
+        await createNativeTask({
+          personId: nativeId,
+          name: `Guest saved a home: ${homeLabel}`,
+          type: 'Follow Up',
+          dueInMinutes: 5,
+        })
+      } catch {
+        // Best-effort. Tag/task blip must not skip the browser stitch.
+      }
+      try {
+        const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+        await stitchFormSubmitIdentity({
+          personId: nativeId,
+          email,
+          rrVid,
+          sessionId: input.sessionId,
+        })
+      } catch {
+        // Best-effort. Identifying the browser must never fail the capture.
+      }
+    }
+  } catch {
+    // Best-effort. Never block the visitor's confirmation on a capture blip.
+  }
+
+  try {
+    await fireLeadGenerated({
+      lp_variant: 'listing-save',
+      lead_type: 'buyer',
+      value: 0,
+    })
+  } catch {
+    // best-effort
+  }
+
+  return { ok: true }
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { valuationHref } from '@/lib/site/valuation-href'
 import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -281,7 +282,15 @@ export default async function Home() {
             source={v3Text(marketSource)}
             chart={medianChart}
             updated={liveStamp(leftoverStamp)}
-            action={{ label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' }}
+            action={
+              // Verdict-aware exit (funnel audit 2026-09-01): the section just
+              // told a would-be seller it is a seller's market — the one action
+              // answers that reader at that moment. Buyer's/balanced/unknown
+              // keep the market-report door. Same single ghost action either way.
+              hasVerdict && verdict.kind === 'seller'
+                ? { label: v3Text('See what your home is worth'), href: valuationHref('/'), variant: 'ghost' as const }
+                : { label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' as const }
+            }
           />
         ) : (
           <V3Quiet

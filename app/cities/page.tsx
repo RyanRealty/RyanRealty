@@ -23,6 +23,7 @@
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
 
+import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
@@ -492,7 +493,7 @@ export default async function CitiesPage() {
           heading="Search every listing in Central Oregon"
           items={[
             { label: 'Search all listings', href: '/search' },
-            { label: 'Value my home', href: '/sell/valuation' },
+            { label: 'Value my home', href: valuationHref('/cities') },
             { label: 'Communities', href: '/communities' },
             { label: 'Neighborhoods', href: '/neighborhoods' },
             { label: 'Recorded plats', href: '/subdivisions' },
