@@ -195,7 +195,7 @@ export function buildHubLead(closedYear: CoMarketAnnualRow | null | undefined): 
     chart: closed
       ? buildCompositionChart(
           compositionParts(closed.propertyTypeBreakdown),
-          `ALL-TYPE composition, ${closed.year}`,
+          `Closed sales by property type, ${closed.year}`,
         )
       : undefined,
   }

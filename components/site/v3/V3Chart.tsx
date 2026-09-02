@@ -556,7 +556,10 @@ export function V3Chart({
               ))}
               {marks || emphasisIndex != null
                 ? plot.lines.map((line, i) =>
-                    (marks || i === emphasisIndex ? line.points : [])
+                    // The emphasized series wears marks only when they can be
+                    // told apart: past sixty points (a weekly year) the beads
+                    // bury the line they were meant to lift.
+                    (marks || (i === emphasisIndex && line.points.length <= 60) ? line.points : [])
                       .filter((p) => p.plot)
                       .map((p, j) => (
                         // A zero-length round-capped stroke with
@@ -625,10 +628,32 @@ export function V3Chart({
               ))}
             </svg>
           </div>
-          <div className="v3-chart__x" aria-hidden="true">
-            <span>{plot.bars[0]?.tick}</span>
-            <span>{plot.bars[plot.bars.length - 1]?.tick}</span>
-          </div>
+          {plot.bars.length > 2 ? (
+            // A run of bars prints its ticks the way a line prints its months:
+            // at most six labels, the first and the last always among them,
+            // each under the bar it names (pass six, S6: 29 bars, no year).
+            <div className="v3-chart__x v3-chart__x--ticks" aria-hidden="true">
+              {plot.bars
+                .filter((b, i, all) => {
+                  const step = Math.max(1, Math.ceil(all.length / 6))
+                  return i === all.length - 1 || (i % step === 0 && i < all.length - 1 - step / 2)
+                })
+                .map((b) => (
+                  <span
+                    key={`bx-${b.index}-${b.tick}`}
+                    className="v3-chart__xtick"
+                    style={{ left: `${((b.x + b.w / 2) / plot.vbW) * 100}%` }}
+                  >
+                    {b.tick}
+                  </span>
+                ))}
+            </div>
+          ) : (
+            <div className="v3-chart__x" aria-hidden="true">
+              <span>{plot.bars[0]?.tick}</span>
+              <span>{plot.bars[plot.bars.length - 1]?.tick}</span>
+            </div>
+          )}
         </div>
       ) : null}
 

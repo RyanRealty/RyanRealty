@@ -797,3 +797,12 @@
     gap: var(--v3-space-3xs);
   }
 }
+
+/* Year ticks on a phone: six four-digit labels do not fit a 242px plot
+   (pass six, S4). A tick row of five or more thins to every other label
+   under 48rem; the gridline stays so the position still reads. */
+@media (max-width: 47.99rem) {
+  .v3 .v3-chart__x--ticks:has(> :nth-child(5)) .v3-chart__xtick:nth-child(2n) {
+    visibility: hidden;
+  }
+}

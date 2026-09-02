@@ -75,21 +75,36 @@ export function subdivisionSalesChart(
   displayName: string,
   history: readonly SubdivisionSalesYear[],
 ): V3ChartProps | undefined {
+  // The current year is a partial year: its bar is labelled "to date" and the
+  // claim states it alone. Comparing eight months to twelve is not a year over
+  // year (CLAUDE.md section 0: the same window across two years; evaluator
+  // pass six, S3).
+  const thisYear = new Date().getFullYear()
   const points: V3ChartPoint[] = [...history]
     .filter((row) => row.closedCount > 0)
     .sort((a, b) => a.year - b.year)
     .map((row) => ({
       value: row.closedCount,
-      tick: v3Text(String(row.year)),
+      tick: v3Text(row.year === thisYear ? `${row.year} to date` : String(row.year)),
       label: v3Text(row.closedCount.toLocaleString('en-US')),
       at: row.year,
     }))
   if (points.length < 2) return undefined
   const series = [{ name: v3Text('Closed counts'), points }]
+  const last = points[points.length - 1]!
   // The claim is the plat's latest closed year against the year before it,
   // both off this same series. A plat with a gap in its history carries no
-  // comparison rather than reaching to the nearest year it does have.
-  const claim = yoyClaim({ metric: 'Closed sales', unit: 'count', series })
+  // comparison rather than reaching to the nearest year it does have; a
+  // partial current year carries none either.
+  const claim =
+    last.at === thisYear
+      ? yoyClaim({
+          metric: 'Closed sales',
+          unit: 'count',
+          series: [{ name: series[0]!.name, points: [last] }],
+          latestLabel: `${thisYear} so far`,
+        })
+      : yoyClaim({ metric: 'Closed sales', unit: 'count', series })
   const yTicks = countTicks(series)
   const xTicks = yearTicks(series)
   return {

@@ -67,13 +67,13 @@ describe('compositionParts', () => {
 })
 
 describe('buildAllTypeFigures and buildCompositionFigures', () => {
-  it('labels volume and closes ALL-TYPE and composition with labelPropertyType', () => {
+  it('labels volume and closes as every type and composition with labelPropertyType', () => {
     const allType = buildAllTypeFigures({
       soldCount: 5769,
       totalVolume: 4_116_031_220.9,
       historyHref: '/housing-market/history?year=2025',
     })
-    expect(allType.map((f) => f.label)).toEqual(['ALL-TYPE volume', 'ALL-TYPE closes'])
+    expect(allType.map((f) => f.label)).toEqual(['Closed volume, every type', 'Closed sales, every type'])
     expect(allType[0]?.value).toBe('$4.116B')
     expect(allType[1]?.value).toBe('5,769')
 

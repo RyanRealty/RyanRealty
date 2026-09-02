@@ -104,14 +104,14 @@ export function buildAllTypeFigures(opts: {
   if (volume) {
     figures.push({
       value: v3Text(volume),
-      label: v3Text('ALL-TYPE volume'),
+      label: v3Text('Closed volume, every type'),
       href: opts.historyHref,
     })
   }
   if (opts.soldCount > 0) {
     figures.push({
       value: v3Text(opts.soldCount.toLocaleString('en-US')),
-      label: v3Text('ALL-TYPE closes'),
+      label: v3Text('Closed sales, every type'),
       href: opts.historyHref,
     })
   }
@@ -119,7 +119,7 @@ export function buildAllTypeFigures(opts: {
   if (median) {
     figures.push({
       value: v3Text(median),
-      label: v3Text('ALL-TYPE median close'),
+      label: v3Text('Median close, every type'),
       href: opts.historyHref,
     })
   }

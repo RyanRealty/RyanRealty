@@ -57,8 +57,8 @@ describe('buildAnnualCharts leftover overlay', () => {
 
   it('names leftover membership when leftover plots', () => {
     const charts = buildAnnualCharts(months, '2026-08', true)
-    expect(charts.region?.caption).toBe('Median close by month, Market Truth leftover, recent years')
-    expect(charts.trailing?.caption).toBe('Median close, Market Truth leftover, last 12 completed months')
+    expect(charts.region?.caption).toBe('Median sale price by month, single-family, recent years')
+    expect(charts.trailing?.caption).toBe('Median sale price, single-family, last 12 completed months')
   })
 
   it('keeps the cache caption when leftover cannot plot', () => {

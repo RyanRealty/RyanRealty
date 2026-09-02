@@ -105,6 +105,25 @@ from the place's own centre and scrolls the map into view — 27/27 homepage and
 reachable by chip; measured 6/6 chip taps pin the right card on both. Interior taps: 26/27 homepage
 places answer their own tap at 375 (was 14/27), Larkspur 73/80.
 
+**PASS SIX GRADED (scratchpad `atlas-eval-6.md`): dots 86 · split 82 · heat 69 · Tetherow 74 ·
+Bend 80 · Larkspur 73 · chart atom 84 (SHIPS — first surface to clear the bar) · chart rollout 67.**
+Pass seven (this commit) closes S1 (source line counts towns + places), S2 (name publisher: orphan
+periods, Vacation Plat, `atlasRegionNames` keeps the published name when stripping would fold two
+plats), S3 (a partial current year on the subdivision chart stands alone, its bar reads "2026 to
+date"), S4 (phone tick rows of five or more thin to every other label), S5 (the weekly rate overlay
+emphasizes the latest year; the atom draws marks on an emphasized line only up to 60 points), S6
+(bar runs print up to six ticks), S8 (captions and KPI labels lose "Market Truth leftover",
+"ALL-TYPE", "leftover membership"). Open: S7 (bar runs and range strips have no hover layer), S9
+(three plat names still ellipsize on the desktop card), S10 (two homepage silhouettes under 8px wide
+answer for a neighbour — geometry, not the hit layer), and the Tetherow "12 sold" (every type in the
+boundary) vs "7 closed · 30 days" (detached, by plat name) pairing wants an explicit label.
+
+**BROKERAGE WAVE:** `/reviews` rebuilt on the new barrel primitive `V3Proof` (figures, record strip,
+year chips, two-column cards with the first sentence in the display face); `/contact` rebuilt on
+`V3Ask` (one screen) with `V3Doors` above it (call / write / book) and `ContactSheet` deleted. NEXT:
+`/about` — replace the "Where we work" ledger with the regional `V3Atlas` and add a Proof band of the
+newest reviews; then the broker profile pages; then an evaluator pass over the three.
+
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
 2. Design the place-page class as a composed page, not stacked sections: an interactive

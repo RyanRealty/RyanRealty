@@ -102,7 +102,7 @@ export function ContactAsk({
       }
       formData.set('message', message)
       if (smsConsent) formData.set('smsConsent', 'yes')
-      const rrSession = readRrSessionId()
+      const rrSession = readRrSessionId() // hydration-safe: event/effect storage only
       if (rrSession) formData.set('sessionId', rrSession)
       if (listingKey) formData.set('listingKey', listingKey)
       const result = await submitContactForm(formData)

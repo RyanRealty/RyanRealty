@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { atlasRegionName } from './place-names'
+import { atlasRegionName, atlasRegionNames } from './place-names'
 
 describe('atlasRegionName', () => {
   it('strips every recorder residue class the evaluator quoted', () => {
@@ -12,7 +12,9 @@ describe('atlasRegionName', () => {
       ['Bend Park Third Addition Replat Block 186 Lots 15 & 16', 'Bend Park Third Addition'],
       ['Bend Park Second Addition Portion Of Blocks 145-164 Vacation', 'Bend Park Second Addition'],
       ['River Rim P.u.d', 'River Rim'],
-      ['Awbrey Glen &d', 'Awbrey Glen'],
+      ['Gardenside P.u.d Phase 1', 'Gardenside Phase 1'],
+      ['Desert Skies Phases 1 & 2', 'Desert Skies Phases 1 & 2'],
+      ['South Bend Vacation Plat', 'South Bend'],
     ]
     for (const [raw, want] of cases) expect(atlasRegionName(raw)).toBe(want)
   })
@@ -20,5 +22,15 @@ describe('atlasRegionName', () => {
   it('returns null when nothing survives', () => {
     expect(atlasRegionName('Pz 20-0027')).toBeNull()
     expect(atlasRegionName('')).toBeNull()
+  })
+})
+
+describe('atlasRegionNames', () => {
+  it('keeps the published name when stripping would fold two plats onto one', () => {
+    const raws = ['Daly Estates Replat Block 1', 'Daly Estates Replat Block 2', 'Daly Estates', 'Aviara Subdivision']
+    const names = atlasRegionNames(raws)
+    expect(new Set(names).size).toBe(4)
+    expect(names[3]).toBe('Aviara Subdivision')
+    expect(names[0]).not.toBe(names[1])
   })
 })

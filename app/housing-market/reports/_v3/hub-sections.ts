@@ -144,7 +144,7 @@ export function buildRangeDataset(reportData: CityRangeReport): SchemaInput | nu
     description:
       'Single-family home sales and inventory data for Central Oregon cities. ' +
       'Includes closed sales, 12-month leftover closed sales, median sale price, median days on market, and active listings. ' +
-      'Sourced from Oregon Data Share via Ryan Realty. 12-month closed sales are Market Truth leftover cells.',
+      'Sourced from Oregon Data Share via Ryan Realty. 12-month closed sales cover the region beyond the city rows.',
     url: `${siteUrl}${CANONICAL_PATH}`,
     temporalCoverage: `${periodStart}/${periodEnd}`,
     spatialCoverageName: 'Central Oregon, OR',

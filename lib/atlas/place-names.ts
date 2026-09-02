@@ -23,7 +23,7 @@ const RESIDUE: readonly RegExp[] = [
   /\s+\bBlocks?\s+\d+.*$/i, // Block 12 Lots 3-4
   /\s+\bLots?\s+\d+.*$/i, // Lot 7
   /\s*\bP\.?\s?U\.?\s?D\.?\b/gi, // P.u.d / PUD
-  /\s*&\s*d\b/gi, // "&d" fragment left by a broken ampersand
+  /\s+\bVacation\s+Plat\b.*$/i, // South Bend Vacation Plat
   /\s+\bTp\b$/i, // trailing plat marker
 ]
 
@@ -32,6 +32,27 @@ export function atlasRegionName(raw: string | null | undefined): string | null {
   const published = publishPlatDisplayName(raw) ?? (raw ?? '').trim()
   let name = published
   for (const re of RESIDUE) name = name.replace(re, ' ')
-  name = name.replace(/\s{2,}/g, ' ').replace(/^[\s,.-]+|[\s,.-]+$/g, '').trim()
+  name = name
+    .replace(/\s+\.\s*/g, ' ') // an orphan period left by a stripped abbreviation
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s,.-]+|[\s,.-]+$/g, '')
+    .trim()
   return name.length > 0 ? name : null
+}
+
+/**
+ * Names for a SET of regions. Stripping the recorder's residue can fold two
+ * plats onto one name ("Daly Estates" ×3 on Larkspur, pass six S2); when it
+ * does, the colliding ones keep their published name in full so three
+ * silhouettes never say the same thing and open three different pages.
+ */
+export function atlasRegionNames(raws: readonly (string | null | undefined)[]): (string | null)[] {
+  const stripped = raws.map((r) => atlasRegionName(r))
+  const seen = new Map<string, number>()
+  for (const n of stripped) if (n) seen.set(n, (seen.get(n) ?? 0) + 1)
+  return stripped.map((n, i) => {
+    if (!n || (seen.get(n) ?? 0) < 2) return n
+    const full = (publishPlatDisplayName(raws[i]) ?? raws[i] ?? '').trim()
+    return full.length > 0 ? full : n
+  })
 }

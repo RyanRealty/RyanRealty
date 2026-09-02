@@ -138,7 +138,7 @@ export function buildYearOverlayChart(
     return {
       caption: v3Text(
         leftoverUsed
-          ? 'Median close by month, Market Truth leftover, recent years'
+          ? 'Median sale price by month, single-family, recent years'
           : 'Median sale price by month, recent years',
       ),
       ...(claim ? { claim: v3Text(claim) } : {}),
@@ -150,7 +150,7 @@ export function buildYearOverlayChart(
   }
   return buildMonthlyMedianChart(
     monthly,
-    leftoverUsed ? 'Median close, Market Truth leftover, completed months' : 'Median sale price, completed months',
+    leftoverUsed ? 'Median sale price, single-family, completed months' : 'Median sale price, completed months',
   )
 }
 

@@ -876,8 +876,8 @@ export function V3Atlas({
               <summary className="v3-atlas__source-summary">Source{stamp ? ` · updated ${stamp}` : ''}</summary>
               <p className="v3-atlas__source-body">
                 {source}
-                {towns.length > 1
-                  ? ` The map outlines the ${towns.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
+                {towns.length + places.length > 1
+                  ? ` The map outlines the ${towns.length + places.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
                   : ''}
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
               </p>

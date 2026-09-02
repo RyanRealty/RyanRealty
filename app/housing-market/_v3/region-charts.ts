@@ -191,6 +191,9 @@ function rateYoyPanel(m30: readonly StatPoint[]): V3ChartProps | undefined {
   const yTicks = customTicks(series, (v) => fmtPct(v))
   return {
     caption: v3Text('Weekly 30-year fixed rate, each calendar year over one January to December axis'),
+    // The latest year in ink, the earlier years in tints: the claim names
+    // the latest year and the eye must land on it (pass six, S5).
+    emphasize: 'last',
     ...(claim ? { claim: v3Text(claim) } : {}),
     series,
     overlay: 'yoy',

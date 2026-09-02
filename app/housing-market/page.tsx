@@ -461,8 +461,8 @@ export default async function HousingMarketHubPage() {
             source={v3Text(
               `${
                 publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
-                  ? 'Leftover membership. Single-family figures, extra product types, and 12-month pace are the leftover pile. A miss omits. Not ALL-TYPE closed sales'
-                  : 'Leftover membership, single-family houses across the Central Oregon region. Not ALL-TYPE closed sales'
+                  ? 'Single-family figures, extra product types, and 12-month pace cover the Central Oregon region beyond the city rows. A miss omits. Not closed sales of every type'
+                  : 'Single-family houses across the Central Oregon region beyond the city rows. Not closed sales of every type'
               }.${mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`,
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
@@ -491,7 +491,7 @@ export default async function HousingMarketHubPage() {
             heading={v3Text('Market by city')}
             rows={[firstCityRow, ...restCityRows]}
             source={v3Text(
-              'leftover membership, active single-family houses, one row per city',
+              'live MLS through Oregon Data Share, active single-family houses, one row per city',
             )}
             updated={cityRefreshedAt ? v3Text(formatDate(cityRefreshedAt)) : undefined}
             action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}
