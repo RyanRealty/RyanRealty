@@ -40,11 +40,30 @@ const WORK = path.join(ROOT, '.basemap-work')
 const OUT_DIR = path.join(ROOT, 'data/basemap')
 const MAPSHAPER = 'mapshaper@0.6.102'
 
-const COUNTIES = [
+/**
+ * The three counties of the core market get every tier, including the street
+ * grid. The rest are where our listings also reach — measured from the live
+ * listing sitemap: Medford 739, Klamath Falls 640, Grants Pass 543, Ashland
+ * 278, and on down — and they get the near tier only. A listing there used to
+ * draw its dots on empty cream, with no road, river or lake anywhere
+ * (evaluator round six, LISTING-NOBOUNDARY-R6-3); the region tier stays the
+ * core three, so the homepage's payload does not change.
+ */
+const CORE_COUNTIES = [
   { fips: '41017', name: 'Deschutes' },
   { fips: '41013', name: 'Crook' },
   { fips: '41031', name: 'Jefferson' },
 ]
+
+const REACH_COUNTIES = [
+  { fips: '41029', name: 'Jackson' },
+  { fips: '41033', name: 'Josephine' },
+  { fips: '41035', name: 'Klamath' },
+  { fips: '41037', name: 'Lake' },
+  { fips: '41023', name: 'Grant' },
+]
+
+const COUNTIES = [...CORE_COUNTIES, ...REACH_COUNTIES]
 const LAYERS = ['roads', 'linearwater', 'areawater']
 const TIGER = 'https://www2.census.gov/geo/tiger/TIGER2024'
 const SOURCE = 'US Census TIGER/Line 2024'
@@ -59,7 +78,10 @@ const SOURCE = 'US Census TIGER/Line 2024'
    intervals are metres of Visvalingam simplification. */
 const TIERS = {
   region: { interval: 200, precision: 0.0001, minWaterKm: 25, minBodyKm2: 0.5 },
-  near: { interval: 40, precision: 0.00001, minWaterKm: 0, minBodyKm2: 0 },
+  /* The near tier still drops what no frame draws: a 200m ditch and a farm
+     pond are under a pixel even at 2km across, and eight counties of them cost
+     more than the geometry that reads. */
+  near: { interval: 40, precision: 0.00001, minWaterKm: 1.5, minBodyKm2: 0.02 },
 }
 
 const args = new Set(process.argv.slice(2))
@@ -245,7 +267,7 @@ function buildTier(tier) {
   const waterways = []
   const bodies = []
 
-  for (const { fips } of COUNTIES) {
+  for (const { fips } of tier === 'region' ? CORE_COUNTIES : COUNTIES) {
     const arterials = extract({
       fips,
       tier,
@@ -284,7 +306,7 @@ function buildTier(tier) {
   return {
     source: SOURCE,
     sourceUrl: `${TIGER}/`,
-    counties: COUNTIES.map((c) => `${c.fips} ${c.name}`),
+    counties: (tier === 'region' ? CORE_COUNTIES : COUNTIES).map((c) => `${c.fips} ${c.name}`),
     tier,
     q,
     method: `MTFCC S1100/S1200 roads${minWaterKm > 0 ? `, named H3010/H3020 waterways at least ${minWaterKm}km long` : ', every named H3010/H3020 waterway'}${minBodyKm2 > 0 ? `, H2030/H2040/H3010 water bodies at least ${minBodyKm2}km²` : ', every H2030/H2040/H3010 water body'}; dissolved by name, Visvalingam simplified at ${interval}m, coordinates quantized to ${decimals} decimals and delta encoded.`,
@@ -329,7 +351,7 @@ function writeStreetTiles() {
   const q = Math.round(1 / TIERS.near.precision)
   const tiles = new Map()
   let total = 0
-  for (const { fips } of COUNTIES) {
+  for (const { fips } of CORE_COUNTIES) {
     const local = extract({
       fips,
       tier: 'near',

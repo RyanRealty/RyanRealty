@@ -94,8 +94,16 @@ function bboxOfGeometries(regions: readonly { geometry: GeoJSON.Geometry | null 
 
 export function basemapForFrame({ bbox, tier, pad = 0.15 }: BasemapFrame): Basemap {
   const span = bbox ? Math.max(bbox.maxLon - bbox.minLon, bbox.maxLat - bbox.minLat) : Infinity
-  const chosen = tier ?? (span <= NEAR_SPAN ? 'near' : 'region')
-  const clipped = clipBasemap(TIERS[chosen], bbox, pad)
+  let chosen = tier ?? (span <= NEAR_SPAN ? 'near' : 'region')
+  let clipped = clipBasemap(TIERS[chosen], bbox, pad)
+  // The region tier is the core three counties; the near tier is everywhere we
+  // list. A wide frame outside the core — Klamath Falls spread over half a
+  // degree — chose the region tier and got nothing, so its map drew dots on
+  // empty cream (evaluator round six, LISTING-NOBOUNDARY-R6-3).
+  if (chosen === 'region' && bbox && clipped.roads.length === 0 && clipped.waterways.length === 0) {
+    chosen = 'near'
+    clipped = clipBasemap(TIERS.near, bbox, pad)
+  }
   const framed = bbox ? thinBasemap(clipped, bbox) : clipped
   if (!bbox) return framed
   // Close enough to walk: the named local streets come in under the highways.
