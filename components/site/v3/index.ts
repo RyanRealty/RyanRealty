@@ -129,6 +129,14 @@ export { V3Proof } from './V3Proof.client'
 
 export type { V3ProofProps, V3ProofQuote, V3ProofFigure } from './V3Proof.client'
 
+/**
+ * Ask: one screen, every field, one button. The contact form. The Sheet stays
+ * the one-question-at-a-time pattern for a valuation.
+ */
+export { V3Ask } from './V3Ask.client'
+
+export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
+
 export { V3ChartSwitch } from './V3ChartSwitch.client'
 
 export type { V3ChartSwitchProps, V3ChartSwitchItem } from './V3ChartSwitch.client'

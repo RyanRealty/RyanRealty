@@ -36,8 +36,9 @@ import {
   V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
+  V3Doors,
 } from '@/components/site/v3'
-import { ContactSheet } from './_v3/ContactSheet.client'
+import { ContactAsk } from './_v3/ContactAsk.client'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
 import { brokerLedgerRow, TEAM_RANK } from '@/app/team/_v3/team-constants'
 
@@ -131,9 +132,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
       : []),
-    { label: 'Call or text', href: `tel:${CONTACT.phoneFubTel}` },
-    { label: CONTACT.email.primary, href: `mailto:${CONTACT.email.primary}` },
-    { label: 'Broker profiles', href: '/team' },
   ]
 
   const faqItems: V3QuietItem[] = [
@@ -164,8 +162,34 @@ export default async function ContactPage({ searchParams }: PageProps) {
           headingLevel={1}
           items={introItems}
         />
+        {/* The three fastest doors, above the form: a visitor who wants a
+            human should not have to find a form field first. */}
+        <V3Doors
+          id="reach"
+          name={v3Text('Reach a broker')}
+          doors={[
+            {
+              kicker: v3Text('Call or text'),
+              label: v3Text(CONTACT.phoneDirect),
+              fact: v3Text('A broker answers, not a desk'),
+              href: `tel:${CONTACT.phoneDirectTel}`,
+            },
+            {
+              kicker: v3Text('Write'),
+              label: v3Text('Email a broker'),
+              fact: v3Text(`${CONTACT.email.primary}, a reply within one business day`),
+              href: `mailto:${CONTACT.email.primary}`,
+            },
+            {
+              kicker: v3Text('Book'),
+              label: v3Text('Book a broker'),
+              fact: v3Text('Pick a time on the calendar'),
+              href: '/book',
+            },
+          ]}
+        />
 
-        <ContactSheet
+        <ContactAsk
           defaultInquiryType={defaultInquiry}
           listingKey={params.listingKey}
           intent={intent}

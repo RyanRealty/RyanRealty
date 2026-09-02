@@ -871,7 +871,7 @@
     min-height: var(--v3-tap);
     padding: 0 var(--v3-space-xs);
     border: 1px solid var(--v3-edge);
-    border-radius: 999px;
+    border-radius: var(--v3-radius-pill);
     background: none;
     color: var(--v3-ink);
     font-family: inherit;

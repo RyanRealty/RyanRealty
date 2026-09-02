@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { V3Sheet } from '@/components/site/v3'
 import { CONTACT_FIELD_IDS } from './contact-constants'
 
-const SHEET_FILE = join(process.cwd(), 'app/contact/_v3/ContactSheet.client.tsx')
+const ASK_FILE = join(process.cwd(), 'app/contact/_v3/ContactAsk.client.tsx')
 
 describe('contact field locators', () => {
   it('assigns one unique id per contact control', () => {
@@ -15,8 +15,8 @@ describe('contact field locators', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('ContactSheet wires each stable id once', () => {
-    const src = readFileSync(SHEET_FILE, 'utf8')
+  it('ContactAsk wires each stable id once', () => {
+    const src = readFileSync(ASK_FILE, 'utf8')
     for (const key of Object.keys(CONTACT_FIELD_IDS) as (keyof typeof CONTACT_FIELD_IDS)[]) {
       const needle = `id: CONTACT_FIELD_IDS.${key}`
       expect(src.split(needle).length - 1, needle).toBe(1)
