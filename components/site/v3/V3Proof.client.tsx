@@ -108,17 +108,31 @@ export function V3Proof({
   const last = years[years.length - 1] ?? first
   const span = Math.max(1, last + 1 - first)
 
-  /* Marks: one per review at its month, stacked when a month holds more. */
+  /* Marks: one per review at its month. A mark keeps its month exactly — the
+     strip is a time axis — and rises a row whenever the row below already
+     holds a mark within MIN_GAP. Stacking only same-month marks left adjacent
+     months 3.5px apart at 375, two-thirds overlapped, so a tap four pixels off
+     opened a different review in three of six trials (evaluator round five,
+     REVIEWS-1). */
   const marks = useMemo(() => {
-    const byMonth = new Map<string, number>()
-    return quotes.map((q) => {
-      const key = `${q.year}-${q.month}`
-      const stack = byMonth.get(key) ?? 0
-      byMonth.set(key, stack + 1)
-      const x = ((q.year - first + (q.month + 0.5) / 12) / span) * STRIP_W
-      const y = STRIP_H - 14 - stack * (MARK_R * 2 + 3)
-      return { q, x, y: Math.max(MARK_R + 1, y) }
-    })
+    // In strip units: 34 of 1000 is about 11px on a 335px phone strip, one
+    // mark diameter, so no two marks in a row can touch.
+    const MIN_GAP = 34
+    const rowLastX: number[] = []
+    const placed = quotes
+      .map((q) => ({ q, x: ((q.year - first + (q.month + 0.5) / 12) / span) * STRIP_W }))
+      .sort((a, b) => a.x - b.x)
+      .map(({ q, x }) => {
+        let row = 0
+        while (rowLastX[row] != null && x - rowLastX[row]! < MIN_GAP) row += 1
+        rowLastX[row] = x
+        const y = STRIP_H - 14 - row * (MARK_R * 2 + 3)
+        return { q, x, y: Math.max(MARK_R + 1, y) }
+      })
+    // Back to the order the cards are in, so the roving index and the list
+    // agree.
+    const byId = new Map(placed.map((m) => [m.q.id, m]))
+    return quotes.map((q) => byId.get(q.id)!).filter(Boolean)
   }, [quotes, first, span])
 
   const shown = useMemo(() => (year == null ? quotes : quotes.filter((q) => q.year === year)), [quotes, year])
