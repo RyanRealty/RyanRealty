@@ -56,7 +56,6 @@ vi.mock('next/cache', () => ({
 import {
   createArea,
   renameArea,
-  setAreaShapes,
   deleteArea,
   setAreaPublic,
 } from '@/app/actions/search-areas'
@@ -79,7 +78,6 @@ describe('search-areas actions — session gate', () => {
     session = null
     expect((await createArea('Bend West Side', SHAPES)).error).toBe('Not signed in')
     expect((await renameArea('a1', 'New name')).error).toBe('Not signed in')
-    expect((await setAreaShapes('a1', SHAPES)).error).toBe('Not signed in')
     expect((await deleteArea('a1')).error).toBe('Not signed in')
     expect((await setAreaPublic('a1', true, 'bend-west-side')).error).toBe('Not signed in')
     expect(calls).toHaveLength(0)
@@ -113,11 +111,6 @@ describe('createArea', () => {
 describe('owner-scoped writes carry the session user id', () => {
   it('renameArea', async () => {
     await renameArea('a1', 'River West')
-    const call = calls.find((c) => c.fn === 'updateAreaForUser')
-    expect(call?.args.slice(0, 2)).toEqual(['a1', 'user-1'])
-  })
-  it('setAreaShapes', async () => {
-    await setAreaShapes('a1', SHAPES)
     const call = calls.find((c) => c.fn === 'updateAreaForUser')
     expect(call?.args.slice(0, 2)).toEqual(['a1', 'user-1'])
   })

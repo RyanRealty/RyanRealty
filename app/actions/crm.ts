@@ -26,10 +26,7 @@ import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedE
 import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmPeopleQuery'
 import { savedViewToSegment } from '@/lib/data/crm/getSavedViewSegment'
 import { EMPTY_SEGMENT, type CrmSegment, type CrmNode } from '@/lib/crm/segment-ast'
-import type { TriageItem } from '@/lib/data/crm/getInboundTriage'
-import { createContactAddress, parseCreateContactForm, validateCreateContact } from '@/lib/crm/create-contact'
 import { trySendGroupMms } from '@/lib/crm/try-send-group-mms'
-import { persistCreatedContactAddress, resolveCreatedPersonId } from '@/lib/crm/persist-created-contact'
 
 export type CrmActionResult = { ok: true } | { ok: false; error: string }
 
@@ -142,15 +139,6 @@ export async function requirePersonInScope(
 }
 
 // ── Reads ──────────────────────────────────────────────────────────────────
-
-export async function listCrmSavedViews(): Promise<CrmSavedView[]> {
-  const sb = createServiceClient()
-  const { data } = await sb
-    .from('crm_saved_views')
-    .select('id,name,description,filter,position')
-    .order('position', { ascending: true })
-  return (data ?? []) as CrmSavedView[]
-}
 
 export async function listCrmPeople(filters: CrmListFilters): Promise<{
   rows: CrmPersonRow[]
@@ -266,23 +254,6 @@ export async function listCrmPeople(filters: CrmListFilters): Promise<{
 
 export type CrmOverview = {
   total: number
-}
-
-/**
- * Headline total for the People sidebar. Trimmed 2026-07-14 (audit): the old
- * version also ran three tags-contains exact counts over the ~20k-row
- * crm_people table plus open-tasks + last-sync reads, and its ONLY consumer
- * (/admin/crm) used nothing but `total` — five of six queries were dead weight
- * on every People-list load.
- */
-export async function getCrmOverview(brokerSlug?: string | null): Promise<CrmOverview> {
-  const sb = createServiceClient()
-  // GAP-2: scope the headline count to the caller's own book when restricted.
-  // The page passes scopeBroker(access) — null (superuser) leaves it global.
-  let q = sb.from('crm_people').select('id', { count: 'exact', head: true })
-  if (brokerSlug) q = q.eq('assigned_broker', brokerSlug)
-  const { count } = await q
-  return { total: count ?? 0 }
 }
 
 // getCrmHomeDashboard + CrmHomeDashboard removed 2026-07-14 (audit): zero
@@ -605,96 +576,6 @@ export async function sendCrmEmailAction(formData: FormData): Promise<CrmActionR
 // the POST endpoints Next generates for them.
 
 export type ActivityPerson = { personId: number; name: string; pictureUrl: string | null; ts: string; label: string }
-
-/**
- * Named-people activity for the broker dashboard "Right now" feed
- * (docs/MOBILE_CRM_PARITY.md #3). Matt 2026-06-16: show WHO — the latest
- * person on the site, who opened/sent email — not a wall of anonymous session
- * IDs. Each row resolves crm_timeline events to a named crm_people row and links
- * to that lead. Latest event per person, broker-scoped.
- */
-async function recentActivityPeople(
-  kinds: string[],
-  labelFor: (kind: string) => string,
-  brokerSlug?: string | null,
-  limit = 12,
-): Promise<ActivityPerson[]> {
-  const sb = createServiceClient()
-  const { data } = await sb
-    .from('crm_timeline')
-    .select('person_id,ts,kind,crm_people(name,picture_url,assigned_broker,deleted)')
-    .in('kind', kinds)
-    .order('ts', { ascending: false })
-    .limit(300)
-  const seen = new Set<number>()
-  const out: ActivityPerson[] = []
-  type Joined = { person_id: number; ts: string; kind: string; crm_people: { name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean } | Array<{ name: string | null; picture_url: string | null; assigned_broker: string | null; deleted: boolean }> | null }
-  for (const r of (data ?? []) as unknown as Joined[]) {
-    const p = Array.isArray(r.crm_people) ? r.crm_people[0] : r.crm_people
-    if (!p || p.deleted || !p.name) continue
-    if (brokerSlug && p.assigned_broker !== brokerSlug) continue
-    if (seen.has(r.person_id)) continue
-    seen.add(r.person_id)
-    out.push({ personId: r.person_id, name: p.name, pictureUrl: p.picture_url, ts: r.ts, label: labelFor(r.kind) })
-    if (out.length >= limit) break
-  }
-  return out
-}
-
-/** Latest identified people who visited the website (named, newest first). */
-export async function getRecentWebsiteVisitors(brokerSlug?: string | null, limit = 12): Promise<ActivityPerson[]> {
-  return recentActivityPeople(['web_event'], () => 'Viewed the site', brokerSlug, limit)
-}
-
-/** Latest people with email activity — who opened your email or emailed you. */
-export async function getRecentEmailPeople(brokerSlug?: string | null, limit = 12): Promise<ActivityPerson[]> {
-  const label = (k: string) => (k === 'email_open' ? 'Opened your email' : k === 'email_in' ? 'Emailed you' : 'You emailed')
-  return recentActivityPeople(['email_open', 'email_in', 'email_out'], label, brokerSlug, limit)
-}
-
-export type RecentLead = {
-  id: number
-  name: string | null
-  stage: string
-  source: string | null
-  pictureUrl: string | null
-  createdAt: string
-}
-
-/**
- * Recently-added leads for the broker dashboard "New leads" activity segment
- * (docs/MOBILE_CRM_PARITY.md #3). Broker-scoped the same way the rest of the
- * dashboard reads are — a slug sees only their own, a superuser sees everyone.
- */
-export async function getRecentNewLeads(limit = 12): Promise<RecentLead[]> {
-  const access = await getCrmAccess()
-  if (!access) return []
-  const { isAttributableLead } = await import('@/lib/data/crm/leadSourceTaxonomy')
-  const sb = createServiceClient()
-  // Fetch a generous recent batch, then keep only GENUINE inbound leads
-  // (web/portal/phone/social/referral). Ordering by created_at desc is dominated
-  // by the Farm/Import bulk lists (~22k rows), so we over-fetch and filter with
-  // the shared taxonomy instead of showing imports as "new leads".
-  let q = sb
-    .from('crm_people')
-    .select('id,name,stage,source,picture_url,created_at,assigned_broker')
-    .eq('deleted', false)
-    .order('created_at', { ascending: false })
-    .limit(Math.max(limit * 12, 150))
-  if (access.brokerSlug) q = q.eq('assigned_broker', access.brokerSlug)
-  const { data } = await q
-  return (data ?? [])
-    .filter((r) => isAttributableLead((r.source ?? null) as string | null))
-    .slice(0, limit)
-    .map((r) => ({
-      id: r.id as number,
-      name: (r.name ?? null) as string | null,
-      stage: (r.stage ?? 'Lead') as string,
-      source: (r.source ?? null) as string | null,
-      pictureUrl: (r.picture_url ?? null) as string | null,
-      createdAt: r.created_at as string,
-    }))
-}
 
 // listCrmConversations + CrmConversationRow removed 2026-07-14 (audit):
 // superseded by the lib/data/crm conversation machinery (getInboxFolderQueue /
@@ -1022,17 +903,6 @@ export type BrokerLicenseRow = {
   nrds_id: string | null
 }
 
-/** License + membership info for the license card (broker sees own, superuser sees all). */
-export async function listBrokerLicenses(): Promise<BrokerLicenseRow[]> {
-  const sb = createServiceClient()
-  const { data } = await sb
-    .from('brokers')
-    .select('slug,display_name,license_number,license_type,license_status,license_expires_on,license_checked_at,nrds_id')
-    .eq('is_active', true)
-    .order('sort_order')
-  return (data ?? []) as BrokerLicenseRow[]
-}
-
 /** Reassign a contact to a broker — updates CRM + CRM assignedUserId + broker: tag, logs to timeline. */
 export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActionResult> {
   const access = await requireCrmAccess()
@@ -1246,79 +1116,6 @@ export type CrmOpenTask = {
   assigned_broker: string | null
   person_id: number | null
   person: { name: string | null; stage: string } | null
-}
-
-/** All open tasks across the book — the global Tasks page. */
-export async function listCrmOpenTasks(broker?: string): Promise<CrmOpenTask[]> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return []
-  const sb = createServiceClient()
-  // Drop tasks >31 days overdue (CRM import cruft, not real work — Matt
-  // 2026-06-15) while keeping tasks with no due date.
-  const staleTaskFloor = new Date(Date.now() - 31 * 24 * 3600e3).toISOString()
-  let q = sb
-    .from('crm_tasks')
-    .select('id,name,type,due_at,assigned_broker,person_id,crm_people(name,stage)')
-    .is('completed_at', null)
-    .or(`due_at.is.null,due_at.gte.${staleTaskFloor}`)
-    .order('due_at', { ascending: true, nullsFirst: false })
-    .limit(300)
-  // GAP-3: default to the caller's own scope instead of "all brokers". A
-  // restricted broker (scope non-null) can't widen past their own slug — their
-  // scope overrides any wider ?broker= the URL tries to pass.
-  const scope = scopeBroker(access.access)
-  const effective = scope ?? broker
-  if (effective) q = q.eq('assigned_broker', effective)
-  const { data } = await q
-  return (data ?? []).map((r) => ({
-    id: r.id as number,
-    name: r.name as string,
-    type: (r.type ?? null) as string | null,
-    due_at: (r.due_at ?? null) as string | null,
-    assigned_broker: (r.assigned_broker ?? null) as string | null,
-    person_id: (r.person_id ?? null) as number | null,
-    person: (r as unknown as { crm_people: { name: string | null; stage: string } | null }).crm_people ?? null,
-  }))
-}
-
-/**
- * Manual contact creation. Routes through sendEvent (native capture via
- * ensureNativeLead since the CRM decommission) so dedupe-by-email/phone and
- * the standard enrollment pipeline behave exactly like a site lead, then
- * resolves and returns the CRM id.
- */
-export async function createCrmContactAction(formData: FormData): Promise<CrmActionResult & { personId?: number }> {
-  const access = await requireCrmAccess()
-  if (!access.ok) return access
-  const input = parseCreateContactForm(formData)
-  const valid = validateCreateContact(input)
-  if (!valid.ok) return valid
-  const address = createContactAddress(input)
-  const broker = access.access.brokerSlug ?? 'matt'
-
-  const { sendEvent } = await import('@/lib/crm/send-event')
-  const sent = await sendEvent({
-    type: 'General Inquiry',
-    source: 'Manual entry',
-    system: 'RyanRealtyPlatform',
-    person: {
-      firstName: input.firstName,
-      lastName: input.lastName || undefined,
-      emails: input.email ? [{ value: input.email }] : undefined,
-      phones: input.phone ? [{ value: input.phone }] : undefined,
-    },
-    brokerAttribution: { brokerSlug: broker },
-  })
-  if (!sent.ok) return { ok: false, error: `Lead create failed: ${'error' in sent ? sent.error : sent.status}` }
-
-  const personId = await resolveCreatedPersonId({
-    sentPersonId: sent.personId ?? undefined,
-    email: input.email,
-    phone: input.phone,
-  })
-  if (personId && address) await persistCreatedContactAddress(personId, address)
-  revalidateCrm(personId)
-  return { ok: true, personId }
 }
 
 export async function completeCrmTaskAction(formData: FormData): Promise<CrmActionResult> {
@@ -1601,17 +1398,6 @@ export async function getNextRecommendation(personId: number): Promise<CrmNextRe
 
 export type { BrokerActionItem } from '@/lib/data/crm/getBrokerActionQueue'
 
-/** Every lead with a broker-confirmed step waiting, scoped to the signed-in
- *  broker — the "what needs you" queue. Logic lives in
- *  lib/data/crm/getBrokerActionQueue (P9); this wrapper resolves access for
- *  action-side callers. */
-export async function getBrokerActionQueue() {
-  const access = await getCrmAccess()
-  if (!access) return []
-  const { getBrokerActionQueue: run } = await import('@/lib/data/crm/getBrokerActionQueue')
-  return run({ brokerSlug: access.brokerSlug })
-}
-
 /** Broker confirms the recommended next step — engine sends it on the next run. */
 export async function confirmNextStepAction(enrollmentId: number) {
   const access = await getCrmAccess()
@@ -1648,33 +1434,6 @@ export async function skipNextStepAction(enrollmentId: number) {
       : { step_index: nextIdx, status: 'running', next_run_at: new Date().toISOString() },
     'Recommended step skipped by broker',
   )
-}
-
-/**
- * The inbound-activity triage list for the dashboard "Needs your action" queue —
- * unread replies, CMA/BPO/market-report opens, hot identified visitors, and
- * showing/new-lead call tasks due, ranked by recency x signal weight
- * (lib/data/crm/getInboundTriage). Scope mirrors the rest of the dashboard: a
- * restricted broker is pinned to their own book; a superuser may pass the page's
- * resolved slug (null = Everyone).
- */
-export async function getBrokerInboundTriage(requestedSlug?: string | null): Promise<TriageItem[]> {
-  const access = await getCrmAccess()
-  if (!access) return []
-  const own = scopeBroker(access)
-  let slug: string | null
-  if (own) {
-    slug = own
-  } else {
-    const req = (requestedSlug ?? '').trim()
-    slug = req && (CRM_BROKERS as readonly string[]).includes(req) ? req : null
-  }
-  try {
-    const { getInboundTriage } = await import('@/lib/data/crm/getInboundTriage')
-    return await getInboundTriage(slug)
-  } catch {
-    return []
-  }
 }
 
 /**

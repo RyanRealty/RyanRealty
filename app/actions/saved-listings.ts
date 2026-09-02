@@ -2,7 +2,6 @@
 
 import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient } from '@/lib/supabase/service'
 import { recordSaveListingEvent } from '@/lib/data/crm/recordSaveListingEvent'
 import { incrementListingSaveCount, decrementListingSaveCount } from '@/app/actions/engagement'
 import { unlikeListing } from '@/app/actions/likes'
@@ -141,17 +140,3 @@ export async function removeSavedHome(listingKey: string): Promise<{ error: stri
   return { error: saveResult.error ?? likeResult.error ?? null }
 }
 
-/** Public save count for a listing (social proof). Uses service role to count saved_listings. */
-export async function getSavedListingCount(listingKey: string): Promise<number> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim() || !listingKey?.trim()) return 0
-  const canonicalKey = await resolveCanonicalListingKey(listingKey.trim())
-  const supabase = createServiceClient()
-  const { count, error } = await supabase
-    .from('saved_listings')
-    .select('*', { count: 'exact', head: true })
-    .eq('listing_key', canonicalKey)
-  if (error) return 0
-  return count ?? 0
-}

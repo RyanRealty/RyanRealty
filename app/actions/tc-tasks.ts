@@ -4,9 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { listDealTasks } from '@/lib/data/tc/task-reads'
-
-export { listDealTasks }
 
 async function requireBroker(): Promise<{ email: string } | { error: string }> {
   const session = await getSession()

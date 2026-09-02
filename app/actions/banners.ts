@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
-import { fetchPlacePhoto, fetchPlacePhotoOptions } from '../../lib/photo-api'
+import { fetchPlacePhoto } from '../../lib/photo-api'
 import { cityEntityKey, subdivisionEntityKey } from '../../lib/slug'
 import { getBannerSearchQuery } from '../../lib/banner-prompts'
 import { getResortEntityKeys } from './subdivision-flags'
@@ -187,38 +187,6 @@ async function downloadAndStoreBanner(
 }
 
 /**
- * Return 4 Unsplash options for "pick another" UI (thumbUrl for thumbnails, url for saving).
- */
-export async function getPlaceBannerOptions(searchQuery: string): Promise<
-  { url: string; thumbUrl: string; attribution: string }[]
-> {
-  const options = await fetchPlacePhotoOptions(searchQuery.trim() || 'Central Oregon', 4)
-  return options.map((o) => ({ url: o.url, thumbUrl: o.thumbUrl, attribution: o.attribution }))
-}
-
-/**
- * Set the place banner to a chosen Unsplash photo (from picker). Returns new URL on success.
- */
-export async function setPlaceBannerFromPhoto(
-  entityType: 'city' | 'subdivision',
-  entityKey: string,
-  photoUrl: string,
-  attribution: string
-): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const url = await downloadAndStoreBanner(entityType, entityKey, photoUrl, attribution)
-  if (url) {
-    await logBannerAudit('update', {
-      entityType,
-      entityKey,
-      source: 'manual_photo_pick',
-      attribution,
-    })
-    return { ok: true, url }
-  }
-  return { ok: false, error: 'Failed to save image.' }
-}
-
-/**
  * Fetch a new Unsplash photo (different page) and replace the stored banner.
  */
 export async function refreshPlaceBanner(
@@ -326,30 +294,6 @@ export async function generateAndStoreBanner(entity: BannerEntity): Promise<{ ok
     return { ok: true, url }
   }
   return { ok: false, error: 'Failed to save image to storage.' }
-}
-
-/**
- * Generate (or regenerate) a single banner for the current page. Call from city/subdivision search page.
- * Pass isResort for subdivisions so resort communities get community-specific imagery, others get city landscape.
- */
-export async function generateBannerForPage(params: {
-  entityType: 'city' | 'subdivision'
-  entityKey: string
-  displayName: string
-  city?: string
-  isResort?: boolean
-}): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  const entity: BannerEntity =
-    params.entityType === 'city'
-      ? { entityType: 'city', entityKey: params.entityKey, displayName: params.displayName }
-      : {
-          entityType: 'subdivision',
-          entityKey: params.entityKey,
-          displayName: params.displayName,
-          city: params.city ?? '',
-          isResort: params.isResort,
-        }
-  return generateAndStoreBanner(entity)
 }
 
 /**

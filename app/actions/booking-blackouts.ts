@@ -20,8 +20,6 @@ import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import {
   addBookingBlackout,
   deleteBookingBlackout,
-  listBookingBlackouts,
-  type BookingBlackout,
 } from '@/lib/data/crm/bookingBlackouts'
 
 export type BlackoutResult = { ok: true } | { ok: false; error: string }
@@ -48,12 +46,6 @@ async function resolveScope(requested: string): Promise<string | null> {
   if (access.role !== 'broker' || !own) return null
   // A broker may only ever touch their own calendar.
   return requested === own || !requested ? own : null
-}
-
-export async function listBookingBlackoutsAction(brokerSlug: string): Promise<BookingBlackout[]> {
-  const slug = await resolveScope(brokerSlug)
-  if (!slug) return []
-  return listBookingBlackouts(slug)
 }
 
 export async function addBookingBlackoutAction(raw: unknown): Promise<BlackoutResult> {

@@ -433,47 +433,6 @@ export async function runOneFullSyncChunk(): Promise<RunOneChunkResult> {
   }
 }
 
-/** Update sync_cursor after "Sync all listings" completes so Cron sync status shows correct phase. */
-export async function updateSyncCursorAfterListingsComplete(totalListingPages: number): Promise<void> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) return
-  const supabase = createServiceClient()
-  await supabase.from('sync_cursor').upsert(
-    {
-      id: CURSOR_ID,
-      phase: 'history',
-      next_listing_page: 1,
-      total_listing_pages: totalListingPages,
-      next_history_offset: 0,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'id' }
-  )
-}
-
-/** Set sync_cursor to idle (e.g. after "Sync all history" completes). */
-export async function updateSyncCursorToIdle(): Promise<void> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) return
-  const supabase = createServiceClient()
-  await supabase.from('sync_cursor').upsert(
-    {
-      id: CURSOR_ID,
-      phase: 'idle',
-      next_listing_page: 1,
-      total_listing_pages: null,
-      next_history_offset: 0,
-      updated_at: new Date().toISOString(),
-      run_started_at: null,
-      run_listings_upserted: 0,
-      run_history_rows: 0,
-    },
-    { onConflict: 'id' }
-  )
-}
-
 export type SyncStatus = {
   cursor: SyncCursor | null
   lastSync: { completedAt: string; runType: string; durationSeconds: number; listingsUpserted: number; historyRowsUpserted: number; error: string | null } | null

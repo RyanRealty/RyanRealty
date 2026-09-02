@@ -127,29 +127,6 @@ async function getReviewStatsForBroker(brokerId: string): Promise<{ avgRating: n
   return { avgRating, reviewCount: rows.length }
 }
 
-/** All active brokers with stats for agents index page. */
-export async function getAgentsForIndex(): Promise<AgentForIndex[]> {
-  const brokers = await getActiveBrokers()
-  const result: AgentForIndex[] = []
-  for (const b of brokers) {
-    const [activeCount, soldStats, reviewStats] = await Promise.all([
-      getActiveCountForBroker(b.license_number, b.email),
-      getSoldStatsForBroker(b.license_number, b.email),
-      getReviewStatsForBroker(b.id),
-    ])
-    result.push({
-      ...b,
-      activeCount,
-      soldCount24Mo: soldStats.count,
-      soldVolume24Mo: soldStats.volume,
-      avgRating: reviewStats.avgRating,
-      reviewCount: reviewStats.reviewCount,
-    })
-  }
-  result.sort((a, b) => b.activeCount - a.activeCount || b.soldCount24Mo - a.soldCount24Mo || a.display_name.localeCompare(b.display_name))
-  return result
-}
-
 /** Single broker detail with listings, sold, reviews, performance stats. */
 export type AgentDetail = BrokerRow & {
   activeCount: number
@@ -244,74 +221,6 @@ async function getAgentPerformanceStats(
   const allDoms = domFromColumn.length > 0 ? domFromColumn : domFromDates
   const avgDom = allDoms.length > 0 ? Math.round(allDoms.reduce((a, b) => a + b, 0) / allDoms.length) : null
   return { avgSalePrice, avgDom }
-}
-
-/** Reviews for broker (not hidden), newest first. */
-export async function getAgentReviews(brokerId: string, limit: number): Promise<ReviewRow[]> {
-  const { data } = await supabase()
-    .from('reviews')
-    .select('id, source, rating, text, reviewer_name, review_date')
-    .eq('broker_id', brokerId)
-    .eq('is_hidden', false)
-    .order('review_date', { ascending: false, nullsFirst: false })
-    .order('id', { ascending: false })
-    .limit(limit)
-  return (data ?? []) as ReviewRow[]
-}
-
-export type SubmitBrokerInquiryParams = {
-  brokerId: string
-  brokerSlug?: string
-  name: string
-  email: string
-  phone?: string
-  message: string
-  helpType?: string
-}
-
-/** Submit broker contact form: send to CRM as General Inquiry with broker context. */
-export async function submitBrokerInquiry(
-  params: SubmitBrokerInquiryParams
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { brokerId, brokerSlug, name, email, message, phone, helpType } = params
-  const emailTrim = email?.trim()
-  if (!emailTrim) return { ok: false, error: 'Email is required.' }
-
-  const { sendEvent } = await import('@/lib/crm/send-event')
-  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
-    .replace(/^https?:\/\//, '')
-    .replace(/\/$/, '')
-    .toLowerCase() || 'ryan-realty.com'
-  const fullMessage = [
-    message,
-    helpType ? `Interest: ${helpType}` : '',
-    `Broker ID: ${brokerId}`,
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  const result = await sendEvent({
-    type: 'General Inquiry',
-    person: {
-      emails: [{ value: emailTrim }],
-      firstName: name.trim().split(/\s+/)[0] ?? undefined,
-      lastName: name.trim().split(/\s+/).slice(1).join(' ') || undefined,
-      phones: phone?.trim() ? [{ value: phone.trim() }] : undefined,
-    },
-    source,
-    message: fullMessage,
-    sourceUrl: `${source}/agents`,
-    pageUrl: `${source}/agents`,
-    pageTitle: 'Agent contact form',
-    brokerAttribution: brokerSlug?.trim()
-      ? {
-          brokerSlug: brokerSlug.trim().toLowerCase(),
-        }
-      : undefined,
-  })
-
-  if (!result.ok) return { ok: false, error: result.error ?? 'Failed to send.' }
-  return { ok: true }
 }
 
 /** Full agent detail by slug. */

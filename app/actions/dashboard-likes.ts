@@ -1,11 +1,11 @@
 'use server'
 
-import { getLikedListingKeys, unlikeListing } from '@/app/actions/likes'
-import { getSavedListingKeys, unsaveListing } from '@/app/actions/saved-listings'
+import { getLikedListingKeys } from '@/app/actions/likes'
+import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getListingsByKeys } from '@/app/actions/listings'
-import { getSavedCitySlugs, unsaveCity } from '@/app/actions/saved-cities'
-import { getLikedCommunityKeys, removeCommunityLike } from '@/app/actions/community-engagement'
-import { getSavedCommunityKeys, unsaveCommunity } from '@/app/actions/saved-communities'
+import { getSavedCitySlugs } from '@/app/actions/saved-cities'
+import { getLikedCommunityKeys } from '@/app/actions/community-engagement'
+import { getSavedCommunityKeys } from '@/app/actions/saved-communities'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 
@@ -93,28 +93,3 @@ export async function getDashboardLikesData(): Promise<DashboardLikesData> {
   }
 }
 
-export async function removeLikeItem(
-  kind: 'listing' | 'city' | 'community',
-  id: string
-): Promise<{ error: string | null }> {
-  const normalizedId = id.trim()
-  if (!normalizedId) return { error: 'Missing id' }
-
-  if (kind === 'listing') {
-    const [likeResult, saveResult] = await Promise.all([
-      unlikeListing(normalizedId),
-      unsaveListing(normalizedId),
-    ])
-    return { error: likeResult.error ?? saveResult.error ?? null }
-  }
-
-  if (kind === 'city') {
-    return unsaveCity(normalizedId.toLowerCase())
-  }
-
-  const [likedResult, savedResult] = await Promise.all([
-    removeCommunityLike(normalizedId.toLowerCase()),
-    unsaveCommunity(normalizedId.toLowerCase()),
-  ])
-  return { error: likedResult.error ?? savedResult.error ?? null }
-}

@@ -3,7 +3,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { unstable_cache } from 'next/cache'
-import { listingDetailPath, listingKeyFromSlug, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
+import { listingDetailPath, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
 import { getSubdivisionMatchNames } from '../../lib/subdivision-aliases'
 import { getPolygonBounds, isPointInPolygon, type MapPolygonPoint } from '@/lib/map-polygon'
@@ -152,111 +152,6 @@ export type SimilarListingRow = {
   year_built?: number | null
   price_per_sqft?: number | null
   lot_size_acres?: number | null
-}
-
-/**
- * Fetch other active listings in the same subdivision (from Supabase), excluding the current one.
- * Returns at most 6. Only call when subdivision name is present.
- */
-/** Map a DAL ListingTile to SimilarListingRow (legacy shape callers expect). */
-function tileToSimilarListingRow(tile: ListingTile): SimilarListingRow {
-  return {
-    ListingKey: tile.listingKey,
-    ListNumber: tile.listNumber,
-    ListPrice: tile.listPrice,
-    BedroomsTotal: tile.beds,
-    BathroomsTotal: tile.baths,
-    StreetNumber: tile.streetNumber,
-    StreetName: tile.streetName,
-    City: tile.city,
-    State: null,
-    PostalCode: tile.postalCode,
-    SubdivisionName: tile.subdivisionName,
-    PhotoURL: tile.photoUrl,
-    Latitude: tile.lat,
-    Longitude: tile.lng,
-    StandardStatus: tile.status,
-    OnMarketDate: tile.onMarketDate,
-    OpenHouses: null,
-    TotalLivingAreaSqFt: tile.sqft,
-    ListOfficeName: null,
-    ListAgentName: null,
-    has_virtual_tour: tile.hasVirtualTour,
-    year_built: tile.yearBuilt,
-    price_per_sqft: tile.pricePerSqft,
-    lot_size_acres: tile.lotSizeAcres,
-  }
-}
-
-export async function getOtherListingsInSubdivision(
-  subdivisionName: string,
-  excludeListingKey: string
-): Promise<SimilarListingRow[]> {
-  // DAL: read from listing_tile_mv via getCommunityListings. Fetches 8 to
-  // make room for excluding the current listing; trims to 6 at the end.
-  const tiles = await getCommunityListingsDAL(subdivisionName, {
-    status: 'active-and-pending',
-    sort: 'newest',
-    limit: 8,
-  })
-  return tiles
-    .filter(
-      (t) =>
-        t.listingKey !== excludeListingKey &&
-        t.listNumber !== excludeListingKey,
-    )
-    .slice(0, 6)
-    .map(tileToSimilarListingRow)
-}
-
-const SIMILAR_SELECT =
-  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, OpenHouses, TotalLivingAreaSqFt, ListOfficeName, ListAgentName, has_virtual_tour, year_built, price_per_sqft, lot_size_acres'
-
-/**
- * Similar listings for detail page: same subdivision first, then fill to minCount with recent in city.
- * Per listing page audit: minimum 4, maximum 8; never empty (fallback to recent in region).
- */
-export async function getSimilarListingsWithFallback(
-  subdivisionName: string | null,
-  city: string | null,
-  excludeListingKey: string,
-  minCount = 4,
-  maxCount = 8
-): Promise<SimilarListingRow[]> {
-  const excludeKey = String(excludeListingKey ?? '').trim()
-  if (!excludeKey) return []
-  let similar: SimilarListingRow[] = []
-  if (subdivisionName?.trim()) {
-    similar = await getOtherListingsInSubdivision(subdivisionName.trim(), excludeKey)
-  }
-  if (similar.length >= maxCount) return similar.slice(0, maxCount)
-  if (similar.length >= minCount && !city?.trim()) return similar
-  const need = Math.max(minCount - similar.length, 0)
-  if (need === 0 && similar.length >= minCount) return similar.slice(0, maxCount)
-  const excludeSet = new Set([excludeKey, ...similar.map((r) => (r.ListNumber ?? r.ListingKey ?? '').toString().trim()).filter(Boolean)])
-  // DAL: read fallback tiles from listing_tile_mv via getCityListings
-  const cityName = city?.trim()
-  const fillLimit = (maxCount - similar.length) + 20
-  const tiles = cityName
-    ? await getCityListingsDAL(cityName, { status: 'active-and-pending', sort: 'newest', limit: fillLimit })
-    : []
-  const extraRows: SimilarListingRow[] = tiles
-    .filter(
-      (t) =>
-        t.listingKey !== excludeKey &&
-        t.listNumber !== excludeKey,
-    )
-    .map(tileToSimilarListingRow)
-  const merged = similar.slice()
-  for (const row of extraRows) {
-    const k = (row.ListNumber ?? row.ListingKey ?? '').toString().trim()
-    if (k && !excludeSet.has(k)) {
-      excludeSet.add(k)
-      merged.push(row)
-      if (merged.length >= maxCount) break
-    }
-  }
-  return merged.slice(0, maxCount)
 }
 
 /** Static fallback so city dropdown is never empty (e.g. before first sync or if DB is unreachable). */
@@ -1533,78 +1428,6 @@ export type GetListingsInBoundsOptions = GetListingsForMapOptions & {
   sort?: 'newest' | 'oldest' | 'price_asc' | 'price_desc'
 }
 
-const LISTING_BOUNDS_SELECT =
-  'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, Latitude, Longitude, StandardStatus, OnMarketDate, CloseDate, TotalLivingAreaSqFt, ListOfficeName, ListAgentName'
-
-/**
- * Fetch listings within map bounds (viewport-driven search). Used by the unified map view:
- * whatever the user sees on the map is the area we search. Returns paginated tile rows + total count.
- */
-export async function getListingsInBounds(
-  options: GetListingsInBoundsOptions
-): Promise<{ listings: ListingTileRow[]; totalCount: number }> {
-  const { bounds, polygon, limit = 20, offset = 0, sort = 'newest' } = options
-  const polygonBounds = polygon && polygon.length >= 3 ? getPolygonBounds(polygon) : null
-  const effectiveBounds = polygonBounds ?? bounds
-  const statusFilter = options.statusFilter ?? (options.includeClosed === true ? 'all' : 'active')
-  void LISTING_BOUNDS_SELECT
-  void ACTIVE_STATUS_OR
-  void ACTIVE_OR_PENDING_OR
-  const dalStatus =
-    statusFilter === 'all'
-      ? 'all'
-      : statusFilter === 'active_and_pending'
-        ? 'active-and-pending'
-        : statusFilter === 'pending'
-          ? 'pending-only'
-          : statusFilter === 'closed'
-            ? 'closed'
-            : 'active'
-  const dalSort: 'newest' | 'oldest' | 'price-asc' | 'price-desc' =
-    sort === 'price_asc' ? 'price-asc' : sort === 'price_desc' ? 'price-desc' : sort
-  const canonicalSubdivision = options.subdivision?.trim()
-    ? getSubdivisionMatchNames(options.subdivision.trim())[0] ?? null
-    : null
-
-  const limitClamp = Math.min(Math.max(limit, 1), 50)
-  const polygonFetchLimit = 3000
-  // For polygon-restricted view we fetch a wide bbox first, then filter in
-  // memory by point-in-polygon. For bbox-only view we trust the MV.
-  const { getListingTiles } = await import('@/lib/data')
-  const tiles = await getListingTiles({
-    bbox: {
-      west: effectiveBounds.west,
-      south: effectiveBounds.south,
-      east: effectiveBounds.east,
-      north: effectiveBounds.north,
-    },
-    city: options.city?.trim() || undefined,
-    subdivision: canonicalSubdivision || undefined,
-    status: dalStatus,
-    ...advancedTileFilters(options),
-    sort: dalSort,
-    limit: polygon && polygon.length >= 3 ? polygonFetchLimit : Math.min(offset + limitClamp + 1, 500),
-  })
-  const rows: ListingTileRow[] = tiles.map(
-    (t) => ({ ...tileToSearchRow(t), ListOfficeName: null, ListAgentName: null }),
-  ) as ListingTileRow[]
-
-  if (polygon && polygon.length >= 3) {
-    const polygonFiltered = rows.filter((row) => {
-      const lat = Number(row.Latitude)
-      const lng = Number(row.Longitude)
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
-      return isPointInPolygon({ lat, lng }, polygon)
-    })
-    return {
-      listings: polygonFiltered.slice(offset, offset + limitClamp),
-      totalCount: polygonFiltered.length,
-    }
-  }
-
-  return { listings: rows.slice(offset, offset + limitClamp), totalCount: rows.length }
-}
-
 /**
  * Viewport search (search-as-you-move). ONE fetch drives BOTH the list and the
  * map markers so they can never diverge — the list shows exactly the homes whose
@@ -2313,49 +2136,6 @@ export const getHotCommunitiesInCity = unstable_cache(
   { revalidate: 300, tags: ['hot-communities-city'] }
 )
 
-/**
- * Centroid (avg lat/lng) of listings in a city. Used to center the map on a city page.
- * Returns null if no listings with coordinates in that city.
- */
-export async function getCityCentroid(city: string): Promise<{ lat: number; lng: number } | null> {
-  if (!city?.trim()) return null
-  const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
-  const tiles = await getCityListingsDAL(city, { status: 'all', sort: 'newest', limit: 500 })
-  const valid = tiles.filter(
-    (t) => Number.isFinite(Number(t.lat)) && Number.isFinite(Number(t.lng))
-  )
-  if (valid.length === 0) return null
-  const lat = valid.reduce((a, t) => a + Number(t.lat), 0) / valid.length
-  const lng = valid.reduce((a, t) => a + Number(t.lng), 0) / valid.length
-  return { lat, lng }
-}
-
-/**
- * Centroid (avg lat/lng) of listings in a community (subdivision) for video flyover prompts.
- * Returns null if no listings with coordinates in that city+subdivision.
- */
-export async function getCommunityCentroid(
-  city: string,
-  subdivisionName: string
-): Promise<{ lat: number; lng: number } | null> {
-  if (!city?.trim() || !subdivisionName?.trim()) return null
-  const { getListingTiles } = await import('@/lib/data')
-  const tiles = await getListingTiles({
-    city,
-    subdivision: subdivisionName,
-    status: 'all',
-    sort: 'newest',
-    limit: 100,
-  })
-  const valid = tiles.filter(
-    (t) => Number.isFinite(Number(t.lat)) && Number.isFinite(Number(t.lng))
-  )
-  if (valid.length === 0) return null
-  const lat = valid.reduce((a, t) => a + Number(t.lat), 0) / valid.length
-  const lng = valid.reduce((a, t) => a + Number(t.lng), 0) / valid.length
-  return { lat, lng }
-}
-
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -2467,53 +2247,6 @@ export type ListingDetailRow = {
   [key: string]: unknown
 }
 
-/**
- * Get one listing by ListingKey or ListNumber from Supabase (used for detail page).
- * URL can be /listing/[key] or /listing/[key]-[address-slug]. We try multiple key candidates
- * (first segment, all numeric segments, hyphen stripping) and both PascalCase and snake_case columns.
- */
-export async function getListingByKey(listingKeyOrSlug: string): Promise<ListingDetailRow | null> {
-  const raw = String(listingKeyOrSlug ?? '')
-  const decoded = decodeURIComponent(raw).trim()
-  if (!decoded) return null
-
-  const { getListingRawRowByKey } = await import('@/lib/data')
-
-  /** Resolve by first segment, numeric segments, raw slug, then truncated slug. */
-  const tryKey = async (key: string): Promise<ListingDetailRow | null> => {
-    const row = await getListingRawRowByKey(key)
-    return row ? (row as ListingDetailRow) : null
-  }
-
-  const firstKey = listingKeyFromSlug(decoded).trim()
-  if (firstKey) {
-    const row = await tryKey(firstKey)
-    if (row) return row
-  }
-
-  const parts = decoded.split('-')
-  for (let i = 0; i < parts.length; i++) {
-    const seg = (parts[i] ?? '').trim()
-    if (seg && /^\d+$/.test(seg) && seg !== firstKey) {
-      const row = await tryKey(seg)
-      if (row) return row
-    }
-  }
-
-  const byRaw = await tryKey(decoded)
-  if (byRaw) return byRaw
-
-  if (decoded.includes('-')) {
-    for (let len = parts.length - 1; len >= 1; len--) {
-      const candidate = parts.slice(0, len).join('-')
-      const row = await tryKey(candidate)
-      if (row) return row
-    }
-  }
-
-  return null
-}
-
 const LISTING_TILE_SELECT =
   'ListingKey, ListNumber, ListPrice, BedroomsTotal, BathroomsTotal, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName, PhotoURL, StandardStatus, OnMarketDate, CloseDate'
 
@@ -2526,42 +2259,6 @@ export type ListingsAtAddressOptions = {
   excludeListingKey: string
   /** If true, include closed/pending; default false = active only */
   includeClosed?: boolean
-}
-
-/**
- * Get all listings at the same address (same street number, street name, city, state, postal).
- * Used on listing detail to show "Other listings at this address" (e.g. past sales). Default is active only; set includeClosed to show past listings.
- */
-export async function getListingsAtAddress(options: ListingsAtAddressOptions): Promise<ListingTileRow[]> {
-  const excludeKey = String(options.excludeListingKey ?? '').trim()
-  const city = (options.city ?? '').trim()
-  if (!excludeKey || !city) return []
-  // DAL: pull tiles for the city via listing_tile_mv then filter by exact
-  // StreetNumber + StreetName / PostalCode in memory. The set per city is
-  // ~3K active rows; the predicate filter is sub-1ms.
-  void getAnonSupabase
-  void LISTING_TILE_SELECT
-  void ACTIVE_STATUS_OR
-  const sn = (options.streetNumber ?? '').toString().trim()
-  const sname = (options.streetName ?? '').toString().trim().toLowerCase()
-  const zip = (options.postalCode ?? '').toString().trim()
-  const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
-  const tiles = await getCityListingsDAL(city, {
-    status: options.includeClosed === true ? 'all' : 'active',
-    sort: 'newest',
-    limit: 5000,
-    postalCode: /^\d{5}$/.test(zip) ? zip : undefined,
-  })
-  return tiles
-    .filter((t) => {
-      const k = (t.listNumber ?? t.listingKey ?? '').toString().trim()
-      if (!k || k === excludeKey) return false
-      if (sn && String(t.streetNumber ?? '').trim() !== sn) return false
-      if (sname && !String(t.streetName ?? '').toLowerCase().includes(sname)) return false
-      return true
-    })
-    .slice(0, 50)
-    .map(tileToListingTileRow)
 }
 
 /**

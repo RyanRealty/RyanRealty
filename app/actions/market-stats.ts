@@ -5,7 +5,6 @@ import { slugify, subdivisionEntityKey } from '@/lib/slug'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { marketVerdict } from '@/lib/market/classify'
 import type { CityMarketStats } from '@/app/actions/listings'
-import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 
 export type MarketGeoType = 'region' | 'city' | 'subdivision' | 'neighborhood'
 export type MarketPeriodType = 'monthly' | 'quarterly' | 'yearly' | 'custom' | 'ytd' | 'weekly' | 'rolling_30d' | 'rolling_90d' | 'rolling_365d'
@@ -176,80 +175,6 @@ export async function getMarketStatsForCity(
   return getQuickCityCount(cityName)
 }
 
-/**
- * Populate market_pulse_live for a single city. Called from admin or cron.
- * Uses simple, fast queries instead of the heavy RPC that times out.
- */
-export async function populateMarketPulseForCity(cityName: string): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const supabase = createServiceClient()
-    const geoSlug = canonicalCityCacheSlug(cityName)
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    const cutoff30 = thirtyDaysAgo.toISOString().slice(0, 10)
-    const cutoff7 = sevenDaysAgo.toISOString().slice(0, 10)
-
-    // DAL: city aggregations via listing_tile_mv.
-    const { getCityListings: getCityListingsDAL } = await import('@/lib/data')
-    const [activeTiles, pendingTiles] = await Promise.all([
-      getCityListingsDAL(cityName, { status: 'active', limit: 5000 }),
-      getCityListingsDAL(cityName, { status: 'pending-only', limit: 5000 }),
-    ])
-    const prices = activeTiles
-      .map((t) => Number(t.listPrice))
-      .filter((p) => Number.isFinite(p) && p > 0)
-      .sort((a, b) => a - b)
-    const activeCount = prices.length
-    const avgListPrice =
-      prices.length > 0 ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : null
-    const medianListPrice = prices.length > 0 ? prices[Math.floor(prices.length / 2)]! : null
-    const pendingCount = pendingTiles.length
-    const new7d = activeTiles.filter(
-      (t) => t.onMarketDate != null && t.onMarketDate.slice(0, 10) >= cutoff7
-    ).length
-    const new30d = activeTiles.filter(
-      (t) => t.onMarketDate != null && t.onMarketDate.slice(0, 10) >= cutoff30
-    ).length
-
-    // Upsert into market_pulse_live via DAL.
-    void supabase
-    const { upsertMarketPulseLiveRow } = await import('@/lib/data')
-    const res = await upsertMarketPulseLiveRow({
-      geo_type: 'city',
-      geo_slug: geoSlug,
-      geo_label: cityName,
-      active_count: activeCount,
-      pending_count: pendingCount,
-      new_count_7d: new7d,
-      new_count_30d: new30d,
-      median_list_price: medianListPrice,
-      avg_list_price: avgListPrice,
-      market_health_score: null,
-      market_health_label: null,
-      updated_at: new Date().toISOString(),
-    })
-
-    if (!res.ok) return { ok: false, error: res.error }
-    return { ok: true }
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) }
-  }
-}
-
-/**
- * Populate market_pulse_live for all Central Oregon cities.
- */
-export async function populateAllMarketPulse(): Promise<{ results: Array<{ city: string; ok: boolean; error?: string }> }> {
-  // The 11-city stat tier from the one report-coverage registry (W8.8).
-  const results = []
-  for (const city of MARKET_REPORT_DEFAULT_CITIES) {
-    const result = await populateMarketPulseForCity(city)
-    results.push({ city, ...result })
-  }
-  return { results }
-}
 
 /** Lightweight fallback — just count active listings, no complex aggregations */
 async function getQuickCityCount(cityName: string): Promise<CityMarketStats> {

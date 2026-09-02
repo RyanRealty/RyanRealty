@@ -20,7 +20,7 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * export async functions) and are unit-tested there without a DB.
  */
 
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   requireCrmAccess,
@@ -29,8 +29,6 @@ import {
 } from '@/app/actions/crm'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { scopeBroker } from '@/lib/crm/scope'
-import { makeConfigTable, type ConfigResult } from '@/lib/crm/config-table'
-import { CRM_TASK_TYPES_TAG } from '@/lib/data/crm/getTaskQueue'
 import { canActOnTask, addDaysToDue } from '@/lib/crm/task-lifecycle'
 
 // ── Internal: load a task's owner + guard the caller ────────────────────────
@@ -256,49 +254,6 @@ export async function clearMyOverdueTasksAction(): Promise<CrmActionResult & { c
 
   revalidateTasks()
   return { ok: true, cleared: (data ?? []).length }
-}
-
-// ── Task-type config-table CRUD ─────────────────────────────────────────────
-
-const TASK_TYPES = makeConfigTable({
-  table: 'crm_task_types',
-  revalidatePaths: ['/admin/crm/tasks', '/admin/crm/settings'],
-})
-
-/** Drop the cached getCrmTaskTypes result after any mutation. */
-function bustTaskTypeCache() {
-  revalidateTag(CRM_TASK_TYPES_TAG, 'max')
-}
-
-export async function createCrmTaskTypeAction(formData: FormData): Promise<ConfigResult> {
-  const label = String(formData.get('label') ?? '').trim()
-  const key = String(formData.get('key') ?? label).trim()
-  if (!label) return { ok: false, error: 'Label is required' }
-  const res = await TASK_TYPES.create({ key, label })
-  if (res.ok) bustTaskTypeCache()
-  return res
-}
-
-export async function renameCrmTaskTypeAction(formData: FormData): Promise<ConfigResult> {
-  const id = Number(formData.get('id'))
-  const label = String(formData.get('label') ?? '').trim()
-  if (!id || !label) return { ok: false, error: 'Task type and label are required' }
-  const res = await TASK_TYPES.rename(id, label)
-  if (res.ok) bustTaskTypeCache()
-  return res
-}
-
-/**
- * Delete a task type. Protected types (Follow Up) are refused by the factory.
- * crm_tasks.type is a free text value (not an FK), so existing tasks of a deleted
- * type keep their value — no reassign callback needed.
- */
-export async function deleteCrmTaskTypeAction(formData: FormData): Promise<ConfigResult> {
-  const id = Number(formData.get('id'))
-  if (!id) return { ok: false, error: 'Task type required' }
-  const res = await TASK_TYPES.remove(id)
-  if (res.ok) bustTaskTypeCache()
-  return res
 }
 
 // ── Contact search for the NewTaskDialog contact picker (D2 fix) ─────────────

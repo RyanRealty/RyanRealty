@@ -55,7 +55,10 @@ describe('People new-contact primary path', () => {
   })
 
   it('create action writes addresses jsonb and never a note', () => {
-    const src = readFileSync('app/actions/crm.ts', 'utf8')
+    // app/actions/crm.ts's createCrmContactAction was the pre-quick-add duplicate
+    // (dead, zero callers) and was removed 2026-09-01; createQuickContactAction in
+    // crm-quick-add.ts is the one live create path AddPersonDialog calls.
+    const src = readFileSync('app/actions/crm-quick-add.ts', 'utf8')
     const persist = readFileSync('lib/crm/persist-created-contact.ts', 'utf8')
     expect(src).toContain('createContactAddress')
     expect(src).toContain('persistCreatedContactAddress')

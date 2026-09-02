@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
+import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
 import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
@@ -13,12 +13,11 @@ import { renderNewsletterPreview, senderIdentityFor, PREVIEW_UNSUBSCRIBE_URL } f
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
 import { getAssignedBrokersByPersonId, getSubscribersByEmails, bulkActivateSubscribers } from '@/lib/data/newsletter/queue'
 import { sendEmail } from '@/lib/resend'
-import { createListingAlertForLead, updateListingAlert, deleteListingAlertById } from '@/lib/data'
+import { createListingAlertForLead, deleteListingAlertById } from '@/lib/data'
 import { normalizeSavedSearchFilters, getSavedSearchHash, getFilterNameFallback } from '@/lib/search-filters'
 import {
   subscribeToNewsletter,
   setSubscriberStatus,
-  getCrmPersonContact,
   createNewsletterDraft,
   updateNewsletter,
   deleteNewsletterDraft,
@@ -124,37 +123,11 @@ export async function adminAddSubscriberAction(formData: FormData): Promise<{ ok
   return { ok: r.ok, error: r.error }
 }
 
-/** Assign an existing CRM person to the newsletter (resolves their email). */
-export async function adminAssignCrmPersonAction(personId: number, segment?: NewsletterSegment): Promise<{ ok: boolean; error?: string }> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return { ok: false, error: 'unauthorized' }
-  const contact = await getCrmPersonContact(personId)
-  if (!contact) return { ok: false, error: 'no_email' }
-  const r = await subscribeToNewsletter({ email: contact.email, name: contact.name, source: 'crm-assign', segment: segment ?? 'general', crmPersonId: personId })
-  if (r.ok && r.skippedOptedOut) return { ok: false, error: 'This contact unsubscribed. It can only be re-added by the person themselves.' }
-  return { ok: r.ok, error: r.error }
-}
-
 /** Admin set a subscriber's status (remove = unsubscribed, re-add = active). */
 export async function adminSetSubscriberStatusAction(id: string, status: SubscriberStatus): Promise<{ ok: boolean }> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false }
   return setSubscriberStatus(id, status)
-}
-
-/** Bulk-assign many CRM people to the newsletter (resolves each email). */
-export async function adminBulkAssignNewsletterAction(personIds: number[], segment?: NewsletterSegment): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
-  const gate = await requireSuperuser()
-  if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
-  let assigned = 0
-  let skipped = 0
-  for (const pid of personIds.slice(0, 2000)) {
-    const contact = await getCrmPersonContact(pid)
-    if (!contact) { skipped++; continue }
-    const r = await subscribeToNewsletter({ email: contact.email, name: contact.name, source: 'crm-assign', segment: segment ?? 'general', crmPersonId: pid })
-    if (r.ok) assigned++; else skipped++
-  }
-  return { ok: true, assigned, skipped }
 }
 
 /**
@@ -244,25 +217,6 @@ export async function adminAssignSavedSearchAction(formData: FormData): Promise<
   return createListingAlertForLead({ email, fubPersonId, name, filters, filtersHash: getSavedSearchHash(filters), origin: 'broker', assignedBy: gate.email, frequency })
 }
 
-/** Edit a saved search (rename + change parameters) — used on the lead page. */
-export async function adminUpdateSavedSearchAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return { ok: false, error: 'unauthorized' }
-  const id = String(formData.get('id') ?? '').trim()
-  if (!id) return { ok: false, error: 'no_id' }
-  const lead = await getGuestAlertLead(id)
-  if (await savedSearchLeadOutOfScope(lead)) return { ok: false, error: 'unauthorized' }
-  const name = String(formData.get('name') ?? 'Saved search').trim() || 'Saved search'
-  let raw: Record<string, unknown> = {}
-  try { raw = JSON.parse(String(formData.get('filters') ?? '{}')) } catch { raw = {} }
-  // Normalize + hash through the canonical model so the (email, filters_hash)
-  // dedupe key matches every other write path. An empty filter set is refused,
-  // a search with no filters would email the whole MLS feed.
-  const filters = normalizeSavedSearchFilters(raw)
-  if (Object.keys(filters).length === 0) return { ok: false, error: 'no_filters' }
-  return updateListingAlert(id, { name, filters, filtersHash: getSavedSearchHash(filters) })
-}
-
 /** Remove a saved search by id. */
 export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: boolean }> {
   const gate = await requireAdmin()
@@ -270,29 +224,6 @@ export async function adminDeleteSavedSearchAction(id: string): Promise<{ ok: bo
   const lead = await getGuestAlertLead(id)
   if (await savedSearchLeadOutOfScope(lead)) return { ok: false }
   return deleteListingAlertById(id)
-}
-
-/** Bulk-assign many CRM people the SAME broker-created saved search. */
-export async function adminBulkAssignSavedSearchAction(personIds: number[], name: string, filters: Record<string, unknown>): Promise<{ ok: boolean; assigned: number; skipped: number; error?: string }> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return { ok: false, assigned: 0, skipped: 0, error: 'unauthorized' }
-  // Normalize + hash through the canonical model (same key as every other write
-  // path) and refuse an empty filter set, which would email the whole MLS feed.
-  const normalized = normalizeSavedSearchFilters(filters)
-  if (Object.keys(normalized).length === 0) return { ok: false, assigned: 0, skipped: 0, error: 'no_filters' }
-  const hash = getSavedSearchHash(normalized)
-  const access = await getCrmAccess()
-  let assigned = 0
-  let skipped = 0
-  for (const pid of personIds.slice(0, 2000)) {
-    // Restricted broker: silently skip leads outside their scope (owner short-circuits).
-    if (access && !(await requirePersonInScope(pid, access)).ok) { skipped++; continue }
-    const contact = await getCrmPersonContact(pid)
-    if (!contact) { skipped++; continue }
-    const r = await createListingAlertForLead({ email: contact.email, crmPersonId: pid, fubPersonId: null, name, filters: normalized, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
-    if (r.ok) assigned++; else skipped++
-  }
-  return { ok: true, assigned, skipped }
 }
 
 // ── ADMIN: newsletter drafts ─────────────────────────────────────────────────

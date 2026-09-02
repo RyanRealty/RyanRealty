@@ -1,17 +1,3 @@
-/** Default cities for the activity feed slider (home and reusable section). User can add more via dropdown. */
-export const ACTIVITY_FEED_DEFAULT_CITIES = [
-  'Bend',
-  'Redmond',
-  'La Pine',
-  'Sunriver',
-  'Sisters',
-  'Tumalo',
-  'Terrebonne',
-  'Madras',
-  'Prineville',
-  'Crooked River Ranch',
-] as const
-
 export type ActivityFeedItem = {
   id: string
   listing_key: string

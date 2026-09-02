@@ -31,7 +31,6 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
-import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import {
@@ -123,82 +122,6 @@ export async function assignConversationAction(
   return { ok: true }
 }
 
-/**
- * Mark every conversation in the caller's scope as read — flips any 'unread'
- * conversation to 'open'. Scoped: a restricted broker only clears their own
- * unread; a superuser clears everyone's. Conversations with no state row yet
- * (which read as 'unread' by default) are materialized to 'open' here.
- */
-export async function markAllReadAction(): Promise<InboxActionResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Unauthorized' }
-  const slug = scopeBroker(access)
-  const sb = createServiceClient()
-
-  // 1) Existing state rows that are 'unread' -> 'open', broker-scoped.
-  let stateQ = sb
-    .from('crm_conversation_state')
-    .update({ status: 'open', updated_at: new Date().toISOString() })
-    .eq('status', 'unread')
-  if (slug) stateQ = stateQ.eq('assigned_broker', slug)
-  const { error: stateErr } = await stateQ
-  if (stateErr) return { ok: false, error: stateErr.message }
-
-  // 2) Contacts with inbound messages but NO state row also read as 'unread'
-  //    by default. Materialize an 'open' state row for those so "mark all read"
-  //    actually clears the inbox. Resolve the set from recent inbound messages,
-  //    broker-scoped, excluding any person that already has a state row.
-  // Paged read (PostgREST caps single responses at 1,000 rows — the old
-  // .limit(2000) silently truncated there). Newest-first, id tiebreaker.
-  type Joined = { person_id: number; crm_people: { assigned_broker: string | null; deleted: boolean } | Array<{ assigned_broker: string | null; deleted: boolean }> | null }
-  const { rows: inboundRows } = await fetchPagedRows<Joined>(
-    (from, to) => {
-      let inboundQ = sb
-        .from('crm_timeline')
-        .select('person_id,crm_people!inner(assigned_broker,deleted)')
-        .in('kind', ['sms_in', 'email_in', 'call', 'voicemail'])
-        .order('ts', { ascending: false })
-        .order('id', { ascending: false })
-      if (slug) inboundQ = inboundQ.eq('crm_people.assigned_broker', slug)
-      return inboundQ.range(from, to)
-    },
-    2000,
-  )
-
-  const candidatePersonIds = new Set<number>()
-  const ownerByPerson = new Map<number, string | null>()
-  for (const r of inboundRows) {
-    const p = Array.isArray(r.crm_people) ? r.crm_people[0] : r.crm_people
-    if (!p || p.deleted) continue
-    candidatePersonIds.add(r.person_id)
-    if (!ownerByPerson.has(r.person_id)) ownerByPerson.set(r.person_id, p.assigned_broker)
-  }
-  if (candidatePersonIds.size === 0) {
-    revalidateInbox()
-    return { ok: true }
-  }
-  const ids = [...candidatePersonIds]
-  const { data: existing } = await sb
-    .from('crm_conversation_state')
-    .select('person_id')
-    .in('person_id', ids)
-  const have = new Set((existing ?? []).map((e) => (e as { person_id: number }).person_id))
-  const toInsert = ids
-    .filter((pid) => !have.has(pid))
-    .map((pid) => ({
-      person_id: pid,
-      status: 'open' as const,
-      assigned_broker: ownerByPerson.get(pid) ?? null,
-      updated_at: new Date().toISOString(),
-    }))
-  if (toInsert.length > 0) {
-    const { error: insErr } = await sb.from('crm_conversation_state').insert(toInsert)
-    if (insErr) return { ok: false, error: insErr.message }
-  }
-
-  revalidateInbox()
-  return { ok: true }
-}
 
 /**
  * Bulk-set the triage status for several conversations at once (the inbox

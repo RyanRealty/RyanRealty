@@ -49,9 +49,7 @@ import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
  *
  * The PUBLIC-search feature (is_public / public_title / cache_listing_keys /
  * public_click_count) deliberately stays on the LEGACY saved_searches table —
- * see getPopularPublicSearches / trackPublicSearchClick /
- * setSavedSearchPublicState / refreshSavedSearchCache at the bottom. Only
- * alert functionality moved off.
+ * see trackPublicSearchClick at the bottom. Only alert functionality moved off.
  */
 
 export type SavedSearchRow = {
@@ -193,9 +191,8 @@ export async function createSavedSearch(
   }
 
   // The public/social feature stays on the LEGACY saved_searches table. When
-  // the user opts into sharing, mirror a legacy row carrying the public fields
-  // so getPopularPublicSearches keeps receiving entries. That row is display-
-  // only. The alert cron scans listing_alerts exclusively.
+  // the user opts into sharing, mirror a legacy row carrying the public fields.
+  // That row is display-only. The alert cron scans listing_alerts exclusively.
   if (options?.isPublic === true) {
     const supabase = await createClient()
     const publicTitle = options.publicTitle?.trim() || searchName
@@ -371,100 +368,6 @@ export async function setSavedSearchFrequencyForUser(
 // deliberately NOT migrated to listing_alerts (alerts and public/social display
 // are different products). These functions are the only remaining consumers of
 // saved_searches outside the DAL — see the unification migration notes.
-
-export async function setSavedSearchPublicState(
-  id: string,
-  isPublic: boolean,
-  publicTitle?: string
-): Promise<{ error: string | null }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not signed in' }
-
-  const updatePayload: Record<string, unknown> = {
-    is_public: isPublic,
-    public_title: isPublic ? (publicTitle?.trim() || null) : null,
-  }
-  if (!isPublic) updatePayload.public_click_count = 0
-
-  const { error } = await supabase
-    .from('saved_searches')
-    .update(updatePayload)
-    .eq('id', id.trim())
-    .eq('user_id', user.id)
-  if (error) return { error: error.message }
-  return { error: null }
-}
-
-export async function refreshSavedSearchCache(id: string): Promise<{ error: string | null }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not signed in' }
-  const { data, error } = await supabase
-    .from('saved_searches')
-    .select('id, filters')
-    .eq('id', id.trim())
-    .eq('user_id', user.id)
-    .maybeSingle()
-  if (error) return { error: error.message }
-  if (!data) return { error: 'Search not found' }
-
-  const filters = normalizeSavedSearchFilters((data.filters ?? {}) as SavedSearchFilters)
-  const warm = await prewarmSearchCache(filters, 24)
-  const { error: updateError } = await supabase
-    .from('saved_searches')
-    .update({
-      filters_hash: warm.cacheKey,
-      result_count: warm.totalCount,
-      cache_listing_keys: warm.listingKeys.slice(0, 24),
-      cache_refreshed_at: new Date().toISOString(),
-    })
-    .eq('id', data.id)
-    .eq('user_id', user.id)
-  if (updateError) return { error: updateError.message }
-  return { error: null }
-}
-
-export async function getPopularPublicSearches(limit = 12): Promise<PublicSearchRow[]> {
-  try {
-    const service = createServiceClient()
-    const safeLimit = Math.max(1, Math.min(20, Math.floor(limit)))
-    const { data, error } = await service
-      .from('saved_searches')
-      .select('id, name, public_title, filters, result_count, public_click_count, created_at')
-      .eq('is_public', true)
-      .order('public_click_count', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false })
-      .limit(safeLimit)
-    if (error) return []
-    const rows = (data ?? []) as Array<{
-      id: string
-      name: string
-      public_title: string | null
-      filters: SavedSearchFilters | null
-      result_count: number | null
-      public_click_count: number | null
-      created_at: string
-    }>
-    return rows.map((row) => {
-      const filters = normalizeSavedSearchFilters(row.filters ?? {})
-      const title = row.public_title?.trim() || row.name?.trim() || getFilterNameFallback(filters)
-      return {
-        id: row.id,
-        name: row.name?.trim() || 'Saved search',
-        title,
-        href: buildSearchUrlFromFilters(filters),
-        summary: getFiltersSummary(filters),
-        resultCount: Math.max(0, Number(row.result_count ?? 0)),
-        clickCount: Math.max(0, Number(row.public_click_count ?? 0)),
-        createdAt: row.created_at,
-      }
-    })
-  } catch (error) {
-    console.error('[getPopularPublicSearches]', error)
-    return []
-  }
-}
 
 export async function trackPublicSearchClick(id: string): Promise<void> {
   const searchId = id.trim()

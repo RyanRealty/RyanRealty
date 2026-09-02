@@ -88,21 +88,3 @@ export async function updateProfile(updates: {
   return { error: null }
 }
 
-/**
- * Set default home city. For signed-in users updates profile; for anonymous returns city so client can set cookie.
- * Returns { setCookie: string } when not signed in so the client sets the cookie and refreshes.
- */
-export async function setDefaultHomeCity(city: string): Promise<{ error?: string; setCookie?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const trimmed = city?.trim() || null
-  if (user && trimmed) {
-    const { error } = await updateProfile({ defaultCity: trimmed })
-    return error ? { error } : {}
-  }
-  if (user && !trimmed) {
-    const { error } = await updateProfile({ defaultCity: null })
-    return error ? { error } : {}
-  }
-  return { setCookie: trimmed || 'Bend' }
-}

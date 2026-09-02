@@ -91,21 +91,6 @@ export async function renameArea(id: string, name: string): Promise<AreaActionRe
   return { error: null }
 }
 
-/** Replace an area's drawn shapes (re-draw / edit on the map). */
-export async function setAreaShapes(id: string, shapes: unknown): Promise<AreaActionResult> {
-  const session = await getSession()
-  if (!session) return { error: 'Not signed in' }
-  const validShapes = validateAreaShapes(shapes)
-  if (!validShapes.ok) return { error: validShapes.error }
-
-  const result = await updateAreaForUser(id, session.user.id, { shapes: validShapes.value })
-  if (!result.ok) return { error: result.error }
-  refreshOwnerViews()
-  const row = await getAreaForUser(id, session.user.id)
-  if (row?.is_public) refreshPublicViews(row.slug)
-  return { error: null }
-}
-
 /** Delete an area the signed-in user owns. */
 export async function deleteArea(id: string): Promise<AreaActionResult> {
   const session = await getSession()

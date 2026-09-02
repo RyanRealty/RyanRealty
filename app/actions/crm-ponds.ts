@@ -1,11 +1,9 @@
 'use server'
 
 /**
- * CRM Ponds CRUD + claim actions (CRM §8.2).
+ * CRM Ponds CRUD actions (CRM §8.2).
  *
  * Owner/superuser only for create/update/delete/membership.
- * Any broker can call claimLeadFromPondAction to claim a lead from a pond they
- * belong to (checked server-side).
  *
  * Reads: lib/data/crm/getCrmPonds.ts (cached, tag 'crm-ponds').
  */
@@ -109,65 +107,3 @@ export async function removePondMemberAction(formData: FormData): Promise<CrmPon
   return { ok: true }
 }
 
-/**
- * claimLeadFromPondAction — a pond member claims a specific lead.
- *
- * Validates that the calling broker is actually a member of the lead's pond,
- * sets assigned_broker, clears pond_id, and writes a crm_timeline 'note' row
- * marking the claim. Any broker (not owner-only) may call this.
- */
-export async function claimLeadFromPondAction(formData: FormData): Promise<CrmPondsResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Not authorized' }
-  const brokerSlug = access.brokerSlug
-  if (!brokerSlug) return { ok: false, error: 'Your account is not mapped to a broker' }
-  const personId = Number(formData.get('person_id'))
-  if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'Missing person id' }
-
-  const sb = createServiceClient()
-
-  // Read the lead's current pond_id.
-  const { data: person, error: readErr } = await sb
-    .from('crm_people')
-    .select('id, pond_id, name')
-    .eq('id', personId)
-    .maybeSingle()
-  if (readErr || !person) return { ok: false, error: 'Lead not found' }
-  const lead = person as { id: number; pond_id: number | null; name: string | null }
-  if (!lead.pond_id) return { ok: false, error: 'This lead is not in a pond' }
-
-  // Verify the calling broker is a member of this pond.
-  const { data: membership, error: memErr } = await sb
-    .from('crm_pond_members')
-    .select('id')
-    .eq('pond_id', lead.pond_id)
-    .eq('broker_slug', brokerSlug)
-    .maybeSingle()
-  if (memErr || !membership) return { ok: false, error: 'You are not a member of this pond' }
-
-  // Claim: set assigned_broker, clear pond_id.
-  const { error: updateErr } = await sb
-    .from('crm_people')
-    .update({
-      assigned_broker: brokerSlug,
-      pond_id: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', personId)
-    .eq('pond_id', lead.pond_id) // optimistic lock: only update if still in this pond
-  if (updateErr) return { ok: false, error: updateErr.message }
-
-  // Timeline note.
-  await sb.from('crm_timeline').insert({
-    person_id: personId,
-    kind: 'note',
-    title: 'Lead claimed from pond',
-    body: `${brokerSlug} claimed this lead from pond #${lead.pond_id}.`,
-    broker: brokerSlug,
-    source: 'pond-claim',
-  })
-
-  revalidateTag('crm-groups', 'max')
-  revalidateTag('crm-ponds', 'max')
-  return { ok: true }
-}

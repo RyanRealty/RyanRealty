@@ -1,16 +1,11 @@
 'use server'
 
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
-import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
-import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { cookies } from 'next/headers'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-
-const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 async function fireCapiLead(args: {
   eventName: 'Lead' | 'ViewContent'
@@ -62,107 +57,6 @@ function websiteSource(): string {
     .replace(/^https?:\/\//, '')
     .replace(/\/$/, '')
     .toLowerCase() || 'ryan-realty.com'
-}
-
-function partnerSlugFromCampaign(source?: string): 'lender_referral' | 'relocation_referral' | null {
-  const value = source?.trim().toLowerCase() ?? ''
-  if (!value) return null
-  if (value.includes('lender') || value.includes('mortgage')) return 'lender_referral'
-  if (value.includes('relocation')) return 'relocation_referral'
-  return null
-}
-
-export async function submitExitIntentLead(input: {
-  email: string
-  context?: string
-  pageUrl?: string
-  campaign?: CampaignInput
-  /** Anonymous visitor session id (uuid v4). When present we stitch the prior
-   *  browsing history to this person and mark the session identified. */
-  sessionId?: string
-}): Promise<{ ok: boolean; error?: string }> {
-  const email = input.email.trim().toLowerCase()
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, error: 'Invalid email' }
-  }
-
-  const person: LeadEventPerson = { emails: [{ value: email }] }
-
-  const result = await sendEvent({
-    type: 'Registration',
-    person,
-    source: websiteSource(),
-    sourceUrl: input.pageUrl?.trim() || `${SITE_URL}/`,
-    pageUrl: input.pageUrl?.trim(),
-    pageTitle: 'Exit Intent Lead',
-    message: input.context?.trim() || 'exit-intent-popup',
-    campaign: input.campaign,
-  })
-
-  await fireCapiLead({
-    eventName: 'Lead',
-    email,
-    eventSourceUrl: input.pageUrl?.trim() || `${SITE_URL}/`,
-    contentName: 'exit_intent_popup',
-    value: 100,
-  })
-
-  // Canonical tagging against the native person id sendEvent just returned —
-  // this is what lands the lead in marketing_assignments and triggers workflow
-  // auto-enroll. MUST be awaited: on Vercel serverless the lambda freezes the
-  // instant the handler returns, so a fire-and-forget here gets killed
-  // mid-flight. The try/catch keeps a tagging blip from failing the capture.
-  try {
-    if (result.ok && result.personId) {
-      await canonicallyTagLead({
-        fubPersonId: result.personId,
-        audience: 'buyer',
-        source: 'unknown',
-        tier: 'nurture',
-      })
-
-      // Stitch via rr_vid always. Session-only writes missed submits that
-      // had no tracker session yet.
-      const rrVid = (await cookies()).get('rr_vid')?.value ?? null
-      await stitchFormSubmitIdentity({
-        personId: result.personId,
-        email,
-        rrVid,
-        sessionId: input.sessionId && UUID_V4_RE.test(input.sessionId) ? input.sessionId : null,
-      })
-    }
-  } catch (err) {
-    console.warn('[exit-intent] canonical tagging / session stitch failed (non-blocking):', err)
-  }
-
-  // GA4 Measurement Protocol mirror.
-  await fireLeadGenerated({
-    lp_variant: 'exit-intent',
-    lead_type: 'exit_intent',
-    value: 100,
-    extra: {
-      context: input.context,
-      page_url: input.pageUrl,
-      utm_source: input.campaign?.source,
-      utm_medium: input.campaign?.medium,
-      utm_campaign: input.campaign?.campaign,
-    },
-  })
-
-  const partnerSlug = partnerSlugFromCampaign(input.campaign?.source)
-  if (partnerSlug) {
-    await recordPartnerReferral({
-      partnerSlug,
-      leadSource: 'exit_intent_popup',
-      leadIdentifier: email,
-      campaignSource: input.campaign?.source ?? null,
-      campaignMedium: input.campaign?.medium ?? null,
-      estimatedValue: partnerSlug === 'lender_referral' ? 300 : 2500,
-      notes: 'Auto-attributed from exit intent campaign source.',
-    })
-  }
-
-  return result.ok ? { ok: true } : { ok: false, error: result.error ?? 'Lead capture failed' }
 }
 
 /**

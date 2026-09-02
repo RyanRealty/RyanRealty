@@ -5,12 +5,11 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * One-click membership toggle actions (CONTACT360 Phase 3.3, write side).
  *
  * Matt's top ask: "one click assign or unassign from workflow, newsletter,
- * saved search/listing alerts by toggling." These three admin-guarded server
+ * saved search/listing alerts by toggling." These admin-guarded server
  * actions flip a contact's membership in each channel:
  *
  *   - setSequenceEnrollment   — enroll / unenroll from a workflow
  *   - setNewsletterSubscription — subscribe / unsubscribe the newsletter
- *   - setListingAlertsPaused  — pause / resume every listing alert
  *
  * Every action:
  *   1. Is admin-guarded the same way app/actions/crm.ts is (getCrmAccess).
@@ -37,7 +36,6 @@ import { manualEnrollPerson } from '@/lib/crm/enroll'
 import { addSuppression, removeSuppression } from '@/lib/crm/suppressions'
 import { canSubscribe } from '@/lib/crm/membership-consent'
 import { getSuppressionSignals } from '@/lib/data/crm/getSuppressionSignals'
-import { setContactListingAlertsPaused } from '@/lib/data/crm/getContactMemberships'
 import {
   getNewsletterMembershipForLead,
   getCrmPersonContact,
@@ -209,40 +207,3 @@ export async function setNewsletterSubscription(input: {
   return { ok: true, message: 'Unsubscribed from the newsletter' }
 }
 
-// ── Listing-alerts membership ────────────────────────────────────────────────
-
-/**
- * Pause or resume EVERY listing alert a contact receives (the unified
- * listing_alerts table), in one click. Listing alerts are a first-party site
- * feature the contact created themselves — they carry NO consent hard-stop, so
- * this is a plain state flip (no suppression write). The email/sms delivery of
- * an alert is still independently suppression-gated at send time. The write goes
- * through the DAL (setContactListingAlertsPaused) keyed off the same identity
- * the reader uses, so paused state matches what getContactListingAlerts reports.
- */
-export async function setListingAlertsPaused(input: {
-  personId: number
-  paused: boolean
-}): Promise<MembershipResult> {
-  const access = await getCrmAccess()
-  if (!access) return { ok: false, error: 'Unauthorized' }
-  const personId = Number(input.personId)
-  if (!Number.isFinite(personId) || personId <= 0) return { ok: false, error: 'A contact is required' }
-  const scoped = await requirePersonInScope(personId, access)
-  if (!scoped.ok) return scoped
-
-  const touched = await setContactListingAlertsPaused(personId, input.paused)
-  const total = touched.savedSearches + touched.guestAlerts
-  if (total === 0) return { ok: true, message: 'No listing alerts on file' }
-
-  const sb = createServiceClient()
-  await sb.from('crm_timeline').insert({
-    person_id: personId,
-    kind: 'system',
-    title: `Listing alerts ${input.paused ? 'paused' : 'resumed'} by ${access.email} (${total} ${total === 1 ? 'alert' : 'alerts'})`,
-    source: 'app',
-    broker: access.brokerSlug,
-  })
-  revalidateContact(personId)
-  return { ok: true, message: input.paused ? 'Listing alerts paused' : 'Listing alerts resumed' }
-}

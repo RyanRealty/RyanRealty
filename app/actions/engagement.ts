@@ -6,20 +6,9 @@ import {
   incrementListingShareCount as _incrementListingShareCount,
   incrementListingSaveCount as _incrementListingSaveCount,
   decrementListingSaveCount as _decrementListingSaveCount,
-  incrementListingLikeCount as _incrementListingLikeCount,
   decrementListingLikeCount as _decrementListingLikeCount,
 } from '@/lib/data'
 import type { EngagementCounts } from '@/app/actions/engagement-types'
-
-/**
- * Batch-fetch engagement counts for a set of listing keys.
- * Delegates to the DAL `engagement_metrics` reader.
- */
-export async function getEngagementCountsBatch(
-  listingKeys: string[]
-): Promise<Record<string, EngagementCounts>> {
-  return _getEngagementCountsBatch(listingKeys)
-}
 
 const _getEngagementCountsBatchCached = unstable_cache(
   async (listingKeys: string[]) => _getEngagementCountsBatch(listingKeys),
@@ -46,11 +35,6 @@ export async function incrementListingSaveCount(listingKey: string): Promise<voi
 /** Decrement save_count (call after user unsaves listing). */
 export async function decrementListingSaveCount(listingKey: string): Promise<void> {
   await _decrementListingSaveCount(listingKey)
-}
-
-/** Increment like_count (call after user likes listing). */
-export async function incrementListingLikeCount(listingKey: string): Promise<void> {
-  await _incrementListingLikeCount(listingKey)
 }
 
 /** Decrement like_count (call after user unlikes listing). */

@@ -62,16 +62,6 @@ export async function getAdminRoleForEmail(email: string | null | undefined): Pr
   return resolveAdminRole(trimmed)
 }
 
-/** List all admin users (admin_roles rows). Only superuser should call this. */
-export async function listAdminRoles(): Promise<AdminRoleRow[]> {
-  const supabase = await createServerClient()
-  const { data } = await supabase
-    .from('admin_roles')
-    .select('id, email, role, broker_id, user_id, created_at, updated_at')
-    .order('email', { ascending: true })
-  return (data ?? []) as AdminRoleRow[]
-}
-
 /** Add or update admin user. Only superuser. */
 export async function upsertAdminRole(
   email: string,
