@@ -14,7 +14,8 @@
   {
     "id": "email-reporting-one-home",
     "phase": "P12",
-    "note": "Matt lock 2026-09-01 #3: one email-performance home under Reports \u2014 merge reports/emails (send log + rates) and crm/reporting/batch-emails (per-send funnels) into one report with campaign/batch/broker filter dimensions; /admin/email/campaigns becomes compose history only, linking there."
+    "note": "SHIPPED (confirmed 2026-09-01): /admin/reports/emails is the one home (send log + rates + BatchSendsSection); /admin/crm/reporting/batch-emails is a redirect bridge with the per-send funnel kept at ./[jobId] as the entity door; campaigns is compose history. Queue note had lagged the ship.",
+    "status": "shipped"
   },
   {
     "id": "ux-simplify-wave3",
