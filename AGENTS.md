@@ -98,6 +98,7 @@ If a workspace **skill** might apply—even slightly—**read its `SKILL.md` fir
 **Where to look**
 
 - **Master index:** `~/.claude/GLOBAL_SKILLS_REGISTRY.md` or **`docs/plans/GLOBAL_SKILLS_REGISTRY.md`** (same content) — scan here first so you do not miss a plugin or TC-only skill.
+- **Any public page (build, restyle, new section, chart):** read **`design_system/public/TASTE.md`** first — the page to beat, banned tells, interaction on every data section, and the evaluator pass by a SEPARATE agent recorded as `tasteReview` in the route's parity.json. Enforced by `ci:taste-canon`. This binds every tool (Claude, Cursor, Grok, anything pointed at the repo).
 - **This repo:** `.cursor/skills/**/SKILL.md` (e.g. Oregon OREF, OREA PB, SkySlope, professional Word, etc.)
 - **Cursor-bundled / plugin skills:** paths under `~/.cursor/plugins/.../skills/**/SKILL.md` when the task matches their description (Next.js, Vercel, Supabase, TDD, debugging, etc.)
 - **Video:** no producer `SKILL.md` remains. Rules live in `CLAUDE.md` §4. Caption modules only: `video_production_skills/captions/canonical/`.

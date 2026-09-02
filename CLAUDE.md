@@ -194,6 +194,11 @@ no two adjacent sections share a pattern. Held by `ci:one-design-system` and
 `ci:chrome-single-source`. The KB register, the legacy chrome, and the per-surface mockups
 were deleted 2026-08-27.
 
+**TASTE IS A GATE (Matt 2026-09-01).** Before any public page work, read
+[`design_system/public/TASTE.md`](design_system/public/TASTE.md): the page to beat, banned
+tells, interaction on every data section, and a SEPARATE-agent evaluator pass recorded as
+`tasteReview` in the route's parity.json. Held by `ci:taste-canon`. Any agent, every session.
+
 **Everything below governs PRINT, SOCIAL and EMAIL artifacts, plus admin/product surfaces.**
 It is not the public site's look.
 
