@@ -141,6 +141,13 @@ export async function submitSearchAlertSignup(input: {
           type: 'Follow Up',
           dueInMinutes: 5,
         })
+        // Instant sequence enroll (funnel audit 2026-09-01): the 15-minute
+        // crm-auto-enroll sweep remains the catch-all, but a hot signup should
+        // not wait on it — same direct call the contact form makes.
+        const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
+        await autoEnrollByPersonId(nativeId).catch((e: unknown) =>
+          console.warn('[search-alert] instant auto-enroll failed:', e),
+        )
       } catch {
         // Best-effort. Tag/task blip must not skip the browser stitch.
       }
@@ -278,6 +285,10 @@ export async function submitListingSaveCapture(input: {
           type: 'Follow Up',
           dueInMinutes: 5,
         })
+        const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
+        await autoEnrollByPersonId(nativeId).catch((e: unknown) =>
+          console.warn('[listing-save] instant auto-enroll failed:', e),
+        )
       } catch {
         // Best-effort. Tag/task blip must not skip the browser stitch.
       }

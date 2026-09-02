@@ -7,6 +7,8 @@
  * for actions that the legacy trackers were dropping:
  *
  *   - `call_initiated`  → any click on a `tel:` anchor (mobile + desktop)
+ *   - `text_initiated`  → any click on an `sms:` anchor (funnel audit 2026-09-01:
+ *                         listing-page Text CTAs left no click record at all)
  *   - `email_agent`     → any click on a `mailto:` anchor
  *   - `form_start`      → first focus into a form's input (one event per form)
  *
@@ -18,12 +20,13 @@
 import { useEffect } from 'react'
 import { trackEvent } from '@/lib/tracking'
 
-function findTelOrMailto(target: EventTarget | null): { kind: 'tel' | 'mailto'; href: string } | null {
+function findTelOrMailto(target: EventTarget | null): { kind: 'tel' | 'sms' | 'mailto'; href: string } | null {
   if (!(target instanceof Element)) return null
   const a = target.closest('a[href]') as HTMLAnchorElement | null
   if (!a) return null
   const href = a.getAttribute('href') || ''
   if (href.startsWith('tel:'))    return { kind: 'tel',    href }
+  if (href.startsWith('sms:'))    return { kind: 'sms',    href }
   if (href.startsWith('mailto:')) return { kind: 'mailto', href }
   return null
 }
@@ -36,10 +39,10 @@ export default function GlobalIntentTracker() {
         const match = findTelOrMailto(e.target)
         if (!match) return
         const path = (typeof window !== 'undefined' ? window.location.pathname : '/') || '/'
-        if (match.kind === 'tel') {
-          // Strip the tel: prefix for the event params; keep raw href for analytics
-          const number = match.href.replace(/^tel:/, '').trim()
-          trackEvent('call_initiated', {
+        if (match.kind === 'tel' || match.kind === 'sms') {
+          // Strip the scheme for the event params; keep raw href for analytics
+          const number = match.href.replace(/^(tel|sms):/, '').trim()
+          trackEvent(match.kind === 'tel' ? 'call_initiated' : 'text_initiated', {
             phone_number: number.slice(0, 32),
             page_path: path,
             href: match.href.slice(0, 128),

@@ -25,6 +25,7 @@ export type EventName =
   | 'contact_agent_click'
   | 'email_agent'
   | 'call_initiated'
+  | 'text_initiated'
   | 'cma_downloaded'
   | 'cma_anchor_click'
   | 'valuation_requested'

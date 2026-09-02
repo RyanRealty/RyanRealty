@@ -260,6 +260,10 @@ export function neighborhoodExploreItems(input: {
     { label: `All of ${input.cityName}`, href: `/cities/${input.citySlug}` },
     { label: 'Every neighborhood', href: '/neighborhoods' },
     { label: 'Value my home', href: input.links.valuation },
+    // The alert sheet's terminal step is prose-only (V3Sheet renders no link
+    // nodes), so the route to manage a subscription lives here — the same
+    // door the community page's closing block carries (community-figures.ts).
+    { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
 }
