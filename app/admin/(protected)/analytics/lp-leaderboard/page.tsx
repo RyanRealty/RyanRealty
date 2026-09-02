@@ -9,14 +9,14 @@
  * page which shows WHY the conversion rate is what it is.
  *
  * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
- * Presentation only — the visitor_sessions read, the 10,000-row page cap, the
+ * Data access moved into lib/data/analytics/getLpLeaderboard.ts (G1 DAL
+ * boundary) — the visitor_sessions read, the 10,000-row page cap, the
  * lpVariantFromPath mapping, every rate computation and the best/worst gap
- * threshold are carried over verbatim.
+ * threshold are carried over verbatim, just relocated.
  */
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
-import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { getLpLeaderboard } from '@/lib/data/analytics/getLpLeaderboard'
 import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
 import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 import { RangeControl } from '../_components/v2/RangeControl'
@@ -32,114 +32,25 @@ function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
   return out
 }
 
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key)
-}
-
 function formatInt(n: number): string { return new Intl.NumberFormat('en-US').format(n) }
 function formatPct(num: number, den: number): string {
   if (den === 0) return '—'
   return `${((num / den) * 100).toFixed(1)}%`
 }
 
-// Pull the LP slug out of a URL path like /lp/seller-home-value/, /lp/buyer-listing-alerts, /lp/expired-listing
-// Treats /home-valuation as the seller LP also (legacy alias).
-function lpVariantFromPath(pathOrUrl: string | null | undefined): string | null {
-  if (!pathOrUrl) return null
-  let p = pathOrUrl
-  try { p = new URL(pathOrUrl).pathname } catch { /* already a path */ }
-  p = p.toLowerCase().replace(/\/+$/, '')
-  if (p === '/home-valuation') return 'seller-home-value'
-  const m = p.match(/^\/lp\/([a-z0-9-]+)/)
-  if (m) return m[1]
-  return null
-}
-
-type LpRow = {
-  variant: string
-  visits: number
-  identified: number
-  hot: number
-  scoreSum: number
-  topSourceCounts: Map<string, number>
-  topCityCounts: Map<string, number>
-}
-
 async function LpLeaderboard({ range }: { range: { startDate: string; endDate: string } }) {
-  const supabase = getServiceSupabase()
-  const cutoff = `${range.startDate}T00:00:00.000Z`
-  const until = `${range.endDate}T23:59:59.999Z`
-
-  // Pull sessions whose first-touch landing page is an LP (or hits one of
-  // our LP slugs). We classify the variant from `landing_page` then aggregate
-  // in JS. Paged read up to 10,000 sessions — PostgREST caps single responses
-  // at 1,000 rows, so the old .limit(10000) silently truncated there.
-  const { rows: data, error } = await fetchPagedRows(
-    (from, to) =>
-      supabase
-        .from('visitor_sessions')
-        .select('session_id, landing_page, utm_source, utm_medium, utm_campaign, identified_at, hot_lead_fired_at, engagement_score, ip_city')
-        .gte('first_seen_at', cutoff)
-        .lte('first_seen_at', until)
-        .order('session_id', { ascending: true })
-        .range(from, to),
-    10000,
-  )
-  if (error) {
+  const { rows, unreadable, errorMessage } = await getLpLeaderboard({
+    startDate: range.startDate,
+    endDate: range.endDate,
+  })
+  if (unreadable) {
     return (
       <Trouble>
-        Could not load sessions: {error.message}. Nothing on this page is trustworthy until that read succeeds — retry,
-        then check the service-role key.
+        Could not load sessions{errorMessage ? `: ${errorMessage}` : ''}. Nothing on this page is trustworthy until
+        that read succeeds — retry, then check the service-role key.
       </Trouble>
     )
   }
-
-  const byVariant = new Map<string, LpRow>()
-  for (const raw of data) {
-    const row = raw as { landing_page: string | null; utm_source: string | null; identified_at: string | null; hot_lead_fired_at: string | null; engagement_score: number; ip_city: string | null }
-    const variant = lpVariantFromPath(row.landing_page)
-    if (!variant) continue
-    const r = byVariant.get(variant) ?? {
-      variant,
-      visits: 0,
-      identified: 0,
-      hot: 0,
-      scoreSum: 0,
-      topSourceCounts: new Map<string, number>(),
-      topCityCounts: new Map<string, number>(),
-    }
-    r.visits += 1
-    if (row.identified_at) r.identified += 1
-    if (row.hot_lead_fired_at) r.hot += 1
-    r.scoreSum += row.engagement_score || 0
-    if (row.utm_source) r.topSourceCounts.set(row.utm_source, (r.topSourceCounts.get(row.utm_source) ?? 0) + 1)
-    if (row.ip_city) r.topCityCounts.set(row.ip_city, (r.topCityCounts.get(row.ip_city) ?? 0) + 1)
-    byVariant.set(variant, r)
-  }
-
-  function topOf(m: Map<string, number>): string {
-    let best = '—'
-    let bestN = 0
-    for (const [k, n] of m) { if (n > bestN) { best = k; bestN = n } }
-    return best
-  }
-
-  const rows = Array.from(byVariant.values())
-    .map((r) => ({
-      variant: r.variant,
-      visits: r.visits,
-      identified: r.identified,
-      hot: r.hot,
-      identifyRate: r.visits ? r.identified / r.visits : 0,
-      hotRate: r.visits ? r.hot / r.visits : 0,
-      avgScore: r.visits ? r.scoreSum / r.visits : 0,
-      topSource: topOf(r.topSourceCounts),
-      topCity: topOf(r.topCityCounts),
-    }))
-    .sort((a, b) => b.identifyRate - a.identifyRate)
 
   if (rows.length === 0) {
     return (

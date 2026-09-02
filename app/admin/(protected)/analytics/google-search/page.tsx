@@ -2,13 +2,13 @@
 // Top queries, top pages, easy wins.
 //
 // 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
-// Presentation only — every query, aggregation, filter, expected-CTR constant and
-// date-range contract below is carried over verbatim from the legacy version.
+// Data access moved into lib/data/analytics/getGscMetrics.ts (G1 DAL boundary) —
+// every query, aggregation, filter, expected-CTR constant and date-range
+// contract is carried over verbatim, just relocated.
 import { Suspense } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { getGscAccountTotals, getGscScopeAggregate } from '@/lib/data/analytics/getGscMetrics'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { DataList, Figures, Loading } from '../_components/v2/kit'
+import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
 import { RangeControl } from '../_components/v2/RangeControl'
 import { resolveDateRange } from '../_lib/queries'
 
@@ -22,78 +22,21 @@ function normalizeParams(sp: SearchParams): Record<string, string | undefined> {
   return out
 }
 
-function sup() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
-  return createClient(url, key)
-}
-
 const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n)
 const pct = (n: number) => `${(n * 100).toFixed(2)}%`
 const pos = (n: number) => n > 0 ? n.toFixed(1) : '—'
 const stripQ = (s: string) => s.startsWith('query:') ? s.slice(6) : s
 const stripP = (s: string) => { try { return new URL(s).pathname || '/' } catch { return s } }
 
-type Agg = { clicks: number; impressions: number; ctrSum: number; ctrN: number; posSum: number; posN: number }
-type Row = { key: string; clicks: number; impressions: number; ctr: number; position: number }
-
-async function aggBy(scope: 'campaign' | 'page', sinceDate: string, untilDate?: string): Promise<Row[]> {
-  const client = sup()
-  // Paged read — PostgREST caps single responses at 1,000 rows, so the old
-  // .limit(50000) silently truncated the GSC aggregate there. Ordered on the
-  // composite PK (date, channel/scope fixed, scope_id, metric) for stability.
-  const { rows: data } = await fetchPagedRows(
-    (from, to) => {
-      const q = client.from('marketing_channel_daily')
-        .select('scope_id, metric, value')
-        .eq('channel', 'gsc').eq('scope', scope)
-        .in('metric', ['clicks', 'impressions', 'ctr', 'position'])
-        .gte('date', sinceDate)
-      return (untilDate ? q.lte('date', untilDate) : q)
-        .order('date', { ascending: true })
-        .order('scope_id', { ascending: true })
-        .order('metric', { ascending: true })
-        .range(from, to)
-    },
-    50000,
-  )
-  const m = new Map<string, Agg>()
-  for (const raw of data) {
-    const r = raw as { scope_id: string; metric: string; value: number }
-    const a = m.get(r.scope_id) ?? { clicks: 0, impressions: 0, ctrSum: 0, ctrN: 0, posSum: 0, posN: 0 }
-    const v = Number(r.value) || 0
-    if (r.metric === 'clicks') a.clicks += v
-    else if (r.metric === 'impressions') a.impressions += v
-    else if (r.metric === 'ctr') { a.ctrSum += v; a.ctrN += 1 }
-    else if (r.metric === 'position') { a.posSum += v; a.posN += 1 }
-    m.set(r.scope_id, a)
-  }
-  return Array.from(m.entries()).map(([key, a]) => ({
-    key,
-    clicks: a.clicks,
-    impressions: a.impressions,
-    ctr: a.impressions > 0 ? a.clicks / a.impressions : (a.ctrN > 0 ? a.ctrSum / a.ctrN : 0),
-    position: a.posN > 0 ? a.posSum / a.posN : 0,
-  }))
-}
-
 async function HeadlineKpis({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
-  const { data: cur } = await sup().from('marketing_channel_daily').select('metric, value')
-    .eq('channel', 'gsc').eq('scope', 'account').gte('date', sinceDate).lte('date', endDate)
-  const acc = { clicks: 0, impressions: 0, ctrSum: 0, ctrN: 0, posSum: 0, posN: 0 }
-  for (const r of (cur ?? []) as Array<{ metric: string; value: number }>) {
-    const v = Number(r.value) || 0
-    if (r.metric === 'clicks') acc.clicks += v
-    else if (r.metric === 'impressions') acc.impressions += v
-    else if (r.metric === 'avg_ctr') { acc.ctrSum += v; acc.ctrN += 1 }
-    else if (r.metric === 'avg_position') { acc.posSum += v; acc.posN += 1 }
-  }
-  const c = {
-    clicks: acc.clicks,
-    impressions: acc.impressions,
-    ctr: acc.ctrN > 0 ? acc.ctrSum / acc.ctrN : 0,
-    pos: acc.posN > 0 ? acc.posSum / acc.posN : 0,
+  const c = await getGscAccountTotals(sinceDate, endDate)
+  if (c.unreadable) {
+    return (
+      <Trouble>
+        Could not load Search Console totals from marketing_channel_daily. Retry — until it reads,
+        treat this page&apos;s figures as unknown, not as zero.
+      </Trouble>
+    )
   }
   return (
     <>
@@ -121,8 +64,11 @@ async function HeadlineKpis({ sinceDate, endDate }: { sinceDate: string; endDate
 }
 
 async function TopQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
-  const rows = await aggBy('campaign', sinceDate, endDate)
-  const top = rows.sort((a, b) => b.clicks - a.clicks)
+  const { rows: agg, unreadable } = await getGscScopeAggregate('campaign', sinceDate, endDate)
+  if (unreadable) {
+    return <Trouble>Could not load top queries from marketing_channel_daily. Retry before trusting this section.</Trouble>
+  }
+  const top = agg.sort((a, b) => b.clicks - a.clicks)
   return (
     <section aria-label="Top queries by clicks">
       <SectionHead>Top queries by clicks</SectionHead>
@@ -151,10 +97,15 @@ async function SlippingQueries({ sinceDate, endDate }: { sinceDate: string; endD
   const start = new Date(`${sinceDate}T00:00:00Z`).getTime()
   const end = new Date(`${endDate}T00:00:00Z`).getTime()
   const mid = new Date((start + end) / 2).toISOString().slice(0, 10)
-  const [earlier, later] = await Promise.all([
-    aggBy('campaign', sinceDate, mid),
-    aggBy('campaign', mid, endDate),
+  const [earlierRes, laterRes] = await Promise.all([
+    getGscScopeAggregate('campaign', sinceDate, mid),
+    getGscScopeAggregate('campaign', mid, endDate),
   ])
+  if (earlierRes.unreadable || laterRes.unreadable) {
+    return <Trouble>Could not load slipping queries from marketing_channel_daily. Retry before trusting this section.</Trouble>
+  }
+  const earlier = earlierRes.rows
+  const later = laterRes.rows
   const laterByKey = new Map(later.map((r) => [r.key, r]))
   const slipping = earlier
     .filter((a) => a.clicks >= 3)
@@ -200,7 +151,10 @@ async function SlippingQueries({ sinceDate, endDate }: { sinceDate: string; endD
 }
 
 async function OpportunityQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
-  const rows = await aggBy('campaign', sinceDate, endDate)
+  const { rows, unreadable } = await getGscScopeAggregate('campaign', sinceDate, endDate)
+  if (unreadable) {
+    return <Trouble>Could not load opportunity queries from marketing_channel_daily. Retry before trusting this section.</Trouble>
+  }
   // High impressions, low CTR, decent rank (page 1 or 2). Easy SEO wins.
   const opp = rows
     .filter((r) => r.impressions >= 30 && r.ctr < 0.02 && r.position > 0 && r.position <= 20)
@@ -236,7 +190,10 @@ async function OpportunityQueries({ sinceDate, endDate }: { sinceDate: string; e
 }
 
 async function TopPages({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
-  const rows = await aggBy('page', sinceDate, endDate)
+  const { rows, unreadable } = await getGscScopeAggregate('page', sinceDate, endDate)
+  if (unreadable) {
+    return <Trouble>Could not load top pages from marketing_channel_daily. Retry before trusting this section.</Trouble>
+  }
   const top = rows.sort((a, b) => b.clicks - a.clicks)
   return (
     <section aria-label="Top pages by clicks">
