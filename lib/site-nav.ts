@@ -117,6 +117,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
       { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+      { href: '/invest', label: 'Investment property' },
       { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
       { href: '/compare', label: 'Compare homes' },
       { href: '/videos', label: 'Video tours' },

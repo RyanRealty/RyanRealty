@@ -71,6 +71,7 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'homes-for-sale',
   'how-we-get-our-numbers',
   'housing-market',
+  'invest',
   'join',
   'listing',
   'login',

@@ -1,0 +1,60 @@
+{
+  "route": "app/invest/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md patterns, built from components/site/v3. No KB-era mockup — the pattern set is the target (same basis as every post-2026-08-27 page).",
+  "competitiveTarget": "No Central Oregon brokerage has an investor destination at all — competitors bury multi-family in a search filter. This page wins by honesty: live per-type counts with the Market Truth trace, the rental math one tap away on every eligible listing, and NO cash-flow promises (the internal DSCR analysis shows Bend does not cash-flow on long-term rentals at financing rates; the page's stance is inventory + math, never hype).",
+  "note": "Matt ruling 2026-09-01 (decisions.md): investor becomes a real job with /invest as the door and the listing-page investor lens as the depth layer. Every figure is a getPublicPlaceSegments region row — the same numbers the housing-market and search pages print (one source, §0). Stale internal analysis figures are never republished here. Capture is the income-property alert (multi-family pin — a narrowing filter). Detached/SFR is deliberately absent: that is the buyer story.",
+  "requiredComponents": [
+    {
+      "name": "V3SectionTracker",
+      "section": "Analytics island on the one taxonomy.",
+      "blocking": true
+    },
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList JSON-LD.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Invest.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "#place opens with H1 + the page's stance (what it is, how to underwrite); #tools carries the math doors (rental calculator, mortgage calculator, market report).",
+      "blocking": true
+    },
+    {
+      "name": "V3Instrument",
+      "section": "#market — income-property figures (2-4 unit count + median, commercial count) with the Market Truth trace. Omitted entirely when the segment read returns nothing (§0: no section over withheld figures).",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "#searches — one door per income property type (multi-family, commercial, land, farm, business), each with its live count and its place+type landing path.",
+      "blocking": true
+    },
+    {
+      "name": "InvestAlertSheet",
+      "section": "#alerts — income-property alert capture on the hardened submitSearchAlertSignup path, multi-family pin.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome.",
+      "blocking": true
+    }
+  ],
+  "sectionOrder": [
+    "V3SectionTracker + MetadataBlock (not sections)",
+    "V3Breadcrumb",
+    "V3Quiet #place -- H1 + stance",
+    "V3Instrument #market -- income-property figures",
+    "V3Ledger #searches -- live per-type doors",
+    "V3Quiet #tools -- the math doors",
+    "InvestAlertSheet -- the ask (id=alerts renders inside the component, matching HomeAlertSheet)",
+    "V3Footer"
+  ],
+  "superseded": [],
+  "openDefects": {}
+}
