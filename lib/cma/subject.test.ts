@@ -107,6 +107,20 @@ describe('pickMostRecentListing', () => {
   })
 })
 
+describe('parseCmaAddress — unit designators', () => {
+  it('strips a trailing Unit/Apt/Ste group before the suffix strip', () => {
+    expect(parseCmaAddress('141 SW 15th St Unit 21, Bend, OR 97702')!.streetNameTokens).toEqual(['sw', '15th'])
+    expect(parseCmaAddress('1833 SW Canal Blvd Unit 24, Redmond, OR 97756')!.streetNameTokens).toEqual(['sw', 'canal'])
+    expect(parseCmaAddress('789 NE Greenwood Ave Apt B, Bend, OR 97701')!.streetNameTokens).toEqual(['ne', 'greenwood'])
+  })
+  it('strips a bare #NN token', () => {
+    expect(parseCmaAddress('123 Main St #12, Bend')!.streetNameTokens).toEqual(['main'])
+  })
+  it('never eats a street name that merely ends in a number', () => {
+    expect(parseCmaAddress('653 NE 12th St, Bend, OR 97701')!.streetNameTokens).toEqual(['ne', '12th'])
+  })
+})
+
 describe('applyEnteredStreetDirectional', () => {
   it('puts SE back when MLS StreetName is bare Douglas', () => {
     const parsed = parseCmaAddress('648 SE Douglas, Bend, OR 97702')

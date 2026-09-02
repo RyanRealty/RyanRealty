@@ -44,6 +44,18 @@ export function parseCmaAddress(raw: string, cityHint?: string | null, zipHint?:
   const tokens = streetPart.toLowerCase().split(' ').filter(Boolean)
   if (tokens.length < 2 || !/^\d+$/.test(tokens[0]!)) return null
   let nameTokens = tokens.slice(1)
+  // Trailing unit designator ("Unit 21", "Apt B", "Ste 4", "#12") folds into
+  // the street name and breaks the ILIKE prefix match against listings
+  // StreetName (found 2026-09-01: two form-asker CMAs failed resolution on
+  // exactly this). Strip it BEFORE the suffix strip so "15th St Unit 21"
+  // reduces to "15th". "Lot" stays — it leads legitimate rural addresses.
+  const UNIT_WORDS = new Set(['unit', 'apt', 'apartment', 'ste', 'suite', '#'])
+  const secondLast = nameTokens[nameTokens.length - 2]
+  if (nameTokens.length >= 3 && secondLast && UNIT_WORDS.has(secondLast)) {
+    nameTokens = nameTokens.slice(0, -2)
+  } else if (nameTokens.length >= 2 && nameTokens[nameTokens.length - 1]!.startsWith('#')) {
+    nameTokens = nameTokens.slice(0, -1)
+  }
   const last = nameTokens[nameTokens.length - 1]
   if (last && STREET_SUFFIXES.has(last) && nameTokens.length > 1) {
     nameTokens = nameTokens.slice(0, -1)
