@@ -381,7 +381,7 @@ export function zipMedianChart(
  * The leftover pace items this page prints, minus the three that would render
  * a second copy of a figure the market Instrument already carries above them:
  *
- *   pending  is the Instrument's "pending · now"          (hud.pending)
+ *   pending  is the Instrument's "under contract now"          (hud.pending)
  *   sto      is the Instrument's "sale to list"           (hud.saleToList)
  *   closed   is the Instrument's "sold · 12 months"       (hud.sold12mo)
  *

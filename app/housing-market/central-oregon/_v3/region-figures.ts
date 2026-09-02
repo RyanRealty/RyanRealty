@@ -112,7 +112,7 @@ export function buildRegionInstruments(
   if (hud.pending != null && hud.pending > 0) {
     liveFigures.push({
       value: v3Text(hud.pending.toLocaleString('en-US')),
-      label: v3Text('pending · now'),
+      label: v3Text('under contract now'),
     })
   }
   if (mosText != null) {
@@ -143,7 +143,7 @@ export function buildRegionInstruments(
   if (daysToPending != null) {
     paceFigures.push({
       value: v3Text(String(daysToPending)),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
     })
   }
   if (closedLast30Days != null) {

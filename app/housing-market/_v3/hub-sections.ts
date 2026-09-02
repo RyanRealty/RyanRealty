@@ -239,7 +239,7 @@ export function buildSfrFollowFigures(hud: {
   if (hud?.daysToPending != null && hud.daysToPending > 0) {
     figures.push({
       value: v3Text(String(hud.daysToPending)),
-      label: v3Text('median to pending · 90 days, single-family'),
+      label: v3Text('days to an offer, last 90 days, single-family'),
       href: '/housing-market/central-oregon',
     })
   }

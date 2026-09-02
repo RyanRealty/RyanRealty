@@ -26,8 +26,8 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
   it('v3 KPI builder prints leftover pending after the active count', () => {
     const citySections = readFileSync(resolve('app/cities/[slug]/_v3/city-sections.ts'), 'utf8')
     expect(citySections).toMatch(/label: v3Text\('detached homes for sale'\)/)
-    expect(citySections).toMatch(/label: v3Text\('pending · now'\)/)
-    expect(citySections.indexOf("label: v3Text('pending · now')")).toBeGreaterThan(
+    expect(citySections).toMatch(/label: v3Text\('under contract now'\)/)
+    expect(citySections.indexOf("label: v3Text('under contract now')")).toBeGreaterThan(
       citySections.indexOf("label: v3Text('detached homes for sale')"),
     )
     expect(files.types).toMatch(/pending: number \| null/)
@@ -47,7 +47,7 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
       'utf8',
     )
     expect(citySections).toMatch(/hud\.pending/)
-    expect(citySections).toMatch(/label: v3Text\('pending · now'\)/)
+    expect(citySections).toMatch(/label: v3Text\('under contract now'\)/)
     expect(files.city, 'city').toMatch(/leftoverHudKpis/)
     expect(files.city, 'city').toMatch(/publishPlaceFace\(\{\s*grain:\s*'city'/)
     expect(files.city, 'city').not.toMatch(/pending:\s*pulse/)
@@ -74,16 +74,16 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     // is the leftover HUD's pending count and it carries the same label the KB
     // KPI row used. A pulse fill reaching this figure still fails.
     expect(files.zip, 'zip').toMatch(/hud\.pending/)
-    expect(files.zip, 'zip').toMatch(/label: v3Text\('pending · now'\)/)
+    expect(files.zip, 'zip').toMatch(/label: v3Text\('under contract now'\)/)
     expect(files.zip, 'zip').not.toMatch(/pending:\s*pulse/)
     expect(files.zip, 'zip').not.toMatch(/getMarketPulse/)
   })
 
   it('search snapshot and listing KPI print leftover pending', () => {
     expect(files.snapshot).toMatch(/hud\.pending/)
-    expect(files.snapshot).toMatch(/Pending · now/)
+    expect(files.snapshot).toMatch(/Under contract now/)
     expect(files.listing).toMatch(/hud\.pending/)
-    expect(files.listing).toMatch(/Pending · now/)
+    expect(files.listing).toMatch(/Under contract now/)
     expect(files.listing).not.toMatch(/leftover\.pendingCount/)
   })
 
@@ -105,8 +105,8 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
     }
   })
 
-  it('dictionary covers Pending · now', () => {
-    expect(files.dictionary).toMatch(/'Pending · now': 'pending-now'/)
+  it('dictionary covers Under contract now', () => {
+    expect(files.dictionary).toMatch(/'Under contract now': 'pending-now'/)
     expect(files.dictionary).toMatch(/id: 'pending-now'/)
   })
 })
@@ -118,7 +118,7 @@ describe('D26 leftover housing instrument and leftover as-of', () => {
     expect(geo).toMatch(/leftoverHudPublishes/)
     expect(geo).not.toMatch(/getMarketPulse\(/)
     expect(figures).toMatch(/leftover membership/)
-    expect(figures).toMatch(/pending · now/)
+    expect(figures).toMatch(/under contract now/)
     expect(figures).not.toMatch(/live MLS through Oregon Data Share/)
   })
 

@@ -127,7 +127,7 @@ describe('getPublicPlaceSegments', () => {
     expect(SRC).toMatch(/median_sale_to_original_list/)
     expect(SRC).toMatch(/yoy_median_price/)
     expect(SRC).toMatch(/pct_with_price_cut/)
-    expect(SRC).toMatch(/days to contract · 12 months/)
+    expect(SRC).toMatch(/days to an offer, last 12 months/)
     expect(SRC).not.toMatch(/days to pending ·/)
     expect(SRC).toMatch(/leftoverWindow/)
     expect(SRC).toMatch(/windowMonths: leftoverWindow\(stat\)/)
@@ -169,11 +169,11 @@ describe('getPublicPlaceSegments', () => {
       '$326,000',
       '12.8 months',
       "buyer's market",
-      '5 pending · now',
-      '32 closed · 12 months',
-      '41 days to contract · 12 months',
+      '5 under contract now',
+      '32 sold in the last 12 months',
+      '41 days to an offer, last 12 months',
       '95.2% sale to original · 12 months',
-      '-4.1% YoY median close · 12 months',
+      '-4.1% median sale price against a year ago',
       '45.2% closed with a price cut · 12 months',
     ])
     expect(publicSegmentDisplayBits({
@@ -182,7 +182,7 @@ describe('getPublicPlaceSegments', () => {
       verdict: null,
       pendingCount: 5,
       closedCount: 32,
-    })).toEqual(['$589,000', '5 pending · now', '32 closed · 12 months'])
+    })).toEqual(['$589,000', '5 under contract now', '32 sold in the last 12 months'])
     expect(publicSegmentDisplayBits({
       medianList: null,
       monthsOfSupply: null,

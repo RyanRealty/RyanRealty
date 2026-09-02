@@ -51,14 +51,14 @@ export function subdivisionCountItems(row: SubdivisionCounts): SubdivisionCountI
     items.push({
       key: 'pending',
       value: row.pendingCount.toLocaleString('en-US'),
-      label: 'pending · now',
+      label: 'under contract now',
     })
   }
   if (row.closedCount != null && row.closedCount >= 1) {
     items.push({
       key: 'closed',
       value: row.closedCount.toLocaleString('en-US'),
-      label: 'closed sales · 12 months',
+      label: 'homes sold, last 12 months',
     })
   }
   return items
@@ -85,14 +85,14 @@ function extraLead(
     return {
       n: row.pendingCount,
       kind: 'pending',
-      label: `${publicSegmentNoun(row.segment, row.pendingCount)} pending · now · recorded plat`,
+      label: `${publicSegmentNoun(row.segment, row.pendingCount)} under contract now · recorded plat`,
     }
   }
   if (row.closedCount != null && row.closedCount >= 1) {
     return {
       n: row.closedCount,
       kind: 'closed',
-      label: `${publicSegmentNoun(row.segment, row.closedCount)} closed · 12 months · recorded plat`,
+      label: `${publicSegmentNoun(row.segment, row.closedCount)} sold in the last 12 months · recorded plat`,
     }
   }
   return null
@@ -108,14 +108,14 @@ export function subdivisionExtraItems(
     const bits: string[] = []
     if (lead.kind === 'active') {
       if (row.pendingCount != null && row.pendingCount >= 1) {
-        bits.push(`${row.pendingCount.toLocaleString('en-US')} pending · now`)
+        bits.push(`${row.pendingCount.toLocaleString('en-US')} under contract now`)
       }
       if (row.closedCount != null && row.closedCount >= 1) {
-        bits.push(`${row.closedCount.toLocaleString('en-US')} closed · 12 months`)
+        bits.push(`${row.closedCount.toLocaleString('en-US')} sold in the last 12 months`)
       }
     } else if (lead.kind === 'pending') {
       if (row.closedCount != null && row.closedCount >= 1) {
-        bits.push(`${row.closedCount.toLocaleString('en-US')} closed · 12 months`)
+        bits.push(`${row.closedCount.toLocaleString('en-US')} sold in the last 12 months`)
       }
     }
     items.push({

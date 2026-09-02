@@ -70,9 +70,9 @@ describe('community leftover face vs alias tiles', () => {
       daysToPending90d: 51,
     })
     expect(figures.map((f) => String(f.label))).toEqual([
-      'median close · 12 months',
-      'sold · 12 months',
-      'median to pending · 90 days',
+      'median sale price, last 12 months',
+      'homes sold, last 12 months',
+      'days to an offer, last 90 days',
     ])
     expect(figures.map((f) => String(f.value))).toEqual(['$2,384,500', '22', '51'])
     expect(figures.some((f) => String(f.label).includes('months of supply'))).toBe(false)

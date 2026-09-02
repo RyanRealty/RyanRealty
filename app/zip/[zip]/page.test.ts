@@ -56,7 +56,7 @@ describe('ZIP page Market Truth overlay', () => {
     expect(PAGE).toMatch(/leftoverHudKpis/)
     // The 30-day figure comes from the leftover HUD's own 30-day cell.
     expect(PAGE).toMatch(/hud\.new30/)
-    expect(PAGE).toMatch(/label: v3Text\('new · 30 days'\)/)
+    expect(PAGE).toMatch(/label: v3Text\('newly listed, last 30 days'\)/)
     expect(PAGE).not.toMatch(/mtNewVal/)
     expect(PAGE).not.toMatch(/publishedNew30/)
     // ONE ANSWER PER QUESTION. The KB page counted its Dataset's 30-day new

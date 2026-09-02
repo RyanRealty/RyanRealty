@@ -55,7 +55,7 @@ export function buildRegionFigures(
   if (hud.pending != null && hud.pending > 0) {
     figures.push({
       value: v3Text(hud.pending.toLocaleString('en-US')),
-      label: v3Text('pending · now'),
+      label: v3Text('under contract now'),
     })
   }
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
@@ -73,7 +73,7 @@ export function buildRegionFigures(
   if (daysToPending) {
     figures.push({
       value: v3Text(daysToPending),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
       href: '/housing-market',
     })
   }

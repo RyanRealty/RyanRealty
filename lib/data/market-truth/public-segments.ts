@@ -161,16 +161,16 @@ export function publicSegmentDisplayBits(row: {
       : null,
     publicSegmentVerdictLabel(row.verdict),
     row.pendingCount != null && row.pendingCount >= 1
-      ? `${row.pendingCount.toLocaleString('en-US')} pending · now`
+      ? `${row.pendingCount.toLocaleString('en-US')} under contract now`
       : null,
     row.closedCount != null && row.closedCount >= 1
-      ? `${row.closedCount.toLocaleString('en-US')} closed · 12 months`
+      ? `${row.closedCount.toLocaleString('en-US')} sold in the last 12 months`
       : null,
     row.daysToContract != null && row.daysToContract > 0
-      ? `${Math.round(row.daysToContract)} days to contract · 12 months`
+      ? `${Math.round(row.daysToContract)} days to an offer, last 12 months`
       : null,
     row.saleToOriginal != null ? `${formatPaceShare(row.saleToOriginal)} sale to original · 12 months` : null,
-    row.yoyMedian != null ? `${formatPaceDelta(row.yoyMedian)} YoY median close · 12 months` : null,
+    row.yoyMedian != null ? `${formatPaceDelta(row.yoyMedian)} median sale price against a year ago` : null,
     row.priceCutShare != null
       ? `${formatPaceShare(row.priceCutShare)} closed with a price cut · 12 months`
       : null,

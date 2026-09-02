@@ -177,7 +177,7 @@ export async function NeighborhoodMarketContext({
             <KpiCell label={`Active in ${geoName}`} value={<TabularNumber value={activeCount} />} />
           ) : null}
           {hud.pending != null ? (
-            <KpiCell label="Pending · now" value={<TabularNumber value={hud.pending} />} />
+            <KpiCell label="Under contract now" value={<TabularNumber value={hud.pending} />} />
           ) : null}
           {medianList != null ? (
             <KpiCell label="Median list" value={<Price value={medianList} compact />} />

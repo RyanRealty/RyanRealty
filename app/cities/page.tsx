@@ -308,13 +308,13 @@ export default async function CitiesPage() {
       value: v3Text(formatCount(totalActive)),
       // Point-in-time count, not a window — label names it "today" so it
       // reads honestly next to the 12-month and 6-month figures beside it.
-      label: v3Text('Active homes · today'),
+      label: v3Text('Homes for sale today'),
     })
   }
   const regionMedianText = fmtMedian(regionMedian)
   if (regionMedianText) {
     // Same point-in-time basis as active homes above: today's list prices.
-    regionFigures.push({ value: v3Text(regionMedianText), label: v3Text('Median list price · today') })
+    regionFigures.push({ value: v3Text(regionMedianText), label: v3Text('Median asking price today') })
   }
   // The stat is the number; the verdict is a sub-line under it (it used to be
   // the verdict alone under "MONTHS OF SUPPLY" — a word where a number was
@@ -329,13 +329,13 @@ export default async function CitiesPage() {
   if (regionPace.pendingCount != null) {
     regionFigures.push({
       value: v3Text(formatCount(regionPace.pendingCount)),
-      label: v3Text('Pending · now'),
+      label: v3Text('Under contract now'),
     })
   }
   if (regionPace.daysToContract != null) {
     regionFigures.push({
       value: v3Text(formatCount(regionPace.daysToContract)),
-      label: v3Text('Days to contract · 12 months'),
+      label: v3Text('Days to an offer, last 12 months'),
     })
   }
   const [leadFigure, ...restFigures] = regionFigures
@@ -348,7 +348,7 @@ export default async function CitiesPage() {
       median ? `Median list ${median}` : null,
       city.leftover?.pendingCount != null ? `${formatCount(city.leftover.pendingCount)} pending now` : null,
       city.leftover?.daysToContract != null
-        ? `${formatCount(city.leftover.daysToContract)} days to contract · 12 months`
+        ? `${formatCount(city.leftover.daysToContract)} days to an offer, last 12 months`
         : null,
       ...(city.leftover?.extras ?? []).map((item) => `${item.value} ${item.noun} for sale`),
       city.sentence,

@@ -123,30 +123,30 @@ export function publicPaceHasRow(row: PublicPaceRow): boolean {
 export function publicPaceItems(row: PublicPaceRow): PublicPaceItem[] {
   const items: PublicPaceItem[] = []
   if (row.pendingCount != null) {
-    items.push({ key: 'pending', value: row.pendingCount.toLocaleString('en-US'), label: 'pending · now' })
+    items.push({ key: 'pending', value: row.pendingCount.toLocaleString('en-US'), label: 'under contract now' })
   }
   if (row.medianAgeActive != null) {
     items.push({
       key: 'age',
       value: String(row.medianAgeActive),
-      label: 'days median age of actives · now',
+      label: 'days the average home has been listed',
     })
   }
   if (row.daysToContract != null) {
-    items.push({ key: 'dtc', value: String(row.daysToContract), label: 'days to contract · 12 months' })
+    items.push({ key: 'dtc', value: String(row.daysToContract), label: 'days to an offer, last 12 months' })
   }
   if (row.closedCount != null) {
     items.push({
       key: 'closed',
       value: row.closedCount.toLocaleString('en-US'),
-      label: 'closed sales · 12 months',
+      label: 'homes sold, last 12 months',
     })
   }
   if (row.medianClose != null) {
     items.push({
       key: 'medClose',
       value: formatPriceExact(row.medianClose),
-      label: 'median close · 12 months',
+      label: 'median sale price, last 12 months',
     })
   }
   if (row.medianPpsf != null) {
@@ -181,7 +181,7 @@ export function publicPaceItems(row: PublicPaceRow): PublicPaceItem[] {
     items.push({
       key: 'sto',
       value: formatPaceShare(row.saleToOriginal),
-      label: 'sale to original list · 12 months',
+      label: 'sale price against the first asking price, last 12 months',
     })
   }
   if (row.saleToFinal != null) {
@@ -205,14 +205,14 @@ export function publicPaceItems(row: PublicPaceRow): PublicPaceItem[] {
     items.push({
       key: 'yoy',
       value: formatPaceDelta(row.yoyMedian),
-      label: 'YoY median close · 12 months',
+      label: 'Median sale price against a year ago',
     })
   }
   if (row.yoySold != null) {
     items.push({
       key: 'yoySold',
       value: formatPaceDelta(row.yoySold),
-      label: 'YoY closed sales · 12 months',
+      label: 'homes sold against a year ago',
     })
   }
   return items

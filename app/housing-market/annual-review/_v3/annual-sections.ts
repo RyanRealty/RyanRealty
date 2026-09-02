@@ -119,7 +119,7 @@ export function buildRegionFigures(
   if (hud?.daysToPending != null && hud.daysToPending > 0) {
     figures.push({
       value: v3Text(String(hud.daysToPending)),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
       href: REGION_REPORT_PATH,
     })
   }

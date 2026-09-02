@@ -46,8 +46,8 @@ describe('getPublicDetachedPace', () => {
       saleToOriginal: 0.969230769230769,
       medianPriceCut: 0.0591357428610843,
     })
-    expect(items.some((item) => item.label.includes('pending · now'))).toBe(true)
-    expect(items.some((item) => item.label.includes('sale to original list'))).toBe(true)
+    expect(items.some((item) => item.label.includes('under contract now'))).toBe(true)
+    expect(items.some((item) => item.label.includes('sale price against the first asking price'))).toBe(true)
     expect(items.some((item) => item.value === '5.9%')).toBe(true)
   })
 })
@@ -94,7 +94,7 @@ describe('public pace surfaces', () => {
     expect(searchLayer).toMatch(/isPlainCityPage/)
     const citiesIndex = readFileSync(resolve('app/cities/page.tsx'), 'utf8')
     expect(citiesIndex).toMatch(/getPublicDetachedPace/)
-    expect(citiesIndex).toMatch(/Pending · now/)
+    expect(citiesIndex).toMatch(/Under contract now/)
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
     // The homepage still READS pace -- it feeds leftoverHudKpis for the Field
     // count -- but it no longer prints pace items. /housing-market owns the run.

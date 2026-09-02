@@ -333,19 +333,19 @@ export function leftoverMarketFigures(
   if (hud.pending != null && hud.pending > 0) {
     figures.push({
       value: v3Text(hud.pending.toLocaleString('en-US')),
-      label: v3Text('pending · now'),
+      label: v3Text('under contract now'),
     })
   }
   if (hud.closed30 != null && hud.closed30 > 0) {
     figures.push({
       value: v3Text(hud.closed30.toLocaleString('en-US')),
-      label: v3Text('closed · 30 days'),
+      label: v3Text('homes sold, last 30 days'),
     })
   }
   if (hud.new30 != null && hud.new30 > 0) {
     figures.push({
       value: v3Text(hud.new30.toLocaleString('en-US')),
-      label: v3Text('new · 30 days'),
+      label: v3Text('newly listed, last 30 days'),
     })
   }
   if (hud.saleToList != null) {
@@ -354,7 +354,7 @@ export function leftoverMarketFigures(
       // The value is the pace row's saleToOriginal — a 12-month statistic.
       // It wore the bare label 'sale to list' while the surrounding run
       // promises "every figure names its own window" (2026-08-27 audit).
-      label: v3Text('sale to original list · 12 months'),
+      label: v3Text('sale price against the first asking price, last 12 months'),
     })
   }
   // Tenths, through publishDaysFigure — the medians land on half-days, and
@@ -364,7 +364,7 @@ export function leftoverMarketFigures(
   if (daysToPending) {
     figures.push({
       value: v3Text(daysToPending),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
     })
   }
   if (hud.monthsSupply != null && hud.monthsSupply > 0) {
@@ -377,7 +377,7 @@ export function leftoverMarketFigures(
   if (hud.sold12mo != null && hud.sold12mo > 0) {
     figures.push({
       value: v3Text(hud.sold12mo.toLocaleString('en-US')),
-      label: v3Text('sold · 12 months'),
+      label: v3Text('homes sold, last 12 months'),
     })
   }
   return figures

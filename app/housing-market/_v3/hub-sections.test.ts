@@ -29,7 +29,7 @@ describe('buildSfrFollowFigures — list median digits', () => {
       'median list price, single-family',
       'homes for sale, single-family',
       'months of supply, single-family',
-      'median to pending · 90 days, single-family',
+      'days to an offer, last 90 days, single-family',
     ])
   })
 

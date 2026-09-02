@@ -1,7 +1,7 @@
 /**
  * Public HUD KPI row from leftover membership only (D19).
  * One pile, named window. Miss omits. Pulse and cache never fill these tiles.
- * Pending · now is leftover pending_count. New · 30 days stays omitted until
+ * Under contract now is leftover pending_count. New · 30 days stays omitted until
  * leftover has a 30-day new-listings cell. Do not map 12-month leftover closed
  * onto Closed · 30 days.
  */

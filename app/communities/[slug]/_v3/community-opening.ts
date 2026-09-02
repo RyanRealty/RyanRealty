@@ -227,20 +227,20 @@ export function leftoverSoldHistoryFigures(
   if (pace.medianClose != null && pace.medianClose > 0) {
     figures.push({
       value: v3Text(formatPriceExact(pace.medianClose)),
-      label: v3Text('median close · 12 months'),
+      label: v3Text('median sale price, last 12 months'),
     })
   }
   if (hud.sold12mo != null && hud.sold12mo > 0) {
     figures.push({
       value: v3Text(hud.sold12mo.toLocaleString('en-US')),
-      label: v3Text('sold · 12 months'),
+      label: v3Text('homes sold, last 12 months'),
     })
   }
   const daysToPending = publishDaysFigure(hud.daysToPending)
   if (daysToPending) {
     figures.push({
       value: v3Text(daysToPending),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
     })
   }
   return figures

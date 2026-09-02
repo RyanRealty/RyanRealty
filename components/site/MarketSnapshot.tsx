@@ -176,7 +176,7 @@ export default async function MarketSnapshot({
             sub="For sale now"
           />
           <StatCard
-            label="Pending · now"
+            label="Under contract now"
             value={<TabularNumber value={pendingCount} />}
             sub="Under contract"
           />

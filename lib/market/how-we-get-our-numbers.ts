@@ -26,7 +26,7 @@ export type HowNumberFaq = {
 /** HUD KPI label -> dictionary id. Every label KbMarketHud can print must live here. */
 export const HUD_KPI_HOW = {
   'Active homes': 'active-homes',
-  'Pending · now': 'pending-now',
+  'Under contract now': 'pending-now',
   'Closed · 30 days': 'closed-30-days',
   'Sold · 12 mo': 'sold-12-mo',
   'New · 30 days': 'new-30-days',
@@ -61,7 +61,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'leftover',
     term: 'Leftover',
     body: [
-      'Leftover is our name for those membership counts. Closed · 30 days, Pending · now, Median to pending, the leftover strip, mix, leftover monthly charts, leftover extra product types, listing place market, About city rows, the public JSON feed, city OG cards, market FAQ Median to pending, and the seller home-value HUD all use this pile.',
+      'Leftover is our name for those membership counts. Closed · 30 days, Under contract now, Median to pending, the leftover strip, mix, leftover monthly charts, leftover extra product types, listing place market, About city rows, the public JSON feed, city OG cards, market FAQ Median to pending, and the seller home-value HUD all use this pile.',
       'It is a different pile from the live MLS snapshot and from the older monthly figures. A city can show more houses on leftover than an older snapshot that only counted listings whose city field matched and whose pin sat inside a polygon. That is a definition, not a math error.',
       'On a listing, leftover neighborhood prints when leftover can publish it. If leftover cannot, leftover city prints and the city is named. A subdivision name is not leftover neighborhood.',
     ],
@@ -70,7 +70,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'active-homes',
     term: 'Active homes',
     body: [
-      'Houses currently for sale in that place, leftover membership. Same pile as Pending · now, Closed · 30 days, Median to pending, Sale to list, and Months of supply on that HUD.',
+      'Houses currently for sale in that place, leftover membership. Same pile as Under contract now, Closed · 30 days, Median to pending, Sale to list, and Months of supply on that HUD.',
       'If leftover cannot publish the count, the tile is omitted. We do not fill it from the live MLS snapshot. Neighborhood inventory is the address set we have mapped, not a polygon count.',
     ],
   },
@@ -84,7 +84,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
   },
   {
     id: 'pending-now',
-    term: 'Pending · now',
+    term: 'Under contract now',
     body: [
       'Houses in that place that are under contract right now, leftover membership. Same pile as Active homes on that HUD.',
       'If leftover cannot publish the count, the tile is omitted. We do not fill it from the live MLS snapshot.',
@@ -117,7 +117,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'median-to-pending',
     term: 'Median to pending',
     body: [
-      'Median days from list date to an accepted offer over the last 90 days, leftover membership. Same pile as Active homes, Pending · now, and Closed · 30 days on that HUD.',
+      'Median days from list date to an accepted offer over the last 90 days, leftover membership. Same pile as Active homes, Under contract now, and Closed · 30 days on that HUD.',
       'If leftover cannot publish the figure, the tile is omitted. We do not fill it from the live MLS snapshot. The leftover 12-month days-to-contract lives in the leftover strip, never on this tile.',
     ],
   },
@@ -156,7 +156,7 @@ export const HOW_NUMBER_ENTRIES: readonly HowNumberEntry[] = [
     id: 'leftover-pace',
     term: 'Detached leftover strip',
     body: [
-      'The leftover strip under the HUD. Median age of actives and 12-month leftover stats such as closed count, median close, days to contract, new listings, price cuts, sale to original list, cash share, and year-over-year change. Pending · now also prints on the HUD KPI row from the same leftover pile.',
+      'The leftover strip under the HUD. Median age of actives and 12-month leftover stats such as closed count, median close, days to contract, new listings, price cuts, sale to original list, cash share, and year-over-year change. Under contract now also prints on the HUD KPI row from the same leftover pile.',
       'Missing leftover cells are omitted, not filled from the older monthly figures. This strip is where 12-month days to contract lives.',
     ],
   },
@@ -259,7 +259,7 @@ export const HOW_NUMBER_RELATED = [
 ] as const
 
 export const HOW_NUMBER_METADATA_DESCRIPTION =
-  'What Closed · 30 days, Pending · now, months of supply, leftover, and the other market figures on this site actually count, and how we collect them.'
+  'What Closed · 30 days, Under contract now, months of supply, leftover, and the other market figures on this site actually count, and how we collect them.'
 
 export const HOW_NUMBER_METADATA_KEYWORDS = [
   'how we get our numbers',

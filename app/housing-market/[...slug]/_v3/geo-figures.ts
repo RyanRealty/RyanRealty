@@ -105,7 +105,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
   if (pendingCount != null) {
     figures.push({
       value: v3Text(pendingCount.toLocaleString('en-US')),
-      label: v3Text('pending · now'),
+      label: v3Text('under contract now'),
     })
   }
   if (mosText != null) {
@@ -118,7 +118,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
   if (daysToPending != null) {
     figures.push({
       value: v3Text(String(daysToPending)),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
     })
   }
   if (closed30 != null) {
@@ -167,7 +167,7 @@ function leftoverPeriodItems(row: PublicPaceRow | null | undefined) {
   return publicPaceItems(row).filter((item) => isLeftoverPeriodKey(item.key))
 }
 
-/** Leftover pace. Miss omitted. Pending · now lives on leftover HUD live figures. */
+/** Leftover pace. Miss omitted. Under contract now lives on leftover HUD live figures. */
 export function buildPublicPaceFigures(row: PublicPaceRow | null | undefined): V3InstrumentFigure[] {
   if (!row) return []
   return publicPaceItems(row)

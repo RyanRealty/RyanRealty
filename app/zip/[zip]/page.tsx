@@ -359,19 +359,19 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (hud.pending != null && hud.pending > 0) {
     marketFigures.push({
       value: v3Text(hud.pending.toLocaleString('en-US')),
-      label: v3Text('pending · now'),
+      label: v3Text('under contract now'),
     })
   }
   if (hud.closed30 != null && hud.closed30 > 0) {
     marketFigures.push({
       value: v3Text(hud.closed30.toLocaleString('en-US')),
-      label: v3Text('closed · 30 days'),
+      label: v3Text('homes sold, last 30 days'),
     })
   }
   if (hud.new30 != null && hud.new30 > 0) {
     marketFigures.push({
       value: v3Text(hud.new30.toLocaleString('en-US')),
-      label: v3Text('new · 30 days'),
+      label: v3Text('newly listed, last 30 days'),
     })
   }
   if (hud.saleToList != null) {
@@ -379,13 +379,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       value: v3Text(`${hud.saleToList.toFixed(1)}%`),
       // pace.saleToOriginal, a 12-month statistic; bare-labelled until the
       // 2026-08-27 audit.
-      label: v3Text('sale to original list · 12 months'),
+      label: v3Text('sale price against the first asking price, last 12 months'),
     })
   }
   if (hud.daysToPending != null && hud.daysToPending > 0) {
     marketFigures.push({
       value: v3Text(String(hud.daysToPending)),
-      label: v3Text('median to pending · 90 days'),
+      label: v3Text('days to an offer, last 90 days'),
     })
   }
   if (mosText != null) {
@@ -398,7 +398,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (hud.sold12mo != null && hud.sold12mo > 0) {
     marketFigures.push({
       value: v3Text(hud.sold12mo.toLocaleString('en-US')),
-      label: v3Text('sold · 12 months'),
+      label: v3Text('homes sold, last 12 months'),
     })
   }
   // §0 rule 3: time on market for the homes STILL for sale, under its own label
