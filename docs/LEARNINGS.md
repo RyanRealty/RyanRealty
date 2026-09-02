@@ -21,7 +21,9 @@ history, and Grok Build's prompt histories — for Matt corrections not yet writ
    in chat history is lost next session (CLAUDE.md preamble).
 3. **A rule that keeps being broken becomes a gate, not more prose.** This file is the
    *why* layer. The *enforcement* layer is `docs/MECHANICAL_GATES.md`. Each entry below
-   says where the rule now lives. If it says "prose only", that is the next gate to build.
+   says where the rule now lives. If it says "prose only", that is the next gate to build. Once a rule has a gate, its entry
+   collapses to the rule, one line of incident, and the pointer; the gate's row in
+   `docs/MECHANICAL_GATES.md` keeps the story.
 4. **This file is a digest with pointers, not a second source of truth.** Where an entry
    and its owning canon disagree, the owning canon wins and this file gets fixed.
 5. **It only compounds.** Entries are never deleted because they feel obvious. Obvious is
@@ -36,6 +38,10 @@ history, and Grok Build's prompt histories — for Matt corrections not yet writ
 
 Then, in the same commit: apply the rule to the immediate work, and if the class has
 escaped twice, build the gate (`docs/MECHANICAL_GATES.md` has the pattern).
+
+Entry shape is mechanical (`scripts/check-learnings-canon.mjs`, G71): at most 9 lines and
+800 bytes, both pointers present, at most 6 lines once a gate enforces it, and the three
+agent surfaces (CLAUDE.md, AGENTS.md, GROK_BOT_BRAIN.md) must keep naming this file.
 
 ---
 
@@ -149,12 +155,10 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   4.42, a different verdict. SFR is `property_sub_type='Single Family Residence'`.
   → Lives in: CLAUDE.md §7, MARKET_TRUTH D1. Source: `docs/plans/MARKET_TRUTH/DECISIONS.md`, 2026-08-22.
 - **Never derive a market stat from `details` JSONB; use typed columns.** The 2026-04-25
-  cache audit found six corruptions from exactly this: `median_dom=0` everywhere (NULL
-  coalesced to 0), `median_sale_price` literally equal to `avg_sale_price`,
-  `avg_sale_to_list_ratio` hardcoded 1.000, `sold_count` inflated 48 to 83% (filtered on
-  `OnMarketDate`, all statuses), Redmond `median_ppsf` at $22,310 (no living-area floor),
-  13 of 30 columns silently NULL.
-  → Lives in: `check-dal-cache-source.mjs` (G21). Source: `.auto-memory/memory_cache_layer_rewrite_2026_04_25.md`.
+  cache audit found six corruptions from this: `median_dom=0` everywhere, median equal to
+  average, sale-to-list hardcoded 1.000, `sold_count` inflated 48 to 83%, Redmond
+  `median_ppsf` at $22,310, 13 of 30 columns silently NULL.
+  → Lives in: `check-dal-internal-discipline.mjs` (G21). Source: `.auto-memory/memory_cache_layer_rewrite_2026_04_25.md`.
 - **Months of supply = actives / (closed last 6 months / 6). Thresholds ≤4 seller, 4 to 6
   balanced, ≥6 buyer. The pill must match the number.** A fleet bot found
   `/communities/tetherow` showing 4.6 months next to 35 actives and 36 sales/12mo, which is
@@ -179,7 +183,7 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **The region list is the live 16 MLS-city set.** A draft DDL invented 18 cities, added
   Mitchell (Wheeler County, a different market) and dropped Tumalo, Warm Springs, Crooked
   River Ranch. It moved the published median by real dollars.
-  → Lives in: MARKET_TRUTH D14; `check-market-city-names.mjs` (Crooked River Ranch had
+  → Lives in: MARKET_TRUTH D14; `check-market-city-mls-canon.mjs` (Crooked River Ranch had
   been filed under Terrebonne, Tumalo under Bend, behind a false "verified" comment).
 - **Townsite plats are not residential subdivisions.** `redmond-townsite` spans 10 sub-types
   across a century; "a typical home of 1,276 sqft" is a category error.
@@ -202,14 +206,11 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   Source: `docs/plans/CROSS_AGENT_HANDOFF.md` ("third time this session").
 
 - **CMA comps come from the subject's own market: subdivision, then neighborhood group,
-  then radius — never a premium community, never a cheaper submarket.** 922 Ogden priced
-  off less-desirable areas; Pine-area homes picked up Crosswater/Caldera Springs comps
-  ("we never want to include homes like that — a no-brainer"); an Old Bend CMA used
-  Southeast Bend comps; the Delaware CMA repeated it after the rule was stated. Widen in
-  order, never across a desirability or rural/urban boundary.
-  → Lives in: prose only (lib/cma comp selection); resort membership itself is gated by
-  `check-resort-community-definition.mjs`. Source: Claude Code sessions 2026-07-30,
-  2026-08-05, 2026-08-29; Grok Build session, 2026-08-31.
+  then radius; never a premium community, never a cheaper submarket.** Pine-area homes got
+  Crosswater/Caldera Springs comps; an Old Bend CMA used Southeast Bend comps; the Delaware
+  CMA repeated it after the rule was stated. Widen in order, never across a boundary.
+  → Lives in: prose only for comp selection; `check-resort-definitions.mjs` for resort
+  membership. Source: Claude Code 2026-07-30, 2026-08-05, 2026-08-29; Grok Build 2026-08-31.
 - **A CMA never recommends above the home's own expired ask.** The market already proved
   that number too high; any such output means the comp logic is wrong — root-cause it,
   don't patch the case. Matt stated it on consecutive days.
@@ -228,13 +229,10 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 
 ## 4.2 Database, cache, and performance
 
-- **Never read `listings.details` over a broad candidate set.** It is TOAST-backed: 10KB
-  detoast per row, up to 37× slower. It produced a 335-second anon-facing outage
-  (2026-07-31) and `listing_tile_mv` going 8 days stale after outgrowing its timeout. A
-  retry-on-timeout in `sync-spark.ts` retried at 5× the row range and made it worse.
-  Narrow first via trigger-maintained side tables (`listing_feature_flags`,
-  `listing_remarks_search`). A typed-column swap is allowed only after proving zero
-  disagreement across the whole table (`has_virtual_tour` disagreed on 1,423 rows).
+- **Never read `listings.details` over a broad candidate set.** It is TOAST-backed, up to
+  37× slower per row: a 335-second anon-facing outage (2026-07-31) and `listing_tile_mv`
+  8 days stale. Narrow first via trigger-maintained side tables; a typed-column swap only
+  after proving zero disagreement table-wide (`has_virtual_tour` disagreed on 1,423 rows).
   → Lives in: `check-toast-read-discipline.mjs`. Source: `docs/TOAST_READ_DISCIPLINE.md`.
 - **PostgREST silently caps at 1,000 rows.** Newsletter send tiering, CRM tag counts, the
   inbox queue and 20+ dashboard reads were silently truncated (2026-07-14).
@@ -269,14 +267,12 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   stranded test rows in 7 tables (17 in `cmas`, 22 in `crm_people`).
   → Lives in: `check-int-test-residue.mjs` (G59).
 
-- **Every statistic goes through the one stats process — the `-- audit:` escape hatch is
-  not a stats path.** Inventory counts, closed-sale counts, and comp-pool depths were being
-  computed honor-system through the raw-SQL bypass; Matt closed the loophole he had used
-  himself: "all stats should come through one process, enforce this." A later cross-surface
-  discrepancy was diagnosed by the same rule ("all stats come through one process so why
-  the diff").
-  → Lives in: `scripts/stat-tables.cjs` (the single definition), `pre-tool-use.mjs`,
-  `check-script-stat-source.mjs`. Source: Claude Code sessions, 2026-08-26.
+- **Every statistic goes through the one stats process; the `-- audit:` escape hatch is
+  not a stats path.** Inventory, closed-sale, and comp-pool counts were being computed
+  honor-system through the raw-SQL bypass. Matt closed the loophole he had used himself:
+  "all stats should come through one process, enforce this."
+  → Lives in: `scripts/stat-tables.cjs`, `pre-tool-use.mjs`, `check-script-stat-source.mjs`.
+  Source: Claude Code sessions, 2026-08-26.
 
 ## 4.3 CRM, identity, and outbound
 
@@ -311,7 +307,7 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
   deliberately. Source: `docs/audit/CRM_RBAC_AUDIT.md`.
 - **Sequential ids are an IDOR.** `crm/deals/[id]` let a restricted broker read any deal's
   commission; `people/[id]/portal` leaked any contact's saved homes (2026-08-07).
-  → Lives in: `check-admin-entity-reader-scope.mjs` (G66).
+  → Lives in: `check-entity-scope.mjs` (G66).
 - **Meta CAPI returned 200 on failure with only a `console.warn`.** A revoked token
   silently dropped 100% of conversions. `CRM_MIRROR_ENABLED=false` silently stops all
   `crm_people` writes. An API key read under two differently-cased env names disabled half
@@ -322,12 +318,11 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **Broker headshots are never center-cropped.** ~20 surfaces beheaded portraits via
   `rounded-full object-cover` (2026-07-15). → Lives in: `check-avatar-crop.mjs` (G49).
 
-- **Follow Up Boss is retired everywhere — code, emails, docs, analytics.** Purged
+- **The retired vendor CRM is gone everywhere: code, emails, docs, analytics.** Purged
   repeatedly and still resurfacing: "WE DONT USE FUB ANYMORE" (2026-07-04); "there should
-  be absolutely no mention of it anywhere" (2026-08-07); leftover references found again in
-  analytics (2026-08-19).
-  → Lives in: prose only. Source: Claude Code sessions, 2026-07-04, 2026-08-07; Grok Build
-  session, 2026-08-19.
+  be absolutely no mention of it anywhere" (2026-08-07); found again in analytics (2026-08-19).
+  → Lives in: `check-claude-canon.mjs` (fails any tracked file naming it). Source: Claude
+  Code sessions, 2026-07-04, 2026-08-07; Grok Build session, 2026-08-19.
 - **A CMA is signed by the lead's assigned broker; Matt is the fallback.** The plan
   defaulted to Matt four times: "I've told you four times that the CMA gets signed by the
   assigned broker."
@@ -357,7 +352,7 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **The deploy builds the commit, not the working tree.** `trackEvent('nav_interact')`
   shipped while its `EventName` union extension stayed unstaged: every Vercel build failed
   for 75 minutes, 12 commits queued behind. A second escape the same night: a DAL export in
-  the working tree, callers already committed. → Lives in: `check-commit-self-contained.mjs`
+  the working tree, callers already committed. → Lives in: `check-commit-compiles.mjs`
   (G46, staged-tree tsc). Source: escape ledger row 1, 2026-06-10.
 - **A `'use server'` module cannot re-export a type-only import.** It took
   `/admin/crm/subscriptions` to a 500 behind a green `tsc` (2026-08-08). → Lives in: G63.
@@ -396,7 +391,7 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **23 of 72 cron routes were unregistered and invisible** (2026-07-21).
   → Lives in: `check-cron-registered.mjs` (G53).
 - **~200 components shipped dark.** SmartSearch, HeroSearchOverlay, SearchSplitView were
-  exported and imported nowhere. → Lives in: `check-export-reachability.mjs` (G55).
+  exported and imported nowhere. → Lives in: `check-reachable-exports.mjs` (G55).
 
 - **A wrapper script propagates the real exit code.** `npm run push` exited 0 while
   `git push` was rejected non-fast-forward — gates and build reported success over an
@@ -471,7 +466,7 @@ Where an agent halts and waits for a human. Each one exists because an agent onc
 - **Oregon Data Share display rules are a gate.** Matt directive 2026-07-21. → Lives in: G54.
 - **A resort home is never a non-resort home and vice versa.** Matt 2026-08-05. A comp
   guard built from an 80%-inside polygon test had flagged ~2,900 closed sales wrongly; 23
-  entries removed across 6 communities. → Lives in: `check-resort-community-definition.mjs`,
+  entries removed across 6 communities. → Lives in: `check-resort-definitions.mjs`,
   `data/resort-communities.json`.
 - **Read a document's actual property and sale number before archiving on a
   "wrong-property" verdict.** A classifier nearly archived a correctly filed woodstove

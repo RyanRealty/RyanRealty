@@ -1,0 +1,7 @@
+{
+  "note": "Ratchet for ci:learnings-canon (G71). Entries in docs/LEARNINGS.md missing a \"→ Lives in:\" pointer or a \"Source:\" line. Both counts may only SHRINK: every new entry carries both. Refresh with node scripts/check-learnings-canon.mjs --write-baseline after fixing old entries, never to admit new debt.",
+  "generatedAt": "2026-09-02T04:00:05.200Z",
+  "entries": 164,
+  "missingLivesIn": 35,
+  "missingSource": 76
+}
