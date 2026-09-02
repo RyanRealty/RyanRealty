@@ -147,6 +147,20 @@ the MLS, median close, listed · represented, so far this year) with the closing
 V3Proof band of reviews naming the broker (record off), and V3Doors (call / text / email). Measured:
 21 closings for Matt, 21 dots, claim "21 closings of every type", page 6,570px (was 10,196).
 
+**LISTING PAGE — THE NEXT CLASS (surveyed 2026-09-02, not started).** Measured on
+`/homes-for-sale/bend/awbrey-butte/rivers-edge-village/2533-pine-terrace-220223522` at 1280:
+13,030px tall, 23 sections, 119 images, 104 buttons, 1 chart, 3 map surfaces, 1,817 words — the
+data is all there (payment calculator, schools, sale history, "how the ask sits against nearby
+sales", Bend market chart, parks, guides, trails, rental analysis, similar homes) and it reads as a
+scroll. Its parity contract binds 26 components (`ui_kits/listing-detail/parity.json`). The plan,
+design-the-class: (1) the photo stage with the ask and three facts, a contact rail that stays; (2)
+one "this home in numbers" Instrument holding the comps chart and the ask-vs-nearby figures; (3) the
+living map scoped to the plat/neighborhood with THIS home's dot held (V3Atlas needs a `highlight`
+dot) in place of the static location map; (4) the neighborhood's character + a Proof band; (5) the
+long tail (schools, parks, trails, guides) as one V3Doors row, not five sections; (6) the payment and
+rental instruments kept, as instruments; (7) similar homes as a strip. Execution-grade plan first,
+then build, then the evaluator. Do not start it without reading TASTE.md and the listing parity note.
+
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
 2. Design the place-page class as a composed page, not stacked sections: an interactive
