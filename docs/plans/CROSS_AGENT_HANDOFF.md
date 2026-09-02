@@ -27,9 +27,29 @@ data cube (every property type, every subdivision); beat the best page for Tethe
 Northwest Crossing, Old Bend, West Hills, every listing; brokerage pages and contact dialed;
 stop the one-off approach — design the CLASS of pages. Any tool, every session, uses TASTE.md.
 
+**Evaluator pass on the homepage (2026-09-01, separate agent, report in the session
+scratchpad): 41/100 FAIL.** Design 14/30, originality 9/30, interaction 5/15, craft 7/15,
+honesty 6/10. Only `#doors` and desktop `#faces` were judged deliberate. Craft defects fixed
+and on main (swept into the admin session's `fbbef2af` by a shared-checkout `git add`; content
+intact): `#sell` mounted in SellCapture with heading + 44px controls (was a bare full-bleed
+form), Buying door made place-first ("Find your place", map search — Matt: a buyer does not
+want every home), pace figures as one sentence instead of a KPI grid with the banned
+`median to pending · 90 days` label, source line in visitor language, all three brokers at
+375, hero eyebrow and footer figure-repeat removed. STILL OPEN, all form-level and all
+requiring variants: towns ledger encodes nothing (bars or choropleth), market chart has zero
+hover and no claim (marks + scrubber + emphasis line), verdict should be a range meter,
+reviews is a 1.5–2.3k px prose wall (proof band), homes map pins are 13px at region zoom,
+communities repeats the towns ledger and discards its video posters, footer is 2,686px at 375.
+Matt's reaction to the shipped top of page: "is this supposed to wow me?" — it is not, and he
+is right: the opening is a stock hero plus three text doors.
+
 **Next program (the place-page class), in order:**
-1. Evaluator pass on the homepage per TASTE.md → fix defects → record `tasteReview` (first
-   route out of the baseline).
+1. The homepage OPENING as a real interactive data experience, built as 2–3 rendered
+   variants for Matt to pick (not another quiet iteration): the live Central Oregon map as
+   the first screen — every town, community, and neighborhood boundary touchable with count,
+   median, and pace; property-type toggles; a price scrubber — so "Buying" means "find your
+   place," not "see every home." Then the remaining form-level defects above through the
+   evaluator loop, and the first `tasteReview` receipt.
 2. Design the place-page class as a composed page, not stacked sections: an interactive
    property-type × subdivision display (hover/toggle/scrub reveals the cube), the closed-sales
    moat made visible, the map cells carrying per-type counts (punch-list item 6), and the
