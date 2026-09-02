@@ -589,7 +589,17 @@ export function V3Chart({
             {hoverColumns.length > 0 ? <V3ChartHover columns={hoverColumns} label={caption} /> : null}
           </div>
           {ticks.x.length >= 2 ? (
-            <div className="v3-chart__x v3-chart__x--ticks" aria-hidden="true">
+            <div
+              className={cn(
+                'v3-chart__x v3-chart__x--ticks',
+                // "Q1 2024" is nearly twice the width of "2024": a row of five
+                // collides at 375 where seven years do not, so the thinning
+                // threshold follows the label, not just the count (evaluator
+                // round six, SUBDIVISION-R6-5).
+                ticks.x.some((tk) => tk.label.trim().length > 5) && 'is-wide-ticks',
+              )}
+              aria-hidden="true"
+            >
               {ticks.x.map((tk) => (
                 <span key={`${tk.label}-${tk.frac.toFixed(3)}`} className="v3-chart__xtick" style={{ left: `${bandLeftPct(tk.frac)}%` }}>
                   {tk.label}
@@ -654,7 +664,14 @@ export function V3Chart({
             // at most six labels, the first and the last always among them,
             // each under the bar it names (pass six, S6: 29 bars, no year;
             // pass three D6: two bars labelled at the frame's ends).
-            <div className="v3-chart__x v3-chart__x--ticks" aria-hidden="true">
+            <div
+              className={cn(
+                'v3-chart__x v3-chart__x--ticks',
+                // Same rule as the line's row: a wide label thins earlier.
+                plot.bars.some((b) => b.tick.trim().length > 5) && 'is-wide-ticks',
+              )}
+              aria-hidden="true"
+            >
               {plot.bars
                 .filter((b, i, all) => {
                   const step = Math.max(1, Math.ceil(all.length / 6))

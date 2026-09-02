@@ -826,15 +826,21 @@
    (pass six, S4). A tick row of five or more thins to every other label
    under 48rem; the gridline stays so the position still reads. */
 @media (max-width: 47.99rem) {
-  /* …but never the last one: on a six-year run the rule hid 2026, the year
-     the claim beside it names (evaluator round five, SUBDIVISION-CHART-1). */
-  .v3 .v3-chart__x--ticks:has(> :nth-child(4)) .v3-chart__xtick:nth-child(2n):not(:last-child) {
+  /* Thin only a row that cannot fit. Four-digit labels at 375 clear each other
+     to seven of them — measured smallest gap 14.4px on a five-tick row — so
+     thinning from four hid labels that had room (evaluator round six,
+     SUBDIVISION-R6-5). From eight, every other label goes…
+     …but never the last one: on a run the rule used to hide the year the claim
+     beside it names (round five, SUBDIVISION-CHART-1). */
+  .v3 .v3-chart__x--ticks:has(> :nth-child(8)) .v3-chart__xtick:nth-child(2n):not(:last-child),
+  .v3 .v3-chart__x--ticks.is-wide-ticks:has(> :nth-child(5)) .v3-chart__xtick:nth-child(2n):not(:last-child) {
     visibility: hidden;
   }
 
   /* An even run would then show the last two labels side by side: drop the
      one before it instead. */
-  .v3 .v3-chart__x--ticks:has(> :nth-child(4)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)) {
+  .v3 .v3-chart__x--ticks:has(> :nth-child(8)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)),
+  .v3 .v3-chart__x--ticks.is-wide-ticks:has(> :nth-child(5)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)) {
     visibility: hidden;
   }
 }

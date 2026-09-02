@@ -146,7 +146,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
-import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { V3Atlas, V3Quiet, type AtlasRegion } from '@/components/site/v3'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
@@ -677,7 +677,23 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
 
         <PlaceTypeSlider cards={typeCards} label={`${displayName} property types`} />
 
+        {/* The map search counts what its VIEW holds, which is not what the
+            plat holds: a reader met "100 homes" under an atlas saying 15, with
+            nothing between them to say they count different things (evaluator
+            round six, SUBDIVISION-R6-2). The section says what it searches. */}
         <div id="homes">
+          <V3Quiet
+            id="homes-head"
+            eyebrow={v3Text('Search the map')}
+            headingLevel={2}
+            heading={v3Text(`Every home on the market around ${displayName}`)}
+            items={[
+              {
+                kind: 'prose' as const,
+                body: `Counts here follow the map view and the filters, so they run wider than the ${displayName} inventory above.`,
+              },
+            ]}
+          />
           <PlaceSplitView
             city={splitCity}
             subdivision={splitSubdivision}
