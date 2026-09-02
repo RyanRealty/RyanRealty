@@ -216,6 +216,61 @@
   background: var(--v3-wash);
 }
 
+/* Phone ---------------------------------------------------------------------
+   Always visible at every width: a brokerage whose number takes three taps to
+   find has failed at its one job. Icon-only at 390 (the number is the link's
+   accessible name either way); the digits join it from 40rem, styled like
+   Saved so the bar stays one register. */
+.v3-chrome__phone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-3xs);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-2xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-chrome__phone:hover,
+.v3-chrome__phone:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.v3-chrome__phone-num {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+@media (min-width: 40rem) {
+  .v3-chrome__phone-num {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .v3-chrome__phone {
+    padding: 0 var(--v3-space-xs);
+  }
+}
+
 /* Saved ---------------------------------------------------------------------
    The account affordance, not a nav word (ia-lock). It joins the bar at the
    same width as the destinations; below that it lives in the overlay, where its

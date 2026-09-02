@@ -34,7 +34,7 @@
     },
     {
       "name": "KbCommunityAlerts",
-      "where": "HomeAlertSheet: same server action, fields, honeypot"
+      "where": "retired with the homepage declutter (Matt 2026-09-01); alert capture lives on the search pages and /invest, the homepage ask is the seller sheet"
     },
     {
       "name": "KbTestimonials",
@@ -67,6 +67,11 @@
       "section": "the Bend flyover hero, D11 H1, search as the only Stage action"
     },
     {
+      "name": "V3Doors",
+      "section": "#doors -- the three routes (Buying / Selling / Investing), each with a live fact from the destination page's own source. Matt 2026-09-01: the homepage MUST route the three intents, implemented as a quiet band, not the killed 2026-08-16 button bar.",
+      "blocking": true
+    },
+    {
       "name": "HomeHeroSearch",
       "section": "city / community / address search on the Stage"
     },
@@ -81,10 +86,6 @@
     {
       "name": "V3Instrument",
       "section": "the market question, leftover KPI row, year overlay"
-    },
-    {
-      "name": "HomeAlertSheet",
-      "section": "listing alert capture"
     },
     {
       "name": "V3Footer",
@@ -137,12 +138,12 @@
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- flyover, H1, HomeHeroSearch",
+    "V3Doors #doors -- Buying / Selling / Investing, one live fact each",
     "HomeHomesField -- the houses and the map in one frame, type chips, listFlow, See all",
     "V3Ledger #towns -- each town's active count and median list price",
     "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
     "section #sell -- the seller ask, directly after the market verdict speaks to sellers (Matt 2026-09-01: moved up from last)",
     "V3Ledger #communities -- resorts and master-planned communities",
-    "HomeAlertSheet -- the ask",
     "V3Quiet #reviews -- Google reviews",
     "AboutFaces -- the three brokers",
     "V3Footer"

@@ -28,6 +28,10 @@ const GLOBAL_ALLOW_PATHS = [
   // (e.g. lib/cma-delivery.ts mentions the old /home-valuation path).
   // Inline-comment legacy mentions are acceptable.
   /^lib[\\/]cma-delivery\.ts$/,
+  // Analytics readers that CLASSIFY historical rows recorded under legacy
+  // URLs (the LP leaderboard maps old /home-valuation hits onto the seller
+  // LP). Parsing recorded data is not linking to it.
+  /^lib[\\/]data[\\/]analytics[\\/]getLpLeaderboard\.ts$/,
 ]
 
 const RULES = [

@@ -30,6 +30,7 @@ import {
   type PublicSegmentRow,
 } from '@/lib/data/market-truth/public-segments'
 import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
+import { INVEST_SEGMENTS } from '@/lib/invest/segments'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -58,8 +59,6 @@ export const metadata: Metadata = pageMetadata({
   path: '/invest',
 })
 
-/** The income-side segments, in door order. Detached is the buyer story, not this page's. */
-const INVEST_SEGMENTS = ['multifamily_2_4', 'commercial_sale', 'land', 'farm', 'business'] as const
 
 const SEGMENT_TRACE =
   'regional MLS through Oregon Data Share, read through the Market Truth metric layer: active listings per property type across Central Oregon. A figure the layer withheld is absent, not estimated'

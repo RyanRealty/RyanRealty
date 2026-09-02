@@ -36,5 +36,11 @@
     "id": "pricing-depth-followons",
     "phase": "BACKLOG",
     "note": "BACKLOG 2026-08-10. Parked CMA pricing ideas \u2014 re-run scripts/cma-backtest.mjs quarterly. Not P12."
+  },
+  {
+    "id": "admin-users-v2-migration",
+    "phase": "P12",
+    "status": "shipped",
+    "note": "SHIPPED 2026-09-01 same day: AdminUsersList rewritten on ReportGrid/SearchField/SectionHead (shadcn burndown 78\u219275), names are doors to /admin/crm?q=<email>, dates via the pinned formatter. Live-verified. Remaining from the audit: complete the app/actions orphan cross-check (195 files, only prospecting+sync verified)."
   }
 ]

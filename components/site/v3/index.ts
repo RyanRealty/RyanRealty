@@ -209,6 +209,9 @@ export type {
 /* Pattern 6 — QUIET: hairline supporting content, the graph's outbound edges  */
 /* -------------------------------------------------------------------------- */
 
+export { V3Doors } from './V3Doors'
+export type { V3Door, V3DoorsProps } from './V3Doors'
+
 export { V3Quiet } from './V3Quiet'
 
 export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Quiet'

@@ -1,0 +1,115 @@
+/* ===========================================================================
+   PATTERN 7: DOORS
+   Styles for V3Doors.tsx and nothing else. Every value resolves from
+   ./tokens.css. No raw color, no hardcoded motion: the arrow's travel reads
+   --v3-travel so reduced motion collapses it to 0.
+
+   The band's whole job is orientation in one glance: three intents on one
+   rhythm, divided by hairlines, each a full-surface door. If it ever grows a
+   fill, a shadow, or a button, it has become the 2026-08-16 bar that was
+   killed on sight — the restraint IS the pattern.
+   =========================================================================== */
+
+/* Compound guard, same reason as every pattern (see V3Quiet.css). */
+.v3.v3-doors {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+}
+
+/* THE LOOK (Broadside): a section following content opens on the navy rule. */
+* + .v3.v3-doors {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-doors__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Stacked at 390: hairline between doors, none above the first (the section
+   rule or the hero edge already closes that side). */
+.v3-doors__item + .v3-doors__item {
+  border-top: var(--v3-rule-hairline);
+}
+
+@media (min-width: 48rem) {
+  .v3-doors__list {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  }
+
+  .v3-doors__item + .v3-doors__item {
+    border-top: 0;
+    border-left: var(--v3-rule-hairline);
+  }
+}
+
+/* One door -----------------------------------------------------------------
+   The whole cell is the anchor: kicker, promise, fact, arrow, all one target.
+   Vertical rhythm is the section's own; the doors carry the padding so the
+   hover wash reaches the dividers with no gaps. */
+.v3-doors__door {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+  padding: clamp(1.5rem, 3.5vw, 2.5rem) var(--v3-gutter) clamp(1.4rem, 3vw, 2.2rem);
+  color: var(--v3-ink);
+  text-decoration: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-doors__door:hover,
+.v3-doors__door:focus-visible {
+  background: var(--v3-wash);
+}
+
+.v3-doors__kicker {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-doors__label {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  text-wrap: balance;
+}
+
+.v3-doors__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-xs);
+  margin-top: var(--v3-space-3xs);
+}
+
+.v3-doors__fact {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-note);
+}
+
+/* The concession that this is a door. Nudges on hover by --v3-travel, which
+   reduced motion resolves to 0 — no second declaration needed. */
+.v3-doors__arrow {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--v3-ink-muted);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-doors__door:hover .v3-doors__arrow,
+.v3-doors__door:focus-visible .v3-doors__arrow {
+  transform: translateX(calc(var(--v3-travel) * 0.4));
+  color: var(--v3-ink);
+}

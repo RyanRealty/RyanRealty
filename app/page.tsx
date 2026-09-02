@@ -29,6 +29,7 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Stage,
+  V3Doors,
   V3Instrument,
   V3Ledger,
   V3Quiet,
@@ -37,6 +38,7 @@ import {
   V3SectionTracker,
   type V3QuietItem,
 } from '@/components/site/v3'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { HomeHomesField } from './_v3/HomeHomesField'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
@@ -56,7 +58,6 @@ import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { SellValueForm } from '@/app/sell/_v3/SellValueForm'
-import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
 import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -111,7 +112,7 @@ const COMM_FEATURED = [
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries] = await Promise.all([
+  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -129,6 +130,7 @@ export default async function Home() {
         getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }).catch(() => null),
       ),
     ),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
   ])
   const regionBoundary = unionBoundaryGeometry(townBoundaries)
   const regionMt = regionOverlays.get('region:central-oregon')
@@ -226,6 +228,38 @@ export default async function Home() {
       ? `See all ${hud.active.toLocaleString('en-US')} homes`
       : 'See all homes'
 
+  // The three routes (Matt 2026-09-01). Each fact is the same live figure its
+  // destination page prints, or absent — never an estimate (section 0). The
+  // investing sum names exactly the segments it counts.
+  const investDoorSegments = new Set(['multifamily_2_4', 'commercial_sale', 'land'])
+  const investCount = investSegments
+    .filter((row) => investDoorSegments.has(row.segment))
+    .reduce((sum, row) => sum + (row.activeCount ?? 0), 0)
+  const doors = [
+    {
+      kicker: v3Text('Buying'),
+      label: v3Text('See every home for sale'),
+      href: publishRegionalSearchHref(),
+      ...(hud.active != null
+        ? { fact: v3Text(`${hud.active.toLocaleString('en-US')} homes on the market today`) }
+        : {}),
+    },
+    {
+      kicker: v3Text('Selling'),
+      label: v3Text('See what your home is worth'),
+      href: valuationHref('/'),
+      fact: v3Text('A broker prices it within 24 hours'),
+    },
+    {
+      kicker: v3Text('Investing'),
+      label: v3Text('Income property, with the math'),
+      href: '/invest',
+      ...(investCount > 0
+        ? { fact: v3Text(`${investCount.toLocaleString('en-US')} income and land listings`) }
+        : {}),
+    },
+  ] as const
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -241,6 +275,8 @@ export default async function Home() {
         >
           <HomeHeroSearch />
         </V3Stage>
+
+        <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 
         <HomeHomesField
           fieldItems={fieldItems}
@@ -318,8 +354,6 @@ export default async function Home() {
             action={{ label: v3Text('Every community'), href: '/communities' }}
           />
         ) : null}
-
-        <HomeAlertSheet />
 
         {testimonialItems.length > 0 ? (
           <V3Quiet

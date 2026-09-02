@@ -293,6 +293,20 @@ function IconBookmark() {
   )
 }
 
+function IconPhone() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M3.2 2.2h2.4l1.2 3-1.5 1.2a9.5 9.5 0 0 0 4.3 4.3l1.2-1.5 3 1.2v2.4a1.2 1.2 0 0 1-1.3 1.2A11.8 11.8 0 0 1 2 3.5a1.2 1.2 0 0 1 1.2-1.3z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function IconMenu() {
   return (
     <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
@@ -534,6 +548,20 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
+          {/* The broker's number, always visible (Matt 2026-09-01: a visitor
+              could not find how to contact the brokerage — chrome failure on a
+              lead-gen site). Icon-only at 390, the number itself from 40rem.
+              tel: from lib/brand/contact is one of the two sanctioned literal
+              destinations in this file (see the header comment). */}
+          <a
+            href={`tel:${CONTACT.phoneDirectTel}`}
+            className="v3-chrome__phone"
+            aria-label={`Call Ryan Realty, ${CONTACT.phoneDirect}`}
+          >
+            <IconPhone />
+            <span className="v3-chrome__phone-num">{CONTACT.phoneDirect}</span>
+          </a>
+
           {SAVED ? (
             <Link
               href={SAVED.href}

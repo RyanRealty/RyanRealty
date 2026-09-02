@@ -1,9 +1,8 @@
 {
   "generatedAt": "2026-08-26T20:52:36.682Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 2,
+  "count": 1,
   "names": [
-    "components/site/listing-detail/RoomRestyle.client.tsx",
     "lib/data/crm/getFirstTouchAttribution.ts"
   ]
 }
