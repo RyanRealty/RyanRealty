@@ -368,7 +368,7 @@ export function V3Atlas({
           <ul className="v3-atlas__live" aria-label="Latest activity">
             {events.slice(0, 3).map((e) => (
               <li key={e.key} className={`v3-atlas__live-item v3-atlas__live-item--${e.kind}`}>
-                <Link href={e.href}>{e.label}</Link>
+                <Link href={e.href} className="v3-atlas__live-link">{e.label}</Link>
               </li>
             ))}
           </ul>
@@ -526,9 +526,10 @@ export function V3Atlas({
             </div>
             <label className="v3-atlas__scrub">
               <span className="v3-atlas__scrub-label">
-                Up to <strong>{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
+                Up to <strong className="v3-atlas__scrub-value">{atCeiling ? 'any price' : fmtShort(maxPrice)}</strong>
               </span>
               <input
+                className="v3-atlas__range"
                 type="range"
                 min={priceScale.min}
                 max={priceScale.max}
@@ -555,7 +556,7 @@ export function V3Atlas({
                   >
                     <span className="v3-atlas__rank-name">{r.shape.name}</span>
                     <span className="v3-atlas__rank-bar" aria-hidden="true">
-                      <span style={{ width: `${Math.max(2, (r.n / (ranked[0]?.n ?? 1)) * 100)}%` }} />
+                      <span className="v3-atlas__rank-fill" style={{ width: `${Math.max(2, (r.n / (ranked[0]?.n ?? 1)) * 100)}%` }} />
                     </span>
                     <span className="v3-atlas__rank-n">{r.n.toLocaleString('en-US')}</span>
                     <span className="v3-atlas__rank-median">{r.median != null ? fmtShort(r.median) : ''}</span>
