@@ -347,11 +347,6 @@ app/admin/(protected)/crm/reporting/properties/page.tsx
 app/admin/(protected)/crm/reporting/call-logs/page.tsx
 
 # Deal pipeline + stage config (FUB parity, 2026-07-01): the canonical stage
-# accent palette mirrored from docs/crm-spec/api-export/pipelines.json — 7
-# FUB stage hex colors (amber/salmon/periwinkle/gold/green/red) with no 2-color
-# brand-token equivalent, applied to Kanban column top-borders via inline style.
-# Same exception class as lib/admin/crm-avatar.ts.
-lib/crm/deal-pipelines.ts
 components/admin/crm/person-detail/InlineEditField.tsx
 components/admin/crm/person-detail/PersonDialogs.tsx
 components/admin/crm/person-detail/PersonSidebar.tsx
