@@ -565,8 +565,9 @@ export function V3Atlas({
   const filterPhrase = useMemo(() => {
     if (allTypesOn) return ''
     const on = typesOn.map((t) => t.label.toLowerCase())
-    if (on.length === 0) return ''
-    if (on.length === 1) return `${on[0]} `
+    // One type on: the noun already IS that type ("houses"), so naming it here
+    // too printed "274 house houses for sale" (round six).
+    if (on.length <= 1) return ''
     return `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]!} `
   }, [allTypesOn, typesOn])
 
@@ -969,7 +970,23 @@ export function V3Atlas({
                 ['--atlas-aspect' as string]: `${(proj.width / proj.height).toFixed(4)}`,
               }}
               onPointerMove={onMove}
-              onPointerLeave={() => {
+              /* A touch has no hover: a tap fired pointerdown and then
+                 pointerleave on lift, so the readout the whole fix was for
+                 flashed and vanished — 0 of 10 taps kept one (round six,
+                 LISTING-NOBOUNDARY-R6-1). A touch sets the readout and keeps
+                 it until the next tap; a mouse still clears on leave. */
+              onPointerDown={(e) => {
+                if (e.pointerType === 'mouse') return
+                const el = stageRef.current
+                if (!el) return
+                const r = el.getBoundingClientRect()
+                const px = e.clientX - r.left
+                const py = e.clientY - r.top
+                setPointer({ x: px, y: py })
+                setDotHit(nearestDot(px, py))
+              }}
+              onPointerLeave={(e) => {
+                if (e.pointerType !== 'mouse') return
                 setHover(null)
                 setPointer(null)
                 setDotHit(null)

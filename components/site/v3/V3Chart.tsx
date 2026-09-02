@@ -365,6 +365,10 @@ export function V3Chart({
     refLabel,
     layout,
     baselineLabel,
+    // A run keeps its empty steps. Left out of this list, the flag never
+    // reached the builder and the fix for TEAM-MATT-1 never took effect —
+    // round six measured the same four bars for a twelve-year record.
+    run,
   })
   const captionId = id ? `${id}-caption` : undefined
   const yoy = overlay === 'yoy'
