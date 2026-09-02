@@ -300,7 +300,7 @@ function ListingTile({
   function goToLoginForSave(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    if (canonicalListingKey) redirectToLoginForSave(canonicalListingKey)
+    if (canonicalListingKey) redirectToLoginForSave(canonicalListingKey) // hydration-safe: click handler, never runs during render
     else goToLogin(e)
   }
 

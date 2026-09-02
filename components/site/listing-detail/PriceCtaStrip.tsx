@@ -403,7 +403,7 @@ export function PriceCtaStrip({
           <ListingGuestSaveSheet
             listingKey={listing.listingKey}
             addressLine={street || null}
-            onUseGoogle={() => redirectToLoginForSave(listing.listingKey)}
+            onUseGoogle={() => redirectToLoginForSave(listing.listingKey)} // hydration-safe: click callback, never runs during render
           />
         </div>
       ) : null}
