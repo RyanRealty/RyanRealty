@@ -14,7 +14,7 @@ import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { getDashboardLikesData } from '@/app/actions/dashboard-likes'
 import { getRecentListingViews } from '@/app/actions/dashboard-history'
 import { getListingsByKeys } from '@/app/actions/listings'
-import { listAreasForUser } from '@/lib/data'
+import { listAreasForUser, getMyCmas } from '@/lib/data'
 import { getUserActivityEvents, getUserActivitySummary } from '@/lib/data/activity/getUserEvents'
 import { getPortalHomeLists, getSavedSearchInsights, totalNewSince } from '@/app/account/portal-data'
 import { AccountFrame } from '@/app/account/_v3/AccountFrame'
@@ -126,6 +126,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
     admin,
     activityRows,
     activitySummary,
+    myCmas,
   ] = await Promise.all([
     getProfile(),
     getDashboardLikesData(),
@@ -140,6 +141,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
     getAdminContext(),
     getUserActivityEvents(userId, 40),
     getUserActivitySummary(userId, 30),
+    getMyCmas(session.user.email),
   ])
   const { hiddenKeys, collections } = homeLists
 
@@ -405,6 +407,28 @@ export default async function AccountPage({ searchParams }: PageProps) {
           <ExportMyDataButton className="mt-1" />
         </Card>
       </section>
+
+      {myCmas.length > 0 ? (
+        <section>
+          <SectionHeader title="Home value reports" sub="Reports we prepared for you." />
+          <Card className="divide-y divide-border overflow-hidden p-0">
+            {myCmas.map((cma) => (
+              <div key={cma.slug} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{cma.subjectAddress}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Delivered{' '}
+                    {new Date(cma.deliveredAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+                <Link href={`/cma/${cma.slug}`} className="shrink-0 text-sm font-medium text-primary hover:underline">
+                  View report
+                </Link>
+              </div>
+            ))}
+          </Card>
+        </section>
+      ) : null}
     </>
   )
 

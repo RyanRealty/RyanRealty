@@ -262,7 +262,13 @@ function ListingTile({
   const [hoverTileEmbed, setHoverTileEmbed] = useState(false)
   const [mp4TileReady, setMp4TileReady] = useState(false)
   const [mp4TileFailed, setMp4TileFailed] = useState(false)
-  const primaryPhoto = listing.PhotoURL?.trim() || null
+  const primaryPhotoRaw = listing.PhotoURL?.trim() || null
+  // A CLOSED listing's photo URL can stop serving (MLS media suppression) —
+  // the src exists but 403s, leaving a blank gray card in saved-homes lists.
+  // A load error drops to the same Central Oregon fallback a missing photo
+  // uses, so a consumer's saved list never shows empty boxes.
+  const [photoBroken, setPhotoBroken] = useState(false)
+  const primaryPhoto = photoBroken ? null : primaryPhotoRaw
   const hasVideo = videoUrls.length > 0
   const firstVideoUrl = videoUrls[0] ?? ''
   const directMp4Tile = Boolean(firstVideoUrl && isDirectListingVideoFileUrl(firstVideoUrl))
@@ -380,6 +386,7 @@ function ListingTile({
                 className="object-cover object-top"
                 sizes="(max-width: 640px) 85vw, 320px"
                 priority={priority}
+                onError={() => setPhotoBroken(true)}
               />
             ) : tileVideoEmbed.posterUrl ? (
               <Image
@@ -426,6 +433,7 @@ function ListingTile({
                 className="object-cover object-top"
                 sizes="(max-width: 640px) 85vw, 320px"
                 priority={priority}
+                onError={() => setPhotoBroken(true)}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -469,6 +477,7 @@ function ListingTile({
                 className="object-cover object-top transition duration-300 group-hover:scale-[1.02]"
                 sizes="(max-width: 640px) 85vw, 320px"
                 priority={priority}
+                onError={() => setPhotoBroken(true)}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
