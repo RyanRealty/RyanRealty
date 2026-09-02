@@ -204,13 +204,26 @@
   max-width: 100%;
   min-height: 18rem;
   max-height: min(72vh, 46rem);
-  /* and the same clamp on the width, through the frame's own aspect, so the
-     box never grows wider than the map it paints. */
-  max-width: calc(min(72vh, 46rem) * var(--atlas-aspect, 99));
-  margin-inline: auto;
   background: color-mix(in srgb, var(--v3-navy) 2%, var(--v3-cream));
   overflow: hidden;
   touch-action: pan-y;
+}
+
+/* In a narrow column — a listing page's main column, or any phone — the stage
+   is capped to the map it paints, through the frame's own aspect. A portrait
+   frame there painted 71% of a full-width box and left the rest tinted cream
+   (evaluator round five, LISTING-NOBOUNDARY-4). A full-width panel keeps its
+   canvas: capping it there leaves the map floating in the frame instead. */
+.v3-atlas.is-stacked .v3-atlas__stage {
+  max-width: calc(min(70vh, 44rem) * var(--atlas-aspect, 99));
+  margin-inline: auto;
+}
+
+@media (max-width: 47.99rem) {
+  .v3-atlas__stage {
+    max-width: calc(min(72vh, 46rem) * var(--atlas-aspect, 99));
+    margin-inline: auto;
+  }
 }
 
 /* A wide boundary on a phone takes its aspect, not the minimum height: Larkspur
