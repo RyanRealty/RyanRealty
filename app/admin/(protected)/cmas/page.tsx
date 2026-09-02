@@ -53,7 +53,7 @@ export const dynamic = 'force-dynamic'
 const WINDOW = 500
 const PAGE_SIZE = 24
 
-const STATUSES: CmaStatusFilter[] = ['all', 'draft', 'finalized', 'delivered', 'archived']
+const STATUSES: CmaStatusFilter[] = ['all', 'asked', 'draft', 'finalized', 'delivered', 'archived']
 
 function str(v: string | string[] | undefined): string | undefined {
   const s = Array.isArray(v) ? v[0] : v
@@ -64,6 +64,15 @@ function str(v: string | string[] | undefined): string | undefined {
 function toWorklistStatus(raw: unknown): CmaWorklistStatus {
   const s = String(raw ?? '')
   return s === 'finalized' || s === 'delivered' || s === 'archived' ? s : 'draft'
+}
+
+/** A person requested this value (seller LP or lead form) and it was never delivered. */
+function isAskedUnsent(r: CmaWorklistRow): boolean {
+  return (
+    (r.requestSource === 'seller-lp' || r.requestSource === 'lead-form') &&
+    r.deliveredAt == null &&
+    r.status !== 'archived'
+  )
 }
 
 function mapRow(r: Record<string, unknown>): CmaWorklistRow {
@@ -93,6 +102,7 @@ function mapRow(r: Record<string, unknown>): CmaWorklistRow {
     publishedToListing: r.published_to_listing === true,
     publishedAt: (r.published_at as string | null) ?? null,
     listingKey: (r.subject_listing_key as string | null) ?? null,
+    requestSource: (r.request_source as string | null) ?? null,
   }
 }
 
@@ -121,11 +131,18 @@ export default async function AdminCmasPage({
     delivered: allRows.filter((r) => r.status === 'delivered').length,
     sent: allRows.filter((r) => r.deliveredAt != null).length,
     published: allRows.filter((r) => r.publishedToListing).length,
+    askedUnsent: allRows.filter(isAskedUnsent).length,
   }
   const cities = Array.from(new Set(allRows.map((r) => r.subjectCity).filter((c): c is string => Boolean(c)))).sort()
 
   let filtered = allRows
-  if (status !== 'all') filtered = filtered.filter((r) => r.status === status)
+  if (status === 'asked') {
+    // The send queue's front of the line: a real person asked and nothing
+    // arrived. Oldest first — they have waited longest.
+    filtered = filtered
+      .filter(isAskedUnsent)
+      .sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')))
+  } else if (status !== 'all') filtered = filtered.filter((r) => r.status === status)
   if (city) filtered = filtered.filter((r) => r.subjectCity === city)
   if (q) {
     filtered = filtered.filter((r) =>
@@ -156,8 +173,17 @@ export default async function AdminCmasPage({
           margin: '0 0 14px',
         }}
       >
-        <VerdictLine tone={summary.drafts > 0 ? 'attention' : 'ok'}>
-          {summary.drafts > 0 ? (
+        <VerdictLine tone={summary.askedUnsent > 0 || summary.drafts > 0 ? 'attention' : 'ok'}>
+          {summary.askedUnsent > 0 ? (
+            <>
+              <b>
+                <Link href="/admin/cmas?status=asked" style={{ color: 'inherit' }}>
+                  {summary.askedUnsent} {summary.askedUnsent === 1 ? 'person' : 'people'} asked for a value and never got it.
+                </Link>
+              </b>{' '}
+              {summary.drafts} drafts · {summary.delivered} delivered.
+            </>
+          ) : summary.drafts > 0 ? (
             <>
               <b>
                 {summary.drafts} draft{summary.drafts === 1 ? '' : 's'} waiting for your review.
