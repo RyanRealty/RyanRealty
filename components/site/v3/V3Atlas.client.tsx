@@ -575,7 +575,12 @@ export function V3Atlas({
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
     // "Tap a place" is an instruction only where places are drawn: under a
     // filter that leaves none, it pointed at nothing (TEAM-MATT-4).
-    const how = drawnPlaces.length > 0 ? ' Tap a place for its numbers, or slide the price.' : ' Slide the price, or switch a type back on.'
+    const how =
+      drawnPlaces.length > 0
+        ? ' Tap a place for its numbers, or slide the price.'
+        : dots.length > 0
+          ? ' Point at a mark to read it, or slide the price.'
+          : ' Switch a type back on, or slide the price.'
     const every = allTypesOn ? ' of every type' : ''
     if (closingsMap) {
       return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${every}${ceiling}.${how}`
@@ -584,7 +589,7 @@ export function V3Atlas({
     if (counts.pending > 0) parts.push(`${counts.pending.toLocaleString('en-US')} pending`)
     if (counts.sold > 0) parts.push(`${counts.sold.toLocaleString('en-US')} sold in the last 30 days`)
     return `${parts.join(', ')}.${how}`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap, drawnPlaces.length])
+  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap, drawnPlaces.length, dots.length])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */

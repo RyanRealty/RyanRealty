@@ -43,6 +43,14 @@ export type AtlasScope = {
   boundary?: GeoJSON.Geometry | null
   /** How the source line names the population: "Tetherow", "Bend", "Central Oregon". */
   label: string
+  /**
+   * Keys to keep when the scope has no recorded boundary — a plat the county
+   * never filed, where membership comes from the MLS subdivision name rather
+   * than a polygon. Without this such a page rendered a map with no outline,
+   * no dots and the sentence a failed read prints, which was not true: nothing
+   * had failed (evaluator round five, SUBDIVISION-CHART-7).
+   */
+  listingKeys?: readonly string[]
 }
 
 export type AtlasPopulation = {
@@ -227,7 +235,10 @@ export const EMPTY_PLACE_ATLAS: AtlasPopulation = {
 
 async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promise<Omit<AtlasPopulation, 'tiles'>> {
   const { tiles: all, complete, readAt } = await readAtlasTiles(scope.cities, nowMs)
-  const tiles = tilesInside(all, scope.boundary)
+  const keys = scope.listingKeys && scope.listingKeys.length > 0 ? new Set(scope.listingKeys) : null
+  const tiles = keys
+    ? all.filter((t) => keys.has(String(t.listingKey)))
+    : tilesInside(all, scope.boundary)
   const dots = atlasDotsFromTiles(tiles, nowMs)
   const counts = {
     forSale: dots.filter((d) => d.s === 'active').length,
@@ -235,7 +246,9 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
     sold: dots.filter((d) => d.s === 'sold').length,
     cities: new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size,
   }
-  const where = scope.boundary
+  const where = keys
+    ? `the MLS files under ${scope.label}`
+    : scope.boundary
     ? `inside the recorded boundary of ${scope.label}`
     : counts.cities > 1
       ? `across ${counts.cities} Central Oregon cities`

@@ -393,15 +393,29 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const seedRing = hasRealPlatPolygon(boundary.polygon)
   // The living map, scoped to the plat: every listing inside its recorded
   // polygon. Needs a real polygon and a known city (the read is city-scoped).
-  const atlas =
-    seedRing && boundary.polygon && placeCity
-      ? await withTimeoutFallback(
-          buildPlaceAtlas({ cities: [placeCity], boundary: boundary.polygon, label: displayName }),
-          null,
-          6000,
-          'sub:atlas',
-        )
-      : null
+  // A plat the county never filed has no polygon, and the page used to render
+  // a map with no outline, no dots and the sentence a failed read prints —
+  // three of the four Redmond plats measured in production (evaluator round
+  // five, SUBDIVISION-CHART-7). Nothing had failed: there is no boundary. The
+  // map is then framed by the plat's own listings, the same counted set the
+  // rest of the page uses, selected by key.
+  // Something to map: a recorded polygon, or listings we can frame. With
+  // neither, the section is omitted rather than rendering the sentence a
+  // failed read prints — a plat with no boundary and no listings has nothing
+  // to draw, and nothing failed.
+  const canMapAtlas = placeCity != null && (Boolean(seedRing && boundary.polygon) || mapTiles.length > 0)
+  const atlas = canMapAtlas && placeCity != null
+    ? await withTimeoutFallback(
+        buildPlaceAtlas(
+          seedRing && boundary.polygon
+            ? { cities: [placeCity], boundary: boundary.polygon, label: displayName }
+            : { cities: [placeCity], label: displayName, listingKeys: mapTiles.map((t) => t.listingKey) },
+        ),
+        null,
+        6000,
+        'sub:atlas',
+      )
+    : null
   const atlasRegions: AtlasRegion[] =
     seedRing && boundary.polygon
       ? [{ id: `subdivision:${slug}`, kind: 'town', kindLabel: 'Subdivision', name: displayName, href: `/subdivisions/${slug}`, geometry: boundary.polygon }]
@@ -641,19 +655,23 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             <V3SourceLine source={inventorySource} />
           </div>
         )}
-        {(
+        {canMapAtlas && (
           <V3Atlas
             id="atlas"
             headingLevel={2}
             headline={v3Text(`${displayName} right now`)}
             dots={atlasView.dots}
             regions={atlasRegions}
-            basemap={basemapForRegions(atlasRegions)}
+            basemap={basemapForRegions(atlasRegions, {
+              dots: atlasView.dots,
+              fit: atlasRegions.length > 0 ? 'regions' : 'dots',
+            })}
             types={atlasView.types}
             events={atlasView.events}
             source={atlasView.source}
             stamp={atlasView.stamp}
             incomplete={!atlasView.complete}
+            {...(atlasRegions.length === 0 ? { fit: 'dots' as const } : {})}
           />
         )}
 
