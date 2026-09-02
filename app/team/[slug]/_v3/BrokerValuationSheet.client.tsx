@@ -161,7 +161,7 @@ export function BrokerValuationSheet({ firstName }: { firstName: string }) {
           : stepId
 
   return (
-    <section className={cn(V3_ROOT_CLASS, 'broker-ask')} aria-label={`A CMA from ${firstName}`}>
+    <section id="home-value-ask" className={cn(V3_ROOT_CLASS, 'broker-ask')}>
       <V3Sheet
         id="home-value"
         heading={`A CMA from ${firstName}`}
@@ -175,7 +175,11 @@ export function BrokerValuationSheet({ firstName }: { firstName: string }) {
         }}
         onAdvance={onAdvance}
       />
-      {status === 'asking' || status === 'failed' ? <SmsConsentDisclosure /> : null}
+      {status === 'asking' || status === 'failed' ? (
+        <div className="v3-sheet__consent">
+          <SmsConsentDisclosure />
+        </div>
+      ) : null}
     </section>
   )
 }

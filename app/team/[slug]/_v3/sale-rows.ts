@@ -1,8 +1,9 @@
 /**
  * Map verified MLS closings onto V3Ledger rows. Prices are recorded ClosePrice
  * (formatPriceExact, not formatPrice, because formatPrice rounds to $1,000).
- * Out-of-area zips (not 977) are dropped so a Central Oregon claim is not
- * sitting next to an Ashland closing (design-audit #171).
+ * The brokerage feed keeps to Central Oregon zips (977); a broker's OWN
+ * record is every MLS closing, wherever it stands, the same set the profile's
+ * figures and map count (2026-09-02, C7).
  */
 
 import { formatDate } from '@/lib/format/date'

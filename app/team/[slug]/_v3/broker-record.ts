@@ -99,13 +99,24 @@ export function buildBrokerRecord(sales: readonly BrokerSaleTile[], nowMs = Date
     ]
   })
   const present = new Set(dots.map((d) => d.t))
-  const types = ATLAS_TYPES.filter((t) => present.has(t.key))
+  // Every dot gets a toggle: a type the atlas does not name ("other") still
+  // shows as a chip, so no closing sits on the map with no control over it
+  // (pass three, D10).
+  const types: AtlasType[] = [
+    ...ATLAS_TYPES.filter((t) => present.has(t.key)),
+    ...[...present].filter((k) => !ATLAS_TYPES.some((t) => t.key === k)).map((k) => ({ key: k, label: k === 'other' ? 'Other' : k[0]!.toUpperCase() + k.slice(1) })),
+  ]
 
   // Closed sales by calendar year. The current year is partial: its bar reads
   // "to date" and the claim states it alone (no year-over-year against a full
   // year, section 0).
   const byYear = new Map<number, number>()
   for (const y of years) byYear.set(y, (byYear.get(y) ?? 0) + 1)
+  // A run keeps every year between the first and the last: eight empty
+  // years are eight empty bars, not a jump drawn like a step (D11).
+  if (firstYear != null && lastYear != null) {
+    for (let y = firstYear; y <= lastYear; y += 1) if (!byYear.has(y)) byYear.set(y, 0)
+  }
   const points: V3ChartPoint[] = [...byYear.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([year, n]) => ({

@@ -489,3 +489,42 @@
     transform: none;
   }
 }
+
+/* A consent line beside a Sheet wears the register's ink, size, and a
+   control-sized box — the same rules the Ask form uses (pass three, D7). */
+.v3-sheet__consent,
+.v3-sheet__consent * {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+.v3-sheet__consent {
+  max-width: var(--v3-measure-sheet);
+  margin: var(--v3-space-sm) auto 0;
+  padding: 0 var(--v3-gutter);
+}
+
+.v3-sheet__consent button[role='checkbox'],
+.v3-sheet__consent input[type='checkbox'] {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--v3-ink-muted);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+}
+
+.v3-sheet__consent button[role='checkbox'][data-state='checked'] {
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+@layer base {
+  .v3-sheet__consent a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}

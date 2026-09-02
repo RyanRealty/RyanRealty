@@ -166,7 +166,14 @@ ten pass-three claims TRUE. Closed in the next commit: D1 (a record map's nature
 population, never the filtered counts — an empty price filter no longer turns it into a for-sale
 map), D2 (year ticks stay years; the partial year says "to date" in its reading and the claim
 prints the count), D3 (a bar rail's floor reads 0, never the last bar's value), D12 (the reviews
-strip's tab stop rests on a mark the filter shows). Open: D4–D11, D13 (see the report).
+strip's tab stop rests on a mark the filter shows). Also closed: D7 (the
+valuation sheet's consent line wears the register's ink and a 20px box via `.v3-sheet__consent`),
+D8 (that section is `#home-value-ask`, no duplicate landmark name), D10 (a closing of a type the
+atlas does not name gets its own toggle), D11 (a run charts every year between first and last,
+empty years as zero bars), D13 (sale-rows header). Open, in the Atlas: D4 (a closing inside two
+overlapping places counts in both chips), D5 (outlines with 0 closings still open a card on a
+record map), D9 (the beyond-frame sentence ignores the filter); in the chart: D6 (a two-bar run
+labels the frame's ends, not the bars).
 
 **LISTING PAGE — STARTED (this commit): the living map around this home.** `app/listing/[listingKey]/
 _v3/listing-atlas.ts` reads the recorded neighborhood boundary by slug (else the page's city

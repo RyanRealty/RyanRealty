@@ -95,3 +95,30 @@ describe('buildBrokerRecord', () => {
     expect(empty.chart).toBeUndefined()
   })
 })
+
+describe('buildBrokerRecord, gaps and untyped closings', () => {
+  it('charts every year between the first and the last, empty ones as zero', () => {
+    const record = buildBrokerRecord(
+      [
+        sale({ ListingKey: 'a', CloseDate: '2015-06-01', ClosePrice: 400_000 }),
+        sale({ ListingKey: 'b', CloseDate: '2018-06-01', ClosePrice: 500_000 }),
+      ],
+      NOW,
+    )
+    expect(record.chart?.series?.[0]?.points.map((p) => [p.tick, p.value])).toEqual([
+      ['2015', 1],
+      ['2016', 0],
+      ['2017', 0],
+      ['2018', 1],
+    ])
+  })
+
+  it('gives a closing of a type the atlas does not name its own toggle', () => {
+    const record = buildBrokerRecord(
+      [sale({ ListingKey: 'z', CloseDate: '2025-01-01', ClosePrice: 300_000, Latitude: 44.1, Longitude: -121.2, PropertyType: 'Z', property_sub_type: 'Mystery' })],
+      NOW,
+    )
+    expect(record.dots).toHaveLength(1)
+    expect(record.types.map((t) => t.key)).toContain(record.dots[0]!.t)
+  })
+})
