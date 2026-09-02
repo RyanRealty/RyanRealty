@@ -23,8 +23,10 @@ const ROOT = process.cwd()
 const FILE = join(ROOT, 'app/actions/newsletter.ts')
 
 // Actions that MUST be superuser-only (company-wide reach or recipient-HTML authoring).
+// adminBulkAssignNewsletterAction was deleted in d59dcd42 as an orphaned
+// export with zero importers. An action that does not exist cannot be gated,
+// and naming it here left this gate red on main for everyone.
 const SUPERUSER_ONLY = [
-  'adminBulkAssignNewsletterAction',
   'adminBulkEnrollNewsletterAction',
   'adminCreateNewsletterAction',
   'adminUpdateNewsletterAction',

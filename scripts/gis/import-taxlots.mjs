@@ -192,6 +192,36 @@ async function fetchWindow(layer, field, lo, hi, gaps, depth = 0) {
   return []
 }
 
+
+/**
+ * Esri rings to a GeoJSON polygon. The county's GeoJSON writer refuses some
+ * lots outright — a donut parcel answers HTTP 400 as geojson and returns
+ * perfectly as Esri json — and those were 46 of 207 changed lots in a
+ * three-month window, so the fallback is not an edge case.
+ *
+ * Esri gives one flat list of rings with no nesting: a clockwise ring is an
+ * outer boundary and a counter-clockwise one is a hole. Signed area tells them
+ * apart, and each hole joins the last outer ring opened.
+ */
+function ringsToGeoJson(rings) {
+  const area = (r) => {
+    let a = 0
+    for (let i = 1; i < r.length; i += 1) a += r[i - 1][0] * r[i][1] - r[i][0] * r[i - 1][1]
+    return a / 2
+  }
+  const polys = []
+  for (const ring of rings) {
+    if (!Array.isArray(ring) || ring.length < 4) continue
+    if (area(ring) < 0) polys.push([ring])
+    else if (polys.length > 0) polys[polys.length - 1].push(ring)
+    else polys.push([ring])
+  }
+  if (polys.length === 0) return null
+  return polys.length === 1
+    ? { type: 'Polygon', coordinates: polys[0] }
+    : { type: 'MultiPolygon', coordinates: polys }
+}
+
 function toRow(feature, layer) {
   const p = feature.properties ?? {}
   const id = String(p[layer.fields.id] ?? '').trim()
@@ -245,17 +275,36 @@ async function fetchChangedIds(layer, sinceIso) {
 /** The geometry for a named set of lots, from the authoritative layer. */
 async function fetchByTaxlots(layer, taxlots) {
   const list = taxlots.map((t) => `'${t.replace(/'/g, "''")}'`).join(',')
-  const u = new URL(`${layer.url}/query`)
-  u.searchParams.set('where', `${layer.fields.id} IN (${list})`)
-  u.searchParams.set('outFields', [layer.fields.id, layer.fields.map, layer.fields.dial].filter(Boolean).join(','))
-  u.searchParams.set('returnGeometry', 'true')
-  u.searchParams.set('outSR', '4326')
-  u.searchParams.set('f', 'geojson')
-  const res = await fetch(u)
+  const form = new URLSearchParams({
+    where: `${layer.fields.id} IN (${list})`,
+    outFields: [layer.fields.id, layer.fields.map, layer.fields.dial].filter(Boolean).join(','),
+    returnGeometry: 'true',
+    outSR: '4326',
+    f: 'geojson',
+  })
+  const res = await fetch(`${layer.url}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form,
+  })
   if (!res.ok) throw new Error(`by-taxlot → HTTP ${res.status}`)
   const body = await res.json()
-  if (body.error) throw new Error(`by-taxlot → ${JSON.stringify(body.error).slice(0, 200)}`)
-  return body.features ?? []
+  if (!body.error) return body.features ?? []
+
+  // The GeoJSON writer refused these lots; ask for Esri rings instead.
+  form.set('f', 'json')
+  const alt = await fetch(`${layer.url}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form,
+  })
+  if (!alt.ok) throw new Error(`by-taxlot (esri) → HTTP ${alt.status}`)
+  const altBody = await alt.json()
+  if (altBody.error) throw new Error(`by-taxlot → ${JSON.stringify(altBody.error).slice(0, 200)}`)
+  return (altBody.features ?? []).flatMap((f) => {
+    const geometry = ringsToGeoJson(f.geometry?.rings ?? [])
+    return geometry ? [{ type: 'Feature', properties: f.attributes ?? {}, geometry }] : []
+  })
 }
 
 async function rpc({ url, key }, name, body) {
@@ -302,17 +351,25 @@ async function runDelta(layer, creds) {
 
   let written = 0
   const gaps = []
-  for (let i = 0; i < changed.length; i += 200) {
-    const batch = changed.slice(i, i + 200)
-    let features = []
+  // Halve on failure: the service refuses a request whose response it cannot
+  // serialise, and one large multipart lot is enough to trip it.
+  const write = async (batch, depth = 0) => {
     try {
-      features = await fetchByTaxlots(layer, batch)
+      const features = await fetchByTaxlots(layer, batch)
+      const rows = features.map((f) => toRow(f, layer)).filter(Boolean)
+      if (rows.length > 0) written += await upsert(creds, COUNTY, layer, rows, 4326)
     } catch (err) {
-      gaps.push({ taxlots: batch.length, why: err instanceof Error ? err.message : String(err) })
-      continue
+      if (batch.length === 1 || depth > 8) {
+        gaps.push({ taxlots: batch.length, ids: batch, why: err instanceof Error ? err.message : String(err) })
+        return
+      }
+      const mid = Math.ceil(batch.length / 2)
+      await write(batch.slice(0, mid), depth + 1)
+      await write(batch.slice(mid), depth + 1)
     }
-    const rows = features.map((f) => toRow(f, layer)).filter(Boolean)
-    if (rows.length > 0) written += await upsert(creds, COUNTY, layer, rows)
+  }
+  for (let i = 0; i < changed.length; i += 40) {
+    await write(changed.slice(i, i + 40))
   }
 
   await rpc(creds, 'record_taxlot_refresh', {
@@ -320,6 +377,7 @@ async function runDelta(layer, creds) {
     p_changed: changed.length, p_written: written, p_gaps: gaps, p_note: null,
   })
   log(`delta done: ${changed.length} changed, ${written} written${gaps.length ? `, ${gaps.length} gap(s)` : ''}`)
+  for (const g of gaps.slice(0, 3)) log(`  gap of ${g.taxlots} (${(g.ids || []).join(',')}): ${g.why}`)
   if (gaps.length > 0) process.exitCode = 1
 }
 

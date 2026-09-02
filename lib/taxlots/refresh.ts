@@ -103,26 +103,88 @@ async function changedTaxlots(layer: TaxlotCounty, sinceDate: string): Promise<s
   return [...new Set(ids)]
 }
 
+
+/**
+ * Esri rings to a GeoJSON polygon. The county's GeoJSON writer refuses some
+ * lots outright — a donut parcel answers HTTP 400 as geojson and returns
+ * perfectly as Esri json — and those were 46 of 207 changed lots in a
+ * three-month window, so this fallback is not an edge case.
+ *
+ * Esri gives one flat list of rings with no nesting: a clockwise ring is an
+ * outer boundary and a counter-clockwise one is a hole. Signed area tells them
+ * apart, and each hole joins the last outer ring opened.
+ */
+function ringsToGeoJson(rings: number[][][]): GeoJSON.Polygon | GeoJSON.MultiPolygon | null {
+  const area = (r: number[][]): number => {
+    let a = 0
+    for (let i = 1; i < r.length; i += 1) a += r[i - 1]![0]! * r[i]![1]! - r[i]![0]! * r[i - 1]![1]!
+    return a / 2
+  }
+  const polys: number[][][][] = []
+  for (const ring of rings) {
+    if (!Array.isArray(ring) || ring.length < 4) continue
+    if (area(ring) < 0) polys.push([ring])
+    else if (polys.length > 0) polys[polys.length - 1]!.push(ring)
+    else polys.push([ring])
+  }
+  if (polys.length === 0) return null
+  return polys.length === 1
+    ? ({ type: 'Polygon', coordinates: polys[0] } as GeoJSON.Polygon)
+    : ({ type: 'MultiPolygon', coordinates: polys } as GeoJSON.MultiPolygon)
+}
+
+
+/** The same lots as Esri rings, converted here, when GeoJSON is refused. */
+async function esriFallback(layer: TaxlotCounty, list: string) {
+  const res = await fetch(`${layer.url}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      where: `${layer.fields.id} IN (${list})`,
+      outFields: [layer.fields.id, layer.fields.map, layer.fields.dial].filter(Boolean).join(','),
+      returnGeometry: 'true',
+      outSR: '4326',
+      f: 'json',
+    }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`geometry (esri) → HTTP ${res.status}`)
+  const body = (await res.json()) as {
+    error?: unknown
+    features?: { attributes?: Record<string, unknown>; geometry?: { rings?: number[][][] } }[]
+  }
+  if (body.error) throw new Error(`geometry → ${JSON.stringify(body.error).slice(0, 200)}`)
+  return (body.features ?? []).flatMap((f) => {
+    const geometry = ringsToGeoJson(f.geometry?.rings ?? [])
+    return geometry ? [{ properties: f.attributes ?? {}, geometry }] : []
+  })
+}
+
 /** The geometry for a named set of lots, from the authoritative layer. */
 async function geometryFor(layer: TaxlotCounty, taxlots: string[]) {
   const list = taxlots.map((t) => `'${t.replace(/'/g, "''")}'`).join(',')
-  const u = new URL(`${layer.url}/query`)
-  u.searchParams.set('where', `${layer.fields.id} IN (${list})`)
-  u.searchParams.set(
-    'outFields',
-    [layer.fields.id, layer.fields.map, layer.fields.dial].filter(Boolean).join(','),
-  )
-  u.searchParams.set('returnGeometry', 'true')
-  u.searchParams.set('outSR', '4326')
-  u.searchParams.set('f', 'geojson')
-  const res = await fetch(u, { cache: 'no-store' })
+  // POST, not a query string: a hundred quoted ids exceeds what the service
+  // will accept in a URL, and a batch that fails leaves a lot with a stale
+  // shape and nothing to say so.
+  const res = await fetch(`${layer.url}/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      where: `${layer.fields.id} IN (${list})`,
+      outFields: [layer.fields.id, layer.fields.map, layer.fields.dial].filter(Boolean).join(','),
+      returnGeometry: 'true',
+      outSR: '4326',
+      f: 'geojson',
+    }),
+    cache: 'no-store',
+  })
   if (!res.ok) throw new Error(`geometry → HTTP ${res.status}`)
   const body = (await res.json()) as {
     error?: unknown
     features?: { properties?: Record<string, unknown>; geometry?: { type?: string } }[]
   }
-  if (body.error) throw new Error(`geometry → ${JSON.stringify(body.error).slice(0, 200)}`)
-  return (body.features ?? []).flatMap((f) => {
+  const features = body.error ? await esriFallback(layer, list) : (body.features ?? [])
+  return features.flatMap((f) => {
     const props = f.properties ?? {}
     const id = String(props[layer.fields.id] ?? '').trim()
     const geom = f.geometry
@@ -162,8 +224,14 @@ export async function refreshTaxlots(
   let written = 0
   const gaps: { taxlots: number; why: string }[] = []
 
-  for (let i = 0; i < changed.length; i += 200) {
-    const batch = changed.slice(i, i + 200)
+  /**
+   * One batch, halving on failure. The service refuses a request whose
+   * RESPONSE it cannot serialise — one very large multipart lot is enough —
+   * so a fixed batch size either wastes round trips or loses lots. Halving
+   * finds the boundary, and a single lot that still fails is recorded as a
+   * gap rather than dropped in silence.
+   */
+  const write = async (batch: string[], depth = 0): Promise<void> => {
     try {
       const rows = await geometryFor(layer, batch)
       if (rows.length > 0) {
@@ -172,11 +240,24 @@ export async function refreshTaxlots(
           p_source: layer.source,
           p_source_url: layer.url,
           p_features: rows,
+          // The authoritative layer answers in WGS84 when asked; the bulk
+          // export does not, which is why the RPC takes a projection at all.
+          p_srid: 4326,
         })
       }
     } catch (err) {
-      gaps.push({ taxlots: batch.length, why: err instanceof Error ? err.message : String(err) })
+      if (batch.length === 1 || depth > 8) {
+        gaps.push({ taxlots: batch.length, why: err instanceof Error ? err.message : String(err) })
+        return
+      }
+      const mid = Math.ceil(batch.length / 2)
+      await write(batch.slice(0, mid), depth + 1)
+      await write(batch.slice(mid), depth + 1)
     }
+  }
+
+  for (let i = 0; i < changed.length; i += 40) {
+    await write(changed.slice(i, i + 40))
   }
 
   await rpc(c, 'record_taxlot_refresh', {
