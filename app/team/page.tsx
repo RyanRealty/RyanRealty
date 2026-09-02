@@ -15,7 +15,7 @@
  * route. MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D11: no virtue names. No invented quote. Reviews are verbatim from
- * getReviews, with TESTIMONIALS as the empty-pool fallback.
+ * getReviews, with the recorded testimonials as the empty-pool fallback (lib/reviews/review-quotes).
  *
  * Parity: design_system/ryan-realty/ui_kits/team/parity.json
  */
@@ -24,7 +24,8 @@ import type { Metadata } from 'next'
 import { getBrokers, getReviews } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { TESTIMONIALS } from '@/lib/testimonials'
+import { toReviewQuotes } from '@/lib/reviews/review-quotes'
+import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -37,6 +38,7 @@ import {
   V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
+  V3Proof,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
@@ -75,24 +77,14 @@ export default async function TeamPage() {
 
   const namesMatt = (text: string) => /\bmatt(hew)?\b/i.test(text)
   const namesOtherBroker = (text: string) => /\brebecca\b/i.test(text) || /\bpaul\b/i.test(text)
-  const sortedReviews = [
-    ...reviews.reviews.filter((r) => namesOtherBroker(r.text)),
-    ...reviews.reviews.filter((r) => !namesOtherBroker(r.text) && !namesMatt(r.text)),
-    ...reviews.reviews.filter((r) => !namesOtherBroker(r.text) && namesMatt(r.text)),
-  ]
 
-  const liveReviewItems: V3QuietItem[] = sortedReviews.slice(0, 8).map((r) => {
-    const author = r.reviewerName?.trim()
-    return author
-      ? { kind: 'prose' as const, term: author, body: r.text }
-      : { kind: 'prose' as const, body: r.text }
-  })
-  const fallbackReviewItems: V3QuietItem[] = TESTIMONIALS.slice(0, 8).map((t) => ({
-    kind: 'prose' as const,
-    term: t.author,
-    body: t.quote,
-  }))
-  const reviewItems = liveReviewItems.length > 0 ? liveReviewItems : fallbackReviewItems
+  // The newest verified reviews as a Proof band (record off: a strip of four
+  // must not sit beside a figure that says twenty-five); the same shaping
+  // /reviews prints, with the recorded testimonials as the empty-pool fallback.
+  const quotes = toReviewQuotes(reviews.reviews).slice(0, 4)
+  const reviewCount = reviews.count > 0 ? reviews.count : quotes.length
+  const reviewAverage = reviews.count > 0 ? reviews.averageRating : 5
+  const newestReview = quotes.find((q) => q.date)?.date ?? null
 
   const faqItems: V3QuietItem[] = [
     ...TEAM_FAQ_ITEMS.map((item) => ({
@@ -157,12 +149,30 @@ export default async function TeamPage() {
           />
         )}
 
+        {quotes.length > 0 ? (
+          <V3Proof
+            id="proof"
+            eyebrow="Ryan Realty · Google"
+            headline={`${reviewCount} Google reviews`}
+            headingLevel={2}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            figures={[
+              { value: String(reviewCount), label: 'Google reviews' },
+              { value: reviewAverage.toFixed(1), label: 'average of 5' },
+              ...(newestReview
+                ? [{ value: formatDate(newestReview, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }]
+                : []),
+            ]}
+            quotes={quotes}
+            source={{ label: 'Every review', href: '/reviews' }}
+            record={false}
+          />
+        ) : null}
         <V3Quiet
           id="reviews-faq"
           eyebrow="Clients and questions"
           heading="Working with a Bend broker"
           items={[
-            ...reviewItems,
             { label: 'All Google reviews', href: '/reviews' },
             ...faqItems,
           ]}
