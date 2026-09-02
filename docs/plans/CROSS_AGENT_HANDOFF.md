@@ -99,9 +99,11 @@ card names clamp at 4 lines), R6 (the source details reconcile counted cities wi
 R7 (place pages render the Atlas with `EMPTY_PLACE_ATLAS` instead of deleting the section), R8
 (wide boundary on a phone takes its aspect), R9/R10 (chart touch reading holds after the finger
 lifts; the tooltip is a strip under the plot on phones), R11 (rail card labels wrap). Pass six is on main
-(8aadb26f + 6f4bc753); evaluator pass six is measuring it. Open: R2 (a phone cannot reach 13/27
-homepage places under 20px — needs a zoom or a list door). Measured before the pass: 26/27
-homepage places answer their own tap at 375 (was 14/27), Larkspur 73/80.
+(8aadb26f + 6f4bc753); evaluator pass six is measuring it. R2 closed: under 48rem every place is
+also a chip under the dock (`.v3-atlas__chips`, by count, empties last), tapping one pins its card
+from the place's own centre and scrolls the map into view — 27/27 homepage and 22/22 Tetherow places
+reachable by chip; measured 6/6 chip taps pin the right card on both. Interior taps: 26/27 homepage
+places answer their own tap at 375 (was 14/27), Larkspur 73/80.
 
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.

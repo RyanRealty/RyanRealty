@@ -490,14 +490,40 @@ export function V3Atlas({
   }, [])
 
   const pin = useCallback(
-    (shape: PlacedShape) => {
+    (shape: PlacedShape, at?: readonly [number, number]) => {
       setPinned((p) => {
         if (p?.id === shape.id) return null
-        const at = pointer ? ([pointer.x, pointer.y] as const) : shape.anchor ? toPx(...proj.toXY(shape.anchor[0], shape.anchor[1])) : ([16, 16] as const)
-        return { id: shape.id, at }
+        const where =
+          at ?? (pointer ? ([pointer.x, pointer.y] as const) : shape.anchor ? toPx(...proj.toXY(shape.anchor[0], shape.anchor[1])) : ([16, 16] as const))
+        return { id: shape.id, at: where }
       })
     },
     [pointer, toPx, proj],
+  )
+
+  /* A chip pins its place from the place's own centre, not the last touch,
+     and brings the map back into view so the card strip is seen. */
+  const pinFromChip = useCallback(
+    (shape: PlacedShape) => {
+      const at = shape.anchor ? toPx(...proj.toXY(shape.anchor[0], shape.anchor[1])) : ([16, 16] as const)
+      setHover(shape.id)
+      pin(shape, at)
+      stageRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    },
+    [pin, proj, toPx],
+  )
+
+  /* Every place as a door a thumb can hit: on a phone most silhouettes are
+     under 20px, so the chips carry the reach the map cannot (pass five, R2).
+     Places with listings first, by count; empty ones after, still doors. */
+  const chipPlaces = useMemo(
+    () =>
+      incomplete
+        ? []
+        : places
+            .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0 }))
+            .sort((a, b) => b.n - a.n || a.shape.name.localeCompare(b.shape.name)),
+    [places, regionStats, incomplete],
   )
 
   /* Escape, a click on empty map, or a click outside the stage release a
@@ -622,6 +648,22 @@ export function V3Atlas({
           aria-valuetext={atCeiling ? 'Any price' : `Up to ${fmtShort(maxPrice)}`}
         />
       </label>
+      {chipPlaces.length > 0 ? (
+        <div className="v3-atlas__chips" role="group" aria-label="Places on this map">
+          {chipPlaces.map((r) => (
+            <button
+              key={r.shape.id}
+              type="button"
+              className={cn('v3-atlas__chip', active === r.shape.id && 'is-active')}
+              aria-pressed={active === r.shape.id}
+              onClick={() => pinFromChip(r.shape)}
+            >
+              <span className="v3-atlas__chip-name">{r.shape.name}</span>
+              {r.n > 0 ? <span className="v3-atlas__chip-n">{r.n.toLocaleString('en-US')}</span> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 
