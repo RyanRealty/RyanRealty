@@ -53,6 +53,13 @@ export type AtlasPopulation = {
   counts: { forSale: number; pending: number; sold: number; cities: number }
   /** The tiles the dots came from, for callers that need addresses or photos. */
   tiles: ListingTile[]
+  /**
+   * False when any read rejected: the population is short and the Atlas
+   * must say so. (A read that times out inside the DAL returns an empty page
+   * without rejecting; that case is invisible here and is noted in the
+   * source line's honesty budget.)
+   */
+  complete: boolean
 }
 
 const PAGE = 1000
@@ -76,21 +83,25 @@ function dotStatus(status: string): AtlasDot['s'] | null {
  * PostgREST's 1,000-row cap and deduped by key. `cities` narrows the read;
  * an empty list is the whole feed.
  */
-export async function readAtlasTiles(cities: readonly string[], nowMs = Date.now()): Promise<ListingTile[]> {
+export async function readAtlasTiles(
+  cities: readonly string[],
+  nowMs = Date.now(),
+): Promise<{ tiles: ListingTile[]; complete: boolean }> {
   const scope = cities.length === 1 ? { city: cities[0]! } : cities.length > 1 ? { cities: [...cities] } : {}
   const closedFromDate = new Date(nowMs - SOLD_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
-  const pages = await Promise.all([
+  const settled = await Promise.allSettled([
     ...[0, 1, 2, 3, 4].map((n) =>
-      getListingTiles({ ...scope, status: 'active-and-pending', limit: PAGE, offset: n * PAGE, sort: 'newest' }).catch(
-        () => [] as ListingTile[],
-      ),
+      getListingTiles({ ...scope, status: 'active-and-pending', limit: PAGE, offset: n * PAGE, sort: 'newest' }),
     ),
-    getListingTiles({ ...scope, status: 'closed', closedFromDate, limit: PAGE, sort: 'close-newest' }).catch(
-      () => [] as ListingTile[],
-    ),
+    getListingTiles({ ...scope, status: 'closed', closedFromDate, limit: PAGE, sort: 'close-newest' }),
   ])
+  const pages = settled.map((r) => (r.status === 'fulfilled' ? r.value : null))
+  const complete = pages.every((p) => p !== null)
   const seen = new Set<string>()
-  return pages.flat().filter((t) => (seen.has(t.listingKey) ? false : (seen.add(t.listingKey), true)))
+  const tiles = pages
+    .flatMap((p) => p ?? [])
+    .filter((t) => (seen.has(t.listingKey) ? false : (seen.add(t.listingKey), true)))
+  return { tiles, complete }
 }
 
 /** Keep the tiles inside a recorded boundary. No boundary keeps everything. */
@@ -186,7 +197,7 @@ export function atlasEventsFromTiles(tiles: readonly ListingTile[], fallbackPlac
 
 /** The whole population for a scope, in one call. */
 export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Promise<AtlasPopulation> {
-  const all = await readAtlasTiles(scope.cities, nowMs)
+  const { tiles: all, complete } = await readAtlasTiles(scope.cities, nowMs)
   const tiles = tilesInside(all, scope.boundary)
   const dots = atlasDotsFromTiles(tiles, nowMs)
   const counts = {
@@ -211,5 +222,6 @@ export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Pr
     stamp: formatDateTime(new Date(nowMs)),
     counts,
     tiles,
+    complete,
   }
 }

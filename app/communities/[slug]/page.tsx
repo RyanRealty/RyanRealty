@@ -76,11 +76,14 @@ import {
   V3Ledger,
   V3PlaceCharacter,
   V3Quiet,
+  V3Atlas,
+  type AtlasRegion,
   V3SectionTracker,
   type V3ChartCardProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
+import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -518,6 +521,36 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     href: `/subdivisions/${cell.slug}`,
     geojson: cell.geometry,
   }))
+  // The living map, scoped to this community (Matt 2026-09-01: heat maps on
+  // every page). Population = every active, pending, and 30-day-closed
+  // listing INSIDE the recorded boundary, read through the same builder the
+  // homepage uses; the plats are the touchable places. No boundary, no map.
+  const atlas = mapPolygon
+    ? await withTimeoutFallback(
+        buildPlaceAtlas({
+          cities: [...new Set([cityName, ...(registryEntry?.mls_cities ?? [])])],
+          boundary: mapPolygon,
+          label: publicName,
+        }),
+        null,
+        6000,
+        'comm:atlas',
+      )
+    : null
+  const atlasRegions: AtlasRegion[] = mapPolygon
+    ? [
+        { id: `community:${slug}`, kind: 'town', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
+        ...platCells.slice(0, 80).map(
+          (cell): AtlasRegion => ({
+            id: `plat:${cell.slug}`,
+            kind: 'neighborhood',
+            name: cell.label,
+            href: `/subdivisions/${cell.slug}`,
+            geometry: cell.geometry,
+          }),
+        ),
+      ]
+    : []
   const typeCovers = await withTimeoutFallback(
     loadPlaceTypeCoverPhotos({
       city: cityName,
@@ -647,6 +680,22 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             {face.stats.length > 0 ? <PlaceFaceStrip stats={face.stats} /> : null}
           </section>
         )}
+        {atlas && atlas.dots.length > 0 ? (
+          <V3Atlas
+            id="atlas"
+            variant="dots"
+            headingLevel={2}
+            headline={v3Text(`${publicName} right now`)}
+            dots={atlas.dots}
+            regions={atlasRegions}
+            types={atlas.types}
+            events={atlas.events}
+            source={atlas.source}
+            stamp={atlas.stamp}
+            incomplete={!atlas.complete}
+          />
+        ) : null}
+
         <PlaceTypeSlider cards={typeCards} label={`${publicName} property types`} />
 
         <PlaceSplitView

@@ -2,8 +2,9 @@
    PATTERN 8: ATLAS
    Styles for V3Atlas.client.tsx and nothing else. Every value resolves from
    ./tokens.css: navy tints for the marks, hairlines for the silhouettes, the
-   one exception hue nowhere. Motion: the dots fade in once as a group; the
-   pulses breathe on a 2.4s loop; reduced motion resolves both to stills.
+   one exception hue nowhere. Motion: the heat fades in once; the pulses
+   breathe on a 2.4s loop on their own layer and pause off-screen; reduced
+   motion resolves both to stills.
    =========================================================================== */
 
 .v3.v3-atlas {
@@ -13,31 +14,54 @@
   background: var(--v3-surface);
 }
 
-/* The grid: stacked at 390 (head, map, dock); from 64rem two columns — the
-   head, search and controls on the left, the map a tall panel on the right.
-   The basin is taller than it is wide, so a portrait panel is the only frame
-   that lets it fill the fold instead of floating in a landscape void. */
+/* The grid. Phone: head, map, aside. From 64rem: head + aside in a left
+   column, the map a tall panel on the right (the basin is portrait). */
 .v3-atlas__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'body'
+    'aside';
 }
 
-/* Head ---------------------------------------------------------------------
-   H1, the live claim, the live line, the source, the search. */
 .v3-atlas__head {
+  grid-area: head;
+}
+
+.v3-atlas__body {
+  grid-area: body;
+}
+
+.v3-atlas__aside {
+  grid-area: aside;
+}
+
+/* Head ---------------------------------------------------------------------- */
+.v3-atlas__head,
+.v3-atlas__aside {
   max-width: var(--v3-measure);
   margin: 0 auto;
   width: 100%;
-  padding: clamp(1.5rem, 4vw, 3rem) var(--v3-gutter) var(--v3-space-md);
+  padding: 0 var(--v3-gutter);
   display: grid;
   gap: var(--v3-space-xs);
   align-content: start;
 }
 
+.v3-atlas__head {
+  padding-top: clamp(1.25rem, 3vw, 2.5rem);
+  padding-bottom: var(--v3-space-sm);
+}
+
+.v3-atlas__aside {
+  padding-top: var(--v3-space-sm);
+}
+
 .v3.v3-atlas .v3-atlas__headline {
   margin: 0;
   font-family: var(--v3-font-display);
-  font-size: clamp(2.2rem, 5.2vw, 3.6rem);
+  font-size: clamp(2rem, 5.2vw, 3.6rem);
   font-weight: var(--v3-weight-display);
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-display);
@@ -53,20 +77,51 @@
   line-height: var(--v3-leading-body);
 }
 
+.v3-atlas__search {
+  max-width: 40rem;
+}
+
+/* The source, under a disclosure. */
 .v3-atlas__source {
-  margin: 0;
   max-width: var(--v3-measure-text);
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-note);
 }
 
-.v3-atlas__search {
-  margin-top: var(--v3-space-2xs);
-  max-width: 40rem;
+.v3-atlas__source-summary {
+  cursor: pointer;
+  min-height: var(--v3-tap);
+  display: flex;
+  align-items: center;
+  list-style: none;
 }
 
-/* The live line: three real events under the claim, newest first. */
+.v3-atlas__source-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3-atlas__source-summary::before {
+  content: '';
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-right: var(--v3-space-2xs);
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__source[open] .v3-atlas__source-summary::before {
+  transform: rotate(45deg);
+}
+
+.v3-atlas__source-body {
+  margin: 0 0 var(--v3-space-xs);
+}
+
+/* The live line ------------------------------------------------------------- */
 .v3-atlas__live {
   display: flex;
   flex-wrap: wrap;
@@ -116,33 +171,64 @@
 }
 
 /* Body ----------------------------------------------------------------------
-   The frame holds the SVG and the dock; split adds the rail beside it. */
+   The frame is a column: the stage (canvas + svg + labels + pulses + card),
+   then the dock IN FLOW — it can never cover the basin's south end. */
 .v3-atlas__body {
   display: grid;
   gap: 0;
 }
 
 .v3-atlas__frame {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   border-top: var(--v3-rule-hairline);
   border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-atlas__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: clamp(22rem, 62vh, 44rem);
   background: color-mix(in srgb, var(--v3-navy) 2%, var(--v3-cream));
-  touch-action: pan-y;
   overflow: hidden;
+  touch-action: pan-y;
+}
+
+.v3-atlas__heat,
+.v3-atlas__svg,
+.v3-atlas__pulses,
+.v3-atlas__labels {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.v3-atlas__heat {
+  opacity: 0;
+  transition: opacity 400ms var(--v3-ease-out);
+  pointer-events: none;
+}
+
+.v3-atlas__heat[data-painted='1'] {
+  opacity: 1;
 }
 
 .v3-atlas__svg {
   display: block;
-  width: 100%;
-  height: clamp(22rem, 72vh, 46rem);
   overflow: visible;
 }
 
-/* The dock: toggles on one row, the scrubber on the next. Over the map's
-   foot from 48rem (cream at alpha so the field reads through); under the
-   map below it. Chips wrap from 48rem and scroll with a fade under it. */
+.v3-atlas__pulses,
+.v3-atlas__labels {
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* The dock: in flow. Chips wrap from 48rem; scroll with a fade under it. */
 .v3-atlas__dock {
+  flex: none;
   display: grid;
   gap: var(--v3-space-sm);
   padding: var(--v3-space-sm) var(--v3-gutter);
@@ -212,63 +298,59 @@
 }
 
 @media (min-width: 48rem) {
-  .v3-atlas__dock {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    background: color-mix(in srgb, var(--v3-cream) 92%, transparent);
-    backdrop-filter: blur(6px);
-  }
-
   .v3-atlas__types {
     flex-wrap: wrap;
     overflow: visible;
     -webkit-mask-image: none;
     mask-image: none;
   }
-}
 
-/* Two columns from 64rem. The SVG leaves room for the dock so the basin's
-   south end never sits under the controls. */
-@media (min-width: 64rem) {
-  .v3-atlas__grid {
-    grid-template-columns: minmax(20rem, 5fr) minmax(0, 7fr);
-    max-width: var(--v3-measure);
-    margin: 0 auto;
-    padding: 0 var(--v3-gutter);
-    min-height: min(88vh, 60rem);
-  }
-
-  .v3-atlas__head {
-    padding-right: var(--v3-space-xl, 2.5rem);
-    position: sticky;
-    top: 5rem;
-  }
-
-  .v3-atlas__frame {
-    border-top: 0;
-    border-bottom: 0;
-    border-left: var(--v3-rule-hairline);
-    height: min(88vh, 60rem);
-  }
-
-  .v3.v3-atlas .v3-atlas__svg {
-    height: calc(100% - 8.5rem);
-  }
-
-  /* The dock on one row: chips (wrapping) beside the scrubber. */
   .v3-atlas__dock {
     grid-template-columns: minmax(0, 1fr) minmax(11rem, 13rem);
     align-items: end;
     column-gap: var(--v3-space-lg);
   }
+}
 
-  /* Split: head, map, rail — three columns. The head keeps room for the
-     headline and the search row; the search wraps when the column is tight. */
+/* Two columns from 64rem. */
+@media (min-width: 64rem) {
+  .v3-atlas__grid {
+    grid-template-columns: minmax(20rem, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'head body'
+      'aside body';
+    max-width: var(--v3-measure);
+    margin: 0 auto;
+    padding: 0 var(--v3-gutter);
+  }
+
+  .v3-atlas__head,
+  .v3-atlas__aside {
+    padding-right: var(--v3-space-xl, 2.5rem);
+  }
+
+  .v3-atlas__head {
+    padding-top: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .v3-atlas__frame {
+    height: min(88vh, 60rem);
+    border-top: 0;
+    border-bottom: 0;
+    border-left: var(--v3-rule-hairline);
+  }
+
+  .v3-atlas__stage {
+    min-height: 0;
+  }
+
+  /* Split: head + aside, map, rail — three columns. */
   .v3-atlas--split .v3-atlas__grid {
     grid-template-columns: minmax(20rem, 3.6fr) minmax(0, 5fr) minmax(15rem, 2.8fr);
+    grid-template-areas:
+      'head body body'
+      'aside body body';
   }
 
   .v3.v3-atlas--split .v3-atlas__headline {
@@ -284,20 +366,14 @@
   }
 
   .v3-atlas--split .v3-atlas__body {
-    grid-column: 2 / span 2;
     grid-template-columns: minmax(0, 5fr) minmax(15rem, 2.8fr);
     column-gap: var(--v3-space-lg);
     align-items: start;
   }
 
-  /* Split's map column is narrower: chips flow in rows, the scrubber under. */
   .v3-atlas--split .v3-atlas__dock {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
-  }
-
-  .v3.v3-atlas--split .v3-atlas__svg {
-    height: calc(100% - 11.5rem);
   }
 
   .v3-atlas--split .v3-atlas__rail {
@@ -350,124 +426,104 @@
 .v3-atlas--heat .v3-atlas__place:hover,
 .v3-atlas--heat .v3-atlas__place.is-active { stroke: var(--v3-navy); stroke-width: 2; }
 
-/* Heat ---------------------------------------------------------------------
-   One blurred <use> of the dots group, stroked wide so each point becomes a
-   glow; where they stack the field darkens. Never a pointer target. */
-.v3-atlas__heat {
-  pointer-events: none;
-}
-
-.v3-atlas__heat-use {
-  stroke: color-mix(in srgb, var(--v3-navy) 9%, transparent);
-  stroke-linejoin: round;
-}
-
-.v3-atlas--heat .v3-atlas__heat-use {
-  stroke: color-mix(in srgb, var(--v3-navy) 16%, transparent);
-}
-
-.v3-atlas__heat-sold {
-  fill: color-mix(in srgb, var(--v3-navy) 7%, transparent);
-}
-
 /* Dots ---------------------------------------------------------------------
-   Navy at alpha so density reads as darkness where homes stack. The group
-   fades in once; the heat variant ghosts the crisp layer and lets the <use>
-   carry the field. */
-.v3-atlas__crisp {
-  animation: v3-atlas-in 300ms var(--v3-ease-out) both;
-}
-
-.v3-atlas__crisp--ghost {
-  opacity: 0;
-}
-
+   Zero-length stroked paths: the diameter is screen pixels at any scale, so
+   the server-rendered map is the final map. Navy at alpha so density reads
+   as darkness where homes stack. */
 .v3-atlas__dots {
   pointer-events: none;
 }
 
 .v3-atlas__dot {
-  fill: color-mix(in srgb, var(--v3-navy) 52%, transparent);
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 52%, transparent);
+  stroke-width: 4.2px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
   transition: opacity var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3-atlas__dot--condo { fill: color-mix(in srgb, var(--v3-navy) 40%, transparent); }
-.v3-atlas__dot--townhouse { fill: color-mix(in srgb, var(--v3-navy) 46%, transparent); }
-.v3-atlas__dot--land { fill: color-mix(in srgb, var(--v3-navy) 22%, transparent); }
-.v3-atlas__dot--multi { fill: var(--v3-navy); }
-.v3-atlas__dot--pending { fill: color-mix(in srgb, var(--v3-navy) 30%, transparent); }
+.v3-atlas__dot--condo { stroke: color-mix(in srgb, var(--v3-navy) 40%, transparent); }
+.v3-atlas__dot--townhouse { stroke: color-mix(in srgb, var(--v3-navy) 46%, transparent); }
+.v3-atlas__dot--land { stroke: color-mix(in srgb, var(--v3-navy) 24%, transparent); }
+.v3-atlas__dot--commercial { stroke: color-mix(in srgb, var(--v3-navy) 34%, transparent); }
+.v3-atlas__dot--multi { stroke: var(--v3-navy); }
+.v3-atlas__dot--pending { stroke: color-mix(in srgb, var(--v3-navy) 30%, transparent); stroke-width: 5px; }
 
 .v3-atlas__dot.is-off {
   opacity: 0.06;
 }
 
-@keyframes v3-atlas-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 /* Pulses --------------------------------------------------------------------
-   A ring that grows and fades on a real event. 2.4s loop, staggered so the
-   map breathes rather than blinks. Reduced motion: a still ring. */
-.v3-atlas__pulses {
-  pointer-events: none;
-}
-
+   Stroked points whose stroke grows in screen pixels and fades: a ring on
+   a real event. Own layer, capped, paused off-screen. */
 .v3-atlas__pulse {
   fill: none;
   stroke: var(--v3-navy);
-  stroke-width: 1.2;
+  stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: v3-atlas-pulse 2.4s var(--v3-ease-out) infinite;
+  stroke-width: 4px;
+  opacity: 0;
+  animation: v3-atlas-pulse 2.6s var(--v3-ease-out) infinite;
 }
 
 .v3-atlas__pulse--sold {
   stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
-  animation-duration: 3.2s;
+  animation-duration: 3.4s;
 }
 
 .v3-atlas__pulse--pending {
   stroke-dasharray: 2 2;
 }
 
+.v3-atlas.is-offscreen .v3-atlas__pulse,
+.v3-atlas.is-offscreen .v3-atlas__live-item::before {
+  animation-play-state: paused;
+}
+
 @keyframes v3-atlas-pulse {
-  0% { transform: scale(0.6); opacity: 0.9; }
-  70% { transform: scale(3.2); opacity: 0; }
-  100% { transform: scale(3.2); opacity: 0; }
+  0% { stroke-width: 3px; opacity: 0.85; }
+  70% { stroke-width: 26px; opacity: 0; }
+  100% { stroke-width: 26px; opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .v3-atlas__crisp,
   .v3-atlas__pulse,
   .v3-atlas__live-item::before {
     animation: none;
   }
 
   .v3-atlas__pulse {
-    opacity: 0.6;
+    opacity: 0.5;
+    stroke-width: 8px;
+  }
+
+  .v3-atlas__heat {
+    transition: none;
   }
 }
 
-/* Labels (font-size and halo arrive in screen space from the component). */
+/* Labels (HTML, positioned from the measured view). */
 .v3-atlas__label {
-  fill: var(--v3-ink);
-  font-family: var(--v3-font-body);
+  position: absolute;
+  transform: translate(-50%, 0);
+  padding: 0 0.3rem;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-strong, 600);
   letter-spacing: var(--v3-track-eyebrow);
   text-transform: uppercase;
-  text-anchor: middle;
-  paint-order: stroke;
-  stroke: var(--v3-cream);
-  stroke-linejoin: round;
-  pointer-events: none;
+  white-space: nowrap;
+  text-shadow:
+    0 0 4px var(--v3-cream),
+    0 0 4px var(--v3-cream),
+    0 0 8px var(--v3-cream);
 }
 
 /* The card ----------------------------------------------------------------
-   Follows the pointer on dots/heat, clamped inside the frame; sits at the
-   top of the rail on split; docks over the map's foot under 48rem with a
-   close control. */
+   Follows the pointer on dots/heat, pinned where the reader tapped, clamped
+   inside the stage; docks over the stage's foot under 48rem with a close
+   control; on split from 64rem it lives in a fixed slot under the rail. */
 .v3-atlas__card {
   position: absolute;
   z-index: 3;
@@ -477,6 +533,11 @@
   background: var(--v3-cream);
   border: 1px solid color-mix(in srgb, var(--v3-navy) 30%, transparent);
   box-shadow: var(--v3-media-shadow);
+  pointer-events: none;
+}
+
+.v3-atlas__card.is-pinned {
+  pointer-events: auto;
 }
 
 .v3-atlas__card-close {
@@ -494,11 +555,8 @@
   cursor: pointer;
 }
 
-.v3-atlas--split .v3-atlas__card {
-  position: static;
-  max-width: none;
-  margin-bottom: var(--v3-space-sm);
-  box-shadow: none;
+.v3-atlas__card.is-pinned .v3-atlas__card-close {
+  display: block;
 }
 
 @media (max-width: 47.99rem) {
@@ -508,6 +566,7 @@
     top: auto !important;
     bottom: 0;
     max-width: none;
+    pointer-events: auto;
   }
 
   .v3-atlas__card-close {
@@ -561,6 +620,7 @@
   font-weight: var(--v3-weight-medium);
   text-decoration: underline;
   text-underline-offset: var(--v3-underline-offset);
+  pointer-events: auto;
 }
 
 /* The rail (split) --------------------------------------------------------- */
@@ -628,4 +688,39 @@
   font-size: var(--v3-size-body-sm);
   text-align: right;
   min-width: 3.5rem;
+}
+
+/* The rail's card slot: fixed height, so hovering never shifts the rows. */
+.v3-atlas__rail-card {
+  min-height: 12.5rem;
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-atlas__rail-card .v3-atlas__card {
+  position: relative;
+  max-width: none;
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+.v3-atlas__rail-empty {
+  margin: 0;
+  padding: var(--v3-space-sm) 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* Under 64rem the split rail sits under the map and the card lives in the
+   stage like every other variant. */
+@media (max-width: 63.99rem) {
+  .v3-atlas--split .v3-atlas__rail {
+    max-width: var(--v3-measure);
+    margin: 0 auto;
+    width: 100%;
+    padding: var(--v3-space-md) var(--v3-gutter) 0;
+  }
+
+  .v3-atlas--split .v3-atlas__rail-card {
+    display: none;
+  }
 }

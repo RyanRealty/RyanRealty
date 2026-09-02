@@ -112,12 +112,23 @@ const COMM_FEATURED = [
   { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
 ]
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   // The Atlas composition. The three candidates (dots | heat | split) live on
-  // the decision sheet as renders; the page itself stays ISR — a searchParams
-  // switch made it dynamic and ran every read on every request (58 rail
-  // timeouts in the 2026-09-01 build). The losers are deleted on Matt's pick.
-  const opening: V3AtlasVariant = 'dots'
+  // the decision sheet as renders. In DEVELOPMENT only, ?opening=heat|split
+  // renders the alternates for those captures; production never reads
+  // searchParams, so the page stays ISR — reading it made the page dynamic
+  // and ran every read on every request (58 rail timeouts in the 2026-09-01
+  // build). The losers are deleted on Matt's pick.
+  let opening: V3AtlasVariant = 'dots'
+  if (process.env.NODE_ENV === 'development') {
+    const sp = await searchParams
+    const raw = typeof sp.opening === 'string' ? sp.opening : ''
+    if (raw === 'heat' || raw === 'split') opening = raw
+  }
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments, atlas, neighborhoodRows, communityBoundaries] = await Promise.all([
     getCitiesForIndex().catch(() => []),
@@ -297,7 +308,11 @@ export default async function Home() {
       kicker: v3Text('Buying'),
       label: v3Text('Find your place'),
       href: '/homes-for-sale?view=map',
-      fact: v3Text('Every town, community, and neighborhood, mapped above'),
+      // Only what the map actually holds: the communities and neighborhoods
+      // with a recorded boundary (pass two, N8).
+      fact: v3Text(
+        `${atlasRegions.filter((r) => r.kind === 'town').length} towns, ${atlasRegions.filter((r) => r.kind === 'community').length} communities, and ${atlasRegions.filter((r) => r.kind === 'neighborhood').length} Bend neighborhoods, mapped above`,
+      ),
     },
     {
       kicker: v3Text('Selling'),
@@ -331,6 +346,7 @@ export default async function Home() {
           events={atlas.events}
           source={atlas.source}
           stamp={atlas.stamp}
+          incomplete={!atlas.complete}
         >
           <HomeHeroSearch />
         </V3Atlas>
@@ -348,8 +364,8 @@ export default async function Home() {
         {firstTownRow ? (
           <V3Ledger
             id="towns"
-            eyebrow={v3Text('Central Oregon · By town')}
-            heading={v3Text('Where the homes are, and what they cost')}
+            eyebrow={v3Text('Central Oregon · Single-family, by town')}
+            heading={v3Text('Where the single-family homes are, and what they cost')}
             rows={[firstTownRow, ...restTownRows]}
             source={v3Text(PLACE_COUNT_TRACE)}
             updated={liveStamp(leftoverStamp)}
@@ -358,8 +374,8 @@ export default async function Home() {
         ) : (
           <V3Ledger
             id="towns"
-            eyebrow={v3Text('Central Oregon · By town')}
-            heading={v3Text('Where the homes are, and what they cost')}
+            eyebrow={v3Text('Central Oregon · Single-family, by town')}
+            heading={v3Text('Where the single-family homes are, and what they cost')}
             rows={[]}
             emptyMessage={v3Text('No town returned a live market row on this refresh.')}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
