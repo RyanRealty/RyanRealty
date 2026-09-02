@@ -10,6 +10,7 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 
 Every session — Claude Code, Cursor, or Grok — starts here:
 
+0. **`docs/LEARNINGS.md`** — the one document every agent (Claude Code, Cursor, Grok, Copilot) reads before executing: every rule born from a real mistake, the decision-authority matrix, the stop points. When Matt corrects you, the fix is written there in the same session.
 0. **`docs/GROK_BOT_BRAIN.md`** if you are a Grok Bot / Grok Build teammate — map only, then open the one door for this job. Do not load the whole canon.
 1. **`docs/plans/CROSS_AGENT_HANDOFF.md` Current block** (≤18 lines) — what the other surface left. Do not read the Prior novel unless you need a named SHA.
 2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`.

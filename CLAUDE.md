@@ -4,7 +4,7 @@ This file is loaded into every session. It holds the rules that outrank convenie
 nothing else. Anything longer than a rule lives in the doc it points at.
 
 **Read order:** §0 data accuracy → §1 approval → §2 brand voice → then whichever of §3–§9
-your task touches.
+your task touches. **Before executing:** [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
 
 **Fleet start (mandatory before subject tunnels):** read
 [`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md)
@@ -19,10 +19,9 @@ exhaustively → ship → measure → learn → lock behind a gate → compete. 
 contract, the live-environment rules, the escape-ledger protocol, and the approval model.
 Enforced by G44 (`ci:process-canon`).
 
-**A rule that lives only in chat history is lost next session.** When Matt issues a directive
-that creates a permanent rule, do both: apply it to the immediate work, AND write it here (or
-into the producer SKILL.md that owns the surface). See §6 — if a rule keeps being violated, the
-answer is a new mechanical gate, not more prose.
+**A rule that lives only in chat history is lost next session.** When Matt corrects you, apply
+it to the work AND write it into `docs/LEARNINGS.md` that session. A rule violated twice
+becomes a gate (§6), not more prose.
 
 ---
 

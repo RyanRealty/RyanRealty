@@ -359,7 +359,16 @@
       "docs/MASTER_SPEC.md",
       "docs/SITE_SPEC.md",
       "docs/DEVELOPMENT_PROCESS.md",
+      "docs/LEARNINGS.md",
       "scripts/claude-canon-baseline.json"
+    ],
+    "ci:learnings-canon": [
+      "docs/LEARNINGS.md",
+      "CLAUDE.md",
+      "AGENTS.md",
+      "docs/GROK_BOT_BRAIN.md",
+      "scripts/check-learnings-canon.mjs",
+      "scripts/learnings-canon-baseline.json"
     ],
     "ci:cma-exemplar": [
       "lib/cma/**",
