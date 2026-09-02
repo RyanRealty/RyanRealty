@@ -2,12 +2,14 @@
   {
     "id": "fold-inbox-into-messages",
     "phase": "P12",
-    "note": "Matt lock 2026-09-01 #1 \u2014 slices 1-4 SHIPPED: folders as one select, unknown-caller add/link in thread, ?m= deep links, all entrances repointed, per-thread status+assign controls (MessagesThreadControls via getConversationTriageState), per-row Done sweep in folder views. FINAL: convert crm/inbox/page.tsx to a redirect + retire its tree. Recon done \u2014 cascade to handle: check-email-quality.mjs lists inbox/page.tsx; check-admin-v2-tokens SCAN_DIRS lists page + 8 _components (keep AddPersonForm \u2014 Messages imports it; settings/account imports mobile-data); reachable-exports will flag bulkConversationStateAction/saveDraft/aiSmsDraft/renderSmsTemplate + mobile components once the page body goes; check-crm-mobile-track PENDING text mentions the route (text-only). Multi-select bulk triage is the one capability without a Messages equivalent \u2014 confirm unmissed or add multi-select before deleting."
+    "note": "SHIPPED 2026-09-01 (all 5 slices). Slice 5: /admin/crm/inbox 3xx-redirects to /admin/messages (config redirect, legacy ?folder= mapped in the page), 19-file tree deleted. Capability parity held: SMS AI pills + per-contact template render ported to ComposeSurface text mode (TextDraftTools + getSmsComposeTemplatesAction), multi-select bulk triage replaced by folder-level Done-all via the same scope-checked bulk action. AddPersonForm moved into messages/. Cascade updated: admin-v2-tokens scan list, email-quality, crm-mobile-track, help/smoke/e2e route lists, streamed-redirect baseline, crm-screens contracts repointed. Verified in the dev harness: 307 with query carry, folder queue + Done all 25, pills, template merge filled the textarea per-contact.",
+    "status": "shipped"
   },
   {
     "id": "looking-at-identity-leg",
     "phase": "P12",
-    "note": "2026-09-01: getLookingAtNow (Today lane + broker looking-at SMS, lib/crm/broker-alerts queue) keys sessions ONLY on visitor_sessions.crm_person_id \u2014 misses identity_map/rr_vid-stitched sessions (e.g. batch-email clickers; verified: newest identified session Aug 31 while stitched clickers were on site Sep 1). Widen the window scan to join visitor_identity_map (bounded), so the alert fires for stitched visitors too. SEND PATH \u2014 draft-first discipline, test on the queue not live sends. Person-page glance already widened via resolveLeadSessionIds."
+    "note": "SHIPPED 2026-09-01. Root fix: /api/visitors/track stamps a BRAND-NEW session from visitor_identity_map by rr_vid (identified_via='rr_vid_carryover') so stitched returners are identified at session birth; getLookingAtNow additionally walks the map's known vids (map-first \u2014 anon window traffic swamps any cap) for sessions the stamp missed. Verified live: 83 stitched vids, the one in-window unidentified session resolved to person 13168. queueReturnVisitAlert untouched (still queue-only).",
+    "status": "shipped"
   },
   {
     "id": "email-reporting-one-home",
