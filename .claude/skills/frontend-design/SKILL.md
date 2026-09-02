@@ -7,6 +7,14 @@ description: Build distinctive, production-grade web UI for Ryan Realty that avo
 
 Use this skill for any web surface: landing pages (`/lp/*`), site pages, heroes, sections, components. It is the design-taste layer that sits on top of the shadcn/ui component rule and the `design_system/ryan-realty/` brand spec.
 
+**Required reference for any DATA-DISPLAY section or chart:**
+[`design_system/public/TASTE.md`](../../../design_system/public/TASTE.md) — the judging
+ritual (render, screenshot, answer the five questions before shipping), the house
+chart method (the `dataviz` skill parameterized to navy-on-cream: emphasis over
+categorical, ≤3 series, `--rr-exception` as the only second hue), and the
+variants rule (new data sections ship 2–3 variants on a decision sheet; Matt
+picks; losers are deleted in the pick's commit).
+
 ## Why this exists (the diagnosis)
 
 The failure mode we keep hitting on landing pages is **generic-safe**: stacked centered cards on white, equal-width columns, a drop shadow on every box, and the same hero to 3-feature to CTA to footer rhythm every time. Reviewers read that as "plain" and "it's just not it." It is not a whitespace problem and not a photo problem. It is the absence of a committed, intentional point of view, executed in every detail.
