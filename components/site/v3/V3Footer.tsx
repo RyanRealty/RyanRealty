@@ -263,9 +263,9 @@ export function V3Footer({
             <nav className="v3-footer__column" aria-label={column.heading} key={column.heading}>
               {/*
                 A native disclosure, and the only interactive element this footer
-                has ever had. On a phone the six columns stacked to 2,599px — the
+                has ever had. On a phone the five columns stacked to 2,599px — the
                 tallest thing on every page on the site, 52 destinations nobody
-                scrolls to. Folded, the reader sees six group names with their
+                scrolls to. Folded, the reader sees five group names with their
                 counts and opens the one they want.
 
                 No client JS: the fold is the browser's own, so it works before

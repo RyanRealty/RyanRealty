@@ -138,7 +138,7 @@
   }
 }
 
-/* The fold. A phone gets six group names; a pointer gets the whole sitemap.
+/* The fold. A phone gets five group names; a pointer gets the whole sitemap.
    See the comment in V3Footer.tsx for why this is a native details and not a
    client component. */
 .v3-footer__fold {
@@ -168,8 +168,13 @@
   display: none;
 }
 
-/* The house disclosure glyph: the same chevron V3Instrument and V3Atlas use on
-   their folds, so a reader who has opened one on this site knows this one. */
+/* The count, and the house disclosure glyph beside it.
+   The rotation matches V3Atlas's source fold exactly — closed points RIGHT
+   (-45deg), open points DOWN (45deg), 0.4rem, 1px borders — so one gesture
+   means one thing across the site. It shipped inverted on the first pass
+   (down for closed, up for open), which made a down-chevron mean "open" on the
+   map and "closed" here. V3Instrument still uses a +/- pair; folding that into
+   this one language is its own change. */
 .v3-footer__count {
   display: inline-flex;
   align-items: center;
@@ -180,16 +185,16 @@
 
 .v3-footer__count::after {
   content: '';
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.4rem;
+  height: 0.4rem;
   border-right: 1px solid currentColor;
   border-bottom: 1px solid currentColor;
-  transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+  transform: rotate(-45deg);
   transition: transform var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .v3-footer__fold[open] .v3-footer__count::after {
-  transform: rotate(225deg) translate(-0.2rem, -0.2rem);
+  transform: rotate(45deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -246,16 +251,27 @@
   .v3-footer__column-list a {
     min-height: 2rem;
   }
+}
 
-  /* Above the wide stop the sitemap is not folded: five columns fit side by
-     side and there is nothing to save. The summary keeps its old job as the
-     column title — same size, same tracking, same muted ink — and the list is
-     forced visible whether or not the disclosure happens to be open.
+/* The fold lives ONLY where the sitemap is ONE column.
+   ---------------------------------------------------------------------------
+   From 40rem the grid goes multi-column, and a grid row is as tall as its
+   tallest cell. Opening PLACES (13 links) in a 2- or 3-column grid stretched
+   its row to 631px while HOMES beside it stayed 45px — about 586px of blank
+   cream at 640, 768, 834 and 899. The evaluator measured it; it was invisible
+   from the two widths this was built at, which is the whole argument for
+   testing the widths between them.
 
-     Two overrides because browsers hide a closed disclosure's content two
-     different ways: the older model sets display:none on every non-summary
-     child, the newer one sets content-visibility:hidden on ::details-content.
-     Both were verified in Chromium 145 before this shipped. */
+   So the unfold starts at the same 40rem the grid does. Above it the sitemap
+   is not folded: the summary keeps its old job as the column title — same
+   size, tracking and muted ink — and the list is forced visible whether or not
+   the disclosure happens to be open.
+
+   Two overrides, because browsers hide a closed disclosure's content two
+   different ways: the older model sets display:none on every non-summary
+   child, the newer one sets content-visibility:hidden on ::details-content.
+   Both were verified in Chromium 145 before this shipped. */
+@media (min-width: 40rem) {
   .v3-footer__fold {
     border-top: 0;
   }
@@ -278,7 +294,7 @@
 }
 
 @supports selector(::details-content) {
-  @media (min-width: 56.25rem) {
+  @media (min-width: 40rem) {
     .v3-footer__fold::details-content {
       content-visibility: visible;
     }
