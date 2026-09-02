@@ -21,6 +21,14 @@ import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import type { ConcessionsQuarter } from '@/lib/data/pricing/getConcessionsQuarterly'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import {
+  customTicks,
+  moneyTicks,
+  spacedTicks,
+  windowClaim,
+  yearTicks,
+  yoyClaim,
+} from '@/lib/charts/ticks'
+import {
   v3Text,
   type V3ChartCardProps,
   type V3ChartPoint,
@@ -63,6 +71,14 @@ function epochAt(iso: string): number | null {
   return p ? Date.UTC(p.y, p.m - 1, p.d) : null
 }
 
+/**
+ * Day of the year each month opens on, the x key the year overlay plots by.
+ * A leap year shifts everything after February by one day out of 365, which
+ * is below one pixel on the axis and is why these are constants rather than a
+ * per-year computation. They are label positions, never data.
+ */
+const MONTH_START_DAY = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334] as const
+
 function dayOfYear(iso: string): number | null {
   const p = isoParts(iso)
   if (!p) return null
@@ -90,6 +106,33 @@ function ratePoint(p: StatPoint, tick: string, at: number | null): V3ChartPoint 
   return { value: p.value, tick: v3Text(tick), label: v3Text(fmtPct(p.value)), at }
 }
 
+/**
+ * A rate panel's gridlines, month labels, and claim.
+ *
+ * NO `emphasize` AND NO `marks` ON A WEEKLY SERIES. Emphasis draws a dot on
+ * every point of the emphasized line, and a five-year weekly window is 260
+ * points — the line disappears under its own beads. Emphasis is for the
+ * monthly and annual series in this file.
+ *
+ * The claim is a WINDOW claim because the panel is a window: the latest week
+ * against the first week the panel draws, both named by their own ticks. A
+ * rate moves in percentage points, which is what `unit: 'percent'` writes.
+ */
+function ratePanel(caption: string, points: readonly V3ChartPoint[]): V3ChartProps | undefined {
+  if (points.length < 2) return undefined
+  const series = [{ name: v3Text('30-year fixed'), points }]
+  const claim = windowClaim({ metric: '30-year fixed rate', unit: 'percent', series })
+  const yTicks = customTicks(series, (v) => fmtPct(v))
+  const xTicks = spacedTicks(series, 3)
+  return {
+    caption: v3Text(caption),
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
+  }
+}
+
 function rateWindowPanel(m30: readonly StatPoint[], yearsBack: number, caption: string): V3ChartProps | undefined {
   const last = m30[m30.length - 1]
   if (!last) return undefined
@@ -102,8 +145,7 @@ function rateWindowPanel(m30: readonly StatPoint[], yearsBack: number, caption: 
     const point = ratePoint(p, obsMonthYear(p.observationDate), epochAt(p.observationDate))
     if (point) points.push(point)
   }
-  if (points.length < 2) return undefined
-  return { caption: v3Text(caption), series: [{ name: v3Text('30-year fixed'), points }] }
+  return ratePanel(caption, points)
 }
 
 function rateAllPanel(m30: readonly StatPoint[]): V3ChartProps | undefined {
@@ -112,11 +154,7 @@ function rateAllPanel(m30: readonly StatPoint[]): V3ChartProps | undefined {
     const point = ratePoint(p, obsMonthYear(p.observationDate), epochAt(p.observationDate))
     if (point) points.push(point)
   }
-  if (points.length < 2) return undefined
-  return {
-    caption: v3Text(`Weekly 30-year fixed rate since ${RATE_WINDOW_FROM.slice(0, 4)}`),
-    series: [{ name: v3Text('30-year fixed'), points }],
-  }
+  return ratePanel(`Weekly 30-year fixed rate since ${RATE_WINDOW_FROM.slice(0, 4)}`, points)
 }
 
 function rateYoyPanel(m30: readonly StatPoint[]): V3ChartProps | undefined {
@@ -139,10 +177,27 @@ function rateYoyPanel(m30: readonly StatPoint[]): V3ChartProps | undefined {
     if (points.length >= 2) series.push({ name: v3Text(String(year)), points })
   }
   if (series.length === 0) return undefined
+  // The claim compares the latest week to the NEAREST week in the previous
+  // year's line, inside ten days. Freddie Mac publishes on a Thursday, so the
+  // same calendar week lands on a different day of the year every year and an
+  // exact match would never fire. The compared point is a plotted point and
+  // the sentence names its own tick, so the reader is told which week it was.
+  const claim = yoyClaim({
+    metric: '30-year fixed rate',
+    unit: 'percent',
+    series,
+    matchWithin: 10,
+  })
+  const yTicks = customTicks(series, (v) => fmtPct(v))
   return {
     caption: v3Text('Weekly 30-year fixed rate, each calendar year over one January to December axis'),
+    ...(claim ? { claim: v3Text(claim) } : {}),
     series,
     overlay: 'yoy',
+    ...(yTicks.length ? { yTicks } : {}),
+    xTicks: MONTH_START_DAY.flatMap((day, i) =>
+      i % 2 === 0 ? [{ at: day, label: v3Text(MONTHS[i]) }] : [],
+    ),
   }
 }
 
@@ -289,6 +344,7 @@ export function buildSpreadCard(
       { value: norm.mean, tick: v3Text(obsMonthYear(last.observationDate)), label: normLabel, at: lastAt },
     ],
   }
+  const spreadSeries: V3ChartSeries[] = [{ name: v3Text('Mortgage minus Treasury'), points }, normSeries]
   const delta = last.spread - norm.mean
   const title =
     Math.abs(delta) < 0.005
@@ -306,7 +362,14 @@ export function buildSpreadCard(
     wide: true,
     chart: {
       caption: v3Text('30-year mortgage minus 10-year Treasury, weekly, in percentage points'),
-      series: [{ name: v3Text('Mortgage minus Treasury'), points }, normSeries],
+      // NO CLAIM: the card's title is the claim ("Spread 0.28pp above norm"),
+      // computed from these same points. A second sentence saying it again is
+      // the thing section 2 forbids. NO `emphasize`: it would bead 600 weekly
+      // points, and the atom's default ladder already draws the subject solid
+      // and the norm as a muted dashed line.
+      series: spreadSeries,
+      yTicks: customTicks(spreadSeries, (v) => `${v.toFixed(2)}pp`),
+      xTicks: spacedTicks(spreadSeries, 3),
     },
   }
 }
@@ -355,6 +418,10 @@ export function buildNationIndexCard(
     csPoints.push({ value: idx, tick: v3Text(String(year)), label: v3Text(idx.toFixed(0)), at: year })
   }
   if (coPoints.length < 2 || csPoints.length < 2) return undefined
+  const indexSeries: V3ChartSeries[] = [
+    { name: v3Text('Central Oregon'), points: coPoints },
+    { name: v3Text('U.S. Case-Shiller'), points: csPoints },
+  ]
   const coMult = coPoints[coPoints.length - 1]!.value / 100
   const csMult = csPoints[csPoints.length - 1]!.value / 100
   return {
@@ -370,11 +437,14 @@ export function buildNationIndexCard(
     wide: true,
     chart: {
       caption: v3Text(`Region median close and Case-Shiller national index, ${INDEX_BASE_YEAR} = 100`),
-      series: [
-        { name: v3Text('Central Oregon'), points: coPoints },
-        { name: v3Text('U.S. Case-Shiller'), points: csPoints },
-      ],
+      // NO CLAIM: the title already states both multiples off these points.
+      // `emphasize: 'first'` is the TASTE emphasis pattern — Central Oregon is
+      // the subject in full ink, the nation is context in a navy tint.
+      series: indexSeries,
       marks: true,
+      emphasize: 'first',
+      yTicks: customTicks(indexSeries, (v) => v.toFixed(0)),
+      xTicks: yearTicks(indexSeries),
     },
   }
 }
@@ -403,6 +473,10 @@ export function buildPriceVolumeCard(co: readonly CoMarketAnnualRow[]): V3ChartC
     at: r.year,
   }))
   if (pricePoints.length < 2 || soldPoints.length < 2) return undefined
+  const priceSeries: V3ChartSeries[] = [{ name: v3Text('Median close'), points: pricePoints }]
+  const soldSeries: V3ChartSeries[] = [{ name: v3Text('Homes sold'), points: soldPoints }]
+  const priceClaim = windowClaim({ metric: 'Median close price', unit: 'money', series: priceSeries })
+  const soldClaim = windowClaim({ metric: 'Homes sold', unit: 'count', series: soldSeries })
   const mult = last.medianClose / first.medianClose
   const soldPct = (lastCount.soldCount / firstCount.soldCount - 1) * 100
   const dir = soldPct >= 0 ? 'up' : 'down'
@@ -425,16 +499,24 @@ export function buildPriceVolumeCard(co: readonly CoMarketAnnualRow[]): V3ChartC
       ],
       panels: [
         {
+          // Every panel of a SWITCHER carries its own claim: one card title
+          // cannot describe two measures, and the reader has to know which
+          // one is on screen. A card with a single chart carries none — there
+          // the title is the claim.
           caption: v3Text('Median close price by year, region single-family'),
-          series: [{ name: v3Text('Median close'), points: pricePoints }],
+          ...(priceClaim ? { claim: v3Text(priceClaim) } : {}),
+          series: priceSeries,
           marks: true,
+          yTicks: moneyTicks(priceSeries),
+          xTicks: yearTicks(priceSeries),
         },
         {
           caption: v3Text('Homes sold by year, region single-family'),
+          ...(soldClaim ? { claim: v3Text(soldClaim) } : {}),
           kind: 'bars',
           run: true,
           baselineLabel: v3Text('0'),
-          series: [{ name: v3Text('Homes sold'), points: soldPoints }],
+          series: soldSeries,
         },
       ],
       defaultKey: 'price',
@@ -466,6 +548,10 @@ export function buildRealNominalCard(
     if (point) realPoints.push(point)
   }
   if (nominalPoints.length < 2 || realPoints.length < 2) return undefined
+  const realNominalSeries: V3ChartSeries[] = [
+    { name: v3Text('Actual dollars'), points: nominalPoints },
+    { name: v3Text(`${refRow.year} dollars`), points: realPoints },
+  ]
   const realFirst = realPoints[0]!.value
   const realLast = realPoints[realPoints.length - 1]!.value
   const realMult = realLast / realFirst
@@ -482,11 +568,14 @@ export function buildRealNominalCard(
     ),
     chart: {
       caption: v3Text(`Median close by year, actual dollars and ${refRow.year} dollars`),
-      series: [
-        { name: v3Text('Actual dollars'), points: nominalPoints },
-        { name: v3Text(`${refRow.year} dollars`), points: realPoints },
-      ],
+      // NO CLAIM: the title states the real multiple off these same points.
+      // `emphasize: 'last'` puts the inflation-adjusted line — the one the
+      // card is about — in full ink and the nominal line in a navy tint.
+      series: realNominalSeries,
       marks: true,
+      emphasize: 'last',
+      yTicks: moneyTicks(realNominalSeries),
+      xTicks: yearTicks(realNominalSeries),
     },
   }
 }

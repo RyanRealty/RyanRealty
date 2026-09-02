@@ -74,6 +74,11 @@ function toCardProps(card: CityChartCard, wide: boolean): V3ChartCardProps {
       card.rangeBaseKeyLabel != null ? v3Text(card.rangeBaseKeyLabel) : undefined,
     sampleKey: card.sampleKey != null ? v3Text(card.sampleKey) : undefined,
     marks: card.marks,
+    // Gridlines and axis labels the builder computed off the same rows. The
+    // atom drops any tick outside the plotted domain, so a stale one cannot
+    // draw. No `claim` here on purpose: on a card, the title IS the claim.
+    yTicks: card.yTicks?.map((t) => ({ value: t.value, label: v3Text(t.label) })),
+    xTicks: card.xTicks?.map((t) => ({ at: t.at, label: v3Text(t.label) })),
   }
   return {
     id: `city-town-${card.key}`,

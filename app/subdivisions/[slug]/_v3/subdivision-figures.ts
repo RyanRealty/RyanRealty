@@ -28,6 +28,7 @@
 
 import { v3Text, type V3InstrumentFigure, type V3ChartProps, type V3ChartPoint } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
+import { countTicks, yearTicks, yoyClaim } from '@/lib/charts/ticks'
 import type { MarketStats } from '@/lib/data'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { publishSubdivisionClosedPrice } from '@/lib/market/publish-subdivision-closed-price'
@@ -84,8 +85,18 @@ export function subdivisionSalesChart(
       at: row.year,
     }))
   if (points.length < 2) return undefined
+  const series = [{ name: v3Text('Closed counts'), points }]
+  // The claim is the plat's latest closed year against the year before it,
+  // both off this same series. A plat with a gap in its history carries no
+  // comparison rather than reaching to the nearest year it does have.
+  const claim = yoyClaim({ metric: 'Closed sales', unit: 'count', series })
+  const yTicks = countTicks(series)
+  const xTicks = yearTicks(series)
   return {
     caption: v3Text(`Closed single-family sales by MLS plat name, ${displayName}`),
-    series: [{ name: v3Text('Closed counts'), points }],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }

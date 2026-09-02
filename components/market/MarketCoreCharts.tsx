@@ -126,6 +126,9 @@ export function MarketCoreCharts({ data, heading, scopeLabel, className }: Marke
           kind={chart.kind}
           run={chart.run}
           series={chart.series}
+          claim={chart.claim}
+          yTicks={chart.yTicks}
+          xTicks={chart.xTicks}
         />
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
           {tab.period} · {tab.source}. {tab.metric === 'monthsOfSupply'

@@ -61,6 +61,10 @@ function viewChart(view: NeighborhoodChartView): V3ChartProps {
     run: view.run,
     baselineLabel: view.baselineLabel != null ? v3Text(view.baselineLabel) : undefined,
     sampleKey: view.sampleKey != null ? v3Text(view.sampleKey) : undefined,
+    claim: view.claim != null ? v3Text(view.claim) : undefined,
+    yTicks: view.yTicks?.map((t) => ({ value: t.value, label: v3Text(t.label) })),
+    xTicks: view.xTicks?.map((t) => ({ at: t.at, label: v3Text(t.label) })),
+    emphasize: view.emphasize,
   }
 }
 

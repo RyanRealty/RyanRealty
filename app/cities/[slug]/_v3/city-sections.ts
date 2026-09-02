@@ -35,6 +35,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { moneyTicks, monthTicks, yoyClaim } from '@/lib/charts/ticks'
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
@@ -382,26 +383,16 @@ export function placeMedianChartCaption(placeName: string): string {
  * the ZIP node ships (zipMedianChart), one copy for the place family. Absent
  * months are dropped, a year with fewer than two plottable points is dropped,
  * and an empty overlay returns undefined so the caller mounts no chart.
+ *
+ * The claim, the gridlines, and the month axis all come out of lib/charts/ticks
+ * — the same three helpers every other public chart now calls, so no two
+ * surfaces can round the same series two ways.
  */
-/**
- * A clean step for a value range: 1, 2, or 5 × 10^n, so four ticks read as
- * round money.
- */
-function niceStep(span: number, target = 3): number {
-  if (!(span > 0)) return 1
-  const raw = span / target
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)))
-  const norm = raw / mag
-  const step = norm >= 5 ? 5 : norm >= 2 ? 2 : 1
-  return step * mag
-}
-
 export function placeMedianChart(
   years: readonly KbYearSeries[],
   caption: string,
 ): V3ChartProps | undefined {
   const overlay: V3ChartSeries[] = []
-  const plottedValues: number[] = []
   for (const year of years.slice(-V3_CHART_CATEGORY_SLOTS)) {
     const points: V3ChartPoint[] = []
     for (const row of year.points) {
@@ -411,7 +402,6 @@ export function placeMedianChart(
       const label = formatPriceCompact(row.value)
       if (!label || label === '—') continue
       points.push({ value: row.value, tick: v3Text(tick), label: v3Text(label), at: row.m })
-      plottedValues.push(row.value)
     }
     if (points.length < 2) continue
     overlay.push({ name: v3Text(String(year.year)), points })
@@ -421,44 +411,17 @@ export function placeMedianChart(
   // The claim: the latest plotted month against the same month a year
   // earlier, from the same series the chart draws. No prior month, no
   // comparison — the sentence shrinks rather than estimates.
-  const latest = overlay[overlay.length - 1]!
-  const last = latest.points[latest.points.length - 1]!
-  const prior = overlay.length >= 2 ? overlay[overlay.length - 2]!.points.find((p) => p.at === last.at) : undefined
-  const monthName = MONTH_TICK[(last.at ?? 1) - 1] ?? ''
-  const monthWord = monthName.charAt(0) + monthName.slice(1).toLowerCase()
-  let claim = `Median sale price ${last.label} in ${monthWord} ${latest.name}.`
-  if (prior && prior.value > 0) {
-    const pct = ((last.value - prior.value) / prior.value) * 100
-    const rounded = Math.round(pct * 10) / 10
-    const word = rounded > 0 ? 'up' : rounded < 0 ? 'down' : 'flat against'
-    claim =
-      rounded === 0
-        ? `Median sale price ${last.label} in ${monthWord} ${latest.name}, flat against ${monthWord} ${overlay[overlay.length - 2]!.name}.`
-        : `Median sale price ${last.label} in ${monthWord} ${latest.name}, ${word} ${Math.abs(rounded)}% from ${monthWord} ${overlay[overlay.length - 2]!.name}.`
-  }
-
-  // Four round-money gridlines inside the plotted range.
-  const lo = Math.min(...plottedValues)
-  const hi = Math.max(...plottedValues)
-  const step = niceStep(hi - lo)
-  const yTicks: { value: number; label: ReturnType<typeof v3Text> }[] = []
-  for (let v = Math.ceil(lo / step) * step; v <= hi && yTicks.length < 6; v += step) {
-    const label = formatPriceCompact(v)
-    if (label && label !== '—') yTicks.push({ value: v, label: v3Text(label) })
-  }
-  const xTicks = [1, 3, 5, 7, 9, 11].flatMap((m) => {
-    const t = MONTH_TICK[m - 1]
-    return t ? [{ at: m, label: v3Text(t) }] : []
-  })
+  const claim = yoyClaim({ metric: 'Median sale price', unit: 'money', series: overlay })
+  const yTicks = moneyTicks(overlay)
 
   return {
     caption: v3Text(caption),
-    claim: v3Text(claim),
+    ...(claim ? { claim: v3Text(claim) } : {}),
     series: overlay,
     overlay: 'yoy',
     emphasize: 'last',
-    ...(yTicks.length >= 2 ? { yTicks } : {}),
-    xTicks,
+    ...(yTicks.length ? { yTicks } : {}),
+    xTicks: monthTicks(MONTH_TICK),
   }
 }
 

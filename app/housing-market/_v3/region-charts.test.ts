@@ -83,6 +83,30 @@ describe('buildRateClockCard', () => {
   it('is not built from an empty series', () => {
     expect(buildRateClockCard([])).toBeUndefined()
   })
+
+  it('claims every panel, and a rate moves in points rather than in percent', () => {
+    const card = buildRateClockCard(m30InSixes)!
+    const keys = card.switcher!.items.map((it) => it.key)
+    for (const panel of card.switcher!.panels) {
+      expect(String(panel.claim)).toMatch(/^30-year fixed rate 6\.37%/)
+      expect(String(panel.claim)).not.toMatch(/[;—–!]/)
+    }
+    const oneYear = card.switcher!.panels[keys.indexOf('1y')]!
+    expect(oneYear.claim).toBe('30-year fixed rate 6.37% in Oct 2026, down 0.3 points from Oct 2025.')
+  })
+
+  it('gridlines and month labels stay inside the plotted domain', () => {
+    const card = buildRateClockCard(m30InSixes)!
+    const keys = card.switcher!.items.map((it) => it.key)
+    const all = card.switcher!.panels[keys.indexOf('all')]!
+    const values = (all.series?.[0]?.points ?? []).map((p) => p.value)
+    for (const tick of all.yTicks ?? []) {
+      expect(tick.value).toBeGreaterThanOrEqual(Math.min(...values))
+      expect(tick.value).toBeLessThanOrEqual(Math.max(...values))
+    }
+    const xs = new Set((all.series?.[0]?.points ?? []).map((p) => p.at))
+    for (const tick of all.xTicks ?? []) expect(xs.has(tick.at)).toBe(true)
+  })
 })
 
 describe('buildRateFigures', () => {

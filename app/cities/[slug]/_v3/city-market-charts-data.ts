@@ -47,6 +47,7 @@ import {
   type CityQuarterPair,
 } from '@/lib/data/pricing/getCityQuarterSaleToAsk'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { moneyTicks, yearTicks } from '@/lib/charts/ticks'
 import { publishDaysFigure, publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 
@@ -91,6 +92,9 @@ export type CityChartCard = {
   /** Names what the rows' sample counts. Required when any row carries one. */
   sampleKey?: string
   marks?: boolean
+  /** Line cards only: gridlines and axis labels, already formatted. */
+  yTicks?: { value: number; label: string }[]
+  xTicks?: { at: number; label: string }[]
 }
 
 export type CityRankInput = {
@@ -388,24 +392,31 @@ export function buildYearCard(
   const first = rows[0]!
   const last = rows[rows.length - 1]!
   const multiple = last.medianClose! / first.medianClose!
+  const series: V3ChartSeries[] = [
+    {
+      name: v3Text(`${opts.subjectName} median close`),
+      points: rows.map((r) => ({
+        value: r.medianClose!,
+        tick: v3Text(String(r.year)),
+        label: v3Text(`$${Math.round(r.medianClose!).toLocaleString('en-US')}`),
+        at: r.year,
+      })),
+    },
+  ]
 
   return {
     key: 'year',
     kind: 'line',
     marks: true,
+    // NO CLAIM on this card: the title is the claim ("Bend median 3.6x since
+    // 2015"), computed from these same rows. The gridlines are compact money
+    // because an axis of "$615,000" labels does not fit the plot's gutter —
+    // every point keeps its exact reading in the hover and the data list.
     title: `${opts.subjectName} median ${multiple.toFixed(1)}x since ${first.year}`,
     displayLine: `Median detached close price per year, ${first.year}–${last.year}.`,
-    series: [
-      {
-        name: v3Text(`${opts.subjectName} median close`),
-        points: rows.map((r) => ({
-          value: r.medianClose!,
-          tick: v3Text(String(r.year)),
-          label: v3Text(`$${Math.round(r.medianClose!).toLocaleString('en-US')}`),
-          at: r.year,
-        })),
-      },
-    ],
+    series,
+    yTicks: moneyTicks(series),
+    xTicks: yearTicks(series),
     source:
       `sale_pricing_facts detached closes, aggregated by the city_year_pricing function. ` +
       `Median close price per calendar year, years with at least 3 closings; ` +

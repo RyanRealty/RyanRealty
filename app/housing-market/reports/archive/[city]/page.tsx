@@ -38,6 +38,7 @@ import {
   type V3ChartPoint,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
+import { countTicks, yearTicks, yoyClaim } from '@/lib/charts/ticks'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { ArchiveYearTable } from './_v3/ArchiveYearTable'
 
@@ -58,9 +59,16 @@ function buildArchiveSoldChart(archive: CityArchive): V3ChartProps | undefined {
       ]
     })
   if (points.length < 2) return undefined
+  const series = [{ name: v3Text('Homes sold'), points }]
+  const claim = yoyClaim({ metric: 'Homes sold', unit: 'count', series })
+  const yTicks = countTicks(series)
+  const xTicks = yearTicks(series)
   return {
     caption: v3Text(`Closed single-family sales by year, ${archive.label}`),
-    series: [{ name: v3Text('Homes sold'), points }],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }
 

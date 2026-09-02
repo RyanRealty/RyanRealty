@@ -11,6 +11,7 @@
 
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
+import { customTicks, seriesClaim, spacedTicks, type ChartUnit } from '@/lib/charts/ticks'
 import {
   v3Text,
   type V3ChartCardProps,
@@ -160,8 +161,70 @@ export function buildCoreChartTabs(data: CoreChartSeries | null | undefined): Co
 /* v3 card form — the same tabs as one V3ChartCard switcher                    */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * How each metric is NAMED and MEASURED in its claim. The names are the
+ * reader's words, not the column's, and the unit decides whether a change
+ * reads as a percent or as points (a share moves in points).
+ */
+const CLAIM_METRIC: Record<CoreChartMetric, string> = {
+  medianClosePrice: 'Median close price',
+  activeInventory: 'Homes for sale',
+  medianDom: 'Median days on market',
+  monthsOfSupply: 'Months of supply',
+  priceCutShare: 'Share of listings with a price cut',
+  closedVolume: 'Homes sold',
+}
+
+const CLAIM_UNIT: Record<CoreChartMetric, ChartUnit> = {
+  medianClosePrice: 'money',
+  activeInventory: 'count',
+  medianDom: 'days',
+  // Months of supply is a ratio measured in months, not a percent, so its
+  // change reads as a percent of itself the way a count's does.
+  monthsOfSupply: 'count',
+  priceCutShare: 'percent',
+  closedVolume: 'count',
+}
+
+/**
+ * The value as the CLAIM writes it. Same number as the point's reading, minus
+ * the noun the metric name already carries: "Homes sold 84 sold" and "Homes
+ * for sale 471 active" are what the plotted labels would otherwise produce.
+ */
+function claimValue(tab: CoreChartTab, value: number): string {
+  if (tab.metric === 'activeInventory' || tab.metric === 'closedVolume') {
+    return Math.round(value).toLocaleString('en-US')
+  }
+  if (tab.metric === 'monthsOfSupply') return `${formatMonthsOfSupply(value)} months`
+  return formatCoreChartReading(tab, value)
+}
+
 /** One tab as a V3Chart panel — the exact conversion MarketCoreCharts renders. */
 export function coreChartForTab(tab: CoreChartTab): V3ChartProps {
+  const series = [
+    {
+      name: v3Text(tab.tabLabel),
+      points: tab.rows.map((row) => ({
+        value: row.value,
+        tick: v3Text(row.label),
+        label: v3Text(formatCoreChartReading(tab, row.value)),
+      })),
+    },
+  ]
+  // EVERY panel of this switcher states its own claim: six metrics share one
+  // card title, and a reader who has just clicked a tab needs to know what
+  // that tab is saying. Monthly ticks read "Aug 2026", so the claim takes the
+  // same month a year back when the window holds it and the window's own
+  // first period when it does not (a weekly tab always the latter).
+  const latestRow = tab.rows[tab.rows.length - 1]
+  const claim = seriesClaim({
+    metric: CLAIM_METRIC[tab.metric],
+    unit: CLAIM_UNIT[tab.metric],
+    series,
+    ...(latestRow ? { value: claimValue(tab, latestRow.value) } : {}),
+  })
+  const yTicks = tab.kind === 'bar' ? [] : customTicks(series, (v) => formatCoreChartAxis(tab.metric, v))
+  const xTicks = tab.kind === 'bar' ? [] : spacedTicks(series, 3)
   return {
     caption: v3Text(`${tab.tabLabel}, ${tab.period}`),
     kind: tab.kind === 'bar' ? ('bars' as const) : ('line' as const),
@@ -170,16 +233,10 @@ export function coreChartForTab(tab: CoreChartTab): V3ChartProps {
     // bars and drops the per-bar key legend — without it V3Chart printed one
     // legend entry PER MONTH (24 swatch rows above the chart at 375px).
     run: tab.kind === 'bar',
-    series: [
-      {
-        name: v3Text(tab.tabLabel),
-        points: tab.rows.map((row) => ({
-          value: row.value,
-          tick: v3Text(row.label),
-          label: v3Text(formatCoreChartReading(tab, row.value)),
-        })),
-      },
-    ],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }
 
@@ -189,7 +246,11 @@ export function formatCoreChartReading(tab: CoreChartTab, value: number): string
     return `$${(Math.round(value / 1000) * 1000).toLocaleString('en-US')}`
   }
   if (tab.metric === 'priceCutShare') return `${value.toFixed(1)}%`
-  if (tab.metric === 'monthsOfSupply') return tab.latestValue
+  // Read THIS point, never the tab's latest. This branch returned
+  // `tab.latestValue` for every month, so the months-of-supply hover, the
+  // accessible reading list, and now the claim all named the latest figure
+  // beside a mark that was measured somewhere else (section 0).
+  if (tab.metric === 'monthsOfSupply') return formatCoreChartValue(tab.metric, value)
   if (tab.metric === 'medianDom') return `${Math.round(value)} days`
   if (tab.metric === 'closedVolume') return `${Math.round(value).toLocaleString('en-US')} sold`
   return `${Math.round(value).toLocaleString('en-US')} active`

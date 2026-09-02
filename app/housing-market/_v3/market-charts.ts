@@ -12,6 +12,16 @@
 
 import { buildYearSeries, type KbYearSeries } from '@/lib/kb/year-series'
 import { formatPriceCompact } from '@/lib/format/money'
+import {
+  countTicks,
+  customTicks,
+  moneyTicks,
+  monthTicks,
+  seriesClaim,
+  spacedTicks,
+  yearTicks,
+  yoyClaim,
+} from '@/lib/charts/ticks'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import {
   v3Text,
@@ -85,9 +95,19 @@ export function buildMonthlyMedianChart(
     if (point) points.push(point)
   }
   if (points.length < 2) return undefined
+  const series = [{ name: v3Text('Median sale'), points }]
+  // Ticks read "Aug 2026", so the claim finds last August when the window
+  // holds it and falls back to the window's own first month when it does not
+  // (the trailing-twelve-month instrument never holds its own prior year).
+  const claim = seriesClaim({ metric: 'Median sale price', unit: 'money', series })
+  const yTicks = moneyTicks(series)
+  const xTicks = spacedTicks(series, 3)
   return {
     caption: v3Text(caption),
-    series: [{ name: v3Text('Median sale'), points }],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }
 
@@ -113,13 +133,19 @@ export function buildYearOverlayChart(
     overlay.push({ name: v3Text(String(year.year)), points })
   }
   if (overlay.length > 0) {
+    const claim = yoyClaim({ metric: 'Median sale price', unit: 'money', series: overlay })
+    const yTicks = moneyTicks(overlay)
     return {
       caption: v3Text(
         leftoverUsed
           ? 'Median close by month, Market Truth leftover, recent years'
           : 'Median sale price by month, recent years',
       ),
+      ...(claim ? { claim: v3Text(claim) } : {}),
       series: overlay,
+      emphasize: 'last',
+      ...(yTicks.length ? { yTicks } : {}),
+      xTicks: monthTicks(MONTH_TICK),
     }
   }
   return buildMonthlyMedianChart(
@@ -177,9 +203,16 @@ export function buildClosedCountChart(
       at: row.year,
     }))
   if (points.length < 2) return undefined
+  const series = [{ name: v3Text('Homes sold'), points }]
+  const claim = yoyClaim({ metric: 'Homes sold', unit: 'count', series })
+  const yTicks = countTicks(series)
+  const xTicks = yearTicks(series)
   return {
     caption: v3Text(caption),
-    series: [{ name: v3Text('Homes sold'), points }],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }
 
@@ -198,9 +231,21 @@ export function buildCompositionChart(
       label: v3Text(part.n.toLocaleString('en-US')),
     }))
   if (points.length < 1) return undefined
+  // The claim on a mix bar is the lead segment's share of the bar itself, so
+  // the total is the sum of the SEGMENTS DRAWN and never a count from another
+  // query (a mix that dropped a zero-unit type would otherwise divide by a
+  // population wider than the one on screen).
+  const total = points.reduce((sum, p) => sum + p.value, 0)
+  const lead = points.reduce((a, p) => (p.value > a.value ? p : a), points[0]!)
+  const share = total > 0 ? Math.round((lead.value / total) * 1000) / 10 : null
+  const claim =
+    share != null
+      ? `${lead.tick} made up ${share}% of the ${total.toLocaleString('en-US')} closed sales.`
+      : null
   return {
     caption: v3Text(caption),
     kind: 'mix',
+    ...(claim ? { claim: v3Text(claim) } : {}),
     series: [{ name: v3Text('Closed units'), points }],
   }
 }
@@ -218,9 +263,13 @@ export function buildAmenityShareChart(
       label: v3Text(`${row.sharePct.toFixed(1)}%`),
     }))
   if (points.length < 1) return undefined
+  const lead = points.reduce((a, p) => (p.value > a.value ? p : a), points[0]!)
   return {
     caption: v3Text(caption),
     kind: 'bars',
+    // The tallest bar, named. Bars carry no gridlines in the atom, so the
+    // claim is the whole of this chart's first read.
+    claim: v3Text(`${lead.tick} leads at ${lead.label} of closed sales.`),
     baselineLabel: v3Text('0%'),
     series: [{ name: v3Text('Share of closes'), points }],
   }
@@ -252,8 +301,17 @@ export function buildClosedVolumeChart(
     })
   }
   if (points.length < 2) return undefined
+  const series = [{ name: v3Text('ALL-TYPE volume'), points }]
+  const claim = yoyClaim({ metric: 'Closed dollar volume', unit: 'money', series })
+  // volumeCompact, not the money formatter: these are billions, and the
+  // gridline has to be written the way the points beside it are.
+  const yTicks = customTicks(series, (v) => volumeCompact(v))
+  const xTicks = yearTicks(series)
   return {
     caption: v3Text(caption),
-    series: [{ name: v3Text('ALL-TYPE volume'), points }],
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    series,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
   }
 }
