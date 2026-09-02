@@ -32,6 +32,8 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Ledger,
+  V3Answers,
+  splitQuietItems,
   V3Quiet,
   V3SectionTracker,
   type V3LedgerPlainRow,
@@ -149,6 +151,12 @@ export default async function ContactPage({ searchParams }: PageProps) {
     { label: 'Value my home', href: valuationHref('/contact') },
   ]
 
+  // Split once, here, so the discarded third bucket is visible rather than
+  // vanishing inside a JSX spread: `prose` holds passages with no question to
+  // sit under, and this page has none. If one ever arrives it belongs in a
+  // Quiet block beside this one, not silently deleted.
+  const contactAnswers = splitQuietItems(faqItems)
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -219,7 +227,15 @@ export default async function ContactPage({ searchParams }: PageProps) {
           />
         )}
 
-        <V3Quiet id="faq" eyebrow="Common questions" heading="Before you write" items={faqItems} />
+        {/* The questions fold; the four doors stay in the flow, which is what
+            V3Answers does under its own six-door ceiling. */}
+        <V3Answers
+          id="faq"
+          eyebrow="Common questions"
+          heading="Before you write"
+          questions={contactAnswers.questions}
+          doors={contactAnswers.doors}
+        />
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only

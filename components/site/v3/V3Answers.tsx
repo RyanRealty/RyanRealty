@@ -94,6 +94,42 @@ export type V3AnswersProps = {
  */
 const FOLD_DOORS_PAST = 6
 
+/**
+ * A legacy Quiet item array, split into what this pattern takes.
+ *
+ * Twelve routes still close on a V3Quiet holding a mixed pile: questions as
+ * `kind: 'prose'` rows with a `term`, and outbound edges as bare
+ * `{ label, href }`. One heading, three jobs, no disclosure. This turns that
+ * pile into the two lists V3Answers wants, so a route migrates in one line
+ * instead of growing its own copy of the same split.
+ *
+ * A prose row with no `term` is NOT a question — it is a legal paragraph or a
+ * disclosure, which is what Quiet is genuinely for — so it is returned in
+ * `prose` for the caller to keep rendering as prose rather than being forced
+ * into a question shape with an empty summary.
+ */
+export function splitQuietItems(
+  items: readonly { kind?: string; term?: string; body?: string | readonly string[]; label?: string; href?: string }[],
+): { questions: V3Answer[]; doors: V3AnswersDoor[]; prose: { body: string | readonly string[] }[] } {
+  const questions: V3Answer[] = []
+  const doors: V3AnswersDoor[] = []
+  const prose: { body: string | readonly string[] }[] = []
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue
+    if (typeof item.href === 'string' && typeof item.label === 'string') {
+      doors.push({ label: item.label, href: item.href })
+      continue
+    }
+    if (item.body == null) continue
+    if (typeof item.term === 'string' && item.term.trim()) {
+      questions.push({ question: item.term, body: item.body })
+    } else {
+      prose.push({ body: item.body })
+    }
+  }
+  return { questions, doors, prose }
+}
+
 /** Trimmed text, or nothing. An empty string is not a label and not a name. */
 function text(value: string | undefined): string | undefined {
   const trimmed = value?.trim()

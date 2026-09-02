@@ -255,7 +255,7 @@ export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Q
  * the outbound doors in a left rail, the questions beside them. Quiet keeps
  * prose that must read as prose.
  */
-export { V3Answers } from './V3Answers'
+export { V3Answers, splitQuietItems } from './V3Answers'
 
 export type { V3AnswersProps, V3Answer, V3AnswersDoor } from './V3Answers'
 

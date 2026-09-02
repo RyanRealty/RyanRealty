@@ -70,7 +70,7 @@ import {
   V3Ledger,
   V3PlaceCharacter,
   V3PlaceDocuments,
-
+  V3Answers,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
@@ -689,11 +689,12 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             grains). The opening Instrument is the H1 head term, so the
             question renders here, as the FAQ section's own heading, with the
             verdict answer as the first item beneath it. */}
-        <V3Quiet
+        {/* A question set belongs in the primitive built for question sets. */}
+        <V3Answers
           id="faq"
           eyebrow="Common questions"
           heading={`Questions about ${neighborhood.name}`}
-          items={faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer }))}
+          questions={faqs.map((item) => ({ question: item.question, body: item.answer }))}
         />
 
         {/* Peer neighborhoods - the same designated-district set, minus this

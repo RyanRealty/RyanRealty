@@ -88,7 +88,7 @@ import {
   V3Heading,
   V3Instrument,
   V3Ledger,
-
+  V3Answers,
   V3Quiet,
   V3SectionTracker,
   type V3ChartCardProps,
@@ -826,11 +826,14 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           />
         ) : null}
 
-        <V3Quiet
+        {/* A question set belongs in the primitive built for question sets:
+            every answer folds, and every answer stays in the served HTML for
+            the crawler that never opens one. */}
+        <V3Answers
           id="faq"
           eyebrow="Common questions"
           heading={`Questions about ${cityName}`}
-          items={faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer }))}
+          questions={faqs.map((item) => ({ question: item.question, body: item.answer }))}
         />
 
         {/* D80: real published guides for this city, never generated filler. */}

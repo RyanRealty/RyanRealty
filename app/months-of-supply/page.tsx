@@ -175,6 +175,8 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
+  V3Answers,
+  splitQuietItems,
   V3Quiet,
   V3SectionTracker,
   type V3InstrumentFigure,
@@ -429,6 +431,11 @@ export default async function MonthsOfSupplyPage() {
     ...MOS_RELATED_LINKS.map((link) => ({ label: link.label, href: link.href })),
   ]
 
+  // Split once, here. `prose` is the bucket for a passage with no question over
+  // it; this page has none, and an item that lost its term would show up as a
+  // dropped row rather than disappearing inside a spread.
+  const mosAnswers = splitQuietItems(closingItems)
+
   const site = getCanonicalSiteUrl()
   const pageUrl = `${site}/months-of-supply`
   const definitionText = `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
@@ -595,12 +602,14 @@ export default async function MonthsOfSupplyPage() {
           />
         ) : null}
 
-        <V3Quiet
+        <V3Answers
           id="faq"
           eyebrow="Common questions"
           heading={MOS_FAQ_TITLE}
           note={MOS_FAQ_NOTE}
-          items={closingItems}
+          questions={mosAnswers.questions}
+          doors={mosAnswers.doors}
+          doorsLabel="The full market report"
         />
       </main>
 
