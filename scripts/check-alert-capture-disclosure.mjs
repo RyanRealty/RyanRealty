@@ -99,7 +99,6 @@ const REQUIREMENTS = [
 // requirement rather than being excused from two.
 const LEDGER = {
   'components/SaveSearchButton.tsx': ['frequency', 'unsubscribe'],
-  'components/site/listing-detail/RoomRestyle.client.tsx': ['frequency', 'unsubscribe'],
 }
 
 const files = [...walkFiles('app'), ...walkFiles('components')].filter(

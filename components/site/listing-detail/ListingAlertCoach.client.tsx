@@ -38,7 +38,7 @@ function alreadyWatchingInThisBrowser(): boolean {
  *   so coach and "Schedule a tour" never become one unreadable blob
  *
  * No shadcn (ci:shadcn-burndown). Dismiss control is a raw button like
- * PriceCtaStrip / RoomRestyle (design-token ignore list).
+ * PriceCtaStrip (design-token ignore list).
  */
 export function ListingAlertCoach({ city }: { city: string | null | undefined }) {
   const [visible, setVisible] = useState(false)

@@ -4,7 +4,7 @@ import { ListingAlertCoach } from '@/components/site/listing-detail/ListingAlert
 /**
  * Listing-detail B1 capture: city + price band (+ beds) for homes like this.
  * Server-safe wrapper so app/listing page stays under the file-size budget.
- * `#listing-like-alerts` is the anchor for PriceCtaStrip + RoomRestyle + coach.
+ * `#listing-like-alerts` is the anchor for PriceCtaStrip + coach.
  * The Sheet owns that id.
  */
 export function ListingLikeThisAlerts({
