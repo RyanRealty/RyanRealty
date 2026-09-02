@@ -1287,3 +1287,18 @@ from live only by rows modified after the row's own computed_at). The
 publish-mixed-instrument-stamp gate was re-expressed from the old page spelling to
 the invariant (stamp composed via publishInstrumentStamp, no ?? clock coalescing)
 and break-tested.
+
+## 2026-09-01 — Intent routing, investor job, seller-ask position (Matt, in-session)
+
+1. **The ArrivalIntent kill is CLARIFIED, not absolute.** Matt: "I killed the doors because how
+   it was implemented looked extremely stupid. If it could be done in a smarter way, yeah, do
+   it." A first-paint triage QUIZ/bar in the old form stays dead; a well-designed intent
+   surface is permitted. Any new implementation must clear the TASTE.md judging ritual and be
+   shown to Matt as rendered screens before shipping wide.
+2. **Investor becomes a real job.** Build `/invest` — honest per the DSCR analysis (Bend does
+   not cash-flow on LTR): income-property searches, rental calculator, market data, capture.
+   Nav entry included. The listing-page investor lens remains the depth layer.
+3. **Seller ask moves up the homepage.** Matt: "move it up… I'm totally relying on you to
+   position these items that bring people into the funnels in the best possible position."
+   Funnel-position authority on public surfaces is delegated; the section SET remains a
+   product decision, its ORDER for conversion is the agent's to optimize and show.
