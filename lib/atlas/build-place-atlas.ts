@@ -99,6 +99,15 @@ function dotStatus(status: string): AtlasDot['s'] | null {
  */
 const lastGood = new Map<string, { tiles: AtlasTile[]; readAt: number }>()
 
+/**
+ * Reads in flight, by scope key. `unstable_cache` does not dedupe concurrent
+ * misses, so a static build starting sixty plat pages in the same city fired
+ * sixty identical reads and pushed other reads past their timeout (10 rail
+ * timeouts on 42e6d051, after plat pages without a polygon began reading at
+ * all). One read per scope per process; the rest await it.
+ */
+const inFlight = new Map<string, Promise<AtlasTile[]>>()
+
 export async function readAtlasTiles(
   cities: readonly string[],
   nowMs = Date.now(),
@@ -106,7 +115,19 @@ export async function readAtlasTiles(
   const closedFromDate = new Date(nowMs - SOLD_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
   const key = [...cities].map((c) => c.toLowerCase().trim()).sort().join('|') || '*'
   try {
-    const tiles = await getAtlasTiles({ cities, closedFromDate })
+    const pending = inFlight.get(`${key}@${closedFromDate}`)
+    let tiles: AtlasTile[]
+    if (pending) {
+      tiles = await pending
+    } else {
+      const read = getAtlasTiles({ cities, closedFromDate })
+      inFlight.set(`${key}@${closedFromDate}`, read)
+      try {
+        tiles = await read
+      } finally {
+        inFlight.delete(`${key}@${closedFromDate}`)
+      }
+    }
     lastGood.set(key, { tiles, readAt: nowMs })
     return { tiles, complete: true, readAt: nowMs }
   } catch (error) {
