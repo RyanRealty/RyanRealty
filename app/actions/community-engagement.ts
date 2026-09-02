@@ -46,33 +46,6 @@ export async function removeCommunityLike(entityKey: string): Promise<{ error: s
   return { error: error?.message ?? null }
 }
 
-/** Called when a user saves a community; bumps save_count in community_engagement_metrics. */
-export async function incrementCommunitySaveCount(entityKey: string): Promise<void> {
-  const key = entityKey.trim().toLowerCase()
-  if (!key || !key.includes(':')) return
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !serviceKey?.trim()) return
-  const supabase = createServiceClient()
-  const { data } = await communityMetrics(supabase).select('save_count').eq('entity_key', key).maybeSingle()
-  if (data) {
-    await communityMetrics(supabase)
-      .update({
-        save_count: (data as { save_count: number }).save_count + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('entity_key', key)
-  } else {
-    await communityMetrics(supabase).insert({
-      entity_key: key,
-      view_count: 0,
-      like_count: 0,
-      save_count: 1,
-      share_count: 0,
-      updated_at: new Date().toISOString(),
-    })
-  }
-}
 
 /** Called when a user unsaves a community; decrements save_count. */
 export async function decrementCommunitySaveCount(entityKey: string): Promise<void> {
