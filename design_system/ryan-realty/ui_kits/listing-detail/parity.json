@@ -96,6 +96,11 @@
       "blocking": true
     },
     {
+      "name": "V3Atlas",
+      "section": "The living map around this home (2026-09-02): the recorded neighborhood, else the city, as the frame; every listing of every type inside it as dots from buildPlaceAtlas; the recorded plats as doors; THIS home held (highlight). The Google location map stays as the fallback when no boundary resolves.",
+      "blocking": true
+    },
+    {
       "name": "ListingLocationMap",
       "section": "Location map.",
       "blocking": true

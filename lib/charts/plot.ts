@@ -458,7 +458,9 @@ export function buildBarPlot(
     }
   }
   if (!(yMax > 0)) return null
-  const yMinLabel = opts?.baselineLabel ?? points[points.length - 1]!.label
+  // Bars grow from zero, so the rail's floor is zero — never the last bar's
+  // own value, which read as an axis minimum (evaluator pass three, D3).
+  const yMinLabel = opts?.baselineLabel ?? '0'
 
   const bars: BarRect[] = []
   const ticks: BarPlot['ticks'] = []

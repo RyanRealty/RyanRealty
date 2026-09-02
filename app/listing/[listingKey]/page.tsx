@@ -55,6 +55,7 @@ import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCal
 import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
+import { buildListingAtlas } from './_v3/listing-atlas'
 import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentityLine'
 import { ListingFeaturedHomes } from '@/components/site/listing-detail/ListingFeaturedHomes.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
@@ -90,6 +91,8 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
+  V3Atlas,
+  v3Text,
 } from '@/components/site/v3'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
@@ -425,6 +428,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
       return null
     })(),
   ])
+  // The living map around this home: the neighborhood (else the city) as the
+  // frame, every listing inside it, the recorded plats as doors, this home
+  // held. Same population and builder as the place pages.
+  const listingAtlas = await buildListingAtlas({
+    city: listing.city ?? '',
+    citySlug: listing.citySlug ?? null,
+    cityName: listing.city ?? null,
+    neighborhoodSlug: listing.neighborhoodSlug ?? null,
+    neighborhoodName: placeContext.neighborhood?.label ?? listing.neighborhoodName ?? null,
+    boundary: placeBoundary,
+  }).catch(() => null)
 
   const { isListingSaved } = await import('@/app/actions/saved-listings')
   const initialSaved = await isListingSaved(listing.listingKey).catch(() => false)
@@ -538,7 +552,30 @@ export default async function ListingDetailPage({ params }: PageProps) {
           ratePct={calcDefaults?.mortgageRate ?? null}
         />
       ) : null}
-      <ListingLocationMap
+      {listingAtlas ? (
+        <V3Atlas
+          id="location"
+          variant="dots"
+          headingLevel={2}
+          headline={v3Text(`${listingAtlas.frameName} around this home`)}
+          dots={listingAtlas.atlas.dots}
+          regions={listingAtlas.regions}
+          types={listingAtlas.atlas.types}
+          events={listingAtlas.atlas.events}
+          source={listingAtlas.atlas.source}
+          stamp={listingAtlas.atlas.stamp}
+          incomplete={!listingAtlas.atlas.complete}
+          highlight={{ key: listing.listingKey, label: 'This home' }}
+        >
+          <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
+          {listingAtlas.frameHref ? (
+            <p className="listing-detail__lifestyle">
+              <a href={listingAtlas.frameHref}>Every home for sale in {listingAtlas.frameName}</a>
+            </p>
+          ) : null}
+        </V3Atlas>
+      ) : (
+        <ListingLocationMap
         lat={listing.lat}
         lng={listing.lng}
         boundary={placeBoundary}
@@ -553,7 +590,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
         href={listingHref}
         inventoryHref={inventoryDoor?.href}
         inventoryLabel={inventoryDoor?.name}
-      />
+        />
+      )}
       <SchoolsBlock listing={listingWithPhotos} />
       {neighborhoodContent &&
       (placeContext.neighborhood?.label ?? listing.neighborhoodName) &&

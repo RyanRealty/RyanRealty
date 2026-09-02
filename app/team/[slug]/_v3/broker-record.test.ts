@@ -77,7 +77,8 @@ describe('buildBrokerRecord', () => {
   it('charts closings by year with the partial year standing alone', () => {
     expect(record.chart?.kind).toBe('bars')
     const ticks = record.chart?.series?.[0]?.points.map((p) => p.tick)
-    expect(ticks).toEqual(['2024', '2025', '2026 to date'])
+    expect(ticks).toEqual(['2024', '2025', '2026'])
+    expect(record.chart?.series?.[0]?.points.map((p) => p.label)).toEqual(['1', '2', '1 to date'])
     expect(record.chart?.claim).toBe('Closed sales 1 in 2026 so far.')
   })
 

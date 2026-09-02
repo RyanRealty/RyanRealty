@@ -110,8 +110,10 @@ export function buildBrokerRecord(sales: readonly BrokerSaleTile[], nowMs = Date
     .sort((a, b) => a[0] - b[0])
     .map(([year, n]) => ({
       value: n,
-      tick: v3Text(year === thisYear ? `${year} to date` : String(year)),
-      label: v3Text(n.toLocaleString('en-US')),
+      // The tick stays a year (a long tick overlaps its neighbour at 375,
+      // pass three D2); the partial year says so in its reading.
+      tick: v3Text(String(year)),
+      label: v3Text(year === thisYear ? `${n.toLocaleString('en-US')} to date` : n.toLocaleString('en-US')),
       at: year,
     }))
   let chart: V3ChartProps | undefined
@@ -120,7 +122,7 @@ export function buildBrokerRecord(sales: readonly BrokerSaleTile[], nowMs = Date
     const last = points[points.length - 1]!
     const claim =
       last.at === thisYear
-        ? yoyClaim({ metric: 'Closed sales', unit: 'count', series: [{ name: series[0]!.name, points: [last] }], latestLabel: `${thisYear} so far` })
+        ? yoyClaim({ metric: 'Closed sales', unit: 'count', series: [{ name: series[0]!.name, points: [last] }], value: last.value.toLocaleString('en-US'), latestLabel: `${thisYear} so far` })
         : yoyClaim({ metric: 'Closed sales', unit: 'count', series })
     const yTicks = countTicks(series)
     const xTicks = yearTicks(series)

@@ -85,8 +85,8 @@ export function subdivisionSalesChart(
     .sort((a, b) => a.year - b.year)
     .map((row) => ({
       value: row.closedCount,
-      tick: v3Text(row.year === thisYear ? `${row.year} to date` : String(row.year)),
-      label: v3Text(row.closedCount.toLocaleString('en-US')),
+      tick: v3Text(String(row.year)),
+      label: v3Text(row.year === thisYear ? `${row.closedCount.toLocaleString('en-US')} to date` : row.closedCount.toLocaleString('en-US')),
       at: row.year,
     }))
   if (points.length < 2) return undefined
@@ -102,6 +102,7 @@ export function subdivisionSalesChart(
           metric: 'Closed sales',
           unit: 'count',
           series: [{ name: series[0]!.name, points: [last] }],
+          value: last.value.toLocaleString('en-US'),
           latestLabel: `${thisYear} so far`,
         })
       : yoyClaim({ metric: 'Closed sales', unit: 'count', series })

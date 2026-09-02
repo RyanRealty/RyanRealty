@@ -161,7 +161,23 @@ count — `brokerageTileToRow(tile, { anyArea: true })`; the brokerage feed keep
 comment). Open: C9 (/about fires two /api/visitors/track POSTs per load; automated reloads trip
 the endpoint's 429), B12.
 
-**LISTING PAGE — THE NEXT CLASS (surveyed 2026-09-02, not started).** Measured on
+**BROKERAGE PASS THREE (scratchpad `brokerage-eval-3.md`): /team/[slug] 74 → 82, /reviews 88.** All
+ten pass-three claims TRUE. Closed in the next commit: D1 (a record map's nature comes from the whole
+population, never the filtered counts — an empty price filter no longer turns it into a for-sale
+map), D2 (year ticks stay years; the partial year says "to date" in its reading and the claim
+prints the count), D3 (a bar rail's floor reads 0, never the last bar's value), D12 (the reviews
+strip's tab stop rests on a mark the filter shows). Open: D4–D11, D13 (see the report).
+
+**LISTING PAGE — STARTED (this commit): the living map around this home.** `app/listing/[listingKey]/
+_v3/listing-atlas.ts` reads the recorded neighborhood boundary by slug (else the page's city
+boundary), `buildPlaceAtlas` scoped to it, the plats as doors; the page mounts `V3Atlas` with
+`highlight={{ key: listingKey, label: 'This home' }}` (new prop: the held dot + a label) in the
+location map's slot, the Google map as the fallback when no boundary resolves; the listing parity
+contract binds V3Atlas. Measured on 2533 Pine Terrace: "Awbrey Butte around this home", 75 for
+sale / 24 pending / 11 sold, 99 dots, 80 plats, this home held. The rest of the listing plan below
+is NOT started.
+
+**LISTING PAGE — THE NEXT CLASS (surveyed 2026-09-02).** Measured on
 `/homes-for-sale/bend/awbrey-butte/rivers-edge-village/2533-pine-terrace-220223522` at 1280:
 13,030px tall, 23 sections, 119 images, 104 buttons, 1 chart, 3 map surfaces, 1,817 words — the
 data is all there (payment calculator, schools, sale history, "how the ask sits against nearby

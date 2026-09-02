@@ -122,6 +122,11 @@ export function V3Proof({
   }, [quotes, first, span])
 
   const shown = useMemo(() => (year == null ? quotes : quotes.filter((q) => q.year === year)), [quotes, year])
+  /* The strip's one tab stop rests on a mark the filter shows (pass three, D12). */
+  const defaultMarkId = useMemo(
+    () => (year == null ? marks[0] : marks.find((m) => m.q.year === year))?.q.id ?? null,
+    [marks, year],
+  )
 
   /* The mark whose centre is nearest the pointer, in screen pixels: marks in
      dense months overlap, and the topmost box is not the one under the eye. */
@@ -258,7 +263,7 @@ export function V3Proof({
                 )}
                 style={{ left: `${(x / STRIP_W) * 100}%`, top: `${(y / STRIP_H) * 100}%` }}
                 data-mark={q.id}
-                tabIndex={focus === q.id || (focus == null && marks[0]?.q.id === q.id) ? 0 : -1}
+                tabIndex={focus === q.id || (focus == null && defaultMarkId === q.id) ? 0 : -1}
                 aria-label={`${q.author}, ${q.attribution}`}
                 title={`${q.author}, ${q.attribution}`}
                 onFocus={() => setFocus(q.id)}
@@ -284,7 +289,10 @@ export function V3Proof({
               type="button"
               className="v3-proof__chip"
               aria-pressed={year == null}
-              onClick={() => setYear(null)}
+              onClick={() => {
+                setYear(null)
+                setFocus(null)
+              }}
             >
               All {quotes.length}
             </button>
@@ -296,7 +304,10 @@ export function V3Proof({
                   type="button"
                   className="v3-proof__chip"
                   aria-pressed={year === y}
-                  onClick={() => setYear((cur) => (cur === y ? null : y))}
+                  onClick={() => {
+                    setYear((cur) => (cur === y ? null : y))
+                    setFocus(null)
+                  }}
                 >
                   {y} <span className="v3-proof__chip-n">{n}</span>
                 </button>

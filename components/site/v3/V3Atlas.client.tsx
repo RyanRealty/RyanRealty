@@ -134,6 +134,11 @@ export type V3AtlasProps = {
    * corner of the whole region. Regions outside the frame are clipped.
    */
   fit?: 'regions' | 'dots'
+  /**
+   * One dot held above the rest and named — the home a listing page is about.
+   * Matched by the dot's key; absent from the dots, nothing is drawn.
+   */
+  highlight?: { key: string; label: string }
   children?: ReactNode
   className?: string
 }
@@ -219,6 +224,7 @@ export function V3Atlas({
   source,
   stamp,
   fit = 'regions',
+  highlight,
   noun: nounProp,
   incomplete,
   events,
@@ -413,8 +419,13 @@ export function V3Atlas({
     })
     return { forSale, pending, sold, closed, listed }
   }, [dots, isOn])
-  /* A record map: every dot is a closing, none is for sale. */
-  const closingsMap = counts.closed > 0 && counts.forSale === 0 && counts.pending === 0
+  /* A record map: every dot is a closing, none is for sale. Read from the
+     whole population, never the filtered counts: an empty price filter must
+     not turn a broker's record into a for-sale map (pass three, D1). */
+  const closingsMap = useMemo(
+    () => dots.some((d) => d.s === 'closed') && !dots.some((d) => d.s === 'active' || d.s === 'pending'),
+    [dots],
+  )
 
   const typesOn = useMemo(() => types.filter((t) => !offTypes.has(t.key)), [types, offTypes])
   const allTypesOn = typesOn.length === types.length
@@ -809,6 +820,7 @@ export function V3Atlas({
                             `v3-atlas__dot--${d.t}`,
                             d.s === 'pending' && 'v3-atlas__dot--pending',
                             d.s === 'closed' && 'v3-atlas__dot--closed',
+                            highlight && d.k === highlight.key && 'is-home',
                             !isOn(d) && 'is-off',
                           )}
                         />
@@ -882,6 +894,19 @@ export function V3Atlas({
               {/* Town labels in real type, placed from the measured view. */}
               {view ? (
                 <div className="v3-atlas__labels" aria-hidden="true">
+                  {highlight
+                    ? dots
+                        .filter((d) => d.k === highlight.key)
+                        .slice(0, 1)
+                        .map((d) => {
+                          const [x, y] = toPx(...proj.toXY(d.lng, d.lat))
+                          return (
+                            <span key="home" className="v3-atlas__label v3-atlas__label--home" style={{ left: x, top: y - 14 }}>
+                              {highlight.label}
+                            </span>
+                          )
+                        })
+                    : null}
                   {towns
                     .filter((s) => s.anchor && !isFrame(s))
                     .map((s) => {
