@@ -43,9 +43,11 @@ communities repeats the towns ledger and discards its video posters, footer is 2
 Matt's reaction to the shipped top of page: "is this supposed to wow me?" — it is not, and he
 is right: the opening is a stock hero plus three text doors.
 
-**IN FLIGHT — the living map (worktree, NOT on main):** branch `wt/home-opening-20260901` at
-`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, tip `d08d596e`, dev server
-`wt-home-opening-dev` (port 3321). `V3Atlas` (new barrel pattern, `components/site/v3/
+**LIVE ON MAIN (33ae8f0a, production READY) — the living map:** built on branch
+`wt/home-opening-20260901` (`/Users/matthewryan/RyanRealty-wt-home-opening-20260901`, dev server
+`wt-home-opening-dev`, port 3321); `npm run push` from the worktree pushed it onto main before
+Matt's pick, so production serves variant `dots` by default and `?opening=heat|split` for the
+others. Matt picks from the decision sheet; the losers are deleted on main. `V3Atlas` (new barrel pattern, `components/site/v3/
 V3Atlas.client.tsx` + `.css`, projection in `lib/geo/project-svg.ts`) replaces the photo
 Stage on the homepage: 3,290 active + 896 pending listings as points on a flat SVG
 projection, 6 towns + 14 communities + 13 Bend neighborhoods as touchable silhouettes, a
