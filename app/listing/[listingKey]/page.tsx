@@ -94,6 +94,7 @@ import {
   V3Atlas,
   v3Text,
 } from '@/components/site/v3'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
@@ -561,6 +562,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
           headline={v3Text(`${listingAtlas.frameName} around this home`)}
           dots={listingAtlas.atlas.dots}
           regions={listingAtlas.regions}
+          basemap={basemapForRegions(listingAtlas.regions, {
+            dots: listingAtlas.atlas.dots,
+            fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
+          })}
           types={listingAtlas.atlas.types}
           events={listingAtlas.atlas.events}
           source={listingAtlas.atlas.source}

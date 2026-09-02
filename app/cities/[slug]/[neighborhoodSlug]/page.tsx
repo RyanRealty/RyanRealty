@@ -77,6 +77,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { atlasRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
@@ -556,6 +557,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             headline={v3Text(`${neighborhood.name} right now`)}
             dots={atlasView.dots}
             regions={atlasRegions}
+            basemap={basemapForRegions(atlasRegions)}
             types={atlasView.types}
             events={atlasView.events}
             source={atlasView.source}

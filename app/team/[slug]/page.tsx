@@ -50,6 +50,7 @@ import { buildBrokerRecord, brokerRecordSource, brokerRecordStamp } from './_v3/
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { formatDate } from '@/lib/format/date'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const OFFICE_NAME = 'Ryan Realty'
@@ -280,6 +281,7 @@ export default async function TeamMemberPage({ params }: Props) {
             headline={v3Text(`Where ${firstName} has closed`)}
             dots={record.dots}
             regions={regionAtlas?.regions ?? []}
+            basemap={basemapForRegions(regionAtlas?.regions ?? [], { dots: record.dots, fit: 'dots' })}
             types={record.types}
             events={[]}
             source={recordSource}

@@ -126,6 +126,7 @@ import {
   placeMedianChartCaption,
 } from '@/app/cities/[slug]/_v3/city-sections'
 import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return getAllResortCommunities().map((c) => ({ slug: c.slug }))
@@ -692,6 +693,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             headline={v3Text(`${publicName} right now`)}
             dots={atlasView.dots}
             regions={atlasRegions}
+            basemap={basemapForRegions(atlasRegions)}
             types={atlasView.types}
             events={atlasView.events}
             source={atlasView.source}

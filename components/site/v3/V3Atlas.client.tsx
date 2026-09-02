@@ -51,9 +51,12 @@ import {
   outerRings,
   padBbox,
   pointInRings,
+  pointsToPath,
   ringsToPath,
   type Ring,
 } from '@/lib/geo/project-svg'
+import { recordFrame } from '@/lib/geo/record-frame'
+import { decodeBasemapFeature, type Basemap, type BasemapFeature } from '@/lib/geo/basemap'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
@@ -141,6 +144,12 @@ export type V3AtlasProps = {
    * outlines are a subset (a plat cap): the source line says "N of M".
    */
   outlinedOf?: number
+  /**
+   * The roads, rivers and lakes drawn under everything else — context, so a
+   * dot has a place rather than floating in cream. Clipped and thinned to the
+   * frame by the page (lib/geo/basemap-source.ts); absent, the map draws none.
+   */
+  basemap?: Basemap | null
   children?: ReactNode
   className?: string
 }
@@ -227,6 +236,7 @@ export function V3Atlas({
   fit = 'regions',
   highlight,
   outlinedOf,
+  basemap,
   noun: nounProp,
   incomplete,
   events,
@@ -254,45 +264,32 @@ export function V3Atlas({
     // 1st–99th percentile in each axis. A lone listing an hour into the high
     // desert stays counted (the source says so) without shrinking the map.
     const baseRings = shapes.filter((s) => s.kind === 'town').flatMap((s) => s.rings)
+    // A record map (fit: dots) has no boundary of its own to sit inside, so
+    // the frame is computed from the dots and the towns that hold them:
+    // outliers stay out (Ashland is counted and named beyond the edge, pass
+    // two C1) and a tight cluster still frames wide enough for a town label
+    // to land in the stage (round five). See lib/geo/record-frame.ts.
+    if (fit === 'dots') {
+      const frame = recordFrame(
+        dots,
+        shapes.filter((s) => s.kind === 'town').map((s) => ({ id: s.id, rings: s.rings })),
+      )
+      const padded = padBbox(frame.bbox ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.1)
+      return makeProjection(padded, 1000)
+    }
+    // The regional map frames the basin, not the outliers: the base
+    // silhouettes plus the dots' 1st–99th percentile in each axis.
     const lons = dots.map((d) => d.lng).sort((a, b) => a - b)
     const lats = dots.map((d) => d.lat).sort((a, b) => a - b)
-    // A record map (fit: dots) frames the dense core by an IQR fence per
-    // axis: twenty closings around Bend and one in Ashland frame Bend, and
-    // the Ashland one is counted and named beyond the edge, not dragged into
-    // a frame that is then mostly cream (evaluator pass two, C1). The 1st–99th
-    // percentile core is for the regional map, where the base silhouettes
-    // carry the frame anyway.
-    const fence = (sorted: number[]): [number, number] => {
-      const q1 = quantile(sorted, 0.25)
-      const q3 = quantile(sorted, 0.75)
-      // Three IQRs, not one and a half: a broker's twenty closings around
-      // Bend put Madras (40 miles) inside the frame and Ashland (150) beyond.
-      const iqr = Math.max(q3 - q1, 0.06)
-      const lo = q1 - 3 * iqr
-      const hi = q3 + 3 * iqr
-      // Snap to the dots the fence keeps, so the frame hugs them rather than
-      // the fence's own reach into empty ground.
-      const kept = sorted.filter((v) => v >= lo && v <= hi)
-      return kept.length > 0 ? [kept[0]!, kept[kept.length - 1]!] : [sorted[0]!, sorted[sorted.length - 1]!]
-    }
     const core: Ring =
       lons.length > 0
-        ? fit === 'dots'
-          ? (() => {
-              const [lo1, hi1] = fence(lons)
-              const [lo2, hi2] = fence(lats)
-              return [
-                [lo1, lo2],
-                [hi1, hi2],
-              ] as const
-            })()
-          : [
-              [quantile(lons, 0.01), quantile(lats, 0.01)],
-              [quantile(lons, 0.99), quantile(lats, 0.99)],
-            ]
+        ? [
+            [quantile(lons, 0.01), quantile(lats, 0.01)],
+            [quantile(lons, 0.99), quantile(lats, 0.99)],
+          ]
         : []
-    const b = bboxOfRings(fit === 'dots' && core.length > 0 ? [core] : core.length > 0 ? [...baseRings, core] : baseRings)
-    const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, fit === 'dots' ? 0.1 : 0.04)
+    const b = bboxOfRings(core.length > 0 ? [...baseRings, core] : baseRings)
+    const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
     return makeProjection(padded, 1000)
   }, [shapes, dots, fit])
 
@@ -301,6 +298,29 @@ export function V3Atlas({
     () => shapes.map((s) => ({ ...s, d: ringsToPath(s.rings, proj) })),
     [shapes, proj],
   )
+
+  /* The basemap, decoded once and projected with the same functions the
+     recorded boundaries use — one projection, so a road meets the city limit
+     it actually runs through. */
+  const basemapPaths = useMemo(() => {
+    if (!basemap) return null
+    const place = (features: readonly BasemapFeature[], close: boolean) =>
+      features
+        .flatMap((f) =>
+          decodeBasemapFeature(f, basemap.q).map((points) => ({
+            cls: f.c,
+            name: f.n,
+            d: close ? ringsToPath([points], proj) : pointsToPath(points, proj),
+          })),
+        )
+        .filter((p) => p.d.length > 0)
+    const built = {
+      bodies: place(basemap.bodies, true),
+      waterways: place(basemap.waterways, false),
+      roads: place(basemap.roads, false),
+    }
+    return built.bodies.length + built.waterways.length + built.roads.length > 0 ? built : null
+  }, [basemap, proj])
   const towns = useMemo(() => paths.filter((s) => s.kind === 'town'), [paths])
   /* Largest first, so a community inside a neighborhood is painted on top
      and takes the pointer. */
@@ -310,12 +330,15 @@ export function V3Atlas({
      at the edge (pass five). */
   const isFrame = useCallback(
     (s: RegionShape) => {
+      // A record map's frame is computed, not named by the headline: the town
+      // filling it is the answer to "where", so it keeps its label.
+      if (fit === 'dots') return false
       if (!s.bbox) return false
       const [x0, y0] = proj.toXY(s.bbox.minLon, s.bbox.maxLat)
       const [x1, y1] = proj.toXY(s.bbox.maxLon, s.bbox.minLat)
       return Math.abs(x1 - x0) / proj.width > 0.8 || Math.abs(y1 - y0) / proj.height > 0.8
     },
-    [proj],
+    [proj, fit],
   )
   const wide = proj.width / proj.height > 1.35
 
@@ -797,6 +820,28 @@ export function V3Atlas({
                       : `Map with ${counts.forSale.toLocaleString('en-US')} listings for sale`
                 }
               >
+                {/* 0. The basemap: the highway skeleton, the named rivers and
+                    the lakes, drawn in the register under everything so a
+                    reader can place a dot without a foreign tile layer. */}
+                {basemapPaths ? (
+                  <g className="v3-atlas__basemap" aria-hidden="true">
+                    {basemapPaths.bodies.map((p, i) => (
+                      <path key={`w-${i}`} d={p.d} className={`v3-atlas__water v3-atlas__water--${p.cls}`}>
+                        {p.name ? <title>{p.name}</title> : null}
+                      </path>
+                    ))}
+                    {basemapPaths.waterways.map((p, i) => (
+                      <path key={`s-${i}`} d={p.d} className={`v3-atlas__stream v3-atlas__stream--${p.cls}`}>
+                        {p.name ? <title>{p.name}</title> : null}
+                      </path>
+                    ))}
+                    {basemapPaths.roads.map((p, i) => (
+                      <path key={`r-${i}`} d={p.d} className={`v3-atlas__road v3-atlas__road--${p.cls}`}>
+                        {p.name ? <title>{p.name}</title> : null}
+                      </path>
+                    ))}
+                  </g>
+                ) : null}
                 <g className="v3-atlas__towns">
                   {towns.map((s) => (
                     <path
@@ -975,6 +1020,9 @@ export function V3Atlas({
                   ? ` ${beyond.n} of the ${beyond.on.toLocaleString('en-US')} ${beyond.n === 1 ? 'sits' : 'sit'} beyond the frame's edges: counted in every figure, not drawn.`
                   : ''}
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
+                {basemapPaths && basemap?.source
+                  ? ` Roads, rivers and lakes: ${basemap.source}, drawn in this map's own projection.`
+                  : ''}
               </p>
             </details>
           ) : null}

@@ -216,3 +216,9 @@ docs/design-audit/assets/fix-*.png
 # Compiled OCR helper — build with:
 #   swiftc -O -o scripts/place-documents/ocr scripts/place-documents/ocr.swift
 scripts/place-documents/ocr
+
+# TIGER download + ingest payload for the living map's basemap. The two tier
+# files under data/basemap/ ARE tracked; rebuild with:
+#   node scripts/gis/build-basemap-skeleton.mjs
+.basemap-work/
+data/basemap/central-oregon-detail.ndjson

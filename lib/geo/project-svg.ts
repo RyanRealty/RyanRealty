@@ -75,6 +75,22 @@ export function ringsToPath(rings: readonly Ring[], proj: Projection, decimals =
 }
 
 /**
+ * SVG path data for an OPEN line — a road, a river. Unlike `ringsToPath` it
+ * never closes the path and it keeps a two-point segment, which is most of what
+ * a road network is made of.
+ */
+export function pointsToPath(points: readonly LonLat[], proj: Projection, decimals = 1): string {
+  if (points.length < 2) return ''
+  const f = (n: number) => n.toFixed(decimals)
+  let d = ''
+  points.forEach(([lon, lat], i) => {
+    const [x, y] = proj.toXY(lon, lat)
+    d += `${i === 0 ? 'M' : 'L'}${f(x)} ${f(y)}`
+  })
+  return d
+}
+
+/**
  * Outer rings of a GeoJSON Polygon or MultiPolygon. Holes are dropped: the
  * atlas draws places as silhouettes and tests membership against the outer
  * boundary, which is what a visitor means by "in Tetherow".

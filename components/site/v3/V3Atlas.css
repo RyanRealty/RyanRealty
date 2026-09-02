@@ -379,6 +379,56 @@
 }
 
 /* Silhouettes ------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   The basemap: the highway skeleton, the named rivers and the lakes. Context,
+   not content — every weight sits under the lightest town outline (55% navy,
+   1.2px), so a road never competes with a boundary or a dot. Two colours only,
+   navy on cream, per the design system.
+   -------------------------------------------------------------------------- */
+
+.v3-atlas__basemap {
+  pointer-events: none;
+}
+
+.v3-atlas__road {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* A US highway is the spine a reader finds first. */
+.v3-atlas__road--primary {
+  stroke: color-mix(in srgb, var(--v3-navy) 34%, transparent);
+  stroke-width: 1.6;
+}
+
+.v3-atlas__stream {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 26%, transparent);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* An irrigation canal is a straight line a river never is: lighter, so the
+   Deschutes still reads as the river. */
+.v3-atlas__stream--canal {
+  stroke: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  stroke-width: 0.7;
+  stroke-dasharray: 5 4;
+}
+
+.v3-atlas__water {
+  fill: color-mix(in srgb, var(--v3-navy) 12%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 26%, transparent);
+  stroke-width: 0.8;
+  vector-effect: non-scaling-stroke;
+}
+
 .v3-atlas__town {
   fill: color-mix(in srgb, var(--v3-navy) 5%, transparent);
   stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);

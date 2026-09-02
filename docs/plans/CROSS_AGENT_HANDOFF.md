@@ -162,8 +162,17 @@ simplified per class), a DAL read by bbox + class, and an Atlas layer under the 
 the region frame; arterials + local streets + the river inside a neighborhood frame). Never a
 Google/Mapbox tile layer under the SVG (different projection, per-view cost, foreign style).
 
+**SHIPPED c5b56ed1 (2026-09-02, pushed, deploy verified separately): decision (1) — heat, split,
+`?opening`, the `variant` prop and the `V3AtlasVariant` export are deleted; V3Atlas is dots-only;
+the homepage parity.json carries `tasteReview` 86 and left the taste baseline (20 remain). The
+primary worktree `RyanRealty-wt-home-opening-20260901` was fast-forwarded to it. After the push,
+three Workflows ran in this session: an eight-surface evaluator round (homepage, listing Bend /
+Redmond / a no-boundary city, team Matt / Rebecca, reviews, subdivision chart at 375; two skeptics
+per verdict; a completeness critic), the roads-basemap research, and the listing-page research —
+their findings are the next block above this one when it is written.**
+
 **PASS FOUR (scratchpad `brokerage-eval-4.md`): listing map 74 (E1 label covers the dot), team 85
-(D4), reviews 89 ships.** Fixed in the next commit: E1/E9 (the home label wins its transform, clamped
+(D4), reviews 89 ships.** Fixed in c5b56ed1: E1/E9 (the home label wins its transform, clamped
 inside the stage), E2 (the home's own plat is always outlined, cap or no cap), E3 (`outlinedOf`: "outlines
 N of the M places with a recorded boundary"), E4/E12 (`is-stacked` mount for a narrow column), E5 (chips
 rail capped at 24), E6 (`.v3-atlas__door`), E7 (sold dots drawn, lighter), E8 (a second dedupe pass
@@ -188,7 +197,7 @@ comment). Open: C9 (/about fires two /api/visitors/track POSTs per load; automat
 the endpoint's 429), B12.
 
 **BROKERAGE PASS THREE (scratchpad `brokerage-eval-3.md`): /team/[slug] 74 → 82, /reviews 88.** All
-ten pass-three claims TRUE. Closed in the next commit: D1 (a record map's nature comes from the whole
+ten pass-three claims TRUE. Closed in 84223da2: D1 (a record map's nature comes from the whole
 population, never the filtered counts — an empty price filter no longer turns it into a for-sale
 map), D2 (year ticks stay years; the partial year says "to date" in its reading and the claim
 prints the count), D3 (a bar rail's floor reads 0, never the last bar's value), D12 (the reviews
@@ -201,7 +210,7 @@ overlapping places counts in both chips), D5 (outlines with 0 closings still ope
 record map), D9 (the beyond-frame sentence ignores the filter). D6 closed: every bar run, however
 short, prints its ticks under its bars.
 
-**LISTING PAGE — STARTED (this commit): the living map around this home.** `app/listing/[listingKey]/
+**LISTING PAGE — STARTED (84223da2, finished for the map in c5b56ed1): the living map around this home.** `app/listing/[listingKey]/
 _v3/listing-atlas.ts` reads the recorded neighborhood boundary by slug (else the page's city
 boundary), `buildPlaceAtlas` scoped to it, the plats as doors; the page mounts `V3Atlas` with
 `highlight={{ key: listingKey, label: 'This home' }}` (new prop: the held dot + a label) in the

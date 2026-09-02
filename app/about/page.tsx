@@ -63,6 +63,7 @@ import {
 import { AboutFaces } from './_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from './_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 const ROUTE_PATH = '/about'
 
@@ -216,6 +217,7 @@ export default async function AboutPage() {
           headline={v3Text('Where we work')}
           dots={atlas.dots}
           regions={atlasRegions}
+          basemap={basemapForRegions(atlasRegions)}
           types={atlas.types}
           events={atlas.events}
           source={atlas.source}

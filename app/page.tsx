@@ -60,6 +60,7 @@ import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { SellValueForm } from '@/app/sell/_v3/SellValueForm'
 import { SellCapture } from '@/app/sell/_v3/SellCapture'
 import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
+import { regionBasemap } from '@/lib/geo/basemap-source'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -293,6 +294,7 @@ export default async function Home() {
           source={atlas.source}
           stamp={atlas.stamp}
           incomplete={!atlas.complete}
+          basemap={regionBasemap()}
         >
           <HomeHeroSearch />
         </V3Atlas>

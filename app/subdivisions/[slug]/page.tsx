@@ -172,6 +172,7 @@ import {
   platStatsTrace,
   type PlatScope,
 } from './_v3/subdivision-traces'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 export const dynamicParams = true
 // FORCE-DYNAMIC, NOT ISR — this is the fix for the fleet's oldest silent 500.
@@ -647,6 +648,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             headline={v3Text(`${displayName} right now`)}
             dots={atlasView.dots}
             regions={atlasRegions}
+            basemap={basemapForRegions(atlasRegions)}
             types={atlasView.types}
             events={atlasView.events}
             source={atlasView.source}
