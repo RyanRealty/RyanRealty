@@ -72,8 +72,13 @@ the line scale and `lineTicks`), `emphasize: 'first'|'last'` (one series in ink 
 rest in navy tints — emphasis over the five-hue yoy run), and a hover layer
 (`V3ChartHover.client.tsx`: crosshair, dot per series, the reading at the nearest x; pointer,
 touch, arrow keys, live region). `placeMedianChart` (homepage + every city page) passes all four.
-Other chart builders (housing-market hub/region/annual, neighborhood, subdivision, chart-room
-cards) still pass none of the new props — NEXT: give each a claim, ticks, and emphasis.
+**Rolled out site-wide (648864e0, merged c0740278):** `lib/charts/ticks.ts` (niceStep, money/
+count/day/percent/custom ticks, month/year/spaced ticks, `yoyClaim`/`windowClaim`/`seriesClaim`,
+74 tests) and every public chart builder passes claim + ticks + emphasis where honest. Rules the
+builder set: a percent series states its change in POINTS; a one-chart card claims through its
+title, a switcher card claims per panel, a standalone chart always claims; no emphasis on 260+
+point weekly lines. 6f4bc753: a claim's percentage is computed from the figures it PRINTS (the
+point's label, else the unit formatter) so a reader can check it (§0).
 
 **MENUS WENT LIVE (this commit):** `V3Chrome` takes `live?: V3ChromeLive` (site-nav group key →
 eyebrow, facts, values-by-href, dot field, read stamp), composed by `lib/site/chrome-live.ts`
@@ -93,10 +98,10 @@ clones UNDER the places; halos are `<use>` clones too, so the geometry ships onc
 card names clamp at 4 lines), R6 (the source details reconcile counted cities with drawn outlines),
 R7 (place pages render the Atlas with `EMPTY_PLACE_ATLAS` instead of deleting the section), R8
 (wide boundary on a phone takes its aspect), R9/R10 (chart touch reading holds after the finger
-lifts; the tooltip is a strip under the plot on phones), R11 (rail card labels wrap). Open: R2
-(a phone cannot reach 13/27 homepage places under 20px — needs a zoom or a list door), R12 (claim
-percentage from the printed values — do it in `lib/charts/ticks.ts` `yoyClaim` after the chart
-rollout merge).
+lifts; the tooltip is a strip under the plot on phones), R11 (rail card labels wrap). Pass six is on main
+(8aadb26f + 6f4bc753); evaluator pass six is measuring it. Open: R2 (a phone cannot reach 13/27
+homepage places under 20px — needs a zoom or a list door). Measured before the pass: 26/27
+homepage places answer their own tap at 375 (was 14/27), Larkspur 73/80.
 
 **Next program (the place-page class), in order:**
 1. ~~The homepage OPENING as a real interactive data experience~~ — built, see IN FLIGHT.
