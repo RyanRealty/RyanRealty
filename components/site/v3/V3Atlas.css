@@ -371,7 +371,7 @@
   background: var(--v3-cream);
   border: var(--v3-rule-hairline);
   border-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
-  box-shadow: 0 8px 24px rgb(16 39 66 / 0.12);
+  box-shadow: var(--v3-media-shadow);
   pointer-events: auto;
 }
 
@@ -389,7 +389,7 @@
     top: auto !important;
     bottom: 0;
     max-width: none;
-    box-shadow: 0 -8px 24px rgb(16 39 66 / 0.1);
+    box-shadow: var(--v3-media-shadow);
   }
 }
 
