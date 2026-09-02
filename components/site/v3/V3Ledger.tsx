@@ -129,6 +129,25 @@ export type V3LedgerFigureRow = V3LedgerRowBase & {
    * trace printed beneath the list.
    */
   value: V3Text
+  /**
+   * This row's share of the largest value in the same list, 0 to 1, which the
+   * ledger draws as a length behind the figure when `encode` is on.
+   *
+   * A PROPORTION, not the figure. That distinction is the whole reason this
+   * primitive can encode without breaking its own rule that it never formats or
+   * computes a number: the caller already owns the value and its source trace,
+   * so the caller owns the arithmetic that turns six values into six lengths.
+   * Handing over a raw count instead would make this component find a maximum,
+   * and a component that does arithmetic on figures is one that can disagree
+   * with the trace printed under it.
+   *
+   * Why it is needed at all: without a length, a list of six towns whose counts
+   * run 699 to 43 renders that 16-to-1 spread as digits in a column that is 7%
+   * of the row's width. TASTE calls that "a table wearing hairlines" and bans it
+   * past six rows. Out of range or not finite is dropped, not clamped — a bar
+   * whose length was guessed is worse than no bar.
+   */
+  weight?: number
 }
 
 /**
@@ -205,6 +224,18 @@ type V3LedgerBase = {
    * and other cities are not four copies of one row.
    */
   layout?: 'list' | 'pulse' | 'walk' | 'magazine' | 'places'
+  /**
+   * Draw each row's figure as a length as well as a number, using the row's own
+   * `weight`. Off by default: a ledger of prices with no common scale, or of
+   * rows the reader is meant to read rather than compare, is not a comparison
+   * and a bar would invent one.
+   *
+   * Turn it on when the rows ARE a comparison — towns by inventory, communities
+   * by active listings, neighborhoods by median — which is every place ledger on
+   * the site and the reason this prop exists on the primitive rather than in
+   * nine copies of a bar on nine pages.
+   */
+  encode?: 'bar'
 }
 
 /**
@@ -287,7 +318,22 @@ export function V3Ledger(props: V3LedgerProps) {
     id,
     className,
     layout = 'list',
+    encode,
   } = props
+
+  /**
+   * A finite share of the widest bar, or nothing. Out of range is DROPPED
+   * rather than clamped: a caller that hands over 1.4 has a bug in its own
+   * normalization, and clamping it to full width would hide that bug behind a
+   * bar that reads as "the largest" when it is not.
+   */
+  const barWidth = (weight: number | undefined): string | undefined => {
+    if (typeof weight !== 'number' || !Number.isFinite(weight)) return undefined
+    if (weight < 0 || weight > 1) return undefined
+    // A floor so a real but tiny value is still a visible mark rather than a
+    // blank cell that reads as missing data.
+    return `${Math.max(weight * 100, 1.5).toFixed(2)}%`
+  }
 
   const rows: readonly V3LedgerRow[] = props.rows
   const isEmpty = rows.length === 0
@@ -316,6 +362,7 @@ export function V3Ledger(props: V3LedgerProps) {
         V3_ROOT_CLASS,
         'v3-ledger',
         layout !== 'list' && `v3-ledger--${layout}`,
+        encode === 'bar' && 'v3-ledger--encoded',
         className,
       )}
       aria-labelledby={headingId}
@@ -368,7 +415,27 @@ export function V3Ledger(props: V3LedgerProps) {
                   </span>
                 </span>
                 {row.value ? (
-                  <span className="v3-ledger__value">{row.value}</span>
+                  encode === 'bar' ? (
+                    <span className="v3-ledger__measure">
+                      {/* The bar is presentation only. The figure beside it is
+                          the accessible value and the one the source trace
+                          covers, so a screen reader is never read a length. */}
+                      <span className="v3-ledger__track" aria-hidden="true">
+                        {barWidth(row.weight) ? (
+                          <span
+                            className={cn(
+                              'v3-ledger__bar',
+                              row.weight === 1 && 'v3-ledger__bar--lead',
+                            )}
+                            style={{ width: barWidth(row.weight) }}
+                          />
+                        ) : null}
+                      </span>
+                      <span className="v3-ledger__value">{row.value}</span>
+                    </span>
+                  ) : (
+                    <span className="v3-ledger__value">{row.value}</span>
+                  )
                 ) : null}
               </Link>
             </li>

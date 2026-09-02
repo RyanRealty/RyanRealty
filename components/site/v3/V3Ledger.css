@@ -161,12 +161,91 @@
   white-space: nowrap;
 }
 
+/* Encoded ------------------------------------------------------------------
+   `encode="bar"` draws the figure as a length as well as a number. Six towns
+   whose inventories run 699 to 43 print that 16-to-1 spread in a value column
+   7% of the row wide; as bars it is the first thing the reader sees.
+
+   One hue, three weights, per the near-monochrome rule, and the same three
+   V3Chart already uses to separate a subject series from its context: the
+   track is --v3-hairline, a context bar is --v3-ink-muted, the largest is
+   --v3-navy-70, and the row under the cursor goes to full --v3-ink. No second
+   colour enters the system to draw a bar. */
+.v3-ledger__measure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  justify-self: stretch;
+  min-width: 0;
+}
+
+.v3-ledger__track {
+  position: relative;
+  display: block;
+  height: 0.375rem;
+  min-width: 2.5rem;
+  border-radius: 999px;
+  background: var(--v3-hairline);
+}
+
+.v3-ledger__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  border-radius: inherit;
+  background: var(--v3-ink-muted);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* Emphasis, not decoration: the row the cursor is on is the row that will
+   open, and its bar is the one the reader is comparing from. */
+.v3-ledger--encoded .v3-ledger__row:hover .v3-ledger__bar,
+.v3-ledger--encoded .v3-ledger__row:focus-visible .v3-ledger__bar {
+  background: var(--v3-ink);
+}
+
+/* The largest value carries the full track and goes darker, so it reads as the
+   reference the others are measured against. Marked by the component from the
+   weight itself, never by position: these lists are ordered by the caller (the
+   homepage's towns run in a fixed geographic order), so :first-child is not
+   the maximum and styling it as one would be a lie about the data. */
+.v3-ledger__bar--lead {
+  background: var(--v3-navy-70);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-ledger__bar {
+    transition: none;
+  }
+}
+
+/* The track needs room to mean anything. Below the three-column stop the row
+   is two columns, so the measure spans the full width under the name rather
+   than fighting it for a few pixels. */
+@media (max-width: 47.99rem) {
+  .v3-ledger--encoded .v3-ledger__measure {
+    grid-column: 1 / -1;
+    margin-top: var(--v3-space-3xs);
+  }
+}
+
 /* From 768 up the when line takes its own column and the ledger reads as three
    true columns: context, name, figure. */
 @media (min-width: 48rem) {
   .v3-ledger__row {
     grid-template-columns: minmax(9rem, 15rem) minmax(0, 1fr) auto;
     column-gap: var(--v3-space-lg);
+  }
+
+  /* An encoded row gives the track a real share of the width — the whole point
+     is that length carries the value, and a 60px track carries nothing. */
+  .v3-ledger--encoded .v3-ledger__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+
+  .v3-ledger--encoded .v3-ledger__when {
+    display: none;
   }
 
   .v3-ledger__when {

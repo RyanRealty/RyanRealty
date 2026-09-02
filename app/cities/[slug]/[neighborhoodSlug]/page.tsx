@@ -622,6 +622,10 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={v3Text(`${neighborhood.name} · Subdivisions`)}
             heading={v3Text('Subdivisions')}
             rows={[firstSub, ...restSub]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
             action={{ label: v3Text(`All ${cityName} homes`), href: `/homes-for-sale/${citySlug}` }}
           />
@@ -701,6 +705,10 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={v3Text(`${cityName} · Other neighborhoods`)}
             heading={v3Text('Explore nearby neighborhoods')}
             rows={[firstPeer, ...restPeer]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{ label: v3Text(`All of ${cityName}`), href: `/cities/${citySlug}` }}
           />
@@ -721,6 +729,10 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Other cities on the list')}
             rows={[firstOther, ...restOther]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{ label: v3Text('Every city'), href: '/cities' }}
           />

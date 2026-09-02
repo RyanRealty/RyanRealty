@@ -138,14 +138,69 @@
   }
 }
 
+/* The fold. A phone gets six group names; a pointer gets the whole sitemap.
+   See the comment in V3Footer.tsx for why this is a native details and not a
+   client component. */
+.v3-footer__fold {
+  border-top: var(--v3-rule-hairline);
+}
+
 .v3-footer__column-title {
-  margin: 0 0 var(--v3-space-2xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  /* The whole row is the target, not the word. */
+  min-height: var(--v3-tap);
+  margin: 0;
+  padding: var(--v3-space-2xs) 0;
   font-family: inherit;
   font-size: var(--v3-size-eyebrow);
   font-weight: var(--v3-weight-medium);
   letter-spacing: var(--v3-track-eyebrow);
   text-transform: uppercase;
   color: var(--v3-ink-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.v3-footer__column-title::-webkit-details-marker {
+  display: none;
+}
+
+/* The house disclosure glyph: the same chevron V3Instrument and V3Atlas use on
+   their folds, so a reader who has opened one on this site knows this one. */
+.v3-footer__count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+.v3-footer__count::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-footer__fold[open] .v3-footer__count::after {
+  transform: rotate(225deg) translate(-0.2rem, -0.2rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-footer__count::after {
+    transition: none;
+  }
+}
+
+.v3-footer__column-title:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 2px;
 }
 
 .v3-footer__column-list {
@@ -190,6 +245,43 @@
 @media (min-width: 56.25rem) {
   .v3-footer__column-list a {
     min-height: 2rem;
+  }
+
+  /* Above the wide stop the sitemap is not folded: five columns fit side by
+     side and there is nothing to save. The summary keeps its old job as the
+     column title — same size, same tracking, same muted ink — and the list is
+     forced visible whether or not the disclosure happens to be open.
+
+     Two overrides because browsers hide a closed disclosure's content two
+     different ways: the older model sets display:none on every non-summary
+     child, the newer one sets content-visibility:hidden on ::details-content.
+     Both were verified in Chromium 145 before this shipped. */
+  .v3-footer__fold {
+    border-top: 0;
+  }
+
+  .v3-footer__column-title {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    margin-bottom: var(--v3-space-2xs);
+    cursor: default;
+  }
+
+  .v3-footer__count {
+    display: none;
+  }
+
+  .v3-footer__fold:not([open]) > .v3-footer__column-list {
+    display: block;
+  }
+}
+
+@supports selector(::details-content) {
+  @media (min-width: 56.25rem) {
+    .v3-footer__fold::details-content {
+      content-visibility: visible;
+    }
   }
 }
 

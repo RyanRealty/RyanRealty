@@ -740,6 +740,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             eyebrow={v3Text(`${cityName} · Neighborhoods`)}
             heading={v3Text('Neighborhoods')}
             rows={[firstNbh, ...restNbh]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{
               label: v3Text(`All ${cityName} homes`),
@@ -785,6 +789,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             eyebrow={v3Text(`${cityName} · Communities`)}
             heading={v3Text('Golf and master-planned communities')}
             rows={[firstGolf, ...restGolf]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{ label: v3Text('Every community'), href: '/communities' }}
           />
@@ -847,6 +855,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Explore other cities')}
             rows={[firstOther, ...restOther]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{ label: v3Text('Every city'), href: '/cities' }}
           />

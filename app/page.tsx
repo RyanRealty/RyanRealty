@@ -317,6 +317,12 @@ export default async function Home() {
             rows={[firstTownRow, ...restTownRows]}
             source={v3Text(PLACE_COUNT_TRACE)}
             updated={liveStamp(leftoverStamp)}
+            // The six towns ARE a comparison — Bend holds more single-family
+            // homes than the other five together — and the value column is 7%
+            // of the row, so as digits alone that spread is arithmetic the
+            // reader has to do. The bars come off the same counts the figures
+            // print; placeFigureRows computes the share beside the figure.
+            encode="bar"
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
           />
         ) : (

@@ -261,14 +261,36 @@ export function V3Footer({
         <div className="v3-footer__columns">
           {sitemap.map((column) => (
             <nav className="v3-footer__column" aria-label={column.heading} key={column.heading}>
-              <p className="v3-footer__column-title">{column.heading}</p>
-              <ul className="v3-footer__column-list">
-                {column.links.map((link) => (
-                  <li key={`${column.heading}-${link.href}`}>
-                    <Link href={link.href}>{link.label}</Link>
-                  </li>
-                ))}
-              </ul>
+              {/*
+                A native disclosure, and the only interactive element this footer
+                has ever had. On a phone the six columns stacked to 2,599px — the
+                tallest thing on every page on the site, 52 destinations nobody
+                scrolls to. Folded, the reader sees six group names with their
+                counts and opens the one they want.
+
+                No client JS: the fold is the browser's own, so it works before
+                hydration like every other row in this component. Above the wide
+                stop the columns render exactly as they did — the summary keeps
+                its job as the column title and the list is forced visible in
+                CSS, so desktop loses nothing and the markup stays one tree.
+
+                The count is not decoration: it tells the reader whether a group
+                is worth opening, which is the whole reason a fold is honest
+                here rather than a place to hide destinations.
+              */}
+              <details className="v3-footer__fold">
+                <summary className="v3-footer__column-title">
+                  {column.heading}
+                  <span className="v3-footer__count">{column.links.length}</span>
+                </summary>
+                <ul className="v3-footer__column-list">
+                  {column.links.map((link) => (
+                    <li key={`${column.heading}-${link.href}`}>
+                      <Link href={link.href}>{link.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             </nav>
           ))}
         </div>

@@ -114,6 +114,22 @@ export function placeFigureRows(
   items: readonly CityPlaceItem[],
   kindLabel: string,
 ): V3LedgerFigureRow[] {
+  /**
+   * Each row's share of the busiest place in the same list, which V3Ledger
+   * draws as a length when the caller turns `encode` on.
+   *
+   * Computed HERE, beside the figure it encodes, because this function already
+   * owns the number and its wording — the ledger primitive is not allowed to do
+   * arithmetic on a figure it might then disagree with. A place with no
+   * measured count gets no weight and therefore no bar, which is the same
+   * answer its value column gives ("not measured"). A measured zero gets a
+   * weight of zero, because none listed is a fact, not a gap.
+   */
+  const counts = items
+    .map((i) => i.activeCount)
+    .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0)
+  const busiest = counts.length > 0 ? Math.max(...counts) : 0
+
   return items.flatMap((item) => {
     const name = item.name?.trim()
     const href = item.href?.trim()
@@ -138,6 +154,12 @@ export function placeFigureRows(
               ? 'none listed now'
               : `${item.activeCount.toLocaleString('en-US')} active`,
         ),
+        ...(typeof item.activeCount === 'number' &&
+        Number.isFinite(item.activeCount) &&
+        item.activeCount >= 0 &&
+        busiest > 0
+          ? { weight: item.activeCount / busiest }
+          : {}),
         ...(media(item.img) ? { media: media(item.img) } : {}),
       },
     ]

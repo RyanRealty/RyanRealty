@@ -788,6 +788,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             eyebrow={v3Text(`${publicName} · Subdivisions`)}
             heading={v3Text('Subdivisions')}
             rows={[firstChildSub, ...restChildSub]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
             source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
             action={{ label: v3Text(`All ${publicName} homes`), href: browseHref }}
           />
