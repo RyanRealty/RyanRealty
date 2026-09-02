@@ -177,6 +177,8 @@ export type LpContext = {
   lp_term?: string
   /** Meta click-id — persisted alongside utm_* so it survives navigation. */
   fbclid?: string
+  /** Google Ads click-id — same persistence treatment as fbclid. */
+  gclid?: string
 }
 
 const LP_CONTEXT_STORAGE_KEY = 'rr_lp_context'
@@ -199,6 +201,7 @@ export function getLpContext(lpVariant?: string): LpContext {
     lp_content: url.searchParams.get('utm_content') ?? undefined,
     lp_term: url.searchParams.get('utm_term') ?? undefined,
     fbclid: url.searchParams.get('fbclid') ?? undefined,
+    gclid: url.searchParams.get('gclid') ?? undefined,
   }
   let fromStorage: Partial<LpContext> = {}
   try {
@@ -215,6 +218,7 @@ export function getLpContext(lpVariant?: string): LpContext {
     lp_content: fromUrl.lp_content ?? fromStorage.lp_content,
     lp_term: fromUrl.lp_term ?? fromStorage.lp_term,
     fbclid: fromUrl.fbclid ?? fromStorage.fbclid,
+    gclid: fromUrl.gclid ?? fromStorage.gclid,
   }
   return merged
 }

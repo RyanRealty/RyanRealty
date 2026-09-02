@@ -112,7 +112,7 @@ function consentLevel(): 'all' | 'analytics' | 'essential' | 'declined' {
  * the WP snippet's captureSource so we get consistent first-touch attribution
  * regardless of which surface the visitor landed on first.
  */
-function captureSource(): { campaign?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string }; referrer?: string; landingPage?: string; fbclid?: string } {
+function captureSource(): { campaign?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string }; referrer?: string; landingPage?: string; fbclid?: string; gclid?: string } {
   if (typeof window === 'undefined') return {}
   const STORAGE_KEY = 'rr_source_v1'
   try {
@@ -131,6 +131,8 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
   // Captured once at session start (first-touch) and stored so we don't lose
   // it on SPA navigation (the param disappears after the initial landing).
   const fbclid = params.get('fbclid') ?? undefined
+  // Google click-id — same first-touch treatment for Google Ads clicks.
+  const gclid = params.get('gclid') ?? undefined
   const referrer = (typeof document !== 'undefined' ? document.referrer : '') || undefined
   // Auto-infer source from referrer host when no UTM
   if (!src.utm_source && referrer) {
@@ -157,6 +159,7 @@ function captureSource(): { campaign?: { source?: string; medium?: string; campa
       term: src.utm_term,
     },
     fbclid,
+    gclid,
     referrer,
     landingPage: window.location.href,
   }
@@ -209,7 +212,7 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
   if (!sessionId) return
   const consent = consentLevel()
   if (consent === 'declined') return
-  const { campaign, referrer, landingPage, fbclid } = captureSource()
+  const { campaign, referrer, landingPage, fbclid, gclid } = captureSource()
   const pathname = window.location.pathname
   try {
     if (eventType === 'listing_view') {
@@ -241,6 +244,7 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
     metadata: opts.metadata,
     campaign,
     fbclid,
+    gclid,
     referrer,
     landingPage,
     consent,
