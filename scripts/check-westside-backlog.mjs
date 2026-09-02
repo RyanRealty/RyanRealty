@@ -110,10 +110,15 @@ checks.push({
   ok: /skipped-existing-draft/.test(stager),
 })
 
-const restage = src('app/actions/crm-deals.ts')
+// restageCrmDeal (app/actions/crm-deals.ts) was deleted as an orphan in the
+// 2026-09-01 dead-code sweep (90b71b0a): nothing imported it, so the on-close
+// staging it claimed never ran through it. The surviving on-close path is the
+// review-ask-on-close cron below, which calls the TC scanner that stages the
+// draft (lib/data/tc/stageReviewAsksForRecentCloses.ts).
+const scanner = src('lib/data/tc/stageReviewAsksForRecentCloses.ts')
 checks.push({
-  label: 'restageCrmDeal stages a review-ask draft on close',
-  ok: /stageReviewAskDraft/.test(restage) && /shouldStageReviewAsk/.test(restage),
+  label: 'the TC close scanner stages the review-ask draft',
+  ok: /stageReviewAskDraft\(/.test(scanner),
 })
 
 const cron = src('app/api/cron/review-ask-on-close/route.ts')

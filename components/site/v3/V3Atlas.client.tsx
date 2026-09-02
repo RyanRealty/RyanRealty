@@ -411,7 +411,7 @@ export function V3Atlas({
     ctx.clearRect(0, 0, view.w, view.h)
     const [r, g, b] = readNavy(stage)
     const heat = variant === 'heat'
-    const radius = heat ? 26 : 15
+    const radius = heat ? 19 : 15
     const paint = (x: number, y: number, alpha: number, rad: number) => {
       const grad = ctx.createRadialGradient(x, y, 0, x, y, rad)
       grad.addColorStop(0, `rgba(${r},${g},${b},${alpha})`)
@@ -425,7 +425,7 @@ export function V3Atlas({
       if (!isOn(d)) return
       const [x, y] = toPx(xy[i]![0], xy[i]![1])
       if (d.s === 'sold') paint(x, y, heat ? 0.05 : 0.035, radius * 0.9)
-      else paint(x, y, heat ? 0.11 : 0.06, radius)
+      else paint(x, y, heat ? 0.13 : 0.06, radius)
     })
     canvas.dataset.painted = '1'
   }, [dots, xy, isOn, view, variant, toPx])
