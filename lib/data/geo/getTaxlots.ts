@@ -157,8 +157,10 @@ async function fetchTaxlotsInBoundary(input: Required<TaxlotsInBoundaryInput>): 
   if (!supabase) return []
 
   const { data, error } = await supabase.rpc('taxlots_in_boundary', {
-    p_geo_type: input.geoType,
     p_geo_slug: input.geoSlug,
+    // Omitted when null rather than sent as null: a client that drops a null
+    // argument gets PGRST202 back, and the RPC defaults this to null anyway.
+    ...(input.geoType ? { p_geo_type: input.geoType } : {}),
     p_limit: input.maxLots,
     p_tolerance: input.toleranceDegrees,
   })
@@ -186,7 +188,7 @@ export function getTaxlotsInBoundary(input: TaxlotsInBoundaryInput): Promise<Tax
   return unstable_cache(
     () => fetchTaxlotsInBoundary(filled),
     [
-      'taxlots-in-boundary-v2',
+      'taxlots-in-boundary-v3',
       filled.geoType ?? 'any',
       filled.geoSlug,
       String(filled.maxLots),

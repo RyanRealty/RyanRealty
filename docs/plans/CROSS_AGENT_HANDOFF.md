@@ -206,7 +206,18 @@ publish the assessor's acreage as its own figure).**
   county record; the subdivision page draws the lots inside the plat. Both carry
   `TAXLOT_DISCLAIMER` — an assessor's map is not a survey, and it sits beside the map, never in a
   footer.
-- **Not done yet:** the CMA and valuation surfaces (Matt asked for a comp's parcel beside the
+- **Where a plat's lots actually draw: `/communities/[slug]`, not `/subdivisions/[slug]`.** A
+  registry community's subdivision URL redirects to the community route, so Tetherow and Awbrey
+  Glen never ran the subdivision page at all. Both routes carry the parcel layer now (Tetherow
+  320 lots, Awbrey Glen 220). Three traps in one afternoon on this read, all fixed and all worth
+  knowing: the boundary row for a registry community is filed as `geo_type='neighborhood'`, so
+  asking for 'subdivision' found nothing; **supabase-js omits a null argument**, and PostgREST
+  answers PGRST202 for the missing overload, so the RPC defaults `p_geo_type` and the DAL omits
+  it rather than sending null; and an empty answer is legitimately cacheable for a day, so every
+  fix to this read needs a cache-key bump (now v3).
+- **CMA:** the county's acreage sits beside the MLS figure in the site data, and the audit's
+  subject line says so when they differ by more than a tenth.
+- **Not done yet:** the rest of the CMA surfaces (a comp's parcel drawn beside the subject's) (Matt asked for a comp's parcel beside the
   subject's, and an acreage cross-check against the MLS figure), and the other seven counties.
   Jackson and Klamath both publish taxlots; Crook, Jefferson and Josephine surfaced no county
   layer in a catalog search. Regrid is the one-integration commercial option if Matt wants

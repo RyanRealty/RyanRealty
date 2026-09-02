@@ -85,6 +85,7 @@ import {
 } from '@/components/site/v3'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
+import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -539,6 +540,19 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         'comm:atlas',
       )
     : null
+
+  // The lots inside this community, from the county assessor's cadastre. A
+  // /subdivisions/ slug for a registry community redirects here, so this is
+  // where a plat's lot lines actually get drawn.
+  const platLots = await withTimeoutFallback(
+    getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch((err) => {
+      console.error('[community] plat lots failed', { slug, err })
+      return []
+    }),
+    [],
+    8000,
+    'comm:taxlots',
+  )
   const atlasRegions: AtlasRegion[] = mapPolygon
     ? [
         { id: `community:${slug}`, kind: 'town', kindLabel: 'Community', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
@@ -694,9 +708,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             dots={atlasView.dots}
             regions={atlasRegions}
             basemap={basemapForRegions(atlasRegions)}
+            parcels={platLots.map((lot) => ({ id: lot.taxlot, subject: false, geometry: lot.geometry }))}
             types={atlasView.types}
             events={atlasView.events}
-            source={atlasView.source}
+            source={platLots.length > 0 ? `${atlasView.source} ${TAXLOT_DISCLAIMER}` : atlasView.source}
             stamp={atlasView.stamp}
             incomplete={!atlasView.complete}
           />

@@ -407,14 +407,23 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const canMapAtlas = placeCity != null && (Boolean(seedRing && boundary.polygon) || mapTiles.length > 0)
   // The lots inside the plat: what a plat actually is. Capped, simplified
   // server-side, and only where the county has a recorded boundary to clip to.
-  const platLots = hasBoundary
-    ? await withTimeoutFallback(
-        getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch(() => []),
-        [],
-        5000,
-        'sub:taxlots',
-      )
-    : []
+  // No `hasBoundary` gate: the page reads its boundary as geo_type
+  // 'subdivision', and a registry community like Tetherow files its polygon
+  // under 'neighborhood', so the gate was false on exactly the plats with the
+  // most lots. The RPC finds the row by slug and returns nothing when there is
+  // none, which is the same answer at one indexed query.
+  const platLots = await withTimeoutFallback(
+        getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch((err) => {
+          // Fail-open, but never silent: a lot line must not break a page, and
+          // an empty parcel layer that nobody logged is how this shipped
+          // drawing nothing for a day.
+          console.error('[subdivision] plat lots failed', { slug, err })
+          return []
+        }),
+    [],
+    8000,
+    'sub:taxlots',
+  )
   const atlas = canMapAtlas && placeCity != null
     ? await withTimeoutFallback(
         buildPlaceAtlas(

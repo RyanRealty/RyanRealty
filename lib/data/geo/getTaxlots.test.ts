@@ -106,8 +106,8 @@ describe('getTaxlotsInBoundary', () => {
     rpc.mockResolvedValue({ data: [row({ is_subject: undefined })], error: null })
     const lots = await getTaxlotsInBoundary({ geoType: 'subdivision', geoSlug: 'awbrey-glen' })
     expect(rpc).toHaveBeenCalledWith('taxlots_in_boundary', {
-      p_geo_type: 'subdivision',
       p_geo_slug: 'awbrey-glen',
+      p_geo_type: 'subdivision',
       p_limit: 400,
       p_tolerance: 0.00002,
     })
@@ -118,8 +118,9 @@ describe('getTaxlotsInBoundary', () => {
     const { getTaxlotsInBoundary } = await import('./getTaxlots')
     rpc.mockResolvedValue({ data: [], error: null })
     await getTaxlotsInBoundary({ geoType: null, geoSlug: 'tetherow' })
+    // The type is OMITTED, not sent as null: a dropped null argument is a
+    // 404 from PostgREST, and the RPC defaults it.
     expect(rpc).toHaveBeenCalledWith('taxlots_in_boundary', {
-      p_geo_type: null,
       p_geo_slug: 'tetherow',
       p_limit: 400,
       p_tolerance: 0.00002,
