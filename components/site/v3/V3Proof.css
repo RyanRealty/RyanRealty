@@ -1,9 +1,35 @@
 /* V3Proof — verified third-party words with their record. Tokens only. */
 
+/* ONE RHYTHM (2026-09-02). tokens.css states the system on the token itself:
+   "Every pattern root pads its block axis with this one value, so the whole
+   register's rhythm is one token." Proof was reading --v3-space-lg /
+   --v3-space-2xl (24/48px), so on /about the gap either side of it measured
+   48px and 168px while Quiet-to-Instrument measured 240px, and a reader saw
+   the reviews crowded against the map above them. Same value as Instrument,
+   Ledger, Quiet, Field, Sheet and Answers now. */
 .v3-proof {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-2xl);
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* The lead exception, set from headingLevel in V3Proof.client.tsx: on /reviews
+   this section IS the page, so the rhythm's top pad would put 120px of nothing
+   between the breadcrumb and the page's own title. Same value and same reason
+   as .about-faces--lead. */
+.v3-proof--lead {
+  padding-top: var(--v3-space-lg);
+}
+
+/* THE LOOK (Broadside), PUBLIC_UI.md section 6: "a pattern section that FOLLOWS
+   content opens on --v3-rule-section ... the section that opens the page
+   carries none, because the mast rule above it already closed the chrome."
+   Instrument, Ledger, Field, Quiet, Doors and Answers all declare this; Proof
+   did not, so on /about the reviews were the one mid-page section arriving
+   with no rule above them. The :not() is what the other patterns cannot say
+   and this one can — the lead class already knows when Proof opens a page. */
+* + .v3.v3-proof:not(.v3-proof--lead) {
+  border-top: var(--v3-rule-section);
 }
 
 .v3-proof__head {

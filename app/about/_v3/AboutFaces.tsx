@@ -22,6 +22,13 @@ export function AboutFaces({
    * H1. 2 on the homepage, whose H1 is the Stage — a second H1 on one document
    * is an outline defect, not a style choice. Default keeps both existing
    * callers byte-identical.
+   *
+   * It is also the only thing that distinguishes the two jobs this section
+   * does, so it is where the visual distinction is set (see about-faces.css):
+   * level 1 means the section OPENS the page, so it carries the page's title
+   * at display-1 and pays the chrome's top spacing instead of the section
+   * rhythm; level 2 means it is a section inside a page that already has a
+   * title, so it wears the section heading size and the full rhythm.
    */
   headingLevel?: 1 | 2
 }) {
@@ -32,7 +39,7 @@ export function AboutFaces({
   return (
     <section
       id="faces"
-      className={cn(V3_ROOT_CLASS, 'about-faces')}
+      className={cn(V3_ROOT_CLASS, 'about-faces', headingLevel === 1 && 'about-faces--lead')}
       aria-labelledby="faces-heading"
     >
       <div className="about-faces__head">

@@ -6,20 +6,30 @@
  * canonical transparent PNGs (no card, no wash, no box). Name is the door.
  * Call and text sit on the face row. Quiet (origin) then Instrument (verified
  * licenses) then Atlas (the service area as the living map) then Proof (the
- * newest reviews) then Quiet (FAQ). PUBLIC_UI.md opens
- * About on Quiet + Sheet. The Sheet stays on /contact and /team/[slug]. A new
- * on-page form here would be a new capture contract. Seller lives on Sell.
- * The next tap is the name or the number.
+ * newest reviews) then Answers (the questions, as disclosures). PUBLIC_UI.md
+ * opens About on Quiet + Sheet. The Sheet stays on /contact and /team/[slug].
+ * A new on-page form here would be a new capture contract. Seller lives on
+ * Sell. The next tap is the name or the number.
+ *
+ * THE CLOSING SECTION IS V3Answers, NOT A SECOND V3Quiet (2026-09-02). As a
+ * Quiet it measured 1,491px at 1440 and 1,697px at 375 — the tallest section on
+ * the page — 8 paragraphs, 229 words, no figure, no media, no control, which is
+ * the wall of text TASTE.md bans by name ("FAQ blocks count. If the prose is
+ * needed for search, it sits under a disclosure or beside a display, never as
+ * the section"). Four of those paragraphs restated a section above them, and
+ * three of its six doors repeated the origin section's three. The rebuild is
+ * the barrel primitive V3Answers: the questions as native disclosures, the
+ * remaining edges beside them. Nothing moved behind script — every answer is
+ * still in the served HTML, and the FAQPage JSON-LD names the same four.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (AboutPage + aboutOrganization +
  * BreadcrumbList + FAQPage), a rendered V3SectionTracker with pageType="about",
  * revalidate 3600, and the route. MetadataBlock stays on the legacy register
- * (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
+ * (JSON-LD). V3SectionTracker is a v3 island, not an eighth pattern.
  *
- * D11: the mission sentence is the one virtue-word exception, exact words, We.
- * It ships in the closing Quiet, never on the first screen. No invented quote.
- * MLS remarks N/A.
+ * No invented quote. MLS remarks N/A. The D11 mission sentence is off this
+ * page — see the reason in ./_v3/about-constants.ts.
  *
  * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
  * The KB articles rail (now deleted) formatted with timeZone UTC. formatDate is
@@ -48,18 +58,17 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3Answers,
   V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
+  type V3Answer,
+  type V3AnswersDoor,
   V3Atlas,
   V3Proof,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import {
-  ABOUT_FAQ_ITEMS,
-  ABOUT_MISSION,
-  FIRM_LICENSE,
-} from './_v3/about-constants'
+import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFaces } from './_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from './_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
@@ -136,16 +145,18 @@ export default async function AboutPage() {
   ]
   const [firstLicense, ...restLicense] = licenseFigures
 
-  const faqItems: V3QuietItem[] = [
-    { kind: 'prose', body: ABOUT_MISSION },
-    ...ABOUT_FAQ_ITEMS.map((item) => ({
-      kind: 'prose' as const,
-      term: item.question,
-      body: item.answer,
-    })),
-    { label: 'Broker profiles', href: '/team' },
-    { label: 'Client reviews', href: '/reviews' },
-    { label: 'Call, text, or write', href: '/contact' },
+  // The first question opens on arrival, so the control shows its work rather
+  // than leaving the section as four unexplained lines.
+  const faqAnswers: V3Answer[] = ABOUT_FAQ_ITEMS.map((item, index) => ({
+    question: item.question,
+    body: item.answer,
+    open: index === 0,
+  }))
+
+  // Broker profiles, Client reviews, and Call text or write are NOT repeated
+  // here: the origin section carries those three doors, and this section sits
+  // four sections below it. What is left is what /about has not offered yet.
+  const faqDoors: V3AnswersDoor[] = [
     { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
     { label: 'Homes for sale', href: listingsBrowsePath() },
     { label: 'Central Oregon housing market', href: '/housing-market' },
@@ -174,14 +185,15 @@ export default async function AboutPage() {
     },
   ]
 
-  const brokerDoors: V3QuietItem[] = orderedBrokers.flatMap((b) => {
-    const name = b.fullName?.trim()
-    const slug = b.slug?.trim()
-    if (!name || !slug) return []
-    const title = b.title?.trim()
-    return [{ label: title ? `${name}, ${title}` : name, href: teamPath(slug) }]
-  })
-
+  // THE PER-BROKER DOORS ARE GONE FROM THE CLOSING SECTION (2026-09-02). They
+  // labelled themselves "<name>, <title>" and pointed at /team/<slug>, which is
+  // what the three faces at the top of the page already are, and they sat one
+  // row from the roster answer that states the same three names with their
+  // titles and their Oregon license numbers. Three copies of the roster on one
+  // page was the duplication this rebuild cut; the roster answer is the copy
+  // that carries a fact the other two do not. aboutDisplayName still resolves
+  // the faces' names in ./_v3/about-faces.ts, which is the call site that made
+  // the page publish one spelling per broker.
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -243,16 +255,13 @@ export default async function AboutPage() {
             record={false}
           />
         ) : null}
-        <V3Quiet
+        <V3Answers
           id="faq"
           eyebrow="Common questions"
           heading="Working with Ryan Realty"
-          items={[
-            ...faqItems,
-            ...(brokerDoors.length > 0
-              ? [{ kind: 'prose' as const, term: 'Who you work with', body: 'Matt Ryan, Paul Stevenson, Rebecca Peterson.' }, ...brokerDoors]
-              : []),
-          ]}
+          headingLevel={2}
+          questions={faqAnswers}
+          doors={faqDoors}
         />
       </main>
 

@@ -163,10 +163,16 @@ const RESIDENTIAL = new Set(['house', 'condo', 'townhouse', 'manufactured', 'mul
 const PULSE_SLOTS = { new: 16, pending: 6, sold: 18 } as const
 const KIND_LABEL: Record<AtlasRegionKind, string> = { town: 'Town', community: 'Community', neighborhood: 'Neighborhood' }
 
+/**
+ * The price a control is actually set to. Two decimals under ten million,
+ * because the scrubber steps in twenty-five thousands: one decimal printed
+ * "$1.8M" for both $1,775,000 and $1,750,000, so the number on screen was not
+ * the number being applied (evaluator round five, LISTING-NOBOUNDARY-3).
+ */
 function fmtShort(usd: number): string {
   if (usd >= 1_000_000) {
     const m = usd / 1_000_000
-    return `$${m >= 10 ? m.toFixed(0) : m.toFixed(1).replace(/\.0$/, '')}M`
+    return `$${m >= 10 ? m.toFixed(0) : m.toFixed(2).replace(/\.?0+$/, '')}M`
   }
   return `$${Math.round(usd / 1000)}K`
 }
@@ -341,6 +347,11 @@ export function V3Atlas({
     [proj, fit],
   )
   const wide = proj.width / proj.height > 1.35
+  /* A frame at least as wide as it is tall does not need the phone's
+     minimum height: the aspect already gives it one, and the floor was
+     leaving 16% of the stage empty at 375 (evaluator round five,
+     LISTING-NOBOUNDARY-9). */
+  const fitsPhone = proj.width / proj.height >= 1
 
   const xy = useMemo(() => dots.map((d) => proj.toXY(d.lng, d.lat)), [dots, proj])
 
@@ -645,12 +656,52 @@ export function V3Atlas({
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
   const activeStats = active ? regionStats.get(active) ?? { n: 0, median: null } : null
 
-  const onMove = useCallback((e: React.PointerEvent) => {
-    const el = stageRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    setPointer({ x: e.clientX - r.left, y: e.clientY - r.top })
-  }, [])
+  /* Every dot in stage pixels, so the nearest one to a pointer is a scan and
+     not a projection per event. */
+  const dotPx = useMemo(() => (view ? xy.map(([x, y]) => toPx(x, y)) : []), [xy, toPx, view])
+
+  /* The mark under the pointer. Until now the dots — the data the map is made
+     of — answered nothing: they are pointer-transparent so 4,676 of them cost
+     no hit testing, and on a frame with no places the whole map was inert
+     (evaluator round five, LISTING-NOBOUNDARY-2, LISTING-BEND-7). */
+  const [dotHit, setDotHit] = useState<number | null>(null)
+  const REACH = 14
+
+  const nearestDot = useCallback(
+    (px: number, py: number): number | null => {
+      if (dotPx.length === 0) return null
+      let best: number | null = null
+      let bestD = REACH * REACH
+      for (let i = 0; i < dotPx.length; i += 1) {
+        const d = dots[i]
+        if (!d || !isOn(d)) continue
+        const p = dotPx[i]
+        if (!p) continue
+        const dx = p[0] - px
+        const dy = p[1] - py
+        const dd = dx * dx + dy * dy
+        if (dd < bestD) {
+          bestD = dd
+          best = i
+        }
+      }
+      return best
+    },
+    [dotPx, dots, isOn],
+  )
+
+  const onMove = useCallback(
+    (e: React.PointerEvent) => {
+      const el = stageRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const px = e.clientX - r.left
+      const py = e.clientY - r.top
+      setPointer({ x: px, y: py })
+      setDotHit(nearestDot(px, py))
+    },
+    [nearestDot],
+  )
 
   const pin = useCallback(
     (shape: PlacedShape, at?: readonly [number, number]) => {
@@ -748,6 +799,44 @@ export function V3Atlas({
         }
       : undefined
 
+  /* The readout for one mark: what it is, what it costs, when it moved. */
+  const tip = (() => {
+    if (dotHit == null || pinned || !view) return null
+    const d = dots[dotHit]
+    const p = dotPx[dotHit]
+    if (!d || !p) return null
+    const state =
+      d.s === 'closed' ? 'Closed' : d.s === 'sold' ? 'Sold' : d.s === 'pending' ? 'Pending' : 'For sale'
+    const when =
+      d.s === 'sold' || d.s === 'closed'
+        ? d.soldAgo != null
+          ? d.soldAgo === 0
+            ? 'today'
+            : `${d.soldAgo} ${d.soldAgo === 1 ? 'day' : 'days'} ago`
+          : null
+        : d.age != null && d.age <= 14
+          ? d.age === 0
+            ? 'listed today'
+            : `listed ${d.age} ${d.age === 1 ? 'day' : 'days'} ago`
+          : null
+    const type = types.find((t) => t.key === d.t)?.label
+    return (
+      <p
+        className="v3-atlas__tip"
+        role="status"
+        style={{
+          left: Math.min(Math.max(p[0], 8), Math.max(8, view.w - 8)),
+          top: Math.max(0, p[1] - 12),
+        }}
+      >
+        <span className="v3-atlas__tip-state">{state}</span>
+        {d.p != null ? <span className="v3-atlas__tip-price">{fmtShort(d.p)}</span> : null}
+        {type ? <span className="v3-atlas__tip-type">{type}</span> : null}
+        {when ? <span className="v3-atlas__tip-type">{when}</span> : null}
+      </p>
+    )
+  })()
+
   const card =
     activeShape && activeStats ? (
       <div ref={cardRef} className={cn('v3-atlas__card', pinned && 'is-pinned')} role="status" style={cardStyle}>
@@ -774,7 +863,12 @@ export function V3Atlas({
           </p>
         )}
         <Link href={activeShape.href} className="v3-atlas__card-door">
-          See {activeShape.name}
+          {/* A long plat name is already the card's heading; repeating all 64
+              characters here printed it twice, once clipped and once one word
+              per line (evaluator round five, LISTING-BEND-3). */}
+          {activeShape.name.length > 28
+            ? `See this ${(activeShape.kindLabel ?? KIND_LABEL[activeShape.kind]).toLowerCase()}`
+            : `See ${activeShape.name}`}
         </Link>
       </div>
     ) : null
@@ -843,7 +937,7 @@ export function V3Atlas({
     <section
       ref={sectionRef}
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-atlas', wide && 'is-wide', !inView && 'is-offscreen', className)}
+      className={cn(V3_ROOT_CLASS, 'v3-atlas', wide && 'is-wide', fitsPhone && 'is-fits', !inView && 'is-offscreen', className)}
       aria-labelledby={`${uid}-h`}
     >
       <div className="v3-atlas__grid">
@@ -862,11 +956,18 @@ export function V3Atlas({
             <div
               ref={stageRef}
               className="v3-atlas__stage"
-              style={{ aspectRatio: `${proj.width} / ${proj.height}` }}
+              /* The box IS the painting: with only a height clamp, a portrait
+                 frame painted 71% of a full-width box and left the rest tinted
+                 cream (evaluator round five, LISTING-NOBOUNDARY-4). */
+              style={{
+                aspectRatio: `${proj.width} / ${proj.height}`,
+                ['--atlas-aspect' as string]: `${(proj.width / proj.height).toFixed(4)}`,
+              }}
               onPointerMove={onMove}
               onPointerLeave={() => {
                 setHover(null)
                 setPointer(null)
+                setDotHit(null)
               }}
             >
               <canvas ref={canvasRef} className="v3-atlas__heat" aria-hidden="true" />
@@ -877,11 +978,16 @@ export function V3Atlas({
                 preserveAspectRatio="xMidYMid meet"
                 role="img"
                 aria-label={
+                  /* The map's name counts every mark it draws. It used to name
+                     the for-sale figure alone over a map holding three
+                     (evaluator round five, LISTING-BEND-11). */
+                  /* The held home is the one thing a listing page's map adds
+                     over the neighborhood's own, and the label naming it is
+                     aria-hidden, so the map's own name carries it (evaluator
+                     round five, LISTING-BEND-4). */
                   incomplete
                     ? 'Map of listings'
-                    : closingsMap
-                      ? `Map with ${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}`
-                      : `Map with ${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)} for sale`
+                    : `Map. ${claim}${highlight && dots.some((d) => d.k === highlight.key) ? ` ${highlight.label} is marked.` : ''}`
                 }
               >
                 {/* 0. The basemap: the highway skeleton, the named rivers and
@@ -1081,8 +1187,13 @@ export function V3Atlas({
                 </div>
               ) : null}
 
-              {card}
+              {tip}
             </div>
+            {/* The card sits in the frame, not the stage: on a phone it drops
+                below the map in flow, because pinned over a 208px stage it
+                covered the map it belongs to on 14 of 20 taps (evaluator
+                round five, LISTING-BEND-1). */}
+            {card}
           </div>
 
         </div>

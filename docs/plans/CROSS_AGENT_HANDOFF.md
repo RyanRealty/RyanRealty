@@ -147,6 +147,21 @@ the MLS, median close, listed · represented, so far this year) with the closing
 V3Proof band of reviews naming the broker (record off), and V3Doors (call / text / email). Measured:
 21 closings for Matt, 21 dots, claim "21 closings of every type", page 6,570px (was 10,196).
 
+**THE BASEMAP IS IN (2e54768a, 304422f4).** Matt's "we do need some map features like roads
+for context but should match the style" is answered from public-domain US Census TIGER/Line
+2024, drawn in our own projection in the register — never a Google or Mapbox tile layer.
+`scripts/gis/build-basemap-skeleton.mjs` builds three things from one pass: a `region` tier
+at 200m (the highway skeleton, named rivers and canals over 25km, water bodies over 0.5km²
+— 66 KB, 19 KB over the wire, shipped on every frame), a `near` tier at 40m, and 877 street
+tiles of 0.05° holding all 12,798 named local streets (S1400), read from disk by
+`lib/geo/basemap-streets.ts` for any frame under about ten kilometres. Paths are quantized
+deltas with an integer bounding box per feature, so a page clips without decoding
+(`lib/geo/basemap.ts`, `lib/geo/basemap-source.ts`; `basemapForRegions(regions, opts)` is the
+one call a page makes). The street tiles are traced in `next.config.ts` for the six routes
+that draw a walkable frame — without that they are absent at runtime and the map silently
+loses its streets. Rebuild after a TIGER vintage change:
+`node scripts/gis/build-basemap-skeleton.mjs`.
+
 **MATT'S DECISIONS (2026-09-02, asked and answered):** (1) the homepage living map ships as DOTS —
 heat and split get deleted (variant prop, heat canvas, choropleth steps, split rail, the `?opening`
 switch, their CSS and tests; the decision sheet closes); (2) listing pages carry the living map
@@ -161,6 +176,43 @@ files for Deschutes (41017), Crook (41013), Jefferson (41031), ingested to Supab
 simplified per class), a DAL read by bbox + class, and an Atlas layer under the dots (highways at
 the region frame; arterials + local streets + the river inside a neighborhood frame). Never a
 Google/Mapbox tile layer under the SVG (different projection, per-view cost, foreign style).
+
+**EVALUATOR ROUND FIVE (2026-09-02, separate Opus agents, ten surfaces, measurements
+in `/private/tmp/.../scratchpad/` and the workflow journal `wf_83ae7161-679`).** Scores:
+homepage 80, listing-bend 75, team-rebecca 68, team-matt 64, about 62, reviews 76,
+subdivision-chart 53, listing-noboundary 57. None shipped. These evaluators measure far
+harder than the earlier passes — every finding carries a number read off the DOM.
+
+Fixed and pushed in a0be7256: TEAM-MATT-1 (a bar run dropped its empty years, so a
+nine-year gap was drawn as wide as a one-year gap — `buildBarPlot` filtered `value > 0`
+back out of what `broker-record.ts` had filled in; a run now keeps zeros, categories do
+not), TEAM-MATT-2/TEAM-REBECCA-1 (the source line counted regions handed over, not
+outlines drawn: "36 places" over a map drawing 17), TEAM-REBECCA-3 (a closing's owner was
+`ids[ids.length-1]` from an unsorted array, so the map and the ledger named all four of a
+broker's closings differently — it is the smallest place by area now), TEAM-MATT-3/4 (the
+claim named the price filter and never the type filter, and said "Tap a place" where none
+are drawn), HOMEPAGE-1 (a `use` clone of a focusable path is focusable: 27 invisible inert
+tab stops; clones are pointer-only and the map is ONE stop with arrow keys), HOMEPAGE-2
+(seven property types on one alpha ramp put manufactured and house on identical navy and
+pending between commercial and land — dots encode STATE only now, with a key printing the
+same three numbers the claim does, and the type row is switches), TEAM-MATT-5/TEAM-REBECCA-2/
+ABOUT-4 (400px of empty column beside the map while the chips that name every place were
+display:none above 768px — chips now sit under the search at every width). Also the build
+cost the street tier exposed: `outerRings` copied every plat coordinate per page to get a
+bounding box, worth 31 rail timeouts and 57s of SSG; the box is walked without allocating
+and memoised, and the next deploy measured 0 timeouts and SSG back to 99s.
+
+In the tree at the time of writing (second batch, gates not yet run): the dots answer a
+pointer (nearest mark within 14px, a readout of state, price, type and age — this is what
+makes a no-boundary frame interrogable at all), the card sits under the map on a phone
+instead of covering 100% of it, every chart rail label sits on its gridline (three separate
+geometry faults: plot-relative fraction applied to the rail's full height, a rail stretched
+to a taller grid row, and the phone's 28px reading band), the phone tick rule never hides
+the last label, x ticks are centred on their bars, the price label prints the price actually
+applied, the stage box is the painting (28.7% empty → 3%), and the false "a few sit just
+beyond its edges" sentence is gone. Still open from this round: REVIEWS-1 (at 375 the strip's
+marks overlap by two-thirds and a 4px miss opens the wrong review), ABOUT-1/2/3/10/11,
+LISTING-BEND-6, LISTING-NOBOUNDARY-6/10.
 
 **SHIPPED c5b56ed1 (2026-09-02, pushed, deploy verified separately): decision (1) — heat, split,
 `?opening`, the `variant` prop and the `V3AtlasVariant` export are deleted; V3Atlas is dots-only;

@@ -23,6 +23,9 @@
  */
 import { cn } from '@/lib/utils'
 import {
+  bandLeftPct,
+  bandTopPct,
+  BAR_PAD_B,
   buildBarPlot,
   buildLinePlot,
   buildMixPlot,
@@ -519,15 +522,15 @@ export function V3Chart({
           {ticks.y.length >= 2 ? (
             <div className="v3-chart__y v3-chart__y--ticks" aria-hidden="true">
               {ticks.y.map((tk) => (
-                <span key={tk.label} className="v3-chart__ytick" style={{ top: `${tk.frac * 100}%` }}>
+                <span key={tk.label} className="v3-chart__ytick" style={{ top: `${bandTopPct(tk.frac)}%` }}>
                   {tk.label}
                 </span>
               ))}
             </div>
           ) : (
-            <div className="v3-chart__y" aria-hidden="true">
-              <span>{plot.yMaxLabel}</span>
-              <span>{plot.yMinLabel}</span>
+            <div className="v3-chart__y v3-chart__y--ends" aria-hidden="true">
+              <span style={{ top: `${bandTopPct(0)}%` }}>{plot.yMaxLabel}</span>
+              <span style={{ top: `${bandTopPct(1)}%` }}>{plot.yMinLabel}</span>
             </div>
           )}
           <div className="v3-chart__plot">
@@ -588,7 +591,7 @@ export function V3Chart({
           {ticks.x.length >= 2 ? (
             <div className="v3-chart__x v3-chart__x--ticks" aria-hidden="true">
               {ticks.x.map((tk) => (
-                <span key={`${tk.label}-${tk.frac.toFixed(3)}`} className="v3-chart__xtick" style={{ left: `${tk.frac * 100}%` }}>
+                <span key={`${tk.label}-${tk.frac.toFixed(3)}`} className="v3-chart__xtick" style={{ left: `${bandLeftPct(tk.frac)}%` }}>
                   {tk.label}
                 </span>
               ))}
@@ -604,9 +607,9 @@ export function V3Chart({
 
       {plot.kind === 'bars' ? (
         <div className="v3-chart__frame">
-          <div className="v3-chart__y" aria-hidden="true">
-            <span>{plot.yMaxLabel}</span>
-            <span>{plot.yMinLabel}</span>
+          <div className="v3-chart__y v3-chart__y--ends" aria-hidden="true">
+            <span style={{ top: `${bandTopPct(0, plot.vbH, BAR_PAD_B)}%` }}>{plot.yMaxLabel}</span>
+            <span style={{ top: `${bandTopPct(1, plot.vbH, BAR_PAD_B)}%` }}>{plot.yMinLabel}</span>
           </div>
           <div className="v3-chart__plot">
             <svg

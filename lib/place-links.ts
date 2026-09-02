@@ -4,6 +4,7 @@
  */
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { RESORT_SLUG_TO_CITY } from '@/lib/community-slug'
+import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
 
 export type PlaceType = 'city' | 'neighborhood' | 'community'
 
@@ -44,7 +45,8 @@ export function getPlaceLinks(input: {
 
   if (input.type === 'city') {
     return {
-      placeUrl: `/cities/${slug}`,
+      // An out-of-area city's page is /oregon/<slug>; /cities/<slug> 308s there.
+      placeUrl: cityHref(slug) ?? `/cities/${slug}`,
       browseUrl: homesForSalePath(titleFromSlug(slug)),
       marketUrl: `/housing-market/${slug}`,
       label: titleFromSlug(slug),
@@ -54,7 +56,9 @@ export function getPlaceLinks(input: {
   if (input.type === 'neighborhood') {
     const citySlug = (input.citySlug ?? 'bend').toLowerCase()
     return {
-      placeUrl: `/cities/${citySlug}/${slug}`,
+      // A registry community used as a neighborhood slug (Northwest Crossing,
+      // Eagle Crest) has its own /communities page; the two-segment path 308s.
+      placeUrl: cityNeighborhoodHref(citySlug, slug) ?? `/cities/${citySlug}/${slug}`,
       browseUrl: `/homes-for-sale/${citySlug}/${slug}`,
       marketUrl: `/housing-market/${citySlug}/${slug}`,
       label: titleFromSlug(slug),

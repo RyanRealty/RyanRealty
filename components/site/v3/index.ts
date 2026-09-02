@@ -244,6 +244,22 @@ export { V3Quiet } from './V3Quiet'
 export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Quiet'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern 8 — ANSWERS: a question set the reader opens                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Quiet renders every answer expanded, which TASTE.md (Matt 2026-09-01) bans
+ * by name once a section is more than two paragraphs of prose with no figure,
+ * image, map or control — "FAQ blocks count". Answers is that section's form:
+ * native disclosures (so every answer stays in the served HTML), the title and
+ * the outbound doors in a left rail, the questions beside them. Quiet keeps
+ * prose that must read as prose.
+ */
+export { V3Answers } from './V3Answers'
+
+export type { V3AnswersProps, V3Answer, V3AnswersDoor } from './V3Answers'
+
+/* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */
 /* -------------------------------------------------------------------------- */
 

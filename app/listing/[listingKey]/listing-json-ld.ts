@@ -26,6 +26,7 @@
 
 import { listingShareSummary } from '@/lib/share-metadata'
 import { listingDetailPath } from '@/lib/slug'
+import { cityHref } from '@/lib/site/place-href'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 export type ListingJsonLdInput = {
@@ -107,8 +108,10 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
       items: [
         { name: 'Home', url: '/' },
         { name: 'Homes for sale', url: '/homes-for-sale' },
-        ...(listing.city && listing.citySlug
-          ? [{ name: listing.city, url: `/cities/${listing.citySlug}` }]
+        // A breadcrumb URL is a published claim about where the page lives, so
+        // it names the city's own page rather than a path that 308s to it.
+        ...(listing.city && cityHref(listing.citySlug)
+          ? [{ name: listing.city, url: cityHref(listing.citySlug)! }]
           : []),
         { name: street || `Listing ${listingKey}`, url: canonicalPath },
       ],

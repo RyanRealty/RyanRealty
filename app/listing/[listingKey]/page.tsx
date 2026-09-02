@@ -22,6 +22,7 @@ import { BuilderExploreSection } from '@/components/site/listing-detail/BuilderE
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
@@ -479,7 +480,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
     : reviews
 
   const street = listingMlsStreetLine(listing)
-  const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
+  // One hop: an out-of-area city's page is /oregon/<slug> and /cities/<slug>
+  // 308s there; a registry community used as a neighborhood slug 308s to
+  // /communities/<slug> (lib/site/place-href).
+  const cityDoorHref = cityHref(listing.citySlug)
+  const neighborhoodDoorHref =
+    placeContext.neighborhood?.href ?? cityNeighborhoodHref(listing.citySlug, listing.neighborhoodSlug)
   const listingHref = listingDetailPath(
     listing.listingKey,
     {
@@ -501,7 +507,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
-    ...(listing.city && cityHref ? [{ label: listing.city, href: cityHref }] : []),
+    ...(listing.city && cityDoorHref ? [{ label: listing.city, href: cityDoorHref }] : []),
     { label: street || `Listing ${listingKey}` },
   ]
 
@@ -604,16 +610,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <SchoolsBlock listing={listingWithPhotos} />
       {neighborhoodContent &&
       (placeContext.neighborhood?.label ?? listing.neighborhoodName) &&
-      (placeContext.neighborhood?.href ??
-        (listing.citySlug && listing.neighborhoodSlug
-          ? `/cities/${listing.citySlug}/${listing.neighborhoodSlug}`
-          : null)) ? (
+      neighborhoodDoorHref ? (
         <ListingNeighborhoodSection
           name={placeContext.neighborhood?.label ?? listing.neighborhoodName ?? neighborhoodContent.name}
-          href={
-            placeContext.neighborhood?.href ??
-            `/cities/${listing.citySlug}/${listing.neighborhoodSlug}`
-          }
+          href={neighborhoodDoorHref}
           content={neighborhoodContent}
         />
       ) : null}

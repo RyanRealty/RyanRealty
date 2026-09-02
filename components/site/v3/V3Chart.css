@@ -581,11 +581,27 @@
   vector-effect: non-scaling-stroke;
 }
 
-.v3 .v3-chart__y--ticks {
+.v3 .v3-chart__y--ticks,
+.v3 .v3-chart__y--ends {
   position: relative;
   display: block;
   min-width: 3.2rem;
   padding: 0;
+  /* The rail's box IS the plot's box: the grid row can be taller than the
+     plot, and a rail stretched to the row mapped every label onto a scale
+     28px longer than the gridlines it names (evaluator round five,
+     SUBDIVISION-CHART-2). */
+  height: var(--v3-chart-plot);
+  align-self: start;
+}
+
+/* A two-label rail sits on the band's ends, the same band the gridlines and
+   the bars are drawn in. */
+.v3 .v3-chart__y--ends > span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
 }
 
 .v3 .v3-chart__ytick {
@@ -607,12 +623,12 @@
   white-space: nowrap;
 }
 
-.v3 .v3-chart__xtick:first-child {
-  transform: translateX(0);
-}
-
-.v3 .v3-chart__xtick:last-child {
-  transform: translateX(-100%);
+/* Every tick is centred on the thing it names. The ends used to be shoved
+   fully inside the plot, which put the first and last year 18px — a third of
+   the bar pitch at 375 — off the bars they label (evaluator round five,
+   SUBDIVISION-CHART-3). The row carries the overhang instead. */
+.v3 .v3-chart__x--ticks {
+  overflow: visible;
 }
 
 /* ---------------------------------------------------------------------------
@@ -763,6 +779,14 @@
     padding-top: 1.75rem;
   }
 
+  /* The rail follows the plot's reading band, or its labels map onto a scale
+     28px longer than the gridlines they name. */
+  .v3 .v3-chart__y--ticks,
+  .v3 .v3-chart__y--ends {
+    margin-top: 1.75rem;
+    height: calc(var(--v3-chart-plot) - 1.75rem);
+  }
+
   .v3 .v3-chart__tip,
   .v3 .v3-chart__tip--flip {
     top: 0;
@@ -802,7 +826,15 @@
    (pass six, S4). A tick row of five or more thins to every other label
    under 48rem; the gridline stays so the position still reads. */
 @media (max-width: 47.99rem) {
-  .v3 .v3-chart__x--ticks:has(> :nth-child(4)) .v3-chart__xtick:nth-child(2n) {
+  /* …but never the last one: on a six-year run the rule hid 2026, the year
+     the claim beside it names (evaluator round five, SUBDIVISION-CHART-1). */
+  .v3 .v3-chart__x--ticks:has(> :nth-child(4)) .v3-chart__xtick:nth-child(2n):not(:last-child) {
+    visibility: hidden;
+  }
+
+  /* An even run would then show the last two labels side by side: drop the
+     one before it instead. */
+  .v3 .v3-chart__x--ticks:has(> :nth-child(4)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)) {
     visibility: hidden;
   }
 }

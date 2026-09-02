@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { BROKERS } from '@/lib/brand/contact'
-import { aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
+import { aboutDisplayName, aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
+import { ABOUT_BROKER_ROSTER, ABOUT_FAQ_ITEMS } from '@/app/about/_v3/about-constants'
 
 describe('about faces fold', () => {
   it('names the photo door so pa11y does not see an empty link', () => {
@@ -24,6 +25,50 @@ describe('about page copy', () => {
     const origin = src.slice(src.indexOf('originItems'), src.indexOf('licenseFigures'))
     expect(origin).not.toContain('ABOUT_MISSION')
     expect(origin).not.toMatch(/boutique|authentic|exceptional/)
+  })
+})
+
+/**
+ * /about shipped two names for one broker until 2026-09-02: the faces row and
+ * the FAQ prose read BROKERS.rebecca.nameShort while the FAQ answer and the
+ * broker doors read the legal name, so the page read as four brokers. The
+ * display name is nameShort everywhere; the legal name is a fact about the
+ * license and is allowed exactly one appearance, attached to that license.
+ */
+describe('one name per broker on /about', () => {
+  const rebecca = BROKERS.rebecca
+
+  it('states the licensed name once, on the license', () => {
+    expect(ABOUT_BROKER_ROSTER).toContain(
+      `${rebecca.nameShort}, ${rebecca.titleShort}, OR #${rebecca.license}, licensed as ${rebecca.name}`,
+    )
+    expect(ABOUT_BROKER_ROSTER.split(rebecca.name)).toHaveLength(2)
+  })
+
+  it('names every broker by the display name the faces use', () => {
+    for (const key of ['matt', 'paul', 'rebecca'] as const) {
+      expect(ABOUT_BROKER_ROSTER).toContain(`${BROKERS[key].nameShort}, ${BROKERS[key].titleShort}`)
+    }
+  })
+
+  it('answers "Who are the brokers?" from that one roster', () => {
+    const answer = ABOUT_FAQ_ITEMS.find((i) => i.question === 'Who are the brokers?')?.answer
+    expect(answer).toBe(ABOUT_BROKER_ROSTER)
+  })
+
+  it('resolves the door label and the face to the same name', () => {
+    // brokers.display_name carries the legal name; both call sites go through here.
+    expect(aboutDisplayName(rebecca.slug, rebecca.name)).toBe(rebecca.nameShort)
+  })
+
+  it('hand-types no broker name in page.tsx or the constants', () => {
+    const page = readFileSync('app/about/page.tsx', 'utf8')
+    const constants = readFileSync('app/about/_v3/about-constants.ts', 'utf8')
+    for (const src of [page, constants]) {
+      expect(src).not.toContain(rebecca.name)
+      expect(src).not.toContain(rebecca.nameShort)
+      expect(src).not.toContain(BROKERS.paul.nameShort)
+    }
   })
 })
 

@@ -21,7 +21,12 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice. After the faces, below the fold: origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. Closing: the locked D11 mission sentence (exact words, We), the same FAQ array the FAQPage JSON-LD uses, plus outbound edges and any city that had no publishable median.",
+      "section": "Pattern 6, ONCE (2026-09-02, was twice). After the faces, below the fold: origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. The closing block moved to V3Answers.",
+      "blocking": true
+    },
+    {
+      "name": "V3Answers",
+      "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them — VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -85,8 +90,9 @@
     "AboutFaces -- the three brokers, transparent PNGs, each a door to /team/[slug]",
     "V3Quiet #about -- how it started, the concrete origin, zero marketing-speak",
     "V3Instrument #record -- the verified record, with live city inventory behind it",
-    "V3Ledger #service-area -- where we work, each city a door",
-    "V3Quiet #faq -- working with Ryan Realty",
+    "V3Atlas #service-area -- where we work, the living map (replaced the city Ledger 2026-09-02)",
+    "V3Proof #proof -- the newest verified Google reviews with their record",
+    "V3Answers #faq -- working with Ryan Realty, four questions and three edges",
     "V3Footer"
   ],
   "openDefects": {

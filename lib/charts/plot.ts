@@ -12,6 +12,28 @@ export const VB_H = 140
 export const MIX_H = 36
 export const PAD = { l: 2, r: 2, t: 8, b: 8 }
 
+/**
+ * Where a plot-relative fraction lands in the SVG BOX, as a percentage.
+ *
+ * A tick's `frac` runs 0 to 1 across the plot area, which is inset from the
+ * viewBox by PAD. The rails are HTML beside the SVG, and applying the fraction
+ * to the rail's own full height put the top label 31.7px above the gridline it
+ * names (evaluator round five, SUBDIVISION-CHART-2). This maps one to the
+ * other.
+ */
+export function bandTopPct(frac: number, vbH: number = VB_H, padB: number = PAD.b): number {
+  const h = vbH - PAD.t - padB
+  return ((PAD.t + frac * h) / vbH) * 100
+}
+
+/** A vertical bar chart reserves more room under its baseline than a line. */
+export const BAR_PAD_B = 18
+
+export function bandLeftPct(frac: number, vbW: number = VB_W): number {
+  const w = vbW - PAD.l - PAD.r
+  return ((PAD.l + frac * w) / vbW) * 100
+}
+
 export type ChartKind = 'line' | 'bars' | 'mix'
 
 export type PlotPointIn = {
@@ -508,7 +530,7 @@ export function buildBarPlot(
   const n = points.length
   const padL = 16
   const padR = 16
-  const padB = 18
+  const padB = BAR_PAD_B
   const plotW = VB_W - padL - padR
   const plotH = VB_H - PAD.t - padB
   const gap = plotW / n

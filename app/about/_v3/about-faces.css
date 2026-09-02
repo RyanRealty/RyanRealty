@@ -5,23 +5,50 @@
    390: the first face fills the fold. Other names stay doors on the
    same row as Call and Text. 48rem: three faces, same row language. */
 
+/* ONE RHYTHM (2026-09-02). tokens.css states the system on --v3-section-pad:
+   "Every pattern root pads its block axis with this one value, so the whole
+   register's rhythm is one token." This root did not, and /about paid for it —
+   the gaps between its six sections ran 144, 240, 120, 48, 168px, so the page
+   read as sections that had been placed rather than composed. */
 .v3.about-faces {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-xs) var(--v3-gutter) var(--v3-space-lg);
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* THE ONE EXCEPTION, and it is the same one PUBLIC_UI.md section 6 already
+   makes for rules: "the section that opens the page carries none, because the
+   mast rule above it already closed the chrome." A lead section's upper
+   neighbour is the chrome, not another section, so it pays the chrome's
+   spacing rather than the section rhythm — which is also what keeps the first
+   face in the 390 fold. `--lead` is set from headingLevel in AboutFaces.tsx:
+   level 1 means this heading is the page's own title. */
+.v3.about-faces--lead {
+  padding-top: var(--v3-space-lg);
 }
 
 .about-faces__head {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-3xs);
-  margin-bottom: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-md);
 }
 
 .v3.about-faces .about-faces__heading {
   margin: 0;
-  font-size: var(--v3-size-display-2);
   line-height: var(--v3-leading-heading);
+}
+
+/* THE PAGE'S OWN TITLE IS THE LARGEST TYPE ON IT (2026-09-02). This rule used
+   to pin every heading here to --v3-size-display-2, which is the section-
+   heading size: /about's H1 computed 35.2px at 1440, identical to five H2s,
+   while the Atlas H2 "Where we work" computed 57.6px — the largest type on the
+   page was a section heading. A lead H1 now takes --v3-size-display-1 from
+   .v3-heading--1 in tokens.css, the same ramp every other page's H1 reads.
+   Level 2 (the homepage, whose H1 is the Stage) keeps the section size: a
+   second 4.2rem line under a Stage would be a second title. */
+.v3.about-faces:not(.about-faces--lead) .about-faces__heading {
+  font-size: var(--v3-size-display-2);
 }
 
 /* 390: ALL THREE faces, side by side, name rows beneath. The old rule hid

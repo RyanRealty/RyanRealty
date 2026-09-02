@@ -14,6 +14,12 @@ import { atlasRegionNames } from '@/lib/atlas/place-names'
 import { getBoundaryGeoJSON, getCommunitySubdivisions } from '@/lib/data'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { outerRings, pointInRings } from '@/lib/geo/project-svg'
+import {
+  cityHref,
+  cityNeighborhoodHref,
+  hasCityNeighborhoodPages,
+  subdivisionHref,
+} from '@/lib/site/place-href'
 
 export type ListingAtlasScope = {
   /** The MLS City the home files under; scopes the population read. */
@@ -49,7 +55,15 @@ const READ_MS = 4500
 
 export async function buildListingAtlas(scope: ListingAtlasScope): Promise<ListingAtlas | null> {
   if (!scope.city.trim()) return null
-  const wantsNeighborhood = !!(scope.citySlug && scope.neighborhoodSlug && scope.neighborhoodName)
+  // Neighborhood pages hang off /cities/<city> only. An out-of-area city's page
+  // is /oregon/<city> and has no children, so its frame is the city — asking for
+  // a neighborhood boundary there could only produce a door that 404s.
+  const wantsNeighborhood = !!(
+    scope.citySlug &&
+    scope.neighborhoodSlug &&
+    scope.neighborhoodName &&
+    hasCityNeighborhoodPages(scope.citySlug)
+  )
   const neighborhoodBoundary = wantsNeighborhood
     ? await withTimeoutFallback(
         getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: `${scope.citySlug}-${scope.neighborhoodSlug}` }).catch(() => null),
@@ -61,11 +75,12 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   const hasNeighborhood = neighborhoodBoundary != null
   const boundary = neighborhoodBoundary ?? scope.boundary
   const frameName = hasNeighborhood ? scope.neighborhoodName! : (scope.cityName ?? scope.city)
+  // Every door here resolves in one request (lib/site/place-href). Built inline
+  // they did not: a listing in Medford pointed at /cities/medford, which
+  // answered 308 -> /oregon/medford.
   const frameHref = hasNeighborhood
-    ? `/cities/${scope.citySlug}/${scope.neighborhoodSlug}`
-    : scope.citySlug
-      ? `/cities/${scope.citySlug}`
-      : null
+    ? cityNeighborhoodHref(scope.citySlug, scope.neighborhoodSlug)
+    : cityHref(scope.citySlug)
 
   // No recorded boundary (a city outside the mapped set): the frame is the
   // city's own listings, no outlines — one section for every listing, never a
@@ -121,7 +136,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
               kind: 'neighborhood',
               kindLabel: 'Subdivision',
               name: names[i] ?? cell.label,
-              href: `/subdivisions/${cell.slug}`,
+              href: subdivisionHref(cell.slug) ?? `/subdivisions/${cell.slug}`,
               geometry: cell.geometry,
             },
           ]

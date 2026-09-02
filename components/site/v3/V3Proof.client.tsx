@@ -171,7 +171,12 @@ export function V3Proof({
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-proof', className)}
+      // headingLevel 1 means this headline IS the page's title, so the section
+      // opens the page: its upper neighbour is the chrome, not another section,
+      // and it pays the chrome's spacing rather than the section rhythm. Same
+      // distinction PUBLIC_UI.md section 6 already makes for the section rule
+      // ("the section that opens the page carries none").
+      className={cn(V3_ROOT_CLASS, 'v3-proof', headingLevel === 1 && 'v3-proof--lead', className)}
       aria-labelledby={`${uid}-h`}
     >
       <div className="v3-proof__head">

@@ -29,7 +29,14 @@ export function aboutPhoneE164(phone: string | null | undefined): string | null 
   return digits.length === 10 ? `+1${digits}` : null
 }
 
-function displayName(slug: string, fullName: string): string {
+/**
+ * The everyday display form for a broker the roster knows, falling back to the
+ * `brokers.display_name` the DAL returned. `display_name` carries the LEGAL
+ * name ("Rebecca Ryser Peterson"); `nameShort` is what the site shows. Every
+ * place /about prints a broker's name goes through here, so the page cannot
+ * print two spellings of one person again (2026-09-02).
+ */
+export function aboutDisplayName(slug: string, fullName: string): string {
   return BROKER_BY_SLUG.get(slug)?.nameShort ?? fullName
 }
 
@@ -49,7 +56,7 @@ export function aboutFaceFromBroker(b: {
   return {
     href: teamPath(slug),
     src,
-    name: displayName(slug, name),
+    name: aboutDisplayName(slug, name),
     title: title || 'Broker',
     tel: aboutPhoneE164(b.phoneDirect),
   }

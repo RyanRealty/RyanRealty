@@ -240,9 +240,14 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
     : counts.cities > 1
       ? `across ${counts.cities} Central Oregon cities`
       : `in ${scope.label}`
+  // The map counts what it read and says so. Whether any of it falls outside
+  // the frame is something only the frame knows, so the Atlas appends that
+  // sentence itself, from the dots it actually placed — this one used to
+  // claim "a few sit just beyond its edges" on maps where none did (evaluator
+  // round five, LISTING-NOBOUNDARY-5).
   const source =
     `Every active and pending listing of every property type on the regional MLS through Oregon Data Share ${where}, ` +
-    `plus the closes of the last ${SOLD_WINDOW_DAYS} days. Counts and medians cover every listing read for this map; a few sit just beyond its edges.`
+    `plus the closes of the last ${SOLD_WINDOW_DAYS} days. Counts and medians cover every listing read for this map.`
   return {
     dots,
     types: atlasTypesPresent(dots),

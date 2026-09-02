@@ -2,15 +2,43 @@
  * Route-local constants for /about.
  *
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
- * here fetches or formats. The mission sentence is the D11 exception: it is
- * the only public line that may name authentic / exceptional, and the words
- * are locked. Do not paraphrase it. It ships in the closing Quiet, never in
- * How it started and never on the first screen.
+ * here fetches or formats.
+ *
+ * THE D11 MISSION SENTENCE IS OFF THIS PAGE (2026-09-02). VOICE.md grants it
+ * and grants nothing else — "This sentence MAY appear on About" — so no gate
+ * required it; check-brand-voice.mjs only carves it out of the self-praise
+ * scan, and the carve-out survives whether or not the page uses it. What it
+ * opened the closing section with was "We are a boutique real estate brokerage
+ * in Bend, Oregon", which is the positioning Matt killed on 2026-06-10 ("is
+ * that going to position us, our intent is to grow"), and which
+ * scripts/brand-voice-vocabulary.cjs bans by pattern (boutique|small + org)
+ * everywhere the About carve-out does not reach. The record below it states
+ * the firm without the gloss: founded, firm license, principal broker license,
+ * each traceable to the Oregon Real Estate Agency.
+ *
+ * THE FAQ IS FOUR QUESTIONS, NOT SIX (2026-09-02). The set is what /about can
+ * answer that /about has not already said. "When did Ryan Realty start?" went:
+ * the origin prose, the Instrument headline, and the founded figure printed
+ * June 2023 three times before the FAQ printed it a fourth. The service-area
+ * answer's city list went the same way — the Atlas above it names every city,
+ * resort community, and Bend neighborhood with a recorded boundary as a door,
+ * and names more of them than the sentence did; the one fact the map cannot
+ * state, that Tumalo is not a separate MLS city, is now its own question.
+ * MetadataBlock emits this array as FAQPage, so a question cut here is a
+ * question cut from the structured data too — which is the point: the page and
+ * its JSON-LD answer the same four things.
+ *
+ * NO BROKER NAME IS TYPED IN THIS FILE (2026-09-02). The roster answer below
+ * is built from lib/brand/contact.ts, because the hand-typed one had drifted:
+ * the faces row renders `BROKERS.rebecca.nameShort` while this file's FAQ
+ * answer carried `BROKERS.rebecca.name`, so /about published two spellings of
+ * one broker as if they were two people. Display is `nameShort` on every
+ * surface; the licensed name is a fact about the license and appears once,
+ * attached to it. Held by components/site/__tests__/about-faces.test.ts, which
+ * reads this file as text — do not spell a broker's name in a comment either.
  */
 
-/** D11 About mission. Exact words. Who is talking: We. Nowhere else on the site. */
-export const ABOUT_MISSION =
-  'We are a boutique real estate brokerage in Bend, Oregon, committed to building community through authentic relationships and exceptional customer service.'
+import { BROKERS, type BrokerKey } from '@/lib/brand/contact'
 
 /** Firm license as published on the pre-v3 about page (OREA 201253677). */
 export const FIRM_LICENSE = 'OREA 201253677'
@@ -46,25 +74,46 @@ export const ABOUT_CITY_SLUG: Record<(typeof ABOUT_CITY_LABELS)[number], string>
   Prineville: 'prineville',
 }
 
+/**
+ * Roster order, matching the faces above it: TEAM_RANK (matt 0, rebecca 1,
+ * paul 2) in app/team/_v3/team-constants.ts. One page, one order.
+ */
+const ABOUT_ROSTER: readonly BrokerKey[] = ['matt', 'rebecca', 'paul']
+
+/**
+ * One broker, one line: the name a visitor sees, the title, the Oregon license
+ * that name holds. When the license is issued to a longer legal name the line
+ * says so where it belongs — on the license — rather than the page printing a
+ * second name somewhere else. Every value reads from BROKERS, the single
+ * source for every rendered broker name, title, and license number; the
+ * numbers match the Oregon Real Estate Agency licensee records.
+ */
+function rosterLine(key: BrokerKey): string {
+  const b = BROKERS[key]
+  const licensedAs = b.name === b.nameShort ? '' : `, licensed as ${b.name}`
+  return `${b.nameShort}, ${b.titleShort}, OR #${b.license}${licensedAs}`
+}
+
+/** "Name, Title, OR #license." per broker, in page order. */
+export const ABOUT_BROKER_ROSTER = `${ABOUT_ROSTER.map(rosterLine).join('. ')}.`
+
 export const ABOUT_FAQ_ITEMS = [
   {
     question: 'Who are the brokers?',
-    answer:
-      'Matt Ryan (Principal Broker, OR #201206613), Paul Stevenson, and Rebecca Ryser Peterson.',
+    answer: ABOUT_BROKER_ROSTER,
   },
   {
-    question: 'When did Ryan Realty start?',
-    answer: 'Matt Ryan opened Ryan Realty in June 2023, based in Bend, Oregon.',
-  },
-  {
+    // The sentence the origin prose already carries — "the broker you first
+    // speak to is the broker who works your purchase or sale through to close.
+    // No hand-off." — is not repeated here. What is left is the part that
+    // section does not say: what the hand-off would have been to.
     question: 'Will I work with the same broker from start to finish?',
-    answer:
-      'Yes. The broker you first talk to is the broker who works your purchase or sale through to close. There is no hand-off to a junior agent or a transaction desk.',
+    answer: 'Yes. No hand-off to a junior agent or a transaction desk.',
   },
   {
-    question: 'What areas do you cover?',
+    question: 'Do you cover Tumalo?',
     answer:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Terrebonne, and Prineville, plus the surrounding resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch. Tumalo, unincorporated and not a separate MLS city, is served as part of the Bend market.',
+      'Tumalo is unincorporated and not a separate MLS city. It is served as part of the Bend market.',
   },
   {
     question: 'How do I get a home valuation?',

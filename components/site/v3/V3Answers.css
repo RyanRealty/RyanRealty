@@ -1,0 +1,251 @@
+/* ===========================================================================
+   PATTERN 8: ANSWERS
+   Styles for V3Answers.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3Answers.tsx imports and whose scope the section opens
+   on itself with V3_ROOT_CLASS. No raw color, no hardcoded duration.
+
+   The pattern's job: a question set the reader works. Closed, the section is a
+   short stack of hairline rows; open, one answer at a time at the reading
+   measure. Same near-zero weight as Quiet — the difference is the control.
+   =========================================================================== */
+
+/* Compound guard (`.v3.v3-answers`), same reason every pattern carries one:
+   see V3Quiet.css. The section root pads its block axis with the one rhythm
+   token, so this pattern sits on the same rhythm as Instrument, Ledger,
+   Quiet, Field and Sheet. */
+.v3.v3-answers {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* THE LOOK (Broadside): a section following content opens on the navy rule. */
+* + .v3.v3-answers {
+  border-top: var(--v3-rule-section);
+}
+
+/* One column at 390, in reading order. Two on a wide window: the title and
+   the outbound doors hold the left rail, the questions hold the right. */
+.v3-answers__grid {
+  display: grid;
+  gap: var(--v3-space-xl);
+}
+
+@media (min-width: 64rem) {
+  .v3-answers__grid {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'head list'
+      'doors list';
+    align-items: start;
+    column-gap: var(--v3-space-3xl);
+    row-gap: var(--v3-space-lg);
+  }
+
+  .v3-answers__head {
+    grid-area: head;
+  }
+
+  .v3-answers__list {
+    grid-area: list;
+  }
+
+  .v3-answers__doors {
+    grid-area: doors;
+  }
+}
+
+/* Left rail ---------------------------------------------------------------- */
+
+.v3-answers__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+}
+
+.v3.v3-answers .v3-answers__heading {
+  margin: 0;
+}
+
+.v3-answers__note {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+}
+
+/* Questions ---------------------------------------------------------------- */
+
+.v3-answers__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The hairline is the set, exactly as in Quiet: a rule above every row and a
+   closing rule under the last, never a border box. */
+.v3-answers__item {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-answers__item:last-child {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3.v3-answers .v3-answers__item[id] {
+  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap));
+}
+
+/* The question is the control. The whole row is the target, at the 44px thumb
+   minimum, and the default triangle is removed in both engines. */
+.v3-answers__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  color: var(--v3-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.v3-answers__q::-webkit-details-marker {
+  display: none;
+}
+
+.v3-answers__q:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-answers__q-text {
+  min-width: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-answers__q:hover .v3-answers__q-text {
+  text-decoration-color: currentColor;
+}
+
+/* Plus becomes minus. Two hairlines drawn in the current ink, so the mark
+   inherits the row's color and needs no color of its own. The rotation is the
+   only motion in this pattern and it encodes a state the visitor caused;
+   --v3-dur-state collapses to 0.01ms under reduced motion. */
+.v3-answers__mark {
+  position: relative;
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--v3-ink-muted);
+}
+
+.v3-answers__mark::before,
+.v3-answers__mark::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-answers__mark::after {
+  transform: rotate(90deg);
+}
+
+.v3-answers__row[open] .v3-answers__mark::after {
+  transform: rotate(0deg);
+}
+
+.v3-answers__q:hover .v3-answers__mark {
+  color: var(--v3-ink);
+}
+
+.v3-answers__a {
+  max-width: var(--v3-measure-text);
+  padding: 0 0 var(--v3-space-md);
+}
+
+.v3-answers__para {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+.v3-answers__para + .v3-answers__para {
+  margin-top: var(--v3-space-sm);
+}
+
+/* Doors -------------------------------------------------------------------- */
+
+.v3-answers__doors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-answers__door-item {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-answers__door-item:last-child {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-answers__door {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-decoration: none;
+}
+
+.v3-answers__door:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-answers__door-label {
+  min-width: 0;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-answers__door:hover .v3-answers__door-label,
+.v3-answers__door:focus-visible .v3-answers__door-label {
+  text-decoration-color: currentColor;
+}
+
+.v3-answers__door-mark {
+  flex: none;
+  color: var(--v3-ink-muted);
+  transition:
+    transform var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-answers__door:hover .v3-answers__door-mark,
+.v3-answers__door:focus-visible .v3-answers__door-mark {
+  color: var(--v3-ink);
+  transform: translateX(var(--v3-travel));
+}

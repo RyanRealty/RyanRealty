@@ -6,6 +6,7 @@
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
 import type { BoundaryGeoJSONInput } from '@/lib/data/geo/getBoundaryGeoJSON'
+import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
 
 const NOISE_SLUGS = new Set(['na', 'none', 'unknown', 'outside-city-limits'])
 
@@ -112,9 +113,12 @@ export function leftoverListingGrains(
       geoType: 'neighborhood',
       geoSlug: neighborhoodSlug,
       name: listing.neighborhoodName ?? listing.boundaryNeighborhood ?? neighborhoodSlug,
-      hubHref: listing.citySlug
-        ? `/cities/${listing.citySlug}/${neighborhoodSlug}`
-        : `/cities/${neighborhoodSlug}`,
+      // One hop (lib/site/place-href): the two-segment path 308s for a registry
+      // community, and a bare city slug 308s when it is out of area.
+      hubHref:
+        (listing.citySlug
+          ? cityNeighborhoodHref(listing.citySlug, neighborhoodSlug)
+          : cityHref(neighborhoodSlug)) ?? `/cities/${neighborhoodSlug}`,
     })
   } else if (
     marketGeo?.geoType === 'community' &&
@@ -134,7 +138,7 @@ export function leftoverListingGrains(
       geoType: 'city',
       geoSlug: listing.citySlug,
       name: listing.city ?? listing.citySlug,
-      hubHref: `/cities/${listing.citySlug}`,
+      hubHref: cityHref(listing.citySlug) ?? `/cities/${listing.citySlug}`,
     })
   }
 
