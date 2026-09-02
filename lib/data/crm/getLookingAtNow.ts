@@ -113,14 +113,51 @@ export async function getLookingAtNow(brokerScope: string | null): Promise<Looki
         .select('session_id,crm_person_id')
         .not('crm_person_id', 'is', null)
         .gte('last_seen_at', cutoffIso)
+        .order('last_seen_at', { ascending: false })
         .limit(SESSION_CAP),
     )
   ).filter((s) => Number.isFinite(s.crm_person_id) && s.crm_person_id > 0)
 
-  if (sessions.length === 0) return []
-
   const sessionToPerson = new Map<string, number>()
   for (const s of sessions) sessionToPerson.set(s.session_id, s.crm_person_id)
+
+  // Identity-map leg (2026-09-01): a session born before its browser's rr_vid
+  // was stitched — or where the birth carryover write failed — sits in the
+  // window with crm_person_id NULL even though visitor_identity_map knows the
+  // person. Walk map-first (a few hundred stitched rr_vids) rather than
+  // scanning anonymous window sessions, whose volume would swamp any cap
+  // (verified 2026-09-01: 83 stitched vids vs 200+ anon sessions in one day).
+  const mapRows = await safeRows<{ rr_vid: string; crm_person_id: number | null; fub_person_id: number | null }>(
+    sb
+      .from('visitor_identity_map')
+      .select('rr_vid,crm_person_id,fub_person_id')
+      .not('crm_person_id', 'is', null)
+      .order('identified_at', { ascending: false })
+      .limit(500),
+  )
+  const vidToPerson = new Map<string, number>()
+  for (const r of mapRows) {
+    const pid = Number(r.crm_person_id ?? r.fub_person_id ?? 0)
+    if (pid > 0 && r.rr_vid) vidToPerson.set(r.rr_vid, pid)
+  }
+  const vids = [...vidToPerson.keys()]
+  for (let i = 0; i < vids.length; i += IN_CHUNK) {
+    const rows = await safeRows<{ session_id: string; rr_vid: string | null }>(
+      sb
+        .from('visitor_sessions')
+        .select('session_id,rr_vid')
+        .in('rr_vid', vids.slice(i, i + IN_CHUNK))
+        .is('crm_person_id', null)
+        .gte('last_seen_at', cutoffIso)
+        .limit(SESSION_CAP),
+    )
+    for (const s of rows) {
+      const pid = s.rr_vid ? vidToPerson.get(s.rr_vid) : undefined
+      if (pid && !sessionToPerson.has(s.session_id)) sessionToPerson.set(s.session_id, pid)
+    }
+  }
+
+  if (sessionToPerson.size === 0) return []
   const sessionIds = [...sessionToPerson.keys()]
 
   type Ev = {

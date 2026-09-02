@@ -389,6 +389,39 @@ export async function POST(request: NextRequest) {
     console.warn('[visitors/track] session insert failed:', insertSessionErr.message)
   }
 
+  // Identity carryover at session birth (2026-09-01). stitchVisitorIdentity
+  // stamps person ids only onto sessions that EXIST at stitch time, so a new
+  // session from the same browser days later was born unidentified — the
+  // looking-at wake below and every crm_person_id reader missed stitched
+  // returners (verified: stitched clickers on site with their newest
+  // identified session days old). On a brand-new session whose browser
+  // carries a durable rr_vid, resolve the identity map once (PK read) and
+  // stamp the same fields the stitch writes. Best-effort, never blocks.
+  if (!insertSessionErr && rrVid) {
+    try {
+      const { data: known } = await supabase
+        .from('visitor_identity_map')
+        .select('crm_person_id, fub_person_id, email')
+        .eq('rr_vid', rrVid)
+        .maybeSingle()
+      const carriedId = Number(known?.crm_person_id ?? known?.fub_person_id ?? 0)
+      if (known && (carriedId > 0 || known.email)) {
+        const patch: Record<string, unknown> = {
+          identified_at: new Date().toISOString(),
+          identified_via: 'rr_vid_carryover',
+        }
+        if (carriedId > 0) {
+          patch.crm_person_id = carriedId
+          patch.fub_person_id = carriedId
+        }
+        if (known.email) patch.identified_email = String(known.email).toLowerCase()
+        await supabase.from('visitor_sessions').update(patch).eq('session_id', sessionId)
+      }
+    } catch (err) {
+      console.warn('[visitors/track] rr_vid carryover failed:', err)
+    }
+  }
+
   // 2. INSERT the event. Trigger fires, score updates, last_seen_at refreshes.
   // Under essential-only consent, listing metadata, scroll, dwell, and the
   // freeform metadata blob get dropped — we keep only session_id,

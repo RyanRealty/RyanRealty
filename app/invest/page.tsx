@@ -20,7 +20,7 @@
 
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { buildJsonLd } from '@/lib/site/json-ld'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import {
   getPublicPlaceSegments,
@@ -146,13 +146,18 @@ export default async function InvestPage() {
     <>
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
-        <MetadataBlock
-          schemas={[
-            {
-              type: 'breadcrumb',
-              items: trail.map((t) => ({ name: t.label, url: t.href })),
-            },
-          ]}
+        {/* Inline JSON-LD through the lib builder — the ratchet (ci:public-ui)
+            admits no new page onto the legacy MetadataBlock register. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              buildJsonLd({
+                type: 'breadcrumb',
+                items: trail.map((t) => ({ name: t.label, url: t.href })),
+              }),
+            ),
+          }}
         />
         <V3Breadcrumb trail={trail} />
 
