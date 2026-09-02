@@ -51,6 +51,12 @@ export type V3ProofProps = {
   quotes: readonly V3ProofQuote[]
   /** The record's own page: "View on Google". */
   source: { label: string; href: string }
+  /**
+   * The strip and the year chips are the record of EVERY review. A page that
+   * shows a subset (the About page's newest four) turns them off, so a strip
+   * of four marks never sits beside a figure that says twenty-five.
+   */
+  record?: boolean
   className?: string
 }
 
@@ -78,6 +84,7 @@ export function V3Proof({
   figures,
   quotes,
   source,
+  record = true,
   className,
 }: V3ProofProps) {
   const uid = useId()
@@ -146,7 +153,7 @@ export function V3Proof({
 
       {/* The record: every review on its month. Hover or tap a mark to read
           it; the year chips filter the cards below. */}
-      {years.length > 0 ? (
+      {record && years.length > 0 ? (
         <div className="v3-proof__record">
           <svg
             className="v3-proof__strip"

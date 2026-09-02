@@ -34,7 +34,7 @@ import {
 } from '@/components/site/v3'
 import { formatDate } from '@/lib/format/date'
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
-import { toReviewQuotes } from './_v3/review-quotes'
+import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`

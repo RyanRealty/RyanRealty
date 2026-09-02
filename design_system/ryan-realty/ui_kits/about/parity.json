@@ -2,7 +2,7 @@
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, a concrete origin, live city inventory, and direct-broker doors. Zero marketing-speak except the locked D11 mission sentence.",
-  "note": "Look 2026-08-14: About = faces. Order is Breadcrumb, AboutFaces (live broker cutouts, compact H1, name door, Call and Text on the face row), Quiet (origin facts only), Instrument (founded / firm license / principal broker, no seller ask), Ledger (service-area cities from market_pulse_live), Quiet (locked D11 mission below the fold, then FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job (owned media) without V3Stage's full-bleed frame, which would box the transparent PNGs. The family's Sheet lives on /contact and /team/[slug]. A new on-page form here would be a new capture contract. Seller lives on Sell. The next tap is the name or the number. D11: the mission sentence is the one virtue-word exception, exact words, We, and it does not ship on the first screen. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "note": "Look 2026-08-14: About = faces. Order is Breadcrumb, AboutFaces (live broker cutouts, compact H1, name door, Call and Text on the face row), Quiet (origin facts only), Instrument (founded / firm license / principal broker, no seller ask), Atlas (the service area as the living map, from buildPlaceAtlas), Proof (the newest reviews), Quiet (locked D11 mission below the fold, then FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job (owned media) without V3Stage's full-bleed frame, which would box the transparent PNGs. The family's Sheet lives on /contact and /team/[slug]. A new on-page form here would be a new capture contract. Seller lives on Sell. The next tap is the name or the number. D11: the mission sentence is the one virtue-word exception, exact words, We, and it does not ship on the first screen. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -30,8 +30,13 @@
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "Pattern 3, once. One figure row per service-area city that returned a live market_pulse_live row carrying a median list price. Value column is formatPrice of that median. Trace names live MLS through Oregon Data Share, single-family, city rows from market_pulse_live. Stamp is formatDate of the newest updated_at. Empty branch uses emptyMessage.",
+      "name": "V3Atlas",
+      "section": "The service area as the living map: every town, community, and Bend neighborhood with a recorded boundary as a door, the region's listings as dots, one claim sentence from the same population the homepage hero reads (buildPlaceAtlas, one source). Replaces the city ledger 2026-09-02 (Matt: every page interactive, no scrolling lists).",
+      "blocking": true
+    },
+    {
+      "name": "V3Proof",
+      "section": "The newest verified Google reviews with their record (count, average, newest), headingLevel 2, a door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews.",
       "blocking": true
     },
     {
@@ -62,16 +67,16 @@
     }
   ],
   "removedComponents": [
-    "KbHero \u2014 brand eyebrow, poetry H1, Central Oregon photo, property search.",
-    "KbAbout \u2014 origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
-    "KbExploreTowns \u2014 city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
-    "KbTestimonials \u2014 eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
-    "KbArticles \u2014 getRecentBlogPosts rail. Dropped; the read is gone.",
-    "KbSell \u2014 address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
-    "KbTeam \u2014 already removed 2026-07-08 as a duplicate of /team.",
-    "FAQBlock \u2014 rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
-    "SmoothScrollProvider \u2014 Lenis + GSAP. v3 motion is CSS tokens.",
-    "KbFooter \u2014 replaced by V3Footer outside <main>.",
+    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
+    "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
+    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
+    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
+    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter — replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "sectionOrder": [

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
-import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON, getAllNeighborhoodsWithCity } from '@/lib/data'
-import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getListingTiles, getDetachedOverlays, getBrokers } from '@/lib/data'
+import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -130,7 +130,7 @@ export default async function Home({
     if (raw === 'heat' || raw === 'split') opening = raw
   }
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments, atlas, neighborhoodRows, communityBoundaries] = await Promise.all([
+  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, regionAtlas, investSegments, atlas] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -143,50 +143,15 @@ export default async function Home({
     }).catch(() => []),
     getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
     getBrokers().catch(() => []),
-    Promise.all(
-      TOWN_ORDER.map((slug) =>
-        getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }).catch(() => null),
-      ),
-    ),
+    // Every town, community, and Bend neighborhood with a recorded boundary,
+    // assembled once for every surface that draws the region whole.
+    buildRegionAtlasRegions().catch(() => null),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
     // The Atlas population, through the shared builder (one source for the
     // homepage and every place page). Empty cities = the whole feed.
     buildPlaceAtlas({ cities: [], label: 'Central Oregon' }),
-    getAllNeighborhoodsWithCity().catch(() => []),
-    Promise.all(
-      getAllResortCommunities().map((c) =>
-        getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: c.slug })
-          .then((geometry) => ({ c, geometry }))
-          .catch(() => ({ c, geometry: null })),
-      ),
-    ),
   ])
-  // Every indexed city with a recorded boundary is a town silhouette, not
-  // just the six featured ones: Prineville, Madras, and the rest were blobs
-  // of listings with nothing to tap (pass four, Q2).
-  const extraTowns = await Promise.all(
-    cities
-      .filter((c) => !TOWN_ORDER.includes(c.slug))
-      .map((c) =>
-        getBoundaryGeoJSON({ geoType: 'city', geoSlug: c.slug })
-          .then((geometry) => ({ c, geometry }))
-          .catch(() => ({ c, geometry: null })),
-      ),
-  )
-  const registrySlugs = new Set(getAllResortCommunities().map((c) => c.slug))
-  const bendNeighborhoods = neighborhoodRows.filter((r) => {
-    const city = Array.isArray(r.cities) ? r.cities[0] : r.cities
-    const citySlug = (city?.slug ?? '').toLowerCase().trim()
-    const slug = (r.slug ?? '').toLowerCase().trim()
-    return citySlug === 'bend' && slug && r.name && !registrySlugs.has(slug)
-  })
-  const neighborhoodBoundaries = await Promise.all(
-    bendNeighborhoods.map((r) =>
-      getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: `bend-${(r.slug ?? '').toLowerCase().trim()}` })
-        .then((geometry) => ({ r, geometry }))
-        .catch(() => ({ r, geometry: null })),
-    ),
-  )
+  const townBoundaries = regionAtlas?.townBoundaries ?? TOWN_ORDER.map(() => null)
   const regionBoundary = unionBoundaryGeometry(townBoundaries)
   const regionMt = regionOverlays.get('region:central-oregon')
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
@@ -250,23 +215,7 @@ export default async function Home({
   // neighborhood with one. Every figure the Atlas prints is a count or median
   // over these dots — one population, one source.
   const atlasDots = atlas.dots
-  const atlasRegions: AtlasRegion[] = [
-    ...TOWN_ORDER.flatMap((slug, i): AtlasRegion[] => {
-      const geometry = townBoundaries[i]
-      if (!geometry) return []
-      return [{ id: `town:${slug}`, kind: 'town', name: cityBySlug.get(slug)?.name ?? titleCaseName(slug.replace(/-/g, ' ')), href: `/cities/${slug}`, geometry }]
-    }),
-    ...extraTowns.flatMap(({ c, geometry }): AtlasRegion[] =>
-      geometry ? [{ id: `town:${c.slug}`, kind: 'town', name: c.name, href: `/cities/${c.slug}`, geometry }] : [],
-    ),
-    ...communityBoundaries.flatMap(({ c, geometry }): AtlasRegion[] =>
-      geometry ? [{ id: `community:${c.slug}`, kind: 'community', name: c.label, href: `/communities/${c.slug}`, geometry }] : [],
-    ),
-    ...neighborhoodBoundaries.flatMap(({ r, geometry }): AtlasRegion[] => {
-      const slug = (r.slug ?? '').toLowerCase().trim()
-      return geometry ? [{ id: `neighborhood:${slug}`, kind: 'neighborhood', name: r.name as string, href: `/cities/bend/${slug}`, geometry }] : []
-    }),
-  ]
+  const atlasRegions: AtlasRegion[] = regionAtlas?.regions ?? []
 
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdict = marketVerdict(mosRaw)

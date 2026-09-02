@@ -28,7 +28,11 @@
  */
 
 import type { Metadata } from 'next'
-import { getBrokers } from '@/lib/data'
+import { getBrokers, getReviews } from '@/lib/data'
+import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
+import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -44,12 +48,13 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
-  V3Ledger,
   V3Quiet,
   V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
+  V3Atlas,
+  V3Proof,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -94,6 +99,19 @@ export default async function AboutPage() {
     getBrokers(),
   ])
 
+  // The service area as the living map, from the same population the
+  // homepage hero reads, plus the newest verified reviews with their record.
+  const [atlasRead, regionAtlas, reviewSummary] = await Promise.all([
+    withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
+    buildRegionAtlasRegions().catch(() => null),
+    getReviews(6).catch(() => null),
+  ])
+  const atlas = atlasRead ?? EMPTY_PLACE_ATLAS
+  const atlasRegions = regionAtlas?.regions ?? []
+  const quotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
+  const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
+  const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
+  const newestReview = quotes.find((q) => q.date)?.date ?? null
   const cityRows: V3LedgerFigureRow[] = []
   const rowed = new Set<string>()
   const leftoverStamps: string[] = []
@@ -118,7 +136,6 @@ export default async function AboutPage() {
       id: slug,
     })
   }
-  const [firstCityRow, ...restCityRows] = cityRows
 
   const cityFootnotes = ABOUT_CITY_LABELS.filter((label) => !rowed.has(label)).map((label) => {
     const slug = ABOUT_CITY_SLUG[label]
@@ -137,8 +154,6 @@ export default async function AboutPage() {
   })
 
   const cityRefreshedAt = leftoverStamps.sort().at(-1)
-  const cityStamp = cityRefreshedAt ? formatDate(cityRefreshedAt) : ''
-  const cityUpdated = cityStamp && cityStamp !== '\u2014' ? v3Text(cityStamp) : undefined
 
   const orderedBrokers = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
@@ -259,40 +274,38 @@ export default async function AboutPage() {
           />
         ) : null}
 
-        {firstCityRow ? (
-          <V3Ledger
-            id="service-area"
-            eyebrow={v3Text('Service area')}
-            heading={v3Text('Where we work')}
-            note={v3Text(
-              'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live single-family list prices.',
-            )}
-            rows={[firstCityRow, ...restCityRows]}
-            source={v3Text(
-              // The trace names the SOURCE, not the pipeline (2026-08-27 audit: "leftover
-              // membership" is an internal term that names no source of truth).
-              'live MLS through Oregon Data Share, active single-family listings and their median list price, one count per city. A miss omits',
-            )}
-            updated={cityUpdated}
-            action={{
-              label: v3Text('Search homes across Central Oregon'),
-              href: listingsBrowsePath(),
-            }}
+        <V3Atlas
+          id="service-area"
+          variant="dots"
+          headingLevel={2}
+          headline={v3Text('Where we work')}
+          dots={atlas.dots}
+          regions={atlasRegions}
+          types={atlas.types}
+          events={atlas.events}
+          source={atlas.source}
+          stamp={atlas.stamp}
+          incomplete={!atlas.complete}
+        />
+        {quotes.length > 0 ? (
+          <V3Proof
+            id="proof"
+            eyebrow="Ryan Realty · Google"
+            headline={`${reviewCount} Google reviews`}
+            headingLevel={2}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            figures={[
+              { value: String(reviewCount), label: 'Google reviews' },
+              { value: reviewAverage.toFixed(1), label: 'average of 5' },
+              ...(newestReview
+                ? [{ value: formatDate(newestReview, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }]
+                : []),
+            ]}
+            quotes={quotes}
+            source={{ label: 'Every review', href: '/reviews' }}
+            record={false}
           />
-        ) : (
-          <V3Ledger
-            id="service-area"
-            eyebrow={v3Text('Service area')}
-            heading={v3Text('Where we work')}
-            rows={[]}
-            emptyMessage={v3Text('City inventory did not return in this refresh.')}
-            action={{
-              label: v3Text('Search homes across Central Oregon'),
-              href: listingsBrowsePath(),
-            }}
-          />
-        )}
-
+        ) : null}
         <V3Quiet
           id="faq"
           eyebrow="Common questions"

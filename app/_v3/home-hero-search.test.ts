@@ -116,7 +116,10 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD_MAP).not.toContain('setZoom(9)')
     expect(FIELD).toContain('PlaceFieldMap')
     expect(FIELD).toContain('boundary={boundary}')
-    expect(PAGE).toContain('getBoundaryGeoJSON')
+    // The region boundary reaches the Field through the DAL read on the page OR
+    // through the one shared region assembly (app/_v3/region-atlas.ts) that
+    // makes that read for every surface drawing Central Oregon whole.
+    expect(PAGE).toMatch(/getBoundaryGeoJSON|buildRegionAtlasRegions/)
     expect(PAGE).toContain('unionBoundaryGeometry')
     expect(PAGE).toContain('boundary={regionBoundary ?? undefined}')
   })

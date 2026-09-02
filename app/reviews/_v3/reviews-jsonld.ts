@@ -7,7 +7,7 @@
  * Google's structured-data policy.
  */
 
-import type { ReviewQuote } from './review-quotes'
+import type { ReviewQuote } from '@/lib/reviews/review-quotes'
 
 function ratingValue(rating: number): number {
   if (!Number.isFinite(rating)) return 5
