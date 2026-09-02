@@ -148,8 +148,8 @@ V3Proof band of reviews naming the broker (record off), and V3Doors (call / text
 21 closings for Matt, 21 dots, claim "21 closings of every type", page 6,570px (was 10,196).
 
 **BROKERAGE PASS TWO (scratchpad `brokerage-eval-2.md`): /reviews 87 · /contact 72 · /about 85 —
-all three SHIP; /team/[slug] 74, no ship.** All 13 pass-two claims verified TRUE. Closed in the
-next commit: C1 (a record map frames its dense core by an IQR fence per axis; dots beyond the frame
+all three SHIP; /team/[slug] 74, no ship.** All 13 pass-two claims verified TRUE. Closed in
+9177b29b (evaluator pass three is measuring it): C1 (a record map frames its dense core by an IQR fence per axis; dots beyond the frame
 are counted and NAMED in the source line, never silently clipped — the Ashland closing), C2 (bar
 runs get the hover layer; a broker's years are `run: true`, one ink, no legend restating the axis),
 C3 (the Proof claim says "the newest three/two" from the count), C4 (a close date is a calendar
