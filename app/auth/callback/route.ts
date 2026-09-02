@@ -56,6 +56,23 @@ async function stampPersonIdFromEmail(
         path: '/',
       })
     }
+    // Guest listing-save absorb: if this browser's identity-map row still holds
+    // a minutes-old guest capture under a different email, fold it into the
+    // account person NOW — the stitch below overwrites that row (one per
+    // rr_vid), so this must read it first. Fail-closed, best-effort.
+    try {
+      const { absorbGuestCaptureOnSignIn } = await import('@/lib/crm/absorb-guest-capture')
+      const absorb = await absorbGuestCaptureOnSignIn(sb, {
+        rrVid,
+        accountEmail: normalized,
+        accountPersonId: personId,
+      })
+      if (absorb.merged) {
+        console.log(`[auth-callback] guest capture ${absorb.mergedId} absorbed into ${absorb.survivorId}`)
+      }
+    } catch (err) {
+      Sentry.captureException(err)
+    }
     // Feed the login into the first-party identity graph so a
     // Google/Facebook/email sign-in stitches the durable rr_vid cookie to the
     // known person/email/auth-user (same graph a form submit writes). Best-effort.
