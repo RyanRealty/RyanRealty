@@ -177,6 +177,19 @@ simplified per class), a DAL read by bbox + class, and an Atlas layer under the 
 the region frame; arterials + local streets + the river inside a neighborhood frame). Never a
 Google/Mapbox tile layer under the SVG (different projection, per-view cost, foreign style).
 
+**ROUND SIX IS RUNNING (workflow `wf_31de9f2c-235`, seven surfaces + a regression hunter).**
+First result in: /reviews 66, no ship — five of seven round-five fixes verified landed (mark
+separation 3.48px → 14px, a 4px-off click hits its own review, one tab stop, no clipped rows),
+one PARTIAL (8px off: 6 of 10), and two NO that later commits answered (the focus ring's
+contrast, and the field below the strip). The field was the failing reason: 25 quote cards,
+3,264px at 1440 and 7,651px at 375, every control above them — TASTE's scrolling-list ban. The
+strip is sticky now, so the quotes are read against the timeline, and a card lights its own mark
+on hover, on focus, and on tap.
+
+**PROCESS NOTE, learned the hard way:** round six was launched and then three more batches were
+committed to the dev server it was grading. Freeze the tree while an evaluator round runs, or
+point it at a pinned deployment — otherwise a finding cannot be tied to a build.
+
 **EVALUATOR ROUND FIVE (2026-09-02, separate Opus agents, ten surfaces, measurements
 in `/private/tmp/.../scratchpad/` and the workflow journal `wf_83ae7161-679`).** Scores:
 homepage 80, listing-bend 75, team-rebecca 68, team-matt 64, about 62, reviews 76,
