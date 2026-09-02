@@ -116,7 +116,7 @@ export default async function TeamMemberPage({ params }: Props) {
   const firmRows = brokerageTiles
     .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
     .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
-    .map(brokerageTileToRow)
+    .map((t) => brokerageTileToRow(t))
     .filter((row): row is V3LedgerFigureRow => row !== null)
     .slice(0, 6)
 
@@ -127,8 +127,11 @@ export default async function TeamMemberPage({ params }: Props) {
     ? broker.bio.trim()
     : factualFallbackBio({ displayName: broker.display_name, firstName, closings, phone: broker.phone })
 
-  const telHref = broker.phone ? `tel:${broker.phone.replace(/[^\d]/g, '')}` : null
-  const smsHref = broker.phone ? `sms:${broker.phone.replace(/[^\d]/g, '')}` : null
+  // One rendering of the number site-wide: E.164 (pass two, C8).
+  const digits = broker.phone ? broker.phone.replace(/[^\d]/g, '') : ''
+  const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : digits
+  const telHref = e164 ? `tel:${e164}` : null
+  const smsHref = e164 ? `sms:${e164}` : null
   const mailHref = broker.email ? `mailto:${broker.email}` : null
 
   // Reviews that name this broker first, then the ones that name no broker;
@@ -138,6 +141,8 @@ export default async function TeamMemberPage({ params }: Props) {
     .sort((a, b) => Number(namesBroker(b.quote, firstName)) - Number(namesBroker(a.quote, firstName)))
     .slice(0, 4)
   const namingCount = reviews.reviews.filter((r) => namesBroker(r.text, firstName)).length
+  const COUNT_WORD = ['none', 'one', 'two', 'three', 'four'] as const
+  const shownWord = COUNT_WORD[Math.min(relevantQuotes.length, 4)]
   const newestRelevant = relevantQuotes.find((q) => q.date)?.date ?? null
 
   const canonicalSlug: BrokerSlug | null =
@@ -181,7 +186,7 @@ export default async function TeamMemberPage({ params }: Props) {
 
   const saleSource = hasOwnSales
     ? v3Text(
-        `Closed MLS sales where ${firstName} listed the home or represented the buyer. Central Oregon zips starting with 977. Recorded ClosePrice.`,
+        `Closed MLS sales where ${firstName} listed the home or represented the buyer, every one on the regional MLS. Recorded ClosePrice.`,
       )
     : v3Text(
         'Closed MLS sales listed by Ryan Realty. Central Oregon zips starting with 977. Recorded ClosePrice. Shown while this broker builds a personal record.',
@@ -310,8 +315,8 @@ export default async function TeamMemberPage({ params }: Props) {
             headingLevel={2}
             claim={
               namingCount > 0
-                ? `${namingCount} of the brokerage's ${reviews.count} Google reviews name ${firstName}. The newest four here, in full, as written.`
-                : `${reviews.count} Google reviews, ${reviews.averageRating.toFixed(1)} of 5. The newest four that name no other broker, in full, as written.`
+                ? `${namingCount} of the brokerage's ${reviews.count} Google reviews name ${firstName}. The newest ${shownWord} here, in full, as written.`
+                : `${reviews.count} Google reviews, ${reviews.averageRating.toFixed(1)} of 5. The newest ${shownWord} that name no other broker, in full, as written.`
             }
             figures={[
               ...(namingCount > 0 ? [{ value: String(namingCount), label: `name ${firstName}` }] : []),

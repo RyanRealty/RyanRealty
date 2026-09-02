@@ -453,6 +453,8 @@ export function V3Chart({
   // "n = …" key line naming a column that is no longer there.
   const rangeSampled = plot.kind === 'range' && plot.rows.some((r) => r.sampleN != null)
 
+  const barSeriesName = series?.[0]?.name ?? caption
+
   return (
     <figure
       id={id}
@@ -627,6 +629,18 @@ export function V3Chart({
                 </rect>
               ))}
             </svg>
+            {/* A bar answers a pointer like a line does: the crosshair, the
+                reading, arrow keys (evaluator pass two, C2). */}
+            {plot.bars.length > 0 ? (
+              <V3ChartHover
+                columns={plot.bars.map((b) => ({
+                  frac: (b.x + b.w / 2) / plot.vbW,
+                  tick: b.tick,
+                  readings: [{ name: barSeriesName, label: b.label, frac: b.y / plot.vbH, emphasis: true }],
+                }))}
+                label={caption}
+              />
+            ) : null}
           </div>
           {plot.bars.length > 2 ? (
             // A run of bars prints its ticks the way a line prints its months:

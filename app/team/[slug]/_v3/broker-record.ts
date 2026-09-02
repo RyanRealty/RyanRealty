@@ -128,6 +128,9 @@ export function buildBrokerRecord(sales: readonly BrokerSaleTile[], nowMs = Date
       caption: v3Text('Closed sales by year'),
       ...(claim ? { claim: v3Text(claim) } : {}),
       kind: 'bars',
+      // One metric across years is a run, not categories: one ink, no legend
+      // that restates the x axis (pass two, C2).
+      run: true,
       series,
       ...(yTicks.length ? { yTicks } : {}),
       ...(xTicks.length ? { xTicks } : {}),
@@ -152,6 +155,7 @@ export function brokerRecordSource(firstName: string, record: BrokerRecord): str
 }
 
 export function brokerRecordStamp(record: BrokerRecord): string {
-  const newest = record.closings[0]?.CloseDate
+  // A calendar day, not a UTC-midnight instant (pass two, C4).
+  const newest = record.closings[0]?.CloseDate?.slice(0, 10)
   return newest ? formatDate(newest, { month: 'short', day: undefined, year: 'numeric' }) : ''
 }

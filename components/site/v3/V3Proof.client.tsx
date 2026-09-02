@@ -217,6 +217,22 @@ export function V3Proof({
           <div
             ref={layerRef}
             className="v3-proof__marks-layer"
+            role="group"
+            aria-label="Every review on its month. Arrow keys move between them, Enter opens one."
+            onKeyDown={(e) => {
+              // One tab stop for the strip; arrows walk the marks (C10).
+              if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return
+              e.preventDefault()
+              const order = marks.map((m) => m.q.id)
+              const cur = order.indexOf(focus ?? '')
+              const next =
+                e.key === 'Home' ? 0 : e.key === 'End' ? order.length - 1 : cur < 0 ? 0 : Math.max(0, Math.min(order.length - 1, cur + (e.key === 'ArrowRight' ? 1 : -1)))
+              const id = order[next]
+              if (!id) return
+              setFocus(id)
+              const el = layerRef.current?.querySelector<HTMLButtonElement>(`[data-mark="${id}"]`)
+              el?.focus()
+            }}
             onPointerMove={(e) => {
               const id = nearestMark(e.clientX, e.clientY)
               if (id) setFocus(id)
@@ -241,6 +257,8 @@ export function V3Proof({
                   focus === q.id && 'is-focus',
                 )}
                 style={{ left: `${(x / STRIP_W) * 100}%`, top: `${(y / STRIP_H) * 100}%` }}
+                data-mark={q.id}
+                tabIndex={focus === q.id || (focus == null && marks[0]?.q.id === q.id) ? 0 : -1}
                 aria-label={`${q.author}, ${q.attribution}`}
                 title={`${q.author}, ${q.attribution}`}
                 onFocus={() => setFocus(q.id)}

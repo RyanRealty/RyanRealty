@@ -7,7 +7,8 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { V3Sheet, V3_ROOT_CLASS, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { cn } from '@/lib/utils'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { submitBrokerSellerLead } from '@/app/team/actions'
 
@@ -160,7 +161,7 @@ export function BrokerValuationSheet({ firstName }: { firstName: string }) {
           : stepId
 
   return (
-    <>
+    <section className={cn(V3_ROOT_CLASS, 'broker-ask')} aria-label={`A CMA from ${firstName}`}>
       <V3Sheet
         id="home-value"
         heading={`A CMA from ${firstName}`}
@@ -175,6 +176,6 @@ export function BrokerValuationSheet({ firstName }: { firstName: string }) {
         onAdvance={onAdvance}
       />
       {status === 'asking' || status === 'failed' ? <SmsConsentDisclosure /> : null}
-    </>
+    </section>
   )
 }

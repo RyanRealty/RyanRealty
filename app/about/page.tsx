@@ -5,7 +5,8 @@
  * Look (2026-08-14): About = faces. The first viewport is the live brokers'
  * canonical transparent PNGs (no card, no wash, no box). Name is the door.
  * Call and text sit on the face row. Quiet (origin) then Instrument (verified
- * licenses) then Ledger (service area) then Quiet (FAQ). PUBLIC_UI.md opens
+ * licenses) then Atlas (the service area as the living map) then Proof (the
+ * newest reviews) then Quiet (FAQ). PUBLIC_UI.md opens
  * About on Quiet + Sheet. The Sheet stays on /contact and /team/[slug]. A new
  * on-page form here would be a new capture contract. Seller lives on Sell.
  * The next tap is the name or the number.

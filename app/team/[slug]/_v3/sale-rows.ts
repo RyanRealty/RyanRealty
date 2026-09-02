@@ -29,14 +29,22 @@ function addressLine(tile: PriceDropTile): string {
 }
 
 function soldWhen(closeDate: string | null | undefined, saleSide?: 'listed' | 'represented-buyer'): string {
-  const stamp = closeDate ? formatDate(closeDate, { month: 'short', day: undefined, year: 'numeric' }) : ''
+  // A close date is a calendar day. The feed sends it as a UTC-midnight
+  // timestamp, which formatDate's date-only guard does not catch, so
+  // 2026-09-01 printed as Aug 2026 (evaluator pass two, C4).
+  const day = closeDate ? closeDate.slice(0, 10) : ''
+  const stamp = day ? formatDate(day, { month: 'short', day: undefined, year: 'numeric' }) : ''
   const verb = saleSide === 'represented-buyer' ? 'Bought' : 'Sold'
   if (!stamp || stamp === '\u2014') return verb
   return `${verb} ${stamp}`
 }
 
-export function brokerageTileToRow(tile: PriceDropTile): V3LedgerFigureRow | null {
-  if (!tile.ListingKey || !inServiceArea(tile.PostalCode)) return null
+export function brokerageTileToRow(tile: PriceDropTile, opts?: { anyArea?: boolean }): V3LedgerFigureRow | null {
+  if (!tile.ListingKey) return null
+  // The brokerage feed is a Central Oregon ledger; a broker's OWN record is
+  // every closing on the MLS, wherever it stands, the same set the figures
+  // and the map count (pass two, C7).
+  if (!opts?.anyArea && !inServiceArea(tile.PostalCode)) return null
   const price = tile.ClosePrice ?? tile.ListPrice
   if (price == null || !(price > 0)) return null
   // City now lives in `what` (publishCardAddress), so `detail` carries only
@@ -63,7 +71,7 @@ export function brokerageTileToRow(tile: PriceDropTile): V3LedgerFigureRow | nul
 }
 
 export function brokerSaleToRow(tile: BrokerSaleTile): V3LedgerFigureRow | null {
-  const row = brokerageTileToRow(tile)
+  const row = brokerageTileToRow(tile, { anyArea: true })
   if (!row) return null
   return {
     ...row,
@@ -72,9 +80,9 @@ export function brokerSaleToRow(tile: BrokerSaleTile): V3LedgerFigureRow | null 
 }
 
 /**
- * Published closings for a broker page. Count and ledger rows are the same
- * set: 977-zip sales that map to a row. Do not hide a closing because the
- * photo is missing, and do not slice the ledger below the published count.
+ * Published closings for a broker page: every MLS closing of the broker's,
+ * the same set the record's figures and map count. Do not hide a closing
+ * because the photo is missing.
  */
 export function publishOwnClosingRows(brokerSales: BrokerSaleTile[]): V3LedgerFigureRow[] {
   return brokerSales

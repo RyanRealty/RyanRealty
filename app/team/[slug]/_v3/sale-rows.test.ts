@@ -42,7 +42,7 @@ function sale(overrides: Partial<BrokerSaleTile> = {}): BrokerSaleTile {
 }
 
 describe('publishOwnClosingRows', () => {
-  it('keeps the published count equal to every mapped 977-zip row', () => {
+  it('publishes every closing with a price, wherever it stands (the record is the whole MLS)', () => {
     const sales = [
       sale({ ListingKey: 'listed-1', ListNumber: '1', PhotoURL: 'https://example.com/a.jpg' }),
       sale({
@@ -56,8 +56,8 @@ describe('publishOwnClosingRows', () => {
     ]
 
     const rows = publishOwnClosingRows(sales)
-    expect(rows).toHaveLength(2)
-    expect(rows.map((row) => row.id)).toEqual(['listed-1', 'buyer-1'])
+    expect(rows).toHaveLength(3)
+    expect(rows.map((row) => row.id)).toEqual(['listed-1', 'buyer-1', 'ashland'])
     expect(rows.some((row) => !row.media?.src)).toBe(true)
   })
 

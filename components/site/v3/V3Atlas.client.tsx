@@ -248,17 +248,56 @@ export function V3Atlas({
     const baseRings = shapes.filter((s) => s.kind === 'town').flatMap((s) => s.rings)
     const lons = dots.map((d) => d.lng).sort((a, b) => a - b)
     const lats = dots.map((d) => d.lat).sort((a, b) => a - b)
+    // A record map (fit: dots) frames the dense core by an IQR fence per
+    // axis: twenty closings around Bend and one in Ashland frame Bend, and
+    // the Ashland one is counted and named beyond the edge, not dragged into
+    // a frame that is then mostly cream (evaluator pass two, C1). The 1st–99th
+    // percentile core is for the regional map, where the base silhouettes
+    // carry the frame anyway.
+    const fence = (sorted: number[]): [number, number] => {
+      const q1 = quantile(sorted, 0.25)
+      const q3 = quantile(sorted, 0.75)
+      // Three IQRs, not one and a half: a broker's twenty closings around
+      // Bend put Madras (40 miles) inside the frame and Ashland (150) beyond.
+      const iqr = Math.max(q3 - q1, 0.06)
+      const lo = q1 - 3 * iqr
+      const hi = q3 + 3 * iqr
+      // Snap to the dots the fence keeps, so the frame hugs them rather than
+      // the fence's own reach into empty ground.
+      const kept = sorted.filter((v) => v >= lo && v <= hi)
+      return kept.length > 0 ? [kept[0]!, kept[kept.length - 1]!] : [sorted[0]!, sorted[sorted.length - 1]!]
+    }
     const core: Ring =
       lons.length > 0
-        ? [
-            [quantile(lons, 0.01), quantile(lats, 0.01)],
-            [quantile(lons, 0.99), quantile(lats, 0.99)],
-          ]
+        ? fit === 'dots'
+          ? (() => {
+              const [lo1, hi1] = fence(lons)
+              const [lo2, hi2] = fence(lats)
+              return [
+                [lo1, lo2],
+                [hi1, hi2],
+              ] as const
+            })()
+          : [
+              [quantile(lons, 0.01), quantile(lats, 0.01)],
+              [quantile(lons, 0.99), quantile(lats, 0.99)],
+            ]
         : []
     const b = bboxOfRings(fit === 'dots' && core.length > 0 ? [core] : core.length > 0 ? [...baseRings, core] : baseRings)
-    const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, 0.04)
+    const padded = padBbox(b ?? { minLon: -121.9, maxLon: -120.9, minLat: 43.6, maxLat: 44.55 }, fit === 'dots' ? 0.1 : 0.04)
     return makeProjection(padded, 1000)
   }, [shapes, dots, fit])
+
+  /* Dots the frame does not hold: counted in every figure, named in the
+     source line, never silently missing. */
+  const beyond = useMemo(() => {
+    let n = 0
+    for (const d of dots) {
+      const [x, y] = proj.toXY(d.lng, d.lat)
+      if (x < 0 || y < 0 || x > proj.width || y > proj.height) n += 1
+    }
+    return n
+  }, [dots, proj])
 
   const paths = useMemo<PlacedShape[]>(
     () => shapes.map((s) => ({ ...s, d: ringsToPath(s.rings, proj) })),
@@ -550,8 +589,11 @@ export function V3Atlas({
         ? []
         : places
             .map((s) => ({ shape: s, n: regionStats.get(s.id)?.n ?? 0 }))
+            // A record map lists only the places the record touches; a rail
+            // of zeros is brokerage chrome on a personal page (C5).
+            .filter((r) => !closingsMap || r.n > 0)
             .sort((a, b) => b.n - a.n || a.shape.name.localeCompare(b.shape.name)),
-    [places, regionStats, incomplete],
+    [places, regionStats, incomplete, closingsMap],
   )
 
   /* Escape, a click on empty map, or a click outside the stage release a
@@ -913,6 +955,9 @@ export function V3Atlas({
                 {source}
                 {towns.length + places.length > 1
                   ? ` The map outlines the ${towns.length + places.length} places with a recorded boundary; listings outside them are counted and drawn as dots with no outline to tap.`
+                  : ''}
+                {beyond > 0
+                  ? ` ${beyond} of the ${dots.length.toLocaleString('en-US')} ${beyond === 1 ? 'sits' : 'sit'} beyond the frame's edges: counted in every figure, not drawn.`
                   : ''}
                 {incomplete ? ' A read failed on this render, so no count is printed.' : ''}
               </p>

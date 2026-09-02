@@ -147,6 +147,20 @@ the MLS, median close, listed · represented, so far this year) with the closing
 V3Proof band of reviews naming the broker (record off), and V3Doors (call / text / email). Measured:
 21 closings for Matt, 21 dots, claim "21 closings of every type", page 6,570px (was 10,196).
 
+**BROKERAGE PASS TWO (scratchpad `brokerage-eval-2.md`): /reviews 87 · /contact 72 · /about 85 —
+all three SHIP; /team/[slug] 74, no ship.** All 13 pass-two claims verified TRUE. Closed in the
+next commit: C1 (a record map frames its dense core by an IQR fence per axis; dots beyond the frame
+are counted and NAMED in the source line, never silently clipped — the Ashland closing), C2 (bar
+runs get the hover layer; a broker's years are `run: true`, one ink, no legend restating the axis),
+C3 (the Proof claim says "the newest three/two" from the count), C4 (a close date is a calendar
+day: `CloseDate.slice(0, 10)` before formatDate, in the ledger and the stamp), C5 (a record map's
+chips list only places the record touches), C6 (the valuation sheet's consent line sits inside a
+v3-rooted section), C7 (the broker's ledger is every MLS closing, the same set the figures and map
+count — `brokerageTileToRow(tile, { anyArea: true })`; the brokerage feed keeps its 977 filter), C8
+(E.164 tel/sms), C10 (the reviews strip is one tab stop; arrows walk the marks), C11 (About header
+comment). Open: C9 (/about fires two /api/visitors/track POSTs per load; automated reloads trip
+the endpoint's 429), B12.
+
 **LISTING PAGE — THE NEXT CLASS (surveyed 2026-09-02, not started).** Measured on
 `/homes-for-sale/bend/awbrey-butte/rivers-edge-village/2533-pine-terrace-220223522` at 1280:
 13,030px tall, 23 sections, 119 images, 104 buttons, 1 chart, 3 map surfaces, 1,817 words — the
