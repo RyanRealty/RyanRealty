@@ -201,6 +201,14 @@ export default function PeopleListView(props: PeopleListViewProps) {
   // ── Right panel slot: filters (persistent) or the column chooser (§2) ──────
   const [panel, setPanel] = useState<'filters' | 'columns'>('filters')
   const [panelOpen, setPanelOpen] = useState(true)
+  // Tablet (below lg): the inline 290px filter rail crams the three-region
+  // split (sidebar + table + rail at ~800px truncated every name), so it
+  // starts CLOSED there and overlays when opened. Effect, not init — the
+  // server render has no viewport.
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 1023px)').matches) setPanelOpen(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Selection ───────────────────────────────────────────────────────────────
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -544,7 +552,7 @@ export default function PeopleListView(props: PeopleListViewProps) {
       {/* ── RIGHT: persistent filter panel / column chooser slot (§2/§9) ────── */}
       {panelOpen ? (
         <aside
-          className="w-[290px] shrink-0 rounded-lg p-3"
+          className="w-[290px] shrink-0 rounded-lg p-3 max-lg:fixed max-lg:inset-y-16 max-lg:right-2 max-lg:z-40 max-lg:overflow-y-auto max-lg:shadow-xl"
           style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}
           data-testid="people-right-panel"
         >
