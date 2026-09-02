@@ -42,5 +42,11 @@
     "phase": "P12",
     "status": "shipped",
     "note": "SHIPPED 2026-09-01 same day: AdminUsersList rewritten on ReportGrid/SearchField/SectionHead (shadcn burndown 78\u219275), names are doors to /admin/crm?q=<email>, dates via the pinned formatter. Live-verified. Remaining from the audit: complete the app/actions orphan cross-check (195 files, only prospecting+sync verified)."
+  },
+  {
+    "id": "broker-scoped-visitors-view",
+    "phase": "P12",
+    "status": "open",
+    "note": "2026-09-01 attribution audit (Matt: one smart site, per-broker): /admin/visitors/live requires people.view but shows ALL visitors to every broker, including other brokers' identified clients \u2014 CRM surfaces are broker-own-book gated (ci:broker-own-book), the visitor plane is not. MATT DECISION: scope identified visitors to the assigned broker (company-wide anonymous traffic stays visible), or leave open. The attribution CHAIN itself is closed as of fbbef2af: outbound comms stamp ?agent, the cookie routes LP forms + guest saves + alert signups + Google sign-ups to the attributed broker, tasks follow the person."
   }
 ]
