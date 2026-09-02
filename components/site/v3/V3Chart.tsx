@@ -642,10 +642,11 @@ export function V3Chart({
               />
             ) : null}
           </div>
-          {plot.bars.length > 2 ? (
+          {plot.bars.length > 0 ? (
             // A run of bars prints its ticks the way a line prints its months:
             // at most six labels, the first and the last always among them,
-            // each under the bar it names (pass six, S6: 29 bars, no year).
+            // each under the bar it names (pass six, S6: 29 bars, no year;
+            // pass three D6: two bars labelled at the frame's ends).
             <div className="v3-chart__x v3-chart__x--ticks" aria-hidden="true">
               {plot.bars
                 .filter((b, i, all) => {

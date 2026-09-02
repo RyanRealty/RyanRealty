@@ -172,8 +172,8 @@ D8 (that section is `#home-value-ask`, no duplicate landmark name), D10 (a closi
 atlas does not name gets its own toggle), D11 (a run charts every year between first and last,
 empty years as zero bars), D13 (sale-rows header). Open, in the Atlas: D4 (a closing inside two
 overlapping places counts in both chips), D5 (outlines with 0 closings still open a card on a
-record map), D9 (the beyond-frame sentence ignores the filter); in the chart: D6 (a two-bar run
-labels the frame's ends, not the bars).
+record map), D9 (the beyond-frame sentence ignores the filter). D6 closed: every bar run, however
+short, prints its ticks under its bars.
 
 **LISTING PAGE — STARTED (this commit): the living map around this home.** `app/listing/[listingKey]/
 _v3/listing-atlas.ts` reads the recorded neighborhood boundary by slug (else the page's city
