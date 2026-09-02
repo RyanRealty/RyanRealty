@@ -1,4 +1,53 @@
-# Current — 2026-09-01 (Claude Code UX session, main) — subdivision 500 P0 killed + place-flow punch list
+# Current — 2026-09-01 (Claude Code UX session, main) — homepage three routes, phone in chrome, TASTE is a gate, CMA on xAI
+
+**Shipped, all on origin/main, production READY:**
+- `317d7a12` homepage: V3Doors (new barrel pattern) routes Buying / Selling / Investing under
+  the hero with one live fact each from the destination page's own source; the broker phone is
+  in the header bar at every width (icon at 390, digits from 40rem); HomeAlertSheet retired
+  (one ask per page). `INVEST_SEGMENTS` moved to `lib/invest/segments.ts` (one population for
+  /invest and the door).
+- `5c860c1f` place+type pages never print a raw slug: `resolveSlug` falls back registry-label-
+  first (Caldera Springs' listings carry MLS City Bend, so the Sunriver-scoped lookup always
+  missed) then title-cases. Matt's screenshots of "Lots and Land in caldera-springs" were this.
+- `b7753ad0` CMA judge + audit run on xAI through `lib/grok` (strict json_schema, XAI_API_KEY,
+  fail-open kept; tests mock `@/lib/grok`). `lib/cma/subdivision-story.ts` (vision) is still
+  on Anthropic and fails open — migrate to `lib/grok/vision.ts` next. End-to-end proof on a
+  real backlog CMA rebuild is still owed.
+- `f388698d` TASTE IS A GATE: `design_system/public/TASTE.md` rewritten (why our pages come
+  out generic; builder ritual with interaction as a required answer; evaluator rubric run by
+  a SEPARATE agent; banned tells; design-the-class rule), research at
+  `docs/research/taste-for-agents.md`, pointers in CLAUDE.md §3 / AGENTS.md / frontend-design
+  skill, enforced by `ci:taste-canon` (every public route's parity.json carries a
+  `tasteReview` receipt; 21 pre-rule routes in a shrink-only baseline).
+
+**Matt's standing directives, this session (all in decisions.md items 4–7):** "We are a wall
+of text, scrolling lists, and boring." Every page visually breathtaking; interactive data on
+every page ("not a number, a percentage, and jargon"); every place page blown out with the
+data cube (every property type, every subdivision); beat the best page for Tetherow,
+Northwest Crossing, Old Bend, West Hills, every listing; brokerage pages and contact dialed;
+stop the one-off approach — design the CLASS of pages. Any tool, every session, uses TASTE.md.
+
+**Next program (the place-page class), in order:**
+1. Evaluator pass on the homepage per TASTE.md → fix defects → record `tasteReview` (first
+   route out of the baseline).
+2. Design the place-page class as a composed page, not stacked sections: an interactive
+   property-type × subdivision display (hover/toggle/scrub reveals the cube), the closed-sales
+   moat made visible, the map cells carrying per-type counts (punch-list item 6), and the
+   named page to beat per place written into each parity.json. Build 2–3 variants, decision
+   sheet for Matt, delete the losers.
+3. Listing pages and brokerage pages (about/team/profiles/reviews with pullable GBP reviews)
+   through the same ritual.
+4. CMA: subdivision-story vision migration, real rebuild proof, then the review-queue send
+   agent (Matt reviews every send until he flips automation).
+
+**Lane split with the concurrent session (ryanrealty-9e):** I own the CMA ENGINE
+(judge/audit/xAI) and the public UX; they own CMA DELIVERY (`app/admin/(protected)/cmas/**`)
+and the logged-in browse/save UX. Shared checkout: stage only your own files; message before
+pushing if the other has uncommitted work in your path.
+
+---
+
+# Prior — 2026-09-01 (Claude Code UX session, main) — subdivision 500 P0 killed + place-flow punch list
 
 **Shipped `c83043a7`, production READY, live-verified.** Every `/subdivisions/[slug]` URL had
 served a 500 to every visitor since 2026-07-15 (5,448 errors / 764 users in Vercel's window):
