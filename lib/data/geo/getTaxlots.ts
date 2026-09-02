@@ -139,7 +139,14 @@ export function getTaxlotsNear(input: TaxlotsNearInput): Promise<Taxlot[]> {
 }
 
 export type TaxlotsInBoundaryInput = {
-  geoType: 'city' | 'neighborhood' | 'subdivision'
+  /**
+   * Null means "whichever row carries this slug". A plat page does not know
+   * which type its own boundary is filed under — Awbrey Glen and Tetherow are
+   * /subdivisions/ pages whose polygons live under 'neighborhood', because
+   * they are registry communities — and asking for the wrong one silently
+   * drew no lots.
+   */
+  geoType: 'city' | 'neighborhood' | 'subdivision' | null
   geoSlug: string
   maxLots?: number
   toleranceDegrees?: number
@@ -178,7 +185,13 @@ export function getTaxlotsInBoundary(input: TaxlotsInBoundaryInput): Promise<Tax
   if (!filled.geoSlug.trim()) return Promise.resolve([])
   return unstable_cache(
     () => fetchTaxlotsInBoundary(filled),
-    ['taxlots-in-boundary-v2', filled.geoType, filled.geoSlug, String(filled.maxLots), String(filled.toleranceDegrees)],
-    { revalidate: CACHE_WINDOWS.taxlots, tags: ['taxlots', `${filled.geoType}:${filled.geoSlug}`] },
+    [
+      'taxlots-in-boundary-v2',
+      filled.geoType ?? 'any',
+      filled.geoSlug,
+      String(filled.maxLots),
+      String(filled.toleranceDegrees),
+    ],
+    { revalidate: CACHE_WINDOWS.taxlots, tags: ['taxlots', `${filled.geoType ?? 'any'}:${filled.geoSlug}`] },
   )()
 }

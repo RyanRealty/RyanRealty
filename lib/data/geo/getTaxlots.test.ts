@@ -114,6 +114,18 @@ describe('getTaxlotsInBoundary', () => {
     expect(lots[0]!.isSubject).toBe(false)
   })
 
+  it('a null type finds the boundary whatever it is filed under', async () => {
+    const { getTaxlotsInBoundary } = await import('./getTaxlots')
+    rpc.mockResolvedValue({ data: [], error: null })
+    await getTaxlotsInBoundary({ geoType: null, geoSlug: 'tetherow' })
+    expect(rpc).toHaveBeenCalledWith('taxlots_in_boundary', {
+      p_geo_type: null,
+      p_geo_slug: 'tetherow',
+      p_limit: 400,
+      p_tolerance: 0.00002,
+    })
+  })
+
   it('an empty slug reads nothing', async () => {
     const { getTaxlotsInBoundary } = await import('./getTaxlots')
     expect(await getTaxlotsInBoundary({ geoType: 'subdivision', geoSlug: '  ' })).toEqual([])

@@ -409,7 +409,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   // server-side, and only where the county has a recorded boundary to clip to.
   const platLots = hasBoundary
     ? await withTimeoutFallback(
-        getTaxlotsInBoundary({ geoType: 'subdivision', geoSlug: slug, maxLots: 320 }).catch(() => []),
+        getTaxlotsInBoundary({ geoType: null, geoSlug: slug, maxLots: 320 }).catch(() => []),
         [],
         5000,
         'sub:taxlots',
