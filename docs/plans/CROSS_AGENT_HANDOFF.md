@@ -177,7 +177,31 @@ simplified per class), a DAL read by bbox + class, and an Atlas layer under the 
 the region frame; arterials + local streets + the river inside a neighborhood frame). Never a
 Google/Mapbox tile layer under the SVG (different projection, per-view cost, foreign style).
 
-**ROUND SIX IS RUNNING (workflow `wf_31de9f2c-235`, seven surfaces + a regression hunter).**
+**ROUND SIX IS IN (all seven surfaces).** Scores: reviews 66, subdivision 41, team-matt 62,
+listing-bend 63, listing-noboundary 55, homepage 65, about 64. It caught FOUR regressions in the
+round-five fixes, all now fixed and pushed:
+- the `keepZeros` flag was wired from the chart props to the plot builder, and the builder is
+  called with an explicit field list that omitted `run` — so the fix never took effect and a
+  twelve-year record still drew four bars. **Check the call site, not just the flag.**
+- moving the card out of the stage made it 26px wide on a phone (two columns in a 285px box), so
+  a plat name rendered as "Aw" down four lines. The phone card stacks in one column now.
+- the new mark readout was mouse-only: a tap fired pointerdown then pointerleave on lift, so it
+  flashed and vanished, 0 of 10. A touch keeps it now.
+- naming the type filter doubled the noun: "274 house houses for sale", because `nounFor` already
+  returns the type's own noun when one type is on.
+Plus two of mine it graded: pending carried the heaviest mark of the three states while being the
+smallest population, and the key's sold mark was a ring where the map draws a disc.
+
+**THE OPEN DECISION FOR MATT (round six failed the homepage AND the subdivision page on it):**
+there are TWO maps of Central Oregon on the homepage — the living map hero, and 383px below it a
+live Google raster in Google's own chrome (`PlaceFieldMap` in the `#homes` V3Field). The
+subdivision page has the same shape, where the Google slab also printed 100 homes under an atlas
+saying 15 (now labelled). Matt already made this call for listing pages: living map only. I did
+NOT extend it unilaterally, because the Google field is bound to a list and the living map has no
+list binding yet. Recommendation: build the living map's list binding, then retire the Google
+field everywhere — it also ends a per-view map bill.
+
+**ROUND SIX (workflow `wf_31de9f2c-235`, seven surfaces + a regression hunter).**
 First result in: /reviews 66, no ship — five of seven round-five fixes verified landed (mark
 separation 3.48px → 14px, a 4px-off click hits its own review, one tab stop, no clipped rows),
 one PARTIAL (8px off: 6 of 10), and two NO that later commits answered (the focus ring's

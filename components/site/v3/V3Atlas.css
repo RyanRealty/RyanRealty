@@ -411,16 +411,15 @@
 }
 
 .v3-atlas__key-mark--pending {
-  background: color-mix(in srgb, var(--v3-navy) 38%, transparent);
-  width: 0.72rem;
-  height: 0.72rem;
+  background: color-mix(in srgb, var(--v3-navy) 40%, transparent);
 }
 
+/* The key wears the mark the map draws: a sold dot is a lighter, smaller disc,
+   not a ring (round six, HOMEPAGE-R6-5). */
 .v3-atlas__key-mark--sold {
-  background: none;
-  border: 1.5px solid color-mix(in srgb, var(--v3-navy) 28%, transparent);
-  width: 0.48rem;
-  height: 0.48rem;
+  background: color-mix(in srgb, var(--v3-navy) 28%, transparent);
+  width: 0.46rem;
+  height: 0.46rem;
 }
 
 .v3-atlas__key-mark--closed {
@@ -669,9 +668,12 @@
    identical navy and pending sitting between commercial and land. Seven inks
    nobody could separate, keyed by seven identical swatches (evaluator round
    five, HOMEPAGE-2). Type is a filter now, not an encoding. */
+/* Weight follows population, not novelty: pending is the smallest of the three
+   and carried the heaviest mark, which read as the map's subject (evaluator
+   round six, HOMEPAGE-R6-4). Same diameter as for sale, lighter ink. */
 .v3-atlas__dot--pending {
-  stroke: color-mix(in srgb, var(--v3-navy) 38%, transparent);
-  stroke-width: 5.6px;
+  stroke: color-mix(in srgb, var(--v3-navy) 40%, transparent);
+  stroke-width: 4.2px;
 }
 /* The home a listing page is about: held above the rest, full ink, a ring. */
 .v3-atlas__dot.is-home {
