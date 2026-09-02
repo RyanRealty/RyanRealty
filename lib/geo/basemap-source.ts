@@ -16,6 +16,7 @@ import region from '@/data/basemap/central-oregon-region.json'
 import { clipBasemap, thinBasemap, type Basemap } from './basemap'
 import { bboxOfRings, outerRings, type Bbox, type Ring } from './project-svg'
 import { recordFrame } from './record-frame'
+import { streetsForFrame } from './basemap-streets'
 
 const TIERS = { region: region as Basemap, near: near as Basemap }
 
@@ -43,7 +44,14 @@ export function basemapForFrame({ bbox, tier, pad = 0.15 }: BasemapFrame): Basem
   const span = bbox ? Math.max(bbox.maxLon - bbox.minLon, bbox.maxLat - bbox.minLat) : Infinity
   const chosen = tier ?? (span <= NEAR_SPAN ? 'near' : 'region')
   const clipped = clipBasemap(TIERS[chosen], bbox, pad)
-  return bbox ? thinBasemap(clipped, bbox) : clipped
+  const framed = bbox ? thinBasemap(clipped, bbox) : clipped
+  if (!bbox) return framed
+  // Close enough to walk: the named local streets come in under the highways.
+  // Only into the near tier — the two tiers quantize differently, and a street
+  // decoded against the region tier's q would land a factor of ten away.
+  const streets = streetsForFrame(bbox, pad)
+  if (streets.features.length === 0 || streets.q !== framed.q) return framed
+  return { ...framed, roads: [...streets.features, ...framed.roads] }
 }
 
 /** The whole basin, for the region frame the homepage and About draw. */

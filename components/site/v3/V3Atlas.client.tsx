@@ -371,6 +371,19 @@ export function V3Atlas({
     measure()
     return () => ro.disconnect()
   }, [proj.width, proj.height])
+
+  /* The held home's label is centred on its dot, so half of it hangs either
+     side: it must be clamped by its own width or a long label leaves the
+     stage. Measured after paint; until then 48, the width of "This home". */
+  const homeLabelRef = useRef<HTMLSpanElement>(null)
+  const [homeInset, setHomeInset] = useState(48)
+  useEffect(() => {
+    const el = homeLabelRef.current
+    if (!el) return
+    const half = el.getBoundingClientRect().width / 2
+    if (half > 0) setHomeInset(Math.round(half) + 8)
+  }, [highlight, view])
+
   const toPx = useCallback(
     (x: number, y: number): readonly [number, number] => (view ? [view.ox + x * view.scale, view.oy + y * view.scale] : [0, 0]),
     [view],
@@ -961,8 +974,15 @@ export function V3Atlas({
                           return (
                             <span
                               key="home"
+                              ref={homeLabelRef}
                               className="v3-atlas__label v3-atlas__label--home"
-                              style={{ left: view ? Math.min(Math.max(x, 48), view.w - 48) : x, top: y - 14 }}
+                              style={{
+                                // Clamped by the label's own measured width, not
+                                // a constant: "This home" and a longer label do
+                                // not have the same half.
+                                left: view ? Math.min(Math.max(x, homeInset), view.w - homeInset) : x,
+                                top: y - 14,
+                              }}
                             >
                               {highlight.label}
                             </span>

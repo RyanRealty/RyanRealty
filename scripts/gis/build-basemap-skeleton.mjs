@@ -303,6 +303,72 @@ function writeTier(tier) {
   )
 }
 
+/**
+ * The street tier: every NAMED local street (MTFCC S1400), NOT dissolved — a
+ * dissolved name spans a whole county and its box then matches every frame,
+ * which defeats the clip. Segments keep tight boxes, and an unnamed segment is
+ * usually a driveway or a service road, so the named set is both smaller and
+ * better cartography.
+ *
+ * Written as 0.05° tiles (about 4km at this latitude) so a frame reads the one
+ * to four files it overlaps instead of a three-megabyte file.
+ */
+const TILE = 0.05
+
+function tileKeys(box, q) {
+  const keys = []
+  const x0 = Math.floor(box[0] / q / TILE)
+  const x1 = Math.floor(box[2] / q / TILE)
+  const y0 = Math.floor(box[1] / q / TILE)
+  const y1 = Math.floor(box[3] / q / TILE)
+  for (let x = x0; x <= x1; x += 1) for (let y = y0; y <= y1; y += 1) keys.push(`${x}_${y}`)
+  return keys
+}
+
+function writeStreetTiles() {
+  const q = Math.round(1 / TIERS.near.precision)
+  const tiles = new Map()
+  let total = 0
+  for (const { fips } of COUNTIES) {
+    const local = extract({
+      fips,
+      tier: 'near',
+      layer: 'roads',
+      filter: 'MTFCC === "S1400" && !!FULLNAME',
+      classify: 'cls = "local", name = FULLNAME',
+      dissolve: false,
+      out: `loc_${fips}.json`,
+    })
+    for (const f of local) {
+      const item = feature(f, 'line', q)
+      if (item.p.length === 0) continue
+      total += 1
+      for (const key of tileKeys(item.b, q)) {
+        const bucket = tiles.get(key)
+        if (bucket) bucket.push(item)
+        else tiles.set(key, [item])
+      }
+    }
+  }
+
+  const dir = path.join(OUT_DIR, 'streets')
+  rmSync(dir, { recursive: true, force: true })
+  mkdirSync(dir, { recursive: true })
+  let bytes = 0
+  const manifest = {}
+  for (const [key, features] of [...tiles.entries()].sort()) {
+    const file = path.join(dir, `${key}.json`)
+    writeFileSync(file, JSON.stringify({ q, tile: TILE, features }))
+    bytes += readFileSync(file).length
+    manifest[key] = features.length
+  }
+  writeFileSync(
+    path.join(OUT_DIR, 'streets.json'),
+    `${JSON.stringify({ source: SOURCE, sourceUrl: `${TIGER}/`, q, tile: TILE, method: `Named MTFCC S1400 local streets, undissolved, Visvalingam simplified at ${TIERS.near.interval}m, quantized to ${Math.round(Math.log10(q))} decimals and delta encoded, filed into ${TILE}° tiles.`, tiles: manifest })}\n`,
+  )
+  log(`streets: ${total} named local streets in ${tiles.size} tiles → ${(bytes / 1024 / 1024).toFixed(1)} MB`)
+}
+
 async function main() {
   await fetchAll()
   mkdirSync(OUT_DIR, { recursive: true })
@@ -310,24 +376,7 @@ async function main() {
   writeTier('region')
   writeTier('near')
 
-  if (!skeletonOnly) {
-    const detail = []
-    const q = Math.round(1 / TIERS.near.precision)
-    for (const { fips, name: county } of COUNTIES) {
-      const local = extract({
-        fips,
-        tier: 'near',
-        layer: 'roads',
-        filter: 'MTFCC === "S1400"',
-        classify: 'cls = "local", name = FULLNAME || ""',
-        out: `loc_${fips}.json`,
-      })
-      for (const f of local) detail.push({ kind: 'road', county, q, ...feature(f, 'line', q) })
-    }
-    const detailFile = path.join(OUT_DIR, 'central-oregon-detail.ndjson')
-    writeFileSync(detailFile, detail.map((d) => JSON.stringify(d)).join('\n') + '\n')
-    log(`detail: ${detail.length} local streets → ${(readFileSync(detailFile).length / 1024 / 1024).toFixed(1)} MB (ingest payload, gitignored)`)
-  }
+  if (!skeletonOnly) writeStreetTiles()
 
   if (!keepWork) rmSync(WORK, { recursive: true, force: true })
 }

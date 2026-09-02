@@ -398,6 +398,16 @@ const nextConfig: NextConfig = {
   // include, assertPdfPageSafety dies on Vercel after the PDF has already
   // rendered ("Cannot find module .../pdf.worker.mjs").
   outputFileTracingIncludes: {
+    // The living map's street tier: 877 tiles read from disk by
+    // lib/geo/basemap-streets.ts. Traced for every route that draws a frame a
+    // reader can walk; without this the tiles are absent at runtime and the
+    // map silently loses its streets.
+    'app/cities/[slug]/page': ['./data/basemap/streets/*.json'],
+    'app/cities/[slug]/[neighborhoodSlug]/page': ['./data/basemap/streets/*.json'],
+    'app/communities/[slug]/page': ['./data/basemap/streets/*.json'],
+    'app/subdivisions/[slug]/page': ['./data/basemap/streets/*.json'],
+    'app/listing/[listingKey]/page': ['./data/basemap/streets/*.json'],
+    'app/team/[slug]/page': ['./data/basemap/streets/*.json'],
     'app/api/cma/[slug]/pdf/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
       './public/drafts/cma-*/cma.html',
