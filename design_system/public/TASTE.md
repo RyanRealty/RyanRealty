@@ -78,7 +78,7 @@ does well; the bland-output problem lives in design quality and originality.
 | Design quality | 30 | One coherent identity across the page; rhythm, not a stack. A reader could name the brand from a cropped section. |
 | Originality | 30 | Deliberate choices a template would not make. The reader would screenshot a section to show someone. No section shape repeats down the page. |
 | Interaction | 15 | Every data section rewards a hover, tap, scrub, or toggle with more data. Nothing moves for decoration. |
-| Craft | 15 | Hierarchy by size AND weight, spacing on the scale, AA contrast, tabular numerals, no orphaned labels at 375. |
+| Craft | 15 | Hierarchy by size AND weight, spacing on the scale, AA contrast, tabular numerals, no orphaned labels at 375, and one radius and one spacing rhythm across everything visible in a viewport. |
 | Honesty and function | 10 | Every figure has its section 0 trace; loading, empty, and error states render; the page's job (search, value, contact) completes in one path. |
 
 The evaluator's prompt wording is itself a design lever (Anthropic found "museum
@@ -102,8 +102,10 @@ quiet, editorial, expensive, data-first, Central Oregon, never "modern SaaS."
 - **Raw slugs, internal labels, methodology jargon** in anything a visitor
   reads ("caldera-springs", "median to pending · 90 days" as a label).
 - **The generic tells** the two-color system already makes impossible, kept
-  here so nobody argues them back in: gradients, Inter/Roboto, card grids with
-  icons, shadow soup, centered-everything heroes, emoji headers, hover bounce.
+  here so nobody argues them back in: a purple gradient at the top of the page,
+  Inter/Roboto, card grids with icons, frosted-glass panels, one corner radius
+  on every container as the whole visual system, shadow soup,
+  centered-everything heroes, emoji headers, hover bounce.
 - **Missing states.** A display that only renders the happy path.
 
 ## Chart craft — the house method
@@ -137,9 +139,18 @@ The full method is the `dataviz` skill (form → color → validate → marks �
 
 ## Reference-driven, not adjective-driven
 
-"Make it elegant" transfers nothing. Before composing a page class, write down
-three to five references and *what specifically works in each*, and design
-against those sentences. The standing set for this site:
+"The AI doesn't invent criteria; it averages them" (X, 2026-09-01 research,
+`docs/research/taste-for-agents-x.md`). "Make it elegant" transfers nothing.
+Before composing a page class, write down three to five references and *what
+specifically works in each*, and design against those sentences. Two stronger
+forms of the same discipline: point the builder at REAL component code (a
+shipped library's markup and CSS) to adapt rather than generate from a
+description, and feed a machine-readable token sheet from a shipped site you
+admire as pre-build context. An installed generic "anti-slop" skill file is a
+starting constraint, never the answer: used alone it swaps one default
+aesthetic for another, shared by everyone who installed it. Our references are
+our own — the brand tokens, the Old Mill hero, Central Oregon itself. The
+standing set for this site:
 
 - **Editorial data journalism** (the claim-first headline over a chart; the
   scrubber that lets the reader find their own year; annotation on the mark).

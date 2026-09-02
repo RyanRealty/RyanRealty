@@ -29,6 +29,8 @@ export type CmaPerformanceRow = {
   subjectAddress: string
   subjectCity: string | null
   clientName: string | null
+  /** crm_people.id when the document is linked — the client cell's door. */
+  personId: number | null
   clientEmail: string | null
   recommendedList: number | null
   status: string
@@ -83,7 +85,7 @@ async function computeCmaPerformance(filters: CmaPerformanceFilters = {}): Promi
   let q = sb
     .from('cmas')
     .select(
-      'id, slug, doc_type, subject_address, subject_city, client_name, client_email, recommended_list, status, created_at, delivered_at',
+      'id, slug, doc_type, subject_address, subject_city, client_name, client_email, person_id, recommended_list, status, created_at, delivered_at',
     )
     // Archived is a TIMESTAMP, not a status. Filtering only on status='archived'
     // missed every row archived the normal way, and on 2026-07-30 that meant the
@@ -118,7 +120,11 @@ async function computeCmaPerformance(filters: CmaPerformanceFilters = {}): Promi
   // rate of 8/211 when the real answer is 8/50-of-211. The `cmas` table is ~211
   // rows and the reader chunks internally, so correctness is affordable here.
   const engagement = await getDocEngagement(
-    all.map((r) => ({ id: String(r.id), slug: String(r.slug), personId: null })),
+    all.map((r) => ({
+      id: String(r.id),
+      slug: String(r.slug),
+      personId: r.person_id == null ? null : Number(r.person_id),
+    })),
   )
 
   const rows: CmaPerformanceRow[] = slice.map((r) => ({
@@ -128,6 +134,7 @@ async function computeCmaPerformance(filters: CmaPerformanceFilters = {}): Promi
     subjectAddress: String(r.subject_address ?? '—'),
     subjectCity: (r.subject_city as string | null) ?? null,
     clientName: (r.client_name as string | null) ?? null,
+    personId: r.person_id == null ? null : Number(r.person_id),
     clientEmail: (r.client_email as string | null) ?? null,
     recommendedList: r.recommended_list == null ? null : Number(r.recommended_list),
     status: String(r.status ?? 'draft'),

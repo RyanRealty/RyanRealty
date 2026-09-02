@@ -168,7 +168,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-2"
+              className="mt-2 min-h-11 text-base"
               autoFocus
             />
           </div>
@@ -183,7 +183,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-2"
+              className="mt-2 min-h-11 text-base"
             />
           </div>
           <div>
@@ -198,7 +198,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               inputMode="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-2"
+              className="mt-2 min-h-11 text-base"
             />
           </div>
 
@@ -237,7 +237,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           </p>
         ) : null}
 
-        <Button type="submit" disabled={pending} className="mt-6 w-full">
+        <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
           {pending ? 'Sending' : 'Send the report'}
         </Button>
       </form>
@@ -257,7 +257,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         value={address}
         onChange={setAddress}
         invalid={error !== null}
-        className="mt-2"
+        className="mt-2 min-h-11 text-base"
       />
 
       {error ? (
@@ -266,7 +266,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         </p>
       ) : null}
 
-      <Button type="submit" disabled={pending} className="mt-4 w-full">
+      <Button type="submit" disabled={pending} className="mt-4 min-h-11 w-full text-base">
         {pending ? 'Working' : 'Value my home'}
       </Button>
     </form>
