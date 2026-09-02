@@ -1,0 +1,625 @@
+/* ===========================================================================
+   PATTERN 8: ATLAS
+   Styles for V3Atlas.client.tsx and nothing else. Every value resolves from
+   ./tokens.css: navy tints for the marks, hairlines for the silhouettes, the
+   one exception hue nowhere. Motion is one orchestrated reveal (dots fade in
+   by row) that reduced motion resolves to nothing.
+   =========================================================================== */
+
+.v3.v3-atlas {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 var(--v3-space-lg);
+  background: var(--v3-surface);
+}
+
+/* The grid: stacked at 390 (head, map, dock); from 64rem two columns — the
+   head, search and controls on the left, the map a tall panel on the right.
+   The basin is taller than it is wide, so a portrait panel is the only frame
+   that lets it fill the fold instead of floating in a landscape void. */
+.v3-atlas__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .v3-atlas__grid {
+    grid-template-columns: minmax(20rem, 5fr) minmax(0, 7fr);
+    column-gap: 0;
+    max-width: var(--v3-measure);
+    margin: 0 auto;
+    padding: 0 var(--v3-gutter);
+    min-height: min(88vh, 60rem);
+  }
+
+  .v3-atlas--split .v3-atlas__grid {
+    grid-template-columns: minmax(18rem, 4fr) minmax(0, 5fr) minmax(16rem, 3fr);
+  }
+
+  .v3-atlas__head {
+    grid-column: 1;
+    padding-right: var(--v3-space-xl, 2.5rem);
+    align-self: start;
+    position: sticky;
+    top: 5rem;
+  }
+
+  .v3-atlas__body {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .v3-atlas__frame {
+    border-top: 0;
+    border-bottom: 0;
+    border-left: var(--v3-rule-hairline);
+    height: min(88vh, 60rem);
+  }
+
+  .v3-atlas__svg {
+    height: 100%;
+  }
+
+  .v3-atlas--split .v3-atlas__body {
+    grid-column: 2 / span 2;
+    max-width: none;
+    padding: 0;
+    grid-template-columns: minmax(0, 5fr) minmax(16rem, 3fr);
+    column-gap: var(--v3-space-lg);
+    align-items: start;
+  }
+
+  .v3-atlas--split .v3-atlas__rail {
+    padding-top: var(--v3-space-md);
+    position: sticky;
+    top: 5rem;
+  }
+}
+
+/* Head ---------------------------------------------------------------------
+   H1, the live claim, the search. Held to the measure over a full-bleed map. */
+.v3-atlas__head {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  width: 100%;
+  padding: clamp(1.5rem, 4vw, 3rem) var(--v3-gutter) var(--v3-space-md);
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+.v3.v3-atlas .v3-atlas__headline {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: clamp(2.2rem, 5.2vw, 3.6rem);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-display);
+  text-wrap: balance;
+}
+
+.v3-atlas__claim {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-lg);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-body);
+}
+
+.v3-atlas__stamp {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-atlas__search {
+  margin-top: var(--v3-space-2xs);
+  max-width: 40rem;
+}
+
+/* Controls ------------------------------------------------------------------
+   Type toggles (chips) and the price scrubber on one row from 48rem. */
+.v3-atlas__controls {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter) var(--v3-space-sm);
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+@media (min-width: 48rem) {
+  .v3-atlas__controls {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    align-items: center;
+  }
+}
+
+.v3-atlas__types {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--v3-space-xs);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+}
+
+.v3-atlas__types::-webkit-scrollbar {
+  display: none;
+}
+
+.v3.v3-atlas .v3-atlas__type {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+}
+
+.v3.v3-atlas .v3-atlas__type[aria-pressed='false'] {
+  color: var(--v3-ink-muted);
+  border-color: transparent;
+}
+
+.v3-atlas__type-mark {
+  width: var(--v3-space-xs);
+  height: var(--v3-space-xs);
+  flex: none;
+  border-radius: 50%;
+  background: var(--v3-ink);
+}
+
+.v3-atlas__type[aria-pressed='false'] .v3-atlas__type-mark {
+  background: var(--v3-hairline);
+}
+
+.v3-atlas__scrub {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-atlas__scrub strong {
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-atlas__scrub input[type='range'] {
+  width: 100%;
+  height: var(--v3-tap);
+  margin: 0;
+  accent-color: var(--v3-navy);
+  cursor: pointer;
+}
+
+/* Body ----------------------------------------------------------------------
+   The frame holds the SVG; split adds a rail beside it from 56.25rem. */
+.v3-atlas__body {
+  display: grid;
+  gap: 0;
+}
+
+.v3-atlas--split .v3-atlas__body {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+  gap: var(--v3-space-md);
+}
+
+.v3-atlas--split .v3-atlas__body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 56.25rem) {
+  .v3-atlas--split .v3-atlas__body {
+    grid-template-columns: minmax(0, 3fr) minmax(18rem, 2fr);
+    align-items: start;
+  }
+}
+
+.v3-atlas__frame {
+  position: relative;
+  width: 100%;
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
+  background: color-mix(in srgb, var(--v3-navy) 2%, var(--v3-cream));
+  touch-action: pan-y;
+  overflow: hidden;
+}
+
+.v3-atlas__svg {
+  display: block;
+  width: 100%;
+  height: clamp(22rem, 72vh, 46rem);
+  overflow: visible;
+}
+
+/* The dock: toggles and the scrubber over the map's foot, cream at alpha so
+   the dots read through. Stacks under the map below 48rem. */
+.v3-atlas__dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding: var(--v3-space-sm) var(--v3-gutter);
+  background: color-mix(in srgb, var(--v3-cream) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border-top: var(--v3-rule-hairline);
+}
+
+@media (min-width: 48rem) {
+  .v3-atlas__dock {
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 14rem);
+    align-items: center;
+    max-width: var(--v3-measure);
+    margin: 0 auto;
+    left: 50%;
+    right: auto;
+    width: min(100%, var(--v3-measure));
+    transform: translateX(-50%);
+    border: var(--v3-rule-hairline);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .v3-atlas__dock {
+    position: static;
+    transform: none;
+    background: var(--v3-surface);
+  }
+}
+
+/* Silhouettes ------------------------------------------------------------- */
+.v3-atlas__town {
+  fill: color-mix(in srgb, var(--v3-navy) 5%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 48%, transparent);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__town:hover,
+.v3-atlas__town.is-active {
+  fill: color-mix(in srgb, var(--v3-navy) 7%, transparent);
+}
+
+.v3-atlas__place {
+  fill: color-mix(in srgb, var(--v3-navy) 8%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: fill var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__place:hover,
+.v3-atlas__place.is-active {
+  fill: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  stroke: var(--v3-navy);
+}
+
+/* Choropleth steps: one hue, light to dark (dataviz sequential rule). */
+.v3-atlas--heat .v3-atlas__place--step-0 { fill: color-mix(in srgb, var(--v3-navy) 4%, transparent); }
+.v3-atlas--heat .v3-atlas__place--step-1 { fill: color-mix(in srgb, var(--v3-navy) 14%, transparent); }
+.v3-atlas--heat .v3-atlas__place--step-2 { fill: color-mix(in srgb, var(--v3-navy) 30%, transparent); }
+.v3-atlas--heat .v3-atlas__place--step-3 { fill: color-mix(in srgb, var(--v3-navy) 52%, transparent); }
+.v3-atlas--heat .v3-atlas__place--step-4 { fill: color-mix(in srgb, var(--v3-navy) 78%, transparent); }
+.v3-atlas--heat .v3-atlas__place:hover,
+.v3-atlas--heat .v3-atlas__place.is-active { stroke: var(--v3-navy); stroke-width: 2; }
+
+/* Dots ---------------------------------------------------------------------
+   Navy at alpha so density reads as darkness where homes stack. */
+.v3-atlas__dot {
+  fill: color-mix(in srgb, var(--v3-navy) 48%, transparent);
+  pointer-events: none;
+  animation: v3-atlas-in var(--v3-dur-state) var(--v3-ease-out) both;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__dot--condo { fill: color-mix(in srgb, var(--v3-navy) 40%, transparent); }
+.v3-atlas__dot--townhouse { fill: color-mix(in srgb, var(--v3-navy) 50%, transparent); }
+.v3-atlas__dot--land { fill: none; stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent); stroke-width: 1; }
+.v3-atlas__dot--multi { fill: var(--v3-navy); }
+
+.v3-atlas__dot.is-off {
+  opacity: 0.08;
+}
+
+@keyframes v3-atlas-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-atlas__dot {
+    animation: none;
+  }
+}
+
+/* Labels ------------------------------------------------------------------- */
+.v3-atlas__label {
+  fill: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: 13px;
+  font-weight: var(--v3-weight-strong, 600);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--v3-cream);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* The card ----------------------------------------------------------------
+   Follows the pointer on dots/choropleth; sits at the top of the rail on
+   split; docks to the frame's bottom edge under 48rem where there is no
+   pointer to follow. */
+.v3-atlas__card {
+  position: absolute;
+  z-index: 3;
+  min-width: 13rem;
+  max-width: 16rem;
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-cream);
+  border: var(--v3-rule-hairline);
+  border-color: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  box-shadow: 0 8px 24px rgb(16 39 66 / 0.12);
+  pointer-events: auto;
+}
+
+.v3-atlas--split .v3-atlas__card {
+  position: static;
+  max-width: none;
+  margin-bottom: var(--v3-space-sm);
+  box-shadow: none;
+}
+
+@media (max-width: 47.99rem) {
+  .v3-atlas__card {
+    left: 0 !important;
+    right: 0;
+    top: auto !important;
+    bottom: 0;
+    max-width: none;
+    box-shadow: 0 -8px 24px rgb(16 39 66 / 0.1);
+  }
+}
+
+.v3-atlas__card-kind {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-atlas__card-name {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
+}
+
+.v3-atlas__card-figures {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--v3-space-xs);
+  row-gap: 0;
+  align-items: baseline;
+  margin: var(--v3-space-2xs) 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-atlas__card-n {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  line-height: 1.1;
+}
+
+.v3-atlas__card-label {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-atlas__card-door {
+  display: inline-block;
+  margin-top: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  line-height: var(--v3-tap);
+  color: var(--v3-ink);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+/* The rail (split) --------------------------------------------------------- */
+.v3-atlas__rank {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-atlas__rank-row {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-atlas__rank-row:last-child {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-atlas__rank-link {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr) auto auto;
+  gap: var(--v3-space-xs);
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-3xs) 0;
+  color: var(--v3-ink);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__rank-row.is-active .v3-atlas__rank-link,
+.v3-atlas__rank-link:hover {
+  background: var(--v3-wash);
+}
+
+.v3-atlas__rank-name {
+  font-weight: var(--v3-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v3-atlas__rank-bar {
+  display: block;
+  height: 6px;
+  background: var(--v3-hairline);
+}
+
+.v3-atlas__rank-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--v3-navy);
+  transition: width var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__rank-n {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-lg);
+  text-align: right;
+}
+
+.v3-atlas__rank-median {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  text-align: right;
+  min-width: 3.5rem;
+}
+
+/* Heat ---------------------------------------------------------------------
+   Blurred copies of the points at low alpha. Where they stack the field
+   darkens: one hue, light to dark, the sequential rule. Sold homes glow in
+   a lighter tint so the sales of the last month read as a second, softer
+   layer under the market. */
+.v3-atlas__heat-dot {
+  fill: color-mix(in srgb, var(--v3-navy) 14%, transparent);
+}
+
+.v3-atlas--heat .v3-atlas__heat-dot {
+  fill: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+}
+
+.v3-atlas--heat .v3-atlas__town {
+  stroke: color-mix(in srgb, var(--v3-navy) 60%, transparent);
+}
+
+.v3-atlas__heat-dot--sold {
+  fill: color-mix(in srgb, var(--v3-navy) 7%, transparent);
+}
+
+.v3-atlas__dot--pending {
+  fill: none;
+  stroke: var(--v3-navy);
+  stroke-width: 1;
+}
+
+/* Pulses --------------------------------------------------------------------
+   A ring that grows and fades on a real event. 2s loop from the motion
+   ladder, staggered so the map breathes rather than blinks. Reduced motion:
+   a still ring. */
+.v3-atlas__pulse {
+  fill: none;
+  stroke: var(--v3-navy);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: v3-atlas-pulse 2.4s var(--v3-ease-out) infinite;
+  pointer-events: none;
+}
+
+.v3-atlas__pulse--sold {
+  stroke: color-mix(in srgb, var(--v3-navy) 55%, transparent);
+  animation-duration: 3.2s;
+}
+
+.v3-atlas__pulse--pending {
+  stroke-dasharray: 2 2;
+}
+
+.v3-atlas__pulse--cut {
+  stroke: var(--rr-exception, var(--v3-navy));
+}
+
+@keyframes v3-atlas-pulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  70% { transform: scale(3.2); opacity: 0; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-atlas__pulse {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* The live line ------------------------------------------------------------
+   Three real events under the claim, newest first. */
+.v3-atlas__live {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-atlas__live-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-atlas__live-item::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--v3-navy);
+  animation: v3-atlas-blink 2.4s var(--v3-ease-out) infinite;
+}
+
+.v3-atlas__live-item--sold::before { background: color-mix(in srgb, var(--v3-navy) 45%, transparent); }
+.v3-atlas__live-item--cut::before { background: var(--rr-exception, var(--v3-navy)); }
+
+.v3-atlas__live-item a {
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-atlas__live-item a:hover { text-decoration-color: currentColor; }
+
+@keyframes v3-atlas-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-atlas__live-item::before { animation: none; }
+}

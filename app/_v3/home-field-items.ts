@@ -40,7 +40,7 @@ export type HomeFieldItem = V3FieldItem & {
   cat: 0 | 1 | 2 | 3 | 4
 }
 
-function classifyType(input: {
+export function classifyType(input: {
   propertyType?: string | null
   propertySubType?: string | null
 }): { typeKey: HomeFieldTypeKey; typeLabel: string } {

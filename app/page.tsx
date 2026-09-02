@@ -1,7 +1,11 @@
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
-import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON } from '@/lib/data'
+import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON, getAllNeighborhoodsWithCity } from '@/lib/data'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { listingDetailPath } from '@/lib/slug'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { classifyType } from './_v3/home-field-items'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
@@ -27,7 +31,12 @@ import { zonedDateKey } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
-  V3Stage,
+  V3Atlas,
+  type V3AtlasVariant,
+  type AtlasDot,
+  type AtlasEvent,
+  type AtlasRegion,
+  type AtlasType,
   V3Doors,
   V3Instrument,
   V3Ledger,
@@ -43,8 +52,6 @@ import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
 import {
-  HERO_VIDEO,
-  HERO_POSTER,
   HOME_FIELD_POOL,
   HOME_TILE_FETCH,
   HOME_COMMUNITY_TRACE,
@@ -110,9 +117,29 @@ const COMM_FEATURED = [
   { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
 ]
 
-export default async function Home() {
+/** The Atlas type toggles, in display order. Keys are classifyType's. */
+const ATLAS_TYPES: readonly AtlasType[] = [
+  { key: 'house', label: 'House' },
+  { key: 'condo', label: 'Condo' },
+  { key: 'townhouse', label: 'Townhouse' },
+  { key: 'manufactured', label: 'Manufactured' },
+  { key: 'land', label: 'Land' },
+  { key: 'multi', label: 'Multi-family' },
+]
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  // Decision-sheet switch (TASTE.md variants rule): ?opening=dots|choropleth|split.
+  // The losers are deleted in the commit that records Matt's pick.
+  const sp = await searchParams
+  const openingRaw = typeof sp.opening === 'string' ? sp.opening : ''
+  const opening: V3AtlasVariant =
+    openingRaw === 'heat' || openingRaw === 'split' ? openingRaw : 'dots'
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments] = await Promise.all([
+  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments, atlasTiles, neighborhoodRows, communityBoundaries] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -131,7 +158,42 @@ export default async function Home() {
       ),
     ),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
+    // The Atlas population: every public active listing with a coordinate.
+    // PostgREST caps one read at 1,000 rows, so the set is paged and deduped
+    // by key; the claim prints what the dots actually hold.
+    Promise.all([
+      ...[0, 1000, 2000, 3000, 4000].map((offset) =>
+        getListingTiles({ status: 'active-and-pending', limit: 1000, offset, sort: 'newest' }).catch(() => []),
+      ),
+      // The month's closed sales, for the heat field and the live line.
+      getListingTiles({ status: 'closed', limit: 1000, sort: 'newest' }).catch(() => []),
+    ]).then((pages) => {
+      const seen = new Set<string>()
+      return pages.flat().filter((t) => (seen.has(t.listingKey) ? false : (seen.add(t.listingKey), true)))
+    }),
+    getAllNeighborhoodsWithCity().catch(() => []),
+    Promise.all(
+      getAllResortCommunities().map((c) =>
+        getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: c.slug })
+          .then((geometry) => ({ c, geometry }))
+          .catch(() => ({ c, geometry: null })),
+      ),
+    ),
   ])
+  const registrySlugs = new Set(getAllResortCommunities().map((c) => c.slug))
+  const bendNeighborhoods = neighborhoodRows.filter((r) => {
+    const city = Array.isArray(r.cities) ? r.cities[0] : r.cities
+    const citySlug = (city?.slug ?? '').toLowerCase().trim()
+    const slug = (r.slug ?? '').toLowerCase().trim()
+    return citySlug === 'bend' && slug && r.name && !registrySlugs.has(slug)
+  })
+  const neighborhoodBoundaries = await Promise.all(
+    bendNeighborhoods.map((r) =>
+      getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: `bend-${(r.slug ?? '').toLowerCase().trim()}` })
+        .then((geometry) => ({ r, geometry }))
+        .catch(() => ({ r, geometry: null })),
+    ),
+  )
   const regionBoundary = unionBoundaryGeometry(townBoundaries)
   const regionMt = regionOverlays.get('region:central-oregon')
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
@@ -190,6 +252,97 @@ export default async function Home() {
 
   const fieldItems = homeFieldPool(tiles, HOME_FIELD_POOL)
 
+  // The Atlas: dots are the active listings with a coordinate; regions are the
+  // six towns, every registry community with a boundary, and every Bend
+  // neighborhood with one. Every figure the Atlas prints is a count or median
+  // over these dots — one population, one source.
+  const nowMs = Date.now()
+  const daysAgo = (iso: string | null | undefined): number | null => {
+    if (!iso) return null
+    const t = Date.parse(iso)
+    return Number.isFinite(t) ? Math.max(0, Math.floor((nowMs - t) / 86_400_000)) : null
+  }
+  const dotStatus = (status: string): AtlasDot['s'] | null => {
+    if (status === 'Active') return 'active'
+    if (status === 'Active Under Contract' || status === 'Pending') return 'pending'
+    if (status === 'Closed') return 'sold'
+    return null
+  }
+  const atlasDots: AtlasDot[] = atlasTiles.flatMap((tile): AtlasDot[] => {
+    if (tile.lat == null || tile.lng == null) return []
+    const s = dotStatus(tile.status)
+    if (!s) return []
+    const soldAgo = s === 'sold' ? daysAgo(tile.closeDate) : null
+    // Sold dots carry only the month's closes; older closes are not activity.
+    if (s === 'sold' && (soldAgo == null || soldAgo > 30)) return []
+    const { typeKey } = classifyType({ propertyType: tile.propertyType, propertySubType: tile.propertySubType })
+    const price = tile.listPrice != null ? Number(tile.listPrice) : null
+    return [{
+      k: tile.listingKey,
+      lat: Number(tile.lat.toFixed(5)),
+      lng: Number(tile.lng.toFixed(5)),
+      p: price != null && Number.isFinite(price) && price > 0 ? price : null,
+      t: typeKey,
+      s,
+      age: daysAgo(tile.onMarketDate),
+      ...(soldAgo != null ? { soldAgo } : {}),
+      href: listingDetailPath(
+        tile.listingKey,
+        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
+        { city: tile.city, subdivision: tile.subdivisionName },
+        { mlsNumber: tile.listNumber },
+      ),
+    }]
+  })
+  // The live line: the newest real events, one line each. Place is the
+  // subdivision when the feed names one, else the city.
+  const placeOf = (tile: (typeof atlasTiles)[number]) =>
+    publishPlatDisplayName(tile.subdivisionName) ?? tile.city ?? 'Central Oregon'
+  const priceOf = (tile: (typeof atlasTiles)[number]) => {
+    const v = tile.status === 'Closed' && tile.closePrice != null ? Number(tile.closePrice) : tile.listPrice != null ? Number(tile.listPrice) : null
+    return v != null && Number.isFinite(v) && v > 0 ? `$${Math.round(v).toLocaleString('en-US')}` : null
+  }
+  const eventOf = (tile: (typeof atlasTiles)[number], kind: AtlasEvent['kind'], verb: string): AtlasEvent | null => {
+    const price = priceOf(tile)
+    if (!price) return null
+    return {
+      key: `${kind}:${tile.listingKey}`,
+      kind,
+      label: `${verb} in ${placeOf(tile)}, ${price}`,
+      href: listingDetailPath(
+        tile.listingKey,
+        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
+        { city: tile.city, subdivision: tile.subdivisionName },
+        { mlsNumber: tile.listNumber },
+      ),
+    }
+  }
+  const byNewest = (a: string | null | undefined, b: string | null | undefined) => (Date.parse(b ?? '') || 0) - (Date.parse(a ?? '') || 0)
+  const newestListed = [...atlasTiles].filter((t) => t.status === 'Active' && t.onMarketDate).sort((a, b) => byNewest(a.onMarketDate, b.onMarketDate))[0]
+  const newestPending = [...atlasTiles].filter((t) => (t.status === 'Pending' || t.status === 'Active Under Contract') && t.modifiedAt).sort((a, b) => byNewest(a.modifiedAt, b.modifiedAt))[0]
+  const newestSold = [...atlasTiles].filter((t) => t.status === 'Closed' && t.closeDate).sort((a, b) => byNewest(a.closeDate, b.closeDate))[0]
+  const atlasEvents: AtlasEvent[] = [
+    newestListed ? eventOf(newestListed, 'new', 'Just listed') : null,
+    newestPending ? eventOf(newestPending, 'pending', 'Went pending') : null,
+    newestSold ? eventOf(newestSold, 'sold', 'Sold') : null,
+  ].filter((e): e is AtlasEvent => e !== null)
+  const presentTypes = new Set(atlasDots.filter((d) => d.s !== 'sold').map((d) => d.t))
+  const atlasTypes = ATLAS_TYPES.filter((t) => presentTypes.has(t.key))
+  const atlasRegions: AtlasRegion[] = [
+    ...TOWN_ORDER.flatMap((slug, i): AtlasRegion[] => {
+      const geometry = townBoundaries[i]
+      if (!geometry) return []
+      return [{ id: `town:${slug}`, kind: 'town', name: cityBySlug.get(slug)?.name ?? titleCaseName(slug.replace(/-/g, ' ')), href: `/cities/${slug}`, geometry }]
+    }),
+    ...communityBoundaries.flatMap(({ c, geometry }): AtlasRegion[] =>
+      geometry ? [{ id: `community:${c.slug}`, kind: 'community', name: c.label, href: `/communities/${c.slug}`, geometry }] : [],
+    ),
+    ...neighborhoodBoundaries.flatMap(({ r, geometry }): AtlasRegion[] => {
+      const slug = (r.slug ?? '').toLowerCase().trim()
+      return geometry ? [{ id: `neighborhood:${slug}`, kind: 'neighborhood', name: r.name as string, href: `/cities/bend/${slug}`, geometry }] : []
+    }),
+  ]
+
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdict = marketVerdict(mosRaw)
   const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
@@ -245,13 +398,7 @@ export default async function Home() {
       kicker: v3Text('Buying'),
       label: v3Text('Find your place'),
       href: '/homes-for-sale?view=map',
-      ...(hud.active != null
-        ? {
-            fact: v3Text(
-              `${hud.active.toLocaleString('en-US')} homes across ${TOWN_ORDER.length} towns and ${communities.length.toLocaleString('en-US')} communities and subdivisions`,
-            ),
-          }
-        : {}),
+      fact: v3Text('Every town, community, and neighborhood, mapped above'),
     },
     {
       kicker: v3Text('Selling'),
@@ -274,15 +421,18 @@ export default async function Home() {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
 
-        <V3Stage
+        <V3Atlas
           id="hero"
+          variant={opening}
           headingLevel={1}
           headline={v3Text('Homes for Sale in Central Oregon')}
-          posterSrc={HERO_POSTER}
-          videoSrc={HERO_VIDEO}
+          dots={atlasDots}
+          regions={atlasRegions}
+          types={atlasTypes}
+          events={atlasEvents}
         >
           <HomeHeroSearch />
-        </V3Stage>
+        </V3Atlas>
 
         <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 

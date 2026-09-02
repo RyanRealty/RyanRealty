@@ -1,22 +1,22 @@
-/* Homepage Stage search. Scoped under the Stage so inherited on-media cream
-   ink cannot strip the field. Same paint as the Stage on-media primary:
+/* Homepage search. Scoped to the v3 root so it paints the same inside the
+   Stage (on-media) and the Atlas head (on cream). Same paint as the Stage on-media primary:
    cream face, navy ink, 2px navy edge. Tokens only. 44px targets. */
-.v3.v3-stage .home-hero-search {
+.v3 .home-hero-search {
   position: relative;
   width: 100%;
   max-width: var(--v3-measure-text);
   color: var(--v3-ink);
 }
 
-.v3.v3-stage .home-hero-search__row {
+.v3 .home-hero-search__row {
   display: flex;
   align-items: stretch;
   gap: var(--v3-space-xs);
   width: 100%;
 }
 
-.v3.v3-stage .home-hero-search__input,
-.v3.v3-stage .home-hero-search__go {
+.v3 .home-hero-search__input,
+.v3 .home-hero-search__go {
   appearance: none;
   -webkit-appearance: none;
   min-height: var(--v3-tap);
@@ -30,18 +30,18 @@
   box-shadow: var(--v3-media-shadow);
 }
 
-.v3.v3-stage .home-hero-search__input {
+.v3 .home-hero-search__input {
   flex: 1 1 auto;
   min-width: 0;
   padding: 0 var(--v3-space-sm);
 }
 
-.v3.v3-stage .home-hero-search__input::placeholder {
+.v3 .home-hero-search__input::placeholder {
   color: var(--v3-ink-muted);
   opacity: 1;
 }
 
-.v3.v3-stage .home-hero-search__go {
+.v3 .home-hero-search__go {
   flex: 0 0 auto;
   min-width: var(--v3-tap);
   padding: 0 var(--v3-space-md);
@@ -51,11 +51,11 @@
   border-color: var(--v3-surface);
 }
 
-.v3.v3-stage .home-hero-search__go:hover {
+.v3 .home-hero-search__go:hover {
   background: var(--v3-pressed);
 }
 
-.v3.v3-stage .home-hero-search__panel {
+.v3 .home-hero-search__panel {
   position: absolute;
   left: 0;
   right: 0;

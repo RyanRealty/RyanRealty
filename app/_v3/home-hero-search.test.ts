@@ -11,9 +11,10 @@ const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'ut
 const FIELD_MAP = readFileSync(resolve('app/central-oregon/_v3/PlaceFieldMapImpl.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
-  it('mounts HomeHeroSearch as the only Stage action', () => {
+  it('mounts HomeHeroSearch inside the Atlas head (the Stage is retired on the homepage, 2026-09-01)', () => {
     expect(PAGE).toMatch(/<HomeHeroSearch/)
-    expect(PAGE).toMatch(/<V3Stage/)
+    expect(PAGE).toMatch(/<V3Atlas/)
+    expect(PAGE).not.toMatch(/<V3Stage/)
     expect(PAGE).not.toMatch(/action=\{\{\s*label:\s*['"]See homes['"]/)
     expect(PAGE).not.toMatch(/>See homes</)
   })
@@ -35,13 +36,13 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain('aria-label="Search city, community, or address"')
   })
 
-  it('paints the Stage search as cream field and navy Search', () => {
+  it('paints the search as cream field and navy Search wherever the v3 root hosts it', () => {
     const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
-    expect(css).toContain('.v3.v3-stage .home-hero-search__input')
+    expect(css).toContain('.v3 .home-hero-search__input')
     expect(css).toContain('background: var(--v3-surface)')
     expect(css).toContain('color: var(--v3-ink)')
     expect(css).toContain('-webkit-appearance: none')
-    expect(css).toContain('.v3.v3-stage .home-hero-search__go')
+    expect(css).toContain('.v3 .home-hero-search__go')
     expect(css).toContain('background: var(--v3-ink)')
     expect(css).toContain('color: var(--v3-ink-on-navy)')
   })
@@ -155,12 +156,12 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).toContain('flex: none')
   })
 
-  it('opens with Stage then Field, Chart Room mid-page', () => {
-    expect(PAGE).toMatch(/<V3Stage/)
+  it('opens with the Atlas then Field, Chart Room mid-page', () => {
+    expect(PAGE).toMatch(/<V3Atlas/)
     expect(PAGE).toMatch(/<HomeHomesField/)
     expect(PAGE).toMatch(/<V3Instrument/)
     expect(PAGE).toMatch(/id="towns"/)
-    const stageAt = PAGE.indexOf('<V3Stage')
+    const stageAt = PAGE.indexOf('<V3Atlas')
     const fieldAt = PAGE.indexOf('<HomeHomesField')
     const townsAt = PAGE.indexOf('id="towns"')
     const marketAt = PAGE.indexOf('<V3Instrument')

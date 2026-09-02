@@ -63,8 +63,8 @@
       "section": "analytics island"
     },
     {
-      "name": "V3Stage",
-      "section": "the Bend flyover hero, D11 H1, search as the only Stage action"
+      "name": "V3Atlas",
+      "section": "#hero -- the living map: every active home as a point on Central Oregon, every town/community/neighborhood a touchable silhouette, type toggles, a price scrubber, a card with the place's live count and median. The H1 (D11 lock) and the search sit in its head. Replaces the photo Stage (Matt 2026-09-01: the opening must be the data itself)."
     },
     {
       "name": "V3Doors",
@@ -137,7 +137,7 @@
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- flyover, H1, HomeHeroSearch",
+    "V3Atlas #hero -- the living map, H1, HomeHeroSearch",
     "V3Doors #doors -- Buying / Selling / Investing, one live fact each",
     "HomeHomesField -- the houses and the map in one frame, type chips, listFlow, See all",
     "V3Ledger #towns -- each town's active count and median list price",
