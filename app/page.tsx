@@ -3,9 +3,7 @@ import type { Metadata } from 'next'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { getListingTiles, getDetachedOverlays, getBrokers, getBoundaryGeoJSON, getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
-import { listingDetailPath } from '@/lib/slug'
-import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
-import { classifyType } from './_v3/home-field-items'
+import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
@@ -27,16 +25,13 @@ import {
   type CityPlaceItem,
   type CityCommunityItem,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { zonedDateKey, formatDateTime } from '@/lib/format/date'
+import { zonedDateKey } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Atlas,
   type V3AtlasVariant,
-  type AtlasDot,
-  type AtlasEvent,
   type AtlasRegion,
-  type AtlasType,
   V3Doors,
   V3Instrument,
   V3Ledger,
@@ -77,7 +72,7 @@ const D11_HOMEPAGE_LEAD =
  * Homepage. Stage (owned Old Mill / Bend flyover, one line, search action)
  * then Field of homes on the v3 barrel. Chart Room is mid-page.
  */
-export const revalidate = 60
+export const revalidate = 300
 
 export const metadata: Metadata = {
   title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
@@ -117,29 +112,14 @@ const COMM_FEATURED = [
   { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
 ]
 
-/** The Atlas type toggles, in display order. Keys are classifyType's. */
-const ATLAS_TYPES: readonly AtlasType[] = [
-  { key: 'house', label: 'House' },
-  { key: 'condo', label: 'Condo' },
-  { key: 'townhouse', label: 'Townhouse' },
-  { key: 'manufactured', label: 'Manufactured' },
-  { key: 'land', label: 'Land' },
-  { key: 'multi', label: 'Multi-family' },
-]
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
-  // Decision-sheet switch (TASTE.md variants rule): ?opening=dots|choropleth|split.
-  // The losers are deleted in the commit that records Matt's pick.
-  const sp = await searchParams
-  const openingRaw = typeof sp.opening === 'string' ? sp.opening : ''
-  const opening: V3AtlasVariant =
-    openingRaw === 'heat' || openingRaw === 'split' ? openingRaw : 'dots'
+export default async function Home() {
+  // The Atlas composition. The three candidates (dots | heat | split) live on
+  // the decision sheet as renders; the page itself stays ISR — a searchParams
+  // switch made it dynamic and ran every read on every request (58 rail
+  // timeouts in the 2026-09-01 build). The losers are deleted on Matt's pick.
+  const opening: V3AtlasVariant = 'dots'
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments, atlasTiles, neighborhoodRows, communityBoundaries] = await Promise.all([
+  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments, atlas, neighborhoodRows, communityBoundaries] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -158,25 +138,9 @@ export default async function Home({
       ),
     ),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
-    // The Atlas population: every public active listing with a coordinate.
-    // PostgREST caps one read at 1,000 rows, so the set is paged and deduped
-    // by key; the claim prints what the dots actually hold.
-    Promise.all([
-      ...[0, 1000, 2000, 3000, 4000].map((offset) =>
-        getListingTiles({ status: 'active-and-pending', limit: 1000, offset, sort: 'newest' }).catch(() => []),
-      ),
-      // The month's closed sales (a close_date window, newest close first),
-      // for the heat field and the live line.
-      getListingTiles({
-        status: 'closed',
-        closedFromDate: new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10),
-        limit: 1000,
-        sort: 'close-newest',
-      }).catch(() => []),
-    ]).then((pages) => {
-      const seen = new Set<string>()
-      return pages.flat().filter((t) => (seen.has(t.listingKey) ? false : (seen.add(t.listingKey), true)))
-    }),
+    // The Atlas population, through the shared builder (one source for the
+    // homepage and every place page). Empty cities = the whole feed.
+    buildPlaceAtlas({ cities: [], label: 'Central Oregon' }),
     getAllNeighborhoodsWithCity().catch(() => []),
     Promise.all(
       getAllResortCommunities().map((c) =>
@@ -262,77 +226,7 @@ export default async function Home({
   // six towns, every registry community with a boundary, and every Bend
   // neighborhood with one. Every figure the Atlas prints is a count or median
   // over these dots — one population, one source.
-  const nowMs = Date.now()
-  const daysAgo = (iso: string | null | undefined): number | null => {
-    if (!iso) return null
-    const t = Date.parse(iso)
-    return Number.isFinite(t) ? Math.max(0, Math.floor((nowMs - t) / 86_400_000)) : null
-  }
-  const dotStatus = (status: string): AtlasDot['s'] | null => {
-    if (status === 'Active') return 'active'
-    if (status === 'Active Under Contract' || status === 'Pending') return 'pending'
-    if (status === 'Closed') return 'sold'
-    return null
-  }
-  const atlasDots: AtlasDot[] = atlasTiles.flatMap((tile): AtlasDot[] => {
-    if (tile.lat == null || tile.lng == null) return []
-    const s = dotStatus(tile.status)
-    if (!s) return []
-    const soldAgo = s === 'sold' ? daysAgo(tile.closeDate) : null
-    // Sold dots carry only the month's closes; older closes are not activity.
-    if (s === 'sold' && (soldAgo == null || soldAgo > 30)) return []
-    const { typeKey } = classifyType({ propertyType: tile.propertyType, propertySubType: tile.propertySubType })
-    const raw = s === 'sold' && tile.closePrice != null ? Number(tile.closePrice) : tile.listPrice != null ? Number(tile.listPrice) : null
-    return [{
-      k: tile.listingKey,
-      lat: Number(tile.lat.toFixed(4)),
-      lng: Number(tile.lng.toFixed(4)),
-      p: raw != null && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null,
-      t: typeKey,
-      s,
-      age: daysAgo(tile.onMarketDate),
-      ...(soldAgo != null ? { soldAgo } : {}),
-    }]
-  })
-  // The live line: the newest real events, one line each. Place is the
-  // subdivision when the feed names one, else the city.
-  const placeOf = (tile: (typeof atlasTiles)[number]) =>
-    publishPlatDisplayName(tile.subdivisionName) ?? tile.city ?? 'Central Oregon'
-  const priceOf = (tile: (typeof atlasTiles)[number]) => {
-    const v = tile.status === 'Closed' && tile.closePrice != null ? Number(tile.closePrice) : tile.listPrice != null ? Number(tile.listPrice) : null
-    return v != null && Number.isFinite(v) && v > 0 ? `$${Math.round(v).toLocaleString('en-US')}` : null
-  }
-  const eventOf = (tile: (typeof atlasTiles)[number], kind: AtlasEvent['kind'], verb: string): AtlasEvent | null => {
-    const price = priceOf(tile)
-    if (!price) return null
-    return {
-      key: `${kind}:${tile.listingKey}`,
-      kind,
-      label: `${verb} in ${placeOf(tile)}, ${price}`,
-      href: listingDetailPath(
-        tile.listingKey,
-        { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
-        { city: tile.city, subdivision: tile.subdivisionName },
-        { mlsNumber: tile.listNumber },
-      ),
-    }
-  }
-  const byNewest = (a: string | null | undefined, b: string | null | undefined) => (Date.parse(b ?? '') || 0) - (Date.parse(a ?? '') || 0)
-  const newestListed = [...atlasTiles].filter((t) => t.status === 'Active' && t.onMarketDate).sort((a, b) => byNewest(a.onMarketDate, b.onMarketDate))[0]
-  const newestPending = [...atlasTiles].filter((t) => (t.status === 'Pending' || t.status === 'Active Under Contract') && t.modifiedAt).sort((a, b) => byNewest(a.modifiedAt, b.modifiedAt))[0]
-  const newestSold = [...atlasTiles].filter((t) => t.status === 'Closed' && t.closeDate).sort((a, b) => byNewest(a.closeDate, b.closeDate))[0]
-  const atlasEvents: AtlasEvent[] = [
-    newestListed ? eventOf(newestListed, 'new', 'Just listed') : null,
-    newestPending ? eventOf(newestPending, 'pending', 'Went pending') : null,
-    newestSold ? eventOf(newestSold, 'sold', 'Sold') : null,
-  ].filter((e): e is AtlasEvent => e !== null)
-  const atlasStamp = formatDateTime(new Date(nowMs))
-  const atlasCities = new Set(atlasTiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size
-  const atlasSource =
-    `Every active and pending listing of every property type on the regional MLS through Oregon Data Share, ` +
-    `across ${atlasCities} Central Oregon cities, plus the closes of the last 30 days. Counts and medians are of the listings on this map.`
-  const presentTypes = new Set(atlasDots.filter((d) => d.s !== 'sold').map((d) => d.t))
-  const atlasTypes = ATLAS_TYPES.filter((t) => presentTypes.has(t.key))
+  const atlasDots = atlas.dots
   const atlasRegions: AtlasRegion[] = [
     ...TOWN_ORDER.flatMap((slug, i): AtlasRegion[] => {
       const geometry = townBoundaries[i]
@@ -433,10 +327,10 @@ export default async function Home({
           headline={v3Text('Homes for Sale in Central Oregon')}
           dots={atlasDots}
           regions={atlasRegions}
-          types={atlasTypes}
-          events={atlasEvents}
-          source={atlasSource}
-          stamp={atlasStamp}
+          types={atlas.types}
+          events={atlas.events}
+          source={atlas.source}
+          stamp={atlas.stamp}
         >
           <HomeHeroSearch />
         </V3Atlas>
