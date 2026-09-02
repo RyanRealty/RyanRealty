@@ -70,15 +70,17 @@ checks.push({
     /seedListingDetailHistory\(listingKey, seed\)/.test(reader),
 })
 
-const mapper = src('lib/listing/map-published-history-event.ts')
-const action = src('app/actions/listing-detail.ts')
+// The app/actions/listing-detail pipeline (getListingDetailData +
+// map-published-history-event) was a zero-caller duplicate deleted 2026-09-01.
+// The LIVE page reads lib/listing/read-listing-detail-history, whose
+// listed/pending discipline lives in publish-listing-history — pinned here.
+const liveReader = src('lib/listing/read-listing-detail-history.ts')
 checks.push({
-  label: 'listing-detail action maps published listed/pending without raw.Field',
+  label: 'live listing page publishes history through read-listing-detail-history',
   ok:
-    /readListingDetailHistory/.test(action) &&
-    /mapPublishedHistoryEvent/.test(action) &&
-    /publishedEvent === 'listed'/.test(mapper) &&
-    /publishedEvent === 'pending'/.test(mapper),
+    /publishListingHistory/.test(liveReader) &&
+    /pending/.test(helper) &&
+    /listed/i.test(helper),
 })
 
 const historyUi = src('components/site/listing-detail/PropertyHistory.tsx')
