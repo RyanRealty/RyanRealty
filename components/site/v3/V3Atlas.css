@@ -290,6 +290,16 @@
     align-items: start;
   }
 
+  /* Split's map column is narrower: chips flow in rows, the scrubber under. */
+  .v3-atlas--split .v3-atlas__dock {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .v3.v3-atlas--split .v3-atlas__svg {
+    height: calc(100% - 11.5rem);
+  }
+
   .v3-atlas--split .v3-atlas__rail {
     padding-top: var(--v3-space-md);
     position: sticky;
