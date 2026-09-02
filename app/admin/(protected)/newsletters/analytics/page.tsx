@@ -85,11 +85,13 @@ export default async function NewsletterAnalyticsPage({
   const slugsToShow: string[] = selectedBroker === 'all' ? [...CRM_BROKERS] : [selectedBroker]
 
   const perBroker = await Promise.all(
-    slugsToShow.map(async (slug) => ({
-      slug,
-      analytics: await getBrokerNewsletterAnalytics(slug),
-      warmList: await getBrokerWarmList(slug, 50),
-    })),
+    slugsToShow.map(async (slug) => {
+      const [analytics, warmList] = await Promise.all([
+        getBrokerNewsletterAnalytics(slug),
+        getBrokerWarmList(slug, 50),
+      ])
+      return { slug, analytics, warmList }
+    }),
   )
 
   const totals = perBroker.reduce(

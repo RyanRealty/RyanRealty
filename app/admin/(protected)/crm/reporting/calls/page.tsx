@@ -239,10 +239,10 @@ export default async function CallsReportPage({
         <>
           <SectionHead>{period === 'this period' ? 'This period' : period[0].toUpperCase() + period.slice(1)}</SectionHead>
           <div className="av2-week">
-            <Figure
-              value={totals.callsMade.toLocaleString('en-US')}
-              label={`calls made${totals.callsMadePeople > 0 ? ` · ${peopleLabel(totals.callsMadePeople)}` : ''}`}
-            />
+            {/* Outbound click-to-call is not built, so this can only ever be
+                zero — say "not tracked" (the answer-time idiom below) instead
+                of a fabricated 0 that reads as "nobody called anyone". */}
+            <Figure value="—" label="calls made — not tracked" />
             <Figure
               value={totals.connected.toLocaleString('en-US')}
               label={`connected${totals.connectedPeople > 0 ? ` · ${peopleLabel(totals.connectedPeople)}` : ''}`}

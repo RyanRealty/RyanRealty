@@ -1,6 +1,7 @@
 'use server'
 
 import { cookies, headers } from 'next/headers'
+import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { getAuthLimiter } from '@/lib/rate-limit'
 import {
   hasNarrowingFilter,
@@ -105,6 +106,11 @@ export async function submitSearchAlertSignup(input: {
   let fubPersonId: number | null = null
   let crmPersonId: number | null = null
   try {
+    // Per-broker attribution (Matt 2026-09-01: one smart site, every broker's
+    // links route their own leads): the rr_agent_attribution cookie a broker's
+    // shared link stamped decides who this lead belongs to, same rule as the
+    // LP forms. No cookie = default routing.
+    const attributed = await readAttributedAgentServer()
     const result = await sendEvent({
       type: 'Saved Property Search',
       person: { emails: [{ value: email }] },
@@ -112,6 +118,7 @@ export async function submitSearchAlertSignup(input: {
       system: 'Ryan Realty Website',
       sourceUrl: searchUrl,
       message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
+      brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
     crmPersonId = nativeId
@@ -254,6 +261,8 @@ export async function submitListingSaveCapture(input: {
   const listingUrl = `${base}/homes-for-sale/listing/${encodeURIComponent(listingKey)}`
 
   try {
+    // Same per-broker attribution rule as the alert signup above.
+    const attributed = await readAttributedAgentServer()
     const result = await sendEvent({
       type: 'Saved Property',
       person: { emails: [{ value: email }] },
@@ -261,6 +270,7 @@ export async function submitListingSaveCapture(input: {
       system: 'Ryan Realty Website',
       sourceUrl: listingUrl,
       message: `Saved a home: ${homeLabel} (${listingKey})`,
+      brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
     })
     const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
     if (nativeId) {

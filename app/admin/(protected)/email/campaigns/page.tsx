@@ -87,16 +87,17 @@ export default async function AdminEmailCampaignsPage() {
   const role = await getAdminRoleForEmail(session.user.email)
   if (!role) redirect('/admin/access-denied')
 
-  const { rows: campaigns, unreadable } = await getEmailCampaigns(50)
+  const [{ rows: campaigns, unreadable }, summary] = await Promise.all([
+    getEmailCampaigns(50),
+    // Brokerage-wide campaign engagement for the numbers strip — all campaign sends.
+    getEmailEngagementSummary({ sendType: 'campaign' }),
+  ])
 
   // Real engagement, joined by message id (email_campaigns.fub_campaign_id ==
   // email_events.message_id). The stored open_count/click_count columns are never
   // updated by the webhook, so they are ignored — this is the truth from events.
   const messageIds = campaigns.map((c) => c.messageId).filter((m): m is string => !!m)
   const engagementMap = await getCampaignEngagement(messageIds)
-
-  // Brokerage-wide campaign engagement for the numbers strip — all campaign sends.
-  const summary = await getEmailEngagementSummary({ sendType: 'campaign' })
 
   const rows: CampaignViewRow[] = campaigns.map((c) => ({
     id: c.id,

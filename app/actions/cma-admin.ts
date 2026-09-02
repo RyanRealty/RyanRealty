@@ -222,7 +222,10 @@ export async function rebuildCmaAction(
       },
       brokerSlug: input.brokerSlug?.trim() || (row.broker_slug as string | null),
       priceOverride,
-      requestSource: 'admin-rebuild',
+      // Keep the ORIGINAL provenance: a rebuilt seller-lp request is still a
+      // person who asked — stamping 'admin-rebuild' ejected rows from the
+      // Asked-unsent send queue (found 2026-09-01).
+      requestSource: (row.request_source as string | null) ?? 'admin-rebuild',
       personId,
       subjectFacts: {
         beds: parsePositiveInt(input.beds ?? (row.subject_beds as number | null)),

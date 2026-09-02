@@ -30,8 +30,9 @@ const FILES = [
   'scripts/lib/walk.mjs',
   // The compliant subject: every rule satisfied, through the v3 register.
   'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
-  // Second compliant surface (homepage). KbCommunityAlerts is gone.
-  'app/_v3/HomeAlertSheet.client.tsx',
+  // Second compliant surface. KbCommunityAlerts and the homepage sheet are
+  // gone (homepage declutter, Matt 2026-09-01); /invest carries the sibling.
+  'app/invest/_v3/InvestAlertSheet.client.tsx',
 ]
 
 function run() {

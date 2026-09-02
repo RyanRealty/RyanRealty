@@ -46,9 +46,9 @@ export const HOME_COMMUNITY_TRACE =
  * the same MoS clauses appended by the caller when a supply figure prints.
  */
 export const HOME_MARKET_TRACE =
-  'regional MLS through Oregon Data Share, read through the Market Truth metric layer: ' +
-  'detached single-family houses across the Central Oregon region. ' +
-  'Every figure names its own window. A figure the layer withheld is absent, not estimated.'
+  'regional MLS through Oregon Data Share: detached single-family houses across Central Oregon. ' +
+  'Pending pace covers the last 90 days and sale-to-asking the last 12 months. ' +
+  'A figure we cannot verify is left out, never estimated.'
 
 /** Live place hero when present. Otherwise the page's existing fallback image. */
 export { preferPlaceHero } from '@/lib/geo-images'

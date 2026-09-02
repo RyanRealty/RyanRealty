@@ -22,12 +22,12 @@
  * strand/band violators are excluded, and the numeric band is written into
  * their reason so the excluded list reads as one rule.
  *
- * Runs on ANTHROPIC_API_KEY (Sonnet 4.5). Fails OPEN: if the key is absent or
+ * Runs on XAI_API_KEY through lib/grok (Matt 2026-09-01). Fails OPEN: if the key is absent or
  * a call errors, returns null and the caller falls back to the deterministic
  * set + the dispersion guard. Never blocks a build, never throws.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { GROK_MODELS, generateGrokStructured, grokConfigured, type GrokMessage } from '@/lib/grok'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
@@ -48,9 +48,10 @@ import {
 export type { CompTier, CompVerdict, ExclusionBasis, ConsistencyCheck } from '@/lib/cma/judge-consistency'
 export { checkJudgmentConsistency } from '@/lib/cma/judge-consistency'
 
-const MODEL = 'claude-sonnet-4-5'
-const INPUT_COST_PER_TOKEN = 0.000003
-const OUTPUT_COST_PER_TOKEN = 0.000015
+// The judge runs on xAI (Matt 2026-09-01: the Anthropic account went dark on
+// billing 2026-08-27 and the LLM layer moved to Grok). Model id lives in
+// lib/grok/client.ts (ci:grok-models); cost comes back per call from xAI.
+const MODEL = GROK_MODELS.text
 
 /** Below this many kept comps the deterministic resolver stops pruning —
  *  buildCma's own MIN_COMPS floor would discard the whole judgment anyway. */
@@ -115,11 +116,10 @@ function describeComp(c: CmaComp): string {
   return remarks ? `${line}\n   remarks: ${remarks}` : line
 }
 
-const JUDGE_TOOL: Anthropic.Tool = {
-  name: 'record_comp_judgment',
-  description: 'Record the comparability verdict for every candidate comp and the overall confidence.',
-  input_schema: {
+/** Strict JSON schema for the judgment (xAI json_schema mode: every property required, no extras). */
+const JUDGE_SCHEMA: Record<string, unknown> = {
     type: 'object',
+    additionalProperties: false,
     properties: {
       ppsfFloor: {
         type: 'number',
@@ -151,12 +151,13 @@ const JUDGE_TOOL: Anthropic.Tool = {
             },
             basis: {
               type: 'string',
-              enum: EXCLUSION_BASES,
+              enum: [...EXCLUSION_BASES, 'not-excluded'],
               description:
-                'REQUIRED on tier=exclude: the single criterion the exclusion rests on. Use price-tier ONLY when the $/sqft band is the reason. If the real reason is condition, vintage, size, lot, location, or structure type, name that instead.',
+                'On tier=exclude: the single criterion the exclusion rests on ("not-excluded" for kept comps). Use price-tier ONLY when the $/sqft band is the reason. If the real reason is condition, vintage, size, lot, location, or structure type, name that instead.',
             },
           },
-          required: ['listingKey', 'tier', 'reason'],
+          additionalProperties: false,
+          required: ['listingKey', 'tier', 'reason', 'basis'],
         },
       },
       confidence: {
@@ -171,7 +172,6 @@ const JUDGE_TOOL: Anthropic.Tool = {
       },
     },
     required: ['ppsfFloor', 'ppsfCeiling', 'exclusionRule', 'verdicts', 'confidence', 'narrative'],
-  },
 }
 
 const SYSTEM =
@@ -222,7 +222,7 @@ const SYSTEM =
   'name the finish level with the remarks phrase itself ("studs out remodel", "needs TLC") or with the number. ' +
   'A number is stated once and left alone. No coined maxims, no clause that moralizes a fact, and never phrase a ' +
   'number as something that speaks, says, or proves a point: state the number and stop. No em dashes, no semicolons, no exclamation marks. ' +
-  'Return your judgment only through the record_comp_judgment tool.'
+  'Return only the JSON judgment object.'
 
 
 interface RawJudgment {
@@ -234,8 +234,8 @@ interface RawJudgment {
   exclusionRule: string
 }
 
-function parseJudgment(block: Anthropic.ToolUseBlock, comps: CmaComp[]): RawJudgment | null {
-  const out = block.input as {
+function parseJudgment(payload: unknown, comps: CmaComp[]): RawJudgment | null {
+  const out = payload as {
     verdicts?: Array<{ listingKey?: string; tier?: string; reason?: string; basis?: string }>
     confidence?: string
     narrative?: string
@@ -290,7 +290,8 @@ function renderJudgmentForRepair(comps: CmaComp[], j: RawJudgment): string {
 }
 
 interface JudgeTurn {
-  block: Anthropic.ToolUseBlock | null
+  payload: unknown | null
+  raw: string | null
   costUsd: number
 }
 
@@ -301,22 +302,16 @@ interface JudgeTurn {
  * forcing, the token ceiling, and the cost accounting are defined once and
  * cannot drift apart between the two.
  */
-async function sendJudgeTurn(
-  client: Anthropic,
-  messages: Anthropic.MessageParam[],
-): Promise<JudgeTurn> {
-  const res = await client.messages.create({
-    model: MODEL,
-    max_tokens: 2500,
+async function sendJudgeTurn(messages: GrokMessage[]): Promise<JudgeTurn> {
+  const res = await generateGrokStructured<Record<string, unknown>>({
     system: SYSTEM,
-    tools: [JUDGE_TOOL],
-    tool_choice: { type: 'tool', name: 'record_comp_judgment' },
     messages,
+    schema: JUDGE_SCHEMA,
+    schemaName: 'record_comp_judgment',
+    maxTokens: 2500,
+    reasoningEffort: 'high',
   })
-  return {
-    block: res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use') ?? null,
-    costUsd: computeCostUsd(res.usage.input_tokens, res.usage.output_tokens),
-  }
+  return { payload: res.value, raw: res.raw, costUsd: res.costUsd ?? 0 }
 }
 
 /**
@@ -369,7 +364,7 @@ function buildJudgeUserPrompt(
 
 /**
  * Judge which candidate comps are genuinely comparable to the subject.
- * Returns null (fail-open) when ANTHROPIC_API_KEY is missing or the call fails.
+ * Returns null (fail-open) when XAI_API_KEY is missing or the call fails.
  */
 export async function judgeComps(
   subject: CmaSubject,
@@ -377,20 +372,17 @@ export async function judgeComps(
   market: CmaMarketContext | null,
 ): Promise<CompJudgment | null> {
   setJudgeUnavailableReason(null)
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || comps.length === 0) return null
+  if (!grokConfigured() || comps.length === 0) return null
 
   const user = buildJudgeUserPrompt(subject, comps, market)
 
   try {
-    const client = new Anthropic({ apiKey })
     let costUsd = 0
 
-    const first = await sendJudgeTurn(client, [{ role: 'user', content: user }])
+    const first = await sendJudgeTurn([{ role: 'user', content: user }])
     costUsd += first.costUsd
-    const firstBlock = first.block
-    if (!firstBlock) return null
-    let judged = parseJudgment(firstBlock, comps)
+    if (first.payload == null) return null
+    let judged = parseJudgment(first.payload, comps)
     if (!judged) return null
 
     const firstCheck = checkJudgmentConsistency({ comps, ...judged })
@@ -414,22 +406,13 @@ export async function judgeComps(
         `correct answer and you should say so and lower the confidence. Do not keep a non-comparable sale to hit ` +
         `a count. Return the complete corrected judgment through the tool, every candidate included.`
 
-      const second = await sendJudgeTurn(client, [
+      const second = await sendJudgeTurn([
         { role: 'user', content: user },
-        { role: 'assistant', content: [firstBlock] },
-        // The tool_use above MUST be answered by a tool_result or the API
-        // rejects the turn, which would fail the judge open on every
-        // inconsistent document.
-        {
-          role: 'user',
-          content: [
-            { type: 'tool_result', tool_use_id: firstBlock.id, content: 'Judgment recorded. Consistency check follows.' },
-            { type: 'text', text: repairUser },
-          ],
-        },
+        { role: 'assistant', content: first.raw ?? JSON.stringify(first.payload) },
+        { role: 'user', content: repairUser },
       ])
       costUsd += second.costUsd
-      const repaired = second.block ? parseJudgment(second.block, comps) : null
+      const repaired = second.payload != null ? parseJudgment(second.payload, comps) : null
       if (repaired) {
         const recheck = checkJudgmentConsistency({ comps, ...repaired })
         // Take the repair when it is strictly better; otherwise keep round one.
@@ -564,9 +547,6 @@ export async function judgeComps(
   }
 }
 
-function computeCostUsd(inputTokens: number, outputTokens: number): number {
-  return +(inputTokens * INPUT_COST_PER_TOKEN + outputTokens * OUTPUT_COST_PER_TOKEN).toFixed(4)
-}
 
 /**
  * ONE targeted narrative repair, driven by the adversarial audit's findings.
@@ -594,8 +574,7 @@ export async function repairNarrativeAgainstAudit(args: {
   /** Auditor findings about the prose, rendered one per line. */
   findings: string[]
 }): Promise<{ narrative: string; costUsd: number; model: string } | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || args.findings.length === 0 || args.comps.length === 0) return null
+  if (!grokConfigured() || args.findings.length === 0 || args.comps.length === 0) return null
   if (!args.judgment.narrative?.trim()) return null
 
   const user = buildJudgeUserPrompt(args.subject, args.comps, args.market)
@@ -614,29 +593,20 @@ export async function repairNarrativeAgainstAudit(args: {
     `one that is not.`
 
   try {
-    const client = new Anthropic({ apiKey })
     let costUsd = 0
 
-    const first = await sendJudgeTurn(client, [{ role: 'user', content: user }])
+    const first = await sendJudgeTurn([{ role: 'user', content: user }])
     costUsd += first.costUsd
-    if (!first.block) return null
+    if (first.payload == null) return null
 
-    const second = await sendJudgeTurn(client, [
+    const second = await sendJudgeTurn([
       { role: 'user', content: user },
-      { role: 'assistant', content: [first.block] },
-      // The tool_use above MUST be answered by a tool_result or the API rejects
-      // the turn.
-      {
-        role: 'user',
-        content: [
-          { type: 'tool_result', tool_use_id: first.block.id, content: 'Judgment recorded. Audit findings follow.' },
-          { type: 'text', text: repairUser },
-        ],
-      },
+      { role: 'assistant', content: first.raw ?? JSON.stringify(first.payload) },
+      { role: 'user', content: repairUser },
     ])
     costUsd += second.costUsd
 
-    const repaired = second.block ? parseJudgment(second.block, args.comps) : null
+    const repaired = second.payload != null ? parseJudgment(second.payload, args.comps) : null
     const narrative = repaired?.narrative?.trim()
     if (!narrative) return null
 

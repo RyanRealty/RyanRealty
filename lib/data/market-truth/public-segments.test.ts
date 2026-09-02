@@ -411,10 +411,15 @@ describe('public place pages', () => {
     // The homepage's region-scoped property-type run was CUT 2026-08-27 (Matt,
     // on the Search Console data): eight filter sections between the inventory
     // and every ask on a page judged on conversion, duplicating the city-scoped
-    // run app/cities/[slug] carries -- which this test still asserts above. The
-    // homepage must NOT read segments only to discard them.
+    // run app/cities/[slug] carries -- which this test still asserts above.
+    // 2026-09-01: the homepage reads segments again for exactly ONE printed
+    // figure, the Investing door's income-and-land count (the same rows /invest
+    // prints, one source). The run itself stays cut: no property-type section
+    // may mount here.
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
-    expect(home).not.toMatch(/getPublicPlaceSegments/)
+    expect(home).toMatch(/getPublicPlaceSegments/)
+    expect(home).toMatch(/V3Doors/)
+    expect(home).not.toMatch(/PlaceTypeSlider|V3PlacePropertyTypes|PublicProductTypes|communityTypeStripItems/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(
       resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'),

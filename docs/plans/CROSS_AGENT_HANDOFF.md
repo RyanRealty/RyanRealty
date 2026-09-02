@@ -1,4 +1,108 @@
-# Current — 2026-09-01 (Claude Code UX session, main) — subdivision 500 P0 killed + place-flow punch list
+# Current — 2026-09-01 (Claude Code UX session, main) — homepage three routes, phone in chrome, TASTE is a gate, CMA on xAI
+
+**Shipped, all on origin/main, production READY:**
+- `317d7a12` homepage: V3Doors (new barrel pattern) routes Buying / Selling / Investing under
+  the hero with one live fact each from the destination page's own source; the broker phone is
+  in the header bar at every width (icon at 390, digits from 40rem); HomeAlertSheet retired
+  (one ask per page). `INVEST_SEGMENTS` moved to `lib/invest/segments.ts` (one population for
+  /invest and the door).
+- `5c860c1f` place+type pages never print a raw slug: `resolveSlug` falls back registry-label-
+  first (Caldera Springs' listings carry MLS City Bend, so the Sunriver-scoped lookup always
+  missed) then title-cases. Matt's screenshots of "Lots and Land in caldera-springs" were this.
+- `b7753ad0` CMA judge + audit run on xAI through `lib/grok` (strict json_schema, XAI_API_KEY,
+  fail-open kept; tests mock `@/lib/grok`). `lib/cma/subdivision-story.ts` (vision) is still
+  on Anthropic and fails open — migrate to `lib/grok/vision.ts` next. End-to-end proof on a
+  real backlog CMA rebuild is still owed.
+- `f388698d` TASTE IS A GATE: `design_system/public/TASTE.md` rewritten (why our pages come
+  out generic; builder ritual with interaction as a required answer; evaluator rubric run by
+  a SEPARATE agent; banned tells; design-the-class rule), research at
+  `docs/research/taste-for-agents.md`, pointers in CLAUDE.md §3 / AGENTS.md / frontend-design
+  skill, enforced by `ci:taste-canon` (every public route's parity.json carries a
+  `tasteReview` receipt; 21 pre-rule routes in a shrink-only baseline).
+
+**Matt's standing directives, this session (all in decisions.md items 4–7):** "We are a wall
+of text, scrolling lists, and boring." Every page visually breathtaking; interactive data on
+every page ("not a number, a percentage, and jargon"); every place page blown out with the
+data cube (every property type, every subdivision); beat the best page for Tetherow,
+Northwest Crossing, Old Bend, West Hills, every listing; brokerage pages and contact dialed;
+stop the one-off approach — design the CLASS of pages. Any tool, every session, uses TASTE.md.
+
+**Next program (the place-page class), in order:**
+1. Evaluator pass on the homepage per TASTE.md → fix defects → record `tasteReview` (first
+   route out of the baseline).
+2. Design the place-page class as a composed page, not stacked sections: an interactive
+   property-type × subdivision display (hover/toggle/scrub reveals the cube), the closed-sales
+   moat made visible, the map cells carrying per-type counts (punch-list item 6), and the
+   named page to beat per place written into each parity.json. Build 2–3 variants, decision
+   sheet for Matt, delete the losers.
+3. Listing pages and brokerage pages (about/team/profiles/reviews with pullable GBP reviews)
+   through the same ritual.
+4. CMA: subdivision-story vision migration, real rebuild proof, then the review-queue send
+   agent (Matt reviews every send until he flips automation).
+
+**Lane split with the concurrent session (ryanrealty-9e):** I own the CMA ENGINE
+(judge/audit/xAI) and the public UX; they own CMA DELIVERY (`app/admin/(protected)/cmas/**`)
+and the logged-in browse/save UX. Shared checkout: stage only your own files; message before
+pushing if the other has uncommitted work in your path.
+
+---
+
+# Current — 2026-09-01 (Claude Code admin/delivery session, main, through `b583dc63`) — Messages fold FINAL, CMA send queue, gap-audit sweep
+
+**Shipped on origin/main, production READY, live-verified in Matt's browser:**
+- Messages fold FINAL: `/admin/crm/inbox` 307s to `/admin/messages` (config redirect, legacy
+  `?folder=` mapped in the page), 19-file tree deleted. Capability parity held: SMS AI pills +
+  per-contact template render ported into `ComposeSurface` text mode
+  (`components/admin/crm/TextDraftTools.tsx` + `getSmsComposeTemplatesAction`); multi-select
+  bulk triage became folder-level Done-all (`QueueDoneAll`). Gate cascade updated
+  (admin-v2-tokens scan list, email-quality, crm-mobile-track, help/smoke/e2e route lists,
+  streamed-redirect baseline, crm-screens contracts repointed).
+- CMA delivery (Matt: review-first until he flips automation): `/admin/cmas` fronts
+  "N people asked for a value and never got it" as a door to the new `?status=asked` facet
+  (seller-lp/lead-form undelivered, oldest first); the send dialog prefill is AI-drafted
+  source-aware via `lib/grok` textFast (form ask = "here is what you asked for" + apology when
+  old; expired = sorry-it-didn't-sell; FSBO stays templated; template fallback on any model
+  failure). Nothing sends without Matt in the dialog.
+- `parseCmaAddress` strips trailing unit designators (Unit/Apt/Ste/#) — two form-asker
+  addresses now resolve (pinned in subject.test.ts); `rebuildCmaAction` preserves the original
+  `request_source` (was stamping admin-rebuild, ejecting rows from the asked queue).
+  `cma-1617-nw-8th` REBUILT successfully via the marketing_brain_actions rail → the asked
+  queue now holds 9 sendable documents.
+- Identity: rr_vid carryover at session birth (`/api/visitors/track`) + map-first widening in
+  `getLookingAtNow` — stitched returners reach the looking-at SMS wake and Today lane.
+  Guest listing-save capture auto-absorbs into the verified account person on sign-in
+  (`lib/crm/absorb-guest-capture.ts`, P12 fail-closed posture; Matt confirmed keep).
+- Google sign-in: official GIS control on /login//signup/save-gate with a REQUIRED visible
+  fallback (`GoogleOneTap` `fallback` prop) — GIS pins its iframe 0x0 for Google-signed-out
+  visitors (memory: gis-button-zero-size). Personalized "Continue as Matthew" verified live.
+- Admin gap-audit sweep: 5 orphaned expired/fsbo dashboard actions + 4 dead sync components +
+  `testListingHistory` deleted; calls report's fabricated "0 calls made" now says "not
+  tracked"; 6 serial-await pages batched; `/admin/users` migrated to admin-v2 ReportGrid
+  (shadcn burndown 78→75); 4 analytics pages' raw reads moved into `lib/data/analytics/*`
+  (agent worktree, cherry-picked as `17f2322c`).
+
+**In flight, resume these:**
+1. DEAD-CODE SWEEP AGENT (worktree `.claude/worktrees/agent-aba84bded80d98abd`): deleting 18
+   fully-orphaned `app/actions/*` files (16 zero-importer + crm-deals.ts/listing-views.ts
+   transitive chains), full audit report in this session's task log. When its commit lands:
+   review the diff, cherry-pick to main, run full gates, push. The same audit's §3 list
+   (~100 orphaned VALUE exports across 41 live action files) is a queued follow-up slice.
+2. TWO CONDO ASKED ROWS refuse comps after the parser fix ("0 qualifying closed comps"):
+   `cma-141-sw-15th-unit-21`, `cma-1833-sw-canal-unit-24-redmond-97756` — actions sit
+   'pending' on the rail and will retry+refail. Engine question (comp selection for condo
+   units), engine lane's call whether to widen or leave the honest refusal + a manual note.
+3. Remaining asked-queue classes: 9 sendable now at `/admin/cmas?status=asked` (Matt reviews
+   each send in the dialog); 5 rural comp-refusals need a product answer (honest "no
+   defensible comp value" letter?); 2 never-MLS-listed + 1 out-of-area are correct refusals
+   pending D2 (assessor-backed resolver).
+
+**Queue (docs/plans/ADMIN_PRODUCT/work-queue.json):** tablet-width CRM layout, phone-width
+walk via dev harness, gclid capture, cma-performance personId threading, and the
+app/actions §3 export-trim slice.
+
+---
+
+# Prior — 2026-09-01 (Claude Code UX session, main) — subdivision 500 P0 killed + place-flow punch list
 
 **Shipped `c83043a7`, production READY, live-verified.** Every `/subdivisions/[slug]` URL had
 served a 500 to every visitor since 2026-07-15 (5,448 errors / 764 users in Vercel's window):

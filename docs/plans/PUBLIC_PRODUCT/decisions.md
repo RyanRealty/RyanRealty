@@ -1302,3 +1302,21 @@ and break-tested.
    position these items that bring people into the funnels in the best possible position."
    Funnel-position authority on public surfaces is delegated; the section SET remains a
    product decision, its ORDER for conversion is the agent's to optimize and show.
+
+## 2026-09-01 (later) — Taste is a gate; interactive data on every page; the class, not the instance (Matt, in-session)
+
+4. **The verdict.** "We are a wall of text, scrolling lists, and boring." The standard is
+   "absolutely visually breathtaking," "engaging and interactive content on every single page,"
+   and competitive: for Tetherow, Northwest Crossing, Old Bend, West Hills, any listing — "there
+   is no page we won't beat in every single metric." Canon: `design_system/public/TASTE.md`.
+5. **Every future session, any tool, must build with the same taste.** Bound by CLAUDE.md §3,
+   AGENTS.md, the frontend-design skill, and `ci:taste-canon` (a public route's parity.json
+   carries a `tasteReview` receipt from a SEPARATE evaluator agent; shrink-only baseline of 21
+   pre-rule routes). `/deep-research` is user-invocation-only; Matt fires it himself.
+6. **Stop the one-off approach.** Design a display for the class of pages (every city,
+   neighborhood, community, subdivision) with the data cube's full contents in view, then land
+   it everywhere. A section that only works for one place is not the product.
+7. **Homepage three routes shipped** as V3Doors (Buying / Selling / Investing under the hero,
+   live facts from the destination pages' own sources); the broker phone is in the header bar at
+   every width; HomeAlertSheet retired (one ask per page: the seller sheet). 317d7a12, verified
+   READY in production.

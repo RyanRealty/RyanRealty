@@ -235,6 +235,69 @@ function defaultComposeText(ctx: CmaSendContext): string {
 }
 
 /**
+ * AI-drafted compose prefill (Matt 2026-09-01: every send is drafted into the
+ * review dialog, he edits and approves — this NEVER sends). Source-aware
+ * frame: a form request gets "here is what you asked for", an expired listing
+ * gets the sorry-your-home-didn't-sell opening. FSBO stays on the gated
+ * template (first-touch template rules) and internal-qa needs no prose.
+ * Numbers discipline (§0): the model receives the document's own figures and
+ * may reference NOTHING else. Falls back to the deterministic template on any
+ * model failure or timeout, so the dialog always opens.
+ */
+async function draftComposeText(
+  ctx: CmaSendContext,
+  requestSource: string | null,
+  requestedAt: string | null,
+): Promise<string> {
+  if (requestSource === 'fsbo-cron' || requestSource === 'internal-qa') return defaultComposeText(ctx)
+  try {
+    const { generateGrokText } = await import('@/lib/grok/text')
+    const first = (ctx.clientName ?? '').trim().split(/\s+/)[0] || null
+    const address = ctx.subjectAddress?.trim() || 'the home'
+    const ageDays = requestedAt
+      ? Math.floor((Date.now() - new Date(requestedAt).getTime()) / 86_400_000)
+      : null
+    const frame =
+      requestSource === 'seller-lp' || requestSource === 'lead-form'
+        ? `They asked us for this home value through our website form${ageDays != null ? ` ${ageDays} day${ageDays === 1 ? '' : 's'} ago` : ''}. The message delivers what they asked for.${ageDays != null && ageDays > 3 ? ' Include one short apology sentence for the wait. No excuses.' : ''}`
+        : requestSource === 'expired-listing-cron'
+          ? 'Their listing with another brokerage expired without selling. Open with one brief, kind acknowledgment that the home did not sell, then offer the analysis as something useful whatever they decide next.'
+          : 'They did not ask for this report. Be brief and useful. No pitch.'
+    const numbers =
+      ctx.valueLow != null && ctx.valueHigh != null
+        ? `The report's value range is $${ctx.valueLow.toLocaleString('en-US')} to $${ctx.valueHigh.toLocaleString('en-US')}.`
+        : 'The report carries the value range; do not state numbers in the message.'
+    const { GROK_MODELS } = await import('@/lib/grok/client')
+    const res = await generateGrokText({
+      // textFast: the reasoning model regularly blows the dialog's 10s budget
+      // (verified 2026-09-01 — every draft fell back to the template).
+      model: GROK_MODELS.textFast,
+      system: [
+        'You draft one short email body for a Ryan Realty broker in Bend, Oregon, delivering a home value report. The broker reviews and edits before sending. ',
+        'Voice: direct, specific, kind, honest. Plain English. Short sentences. State the fact, then stop — never write a sentence whose job is to explain the previous sentence. ',
+        'HARD RULES: no em dashes, no semicolons, no exclamation marks, no emoji. ',
+        'Banned words: stunning, gorgeous, charming, nestled, boasts, dream home, truly, luxurious, delve, seamless, elevate, vibrant, curated. No manufactured urgency. ',
+        'Numbers: you may reference ONLY the value range provided. Never invent prices, dates, market claims, or facts. ',
+        "Open with a greeting line ('Hi <name>,' or 'Hi there,'). Then 2 to 4 short sentences. Do not write a signature, a link, or a subject line — those append automatically. Under 110 words. Output ONLY the email body text.",
+      ].join(''),
+      prompt: `Recipient: ${first ?? 'name unknown (open with "Hi there,")'}
+Home: ${address}
+Context: ${frame}
+${numbers}
+The full report is attached as a PDF and readable online (the link appends after your text — you can say "the report is attached" but write no URL).`,
+      maxTokens: 300,
+      temperature: 0.4,
+      timeoutMs: 10_000,
+    })
+    const text = res.text.trim()
+    return text.length > 40 ? text : defaultComposeText(ctx)
+  } catch (e) {
+    console.warn('[cma/send] AI draft fell back to template:', e instanceof Error ? e.message : e)
+    return defaultComposeText(ctx)
+  }
+}
+
+/**
  * Compose-dialog prefill: the default subject + message text (sans footer) and
  * the doc facts, so the broker edits from a working baseline. Read-only.
  */
@@ -277,7 +340,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     return {
       ok: true,
       subject: body.subject,
-      bodyText: defaultComposeText(fakeCtx),
+      bodyText: await draftComposeText(fakeCtx, (row.request_source as string | null) ?? null, (row.created_at as string | null) ?? null),
       docUrl: `${SITE_URL}/cma/${slug}`,
       clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || null,
       clientName: (row.client_name as string | null) ?? null,
@@ -285,10 +348,11 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     }
   }
   const body = buildLeadBody(ctx)
+  const sourceRow = await getCmaAdminRowBySlug(slug)
   return {
     ok: true,
     subject: body.subject,
-    bodyText: defaultComposeText(ctx),
+    bodyText: await draftComposeText(ctx, (sourceRow?.request_source as string | null) ?? null, (sourceRow?.created_at as string | null) ?? null),
     docUrl: `${SITE_URL}/cma/${ctx.slug}`,
     clientEmail: ctx.clientEmail,
     clientName: ctx.clientName,

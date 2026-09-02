@@ -10,7 +10,6 @@ import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { formatPriceExact } from '@/lib/format/money'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import {
@@ -29,6 +28,7 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Stage,
+  V3Doors,
   V3Instrument,
   V3Ledger,
   V3Quiet,
@@ -37,6 +37,7 @@ import {
   V3SectionTracker,
   type V3QuietItem,
 } from '@/components/site/v3'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { HomeHomesField } from './_v3/HomeHomesField'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
@@ -56,7 +57,7 @@ import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { SellValueForm } from '@/app/sell/_v3/SellValueForm'
-import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
+import { SellCapture } from '@/app/sell/_v3/SellCapture'
 import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -111,7 +112,7 @@ const COMM_FEATURED = [
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries] = await Promise.all([
+  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, townBoundaries, investSegments] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -129,6 +130,7 @@ export default async function Home() {
         getBoundaryGeoJSON({ geoType: 'city', geoSlug: slug }).catch(() => null),
       ),
     ),
+    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
   ])
   const regionBoundary = unionBoundaryGeometry(townBoundaries)
   const regionMt = regionOverlays.get('region:central-oregon')
@@ -198,12 +200,19 @@ export default async function Home() {
   const verdictSentence = hasVerdict
     ? `Central Oregon has ${mosLabel} months of supply, which is a ${verdict.label}.`
     : null
+  // The two pace figures read as a sentence, not as a KPI grid (evaluator
+  // 2026-09-01: "a number, a percentage, and jargon"). Same pace row, same trace.
+  const paceSentence =
+    hud.daysToPending != null && hud.saleToList != null
+      ? `Homes go pending in a median of ${Math.round(hud.daysToPending)} days and sell for ${hud.saleToList.toFixed(0)}% of the original asking price.`
+      : hud.daysToPending != null
+        ? `Homes go pending in a median of ${Math.round(hud.daysToPending)} days.`
+        : null
+  const marketNote = [verdictSentence, paceSentence].filter(Boolean).join(' ')
   const HOME_FIGURE_LABELS = new Set([
     'median list price',
     'detached homes for sale',
     'months of supply',
-    'median to pending · 90 days',
-    'sale to original list · 12 months',
   ])
   const figures = leftoverMarketFigures(hud, {
     browse: publishRegionalSearchHref(),
@@ -216,15 +225,49 @@ export default async function Home() {
   )
   const marketSource = `${HOME_MARKET_TRACE}${mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`
 
-  const footerFine = townItems
-    .filter((t) => t.activeCount != null && t.medianPrice != null)
-    .map((t) => `${t.name} ${(t.activeCount as number).toLocaleString('en-US')} / ${formatPriceExact(t.medianPrice as number)}`)
-    .join(' · ')
-
   const seeAllLabel =
     hud.active != null
       ? `See all ${hud.active.toLocaleString('en-US')} homes`
       : 'See all homes'
+
+  // The three routes (Matt 2026-09-01). Each fact is the same live figure its
+  // destination page prints, or absent — never an estimate (section 0). The
+  // investing sum names exactly the segments it counts.
+  const investDoorSegments = new Set(['multifamily_2_4', 'commercial_sale', 'land'])
+  const investCount = investSegments
+    .filter((row) => investDoorSegments.has(row.segment))
+    .reduce((sum, row) => sum + (row.activeCount ?? 0), 0)
+  const doors = [
+    {
+      // A buyer does not want every home; a buyer wants THEIR place, price,
+      // and type (Matt 2026-09-01). The door is place-first and lands on the
+      // map, where the search narrows by town, community, and price.
+      kicker: v3Text('Buying'),
+      label: v3Text('Find your place'),
+      href: '/homes-for-sale?view=map',
+      ...(hud.active != null
+        ? {
+            fact: v3Text(
+              `${hud.active.toLocaleString('en-US')} homes across ${TOWN_ORDER.length} towns and ${communities.length.toLocaleString('en-US')} communities and subdivisions`,
+            ),
+          }
+        : {}),
+    },
+    {
+      kicker: v3Text('Selling'),
+      label: v3Text('See what your home is worth'),
+      href: valuationHref('/'),
+      fact: v3Text('A written valuation within 24 hours'),
+    },
+    {
+      kicker: v3Text('Investing'),
+      label: v3Text('Income property, with the math'),
+      href: '/invest',
+      ...(investCount > 0
+        ? { fact: v3Text(`${investCount.toLocaleString('en-US')} income and land listings`) }
+        : {}),
+    },
+  ] as const
 
   return (
     <>
@@ -234,13 +277,14 @@ export default async function Home() {
         <V3Stage
           id="hero"
           headingLevel={1}
-          eyebrow="Central Oregon Real Estate"
           headline={v3Text('Homes for Sale in Central Oregon')}
           posterSrc={HERO_POSTER}
           videoSrc={HERO_VIDEO}
         >
           <HomeHeroSearch />
         </V3Stage>
+
+        <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 
         <HomeHomesField
           fieldItems={fieldItems}
@@ -277,7 +321,7 @@ export default async function Home() {
             level={2}
             eyebrow={v3Text('Central Oregon · The market')}
             headline={v3Text(marketHeadline)}
-            note={verdictSentence ? v3Text(verdictSentence) : undefined}
+            note={marketNote ? v3Text(marketNote) : undefined}
             figures={[firstMarketFigure, ...restMarketFigures]}
             source={v3Text(marketSource)}
             chart={medianChart}
@@ -303,9 +347,14 @@ export default async function Home() {
         {/* Seller ask sits right after the market verdict spoke to sellers
             (Matt 2026-09-01: "move it up"). Sheet after Instrument keeps the
             rhythm rule; reviews and brokers close the page instead. */}
-        <section id="sell" className={V3_ROOT_CLASS}>
+        <SellCapture
+          id="sell"
+          eyebrow="Selling"
+          heading="A broker's valuation of your home, within 24 hours"
+          headingId="home-sell-heading"
+        >
           <SellValueForm pagePath="/" formId="home-get-value" />
-        </section>
+        </SellCapture>
 
         {firstCommunityRow ? (
           <V3Ledger
@@ -318,8 +367,6 @@ export default async function Home() {
             action={{ label: v3Text('Every community'), href: '/communities' }}
           />
         ) : null}
-
-        <HomeAlertSheet />
 
         {testimonialItems.length > 0 ? (
           <V3Quiet
@@ -335,10 +382,7 @@ export default async function Home() {
 
       </main>
 
-      <V3Footer
-        columns={V3_FOOTER_COLUMNS}
-        note={footerFine ? `Active single-family by town: ${footerFine}. Figures from the MLS.` : undefined}
-      />
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

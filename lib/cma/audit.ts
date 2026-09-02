@@ -16,7 +16,7 @@
  * this pass hunts the judgment-level failures math cannot see.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { GROK_MODELS, generateGrokStructured, grokConfigured } from '@/lib/grok'
 import { setAuditUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
@@ -24,9 +24,9 @@ import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaSiteData } from '@/lib/cma/county'
 
-const MODEL = 'claude-sonnet-4-5'
-const INPUT_COST_PER_TOKEN = 0.000003
-const OUTPUT_COST_PER_TOKEN = 0.000015
+// The audit runs on xAI (Matt 2026-09-01; the Anthropic account went dark on
+// billing 2026-08-27). Model id lives in lib/grok/client.ts (ci:grok-models).
+const MODEL = GROK_MODELS.text
 
 export type AuditSeverity = 'critical' | 'major' | 'minor'
 export type AuditVerdict = 'pass' | 'review' | 'fail'
@@ -116,11 +116,10 @@ function remarks(t: string | null | undefined, maxChars = 260): string {
   return s.length > maxChars ? `${s.slice(0, maxChars)}…` : s
 }
 
-const AUDIT_TOOL: Anthropic.Tool = {
-  name: 'record_audit',
-  description: 'Record the adversarial audit result for this CMA.',
-  input_schema: {
+/** Strict JSON schema for the audit (xAI json_schema mode: every property required, no extras). */
+const AUDIT_SCHEMA: Record<string, unknown> = {
     type: 'object',
+    additionalProperties: false,
     properties: {
       findings: {
         type: 'array',
@@ -143,10 +142,11 @@ const AUDIT_TOOL: Anthropic.Tool = {
             evidence: { type: 'string', description: 'The specific data shown here that proves it.' },
             compListingKey: {
               type: 'string',
-              description: 'REQUIRED when the defect is a specific priced comp: that comp\'s listing key exactly as shown (key=...). Omit for findings not tied to one comp.',
+              description: 'When the defect is a specific priced comp: that comp\'s listing key exactly as shown (key=...). Empty string for findings not tied to one comp.',
             },
           },
-          required: ['severity', 'claim', 'evidence'],
+          additionalProperties: false,
+          required: ['severity', 'category', 'claim', 'evidence', 'compListingKey'],
         },
       },
       verdict: {
@@ -160,7 +160,6 @@ const AUDIT_TOOL: Anthropic.Tool = {
       },
     },
     required: ['findings', 'verdict', 'summary'],
-  },
 }
 
 /**
@@ -187,8 +186,7 @@ export async function auditCma(args: {
   site?: CmaSiteData | null
 }): Promise<CmaAudit | null> {
   setAuditUnavailableReason(null)
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!grokConfigured()) return null
   const { subject, comps, excluded, pricing, judgment, market, finalOpinion, site } = args
 
   const subjectLine = [
@@ -250,7 +248,7 @@ export async function auditCma(args: {
     'comp the report explicitly EXCLUDED is not fabrication — that is honest disclosure. major means a specific comp, claim, or exclusion needs broker correction ' +
     '(set compListingKey when it is a comp); minor is polish. Most competent analyses should PASS or carry a small ' +
     'number of major findings — reserve fail for a genuinely broken analysis. If the analysis survives your attack, ' +
-    'verdict=pass and say so plainly — a clean pass is a legitimate outcome. Report only through the record_audit tool.'
+    'verdict=pass and say so plainly — a clean pass is a legitimate outcome. Return only the JSON audit object.'
 
   const siteLine = site
     ? `Zoning ${site.zone ?? 'UNRESOLVED'}${site.zoneOverlays.length ? ` (overlays ${site.zoneOverlays.join(', ')})` : ''}. ` +
@@ -283,22 +281,16 @@ export async function auditCma(args: {
     'Attack this analysis. Record every defect with severity and evidence, then give your verdict.'
 
   try {
-    const client = new Anthropic({ apiKey })
-    const res = await client.messages.create({
-      model: MODEL,
-      max_tokens: 2500,
+    const res = await generateGrokStructured<Record<string, unknown>>({
       system,
-      tools: [AUDIT_TOOL],
-      tool_choice: { type: 'tool', name: 'record_audit' },
-      messages: [{ role: 'user', content: user }],
+      prompt: user,
+      schema: AUDIT_SCHEMA,
+      schemaName: 'record_audit',
+      maxTokens: 2500,
+      reasoningEffort: 'high',
     })
-    const costUsd = +(
-      res.usage.input_tokens * INPUT_COST_PER_TOKEN +
-      res.usage.output_tokens * OUTPUT_COST_PER_TOKEN
-    ).toFixed(4)
-    const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
-    if (!block) return null
-    const out = block.input as {
+    const costUsd = +(res.costUsd ?? 0).toFixed(4)
+    const out = res.value as {
       findings?: Array<{ severity?: string; category?: string; claim?: string; evidence?: string; compListingKey?: string }>
       verdict?: string
       summary?: string

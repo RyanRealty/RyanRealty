@@ -39,14 +39,14 @@ const JUDGMENT = {
 
 describe('repairNarrativeAgainstAudit — fail-open contract', () => {
   const withKey = async (key: string | undefined, run: () => Promise<unknown>) => {
-    const prior = process.env.ANTHROPIC_API_KEY
-    if (key === undefined) delete process.env.ANTHROPIC_API_KEY
-    else process.env.ANTHROPIC_API_KEY = key
+    const prior = process.env.XAI_API_KEY
+    if (key === undefined) delete process.env.XAI_API_KEY
+    else process.env.XAI_API_KEY = key
     try {
       return await run()
     } finally {
-      if (prior === undefined) delete process.env.ANTHROPIC_API_KEY
-      else process.env.ANTHROPIC_API_KEY = prior
+      if (prior === undefined) delete process.env.XAI_API_KEY
+      else process.env.XAI_API_KEY = prior
     }
   }
 

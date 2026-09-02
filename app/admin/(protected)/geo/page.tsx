@@ -59,9 +59,11 @@ export default async function AdminGeoPage({
   const stateId = oregonState?.id ?? null
   const citiesFromGeo = stateId ? await listGeoPlaces({ type: 'city', parentId: stateId }) : await listGeoPlaces({ type: 'city' })
   const cityId = selectedCityId && citiesFromGeo.some((c) => c.id === selectedCityId) ? selectedCityId : citiesFromGeo[0]?.id ?? null
-  const neighborhoods = cityId ? await listGeoPlaces({ type: 'neighborhood', parentId: cityId }) : []
+  const [neighborhoods, allCommunities] = await Promise.all([
+    cityId ? listGeoPlaces({ type: 'neighborhood', parentId: cityId }) : Promise.resolve([]),
+    listGeoPlaces({ type: 'community' }),
+  ])
   const communityParentIds = cityId ? [cityId, ...neighborhoods.map((n) => n.id)] : []
-  const allCommunities = await listGeoPlaces({ type: 'community' })
   const communities = communityParentIds.length > 0 ? allCommunities.filter((c) => c.parent_id && communityParentIds.includes(c.parent_id)) : allCommunities
 
   const selectedCityName = citiesFromGeo.find((c) => c.id === cityId)?.name

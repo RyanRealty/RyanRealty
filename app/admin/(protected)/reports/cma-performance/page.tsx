@@ -138,7 +138,13 @@ export default async function CmaPerformancePage({
       <Link key="a" href={`/cma/${r.slug}`} style={{ color: 'var(--a-accent)' }}>
         {r.subjectAddress}
       </Link>,
-      r.clientName ?? <span key="c" style={muted}>—</span>,
+      r.personId ? (
+        <Link key="c" href={`/admin/people/${r.personId}`} style={{ color: 'var(--a-accent)' }}>
+          {r.clientName ?? r.clientEmail ?? `Person ${r.personId}`}
+        </Link>
+      ) : (
+        (r.clientName ?? <span key="c" style={muted}>—</span>)
+      ),
       r.docType,
       formatPrice(r.recommendedList),
       r.deliveredAt ? (

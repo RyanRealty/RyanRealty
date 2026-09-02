@@ -155,6 +155,8 @@ type TrackBody = {
    * Stripped to 512 chars max; only accepted at analytics/all consent level.
    */
   fbclid?: string
+  /** Google Ads click-id from ?gclid= — same first-touch treatment as fbclid. */
+  gclid?: string
   /**
    * Global Privacy Control JS flag (navigator.globalPrivacyControl) forwarded
    * by the client. The Sec-GPC request header is read server-side; this is the
@@ -343,6 +345,9 @@ export async function POST(request: NextRequest) {
   const fbclid = typeof body.fbclid === 'string' && body.fbclid.trim()
     ? body.fbclid.trim().slice(0, 512)
     : undefined
+  const gclid = typeof body.gclid === 'string' && body.gclid.trim()
+    ? body.gclid.trim().slice(0, 512)
+    : undefined
 
   // First-party durable visitor id (Phase 5). Set by middleware on the first
   // page request, so it is present on every same-origin track POST. It is a
@@ -362,6 +367,7 @@ export async function POST(request: NextRequest) {
     utm_content:  campaign?.content ?? undefined,
     utm_term:     campaign?.term ?? undefined,
     fbclid,
+    gclid,
     referrer:     body.referrer?.slice(0, 1024) ?? undefined,
     landing_page: body.landingPage?.slice(0, 1024) ?? undefined,
     user_agent:   userAgent,

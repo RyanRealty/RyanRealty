@@ -45,12 +45,11 @@ export default async function ValuationsPage() {
   await requireAdminPage('valuations.view')
   const nowMs = Date.now()
 
-  const [cmas, bpos] = await Promise.all([
+  const [cmas, bpos, bposSeller] = await Promise.all([
     listCmasForAdmin({ limit: 100, offset: 0 }),
     listBposForAdmin({ status: 'all', posture: 'buyer', page: 1, pageSize: 100 }),
-    // Seller-posture BPOs ride the second call below.
+    listBposForAdmin({ status: 'all', posture: 'seller', page: 1, pageSize: 100 }),
   ])
-  const bposSeller = await listBposForAdmin({ status: 'all', posture: 'seller', page: 1, pageSize: 100 })
 
   const cmaRows = cmas.rows as CmaRow[]
   const cmaDrafts = cmaRows.filter((r) => r.status === 'draft' && r.built_at && !r.build_error)

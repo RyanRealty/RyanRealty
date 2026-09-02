@@ -835,7 +835,7 @@ export async function listCmasForAdmin(options: {
   const sb = client()
   if (!sb) return { rows: [], total: 0 }
   let q = sb.from('cmas').select(
-      'id, slug, doc_type, subject_address, subject_subdivision, subject_city, subject_listing_key, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary, published_to_listing, published_at',
+      'id, slug, doc_type, subject_address, subject_subdivision, subject_city, subject_listing_key, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary, published_to_listing, published_at, request_source',
       { count: 'exact' },
     )
     .is('archived_at', null).or('doc_type.eq.cma,doc_type.is.null')

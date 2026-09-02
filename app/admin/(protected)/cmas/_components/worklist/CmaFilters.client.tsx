@@ -29,6 +29,7 @@ import type { CmaStatusFilter, CmaWorklistFilters } from './types'
 
 const STATUS_OPTIONS: { value: CmaStatusFilter; label: string }[] = [
   { value: 'all', label: 'All' },
+  { value: 'asked', label: 'Asked, unsent' },
   { value: 'draft', label: 'Draft' },
   { value: 'finalized', label: 'Finalized' },
   { value: 'delivered', label: 'Delivered' },

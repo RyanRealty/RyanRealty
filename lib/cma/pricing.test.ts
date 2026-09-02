@@ -277,14 +277,14 @@ describe('pricingRangeDisplay', () => {
 })
 
 describe('judgeComps (fail-open contract)', () => {
-  it('returns null when ANTHROPIC_API_KEY is absent, so a build never blocks', async () => {
-    const prev = process.env.ANTHROPIC_API_KEY
-    delete process.env.ANTHROPIC_API_KEY
+  it('returns null when XAI_API_KEY is absent, so a build never blocks', async () => {
+    const prev = process.env.XAI_API_KEY
+    delete process.env.XAI_API_KEY
     try {
       const result = await judgeComps(subject(), [comp(), comp(), comp()], market)
       expect(result).toBeNull()
     } finally {
-      if (prev !== undefined) process.env.ANTHROPIC_API_KEY = prev
+      if (prev !== undefined) process.env.XAI_API_KEY = prev
     }
   })
 

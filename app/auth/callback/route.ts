@@ -125,12 +125,18 @@ async function applyGoogleCommsConsent(opts: {
   try {
     const { ensureNativeLead, enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
     const phone = usableGoogleCommsPhone(opts.consent.phone)
+    // Per-broker attribution (Matt 2026-09-01): a sign-up that arrived through
+    // a broker's shared link (rr_agent_attribution cookie) is that broker's
+    // lead — same rule the LP forms apply. No cookie = default routing.
+    const { readAttributedAgentServer } = await import('@/app/actions/agent-attribution-read')
+    const attributed = await readAttributedAgentServer()
     const { personId } = await ensureNativeLead({
       name: opts.name ?? null,
       email,
       phone,
       source: 'website-signup',
       tags: ['source:website-signup'],
+      assignedBroker: attributed?.broker,
     })
     if (personId > 0) {
       const { addSuppression, removeSuppression } = await import('@/lib/crm/suppressions')

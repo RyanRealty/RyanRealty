@@ -9,7 +9,9 @@
 
 export type CmaWorklistStatus = 'draft' | 'finalized' | 'delivered' | 'archived'
 
-export type CmaStatusFilter = 'all' | CmaWorklistStatus
+/** 'asked' is a virtual facet: a person requested this value (seller-lp /
+ *  lead-form) and it was never delivered — the send queue's front of line. */
+export type CmaStatusFilter = 'all' | 'asked' | CmaWorklistStatus
 
 export interface CmaWorklistFilters {
   q: string | null
@@ -49,6 +51,9 @@ export interface CmaWorklistRow {
   publishedAt: string | null
   /** cmas.subject_listing_key — the listing this document is attached to, if any. */
   listingKey: string | null
+  /** cmas.request_source — who asked: seller-lp / lead-form (a real person),
+   *  expired-listing-cron / fsbo-cron (proactive), internal-qa, or null. */
+  requestSource: string | null
 }
 
 export interface CmaWorklistSummary {
@@ -62,4 +67,6 @@ export interface CmaWorklistSummary {
   sent: number
   /** published_to_listing = true — the value range is live on a public page. */
   published: number
+  /** A person asked (seller-lp / lead-form) and delivered_at is still null. */
+  askedUnsent: number
 }

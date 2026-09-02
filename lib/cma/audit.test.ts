@@ -4,11 +4,16 @@ import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
 
 const createMock = vi.fn()
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class {
-    messages = { create: (...a: unknown[]) => createMock(...a) }
-  },
-}))
+// The audit runs on xAI through lib/grok (2026-09-01 migration). Mock the
+// chokepoint, not the transport.
+vi.mock('@/lib/grok', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/grok')>()
+  return {
+    ...actual,
+    grokConfigured: () => Boolean(process.env.XAI_API_KEY),
+    generateGrokStructured: (...a: unknown[]) => createMock(...a),
+  }
+})
 
 const f = (
   severity: AuditFinding['severity'],
@@ -96,13 +101,14 @@ describe('auditCma — deterministic narrative check is wired into the findings'
   const pricing = { method1Mid: 590000, method2: 585000, method3: 588000, convergenceSpreadPct: 1.2, recommended: 590000, conservative: 570000, highEnd: 610000, confidence: 'Moderate' } as unknown as CmaPricing
 
   const respond = (findings: unknown[], verdict = 'review') => ({
-    usage: { input_tokens: 1000, output_tokens: 300 },
-    content: [{ type: 'tool_use', name: 'record_audit', input: { findings, verdict, summary: 'Reviewed.' } }],
+    value: { findings, verdict, summary: 'Reviewed.' },
+    raw: JSON.stringify({ findings, verdict, summary: 'Reviewed.' }),
+    costUsd: 0.01,
   })
 
   beforeEach(() => {
     createMock.mockReset()
-    vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+    vi.stubEnv('XAI_API_KEY', 'test-key')
   })
   afterEach(() => vi.unstubAllEnvs())
 
@@ -152,8 +158,8 @@ describe('auditCma — deterministic narrative check is wired into the findings'
     await expect(auditCma({ subject, comps, excluded: [], pricing, judgment, market: null })).resolves.toBeNull()
   })
 
-  it('fails OPEN: returns null with no ANTHROPIC_API_KEY, without calling the API', async () => {
-    vi.stubEnv('ANTHROPIC_API_KEY', '')
+  it('fails OPEN: returns null with no XAI_API_KEY, without calling the API', async () => {
+    vi.stubEnv('XAI_API_KEY', '')
     await expect(
       auditCma({ subject, comps, excluded: [], pricing, judgment: null, market: null }),
     ).resolves.toBeNull()
