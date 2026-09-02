@@ -88,6 +88,13 @@
   margin: var(--v3-space-lg) 0 0;
 }
 
+.v3-proof__how {
+  margin: 0 0 var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+}
+
 .v3-proof__strip {
   display: block;
   width: 100%;
@@ -151,8 +158,11 @@
 }
 
 .v3-proof__dot:focus-visible {
-  outline: 3px solid var(--v3-wash);
-  outline-offset: 0;
+  /* The wash measured 1.12:1 against the page — below the 3:1 floor for a
+     non-text indicator, on the page's one keyboard control (evaluator round
+     five, REVIEWS-2). */
+  outline: 3px solid color-mix(in srgb, var(--v3-navy) 45%, transparent);
+  outline-offset: 2px;
 }
 
 .v3-proof__status {

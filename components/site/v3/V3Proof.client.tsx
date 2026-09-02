@@ -176,7 +176,13 @@ export function V3Proof({
       const q = quotes.find((x) => x.id === qid)
       if (q && year != null && q.year !== year) setYear(null)
       requestAnimationFrame(() => {
-        document.getElementById(`${uid}-q-${qid}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        // A reader who asked for less motion gets a jump, not a 3,244px glide
+        // (evaluator round five, REVIEWS-3).
+        const still =
+          typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+        document
+          .getElementById(`${uid}-q-${qid}`)
+          ?.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
       })
     },
     [quotes, year, uid],
@@ -216,6 +222,10 @@ export function V3Proof({
           it; the year chips filter the cards below. */}
       {record && years.length > 0 ? (
         <div className="v3-proof__record">
+          {/* Nothing on the page said the strip could be worked: the only
+              per-mark readout was the browser's own tooltip (evaluator round
+              five, REVIEWS-4). */}
+          <p className="v3-proof__how">Every review on its month. Point at a mark to read it, or pick a year.</p>
           <svg
             className="v3-proof__strip"
             viewBox={`0 0 ${STRIP_W} ${STRIP_H}`}
