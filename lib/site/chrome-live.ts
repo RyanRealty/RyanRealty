@@ -172,9 +172,12 @@ export function chromeLiveTowns(): { href: string; slug: string }[] {
 }
 
 const REGION = { geoType: 'region', geoSlug: 'central-oregon' } as const
-const READ_MS = 4000
+/** Long enough for a cold atlas walk to finish; the model is cached for 15 minutes after. */
+const READ_MS = 8000
 
-async function readChromeLive(): Promise<V3ChromeLive> {
+type ChromeLiveRead = { live: V3ChromeLive; complete: boolean }
+
+async function readChromeLive(): Promise<ChromeLiveRead> {
   const towns = chromeLiveTowns()
   const [atlas, region, snapshots] = await Promise.all([
     withTimeoutFallback(
@@ -188,8 +191,9 @@ async function readChromeLive(): Promise<V3ChromeLive> {
   ])
   const countBySlug = new Map<string, number | null>()
   for (const snap of snapshots) countBySlug.set(slugify(snap.geoKey), snap.activeSfrCount)
-  return composeChromeLive({
-    atlas: atlas && atlas.complete ? { counts: atlas.counts, dots: atlas.dots, stamp: atlas.stamp } : null,
+  const atlasIn = atlas && atlas.complete ? { counts: atlas.counts, dots: atlas.dots, stamp: atlas.stamp } : null
+  const live = composeChromeLive({
+    atlas: atlasIn,
     towns: towns.map((t) => ({ href: t.href, count: countBySlug.get(t.slug) ?? null })),
     region: region
       ? {
@@ -200,12 +204,47 @@ async function readChromeLive(): Promise<V3ChromeLive> {
         }
       : null,
   })
+  return { live, complete: atlasIn != null && region != null && snapshots.length > 0 }
 }
 
-const readChromeLiveCached = unstable_cache(readChromeLive, ['chrome-live-v1'], {
-  revalidate: 900,
-  tags: ['chrome-live'],
-})
+/*
+ * One read in flight per process, and a 15-minute memo beside the data cache.
+ * The root layout awaits this on EVERY page, and a static build renders
+ * hundreds of pages at once: without this, each page render issued its own
+ * atlas walk before the first had finished, the reads stacked into rail
+ * timeouts (127 in the first deploy), and the 4s cap returned partial models
+ * that then got cached. Now a process reads once, only a complete model is
+ * stored, and a partial one is served uncached and retried on the next read.
+ */
+const MEMO_MS = 15 * 60 * 1000
+let memo: (ChromeLiveRead & { at: number }) | null = null
+let inflight: Promise<ChromeLiveRead> | null = null
+
+async function readChromeLiveOnce(): Promise<ChromeLiveRead> {
+  if (memo && memo.complete && Date.now() - memo.at < MEMO_MS) return memo
+  if (!inflight) {
+    inflight = readChromeLive()
+      .then((read) => {
+        memo = { ...read, at: Date.now() }
+        return read
+      })
+      .finally(() => {
+        inflight = null
+      })
+  }
+  return inflight
+}
+
+const readChromeLiveCached = unstable_cache(
+  async () => {
+    const read = await readChromeLiveOnce()
+    // Thrown inside the cache so a short model is never stored for 15 minutes.
+    if (!read.complete) throw new Error('chrome-live: incomplete read')
+    return read.live
+  },
+  ['chrome-live-v2'],
+  { revalidate: 900, tags: ['chrome-live'] },
+)
 
 /** The chrome's live model, or null when nothing could be read. Never throws. */
 export async function getChromeLive(): Promise<V3ChromeLive | null> {
@@ -213,6 +252,11 @@ export async function getChromeLive(): Promise<V3ChromeLive | null> {
     const live = await readChromeLiveCached()
     return Object.keys(live).length > 0 ? live : null
   } catch {
-    return null
+    try {
+      const read = memo ?? (await readChromeLiveOnce())
+      return Object.keys(read.live).length > 0 ? read.live : null
+    } catch {
+      return null
+    }
   }
 }
