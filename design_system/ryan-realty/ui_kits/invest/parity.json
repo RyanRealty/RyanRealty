@@ -10,8 +10,8 @@
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "BreadcrumbList JSON-LD.",
+      "name": "buildJsonLd",
+      "section": "BreadcrumbList JSON-LD, inlined through lib/site/json-ld — ci:public-ui admits no new page onto the legacy MetadataBlock register.",
       "blocking": true
     },
     {
@@ -46,7 +46,7 @@
     }
   ],
   "sectionOrder": [
-    "V3SectionTracker + MetadataBlock (not sections)",
+    "V3SectionTracker + inline JSON-LD (not sections)",
     "V3Breadcrumb",
     "V3Quiet #place -- H1 + stance",
     "V3Instrument #market -- income-property figures",
