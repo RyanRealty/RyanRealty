@@ -215,13 +215,50 @@ publish the assessor's acreage as its own figure).**
   answers PGRST202 for the missing overload, so the RPC defaults `p_geo_type` and the DAL omits
   it rather than sending null; and an empty answer is legitimately cacheable for a day, so every
   fix to this read needs a cache-key bump (now v3).
-- **CMA:** the county's acreage sits beside the MLS figure in the site data, and the audit's
-  subject line says so when they differ by more than a tenth.
-- **Not done yet:** the rest of the CMA surfaces (a comp's parcel drawn beside the subject's) (Matt asked for a comp's parcel beside the
-  subject's, and an acreage cross-check against the MLS figure), and the other seven counties.
-  Jackson and Klamath both publish taxlots; Crook, Jefferson and Josephine surfaced no county
-  layer in a catalog search. Regrid is the one-integration commercial option if Matt wants
-  uniform coverage.
+- **CMA — DONE (`64eb7ecf`).** A new section, "The land", after the sales that set the number, on
+  both the print pages (`opinion-pages.ts`) and the web scenes (`opinion-scenes.ts`). It draws the
+  subject's recorded lot and each comp's **at one shared scale**, which is the point: every parcel
+  viewer fits one lot to one frame, making a tenth of an acre and ten acres the same size on
+  screen. `lib/cma/parcel-shapes.ts` fetches, `parcel-silhouettes.ts` draws, 16 tests pin the
+  judgment calls — when the spread passes 4:1 it says IN WORDS that each lot is drawn to its own
+  scale (it never switches silently); price per acre shows only on an acreage comp set (median lot
+  ≥ 1 acre), because "$4.5M an acre" on a fifth-acre house lot is arithmetic about a house; and a
+  tile whose MLS and county acreages disagree prints both. Separately, `parcelAcres` had been
+  computed since that morning and reached ONLY the audit LLM prompt — `factsPage` now prints it as
+  "Lot, county record". `ci:cma-opinion-spine` bans pills from the seller CMA, so the badge is set
+  in type.
+- **FOUR COUNTIES NOW (`52cd703a`), 246,872 lots.** Klamath 61,227 (Klamath County GIS), Josephine
+  41,751 (the county GIS coordinator's own account), and `jackson` 34,426 — which is the **City of
+  Medford's** layer covering the CITY ONLY, because Jackson County publishes no attributable
+  county-wide layer (the only county-wide copy on AGOL is an unattributed third-party snapshot).
+  An Ashland listing draws no lot, correctly. Crook and Jefferson publish nothing, checked twice
+  with two query shapes. Together the new three cover 4,750 listings against Deschutes' 3,134.
+  Regrid remains the one-integration commercial option for uniform coverage.
+- **THE READ HAD ALREADY BROKEN AND NOTHING SAID SO.** `taxlots_near_point` filtered on
+  `st_dwithin(geom::geography, …)` while the index is `gist(geom)` on GEOMETRY; the cast puts the
+  predicate out of the index's reach, so every call scanned the table. At 109K rows that fit
+  inside the function's 6s timeout. At 247K it did not: **10,554 ms, parallel seq scan, 126,321
+  rows removed by filter**. Every uncached listing page had silently lost its lot section. Fixed
+  by putting an indexable bounding box in front of the geography test, sized in degrees from the
+  caller's own latitude so the box strictly contains the circle — **16.8 ms on an index scan**,
+  identical rows (migration `20260902220000`). `taxlots_in_boundary` was always fine: it filters
+  with `st_intersects` on geometry. **Lesson: a predicate that casts away from its index is a
+  seq scan that works until the table grows.**
+- **Staying current for the new three is a SWEEP, not a delta.** None stamps a row with an edit
+  date. Klamath advertises Sync, so it was asked for changes directly and answered "Change
+  tracking is not enabled"; its DDate and Heliondate are one publish date repeated on every row.
+  So they are swept from the CLI (`--county <key> --write`), and `lib/taxlots/refresh.ts` reports
+  a sweep older than 60 days by name with the command that fixes it, instead of letting a county
+  serve a stale map in silence.
+- **Three importer traps, all found by running it.** The upsert sat OUTSIDE the retry, so a
+  transient network error threw past the gap-recording code and Medford stopped at 22,000 of
+  34,447 with nothing recorded — read, merge and write are now one retried unit. A lot filed as
+  several polygon rows lost all but its largest piece (and its acreage with it), so the importer
+  merges pieces into one MultiPolygon: 17 in Josephine, 21 in Medford. And **measure the id field,
+  never assume it** — Medford's obvious `MAPLOT` is 32,487 distinct over 34,447 rows and would
+  have dropped 1,960 lots invisibly; `ACCOUNT` is 34,426. Hosted feature services honour
+  `resultOffset` with geometry (the Deschutes MapServer does not); always send `orderByFields`,
+  both to stop unordered paging dropping rows and to put a split lot's pieces in one page.
 
 **ROUND SIX IS IN (all seven surfaces).** Scores: reviews 66, subdivision 41, team-matt 62,
 listing-bend 63, listing-noboundary 55, homepage 65, about 64. It caught FOUR regressions in the
