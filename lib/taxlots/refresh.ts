@@ -12,6 +12,13 @@
  * run that could not read part of its window is marked not-ok, so the next one
  * re-covers it.
  *
+ * THAT ONLY WORKS WHERE A COUNTY STAMPS ITS EDITS. Deschutes does. Klamath,
+ * Josephine and Medford do not — no edit date, and Klamath's Sync capability
+ * turns out to carry no change tracking. There is nothing to ask them for, so
+ * those three are swept whole from the CLI on a cadence, and this job's job is
+ * to notice when one has gone stale and say which command fixes it. A county
+ * that quietly stops updating is the failure this guards against.
+ *
  * Server only. The write RPC is service-role.
  */
 import 'server-only'
@@ -30,7 +37,18 @@ export type TaxlotCounty = {
   url: string
   source: string
   fields: { id: string; map: string | null; dial: string | null }
-  delta: TaxlotDeltaLayer
+  /** What the layer actually covers. Not every source is a whole county. */
+  coverage: string
+  /**
+   * Present only where the county stamps a row with an edit date. Without one
+   * there is nothing to ask "what changed", and the county is swept instead.
+   */
+  delta?: TaxlotDeltaLayer
+  /**
+   * Declared instead of `delta`. `everyDays` is how long a sweep may go stale
+   * before this job says so out loud.
+   */
+  sweep?: { everyDays: number }
 }
 
 /**
@@ -46,11 +64,52 @@ export const TAXLOT_COUNTIES: Record<string, TaxlotCounty> = {
     url: 'https://maps.deschutes.org/arcgis/rest/services/OpenData/LandFD/MapServer/2',
     source: "Deschutes County Assessor's Office, taxlot layer",
     fields: { id: 'TAXLOT', map: 'MAPNUMBER', dial: 'DIAL' },
+    coverage: 'the whole county',
     delta: {
       url: 'https://maps.deschutes.org/arcgis/rest/services/Dial2_Taxlots/MapServer/0',
       dateField: 'Taxlot_Assessor_Account.AUTODATE',
       idField: 'Taxlot_Assessor_Account.TAXLOT',
     },
+  },
+
+  /*
+   * The other three counties we carry listings in publish NO per-row edit
+   * date, so no delta exists to run. Klamath advertises Sync, but asked for
+   * changes directly it answers "Change tracking is not enabled", and its two
+   * date fields are one publish date repeated on every row. These are swept
+   * whole by scripts/gis/import-taxlots.mjs; this job's part is to say so when
+   * a sweep has gone stale, so a county cannot rot quietly.
+   *
+   * Sixty days: measured churn on a cadastre is a few lots a week out of a
+   * hundred thousand, so a two-month-old sweep is still an accurate map. The
+   * point of the deadline is to notice a county we forgot, not to chase edits.
+   */
+  klamath: {
+    county: 'klamath',
+    label: 'Klamath',
+    url: 'https://services.arcgis.com/H6Mh1bySxR4oHx6x/arcgis/rest/services/KC_Taxlots/FeatureServer/1',
+    source: 'Klamath County GIS, taxlot layer',
+    fields: { id: 'PROP_ID', map: 'MapNumber', dial: null },
+    coverage: 'the whole county',
+    sweep: { everyDays: 60 },
+  },
+  josephine: {
+    county: 'josephine',
+    label: 'Josephine',
+    url: 'https://services3.arcgis.com/qwqIu50nUr6wRrbz/arcgis/rest/services/JoCo_Taxlot/FeatureServer/0',
+    source: 'Josephine County GIS, taxlot layer',
+    fields: { id: 'ACCOUNT', map: 'MapNum', dial: null },
+    coverage: 'the whole county',
+    sweep: { everyDays: 60 },
+  },
+  jackson: {
+    county: 'jackson',
+    label: 'Jackson',
+    url: 'https://maps.medfordmaps.org/arcgis/rest/services/Public/Taxlots_with_SiteAddresses_Service/FeatureServer/1',
+    source: 'City of Medford GIS, taxlots within the city',
+    fields: { id: 'ACCOUNT', map: 'MAPNUM', dial: null },
+    coverage: 'the City of Medford only, not all of Jackson County',
+    sweep: { everyDays: 60 },
   },
 }
 
@@ -61,6 +120,11 @@ export type TaxlotRefreshResult = {
   changed: number
   written: number
   gaps: { taxlots: number; why: string }[]
+  /** How the county is kept current. A sweep county runs no work here. */
+  mode?: 'delta' | 'sweep'
+  /** Set on a sweep county: what this job checked and what it found. */
+  sweptDaysAgo?: number | null
+  note?: string
 }
 
 type Creds = { url: string; key: string }
@@ -83,11 +147,45 @@ async function rpc<T>({ url, key }: Creds, name: string, body: unknown): Promise
   return (text ? JSON.parse(text) : null) as T
 }
 
-/** Which lots the county has edited since a date. */
-async function changedTaxlots(layer: TaxlotCounty, sinceDate: string): Promise<string[]> {
-  const u = new URL(`${layer.delta.url}/query`)
-  u.searchParams.set('where', `${layer.delta.dateField} > date '${sinceDate}'`)
-  u.searchParams.set('outFields', layer.delta.idField)
+/**
+ * Days since this county's last clean whole-layer sweep, or null if it has
+ * never had one.
+ *
+ * A single filtered row off the refresh ledger, read through PostgREST with
+ * the service key this module already holds. It is operational state about our
+ * own jobs — not listing or market data — so it belongs here rather than
+ * behind the page DAL, and it is a one-row lookup, not an aggregate.
+ */
+async function daysSinceSweep({ url, key }: Creds, county: string): Promise<number | null> {
+  const q = new URLSearchParams({
+    select: 'ran_at',
+    county: `eq.${county}`,
+    mode: 'eq.full',
+    ok: 'is.true',
+    order: 'ran_at.desc',
+    limit: '1',
+  })
+  const res = await fetch(`${url}/rest/v1/taxlot_refreshes?${q}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`taxlot_refreshes → HTTP ${res.status}`)
+  const rows = (await res.json()) as { ran_at?: string }[]
+  const at = rows[0]?.ran_at
+  if (!at) return null
+  const ms = Date.now() - new Date(at).getTime()
+  if (!Number.isFinite(ms)) return null
+  return Math.floor(ms / 86_400_000)
+}
+
+/**
+ * Which lots the county has edited since a date. Takes the delta layer rather
+ * than the county, so a county that declares none cannot reach this at all.
+ */
+async function changedTaxlots(delta: TaxlotDeltaLayer, sinceDate: string): Promise<string[]> {
+  const u = new URL(`${delta.url}/query`)
+  u.searchParams.set('where', `${delta.dateField} > date '${sinceDate}'`)
+  u.searchParams.set('outFields', delta.idField)
   u.searchParams.set('returnGeometry', 'false')
   u.searchParams.set('f', 'json')
   const res = await fetch(u, { cache: 'no-store' })
@@ -98,7 +196,7 @@ async function changedTaxlots(layer: TaxlotCounty, sinceDate: string): Promise<s
   }
   if (body.error) throw new Error(`delta → ${JSON.stringify(body.error).slice(0, 200)}`)
   const ids = (body.features ?? [])
-    .map((f) => String(f.attributes?.[layer.delta.idField] ?? '').trim())
+    .map((f) => String(f.attributes?.[delta.idField] ?? '').trim())
     .filter(Boolean)
   return [...new Set(ids)]
 }
@@ -214,13 +312,38 @@ export async function refreshTaxlots(
   const c = creds()
   if (!c) throw new Error('Supabase service role is not configured')
 
+  // A county with no edit stamp has no delta to run. Report how stale its last
+  // whole-layer sweep is instead: the job's whole value here is that a county
+  // we forgot becomes visible rather than quietly serving a two-year-old map.
+  if (!layer.delta) {
+    const days = await daysSinceSweep(c, layer.county)
+    const limit = layer.sweep?.everyDays ?? 60
+    const fresh = days != null && days <= limit
+    return {
+      ok: fresh,
+      county: layer.county,
+      since: '',
+      changed: 0,
+      written: 0,
+      gaps: [],
+      mode: 'sweep',
+      sweptDaysAgo: days,
+      note:
+        days == null
+          ? `${layer.label} has never been swept. Run: node scripts/gis/import-taxlots.mjs --county ${layer.county} --write`
+          : fresh
+            ? `${layer.label} swept ${days} days ago, covering ${layer.coverage}. This county publishes no edit date, so there is no delta to run.`
+            : `${layer.label} was last swept ${days} days ago, past its ${limit}-day limit. Run: node scripts/gis/import-taxlots.mjs --county ${layer.county} --write`,
+    }
+  }
+
   const cutoff =
     sinceOverride ??
     String(await rpc<string>(c, 'taxlot_refresh_cutoff', { p_county: layer.county, p_overlap_days: 3 }))
   const since = cutoff.slice(0, 10)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(since)) throw new Error(`bad cutoff "${cutoff}"`)
 
-  const changed = await changedTaxlots(layer, since)
+  const changed = await changedTaxlots(layer.delta, since)
   let written = 0
   const gaps: { taxlots: number; why: string }[] = []
 

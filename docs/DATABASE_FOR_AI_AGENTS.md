@@ -142,6 +142,26 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.cities` | 0 | City master list. Currently unused; `slugify(city_field)` is the canonical city slug. |
 | `public.neighborhoods` | 13 | City of Bend neighborhood districts with `boundary_geojson` jsonb. Separate from `boundaries` rows (older spatial system, still consumed by AgentFire neighborhood pages). |
 | `public.communities` | 1,848 | Auto-populated from MLS SubdivisionName syncs. Flat list, no parent-child structure. The 14 resort communities are flagged via `subdivision_flags`. |
+| **`public.taxlots`** ⭐ | ~247K | **Lot lines** — one recorded parcel polygon per row (MultiPolygon 4326, GIST), unique on `(county, taxlot)`, with `acres` measured off the polygon on the spheroid at ingest. **RLS on with no anon policy: never read this table directly.** Reads go through `taxlots_near_point()` and `taxlots_in_boundary()`, SECURITY DEFINER RPCs that clip and simplify server-side to the resolution the caller's frame can draw — a listing frame gets ~20 lots at ~186 bytes each instead of the raw fabric. DAL: `lib/data/geo/getTaxlots.ts`. **It is an assessor's map, not a survey**; `TAXLOT_DISCLAIMER` prints beside every drawn line, and `taxlotSourceFor(county)` gives the credit. |
+| `public.taxlot_refreshes` | — | One row per ingest. `mode='delta'` (Deschutes only) or `'full'` (a sweep). `ok=false` means part of the window would not read, so the next run re-covers it. `lib/taxlots/refresh.ts` reads the newest clean `full` row to decide whether a sweep county has gone stale. |
+
+**Taxlot coverage — four counties, and only one of them can be updated incrementally.**
+
+| County key | Source | Rows | Coverage | Staying current |
+|---|---|---|---|---|
+| `deschutes` | Deschutes County Assessor's Office | 109,505 | whole county | **Delta.** The DIAL layer stamps `AUTODATE`, so `/api/cron/taxlot-refresh` pulls only edited lots nightly. Churn: ~3 a week. |
+| `klamath` | Klamath County GIS | 61,227 | whole county | **Sweep.** No edit date. Sync is on but change tracking is not, and `DDate`/`Heliondate` are one publish date repeated on every row. |
+| `josephine` | Josephine County GIS | 41,751 | whole county | **Sweep.** No edit date. |
+| `jackson` | **City of Medford GIS** | ~34,400 | **the City of Medford only** | **Sweep.** Jackson County publishes no county-wide layer we can attribute; the only county-wide copy on ArcGIS Online is an unattributed third-party snapshot. A listing in Ashland or Eagle Point draws no lot, which is correct. |
+
+Sweeps are run from the CLI (`node scripts/gis/import-taxlots.mjs --county <key> --write`); the
+nightly cron reports a sweep county whose last clean run is over 60 days old rather than letting
+it rot silently. **Crook and Jefferson publish no taxlot layer at all** — checked twice, two query
+shapes. Their listings draw no lot lines.
+
+**The id field on each county was measured, never assumed.** Medford's obvious `MAPLOT` holds only
+32,487 distinct values across 34,447 rows; using it would have silently dropped 1,960 lots through
+the upsert's dedupe. `ACCOUNT` holds 34,426. Klamath's `ORTaxlot` repeats; `PROP_ID` does not.
 
 ### 2b. Property data (the source-of-truth listing universe)
 

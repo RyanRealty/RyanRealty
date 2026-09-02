@@ -96,7 +96,7 @@ import {
   v3Text,
 } from '@/components/site/v3'
 import { basemapForRegions, basemapForFrame, bboxOfGeometry } from '@/lib/geo/basemap-source'
-import { TAXLOT_DISCLAIMER } from '@/lib/data'
+import { TAXLOT_DISCLAIMER, taxlotSourceFor } from '@/lib/data'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
@@ -574,7 +574,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           quiet
           types={[]}
           events={[]}
-          source={`${listingAtlas.subjectParcel.acres != null ? `${listingAtlas.subjectParcel.acres.toLocaleString('en-US', { maximumFractionDigits: 2 })} acres on the county assessor's map. ` : ''}Tax lot ${listingAtlas.subjectParcel.taxlot}, Deschutes County Assessor. ${TAXLOT_DISCLAIMER}`}
+          source={`${listingAtlas.subjectParcel.acres != null ? `${listingAtlas.subjectParcel.acres.toLocaleString('en-US', { maximumFractionDigits: 2 })} acres on the county assessor's map. ` : ''}Tax lot ${listingAtlas.subjectParcel.taxlot}, ${taxlotSourceFor(listing.county)}. ${TAXLOT_DISCLAIMER}`}
           highlight={{ key: listing.listingKey, label: 'This home' }}
           parcels={listingAtlas.parcels.map((lot) => ({
             id: lot.taxlot,

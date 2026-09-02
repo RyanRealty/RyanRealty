@@ -24,6 +24,37 @@ import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS } from '@/lib/data/cache/unstable-cache'
 
+/**
+ * Who to credit for a drawn lot line, by the county the home sits in.
+ *
+ * §0 wants every published figure to name its source, and the source is NOT
+ * always the county whose name is on the listing: our Jackson coverage comes
+ * from the City of Medford's own service, because Jackson County publishes no
+ * county-wide layer we can attribute. Saying "Jackson County Assessor" over a
+ * Medford polygon would credit a body that did not publish it.
+ *
+ * A county missing from this map falls back to naming no authority at all,
+ * which is honest, rather than guessing one. lib/taxlots/refresh.test.ts holds
+ * this list to the counties we actually load.
+ */
+const TAXLOT_SOURCES: Record<string, string> = {
+  deschutes: "Deschutes County Assessor's Office",
+  klamath: 'Klamath County GIS',
+  josephine: 'Josephine County GIS',
+  jackson: 'City of Medford GIS',
+}
+
+/** "Klamath County GIS", or a generic credit when we cannot name one. */
+export function taxlotSourceFor(county: string | null | undefined): string {
+  const key = (county ?? '').trim().toLowerCase()
+  return TAXLOT_SOURCES[key] ?? 'the county assessor'
+}
+
+/** Every county whose lot lines we publish. */
+export function taxlotSourceCounties(): string[] {
+  return Object.keys(TAXLOT_SOURCES)
+}
+
 /** What a page must print beside any drawn parcel line. */
 export const TAXLOT_DISCLAIMER =
   'Lot lines come from the county assessor’s tax maps. They show the recorded shape of a parcel, not a survey, and they are not a legal boundary. Order a survey before you rely on a line.'

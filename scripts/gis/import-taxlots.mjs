@@ -72,6 +72,68 @@ const COUNTIES = {
       fields: { id: 'Taxlot_Assessor_Account.TAXLOT', map: null, dial: null },
     },
   },
+
+  /*
+   * THE OTHER THREE COUNTIES WE HAVE LISTINGS IN, and the one fact that shapes
+   * how they are loaded: NONE of them stamps a row with an edit date, so none
+   * of them supports a delta. Klamath advertises Sync, which raised hopes of
+   * `extractChanges`; asked directly it answers "Change tracking is not
+   * enabled." Its DDate and Heliondate are one publish date repeated on every
+   * row, not per-parcel edits. So these three are SWEPT — the whole layer,
+   * periodically — and the ledger records each sweep as mode 'full'.
+   *
+   * All three are hosted feature services, which unlike the Deschutes
+   * MapServer DO honour resultOffset with geometry attached. That makes the
+   * OBJECTID windowing below unnecessary for them; runSweep pages by offset.
+   *
+   * The id field on each was MEASURED, not guessed, because the obvious choice
+   * was wrong twice. Medford's MAPLOT holds 32,487 distinct values across
+   * 34,447 rows — picking it would have silently dropped 1,960 lots through
+   * the upsert's dedupe. ACCOUNT holds 34,426. Klamath's ORTaxlot repeats
+   * across parcels (60,638 of 61,227); PROP_ID is exactly one per row.
+   */
+  klamath: {
+    label: 'Klamath',
+    url: 'https://services.arcgis.com/H6Mh1bySxR4oHx6x/arcgis/rest/services/KC_Taxlots/FeatureServer/1',
+    source: 'Klamath County GIS, taxlot layer',
+    // Attribution as the county states it on the item: "Klamath County GIS".
+    // Its licence line reads "This layer is for reference only", which is the
+    // same thing TAXLOT_DISCLAIMER already tells every reader.
+    fields: { id: 'PROP_ID', map: 'MapNumber', dial: null },
+    pageSize: 1000,
+    paging: 'offset',
+    coverage: 'the whole county',
+  },
+  josephine: {
+    label: 'Josephine',
+    url: 'https://services3.arcgis.com/qwqIu50nUr6wRrbz/arcgis/rest/services/JoCo_Taxlot/FeatureServer/0',
+    // Published by Josephine County's own GIS Coordinator.
+    source: 'Josephine County GIS, taxlot layer',
+    fields: { id: 'ACCOUNT', map: 'MapNum', dial: null },
+    pageSize: 2000,
+    paging: 'offset',
+    coverage: 'the whole county',
+  },
+  /*
+   * Jackson County publishes no county-wide taxlot layer of its own that I
+   * could find. The only county-wide copy on ArcGIS Online is a dated snapshot
+   * re-hosted by a restoration nonprofit, with no attribution and no licence,
+   * so it is not used here. What IS official is the City of Medford's own
+   * service — and Medford is where most of our Jackson listings are. It covers
+   * the CITY, not the county: a listing in Ashland or Eagle Point finds no lot
+   * and the page draws none, which is the correct outcome for data we do not
+   * have. `coverage` says so, and the refresh ledger records it.
+   */
+  medford: {
+    label: 'Medford',
+    county: 'jackson',
+    url: 'https://maps.medfordmaps.org/arcgis/rest/services/Public/Taxlots_with_SiteAddresses_Service/FeatureServer/1',
+    source: 'City of Medford GIS, taxlots within the city',
+    fields: { id: 'ACCOUNT', map: 'MAPNUM', dial: null },
+    pageSize: 2000,
+    paging: 'offset',
+    coverage: 'the City of Medford only, not all of Jackson County',
+  },
 }
 
 const args = process.argv.slice(2)
@@ -234,6 +296,35 @@ function toRow(feature, layer) {
     dial_url: layer.fields.dial && p[layer.fields.dial] != null ? String(p[layer.fields.dial]) : null,
     geojson: geom,
   }
+}
+
+/**
+ * One row per tax lot, keeping EVERY piece of a lot that arrives as several.
+ *
+ * A county can file one parcel as more than one polygon row — Josephine does
+ * it 17 times, Medford 21. The upsert dedupes a batch by keeping the largest
+ * polygon, which is right for a genuine duplicate and wrong for a lot split by
+ * a road: the smaller piece vanishes and the acreage we publish for that lot
+ * comes out short. Merging the pieces into one MultiPolygon first means the
+ * upsert sees one row, the lot draws whole, and its acreage is the sum.
+ *
+ * Pairs with orderByFields on the id, which is what puts the pieces in the
+ * same page to begin with.
+ */
+function mergeByTaxlot(rows) {
+  const byId = new Map()
+  for (const r of rows) {
+    const prev = byId.get(r.taxlot)
+    if (!prev) {
+      byId.set(r.taxlot, r)
+      continue
+    }
+    const parts = (g) => (g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates])
+    prev.geojson = { type: 'MultiPolygon', coordinates: [...parts(prev.geojson), ...parts(r.geojson)] }
+    prev.map_number = prev.map_number ?? r.map_number
+    prev.dial_url = prev.dial_url ?? r.dial_url
+  }
+  return [...byId.values()]
 }
 
 async function upsert({ url, key }, county, layer, rows, srid = 4326) {
@@ -433,9 +524,166 @@ async function runBulk(layer, creds) {
   log(`bulk done: ${written.toLocaleString('en-US')} written`)
 }
 
+/**
+ * One page by result offset, for a hosted feature service.
+ *
+ * These services answer resultOffset WITH geometry attached, which the
+ * Deschutes MapServer refuses — that refusal is why the OBJECTID windowing
+ * above exists at all. Offset paging is simpler and needs no id list.
+ */
+async function fetchOffsetPage(layer, offset, size) {
+  const u = new URL(`${layer.url}/query`)
+  u.searchParams.set('where', '1=1')
+  u.searchParams.set('outFields', [layer.fields.id, layer.fields.map, layer.fields.dial].filter(Boolean).join(','))
+  u.searchParams.set('returnGeometry', 'true')
+  u.searchParams.set('outSR', '4326')
+  u.searchParams.set('resultOffset', String(offset))
+  u.searchParams.set('resultRecordCount', String(size))
+  // Ordered for two reasons. Offset paging over an unordered result is free to
+  // return a row twice and another never — the service makes no promise
+  // otherwise. And ordering BY THE ID puts a parcel's duplicate rows next to
+  // each other, so mergeByTaxlot below sees both halves of a split lot in the
+  // same page instead of across a page boundary.
+  u.searchParams.set('orderByFields', layer.fields.id)
+  u.searchParams.set('f', 'geojson')
+  const res = await fetch(u)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const body = await res.json()
+  if (body.error) throw new Error(JSON.stringify(body.error).slice(0, 200))
+  if (!Array.isArray(body.features)) throw new Error('no features array')
+  return body.features
+}
+
+/**
+ * The whole layer, page by page. This is the ONLY way to keep a county current
+ * when it stamps no edit date — see the note beside those county entries. It
+ * is idempotent: the upsert rewrites a row it already has, so a sweep that
+ * dies partway is re-run rather than repaired.
+ *
+ * A page that fails halves rather than aborting, because one oversized
+ * multipart lot can make a service refuse to serialise a whole page, and a
+ * page silently dropped is a hole in the county nobody sees.
+ */
+async function runSweep(layer, creds) {
+  const total = await countFeatures(layer)
+  const size = PAGE > 0 ? PAGE : layer.pageSize
+  const target = LIMIT > 0 ? Math.min(LIMIT, total) : total
+  log(`${layer.label}: ${total.toLocaleString('en-US')} parcels published (${layer.coverage}), sweeping by offset at ${layer.url}`)
+  if (!WRITE) log('DRY RUN — pass --write to upsert. Reading two pages to prove the shape.')
+
+  const county = layer.county ?? COUNTY
+  const gaps = []
+  let read = 0
+  let written = 0
+  let skipped = 0
+  let merged = 0
+
+  /**
+   * One page: read it, merge it, write it — all three inside the SAME retry.
+   *
+   * The write used to sit outside, and a transient "fetch failed" on the
+   * Supabase call therefore threw straight out of the loop: Medford stopped at
+   * 22,000 of 34,447 lots on 2026-09-02 with no gap recorded, because the code
+   * that records gaps never ran. A county half-loaded still draws lines, so
+   * this must never abort quietly. Three tries, then halve, then record a gap
+   * and keep going.
+   *
+   * `carry` is the page's last lot, held back rather than written. Ordering by
+   * the id puts a split lot's pieces next to each other, but next to each other
+   * still straddles a page edge sometimes — Josephine lost 5 that way even
+   * after the in-page merge. Handing the last row to the next page closes it,
+   * because the next page's first row is the only one that can match it. The
+   * final carry is written after the loop.
+   */
+  let carry = null
+  const page = async (offset, size, depth = 0) => {
+    let lastWhy = ''
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      // `carry` is read here and only COMMITTED after the write lands, so a
+      // retry re-merges the same carry rather than a row from this page.
+      const carryIn = carry
+      try {
+        const features = await fetchOffsetPage(layer, offset, size)
+        const usable = features.map((f) => toRow(f, layer)).filter(Boolean)
+        const all = mergeByTaxlot(carryIn ? [carryIn, ...usable] : usable)
+        // Hold the last lot back only while more pages are coming; the tail of
+        // the county has nothing left to merge with.
+        const holdBack = all.length > 0 && offset + size < target
+        const rows = holdBack ? all.slice(0, -1) : all
+        if (WRITE && rows.length > 0) {
+          // outSR=4326 was asked for by name, so the rows are already WGS84.
+          written += await upsert(creds, county, layer, rows, 4326)
+        } else if (!WRITE) {
+          const s = rows[0]
+          log(`offset ${offset}: ${features.length} read, ${rows.length} usable${s ? ` — first: ${s.taxlot} (${s.geojson.type})` : ''}`)
+        }
+        carry = holdBack ? all[all.length - 1] : null
+        // Counted only once the page is actually banked.
+        read += features.length
+        // A skipped feature had no id or no polygon and is LOST; a merged one
+        // is a second piece of a lot we are keeping.
+        skipped += features.length - usable.length
+        merged += usable.length + (carryIn ? 1 : 0) - all.length
+        return
+      } catch (err) {
+        lastWhy = err instanceof Error ? err.message : String(err)
+        if (attempt < 3) await sleep(attempt * 1500)
+      }
+    }
+    if (size === 1 || depth > 10) {
+      gaps.push({ lo: offset, hi: offset + size - 1, why: lastWhy })
+      return
+    }
+    const half = Math.ceil(size / 2)
+    await page(offset, half, depth + 1)
+    await page(offset + half, size - half, depth + 1)
+  }
+
+  const pages = Math.ceil(target / size)
+  const limit = WRITE ? pages : Math.min(2, pages)
+  for (let i = FROM; i < limit; i += 1) {
+    await page(i * size, size)
+    if (WRITE && (i % 10 === 0 || i === pages - 1)) {
+      log(`page ${i + 1}/${pages} — ${read.toLocaleString('en-US')} read, ${written.toLocaleString('en-US')} written`)
+    }
+  }
+
+  // The last page's held-back lot. Nothing follows it to merge with, so it is
+  // written on its own — and it must be written, or the county loses its final
+  // parcel every sweep.
+  if (carry) {
+    if (WRITE) written += await upsert(creds, county, layer, [carry], 4326)
+    carry = null
+  }
+
+  if (WRITE) {
+    await rpc(creds, 'record_taxlot_refresh', {
+      p_county: county,
+      p_mode: 'full',
+      p_since: null,
+      p_changed: read,
+      p_written: written,
+      p_gaps: gaps,
+      p_note: `sweep by offset — ${layer.coverage}${merged > 0 ? `; ${merged} extra polygon piece(s) merged into their lot` : ''}`,
+    })
+  }
+  log(`done: ${read.toLocaleString('en-US')} read, ${written.toLocaleString('en-US')} written, ${skipped} skipped (no id or not a polygon), ${merged} merged into a multi-piece lot`)
+  if (gaps.length > 0) {
+    log(`GAPS: ${gaps.length} page range(s) the service would not answer — those parcels are NOT loaded:`)
+    for (const g of gaps.slice(0, 20)) log(`  offset ${g.lo}-${g.hi}: ${g.why}`)
+    process.exitCode = 1
+  }
+  if (!WRITE) log('Nothing was written.')
+}
+
 async function main() {
   const layer = COUNTIES[COUNTY]
   if (!layer) throw new Error(`no layer declared for county "${COUNTY}" — known: ${Object.keys(COUNTIES).join(', ')}`)
+
+  if (layer.paging === 'offset' && !BULK && !SINCE) {
+    await runSweep(layer, WRITE ? env() : null)
+    return
+  }
 
   if (BULK) {
     await runBulk(layer, WRITE ? env() : null)
