@@ -55,6 +55,16 @@
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   box-shadow: none;
+  /* G71 measures CSS px at 1440. A pointer:coarse min-height does not save a
+     32px chip. min-height, not a second ::after hit layer. */
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
+}
+
+/* Removable-chip X. size-6 (24px) was the painted glyph; the control is the button. */
+.srch-chip button {
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
 }
 
 /* Square any remaining control corner (inputs, selects, toggles) without
@@ -62,6 +72,14 @@
 .srch-square {
   border-radius: 0;
   box-shadow: none;
+  min-height: var(--v3-tap, 44px);
+}
+
+/* Clear-all text control and the location suggest field: both were height:auto. */
+.srch-clear,
+.srch-suggest {
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
 }
 
 /* Count/summary line: working figures — Geist Mono digits via the register's
@@ -146,6 +164,23 @@
 }
 .map-search-views button + button {
   border-left: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
+}
+/* The strip's min-height is border-box, so stretch children were 42px inside
+   a 1px edge. Floor the buttons themselves. */
+.map-search-views button {
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
+}
+
+/* Draw / Saved areas render on the map canvas (MapDrawTools, AreaPicker).
+   This file is already on that page via MapSearchView. */
+[aria-label="Draw tools"] button {
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
+}
+[aria-controls="area-picker-panel"] {
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
 }
 .place-split {
   height: auto;

@@ -70,9 +70,9 @@ export function SentenceSearch({ className, transcript }: SentenceSearchProps) {
         placeholder="3 bed under 800 in Tetherow"
         autoComplete="off"
         enterKeyHint="search"
-        className="srch-square h-9 min-w-0 flex-1"
+        className="srch-square min-w-0 flex-1"
       />
-      <Button type="submit" size="sm" className="srch-chip h-9">
+      <Button type="submit" className="srch-chip">
         Search
       </Button>
     </form>

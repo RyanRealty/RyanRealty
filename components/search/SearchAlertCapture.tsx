@@ -281,7 +281,7 @@ export function SearchAlertCapture({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild size={isInline ? 'sm' : 'default'} className="shrink-0">
+            <Button asChild className="min-h-[length:var(--v3-tap)] shrink-0">
               <Link href={priorWatch.href}>See matching homes</Link>
             </Button>
             <Button
@@ -293,10 +293,7 @@ export function SearchAlertCapture({
                 setPriorWatch(null)
               }}
               aria-label="Dismiss watching reminder"
-              className={cn(
-                'shrink-0 text-muted-foreground hover:text-foreground',
-                isInline && 'h-8 w-8'
-              )}
+              className="min-h-[length:var(--v3-tap)] min-w-[length:var(--v3-tap)] shrink-0 text-muted-foreground hover:text-foreground"
             >
               <XMarkIcon className="h-4 w-4" aria-hidden />
             </Button>
@@ -359,9 +356,9 @@ export function SearchAlertCapture({
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             onClick={() => setExpanded(true)}
             aria-expanded={false}
+            className="min-h-[length:var(--v3-tap)]"
           >
             Get listing alerts
           </Button>
@@ -426,14 +423,16 @@ export function SearchAlertCapture({
             aria-label="Email for listing alerts"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className={cn('w-full sm:w-56', isInline && 'h-8 sm:w-44')}
+            className={cn(
+              'min-h-[length:var(--v3-tap)] w-full sm:w-56',
+              isInline && 'sm:w-44',
+            )}
             disabled={pending}
           />
           <Button
             type="submit"
-            size={isInline ? 'sm' : 'default'}
             disabled={pending}
-            className="shrink-0"
+            className="min-h-[length:var(--v3-tap)] shrink-0"
           >
             {pending ? 'Setting up...' : 'Get alerts'}
           </Button>
@@ -443,10 +442,7 @@ export function SearchAlertCapture({
             size="icon"
             onClick={() => setDismissed(true)}
             aria-label="Dismiss"
-            className={cn(
-              'shrink-0 text-muted-foreground hover:text-foreground',
-              isInline && 'h-8 w-8'
-            )}
+            className="min-h-[length:var(--v3-tap)] min-w-[length:var(--v3-tap)] shrink-0 text-muted-foreground hover:text-foreground"
           >
             <XMarkIcon className="h-4 w-4" aria-hidden />
           </Button>
