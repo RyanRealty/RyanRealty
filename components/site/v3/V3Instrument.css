@@ -97,8 +97,12 @@
   border-top: var(--v3-rule-hairline);
 }
 
+/* min-height, not more padding: the fold row was 1.7px under the 44px tap floor
+   and padding would have moved the text off the hairline. The block box keeps
+   its top alignment so the ' +' marker stays on the same line as the label. */
 .v3.v3-instrument .v3-instrument__fold-summary {
   cursor: pointer;
+  min-height: var(--v3-tap);
   padding: var(--v3-space-sm) 0;
   font-size: var(--v3-size-label);
   font-weight: 600;

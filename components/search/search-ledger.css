@@ -112,10 +112,14 @@
 }
 
 /* Compact Map / Split / List. Not the filter-bar chip row. */
+/* The three views are the map's primary thumb targets, so the strip holds the
+   44px floor at every width. The toolbar row grows 16px at 390 and 14.4px at
+   1440; the map pane absorbs it (the shell is the flex child that gives), so
+   /homes-for-sale scrolls the same 902px it did before. */
 .map-search-views {
   display: inline-flex;
   align-items: stretch;
-  height: 1.75rem;
+  min-height: var(--v3-tap);
   flex-shrink: 0;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
   background: var(--v3-cream);
@@ -142,11 +146,6 @@
 }
 .map-search-views button + button {
   border-left: 1px solid color-mix(in srgb, var(--v3-navy) 12%, transparent);
-}
-@media (min-width: 64rem) {
-  .map-search-views {
-    height: 1.85rem;
-  }
 }
 .place-split {
   height: auto;

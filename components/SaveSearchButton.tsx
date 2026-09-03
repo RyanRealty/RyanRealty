@@ -229,6 +229,8 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
           <Label htmlFor="save-search-email" className="text-sm font-medium text-muted-foreground">
             Email
           </Label>
+          {/* min-h-11 is the 44px tap floor. The Input primitive ships h-8, which
+              left the one field in the guest save form 12px under it. */}
           <Input
             id="save-search-email"
             type="email"
@@ -239,10 +241,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@email.com"
-            className="mt-1 w-full"
+            className="mt-1 min-h-11 w-full"
           />
         </div>
-        <Button type="submit" size="sm" disabled={status === 'saving'}>
+        {/* min-h-11 is the same 44px floor the field beside it now carries. A
+            32px submit next to a 44px input is worse than the pair was before. */}
+        <Button type="submit" size="sm" className="min-h-11" disabled={status === 'saving'}>
           {status === 'saving' ? 'Saving...' : 'Save this search'}
         </Button>
         {status === 'error' ? (
