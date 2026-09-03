@@ -1,0 +1,45 @@
+/* ===========================================================================
+   SEARCH MAP MARKS
+   Tap targets for the Google Maps overlay marks built in
+   components/SearchMapClustered.tsx and nothing else.
+
+   The cluster bubble paints at 32/38/44px and the price pill at 60x25 because
+   that is what reads on a map at those zooms. Neither has a duplicate control
+   elsewhere on the page, so the WCAG 2.5.8 Equivalent exception does not cover
+   them and the mark itself has to carry a 44px target.
+
+   So the target is an invisible ::after centred on the mark. The pseudo is part
+   of its element for hit-testing, so document.elementFromPoint over the mark
+   still returns the mark, and nothing about the drawing changes.
+
+   --rr-map-mark-tap-w / -h / -x / -y are written per element by
+   fitMapMarkTaps() in SearchMapClustered.tsx when a centred full-size box would
+   answer for a mark painted below it. Hit-testing is paint order, not distance,
+   so an unadjusted box on the upper mark would take its neighbour's centre; -x
+   and -y walk the box off that centre, and -w / -h trim it when there is no
+   room left to walk.
+   =========================================================================== */
+
+.rr-map-mark {
+  /* The pseudo positions against the mark. Without this it resolves against
+     the map pane and lands somewhere else on the canvas. */
+  position: relative;
+}
+
+.rr-map-mark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(
+    calc(-50% + var(--rr-map-mark-tap-x, 0px)),
+    calc(-50% + var(--rr-map-mark-tap-y, 0px))
+  );
+  /* Square, not rounded: a border-radius here would hit-test as a circle and
+     the measured 44x44 would not be the real target. The mark's own painted
+     footprint is the floor — max() never shrinks a pill below its own width.
+     44px fallback: this map also renders on surfaces that do not load
+     components/site/v3/tokens.css. */
+  width: max(var(--rr-map-mark-tap-w, var(--v3-tap, 44px)), 100%);
+  height: max(var(--rr-map-mark-tap-h, var(--v3-tap, 44px)), 100%);
+}

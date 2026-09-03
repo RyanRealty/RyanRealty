@@ -24,6 +24,14 @@ import {
   MAP_CREAM,
 } from '@/lib/maps/markers'
 import { placeTypePinFill } from '@/lib/place/place-type-style'
+import './search/search-map-marks.css'
+
+/**
+ * Class that carries a mark's 44px tap target (search-map-marks.css). Every
+ * overlay element a person can hit — price pill, cluster bubble, photo stamp —
+ * wears it. The painted size is untouched; the target is an invisible pseudo.
+ */
+const MARK_CLASS = 'rr-map-mark'
 
 // Map ID strategy (dual-path, P0-1 fix 2026-06-10):
 //   - With NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID set (Vercel env): vector map via
@@ -193,6 +201,7 @@ function buildPricePillElement(
     'filter:drop-shadow(0 2px 6px color-mix(in srgb, var(--v3-navy) 32%, transparent))',
   ].join(';')
   el.setAttribute('data-price-pill', '1')
+  el.className = MARK_CLASS
 
   const pill = document.createElement('div')
   pill.style.cssText = [
@@ -237,12 +246,17 @@ function buildPricePillElement(
 /**
  * Build the HTML element for a cluster bubble.
  * Navy circle with white count — AdvancedMarkerElement version.
+ *
+ * The circle stays 32/38/44px. `position:relative` is the anchor the 44px tap
+ * pseudo in search-map-marks.css positions against; it moves nothing.
  */
 function buildClusterElement(count: number): HTMLDivElement {
   const size = count >= 100 ? 44 : count >= 20 ? 38 : 32
   const fontSize = count >= 100 ? 11 : count >= 20 ? 12 : 13
   const el = document.createElement('div')
+  el.className = MARK_CLASS
   el.style.cssText = [
+    `position:relative`,
     `width:${size}px`,
     `height:${size}px`,
     `border-radius:50%`,
@@ -278,6 +292,7 @@ function buildPhotoStampElement(
   const invert = active || hover
   const fill = opts?.fill ?? MAP_NAVY
   const wrap = document.createElement('div')
+  wrap.className = MARK_CLASS
   wrap.style.cssText = [
     'position:relative',
     'width:56px',
@@ -470,6 +485,124 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
   return PricePillOverlayClass
 }
 
+/** The target every mark carries, matching --v3-tap in components/site/v3/tokens.css. */
+const MARK_TAP_PX = 44
+/**
+ * A box edge landing exactly on a neighbour's centre still hit-tests as a cover
+ * once the browser snaps subpixels — measured on /cities/bend, where a cluster
+ * 22.5px from a pill's centre took that centre with a 44px box. Clear it by this
+ * much rather than by zero.
+ */
+const MARK_TAP_MARGIN_PX = 2
+
+/**
+ * Size and place every mark's tap box.
+ *
+ * Each mark gets a 44px square. Hit-testing follows paint order, not distance,
+ * so a box on a mark painted ABOVE a close neighbour answers for that
+ * neighbour's centre — a tap on the lower mark would open the upper one. Where
+ * that happens the upper mark's box moves off-centre, away from the neighbour,
+ * far enough to clear it, as long as the painted mark stays inside the box. Only
+ * when there is no room left does the box give up size. The lower mark keeps its
+ * own full box: its painted body is above the neighbour's pseudo at its centre.
+ *
+ * A mark never shrinks below its painted footprint — the max() in
+ * components/search/search-map-marks.css holds that floor.
+ */
+function fitMapMarkTaps(root: HTMLElement | null) {
+  if (!root) return
+  const els = Array.from(root.querySelectorAll<HTMLElement>('.rr-map-mark'))
+  if (els.length === 0) return
+  // Read all geometry before writing anything: one layout pass, not one per mark.
+  const marks = els.map((el, i) => {
+    const r = el.getBoundingClientRect()
+    // Google writes an AdvancedMarkerElement's z-index inline on the host; the
+    // raster OverlayView path writes it on its own container. Equal z falls
+    // back to DOM order, which is what the browser paints by.
+    const z = Number(el.parentElement?.style.zIndex ?? '') || 0
+    return { el, cx: r.x + r.width / 2, cy: r.y + r.height / 2, w: r.width, h: r.height, z, i }
+  })
+  // Bucket by tap-sized cell so each mark tests its own neighbourhood, not the
+  // whole layer — a dense search viewport carries hundreds of pins.
+  const grid = new Map<string, number[]>()
+  marks.forEach((m, i) => {
+    const key = `${Math.floor(m.cx / MARK_TAP_PX)}:${Math.floor(m.cy / MARK_TAP_PX)}`
+    const bucket = grid.get(key)
+    if (bucket) bucket.push(i)
+    else grid.set(key, [i])
+  })
+  for (const m of marks) {
+    // Only a mark painted BELOW this one can lose its centre to it. Nearest
+    // first: the tightest constraint decides the box before the loose ones.
+    const below: typeof marks = []
+    const gx = Math.floor(m.cx / MARK_TAP_PX)
+    const gy = Math.floor(m.cy / MARK_TAP_PX)
+    for (let cx = -1; cx <= 1; cx++) {
+      for (let cy = -1; cy <= 1; cy++) {
+        for (const j of grid.get(`${gx + cx}:${gy + cy}`) ?? []) {
+          const n = marks[j]
+          if (n === m) continue
+          if (!(n.z < m.z || (n.z === m.z && n.i < m.i))) continue
+          const reach = Math.max(Math.abs(n.cx - m.cx), Math.abs(n.cy - m.cy))
+          if (reach <= MARK_TAP_PX) below.push(n)
+        }
+      }
+    }
+    below.sort(
+      (a, b) =>
+        Math.max(Math.abs(a.cx - m.cx), Math.abs(a.cy - m.cy)) -
+        Math.max(Math.abs(b.cx - m.cx), Math.abs(b.cy - m.cy)),
+    )
+    let w = MARK_TAP_PX
+    let h = MARK_TAP_PX
+    let dx = 0
+    let dy = 0
+    // How far the box may travel and still hold the painted mark.
+    const roomX = Math.max(0, (MARK_TAP_PX - m.w) / 2)
+    const roomY = Math.max(0, (MARK_TAP_PX - m.h) / 2)
+    for (const n of below) {
+      const gapX = n.cx - (m.cx + dx)
+      const gapY = n.cy - (m.cy + dy)
+      const needX = (w + MARK_TAP_MARGIN_PX) / 2 - Math.abs(gapX)
+      const needY = (h + MARK_TAP_MARGIN_PX) / 2 - Math.abs(gapY)
+      if (needX <= 0 || needY <= 0) continue
+      if (needX <= needY) {
+        const moved = dx - Math.sign(gapX) * needX
+        if (Math.abs(moved) <= roomX) dx = moved
+        else w = Math.max(0, Math.abs(gapX) * 2 - MARK_TAP_MARGIN_PX)
+      } else {
+        const moved = dy - Math.sign(gapY) * needY
+        if (Math.abs(moved) <= roomY) dy = moved
+        else h = Math.max(0, Math.abs(gapY) * 2 - MARK_TAP_MARGIN_PX)
+      }
+    }
+    // Moving away from one neighbour can move onto another, and a zero gap
+    // cannot be moved off at all. Whatever is still covered, trim.
+    for (const n of below) {
+      const gapX = Math.abs(n.cx - (m.cx + dx))
+      const gapY = Math.abs(n.cy - (m.cy + dy))
+      if (gapX * 2 >= w + MARK_TAP_MARGIN_PX || gapY * 2 >= h + MARK_TAP_MARGIN_PX) continue
+      if (gapX >= gapY) w = Math.max(0, gapX * 2 - MARK_TAP_MARGIN_PX)
+      else h = Math.max(0, gapY * 2 - MARK_TAP_MARGIN_PX)
+    }
+    setMarkTap(m.el, w, h, dx, dy)
+  }
+}
+
+/** Write a fitted box, or clear the properties when the mark takes the default. */
+function setMarkTap(el: HTMLElement, w: number, h: number, dx: number, dy: number) {
+  const props: Array<[string, number, number]> = [
+    ['--rr-map-mark-tap-w', w, MARK_TAP_PX],
+    ['--rr-map-mark-tap-h', h, MARK_TAP_PX],
+    ['--rr-map-mark-tap-x', dx, 0],
+    ['--rr-map-mark-tap-y', dy, 0],
+  ]
+  for (const [name, value, fallback] of props) {
+    if (value === fallback) el.style.removeProperty(name)
+    else el.style.setProperty(name, `${value}px`)
+  }
+}
+
 /** Detach a marker from the map, whichever implementation it is. */
 function detachMarker(m: PriceMarker) {
   try {
@@ -537,6 +670,17 @@ export default function SearchMapClustered({
   } | null>(null)
   /** Zoom storytelling: pill (mid) vs photo stamp (close). Clusters handle far. */
   const [zoomMode, setZoomMode] = useState<'pill' | 'photo'>('pill')
+
+  // Tap boxes are re-fit whenever the marks move or are rebuilt. One frame's
+  // worth of moves collapses into a single pass.
+  const fitTapsFrameRef = useRef<number | null>(null)
+  const scheduleFitTaps = useCallback(() => {
+    if (fitTapsFrameRef.current != null) return
+    fitTapsFrameRef.current = requestAnimationFrame(() => {
+      fitTapsFrameRef.current = null
+      fitMapMarkTaps(mapContainerRef.current)
+    })
+  }, [])
 
   // 'marker' library only needed for AdvancedMarkerElement (vector/Map ID path).
   // The raster path uses OverlayView from the core 'maps' module.
@@ -1003,8 +1147,44 @@ export default function SearchMapClustered({
       },
     })
 
+    // Re-fit the tap boxes whenever the marks change.
+    //
+    // Watching the container is what works. Google attaches a marker's DOM on
+    // its own draw pass, several frames after the clusterer reports it drew, so
+    // every event hook here — the map's 'idle', the clusterer's 'clusteringend'
+    // — fires while the layer is still empty and then never again (measured:
+    // last hook at 2.97s, marks in the DOM after that, zero boxes fitted).
+    // childList only, so a pan that moves marks by transform costs nothing;
+    // 'idle' covers that case.
+    const marksObserver = new MutationObserver((records) => {
+      for (const rec of records) {
+        for (const nodes of [rec.addedNodes, rec.removedNodes]) {
+          for (const node of nodes) {
+            if (!(node instanceof HTMLElement)) continue
+            if (
+              node.classList.contains(MARK_CLASS) ||
+              node.firstElementChild?.classList.contains(MARK_CLASS)
+            ) {
+              scheduleFitTaps()
+              return
+            }
+          }
+        }
+      }
+    })
+    const container = mapContainerRef.current
+    if (container) marksObserver.observe(container, { childList: true, subtree: true })
+    const idleListener = map.addListener('idle', scheduleFitTaps)
+    scheduleFitTaps()
+
     return () => {
       try {
+        marksObserver.disconnect()
+        google.maps.event.removeListener(idleListener)
+        if (fitTapsFrameRef.current != null) {
+          cancelAnimationFrame(fitTapsFrameRef.current)
+          fitTapsFrameRef.current = null
+        }
         newMarkers.forEach(detachMarker)
         if (clustererRef.current) {
           try { clustererRef.current.clearMarkers() } catch { /* ignore */ }
@@ -1014,7 +1194,7 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [mapInstance, validListings, zoomMode])
+  }, [mapInstance, validListings, zoomMode, scheduleFitTaps])
 
   // Marker emphasis: update content in-place for hovered / active marker.
   // Pill vs photo stamp follows zoomMode. Mutate content (no full remount).
@@ -1046,6 +1226,9 @@ export default function SearchMapClustered({
         // marker DOM may be gone mid-pan; ignore
       }
     }
+    // Emphasis swaps the element, so the replacement starts without its fitted
+    // box. The mark observer in the marker effect sees that swap as a childList
+    // change and re-fits it.
   }, [hoveredKey, activeKey, validListings, savedSet, zoomMode])
 
   if (loadError) {
