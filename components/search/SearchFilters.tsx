@@ -478,7 +478,7 @@ export default function SearchFilters({
         >
         {hideLocation ? null : (
         <div className="relative w-40 shrink-0 sm:w-56">
-          <div className="srch-panel srch-tap flex min-w-0 items-center gap-2 px-3 transition focus-within:ring-2 focus-within:ring-primary/30">
+          <div className="srch-panel srch-tap min-h-11 flex min-w-0 items-center gap-2 px-3 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
