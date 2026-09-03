@@ -105,6 +105,15 @@ jobs:
           # 996 KB -> 1,019,774 bytes with nothing watching it.
           npm run ci:page-payload
 
+          # 44x44 tap-target ratchet. Same reason as the payload gate above:
+          # it measures computed getBoundingClientRect on a real rendered
+          # page, which no static parse of CSS or TSX can do, and the WCAG
+          # 2.5.8 "Equivalent" exception it honours (a small control passes
+          # when another control on the SAME page does the job full-size) is
+          # a property of the rendered page, not of the source. Baselined in
+          # scripts/tap-targets-baseline.json; the list may only shrink.
+          npm run ci:tap-targets
+
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
       # Skipped on push events (already run nightly via quality.yml).

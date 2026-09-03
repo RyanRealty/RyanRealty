@@ -1,0 +1,376 @@
+{
+  "note": "Controls on public pages under 44x44 CSS px with no WCAG 2.5.8 excuse — KNOWN DEBT. Keyed by signature (tag + class shape), not by count: counts move with the data, signatures do not. The signature list may only SHRINK, and a listed control may not get smaller than its recorded `min`. Regenerate with `npm run ci:tap-targets:baseline`.",
+  "generated_by": "check-tap-targets.mjs --write-baseline",
+  "min_px": 44,
+  "measured": {
+    "base": "http://localhost:3322",
+    "routes": [
+      "/",
+      "/housing-market",
+      "/cities/bend",
+      "/communities",
+      "/homes-for-sale",
+      "/sell",
+      "/contact",
+      "/team"
+    ],
+    "viewports": [
+      "390x844",
+      "1440x900"
+    ],
+    "controls": 3262
+  },
+  "violations": [
+    {
+      "signature": "a.v3-chrome__group-link",
+      "min": "38.9x44",
+      "minW": 38.9,
+      "minH": 44,
+      "instances": 7,
+      "example": "Sell",
+      "seen": [
+        "/ @1440",
+        "/cities/bend @1440",
+        "/communities @1440",
+        "/contact @1440",
+        "/homes-for-sale @1440",
+        "/housing-market @1440",
+        "/team @1440"
+      ]
+    },
+    {
+      "signature": "button.v3-chart-switch__tab",
+      "min": "47.6x32",
+      "minW": 47.6,
+      "minH": 32,
+      "instances": 18,
+      "example": "1Y",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/housing-market @1440",
+        "/housing-market @390"
+      ]
+    },
+    {
+      "signature": "button.v3-chrome__caret",
+      "min": "32x44",
+      "minW": 32,
+      "minH": 44,
+      "instances": 40,
+      "example": "Homes pages",
+      "seen": [
+        "/ @1440",
+        "/cities/bend @1440",
+        "/communities @1440",
+        "/contact @1440",
+        "/homes-for-sale @1440",
+        "/housing-market @1440",
+        "/sell @1440",
+        "/team @1440"
+      ]
+    },
+    {
+      "signature": "button[name=\"all types\"]",
+      "min": "108.9x32",
+      "minW": 108.9,
+      "minH": 32,
+      "instances": 4,
+      "example": "All types",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"baths\"]",
+      "min": "83.5x32",
+      "minW": 83.5,
+      "minH": 32,
+      "instances": 4,
+      "example": "Baths",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"beds\"]",
+      "min": "76.6x32",
+      "minW": 76.6,
+      "minH": 32,
+      "instances": 4,
+      "example": "Beds",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"clear all\"]",
+      "min": "48.4x18",
+      "minW": 48.4,
+      "minH": 18,
+      "instances": 2,
+      "example": "Clear all",
+      "seen": [
+        "/cities/bend @1440",
+        "/homes-for-sale @1440"
+      ]
+    },
+    {
+      "signature": "button[name=\"draw\"]",
+      "min": "60x32",
+      "minW": 60,
+      "minH": 32,
+      "instances": 4,
+      "example": "Draw",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"for sale\"]",
+      "min": "103.6x32",
+      "minW": 103.6,
+      "minH": 32,
+      "instances": 4,
+      "example": "For sale",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"list view\"]",
+      "min": "39x42",
+      "minW": 39,
+      "minH": 42,
+      "instances": 5,
+      "example": "List view",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"map view\"]",
+      "min": "42.2x42",
+      "minW": 42.2,
+      "minH": 42,
+      "instances": 5,
+      "example": "Map view",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"open all filters\"]",
+      "min": "119x32",
+      "minW": 119,
+      "minH": 32,
+      "instances": 4,
+      "example": "Open all filters",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"price\"]",
+      "min": "80.8x32",
+      "minW": 80.8,
+      "minH": 32,
+      "instances": 4,
+      "example": "Price",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"remove filter all types\"]",
+      "min": "24x24",
+      "minW": 24,
+      "minH": 24,
+      "instances": 2,
+      "example": "Remove filter: All types",
+      "seen": [
+        "/cities/bend @1440",
+        "/homes-for-sale @1440"
+      ]
+    },
+    {
+      "signature": "button[name=\"saved areas\"]",
+      "min": "106.3x38",
+      "minW": 106.3,
+      "minH": 38,
+      "instances": 4,
+      "example": "Saved areas",
+      "seen": [
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "button[name=\"search by voice\"]",
+      "min": "36x36",
+      "minW": 36,
+      "minH": 36,
+      "instances": 2,
+      "example": "Search by voice",
+      "seen": [
+        "/cities/bend @1440",
+        "/homes-for-sale @1440"
+      ]
+    },
+    {
+      "signature": "button[name=\"show more homes\"]",
+      "min": "543x32",
+      "minW": 543,
+      "minH": 32,
+      "instances": 1,
+      "example": "Show more homes",
+      "seen": [
+        "/homes-for-sale @1440"
+      ]
+    },
+    {
+      "signature": "button[name=\"sort results\"]",
+      "min": "168x28",
+      "minW": 168,
+      "minH": 28,
+      "instances": 1,
+      "example": "Sort results",
+      "seen": [
+        "/homes-for-sale @1440"
+      ]
+    },
+    {
+      "signature": "button[name=\"split view\"]",
+      "min": "44.5x42",
+      "minW": 44.5,
+      "minH": 42,
+      "instances": 1,
+      "example": "Split view",
+      "seen": [
+        "/cities/bend @1440"
+      ]
+    },
+    {
+      "signature": "div.v3-ask__consent button",
+      "min": "42x34",
+      "minW": 42,
+      "minH": 34,
+      "instances": 2,
+      "example": "(no name)",
+      "seen": [
+        "/contact @1440",
+        "/contact @390"
+      ]
+    },
+    {
+      "signature": "input[name=\"search by address city community zip or broker\"]",
+      "min": "110x20",
+      "minW": 110,
+      "minH": 20,
+      "instances": 2,
+      "example": "Search by address, city, community, zip, or broker",
+      "seen": [
+        "/homes-for-sale @1440",
+        "/homes-for-sale @390"
+      ]
+    },
+    {
+      "signature": "nav.v3-footer__legal a",
+      "min": "42x44",
+      "minW": 42,
+      "minH": 44,
+      "instances": 14,
+      "example": "DMCA",
+      "seen": [
+        "/ @1440",
+        "/ @390",
+        "/cities/bend @1440",
+        "/cities/bend @390",
+        "/communities @1440",
+        "/communities @390",
+        "/contact @1440",
+        "/contact @390",
+        "/housing-market @1440",
+        "/housing-market @390",
+        "/sell @1440",
+        "/sell @390",
+        "/team @1440",
+        "/team @390"
+      ]
+    },
+    {
+      "signature": "p.v3-proof__source a",
+      "min": "72.1x17",
+      "minW": 72.1,
+      "minH": 17,
+      "instances": 1,
+      "example": "Every review",
+      "seen": [
+        "/ @1440"
+      ]
+    },
+    {
+      "signature": "summary.v3-footer__column-title",
+      "min": "203.2x17.8",
+      "minW": 203.2,
+      "minH": 17.8,
+      "instances": 35,
+      "example": "Homes7",
+      "seen": [
+        "/ @1440",
+        "/cities/bend @1440",
+        "/communities @1440",
+        "/contact @1440",
+        "/housing-market @1440",
+        "/sell @1440",
+        "/team @1440"
+      ]
+    },
+    {
+      "signature": "ul.v3-footer__column-list a",
+      "min": "203.2x32",
+      "minW": 203.2,
+      "minH": 32,
+      "instances": 214,
+      "example": "Open houses",
+      "seen": [
+        "/ @1440",
+        "/cities/bend @1440",
+        "/communities @1440",
+        "/contact @1440",
+        "/housing-market @1440",
+        "/sell @1440",
+        "/team @1440"
+      ]
+    }
+  ]
+}
