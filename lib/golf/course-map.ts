@@ -105,6 +105,16 @@ function turnDegrees(line: [number, number][]): number | null {
   return total
 }
 
+/**
+ * A stroke index runs 1 to the number of holes. OSM carries a `handicap=-1` on
+ * Eagle Crest Ridge, which printed "Stroke index -1" on the card; anything
+ * outside the range is a tag, not an index.
+ */
+function validStrokeIndex(value: number | null, holes: number): number | null {
+  if (value == null || !Number.isInteger(value)) return null
+  return value >= 1 && value <= holes ? value : null
+}
+
 /** A dogleg is called at 15°; below that the routing reads straight on the map. */
 const BEND_DEGREES = 15
 /** A bunker within this many metres of the green centre is greenside. */
@@ -180,7 +190,7 @@ export function holeNotes(data: CourseMapData): HoleNote[] {
       ref: h.ref,
       par: data.parReconciles ? h.par : null,
       yards: data.yardsReconcile ? h.yards : null,
-      handicap: h.handicap,
+      handicap: validStrokeIndex(h.handicap, data.holes.length),
       bend,
       bendDegrees: deg == null ? null : Math.round(deg),
       bunkers: bunkers.length,

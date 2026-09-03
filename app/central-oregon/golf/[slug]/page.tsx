@@ -228,7 +228,6 @@ export default async function GolfDetailPage({ params }: Props) {
             id="holes"
             data={courseMap}
             heading={v3Text(`${shortName}, hole by hole`)}
-            note={course.signature.trim() ? v3Text(course.signature.trim()) : undefined}
           />
         ) : null}
 

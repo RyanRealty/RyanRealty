@@ -7,8 +7,9 @@
  * rest of its page unchanged — the absence is the honest state, not a hole.
  *
  * A course earns a file by mapping every one of its published holes; see the
- * refusals in scripts/golf/build-course-maps.mjs. Sunriver Woodlands maps 17 of
- * 18 and so is deliberately not here.
+ * refusals in scripts/golf/build-course-maps.mjs. Sunriver Woodlands, Widgi
+ * Creek and Glaze Meadow each map 17 of 18 and Caldera Links 8 of 9, so none of
+ * them is here.
  */
 import type { CourseMapData } from './course-map'
 
@@ -18,6 +19,7 @@ const COURSE_MAPS: Record<string, Loader> = {
   'tetherow-golf-club': () => import('@/data/golf/course-maps/tetherow.json'),
   crosswater: () => import('@/data/golf/course-maps/crosswater.json'),
   'sunriver-meadows': () => import('@/data/golf/course-maps/sunriver-meadows.json'),
+  'eagle-crest-ridge': () => import('@/data/golf/course-maps/eagle-crest-ridge.json'),
 }
 
 export function hasCourseMap(courseSlug: string): boolean {

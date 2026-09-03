@@ -71,12 +71,6 @@ export type V3CourseMapProps = {
   data: CourseMapData
   /** Section heading. The page owns the wording; this owns the pattern. */
   heading: V3Text
-  /**
-   * The club's own line about the course, when the registry has one. Printed
-   * once under the claim and attributed there — it is the one sentence on this
-   * section that is not measured off the drawing.
-   */
-  note?: V3Text
   /** The section's own id, for the hash and aria-labelledby. */
   id?: string
   className?: string
@@ -91,7 +85,7 @@ function figureLine(h: HoleNote): string | null {
   return bits.length ? bits.join(' · ') : null
 }
 
-export function V3CourseMap({ data, heading, note, id, className }: V3CourseMapProps) {
+export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) {
   const notes = holeNotes(data)
   if (notes.length === 0) return null
 
@@ -175,7 +169,6 @@ export function V3CourseMap({ data, heading, note, id, className }: V3CourseMapP
         {heading}
       </V3Heading>
       {claim ? <p className="v3-course__claim">{claim}</p> : null}
-      {note ? <p className="v3-course__note">{note}</p> : null}
 
       <div className="v3-course__body">
         <div className="v3-course__stage">
