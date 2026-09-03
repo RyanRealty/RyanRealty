@@ -1,4 +1,92 @@
-# Current — 2026-09-02 (golf course maps, main) — ten courses drawn hole by hole
+# Current — 2026-09-02 (golf course maps + footer, main) — sixteen courses drawn hole by hole
+
+Matt asked for the course map on the golf communities and then for all of Central
+Oregon, against his restated standard that a page must be the best page on the
+internet for its exact subject.
+
+**Shipped, all on origin/main:** `V3CourseMap`, a new barrel pattern, on
+`/central-oregon/golf/[slug]` (16 of 26 courses) and on seven community pages
+(Tetherow, Crosswater, Sunriver, Caldera Springs, Black Butte Ranch, Eagle Crest,
+Widgi Creek). Plus the footer disclosure fix and the golf hub's value column.
+
+| | |
+|---|---|
+| Courses with a map | Tetherow, Crosswater, Sunriver Meadows, Sunriver Woodlands, Eagle Crest Ridge, Eagle Crest Resort, Aspen Lakes, Juniper, Bend Golf & Country Club, Widgi Creek, Glaze Meadow, Big Meadow, Meadow Lakes, Crooked River Ranch, Lost Tracks, Caldera Links |
+| Committed geometry | `data/golf/course-maps/*.json`, 1.4 MB, one lazy import per page |
+| Refused | Quail Run and River's Edge (boundary in OSM, nothing inside it); Pronghorn ×2, Brasada Canyons, Broken Top, Awbrey Glen, Eagle Crest Challenge, The Greens at Redmond, Desert Peaks (no polygon carrying golf features) |
+
+**Where the geometry comes from.** OSM has greens, bunkers, tees and hole
+routings; its fairway coverage is partial (12 of Tetherow's 18), so the fairway
+body is mown turf traced out of Oregon's OSIP 2018 aerial, clipped to the
+course's own named `leisure=golf_course` polygon. That boundary is load-bearing:
+a radius query around Crosswater's clubhouse also returns Caldera Links and the
+map then numbers 36 holes 1 to 18 twice.
+
+**The hole notes are measured, not written.** Dogleg is the turn angle of the
+routing on screen, bunker count is the number of bunker shapes that light when
+the hole is selected, water is a drawn hazard. `lib/golf/course-map.ts`.
+
+**Three build paths, each stated on the page:**
+1. Routed and complete — the normal case.
+2. Routed and short. A course may miss up to a QUARTER of its holes; the page
+   names every absent one ("Holes 2, 12, 13, 14 have no routing in the map data")
+   and prints no superlatives, because "longest hole" over 14 of 18 can name the
+   wrong hole.
+3. **Green-anchored.** Big Meadow has 19 greens, 64 bunkers, 51 tees and not one
+   `golf=hole` way — but 18 of its greens carry `ref` 1 to 18, which IS the
+   numbering. The number marks the green, nothing claims a length or a shape, and
+   the section says so. The routing is NOT inferred: pairing a tee to a green by
+   proximity has no unique answer (the tee for hole N sits beside green N-1) and
+   a line between a guessed pair is a shape the course does not have, which would
+   then be measured for a dogleg and printed as one.
+
+**§0 refusals, all live.** Per-hole par prints only when the holes sum to the
+published par (Tetherow's OSM tags sum to 71 on a par-72 course). Per-hole
+yardage only within 1% of the published card. Green square footage is measured
+and never published — OSM traces some greens as the whole complex and Crosswater
+would print an 18,300 sq ft putting surface. A stroke index outside 1..holes is
+dropped (OSM carries `handicap=-1` at Eagle Crest Ridge).
+
+**The turf threshold is chosen by looking, per course.** `python3
+scripts/golf/trace-turf.py <slug> --sweep` renders the candidate bands as red
+overlays on the aerial side by side. Per course because what the threshold
+separates turf FROM differs: sage at Tetherow (loose, 60 acres), wet meadow at
+Crosswater (tight — loose floods the Deschutes floodplain and reports 115 acres
+where 47 are fairway), pine shadow at Widgi Creek (widest, 8 acres on the default
+against 46). Reasoning about HSV instead produced 3 acres on one attempt and 425
+on another.
+
+**Pipeline, one command per stage:** `scripts/golf/fetch-osm-courses.py` →
+`scripts/golf/trace-turf.py <slug>` → `scripts/golf/build-course-maps.mjs`.
+
+**Traps found here.** The registry parser read single-quoted fields only, so
+River's Edge reported "no registry row" while sitting in `data/golf/courses.ts`;
+fixing it also surfaced Bend Golf & Country Club. The ArcGIS image server answers
+an oversized request with a JSON body that lands on disk as an unopenable `.png`.
+Anything sized in SVG user units scales with the drawing, not the screen: a 44px
+tap target measured 20px on Juniper at 390 and the hole numbers were 6px on a
+desktop Juniper, so both moved into a percent-positioned HTML layer over the map.
+Fading the unselected course to emphasise one hole wiped the map — turf sits at
+20% of navy and a 0.18 multiplier left under 4% ink.
+
+**Two other things shipped in the same stretch:**
+- **The footer fold reports the state it is in.** Above 40rem the disclosure was
+  closed and CSS forced its list visible, so a screen reader met a control
+  announced COLLAPSED over thirteen visible links. The markup ships `open` and an
+  island closes it below 56.25rem — that direction, because the inverse hides 52
+  footer destinations from every crawler that does not run JS. The two- and
+  three-column grid steps are deleted, which is what removed the blank-cream
+  defect at 640–899 for good: no fold ever sits in a grid now. Footer height
+  measured 947/884/862/862/862/907/907/907 at 390/640/768/834/899/900/1024/1440.
+- **The golf hub's value column.** It printed "18 holes" on 24 of 26 rows. It is
+  back-tee yardage now, ordered longest first, with V3Ledger's bar encode.
+
+**Open here:** the ten refused courses need OSM hole geometry that does not
+exist. The fix is contributing it upstream, which is slow but permanent.
+
+---
+
+# Previous — 2026-09-02 (golf course maps, main) — ten courses drawn hole by hole
 
 Matt asked for the course map on the golf communities: "a beautiful course map with
 hole descriptions or whatever," against his restated standard that a page must be the
