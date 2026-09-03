@@ -10,6 +10,7 @@ describe('resortSlugForSubdivision', () => {
     expect(resortSlugForSubdivision('Crosswater')).toBeTruthy()
     expect(resortSlugForSubdivision('crosswater')).toBeTruthy()
     expect(resortSlugForSubdivision('Caldera Springs')).toBeTruthy()
+    expect(resortSlugForSubdivision('Pronghorn')).toBe('pronghorn')
     expect(resortSlugForSubdivision('Tetherow')).toBe('tetherow')
   })
   it('plain subdivisions map to nothing', () => {
@@ -34,6 +35,12 @@ describe('resortCommunityCompatible', () => {
   })
   it('same resort on both sides is fine', () => {
     expect(resortCommunityCompatible('Caldera Springs', 'Caldera Springs')).toBe(true)
+    expect(resortCommunityCompatible('Pronghorn', 'Pronghorn')).toBe(true)
+  })
+  it('Pronghorn comps stay inside Pronghorn', () => {
+    expect(resortCommunityCompatible('Pronghorn', 'Kenwood')).toBe(false)
+    expect(resortCommunityCompatible('Kenwood', 'Pronghorn')).toBe(false)
+    expect(resortCommunityCompatible('Pronghorn', 'Caldera Springs')).toBe(false)
   })
   it('two different resorts never price each other', () => {
     expect(resortCommunityCompatible('Crosswater', 'Tetherow')).toBe(false)

@@ -23,7 +23,12 @@
  * So the ladder is now subdivision -> same GIS neighborhood polygon -> same area
  * but older -> competing neighborhood (flagged) -> city-wide (flagged, last
  * resort). Hard exclusions apply at EVERY tier per Matt: lot character (acreage
- * vs in-town lot) is never comparable regardless of distance.
+ * vs in-town lot) is never comparable regardless of distance. Custom / new
+ * subjects add year-built and quality (19365 Rim View: do not pad TARGET_COMPS
+ * with 1970s–2000 stock). Acreage subjects add remarks infrastructure
+ * (irrigation, horse property, barns). US-97 / Parkway / Deschutes stays
+ * lib/pricing/divides.ts on every rung, including rural — unmapped rural
+ * points fail open there; we do not invent a second road list.
  */
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
@@ -38,6 +43,8 @@ import {
   productTypeCompatible,
   keepSameProductType,
   bathCountCompatible,
+  yearQualityCompatible,
+  acreageInfrastructureCompatible,
   marketAreaBounds,
   radiusBounds,
   marketAreaName,
@@ -55,7 +62,8 @@ import {
 } from '@/lib/cma/comp-trace'
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { crossesMajorDivide } from '@/lib/pricing/divides'
+import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
+import type { IrrigationClass } from '@/lib/pricing/classes'
 
 export { realSubdivision }
 
@@ -227,7 +235,10 @@ function emptyDiagnostics(subject: CmaSubject, note: string | null): CompSelecti
  * recorded in `trace` (prose, for the rendered citations) and in `diagnostics`
  * (structured, for build_summary).
  */
-export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
+export async function selectComps(
+  subject: CmaSubject,
+  opts: { subjectIrrigation?: IrrigationClass | null } = {},
+): Promise<CompSelection> {
   const sqft = subject.sqft ?? 0
   // Land is priced per ACRE, not per square foot, so a land subject legitimately
   // has no living area and must not fall into the bail below. Selection used to
@@ -393,6 +404,23 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         continue
       }
 
+      // HARD EXCLUSION at every tier (Matt 2026-09-03): a dry 10-acre lot is
+      // not a peer to an irrigated horse property with barns. Remarks are the
+      // source — empty remarks fail open, same as unknown lot size.
+      if (
+        !acreageInfrastructureCompatible(
+          {
+            lotAcres: subject.lotAcres,
+            remarks: subject.publicRemarks,
+            irrigationClass: opts.subjectIrrigation,
+          },
+          { lotAcres: comp.lotAcres, remarks: comp.publicRemarks },
+        )
+      ) {
+        rung.excluded.acreage_infrastructure++
+        continue
+      }
+
       // HARD EXCLUSION at every tier (Matt 2026-08-05, the no-brainer): a
       // resort-community sale (Crosswater, Caldera Springs, ...) only prices
       // a home in the SAME resort community — and a plain-town sale never
@@ -413,7 +441,9 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
         crossesMajorDivide(
           subjectArea,
           resolveMarketArea(comp.latitude, comp.longitude),
-        )
+        ) ||
+        (ruralAcreage &&
+          unmappedCrossesKnownBank(subjectArea, resolveMarketArea(comp.latitude, comp.longitude)))
       ) {
         rung.excluded.crossed_divide++
         continue
@@ -431,6 +461,24 @@ export async function selectComps(subject: CmaSubject): Promise<CompSelection> {
 
       if (!bathCountCompatible(subject.baths, comp.baths)) {
         rung.excluded.bath_count++
+        continue
+      }
+
+      // HARD EXCLUSION at every tier for custom / new-construction subjects
+      // (Matt 2026-09-03, 19365 Rim View). Year-built and quality outrank a
+      // tight radius. Widen geography or time; do not pad TARGET_COMPS with
+      // a different construction generation. Ordinary resale subjects skip.
+      if (
+        !yearQualityCompatible(
+          {
+            yearBuilt: subject.yearBuilt,
+            newConstructionYn: subject.newConstructionYn,
+            remarks: subject.publicRemarks,
+          },
+          { yearBuilt: comp.yearBuilt, remarks: comp.publicRemarks },
+        )
+      ) {
+        rung.excluded.year_quality++
         continue
       }
 

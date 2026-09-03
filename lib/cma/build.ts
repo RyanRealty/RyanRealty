@@ -26,7 +26,7 @@ import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
-import { classifyStory, citySlug } from '@/lib/pricing/classes'
+import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
@@ -200,10 +200,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
     // resolution is fail-open and never throws.
     const curatedKeys = (input.compKeys ?? []).map((k) => k.trim()).filter(Boolean)
-    const [selection, market, site] = await Promise.all([
-      curatedKeys.length > 0 ? selectCompsByKeys(subject, curatedKeys) : selectCompsPreferringFacts(subject),
-      getCmaMarketContext(subject),
-      resolveCmaSiteData(subject),
+    const marketPromise = getCmaMarketContext(subject)
+    const sitePromise = resolveCmaSiteData(subject)
+    const site = await sitePromise
+    const subjectIrrigation = irrigationClassFromOwrd(site.water)
+    const [selection, market] = await Promise.all([
+      curatedKeys.length > 0
+        ? selectCompsByKeys(subject, curatedKeys)
+        : selectCompsPreferringFacts(subject, { subjectIrrigation }),
+      marketPromise,
     ])
     compDiagnostics = selection.diagnostics
 
@@ -368,15 +373,41 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // owns the selection. A non-pass audit still records its findings and forces
     // needs_review through the contract, so the broker reviews it explicitly.
     if (audit && audit.verdict !== 'pass' && !isCurated) {
+      const customSubject = isCustomOrNewSubject({
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstructionYn,
+        remarks: subject.publicRemarks,
+      })
       const flagged = [
         ...new Set(
           audit.findings
-            .filter(
-              (f) =>
-                (f.severity === 'critical' || f.severity === 'major') &&
-                (f.category === 'comp-selection' || f.category === 'data-integrity') &&
-                f.compListingKey,
-            )
+            .filter((f) => {
+              if (
+                !(f.severity === 'critical' || f.severity === 'major') ||
+                !(f.category === 'comp-selection' || f.category === 'data-integrity') ||
+                !f.compListingKey
+              ) {
+                return false
+              }
+              if (f.category === 'data-integrity') return true
+              if (!customSubject) return true
+              const peer = compsForPricing.find((c) => c.listingKey === f.compListingKey)
+              if (
+                peer &&
+                yearQualityCompatible(
+                  {
+                    yearBuilt: subject.yearBuilt,
+                    newConstructionYn: subject.newConstructionYn,
+                    remarks: subject.publicRemarks,
+                  },
+                  { yearBuilt: peer.yearBuilt, remarks: peer.publicRemarks },
+                ) &&
+                /luxury|too expensive|premium|price.?tier|higher price/i.test(`${f.claim} ${f.evidence}`)
+              ) {
+                return false
+              }
+              return true
+            })
             .map((f) => f.compListingKey!),
         ),
       ]

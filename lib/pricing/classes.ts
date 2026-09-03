@@ -264,9 +264,31 @@ export type RemarkFlags = {
   newConstructionPhrase: string | null
   distressed: boolean
   distressedPhrase: string | null
+  irrigated: boolean
+  irrigatedPhrase: string | null
+  dry: boolean
+  dryPhrase: string | null
+  horseProperty: boolean
+  horsePropertyPhrase: string | null
+  barn: boolean
+  barnPhrase: string | null
+  customQuality: boolean
+  customQualityPhrase: string | null
 }
 
-const REMARK_RULES: Array<{ key: keyof Pick<RemarkFlags, 'newRoof' | 'remodeled' | 'updatedKitchen' | 'newConstruction' | 'distressed'>; phrase: keyof RemarkFlags; re: RegExp }> = [
+type RemarkBoolKey =
+  | 'newRoof'
+  | 'remodeled'
+  | 'updatedKitchen'
+  | 'newConstruction'
+  | 'distressed'
+  | 'irrigated'
+  | 'dry'
+  | 'horseProperty'
+  | 'barn'
+  | 'customQuality'
+
+const REMARK_RULES: Array<{ key: RemarkBoolKey; phrase: keyof RemarkFlags; re: RegExp }> = [
   {
     key: 'newRoof',
     phrase: 'newRoofPhrase',
@@ -280,10 +302,31 @@ const REMARK_RULES: Array<{ key: keyof Pick<RemarkFlags, 'newRoof' | 'remodeled'
     phrase: 'distressedPhrase',
     re: /\bas[\s-]is\b|\bfixer\b|\bestate sale\b|\bforeclosure\b|\bshort sale\b|\bneeds work\b/i,
   },
+  {
+    key: 'dry',
+    phrase: 'dryPhrase',
+    re: /\bno[\s-]+(?:irrigation|water[\s-]+rights?)\b|\bnon[\s-]+irrigat(?:ed|ion)\b|\bdry[\s-]+(?:lot|acreage|land|parcel)\b/i,
+  },
+  {
+    key: 'irrigated',
+    phrase: 'irrigatedPhrase',
+    re: /\birrigat(?:ed|ion|es|ing)?\b|\bwater[\s-]+rights?\b|\bditch\s+water\b/i,
+  },
+  {
+    key: 'horseProperty',
+    phrase: 'horsePropertyPhrase',
+    re: /\bhorse[\s-]+propert(?:y|ies)\b|\bdesignated\s+horse\b|\bequestrian\b|\bhorse[\s-]+(?:barn|facilit|setup|allowed|ready)\b|\bstables?\b|\barena\b/i,
+  },
+  { key: 'barn', phrase: 'barnPhrase', re: /\bbarns?\b|\bstables?\b/i },
+  {
+    key: 'customQuality',
+    phrase: 'customQualityPhrase',
+    re: /\bcustom[\s-]+(?:built|home|house|residence|construction|designed|estate|modern)\b|\bmodern[\s-]+custom\b|\barchitect(?:urally)?[\s-]*designed\b/i,
+  },
 ]
 
-export function extractRemarkFlags(text: string | null | undefined): RemarkFlags {
-  const empty: RemarkFlags = {
+function emptyRemarkFlags(): RemarkFlags {
+  return {
     newRoof: false,
     newRoofPhrase: null,
     remodeled: false,
@@ -294,7 +337,21 @@ export function extractRemarkFlags(text: string | null | undefined): RemarkFlags
     newConstructionPhrase: null,
     distressed: false,
     distressedPhrase: null,
+    irrigated: false,
+    irrigatedPhrase: null,
+    dry: false,
+    dryPhrase: null,
+    horseProperty: false,
+    horsePropertyPhrase: null,
+    barn: false,
+    barnPhrase: null,
+    customQuality: false,
+    customQualityPhrase: null,
   }
+}
+
+export function extractRemarkFlags(text: string | null | undefined): RemarkFlags {
+  const empty = emptyRemarkFlags()
   if (!text?.trim()) return empty
   const out = { ...empty }
   for (const rule of REMARK_RULES) {
@@ -304,7 +361,159 @@ export function extractRemarkFlags(text: string | null | undefined): RemarkFlags
       ;(out[rule.phrase] as string | null) = m[0].slice(0, 80)
     }
   }
+  // Dry / non-irrigated wins over a bare "irrigation" mention in the same blurb
+  // ("no irrigation" also matches the irrigated regex).
+  if (out.dry) {
+    out.irrigated = false
+    out.irrigatedPhrase = null
+  }
   return out
+}
+
+/** Irrigated and dry are two different properties. Unknown fails open. */
+export type IrrigationClass = 'irrigated' | 'dry' | 'unknown'
+
+export type OwrdIrrigationSignal = {
+  mappedIrrigationAcres?: number | null
+  hasPrivateAppurtenant?: boolean | null
+}
+
+export function irrigationClassFromRemarks(text: string | null | undefined): IrrigationClass {
+  const flags = extractRemarkFlags(text)
+  if (flags.dry) return 'dry'
+  if (flags.irrigated) return 'irrigated'
+  return 'unknown'
+}
+
+/**
+ * OWRD maps irrigation onto the subject parcel. Presence of mapped perfected
+ * acres or a private appurtenant right is irrigated. Absence is NOT dry —
+ * a failed query or a district boundary is not a dryness proof.
+ */
+export function irrigationClassFromOwrd(owrd: OwrdIrrigationSignal | null | undefined): IrrigationClass {
+  if (!owrd) return 'unknown'
+  if ((owrd.mappedIrrigationAcres ?? 0) > 0 || owrd.hasPrivateAppurtenant === true) return 'irrigated'
+  return 'unknown'
+}
+
+export function resolveIrrigationClass(
+  remarks: string | null | undefined,
+  owrd?: OwrdIrrigationSignal | null,
+  known?: IrrigationClass | null,
+): IrrigationClass {
+  if (known === 'irrigated' || known === 'dry') return known
+  const fromOwrd = irrigationClassFromOwrd(owrd)
+  if (fromOwrd !== 'unknown') return fromOwrd
+  return irrigationClassFromRemarks(remarks)
+}
+
+export function irrigationCompatible(a: IrrigationClass, b: IrrigationClass): boolean {
+  if (a === 'unknown' || b === 'unknown') return true
+  return a === b
+}
+
+/**
+ * Horse barns / designated horse property. Empty remarks fail open. A subject
+ * that names horse infrastructure does not keep a sale whose remarks name none.
+ */
+export function horseInfrastructureCompatible(
+  subjectRemarks: string | null | undefined,
+  saleRemarks: string | null | undefined,
+): boolean {
+  const subjectText = subjectRemarks?.trim() ?? ''
+  const saleText = saleRemarks?.trim() ?? ''
+  if (!subjectText || !saleText) return true
+  const subject = extractRemarkFlags(subjectText)
+  const sale = extractRemarkFlags(saleText)
+  if ((subject.horseProperty || subject.barn) && !sale.horseProperty && !sale.barn) return false
+  if ((sale.horseProperty || sale.barn) && !subject.horseProperty && !subject.barn) return false
+  return true
+}
+
+/** One construction generation — the tight ageYears band on the subdivision rungs. */
+export const CUSTOM_NEW_YEAR_BAND = 15
+
+export type YearQualityInput = {
+  yearBuilt: number | null | undefined
+  newConstructionYn?: boolean | null
+  remarks?: string | null
+}
+
+function asOfYearOrNow(asOfYear?: number): number {
+  return asOfYear ?? new Date().getFullYear()
+}
+
+export function remarksMarkCustomOrNew(remarks: string | null | undefined): boolean {
+  if (!remarks?.trim()) return false
+  const flags = extractRemarkFlags(remarks)
+  return flags.customQuality || flags.newConstruction
+}
+
+/** True when year, NewConstructionYN, or remarks put the subject in the custom/new class. */
+export function isCustomOrNewSubject(input: YearQualityInput, asOfYear?: number): boolean {
+  const asOf = asOfYearOrNow(asOfYear)
+  if (input.newConstructionYn === true) return true
+  if (isNewBuild(input.yearBuilt, asOf, input.newConstructionYn) === true) return true
+  const year = input.yearBuilt
+  if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= 5) return true
+  return remarksMarkCustomOrNew(input.remarks)
+}
+
+/**
+ * Custom / new subjects do not take a different construction generation.
+ * Unknown year on that class fails CLOSED when the sale cannot prove it is
+ * also custom/new. Ordinary resale subjects skip this rule.
+ */
+export function yearQualityCompatible(
+  subject: YearQualityInput,
+  comp: YearQualityInput,
+  asOfYear?: number,
+): boolean {
+  const asOf = asOfYearOrNow(asOfYear)
+  if (!isCustomOrNewSubject(subject, asOf)) return true
+  const subjectYear = subject.yearBuilt
+  const compYear = comp.yearBuilt
+  if (subjectYear != null && subjectYear >= 1850 && (compYear == null || compYear < 1850)) {
+    return isCustomOrNewSubject(comp, asOf)
+  }
+  if (subjectYear != null && compYear != null && subjectYear >= 1850 && compYear >= 1850) {
+    return Math.abs(subjectYear - compYear) <= CUSTOM_NEW_YEAR_BAND
+  }
+  return isCustomOrNewSubject(comp, asOf)
+}
+
+export type AcreageInfrastructureFlags = {
+  irrigated: boolean
+  horse: boolean
+  barns: boolean
+}
+
+export function acreageInfrastructureFlags(remarks: string | null | undefined): AcreageInfrastructureFlags {
+  const flags = extractRemarkFlags(remarks)
+  return {
+    irrigated: flags.irrigated && !flags.dry,
+    horse: flags.horseProperty,
+    barns: flags.barn,
+  }
+}
+
+/**
+ * Acreage infrastructure: irrigation is a hard split (remarks and/or OWRD).
+ * Horse / barn require remarks on both sides; empty remarks fail open there.
+ */
+export function acreageInfrastructureCompatible(
+  subject: {
+    lotAcres: number | null | undefined
+    remarks?: string | null
+    irrigationClass?: IrrigationClass | null
+  },
+  comp: { lotAcres: number | null | undefined; remarks?: string | null },
+): boolean {
+  const subjectIrr = resolveIrrigationClass(subject.remarks, null, subject.irrigationClass)
+  const compIrr = irrigationClassFromRemarks(comp.remarks)
+  if (!irrigationCompatible(subjectIrr, compIrr)) return false
+  if ((subject.lotAcres ?? 0) < 1) return true
+  return horseInfrastructureCompatible(subject.remarks, comp.remarks)
 }
 
 /** Measured one-story premium vs two-story, same 1600–2200 GLA band, 2024+ CO SFR. */

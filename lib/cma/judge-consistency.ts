@@ -37,6 +37,11 @@
  */
 
 import type { CmaComp } from '@/lib/cma/types'
+import {
+  isCustomOrNewSubject,
+  yearQualityCompatible,
+  type YearQualityInput,
+} from '@/lib/pricing/classes'
 
 export type CompTier = 'strong' | 'weak' | 'exclude'
 
@@ -320,4 +325,54 @@ function strandViolations(
     }
   }
   return out
+}
+
+const LUXURY_REASON_RE =
+  /luxury|too expensive|premium tier|higher price|price segment|gated.?expensive|amenity.?bearing/i
+
+export function isLuxuryOrPriceExclusion(v: CompVerdict): boolean {
+  if (v.tier !== 'exclude') return false
+  if (isPriceTierExclusion(v)) return true
+  return LUXURY_REASON_RE.test(v.reason)
+}
+
+/**
+ * Custom/new year-quality peers must not be tossed as too luxury / too expensive.
+ * Restores those exclusions to weak and names the keys so band repair cannot
+ * drop them again.
+ */
+export function restoreCustomYearQualityPeers(args: {
+  subject: YearQualityInput
+  comps: ReadonlyArray<Pick<CmaComp, 'listingKey' | 'yearBuilt' | 'publicRemarks'>>
+  verdicts: CompVerdict[]
+  asOfYear?: number
+}): { verdicts: CompVerdict[]; restoredKeys: string[] } {
+  if (!isCustomOrNewSubject(args.subject, args.asOfYear)) {
+    return { verdicts: args.verdicts, restoredKeys: [] }
+  }
+  const byKey = new Map(args.comps.map((c) => [c.listingKey, c]))
+  const restoredKeys: string[] = []
+  const verdicts = args.verdicts.map((v) => {
+    if (!isLuxuryOrPriceExclusion(v)) return v
+    const c = byKey.get(v.listingKey)
+    if (!c) return v
+    if (
+      !yearQualityCompatible(
+        args.subject,
+        { yearBuilt: c.yearBuilt, remarks: c.publicRemarks },
+        args.asOfYear,
+      )
+    ) {
+      return v
+    }
+    restoredKeys.push(v.listingKey)
+    return {
+      ...v,
+      tier: 'weak' as const,
+      basis: undefined,
+      reason:
+        'Kept as a custom/new year-and-quality peer. Price tier alone does not drop a same-generation sale.',
+    }
+  })
+  return { verdicts, restoredKeys }
 }
