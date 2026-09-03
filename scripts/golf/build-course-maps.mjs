@@ -11,7 +11,10 @@
  * WHY THE BOUNDARY. A radius query around Crosswater's clubhouse also returns
  * Caldera Links a kilometre away, and the map then numbers 36 holes 1 to 18
  * twice. Every feature in a course file has its centroid inside that course's
- * own polygon.
+ * own polygon. Two courses have no `leisure=golf_course` polygon in OSM and are
+ * bounded by their own hole cluster instead, identified by the neighborhood
+ * polygon we already own — see fetch-osm-courses.py. `boundarySource` on each
+ * built file records which of the two it was.
  *
  * WHY TWO SOURCES. OSM fairway coverage is partial (12 of Tetherow's 18), so the
  * body comes from the aerial trace instead.
@@ -69,6 +72,7 @@ const REGISTRY_SHORT_NAME = {
   'rivers-edge': "River's Edge",
   'awbrey-glen': 'Awbrey Glen',
   'broken-top': 'Broken Top',
+  'brasada-canyons': 'Brasada Canyons',
   pronghorn: 'Pronghorn',
 }
 
@@ -114,6 +118,25 @@ const GREEN_ANCHOR_CATCHMENT_M = {
  * fairway on the property.
  */
 const MAX_MISSING_SHARE = 0.25
+
+/**
+ * How far a traced turf blob may sit from every routing on the course and still
+ * be drawn. Turf is inferred from colour, not from a tag, so a green rectangle
+ * of irrigated ground inside the extent is not evidence of a golf course: the
+ * aerial band that fills Brasada's fairway ribbons also takes a 23-acre
+ * centre-pivot farm circle 626 m north of the nearest hole, and it drew as part
+ * of the course.
+ *
+ * The number is measured, not chosen. Across the sixteen courses bounded by
+ * their own OSM polygon, the farthest turf blob from any routing is 213 m
+ * (Sunriver Woodlands). 250 m clears every one of them and drops exactly the
+ * two strays on the two courses bounded by a hole cluster: Brasada's farm
+ * circle, and 5 acres in two pieces at Broken Top.
+ *
+ * OSM features are not filtered this way. A way tagged `golf=green` says what it
+ * is; a green pixel does not.
+ */
+const TURF_MAX_FROM_ROUTING_M = 250
 
 const RAD = Math.PI / 180
 
@@ -323,10 +346,16 @@ function buildCourse(course, turf) {
     routed = [...byGreen.values()].sort((a, b) => Number(a.ref) - Number(b.ref))
   }
 
+  // The course's own OSM boundary, drawn first. Without it Tetherow reads as
+  // unrelated turf fragments: only about 60 of its 218 acres are mown.
+  //
+  // A cluster-bounded course has no such polygon. Its ring is a rectangle this
+  // pipeline computed around the holes, and drawing it would put a shape on the
+  // map that claims to be the edge of the property. It is not; it is where the
+  // query stopped. So it is not drawn.
+  const clusterBounded = /-hole cluster inside /.test(course.boundarySource ?? '')
   const ground = [
-    // The course's own OSM boundary, drawn first. Without it Tetherow reads as
-    // unrelated turf fragments: only about 60 of its 218 acres are mown.
-    ...(course.rings || []).map((ring) => ({ kind: 'bounds', ring })),
+    ...(clusterBounded ? [] : course.rings || []).map((ring) => ({ kind: 'bounds', ring })),
     ...(turf?.polys || []).map((ring) => ({ kind: 'turf', ring })),
     ...feats.filter((f) => GROUND_KINDS.includes(f.kind)).map((f) => ({ kind: f.kind, ring: f.ring })),
   ]
@@ -356,8 +385,9 @@ function buildCourse(course, turf) {
       }
     }
     f.hole = bestD <= limit ? best : null
+    if (f.kind === 'turf' && bestD > TURF_MAX_FROM_ROUTING_M) f.drop = true
   }
-  return { holes: routed, ground, anchor }
+  return { holes: routed, ground: ground.filter((f) => !f.drop), anchor }
 }
 
 function main() {
@@ -410,6 +440,13 @@ function main() {
       yardsReconcile,
       missingHoles,
       anchor: built.anchor,
+      /**
+       * Which kind of boundary the features were clipped to. Two courses have
+       * no `leisure=golf_course` polygon in OSM and are bounded by their own
+       * hole cluster, so the source line cannot say 'clipped to the course
+       * boundary' for them and say something true.
+       */
+      boundary: /-hole cluster inside /.test(course.boundarySource ?? '') ? 'cluster' : 'course',
       turfAcres: turf?.acres ?? null,
       holes: built.holes.map((h) => ({
         ref: h.ref,

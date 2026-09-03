@@ -45,6 +45,15 @@ export type CourseMapData = {
    * A green-anchored hole has no length and no shape, so it claims neither.
    */
   anchor?: 'tee' | 'green'
+  /**
+   * What the features were clipped to. 'course' is the normal case: the course's
+   * own named `leisure=golf_course` polygon in OSM. 'cluster' means OSM has no
+   * such polygon, so the boundary is the course's own hole cluster, identified
+   * by the neighborhood polygon in public.boundaries that contains it. The
+   * source line has to say which, because 'clipped to the course boundary' is
+   * not true of the second.
+   */
+  boundary?: 'course' | 'cluster'
   turfAcres: number | null
   holes: CourseHole[]
   shapes: CourseShape[]

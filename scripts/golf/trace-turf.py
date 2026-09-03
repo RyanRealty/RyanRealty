@@ -82,6 +82,17 @@ DEFAULT_BAND = 'base'
 #   bend-golf-country-club — in-town, pine and lawn around it. base is already
 #               clean at 46 acres; loose fills the corridors at 59 without
 #               reaching the neighbourhood, looser takes in the whole property.
+#   broken-top — in-town Bend, ringed by its own residential streets. base leaves
+#               gaps in the corridor between the ring road and the fairways at
+#               62 acres; loose closes them at 77 without reaching the lawns,
+#               which are dark under pine at this exposure. looser adds 5 acres
+#               and they are outside the property to the south-west.
+#   brasada-canyons — high desert at Powell Butte, the cleanest separation of any
+#               course here: bare pumice against irrigated ribbon. base traces
+#               56 acres of broken fragments, loose 97 of continuous fairway.
+#               loose also takes a centre-pivot irrigation circle north of the
+#               property; it is a farm field, and it is dropped at attribution
+#               because it lies past the 130 m catchment of every routing.
 #   sunriver-woodlands, black-butte-glaze-meadow, widgi-creek — pine forest.
 #               Nothing around the turf is bright, so looser costs nothing and
 #               picks up the fairway lying in shadow that the other bands miss.
@@ -101,6 +112,8 @@ PER_COURSE_BAND = {
     'bend-golf-country-club': 'loose',
     'lost-tracks': 'loose',
     'eagle-crest-resort': 'loose',
+    'broken-top': 'loose',
+    'brasada-canyons': 'loose',
     # Ponderosa courses. The surround is dark pine canopy, which the value floor
     # excludes on its own, so the widest band is safe here and is the only one
     # that reaches turf lying in tree shadow.

@@ -243,8 +243,17 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
             </p>
           ) : null}
 
+          {/*
+            These count the whole course, and they sit under a card headed
+            'Hole 1'. Without a heading of their own a reader takes Brasada's
+            'Bunkers 78' for hole 1's bunker count. The heading says whose
+            numbers these are and stops.
+          */}
           {facts.length ? (
-            <dl className="v3-course__facts">
+            <dl className="v3-course__facts" aria-labelledby="course-facts-heading">
+              <p className="v3-course__factshead" id="course-facts-heading">
+                All {data.published?.holes ?? notes.length} holes
+              </p>
               {facts.map((f) => (
                 <div key={f.label} className="v3-course__fact">
                   <dt>{f.label}</dt>
@@ -319,7 +328,10 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
           (greenAnchored
             ? 'greens, bunkers and tees from OpenStreetMap contributors'
             : 'hole routings, greens, bunkers and tees from OpenStreetMap contributors') +
-            ', clipped to the course boundary; fairway turf traced from Oregon statewide aerial imagery; ' +
+            (data.boundary === 'cluster'
+              ? ', clipped to this course\u2019s own hole cluster inside the neighborhood boundary Ryan Realty holds for it'
+              : ', clipped to the course boundary') +
+            '; fairway turf traced from Oregon statewide aerial imagery; ' +
             'the par and yardage in the line under the heading from the USGA National Course Rating Database',
         )}
       />

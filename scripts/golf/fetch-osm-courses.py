@@ -1,6 +1,25 @@
 """
 Pull every Central Oregon golf course out of OpenStreetMap, one course at a time,
-clipped to that course's OWN named boundary.
+clipped to a boundary that belongs to that course.
+
+TWO BOUNDARY PROVENANCES, one clipping rule. Most courses are clipped to their
+own named `leisure=golf_course` polygon in OSM. Four are not, because OSM has no
+such polygon for them: Pronghorn, Broken Top, Brasada Canyons and Awbrey Glen.
+For a long time the pipeline read that as 'OpenStreetMap has no data for these
+courses'. It does — each carries a complete eighteen `golf=hole` ways. They just
+sit inside no golf_course polygon, so a fetch that clips to one could never see
+them, and the absence was a fact about the query rather than about the world.
+For those four the neighborhood polygon in public.boundaries IDENTIFIES the
+course and the course's own holes DELIMIT it. Neither half works alone. The
+neighborhood polygon is not a course extent — Pronghorn's covers four of the
+twenty-one holes on the property and Broken Top's covers the whole residential
+community — so clipping to it directly loses most of one course and floods the
+other with everything green inside a subdivision. And a bare hole cluster has no
+name. So: cluster the region's `golf=hole` ways, ask which cluster falls inside
+the neighborhood we already own a polygon for, and take that cluster's own
+bounding extent as the boundary. It is not a radius around a clubhouse — a radius
+around Crosswater also returns Caldera Links a kilometre away, which is what
+started the boundary rule.
 
 WHY THE BOUNDARY AND NOT A RADIUS. The first version queried a radius around
 each clubhouse. Crosswater's radius also returns Caldera Links a kilometre away
@@ -27,6 +46,7 @@ Writes {slug: {name, rings, features, holes}} for scripts/golf/build-course-maps
 import argparse
 import collections
 import json
+import math
 import os
 import sys
 import time
@@ -62,6 +82,43 @@ COURSES = [
     ('crooked-river-ranch', 'Crooked River Ranch Golf Course'),
     ('old-back-nine', 'Old Back Nine Golf Club'),
 ]
+
+# Courses with no `leisure=golf_course` polygon in OSM, clipped to our own
+# neighborhood boundary instead. The value is the boundary's geo_slug, which is
+# NOT always the course slug: Awbrey Glen has a neighborhood row of its own, but
+# the golf course sits on Awbrey Butte, so its holes fall inside
+# `bend-awbrey-butte`. Written out for the same reason the OSM name join is.
+NEIGHBORHOOD_COURSES = [
+    ('broken-top', 'broken-top', 'Broken Top Club'),
+    ('brasada-canyons', 'brasada-ranch', 'Brasada Canyons'),
+]
+
+# Found by the same sweep, not written, and why. These are here so the next run
+# does not rediscover them and reach a different conclusion.
+#
+#   pronghorn — a complete eighteen, refs 1..18 once each, par summing to 72.
+#       Pronghorn has TWO par-72 eighteens on one property, Nicklaus at 7,379
+#       yards and Fazio at 7,456, and nothing in the OSM tags says which one this
+#       is. The measured routings run 6,788 yards, 8.0% under one card and 9.0%
+#       under the other, so length does not separate them either. A course map
+#       has to name its course; this one cannot be named, so it is not written.
+#   awbrey-glen, quail-run — eighteen routings each, greens and tees and bunkers
+#       with them, and not one `ref` tag on any hole. The holes are there; their
+#       numbers are not. Every hole card, the scorecard rail and the tap discs
+#       are hole NUMBERS, so there is nothing to label them with.
+
+# Two holes on neighbouring courses can lie closer together than two holes on the
+# same course, so the link distance is the one number that decides whether a
+# cluster is one course or two. 700 m holds: the widest gap between consecutive
+# holes measured on the sixteen courses already built is under 500 m, and the
+# nearest pair of holes on DIFFERENT courses in this region (Crosswater and
+# Caldera Links) is 800 m apart. A cluster is verified after the fact anyway —
+# it has to produce a complete ref set for the published hole count.
+CLUSTER_LINK_M = 700
+# How far past the outermost hole the course extent reaches. A green sits at the
+# end of its routing and the bunkers guarding it sit past that; 150 m covers the
+# putting complex without reaching the next property.
+EXTENT_MARGIN_M = 150
 
 FEATURE_KINDS = (
     'hole', 'fairway', 'green', 'tee', 'bunker',
@@ -114,10 +171,197 @@ def inside(pt, ring):
     return c
 
 
+def harvest(rings):
+    """Every golf feature whose centroid lies inside `rings`.
+
+    Both boundary provenances run through this, so 'inside the boundary' means
+    exactly one thing whether the boundary came from OSM or from our own
+    boundaries table.
+    """
+    xs = [p[0] for r in rings for p in r]
+    ys = [p[1] for r in rings for p in r]
+    bbox = (min(ys), min(xs), max(ys), max(xs))
+    time.sleep(3)
+    d = ask(
+        f'[out:json][timeout:180];'
+        f'(way["golf"]({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}););out tags geom;'
+    )
+    if d is None:
+        return None, None
+    keep = []
+    for e in d.get('elements', []):
+        g = e.get('geometry')
+        if not g:
+            continue
+        cx = sum(p['lon'] for p in g) / len(g)
+        cy = sum(p['lat'] for p in g) / len(g)
+        if any(inside([cx, cy], r) for r in rings):
+            keep.append(e)
+    holes = sorted(
+        {(e.get('tags') or {}).get('ref') for e in keep
+         if (e.get('tags') or {}).get('golf') == 'hole'} - {None}
+    )
+    return keep, holes
+
+
+def hole_clusters(cache=None):
+    """Every golf=hole way in the region, single-link clustered at CLUSTER_LINK_M.
+
+    One query, cached to disk. Per-course bbox queries time out on the public
+    mirrors often enough that a run rarely finishes; the region-wide one is a
+    single request, and caching it means a re-run after a code change does not
+    have to win that race again.
+    """
+    if cache and os.path.exists(cache):
+        d = json.load(open(cache))
+        print(f'holes: {len(d.get("elements", []))} from cache {cache}')
+    else:
+        d = ask('[out:json][timeout:540];(way["golf"="hole"](43.2,-122.2,44.9,-120.8););out tags geom;')
+        if d is not None and cache:
+            json.dump(d, open(cache, 'w'))
+    if d is None:
+        return None
+    pts = []
+    for e in d.get('elements', []):
+        g = e.get('geometry')
+        if not g:
+            continue
+        pts.append({
+            'ref': (e.get('tags') or {}).get('ref'),
+            'lon': sum(p['lon'] for p in g) / len(g),
+            'lat': sum(p['lat'] for p in g) / len(g),
+            'geometry': g,
+        })
+    groups = []
+    for h in pts:
+        for g in groups:
+            if any(hav(h, o) < CLUSTER_LINK_M for o in g):
+                g.append(h)
+                break
+        else:
+            groups.append([h])
+    merged = True
+    while merged:
+        merged = False
+        for i in range(len(groups)):
+            for j in range(i + 1, len(groups)):
+                if any(hav(a, b) < CLUSTER_LINK_M for a in groups[i] for b in groups[j]):
+                    groups[i] += groups[j]
+                    del groups[j]
+                    merged = True
+                    break
+            if merged:
+                break
+    return groups
+
+
+def hav(a, b):
+    k = math.cos(math.radians((a['lat'] + b['lat']) / 2))
+    return math.hypot((a['lon'] - b['lon']) * k, a['lat'] - b['lat']) * 111320
+
+
+def pick_cluster(clusters, hood_rings):
+    """The cluster with the most holes inside `hood_rings`.
+
+    Most, not any: a neighborhood polygon can clip the corner of the course next
+    door, and a single stray hole must not outvote eighteen.
+    """
+    best, best_n = None, 0
+    for g in clusters:
+        n = sum(1 for h in g if any(inside([h['lon'], h['lat']], r) for r in hood_rings))
+        if n > best_n:
+            best, best_n = g, n
+    return best
+
+
+def seg_dist(pt, line):
+    """Metres from `pt` to the nearest point on polyline `line`.
+
+    To the SEGMENTS, not the vertices: a three-point routing leaves 200 m gaps
+    between vertices, and a nearest-vertex rule hands the middle of one fairway
+    to the hole next door.
+    """
+    k = math.cos(math.radians(pt[1]))
+    best = float('inf')
+    for i in range(1, len(line)):
+        ax, ay = line[i - 1]
+        bx, by = line[i]
+        dx, dy = (bx - ax) * k, by - ay
+        d2 = dx * dx + dy * dy
+        t = 0.0 if d2 == 0 else max(0.0, min(1.0, (((pt[0] - ax) * k) * dx + (pt[1] - ay) * dy) / d2))
+        ex, ey = (pt[0] - (ax + t * (bx - ax))) * k, pt[1] - (ay + t * (by - ay))
+        best = min(best, math.hypot(ex, ey))
+    return best * 111320
+
+
+def own_features(keep, cluster):
+    """Split a rectangle harvest into this course's features and the neighbours'."""
+    mine = [[[p['lon'], p['lat']] for p in h['geometry']] for h in cluster]
+    mine_ids = {id(h) for h in cluster}
+    mine_keys = {
+        (round(sum(p[0] for p in line) / len(line), 7), round(sum(p[1] for p in line) / len(line), 7))
+        for line in mine
+    }
+    foreign = []
+    out = []
+    for e in keep:
+        if (e.get('tags') or {}).get('golf') != 'hole':
+            continue
+        g = e.get('geometry') or []
+        if not g:
+            continue
+        key = (
+            round(sum(p['lon'] for p in g) / len(g), 7),
+            round(sum(p['lat'] for p in g) / len(g), 7),
+        )
+        (out if key in mine_keys else foreign).append(e)
+    del mine_ids
+    foreign_lines = [[[p['lon'], p['lat']] for p in e['geometry']] for e in foreign]
+    dropped = len(foreign)
+    for e in keep:
+        if (e.get('tags') or {}).get('golf') == 'hole':
+            continue
+        g = e.get('geometry') or []
+        if not g:
+            continue
+        c = [sum(p['lon'] for p in g) / len(g), sum(p['lat'] for p in g) / len(g)]
+        near_mine = min(seg_dist(c, line) for line in mine) if mine else float('inf')
+        near_theirs = min((seg_dist(c, line) for line in foreign_lines), default=float('inf'))
+        if near_mine <= near_theirs:
+            out.append(e)
+        else:
+            dropped += 1
+    holes = sorted(
+        {(e.get('tags') or {}).get('ref') for e in out
+         if (e.get('tags') or {}).get('golf') == 'hole'} - {None}
+    )
+    return out, holes, dropped
+
+
+def duplicate_refs(cluster):
+    """True when one hole number appears on more than one way in `cluster`."""
+    refs = [h['ref'] for h in cluster if h.get('ref')]
+    return len(refs) != len(set(refs))
+
+
+def extent_ring(cluster):
+    """A rectangle around every vertex of the cluster's routings, plus a margin."""
+    xs = [p['lon'] for h in cluster for p in h['geometry']]
+    ys = [p['lat'] for h in cluster for p in h['geometry']]
+    lat = sum(ys) / len(ys)
+    dy = EXTENT_MARGIN_M / 111320
+    dx = dy / max(math.cos(math.radians(lat)), 1e-6)
+    x0, x1 = min(xs) - dx, max(xs) + dx
+    y0, y1 = min(ys) - dy, max(ys) + dy
+    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default='/tmp/osm-courses.json')
     ap.add_argument('--polys', default='/tmp/course-polys.json')
+    ap.add_argument('--hood-polys', default='/tmp/course-neighborhood-polys.json')
+    ap.add_argument('--hole-cache', default='/tmp/region-golf-holes.json')
     args = ap.parse_args()
 
     polys = json.load(open(args.polys))
@@ -152,34 +396,94 @@ def main():
             print(f'{name:36} boundary had no ring')
             continue
 
-        xs = [p[0] for r in rings for p in r]
-        ys = [p[1] for r in rings for p in r]
-        bbox = (min(ys), min(xs), max(ys), max(xs))
-        time.sleep(3)
-        d2 = ask(
-            f'[out:json][timeout:180];'
-            f'(way["golf"]({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}););out tags geom;'
-        )
-        keep = []
-        for e in (d2 or {}).get('elements', []):
-            g = e.get('geometry')
-            if not g:
-                continue
-            cx = sum(p['lon'] for p in g) / len(g)
-            cy = sum(p['lat'] for p in g) / len(g)
-            if any(inside([cx, cy], r) for r in rings):
-                keep.append(e)
+        keep, holes = harvest(rings)
+        if keep is None:
+            print(f'{name:36} feature fetch failed')
+            continue
 
         counts = collections.Counter((e.get('tags') or {}).get('golf') for e in keep)
-        holes = sorted(
-            {(e.get('tags') or {}).get('ref') for e in keep
-             if (e.get('tags') or {}).get('golf') == 'hole'} - {None}
-        )
-        out[slug] = {'name': name, 'rings': rings, 'features': keep, 'holes': holes}
+        out[slug] = {
+            'name': name,
+            'rings': rings,
+            'features': keep,
+            'holes': holes,
+            'boundarySource': f'OSM {el["type"]}/{el["id"]} leisure=golf_course',
+        }
         # Save per course: a killed run resumes instead of re-fetching everything.
         json.dump(out, open(args.out, 'w'))
         parts = ' · '.join(f'{k} {counts[k]}' for k in FEATURE_KINDS if counts.get(k))
         print(f'{name:36} holes {len(holes):2}  {parts}')
+        sys.stdout.flush()
+        time.sleep(4)
+
+    # Second provenance: courses clipped to our own neighborhood boundary.
+    hoods = {}
+    if os.path.exists(args.hood_polys):
+        hoods = json.load(open(args.hood_polys)).get('polys', {})
+    elif NEIGHBORHOOD_COURSES:
+        print(f'\n{args.hood_polys} missing — run scripts/golf/export-neighborhood-polys.mjs first')
+
+    clusters = None
+    for slug, hood_slug, label in NEIGHBORHOOD_COURSES:
+        if slug in out:
+            continue
+        poly = hoods.get(hood_slug)
+        if not poly:
+            print(f'{label:36} no neighborhood boundary for {hood_slug}')
+            continue
+        hood = [r for r in poly['rings'] if r and len(r) > 3]
+        if not hood:
+            print(f'{label:36} neighborhood boundary had no ring')
+            continue
+        if clusters is None:
+            clusters = hole_clusters(args.hole_cache)
+            if clusters is None:
+                print('region-wide hole fetch failed — neighborhood courses skipped')
+                break
+            print(f'\n{len(clusters)} hole clusters in the region\n')
+        pick = pick_cluster(clusters, hood)
+        if not pick:
+            print(f'{label:36} no hole cluster inside {hood_slug}')
+            continue
+        # A cluster carrying the same hole number twice spans more than one
+        # course: Broken Top's holes chain into Tetherow's 700 m away and come
+        # back as one 36-hole group numbered 1..18 twice. The neighborhood
+        # polygon is what separates them, so narrow to it and re-check.
+        if duplicate_refs(pick):
+            pick = [h for h in pick if any(inside([h['lon'], h['lat']], r) for r in hood)]
+            if duplicate_refs(pick):
+                print(f'{label:36} cluster still repeats a hole number inside {hood_slug} — skipped')
+                continue
+        if not pick:
+            print(f'{label:36} no holes inside {hood_slug}')
+            continue
+        rings = [extent_ring(pick)]
+        keep, holes = harvest(rings)
+        if keep is None:
+            print(f'{label:36} feature fetch failed')
+            continue
+        # The extent is a rectangle, so it also catches the corner of whatever
+        # lies next door: Broken Top's box takes in five of Tetherow's holes.
+        # Drop those, then keep a non-hole feature only if it sits nearer to one
+        # of THIS course's routings than to any foreign one — a green belongs to
+        # the course it is on, not to the course whose bounding box reached it.
+        keep, holes, dropped = own_features(keep, pick)
+        if dropped:
+            print(f'{label:36} dropped {dropped} feature(s) nearer a neighbouring course')
+        out[slug] = {
+            'name': label,
+            'rings': rings,
+            'features': keep,
+            'holes': holes,
+            'boundarySource': (
+                f'{len(pick)}-hole cluster inside public.boundaries '
+                f'neighborhood/{hood_slug}, extent + {EXTENT_MARGIN_M} m'
+            ),
+        }
+        json.dump(out, open(args.out, 'w'))
+        counts = collections.Counter((e.get('tags') or {}).get('golf') for e in keep)
+        parts = ' · '.join(f'{k} {counts[k]}' for k in FEATURE_KINDS if counts.get(k))
+        print(f'{label:36} holes {len(holes):2}  {parts}   [neighborhood boundary]')
         sys.stdout.flush()
         time.sleep(4)
 

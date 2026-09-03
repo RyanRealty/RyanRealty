@@ -402,7 +402,18 @@
   margin: 0;
   display: grid;
   gap: 0;
-  border-top: var(--v3-rule-hairline);
+}
+
+/* These rows sit directly under a card headed 'Hole 1'; the heading is what
+   stops a course total from reading as that hole's. */
+.v3-course__factshead {
+  margin: var(--v3-space-md) 0 0;
+  padding-bottom: var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: var(--v3-rule-hairline);
 }
 
 .v3-course__fact {
