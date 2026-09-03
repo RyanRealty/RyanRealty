@@ -1,45 +1,36 @@
 'use client'
+/**
+ * The public rental underwriting tool, on the components/site/v3 register.
+ *
+ * WHAT CHANGED AND WHY (2026-09-02). It rendered 56 shadcn `data-slot` elements
+ * — Card, Input, Label, Slider, Separator, Button, Select, Accordion, Tooltip
+ * and Table — on TWO public routes: the listing page through RentalAnalysis and
+ * /tools/rental-property-calculator. §3 puts the public site on components/site/v3,
+ * and two registers on one page is the defect that rule exists to end.
+ *
+ * The controls are native: <input type=range> for the down payment, <select>
+ * for the term, <details> for the two folds, a real <table> for the projection.
+ * Native controls arrive with keyboard support, form semantics and a focus ring
+ * that the radix versions were re-implementing in a second neutral.
+ *
+ * THE TOOLTIP IS GONE AND ITS WORDS ARE NOT. Four definitions lived in hover
+ * tooltips behind 16px "?" buttons — the smallest targets on the page, and
+ * invisible to anyone who does not hover. They are one "What these mean" fold
+ * under the figures now, always in the DOM.
+ *
+ * THE MATH IS UNTOUCHED. Every figure still comes from analyzeRental in
+ * lib/rental-analysis; this file changed only what draws them.
+ */
 
 import { useMemo, useState } from 'react'
 import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
-import RentalLeadForm from '@/components/tools/RentalLeadForm'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { V3Button } from '@/components/site/v3'
+import RentalLeadForm from '@/components/tools/RentalLeadForm'
 import { analyzeRental, formatUSD, formatPct, type RentalAnalysisInputs } from '@/lib/rental-analysis'
 import EquityProjectionChart from './EquityProjectionChart.client'
+import '@/components/site/v3/tokens.css'
+import './rental-calculator.css'
 
 /** Optional rent estimate (e.g. from RentCast on a listing page). */
 export type RentEstimate = {
@@ -78,23 +69,25 @@ function num(value: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-/** Small "?" glossary affordance. */
-function Glossary({ children }: { children: React.ReactNode }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label="What is this?"
-          className="ml-1 inline-flex size-4 items-center justify-center rounded-full border border-border text-[10px] leading-none text-muted-foreground hover:bg-secondary"
-        >
-          ?
-        </button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-[240px] text-pretty">{children}</TooltipContent>
-    </Tooltip>
-  )
-}
+/** The four figures the results panel prints, and what each one means. */
+const TERMS: ReadonlyArray<{ term: string; meaning: string }> = [
+  {
+    term: 'Cash flow',
+    meaning:
+      'Money left each month after the mortgage, taxes, insurance, management and reserves are paid.',
+  },
+  {
+    term: 'Cap rate',
+    meaning:
+      'Net operating income divided by purchase price. A price-independent yardstick of yield.',
+  },
+  {
+    term: 'Cash on cash',
+    meaning:
+      'Annual cash flow divided by the cash you put in: down payment, closing costs and rehab.',
+  },
+  { term: 'Cash needed', meaning: 'Down payment plus cash closing costs plus rehab budget.' },
+]
 
 function NumberField({
   id,
@@ -118,17 +111,13 @@ function NumberField({
   hint?: React.ReactNode
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="flex items-center text-sm">
+    <div className="rc__field">
+      <label htmlFor={id} className="rc__fieldlabel">
         {label}
-      </Label>
-      <div className="relative">
-        {prefix && (
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-            {prefix}
-          </span>
-        )}
-        <Input
+      </label>
+      <div className="rc__control">
+        {prefix ? <span className="rc__affix rc__affix--prefix">{prefix}</span> : null}
+        <input
           id={id}
           type="number"
           inputMode="decimal"
@@ -136,59 +125,42 @@ function NumberField({
           onChange={(e) => onChange(num(e.target.value))}
           min={min}
           step={step}
-          className={cn('tabular-nums', prefix && 'pl-7', suffix && 'pr-10')}
+          className={cn(
+            'rc__input',
+            prefix && 'rc__input--prefixed',
+            suffix && 'rc__input--suffixed',
+          )}
         />
-        {suffix && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-            {suffix}
-          </span>
-        )}
+        {suffix ? <span className="rc__affix rc__affix--suffix">{suffix}</span> : null}
       </div>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint ? <p className="rc__hint">{hint}</p> : null}
     </div>
   )
 }
 
-function KpiTile({
+function Kpi({
   label,
   value,
-  glossary,
-  tone = 'default',
+  exception = false,
 }: {
   label: string
   value: string
-  glossary?: React.ReactNode
-  tone?: 'default' | 'positive' | 'negative'
+  /** Only a cash flow below zero. The accent marks a data exception, §3. */
+  exception?: boolean
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <div className="flex items-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-        {glossary && <Glossary>{glossary}</Glossary>}
-      </div>
-      {/* clamp instead of a fixed text-2xl: the widest state (negative
-          five-figure + "/mo") overflowed the tile at a fixed size and read as
-          clipped (design-audit P3). */}
-      <div
-        className={cn(
-          'mt-1 font-semibold tabular-nums break-words',
-          'text-[clamp(1.15rem,5vw,1.5rem)]',
-          tone === 'positive' && 'text-success',
-          tone === 'negative' && 'text-destructive',
-          tone === 'default' && 'text-foreground'
-        )}
-      >
-        {value}
-      </div>
+    <div className="rc__kpi">
+      <p className="rc__kpilabel">{label}</p>
+      <p className={cn('rc__kpivalue', exception && 'rc__kpivalue--exception')}>{value}</p>
     </div>
   )
 }
 
 function FlowRow({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={cn('flex items-center justify-between py-1.5 text-sm', strong && 'font-semibold')}>
-      <span className={cn(strong ? 'text-foreground' : 'text-muted-foreground')}>{label}</span>
-      <span className="tabular-nums">{value}</span>
+    <div className={cn('rc__flowrow', strong && 'rc__flowrow--strong')}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   )
 }
@@ -327,216 +299,207 @@ export default function RentalCalculator({
       )} per month negative. Adjust the price, down payment, or rent to find what works.`
 
   return (
-    <TooltipProvider delayDuration={150}>
-      <Card>
-        {!embedded && (
-          <CardHeader>
-            <CardTitle>Rental property calculator</CardTitle>
-            {propertyLabel && <p className="text-sm text-muted-foreground">{propertyLabel}</p>}
-          </CardHeader>
-        )}
-        <CardContent className={cn('grid gap-8 lg:grid-cols-5', embedded && 'pt-6')}>
-          {/* ── Inputs ───────────────────────────────────────────── */}
-          <div className="space-y-6 lg:col-span-3">
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Purchase &amp; financing</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <NumberField id="price" label="Purchase price" prefix="$" step={5000} min={0} value={purchasePrice} onChange={setPurchasePrice} />
-                <NumberField id="rehab" label="Rehab budget (optional)" prefix="$" step={1000} min={0} value={rehabCost} onChange={setRehabCost} />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="down" className="text-sm">Down payment</Label>
-                  <span className="text-sm tabular-nums text-muted-foreground">
-                    {downPaymentPct}% &middot; {formatUSD(downPayment)}
-                  </span>
-                </div>
-                <Slider
-                  id="down"
-                  aria-label="Down payment percent"
-                  value={[downPaymentPct]}
-                  onValueChange={(v) => setDownPaymentPct(v[0] ?? 0)}
-                  min={0}
-                  max={50}
-                  step={1}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <NumberField id="rate" label="Interest rate" suffix="%" step={0.125} min={0} value={interestRate} onChange={setInterestRate} />
-                <div className="space-y-1.5">
-                  <Label htmlFor="term" className="text-sm">Loan term</Label>
-                  <Select value={String(loanTermYears)} onValueChange={(v) => setLoanTermYears(Number(v))}>
-                    <SelectTrigger id="term"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 years</SelectItem>
-                      <SelectItem value="20">20 years</SelectItem>
-                      <SelectItem value="30">30 years</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </section>
+    <div className="rc">
+      {!embedded ? (
+        <div className="rc__head">
+          <h2 className="rc__title">Rental property calculator</h2>
+          {propertyLabel ? <p className="rc__label">{propertyLabel}</p> : null}
+        </div>
+      ) : null}
 
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Income</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <NumberField
-                  id="rent"
-                  label="Monthly rent"
-                  prefix="$"
-                  step={25}
-                  min={0}
-                  value={grossRent}
-                  onChange={setGrossRent}
-                  hint={
-                    rentEstimate?.value
-                      ? `Estimate ${formatUSD(rentEstimate.value)}${
-                          rentEstimate.low && rentEstimate.high
-                            ? ` (${formatUSD(rentEstimate.low)}–${formatUSD(rentEstimate.high)})`
-                            : ''
-                        }${rentEstimate.source ? ` · ${rentEstimate.source}` : ''}. Edit to your own number.`
-                      : 'Your expected market rent. Edit to your own number.'
-                  }
-                />
-                <NumberField id="vacancy" label="Vacancy" suffix="%" step={0.5} min={0} value={vacancyPct} onChange={setVacancyPct} />
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Operating expenses</h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <NumberField id="taxes" label="Property taxes (yearly)" prefix="$" step={50} min={0} value={propertyTaxesYear} onChange={setPropertyTaxesYear} />
-                <NumberField id="insurance" label="Insurance (yearly)" prefix="$" step={50} min={0} value={insuranceYear} onChange={setInsuranceYear} />
-                <NumberField id="mgmt" label="Management (% of rent)" suffix="%" step={0.5} min={0} value={mgmtPct} onChange={setMgmtPct} />
-                <NumberField id="maint" label="Maintenance (% of rent)" suffix="%" step={0.5} min={0} value={maintPct} onChange={setMaintPct} />
-                <NumberField id="capex" label="Capital reserves (% of rent)" suffix="%" step={0.5} min={0} value={capexPct} onChange={setCapexPct} />
-                <NumberField id="hoa" label="HOA (monthly)" prefix="$" step={10} min={0} value={hoaMonthly} onChange={setHoaMonthly} />
-              </div>
-            </section>
-
-            <Accordion type="single" collapsible>
-              <AccordionItem value="assumptions" className="border-b-0">
-                <AccordionTrigger className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Long-term assumptions
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <NumberField id="appr" label="Appreciation / yr" suffix="%" step={0.5} min={0} value={appreciationPct} onChange={setAppreciationPct} />
-                    <NumberField id="rentgrow" label="Rent growth / yr" suffix="%" step={0.5} min={0} value={rentGrowthPct} onChange={setRentGrowthPct} />
-                    <NumberField id="expgrow" label="Expense growth / yr" suffix="%" step={0.5} min={0} value={expenseGrowthPct} onChange={setExpenseGrowthPct} />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+      <div className="rc__inputs">
+        <section className="rc__group" aria-label="Purchase and financing">
+          <h3 className="rc__grouphead">Purchase and financing</h3>
+          <div className="rc__fields">
+            <NumberField id="price" label="Purchase price" prefix="$" step={5000} min={0} value={purchasePrice} onChange={setPurchasePrice} />
+            <NumberField id="rehab" label="Rehab budget (optional)" prefix="$" step={1000} min={0} value={rehabCost} onChange={setRehabCost} />
           </div>
-
-          {/* ── Results ──────────────────────────────────────────── */}
-          <div className="lg:col-span-2">
-            <div className="space-y-5 lg:sticky lg:top-24">
-              <div className="grid grid-cols-2 gap-3">
-                <KpiTile
-                  label="Cash flow"
-                  value={`${formatUSD(result.cashFlowMonthly)}/mo`}
-                  tone={cashFlowPositive ? 'positive' : 'negative'}
-                  glossary="Money left each month after the mortgage, taxes, insurance, management, and reserves are paid."
-                />
-                <KpiTile
-                  label="Cap rate"
-                  value={formatPct(result.capRatePurchase)}
-                  glossary="Net operating income divided by purchase price. A price-independent yardstick of yield."
-                />
-                <KpiTile
-                  label="Cash on cash"
-                  value={formatPct(result.cashOnCash)}
-                  glossary="Annual cash flow divided by the cash you put in (down payment, closing, rehab)."
-                />
-                <KpiTile
-                  label="Cash needed"
-                  value={formatUSD(result.totalCashNeeded)}
-                  glossary="Down payment plus cash closing costs plus rehab budget."
-                />
-              </div>
-
-              <p className="text-sm text-pretty text-foreground">{verdict}</p>
-
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Monthly cash flow
-                </div>
-                <div className="mt-1 divide-y divide-border">
-                  <FlowRow label="Gross rent" value={formatUSD(result.grossRentMonthly)} />
-                  <FlowRow label={`Vacancy (${vacancyPct}%)`} value={`- ${formatUSD(result.vacancyAnnual / 12)}`} />
-                  <FlowRow label="Operating income" value={formatUSD(result.operatingIncomeAnnual / 12)} strong />
-                  <FlowRow label="Operating expenses" value={`- ${formatUSD(result.operatingExpensesMonthly)}`} />
-                  <FlowRow label="Net operating income" value={formatUSD(result.noiMonthly)} strong />
-                  <FlowRow label="Loan payment" value={`- ${formatUSD(result.monthlyDebtService)}`} />
-                  <FlowRow label="Cash flow" value={formatUSD(result.cashFlowMonthly)} strong />
-                </div>
-              </div>
-
-              <Accordion type="single" collapsible>
-                <AccordionItem value="projection" className="border-b-0">
-                  <AccordionTrigger className="text-sm font-medium">Show 30-year projection</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      <EquityProjectionChart projection={result.projection} />
-                      <div className="overflow-hidden rounded-xl border border-border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Year</TableHead>
-                              <TableHead className="text-right">Value</TableHead>
-                              <TableHead className="text-right">Equity</TableHead>
-                              <TableHead className="text-right">Cash flow</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody className="tabular-nums">
-                            {milestones.map((p) => (
-                              <TableRow key={p.year}>
-                                <TableCell>{p.year}</TableCell>
-                                <TableCell className="text-right">{formatUSD(p.propertyValue)}</TableCell>
-                                <TableCell className="text-right">{formatUSD(p.equity)}</TableCell>
-                                <TableCell className="text-right">{formatUSD(p.cashFlow)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <RentalLeadForm
-                  propertyLabel={propertyLabel}
-                  contextNote={`${formatUSD(purchasePrice)} · cash flow ${formatUSD(result.cashFlowMonthly)}/mo · cap rate ${formatPct(result.capRatePurchase)}`}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleDownloadPdf}
-                  disabled={downloading}
-                >
-                  {downloading ? 'Preparing report…' : 'Download PDF report'}
-                </Button>
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/homes-for-sale">Browse homes for sale</Link>
-                </Button>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-pretty">
-                Estimates only, not investment advice or a guarantee of rent, value, or return. Figures depend on the
-                numbers you enter and current market conditions. Verify with your lender, tax advisor, and a Ryan Realty
-                broker before you rely on them.
-              </p>
+          <div className="rc__slider">
+            <div className="rc__sliderhead">
+              <label htmlFor="down" className="rc__fieldlabel">
+                Down payment
+              </label>
+              <span className="rc__slidervalue">
+                {downPaymentPct}% · {formatUSD(downPayment)}
+              </span>
+            </div>
+            {/* A native range: keyboard-operable, announces its own value, and
+                the thumb is grown to the tap floor in CSS. */}
+            <input
+              id="down"
+              type="range"
+              className="rc__range"
+              min={0}
+              max={50}
+              step={1}
+              value={downPaymentPct}
+              onChange={(e) => setDownPaymentPct(num(e.target.value))}
+              aria-label="Down payment percent"
+              aria-valuetext={`${downPaymentPct} percent, ${formatUSD(downPayment)}`}
+            />
+          </div>
+          <div className="rc__fields">
+            <NumberField id="rate" label="Interest rate" suffix="%" step={0.125} min={0} value={interestRate} onChange={setInterestRate} />
+            <div className="rc__field">
+              <label htmlFor="term" className="rc__fieldlabel">
+                Loan term
+              </label>
+              <select
+                id="term"
+                className="rc__select"
+                value={String(loanTermYears)}
+                onChange={(e) => setLoanTermYears(Number(e.target.value))}
+              >
+                <option value="15">15 years</option>
+                <option value="20">20 years</option>
+                <option value="30">30 years</option>
+              </select>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </TooltipProvider>
+        </section>
+
+        <section className="rc__group" aria-label="Income">
+          <h3 className="rc__grouphead">Income</h3>
+          <div className="rc__fields">
+            <NumberField
+              id="rent"
+              label="Monthly rent"
+              prefix="$"
+              step={25}
+              min={0}
+              value={grossRent}
+              onChange={setGrossRent}
+              hint={
+                rentEstimate?.value
+                  ? `Estimate ${formatUSD(rentEstimate.value)}${
+                      rentEstimate.low && rentEstimate.high
+                        ? ` (${formatUSD(rentEstimate.low)} to ${formatUSD(rentEstimate.high)})`
+                        : ''
+                    }${rentEstimate.source ? ` · ${rentEstimate.source}` : ''}. Edit to your own number.`
+                  : 'Your expected market rent. Edit to your own number.'
+              }
+            />
+            <NumberField id="vacancy" label="Vacancy" suffix="%" step={0.5} min={0} value={vacancyPct} onChange={setVacancyPct} />
+          </div>
+        </section>
+
+        <section className="rc__group" aria-label="Operating expenses">
+          <h3 className="rc__grouphead">Operating expenses</h3>
+          <div className="rc__fields">
+            <NumberField id="taxes" label="Property taxes (yearly)" prefix="$" step={50} min={0} value={propertyTaxesYear} onChange={setPropertyTaxesYear} />
+            <NumberField id="insurance" label="Insurance (yearly)" prefix="$" step={50} min={0} value={insuranceYear} onChange={setInsuranceYear} />
+            <NumberField id="mgmt" label="Management (% of rent)" suffix="%" step={0.5} min={0} value={mgmtPct} onChange={setMgmtPct} />
+            <NumberField id="maint" label="Maintenance (% of rent)" suffix="%" step={0.5} min={0} value={maintPct} onChange={setMaintPct} />
+            <NumberField id="capex" label="Capital reserves (% of rent)" suffix="%" step={0.5} min={0} value={capexPct} onChange={setCapexPct} />
+            <NumberField id="hoa" label="HOA (monthly)" prefix="$" step={10} min={0} value={hoaMonthly} onChange={setHoaMonthly} />
+          </div>
+        </section>
+
+        <details className="rc__fold">
+          <summary className="rc__foldsummary">Long-term assumptions</summary>
+          <div className="rc__foldbody">
+            <div className="rc__fields rc__fields--three">
+              <NumberField id="appr" label="Appreciation / yr" suffix="%" step={0.5} min={0} value={appreciationPct} onChange={setAppreciationPct} />
+              <NumberField id="rentgrow" label="Rent growth / yr" suffix="%" step={0.5} min={0} value={rentGrowthPct} onChange={setRentGrowthPct} />
+              <NumberField id="expgrow" label="Expense growth / yr" suffix="%" step={0.5} min={0} value={expenseGrowthPct} onChange={setExpenseGrowthPct} />
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div className="rc__results">
+        <div className="rc__kpis">
+          <Kpi
+            label="Cash flow"
+            value={`${formatUSD(result.cashFlowMonthly)}/mo`}
+            exception={!cashFlowPositive}
+          />
+          <Kpi label="Cap rate" value={formatPct(result.capRatePurchase)} />
+          <Kpi label="Cash on cash" value={formatPct(result.cashOnCash)} />
+          <Kpi label="Cash needed" value={formatUSD(result.totalCashNeeded)} />
+        </div>
+
+        <p className="rc__verdict">{verdict}</p>
+
+        {/* The four definitions that used to be hover tooltips on 16px buttons. */}
+        <details className="rc__fold">
+          <summary className="rc__foldsummary">What these mean</summary>
+          <div className="rc__foldbody">
+            <dl className="rc__terms">
+              {TERMS.map((t) => (
+                <div className="rc__term" key={t.term}>
+                  <dt>{t.term}</dt>
+                  <dd>{t.meaning}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </details>
+
+        <dl className="rc__flow">
+          <p className="rc__flowhead">Monthly cash flow</p>
+          <FlowRow label="Gross rent" value={formatUSD(result.grossRentMonthly)} />
+          <FlowRow label={`Vacancy (${vacancyPct}%)`} value={`- ${formatUSD(result.vacancyAnnual / 12)}`} />
+          <FlowRow label="Operating income" value={formatUSD(result.operatingIncomeAnnual / 12)} strong />
+          <FlowRow label="Operating expenses" value={`- ${formatUSD(result.operatingExpensesMonthly)}`} />
+          <FlowRow label="Net operating income" value={formatUSD(result.noiMonthly)} strong />
+          <FlowRow label="Loan payment" value={`- ${formatUSD(result.monthlyDebtService)}`} />
+          <FlowRow label="Cash flow" value={formatUSD(result.cashFlowMonthly)} strong />
+        </dl>
+
+        <details className="rc__fold">
+          <summary className="rc__foldsummary">30-year projection</summary>
+          <div className="rc__foldbody">
+            <EquityProjectionChart projection={result.projection} />
+            <div className="rc__tablewrap">
+              <table className="rc__table">
+                <caption className="rc__flowhead">Value, equity and cash flow by year</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Year</th>
+                    <th scope="col">Value</th>
+                    <th scope="col">Equity</th>
+                    <th scope="col">Cash flow</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {milestones.map((p) => (
+                    <tr key={p.year}>
+                      <th scope="row">{p.year}</th>
+                      <td>{formatUSD(p.propertyValue)}</td>
+                      <td>{formatUSD(p.equity)}</td>
+                      <td>{formatUSD(p.cashFlow)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+
+        <div className="rc__actions">
+          <RentalLeadForm
+            propertyLabel={propertyLabel}
+            contextNote={`${formatUSD(purchasePrice)} · cash flow ${formatUSD(result.cashFlowMonthly)}/mo · cap rate ${formatPct(result.capRatePurchase)}`}
+          />
+          <V3Button
+            variant="ghost"
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+          >
+            {downloading ? 'Preparing report' : 'Download PDF report'}
+          </V3Button>
+          <V3Button variant="ghost" href="/homes-for-sale">
+            Browse homes for sale
+          </V3Button>
+        </div>
+
+        <p className="rc__note">
+          Estimates only, not investment advice or a guarantee of rent, value, or return.
+          Figures depend on the numbers you enter and current market conditions. Verify with
+          your lender, tax advisor, and a Ryan Realty broker before you rely on them.
+        </p>
+      </div>
+    </div>
   )
 }

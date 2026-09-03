@@ -1,3 +1,40 @@
+# MISSION IN FLIGHT — 2026-09-02 — close the four open public-surface items
+
+Matt: `/endtoend all open tasks`. Done means a real visitor can use each surface
+and the foundation under it is right, not that a screenshot looks fixed.
+
+**W1 — the rental calculator comes off shadcn.** `components/tools/RentalCalculator.tsx`
+imports Card, Input, Label, Slider, Separator, Button, Select, Accordion,
+Tooltip and Table from `@/components/ui` and renders 56 `data-slot` elements on
+TWO public routes: the listing page (through `RentalAnalysis`) and
+`/tools/rental-property-calculator`. §3 says the public site builds from
+`components/site/v3`. DONE = zero `[data-slot]` on both routes, every control at
+the 44px floor, `analyzeRental` untouched and its tests still green, and the
+same numbers on screen before and after.
+
+**W2 — the search map's marks are reachable.** `SearchMapClustered.tsx`
+`buildClusterElement` and `buildPricePillElement` measure 32×32, 38×38 and
+60.25×25; 22 of 23 are under 44px in both axes on `/cities/bend`, and there is
+no equivalent control for them. DONE = every mark's target ≥44px with the
+painted circle unchanged, measured on a live map.
+
+**W3 — four controls under the floor.** `.v3-chartcard__source-summary` 17.84px,
+`.v3-instrument__fold-summary` 42.34, `#save-search-email` 32,
+`.map-search-views` 26.00/27.59. DONE = each ≥44px, measured, with no section
+growing more than it has to.
+
+**W4 — the gate, so this class stops coming back (§6).** A `scripts/check-*.mjs`
+in `ci:gates` that fails a public control under 44px — and encodes the WCAG
+Equivalent exception, or it fails the atlas and the field pins on every run: a
+control under 44px fails only when NO same-page control does the same job at
+≥44px. Both existing mitigations are machine-checkable (atlas chips match places
+1:1 by name, field-pin hrefs match row hrefs 1:1). DONE = the gate is wired,
+green on the current tree, and red on a deliberately shrunk control.
+
+Progress is logged in this block as each lands.
+
+---
+
 # Current — 2026-09-02 (golf maps + the punch list, main) — sixteen courses, five items closed
 
 Matt: "finish all Central Oregon courses and then finish the primary items in

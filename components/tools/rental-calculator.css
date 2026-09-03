@@ -1,0 +1,441 @@
+/* ===========================================================================
+   RENTAL CALCULATOR — the public underwriting tool, on the v3 register.
+
+   It was shadcn: Card, Input, Label, Slider, Separator, Button, Select,
+   Accordion, Tooltip and Table, 56 data-slot elements on TWO public routes —
+   the listing page through RentalAnalysis, and /tools/rental-property-calculator.
+   §3 says the public site builds from components/site/v3, and two registers on
+   one page is the defect that rule exists to end.
+
+   The controls are native now: an <input type=range> for the down payment, a
+   <select> for the term, <details> for the two folds, a real <table> for the
+   projection. Native controls come with keyboard, form semantics and a focus
+   ring; the radix versions were re-implementing all three in a second neutral.
+
+   Every value resolves from components/site/v3/tokens.css. --v3-exception is
+   the one accent, and it marks exactly one thing: a cash flow below zero.
+   =========================================================================== */
+
+.rc {
+  display: grid;
+  gap: var(--v3-space-xl);
+}
+
+@media (min-width: 64rem) {
+  .rc {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+}
+
+.rc__head {
+  grid-column: 1 / -1;
+}
+
+.rc__title {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
+}
+
+.rc__label {
+  margin: var(--v3-space-3xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* --- input side ----------------------------------------------------------- */
+.rc__inputs {
+  display: grid;
+  gap: var(--v3-space-xl);
+  min-width: 0;
+}
+
+.rc__group {
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+.rc__grouphead {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rc__fields {
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+@media (min-width: 34rem) {
+  .rc__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rc__fields--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.rc__field {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.rc__fieldlabel {
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+}
+
+.rc__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rc__affix {
+  position: absolute;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  pointer-events: none;
+}
+
+.rc__affix--prefix {
+  left: var(--v3-space-sm);
+}
+
+.rc__affix--suffix {
+  right: var(--v3-space-sm);
+}
+
+.rc__input,
+.rc__select {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  background: var(--v3-surface);
+  border: 0;
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  font: inherit;
+  font-size: var(--v3-size-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc__input--prefixed {
+  padding-left: var(--v3-space-lg);
+}
+
+.rc__input--suffixed {
+  padding-right: var(--v3-space-lg);
+}
+
+.rc__hint {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* The down-payment range. A native range is keyboard-operable and announces
+   its value; the thumb is grown to the tap floor. */
+.rc__slider {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
+.rc__sliderhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+}
+
+.rc__slidervalue {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc__range {
+  width: 100%;
+  height: var(--v3-tap);
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.rc__range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--v3-hairline);
+}
+
+.rc__range::-moz-range-track {
+  height: 2px;
+  background: var(--v3-hairline);
+}
+
+.rc__range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: -0.6875rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--v3-navy);
+}
+
+.rc__range::-moz-range-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--v3-navy);
+}
+
+/* --- folds ---------------------------------------------------------------- */
+.rc__fold {
+  border-top: var(--v3-rule-hairline);
+}
+
+.rc__foldsummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  min-height: var(--v3-tap);
+  color: var(--v3-ink-muted);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rc__foldsummary::-webkit-details-marker {
+  display: none;
+}
+
+.rc__foldsummary::after {
+  content: '›';
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.rc__fold[open] > .rc__foldsummary::after {
+  transform: rotate(90deg);
+}
+
+.rc__foldbody {
+  padding-bottom: var(--v3-space-md);
+}
+
+/* --- results side --------------------------------------------------------- */
+.rc__results {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-content: start;
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .rc__results {
+    position: sticky;
+    top: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
+  }
+}
+
+.rc__kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+.rc__kpi {
+  padding: var(--v3-space-sm) var(--v3-space-md) var(--v3-space-sm) 0;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.rc__kpilabel {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rc__kpivalue {
+  margin: var(--v3-space-3xs) 0 0;
+  font-family: var(--v3-font-display);
+  font-size: clamp(1.15rem, 5vw, 1.6rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* The one accent, on the one thing that is a data exception: a cash flow below
+   zero. Everything else is navy (§3). */
+.rc__kpivalue--exception {
+  color: var(--v3-exception);
+}
+
+.rc__verdict {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--v3-size-body);
+}
+
+.rc__flow {
+  border-top: var(--v3-rule-hairline);
+}
+
+.rc__flowhead {
+  margin: 0;
+  padding: var(--v3-space-xs) 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rc__flowrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  padding: var(--v3-space-2xs) 0;
+  border-top: var(--v3-rule-hairline);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc__flowrow--strong {
+  font-weight: var(--v3-weight-medium);
+}
+
+.rc__flowrow dt {
+  color: var(--v3-ink-muted);
+}
+
+.rc__flowrow--strong dt {
+  color: var(--v3-ink);
+}
+
+.rc__flowrow dd {
+  margin: 0;
+}
+
+/* --- projection table ----------------------------------------------------- */
+.rc__tablewrap {
+  overflow-x: auto;
+}
+
+.rc__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc__table th,
+.rc__table td {
+  padding: var(--v3-space-2xs) var(--v3-space-xs);
+  border-bottom: var(--v3-rule-hairline);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rc__table th:first-child,
+.rc__table td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.rc__table th {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --- terms + actions ------------------------------------------------------ */
+.rc__terms {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin: 0;
+}
+
+.rc__term {
+  display: grid;
+  gap: 2px;
+}
+
+.rc__term dt {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+}
+
+.rc__term dd {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.rc__actions {
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding-top: var(--v3-space-md);
+  border-top: var(--v3-rule-hairline);
+}
+
+.rc__note {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  max-width: 52ch;
+}
+
+/* --- lead form ------------------------------------------------------------ */
+.rc-lead {
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.rc-lead__prose {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.rc-lead__error {
+  margin: 0;
+  color: var(--v3-exception);
+  font-size: var(--v3-size-body-sm);
+}
+
+.rc-lead__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm);
+}
+
+.rc-lead__done {
+  margin: 0;
+  padding: var(--v3-space-md);
+  background: var(--v3-wash);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* The listing-page wrapper around the calculator. It was an inline style with
+   a clamp and a flex column, which is a fourth place the section rhythm was
+   written down. */
+.rental-analysis__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-md);
+  margin-top: var(--v3-space-lg);
+}

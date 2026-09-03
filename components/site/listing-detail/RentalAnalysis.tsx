@@ -1,5 +1,4 @@
 import RentalCalculator from '@/components/tools/RentalCalculator'
-import { Body } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { getAreaRentEstimate } from '@/lib/hud-fmr'
 import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
@@ -8,8 +7,12 @@ import { publishRentalHoaMonthly } from '@/lib/listing/publish-listing-hoa'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 
 /**
- * Listing-detail RentalAnalysis — KB section style.
+ * Listing-detail RentalAnalysis — the section wrapper around the calculator.
  * Navy sec-head, Amboqia heading. RentalCalculator interactive island preserved.
+ *
+ * The lede was `Body` from components/site/primitives — a third register on a
+ * page that already carries two. It is the calculator's own muted line now
+ * (2026-09-02, with the calculator's move off shadcn).
  *
  * Per CLAUDE.md §0 Data Accuracy: all numbers are labeled estimates.
  *
@@ -113,10 +116,11 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
         </div>
       </div>
 
-      <div className="tool-skin" style={{ marginTop: 'clamp(22px,3vw,36px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Body size="small" tone="muted">
-          Monthly cash flow, cap rate, and cash-on-cash return at this price. Adjust the numbers to your own financing and rent.
-        </Body>
+      <div className="rental-analysis__body">
+        <p className="rc__note">
+          Monthly cash flow, cap rate, and cash-on-cash return at this price. Adjust the
+          numbers to your own financing and rent.
+        </p>
         <RentalCalculator
           embedded
           initialPrice={price}

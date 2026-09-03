@@ -3,17 +3,19 @@
 import { useState, useTransition } from 'react'
 import { submitRentalLead } from '@/app/actions/lead-capture'
 import { trackEvent } from '@/lib/tracking'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { V3Button } from '@/components/site/v3'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
+import './rental-calculator.css'
 
 /**
  * Rental-calculator lead capture. A visitor running the numbers asks a Ryan
  * Realty broker to pull real rent comps + underwrite the deal. Expands from a
  * button so the calculator stays clean. Carries the property + analysis context
  * (when launched from a listing) into the CRM via submitRentalLead.
+ *
+ * On the v3 register since 2026-09-02, with the calculator it sits inside: it
+ * shipped shadcn Button, Card, Input and Label on two public routes. The fields
+ * are native and wear the calculator's own stylesheet.
  */
 export default function RentalLeadForm({
   propertyLabel,
@@ -65,51 +67,78 @@ export default function RentalLeadForm({
 
   if (done) {
     return (
-      <div className="rounded-lg border border-border bg-muted p-4 text-sm text-foreground">
-        Thanks. A Ryan Realty broker will reach out with real rent comps and help underwriting this deal.
-      </div>
+      <p className="rc-lead__done" role="status">
+        Thanks. A Ryan Realty broker will reach out with real rent comps and help underwriting
+        this deal.
+      </p>
     )
   }
 
   if (!open) {
     return (
-      <Button type="button" className="w-full" onClick={() => setOpen(true)}>
+      <V3Button onClick={() => setOpen(true)}>
         Have a Ryan Realty broker review this deal
-      </Button>
+      </V3Button>
     )
   }
 
   return (
-    <Card className="p-4">
-      <CardContent className="p-0">
-        <p className="mb-3 text-sm text-muted-foreground">
-          Send your numbers to a Ryan Realty broker for real rent comps and a second look.
+    <div className="rc-lead">
+      <p className="rc-lead__prose">
+        Send your numbers to a Ryan Realty broker for real rent comps and a second look.
+      </p>
+      <div className="rc__field">
+        <label htmlFor="rental-lead-name" className="rc__fieldlabel">
+          Name
+        </label>
+        <input
+          id="rental-lead-name"
+          className="rc__input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
+        />
+      </div>
+      <div className="rc__field">
+        <label htmlFor="rental-lead-email" className="rc__fieldlabel">
+          Email
+        </label>
+        <input
+          id="rental-lead-email"
+          className="rc__input"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+        />
+      </div>
+      <div className="rc__field">
+        <label htmlFor="rental-lead-phone" className="rc__fieldlabel">
+          Phone
+        </label>
+        <input
+          id="rental-lead-phone"
+          className="rc__input"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          autoComplete="tel"
+        />
+      </div>
+      {error ? (
+        <p className="rc-lead__error" role="alert">
+          {error}
         </p>
-        <div className="space-y-3">
-          <div>
-            <Label htmlFor="rental-lead-name">Name</Label>
-            <Input id="rental-lead-name" value={name} onChange={(e) => setName(e.target.value)} className="mt-1" autoComplete="name" />
-          </div>
-          <div>
-            <Label htmlFor="rental-lead-email">Email</Label>
-            <Input id="rental-lead-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" autoComplete="email" />
-          </div>
-          <div>
-            <Label htmlFor="rental-lead-phone">Phone</Label>
-            <Input id="rental-lead-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1" autoComplete="tel" />
-          </div>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <SmsConsentDisclosure />
-          <div className="flex items-center gap-2">
-            <Button type="button" onClick={handleSubmit} disabled={pending}>
-              {pending ? 'Sending…' : 'Send to a broker'}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      ) : null}
+      <SmsConsentDisclosure />
+      <div className="rc-lead__row">
+        <V3Button onClick={handleSubmit} disabled={pending}>
+          {pending ? 'Sending' : 'Send to a broker'}
+        </V3Button>
+        <V3Button variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
+          Cancel
+        </V3Button>
+      </div>
+    </div>
   )
 }
