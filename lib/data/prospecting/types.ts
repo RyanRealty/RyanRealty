@@ -91,7 +91,7 @@ export interface ProspectComplianceState {
   /** Compliance-only SMS/call block. Excludes reachability — see the note above. */
   hardStop: boolean
   flags: ComplianceFlag[]
-  /** Now Active/Pending/Coming-Soon in MLS — never solicit an on-market listing. */
+  /** Now Active/Pending/Coming-Soon in MLS, or Closed after the expire timestamp — never solicit. */
   relisted: boolean
   /** FSBO no longer seen in a successful scrape (status='off_market'). */
   offMarket: boolean
