@@ -230,3 +230,51 @@ The Pronghorn resort now trades as **Juniper Preserve Golf & Wellness Resort**
 Club, Pronghorn Golf Academy, Pronghorn Club Membership — and USGA still lists both
 courses under "Pronghorn", so the course rows keep that name. Prose describing the
 *resort* should say Juniper Preserve.
+
+## Course-map geometry — `data/golf/course-maps/*.json`
+
+Added 2026-09-02. Sixteen of the twenty-six courses have a committed geometry file
+that `V3CourseMap` draws hole by hole. Three sources, none of them a scorecard.
+
+**Hole routings, greens, tees, bunkers and mapped water hazards: OpenStreetMap
+contributors**, under ODbL. Pulled per course by
+`scripts/golf/fetch-osm-courses.py` and clipped to that course's own named
+`leisure=golf_course` polygon — a feature is kept only when its centroid falls
+inside that ring. The clip is the difference between a map of Crosswater and a map
+that numbers 36 holes 1 to 18 twice, because Caldera Links is a kilometre away.
+
+**Fairway body: Oregon Statewide Imagery Program 2018** (OSIP,
+`imagery.oregonexplorer.info`), public, half-foot. Mown turf is segmented out of
+the aerial by `scripts/golf/trace-turf.py` and clipped to the same boundary. OSM
+maps only 12 of Tetherow's 18 fairways, so a course drawn from OSM alone is a
+scatter of floating greens. The band that decides what counts as turf is chosen
+per course by looking at a `--sweep` overlay, and each choice carries its reason in
+`PER_COURSE_BAND`; the acreage the script prints measures the imagery and is not
+published anywhere.
+
+**Par, yardage and hole count: the USGA rows above.** Every figure the map section
+prints comes from the registry, never from OSM, with two exceptions that are gated:
+
+- **Per-hole par** prints only when the course's OSM per-hole `par` tags sum to the
+  published par. Tetherow's sum to 71 on a par-72 course, so Tetherow prints no
+  per-hole par.
+- **Per-hole yardage** prints only when the routings sum to within 1% of the
+  published back-tee card.
+
+Three things are measured and deliberately never published: **green square
+footage** (OSM traces some greens as the whole complex — Crosswater would print an
+18,300 sq ft putting surface, and there is no card to reconcile a green against),
+**traced turf acreage**, and any **stroke index outside 1..holes** (OSM carries
+`handicap=-1` at Eagle Crest Ridge).
+
+**A course that cannot be drawn honestly is not drawn.** `build-course-maps.mjs`
+refuses a course missing more than a quarter of its published holes; every absent
+hole that does ship is named on the page. Big Meadow has no hole routings at all
+and is anchored on its greens, 18 of which carry an OSM `ref` — the number marks
+the green, no hole claims a length or a shape, and the section says so. Quail Run,
+River's Edge, Pronghorn's two courses, Brasada Canyons, Broken Top, Awbrey Glen,
+the Eagle Crest Challenge course, The Greens at Redmond and Desert Peaks have no
+usable hole geometry in OSM and have no map.
+
+**Attribution.** The public source line on every course-map section names
+OpenStreetMap contributors, the Oregon aerial, and the USGA database.
