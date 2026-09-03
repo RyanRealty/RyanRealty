@@ -115,19 +115,37 @@ export function V3Proof({
      opened a different review in three of six trials (evaluator round five,
      REVIEWS-1). */
   const marks = useMemo(() => {
-    // In strip units: 34 of 1000 is about 11px on a 335px phone strip, one
-    // mark diameter, so no two marks in a row can touch.
-    const MIN_GAP = 34
-    const rowLastX: number[] = []
+    /* Both spacings are the 24px WCAG 2.5.8 floor, in the units each axis is
+       measured in.
+
+       X is in strip units and the strip scales: 1000 units render as about
+       335px on a 390 phone, so 24px on screen is 72 units. It was 34 — about
+       11px — which is why an evaluator measured twenty-three of twenty-four
+       gaps under 44px and eight pairs under one pixel.
+
+       Y is in CSS pixels already: the layer is a fixed 6rem and y maps 1:1. The
+       row pitch was one mark diameter plus three, 14px, so stacked marks in
+       adjacent rows nearly touched. */
+    const MIN_GAP_X = 72
+    const ROW_PITCH = 24
+    // Four rows is what 96px of strip holds at that pitch. Rows used to be
+    // unbounded and everything past the fourth clamped to the same y, which put
+    // a clamped mark three pixels from the row above it — worse than the
+    // crowding the rows exist to fix.
+    const ROWS = Math.max(1, Math.floor((STRIP_H - 14 - MARK_R) / ROW_PITCH) + 1)
+    const rowLastX: number[] = new Array(ROWS).fill(-Infinity)
     const placed = quotes
       .map((q) => ({ q, x: ((q.year - first + (q.month + 0.5) / 12) / span) * STRIP_W }))
       .sort((a, b) => a.x - b.x)
       .map(({ q, x }) => {
-        let row = 0
-        while (rowLastX[row] != null && x - rowLastX[row]! < MIN_GAP) row += 1
+        let row = rowLastX.findIndex((lastX) => x - lastX >= MIN_GAP_X)
+        if (row < 0) {
+          // Every row is still crowded here. Take the emptiest, which is the
+          // largest gap available, rather than inventing a row with none.
+          row = rowLastX.reduce((best, lastX, i) => (lastX < rowLastX[best]! ? i : best), 0)
+        }
         rowLastX[row] = x
-        const y = STRIP_H - 14 - row * (MARK_R * 2 + 3)
-        return { q, x, y: Math.max(MARK_R + 1, y) }
+        return { q, x, y: STRIP_H - 14 - row * ROW_PITCH }
       })
     // Back to the order the cards are in, so the roving index and the list
     // agree.

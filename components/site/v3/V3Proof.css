@@ -136,6 +136,19 @@
   cursor: pointer;
 }
 
+/* A narrow strip has less horizontal room per month, so it needs more rows.
+   Marks are placed as a percentage of the layer's height, so a taller layer
+   spreads the same four rows further apart: 24px of pitch at 6rem becomes 36px
+   at 9rem. Measured on /reviews with 25 marks — the closest pair went from
+   0.00px to 10.94px at 390 with the row fix, and this takes it the rest of the
+   way. */
+@media (max-width: 47.99rem) {
+  .v3-proof__strip,
+  .v3-proof__marks-layer {
+    height: 9rem;
+  }
+}
+
 /* A mark: an 11px dot inside a 24px target, centred on its month. */
 .v3-proof__dot {
   position: absolute;

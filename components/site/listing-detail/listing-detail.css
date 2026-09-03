@@ -1075,6 +1075,38 @@
   margin-bottom: 18px;
   flex-wrap: wrap;
 }
+/* The "?" that jumps to How we get our numbers. It had no rule anywhere in the
+   repo, so it rendered as a 7.83 x 14px glyph — an evaluator's smallest measured
+   target on any public page. The box is 28px and not 44: a 44px target over a
+   7.8px glyph sitting in a line of text steals about eighteen pixels of the
+   words either side of it. */
+.listing-detail .mkt-how {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 2px;
+  vertical-align: middle;
+  color: var(--v3-ink-muted);
+  text-decoration: none;
+}
+
+.listing-detail .mkt-how:hover .mkt-how-mark,
+.listing-detail .mkt-how:focus-visible .mkt-how-mark {
+  color: var(--v3-ink);
+}
+
+.listing-detail .mkt-how-mark {
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--v3-navy) 30%, transparent);
+  border-radius: 50%;
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
 .listing-detail .mkt-bars {
   display: flex;
   flex-direction: column;
