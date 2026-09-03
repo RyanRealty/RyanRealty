@@ -1,4 +1,77 @@
-# Current — 2026-09-01 (Claude Code UX session, main) — homepage three routes, phone in chrome, TASTE is a gate, CMA on xAI
+# Current — 2026-09-02 (evaluator punch list, main) — seven form defects closed in the PRIMITIVES
+
+Matt picked the evaluator punch list. An 11-agent audit re-measured every open
+finding against the live build first, which was worth doing: **the "market chart has
+zero hover" finding was already fixed** and would have been rebuilt. The critic pass
+that followed produced the work order everything below follows: *"the site's problem
+is not a shortage of primitives — V3Answers is used once, V3Ledger has no encode,
+V3Chart's range rows are aria-hidden, and V3Proof is switched off on the page that
+most needs it. Improve the four that exist before adding four that do not."*
+
+**Shipped this session, all on main, each deployed and verified in production:**
+
+| | was | now |
+|---|---|---|
+| Footer, every page @375 | 2,599px | **947px** (all 52 links still crawlable) |
+| Homepage @375 | 12,675px | **11,022px** |
+| `/communities/tetherow` `#faq` @1440 | 3,405px | **513px** |
+| `/cities/bend` place ledgers | 61 unencoded rows | **27 drawn bars** |
+| Range chart rows | `aria-hidden`, `title` only | pointer + keys + touch, 9/9 rows |
+| Place H1 vs its own H2 | 35px under a 58px | **58px over 35px** |
+
+- **`cd65d5d6` the footer folds and a ledger row draws its figure.** `encode="bar"`
+  on V3Ledger takes a `weight` (a SHARE, 0–1, computed by the caller beside the
+  figure) so the primitive still never does arithmetic on a number it could then
+  disagree with the trace about. One change lit eight place-ledger call sites.
+- **`83518a2f` the fold only lives where the sitemap is one column.** The evaluator
+  found two defects in my own footer an hour after I shipped it: the unfold started
+  at 56.25rem while the grid goes multi-column at 40rem, so opening a group at
+  640/768/834/899 left ~586px of blank cream; and I had written that the chevron
+  matched V3Atlas when it pointed the opposite way. **Still open, a product call:**
+  above 40rem each summary stays focusable and reports itself collapsed over visible
+  links. CSS can force a disclosure open but cannot make the control agree.
+- **`dfe115a1` market figures say what they mean.** TASTE names `median to pending ·
+  90 days` as its example of banned jargon; it was shipping verbatim on four route
+  classes. Nine `·` forms retired. **The rename is COUPLED** —
+  `lib/market/how-we-get-our-numbers.ts` keys its explanation dictionary by the
+  printed label — and **eleven tests had frozen the old spelling**, several by
+  grepping source for the exact string.
+- **`6f1126ed` + `a6477693` the questions fold, on five routes.** V3Answers ran on
+  ONE route. The community `#faq` was one V3Quiet doing three jobs; the 41 outbound
+  doors were the real bulk and now fold past six behind a counted summary. Folding,
+  never cutting: a test walks all 41 hrefs. `splitQuietItems` does the split once, in
+  the barrel. **ci:page-purpose caught the plan drifting from the page** and the city
+  + community parity.json moved with it.
+- **`038d15b4` the range rows can be read.** 57 rows across nine call sites had
+  `aria-hidden="true"` and a native `title`. V3ChartHover took an `axis` and does the
+  same job turned ninety degrees. Two defects the RENDER caught: the tip covered the
+  row it described (a range plot already prints every value, so row charts get the
+  crosshair and live region and no tip), and the crosshair pointed one row high
+  because I sized the layer to the whole range box including its band header.
+- **`bd17f8ab` a page's title is the biggest thing on it again.** V3Atlas hand-rolled
+  a clamp and used it whether its headline was an H1 or an H2; that clamp is now
+  `--v3-size-display-hero`, the step the ramp was missing.
+
+**Still open, in the critic's order:** the place-page prose class (`#belonging` is
+2,974px of essay, and `buildPlaceKnowledge` flattens fully STRUCTURED data —
+`hoa.annual`, `driveTimes[{minutes,destination}]`, `membershipTiers[{name,price,
+waitlist_status}]`, `courseSpecs` — into `·`-joined strings, so it is a composition
+job and not a data one); marks-as-doors clearing 44px (13px Google pins, 5×9px atlas
+region buttons on the homepage hero, 24×24px review marks); V3Proof as one primitive
+for all three review surfaces; `/communities#all-communities` (598 links at 18px in
+shadcn markup on a public page); and the undeclared `.skeleton` across 13 loading
+routes. `/faq` is deliberately unconverted — it interleaves category rows as
+pseudo-questions and needs a category-aware design.
+
+**Two traps worth carrying:** a suspiciously fast dev-server response after an edit is
+a CACHE, not a pass (a stale `/contact` cost me a hunt for a bug that did not exist —
+testing the splitter against real data and restarting the server settled it); and
+equal-specificity CSS is decided by SOURCE ORDER, which is how a modifier placed above
+its base rule silently shrank the homepage hero.
+
+---
+
+# Previous — 2026-09-01 (Claude Code UX session, main) — homepage three routes, phone in chrome, TASTE is a gate, CMA on xAI
 
 **Shipped, all on origin/main, production READY:**
 - `317d7a12` homepage: V3Doors (new barrel pattern) routes Buying / Selling / Investing under
