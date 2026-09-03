@@ -20,6 +20,8 @@ const COURSE_MAPS: Record<string, Loader> = {
   crosswater: () => import('@/data/golf/course-maps/crosswater.json'),
   'sunriver-meadows': () => import('@/data/golf/course-maps/sunriver-meadows.json'),
   'eagle-crest-ridge': () => import('@/data/golf/course-maps/eagle-crest-ridge.json'),
+  'aspen-lakes': () => import('@/data/golf/course-maps/aspen-lakes.json'),
+  juniper: () => import('@/data/golf/course-maps/juniper.json'),
 }
 
 export function hasCourseMap(courseSlug: string): boolean {

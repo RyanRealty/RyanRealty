@@ -55,24 +55,29 @@ DEFAULT_BAND = 'base'
 # One band per course. Each entry was chosen from that course's --sweep overlay
 # and carries the reason.
 #
-#   tetherow  — high desert. The surround is grey-green sage at low saturation,
-#               so the looser band fills the fairway corridors without touching
-#               it: base traces 51 acres of ribbon, loose 60 with the same edges.
-#   crosswater — the Deschutes floodplain. `loose` floods the wet meadow along
-#               the river and reports 115 acres against base's 47; the extra 68
-#               are marsh, not fairway.
-#   sunriver-meadows — same trap, plus the airfield grass beside it.
-#   eagle-crest-ridge — desert again, so loose; the neighbouring Resort course
-#               shows in the frame and is excluded by the boundary, not the band.
+#   tetherow  — high desert. base traces 51 acres of ribbon, loose 60 with the
+#               same edges.
+#   crosswater — the Deschutes floodplain. loose floods the wet meadow along the
+#               river and reports 115 acres against base's 47; the extra 68 are
+#               marsh.
+#   sunriver-meadows — the same trap, plus the airfield grass beside it.
+#   eagle-crest-ridge — desert. The neighbouring Resort course shows in the frame
+#               and is excluded by the boundary, not by the band.
+#   aspen-lakes — desert, with irrigated farm fields north of the property that
+#               looser starts taking in.
+#   juniper   — desert.
 #
 # Anything not listed gets DEFAULT_BAND, which under-traces rather than over-:
 # a missing fairway shows less turf, an invented one shows ground that is not
 # there.
 PER_COURSE_BAND = {
+    # High-desert courses. Sage is grey-green at low saturation, so the loose
+    # band fills the fairway corridors and leaves the desert alone. Each one was
+    # confirmed on its own sweep, not inherited from the one above it.
     'tetherow': 'loose',
-    # Same high-desert surround as Tetherow, verified on its own sweep: the
-    # corridors fill and the sage stays untouched.
     'eagle-crest-ridge': 'loose',
+    'aspen-lakes': 'loose',
+    'juniper': 'loose',
 }
 
 
