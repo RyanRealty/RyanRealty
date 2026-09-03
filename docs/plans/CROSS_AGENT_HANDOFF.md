@@ -1,4 +1,95 @@
-# Current — 2026-09-02 (golf course maps + footer, main) — sixteen courses drawn hole by hole
+# Current — 2026-09-02 (golf maps + the punch list, main) — sixteen courses, five items closed
+
+Matt: "finish all Central Oregon courses and then finish the primary items in
+this session, I want it all and I want it all done the best."
+
+## The courses — 16 of 26, and the other 10 are a data wall
+
+See the block below for the pipeline, the three build paths and the §0 refusals;
+it is unchanged except that the count went 10 → 16 and a separate evaluator then
+failed the section on four counts, all fixed:
+
+- **The source line attributed per-hole par and yardage to the USGA.** A hole's
+  length is the measured length of an OSM polyline and its par is a raw OSM tag;
+  the USGA supplies the two totals in the claim line and nothing else. The trace
+  is split, and a basis line sits with the figures.
+- **A duplicate stroke index shipped** (Eagle Crest Resort printed index 6 on
+  holes 10 and 11). A stroke index is a permutation of 1..N, so it reconciles as
+  a SET now — complete and unique — or it does not print. It prints on no course
+  today, which is the honest state of the tags.
+- **Two totals for one course disagreed on one screen**: the USGA claim against
+  the summed routings (Crooked River Ranch 5,818 vs 5,763). The nine totals say
+  "measured" now.
+- **The hole numbers failed AA on every map**: dimming the disc to 0.45 put
+  cream-on-navy at 2.73–3.79:1. State is in the FORM now, a ring against a
+  filled disc, both at 14.23:1.
+
+Plus five more from the same pass: the scorecard's columns lied on courses with
+missing holes (hole 3 sat in column 2), a nine that could total nothing printed
+"Out" alone, the green and the water had no `.is-on` rule so a card reading
+"water on the hole" lit no water, the buttons announced as "1 4", and the cells
+measured 37×44px.
+
+**The ten without maps are blocked on OpenStreetMap, not on us.** Quail Run and
+River's Edge have a boundary and nothing inside it. Pronghorn's two courses,
+Brasada Canyons, Broken Top, Awbrey Glen, the Eagle Crest Challenge course, The
+Greens at Redmond and Desert Peaks have no polygon carrying golf features —
+checked by id, not by name. The fix is contributing the hole geometry upstream.
+
+## The punch list — all five, plus two the recon surfaced
+
+A ten-agent read-only recon measured every item against the live build and then
+adversarially verified its own findings, which changed three of them materially.
+
+| item | what shipped |
+|---|---|
+| `#belonging` prose class | V3Quiet gained `fact`, `chips` and `fold` rows. Tetherow 2,974 → 2,374px at 1440, 4,042 → 2,799 at 390, with the DOM word count unchanged. |
+| `/communities#all-communities` | 600 links off shadcn onto the barrel: 14px text in an 18px box → 16px navy in a 44px row. Two new atoms, V3Filter and V3Segmented. |
+| undeclared `.skeleton` | V3Placeholder (paint only) + V3Loading (the v3 section rhythm). Nine public routes are five lines each. |
+| V3Proof | The homepage's eight hardcoded testimonials are the live Google reviews. 1,557 → 964px, with figures, dates and a door. |
+| marks under 44px | The review strip's closest pair went 0.00px → 24.00 at 1440 and 10.94 at 390. The listing page's `?` link got a rule; it had none anywhere. |
+
+**Two the recon found that were not on the list, both worse than the items:**
+
+- **The listing page's broker contact rendered at NO width.** The mobile bar is
+  `position: fixed` and lived inside `.listing-detail-aside`, which is
+  `display: none` below 64rem — a fixed element does not escape a hidden
+  ancestor — and the desktop card was hidden at exactly the width the aside
+  appears. Measured 0×0 for both at 390, 1024 and 1440; now 390×56 and 518×510.
+  The CSS comment above the bar reads "Conversion-critical."
+- **The footer disclosure lied.** Above 40rem it was closed while CSS forced its
+  list visible, so a screen reader met a control announced COLLAPSED over
+  thirteen visible links. It ships `open` now and an island closes it narrow —
+  that direction, because the inverse hides 52 destinations from every crawler
+  that does not run JS.
+
+## Still open
+
+- **RentalCalculator on the public listing page**: 56 shadcn `data-slot`
+  elements on a public surface, a straight §3 violation. It is a real rewrite,
+  not a swap.
+- **Map cluster and price pills** (`SearchMapClustered`): 32×32 / 38×38 /
+  60×25, 22 of 23 under 44px on /cities/bend. Use the transparent-wrapper form
+  the course map proved.
+- **Control heights**: `.v3-chartcard__source-summary` 17.84px,
+  `.v3-instrument__fold-summary` 42.34, `#save-search-email` 32,
+  `.map-search-views` 26.
+- **A tap-target gate** (§6). It must encode the WCAG Equivalent exception or it
+  fails the atlas and the field pins on every run: a control under 44px fails
+  only when no same-page control does the same job at ≥44px. Both existing
+  mitigations are machine-checkable — atlas chips match places 1:1 by name,
+  field-pin hrefs match row hrefs 1:1.
+
+**Two traps worth carrying.** Zero in-degree is not dead code, again: I nearly
+deleted PublicProductTypes on the strength of four parity.json files recording
+it replaced and a grep that found no importer. G46 caught it —
+NeighborhoodMarketContext imports it. And `git checkout HEAD -- <path>` on a
+file the HEAD commit deleted does not restore it; chained with a `git show`
+fallback it wrote two EMPTY files that then broke the same gate.
+
+---
+
+# Previous — 2026-09-02 (golf course maps + footer, main) — sixteen courses drawn hole by hole
 
 Matt asked for the course map on the golf communities and then for all of Central
 Oregon, against his restated standard that a page must be the best page on the
