@@ -15,6 +15,8 @@ export {
   isRelistedNow,
   isFsboRelistedNow,
   resolveComplianceState,
+  expiredOutreachListingHits,
+  normalizeParcelNumber,
   type ProspectComplianceInput,
 } from './compliance'
 

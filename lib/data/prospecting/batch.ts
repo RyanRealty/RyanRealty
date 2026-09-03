@@ -15,6 +15,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import {
+  EXPIRED_OUTREACH_LISTING_SELECT,
+  EXPIRED_OUTREACH_ON_MARKET,
+  EXPIRED_OUTREACH_STATUS_OR,
+  expiredOutreachListingHits,
+  normalizeParcelNumber,
+  type ExpiredOutreachListing,
+} from './compliance'
+import {
   blockAllChannels,
   acceptedDocTypesFor,
   expectedDocTypeFor,
@@ -239,27 +247,66 @@ export async function resolveComplianceBatch(
   const sb = createServiceClient()
   const idKey = kind === 'expired' ? 'listing_key' : 'fsbo_url'
 
-  // ── Batch the relist read: one listings query scoped to the street numbers present.
+  // ── Batch the relist read: one listings query scoped to the street numbers
+  // present. Expired rows also pull Closed (sold after expire) and, when the
+  // original listing has a parcel_number, same-taxlot siblings.
   const nums = [...new Set(rows.map((r) => streetNumber(r.street_address as string | null)).filter((n): n is string => !!n))]
-  const onMarketByNumber = new Map<string, Array<{ streetName: string; city: string; ts: string | null }>>()
-  if (nums.length > 0) {
-    const { data, error } = await sb
-      .from('listings')
-      .select('StreetNumber, StreetName, City, status_change_timestamp')
-      .in('StreetNumber', nums)
-      .in('StandardStatus', ['Active', 'Pending', 'Coming Soon'])
-    if (error) {
-      console.error('[prospecting] resolveComplianceBatch relist read failed:', error.message)
+  const listingByNumber = new Map<string, ExpiredOutreachListing[]>()
+  const listingByParcel = new Map<string, ExpiredOutreachListing[]>()
+  const parcelByListingKey = new Map<string, string>()
+  if (kind === 'expired') {
+    const keys = [...new Set(rows.map((r) => String(r.listing_key ?? '')).filter(Boolean))]
+    if (keys.length > 0) {
+      const { data: anchors, error: anchorErr } = await sb
+        .from('listings')
+        .select('ListingKey, parcel_number')
+        .in('ListingKey', keys)
+      if (anchorErr) {
+        console.error('[prospecting] resolveComplianceBatch parcel read failed:', anchorErr.message)
+      } else {
+        for (const a of (anchors ?? []) as RawRow[]) {
+          const parcel = normalizeParcelNumber(a.parcel_number)
+          if (parcel) parcelByListingKey.set(String(a.ListingKey), parcel)
+        }
+      }
+    }
+  }
+  const parcels = [...new Set(parcelByListingKey.values())]
+  if (nums.length > 0 || parcels.length > 0) {
+    const streetQ =
+      nums.length > 0
+        ? kind === 'expired'
+          ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('StreetNumber', nums).or(EXPIRED_OUTREACH_STATUS_OR)
+          : sb
+              .from('listings')
+              .select(EXPIRED_OUTREACH_LISTING_SELECT)
+              .in('StreetNumber', nums)
+              .in('StandardStatus', [...EXPIRED_OUTREACH_ON_MARKET])
+        : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const parcelQ =
+      kind === 'expired' && parcels.length > 0
+        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('parcel_number', parcels).or(EXPIRED_OUTREACH_STATUS_OR)
+        : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
+    if (streetRes.error) {
+      console.error('[prospecting] resolveComplianceBatch relist read failed:', streetRes.error.message)
     } else {
-      for (const l of (data ?? []) as RawRow[]) {
+      for (const l of (streetRes.data ?? []) as ExpiredOutreachListing[]) {
         const key = String(l.StreetNumber ?? '')
-        const arr = onMarketByNumber.get(key) ?? []
-        arr.push({
-          streetName: String(l.StreetName ?? '').toUpperCase(),
-          city: String(l.City ?? '').toUpperCase(),
-          ts: (l.status_change_timestamp as string | null) ?? null,
-        })
-        onMarketByNumber.set(key, arr)
+        const arr = listingByNumber.get(key) ?? []
+        arr.push(l)
+        listingByNumber.set(key, arr)
+      }
+    }
+    if (parcelRes.error) {
+      console.error('[prospecting] resolveComplianceBatch parcel probe failed:', parcelRes.error.message)
+    } else {
+      for (const l of (parcelRes.data ?? []) as ExpiredOutreachListing[]) {
+        const parcel = normalizeParcelNumber(l.parcel_number)
+        if (!parcel) continue
+        const arr = listingByParcel.get(parcel) ?? []
+        arr.push(l)
+        listingByParcel.set(parcel, arr)
       }
     }
   }
@@ -337,16 +384,25 @@ export async function resolveComplianceBatch(
     const suppressedSms = channels.sms.blocked
     const hardStop = channels.sms.blocked
 
-    // Relist match (in memory).
+    // Relist + sold-after-expire match (in memory). Same `relisted` flag.
     const numKey = streetNumber(street)
     const prefix = namePrefix(street)
-    const candidates = numKey ? onMarketByNumber.get(numKey) ?? [] : []
-    const relisted = candidates.some((l) => {
-      if (!l.streetName.startsWith(prefix) || l.city !== city) return false
-      if (kind === 'fsbo') return true
-      const scts = (raw.status_change_timestamp as string | null) ?? null
-      return scts == null || (l.ts ?? '') > scts
-    })
+    const subjectParcel = kind === 'expired' ? (parcelByListingKey.get(id) ?? null) : null
+    const expiryComparator = (raw.status_change_timestamp as string | null) ?? (raw.expired_at as string | null) ?? null
+    const candidates = [
+      ...(numKey ? listingByNumber.get(numKey) ?? [] : []),
+      ...(subjectParcel ? listingByParcel.get(subjectParcel) ?? [] : []),
+    ]
+    const relisted = candidates.some((l) =>
+      expiredOutreachListingHits({
+        kind,
+        listing: l,
+        namePrefix: prefix,
+        cityUpper: city,
+        expiryComparator,
+        subjectParcel,
+      }),
+    )
 
     const offMarket = kind === 'fsbo' ? ((raw.status as string | null) ?? 'active') !== 'active' : false
     const noPhone = !hasSendablePhone((raw.contact_phone as string | null) ?? null)
@@ -395,12 +451,20 @@ export async function resolveComplianceBatch(
  * send must fail CLOSED — a read error must BLOCK, never silently solicit a
  * property that may be back on the market. Returns `verifyFailed:true` on any
  * read error so the caller refuses. `expiryComparator` is the prospect's
- * off-market timestamp; for expired we only count on-market listings newer than
- * it, for fsbo any current on-market match blocks.
+ * off-market timestamp; for expired we count on-market listings newer than it
+ * AND Closed sales whose CloseDate (else status_change_timestamp) is newer —
+ * both paint as `relisted`. For fsbo any current on-market match blocks.
+ * Same street match as before; also same parcel_number when `listing_key`
+ * resolves one.
  */
 export async function verifyNotRelisted(
   kind: ProspectKind,
-  prospect: { street_address: string | null; city: string | null; expiryComparator: string | null },
+  prospect: {
+    street_address: string | null
+    city: string | null
+    expiryComparator: string | null
+    listing_key?: string | null
+  },
 ): Promise<{ relisted: boolean; verifyFailed: boolean }> {
   if (!prospect.street_address) return { relisted: false, verifyFailed: false }
   try {
@@ -409,21 +473,54 @@ export async function verifyNotRelisted(
     if (!numKey) return { relisted: false, verifyFailed: false }
     const prefix = namePrefix(prospect.street_address)
     const city = String(prospect.city ?? '').toUpperCase()
-    const { data, error } = await sb
-      .from('listings')
-      .select('StreetName, City, status_change_timestamp')
-      .eq('StreetNumber', numKey)
-      .in('StandardStatus', ['Active', 'Pending', 'Coming Soon'])
-    if (error) {
-      console.error('[prospecting] verifyNotRelisted read failed (fail-closed):', error.message)
+    let subjectParcel: string | null = null
+    if (kind === 'expired' && prospect.listing_key) {
+      const { data: anchor, error: anchorErr } = await sb
+        .from('listings')
+        .select('parcel_number')
+        .eq('ListingKey', prospect.listing_key)
+        .maybeSingle()
+      if (anchorErr) {
+        console.error('[prospecting] verifyNotRelisted parcel read failed (fail-closed):', anchorErr.message)
+        return { relisted: false, verifyFailed: true }
+      }
+      subjectParcel = normalizeParcelNumber(anchor?.parcel_number)
+    }
+    const streetQ =
+      kind === 'expired'
+        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).eq('StreetNumber', numKey).or(EXPIRED_OUTREACH_STATUS_OR)
+        : sb
+            .from('listings')
+            .select(EXPIRED_OUTREACH_LISTING_SELECT)
+            .eq('StreetNumber', numKey)
+            .in('StandardStatus', [...EXPIRED_OUTREACH_ON_MARKET])
+    const parcelQ =
+      kind === 'expired' && subjectParcel
+        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).eq('parcel_number', subjectParcel).or(EXPIRED_OUTREACH_STATUS_OR)
+        : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
+    if (streetRes.error) {
+      console.error('[prospecting] verifyNotRelisted read failed (fail-closed):', streetRes.error.message)
       return { relisted: false, verifyFailed: true }
     }
-    const relisted = ((data ?? []) as RawRow[]).some((l) => {
-      if (!String(l.StreetName ?? '').toUpperCase().startsWith(prefix)) return false
-      if (String(l.City ?? '').toUpperCase() !== city) return false
-      if (kind === 'fsbo') return true
-      return prospect.expiryComparator == null || String(l.status_change_timestamp ?? '') > prospect.expiryComparator
-    })
+    if (parcelRes.error) {
+      console.error('[prospecting] verifyNotRelisted parcel probe failed (fail-closed):', parcelRes.error.message)
+      return { relisted: false, verifyFailed: true }
+    }
+    const rows = [
+      ...((streetRes.data ?? []) as ExpiredOutreachListing[]),
+      ...((parcelRes.data ?? []) as ExpiredOutreachListing[]),
+    ]
+    const relisted = rows.some((l) =>
+      expiredOutreachListingHits({
+        kind,
+        listing: l,
+        namePrefix: prefix,
+        cityUpper: city,
+        expiryComparator: prospect.expiryComparator,
+        subjectParcel,
+      }),
+    )
     return { relisted, verifyFailed: false }
   } catch (e) {
     console.error('[prospecting] verifyNotRelisted threw (fail-closed):', e instanceof Error ? e.message : e)

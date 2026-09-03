@@ -13,6 +13,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressed } from '@/lib/crm/suppressions'
+import { isClosedStatus } from '@/lib/listing-status'
 import {
   blockAllChannels,
   hasSendableEmail,
@@ -24,6 +25,74 @@ import {
   type ProspectComplianceState,
   type ProspectKind,
 } from './types'
+
+/** On-market statuses the existing expired-outreach probe already used. */
+export const EXPIRED_OUTREACH_ON_MARKET = ['Active', 'Pending', 'Coming Soon'] as const
+
+/**
+ * Same listings probe as the original relist check, plus Closed so a
+ * post-expire sale at the address (or parcel) paints as relisted.
+ * PostgREST `or` — Coming Soon needs quotes (space in the value).
+ */
+export const EXPIRED_OUTREACH_STATUS_OR =
+  'StandardStatus.in.(Active,Pending,"Coming Soon"),StandardStatus.ilike.*Closed*'
+
+export const EXPIRED_OUTREACH_LISTING_SELECT =
+  'StreetNumber, StreetName, City, status_change_timestamp, StandardStatus, CloseDate, parcel_number'
+
+/** Junk APN values the listings column sometimes carries — not a real taxlot. */
+export function normalizeParcelNumber(raw: unknown): string | null {
+  const v = String(raw ?? '').trim()
+  if (!v) return null
+  if (/^(n\/?a\.?|none|tbd|null|unknown|0+|-+|\.+)$/i.test(v)) return null
+  return v
+}
+
+export type ExpiredOutreachListing = {
+  StreetNumber?: unknown
+  StreetName?: unknown
+  City?: unknown
+  StandardStatus?: unknown
+  CloseDate?: unknown
+  status_change_timestamp?: unknown
+  parcel_number?: unknown
+}
+
+/**
+ * One listing hits the existing expired-outreach block: same street number
+ * (caller-scoped) + first word of StreetName + City, OR the same
+ * parcel_number when both sides have one. On-market after expiryComparator
+ * is the original relist. Closed with CloseDate (else status_change_timestamp)
+ * after expiryComparator is the sold-after-expire extend — still `relisted`.
+ */
+export function expiredOutreachListingHits(opts: {
+  kind: ProspectKind
+  listing: ExpiredOutreachListing
+  namePrefix: string
+  cityUpper: string
+  expiryComparator: string | null
+  subjectParcel: string | null
+}): boolean {
+  const streetName = String(opts.listing.StreetName ?? '').toUpperCase()
+  const city = String(opts.listing.City ?? '').toUpperCase()
+  const addressMatch = streetName.startsWith(opts.namePrefix) && city === opts.cityUpper
+  const listingParcel = normalizeParcelNumber(opts.listing.parcel_number)
+  const parcelMatch = Boolean(opts.subjectParcel && listingParcel && opts.subjectParcel === listingParcel)
+  if (!addressMatch && !parcelMatch) return false
+
+  const status = (opts.listing.StandardStatus as string | null) ?? null
+  if (opts.kind === 'fsbo') {
+    return (EXPIRED_OUTREACH_ON_MARKET as readonly string[]).includes(String(status ?? ''))
+  }
+
+  if ((EXPIRED_OUTREACH_ON_MARKET as readonly string[]).includes(String(status ?? ''))) {
+    return opts.expiryComparator == null || String(opts.listing.status_change_timestamp ?? '') > opts.expiryComparator
+  }
+
+  if (!isClosedStatus(status) || opts.expiryComparator == null) return false
+  const soldAt = String(opts.listing.CloseDate ?? opts.listing.status_change_timestamp ?? '')
+  return soldAt !== '' && soldAt > opts.expiryComparator
+}
 
 // ── Hard stop ────────────────────────────────────────────────────────────────
 
@@ -64,36 +133,70 @@ export async function getProspectHardStop(prospect: {
 // ── Re-list guards (spec §6.3 / §6.4) ───────────────────────────────────────
 
 /**
- * Expired re-list check — ported verbatim from the single-row shape in
- * lib/data/expired/outreach.ts `getExpiredListingDetail` (the address-match +
- * status_change_timestamp-newer-than-expiry logic, ~lines 230-245). Never
- * solicit an address that is now Active/Pending/Coming Soon in MLS.
+ * Expired re-list check — same StreetNumber + first-word StreetName + City
+ * probe as before, now also Closed after `status_change_timestamp` (sold
+ * after expire) and parcel_number when the original listing carries one.
+ * Fail-open on read error (worklist paint). The send path re-runs this
+ * decision fail-closed via `verifyNotRelisted`.
  */
 export async function isRelistedNow(prospect: {
   street_address: string | null
   city: string | null
   status_change_timestamp: string | null
+  listing_key?: string | null
 }): Promise<boolean> {
   if (!prospect.street_address) return false
   try {
     const sb = createServiceClient()
     const num = String(prospect.street_address).split(' ')[0]
     const namePrefix = String(prospect.street_address).slice(num.length + 1).split(' ')[0]?.toUpperCase() ?? ''
-    const { data: onMarket, error } = await sb
+    const cityUpper = String(prospect.city ?? '').toUpperCase()
+    let subjectParcel: string | null = null
+    if (prospect.listing_key) {
+      const { data: anchor, error: anchorErr } = await sb
+        .from('listings')
+        .select('parcel_number')
+        .eq('ListingKey', prospect.listing_key)
+        .maybeSingle()
+      if (anchorErr) {
+        console.error('[prospecting] isRelistedNow parcel read failed:', anchorErr.message)
+      } else {
+        subjectParcel = normalizeParcelNumber(anchor?.parcel_number)
+      }
+    }
+    const streetQ = sb
       .from('listings')
-      .select('StreetName, City, status_change_timestamp')
+      .select(EXPIRED_OUTREACH_LISTING_SELECT)
       .eq('StreetNumber', num)
-      .in('StandardStatus', ['Active', 'Pending', 'Coming Soon'])
-    if (error) {
-      console.error('[prospecting] isRelistedNow read failed:', error.message)
+      .or(EXPIRED_OUTREACH_STATUS_OR)
+    const parcelQ = subjectParcel
+      ? sb
+          .from('listings')
+          .select(EXPIRED_OUTREACH_LISTING_SELECT)
+          .eq('parcel_number', subjectParcel)
+          .or(EXPIRED_OUTREACH_STATUS_OR)
+      : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
+    if (streetRes.error) {
+      console.error('[prospecting] isRelistedNow read failed:', streetRes.error.message)
       return false
     }
-    return (onMarket ?? []).some(
-      (l) =>
-        String(l.StreetName ?? '').toUpperCase().startsWith(namePrefix) &&
-        String(l.City ?? '').toUpperCase() === String(prospect.city ?? '').toUpperCase() &&
-        (prospect.status_change_timestamp == null ||
-          String(l.status_change_timestamp ?? '') > prospect.status_change_timestamp),
+    if (parcelRes.error) {
+      console.error('[prospecting] isRelistedNow parcel probe failed:', parcelRes.error.message)
+    }
+    const rows = [
+      ...((streetRes.data ?? []) as ExpiredOutreachListing[]),
+      ...((parcelRes.data ?? []) as ExpiredOutreachListing[]),
+    ]
+    return rows.some((l) =>
+      expiredOutreachListingHits({
+        kind: 'expired',
+        listing: l,
+        namePrefix,
+        cityUpper,
+        expiryComparator: prospect.status_change_timestamp,
+        subjectParcel,
+      }),
     )
   } catch (e) {
     console.error('[prospecting] isRelistedNow threw:', e instanceof Error ? e.message : e)
@@ -149,6 +252,8 @@ export interface ProspectComplianceInput {
   contact_phone: string | null
   /** expired only — feeds isRelistedNow's newer-than-expiry compare. */
   status_change_timestamp?: string | null
+  /** expired only — resolves listings.parcel_number for same-taxlot hits. */
+  listing_key?: string | null
   /** fsbo only — offMarket = status !== 'active'. */
   status?: string | null
   outreach_crm_person_id?: number | null
@@ -198,6 +303,7 @@ export async function resolveComplianceState(
           street_address: prospect.street_address,
           city: prospect.city,
           status_change_timestamp: prospect.status_change_timestamp ?? null,
+          listing_key: prospect.listing_key ?? null,
         })
       : await isFsboRelistedNow({ street_address: prospect.street_address, city: prospect.city })
 

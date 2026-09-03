@@ -183,15 +183,16 @@ export async function sendProspectingIntro(
     // and FAIL-CLOSED (review F2) — a listings read error must block, never silently
     // solicit a property that may be back on the market.
     if (prospect.compliance.relisted) {
-      return { ok: false, error: 'This property has re-listed (Active/Pending). Soliciting a listed property is not allowed.', code: 'relisted' }
+      return { ok: false, error: 'This property has re-listed or sold after expire. Soliciting it is not allowed.', code: 'relisted' }
     }
     const relistCheck = await verifyNotRelisted(kind, {
       street_address: prospect.streetAddress,
       city: prospect.city,
       expiryComparator: prospect.expiredAt,
+      listing_key: kind === 'expired' ? prospect.id : null,
     })
     if (relistCheck.relisted) {
-      return { ok: false, error: 'This property is now active/pending in MLS. Soliciting a listed property is not allowed.', code: 'relisted' }
+      return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
     }
     if (relistCheck.verifyFailed) {
       return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
@@ -471,15 +472,16 @@ export async function sendProspectingEmailIntro(
     // contact is legally emailable. See docs/plans/PROSPECT_TO_CMA_AND_SITE_IA_2026-07-28.md.
     if (prospect.compliance.channels.email.blocked) return { ok: false, error: `Email blocked: ${prospect.compliance.channels.email.reason ?? 'opt-out on file'}.`, code: 'hard-stop' }
     if (prospect.compliance.relisted) {
-      return { ok: false, error: 'This property has re-listed (Active/Pending). Soliciting a listed property is not allowed.', code: 'relisted' }
+      return { ok: false, error: 'This property has re-listed or sold after expire. Soliciting it is not allowed.', code: 'relisted' }
     }
     const relistCheck = await verifyNotRelisted(kind, {
       street_address: prospect.streetAddress,
       city: prospect.city,
       expiryComparator: prospect.expiredAt,
+      listing_key: kind === 'expired' ? prospect.id : null,
     })
     if (relistCheck.relisted) {
-      return { ok: false, error: 'This property is now active/pending in MLS. Soliciting a listed property is not allowed.', code: 'relisted' }
+      return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
     }
     if (relistCheck.verifyFailed) {
       return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
