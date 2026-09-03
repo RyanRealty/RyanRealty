@@ -304,6 +304,9 @@
   --v3-dur-enter: 300ms;
   --v3-dur-rise: 400ms;
   --v3-dur-sequence: 900ms;
+  /* The ladder's loop value. Used by the placeholder breathe and the Atlas
+     pulse, the only two looping animations in the register. */
+  --v3-dur-loop: 2s;
   --v3-ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --v3-travel: 10px;
 

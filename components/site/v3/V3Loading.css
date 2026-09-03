@@ -1,0 +1,66 @@
+/* ===========================================================================
+   LOADING SHELL — the shape a v3 route reserves while it streams.
+
+   ONE definition for the ten public routes that had a bare `skeleton` fallback.
+   Each of those drew a max-w-lg or max-w-7xl Tailwind card stack with rounded
+   corners: a measure that matched no element on the page it fronted, and a
+   corner the public site does not have (--v3-radius-card is 0 in both
+   registers). This reserves the v3 section rhythm instead — the same measure,
+   gutter and section pad every real section below it uses — so the fallback
+   and the page agree on where the text starts.
+   =========================================================================== */
+
+.v3.v3-loading {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+.v3-loading__eyebrow {
+  width: 8rem;
+  max-width: 40%;
+  height: calc(var(--v3-size-eyebrow) * var(--v3-leading-control));
+}
+
+.v3-loading__heading {
+  width: 28rem;
+  max-width: 85%;
+  height: calc(var(--v3-size-display-1) * var(--v3-leading-heading));
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-loading__lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+  margin-top: var(--v3-space-xl);
+}
+
+.v3-loading__line {
+  height: calc(var(--v3-size-body) * var(--v3-leading-body));
+}
+
+/* The last line of a paragraph is short. Three widths, cycled, so a ten-line
+   block does not read as a barcode. */
+.v3-loading__line:nth-child(3n + 2) {
+  width: 92%;
+}
+
+.v3-loading__line:nth-child(3n) {
+  width: 64%;
+}
+
+/* A form reserves its controls, not paragraph lines: one row per field at the
+   control height the real inputs use. */
+.v3-loading__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-md);
+  max-width: 34rem;
+  margin-top: var(--v3-space-xl);
+}
+
+.v3-loading__field {
+  height: var(--v3-tap);
+}

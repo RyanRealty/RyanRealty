@@ -240,6 +240,19 @@ export type {
 /* lib/golf/course-map.ts.                                                      */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The fill a route's loading.tsx shows where text is about to land. Paint only:
+ * the caller sizes the boxes so the reserved space is the space the real
+ * content lands in.
+ */
+export { V3Placeholder } from './V3Placeholder'
+export type { V3PlaceholderProps } from './V3Placeholder'
+
+/** The shape a v3 route reserves while it streams. One definition for every
+ *  public loading.tsx, at the register's own measure. */
+export { V3Loading } from './V3Loading'
+export type { V3LoadingProps } from './V3Loading'
+
 export { V3CourseMap } from './V3CourseMap'
 export type { V3CourseMapProps, CourseMapData } from './V3CourseMap'
 export { V3CourseMapControl } from './V3CourseMap.client'

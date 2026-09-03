@@ -1,0 +1,41 @@
+/* ===========================================================================
+   PLACEHOLDER — the fill a loading.tsx shows where text is about to land.
+
+   PAINT ONLY. It writes a background and a breathe, and no width, height,
+   margin or radius. The caller's own stylesheet sizes every box, so the space
+   a fallback reserves is the space the real content lands in — the lesson from
+   app/about/_v3/about-loading.css, which this generalizes so there is one
+   definition instead of two.
+
+   IT REPLACES AN UNDECLARED CLASS. Thirteen loading.tsx files wrote
+   `className="skeleton …"` and `.skeleton` was defined in no stylesheet in the
+   repo: 0 selector hits across 48 CSS files and 0 of 3,956 runtime rules on a
+   served route. Every one of those boxes computed to background rgba(0,0,0,0),
+   background-image none, animation-name none — laid out at the right size and
+   painting nothing.
+
+   NO RADIUS. --v3-radius-card is 0 in both registers; the fallbacks it replaces
+   drew rounded-lg, a corner the public site does not have anywhere.
+   =========================================================================== */
+
+.v3 .v3-placeholder {
+  background: var(--v3-hairline);
+}
+
+/* The motion ladder's loop value, and the same shape as the Atlas pulse — the
+   only other looping animation in the register. */
+@media (prefers-reduced-motion: no-preference) {
+  .v3 .v3-placeholder {
+    animation: v3-placeholder-breathe var(--v3-dur-loop) var(--v3-ease-out) infinite;
+  }
+}
+
+@keyframes v3-placeholder-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
