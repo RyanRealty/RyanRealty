@@ -177,10 +177,20 @@
   font-weight: var(--v3-weight-medium);
 }
 
+/* The tap layer. Percent-positioned over the drawing, so a target is 44px at
+   every width instead of scaling with the map. */
+.v3-course__taps {
+  position: absolute;
+  inset: 0;
+}
+
 .v3-course__hit {
-  fill: transparent;
+  position: absolute;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  margin: calc(var(--v3-tap) / -2) 0 0 calc(var(--v3-tap) / -2);
+  border-radius: 50%;
   cursor: pointer;
-  outline: none;
 }
 
 /* The selected hole is emphasised; the rest of the course is not faded. Fading

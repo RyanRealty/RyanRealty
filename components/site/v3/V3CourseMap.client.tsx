@@ -23,7 +23,7 @@ export function V3CourseMapControl() {
     const root = anchor.current?.closest<HTMLElement>('.v3-course')
     if (!root) return
     const svg = root.querySelector<SVGSVGElement>('.v3-course__svg')
-    const hits = Array.from(root.querySelectorAll<SVGCircleElement>('.v3-course__hit'))
+    const hits = Array.from(root.querySelectorAll<HTMLElement>('.v3-course__hit'))
     const picks = Array.from(root.querySelectorAll<HTMLButtonElement>('.v3-course__pick'))
     const cards = Array.from(root.querySelectorAll<HTMLElement>('.v3-course__card'))
     const refs = picks.map((p) => p.dataset.hole).filter((r): r is string => !!r)
@@ -77,7 +77,6 @@ export function V3CourseMapControl() {
       p.addEventListener('keydown', onPickKey as EventListener)
     })
     for (const hit of hits) {
-      hit.setAttribute('tabindex', '-1')
       hit.addEventListener('pointerenter', onHole)
       hit.addEventListener('pointerdown', onHole)
     }

@@ -130,7 +130,6 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
   // rendered at 6px. Scaling off the box height keeps discs constant on screen.
   const unit = Math.max(1, H / 900)
   const discR = 12 * unit
-  const hitR = 26 * unit
 
   const headingId = id ? `${id}-heading` : undefined
   const nines = courseNines(notes)
@@ -204,24 +203,30 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
                 </g>
               )
             })}
-            {/* Tap targets. The 12-unit number disc is under the 44px thumb
-                floor at the widths the stage renders; 26 units clears it. */}
+          </svg>
+
+          {/* The tap layer sits OVER the drawing in HTML, not inside the SVG.
+              An SVG circle is sized in user units, so a target that clears 44px
+              on a desktop map is 20px on the same map at 390 — the marker
+              scales with the drawing and a thumb does not. Positioned by percent
+              against the same box the paths are drawn in.
+
+              aria-hidden with no roles: the scorecard below is the accessible
+              control for every hole and carries the same label, so exposing
+              these too would announce eighteen holes twice. */}
+          <div className="v3-course__taps" aria-hidden="true">
             {notes.map((n, i) => {
               const [a, b] = px(data.holes[i]!.line[0]!)
-              const line = figureLine(n)
               return (
-                <circle
-                  key={`hit-${n.ref}`}
+                <span
+                  key={`tap-${n.ref}`}
                   className="v3-course__hit"
                   data-hole={n.ref}
-                  cx={a.toFixed(1)}
-                  cy={b.toFixed(1)}
-                  r={hitR.toFixed(1)}
-                  aria-label={line ? `Hole ${n.ref}, ${line}` : `Hole ${n.ref}`}
+                  style={{ left: `${((a / W) * 100).toFixed(2)}%`, top: `${((b / H) * 100).toFixed(2)}%` }}
                 />
               )
             })}
-          </svg>
+          </div>
         </div>
 
         <div className="v3-course__aside">
