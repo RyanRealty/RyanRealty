@@ -25,7 +25,12 @@ export function V3CourseMapControl() {
     const hits = Array.from(root.querySelectorAll<HTMLElement>('.v3-course__hit'))
     const picks = Array.from(root.querySelectorAll<HTMLButtonElement>('.v3-course__pick'))
     const cards = Array.from(root.querySelectorAll<HTMLElement>('.v3-course__card'))
-    const refs = picks.map((p) => p.dataset.hole).filter((r): r is string => !!r)
+    // The scorecard is the control on a numbered course. A course whose holes
+    // carry no numbers in the source has no scorecard to build, so the marks on
+    // the map are the control instead. Before this the island read `picks`
+    // only, found none, and returned — leaving all eighteen cards on screen.
+    const controls: HTMLElement[] = picks.length ? picks : hits
+    const refs = controls.map((c) => c.dataset.hole).filter((r): r is string => !!r)
     if (refs.length === 0) return
 
     const select = (ref: string) => {
@@ -36,23 +41,31 @@ export function V3CourseMapControl() {
       for (const el of Array.from(root.querySelectorAll(`.H${CSS.escape(ref)}`))) {
         el.classList.add('is-on')
       }
-      for (const p of picks) p.setAttribute('aria-pressed', String(p.dataset.hole === ref))
+      for (const c of controls) c.setAttribute('aria-pressed', String(c.dataset.hole === ref))
       for (const c of cards) c.hidden = c.dataset.hole !== ref
     }
 
     // The hole numbers are one tab stop with arrow keys inside it, rather than
     // eighteen separate stops mid-page.
     const focusPick = (i: number) => {
-      const next = (i + picks.length) % picks.length
-      picks.forEach((p, j) => p.setAttribute('tabindex', j === next ? '0' : '-1'))
-      picks[next]?.focus()
-      const ref = picks[next]?.dataset.hole
+      const next = (i + controls.length) % controls.length
+      controls.forEach((p, j) => p.setAttribute('tabindex', j === next ? '0' : '-1'))
+      controls[next]?.focus()
+      const ref = controls[next]?.dataset.hole
       if (ref) select(ref)
     }
 
     const onPickKey = (e: KeyboardEvent) => {
-      const i = picks.indexOf(e.currentTarget as HTMLButtonElement)
+      const i = controls.indexOf(e.currentTarget as HTMLElement)
       if (i < 0) return
+      // A mark on the map is a role=button span, so Enter and Space have to be
+      // wired by hand; a real <button> in the scorecard gets them free.
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        const ref = controls[i]?.dataset.hole
+        if (ref) select(ref)
+        return
+      }
       const step =
         e.key === 'ArrowRight' || e.key === 'ArrowDown'
           ? 1
@@ -61,7 +74,7 @@ export function V3CourseMapControl() {
             : 0
       if (step === 0 && e.key !== 'Home' && e.key !== 'End') return
       e.preventDefault()
-      focusPick(e.key === 'Home' ? 0 : e.key === 'End' ? picks.length - 1 : i + step)
+      focusPick(e.key === 'Home' ? 0 : e.key === 'End' ? controls.length - 1 : i + step)
     }
 
     const onHole = (e: Event) => {
@@ -69,7 +82,7 @@ export function V3CourseMapControl() {
       if (ref) select(ref)
     }
 
-    picks.forEach((p, i) => {
+    controls.forEach((p, i) => {
       p.setAttribute('tabindex', i === 0 ? '0' : '-1')
       p.addEventListener('click', onHole)
       p.addEventListener('keydown', onPickKey as EventListener)
@@ -83,7 +96,7 @@ export function V3CourseMapControl() {
     select(root.dataset.hole ?? refs[0]!)
 
     return () => {
-      for (const p of picks) {
+      for (const p of controls) {
         p.removeEventListener('click', onHole)
         p.removeEventListener('keydown', onPickKey as EventListener)
       }

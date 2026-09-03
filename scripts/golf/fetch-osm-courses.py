@@ -91,6 +91,9 @@ COURSES = [
 NEIGHBORHOOD_COURSES = [
     ('broken-top', 'broken-top', 'Broken Top Club'),
     ('brasada-canyons', 'brasada-ranch', 'Brasada Canyons'),
+    # Eighteen routings, 24 greens, 79 tees, 48 bunkers, and one tag on every one
+    # of them: `golf`. No ref anywhere, so the course is drawn and not numbered.
+    ('awbrey-glen', 'bend-awbrey-butte', 'Awbrey Glen'),
 ]
 
 # Found by the same sweep, not written, and why. These are here so the next run
@@ -102,10 +105,10 @@ NEIGHBORHOOD_COURSES = [
 #       is. The measured routings run 6,788 yards, 8.0% under one card and 9.0%
 #       under the other, so length does not separate them either. A course map
 #       has to name its course; this one cannot be named, so it is not written.
-#   awbrey-glen, quail-run — eighteen routings each, greens and tees and bunkers
-#       with them, and not one `ref` tag on any hole. The holes are there; their
-#       numbers are not. Every hole card, the scorecard rail and the tap discs
-#       are hole NUMBERS, so there is nothing to label them with.
+#   quail-run — eighteen routings inside its own OSM polygon and almost nothing
+#       else: one fairway, four water hazards, no greens, no tees, no bunkers,
+#       and no `ref` on any of it. It is drawn unnumbered like Awbrey Glen; the
+#       body of that drawing is the aerial turf trace, not OSM.
 
 # Two holes on neighbouring courses can lie closer together than two holes on the
 # same course, so the link distance is the one number that decides whether a

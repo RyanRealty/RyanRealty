@@ -87,6 +87,15 @@ DEFAULT_BAND = 'base'
 #               62 acres; loose closes them at 77 without reaching the lawns,
 #               which are dark under pine at this exposure. looser adds 5 acres
 #               and they are outside the property to the south-west.
+#   quail-run — the cleanest desert separation here after Brasada: bare high
+#               desert against irrigated ribbon. base traces 34 acres of broken
+#               fragments, loose 50 of continuous corridor. It matters more on
+#               this course than on any other, because OSM has eighteen routings
+#               for Quail Run and no greens, tees or bunkers at all — the aerial
+#               trace is the entire body of the drawing.
+#   awbrey-glen — on Awbrey Butte above Bend, juniper and residential lawn around
+#               it. Same read as broken-top: base leaves the corridors broken,
+#               loose closes them without reaching the lawns under canopy.
 #   brasada-canyons — high desert at Powell Butte, the cleanest separation of any
 #               course here: bare pumice against irrigated ribbon. base traces
 #               56 acres of broken fragments, loose 97 of continuous fairway.
@@ -113,6 +122,8 @@ PER_COURSE_BAND = {
     'lost-tracks': 'loose',
     'eagle-crest-resort': 'loose',
     'broken-top': 'loose',
+    'awbrey-glen': 'loose',
+    'quail-run': 'loose',
     'brasada-canyons': 'loose',
     # Ponderosa courses. The surround is dark pine canopy, which the value floor
     # excludes on its own, so the widest band is safe here and is the only one

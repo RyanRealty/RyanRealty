@@ -797,7 +797,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           <V3CourseMap
             id="course"
             data={courseMap.map}
-            heading={v3Text(`${courseMap.course.shortName}, hole by hole`)}
+            heading={v3Text(
+              // 'hole by hole' promises numbered holes. Awbrey Glen and Quail
+              // Run are mapped and unnumbered, so the heading says what the
+              // section actually shows.
+              courseMap.map.numbered === false
+                ? `${courseMap.course.shortName}, drawn from the air`
+                : `${courseMap.course.shortName}, hole by hole`,
+            )}
           />
         ) : null}
 

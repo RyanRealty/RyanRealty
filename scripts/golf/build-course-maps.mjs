@@ -313,6 +313,30 @@ function buildCourse(course, turf) {
     if (!prev || len > prev.walked) byRef.set(h.ref, { ...h, walked: len })
   }
   let routed = [...byRef.values()].sort((a, b) => Number(a.ref) - Number(b.ref))
+
+  /**
+   * UNNUMBERED. Awbrey Glen has eighteen `golf=hole` ways, 24 greens, 79 tees
+   * and 48 bunkers, and every one of them carries exactly one tag: `golf`. No
+   * ref, no par, no name, on anything. The holes are drawn in OpenStreetMap;
+   * their numbers are not recorded anywhere in it.
+   *
+   * A routing sequence could be reconstructed by chaining each green to the
+   * nearest next tee, and it would be a guess about which end is hole 1 and
+   * where the turn falls. A number on a map is a claim, so the routings keep an
+   * internal id and the course states that the source carries no numbering.
+   */
+  let numbered = routed.length > 0
+  if (!routed.length) {
+    const bare = feats.filter((f) => f.kind === 'hole')
+    if (bare.length) {
+      numbered = false
+      routed = bare.map((f, i) => {
+        let walked = 0
+        for (let j = 1; j < f.ring.length; j++) walked += metres(f.ring[j - 1], f.ring[j])
+        return { ref: `r${i + 1}`, par: null, handicap: null, metres: null, walked, line: f.ring }
+      })
+    }
+  }
   for (const h of routed) {
     const m = h.metres ?? h.walked
     h.yards = m ? Math.round(m * 1.09361) : null
@@ -387,7 +411,7 @@ function buildCourse(course, turf) {
     f.hole = bestD <= limit ? best : null
     if (f.kind === 'turf' && bestD > TURF_MAX_FROM_ROUTING_M) f.drop = true
   }
-  return { holes: routed, ground: ground.filter((f) => !f.drop), anchor }
+  return { holes: routed, ground: ground.filter((f) => !f.drop), anchor, numbered }
 }
 
 function main() {
@@ -419,17 +443,23 @@ function main() {
       held.push(`${slug}: mapped ${built.holes.length} of ${pub.holes ?? '?'} holes`)
       continue
     }
+    // An unnumbered course is drawn but claims nothing per hole, so the figures
+    // below have nothing to reconcile against and every one of them is withheld.
+    // The count above still binds: eighteen routings for an eighteen-hole card.
     // Which of the published hole numbers has no routing. Only meaningful for a
     // course numbered 1..holes, which every course in the registry is.
     const mapped = new Set(built.holes.map((h) => Number(h.ref)))
     const missingHoles = []
-    for (let i = 1; i <= pub.holes; i++) if (!mapped.has(i)) missingHoles.push(String(i))
+    if (built.numbered) for (let i = 1; i <= pub.holes; i++) if (!mapped.has(i)) missingHoles.push(String(i))
 
     const osmPar = built.holes.reduce((a, h) => a + (h.par || 0), 0)
     const osmYards = built.holes.reduce((a, h) => a + (h.yards || 0), 0)
-    const parReconciles = !!pub.par && osmPar === pub.par
+    const parReconciles = built.numbered && !!pub.par && osmPar === pub.par
     const yardsReconcile =
-      !!pub.yards && osmYards > 0 && Math.abs(osmYards - pub.yards) / pub.yards <= 0.01
+      built.numbered &&
+      !!pub.yards &&
+      osmYards > 0 &&
+      Math.abs(osmYards - pub.yards) / pub.yards <= 0.01
 
     const out = {
       slug,
@@ -440,6 +470,11 @@ function main() {
       yardsReconcile,
       missingHoles,
       anchor: built.anchor,
+      /**
+       * False when the source records no hole numbers. The routings are drawn
+       * and stay selectable; nothing on the page names a hole.
+       */
+      numbered: built.numbered,
       /**
        * Which kind of boundary the features were clipped to. Two courses have
        * no `leisure=golf_course` polygon in OSM and are bounded by their own

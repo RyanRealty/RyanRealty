@@ -54,6 +54,14 @@ export type CourseMapData = {
    * not true of the second.
    */
   boundary?: 'course' | 'cluster'
+  /**
+   * False when the source records no hole numbers. Awbrey Glen and Quail Run
+   * have eighteen `golf=hole` ways each and exactly one tag on every feature:
+   * `golf`. The routings are real and are drawn; the numbering is not recorded
+   * anywhere, and a number on a map is a claim. Their `ref` is an internal
+   * routing id ('r1'..'r18') and nothing renders it.
+   */
+  numbered?: boolean
   turfAcres: number | null
   holes: CourseHole[]
   shapes: CourseShape[]
@@ -177,10 +185,13 @@ function sentence(n: HoleNote): string {
 
   if (bits.length === 0) return 'Nothing else is mapped on this hole.'
 
+  // The bend is its own sentence and everything after it is a second one, so
+  // the second sentence gets a capital too: 'Doglegs left. water on the hole.'
+  // shipped on every hole that bends, carries water and has no bunker.
+  const up = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
   const first = bits[0]!
   const rest = bits.slice(1)
-  const head = first.charAt(0).toUpperCase() + first.slice(1)
-  return rest.length ? `${head}. ${rest.join(', ')}.` : `${head}.`
+  return rest.length ? `${up(first)}. ${up(rest.join(', '))}.` : `${up(first)}.`
 }
 
 export function holeNotes(data: CourseMapData): HoleNote[] {

@@ -67,6 +67,7 @@
   .v3-course__aside {
     grid-area: aside;
   }
+
 }
 
 /* The panel travels with the map. The drawing is tall, so without this the card
@@ -290,6 +291,16 @@
   line-height: 1.05;
 }
 
+/* The card on a course with no hole numbers. Its own measured sentence is the
+   heading, because there is nothing else true to head it with. */
+.v3-course__cardlead {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
 .v3-course__cardfig {
   margin: var(--v3-space-2xs) 0 0;
   font-variant-numeric: tabular-nums;
@@ -395,6 +406,17 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
+}
+
+/* A mark on a course whose holes are not numbered in the source. It is the same
+   44px target and the same ring; it just has no number to print, so it holds a
+   dot at the size the digits would have occupied and the box does not move. */
+.v3-course__disc--blank::before {
+  content: '';
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* --- what is true of the whole course ------------------------------------- */

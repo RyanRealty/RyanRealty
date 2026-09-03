@@ -227,7 +227,13 @@ export default async function GolfDetailPage({ params }: Props) {
           <V3CourseMap
             id="holes"
             data={courseMap}
-            heading={v3Text(`${shortName}, hole by hole`)}
+            heading={v3Text(
+              // 'hole by hole' promises numbered holes. Two courses are mapped
+              // and unnumbered in the source, so the heading says what is here.
+              courseMap.numbered === false
+                ? `${shortName}, drawn from the air`
+                : `${shortName}, hole by hole`,
+            )}
           />
         ) : null}
 

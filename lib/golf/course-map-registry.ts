@@ -6,7 +6,7 @@
  * asked for is loaded; a course with no file renders the rest of its page
  * unchanged.
  *
- * Eighteen of the registry's twenty-six courses have a file. Each of the eight
+ * Twenty of the registry's twenty-six courses have a file. Each of the six
  * that do not was checked twice, by two differently shaped queries, because the
  * first version of this comment reported an absence that was not there. It said
  * OpenStreetMap had no hole geometry for ten courses. What was true is that a
@@ -15,16 +15,19 @@
  * polygon. Broken Top and Brasada Canyons each carry a complete, numbered
  * eighteen and are now built from their own hole cluster instead.
  *
+ * Two of the twenty carry no hole numbers. Awbrey Glen and Quail Run each have
+ * eighteen `golf=hole` ways and exactly one tag on every feature — `golf` — so
+ * their routings draw, select and describe themselves, and nothing on the page
+ * prints a hole number. A routing order could be reconstructed by chaining each
+ * green to the nearest next tee; where hole 1 starts and where the turn falls
+ * would be a guess, and a number on a map is a claim.
+ *
  * What is actually missing, and what each is missing:
  *   - Pronghorn Nicklaus, Pronghorn Fazio — one complete numbered eighteen on
  *     the property, par summing to 72. Both courses are par 72, at 7,379 and
  *     7,456 yards, and nothing in the tags says which one is mapped. The
  *     measured routings run 8-9% under both cards, so length cannot separate
  *     them either. A course map has to name its course.
- *   - Quail Run, Awbrey Glen — eighteen routings each, inside their own extent,
- *     and not one `ref` tag among them. The holes are drawn; their numbers are
- *     not recorded. Every hole card, the scorecard rail and the tap discs are
- *     hole NUMBERS.
  *   - River's Edge — its polygon contains zero golf features. Checked again by
  *     distance rather than containment: still zero.
  *   - The Greens at Redmond — one clubhouse building and nothing else within
@@ -42,6 +45,7 @@ type Loader = () => Promise<{ default: unknown }>
 
 const COURSE_MAPS: Record<string, Loader> = {
   'aspen-lakes': () => import('@/data/golf/course-maps/aspen-lakes.json'),
+  'awbrey-glen': () => import('@/data/golf/course-maps/awbrey-glen.json'),
   'bend-golf-club': () => import('@/data/golf/course-maps/bend-golf-country-club.json'),
   'black-butte-big-meadow': () => import('@/data/golf/course-maps/black-butte-big-meadow.json'),
   'brasada-canyons': () => import('@/data/golf/course-maps/brasada-canyons.json'),
@@ -55,6 +59,7 @@ const COURSE_MAPS: Record<string, Loader> = {
   juniper: () => import('@/data/golf/course-maps/juniper.json'),
   'lost-tracks': () => import('@/data/golf/course-maps/lost-tracks.json'),
   'meadow-lakes': () => import('@/data/golf/course-maps/meadow-lakes.json'),
+  'quail-run': () => import('@/data/golf/course-maps/quail-run.json'),
   'sunriver-meadows': () => import('@/data/golf/course-maps/sunriver-meadows.json'),
   'sunriver-woodlands': () => import('@/data/golf/course-maps/sunriver-woodlands.json'),
   'tetherow-golf-club': () => import('@/data/golf/course-maps/tetherow.json'),

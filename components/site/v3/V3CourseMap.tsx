@@ -130,6 +130,11 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
   const facts = courseFacts(data, notes)
   const missing = data.missingHoles ?? []
   const greenAnchored = data.anchor === 'green'
+  // The source carries no hole numbers, so nothing on this section may print
+  // one. The routings still draw, still select, and still describe themselves
+  // out of their own geometry; the map is the control because the scorecard —
+  // which is a row of hole NUMBERS — cannot be built.
+  const numbered = data.numbered !== false
   const anyYardage = notes.some((n) => n.yards != null)
   const first = notes[0]!
 
@@ -194,7 +199,7 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
               aria-hidden with no roles: the scorecard below is the accessible
               control for every hole and carries the same label, so exposing
               these too would announce eighteen holes twice. */}
-          <div className="v3-course__taps" aria-hidden="true">
+          <div className="v3-course__taps" aria-hidden={numbered ? 'true' : undefined}>
             {notes.map((n, i) => {
               const [a, b] = px(data.holes[i]!.line[0]!)
               return (
@@ -202,15 +207,33 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
                   key={`tap-${n.ref}`}
                   className={cn('v3-course__hit', `H${n.ref}`)}
                   data-hole={n.ref}
+                  // On a numbered course the scorecard rail below is the
+                  // accessible control and this layer is hidden. There is no
+                  // rail on an unnumbered one, so each mark becomes the control
+                  // and carries the only true name it has: what the routing
+                  // measures.
+                  {...(numbered
+                    ? {}
+                    : { role: 'button', tabIndex: 0, 'aria-label': n.note })}
                   style={{ left: `${((a / W) * 100).toFixed(2)}%`, top: `${((b / H) * 100).toFixed(2)}%` }}
                 >
-                  <span className="v3-course__disc">{n.ref}</span>
+                  <span className={cn('v3-course__disc', !numbered && 'v3-course__disc--blank')}>
+                    {numbered ? n.ref : ''}
+                  </span>
                 </span>
               )
             })}
           </div>
 
-          {greenAnchored || missing.length ? (
+          {!numbered ? (
+            <p className="v3-course__gap">
+              Every hole on this course is mapped and none of them is numbered in
+              the source, so the routings are drawn unlabelled. Select one to
+              read what it measures.
+            </p>
+          ) : null}
+
+          {numbered && (greenAnchored || missing.length) ? (
             <p className="v3-course__gap">
               {greenAnchored
                 ? 'No hole routings are mapped for this course, so each number marks its green rather than its tee, and no hole prints a length or a shape.'
@@ -227,10 +250,23 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
               const line = figureLine(n)
               return (
                 <article key={n.ref} className="v3-course__card" data-hole={n.ref}>
-                  <p className="v3-course__cardnum">Hole {n.ref}</p>
-                  {line ? <p className="v3-course__cardfig">{line}</p> : null}
-                  {n.standout ? <p className="v3-course__standout">{n.standout}</p> : null}
-                  <p className="v3-course__cardnote">{n.note}</p>
+                  {/* An unnumbered course has no name for a hole, so the card
+                      leads with the only true thing it has: what the routing
+                      measures. Eighteen cards headed 'This hole' would be the
+                      same word eighteen times in the server HTML. */}
+                  {numbered ? (
+                    <>
+                      <p className="v3-course__cardnum">Hole {n.ref}</p>
+                      {line ? <p className="v3-course__cardfig">{line}</p> : null}
+                      {n.standout ? <p className="v3-course__standout">{n.standout}</p> : null}
+                      <p className="v3-course__cardnote">{n.note}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="v3-course__cardlead">{n.note}</p>
+                      {n.standout ? <p className="v3-course__standout">{n.standout}</p> : null}
+                    </>
+                  )}
                 </article>
               )
             })}
@@ -264,6 +300,7 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
           ) : null}
         </div>
 
+        {numbered ? (
         <div className="v3-course__rail">
           {nines.map((nine) => {
             const label = nine.label === 'Out' ? 'Front nine' : 'Back nine'
@@ -320,6 +357,7 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
             )
           })}
         </div>
+        ) : null}
       </div>
 
       <V3CourseMapControl />

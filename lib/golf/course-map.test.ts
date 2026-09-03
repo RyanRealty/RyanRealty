@@ -128,3 +128,32 @@ describe('course facts', () => {
     expect(facts.find((f) => f.label === 'Longest hole')).toBeUndefined()
   })
 })
+
+describe('the measured sentence', () => {
+  it('capitalises the second sentence, not just the first', () => {
+    // 'Doglegs left. water on the hole.' shipped on every hole that bends,
+    // carries water and has no bunker to lead the second half.
+    const shapes = [
+      { k: 'water_hazard', h: '1', r: line(1) },
+      { k: 'green', h: '1', r: line(1) },
+    ]
+    const holes = [
+      hole(1, {
+        line: [
+          [-121.3, 44.0],
+          [-121.3, 44.002],
+          [-121.302, 44.004],
+        ],
+      }),
+    ]
+    const [note] = holeNotes(course({ holes, shapes }))
+    expect(note?.note).toMatch(/^[A-Z]/)
+    expect(note?.note).not.toMatch(/\. [a-z]/)
+  })
+
+  it('says so when nothing else is mapped', () => {
+    // A two-point way has no bend to report either, so there is no fact at all.
+    const [note] = holeNotes(course({ holes: [hole(1)], shapes: [] }))
+    expect(note?.note).toBe('Nothing else is mapped on this hole.')
+  })
+})
