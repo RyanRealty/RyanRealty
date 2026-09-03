@@ -120,13 +120,20 @@ describe('MapSearchView orchestrator', () => {
     expect(place).toMatch(/Home type|SearchFilters/)
   })
 
-  it('place Split defaults to map; view switch lives in the map shell', () => {
+  it('place Split is listOnly; filters stay, Google canvas does not', () => {
     const place = readSrc('components/search/PlaceSplitView.tsx')
-    expect(place).toMatch(/viewRaw === 'list' \|\| viewRaw === 'split' \|\| viewRaw === 'map' \? viewRaw : 'map'/)
+    expect(place).toMatch(/<MapSearchView[\s\S]*?\blistOnly\b/)
     expect(place).toMatch(/hideViewToggle/)
+    expect(place).toMatch(/<SearchFilters/)
+    expect(place).toMatch(/filters=\{\{ \.\.\.filters, view: 'list' \}\}/)
     const map = readSrc('components/search/MapSearchView.tsx')
-    expect(map).toMatch(/applyView/)
-    expect(map).toMatch(/map-search-views/)
+    expect(map).toMatch(/export type MapSearchViewProps = \{/)
+    expect(map).toMatch(/listOnly\?: boolean/)
+    expect(map).toMatch(/const mapPanel = listOnly \? null : \(/)
+    const mapPanelAt = map.indexOf('const mapPanel = listOnly ? null')
+    const clusteredAt = map.indexOf('<SearchMapClustered')
+    expect(mapPanelAt).toBeGreaterThan(-1)
+    expect(clusteredAt).toBeGreaterThan(mapPanelAt)
   })
 
   it('place Split keeps the city filter on pan so Search this area stays in the place', () => {

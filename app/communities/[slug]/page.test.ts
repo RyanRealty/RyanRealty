@@ -58,6 +58,7 @@ describe('community first screen leftover face + split', () => {
   })
 
   it('opens on Split, not V3Stage/V3Field as the cage', () => {
+    expect(SRC).toMatch(/<V3Atlas/)
     expect(SRC).toMatch(/<PlaceSplitView/)
     expect(SRC).toMatch(/id="homes"/)
     expect(SRC).toMatch(/seedRing=\{seedRing\}/)
