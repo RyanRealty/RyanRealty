@@ -102,6 +102,11 @@ DEFAULT_BAND = 'base'
 #               loose also takes a centre-pivot irrigation circle north of the
 #               property; it is a farm field, and it is dropped at attribution
 #               because it lies past the 130 m catchment of every routing.
+#   pronghorn — high desert at Juniper Preserve, same sage-vs-ribbon read as
+#               Brasada. The clip is the Nicklaus hole-cluster extent, not the
+#               neighborhood polygon (that covers 4 of 21 holes). A farm circle
+#               626 m off a routing cannot ship: the builder drops turf past
+#               250 m of every routing.
 #   sunriver-woodlands, black-butte-glaze-meadow, widgi-creek — pine forest.
 #               Nothing around the turf is bright, so looser costs nothing and
 #               picks up the fairway lying in shadow that the other bands miss.
@@ -125,6 +130,7 @@ PER_COURSE_BAND = {
     'awbrey-glen': 'loose',
     'quail-run': 'loose',
     'brasada-canyons': 'loose',
+    'pronghorn': 'loose',
     # Ponderosa courses. The surround is dark pine canopy, which the value floor
     # excludes on its own, so the widest band is safe here and is the only one
     # that reaches turf lying in tree shadow.

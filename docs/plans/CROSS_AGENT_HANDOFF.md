@@ -1,4 +1,33 @@
-# Current — 2026-09-03 (golf, main) — sixteen courses became twenty, and the reason they were not
+# Current — 2026-09-03 (golf, Pronghorn Nicklaus) — twenty courses became twenty-one
+
+The naming is solved. Do not re-ask. Operator scorecard `PRH-SC.pdf` is titled
+**NICKLAUS COURSE**, TIPS 7,379 (USGA CourseID 5779). OSM par tags on the cluster
+near 44.1865, −121.1715 are 4-5-3-4-4-4-3-5-4-4-4-4-4-3-5-5-3-4, summing to 72 —
+exact match. Scorecard layout (1 west, 3 north, 15 southwest, practice by 1)
+matches those centroids.
+
+**Shipped** `data/golf/course-maps/pronghorn.json` with `courseSlug:
+'pronghorn-nicklaus'`. Loader key is the registry slug. Cluster-inside-neighborhood
+`pronghorn`, same provenance as Broken Top, **not clipped to the hood polygon**
+(it covers 4 of 21 holes). Duplicate untagged `ref=17` farther west and two
+unnumbered ways dropped; they are not Fazio. No bounds ring. Par 72 prints.
+Yards 6,788 vs 7,379 **HELD** — do not fudge length. `pronghorn-fazio` stays
+refused. `data/golf/courses.ts` par/yards untouched.
+
+**Join.** `REGISTRY_SHORT_NAME['pronghorn']` is `Pronghorn Nicklaus`, not
+`Pronghorn`. The registry has two shortNames on that property; the OSM cluster
+is one eighteen.
+
+**Carry forward:**
+- Overpass still 504s. `/tmp/region-golf-holes.json` and `/tmp/osm-courses.json`
+  are the cache; a tight bbox on `overpass.private.coffee` is the one harvest
+  that returned greens/tees/bunkers.
+- Five maps still missing: Fazio (unnamed leftovers), River's Edge, Greens at
+  Redmond, Desert Peaks, Eagle Crest Challenge.
+
+---
+
+# Previous — 2026-09-03 (golf, main) — sixteen courses became twenty, and the reason they were not
 
 Matt asked for all Central Oregon courses. I reported sixteen and said
 OpenStreetMap had no hole geometry for ten. **That was a conclusion from one

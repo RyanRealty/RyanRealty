@@ -54,8 +54,8 @@ import urllib.parse
 import urllib.request
 
 HOSTS = [
-    'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.private.coffee/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
 ]
 UA = {'User-Agent': 'RyanRealty course map (matt@ryan-realty.com)'}
 
@@ -83,12 +83,20 @@ COURSES = [
     ('old-back-nine', 'Old Back Nine Golf Club'),
 ]
 
-# Courses with no `leisure=golf_course` polygon in OSM, clipped to our own
-# neighborhood boundary instead. The value is the boundary's geo_slug, which is
-# NOT always the course slug: Awbrey Glen has a neighborhood row of its own, but
+# Courses with no `leisure=golf_course` polygon in OSM, identified by our own
+# neighborhood boundary. The value is the boundary's geo_slug, which is NOT
+# always the course slug: Awbrey Glen has a neighborhood row of its own, but
 # the golf course sits on Awbrey Butte, so its holes fall inside
 # `bend-awbrey-butte`. Written out for the same reason the OSM name join is.
+#
+# The neighborhood polygon IDENTIFIES the cluster. It does not always DELIMIT
+# it. Pronghorn's covers 4 of 21 holes on the property, so clipping to the hood
+# ring would throw the other fourteen away. Broken Top's covers the whole
+# residential community, so a duplicate-ref cluster (Broken Top chained into
+# Tetherow) is narrowed to the hood. Same join, two clipping rules — see
+# `narrow_cluster`.
 NEIGHBORHOOD_COURSES = [
+    ('pronghorn', 'pronghorn', 'Pronghorn Nicklaus'),
     ('broken-top', 'broken-top', 'Broken Top Club'),
     ('brasada-canyons', 'brasada-ranch', 'Brasada Canyons'),
     # Eighteen routings, 24 greens, 79 tees, 48 bunkers, and one tag on every one
@@ -99,12 +107,13 @@ NEIGHBORHOOD_COURSES = [
 # Found by the same sweep, not written, and why. These are here so the next run
 # does not rediscover them and reach a different conclusion.
 #
-#   pronghorn — a complete eighteen, refs 1..18 once each, par summing to 72.
-#       Pronghorn has TWO par-72 eighteens on one property, Nicklaus at 7,379
-#       yards and Fazio at 7,456, and nothing in the OSM tags says which one this
-#       is. The measured routings run 6,788 yards, 8.0% under one card and 9.0%
-#       under the other, so length does not separate them either. A course map
-#       has to name its course; this one cannot be named, so it is not written.
+#   pronghorn-fazio — leftovers on the same property as the Nicklaus routing:
+#       an untagged duplicate `ref=17` farther west and two unnumbered ways.
+#       Nothing in the tags names them Fazio. Numbering them would invent a
+#       course, so they stay dropped. The Nicklaus eighteen is the cluster
+#       whose par sequence 4-5-3-4-4-4-3-5-4-4-4-4-4-3-5-5-3-4 matches the
+#       operator scorecard (PRH-SC.pdf, titled NICKLAUS COURSE, TIPS 7,379)
+#       and USGA CourseID 5779.
 #   quail-run — eighteen routings inside its own OSM polygon and almost nothing
 #       else: one fairway, four water hazards, no greens, no tees, no bunkers,
 #       and no `ref` on any of it. It is drawn unnumbered like Awbrey Glen; the
@@ -129,7 +138,7 @@ FEATURE_KINDS = (
 )
 
 
-def ask(query, tries=4):
+def ask(query, tries=4, timeout=90):
     last = ''
     for i in range(tries):
         host = HOSTS[i % len(HOSTS)]
@@ -137,11 +146,11 @@ def ask(query, tries=4):
             req = urllib.request.Request(
                 host, data=urllib.parse.urlencode({'data': query}).encode(), headers=UA
             )
-            with urllib.request.urlopen(req, timeout=240) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read())
         except Exception as e:  # noqa: BLE001 - any transport failure is a retry
             last = str(e)[:80]
-            time.sleep(10)
+            time.sleep(4)
     print(f'   overpass gave up: {last}')
     return None
 
@@ -184,10 +193,12 @@ def harvest(rings):
     xs = [p[0] for r in rings for p in r]
     ys = [p[1] for r in rings for p in r]
     bbox = (min(ys), min(xs), max(ys), max(xs))
-    time.sleep(3)
+    time.sleep(1)
     d = ask(
-        f'[out:json][timeout:180];'
-        f'(way["golf"]({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}););out tags geom;'
+        f'[out:json][timeout:90];'
+        f'(way["golf"]({bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}););out tags geom;',
+        tries=2,
+        timeout=90,
     )
     if d is None:
         return None, None
@@ -229,11 +240,14 @@ def hole_clusters(cache=None):
         g = e.get('geometry')
         if not g:
             continue
+        tags = e.get('tags') or {}
         pts.append({
-            'ref': (e.get('tags') or {}).get('ref'),
+            'ref': tags.get('ref'),
+            'par': tags.get('par'),
             'lon': sum(p['lon'] for p in g) / len(g),
             'lat': sum(p['lat'] for p in g) / len(g),
             'geometry': g,
+            'element': e,
         })
     groups = []
     for h in pts:
@@ -347,6 +361,70 @@ def duplicate_refs(cluster):
     return len(refs) != len(set(refs))
 
 
+def walked(h):
+    g = h.get('geometry') or []
+    n = 0.0
+    for i in range(1, len(g)):
+        n += hav(
+            {'lon': g[i - 1]['lon'], 'lat': g[i - 1]['lat']},
+            {'lon': g[i]['lon'], 'lat': g[i]['lat']},
+        )
+    return n
+
+
+def collapse_duplicate_refs(cluster):
+    """One numbered routing per ref. Unnumbered leftovers are dropped.
+
+    Prefers a tagged par, then the longer way. Pronghorn's cluster is a complete
+    1..18 with par summing to 72, plus an untagged duplicate 17 farther west and
+    two unnumbered ways. Those leftovers are not a second course.
+    """
+    by_ref = {}
+    for h in cluster:
+        ref = h.get('ref')
+        if not ref:
+            continue
+        prev = by_ref.get(ref)
+        if prev is None:
+            by_ref[ref] = h
+            continue
+        h_par = bool(h.get('par'))
+        p_par = bool(prev.get('par'))
+        if h_par and not p_par:
+            by_ref[ref] = h
+        elif h_par == p_par and walked(h) > walked(prev):
+            by_ref[ref] = h
+    return list(by_ref.values())
+
+
+# Same quarter-missing floor as build-course-maps.mjs: 18 - floor(18 * 0.25).
+# A hood clip that keeps fewer unique refs than this is not a course extent
+# (Pronghorn's neighborhood polygon keeps four holes).
+MIN_HOOD_REFS = 14
+
+
+def narrow_cluster(pick, hood, label):
+    """Separate a mixed cluster without inventing a second course.
+
+    Broken Top chains into Tetherow 700 m away and comes back as 1..18 twice;
+    the neighborhood polygon covers Broken Top's eighteen and not Tetherow's,
+    so clipping to the hood is the split. Pronghorn's hood covers 4 of 21
+    holes, so the same clip would throw the course away. There the split is
+    one way per ref, and the leftovers stay unnamed.
+    """
+    if not duplicate_refs(pick):
+        return pick
+    hood_clip = [h for h in pick if any(inside([h['lon'], h['lat']], r) for r in hood)]
+    hood_refs = {h['ref'] for h in hood_clip if h.get('ref')}
+    if hood_clip and not duplicate_refs(hood_clip) and len(hood_refs) >= MIN_HOOD_REFS:
+        return hood_clip
+    collapsed = collapse_duplicate_refs(pick)
+    dropped = len(pick) - len(collapsed)
+    if dropped:
+        print(f'{label:36} dropped {dropped} leftover hole(s), not a second course')
+    return collapsed
+
+
 def extent_ring(cluster):
     """A rectangle around every vertex of the cluster's routings, plus a margin."""
     xs = [p['lon'] for h in cluster for p in h['geometry']]
@@ -365,6 +443,7 @@ def main():
     ap.add_argument('--polys', default='/tmp/course-polys.json')
     ap.add_argument('--hood-polys', default='/tmp/course-neighborhood-polys.json')
     ap.add_argument('--hole-cache', default='/tmp/region-golf-holes.json')
+    ap.add_argument('--only', default=None, help='fetch this slug only')
     args = ap.parse_args()
 
     polys = json.load(open(args.polys))
@@ -377,6 +456,8 @@ def main():
     out = json.load(open(args.out)) if os.path.exists(args.out) else {}
 
     for slug, name in COURSES:
+        if args.only and slug != args.only:
+            continue
         if slug in out:
             continue
         hit = by_name.get(name)
@@ -428,6 +509,8 @@ def main():
 
     clusters = None
     for slug, hood_slug, label in NEIGHBORHOOD_COURSES:
+        if args.only and slug != args.only:
+            continue
         if slug in out:
             continue
         poly = hoods.get(hood_slug)
@@ -448,23 +531,24 @@ def main():
         if not pick:
             print(f'{label:36} no hole cluster inside {hood_slug}')
             continue
-        # A cluster carrying the same hole number twice spans more than one
-        # course: Broken Top's holes chain into Tetherow's 700 m away and come
-        # back as one 36-hole group numbered 1..18 twice. The neighborhood
-        # polygon is what separates them, so narrow to it and re-check.
+        pick = narrow_cluster(pick, hood, label)
         if duplicate_refs(pick):
-            pick = [h for h in pick if any(inside([h['lon'], h['lat']], r) for r in hood)]
-            if duplicate_refs(pick):
-                print(f'{label:36} cluster still repeats a hole number inside {hood_slug} — skipped')
-                continue
+            print(f'{label:36} cluster still repeats a hole number — skipped')
+            continue
         if not pick:
-            print(f'{label:36} no holes inside {hood_slug}')
+            print(f'{label:36} no holes after narrowing {hood_slug}')
             continue
         rings = [extent_ring(pick)]
         keep, holes = harvest(rings)
         if keep is None:
-            print(f'{label:36} feature fetch failed')
-            continue
+            # The public mirrors 504 on the region query; a tight bbox
+            # sometimes still dies. The hole cache is enough to number the
+            # course. Turf fills the body the same way it does for Quail Run.
+            keep = [h['element'] for h in pick if h.get('element')]
+            holes = sorted({h['ref'] for h in pick if h.get('ref')})
+            print(f'{label:36} feature fetch failed — using hole cache only')
+            if not keep:
+                continue
         # The extent is a rectangle, so it also catches the corner of whatever
         # lies next door: Broken Top's box takes in five of Tetherow's holes.
         # Drop those, then keep a non-hole feature only if it sits nearer to one

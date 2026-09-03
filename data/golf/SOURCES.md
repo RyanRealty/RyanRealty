@@ -233,7 +233,7 @@ courses under "Pronghorn", so the course rows keep that name. Prose describing t
 
 ## Course-map geometry — `data/golf/course-maps/*.json`
 
-Added 2026-09-02. Sixteen of the twenty-six courses have a committed geometry file
+Added 2026-09-02. Twenty-one of the twenty-six courses have a committed geometry file
 that `V3CourseMap` draws hole by hole. Three sources, none of them a scorecard.
 
 **Hole routings, greens, tees, bunkers and mapped water hazards: OpenStreetMap
@@ -271,10 +271,25 @@ footage** (OSM traces some greens as the whole complex — Crosswater would prin
 refuses a course missing more than a quarter of its published holes; every absent
 hole that does ship is named on the page. Big Meadow has no hole routings at all
 and is anchored on its greens, 18 of which carry an OSM `ref` — the number marks
-the green, no hole claims a length or a shape, and the section says so. Quail Run,
-River's Edge, Pronghorn's two courses, Brasada Canyons, Broken Top, Awbrey Glen,
-the Eagle Crest Challenge course, The Greens at Redmond and Desert Peaks have no
-usable hole geometry in OSM and have no map.
+the green, no hole claims a length or a shape, and the section says so.
+
+**Pronghorn Nicklaus identity (2026-09-03).** OSM carries one numbered eighteen
+on the property (par tags 4-5-3-4-4-4-3-5-4-4-4-4-4-3-5-5-3-4, summing to 72)
+plus an untagged duplicate `ref=17` farther west and two unnumbered ways. The
+operator scorecard `PRH-SC.pdf` (https://juniperpreserve.com/wp-content/uploads/2023/08/PRH-SC.pdf)
+is titled **NICKLAUS COURSE**, TIPS **7,379** yards — the USGA Nicklaus row
+(CourseID 5779). That par sequence matches the OSM cluster, and the scorecard
+page-1 layout (1 west, 3 north, 15 southwest, practice facility by 1) matches
+those OSM centroids. The file is `course-maps/pronghorn.json` with
+`courseSlug: 'pronghorn-nicklaus'`. Measured routings run 6,788 yards, ~8% under
+the card, so per-hole yardage is held; per-hole par prints. Leftover ways are
+not numbered and are not shipped as Fazio — nothing in the tags names them.
+
+Five registry courses still have no map: **Pronghorn Fazio** (leftovers unnamed),
+**River's Edge** (zero features inside its polygon, re-checked by distance),
+**The Greens at Redmond** (one clubhouse within 3 km), **Desert Peaks** (zero
+within 3 km of its polygon centroid), **Eagle Crest Challenge** (three holes,
+numbered 12–14, below the quarter-missing floor).
 
 **Attribution.** The public source line on every course-map section names
 OpenStreetMap contributors, the Oregon aerial, and the USGA database.
