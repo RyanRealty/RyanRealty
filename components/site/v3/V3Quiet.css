@@ -173,23 +173,32 @@
   padding: var(--v3-space-xs) 0;
 }
 
+/* Wrapping, and min-width:0 on both halves. A fact's value is usually a figure
+   but sometimes it is a sentence-length string — "Fescue blend (Chewings +
+   Creeping Red) with Colonial Bentgrass" — and with the value held on one line
+   that row pushed the whole page into horizontal scroll at 390. */
 .v3-quiet__factpair {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--v3-space-md);
+  gap: var(--v3-space-2xs) var(--v3-space-md);
   margin: 0;
 }
 
 .v3-quiet__factterm {
+  min-width: 0;
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
 }
 
 .v3-quiet__factvalue {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
+  justify-content: flex-end;
   gap: var(--v3-space-xs);
+  min-width: 0;
   margin: 0;
   text-align: right;
 }
@@ -197,7 +206,6 @@
 .v3-quiet__factfigure {
   font-variant-numeric: tabular-nums;
   font-size: var(--v3-size-body);
-  white-space: nowrap;
 }
 
 .v3-quiet__factdetail {
