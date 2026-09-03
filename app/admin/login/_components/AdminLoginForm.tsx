@@ -11,6 +11,14 @@ import { Button } from '@/components/admin/v2'
 const ADMIN_NEXT = '/admin'
 
 /**
+ * GIS / OAuth hosted-domain hint. Matches the @ryan-realty.com copy on this
+ * page and the existing admin_roles / access-denied gate. Google treats `hd`
+ * as a hint, not an authorization check — the server gate still rejects
+ * non-brokerage accounts.
+ */
+const ADMIN_GOOGLE_HOSTED_DOMAIN = 'ryan-realty.com'
+
+/**
  * Google-only admin sign-in (Matt directive 2026-06-09: the brokerage runs on
  * Google Workspace). Updated 2026-06-15 to lead with Google One Tap / FedCM —
  * the modern "one click on your avatar" prompt the way most sites do it — using
@@ -21,14 +29,16 @@ const ADMIN_NEXT = '/admin'
  * redirect flow stays as a fallback for browsers that suppress One Tap (FedCM
  * disabled, third-party-cookie edge cases) or when no client id is configured.
  *
+ * GIS initialize and the OAuth fallback pass `hd=ryan-realty.com` so Chrome's
+ * last Gmail session is not offered first when a Workspace account is present
+ * (or so the account chooser opens instead of a consumer chip).
+ *
  * Requires the site origin under "Authorized JavaScript origins" on the Google
  * OAuth web client (GOOGLE_OAUTH_CLIENT_ID) — One Tap will not render otherwise.
  *
  * 11F: presentation migrated to the LOCKED admin v2 language (ADMIN_UI.md).
- * PRESENTATION ONLY — this is one of the two auth doors. Every handler, the
- * nonce/PKCE flow, the One Tap init, the redirect destination logic and the
- * error handling are byte-for-byte unchanged; only the Button import and the
- * color/type classes moved to v2 tokens.
+ * The handlers, nonce/PKCE flow, next= destination, and domain gate are
+ * unchanged except for the `hd` hosted-domain hint on GIS + OAuth.
  */
 
 interface GoogleIdConfig {
@@ -38,6 +48,8 @@ interface GoogleIdConfig {
   auto_select?: boolean
   cancel_on_tap_outside?: boolean
   use_fedcm_for_prompt?: boolean
+  /** Workspace domain hint — limits One Tap / button account selection. */
+  hd?: string
 }
 interface GoogleButtonOptions {
   type?: string
@@ -140,6 +152,7 @@ export default function AdminLoginForm({ googleClientId, next }: { googleClientI
         auto_select: false,
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: true,
+        hd: ADMIN_GOOGLE_HOSTED_DOMAIN,
       })
       if (buttonRef.current) {
         g.accounts.id.renderButton(buttonRef.current, {
@@ -157,7 +170,7 @@ export default function AdminLoginForm({ googleClientId, next }: { googleClientI
   async function handleRedirect() {
     setLoading(true)
     setError(null)
-    const result = await signInWithOAuthBrowser('google', dest)
+    const result = await signInWithOAuthBrowser('google', dest, { hd: ADMIN_GOOGLE_HOSTED_DOMAIN })
     if (result.error) {
       setLoading(false)
       setError(result.error)

@@ -20,17 +20,24 @@ import { createClient } from '@/lib/supabase/client'
  *
  * `next` is passed via the redirectTo query param (the callback reads it) since
  * the old server-set auth_next cookie is no longer in play.
+ *
+ * `queryParams` is optional provider extras (admin login passes Google `hd` so
+ * the account picker prefers @ryan-realty.com). Public callers omit it.
  */
 export async function signInWithOAuthBrowser(
   provider: 'google' | 'facebook',
   next = '/',
+  queryParams?: Record<string, string>,
 ): Promise<{ error?: string }> {
   const supabase = createClient()
   const safeNext = next.startsWith('/') ? next : `/${next}`
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}` },
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+      ...(queryParams ? { queryParams } : {}),
+    },
   })
   if (error) return { error: error.message }
   // On success supabase-js navigates the browser to the provider; nothing else.
