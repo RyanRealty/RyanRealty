@@ -515,7 +515,8 @@
   border: 0;
   margin: 0;
   padding: var(--v3-space-2xs) var(--v3-space-md);
-  min-height: calc(var(--v3-tap) - var(--v3-space-sm));
+  /* G71: do not subtract spacing from --v3-tap; that calc rendered 32px. */
+  min-height: var(--v3-tap);
   border-radius: var(--v3-radius-pill);
   background: transparent;
   color: var(--v3-ink-muted);
