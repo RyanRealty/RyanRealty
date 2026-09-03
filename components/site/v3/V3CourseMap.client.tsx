@@ -22,7 +22,6 @@ export function V3CourseMapControl() {
   useEffect(() => {
     const root = anchor.current?.closest<HTMLElement>('.v3-course')
     if (!root) return
-    const svg = root.querySelector<SVGSVGElement>('.v3-course__svg')
     const hits = Array.from(root.querySelectorAll<HTMLElement>('.v3-course__hit'))
     const picks = Array.from(root.querySelectorAll<HTMLButtonElement>('.v3-course__pick'))
     const cards = Array.from(root.querySelectorAll<HTMLElement>('.v3-course__card'))
@@ -33,10 +32,9 @@ export function V3CourseMapControl() {
       if (!refs.includes(ref)) return
       root.dataset.hole = ref
       for (const el of Array.from(root.querySelectorAll('.is-on'))) el.classList.remove('is-on')
-      if (svg) {
-        for (const el of Array.from(svg.querySelectorAll(`.H${CSS.escape(ref)}`))) {
-          el.classList.add('is-on')
-        }
+      // Root, not the svg: the hole numbers live in the HTML tap layer beside it.
+      for (const el of Array.from(root.querySelectorAll(`.H${CSS.escape(ref)}`))) {
+        el.classList.add('is-on')
       }
       for (const p of picks) p.setAttribute('aria-pressed', String(p.dataset.hole === ref))
       for (const c of cards) c.hidden = c.dataset.hole !== ref

@@ -125,12 +125,6 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
       })
       .join(' ') + (close ? ' Z' : '')
 
-  // Marker size is in user units, so a fixed radius shrinks as the property gets
-  // taller: Crosswater's viewBox is twice Tetherow's and its hole numbers
-  // rendered at 6px. Scaling off the box height keeps discs constant on screen.
-  const unit = Math.max(1, H / 900)
-  const discR = 12 * unit
-
   const headingId = id ? `${id}-heading` : undefined
   const nines = courseNines(notes)
   const facts = courseFacts(data, notes)
@@ -184,32 +178,14 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
                 d={path(h.line, false)}
               />
             ))}
-            {data.holes.map((h) => {
-              const [a, b] = px(h.line[0]!)
-              return (
-                <g
-                  key={`tag-${h.ref}`}
-                  className={cn('v3-course__tag', `H${h.ref}`)}
-                  transform={`translate(${a.toFixed(1)},${b.toFixed(1)})`}
-                >
-                  <circle r={discR.toFixed(1)} />
-                  <text
-                    y={(discR * 0.34).toFixed(1)}
-                    textAnchor="middle"
-                    fontSize={(discR * 0.95).toFixed(1)}
-                  >
-                    {h.ref}
-                  </text>
-                </g>
-              )
-            })}
           </svg>
 
           {/* The tap layer sits OVER the drawing in HTML, not inside the SVG.
-              An SVG circle is sized in user units, so a target that clears 44px
-              on a desktop map is 20px on the same map at 390 — the marker
-              scales with the drawing and a thumb does not. Positioned by percent
-              against the same box the paths are drawn in.
+              Anything sized in SVG user units scales with the drawing: a 44px
+              target measured 20px on Juniper at 390, and the hole numbers were
+              6px on a desktop Juniper because its viewBox is wide. Both are
+              fixed px here, positioned by percent against the same box the paths
+              are drawn in.
 
               aria-hidden with no roles: the scorecard below is the accessible
               control for every hole and carries the same label, so exposing
@@ -220,10 +196,12 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
               return (
                 <span
                   key={`tap-${n.ref}`}
-                  className="v3-course__hit"
+                  className={cn('v3-course__hit', `H${n.ref}`)}
                   data-hole={n.ref}
                   style={{ left: `${((a / W) * 100).toFixed(2)}%`, top: `${((b / H) * 100).toFixed(2)}%` }}
-                />
+                >
+                  <span className="v3-course__disc">{n.ref}</span>
+                </span>
               )
             })}
           </div>

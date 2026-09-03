@@ -100,6 +100,9 @@
    Crosswater to a 300px ribbon beside an oversized panel. The panel is sticky so
    the card stays on screen down the whole map. */
 .v3-course__stage {
+  /* The tap layer positions against this box. Without it the hole numbers
+     resolve against the page and scatter across the heading. */
+  position: relative;
   min-width: 0;
 }
 
@@ -167,16 +170,6 @@
   stroke-dasharray: 5 4;
 }
 
-.v3-course__tag circle {
-  fill: var(--v3-navy);
-}
-
-.v3-course__tag text {
-  fill: var(--v3-cream);
-  font-family: var(--v3-font-body);
-  font-weight: var(--v3-weight-medium);
-}
-
 /* The tap layer. Percent-positioned over the drawing, so a target is 44px at
    every width instead of scaling with the map. */
 .v3-course__taps {
@@ -186,11 +179,35 @@
 
 .v3-course__hit {
   position: absolute;
+  display: grid;
+  place-items: center;
   width: var(--v3-tap);
   height: var(--v3-tap);
   margin: calc(var(--v3-tap) / -2) 0 0 calc(var(--v3-tap) / -2);
   border-radius: 50%;
   cursor: pointer;
+}
+
+/* The hole number. Fixed px, so it is the same size on a wide course and a tall
+   one; drawn in the SVG it was 6px on Juniper and 16px on Crosswater. */
+.v3-course__disc {
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 50%;
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.45;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-course__hit.is-on .v3-course__disc,
+.v3-course:not([data-enhanced='on']) .v3-course__disc {
+  opacity: 1;
 }
 
 /* The selected hole is emphasised; the rest of the course is not faded. Fading
@@ -215,12 +232,6 @@
   stroke: var(--v3-navy);
   stroke-width: 2.2;
   stroke-dasharray: none;
-}
-
-/* The other hole numbers step back so the selected disc is findable. Discs are
-   navy on cream at full weight, so a fade reads here. */
-.v3-course[data-enhanced='on'] .v3-course__tag:not(.is-on) {
-  opacity: 0.4;
 }
 
 /* --- the hole card --------------------------------------------------------
