@@ -2,9 +2,10 @@
  * /cities/[slug]/[neighborhoodSlug] — the neighborhood node.
  *
  * First screen: H1 `{Neighborhood} homes for sale`, PlaceFaceStrip (polygon
- * SFR count + median list only), PlaceSplitView seeded from
- * getGeoBoundaryMapData. Do not write ?shapes= onto this URL. Do not cage the
- * first screen in V3Stage or V3Field.
+ * SFR count + median list only), living atlas, PlaceSplitView seeded from
+ * getGeoBoundaryMapData. Nested subdivision rings draw as Atlas regions and
+ * Split overlayBoundaries, the same class prop community uses. Do not write
+ * ?shapes= onto this URL. Do not cage the first screen in V3Stage or V3Field.
  *
  * Face SoR is getNeighborhoodPublicInventory. leftoverHudKpis still feeds
  * buildMarketFaq JSON-LD. MOS, sold count, verdict, and DTP do not print on
@@ -79,7 +80,6 @@ import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
-import { atlasRegionName } from '@/lib/atlas/place-names'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
@@ -88,6 +88,7 @@ import {
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
+import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
@@ -298,9 +299,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
   const atlasRegions: AtlasRegion[] = boundaryMapData.polygon
     ? [
         { id: `neighborhood:${neighborhoodSlug}`, kind: 'town', kindLabel: 'Neighborhood', name: neighborhood.name, href: `/cities/${citySlug}/${neighborhoodSlug}`, geometry: boundaryMapData.polygon },
-        ...atlasPlats.slice(0, 80).map(
-          (cell): AtlasRegion => ({ id: `subdivision:${cell.slug}`, kind: 'neighborhood', kindLabel: 'Subdivision', name: atlasRegionName(cell.label) ?? cell.label, href: `/subdivisions/${cell.slug}`, geometry: cell.geometry }),
-        ),
+        ...regionsFromChildCells(atlasPlats),
       ]
     : []
   const inventory = inventoryRead
@@ -530,26 +529,14 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
-        {stagePosterSrc ? (
-          <PlaceAreaHero
-            eyebrow={`${neighborhood.name} · ${cityName}`}
-            headline={headline}
-            posterSrc={stagePosterSrc}
-            trail={trail}
-            stats={face.stats}
-          />
-        ) : (
-          <V3Breadcrumb trail={trail} />
-        )}
-
-        {stagePosterSrc ? null : (
-          <div className="place-opening">
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
-            <PlaceFaceStrip stats={face.stats} />
-          </div>
-        )}
+        <V3Breadcrumb trail={trail} />
+        <div className="place-opening">
+          <V3Heading level={1} size="field">
+            {headline}
+          </V3Heading>
+          <PlaceFaceStrip stats={face.stats} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
+        </div>
         {(
           <V3Atlas
             id="atlas"
@@ -573,6 +560,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             city={cityName}
             neighborhood={neighborhood.name}
             boundaryGeojson={boundaryMapData.polygon}
+            overlayBoundaries={overlaysFromChildCells(atlasPlats)}
             seedRing
             placeQuery={`${neighborhood.name} ${cityName}`}
             listings={splitListings}
