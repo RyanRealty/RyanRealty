@@ -144,4 +144,27 @@ describe('master-plan belonging Quiet', () => {
       expect(String(body)).not.toContain('One about Tetherow.')
     }
   })
+
+  it('puts second-home copy behind a disclosure, not an open paragraph', () => {
+    const items = buildPlaceKnowledge({
+      name: 'Tetherow',
+      city: 'Bend',
+      aboutParagraphs: [],
+      content: null,
+      registry: null,
+      schoolDistrictName: null,
+      schoolDistrictSlug: null,
+      isResort: true,
+      countIsAliasAware: false,
+      contactHref: '/contact',
+      amenityPosts: {},
+    })
+    const second = items.find((item) => item.kind === 'fold' && item.term === 'Second homes')
+    expect(second && second.kind === 'fold' ? second.body : null).toBe(
+      'Short-term rental potential in Tetherow varies by HOA rules, community covenants, and Oregon regulations. Ask for the current rental guidelines before you assume what is permitted or what it could earn.',
+    )
+    expect(items.some((item) => item.kind === 'prose' && 'term' in item && item.term === 'Second homes')).toBe(
+      false,
+    )
+  })
 })

@@ -2,7 +2,7 @@
   "route": "app/communities/[slug]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves — HOA, membership, drive times, course, builders, schools, and the second-home reality — beside the live inventory instead of on a separate marketing page.",
-  "note": "First screen is Split + leftover face. H1 is {Community} homes for sale. leftoverHudKpis grain stays neighborhood keyed by the bare slug; publishPlaceFace({ grain: 'community', hud }) prints leftover active + leftover median list. Tetherow leftover is the 16 SFR pile, not alias Field length ~25 — do not pass alias 25 as an active override. MOS / sold / verdict / DTP stay off the face. Leftover sold history may sit below as its own series, never as a Bend monthly chart, never labeled as MOS on the face. seedRing keys on a TRUSTED polygon: county plat-union (getResortBoundaryGeoJSON) first, reliable stored boundary second — an unreliable hull with no union still draws nothing. Eagle Crest and Black Butte Ranch now seed their verified plat unions; alias tiles still pass as listings override when the stored hull is unreliable. Child plat cells draw as subordinate rings via getCommunitySubdivisions, each a door to its plat page. Type strips, not H2s. Eagle Crest schools are Redmond 2J / getDistrictForCity('Redmond') only. One about paragraph on the first screen. Amenity blogs via getBlogPostsBySlugs; omit generic city/CO fallback. Never plat/nest/parent/child/sibling/CDP/Feeders. THE PUBLIC NAME IS THE REGISTRY LABEL. NO IN-PAGE REDIRECT. buildMarketFaq runs unconditionally with source 'market-truth'. The market question stays below the fold when a verdict exists.",
+  "note": "First screen, amended 2026-09-03: the place-page class opener. Order is V3Breadcrumb, place-opening (V3Heading `{Community} homes for sale` + PlaceFaceStrip leftover count/median + folded PlaceAreaHero photo, never Quiet H1 and never an H1 photo cage), V3Atlas (child plats as regions), PlaceTypeSlider, PlaceSplitView (overlayBoundaries from overlaysFromChildCells / getCommunitySubdivisions), Instrument #market, Quiet #belonging (facts and chips as the display, extra prose and the authored story under disclosure), V3CourseMap when mapped, V3PlaceCharacter, Ledger subdivisions, Sheet, Ledger open houses, Ledger activity, V3Answers #faq, Footer. leftoverHudKpis grain stays neighborhood keyed by the bare slug; publishPlaceFace({ grain: 'community', hud }) prints leftover active + leftover median list. Tetherow leftover is the 16 SFR pile, not alias Field length ~25. MOS / sold / verdict / DTP stay off the face. seedRing keys on a TRUSTED polygon: county plat-union first, reliable stored boundary second. Child plat cells draw as Atlas regions AND Split overlayBoundaries, each a door to its page. Type strips, not H2s. Eagle Crest schools are Redmond 2J / getDistrictForCity('Redmond') only. Amenity blogs via getBlogPostsBySlugs. Never plat/nest/parent/child/sibling/CDP/Feeders on visitor copy. THE PUBLIC NAME IS THE REGISTRY LABEL. NO IN-PAGE REDIRECT. buildMarketFaq runs unconditionally with source 'market-truth'.",
   "dataChanges": {
     "figureCorrected": "The reliable-boundary branch published listings_in_boundary's pin count under the label 'Active single-family'. That RPC filters on status only and caps at 200 rows, so the number counted condos, land, and townhomes, and the median printed beside it came from a DIFFERENT set (the same listings narrowed to propertyType 'A'). The count is now the single-family actives inside the same boundary: the set the label claims and the set its median is computed from. On a community with no condos or land it is the same number.",
     "monthsOfSupplyPublicationRule": "REPAIR 2026-08-12. Months of supply, and the verdict clause it puts in the H1, publish ONLY when the market pulse row's own active_count equals the count this page publishes. Months of supply is actives over average monthly closings and this page prints that formula, so the reader can check it against the count beside it. The pulse row computed the ratio from ITS numerator (the literal-subdivision-name count for the slug) while the page publishes the alias-aware one, and on 2026-08-12 they differed on every community carrying a row: tetherow 20 against 36, vandevert-ranch 12 against 0, broken-top 205 against 21. The arithmetic refuted the page in both directions: vandevert-ranch printed 'a buyer's market' and '72.0 months of supply' over '0 homes for sale' (0 actives yields 0 months, and zero inventory is definitionally not a buyer's market), and tetherow printed 'a balanced market' where its own 36 actives against the same denominator give 9.0, a buyer's. The figure now publishes on exactly the communities whose count came FROM that row (three-rivers: 91 actives, 16.1 months, 'a buyer's market', self-consistent) and is cut everywhere else, in the Instrument, in the visible FAQ, and in the Dataset's variableMeasured, from the one buildMarketFaq call. Median days to pending survives the same disagreement: it is a timing median over homes that went pending, prints no formula, and drives no verdict, and its trace names the pulse row.",
@@ -27,12 +27,17 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Communities > City > Community. tone=on-media when Stage opens on an owned photo (ci:kb-breadcrumb-overlay). Surface tone on the belonging-Instrument fallback.",
+      "section": "Chrome. Home > Communities > City > Community. Surface tone: the opener is H1 + face + atlas, not an on-media Stage.",
+      "blocking": true
+    },
+    {
+      "name": "V3Heading",
+      "section": "Page H1: `${publicName} homes for sale`. Same place-opening as city / neighborhood / subdivision. Not a Quiet headingLevel=1.",
       "blocking": true
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1. Opening Instrument is BELONGING (HOA, membership tiers, acres) only when no owned Stage photo exists. Level 2 is rolling 365 days of closed sales. Live inventory is the Field caption, not the hero. Value my home is not this page's opening ask.",
+      "section": "Pattern 1, below the fold. Rolling leftover closed sales for this community. Live inventory is the face strip, not this Instrument. Value my home is not this page's opening ask.",
       "blocking": true
     },
     {
@@ -52,7 +57,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice. First the authored knowledge of the place, built by _v3/place-knowledge.ts from the verified per-community config plus the resort and school registries: prose, at-a-glance facts, drive times, amenities by category, the course, membership, builders, schools, the second-home reality, and every constituent subdivision as a door. Then the closing block: the verified questions from the same buildMarketFaq array the FAQPage JSON-LD uses, followed by every exit page-inventory.json records for this node — browse, listing-alert management, city homes, city market report, city page, city open houses, each golf course whose registry row names this community, the communities index, the market hub, the sell spine, and contact. REPAIR 2026-08-12: the closing block's note carries the page's VISIBLE freshness line, 'Market data updated <label>', off the same asOfLabel/asOfIso pair buildMarketFaq returns and the Dataset publishes as dateModified. The KB page rendered that line as its own element and the migration replaced it with the Instrument's `updated` prop, which reads the live pair's stamp — null on the alias, reliable-boundary, and subdivision-name branches, so it never rendered on a resort or a plain subdivision while the Dataset went on publishing a dateModified no human was shown. It sits with the provenance line rather than under the figures because it dates the market rows, not the live tile count beside them. The browse door's label no longer says 'Every <community> home for sale': that route filters on the literal MLS subdivision name and publishes fewer homes than the alias-aware count on this page (36 here against 30 there, curl-verified 2026-08-12), so the label names the search it opens and claims nothing about completeness.",
+      "section": "Pattern 6, #belonging. Authored knowledge from _v3/place-knowledge.ts: facts and chips as the display (HOA, drive times, course specs, membership), extra prose and the authored story under disclosure. FAQ is V3Answers, not this Quiet. Market absence is a Quiet only when leftover HUD publishes nothing.",
       "blocking": true
     },
     {
@@ -68,6 +73,16 @@
     {
       "name": "communityTypeStripItems",
       "section": "Type strips, not H2s. Count + noun chips from getPublicPlaceSegments. MOS / verdict stay off the chips.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceTypeSlider",
+      "section": "Horizontal leftover type cards from getPublicPlaceSegments. Same slider as city / neighborhood / subdivision.",
+      "blocking": true
+    },
+    {
+      "name": "V3Answers",
+      "section": "FAQ. Verified questions from buildMarketFaq, each answer a disclosure. Doors are the explore edges. Not a Quiet wall.",
       "blocking": true
     },
     {
