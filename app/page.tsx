@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
-import { getListingTiles, getDetachedOverlays, getBrokers } from '@/lib/data'
+import { getListingTiles, getDetachedOverlays, getBrokers, getReviews } from '@/lib/data'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { getCitiesForIndex } from '@/app/actions/cities'
@@ -25,7 +25,7 @@ import {
   type CityPlaceItem,
   type CityCommunityItem,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { zonedDateKey } from '@/lib/format/date'
+import { zonedDateKey, formatDate } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -39,6 +39,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
   type V3QuietItem,
+  V3Proof,
 } from '@/components/site/v3'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { HomeHomesField } from './_v3/HomeHomesField'
@@ -53,7 +54,7 @@ import {
   preferPlaceHero,
 } from './_v3/home-constants'
 import { unionBoundaryGeometry } from '@/app/central-oregon/_v3/union-boundary'
-import { TESTIMONIALS } from '@/lib/testimonials'
+import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
@@ -135,6 +136,10 @@ export default async function Home() {
     // homepage and every place page). Empty cities = the whole feed.
     buildPlaceAtlas({ cities: [], label: 'Central Oregon' }),
   ])
+  // Live Google reviews, the same read /reviews and /about make. The homepage
+  // printed eight hardcoded TESTIMONIALS in a Quiet block instead: a section of
+  // client words with no source, on the page most people see first.
+  const reviewSummary = await getReviews(6).catch(() => null)
   const townBoundaries = regionAtlas?.townBoundaries ?? TOWN_ORDER.map(() => null)
   const regionBoundary = unionBoundaryGeometry(townBoundaries)
   const regionMt = regionOverlays.get('region:central-oregon')
@@ -164,11 +169,16 @@ export default async function Home() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  const testimonialItems: V3QuietItem[] = TESTIMONIALS.slice(0, 8).map((t) => ({
-    kind: 'prose' as const,
-    term: t.author,
-    body: t.quote,
-  }))
+  const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
+  const reviewCount =
+    reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : reviewQuotes.length
+  const reviewAverage =
+    reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
+  const newestReview = reviewQuotes
+    .map((q) => q.date)
+    .filter((d): d is string => !!d)
+    .sort()
+    .at(-1)
 
   const [firstTownRow, ...restTownRows] = placeFigureRows(townItems, 'City').map(
     ({ when: _kind, ...row }) => row,
@@ -389,11 +399,32 @@ export default async function Home() {
           />
         ) : null}
 
-        {testimonialItems.length > 0 ? (
-          <V3Quiet
+        {reviewQuotes.length > 0 ? (
+          <V3Proof
             id="reviews"
-            heading="What clients say"
-            items={testimonialItems}
+            eyebrow="Ryan Realty · Google"
+            headline={`${reviewCount} Google reviews`}
+            headingLevel={2}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            figures={[
+              { value: String(reviewCount), label: 'Google reviews' },
+              { value: reviewAverage.toFixed(1), label: 'average of 5' },
+              ...(newestReview
+                ? [
+                    {
+                      value: formatDate(newestReview, {
+                        month: 'short',
+                        day: undefined,
+                        year: 'numeric',
+                      }),
+                      label: 'newest',
+                    },
+                  ]
+                : []),
+            ]}
+            quotes={reviewQuotes}
+            source={{ label: 'Every review', href: '/reviews' }}
+            record={false}
           />
         ) : null}
 
