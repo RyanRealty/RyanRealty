@@ -110,6 +110,10 @@
   line-height: var(--v3-leading-note);
 }
 
+.v3-proof__strip-wrap {
+  position: relative;
+}
+
 .v3-proof__strip {
   display: block;
   width: 100%;
@@ -380,12 +384,100 @@
   color: var(--v3-ink-muted);
 }
 
+/* G71: the source line was a 17px-tall text link. The box is the target. */
 @layer base {
   .v3-proof__source a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
     color: inherit;
     text-decoration: underline;
     text-underline-offset: var(--v3-underline-offset);
   }
+}
+
+/* /reviews: strip + year chips are the instrument. Full text lives under
+   one disclosure so the page is not a 7k px card list (TASTE.md). Compact
+   bands never mount these classes. */
+.v3-proof__archive-wrap {
+  margin: var(--v3-space-lg) 0 0;
+}
+
+.v3-proof__reading {
+  min-height: 6rem;
+  padding: var(--v3-space-md) 0;
+  border-top: var(--v3-rule-hairline);
+  scroll-margin-top: calc(var(--v3-chrome-h) + 9rem);
+}
+
+.v3-proof__reading-empty {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+}
+
+.v3-proof__archive {
+  margin: var(--v3-space-sm) 0 0;
+}
+
+.v3-proof__archive-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) 0;
+  border-top: var(--v3-rule-hairline);
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  cursor: pointer;
+  list-style: none;
+}
+
+.v3-proof__archive-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3-proof__archive-summary:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-proof__archive-n {
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-proof__archive-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-proof__archive-item {
+  padding: var(--v3-space-md) 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-proof__archive-item.is-off {
+  display: none;
+}
+
+.v3-proof__archive-item.is-focus {
+  background: var(--v3-wash);
+}
+
+.v3-proof__archive-item .v3-proof__pull {
+  font-size: var(--v3-size-body-lg);
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: 0;
+  text-wrap: pretty;
 }
 
 @media (prefers-reduced-motion: reduce) {

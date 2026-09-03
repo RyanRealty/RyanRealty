@@ -5,9 +5,11 @@
  * Pattern: the reviews page was twenty-five quotes in one column (TASTE.md:
  * a wall). Proof gives the words a record to sit in: the figures the source
  * supports (count, average, first, newest), a strip of every review placed
- * on its month so the years read at a glance, year chips that filter, and
- * the quotes as cards whose opening sentence is set in the display face so
- * a reader can scan twenty-five voices in one pass and open any of them.
+ * on its month so the years read at a glance, and year chips that filter.
+ * On /reviews the strip and chips ARE the instrument (`archive`): full text
+ * stays in the served HTML under a disclosure, not as a 7k px card list.
+ * Compact bands (`record={false}`, homepage / about / team) still print a
+ * short set of cards and ignore `archive`.
  *
  * Honesty: every figure and every string arrives formatted from the caller
  * (the barrel never formats, ci:public-v3 rule 3). Nothing in a quote is
@@ -57,6 +59,12 @@ export type V3ProofProps = {
    * of four marks never sits beside a figure that says twenty-five.
    */
   record?: boolean
+  /**
+   * /reviews only. Strip + year chips are the page; every quote stays in the
+   * served HTML under one disclosure. Compact `record={false}` bands ignore
+   * this, so the homepage newest-four path does not move.
+   */
+  archive?: boolean
   className?: string
 }
 
@@ -75,6 +83,34 @@ function Marks({ rating }: { rating: number }) {
   )
 }
 
+function QuoteFigure({
+  q,
+  displayPull,
+  showMarks,
+}: {
+  q: V3ProofQuote
+  displayPull: boolean
+  showMarks: boolean
+}) {
+  return (
+    <figure className="v3-proof__quote">
+      <blockquote className="v3-proof__words">
+        <p className={cn('v3-proof__pull', (!displayPull || q.pull.length > 90) && 'is-long')}>{q.pull}</p>
+        {q.rest.map((para) => (
+          <p key={para.slice(0, 48)} className="v3-proof__para">
+            {para}
+          </p>
+        ))}
+      </blockquote>
+      <figcaption className="v3-proof__who">
+        <cite className="v3-proof__author">{q.author}</cite>
+        <span className="v3-proof__meta">{q.attribution}</span>
+        {showMarks ? <Marks rating={q.rating} /> : null}
+      </figcaption>
+    </figure>
+  )
+}
+
 export function V3Proof({
   id,
   eyebrow,
@@ -85,6 +121,7 @@ export function V3Proof({
   quotes,
   source,
   record = true,
+  archive = false,
   className,
 }: V3ProofProps) {
   const uid = useId()
@@ -99,6 +136,7 @@ export function V3Proof({
   }, [])
   const showMarks = useMemo(() => quotes.some((q) => q.rating < 5), [quotes])
   const layerRef = useRef<HTMLDivElement>(null)
+  const asArchive = record && archive
 
   const years = useMemo(() => {
     const set = new Set(quotes.map((q) => q.year))
@@ -154,6 +192,14 @@ export function V3Proof({
   }, [quotes, first, span])
 
   const shown = useMemo(() => (year == null ? quotes : quotes.filter((q) => q.year === year)), [quotes, year])
+  const reading = useMemo(() => {
+    if (!asArchive) return null
+    if (focus) {
+      const hit = quotes.find((q) => q.id === focus)
+      if (hit && (year == null || hit.year === year)) return hit
+    }
+    return shown[0] ?? null
+  }, [asArchive, focus, quotes, year, shown])
   /* The strip's one tab stop rests on a mark the filter shows (pass three, D12). */
   const defaultMarkId = useMemo(
     () => (year == null ? marks[0] : marks.find((m) => m.q.year === year))?.q.id ?? null,
@@ -195,15 +241,15 @@ export function V3Proof({
       if (q && year != null && q.year !== year) setYear(null)
       requestAnimationFrame(() => {
         // A reader who asked for less motion gets a jump, not a 3,244px glide
-        // (evaluator round five, REVIEWS-3).
+        // (evaluator round five, REVIEWS-3). Archive mode reads in the pane
+        // under the strip, so there is no 7k list to glide through.
         const still =
           typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-        document
-          .getElementById(`${uid}-q-${qid}`)
-          ?.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
+        const target = asArchive ? `${uid}-read` : `${uid}-q-${qid}`
+        document.getElementById(target)?.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
       })
     },
-    [quotes, year, uid],
+    [quotes, year, uid, asArchive],
   )
 
   return (
@@ -244,6 +290,7 @@ export function V3Proof({
               per-mark readout was the browser's own tooltip (evaluator round
               five, REVIEWS-4). */}
           <p className="v3-proof__how">Every review on its month. Point at a mark to read it, or pick a year.</p>
+          <div className="v3-proof__strip-wrap">
           <svg
             className="v3-proof__strip"
             viewBox={`0 0 ${STRIP_W} ${STRIP_H}`}
@@ -331,6 +378,7 @@ export function V3Proof({
               </span>
             ))}
           </div>
+          </div>
           <div className="v3-proof__filters" role="group" aria-label="Show reviews from">
             <button
               type="button"
@@ -369,39 +417,58 @@ export function V3Proof({
           {year == null ? `Showing all ${quotes.length} reviews` : `Showing ${shown.length} reviews from ${year}`}
         </p>
       ) : null}
-      <ul className={cn('v3-proof__list', !record && 'v3-proof__list--compact')}>
-        {shown.map((q) => (
-          <li
-            key={q.id}
-            id={`${uid}-q-${q.id}`}
-            className={cn('v3-proof__item', focus === q.id && 'is-focus')}
-            onPointerEnter={() => hoverCard(q.id)}
-            /* A touch has no hover: tapping a card lit nothing, so on a phone
-               the field answered nothing at all (evaluator round six). A tap
-               lights its mark on the strip above, which is sticky. */
-            onClick={() => hoverCard(q.id)}
-            onPointerLeave={() => {
-              if (!scrollLock.current) setFocus((f) => (f === q.id ? null : f))
-            }}
-          >
-            <figure className="v3-proof__quote">
-              <blockquote className="v3-proof__words">
-                <p className={cn('v3-proof__pull', (!record || q.pull.length > 90) && 'is-long')}>{q.pull}</p>
-                {q.rest.map((para) => (
-                  <p key={para.slice(0, 48)} className="v3-proof__para">
-                    {para}
-                  </p>
-                ))}
-              </blockquote>
-              <figcaption className="v3-proof__who">
-                <cite className="v3-proof__author">{q.author}</cite>
-                <span className="v3-proof__meta">{q.attribution}</span>
-                {showMarks ? <Marks rating={q.rating} /> : null}
-              </figcaption>
-            </figure>
-          </li>
-        ))}
-      </ul>
+      {asArchive ? (
+        <div className="v3-proof__archive-wrap">
+          <div id={`${uid}-read`} className="v3-proof__reading">
+            {reading ? (
+              <QuoteFigure q={reading} displayPull showMarks={showMarks} />
+            ) : (
+              <p className="v3-proof__reading-empty">Point at a mark, or pick a year, to read a review here.</p>
+            )}
+          </div>
+          <details className="v3-proof__archive">
+            <summary className="v3-proof__archive-summary">
+              Every review as written
+              <span className="v3-proof__archive-n">{quotes.length}</span>
+            </summary>
+            <ul className="v3-proof__archive-list">
+              {quotes.map((q) => (
+                <li
+                  key={q.id}
+                  id={`${uid}-q-${q.id}`}
+                  className={cn(
+                    'v3-proof__archive-item',
+                    year != null && q.year !== year && 'is-off',
+                    focus === q.id && 'is-focus',
+                  )}
+                >
+                  <QuoteFigure q={q} displayPull={false} showMarks={showMarks} />
+                </li>
+              ))}
+            </ul>
+          </details>
+        </div>
+      ) : (
+        <ul className={cn('v3-proof__list', !record && 'v3-proof__list--compact')}>
+          {shown.map((q) => (
+            <li
+              key={q.id}
+              id={`${uid}-q-${q.id}`}
+              className={cn('v3-proof__item', focus === q.id && 'is-focus')}
+              onPointerEnter={() => hoverCard(q.id)}
+              /* A touch has no hover: tapping a card lit nothing, so on a phone
+                 the field answered nothing at all (evaluator round six). A tap
+                 lights its mark on the strip above, which is sticky. */
+              onClick={() => hoverCard(q.id)}
+              onPointerLeave={() => {
+                if (!scrollLock.current) setFocus((f) => (f === q.id ? null : f))
+              }}
+            >
+              <QuoteFigure q={q} displayPull={record} showMarks={showMarks} />
+            </li>
+          ))}
+        </ul>
+      )}
 
       <p className="v3-proof__source">
         <a href={source.href} target="_blank" rel="noopener noreferrer">
