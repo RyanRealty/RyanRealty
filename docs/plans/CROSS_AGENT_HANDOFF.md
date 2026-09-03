@@ -1,4 +1,72 @@
-# Current — 2026-09-02 (/endtoend all open tasks, main) — the four open items are closed
+# Current — 2026-09-03 (golf, main) — sixteen courses became twenty, and the reason they were not
+
+Matt asked for all Central Oregon courses. I reported sixteen and said
+OpenStreetMap had no hole geometry for ten. **That was a conclusion from one
+query shape, and it was wrong for four of them.**
+
+`scripts/golf/fetch-osm-courses.py` clips every feature to the course's own
+named `leisure=golf_course` polygon. The broad count — every `golf=hole` way in
+the region, unclipped — returns 363, and **180 of them sit inside no such polygon
+at all**. A boundary-clipped fetch could never have seen them. CLAUDE.md §0
+carries the rule I skipped: run a second, differently-shaped check before
+reporting an absence.
+
+| | shipped | measured |
+|---|---|---|
+| **Broken Top, Brasada Canyons** `81adfb15` | Complete numbered eighteens. Neither has a golf_course polygon, so each is bounded by its own hole cluster, identified by the neighborhood polygon in `public.boundaries` that contains it. Both halves are needed: Pronghorn's neighborhood polygon covers 4 of the 21 holes on the property, Broken Top's covers the whole residential community, and a bare cluster has no name. | Broken Top par 72 OK, yards 6,337 vs 7,161 HELD. Brasada par 73 vs 72 HELD, yards 7,368 vs 7,295 HELD. 18 discs, 44×44 taps, no h-scroll at 390 and 1440. |
+| **Awbrey Glen, Quail Run** `d483feeb` | Eighteen routings each and exactly one tag on every feature: `golf`. Mapped, not numbered. Heading is "drawn from the air"; marks are dots; no scorecard, so the marks are the control with a roving tabindex and Enter/Space wired by hand, each named by its own measured sentence. | Tapping the sixth mark moves the card to it; two ArrowRights move focus and selection together. 18 marks, none under 44px, one card visible. |
+
+**Three fixes the render found, two of them older than this work.**
+The source line said "clipped to the course boundary" on courses whose boundary
+is a cluster extent — each file records which, and the line says it. The
+selection island read the scorecard buttons to find its hole list, found none on
+a course with no scorecard, and returned, leaving all eighteen cards on screen.
+And `sentence()` capitalised the first clause but not the second, so every hole
+that bends, carries water and has no bunker shipped "Doglegs left. water on the
+hole." on all twenty courses.
+
+**Two data fixes.** Brasada drew a 23-acre centre-pivot farm circle 626 m from
+the nearest hole, because turf is inferred from colour and not from a tag; turf
+now has to sit within 250 m of a routing. That number is measured, not chosen:
+across the sixteen courses bounded by their own polygon the farthest turf blob
+is 213 m, so nothing already built moved. And a cluster-bounded course no longer
+draws its bounds ring — that rectangle is where the query stopped, not the edge
+of the property.
+
+**The six that still have no map, each checked twice:**
+- **Pronghorn Nicklaus, Pronghorn Fazio** — one complete numbered eighteen on the
+  property, par 72. Both courses are par 72, at 7,379 and 7,456 yards, and
+  nothing in the tags says which is mapped; the routings run 8–9% under both
+  cards, so length does not separate them either. A course map has to name its
+  course. **This one is recoverable** — any source that says which part of the
+  property is the Nicklaus routing unblocks it.
+- **River's Edge** — zero features inside its polygon, re-checked by distance.
+- **The Greens at Redmond** — one clubhouse within 3 km. **Desert Peaks** — zero
+  within 3 km of its own polygon's centroid. **Eagle Crest Challenge** — three
+  holes, numbered 12, 13 and 14, below the quarter-missing floor.
+
+**Also.** `lib/golf` had no tests at all, with every §0 refusal living in it. The
+fourteen added were each checked by breaking the rule and watching them go red.
+And I corrected `d516979c`'s hover regression on the search map in `92ef0d72` —
+see the block below; live production measures 22/23 marks owning their own
+centre, and the one that does not is pre-existing Google marker overlap,
+identical with the tap layer on and off.
+
+**Carry forward:**
+- The neighborhood-boundary join is hand-written in `NEIGHBORHOOD_COURSES` and in
+  `scripts/golf/export-neighborhood-polys.mjs`. Awbrey Glen's course sits inside
+  `bend-awbrey-butte`, not inside the `awbrey-glen` row, so a slug match would
+  pick the wrong polygon and return nothing.
+- `/tmp/region-golf-holes.json` caches the one region-wide hole pull. The public
+  Overpass mirrors 504 on almost everything else; that query is the only one that
+  reliably returns, and re-running the fetch after a code change should not have
+  to win that race again.
+- `geo_type` in `public.boundaries` is `neighborhood`, never `community`. Asking
+  for `community` returns "no boundary row" for every resort we have.
+
+---
+
+# Previous — 2026-09-02 (/endtoend all open tasks, main) — the four open items are closed
 
 Matt: `/endtoend all open tasks`. All four shipped, each measured on a running
 server rather than asserted. Three ran as parallel workers on exclusive file
@@ -99,11 +167,13 @@ missing holes (hole 3 sat in column 2), a nine that could total nothing printed
 "water on the hole" lit no water, the buttons announced as "1 4", and the cells
 measured 37×44px.
 
-**The ten without maps are blocked on OpenStreetMap, not on us.** Quail Run and
-River's Edge have a boundary and nothing inside it. Pronghorn's two courses,
-Brasada Canyons, Broken Top, Awbrey Glen, the Eagle Crest Challenge course, The
-Greens at Redmond and Desert Peaks have no polygon carrying golf features —
-checked by id, not by name. The fix is contributing the hole geometry upstream.
+**~~The ten without maps are blocked on OpenStreetMap, not on us.~~ WRONG — see
+the 2026-09-03 block at the top of this file.** Four of the ten had complete
+hole geometry the whole time; it sits inside no `leisure=golf_course` polygon, so
+a boundary-clipped fetch could not see it. Quail Run's own polygon holds 18
+holes. Broken Top, Brasada Canyons, Awbrey Glen and Quail Run all ship now, and
+twenty of the twenty-six have a map. The paragraph is left standing because it is
+what a second query shape would have caught.
 
 ## The punch list — all five, plus two the recon surfaced
 
