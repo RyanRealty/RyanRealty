@@ -99,7 +99,7 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).not.toContain('100vw')
   })
 
-  it('uses Field navy pins on the Google frame, price only when active', () => {
+  it('uses Field navy pins on PlaceFieldMap, price only when active', () => {
     expect(FIELD_MAP).toContain('OverlayView')
     expect(FIELD_MAP).toContain('v3-field__pin')
     expect(FIELD_MAP).toContain('v3-field__pin-label')
@@ -114,8 +114,6 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD_MAP).not.toContain('MAP_LABEL_LISTING')
     expect(FIELD_MAP).not.toContain('#0d9488')
     expect(FIELD_MAP).not.toContain('setZoom(9)')
-    expect(FIELD).toContain('PlaceFieldMap')
-    expect(FIELD).toContain('boundary={boundary}')
     // The region boundary reaches the Field through the DAL read on the page OR
     // through the one shared region assembly (app/_v3/region-atlas.ts) that
     // makes that read for every surface drawing Central Oregon whole.
@@ -124,13 +122,23 @@ describe('homepage Field stays on the barrel', () => {
     expect(PAGE).toContain('boundary={regionBoundary ?? undefined}')
   })
 
+  it('the living atlas is the map; Field is the photographed list, not a second Google frame', () => {
+    expect(PAGE).toMatch(/<V3Atlas/)
+    expect(PAGE).toMatch(/<HomeHomesField/)
+    expect(FIELD).not.toContain('PlaceFieldMap')
+    expect(FIELD).toContain('mapSlot={undefined}')
+    const atlasAt = PAGE.indexOf('<V3Atlas')
+    const fieldAt = PAGE.indexOf('<HomeHomesField')
+    expect(atlasAt).toBeGreaterThan(-1)
+    expect(fieldAt).toBeGreaterThan(atlasAt)
+  })
+
   it('toggles types that exist in the set as Field lead chips', () => {
     expect(FIELD).toContain('aria-label="Property types"')
     expect(FIELD).not.toContain('aria-label="Towns"')
     expect(PAGE).not.toMatch(/towns=\{/)
     expect(FIELD).toContain('v3-field__mark')
     expect(FIELD).toContain('ariaPressed')
-    expect(FIELD).toContain('mapSlot={(binding)')
     expect(V3_FIELD_CSS).toContain('.v3-field__pin--cat-0')
     expect(V3_FIELD_CSS).toContain('.v3-field__mark--cat-0')
     expect(V3_FIELD_CSS).toContain('background: var(--v3-cat-0)')
