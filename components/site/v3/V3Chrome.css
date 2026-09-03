@@ -98,8 +98,10 @@
 .v3-chrome__group-link {
   display: inline-flex;
   align-items: center;
+  min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-3xs) 0 var(--v3-space-xs);
+  /* Short labels (Sell) measured 38.9px; even xs padding plus the tap floor. */
+  padding: 0 var(--v3-space-xs);
   color: var(--v3-ink);
   font-size: var(--v3-size-nav);
   font-weight: var(--v3-weight-medium);
@@ -124,7 +126,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
+  flex: none;
+  /* Hit box is the tap token. 2rem was 32px — G71's founding miss. */
+  min-width: var(--v3-tap);
   min-height: var(--v3-tap);
   padding: 0;
   background: none;
