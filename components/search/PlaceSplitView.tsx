@@ -197,7 +197,7 @@ export async function PlaceSplitView(props: {
         initialTotalCount={totalCount ?? listings?.length ?? 0}
         initialCapped={capped}
         initialBounds={initialBounds}
-        filters={filters}
+        filters={{ ...filters, view: 'list' }}
         savedListingKeys={[]}
         likedListingKeys={[]}
         placeQuery={props.placeQuery}
@@ -209,6 +209,7 @@ export async function PlaceSplitView(props: {
         initialDegraded={degraded}
         lockPlace
         openHouseLabels={openHouseLabels}
+        listOnly
       />
     </div>
   )

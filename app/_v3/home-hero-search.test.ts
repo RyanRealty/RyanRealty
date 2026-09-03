@@ -8,7 +8,7 @@ const SEARCH = readFileSync(resolve('app/_v3/HomeHeroSearch.client.tsx'), 'utf8'
 const FIELD = readFileSync(resolve('app/_v3/HomeHomesField.tsx'), 'utf8')
 const V3_FIELD = readFileSync(resolve('components/site/v3/V3Field.tsx'), 'utf8')
 const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'utf8')
-const FIELD_MAP = readFileSync(resolve('app/central-oregon/_v3/PlaceFieldMapImpl.tsx'), 'utf8')
+const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
   it('mounts HomeHeroSearch inside the Atlas head (the Stage is retired on the homepage, 2026-09-01)', () => {
@@ -99,29 +99,13 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).not.toContain('100vw')
   })
 
-  it('uses Field navy pins on the Google frame, price only when active', () => {
-    expect(FIELD_MAP).toContain('OverlayView')
-    expect(FIELD_MAP).toContain('v3-field__pin')
-    expect(FIELD_MAP).toContain('v3-field__pin-label')
-    expect(FIELD_MAP).toContain('v3-field__pin--cat-')
-    expect(FIELD_MAP).toContain('<Link')
-    expect(FIELD_MAP).toContain('FRAME_INSET_PCT')
-    expect(FIELD_MAP).toContain('MIN_FIT_PX')
-    expect(FIELD_MAP).toContain('ResizeObserver')
-    expect(FIELD_MAP).toContain('for (const ring of polygons)')
-    expect(FIELD_MAP).not.toContain('MarkerClusterer')
-    expect(FIELD_MAP).not.toContain('getListingMarkerIcon')
-    expect(FIELD_MAP).not.toContain('MAP_LABEL_LISTING')
-    expect(FIELD_MAP).not.toContain('#0d9488')
-    expect(FIELD_MAP).not.toContain('setZoom(9)')
-    expect(FIELD).toContain('PlaceFieldMap')
-    expect(FIELD).toContain('boundary={boundary}')
-    // The region boundary reaches the Field through the DAL read on the page OR
-    // through the one shared region assembly (app/_v3/region-atlas.ts) that
-    // makes that read for every surface drawing Central Oregon whole.
-    expect(PAGE).toMatch(/getBoundaryGeoJSON|buildRegionAtlasRegions/)
-    expect(PAGE).toContain('unionBoundaryGeometry')
-    expect(PAGE).toContain('boundary={regionBoundary ?? undefined}')
+  it('the living atlas is the map; Field is the photographed list, not a second Google frame', () => {
+    expect(PAGE).toMatch(/<V3Atlas/)
+    expect(FIELD).not.toContain('PlaceFieldMap')
+    expect(FIELD).toContain('mapSlot={undefined}')
+    expect(ATLAS).toContain('zoomAt')
+    expect(ATLAS).toContain('router.push')
+    expect(ATLAS).toContain('zoomToPlace')
   })
 
   it('toggles types that exist in the set as Field lead chips', () => {
@@ -130,7 +114,6 @@ describe('homepage Field stays on the barrel', () => {
     expect(PAGE).not.toMatch(/towns=\{/)
     expect(FIELD).toContain('v3-field__mark')
     expect(FIELD).toContain('ariaPressed')
-    expect(FIELD).toContain('mapSlot={(binding)')
     expect(V3_FIELD_CSS).toContain('.v3-field__pin--cat-0')
     expect(V3_FIELD_CSS).toContain('.v3-field__mark--cat-0')
     expect(V3_FIELD_CSS).toContain('background: var(--v3-cat-0)')

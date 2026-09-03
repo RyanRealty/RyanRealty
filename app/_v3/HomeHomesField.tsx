@@ -2,18 +2,17 @@
 
 /**
  * Homepage inventory Field. Types that exist in the set are lead chips on
- * V3Field (tokens only). Towns are not a second chip row — Stage search
- * already takes a place. Map and list share one frame.
+ * V3Field (tokens only). The living atlas above is the map — this is the
+ * photographed list, not a second Google frame.
  */
 import { useMemo, useState } from 'react'
 import { V3Button, V3Field } from '@/components/site/v3'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import type { HomeFieldItem } from './home-field-items'
 import { HOME_FIELD_LIMIT } from './home-constants'
 
 export function HomeHomesField({
   fieldItems,
-  boundary,
+  boundary: _boundary,
   listFlow,
   seeAll,
   emptyMessage,
@@ -80,32 +79,7 @@ export function HomeHomesField({
       id="homes"
       ariaLabel="Homes for sale across Central Oregon"
       items={visible}
-      mapSlot={(binding) => {
-        const pins = binding.items.flatMap((item) =>
-          item.lat != null && item.lng != null
-            ? [
-                {
-                  id: item.id,
-                  href: item.href,
-                  priceLabel: item.priceLabel,
-                  title: item.title,
-                  lat: item.lat,
-                  lng: item.lng,
-                  cat: item.cat,
-                },
-              ]
-            : [],
-        )
-        if (pins.length === 0) return null
-        return (
-          <PlaceFieldMap
-            pins={pins}
-            placeName="Central Oregon"
-            posterSrc={visible[0]?.photoSrc ?? fieldItems[0]?.photoSrc}
-            boundary={boundary}
-          />
-        )
-      }}
+      mapSlot={undefined}
       lead={typeLead}
       listFlow={listFlow}
       action={seeAll}
