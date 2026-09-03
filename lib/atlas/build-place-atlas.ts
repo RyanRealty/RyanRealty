@@ -6,11 +6,12 @@
  *
  * Section 0 by construction: dots are the public active and pending listings
  * with a coordinate, read from listing_tile_mv through getAtlasTiles, plus
- * the closes of the last 30 days by close_date. A scope with a boundary keeps
- * only the tiles inside its polygon (the recorded GIS boundary, never a name
- * match), which is what a visitor means by "in Tetherow". Every figure the
- * Atlas prints is a count or a median over these dots; the source line names
- * the population.
+ * the closes of the last 90 days by close_date (the heat). Pulses and the
+ * sold count stay the last 30 days. A scope with a boundary keeps only the
+ * tiles inside its polygon (the recorded GIS boundary, never a name match),
+ * which is what a visitor means by "in Tetherow". Every figure the Atlas
+ * prints is a count or a median over these dots; the source line names the
+ * population and both windows.
  *
  * Server only: it reads the DAL. The Atlas itself never fetches.
  */
@@ -24,6 +25,11 @@ import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { outerRings, pointInRings, type Ring } from '@/lib/geo/project-svg'
 import { classifyType } from '@/app/_v3/home-field-items'
 import type { AtlasDot, AtlasEvent, AtlasType } from '@/components/site/v3'
+import {
+  ATLAS_HEAT_WINDOW_DAYS,
+  ATLAS_PULSE_WINDOW_DAYS,
+  isAtlasPulseSold,
+} from '@/lib/atlas/sales-heat'
 
 /** The Atlas type toggles, in display order. Keys are classifyType's. */
 export const ATLAS_TYPES: readonly AtlasType[] = [
@@ -71,8 +77,6 @@ export type AtlasPopulation = {
   complete: boolean
 }
 
-const SOLD_WINDOW_DAYS = 30
-
 function daysAgo(nowMs: number, iso: string | null | undefined): number | null {
   if (!iso) return null
   const t = Date.parse(iso)
@@ -87,8 +91,8 @@ function dotStatus(status: string): AtlasDot['s'] | null {
 }
 
 /**
- * Every public on-market tile plus the month's closes, through the lean
- * keyset read (getAtlasTiles). `cities` narrows it; empty is the whole
+ * Every public on-market tile plus the heat window's closes, through the
+ * lean keyset read (getAtlasTiles). `cities` narrows it; empty is the whole
  * service area. A thrown read is reported as `complete: false` with no
  * tiles — never as an empty market.
  */
@@ -112,7 +116,7 @@ export async function readAtlasTiles(
   cities: readonly string[],
   nowMs = Date.now(),
 ): Promise<{ tiles: AtlasTile[]; complete: boolean; readAt: number }> {
-  const closedFromDate = new Date(nowMs - SOLD_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const closedFromDate = new Date(nowMs - ATLAS_HEAT_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
   const key = [...cities].map((c) => c.toLowerCase().trim()).sort().join('|') || '*'
   try {
     const pending = inFlight.get(`${key}@${closedFromDate}`)
@@ -145,14 +149,14 @@ export function tilesInside(tiles: readonly AtlasTile[], boundary: GeoJSON.Geome
   return tiles.filter((t) => t.lat != null && t.lng != null && pointInRings(t.lng, t.lat, rings))
 }
 
-/** Tiles to dots: coordinate, price, type, status, ages. Sold dots keep only the month. */
+/** Tiles to dots: coordinate, price, type, status, ages. Sold dots keep the heat window. */
 export function atlasDotsFromTiles(tiles: readonly AtlasTile[], nowMs = Date.now()): AtlasDot[] {
   return tiles.flatMap((tile): AtlasDot[] => {
     if (tile.lat == null || tile.lng == null) return []
     const s = dotStatus(tile.status)
     if (!s) return []
     const soldAgo = s === 'sold' ? daysAgo(nowMs, tile.closeDate) : null
-    if (s === 'sold' && (soldAgo == null || soldAgo > SOLD_WINDOW_DAYS)) return []
+    if (s === 'sold' && (soldAgo == null || soldAgo > ATLAS_HEAT_WINDOW_DAYS)) return []
     const { typeKey } = classifyType({ propertyType: tile.propertyType, propertySubType: tile.propertySubType })
     const raw =
       s === 'sold' && tile.closePrice != null
@@ -270,7 +274,7 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
   const counts = {
     forSale: dots.filter((d) => d.s === 'active').length,
     pending: dots.filter((d) => d.s === 'pending').length,
-    sold: dots.filter((d) => d.s === 'sold').length,
+    sold: dots.filter((d) => isAtlasPulseSold(d)).length,
     cities: new Set(tiles.map((t) => (t.city ?? '').trim()).filter(Boolean)).size,
   }
   const where = keys
@@ -286,8 +290,10 @@ async function buildPlaceAtlasUncached(scope: AtlasScope, nowMs: number): Promis
   // claim "a few sit just beyond its edges" on maps where none did (evaluator
   // round five, LISTING-NOBOUNDARY-5).
   const source =
-    `Every active and pending listing of every property type on the regional MLS through Oregon Data Share ${where}, ` +
-    `plus the closes of the last ${SOLD_WINDOW_DAYS} days. Counts and medians cover every listing read for this map.`
+    `Every active and pending listing of every property type on the regional MLS through Oregon Data Share ${where}. ` +
+    `The wash is sales density of closes in the last ${ATLAS_HEAT_WINDOW_DAYS} days; homes for sale and pending stay as marks. ` +
+    `Pulses and the sold count are the closes of the last ${ATLAS_PULSE_WINDOW_DAYS} days. ` +
+    `Counts and medians cover every listing read for this map.`
   return {
     dots,
     types: atlasTypesPresent(dots),
@@ -315,7 +321,7 @@ export async function buildPlaceAtlas(scope: AtlasScope, nowMs = Date.now()): Pr
       if (!population.complete) throw new Error('[build-place-atlas] short read is not cached')
       return population
     },
-    ['atlas-population-v1', key],
+    ['atlas-population-v2', key],
     { revalidate: CACHE_WINDOWS.listingsByGeo, tags: [cacheTag.listings] },
   )
   try {

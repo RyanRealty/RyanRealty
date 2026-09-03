@@ -1,11 +1,11 @@
 'use client'
 /**
  * PATTERN 8: ATLAS. The living map — every listing on the market as a point on
- * Central Oregon, every place as a touchable silhouette, pulses on real
- * events, one price scrubber, one row of type toggles, and a card that
- * answers "what is here" on hover or tap. The page's opening, replacing the
- * photo-and-headline Stage; scoped to a boundary, the living map of a city,
- * a neighborhood, a community, a plat.
+ * Central Oregon, every place as a touchable silhouette, a sales-heat wash
+ * from closings, pulses on real events, one price scrubber, one row of type
+ * toggles, and a card that answers "what is here" on hover or tap. The page's
+ * opening, replacing the photo-and-headline Stage; scoped to a boundary, the
+ * living map of a city, a neighborhood, a community, a plat.
  *
  * Why it exists (Matt 2026-09-01): "a buyer does not want every home in
  * Central Oregon" — a buyer wants THEIR place, price, and type, and the site's
@@ -19,16 +19,19 @@
  * A caller whose read came back short says so through `incomplete`, and the
  * Atlas then prints NO counts: a partial count is a wrong number.
  *
- * The map is a point per listing, every place a touchable silhouette. Heat
- * and split variants were graded and deleted 2026-09-02; the decision sheet
- * holds the record.
+ * The map is inventory as marks, sales as a field. Closings in the heat
+ * window paint a navy-on-cream kernel in this map's projection; active and
+ * pending stay as dots on top and stay clickable. Sold dots are omitted as
+ * marks so the field is not double-encoded. Quiet and lot maps draw no heat.
+ * Incomplete reads print no heat, same as no counts. Pending and active
+ * never count as heat.
  *
  * LAYERS:
- *   svg      silhouettes and the dots. Each place is drawn twice: a cream
- *            halo under a navy line, so the outline reads over the basemap.
- *            Dots are zero-length stroked paths with non-scaling-stroke, so
- *            their diameter is screen pixels at any scale — the server-
- *            rendered map is the final map.
+ *   svg      silhouettes, the sales wash, and the inventory dots. Each place
+ *            is drawn twice: a cream halo under a navy line, so the outline
+ *            reads over the field. Dots are zero-length stroked paths with
+ *            non-scaling-stroke, so their diameter is screen pixels at any
+ *            scale — the server-rendered map is the final map.
  *   html     town labels, positioned from the measured view, in real type.
  *   svg      the pulses, alone, on their own layer, capped with slots for
  *            each kind of event so a close always shows, paused off-screen.
@@ -63,6 +66,13 @@ import {
   zoomAt,
   type AtlasCam,
 } from '@/lib/geo/atlas-camera'
+import {
+  ATLAS_HEAT_WINDOW_DAYS,
+  atlasHeatWindowLabel,
+  isAtlasHeatClosing,
+  isAtlasPulseSold,
+  salesHeatField,
+} from '@/lib/atlas/sales-heat'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
@@ -526,8 +536,9 @@ export function V3Atlas({
     let closed = 0
     dots.forEach((d, i) => {
       if (!isOn(d)) return
-      if (d.s === 'sold') sold += 1
-      else {
+      if (d.s === 'sold') {
+        if (isAtlasPulseSold(d)) sold += 1
+      } else {
         listed.push(i)
         if (d.s === 'pending') pending += 1
         else if (d.s === 'closed') closed += 1
@@ -543,6 +554,9 @@ export function V3Atlas({
     let on = 0
     for (const d of dots) {
       if (!isOn(d)) continue
+      // Heat-only closes are the wash, not a figure, so they do not belong
+      // in "counted in every figure, not drawn."
+      if (d.s === 'sold' && !isAtlasPulseSold(d)) continue
       on += 1
       const [x, y] = proj.toXY(d.lng, d.lat)
       if (x < 0 || y < 0 || x > proj.width || y > proj.height) n += 1
@@ -672,7 +686,7 @@ export function V3Atlas({
     const byKind: Record<'new' | 'pending' | 'sold', { i: number; recency: number }[]> = { new: [], pending: [], sold: [] }
     dots.forEach((d, i) => {
       if (!isOn(d)) return
-      if (d.s === 'sold' && d.soldAgo != null && d.soldAgo <= 30) byKind.sold.push({ i, recency: d.soldAgo })
+      if (isAtlasPulseSold(d) && d.soldAgo != null) byKind.sold.push({ i, recency: d.soldAgo })
       else if (d.s === 'active' && d.age != null && d.age <= 7) byKind.new.push({ i, recency: d.age })
       else if (d.s === 'pending' && d.age != null && d.age <= 14) byKind.pending.push({ i, recency: d.age })
     })
@@ -683,6 +697,21 @@ export function V3Atlas({
     }
     return out
   }, [dots, isOn])
+
+  /* Sales heat: kernel density of closings in this map's projection. Quiet
+     maps, incomplete reads, and a broker's record of closings (the dots ARE
+     the subject) draw none. */
+  const heat = useMemo(() => {
+    if (quiet || incomplete || closingsMap) return { cells: [] as const, n: 0, max: 0 }
+    const points: { x: number; y: number }[] = []
+    dots.forEach((d, i) => {
+      if (!isAtlasHeatClosing(d.s) || !isOn(d)) return
+      const p = xy[i]
+      if (!p) return
+      points.push({ x: p[0], y: p[1] })
+    })
+    return salesHeatField(points, { width: proj.width, height: proj.height })
+  }, [quiet, incomplete, closingsMap, dots, isOn, xy, proj.width, proj.height])
 
   const active = pinned?.id ?? hover
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
@@ -707,6 +736,9 @@ export function V3Atlas({
       for (let i = 0; i < dotPx.length; i += 1) {
         const d = dots[i]
         if (!d || !isOn(d)) continue
+        // Sold closes are the wash, not marks, except on a record map
+        // or the home this page is about.
+        if (d.s === 'sold' && !closingsMap && d.k !== highlight?.key) continue
         const p = dotPx[i]
         if (!p) continue
         const dx = p[0] - wx
@@ -719,7 +751,7 @@ export function V3Atlas({
       }
       return best
     },
-    [dotPx, dots, isOn],
+    [dotPx, dots, isOn, closingsMap, highlight],
   )
 
   const pointerOnStage = (e: { clientX: number; clientY: number }) => {
@@ -956,12 +988,27 @@ export function V3Atlas({
     const out: { kind: string; label: string }[] = []
     if (counts.forSale > 0) out.push({ kind: 'active', label: `${counts.forSale.toLocaleString('en-US')} for sale` })
     if (counts.pending > 0) out.push({ kind: 'pending', label: `${counts.pending.toLocaleString('en-US')} pending` })
-    if (counts.sold > 0) out.push({ kind: 'sold', label: `${counts.sold.toLocaleString('en-US')} sold in 30 days` })
     return out
   }, [counts, closingsMap, noun, incomplete])
 
   const dock = (
     <div className="v3-atlas__dock">
+      {heat.cells.length > 0 ? (
+        <div
+          className="v3-atlas__sales-legend"
+          role="img"
+          aria-label={`Sales heat, fewer sales to more sales, ${atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}.`}
+        >
+          <span className="v3-atlas__sales-legend-end">fewer sales</span>
+          <ol className="v3-atlas__sales-swatches" aria-hidden="true">
+            {([1, 2, 3, 4] as const).map((step) => (
+              <li key={step} className={`v3-atlas__sales-swatch v3-atlas__sales-swatch--${step}`} />
+            ))}
+          </ol>
+          <span className="v3-atlas__sales-legend-end">more sales</span>
+          <p className="v3-atlas__sales-legend-window">{atlasHeatWindowLabel(ATLAS_HEAT_WINDOW_DAYS)}</p>
+        </div>
+      ) : null}
       {keyItems.length > 0 ? (
         <ul className="v3-atlas__key" aria-label="What the marks mean">
           {keyItems.map((k) => (
@@ -1141,11 +1188,29 @@ export function V3Atlas({
                     />
                   ))}
                 </g>
-                {/* 2. Dots: the listings, UNDER the places so no outline is
-                    ever painted over (pass four, Q1). */}
+                {/* Sales wash: kernel density of closings. Under the inventory
+                    marks and the place outlines. Not the old inventory fog. */}
+                {heat.cells.length > 0 ? (
+                  <g className="v3-atlas__sales-heat" aria-hidden="true">
+                    {heat.cells.map((c, i) => (
+                      <rect
+                        key={`h-${c.x}-${c.y}-${i}`}
+                        x={c.x}
+                        y={c.y}
+                        width={c.size}
+                        height={c.size}
+                        className={`v3-atlas__sales-cell v3-atlas__sales-cell--${c.step}`}
+                      />
+                    ))}
+                  </g>
+                ) : null}
+                {/* 2. Dots: inventory, UNDER the places so no outline is
+                    ever painted over (pass four, Q1). Sold closes are the
+                    wash, not a second mark, except on a record map. */}
                 {(
                   <g className="v3-atlas__dots" aria-hidden="true">
                     {dots.map((d, i) => {
+                      if (d.s === 'sold' && !closingsMap && d.k !== highlight?.key) return null
                       const [x, y] = xy[i]!
                       return (
                         <path
