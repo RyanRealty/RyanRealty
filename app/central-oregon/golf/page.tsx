@@ -71,23 +71,44 @@ export default function GolfIndexPage() {
   const registry = resortCommunitiesRegistry.communities as ReadonlyArray<RegistryCommunity>
   const communityLabel = new Map(registry.map((c) => [c.slug, c.label]))
 
+  /**
+   * Longest first, and the value column is the yardage that ordering is on.
+   * It used to be "18 holes", which twenty-four of the twenty-six rows shared,
+   * so the column carried no information and the list was twenty-six rows of
+   * nothing to compare — the ledger TASTE.md bans. Yardage is the figure that
+   * actually separates these courses, it is already on the page's source trace,
+   * and drawn as a share of the longest it is readable in one pass.
+   *
+   * The two nine-hole courses draw short bars because they ARE short, and the
+   * detail line beside each says how many holes it is measuring.
+   */
+  const byLength = [...courses].sort(
+    (a, b) => (b.yardsBackTees ?? 0) - (a.yardsBackTees ?? 0) || a.name.localeCompare(b.name),
+  )
+  const longest = byLength.reduce((max, c) => Math.max(max, c.yardsBackTees ?? 0), 0)
+
   const rows: V3LedgerFigureRow[] = []
-  for (const course of courses) {
+  for (const course of byLength) {
     const name = course.name.trim()
     const slug = course.slug.trim()
     if (!name || !slug) continue
-    const detail =
-      typeof course.yardsBackTees === 'number'
-        ? `Par ${course.par} · ${course.yardsBackTees.toLocaleString('en-US')} yards from the back tees`
-        : `Par ${course.par}`
+    const yards = course.yardsBackTees
     rows.push({
       id: slug,
       href: `/central-oregon/golf/${slug}`,
       when: v3Text(`${displayCity(course.city)} · ${GOLF_ACCESS_LABEL[course.access]}`),
       what: v3Text(name),
-      detail: v3Text(detail),
-      value: v3Text(`${course.holes} holes`),
-      ariaLabel: v3Text(`${name}, ${displayCity(course.city)} Oregon`),
+      detail: v3Text(`${course.holes} holes · par ${course.par}`),
+      value: v3Text(
+        typeof yards === 'number'
+          ? `${yards.toLocaleString('en-US')} yards`
+          : `Par ${course.par}`,
+      ),
+      ...(typeof yards === 'number' && longest > 0 ? { weight: yards / longest } : {}),
+      ariaLabel: v3Text(
+        `${name}, ${displayCity(course.city)} Oregon, ${course.holes} holes` +
+          (typeof yards === 'number' ? `, ${yards.toLocaleString('en-US')} yards` : ''),
+      ),
     })
   }
   const [firstRow, ...restRows] = rows
@@ -139,7 +160,7 @@ export default function GolfIndexPage() {
     },
   ]
 
-  const caption = `${total.toLocaleString('en-US')} courses across Bend, Sunriver, Sisters, Redmond, La Pine, Madras, Powell Butte, Prineville, and Terrebonne. Every row opens the course and the homes for sale near it.`
+  const caption = `${total.toLocaleString('en-US')} courses across Bend, Sunriver, Sisters, Redmond, La Pine, Madras, Powell Butte, Prineville, and Terrebonne, longest first. Every row opens the course and the homes for sale near it.`
 
   return (
     <>
@@ -168,6 +189,7 @@ export default function GolfIndexPage() {
             heading={v3Text('Central Oregon golf courses')}
             note={v3Text(caption)}
             rows={[firstRow, ...restRows]}
+            encode="bar"
             source={v3Text(LEDGER_TRACE)}
           />
         ) : (
