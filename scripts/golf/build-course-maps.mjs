@@ -8,25 +8,22 @@
  *   --turf-dir mown-turf polygons traced out of Oregon's 2018 aerial imagery
  *              and clipped to the same boundary. scripts/golf/trace-turf.py
  *
- * WHY THE BOUNDARY, EVERY TIME. A radius query around Crosswater's clubhouse
- * also returns Caldera Links a kilometre away, and the map then numbers 36 holes
- * 1 to 18 twice. Every feature that lands in a course file had its centroid
- * inside that course's own polygon.
+ * WHY THE BOUNDARY. A radius query around Crosswater's clubhouse also returns
+ * Caldera Links a kilometre away, and the map then numbers 36 holes 1 to 18
+ * twice. Every feature in a course file has its centroid inside that course's
+ * own polygon.
  *
- * WHY TWO SOURCES. OSM has this region's greens, bunkers, tees and routings in
- * detail but maps only 12 of Tetherow's fairways, so a course drawn from OSM
- * alone is a scatter of floating greens. The body comes from the aerial: mown
- * turf is the fairway system whether or not anyone tagged it.
+ * WHY TWO SOURCES. OSM fairway coverage is partial (12 of Tetherow's 18), so the
+ * body comes from the aerial trace instead.
  *
  * WHAT IT REFUSES TO WRITE (CLAUDE.md §0):
  *   - a course whose mapped hole count is not the club's published hole count.
- *     Sunriver Woodlands maps 17 of 18, and a map that silently drops a hole is
- *     a wrong page, not a partial one.
- *   - per-hole par, unless the holes sum to the published par. OSM's per-hole
- *     par tags are partial: Tetherow's sum to 71 on a par-72 course.
+ *     Sunriver Woodlands maps 17 of 18.
+ *   - per-hole par, unless the holes sum to the published par. OSM per-hole par
+ *     tags are partial: Tetherow's sum to 71 on a par-72 course.
  *   - per-hole yardage, unless the routings sum to within 1% of the published
  *     card off the back tees.
- * The drawing is never gated on a tag — geometry does not depend on one.
+ * The drawing is not gated on a tag.
  *
  *   node scripts/golf/build-course-maps.mjs [--osm PATH] [--turf-dir DIR] [--dry]
  */
@@ -76,13 +73,12 @@ const REGISTRY_SHORT_NAME = {
 
 /**
  * How near a feature has to lie to a hole's routing to belong to that hole,
- * measured to the routing SEGMENTS rather than to its handful of vertices — a
+ * measured to the routing SEGMENTS rather than its handful of vertices: a
  * three-point way leaves 200 m gaps between vertices, and a nearest-vertex rule
  * hands the middle of one fairway to the hole next door.
  *
- * Turf runs wide because a traced blob is a whole fairway corridor; water runs
- * tight because "there is a pond on this hole" is a stronger claim than "there
- * is a pond in this part of the property".
+ * Turf runs wide because a traced blob is a whole fairway corridor. Water runs
+ * tight because 'a pond on this hole' claims more than 'a pond on the property'.
  */
 const CATCHMENT_M = {
   turf: 130,
@@ -264,9 +260,8 @@ function buildCourse(course, turf) {
   }
 
   const ground = [
-    // The course's own OSM boundary, drawn first. Without it Tetherow reads as a
-    // constellation of turf fragments rather than a property: this region's
-    // courses are high-desert, and only 40 of Tetherow's 218 acres are mown.
+    // The course's own OSM boundary, drawn first. Without it Tetherow reads as
+    // unrelated turf fragments: only about 60 of its 218 acres are mown.
     ...(course.rings || []).map((ring) => ({ kind: 'bounds', ring })),
     ...(turf?.polys || []).map((ring) => ({ kind: 'turf', ring })),
     ...feats.filter((f) => GROUND_KINDS.includes(f.kind)).map((f) => ({ kind: f.kind, ring: f.ring })),

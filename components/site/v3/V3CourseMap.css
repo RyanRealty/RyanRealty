@@ -3,10 +3,8 @@
    Styles for V3CourseMap.tsx and nothing else. Every value resolves from
    ./tokens.css. No raw color, no hardcoded duration.
 
-   One hue at six weights. A golf course is drawn in greens and sand everywhere
-   else on the internet; here it is navy on cream like the rest of the site, and
-   the reading comes from weight rather than colour: turf faint, water heavy,
-   greens solid.
+   One hue at six weights, navy on cream. Reading comes from weight rather than
+   colour: turf faint, water heavy, greens solid.
    =========================================================================== */
 
 .v3.v3-course {
@@ -38,9 +36,9 @@
   margin-top: var(--v3-space-lg);
 }
 
-/* Narrow: map, then the scorecard, then the card it drives. The card sat
-   directly under the map at first, which put every rail button an offscreen
-   scroll away from the thing it changes. */
+/* Narrow: map, then the scorecard, then the card it drives. With the card
+   directly under the map, every rail button sat an offscreen scroll from the
+   thing it changes. */
 .v3-course__stage {
   order: 1;
 }
@@ -71,9 +69,8 @@
   }
 }
 
-/* The panel travels with the map, which is a tall drawing: without this the
-   card for the hole you are pointing at scrolls off while its hole is still
-   under the cursor. */
+/* The panel travels with the map. The drawing is tall, so without this the card
+   scrolls off while its hole is still under the cursor. */
 .v3-course__aside {
   display: grid;
   gap: var(--v3-space-lg);
@@ -85,19 +82,17 @@
   .v3-course__aside {
     position: sticky;
     /* Clears the sticky chrome. V3Field's sticky map uses a bare space token and
-       tucks its top edge under the nav; here the top edge is the hole number,
-       which is the one thing that must stay readable. */
+       tucks its top edge under the nav; the top edge here is the hole number. */
     top: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
   }
 }
 
 
-/* The drawing fills its column and takes whatever height the property has.
-   Two other arrangements were tried and are worse: a height cap letterboxes a
-   portrait course into a strip of cream, and sizing the column to the drawing's
-   aspect shrank Crosswater to a 300px ribbon beside an oversized panel. A tall
-   map is the honest shape of a tall property; the panel is sticky so the card
-   for the hole under the cursor is on screen the whole way down. */
+/* The drawing fills its column and takes whatever height the property has. Two
+   other arrangements measured worse: a height cap letterboxes a portrait course
+   into a strip of cream, and sizing the column to the drawing's aspect shrank
+   Crosswater to a 300px ribbon beside an oversized panel. The panel is sticky so
+   the card stays on screen down the whole map. */
 .v3-course__stage {
   min-width: 0;
 }
@@ -120,9 +115,8 @@
     fill var(--v3-dur-state) var(--v3-ease-out);
 }
 
-/* The property line. It is what makes the drawing a course rather than a
-   constellation: only about 40 of Tetherow's 218 acres are mown, so without the
-   boundary the turf reads as unrelated fragments. */
+/* The property line. Only about 60 of Tetherow's 218 acres are mown, so without
+   the boundary the turf reads as unrelated fragments. */
 .v3-course__bounds {
   fill: color-mix(in srgb, var(--v3-navy) 3.5%, transparent);
   stroke: var(--v3-hairline);
@@ -145,8 +139,7 @@
   fill: color-mix(in srgb, var(--v3-navy) 42%, transparent);
 }
 
-/* Sand reads as an outline, not a fill: at map scale a filled bunker is a blot
-   and a drawn one is a bunker. */
+/* Sand is drawn as an outline. At map scale a filled bunker reads as a blot. */
 .v3-course__bunker {
   fill: color-mix(in srgb, var(--v3-navy) 4%, transparent);
   stroke: color-mix(in srgb, var(--v3-navy) 42%, transparent);
@@ -184,12 +177,9 @@
   outline: none;
 }
 
-/* The selected hole is EMPHASISED, not isolated. Fading the rest of the course
-   was the first attempt and it wiped the map: turf already sits at 12% of navy,
-   so a 0.18 multiplier left about 2% ink and the drawing went blank. The course
-   stays exactly as drawn and the chosen hole steps forward instead — which is
-   also the honest reading, since the hole is only legible against the course it
-   runs through. */
+/* The selected hole is emphasised; the rest of the course is not faded. Fading
+   wiped the map: turf sits at 16% of navy, and a 0.18 multiplier left about 3%
+   ink. */
 .v3-course__svg .v3-course__turf.is-on,
 .v3-course__svg .v3-course__fairway.is-on {
   fill: color-mix(in srgb, var(--v3-navy) 34%, transparent);
@@ -211,19 +201,17 @@
   stroke-dasharray: none;
 }
 
-/* The other hole numbers step back so the selected disc is findable at a
-   glance. Discs are already navy on cream at full weight, so this is the one
-   place a fade reads. */
+/* The other hole numbers step back so the selected disc is findable. Discs are
+   navy on cream at full weight, so a fade reads here. */
 .v3-course[data-enhanced='on'] .v3-course__tag:not(.is-on) {
   opacity: 0.4;
 }
 
 /* --- the hole card --------------------------------------------------------
-   All eighteen render. The island hides the ones that are not selected — with
-   the `hidden` attribute rather than a CSS rule, because CSS cannot compare the
-   section's selected hole against a card's own number, and eighteen hand-written
-   pairs would be a rule per hole. With no JavaScript every card stays on the
-   page, which is the version worth indexing. */
+   All eighteen render. The island hides the unselected ones with the `hidden`
+   attribute rather than a CSS rule: CSS cannot compare the section's selected
+   hole against a card's own number, and the alternative is one rule per hole.
+   With no JavaScript every card stays on the page, which is what gets indexed. */
 .v3-course__cards {
   display: grid;
   gap: var(--v3-space-md);
@@ -285,10 +273,9 @@
   }
 }
 
-/* Nine across, always. An auto-fitting track wrapped seven and then stretched
-   the last two to triple width on a phone, which stops reading as a scorecard.
-   A 390px phone gives each cell 38px of width against the 44px height, and the
-   whole row is the shape of the card it is standing in for. */
+/* Nine across, always. An auto-fitting track wrapped seven and stretched the
+   last two to triple width on a phone. A 390px phone gives each cell 38px of
+   width against the 44px height. */
 .v3-course__holes {
   display: grid;
   grid-template-columns: repeat(9, minmax(0, 1fr));

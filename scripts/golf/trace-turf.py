@@ -1,23 +1,20 @@
 """
 Trace the mown turf of one golf course out of Oregon's own aerial imagery.
 
-WHY. OpenStreetMap maps this region's greens, bunkers, tees and hole routings in
-detail but only some of its fairways — 12 of Tetherow's 18 — so a course drawn
-from OSM alone is a scatter of floating greens. The fairway system is visible
-from the air whether or not anyone tagged it, and OSIP 2018 is a public
+WHY. OSM fairway coverage in this region is partial (12 of Tetherow's 18), so a
+course drawn from OSM alone is a scatter of floating greens. The fairway system
+is visible from the air regardless of tagging, and OSIP 2018 is a public
 statewide survey at half-foot resolution.
 
-HOW THE THRESHOLD IS PICKED. Not by reasoning about HSV. Run with --sweep and
-the candidate bands come back as red overlays on the aerial, side by side;
-choose by looking. A number that sounds right produces 3 acres or 425 depending
-on which way it is wrong, and both were produced here before the sweep existed.
-The band is per course and each choice is recorded with its reason in
-PER_COURSE_BAND, because what the threshold has to separate turf FROM is
-different at each one: sage at Tetherow, wet meadow at Crosswater.
+HOW THE THRESHOLD IS PICKED. Run with --sweep: the candidate bands come back as
+red overlays on the aerial, side by side, and the choice is made by looking. A
+threshold picked by reasoning about HSV produced 3 acres on one attempt and 425
+on another. The band is per course, each choice recorded with its reason in
+PER_COURSE_BAND, because what the threshold separates turf FROM differs: sage at
+Tetherow, wet meadow at Crosswater.
 
-WHAT IT IS NOT. The acreage this prints is a measurement of the imagery, not a
-published figure, and nothing on the site prints it. It exists so a run can be
-compared against the last one.
+The acreage printed here measures the imagery. It is not a published figure and
+nothing on the site prints it; it exists to compare one run against the last.
 
     python3 scripts/golf/trace-turf.py <slug> [--osm PATH] [--out-dir DIR]
                                               [--cache DIR] [--sweep]
@@ -55,9 +52,8 @@ BANDS = {
 }
 DEFAULT_BAND = 'base'
 
-# The band is per course, because what surrounds the turf differs and that is
-# what the threshold has to separate it from. Each entry was chosen by looking at
-# the --sweep overlay for that course, and the reason is the entry.
+# One band per course. Each entry was chosen from that course's --sweep overlay
+# and carries the reason.
 #
 #   tetherow  — high desert. The surround is grey-green sage at low saturation,
 #               so the looser band fills the fairway corridors without touching
@@ -69,9 +65,9 @@ DEFAULT_BAND = 'base'
 #   eagle-crest-ridge — desert again, so loose; the neighbouring Resort course
 #               shows in the frame and is excluded by the boundary, not the band.
 #
-# Anything not listed gets DEFAULT_BAND, which under-traces rather than over-.
-# A missing fairway reads as a course with less turf; an invented one is a lie
-# about the ground.
+# Anything not listed gets DEFAULT_BAND, which under-traces rather than over-:
+# a missing fairway shows less turf, an invented one shows ground that is not
+# there.
 PER_COURSE_BAND = {
     'tetherow': 'loose',
     # Same high-desert surround as Tetherow, verified on its own sweep: the
@@ -145,8 +141,8 @@ def turf_mask(rgb, clip, band):
         & (val >= band['val'])
         & (excess_green >= band['excess_green'])
     ).astype(np.uint8)
-    # Open first to drop speckle, then close to bridge the cart path that cuts a
-    # fairway in half; a single pass either way leaves one or the other.
+    # Open drops speckle, close bridges the cart path that cuts a fairway in
+    # half. One pass alone leaves one problem or the other.
     m = cv2.morphologyEx(m, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
     m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (9, 9)))
     m = m & clip

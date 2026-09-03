@@ -1,11 +1,11 @@
 /**
  * The course a community page draws.
  *
- * A resort can own more than one course — Sunriver has three, Eagle Crest two —
- * and a course map runs the height of the property, so the page shows ONE and
- * links the rest through the exits it already carries. The one it shows is the
- * first course the registry lists for that community which has a map at all,
- * which keeps the choice in data/golf/courses.ts rather than here.
+ * A resort can own more than one course (Sunriver three, Eagle Crest two) and a
+ * course map runs the height of the property, so the page shows one and links
+ * the rest through the exits it already carries. It shows the first course the
+ * registry lists for that community which has a map, keeping the choice in
+ * data/golf/courses.ts.
  */
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { getCourseMap, hasCourseMap } from './course-map-registry'

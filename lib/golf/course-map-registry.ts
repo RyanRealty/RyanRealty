@@ -2,9 +2,9 @@
  * Which courses have a map, and how the page gets one.
  *
  * The files are committed geometry (data/golf/course-maps/), not a query, so
- * this is a lazy import keyed by the registry slug rather than a fetch. Only the
- * course the visitor asked for is loaded, and a course with no file renders the
- * rest of its page unchanged — the absence is the honest state, not a hole.
+ * this is a lazy import keyed by the registry slug. Only the course the visitor
+ * asked for is loaded; a course with no file renders the rest of its page
+ * unchanged.
  *
  * A course earns a file by mapping every one of its published holes; see the
  * refusals in scripts/golf/build-course-maps.mjs. Sunriver Woodlands, Widgi

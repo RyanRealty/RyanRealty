@@ -1,34 +1,26 @@
 /**
- * PATTERN: COURSE MAP. A golf course drawn the way a yardage book draws it,
- * with the card for whichever hole you are pointing at.
+ * PATTERN: COURSE MAP. A golf course drawn hole by hole, with the card for the
+ * selected hole beside it.
  *
- * WHERE THE SHAPE COMES FROM. Two sources, because neither is enough alone.
- * OpenStreetMap has this region's greens, bunkers, tees and hole routings in
- * detail, but it maps only 12 of Tetherow's fairways, so a course drawn from it
- * alone is a scatter of floating greens. The body comes from Oregon's own 2018
- * aerial survey instead: mown turf segmented out of the imagery and clipped to
- * the course's own boundary, which is the fairway system whether or not anyone
- * tagged it. Tetherow measures 39.6 acres of maintained turf that way,
- * Crosswater 36.3. scripts/golf/build-course-maps.mjs is the whole pipeline.
+ * GEOMETRY SOURCES. OSM supplies greens, bunkers, tees and hole routings. OSM
+ * fairway coverage is partial (12 of Tetherow's 18), so the fairway body comes
+ * from mown turf traced out of Oregon's 2018 aerial imagery, clipped to the
+ * course's own OSM boundary. Pipeline: scripts/golf/build-course-maps.mjs.
  *
- * WHY THE HOLE NOTES ARE MEASURED AND NOT WRITTEN. Every other course page on
- * the internet describes a hole in marketing prose. Here the dogleg is the turn
- * angle of the routing on screen, the bunker count is the number of bunker
- * shapes that light up when you point at the hole, and the water is drawn. The
- * sentence and the picture come from one array, so the reader can check the
- * claim by looking at it. lib/golf/course-map.ts does the measuring.
+ * HOLE NOTES ARE MEASURED. The dogleg is the turn angle of the routing, the
+ * bunker count is the number of bunker shapes assigned to the hole, the water is
+ * a mapped hazard. Measured in lib/golf/course-map.ts off the same array this
+ * file draws, so the sentence and the picture cannot disagree.
  *
- * THE SCORECARD RECONCILES OR IT DOES NOT PRINT (CLAUDE.md §0). OSM's per-hole
- * par sums to 71 on par-72 Tetherow and to nothing at all on Sunriver Meadows,
- * because the tags are partial. So per-hole par prints only when the holes sum
- * to the club's published par, and per-hole yardage only when the routings sum
- * to within 1% of the published card. Totals always come from the registry.
+ * FIGURES RECONCILE OR THEY DO NOT PRINT (CLAUDE.md §0). OSM per-hole par sums
+ * to 71 on par-72 Tetherow and to 0 on Sunriver Meadows. Per-hole par prints
+ * only when the holes sum to the published par; per-hole yardage only when the
+ * routings sum to within 1% of the published card. Totals come from the
+ * registry.
  *
- * Server component. The whole drawing, all eighteen cards and the scorecard are
- * server HTML — before hydration and with JavaScript off, every hole's card is
- * on the page and readable, which is also what makes it worth indexing. The
- * client island only collapses that to one card at a time and wires the
- * pointer, so nothing about the geometry ships twice.
+ * Server component. The drawing, all eighteen cards and the scorecard are server
+ * HTML, so the section reads without JavaScript and is indexable. The client
+ * island hides the unselected cards and wires the pointer.
  */
 import { cn } from '@/lib/utils'
 import {
@@ -133,10 +125,9 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
       })
       .join(' ') + (close ? ' Z' : '')
 
-  // Marker size is in USER units but the drawing is scaled to fit a height cap,
-  // so a fixed radius shrinks as the property gets taller: Crosswater runs twice
-  // Tetherow's viewBox and its hole numbers rendered at six pixels. Sizing off
-  // the box keeps the discs about constant on screen.
+  // Marker size is in user units, so a fixed radius shrinks as the property gets
+  // taller: Crosswater's viewBox is twice Tetherow's and its hole numbers
+  // rendered at 6px. Scaling off the box height keeps discs constant on screen.
   const unit = Math.max(1, H / 900)
   const discR = 12 * unit
   const hitR = 26 * unit
@@ -212,9 +203,8 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
                 </g>
               )
             })}
-            {/* The targets. A 26-unit radius on a 1000-unit box clears the 44px
-                thumb floor at every width the stage renders; the 12-unit number
-                disc does not. */}
+            {/* Tap targets. The 12-unit number disc is under the 44px thumb
+                floor at the widths the stage renders; 26 units clears it. */}
             {notes.map((n, i) => {
               const [a, b] = px(data.holes[i]!.line[0]!)
               const line = figureLine(n)

@@ -1,21 +1,18 @@
 'use client'
 /**
- * The selection behaviour for V3CourseMap.
+ * Selection behaviour for V3CourseMap.
  *
- * The section ships every hole's card as server HTML so the page reads whole
- * with JavaScript off. This island's first act is to mark the section enhanced,
- * which is what lets the CSS collapse eighteen cards down to one; until then the
- * stylesheet leaves them all showing. Nothing here renders content.
+ * The section ships every hole's card as server HTML. This island marks the
+ * section enhanced and hides the unselected cards. It renders no content.
  *
- * ONE SELECTION, NOT TWO. Pointing at a hole selects it and leaving does not
- * clear it. A preview-on-hover plus a separate committed selection reads fine
- * with a mouse and breaks under a finger, which fires pointerenter and then
- * pointerleave on the lift — the trap the Atlas readout hit, where a tapped
- * place flashed its name and went blank.
+ * One selection, no hover preview. Pointing at a hole selects it; leaving does
+ * not clear it. A hover preview plus a separate committed selection breaks under
+ * touch, which fires pointerenter then pointerleave on the lift (the Atlas
+ * readout hit this: a tapped place flashed its name and went blank).
  *
- * It reaches into its own section by class rather than owning the markup,
- * because the drawing is a few hundred paths and re-rendering it from the client
- * would ship the whole geometry a second time.
+ * It queries its own section by class instead of owning the markup. The drawing
+ * is a few hundred paths and rendering it from the client would ship the
+ * geometry twice.
  */
 import { useEffect, useRef } from 'react'
 
@@ -45,8 +42,8 @@ export function V3CourseMapControl() {
       for (const c of cards) c.hidden = c.dataset.hole !== ref
     }
 
-    // The hole numbers are one tab stop with arrow keys inside it. Eighteen
-    // separate stops in the middle of a page is a wall, not a control.
+    // The hole numbers are one tab stop with arrow keys inside it, rather than
+    // eighteen separate stops mid-page.
     const focusPick = (i: number) => {
       const next = (i + picks.length) % picks.length
       picks.forEach((p, j) => p.setAttribute('tabindex', j === next ? '0' : '-1'))

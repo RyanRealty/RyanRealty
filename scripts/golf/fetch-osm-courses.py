@@ -2,16 +2,16 @@
 Pull every Central Oregon golf course out of OpenStreetMap, one course at a time,
 clipped to that course's OWN named boundary.
 
-WHY THE BOUNDARY AND NOT A RADIUS. The first version queried a radius around each
-clubhouse. Crosswater's radius also returns Caldera Links a kilometre away, and
-the map then numbers 36 holes 1 to 18 twice; Sunriver returned 28 "holes" for an
-18-hole course. Every feature kept here has its centroid inside the named
-`leisure=golf_course` polygon for that course, which is the only thing that
-separates two courses sharing a resort.
+WHY THE BOUNDARY AND NOT A RADIUS. The first version queried a radius around
+each clubhouse. Crosswater's radius also returns Caldera Links a kilometre away
+and the map then numbers 36 holes 1 to 18 twice; Sunriver returned 28 'holes'
+for an 18-hole course. Every feature kept here has its centroid inside the named
+`leisure=golf_course` polygon for that course, which is what separates two
+courses sharing a resort.
 
 The public Overpass endpoint rate-limits and 504s on a run this size, so this
-alternates mirrors, backs off, and saves after every course — a killed run
-resumes where it stopped rather than starting over.
+alternates mirrors, backs off, and saves after every course; a killed run resumes
+where it stopped.
 
     python3 scripts/golf/fetch-osm-courses.py [--out PATH] [--polys PATH]
 

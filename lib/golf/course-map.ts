@@ -1,20 +1,16 @@
 /**
- * Reads a course map file and derives the per-hole facts a yardage book prints.
+ * Derives the per-hole facts a yardage book prints, from a course map file.
  *
- * WHY THIS IS DERIVED AND NOT WRITTEN. A hole description is prose everywhere
- * else on the internet, which means it is unverifiable and usually a marketing
- * paragraph. Everything here is measured off the same geometry the map draws:
- * the dogleg is the turn angle of the routing, the bunker count is the number of
- * bunker polygons that hole owns, the green is the shoelace area of its own
- * green. Point at a hole and the map lights exactly the shapes the sentence just
- * counted, which is the check.
+ * Every note is measured off the same geometry the map draws: the dogleg is the
+ * turn angle of the routing, the bunker count is the number of bunker polygons
+ * assigned to the hole. Selecting a hole lights exactly the shapes the sentence
+ * counted, so a reader can check the claim against the picture.
  *
- * CLAUDE.md §0. Two figures come from OSM tags rather than geometry — per-hole
- * par and the stroke index — and OSM's tagging is partial: Tetherow's holes sum
- * to par 71 on a par-72 course, Sunriver Meadows tags none at all. So per-hole
- * par prints only when the holes sum to the club's published par, and yardage
- * only when the routings sum to within 1% of the published card. Neither gate
- * touches the drawing; geometry does not depend on a tag.
+ * CLAUDE.md §0. Per-hole par and stroke index come from OSM tags, not geometry,
+ * and the tagging is partial: Tetherow's holes sum to par 71 on a par-72 course,
+ * Sunriver Meadows tags none. Per-hole par prints only when the holes sum to the
+ * published par; yardage only when the routings sum to within 1% of the
+ * published card. Neither gate affects the drawing.
  */
 
 export type CourseShape = { k: string; h: string | null; r: [number, number][] }
@@ -83,9 +79,8 @@ function centroid(ring: [number, number][]): [number, number] {
 
 /**
  * Signed turn of a routing, in degrees. Negative is clockwise on a north-up map,
- * which is a right-hand dogleg. A two-point way has no interior vertex and so
- * carries no shape information at all — that returns null rather than "straight",
- * because the two claims are different and only one of them is measured.
+ * which is a right-hand dogleg. A two-point way has no interior vertex and so no
+ * shape information: that returns null rather than 'straight'.
  */
 function turnDegrees(line: [number, number][]): number | null {
   if (line.length < 3) return null
@@ -163,11 +158,11 @@ export function holeNotes(data: CourseMapData): HoleNote[] {
     const greens = own.filter((s) => s.k === 'green')
     const pin = h.line[h.line.length - 1]
 
-    // A hole can own more than one green polygon (a practice green sits inside
-    // the same catchment); the one at the end of the routing is the green. Its
-    // AREA is deliberately not published — OSM traces some of these greens as
-    // the whole complex, so Crosswater's would print an 18,300 sq ft putting
-    // surface, and there is no published card to reconcile a green against.
+    // A hole can own more than one green polygon (a practice green inside the
+    // same catchment); the one at the end of the routing is the green. Green
+    // AREA is not published: OSM traces some greens as the whole complex, so
+    // Crosswater would print an 18,300 sq ft putting surface, and there is no
+    // published card to reconcile a green against.
     let greenAt: [number, number] | null = null
     let greenD = Infinity
     for (const g of greens) {
@@ -208,8 +203,8 @@ export function holeNotes(data: CourseMapData): HoleNote[] {
 }
 
 /**
- * Tag the holes that lead their own course. Ties are left untagged rather than
- * split, because "the longest" stops being a fact the moment two holes share it.
+ * Tag the holes that lead their own course. A tie is left untagged: 'the longest'
+ * is not a fact when two holes share it.
  */
 function markStandouts(notes: HoleNote[]): HoleNote[] {
   const soleLeader = <T,>(
@@ -259,9 +254,8 @@ function markStandouts(notes: HoleNote[]): HoleNote[] {
 export type CourseFact = { label: string; value: string }
 
 /**
- * The four things about a course that are true of the drawing on screen. Every
- * one of them is countable by looking: the bunkers are drawn, the water is
- * drawn, and the two extremes are holes the reader can pick out of the rail.
+ * Course-level figures, each checkable against the drawing: the bunkers are
+ * drawn, and the two extremes are holes the reader can find in the rail.
  */
 export function courseFacts(data: CourseMapData, notes: HoleNote[]): CourseFact[] {
   const facts: CourseFact[] = []
@@ -269,10 +263,10 @@ export function courseFacts(data: CourseMapData, notes: HoleNote[]): CourseFact[
   const bunkers = data.shapes.filter((s) => s.k === 'bunker').length
   if (bunkers > 0) facts.push({ label: 'Bunkers', value: bunkers.toLocaleString('en-US') })
 
-  // NOT a water count. Crosswater has the Deschutes running through it and OSM
-  // tags three golf hazards on the property, so "1 of 18 holes with water" would
-  // be a true count of a partial tagging and a false claim about the course. The
-  // par composition is complete or it is absent, which is why it can print.
+  // Replaces a water-hole count. Crosswater has the Deschutes running through it
+  // and OSM tags three golf hazards, so '1 of 18 holes with water' counts the
+  // tagging accurately and describes the course wrongly. Par composition is
+  // either complete or absent, so it can print.
   if (data.parReconciles) {
     const by = new Map<number, number>()
     for (const n of notes) {
