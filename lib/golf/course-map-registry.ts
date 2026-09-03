@@ -6,10 +6,11 @@
  * asked for is loaded; a course with no file renders the rest of its page
  * unchanged.
  *
- * A course earns a file by mapping every one of its published holes; see the
- * refusals in scripts/golf/build-course-maps.mjs. Sunriver Woodlands, Widgi
- * Creek and Glaze Meadow each map 17 of 18 and Caldera Links 8 of 9, so none of
- * them is here.
+ * A course earns a file by mapping its published holes, less at most one in
+ * eighteen; see the refusals in scripts/golf/build-course-maps.mjs. Woodlands,
+ * Widgi Creek and Glaze Meadow are each missing one hole and say so on the page.
+ * Caldera Links (8 of 9), Eagle Crest Resort (14 of 18), Lost Tracks (15 of 18),
+ * Big Meadow, Quail Run and River's Edge are refused.
  */
 import type { CourseMapData } from './course-map'
 
@@ -22,6 +23,10 @@ const COURSE_MAPS: Record<string, Loader> = {
   'eagle-crest-ridge': () => import('@/data/golf/course-maps/eagle-crest-ridge.json'),
   'aspen-lakes': () => import('@/data/golf/course-maps/aspen-lakes.json'),
   juniper: () => import('@/data/golf/course-maps/juniper.json'),
+  'bend-golf-club': () => import('@/data/golf/course-maps/bend-golf-country-club.json'),
+  'widgi-creek': () => import('@/data/golf/course-maps/widgi-creek.json'),
+  'sunriver-woodlands': () => import('@/data/golf/course-maps/sunriver-woodlands.json'),
+  'black-butte-glaze-meadow': () => import('@/data/golf/course-maps/black-butte-glaze-meadow.json'),
 }
 
 export function hasCourseMap(courseSlug: string): boolean {

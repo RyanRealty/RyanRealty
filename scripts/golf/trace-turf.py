@@ -66,6 +66,13 @@ DEFAULT_BAND = 'base'
 #   aspen-lakes — desert, with irrigated farm fields north of the property that
 #               looser starts taking in.
 #   juniper   — desert.
+#   bend-golf-country-club — in-town, pine and lawn around it. base is already
+#               clean at 46 acres; loose fills the corridors at 59 without
+#               reaching the neighbourhood, looser takes in the whole property.
+#   sunriver-woodlands, black-butte-glaze-meadow, widgi-creek — pine forest.
+#               Nothing around the turf is bright, so looser costs nothing and
+#               picks up the fairway lying in shadow that the other bands miss.
+#               base traces 8 acres of Widgi Creek against looser's 46.
 #
 # Anything not listed gets DEFAULT_BAND, which under-traces rather than over-:
 # a missing fairway shows less turf, an invented one shows ground that is not
@@ -78,6 +85,13 @@ PER_COURSE_BAND = {
     'eagle-crest-ridge': 'loose',
     'aspen-lakes': 'loose',
     'juniper': 'loose',
+    'bend-golf-country-club': 'loose',
+    # Ponderosa courses. The surround is dark pine canopy, which the value floor
+    # excludes on its own, so the widest band is safe here and is the only one
+    # that reaches turf lying in tree shadow.
+    'sunriver-woodlands': 'looser',
+    'black-butte-glaze-meadow': 'looser',
+    'widgi-creek': 'looser',
 }
 
 

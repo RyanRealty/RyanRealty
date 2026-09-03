@@ -32,6 +32,11 @@ export type CourseMapData = {
   } | null
   parReconciles: boolean
   yardsReconcile: boolean
+  /**
+   * Published hole numbers with no routing in OSM, as strings. At most one:
+   * scripts/golf/build-course-maps.mjs refuses to write a course missing more.
+   */
+  missingHoles?: string[]
   turfAcres: number | null
   holes: CourseHole[]
   shapes: CourseShape[]
@@ -199,7 +204,9 @@ export function holeNotes(data: CourseMapData): HoleNote[] {
     return note
   })
 
-  return markStandouts(notes)
+  // A superlative computed over 17 of 18 holes can name the wrong hole, so an
+  // incomplete course carries none.
+  return (data.missingHoles?.length ?? 0) > 0 ? notes : markStandouts(notes)
 }
 
 /**

@@ -17,6 +17,12 @@
   border-top: var(--v3-rule-section);
 }
 
+.v3-course__gap {
+  margin: var(--v3-space-lg) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
 .v3-course__claim {
   margin: var(--v3-space-sm) 0 0;
   font-size: var(--v3-size-body-lg);

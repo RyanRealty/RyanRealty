@@ -135,6 +135,7 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
   const headingId = id ? `${id}-heading` : undefined
   const nines = courseNines(notes)
   const facts = courseFacts(data, notes)
+  const missing = data.missingHoles ?? []
   const first = notes[0]!
 
   const claim = [
@@ -280,6 +281,13 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
       </div>
 
       <V3CourseMapControl />
+      {missing.length ? (
+        <p className="v3-course__gap">
+          {missing.length === 1
+            ? `Hole ${missing[0]} has no routing in the map data, so it is not drawn.`
+            : `Holes ${missing.join(', ')} have no routing in the map data, so they are not drawn.`}
+        </p>
+      ) : null}
       <V3SourceLine
         source={v3Text(
           'hole routings, greens, bunkers and tees from OpenStreetMap contributors, clipped to the course boundary; ' +

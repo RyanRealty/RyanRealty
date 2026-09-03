@@ -17,8 +17,10 @@
  * body comes from the aerial trace instead.
  *
  * WHAT IT REFUSES TO WRITE (CLAUDE.md §0):
- *   - a course whose mapped hole count is not the club's published hole count.
- *     Sunriver Woodlands maps 17 of 18.
+ *   - a course missing more than one hole in eighteen. A single missing hole is
+ *     written and NAMED in the file, so the page can say which hole is absent
+ *     rather than quietly drawing a 17-hole course. A nine-hole course has to be
+ *     complete: one hole there is an eighth of the round.
  *   - per-hole par, unless the holes sum to the published par. OSM per-hole par
  *     tags are partial: Tetherow's sum to 71 on a par-72 course.
  *   - per-hole yardage, unless the routings sum to within 1% of the published
@@ -91,6 +93,13 @@ const CATCHMENT_M = {
   lateral_water_hazard: 60,
 }
 const DEFAULT_CATCHMENT_M = 90
+
+/**
+ * How much of a course may be missing and still be written: one hole in
+ * eighteen. A share rather than a count, so a nine-hole course has to be
+ * complete — one missing hole there is an eighth of the round.
+ */
+const MAX_MISSING_SHARE = 1 / 18
 
 const RAD = Math.PI / 180
 
@@ -196,20 +205,31 @@ function readRegistry() {
   const chunks = src.split(/\n\s*\{\s*\n/).slice(1)
   const out = {}
   for (const c of chunks) {
-    const g = (re) => {
+    const num = (re) => {
       const m = c.match(re)
-      return m ? m[1] : null
+      return m ? Number(m[1]) || null : null
     }
-    const short = g(/shortName:\s*'([^']+)'/)
+    /**
+     * A string field in either quote style. A row whose value holds an
+     * apostrophe is written in double quotes ("River's Edge"), and the
+     * single-quote-only pattern skipped it: River's Edge reported "no registry
+     * row" while sitting in the file.
+     */
+    const str = (field) => {
+      const m = c.match(new RegExp(`\\b${field}:\\s*(?:'([^']*)'|"([^"]*)")`))
+      if (!m) return null
+      const value = m[1] ?? m[2] ?? ''
+      return value.length ? value : null
+    }
+    const short = str('shortName')
     if (!short) continue
     out[short] = {
-      name: g(/\bname:\s*'([^']+)'/),
-      slug: g(/\bslug:\s*'([^']+)'/),
-      par: Number(g(/\bpar:\s*(\d+)/)) || null,
-      yards: Number(g(/yardsBackTees:\s*(\d+)/)) || null,
-      holes: Number(g(/\bholes:\s*(\d+)/)) || null,
-      designer: g(/designer:\s*'([^']+)'/),
-      signature: g(/signature:\s*'([^']*)'/),
+      name: str('name'),
+      slug: str('slug'),
+      par: num(/\bpar:\s*(\d+)/),
+      yards: num(/yardsBackTees:\s*(\d+)/),
+      holes: num(/\bholes:\s*(\d+)/),
+      designer: str('designer'),
     }
   }
   return out
@@ -311,10 +331,16 @@ function main() {
       held.push(`${slug}: no registry row (add it to data/golf/courses.ts)`)
       continue
     }
-    if (!pub.holes || built.holes.length !== pub.holes) {
+    const allowedMissing = Math.floor((pub.holes ?? 0) * MAX_MISSING_SHARE)
+    if (!pub.holes || built.holes.length < pub.holes - allowedMissing) {
       held.push(`${slug}: mapped ${built.holes.length} of ${pub.holes ?? '?'} holes`)
       continue
     }
+    // Which of the published hole numbers has no routing. Only meaningful for a
+    // course numbered 1..holes, which every course in the registry is.
+    const mapped = new Set(built.holes.map((h) => Number(h.ref)))
+    const missingHoles = []
+    for (let i = 1; i <= pub.holes; i++) if (!mapped.has(i)) missingHoles.push(String(i))
 
     const osmPar = built.holes.reduce((a, h) => a + (h.par || 0), 0)
     const osmYards = built.holes.reduce((a, h) => a + (h.yards || 0), 0)
@@ -329,6 +355,7 @@ function main() {
       published: { par: pub.par, yards: pub.yards, holes: pub.holes, designer: pub.designer },
       parReconciles,
       yardsReconcile,
+      missingHoles,
       turfAcres: turf?.acres ?? null,
       holes: built.holes.map((h) => ({
         ref: h.ref,
@@ -351,7 +378,8 @@ function main() {
       `${slug.padEnd(24)} ${(json.length / 1024).toFixed(0).padStart(4)} KB  ` +
         `${String(out.holes.length).padStart(2)} holes  ${String(out.shapes.length).padStart(3)} shapes  ` +
         `par ${parReconciles ? `${osmPar} OK` : `${osmPar} vs ${pub.par} HELD`}  ` +
-        `yards ${yardsReconcile ? `${osmYards} OK` : `${osmYards} vs ${pub.yards} HELD`}`,
+        `yards ${yardsReconcile ? `${osmYards} OK` : `${osmYards} vs ${pub.yards} HELD`}` +
+        (missingHoles.length ? `  missing hole ${missingHoles.join(', ')}` : ''),
     )
   }
 
