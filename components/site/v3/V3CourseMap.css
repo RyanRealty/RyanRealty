@@ -17,12 +17,6 @@
   border-top: var(--v3-rule-section);
 }
 
-.v3-course__gap {
-  margin: var(--v3-space-lg) 0 0;
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body-sm);
-}
-
 .v3-course__claim {
   margin: var(--v3-space-sm) 0 0;
   font-size: var(--v3-size-body-lg);
@@ -116,6 +110,16 @@
   fill: var(--v3-cream);
 }
 
+/* The gap notice is a CAPTION under the drawing it explains. It used to render
+   after the scorecard and the card, a thousand pixels below the map whose
+   reading it is a precondition for. */
+.v3-course__gap {
+  margin: var(--v3-space-sm) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  max-width: 60ch;
+}
+
 /* --- the drawing ---------------------------------------------------------- */
 .v3-course__svg path,
 .v3-course__svg g {
@@ -192,24 +196,31 @@
 
 /* The hole number. Fixed px, so it is the same size on a wide course and a tall
    one; drawn in the SVG it was 6px on Juniper and 16px on Crosswater. */
+/* Unselected is a RING, selected is a filled disc — the state is in the form,
+   not in the opacity of the label. Dimming the whole disc to 0.45 was the first
+   version and it put every unselected hole number between 2.73:1 and 3.79:1
+   against cream, 22 of 34 at exactly 2.80, where AA needs 4.5. Navy on cream is
+   14.8:1 and cream on navy is the same pair inverted, so both states clear it. */
 .v3-course__disc {
   display: grid;
   place-items: center;
   width: 1.55rem;
   height: 1.55rem;
   border-radius: 50%;
-  background: var(--v3-navy);
-  color: var(--v3-ink-on-navy);
+  background: var(--v3-cream);
+  box-shadow: inset 0 0 0 1.5px var(--v3-navy);
+  color: var(--v3-navy);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   font-variant-numeric: tabular-nums;
-  opacity: 0.45;
-  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3-course__hit.is-on .v3-course__disc,
-.v3-course:not([data-enhanced='on']) .v3-course__disc {
-  opacity: 1;
+.v3-course__hit.is-on .v3-course__disc {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
 }
 
 /* The selected hole is emphasised; the rest of the course is not faded. Fading
@@ -234,6 +245,26 @@
   stroke: var(--v3-navy);
   stroke-width: 2.2;
   stroke-dasharray: none;
+}
+
+/* The green is the target of the hole, so it takes the strongest mark on the
+   selected routing. These three had no `.is-on` rule at all: the data assigns
+   297 greens, 70 water hazards and 26 rough polygons to holes, they took the
+   class at runtime, and nothing happened — so a card reading "water on the
+   hole" lit no water, which is exactly the disagreement this component's header
+   says cannot occur. */
+.v3-course__svg .v3-course__green.is-on {
+  stroke: var(--v3-navy);
+  stroke-width: 3;
+  paint-order: stroke;
+}
+
+.v3-course__svg .v3-course__water.is-on {
+  fill: var(--v3-navy);
+}
+
+.v3-course__svg .v3-course__rough.is-on {
+  fill: color-mix(in srgb, var(--v3-navy) 14%, transparent);
 }
 
 /* --- the hole card --------------------------------------------------------
@@ -302,13 +333,20 @@
   }
 }
 
-/* Nine across, always. An auto-fitting track wrapped seven and stretched the
-   last two to triple width on a phone. A 390px phone gives each cell 38px of
-   width against the 44px height. */
+/* Nine across wherever nine cells clear the 44px thumb floor, and five across
+   below that. At 390 a nine-column track gave each cell 37px of width against
+   its 44px height; the metaphor is not worth a target under the floor, and 5+4
+   still reads as a nine. 30rem is where nine cells reach 44px. */
 .v3-course__holes {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
+}
+
+@media (min-width: 30rem) {
+  .v3-course__holes {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
 }
 
 .v3-course__pick {
@@ -388,4 +426,25 @@
   font-size: var(--v3-size-body-sm);
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+/* A published hole with no routing. Not a control — there is nothing to select —
+   but it holds its number so column N stays hole N. */
+.v3-course__pick--absent {
+  display: grid;
+  place-items: center;
+  min-height: var(--v3-tap);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--v3-hairline);
+  color: var(--v3-ink-muted);
+  text-decoration: line-through;
+}
+
+/* The basis line for a measured figure, beside the figures it describes rather
+   than in the section source a thousand pixels below. */
+.v3-course__basis {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  max-width: 46ch;
 }

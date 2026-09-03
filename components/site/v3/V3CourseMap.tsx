@@ -126,10 +126,11 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
       .join(' ') + (close ? ' Z' : '')
 
   const headingId = id ? `${id}-heading` : undefined
-  const nines = courseNines(notes)
+  const nines = courseNines(notes, data.published?.holes ?? null)
   const facts = courseFacts(data, notes)
   const missing = data.missingHoles ?? []
   const greenAnchored = data.anchor === 'green'
+  const anyYardage = notes.some((n) => n.yards != null)
   const first = notes[0]!
 
   const claim = [
@@ -208,6 +209,16 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
               )
             })}
           </div>
+
+          {greenAnchored || missing.length ? (
+            <p className="v3-course__gap">
+              {greenAnchored
+                ? 'No hole routings are mapped for this course, so each number marks its green rather than its tee, and no hole prints a length or a shape.'
+                : missing.length === 1
+                  ? `Hole ${missing[0]} has no routing in the map data, so it is not drawn.`
+                  : `Holes ${missing.join(', ')} have no routing in the map data, so they are not drawn.`}
+            </p>
+          ) : null}
         </div>
 
         <div className="v3-course__aside">
@@ -225,6 +236,13 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
             })}
           </div>
 
+          {anyYardage ? (
+            <p className="v3-course__basis">
+              Hole lengths are measured along the mapped routing, not taken from the
+              printed card. The total under the heading is the club&rsquo;s.
+            </p>
+          ) : null}
+
           {facts.length ? (
             <dl className="v3-course__facts">
               {facts.map((f) => (
@@ -238,55 +256,71 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
         </div>
 
         <div className="v3-course__rail">
-          {nines.map((nine) => (
-            <div key={nine.label} className="v3-course__nine">
-              <div className="v3-course__holes">
-                {nine.holes.map((n) => (
-                  <button
-                    key={n.ref}
-                    type="button"
-                    className="v3-course__pick"
-                    data-hole={n.ref}
-                    aria-pressed={n.ref === first.ref}
-                  >
-                    <span className="v3-course__picknum">{n.ref}</span>
-                    {n.par == null ? null : <span className="v3-course__pickpar">{n.par}</span>}
-                  </button>
-                ))}
-              </div>
-              <p className="v3-course__ninetotal">
-                <span>{nine.label}</span>
-                {nine.par == null ? null : <span>Par {nine.par}</span>}
-                {nine.yards == null ? null : (
-                  <span>{nine.yards.toLocaleString('en-US')} yards</span>
+          {nines.map((nine) => {
+            const label = nine.label === 'Out' ? 'Front nine' : 'Back nine'
+            return (
+              <div key={nine.label} className="v3-course__nine">
+                {/* A group per nine, named. The map's tap layer is aria-hidden,
+                    so this rail is the only way a screen reader reaches a hole
+                    — and eighteen unlabelled buttons announced as "1 4". */}
+                <div className="v3-course__holes" role="group" aria-label={label}>
+                  {nine.cells.map((cell) =>
+                    cell.note ? (
+                      <button
+                        key={cell.ref}
+                        type="button"
+                        className="v3-course__pick"
+                        data-hole={cell.ref}
+                        aria-pressed={cell.ref === first.ref}
+                        aria-label={
+                          figureLine(cell.note)
+                            ? `Hole ${cell.ref}, ${figureLine(cell.note)}`
+                            : `Hole ${cell.ref}`
+                        }
+                      >
+                        <span className="v3-course__picknum">{cell.ref}</span>
+                        {cell.note.par == null ? null : (
+                          <span className="v3-course__pickpar">{cell.note.par}</span>
+                        )}
+                      </button>
+                    ) : (
+                      // Not a button: there is nothing to select. The cell holds
+                      // the number so column N stays hole N.
+                      <span
+                        key={cell.ref}
+                        className="v3-course__pick v3-course__pick--absent"
+                        aria-label={`Hole ${cell.ref}, not mapped`}
+                      >
+                        <span className="v3-course__picknum">{cell.ref}</span>
+                      </span>
+                    ),
+                  )}
+                </div>
+                {/* A nine that can total nothing prints no label row. "Out" on
+                    its own is the orphaned label TASTE names. */}
+                {nine.par == null && nine.measuredYards == null ? null : (
+                  <p className="v3-course__ninetotal">
+                    <span>{nine.label}</span>
+                    {nine.par == null ? null : <span>Par {nine.par}</span>}
+                    {nine.measuredYards == null ? null : (
+                      <span>{nine.measuredYards.toLocaleString('en-US')} yards measured</span>
+                    )}
+                  </p>
                 )}
-              </p>
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
       </div>
 
       <V3CourseMapControl />
-      {greenAnchored ? (
-        <p className="v3-course__gap">
-          No hole routings are mapped for this course, so each number marks its green
-          rather than its tee, and no hole prints a length or a shape.
-        </p>
-      ) : null}
-      {missing.length ? (
-        <p className="v3-course__gap">
-          {missing.length === 1
-            ? `Hole ${missing[0]} has no routing in the map data, so it is not drawn.`
-            : `Holes ${missing.join(', ')} have no routing in the map data, so they are not drawn.`}
-        </p>
-      ) : null}
       <V3SourceLine
         source={v3Text(
           (greenAnchored
             ? 'greens, bunkers and tees from OpenStreetMap contributors'
             : 'hole routings, greens, bunkers and tees from OpenStreetMap contributors') +
             ', clipped to the course boundary; fairway turf traced from Oregon statewide aerial imagery; ' +
-            'par and yardage from the USGA National Course Rating Database',
+            'the par and yardage in the line under the heading from the USGA National Course Rating Database',
         )}
       />
     </section>

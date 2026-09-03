@@ -114,13 +114,28 @@ function turnDegrees(line: [number, number][]): number | null {
 }
 
 /**
- * A stroke index runs 1 to the number of holes. OSM carries a `handicap=-1` on
- * Eagle Crest Ridge, which printed "Stroke index -1" on the card; anything
- * outside the range is a tag, not an index.
+ * A stroke index is a PERMUTATION of 1..N over the course, not a number per
+ * hole, so it reconciles as a set or it does not print at all — the same shape
+ * as the par gate.
+ *
+ * Range-checking each value alone was not enough. It caught the `handicap=-1`
+ * OSM carries on Eagle Crest Ridge and let two other failures through: Eagle
+ * Crest Resort published stroke index 6 on hole 10 AND hole 11, and Crosswater
+ * published one on 2 of its 18 holes, so the card's figure line grew and shrank
+ * an item as the reader arrowed along the scorecard.
  */
-function validStrokeIndex(value: number | null, holes: number): number | null {
-  if (value == null || !Number.isInteger(value)) return null
-  return value >= 1 && value <= holes ? value : null
+function strokeIndexSet(holes: readonly CourseHole[]): Map<string, number> | null {
+  const seen = new Set<number>()
+  const out = new Map<string, number>()
+  for (const h of holes) {
+    const v = h.handicap
+    if (v == null || !Number.isInteger(v) || v < 1 || v > holes.length) return null
+    if (seen.has(v)) return null
+    seen.add(v)
+    out.set(h.ref, v)
+  }
+  // Complete: every hole carries one and every index 1..N is used exactly once.
+  return out.size === holes.length ? out : null
 }
 
 /** A dogleg is called at 15°; below that the routing reads straight on the map. */
@@ -160,6 +175,7 @@ function sentence(n: HoleNote): string {
 }
 
 export function holeNotes(data: CourseMapData): HoleNote[] {
+  const strokeIndex = strokeIndexSet(data.holes)
   const byHole = new Map<string, CourseShape[]>()
   for (const s of data.shapes) {
     if (!s.h) continue
@@ -201,7 +217,7 @@ export function holeNotes(data: CourseMapData): HoleNote[] {
       ref: h.ref,
       par: data.parReconciles ? h.par : null,
       yards: data.yardsReconcile ? h.yards : null,
-      handicap: validStrokeIndex(h.handicap, data.holes.length),
+      handicap: strokeIndex?.get(h.ref) ?? null,
       bend,
       bendDegrees: deg == null ? null : Math.round(deg),
       bunkers: bunkers.length,
@@ -321,36 +337,63 @@ export function courseFacts(data: CourseMapData, notes: HoleNote[]): CourseFact[
 }
 
 /** Front nine, back nine, and the totals a scorecard prints under each. */
+/** One cell of the scorecard: the hole number, and the hole when it is mapped. */
+export type CourseCell = { ref: string; note: HoleNote | null }
+
 export type CourseNine = {
   label: string
-  holes: HoleNote[]
+  cells: CourseCell[]
   par: number | null
-  yards: number | null
+  /**
+   * Summed from the routings, so it is a MEASUREMENT and not the club's card.
+   * The two differ — Crooked River Ranch measures 5,763 against a published
+   * 5,818 — and the caller must label it as measured wherever it prints beside
+   * the published total, or not print it.
+   */
+  measuredYards: number | null
 }
 
-export function courseNines(notes: HoleNote[]): CourseNine[] {
-  const out: HoleNote[] = []
-  const back: HoleNote[] = []
-  for (const n of notes) {
-    const num = Number(n.ref)
-    if (Number.isFinite(num) && num > 9) back.push(n)
-    else out.push(n)
+/**
+ * Front nine, back nine, and the totals a scorecard prints under each.
+ *
+ * Every published hole number gets a cell whether or not it is mapped. Closing
+ * the gaps up was the first version and it broke the only grammar a scorecard
+ * has: Eagle Crest Resort rendered its front nine as 1,3,4,5,6,7,8,9 in a
+ * nine-column grid, so hole 3 sat in column 2 and the row ended one column
+ * early. An empty cell says a hole is missing; a shifted column says the wrong
+ * hole is there.
+ */
+export function courseNines(notes: HoleNote[], publishedHoles: number | null): CourseNine[] {
+  const byRef = new Map(notes.map((n) => [n.ref, n]))
+  const highest = notes.reduce((max, n) => Math.max(max, Number(n.ref) || 0), 0)
+  const total = publishedHoles && publishedHoles > 0 ? publishedHoles : highest
+  if (total <= 0) return []
+
+  const cells: CourseCell[] = []
+  for (let i = 1; i <= total; i++) {
+    const ref = String(i)
+    cells.push({ ref, note: byRef.get(ref) ?? null })
   }
-  const sum = (list: HoleNote[], key: 'par' | 'yards'): number | null => {
+
+  const sum = (list: CourseCell[], key: 'par' | 'yards'): number | null => {
     if (list.length === 0) return null
-    let total = 0
-    for (const n of list) {
-      const v = n[key]
+    let out = 0
+    for (const c of list) {
+      const v = c.note?.[key]
+      // One hole without the figure makes the nine's total a different claim.
       if (v == null) return null
-      total += v
+      out += v
     }
-    return total
+    return out
   }
+
+  const front = cells.slice(0, Math.min(9, cells.length))
+  const back = cells.slice(9)
   const nines: CourseNine[] = [
-    { label: 'Out', holes: out, par: sum(out, 'par'), yards: sum(out, 'yards') },
+    { label: 'Out', cells: front, par: sum(front, 'par'), measuredYards: sum(front, 'yards') },
   ]
   if (back.length) {
-    nines.push({ label: 'In', holes: back, par: sum(back, 'par'), yards: sum(back, 'yards') })
+    nines.push({ label: 'In', cells: back, par: sum(back, 'par'), measuredYards: sum(back, 'yards') })
   }
   return nines
 }
