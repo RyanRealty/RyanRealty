@@ -48,6 +48,7 @@ import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
 import {
   HOME_FIELD_POOL,
+  HOME_FIELD_MAP,
   HOME_TILE_FETCH,
   HOME_COMMUNITY_TRACE,
   HOME_MARKET_TRACE,
@@ -70,8 +71,9 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage. Stage (owned Old Mill / Bend flyover, one line, search action)
- * then Field of homes on the v3 barrel. Chart Room is mid-page.
+ * Homepage. The living atlas is the opening (D11 H1, search in the head).
+ * Then the three intent doors, then photographed homes. Chart Room is mid-page.
+ * Google PlaceFieldMap stays in the Field until Matt retires it on this route.
  */
 export const revalidate = 300
 
@@ -184,19 +186,23 @@ export default async function Home() {
     ({ when: _kind, ...row }) => row,
   )
 
-  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
+  const communityVideos = communityVideoManifest as Record<
+    string,
+    { video?: string; poster?: string } | undefined
+  >
   const titleCaseName = (s: string) => s.replace(/\b[a-z]/g, (ch) => ch.toUpperCase())
   const communityItems: CityCommunityItem[] = COMM_FEATURED.flatMap((f): CityCommunityItem[] => {
     const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
     if (!c) return []
     const cv = communityVideos[f.videoSlug]
+    const poster = cv?.poster?.trim() ?? ''
     return [{
       name: titleCaseName(c.subdivision),
       activeCount: c.activeCount,
       medianPrice: c.medianPrice ?? null,
       town: f.town,
       href: `/communities/${c.slug}`,
-      img: preferPlaceHero(c.heroImageUrl, f.img),
+      img: poster || preferPlaceHero(c.heroImageUrl, f.img),
       video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
     }]
   })
@@ -253,24 +259,24 @@ export default async function Home() {
 
   // The three routes (Matt 2026-09-01). Each fact is the same live figure its
   // destination page prints, or absent — never an estimate (section 0). The
-  // investing sum names exactly the segments it counts.
+  // investing sum names exactly the segments it counts. Buying names the leftover
+  // SFR count the search map lists, not the atlas town/community inventory.
   const investDoorSegments = new Set(['multifamily_2_4', 'commercial_sale', 'land'])
   const investCount = investSegments
     .filter((row) => investDoorSegments.has(row.segment))
     .reduce((sum, row) => sum + (row.activeCount ?? 0), 0)
   const doors = [
     {
-      // A buyer does not want every home; a buyer wants THEIR place, price,
-      // and type (Matt 2026-09-01). The door is place-first and lands on the
-      // map, where the search narrows by town, community, and price.
       kicker: v3Text('Buying'),
       label: v3Text('Find your place'),
       href: '/homes-for-sale?view=map',
-      // Only what the map actually holds: the communities and neighborhoods
-      // with a recorded boundary (pass two, N8).
-      fact: v3Text(
-        `${atlasRegions.filter((r) => r.kind === 'town').length} towns, ${atlasRegions.filter((r) => r.kind === 'community').length} communities, and ${atlasRegions.filter((r) => r.kind === 'neighborhood').length} Bend neighborhoods, mapped above`,
-      ),
+      ...(hud.active != null
+        ? {
+            fact: v3Text(
+              `${hud.active.toLocaleString('en-US')} single-family homes for sale`,
+            ),
+          }
+        : {}),
     },
     {
       kicker: v3Text('Selling'),
@@ -315,6 +321,7 @@ export default async function Home() {
           fieldItems={fieldItems}
           boundary={regionBoundary ?? undefined}
           listFlow
+          map={HOME_FIELD_MAP}
           seeAll={{ href: publishRegionalSearchHref(), label: seeAllLabel }}
           emptyMessage="No photographed active home with a list price and a street address returned on this refresh."
         />

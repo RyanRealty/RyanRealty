@@ -1,16 +1,28 @@
 /**
  * Route-local constants for the homepage (app/page.tsx).
  *
- * Split out so the route file stays under the ci:file-size-budget floor.
- * Nothing here fetches, formats, or derives. TOWN_ORDER and TOWN_IMG stay in
- * app/page.tsx itself.
+ * The opening is the living atlas (V3Atlas in #hero): every active home as a
+ * point, every town / community / neighborhood a silhouette, search in the
+ * head. These constants do not fetch, format, or derive. TOWN_ORDER and
+ * TOWN_IMG stay in app/page.tsx itself.
+ *
+ * Retired 2026-09-01 with the photo Stage. Paths kept so a later agent does
+ * not reintroduce a stock video hero. Do not mount them on `/`.
  */
-
-/** The hero media. The Bend flyover the KB hero played, over the canonical
- *  Old Mill still (Matt 2026-06-14, 0af80821: the drone footage IS the hero;
- *  the 3D-tiles render was rejected). */
 export const HERO_VIDEO = '/videos/hero-optimized.mp4'
 export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
+
+/**
+ * Field map on `/` and `/buy`. Matt's open call is whether to retire Google
+ * PlaceFieldMap under the atlas. Named treatments:
+ *   google (shipped): PlaceFieldMap in the Field slot. Default. /buy stays here.
+ *   none: omit the slot; V3Field uses photographed homes. Prop exists;
+ *         `/` must not pass it until he picks.
+ *   atlas-bind: list hover lights atlas dots. Needs V3Atlas internals. Not built.
+ * Doors stay #doors (parity blocking). Merging them into the atlas dock is a
+ * separate named treatment, also not built.
+ */
+export const HOME_FIELD_MAP = 'google' as const
 
 /** Preview Field: map + list in one frame. Cap is high enough to read as
  *  inventory, not a four-card platter. See all opens the rest. Do not dump

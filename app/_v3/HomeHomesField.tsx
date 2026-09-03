@@ -2,11 +2,11 @@
 
 /**
  * Homepage inventory Field. Types that exist in the set are lead chips on
- * V3Field (tokens only). Towns are not a second chip row — Stage search
- * already takes a place. Map and list share one frame.
+ * V3Field (tokens only). Towns are not a second chip row — Atlas search
+ * already takes a place. Map and list share one frame when map="google".
  */
 import { useMemo, useState } from 'react'
-import { V3Button, V3Field } from '@/components/site/v3'
+import { V3Button, V3Field, type V3FieldBinding } from '@/components/site/v3'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import type { HomeFieldItem } from './home-field-items'
 import { HOME_FIELD_LIMIT } from './home-constants'
@@ -18,6 +18,7 @@ export function HomeHomesField({
   seeAll,
   emptyMessage,
   displayLimit = HOME_FIELD_LIMIT,
+  map = 'google',
 }: {
   fieldItems: HomeFieldItem[]
   boundary?: unknown
@@ -25,6 +26,8 @@ export function HomeHomesField({
   seeAll?: { href: string; label: string }
   emptyMessage: string
   displayLimit?: number
+  /** Default `google` keeps PlaceFieldMap on `/` and `/buy`. `none` omits the slot. */
+  map?: 'google' | 'none'
 }) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const types = useMemo(() => {
@@ -75,37 +78,42 @@ export function HomeHomesField({
       </nav>
     ) : null
 
+  const googleMap =
+    map === 'google'
+      ? (binding: V3FieldBinding) => {
+          const pins = binding.items.flatMap((item) =>
+            item.lat != null && item.lng != null
+              ? [
+                  {
+                    id: item.id,
+                    href: item.href,
+                    priceLabel: item.priceLabel,
+                    title: item.title,
+                    lat: item.lat,
+                    lng: item.lng,
+                    cat: item.cat,
+                  },
+                ]
+              : [],
+          )
+          if (pins.length === 0) return null
+          return (
+            <PlaceFieldMap
+              pins={pins}
+              placeName="Central Oregon"
+              posterSrc={visible[0]?.photoSrc ?? fieldItems[0]?.photoSrc}
+              boundary={boundary}
+            />
+          )
+        }
+      : undefined
+
   return (
     <V3Field
       id="homes"
       ariaLabel="Homes for sale across Central Oregon"
       items={visible}
-      mapSlot={(binding) => {
-        const pins = binding.items.flatMap((item) =>
-          item.lat != null && item.lng != null
-            ? [
-                {
-                  id: item.id,
-                  href: item.href,
-                  priceLabel: item.priceLabel,
-                  title: item.title,
-                  lat: item.lat,
-                  lng: item.lng,
-                  cat: item.cat,
-                },
-              ]
-            : [],
-        )
-        if (pins.length === 0) return null
-        return (
-          <PlaceFieldMap
-            pins={pins}
-            placeName="Central Oregon"
-            posterSrc={visible[0]?.photoSrc ?? fieldItems[0]?.photoSrc}
-            boundary={boundary}
-          />
-        )
-      }}
+      mapSlot={googleMap}
       lead={typeLead}
       listFlow={listFlow}
       action={seeAll}

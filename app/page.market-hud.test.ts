@@ -48,3 +48,19 @@ describe('homepage market figures stay on the leftover pile', () => {
     expect(SRC).not.toContain('Market Truth leftover')
   })
 })
+
+describe('homepage reviews and the seller ask match the live page', () => {
+  it('prints live Google reviews through V3Proof, not a Quiet of hardcoded quotes', () => {
+    expect(SRC).toMatch(/<V3Proof/)
+    expect(SRC).toMatch(/id="reviews"/)
+    expect(SRC).toMatch(/getReviews\(6\)/)
+    expect(SRC).not.toMatch(/id="reviews"[\s\S]{0,80}<V3Quiet/)
+  })
+
+  it('keeps the seller sheet as the on-page ask', () => {
+    expect(SRC).toMatch(/<SellCapture/)
+    expect(SRC).toMatch(/id="sell"/)
+    expect(SRC).not.toMatch(/KbCommunityAlerts/)
+  })
+})
+

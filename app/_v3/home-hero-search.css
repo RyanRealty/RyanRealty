@@ -1,6 +1,5 @@
-/* Homepage search. Scoped to the v3 root so it paints the same inside the
-   Stage (on-media) and the Atlas head (on cream). Same paint as the Stage on-media primary:
-   cream face, navy ink, 2px navy edge. Tokens only. 44px targets. */
+/* Homepage search. Scoped to the v3 root so it paints in the Atlas head
+   (cream). Cream face, navy ink, 2px navy edge. Tokens only. 44px targets. */
 .v3 .home-hero-search {
   position: relative;
   width: 100%;

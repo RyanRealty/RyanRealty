@@ -130,7 +130,9 @@ describe('homepage Field stays on the barrel', () => {
     expect(PAGE).not.toMatch(/towns=\{/)
     expect(FIELD).toContain('v3-field__mark')
     expect(FIELD).toContain('ariaPressed')
-    expect(FIELD).toContain('mapSlot={(binding)')
+    expect(FIELD).toContain('mapSlot={googleMap}')
+    expect(FIELD).toContain("map = 'google'")
+    expect(FIELD).toContain("map?: 'google' | 'none'")
     expect(V3_FIELD_CSS).toContain('.v3-field__pin--cat-0')
     expect(V3_FIELD_CSS).toContain('.v3-field__mark--cat-0')
     expect(V3_FIELD_CSS).toContain('background: var(--v3-cat-0)')
@@ -192,3 +194,70 @@ describe('homepage Field stays on the barrel', () => {
     expect(PAGE).not.toContain('Also in the regional count')
   })
 })
+
+describe('homepage below the atlas: doors stay, Google stays default', () => {
+  it('keeps #doors as its own band and does not restate the atlas geography', () => {
+    expect(PAGE).toMatch(/<V3Doors id="doors"/)
+    expect(PAGE).not.toContain('mapped above')
+    expect(PAGE).toMatch(/hud\.active != null/)
+    expect(PAGE).toMatch(/single-family homes for sale/)
+  })
+
+  it('ships Google PlaceFieldMap on / via HOME_FIELD_MAP and does not pass none', () => {
+    const constants = readFileSync(resolve('app/_v3/home-constants.ts'), 'utf8')
+    expect(constants).toMatch(/export const HOME_FIELD_MAP = 'google' as const/)
+    expect(PAGE).toMatch(/map=\{HOME_FIELD_MAP\}/)
+    expect(PAGE).not.toMatch(/map=["']none["']/)
+    expect(FIELD).toContain('PlaceFieldMap')
+    expect(FIELD).toContain("map = 'google'")
+  })
+
+  it('does not mount the retired flyover as the opening', () => {
+    expect(PAGE).not.toContain('HERO_VIDEO')
+    expect(PAGE).not.toContain('HERO_POSTER')
+    expect(PAGE).not.toMatch(/<V3Stage/)
+    const constants = readFileSync(resolve('app/_v3/home-constants.ts'), 'utf8')
+    expect(constants).toMatch(/living atlas/)
+    expect(constants).toMatch(/Do not mount them on `\/`/)
+  })
+
+  it('attaches the area-guide poster as the communities ledger still', () => {
+    expect(PAGE).toMatch(/poster\?: string/)
+    expect(PAGE).toMatch(/const poster = cv\?\.poster\?\.trim\(\) \?\? ''/)
+    expect(PAGE).toMatch(/img: poster \|\| preferPlaceHero/)
+  })
+
+  it('prints live Google reviews through V3Proof and keeps the seller sheet', () => {
+    expect(PAGE).toMatch(/<V3Proof/)
+    expect(PAGE).toMatch(/id="reviews"/)
+    expect(PAGE).toMatch(/getReviews\(6\)/)
+    expect(PAGE).toMatch(/<SellCapture/)
+    expect(PAGE).toMatch(/id="sell"/)
+    expect(PAGE).not.toMatch(/KbCommunityAlerts/)
+  })
+})
+
+describe('homepage-v6 parity names the live page', () => {
+  const parity = readFileSync(
+    resolve('design_system/ryan-realty/ui_kits/homepage-v6/parity.json'),
+    'utf8',
+  )
+
+  it('does not describe a Stage, Quiet reviews, or Alerts as the homepage ask', () => {
+    expect(parity).not.toContain('Stage then Field')
+    expect(parity).not.toContain('on the Stage')
+    expect(parity).not.toContain('V3Quiet #reviews')
+    expect(parity).not.toContain('Alerts is the on-page ask')
+    expect(parity).toContain('V3Atlas')
+    expect(parity).toContain('V3Proof #reviews')
+    expect(parity).toContain('seller sheet')
+    expect(parity).toContain('"blocking": true')
+  })
+
+  it('keeps the atlas-only taste receipt and does not invent a new score', () => {
+    const json = JSON.parse(parity) as { tasteReview: { score: number; evaluatedAt: string } }
+    expect(json.tasteReview.score).toBe(86)
+    expect(json.tasteReview.evaluatedAt).toBe('2026-09-02')
+  })
+})
+
