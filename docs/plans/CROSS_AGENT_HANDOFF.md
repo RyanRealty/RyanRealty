@@ -8,8 +8,31 @@ sets; the calculator was mine.
 |---|---|---|
 | **Rental calculator off shadcn** `094a21ed` | 56 `data-slot` elements gone from TWO public routes. Native `input[type=range]`, `select`, `details`, a real `table`, V3Button. The four hover tooltips behind 16px "?" buttons became one "What these mean" fold, always in the DOM. `analyzeRental` untouched. | 0 data-slot, 22 controls, none under 44px, no h-scroll at 390 and 1440 on both routes. Walked for real: price 650k→450k and rent 3,250→3,400 moved cash flow −$1,055→+$24/mo; five ArrowRight on the slider 25%→30%; 15-year term −$579/mo; projection fold 7 rows + chart; lead form 44px fields. 30/30 rental-analysis tests. |
 | **Four controls under the floor** `9ce57105` | chart-card source summary 17.84→44, instrument fold 42.34→44, save-search email 32→44, map view strip 28→44, plus the submit beside the email. | Section cost priced each time: +20.56 per chart card (a bare min-height cost 26.16; trading the parent's padding bought 5.6 back), +1.66, +12, +16. `/cities/bend` 21,285→21,401px at 390. `/homes-for-sale` does not grow — the map shell absorbs it. |
-| **Map marks** `d516979c` | Cluster bubbles and price pills carry a 44px `::after`; the paint is untouched. Two things the render taught: hit-testing follows PAINT ORDER, so an unclamped box on an upper mark steals a lower one's centre (the upper one is cut instead); and Google attaches marker DOM several frames after every event hook fires, so a MutationObserver is the only thing that catches it — last hook at 2.97s, marks in the DOM after, zero boxes fitted. | Verified independently of the worker: 23 marks on /cities/bend at 390 and 1440, all in view, every one resolving to ITSELF at its centre, none stolen, targets 44x44 and 60x44. |
+| **Map marks** `d516979c` + `92ef0d72` | Cluster bubbles and price pills carry a 44px `::after`; the paint is untouched. Three things the render taught. Hit-testing follows PAINT ORDER, so an unclamped box on an upper mark steals a lower one's centre — the upper one is cut instead. Google attaches marker DOM several frames after every event hook fires, so a MutationObserver is the only thing that catches it: last hook at 2.97s, marks in the DOM after, zero boxes fitted. And the box itself broke hover, which `d516979c` shipped without — see the correction below. | Verified independently of the worker, twice. Before the hover fix: 23 marks on /cities/bend at 390 and 1440, all in view, every one resolving to ITSELF at its centre, none stolen, targets 44x44 and 60x44. After: 20/20 at both widths, 0 stolen, every box 44x44, and the mark count holds across 10 samples with the pointer parked on a mark. |
 | **G71, the gate** `4146c139` | Runtime Playwright over 8 routes at two viewports. Static could not work: the failures have no declared box, and the WCAG 2.5.8 Equivalent exception is a fact about the rendered page. Ratcheted by SIGNATURE — an href-keyed first cut produced 57 rows, 30 for one footer list, which is the cliff that gets a gate deleted. | 3,263 controls, 132 excused by Equivalent, 25 signatures baselined. Both red paths proven against a mutated-then-restored baseline. The exception is load-bearing: disabled, the homepage alone fails on the atlas polygons at 4.9x5.5. |
+
+**The tap layer broke hover, and `d516979c` was already on main when the worker
+reported it.** Two faults, both inside `SearchMapClustered.tsx`, both fixed in
+`92ef0d72`. Hover was bound per marker on the content element; Google re-slots a
+marker when its zIndex changes, so `mouseleave` lost its element and the pill
+stayed emphasised after the pointer left (3/3 with the layer on, 0/3 with it
+off). Hover is delegated to the map container now and keyed off
+`data-listing-key`, which survives re-slotting. And the emphasised marker sat at
+`MAX_ZINDEX` while cluster bubbles sit at `MAX_ZINDEX + count`, so a hovered pill
+drew *under* a cluster it overlapped: pointer resolved to the cluster, hover
+cleared, pill shrank, pointer resolved to the pill, and it flapped every frame.
+Emphasis goes to `MAX_ZINDEX * 2`. `fitMapMarkTaps` also slides the box
+(`--rr-map-mark-tap-x/-y`) before it trims, and never shrinks below the painted
+footprint.
+
+**The one honest caveat on the map marks.** Giving every mark a 44px box means
+neighbours occlude more of each other, so the *contiguous* region around a mark
+that still answers to it shrinks in some frames. That is the nearest-wins
+behaviour the brief allows, and every mark still owns its own centre in every
+frame measured. What it buys: a click 4px outside a cluster's painted circle now
+fires `click`/`gmp-click` on that cluster, where before no point outside a mark's
+paint resolved to it at all. The map screenshot with the layer on and off differs
+by 0 pixels.
 
 **Also fixed, found by the review sweep and not by a report:** `/communities/tetherow`
 shipped "Value my home" twice — `buildExploreEdges` adds it and the page pushed
