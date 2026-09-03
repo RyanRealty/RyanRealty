@@ -4,12 +4,19 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3/V3Footer'
 
 /**
- * The footer folds its sitemap on a phone: 2,599px of stacked links became 947px
- * of five named groups, measured on the homepage at 375 before and after.
+ * The footer folds its sitemap below 56.25rem: 2,599px of stacked links became
+ * 947px of five named groups, measured on the homepage at 375 before and after.
  *
  * A fold is only honest if it hides nothing. These tests hold the two things a
  * fold can silently break — a destination that stops existing, and a count that
- * stops matching the group it labels — plus the reason it needs no client JS.
+ * stops matching the group it labels — plus the direction the default runs.
+ *
+ * THE DEFAULT INVERTED on 2026-09-02. The markup used to ship closed and CSS
+ * forced the list visible above the wide stop, which left the element reporting
+ * COLLAPSED over thirteen visible links. It ships OPEN now and V3FooterFold
+ * closes it on the narrow widths. That direction and not the other: shipping
+ * closed and opening in JS hides 52 footer destinations from every reader
+ * without JavaScript and every crawler that does not run it.
  */
 
 function html() {
@@ -31,7 +38,9 @@ describe('the footer fold', () => {
 
   it('opens one disclosure per column, each holding that column list', () => {
     const out = html()
-    const details = out.match(/<details class="v3-footer__fold">/g) ?? []
+    // renderToStaticMarkup writes a boolean attribute as `open=""`; a browser
+    // serializes it bare. Both spellings are the same attribute.
+    const details = out.match(/<details class="v3-footer__fold" open(?:="")?>/g) ?? []
     expect(details).toHaveLength(V3_FOOTER_COLUMNS.length)
     expect(out.match(/<summary class="v3-footer__column-title">/g) ?? []).toHaveLength(
       V3_FOOTER_COLUMNS.length,
@@ -51,13 +60,18 @@ describe('the footer fold', () => {
     }
   })
 
-  it('ships NO disclosure open, because an open fold saves nothing', () => {
-    expect(html()).not.toMatch(/<details class="v3-footer__fold" open/)
+  it('ships EVERY disclosure open, so a crawler and a no-JS reader get the sitemap', () => {
+    const out = html()
+    expect(out.match(/<details class="v3-footer__fold" open(?:="")?>/g) ?? []).toHaveLength(
+      V3_FOOTER_COLUMNS.length,
+    )
+    expect(out).not.toMatch(/<details class="v3-footer__fold">/)
   })
 
-  it('stays a server component: no client JS drives the fold', () => {
-    // A native details works before hydration. If this ever needs "use client"
-    // the footer has stopped being free on every page on the site.
+  it('keeps the fold native: the island sets state, it does not render the markup', () => {
+    // A native details works before hydration, and the only client code is the
+    // island that syncs `open` to the width. If a handler ever appears in this
+    // markup the footer has stopped being free on every page on the site.
     const out = html()
     expect(out).toMatch(/<details/)
     expect(out).not.toMatch(/onclick=/i)
