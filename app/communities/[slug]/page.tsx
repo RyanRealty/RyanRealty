@@ -73,6 +73,7 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3CourseMap,
   V3Instrument,
   V3Ledger,
   V3PlaceCharacter,
@@ -84,6 +85,7 @@ import {
   type V3ChartCardProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
+import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
@@ -640,6 +642,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   })
   exploreItems.push({ label: 'Value my home', href: valuationHref(`/communities/${slug}`) })
 
+  // The community's own course, when the registry names one that has a map.
+  // Committed geometry, not a query; the catch is the prerender contract.
+  const courseMap = await getCommunityCourseMap(slug).catch(() => null)
+
   const communitySchemas = buildCommunitySchemas({
     slug,
     name: publicName,
@@ -776,6 +782,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             eyebrow={`${publicName} · Belonging`}
             heading={`Living in ${publicName}`}
             items={knowledgeItems}
+          />
+        ) : null}
+
+        {courseMap ? (
+          <V3CourseMap
+            id="course"
+            data={courseMap.map}
+            heading={v3Text(`${courseMap.course.shortName}, hole by hole`)}
           />
         ) : null}
 
