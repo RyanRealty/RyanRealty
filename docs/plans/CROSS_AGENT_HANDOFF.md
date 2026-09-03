@@ -1,41 +1,50 @@
-# MISSION IN FLIGHT — 2026-09-02 — close the four open public-surface items
+# Current — 2026-09-02 (/endtoend all open tasks, main) — the four open items are closed
 
-Matt: `/endtoend all open tasks`. Done means a real visitor can use each surface
-and the foundation under it is right, not that a screenshot looks fixed.
+Matt: `/endtoend all open tasks`. All four shipped, each measured on a running
+server rather than asserted. Three ran as parallel workers on exclusive file
+sets; the calculator was mine.
 
-**W1 — the rental calculator comes off shadcn.** `components/tools/RentalCalculator.tsx`
-imports Card, Input, Label, Slider, Separator, Button, Select, Accordion,
-Tooltip and Table from `@/components/ui` and renders 56 `data-slot` elements on
-TWO public routes: the listing page (through `RentalAnalysis`) and
-`/tools/rental-property-calculator`. §3 says the public site builds from
-`components/site/v3`. DONE = zero `[data-slot]` on both routes, every control at
-the 44px floor, `analyzeRental` untouched and its tests still green, and the
-same numbers on screen before and after.
+| | what shipped | measured |
+|---|---|---|
+| **Rental calculator off shadcn** `094a21ed` | 56 `data-slot` elements gone from TWO public routes. Native `input[type=range]`, `select`, `details`, a real `table`, V3Button. The four hover tooltips behind 16px "?" buttons became one "What these mean" fold, always in the DOM. `analyzeRental` untouched. | 0 data-slot, 22 controls, none under 44px, no h-scroll at 390 and 1440 on both routes. Walked for real: price 650k→450k and rent 3,250→3,400 moved cash flow −$1,055→+$24/mo; five ArrowRight on the slider 25%→30%; 15-year term −$579/mo; projection fold 7 rows + chart; lead form 44px fields. 30/30 rental-analysis tests. |
+| **Four controls under the floor** `9ce57105` | chart-card source summary 17.84→44, instrument fold 42.34→44, save-search email 32→44, map view strip 28→44, plus the submit beside the email. | Section cost priced each time: +20.56 per chart card (a bare min-height cost 26.16; trading the parent's padding bought 5.6 back), +1.66, +12, +16. `/cities/bend` 21,285→21,401px at 390. `/homes-for-sale` does not grow — the map shell absorbs it. |
+| **Map marks** `d516979c` | Cluster bubbles and price pills carry a 44px `::after`; the paint is untouched. Two things the render taught: hit-testing follows PAINT ORDER, so an unclamped box on an upper mark steals a lower one's centre (the upper one is cut instead); and Google attaches marker DOM several frames after every event hook fires, so a MutationObserver is the only thing that catches it — last hook at 2.97s, marks in the DOM after, zero boxes fitted. | Verified independently of the worker: 23 marks on /cities/bend at 390 and 1440, all in view, every one resolving to ITSELF at its centre, none stolen, targets 44x44 and 60x44. |
+| **G71, the gate** `4146c139` | Runtime Playwright over 8 routes at two viewports. Static could not work: the failures have no declared box, and the WCAG 2.5.8 Equivalent exception is a fact about the rendered page. Ratcheted by SIGNATURE — an href-keyed first cut produced 57 rows, 30 for one footer list, which is the cliff that gets a gate deleted. | 3,263 controls, 132 excused by Equivalent, 25 signatures baselined. Both red paths proven against a mutated-then-restored baseline. The exception is load-bearing: disabled, the homepage alone fails on the atlas polygons at 4.9x5.5. |
 
-**W2 — the search map's marks are reachable.** `SearchMapClustered.tsx`
-`buildClusterElement` and `buildPricePillElement` measure 32×32, 38×38 and
-60.25×25; 22 of 23 are under 44px in both axes on `/cities/bend`, and there is
-no equivalent control for them. DONE = every mark's target ≥44px with the
-painted circle unchanged, measured on a live map.
+**Also fixed, found by the review sweep and not by a report:** `/communities/tetherow`
+shipped "Value my home" twice — `buildExploreEdges` adds it and the page pushed
+it again — so the closing block carried a duplicate exit and React warned on
+duplicate keys. `splitQuietItems` dedupes by href now, so no caller can repeat
+it (`53127679`).
 
-**W3 — four controls under the floor.** `.v3-chartcard__source-summary` 17.84px,
-`.v3-instrument__fold-summary` 42.34, `#save-search-email` 32,
-`.map-search-views` 26.00/27.59. DONE = each ≥44px, measured, with no section
-growing more than it has to.
+**The review pass.** 13 routes x 2 widths: zero horizontal scroll anywhere,
+exactly one `h1` per page, no unnamed links. Full suite 1,531 files / 16,190
+tests green. The only console flags left are Google Maps announcing a vector to
+raster fallback on map pages, which is theirs.
 
-**W4 — the gate, so this class stops coming back (§6).** A `scripts/check-*.mjs`
-in `ci:gates` that fails a public control under 44px — and encodes the WCAG
-Equivalent exception, or it fails the atlas and the field pins on every run: a
-control under 44px fails only when NO same-page control does the same job at
-≥44px. Both existing mitigations are machine-checkable (atlas chips match places
-1:1 by name, field-pin hrefs match row hrefs 1:1). DONE = the gate is wired,
-green on the current tree, and red on a deliberately shrunk control.
+**Two corrections to what this session believed going in.** `.v3-field__pin` is
+not a control — it is a span with a mouseenter handler inside an aria-hidden
+plot, no href — so the "pin hrefs are duplicated by row anchors" mitigation
+describes something that is not there. And zero in-degree is not dead code,
+again: `PublicProductTypes` is recorded as replaced in four parity.json files
+and imported by nothing findable, and G46 caught that
+`NeighborhoodMarketContext` imports it.
 
-Progress is logged in this block as each lands.
+**Carry forward:**
+- G71's baseline was recorded against a dev server, the only one available here.
+  If CI's production build reports a signature that is not in it, re-record with
+  `ci:tap-targets:start` rather than deleting rows. The header says so.
+- G71 is PR-time, not push-to-main: it needs a server, so it runs in the CI step
+  that already starts one for route-smoke and the payload ratchet.
+- The 25 baselined signatures are the real remaining debt, now visible on every
+  run: 214 footer links at 203.2x32, 40 nav carets at 32x44, 35 footer
+  disclosures at 203.2x17.8, 18 chart tabs at 47.6x32, and 19 search-UI controls.
+- A `V3Field` atom would retire the rental calculator's `.design-token-lint-ignore`
+  entry. The barrel has V3Filter (a search box) and no generic labelled field.
 
 ---
 
-# Current — 2026-09-02 (golf maps + the punch list, main) — sixteen courses, five items closed
+# Previous — 2026-09-02 (golf maps + the punch list, main) — sixteen courses, five items closed
 
 Matt: "finish all Central Oregon courses and then finish the primary items in
 this session, I want it all and I want it all done the best."
