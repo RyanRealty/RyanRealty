@@ -3,7 +3,7 @@
   "generated_by": "check-tap-targets.mjs --write-baseline",
   "min_px": 44,
   "measured": {
-    "base": "http://127.0.0.1:3344",
+    "base": "http://127.0.0.1:3011",
     "routes": [
       "/",
       "/housing-market",
@@ -18,58 +18,9 @@
       "390x844",
       "1440x900"
     ],
-    "controls": 3263
+    "controls": 3266
   },
   "violations": [
-    {
-      "signature": "a.v3-chrome__group-link",
-      "min": "38.9x44",
-      "minW": 38.9,
-      "minH": 44,
-      "instances": 7,
-      "example": "Sell",
-      "seen": [
-        "/ @1440",
-        "/cities/bend @1440",
-        "/communities @1440",
-        "/contact @1440",
-        "/homes-for-sale @1440",
-        "/housing-market @1440",
-        "/team @1440"
-      ]
-    },
-    {
-      "signature": "button.v3-chart-switch__tab",
-      "min": "47.6x32",
-      "minW": 47.6,
-      "minH": 32,
-      "instances": 18,
-      "example": "1Y",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/housing-market @1440",
-        "/housing-market @390"
-      ]
-    },
-    {
-      "signature": "button.v3-chrome__caret",
-      "min": "32x44",
-      "minW": 32,
-      "minH": 44,
-      "instances": 40,
-      "example": "Homes pages",
-      "seen": [
-        "/ @1440",
-        "/cities/bend @1440",
-        "/communities @1440",
-        "/contact @1440",
-        "/homes-for-sale @1440",
-        "/housing-market @1440",
-        "/sell @1440",
-        "/team @1440"
-      ]
-    },
     {
       "signature": "div.v3-ask__consent button",
       "min": "42x34",
@@ -139,7 +90,7 @@
       "min": "203.2x32",
       "minW": 203.2,
       "minH": 32,
-      "instances": 214,
+      "instances": 202,
       "example": "Open houses",
       "seen": [
         "/ @1440",
