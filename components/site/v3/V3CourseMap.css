@@ -1,0 +1,382 @@
+/* ===========================================================================
+   COURSE MAP
+   Styles for V3CourseMap.tsx and nothing else. Every value resolves from
+   ./tokens.css. No raw color, no hardcoded duration.
+
+   One hue at six weights. A golf course is drawn in greens and sand everywhere
+   else on the internet; here it is navy on cream like the rest of the site, and
+   the reading comes from weight rather than colour: turf faint, water heavy,
+   greens solid.
+   =========================================================================== */
+
+.v3.v3-course {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.v3-course {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-course__claim {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3-course__note {
+  margin: var(--v3-space-xs) 0 0;
+  max-width: 48ch;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-course__control {
+  display: none;
+}
+
+/* --- layout ---------------------------------------------------------------
+   Map and card side by side once there is room for both; stacked before that,
+   with the card directly under the drawing it describes. */
+.v3-course__body {
+  display: grid;
+  gap: var(--v3-space-lg);
+  margin-top: var(--v3-space-lg);
+}
+
+/* Narrow: map, then the scorecard, then the card it drives. The card sat
+   directly under the map at first, which put every rail button an offscreen
+   scroll away from the thing it changes. */
+.v3-course__stage {
+  order: 1;
+}
+.v3-course__rail {
+  order: 2;
+}
+.v3-course__aside {
+  order: 3;
+}
+
+@media (min-width: 60rem) {
+  .v3-course__body {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-areas:
+      'stage aside'
+      'rail  rail';
+    align-items: start;
+  }
+
+  .v3-course__stage {
+    grid-area: stage;
+  }
+  .v3-course__rail {
+    grid-area: rail;
+  }
+  .v3-course__aside {
+    grid-area: aside;
+  }
+}
+
+/* The panel travels with the map, which is a tall drawing: without this the
+   card for the hole you are pointing at scrolls off while its hole is still
+   under the cursor. */
+.v3-course__aside {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-content: start;
+  min-width: 0;
+}
+
+@media (min-width: 60rem) {
+  .v3-course__aside {
+    position: sticky;
+    /* Clears the sticky chrome. V3Field's sticky map uses a bare space token and
+       tucks its top edge under the nav; here the top edge is the hole number,
+       which is the one thing that must stay readable. */
+    top: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
+  }
+}
+
+
+/* The drawing fills its column and takes whatever height the property has.
+   Two other arrangements were tried and are worse: a height cap letterboxes a
+   portrait course into a strip of cream, and sizing the column to the drawing's
+   aspect shrank Crosswater to a 300px ribbon beside an oversized panel. A tall
+   map is the honest shape of a tall property; the panel is sticky so the card
+   for the hole under the cursor is on screen the whole way down. */
+.v3-course__stage {
+  min-width: 0;
+}
+
+.v3-course__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.v3-course__ground {
+  fill: var(--v3-cream);
+}
+
+/* --- the drawing ---------------------------------------------------------- */
+.v3-course__svg path,
+.v3-course__svg g {
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    fill var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The property line. It is what makes the drawing a course rather than a
+   constellation: only about 40 of Tetherow's 218 acres are mown, so without the
+   boundary the turf reads as unrelated fragments. */
+.v3-course__bounds {
+  fill: color-mix(in srgb, var(--v3-navy) 3.5%, transparent);
+  stroke: var(--v3-hairline);
+  stroke-width: 1.2;
+}
+
+.v3-course__turf {
+  fill: color-mix(in srgb, var(--v3-navy) 13%, transparent);
+}
+
+.v3-course__rough {
+  fill: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+}
+
+.v3-course__fairway {
+  fill: color-mix(in srgb, var(--v3-navy) 14%, transparent);
+}
+
+.v3-course__water {
+  fill: color-mix(in srgb, var(--v3-navy) 42%, transparent);
+}
+
+/* Sand reads as an outline, not a fill: at map scale a filled bunker is a blot
+   and a drawn one is a bunker. */
+.v3-course__bunker {
+  fill: color-mix(in srgb, var(--v3-navy) 4%, transparent);
+  stroke: color-mix(in srgb, var(--v3-navy) 42%, transparent);
+  stroke-width: 0.9;
+}
+
+.v3-course__tee {
+  fill: color-mix(in srgb, var(--v3-navy) 50%, transparent);
+}
+
+.v3-course__green {
+  fill: var(--v3-navy);
+}
+
+.v3-course__route {
+  fill: none;
+  stroke: color-mix(in srgb, var(--v3-navy) 40%, transparent);
+  stroke-width: 1.1;
+  stroke-dasharray: 5 4;
+}
+
+.v3-course__tag circle {
+  fill: var(--v3-navy);
+}
+
+.v3-course__tag text {
+  fill: var(--v3-cream);
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-course__hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+/* The selected hole is EMPHASISED, not isolated. Fading the rest of the course
+   was the first attempt and it wiped the map: turf already sits at 12% of navy,
+   so a 0.18 multiplier left about 2% ink and the drawing went blank. The course
+   stays exactly as drawn and the chosen hole steps forward instead — which is
+   also the honest reading, since the hole is only legible against the course it
+   runs through. */
+.v3-course__svg .v3-course__turf.is-on,
+.v3-course__svg .v3-course__fairway.is-on {
+  fill: color-mix(in srgb, var(--v3-navy) 34%, transparent);
+}
+
+.v3-course__svg .v3-course__bunker.is-on {
+  fill: color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  stroke: var(--v3-navy);
+  stroke-width: 1.4;
+}
+
+.v3-course__svg .v3-course__tee.is-on {
+  fill: var(--v3-navy);
+}
+
+.v3-course__svg .v3-course__route.is-on {
+  stroke: var(--v3-navy);
+  stroke-width: 2.2;
+  stroke-dasharray: none;
+}
+
+/* The other hole numbers step back so the selected disc is findable at a
+   glance. Discs are already navy on cream at full weight, so this is the one
+   place a fade reads. */
+.v3-course[data-enhanced='on'] .v3-course__tag:not(.is-on) {
+  opacity: 0.4;
+}
+
+/* --- the hole card --------------------------------------------------------
+   All eighteen render. The island hides the ones that are not selected — with
+   the `hidden` attribute rather than a CSS rule, because CSS cannot compare the
+   section's selected hole against a card's own number, and eighteen hand-written
+   pairs would be a rule per hole. With no JavaScript every card stays on the
+   page, which is the version worth indexing. */
+.v3-course__cards {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.v3-course__card {
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-course__cardnum {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: 1.05;
+}
+
+.v3-course__cardfig {
+  margin: var(--v3-space-2xs) 0 0;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body);
+}
+
+.v3-course__standout {
+  margin: var(--v3-space-xs) 0 0;
+  display: inline-block;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.v3-course__cardnote {
+  margin: var(--v3-space-xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  max-width: 42ch;
+}
+
+/* --- the scorecard, which is also the control ----------------------------- */
+.v3-course__rail {
+  display: grid;
+  gap: var(--v3-space-lg);
+  align-content: start;
+}
+
+@media (min-width: 48rem) {
+  .v3-course__rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 60rem) {
+  .v3-course__rail {
+    margin-top: var(--v3-space-lg);
+  }
+}
+
+/* Nine across, always. An auto-fitting track wrapped seven and then stretched
+   the last two to triple width on a phone, which stops reading as a scorecard.
+   A 390px phone gives each cell 38px of width against the 44px height, and the
+   whole row is the shape of the card it is standing in for. */
+.v3-course__holes {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.v3-course__pick {
+  appearance: none;
+  display: grid;
+  gap: 1px;
+  place-items: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-3xs);
+  background: var(--v3-wash);
+  border: 0;
+  color: var(--v3-ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-course__pick:hover {
+  background: var(--v3-edge);
+}
+
+.v3-course__pick[aria-pressed='true'] {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3-course__picknum {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-course__pickpar {
+  font-size: var(--v3-size-eyebrow);
+  opacity: 0.7;
+}
+
+.v3-course__ninetotal {
+  display: flex;
+  gap: var(--v3-space-md);
+  margin: var(--v3-space-xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- what is true of the whole course ------------------------------------- */
+.v3-course__facts {
+  margin: 0;
+  display: grid;
+  gap: 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-course__fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  padding: var(--v3-space-xs) 0;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-course__fact dt {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.v3-course__fact dd {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

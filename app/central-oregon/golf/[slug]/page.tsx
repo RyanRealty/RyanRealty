@@ -23,6 +23,7 @@ import type { Metadata } from 'next'
 import { getGolfDetail } from '@/lib/data'
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { GOLF_ACCESS_LABEL, buildGolfFaq, cityToGeoSlug, displayCity } from '@/lib/golf-format'
+import { getCourseMap } from '@/lib/golf/course-map-registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -36,6 +37,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
+  V3CourseMap,
   V3Field,
   V3Quiet,
   V3SectionTracker,
@@ -81,6 +83,9 @@ export default async function GolfDetailPage({ params }: Props) {
   const { slug } = await params
 
   const detail = await getGolfDetail(slug).catch(() => null)
+  // A committed geometry file, not a query — the catch is the prerender
+  // contract, not a real failure mode.
+  const courseMap = await getCourseMap(slug).catch(() => null)
   const course = detail?.course ?? courseBySlug(slug)
   if (!course) notFound()
 
@@ -215,6 +220,15 @@ export default async function GolfDetailPage({ params }: Props) {
               label: v3Text('Value my home'),
               href: valuationHref(`/central-oregon/golf/${slug}`),
             }}
+          />
+        ) : null}
+
+        {courseMap ? (
+          <V3CourseMap
+            id="holes"
+            data={courseMap}
+            heading={v3Text(`${shortName}, hole by hole`)}
+            note={course.signature.trim() ? v3Text(course.signature.trim()) : undefined}
           />
         ) : null}
 

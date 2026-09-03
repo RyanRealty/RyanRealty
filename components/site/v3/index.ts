@@ -234,6 +234,16 @@ export type {
 /* Pattern 6 — QUIET: hairline supporting content, the graph's outbound edges  */
 /* -------------------------------------------------------------------------- */
 
+/* -------------------------------------------------------------------------- */
+/* COURSE MAP: a golf course drawn hole by hole, with the card for the one      */
+/* you are pointing at. Geometry in data/golf/course-maps, measured notes in    */
+/* lib/golf/course-map.ts.                                                      */
+/* -------------------------------------------------------------------------- */
+
+export { V3CourseMap } from './V3CourseMap'
+export type { V3CourseMapProps, CourseMapData } from './V3CourseMap'
+export { V3CourseMapControl } from './V3CourseMap.client'
+
 export { V3Doors } from './V3Doors'
 export { V3Atlas } from './V3Atlas.client'
 export type { V3AtlasProps, AtlasDot, AtlasEvent, AtlasRegion, AtlasType } from './V3Atlas.client'
