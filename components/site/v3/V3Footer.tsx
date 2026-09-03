@@ -48,6 +48,7 @@ import { cn } from '@/lib/utils'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import { KB_FOOTER_COLUMNS, LEGAL_LINKS } from '@/lib/site-nav'
 import { V3_ROOT_CLASS } from './atoms'
+import { V3FooterFold } from './V3FooterFold.client'
 import './tokens.css'
 import './V3Footer.css'
 
@@ -258,6 +259,8 @@ export function V3Footer({
           </ul>
         </div>
 
+        <V3FooterFold />
+
         <div className="v3-footer__columns">
           {sitemap.map((column) => (
             <nav className="v3-footer__column" aria-label={column.heading} key={column.heading}>
@@ -268,17 +271,23 @@ export function V3Footer({
                 scrolls to. Folded, the reader sees five group names with their
                 counts and opens the one they want.
 
-                No client JS: the fold is the browser's own, so it works before
-                hydration like every other row in this component. Above the wide
-                stop the columns render exactly as they did — the summary keeps
-                its job as the column title and the list is forced visible in
-                CSS, so desktop loses nothing and the markup stays one tree.
+                It SHIPS OPEN and V3FooterFold closes it on a phone. Inverted,
+                a reader without JavaScript — and a crawler that does not run it
+                — would meet 52 hidden footer destinations on every page, which
+                is a crawl surface traded for a phone convenience. This way the
+                no-JS case is the whole sitemap, which is the safe failure.
+
+                Forcing the list visible in CSS above 40rem was the first
+                attempt and it lied: the element stayed closed, so the control
+                announced itself COLLAPSED over thirteen visible links and did
+                nothing when activated. CSS can show a disclosure's content; it
+                cannot set `open`, which is what the accessibility tree reads.
 
                 The count is not decoration: it tells the reader whether a group
                 is worth opening, which is the whole reason a fold is honest
                 here rather than a place to hide destinations.
               */}
-              <details className="v3-footer__fold">
+              <details className="v3-footer__fold" open>
                 <summary className="v3-footer__column-title">
                   {column.heading}
                   <span className="v3-footer__count">{column.links.length}</span>

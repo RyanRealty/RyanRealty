@@ -243,6 +243,7 @@ export type {
 export { V3CourseMap } from './V3CourseMap'
 export type { V3CourseMapProps, CourseMapData } from './V3CourseMap'
 export { V3CourseMapControl } from './V3CourseMap.client'
+export { V3FooterFold } from './V3FooterFold.client'
 
 export { V3Doors } from './V3Doors'
 export { V3Atlas } from './V3Atlas.client'

@@ -110,8 +110,8 @@
 }
 
 /* Sitemap -------------------------------------------------------------------
-   One column at 390 and five across at the wide stop, which is the count
-   lib/site-nav.ts projects today. `minmax(0, 1fr)` rather than `1fr` so a long
+   One column while it is folded and five across from 56.25rem, which is the
+   count lib/site-nav.ts projects today. `minmax(0, 1fr)` rather than `1fr` so a long
    label wraps instead of forcing the grid wider than the page. */
 .v3-footer__columns {
   display: grid;
@@ -119,18 +119,12 @@
   gap: var(--v3-space-lg);
 }
 
-@media (min-width: 40rem) {
-  .v3-footer__columns {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 48rem) {
-  .v3-footer__columns {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
+/* The two- and three-column steps are gone. They were the whole source of the
+   blank-cream defect: five folded groups in a two-column grid put PLACES beside
+   HOMES, and opening PLACES stretched the row to 631px while HOMES stayed 45px.
+   A grid row is as tall as its tallest cell and nothing in CSS changes that.
+   So the sitemap is ONE column wherever it is folded and five columns wherever
+   it is open, and there is no width at which a fold sits in a grid. */
 @media (min-width: 56.25rem) {
   .v3-footer__columns {
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -262,42 +256,30 @@
    from the two widths this was built at, which is the whole argument for
    testing the widths between them.
 
-   So the unfold starts at the same 40rem the grid does. Above it the sitemap
-   is not folded: the summary keeps its old job as the column title — same
-   size, tracking and muted ink — and the list is forced visible whether or not
-   the disclosure happens to be open.
+   So the unfold starts at 56.25rem, the width the grid goes five across, and
+   every column is OPEN from there — set by V3FooterFold, not forced visible
+   here. Below it the sitemap is one folded column: at 640 with everything open
+   the footer measured 1,989px, which is the wall the fold exists to prevent. The forcing was the first attempt and it lied: the element stayed
+   closed, so the control announced itself collapsed over thirteen visible links
+   and did nothing when activated. CSS can show a disclosure's content; it
+   cannot set `open`, which is what the accessibility tree reads.
 
-   Two overrides, because browsers hide a closed disclosure's content two
-   different ways: the older model sets display:none on every non-summary
-   child, the newer one sets content-visibility:hidden on ::details-content.
-   Both were verified in Chromium 145 before this shipped. */
-@media (min-width: 40rem) {
+   What is left here is presentation. The summary keeps its old job as the
+   column title — same size, tracking and muted ink — and the count, which
+   answers "is this group worth opening", goes with the question. */
+@media (min-width: 56.25rem) {
   .v3-footer__fold {
     border-top: 0;
   }
 
   .v3-footer__column-title {
-    display: block;
     min-height: 0;
     padding: 0;
     margin-bottom: var(--v3-space-2xs);
-    cursor: default;
   }
 
   .v3-footer__count {
     display: none;
-  }
-
-  .v3-footer__fold:not([open]) > .v3-footer__column-list {
-    display: block;
-  }
-}
-
-@supports selector(::details-content) {
-  @media (min-width: 40rem) {
-    .v3-footer__fold::details-content {
-      content-visibility: visible;
-    }
   }
 }
 
