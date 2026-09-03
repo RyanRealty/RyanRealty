@@ -843,11 +843,10 @@
   justify-content: center;
 }
 
-@media (min-width: 64rem) {
-  .listing-broker-card {
-    display: none;
-  }
-}
+/* The broker card was hidden at exactly the width its only container becomes
+   visible: `.listing-detail-aside` is display:none BELOW 64rem and this hid the
+   card ABOVE it, so the card rendered at no width at all. The card is the
+   desktop half of the pair and the fixed bar is the phone half. */
 
 .listing-map {
   min-height: var(--v3-map-min);

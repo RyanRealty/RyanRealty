@@ -74,9 +74,10 @@ import { publishOpenHouseBadgeLabel } from '@/lib/listing/publish-listing-card-b
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
+import ListingBrokerBar from '@/components/site/listing-detail/ListingBrokerBar.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/listing-detail/PhotoGalleryLightbox'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
-// Parity marker: rendered transitively via ListingBrokerCTA.client (the mobile
+// Parity marker: rendered transitively via ListingBrokerBar.client (the mobile
 // sticky broker bar), imported here under its real name so the mockup-parity
 // gate (which matches the import identifier) sees it.
 import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
@@ -114,7 +115,8 @@ void ListingVideoEmbed
  *               · MortgageCalculator · ListingLocationMap · SchoolsBlock
  *               · PropertySpecs · PropertyHistory · leftover extras
  *               · ListingAttribution (ODS §5-3)
- *   sidebar     ListingTourCard + ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
+ *   sidebar     ListingTourCard + ListingBrokerCTA (the desktop broker card)
+ *   floating    ListingBrokerBar (the fixed phone bar, OUTSIDE the aside)
  *   full-width  ListingFeaturedHomes - nearby similar homes
  *
  * Two sections were retired here 2026-07-30: VacationRentalPotential (no
@@ -739,6 +741,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
     </>
   )
 
+  /**
+   * The fixed bar goes OUTSIDE the grid. It used to render inside
+   * ListingBrokerCTA, which sits in the aside, and the aside is display:none
+   * below 64rem — a fixed element does not escape a hidden ancestor, so the bar
+   * measured 0px high at 390, 1024 and 1440.
+   */
+  const floating = ctaBroker ? (
+    <ListingBrokerBar
+      defaultBroker={ctaBroker}
+      brokers={brokers}
+      listingKey={contactKey}
+      lockToDefault={listingAgent != null}
+    />
+  ) : null
+
   const sidebar = (
     <>
       <ListingTourCard
@@ -797,6 +814,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           hero={hero}
           main={main}
           sidebar={sidebar}
+          floating={floating}
         />
         {featuredItems.length > 0 ? (
           <ListingFeaturedHomes
