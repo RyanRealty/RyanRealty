@@ -374,6 +374,8 @@ interface PricePillOverlayOptions {
   zIndex?: number
   /** Fired on pill click. Propagation to the map container is stopped. */
   onClick?: (ev: MouseEvent) => void
+  /** Stamped on the container so the delegated hover listener can read it. */
+  listingKey?: string
 }
 
 type PricePillOverlayCtor = new (opts: PricePillOverlayOptions) => PricePillOverlayHandle
@@ -400,6 +402,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     private zIndexValue: number
     private titleText: string
     private onClick?: (ev: MouseEvent) => void
+    private listingKeyValue?: string
 
     constructor(opts: PricePillOverlayOptions) {
       super()
@@ -411,6 +414,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       this.zIndexValue = opts.zIndex ?? 1
       this.titleText = opts.title ?? ''
       this.onClick = opts.onClick
+      this.listingKeyValue = opts.listingKey
       if (opts.map) this.setMap(opts.map)
     }
 
@@ -421,6 +425,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       div.style.transform = 'translate(-50%, -100%)'
       div.style.zIndex = String(this.zIndexValue)
       div.style.cursor = 'pointer'
+      if (this.listingKeyValue) div.dataset.listingKey = this.listingKeyValue
       if (this.titleText) div.title = this.titleText
       div.appendChild(this.contentEl)
       div.addEventListener('click', (ev) => {
@@ -501,10 +506,10 @@ const MARK_TAP_MARGIN_PX = 2
  * Each mark gets a 44px square. Hit-testing follows paint order, not distance,
  * so a box on a mark painted ABOVE a close neighbour answers for that
  * neighbour's centre — a tap on the lower mark would open the upper one. Where
- * that happens the upper mark's box moves off-centre, away from the neighbour,
- * far enough to clear it, as long as the painted mark stays inside the box. Only
- * when there is no room left does the box give up size. The lower mark keeps its
- * own full box: its painted body is above the neighbour's pseudo at its centre.
+ * that happens the upper mark's box slides off-centre, away from the neighbour,
+ * far enough to clear it. Only when it runs out of travel does the box give up
+ * size. The lower mark keeps its own full box: its painted body is above the
+ * neighbour's pseudo at its own centre.
  *
  * A mark never shrinks below its painted footprint — the max() in
  * components/search/search-map-marks.css holds that floor.
@@ -553,13 +558,17 @@ function fitMapMarkTaps(root: HTMLElement | null) {
         Math.max(Math.abs(a.cx - m.cx), Math.abs(a.cy - m.cy)) -
         Math.max(Math.abs(b.cx - m.cx), Math.abs(b.cy - m.cy)),
     )
-    let w = MARK_TAP_PX
-    let h = MARK_TAP_PX
+    // The stylesheet floors the box at the mark's own painted footprint, so a
+    // wide pill's box is 60px, not 44. Model what the browser will hit-test.
+    let w = Math.max(MARK_TAP_PX, m.w)
+    let h = Math.max(MARK_TAP_PX, m.h)
     let dx = 0
     let dy = 0
-    // How far the box may travel and still hold the painted mark.
-    const roomX = Math.max(0, (MARK_TAP_PX - m.w) / 2)
-    const roomY = Math.max(0, (MARK_TAP_PX - m.h) / 2)
+    // How far the box may travel. Half the painted mark stays inside it: past
+    // that the target stops being a target for the thing it belongs to. The
+    // mark's own body is hit-testable either way, so travel costs no reach.
+    const roomX = Math.max(0, (w - m.w / 2) / 2)
+    const roomY = Math.max(0, (h - m.h / 2) / 2)
     for (const n of below) {
       const gapX = n.cx - (m.cx + dx)
       const gapY = n.cy - (m.cy + dy)
@@ -569,11 +578,11 @@ function fitMapMarkTaps(root: HTMLElement | null) {
       if (needX <= needY) {
         const moved = dx - Math.sign(gapX) * needX
         if (Math.abs(moved) <= roomX) dx = moved
-        else w = Math.max(0, Math.abs(gapX) * 2 - MARK_TAP_MARGIN_PX)
+        else w = Math.max(m.w, Math.abs(gapX) * 2 - MARK_TAP_MARGIN_PX)
       } else {
         const moved = dy - Math.sign(gapY) * needY
         if (Math.abs(moved) <= roomY) dy = moved
-        else h = Math.max(0, Math.abs(gapY) * 2 - MARK_TAP_MARGIN_PX)
+        else h = Math.max(m.h, Math.abs(gapY) * 2 - MARK_TAP_MARGIN_PX)
       }
     }
     // Moving away from one neighbour can move onto another, and a zero gap
@@ -582,20 +591,29 @@ function fitMapMarkTaps(root: HTMLElement | null) {
       const gapX = Math.abs(n.cx - (m.cx + dx))
       const gapY = Math.abs(n.cy - (m.cy + dy))
       if (gapX * 2 >= w + MARK_TAP_MARGIN_PX || gapY * 2 >= h + MARK_TAP_MARGIN_PX) continue
-      if (gapX >= gapY) w = Math.max(0, gapX * 2 - MARK_TAP_MARGIN_PX)
-      else h = Math.max(0, gapY * 2 - MARK_TAP_MARGIN_PX)
+      // Never below the paint: the stylesheet would ignore it, and a neighbour
+      // centre inside the paint itself is an overlap the tap layer did not make.
+      if (gapX >= gapY) w = Math.max(m.w, gapX * 2 - MARK_TAP_MARGIN_PX)
+      else h = Math.max(m.h, gapY * 2 - MARK_TAP_MARGIN_PX)
     }
-    setMarkTap(m.el, w, h, dx, dy)
+    setMarkTap(m.el, { w, h, dx, dy, restW: Math.max(MARK_TAP_PX, m.w), restH: Math.max(MARK_TAP_PX, m.h) })
   }
 }
 
-/** Write a fitted box, or clear the properties when the mark takes the default. */
-function setMarkTap(el: HTMLElement, w: number, h: number, dx: number, dy: number) {
+/**
+ * Write a fitted box. A value the stylesheet already produces on its own is
+ * cleared rather than written, so an inline property means "this mark had to
+ * give way to a neighbour".
+ */
+function setMarkTap(
+  el: HTMLElement,
+  box: { w: number; h: number; dx: number; dy: number; restW: number; restH: number },
+) {
   const props: Array<[string, number, number]> = [
-    ['--rr-map-mark-tap-w', w, MARK_TAP_PX],
-    ['--rr-map-mark-tap-h', h, MARK_TAP_PX],
-    ['--rr-map-mark-tap-x', dx, 0],
-    ['--rr-map-mark-tap-y', dy, 0],
+    ['--rr-map-mark-tap-w', box.w, box.restW],
+    ['--rr-map-mark-tap-h', box.h, box.restH],
+    ['--rr-map-mark-tap-x', box.dx, 0],
+    ['--rr-map-mark-tap-y', box.dy, 0],
   ]
   for (const [name, value, fallback] of props) {
     if (value === fallback) el.style.removeProperty(name)
@@ -1072,6 +1090,10 @@ export default function SearchMapClustered({
         onMarkerClickRef.current?.(listingKey)
       }
 
+      // The hover listener is delegated to the map container. Both the content
+      // and the wrapper that outlives a content swap carry the key it reports.
+      contentEl.dataset.listingKey = listingKey
+
       let marker: PriceMarker
       if (AdvancedMarkerElement) {
         const adv = new AdvancedMarkerElement({
@@ -1084,6 +1106,7 @@ export default function SearchMapClustered({
         })
         // 'gmp-click' replaces the deprecated 'click' listener on Advanced Markers.
         adv.addEventListener('gmp-click', handleClick)
+        adv.dataset.listingKey = listingKey
         marker = adv
       } else {
         marker = new PricePillOverlay!({
@@ -1093,11 +1116,9 @@ export default function SearchMapClustered({
           title,
           zIndex: 1,
           onClick: handleClick,
+          listingKey,
         })
       }
-
-      contentEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(listingKey))
-      contentEl.addEventListener('mouseleave', () => onMarkerHoverRef.current?.(null))
 
       markersByKeyRef.current.set(listingKey, marker)
       return marker
@@ -1174,12 +1195,29 @@ export default function SearchMapClustered({
     })
     const container = mapContainerRef.current
     if (container) marksObserver.observe(container, { childList: true, subtree: true })
+
+    // Hover is delegated to the container rather than bound per marker.
+    // mouseenter/mouseleave on a marker loses its pair when Google re-slots
+    // that marker — which it does when the emphasis effect below changes
+    // zIndex — so the pointer walks away and the pill stays emphasised. The
+    // container outlives every marker and every content swap.
+    const onMarkOver = (ev: Event) => {
+      const target = ev.target as HTMLElement | null
+      const holder = target?.closest?.('[data-listing-key]') as HTMLElement | null
+      onMarkerHoverRef.current?.(holder?.dataset.listingKey ?? null)
+    }
+    const onMarkOut = () => onMarkerHoverRef.current?.(null)
+    container?.addEventListener('mouseover', onMarkOver)
+    container?.addEventListener('mouseleave', onMarkOut)
+
     const idleListener = map.addListener('idle', scheduleFitTaps)
     scheduleFitTaps()
 
     return () => {
       try {
         marksObserver.disconnect()
+        container?.removeEventListener('mouseover', onMarkOver)
+        container?.removeEventListener('mouseleave', onMarkOut)
         google.maps.event.removeListener(idleListener)
         if (fitTapsFrameRef.current != null) {
           cancelAnimationFrame(fitTapsFrameRef.current)
@@ -1218,10 +1256,14 @@ export default function SearchMapClustered({
           zoomMode === 'photo' && listing?.PhotoURL
             ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive, hover: isHover, fill })
             : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved, fill })
+        newEl.dataset.listingKey = key
         marker.content = newEl
-        marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : 1
-        newEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(key))
-        newEl.addEventListener('mouseleave', () => onMarkerHoverRef.current?.(null))
+        // Above every cluster bubble, which sits at MAX_ZINDEX + its count. At
+        // plain MAX_ZINDEX the emphasised pill drew UNDER the cluster it
+        // overlaps, so the pointer resolved to the cluster, hover cleared, the
+        // pill shrank, and the pointer resolved to the pill again — hover
+        // flapped every frame. The mark being pointed at belongs on top.
+        marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) * 2 : 1
       } catch {
         // marker DOM may be gone mid-pan; ignore
       }
