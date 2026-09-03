@@ -57,11 +57,21 @@
 .v3.v3-atlas .v3-atlas__headline {
   margin: 0;
   font-family: var(--v3-font-display);
-  font-size: clamp(2rem, 5.2vw, 3.6rem);
+  /* Follows the level it renders at. As the homepage's H1 it is the biggest
+     thing on the page; as a place page's H2 it sits under that page's title
+     instead of over it. */
+  font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-display);
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-display);
   text-wrap: balance;
+}
+
+/* AFTER the base rule on purpose: the two selectors have identical
+   specificity, so source order is what decides which font-size wins. Placed
+   above, this lost silently and the homepage hero shrank to the H2 size. */
+.v3.v3-atlas .v3-atlas__headline--h1 {
+  font-size: var(--v3-size-display-hero);
 }
 
 .v3-atlas__claim {

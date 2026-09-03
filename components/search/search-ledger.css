@@ -210,10 +210,14 @@
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
 }
+/* The page's title, and therefore the largest thing on it. It read at the H2
+   size, which put it 23px BELOW the Atlas heading two sections down — the
+   title of the page smaller than a heading inside it, on every city and every
+   community. */
 .place-hero__title {
   margin: 0 0 var(--v3-space-sm);
   font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
+  font-size: var(--v3-size-display-hero);
   line-height: 1.1;
   color: var(--v3-ink-on-media);
 }

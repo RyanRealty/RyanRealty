@@ -994,7 +994,13 @@ export function V3Atlas({
       <div className="v3-atlas__grid">
         {/* The head: the H1 and the claim. On a phone the map follows at once. */}
         <div className="v3-atlas__head">
-          <Heading id={`${uid}-h`} className="v3-atlas__headline">
+          <Heading
+            id={`${uid}-h`}
+            className={cn(
+              'v3-atlas__headline',
+              headingLevel === 1 && 'v3-atlas__headline--h1',
+            )}
+          >
             {headline}
           </Heading>
           {quiet ? null : (
