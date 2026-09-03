@@ -24,6 +24,17 @@ describe('contact field locators', () => {
     expect(src).not.toContain("id: 'contact-email'")
   })
 
+  it('keeps one-screen V3Ask and pads the consent checkbox on this route', () => {
+    const src = readFileSync(ASK_FILE, 'utf8')
+    expect(src).toContain('<V3Ask')
+    expect(src).toContain('className="contact-ask"')
+    expect(src).toContain("from '../actions'")
+    expect(src).not.toContain('V3Sheet')
+    const css = readFileSync(join(process.cwd(), 'app/contact/_v3/contact-ask.css'), 'utf8')
+    expect(css).toContain('var(--v3-tap)')
+    expect(css).not.toMatch(/SMS_CONSENT_TEXT|By checking this box/)
+  })
+
   it('V3Sheet honors field.id so #contact-email is unique', () => {
     const markup = renderToStaticMarkup(
       createElement(V3Sheet, {

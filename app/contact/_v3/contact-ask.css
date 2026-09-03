@@ -1,0 +1,10 @@
+/* Route-level G71 pad: the consent checkbox measured 42x34 on /contact.
+   The carrier sentence is untouched. Tokens only. */
+.contact-ask .v3-ask__consent button[role='checkbox'],
+.contact-ask .v3-ask__consent input[type='checkbox'] {
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  box-sizing: border-box;
+}

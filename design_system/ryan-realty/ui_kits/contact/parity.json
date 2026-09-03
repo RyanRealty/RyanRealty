@@ -1,0 +1,86 @@
+{
+  "route": "app/contact/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
+  "competitiveTarget": "Beat five-step contact wizards and generic 'get in touch' pages: one-screen V3Ask, a broker answers not a desk, live broker phones as doors, FAQ as disclosures.",
+  "note": "Live 2026-09-03 leftover. Order is Breadcrumb, Quiet (H1 Call, text, or write), V3Doors (call/text, email, book), V3Ask (one screen, every field, one button — not the old five-step sheet), V3Ledger (who answers), V3Answers (CONTACT_FAQ_ITEMS as disclosures), Footer. Consent checkbox is padded to --v3-tap on this route without changing SMS_CONSENT_TEXT. tasteReview is withheld until a separate evaluator grades the rendered page (design_system/public/TASTE.md). Do not invent a score.",
+  "requiredComponents": [
+    {
+      "name": "V3SectionTracker",
+      "section": "tracking island",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Contact. Current page never a link.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Opens the page. H1 is Call, text, or write (or the CMS title when it is not a bare Contact). One true line. Listing summary door when ?listingKey= is present.",
+      "blocking": true
+    },
+    {
+      "name": "V3Doors",
+      "section": "The three fastest reaches, above the form: call/text, email, book. A visitor who wants a human should not have to find a form field first.",
+      "blocking": true
+    },
+    {
+      "name": "ContactAsk",
+      "section": "One-screen V3Ask. Same submitContactForm fields as the old five-step sheet. SMS consent checkbox padded to 44px on this route. Consent copy is SMS_CONSENT_TEXT, untouched.",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "Who answers. One row per broker from getBrokers, Matt-Rebecca-Paul, door to /team.",
+      "blocking": true
+    },
+    {
+      "name": "V3Answers",
+      "section": "CONTACT_FAQ_ITEMS as native disclosures, remaining edges in the rail. splitQuietItems at the page so a leftover prose row cannot vanish.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main>.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx"
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Sheet",
+      "reason": "The five-step sheet was the problem this page left. Ask is the whole form at once."
+    },
+    {
+      "name": "V3Stage",
+      "reason": "Contact is not a media page. The ask is the job."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Live inventory opens Homes."
+    },
+    {
+      "name": "V3Proof",
+      "reason": "Reviews live on /reviews. A proof band here would restated that page."
+    }
+  ],
+  "removedComponents": [
+    "Five-step V3Sheet contact wizard (Matt 2026-09-01: how they get hold of us must be simple).",
+    "KbContact / leftover CRM page-view mirror."
+  ],
+  "sectionOrder": [
+    "V3SectionTracker + ContactPage / BreadcrumbList / FAQPage JSON-LD (not sections)",
+    "V3Breadcrumb",
+    "V3Quiet #contact -- H1 and the one true line",
+    "V3Doors #reach -- call, write, book",
+    "ContactAsk / V3Ask #write -- one screen",
+    "V3Ledger #office -- the brokers who answer",
+    "V3Answers #faq -- before you write",
+    "V3Footer"
+  ]
+}
