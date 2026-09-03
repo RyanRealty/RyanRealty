@@ -3,7 +3,7 @@
   "generated_by": "check-tap-targets.mjs --write-baseline",
   "min_px": 44,
   "measured": {
-    "base": "http://localhost:3322",
+    "base": "http://127.0.0.1:3344",
     "routes": [
       "/",
       "/housing-market",
@@ -18,7 +18,7 @@
       "390x844",
       "1440x900"
     ],
-    "controls": 3262
+    "controls": 3263
   },
   "violations": [
     {
@@ -71,215 +71,6 @@
       ]
     },
     {
-      "signature": "button[name=\"all types\"]",
-      "min": "108.9x32",
-      "minW": 108.9,
-      "minH": 32,
-      "instances": 4,
-      "example": "All types",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"baths\"]",
-      "min": "83.5x32",
-      "minW": 83.5,
-      "minH": 32,
-      "instances": 4,
-      "example": "Baths",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"beds\"]",
-      "min": "76.6x32",
-      "minW": 76.6,
-      "minH": 32,
-      "instances": 4,
-      "example": "Beds",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"clear all\"]",
-      "min": "48.4x18",
-      "minW": 48.4,
-      "minH": 18,
-      "instances": 2,
-      "example": "Clear all",
-      "seen": [
-        "/cities/bend @1440",
-        "/homes-for-sale @1440"
-      ]
-    },
-    {
-      "signature": "button[name=\"draw\"]",
-      "min": "60x32",
-      "minW": 60,
-      "minH": 32,
-      "instances": 4,
-      "example": "Draw",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"for sale\"]",
-      "min": "103.6x32",
-      "minW": 103.6,
-      "minH": 32,
-      "instances": 4,
-      "example": "For sale",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"list view\"]",
-      "min": "39x42",
-      "minW": 39,
-      "minH": 42,
-      "instances": 5,
-      "example": "List view",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"map view\"]",
-      "min": "42.2x42",
-      "minW": 42.2,
-      "minH": 42,
-      "instances": 5,
-      "example": "Map view",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"open all filters\"]",
-      "min": "119x32",
-      "minW": 119,
-      "minH": 32,
-      "instances": 4,
-      "example": "Open all filters",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"price\"]",
-      "min": "80.8x32",
-      "minW": 80.8,
-      "minH": 32,
-      "instances": 4,
-      "example": "Price",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"remove filter all types\"]",
-      "min": "24x24",
-      "minW": 24,
-      "minH": 24,
-      "instances": 2,
-      "example": "Remove filter: All types",
-      "seen": [
-        "/cities/bend @1440",
-        "/homes-for-sale @1440"
-      ]
-    },
-    {
-      "signature": "button[name=\"saved areas\"]",
-      "min": "106.3x38",
-      "minW": 106.3,
-      "minH": 38,
-      "instances": 4,
-      "example": "Saved areas",
-      "seen": [
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
-      ]
-    },
-    {
-      "signature": "button[name=\"search by voice\"]",
-      "min": "36x36",
-      "minW": 36,
-      "minH": 36,
-      "instances": 2,
-      "example": "Search by voice",
-      "seen": [
-        "/cities/bend @1440",
-        "/homes-for-sale @1440"
-      ]
-    },
-    {
-      "signature": "button[name=\"show more homes\"]",
-      "min": "543x32",
-      "minW": 543,
-      "minH": 32,
-      "instances": 1,
-      "example": "Show more homes",
-      "seen": [
-        "/homes-for-sale @1440"
-      ]
-    },
-    {
-      "signature": "button[name=\"sort results\"]",
-      "min": "168x28",
-      "minW": 168,
-      "minH": 28,
-      "instances": 1,
-      "example": "Sort results",
-      "seen": [
-        "/homes-for-sale @1440"
-      ]
-    },
-    {
-      "signature": "button[name=\"split view\"]",
-      "min": "44.5x42",
-      "minW": 44.5,
-      "minH": 42,
-      "instances": 1,
-      "example": "Split view",
-      "seen": [
-        "/cities/bend @1440"
-      ]
-    },
-    {
       "signature": "div.v3-ask__consent button",
       "min": "42x34",
       "minW": 42,
@@ -289,18 +80,6 @@
       "seen": [
         "/contact @1440",
         "/contact @390"
-      ]
-    },
-    {
-      "signature": "input[name=\"search by address city community zip or broker\"]",
-      "min": "110x20",
-      "minW": 110,
-      "minH": 20,
-      "instances": 2,
-      "example": "Search by address, city, community, zip, or broker",
-      "seen": [
-        "/homes-for-sale @1440",
-        "/homes-for-sale @390"
       ]
     },
     {

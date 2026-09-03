@@ -209,9 +209,7 @@ function FilterDropdown({
           size="sm"
           aria-haspopup="dialog"
           className={cn(
-            // Dense 32px Ledger control on fine pointers; the W-UI audit's
-            // 44px tap floor holds on touch (ci:publish-search-count).
-            'srch-chip h-8 min-h-8 min-w-11 shrink-0 gap-1 whitespace-nowrap px-3 [@media(pointer:coarse)]:min-h-11',
+            'srch-chip shrink-0 gap-1 whitespace-nowrap px-3',
             open && !active && 'ring-2 ring-primary/30',
           )}
         >
@@ -480,7 +478,7 @@ export default function SearchFilters({
         >
         {hideLocation ? null : (
         <div className="relative w-40 shrink-0 sm:w-56">
-          <div className="srch-panel flex min-h-11 min-w-0 items-center gap-2 px-3 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
+          <div className="srch-panel flex min-h-[length:var(--v3-tap)] min-w-0 items-center gap-2 px-3 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
@@ -514,7 +512,7 @@ export default function SearchFilters({
                 if (picked) handleSuggestPick(picked)
                 else applyNaturalQuery(locationQuery)
               }}
-              className="h-auto min-w-0 flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="srch-suggest h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Search by address, city, community, zip, or broker"
               role="combobox"
               aria-expanded={locationOpen && suggestItems.length > 0}
@@ -764,7 +762,7 @@ export default function SearchFilters({
             setMoreSheetMounted(true)
             setMoreSheetOpen(true)
           }}
-          className="srch-chip h-8 shrink-0 gap-1 px-3 [@media(pointer:coarse)]:min-h-11"
+          className="srch-chip shrink-0 gap-1 px-3"
           aria-label="Open all filters"
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
@@ -826,7 +824,7 @@ export default function SearchFilters({
             variant="ghost"
             size="sm"
             onClick={clearAll}
-            className="ml-1 h-auto px-0 py-0 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
+            className="srch-clear ml-1 px-2 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
           >
             Clear all
           </Button>
@@ -850,7 +848,7 @@ export default function SearchFilters({
             variant="ghost"
             size="sm"
             onClick={clearAll}
-            className="ml-1 h-auto shrink-0 px-0 py-0 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
+            className="srch-clear ml-1 shrink-0 px-2 text-xs text-muted-foreground underline-offset-2 hover:underline hover:bg-transparent"
           >
             Clear all
           </Button>
