@@ -45,6 +45,9 @@ export type ResortCourseSpecs = {
   slope?: number | null
   tees?: string | null
   turf?: string | null
+  /** Where the bunker sand comes from. In the configs, published nowhere until
+   *  the community page's course facts (2026-09-02). */
+  bunker_sand_source?: string | null
   season?: string | null
   summary?: string | null
 }

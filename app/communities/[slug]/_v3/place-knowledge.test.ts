@@ -31,9 +31,11 @@ describe('master-plan belonging Quiet', () => {
       contactHref: '/contact',
       amenityPosts: {},
     })
+    // The HOA is a FACT row now, not a sentence: the community configs hold it
+    // as a number and it was being written out as prose (2026-09-02).
     const first = items[0]
-    expect(first && 'term' in first && first.kind === 'prose' ? first.term : null).toBe('Master HOA')
-    expect(first && 'body' in first ? first.body : null).toMatch(/\$1,464 a year/)
+    expect(first && first.kind === 'fact' ? first.term : null).toBe('Master HOA')
+    expect(first && first.kind === 'fact' ? first.value : null).toBe('$1,464 a year')
   })
 
   // D103 (2026-08-27): a measured HOA median (live member listings) outranks
@@ -75,9 +77,11 @@ describe('master-plan belonging Quiet', () => {
       },
     })
     const first = items[0]
-    expect(first && 'term' in first && first.kind === 'prose' ? first.term : null).toBe('HOA (measured)')
-    expect(first && 'body' in first ? first.body : null).toMatch(/\$2,052 a year/)
-    expect(first && 'body' in first ? first.body : null).toMatch(/median of the 6 current listings that report dues/)
+    expect(first && first.kind === 'fact' ? first.term : null).toBe('HOA (measured)')
+    expect(first && first.kind === 'fact' ? first.value : null).toBe('$2,052 a year')
+    expect(first && first.kind === 'fact' ? first.detail : null).toMatch(
+      /median of the 6 current listings that report dues/,
+    )
   })
 
   it('explains multi-name filing as prose and carries no subdivision doors', () => {
@@ -104,5 +108,40 @@ describe('master-plan belonging Quiet', () => {
     expect(terms).toContain('Subdivisions in Tetherow')
     const hrefs = items.flatMap((item) => ('href' in item ? [item.href] : []))
     expect(hrefs.filter((h) => typeof h === 'string' && h.startsWith('/subdivisions/'))).toEqual([])
+  })
+
+  // The authored story is LAST and folded (2026-09-02). It used to open the
+  // section, which is how #belonging became a 2,974px essay above every figure.
+  // Folding is not cutting: the paragraphs are in the item and in the DOM.
+  it('puts the about paragraphs in one fold at the end, with every paragraph kept', () => {
+    const items = buildPlaceKnowledge({
+      name: 'Tetherow',
+      city: 'Bend',
+      aboutParagraphs: ['One about Tetherow.', 'Two about Tetherow.'],
+      content: null,
+      registry: null,
+      schoolDistrictName: null,
+      schoolDistrictSlug: null,
+      isResort: false,
+      countIsAliasAware: false,
+      contactHref: '/contact',
+      amenityPosts: {},
+    })
+    const folds = items.filter((item) => item.kind === 'fold')
+    expect(folds).toHaveLength(1)
+    const fold = folds[0]
+    expect(fold && fold.kind === 'fold' ? fold.term : null).toBe('More about Tetherow')
+    expect(fold && fold.kind === 'fold' ? fold.body : null).toEqual([
+      'One about Tetherow.',
+      'Two about Tetherow.',
+    ])
+    // Last, so the figures above it are what the section leads with.
+    expect(items.at(-1)).toBe(fold)
+    // And nowhere else: the paragraphs are not also printed above.
+    const prose = items.filter((item) => item.kind === 'prose')
+    for (const item of prose) {
+      const body = item.kind === 'prose' ? item.body : ''
+      expect(String(body)).not.toContain('One about Tetherow.')
+    }
   })
 })

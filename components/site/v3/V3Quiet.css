@@ -159,3 +159,122 @@
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
 }
+
+/* --- Fact rows -------------------------------------------------------------
+   A label and its figure, and the figure drawn as a length when the caller
+   supplies a share. These replaced `·`-joined prose: the community pages hold
+   drive times as {minutes, destination} and membership tiers as {name, price,
+   waitlist_status}, and both were being written out as sentences.
+
+   The bar is a comparison inside one set, so it sits UNDER the pair at full
+   width rather than in a value column — a 13-row set of drive times reads as a
+   small chart that way and as a ragged column the other. */
+.v3-quiet__item--fact {
+  padding: var(--v3-space-xs) 0;
+}
+
+.v3-quiet__factpair {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  margin: 0;
+}
+
+.v3-quiet__factterm {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-quiet__factvalue {
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  text-align: right;
+}
+
+.v3-quiet__factfigure {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body);
+  white-space: nowrap;
+}
+
+.v3-quiet__factdetail {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.v3-quiet__factbar {
+  margin-top: var(--v3-space-3xs);
+  height: 2px;
+  background: var(--v3-hairline);
+}
+
+.v3-quiet__factbar > span {
+  display: block;
+  height: 100%;
+  background: var(--v3-navy);
+}
+
+/* --- Chip sets -------------------------------------------------------------
+   A named set of short labels. Amenities in a category and builders were
+   `·`-joined sentences; a set reads as a set. */
+.v3-quiet__chipset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-2xs);
+  margin: var(--v3-space-3xs) 0 0;
+}
+
+.v3-quiet__chip {
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  background: var(--v3-wash);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* --- Fold rows -------------------------------------------------------------
+   A passage the reader opens. The native disclosure, like the footer sitemap:
+   no client JS, works before hydration, and the content is in the DOM for a
+   crawler whether or not it is open.
+
+   The chevron matches V3Atlas and the footer — closed points RIGHT, open points
+   DOWN — so "points at what you have not seen" means the same thing everywhere.
+   The count is the reason a fold is honest here: it says what is inside. */
+.v3-quiet__item--fold {
+  padding: var(--v3-space-xs) 0;
+}
+
+.v3-quiet__foldsummary {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-quiet__foldsummary::-webkit-details-marker {
+  display: none;
+}
+
+.v3-quiet__foldcount {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.v3-quiet__foldsummary::after {
+  content: '›';
+  margin-left: auto;
+  color: var(--v3-ink-muted);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-quiet__fold[open] > .v3-quiet__foldsummary::after {
+  transform: rotate(90deg);
+}

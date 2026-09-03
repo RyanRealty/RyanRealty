@@ -95,7 +95,68 @@ export type V3QuietProse = {
   id?: string
 }
 
-export type V3QuietItem = V3QuietLink | V3QuietProse
+/**
+ * A measured pair: a label and its figure. The row a `·`-joined sentence was
+ * standing in for.
+ *
+ * WHY THIS EXISTS. The community pages hold fully structured data — an HOA
+ * annual, drive times as `{minutes, destination}`, membership tiers as
+ * `{name, price, waitlist_status}`, course specs — and every one of them was
+ * being join(' · ')'d into a paragraph, which is how `#belonging` became a
+ * 2,974px essay of facts nobody can scan or compare. A fact row keeps the
+ * structure the data already has.
+ *
+ * `weight` draws the value as a length beside it. It is a SHARE, 0 to 1,
+ * computed by the caller from the same numbers it formatted — the primitive
+ * never does arithmetic on a figure it could then disagree with the trace
+ * about, which is the rule V3Ledger's bar encode already follows.
+ */
+export type V3QuietFact = {
+  kind: 'fact'
+  /** The label. Left column. */
+  term: string
+  /** The figure, already formatted by the caller through lib/format. */
+  value: string
+  /** A second, quieter line under the value: a basis, a caveat, a status. */
+  detail?: string
+  /** 0..1 share of the row set's largest. Out of range draws nothing. */
+  weight?: number
+  id?: string
+}
+
+/**
+ * A named set of short labels — amenities in a category, builders, the
+ * subdivisions inside a place. Not doors and not figures: a list whose shape is
+ * "how many, and which", which reads as a set and not as a sentence.
+ */
+export type V3QuietChips = {
+  kind: 'chips'
+  /** What the set is. */
+  term: string
+  /** The labels, in the caller's order. Blank entries are dropped. */
+  labels: readonly string[]
+  id?: string
+}
+
+/**
+ * A passage the reader opens. The same native disclosure the footer sitemap and
+ * the Atlas source note use — no client JS, works before hydration, and the
+ * summary carries a word count so the reader knows what they are opening.
+ *
+ * It exists because a place page's authored story is five or six paragraphs and
+ * a section cannot both lead with its figures and print an essay above them. A
+ * look rule may not delete content; it may decide what is open by default.
+ */
+export type V3QuietFold = {
+  kind: 'fold'
+  /** The summary line. What the reader is opening. */
+  term: string
+  /** The paragraphs inside. One string is one paragraph. */
+  body: string | readonly string[]
+  id?: string
+}
+
+export type V3QuietItem = V3QuietLink | V3QuietProse | V3QuietFact | V3QuietChips | V3QuietFold
 
 /**
  * A Quiet block is named once. Either it shows a title, and that title is the
@@ -160,6 +221,16 @@ function paragraphs(body: V3QuietProse['body']): string[] {
 type RenderableItem =
   | { kind: 'link'; label: string; href: string; id?: string }
   | { kind: 'prose'; term: string | undefined; body: string[]; id?: string }
+  | {
+      kind: 'fact'
+      term: string
+      value: string
+      detail: string | undefined
+      weight: number | undefined
+      id?: string
+    }
+  | { kind: 'chips'; term: string; labels: string[]; id?: string }
+  | { kind: 'fold'; term: string; body: string[]; id?: string }
 
 /**
  * Drops what cannot be rendered honestly: a link with no label would ship an
@@ -181,6 +252,43 @@ function toRenderable(items: readonly V3QuietItem[]): RenderableItem[] {
       const body = paragraphs(item.body)
       if (body.length === 0) continue
       out.push({ kind: 'prose', term: text(item.term), body, id: text(item.id) })
+      continue
+    }
+
+    if (item.kind === 'fact') {
+      const term = text(item.term)
+      const value = text(item.value)
+      // A fact is the pair. Half of one is a dangling label or a naked number.
+      if (!term || !value) continue
+      out.push({
+        kind: 'fact',
+        term,
+        value,
+        detail: text(item.detail),
+        // Out of range draws nothing rather than clamping: a share above 1 is a
+        // caller bug, and a bar silently pinned to full width hides it.
+        weight:
+          typeof item.weight === 'number' && item.weight >= 0 && item.weight <= 1
+            ? item.weight
+            : undefined,
+        id: text(item.id),
+      })
+      continue
+    }
+
+    if (item.kind === 'fold') {
+      const term = text(item.term)
+      const body = paragraphs(item.body)
+      if (!term || body.length === 0) continue
+      out.push({ kind: 'fold', term, body, id: text(item.id) })
+      continue
+    }
+
+    if (item.kind === 'chips') {
+      const term = text(item.term)
+      const labels = item.labels.map((l) => text(l)).filter((l): l is string => !!l)
+      if (!term || labels.length === 0) continue
+      out.push({ kind: 'chips', term, labels, id: text(item.id) })
       continue
     }
 
@@ -281,6 +389,66 @@ export function V3Quiet({
                     →
                   </span>
                 </Link>
+              </li>
+            ) : item.kind === 'fact' ? (
+              <li
+                key={item.id ?? `fact-${index}`}
+                id={item.id}
+                className="v3-quiet__item v3-quiet__item--fact"
+              >
+                <dl className="v3-quiet__factpair">
+                  <dt className="v3-quiet__factterm">{item.term}</dt>
+                  <dd className="v3-quiet__factvalue">
+                    <span className="v3-quiet__factfigure">{item.value}</span>
+                    {item.detail ? (
+                      <span className="v3-quiet__factdetail">{item.detail}</span>
+                    ) : null}
+                  </dd>
+                </dl>
+                {item.weight == null ? null : (
+                  <div className="v3-quiet__factbar" aria-hidden="true">
+                    <span style={{ width: `${(item.weight * 100).toFixed(1)}%` }} />
+                  </div>
+                )}
+              </li>
+            ) : item.kind === 'fold' ? (
+              <li
+                key={item.id ?? `fold-${index}`}
+                id={item.id}
+                className="v3-quiet__item v3-quiet__item--fold"
+              >
+                <details className="v3-quiet__fold">
+                  <summary className="v3-quiet__foldsummary">
+                    <span>{item.term}</span>
+                    <span className="v3-quiet__foldcount">
+                      {item.body.length === 1 ? '1 paragraph' : `${item.body.length} paragraphs`}
+                    </span>
+                  </summary>
+                  <div className="v3-quiet__body">
+                    {item.body.map((line, lineIndex) => (
+                      <p className="v3-quiet__para" key={lineIndex}>
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              </li>
+            ) : item.kind === 'chips' ? (
+              <li
+                key={item.id ?? `chips-${index}`}
+                id={item.id}
+                className="v3-quiet__item v3-quiet__item--chips"
+              >
+                <dl className="v3-quiet__pair">
+                  <dt className="v3-quiet__term">{item.term}</dt>
+                  <dd className="v3-quiet__chipset">
+                    {item.labels.map((label) => (
+                      <span className="v3-quiet__chip" key={label}>
+                        {label}
+                      </span>
+                    ))}
+                  </dd>
+                </dl>
               </li>
             ) : (
               <li

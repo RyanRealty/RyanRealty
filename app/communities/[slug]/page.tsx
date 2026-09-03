@@ -607,11 +607,17 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       ? richContent.aboutProse
       : [community.description ?? registryEntry?.description ?? ''].filter((p): p is string => Boolean(p && p.trim())))
   const faceAbout = firstAboutParagraph(aboutParagraphs)
+  /**
+   * The first paragraph is already on the first screen (`faceAbout`), so
+   * #belonging takes the rest. It was taking all of them, which printed that
+   * paragraph twice on one page — duplicated to the reader and to a crawler.
+   */
+  const belongingAbout = aboutParagraphs.filter((p) => p.trim() && p.trim() !== faceAbout)
 
   const knowledgeItems = buildPlaceKnowledge({
     name: publicName,
     city: cityName,
-    aboutParagraphs: aboutParagraphs,
+    aboutParagraphs: belongingAbout,
     content: richContent,
     registry: registryEntry ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,

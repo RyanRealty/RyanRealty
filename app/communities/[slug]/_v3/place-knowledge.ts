@@ -117,38 +117,57 @@ export function buildPlaceKnowledge(input: {
   })
   if (hoa) {
     items.push({
-      kind: 'prose',
+      kind: 'fact',
       term: hoa.kind === 'measured' ? 'HOA (measured)' : hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
-      body:
+      value: `$${hoa.annual.toLocaleString('en-US')} a year`,
+      detail:
         hoa.kind === 'measured'
-          ? `$${hoa.annual.toLocaleString('en-US')} a year, the ${hoa.basis}.`
+          ? hoa.basis
           : hoa.kind === 'master'
-            ? `$${hoa.annual.toLocaleString('en-US')} a year. Membership is separate from the home.`
-            : `$${hoa.annual.toLocaleString('en-US')} a year.`,
+            ? 'membership separate'
+            : undefined,
     })
   }
 
-  for (const paragraph of input.aboutParagraphs) {
-    if (paragraph.trim().length > 0) items.push({ kind: 'prose', body: paragraph })
+  // At a glance was four facts joined with ` · ` into one sentence. They are
+  // four facts.
+  if (content?.founded) items.push({ kind: 'fact', term: 'Founded', value: String(content.founded) })
+  if (content?.acres) {
+    items.push({ kind: 'fact', term: 'Acres', value: content.acres.toLocaleString('en-US') })
   }
-
-  const glance: string[] = []
-  if (content?.founded) glance.push(`Founded ${String(content.founded)}`)
-  if (content?.acres) glance.push(`${content.acres.toLocaleString('en-US')} acres`)
-  if (content?.architect) glance.push(`Course architect ${content.architect}`)
+  if (content?.architect) {
+    items.push({ kind: 'fact', term: 'Course architect', value: content.architect })
+  }
   const topRanking = content?.courseRankings?.[0]
-  if (topRanking) glance.push(`${topRanking.rank} ${topRanking.publication}`)
-  items.push(...prose('At a glance', glance.join(' · ')))
+  if (topRanking) {
+    items.push({ kind: 'fact', term: 'Ranked', value: topRanking.rank, detail: topRanking.publication })
+  }
 
   const aliases = (registry?.subdivision_aliases ?? []).filter(
     (a) => a.toLowerCase().trim() !== name.toLowerCase().trim(),
   )
   items.push(...childPlatItems({ name, aliases, countIsAliasAware: input.countIsAliasAware }))
 
+  /**
+   * Drive times are `{minutes, destination}` and were being written out as
+   * "18 minutes to Bend · 25 minutes to Redmond Airport · ...". Nearest first,
+   * each drawn as a share of the longest, so the set reads as one comparison
+   * instead of a sentence. The share is computed here, beside the number it
+   * formats, so the primitive never does arithmetic on a published figure.
+   */
   const drives = (content?.driveTimes ?? [])
     .filter((d) => Number.isFinite(d.minutes) && d.destination)
-    .map((d) => `${d.minutes} minutes to ${d.destination}${d.note ? ` (${d.note})` : ''}`)
-  items.push(...prose('Drive times', drives.join(' · ')))
+    .sort((a, b) => a.minutes - b.minutes)
+  const longestDrive = drives.reduce((max, d) => Math.max(max, d.minutes), 0)
+  for (const drive of drives) {
+    items.push({
+      kind: 'fact',
+      term: drive.destination,
+      value: `${drive.minutes} min`,
+      detail: drive.note ?? undefined,
+      ...(longestDrive > 0 ? { weight: drive.minutes / longestDrive } : {}),
+    })
+  }
 
   const byCategory = new Map<string, string[]>()
   for (const amenity of content?.amenities ?? []) {
@@ -160,7 +179,7 @@ export function buildPlaceKnowledge(input: {
     byCategory.set(category, list)
   }
   for (const [category, names] of byCategory) {
-    items.push(...prose(category, names.join(' · ')))
+    items.push({ kind: 'chips', term: category, labels: names })
   }
 
   const seenPost = new Set<string>()
@@ -173,26 +192,47 @@ export function buildPlaceKnowledge(input: {
 
   const specs = content?.courseSpecs
   if (specs) {
-    const line: string[] = []
-    if (specs.par) line.push(`Par ${specs.par}`)
-    if (specs.yardage) line.push(`${specs.yardage.toLocaleString('en-US')} yards`)
-    if (specs.rating) line.push(`Rating ${specs.rating}`)
-    if (specs.slope) line.push(`Slope ${specs.slope}`)
-    if (specs.season) line.push(`Season ${specs.season}`)
-    items.push(...prose('The course', [specs.summary ?? '', line.join(' · ')].filter(Boolean).join(' ')))
+    // The summary is prose because it is prose. The specs are figures and were
+    // being appended to the end of that paragraph. Three of them — the tee set,
+    // the turf blend and where the bunker sand comes from — were in the config
+    // and published nowhere, and they are the kind of thing no other page about
+    // this course carries.
+    items.push(...prose('The course', specs.summary ?? ''))
+    if (specs.par) items.push({ kind: 'fact', term: 'Par', value: String(specs.par) })
+    if (specs.yardage) {
+      items.push({ kind: 'fact', term: 'Yardage', value: specs.yardage.toLocaleString('en-US') })
+    }
+    if (specs.rating) items.push({ kind: 'fact', term: 'Course rating', value: String(specs.rating) })
+    if (specs.slope) items.push({ kind: 'fact', term: 'Slope', value: String(specs.slope) })
+    if (specs.tees) items.push({ kind: 'fact', term: 'Tees', value: String(specs.tees) })
+    if (specs.turf) items.push({ kind: 'fact', term: 'Turf', value: String(specs.turf) })
+    if (specs.bunker_sand_source) {
+      items.push({ kind: 'fact', term: 'Bunker sand', value: String(specs.bunker_sand_source) })
+    }
+    if (specs.season) items.push({ kind: 'fact', term: 'Season', value: String(specs.season) })
   }
 
-  const tiers = (content?.membershipTiers ?? [])
-    .map((tier) => {
-      const label = String(tier.name ?? tier.tier ?? tier.label ?? '').trim()
-      if (!label) return ''
-      const rawPrice = tier.price == null || tier.price === '' ? '' : String(tier.price).trim()
-      const price = rawPrice && !/[\u2014\u2013]/.test(rawPrice) ? ` ${rawPrice}` : ''
-      const wait = tier.waitlist_status ? ` (${tier.waitlist_status})` : ''
-      return `${label}${price}${wait}`
+  /**
+   * A membership tier is a name, a price and a waitlist status — three columns,
+   * previously "Golf $95,000 (closed) · Social $12,000 (open) · ..." in one
+   * paragraph. A tier whose price is an em or en dash carries no price, which is
+   * how the configs record "on application"; the row then prints the status
+   * alone rather than a dash pretending to be a figure.
+   */
+  for (const tier of content?.membershipTiers ?? []) {
+    const label = String(tier.name ?? tier.tier ?? tier.label ?? '').trim()
+    if (!label) continue
+    const rawPrice = tier.price == null || tier.price === '' ? '' : String(tier.price).trim()
+    const price = rawPrice && !/[\u2014\u2013]/.test(rawPrice) ? rawPrice : ''
+    const status = tier.waitlist_status ? String(tier.waitlist_status).trim() : ''
+    if (!price && !status) continue
+    items.push({
+      kind: 'fact',
+      term: label,
+      value: price || status,
+      detail: price && status ? status : undefined,
     })
-    .filter(Boolean)
-  items.push(...prose('Membership', tiers.join(' · ')))
+  }
   if (content?.membershipOfficePhone) {
     items.push(...prose('Membership office', content.membershipOfficePhone))
   }
@@ -200,7 +240,7 @@ export function buildPlaceKnowledge(input: {
   const builders = (content?.builders ?? [])
     .map((b) => String(b.name ?? '').trim())
     .filter(Boolean)
-  items.push(...prose('Builders', builders.join(' · ')))
+  if (builders.length > 0) items.push({ kind: 'chips', term: 'Builders', labels: builders })
 
   if (input.schoolDistrictName) {
     items.push({
@@ -214,6 +254,25 @@ export function buildPlaceKnowledge(input: {
         href: `/schools/${input.schoolDistrictSlug}`,
       })
     }
+  }
+
+  /**
+   * The authored story, last and folded.
+   *
+   * It used to open this section — five or six paragraphs above every figure —
+   * which is how #belonging became a 2,974px essay and why a reader could not
+   * find the HOA or the drive times without reading it first. The section now
+   * leads with what belonging costs and what the place is, and the story is one
+   * row the reader opens. Nothing is cut: the paragraphs are in the DOM for a
+   * crawler whether or not the disclosure is open, and the first of them is
+   * already on the page's first screen.
+   */
+  if (input.aboutParagraphs.length > 0) {
+    items.push({
+      kind: 'fold',
+      term: `More about ${name}`,
+      body: [...input.aboutParagraphs],
+    })
   }
 
   if (input.isResort) {

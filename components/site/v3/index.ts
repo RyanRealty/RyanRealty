@@ -252,7 +252,15 @@ export type { V3Door, V3DoorsProps } from './V3Doors'
 
 export { V3Quiet } from './V3Quiet'
 
-export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Quiet'
+export type {
+  V3QuietProps,
+  V3QuietItem,
+  V3QuietLink,
+  V3QuietProse,
+  V3QuietFact,
+  V3QuietChips,
+  V3QuietFold,
+} from './V3Quiet'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 8 — ANSWERS: a question set the reader opens                        */
