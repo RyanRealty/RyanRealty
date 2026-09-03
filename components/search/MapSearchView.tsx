@@ -283,6 +283,11 @@ export type MapSearchViewProps = {
   lockPlace?: boolean
   /** listingKey → upcoming open-house badge label. */
   openHouseLabels?: Record<string, string>
+  /**
+   * The living atlas on the page is the map. Do not mount Google. List of
+   * homes only — zoom, listing clicks, and place jumps live on V3Atlas.
+   */
+  listOnly?: boolean
 }
 
 export default function MapSearchView({
@@ -302,6 +307,7 @@ export default function MapSearchView({
   initialDegraded = false,
   lockPlace = false,
   openHouseLabels = {},
+  listOnly = false,
 }: MapSearchViewProps) {
   // One initial shape set, whichever URL spelling delivered it: ?shapes=
   // (multi-shape) wins; a legacy ?poly= ring arrives as a single include
@@ -336,10 +342,14 @@ export default function MapSearchView({
   const [tour, setTour] = useState<VideoEmbed | null>(null)
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
   const [layoutView, setLayoutView] = useState<'list' | 'map' | 'split'>(
-    filters.view === 'list' || filters.view === 'map' || filters.view === 'split' ? filters.view : 'split',
+    listOnly
+      ? 'list'
+      : filters.view === 'list' || filters.view === 'map' || filters.view === 'split'
+        ? filters.view
+        : 'split',
   )
   const [mobileView, setMobileView] = useState<'list' | 'map'>(
-    filters.view === 'map' || filters.view === 'split' ? 'map' : 'list',
+    listOnly ? 'list' : filters.view === 'map' || filters.view === 'split' ? 'map' : 'list',
   )
   // Window the CARD list so the SSR payload + hydration cost stays small even
   // when the viewport returns hundreds of homes. The MAP still gets every pin
@@ -994,7 +1004,7 @@ export default function MapSearchView({
     </div>
   )
 
-  const mapPanel = (
+  const mapPanel = listOnly ? null : (
     <div className="relative h-full min-h-0 min-w-0 flex-1">
       <SearchMapClustered
         listings={mapListings}
@@ -1096,6 +1106,7 @@ export default function MapSearchView({
   return (
     <div className="map-search-shell flex min-h-0 flex-1 w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
       <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1">
+        {listOnly ? null : (
         <div className="map-search-views" role="radiogroup" aria-label="View">
           <button
             type="button"
@@ -1126,6 +1137,7 @@ export default function MapSearchView({
             List
           </button>
         </div>
+        )}
         <p className="srch-figure min-w-0 flex-1 truncate text-xs font-semibold text-foreground" aria-live="polite">
           {resultsDegraded ? 'Search delayed' : listCountPhrase}
         </p>
@@ -1136,6 +1148,7 @@ export default function MapSearchView({
           list and shows the canvas. Never double-render panels. */}
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Map — full-bleed under the list on mobile; flex-1 rail partner on desktop. */}
+        {listOnly ? null : (
         <div
           className={cn(
             'absolute inset-0 z-0 min-h-0 min-w-0 lg:static lg:relative lg:z-auto lg:order-2 lg:min-h-0 lg:flex-1',
@@ -1144,6 +1157,7 @@ export default function MapSearchView({
         >
           {mapPanel}
         </div>
+        )}
 
         {/* List rail / mobile list pane.
             List mode: covers the map so overlays cannot sit on the photo.

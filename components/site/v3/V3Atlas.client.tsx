@@ -38,6 +38,7 @@
  */
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   bboxOfRings,
@@ -52,6 +53,16 @@ import {
 } from '@/lib/geo/project-svg'
 import { recordFrame } from '@/lib/geo/record-frame'
 import { decodeBasemapFeature, type Basemap, type BasemapFeature } from '@/lib/geo/basemap'
+import {
+  ATLAS_CAM_HOME,
+  ATLAS_K_MAX,
+  ATLAS_K_MIN,
+  fitRect,
+  panBy,
+  screenToWorld,
+  zoomAt,
+  type AtlasCam,
+} from '@/lib/geo/atlas-camera'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
@@ -61,8 +72,10 @@ import './V3Atlas.css'
 /* -------------------------------------------------------------------------- */
 
 export type AtlasDot = {
-  /** Listing key — the React key. Dots are not doors; places are. */
+  /** Listing key — the React key. */
   k: string
+  /** Canonical listing URL. Absent on a closing with no public page. */
+  href?: string
   lat: number
   lng: number
   /** List price (close price for a sold dot) in dollars; null when withheld. */
@@ -267,6 +280,7 @@ export function V3Atlas({
   className,
 }: V3AtlasProps) {
   const uid = useId()
+  const router = useRouter()
   const Heading = headingLevel === 1 ? 'h1' : 'h2'
 
   /* Geometry: rings, label anchors, areas, projection — once per data set. */
@@ -434,6 +448,35 @@ export function V3Atlas({
     (x: number, y: number): readonly [number, number] => (view ? [view.ox + x * view.scale, view.oy + y * view.scale] : [0, 0]),
     [view],
   )
+
+  const [cam, setCam] = useState<AtlasCam>(ATLAS_CAM_HOME)
+  const camRef = useRef(cam)
+  camRef.current = cam
+  const dragRef = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+  const stageSize = view ? { w: view.w, h: view.h } : { w: 1, h: 1 }
+
+  const zoomToPlace = useCallback(
+    (shape: PlacedShape) => {
+      if (!view || !shape.bbox) return
+      const [x0, y0] = toPx(...proj.toXY(shape.bbox.minLon, shape.bbox.maxLat))
+      const [x1, y1] = toPx(...proj.toXY(shape.bbox.maxLon, shape.bbox.minLat))
+      setCam(fitRect({ x0: Math.min(x0, x1), y0: Math.min(y0, y1), x1: Math.max(x0, x1), y1: Math.max(y0, y1) }, view.w, view.h))
+    },
+    [view, toPx, proj],
+  )
+
+  useEffect(() => {
+    const el = stageRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const r = el.getBoundingClientRect()
+      const factor = e.deltaY < 0 ? 1.18 : 1 / 1.18
+      setCam((c) => zoomAt(c, e.clientX - r.left, e.clientY - r.top, factor, r.width, r.height))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [view?.w, view?.h])
 
   /* In view? The pulses only breathe while the reader can see them. */
   const sectionRef = useRef<HTMLElement>(null)
@@ -609,9 +652,9 @@ export function V3Atlas({
     // filter that leaves none, it pointed at nothing (TEAM-MATT-4).
     const how =
       drawnPlaces.length > 0
-        ? ' Tap a place for its numbers, or slide the price.'
+        ? ' Scroll to zoom. Tap a place to go there on the map, a mark to open the home.'
         : dots.length > 0
-          ? ' Point at a mark to read it, or slide the price.'
+          ? ' Scroll to zoom. Tap a mark to open the home.'
           : ' Switch a type back on, or slide the price.'
     const every = allTypesOn ? ' of every type' : ''
     if (closingsMap) {
@@ -657,17 +700,17 @@ export function V3Atlas({
   const REACH = 14
 
   const nearestDot = useCallback(
-    (px: number, py: number): number | null => {
+    (wx: number, wy: number, reach: number): number | null => {
       if (dotPx.length === 0) return null
       let best: number | null = null
-      let bestD = REACH * REACH
+      let bestD = reach * reach
       for (let i = 0; i < dotPx.length; i += 1) {
         const d = dots[i]
         if (!d || !isOn(d)) continue
         const p = dotPx[i]
         if (!p) continue
-        const dx = p[0] - px
-        const dy = p[1] - py
+        const dx = p[0] - wx
+        const dy = p[1] - wy
         const dd = dx * dx + dy * dy
         if (dd < bestD) {
           bestD = dd
@@ -679,17 +722,34 @@ export function V3Atlas({
     [dotPx, dots, isOn],
   )
 
+  const pointerOnStage = (e: { clientX: number; clientY: number }) => {
+    const el = stageRef.current
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { px: e.clientX - r.left, py: e.clientY - r.top }
+  }
+
   const onMove = useCallback(
     (e: React.PointerEvent) => {
-      const el = stageRef.current
-      if (!el) return
-      const r = el.getBoundingClientRect()
-      const px = e.clientX - r.left
-      const py = e.clientY - r.top
-      setPointer({ x: px, y: py })
-      setDotHit(nearestDot(px, py))
+      const at = pointerOnStage(e)
+      if (!at) return
+      const drag = dragRef.current
+      if (drag && e.buttons) {
+        const dx = at.px - drag.x
+        const dy = at.py - drag.y
+        if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true
+        if (drag.moved) {
+          setCam((c) => panBy(c, dx, dy, stageSize.w, stageSize.h))
+          drag.x = at.px
+          drag.y = at.py
+          return
+        }
+      }
+      setPointer({ x: at.px, y: at.py })
+      const [wx, wy] = screenToWorld(camRef.current, at.px, at.py)
+      setDotHit(nearestDot(wx, wy, REACH / camRef.current.k))
     },
-    [nearestDot],
+    [nearestDot, stageSize.w, stageSize.h],
   )
 
   const pin = useCallback(
@@ -700,8 +760,9 @@ export function V3Atlas({
           at ?? (pointer ? ([pointer.x, pointer.y] as const) : shape.anchor ? toPx(...proj.toXY(shape.anchor[0], shape.anchor[1])) : ([16, 16] as const))
         return { id: shape.id, at: where }
       })
+      zoomToPlace(shape)
     },
-    [pointer, toPx, proj],
+    [pointer, toPx, proj, zoomToPlace],
   )
 
   /* A chip pins its place from the place's own centre, not the last touch,
@@ -711,9 +772,10 @@ export function V3Atlas({
       const at = shape.anchor ? toPx(...proj.toXY(shape.anchor[0], shape.anchor[1])) : ([16, 16] as const)
       setHover(shape.id)
       pin(shape, at)
+      zoomToPlace(shape)
       stageRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     },
-    [pin, proj, toPx],
+    [pin, proj, toPx, zoomToPlace],
   )
 
   /* Every place as a door a thumb can hit: on a phone most silhouettes are
@@ -787,7 +849,11 @@ export function V3Atlas({
 
   /* Choropleth fill step, 0..4, by share of the strongest place. */
 
-  const cardAnchor = pinned ? pinned.at : pointer ? ([pointer.x, pointer.y] as const) : null
+  const cardAnchor = pinned
+    ? ([pinned.at[0] * cam.k + cam.x, pinned.at[1] * cam.k + cam.y] as const)
+    : pointer
+      ? ([pointer.x, pointer.y] as const)
+      : null
   const cardStyle =
     cardAnchor && view
       ? {
@@ -817,19 +883,27 @@ export function V3Atlas({
             : `listed ${d.age} ${d.age === 1 ? 'day' : 'days'} ago`
           : null
     const type = types.find((t) => t.key === d.t)?.label
-    return (
-      <p
-        className="v3-atlas__tip"
-        role="status"
-        style={{
-          left: Math.min(Math.max(p[0], 8), Math.max(8, view.w - 8)),
-          top: Math.max(0, p[1] - 12),
-        }}
-      >
+    const sx = p[0] * cam.k + cam.x
+    const sy = p[1] * cam.k + cam.y
+    const body = (
+      <>
         <span className="v3-atlas__tip-state">{state}</span>
         {d.p != null ? <span className="v3-atlas__tip-price">{fmtShort(d.p)}</span> : null}
         {type ? <span className="v3-atlas__tip-type">{type}</span> : null}
         {when ? <span className="v3-atlas__tip-type">{when}</span> : null}
+      </>
+    )
+    const style = {
+      left: Math.min(Math.max(sx, 8), Math.max(8, view.w - 8)),
+      top: Math.max(0, sy - 12),
+    }
+    return d.href ? (
+      <Link href={d.href} className="v3-atlas__tip" style={style}>
+        {body}
+      </Link>
+    ) : (
+      <p className="v3-atlas__tip" role="status" style={style}>
+        {body}
       </p>
     )
   })()
@@ -969,28 +1043,47 @@ export function V3Atlas({
                 ['--atlas-aspect' as string]: `${(proj.width / proj.height).toFixed(4)}`,
               }}
               onPointerMove={onMove}
-              /* A touch has no hover: a tap fired pointerdown and then
-                 pointerleave on lift, so the readout the whole fix was for
-                 flashed and vanished — 0 of 10 taps kept one (round six,
-                 LISTING-NOBOUNDARY-R6-1). A touch sets the readout and keeps
-                 it until the next tap; a mouse still clears on leave. */
+              /* Drag pans. A tap that did not move opens the listing under
+                 the mark, or the place. Wheel zoom is bound in an effect so
+                 it can preventDefault. */
               onPointerDown={(e) => {
-                if (e.pointerType === 'mouse') return
-                const el = stageRef.current
-                if (!el) return
-                const r = el.getBoundingClientRect()
-                const px = e.clientX - r.left
-                const py = e.clientY - r.top
-                setPointer({ x: px, y: py })
-                setDotHit(nearestDot(px, py))
+                if (e.button !== 0) return
+                const at = pointerOnStage(e)
+                if (!at) return
+                dragRef.current = { x: at.px, y: at.py, moved: false }
+                e.currentTarget.setPointerCapture(e.pointerId)
+                const [wx, wy] = screenToWorld(camRef.current, at.px, at.py)
+                setPointer({ x: at.px, y: at.py })
+                setDotHit(nearestDot(wx, wy, REACH / camRef.current.k))
+              }}
+              onPointerUp={(e) => {
+                const drag = dragRef.current
+                dragRef.current = null
+                if (drag?.moved) return
+                const at = pointerOnStage(e)
+                if (!at) return
+                const [wx, wy] = screenToWorld(camRef.current, at.px, at.py)
+                const hit = nearestDot(wx, wy, REACH / camRef.current.k)
+                const d = hit != null ? dots[hit] : null
+                if (d?.href) {
+                  router.push(d.href)
+                }
               }}
               onPointerLeave={(e) => {
+                if (dragRef.current) return
                 if (e.pointerType !== 'mouse') return
                 setHover(null)
                 setPointer(null)
                 setDotHit(null)
               }}
             >
+              <div
+                className="v3-atlas__world"
+                style={{
+                  transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.k})`,
+                  transformOrigin: '0 0',
+                }}
+              >
               <svg
                 className="v3-atlas__svg"
                 viewBox={`0 0 ${proj.width} ${proj.height}`}
@@ -1038,7 +1131,13 @@ export function V3Atlas({
                       d={s.d}
                       className={cn('v3-atlas__town', active === s.id && 'is-active')}
                       onPointerEnter={() => setHover(s.id)}
-                      onClick={() => pin(s)}
+                      onClick={(e) => {
+                        if (dotHit != null && dots[dotHit]?.href) {
+                          e.stopPropagation()
+                          return
+                        }
+                        pin(s)
+                      }}
                     />
                   ))}
                 </g>
@@ -1083,7 +1182,13 @@ export function V3Atlas({
                       focusable="false"
                       tabIndex={-1}
                       onPointerEnter={() => setHover(s.id)}
-                      onClick={() => pin(s)}
+                      onClick={(e) => {
+                        if (dotHit != null && dots[dotHit]?.href) {
+                          e.stopPropagation()
+                          return
+                        }
+                        pin(s)
+                      }}
                     />
                   ))}
                 </g>
@@ -1140,7 +1245,13 @@ export function V3Atlas({
                         placesRef.current?.querySelectorAll<SVGPathElement>('.v3-atlas__place')[next]?.focus()
                       }}
                       onPointerEnter={() => setHover(s.id)}
-                      onClick={() => pin(s)}
+                      onClick={(e) => {
+                        if (dotHit != null && dots[dotHit]?.href) {
+                          e.stopPropagation()
+                          return
+                        }
+                        pin(s)
+                      }}
                     />
                   ))}
                 </g>
@@ -1221,8 +1332,49 @@ export function V3Atlas({
                     })}
                 </div>
               ) : null}
+              </div>
 
               {tip}
+              {(
+                <div
+                  className="v3-atlas__zoom"
+                  role="group"
+                  aria-label="Map zoom"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="v3-atlas__zoom-btn"
+                    aria-label="Zoom in"
+                    disabled={cam.k >= ATLAS_K_MAX}
+                    onClick={() =>
+                      setCam((c) => zoomAt(c, stageSize.w / 2, stageSize.h / 2, 1.35, stageSize.w, stageSize.h))
+                    }
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className="v3-atlas__zoom-btn"
+                    aria-label="Zoom out"
+                    disabled={cam.k <= ATLAS_K_MIN}
+                    onClick={() =>
+                      setCam((c) => zoomAt(c, stageSize.w / 2, stageSize.h / 2, 1 / 1.35, stageSize.w, stageSize.h))
+                    }
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    className="v3-atlas__zoom-btn"
+                    aria-label="Reset map"
+                    disabled={cam.k === 1 && cam.x === 0 && cam.y === 0}
+                    onClick={() => setCam(ATLAS_CAM_HOME)}
+                  >
+                    1
+                  </button>
+                </div>
+              )}
             </div>
             {/* The card sits in the frame, not the stage: on a phone it drops
                 below the map in flow, because pinned over a 208px stage it

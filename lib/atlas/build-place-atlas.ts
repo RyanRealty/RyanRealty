@@ -163,6 +163,12 @@ export function atlasDotsFromTiles(tiles: readonly AtlasTile[], nowMs = Date.now
     return [
       {
         k: tile.listingKey,
+        href: listingDetailPath(
+          tile.listingKey,
+          { streetNumber: tile.streetNumber, streetName: tile.streetName, city: tile.city },
+          { city: tile.city, subdivision: tile.subdivisionName },
+          { mlsNumber: tile.listNumber },
+        ),
         lat: Number(tile.lat.toFixed(4)),
         lng: Number(tile.lng.toFixed(4)),
         p: raw != null && Number.isFinite(raw) && raw > 0 ? Math.round(raw) : null,
