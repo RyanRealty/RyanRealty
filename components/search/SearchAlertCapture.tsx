@@ -15,6 +15,7 @@ import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import { cn } from '@/lib/utils'
+import '@/components/search/search-ledger.css'
 import {
   buildGuestWatchFromFilters,
   clearGuestWatch, // hydration-safe: event/effect storage only
@@ -281,7 +282,7 @@ export function SearchAlertCapture({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild className="min-h-[length:var(--v3-tap)] shrink-0">
+            <Button asChild className="srch-tap shrink-0">
               <Link href={priorWatch.href}>See matching homes</Link>
             </Button>
             <Button
@@ -293,7 +294,7 @@ export function SearchAlertCapture({
                 setPriorWatch(null)
               }}
               aria-label="Dismiss watching reminder"
-              className="min-h-[length:var(--v3-tap)] min-w-[length:var(--v3-tap)] shrink-0 text-muted-foreground hover:text-foreground"
+              className="srch-tap shrink-0 text-muted-foreground hover:text-foreground"
             >
               <XMarkIcon className="h-4 w-4" aria-hidden />
             </Button>
@@ -358,7 +359,7 @@ export function SearchAlertCapture({
             variant="ghost"
             onClick={() => setExpanded(true)}
             aria-expanded={false}
-            className="min-h-[length:var(--v3-tap)]"
+            className="srch-tap"
           >
             Get listing alerts
           </Button>
@@ -424,7 +425,7 @@ export function SearchAlertCapture({
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             className={cn(
-              'min-h-[length:var(--v3-tap)] w-full sm:w-56',
+              'srch-tap w-full sm:w-56',
               isInline && 'sm:w-44',
             )}
             disabled={pending}
@@ -432,7 +433,7 @@ export function SearchAlertCapture({
           <Button
             type="submit"
             disabled={pending}
-            className="min-h-[length:var(--v3-tap)] shrink-0"
+            className="srch-tap shrink-0"
           >
             {pending ? 'Setting up...' : 'Get alerts'}
           </Button>
@@ -442,7 +443,7 @@ export function SearchAlertCapture({
             size="icon"
             onClick={() => setDismissed(true)}
             aria-label="Dismiss"
-            className="min-h-[length:var(--v3-tap)] min-w-[length:var(--v3-tap)] shrink-0 text-muted-foreground hover:text-foreground"
+            className="srch-tap shrink-0 text-muted-foreground hover:text-foreground"
           >
             <XMarkIcon className="h-4 w-4" aria-hidden />
           </Button>

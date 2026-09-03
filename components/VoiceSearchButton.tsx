@@ -6,6 +6,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Mic01Icon } from '@hugeicons/core-free-icons'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import '@/components/search/search-ledger.css'
 
 type Props = {
   onTranscript?: (text: string) => void
@@ -91,7 +92,7 @@ export default function VoiceSearchButton({ onTranscript, className }: Props) {
         size="icon"
         onClick={listening ? stopListening : startListening}
         className={cn(
-          'size-[length:var(--v3-tap)] min-h-[length:var(--v3-tap)] min-w-[length:var(--v3-tap)] shrink-0',
+          'srch-tap shrink-0',
           className,
         )}
         aria-label={listening ? 'Stop listening' : 'Search by voice'}

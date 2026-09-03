@@ -82,6 +82,12 @@
   min-height: var(--v3-tap, 44px);
 }
 
+/* G71 floor without arbitrary Tailwind (ci:design-tokens). */
+.srch-tap {
+  min-width: var(--v3-tap, 44px);
+  min-height: var(--v3-tap, 44px);
+}
+
 /* Count/summary line: working figures — Geist Mono digits via the register's
    numeral face, at the working text size. */
 .srch-count {
