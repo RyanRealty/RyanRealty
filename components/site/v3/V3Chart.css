@@ -727,6 +727,37 @@
   transform: translateX(calc(-100% - 10px));
 }
 
+/* The range plot's hover layer -------------------------------------------
+   Same layer, turned ninety degrees: the crosshair is a rule ACROSS the rows.
+   There is no floating tip here — the plot already prints every value at the
+   end of its stem — so the crosshair marks the row and the live region carries
+   the reading. The wrapper exists only to give the absolutely positioned layer
+   something to fill. */
+.v3 .v3-chart__rangewrap {
+  position: relative;
+}
+
+/* The rows alone. The hover layer fills THIS, not the whole range box, so a
+   pointer at a given height maps to the row actually under it. */
+.v3 .v3-chart__rangerows {
+  position: relative;
+}
+
+.v3 .v3-chart__rangewrap .v3-chart__hover {
+  /* A row is about 30px tall; a pointer reads by row, not by pixel. */
+  cursor: default;
+  touch-action: pan-y;
+}
+
+.v3 .v3-chart__crosshair--row {
+  top: auto;
+  bottom: auto;
+  left: 0;
+  right: 0;
+  width: auto;
+  height: 1px;
+}
+
 .v3 .v3-chart__tip-tick {
   margin: 0 0 var(--v3-space-3xs);
   color: var(--v3-ink-muted);

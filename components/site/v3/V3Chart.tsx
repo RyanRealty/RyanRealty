@@ -411,6 +411,31 @@ export function V3Chart({
           xTicks?.map((t) => ({ at: t.at, label: t.label })),
         )
       : { y: [], x: [] }
+  /* Hover ROWS: one stop per range row, positioned down the plot. The range
+     rows carried their reading in a native `title` only — no keyboard, no
+     touch, and a tooltip a pointer has to wait for. The layer below is the
+     same one the line charts use, turned ninety degrees, so a reader can walk
+     13 towns with the arrow keys and hear each one. */
+  const hoverRows: V3ChartHoverColumn[] =
+    plot && plot.kind === 'range' && hover !== false && plot.rows.length > 0
+      ? plot.rows.map((r, i) => ({
+          // Row centres, evenly spaced: the range plot lays its rows out in
+          // flow, so the nth of N sits at (n + 0.5) / N of the stack.
+          frac: (i + 0.5) / plot.rows.length,
+          tick: r.tick,
+          readings: [
+            {
+              // Unnamed on purpose: the tick above the tip already names the
+              // row, and a second copy reads as a stutter.
+              name: '',
+              label: r.clamped ? `${rangeReading(r)} — beyond the scale shown` : rangeReading(r),
+              frac: (i + 0.5) / plot.rows.length,
+              emphasis: false,
+            },
+          ],
+        }))
+      : []
+
   /* Hover columns: every series' reading at each plotted x, as fractions of
      the plot box, in x order. */
   const hoverColumns: V3ChartHoverColumn[] =
@@ -726,6 +751,10 @@ export function V3Chart({
       ) : null}
 
       {plot.kind === 'range' ? (
+        /* The visual stays aria-hidden and the hover layer carries the reading,
+           exactly as the line charts do: one tab stop for the whole plot, arrow
+           keys down the rows, a live region, and a tip that a finger can hold. */
+        <div className="v3-chart__rangewrap">
         <div
           className={cn(
             'v3-chart__range',
@@ -759,6 +788,10 @@ export function V3Chart({
               ) : null}
             </div>
           ) : null}
+          {/* The rows get their own box so the hover layer can sit over exactly
+              them. Sized to the whole range container it was off by the height
+              of the band header above, and the crosshair pointed a row high. */}
+          <div className="v3-chart__rangerows">
           {plot.rows.map((r) => {
             // The reading sits on the value dot's outer side: right of the
             // stem when the value is the right end, left when it is the left
@@ -818,6 +851,11 @@ export function V3Chart({
               </div>
             )
           })}
+          {hoverRows.length > 0 ? (
+            <V3ChartHover columns={hoverRows} label={caption} axis="y" />
+          ) : null}
+          </div>
+        </div>
         </div>
       ) : null}
 

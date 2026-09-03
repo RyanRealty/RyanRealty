@@ -385,3 +385,54 @@ describe('V3Chart range sample size', () => {
     expect(html).not.toContain('n 9 (7)')
   })
 })
+
+/**
+ * The range plot's reading layer.
+ *
+ * Those rows shipped with `aria-hidden="true"` over the whole plot and a native
+ * `title` as their only reading: nothing for a keyboard, nothing for a finger,
+ * and a tooltip a pointer has to wait for. 57 rows across nine call sites could
+ * not be interrogated at all — TASTE's "a picture of a chart". The layer below
+ * is the same one the line charts already use, turned ninety degrees.
+ */
+describe('V3Chart range reading layer', () => {
+  const render = () =>
+    renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median days to pending by town'),
+        kind: 'range',
+        rows: ROWS,
+      }),
+    )
+
+  it('mounts the hover layer on the rows, not on the whole plot', () => {
+    const html = render()
+    expect(html).toContain('v3-chart__rangerows')
+    // Sized to the whole range box it sat under the band header too, and a
+    // pointer at a given height read a row above the one it was over.
+    const rows = html.indexOf('v3-chart__rangerows')
+    const layer = html.indexOf('v3-chart__hover')
+    expect(rows).toBeGreaterThan(-1)
+    expect(layer).toBeGreaterThan(rows)
+  })
+
+  it('gives the whole plot ONE tab stop, not one per row', () => {
+    const html = render()
+    expect((html.match(/tabindex="0"/gi) ?? []).length).toBe(1)
+  })
+
+  it('tells the reader the rows run downward', () => {
+    expect(render()).toMatch(/Move down the rows or use the arrow keys/)
+  })
+
+  it('keeps a live region so the reading is announced, not just drawn', () => {
+    expect(render()).toContain('aria-live="polite"')
+  })
+
+  it('leaves the drawn plot aria-hidden — the layer is the accessible copy', () => {
+    // Two copies of one value read twice. The visual stays decorative and the
+    // hover layer plus the reading list carry the meaning.
+    expect(render()).toContain('aria-hidden="true"')
+    expect(render()).toContain('<li>Sisters, 10 days</li>')
+  })
+})
