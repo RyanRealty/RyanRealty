@@ -791,9 +791,17 @@ export function V3Atlas({
             // of zeros is brokerage chrome on a personal page (C5).
             .filter((r) => !closingsMap || r.n > 0)
             .sort((a, b) => b.n - a.n || a.shape.name.localeCompare(b.shape.name))
-            // A rail, not a list: the twenty-four fullest places (E5).
-            .slice(0, 24),
-    [places, regionStats, incomplete, closingsMap],
+            /* A rail, not a list: the fullest places (E5) — but never fewer
+               than the map DRAWS.
+               The cap was a flat 24 while the homepage draws 27, so the three
+               with the fewest listings — Crosswater, Vandevert Ranch, Awbrey
+               Glen — were rendered as buttons with no reachable target
+               anywhere. They are also three of the four smallest polygons on
+               the map (5x11, 5x9, 5x8 at 375), so the chip was the only thumb
+               could ever reach them by. Every chip measures 100x44; a drawn
+               place without one is a promise the page cannot keep. */
+            .slice(0, Math.max(24, drawnPlaces.length)),
+    [places, regionStats, incomplete, closingsMap, drawnPlaces.length],
   )
 
   /* Escape, a click on empty map, or a click outside the stage release a
