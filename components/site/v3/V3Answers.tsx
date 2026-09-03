@@ -114,9 +114,19 @@ export function splitQuietItems(
   const questions: V3Answer[] = []
   const doors: V3AnswersDoor[] = []
   const prose: { body: string | readonly string[] }[] = []
+  /**
+   * One door per destination. Two callers can reach the same page — the
+   * community page pushed "Value my home" after buildExploreEdges had already
+   * added it, so /communities/tetherow shipped the exit twice and React warned
+   * about two children with the same key, since a door is keyed by its href.
+   * The first wins: the builder's label is the considered one.
+   */
+  const seen = new Set<string>()
   for (const item of items) {
     if (!item || typeof item !== 'object') continue
     if (typeof item.href === 'string' && typeof item.label === 'string') {
+      if (seen.has(item.href)) continue
+      seen.add(item.href)
       doors.push({ label: item.label, href: item.href })
       continue
     }

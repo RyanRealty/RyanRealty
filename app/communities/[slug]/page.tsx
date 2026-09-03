@@ -646,7 +646,9 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     golfCourses: GOLF_COURSES.filter((c) => c.communitySlug === slug),
     resortItems: resortQuietItems(),
   })
-  exploreItems.push({ label: 'Value my home', href: valuationHref(`/communities/${slug}`) })
+  // buildExploreEdges already adds this door (community-figures.ts). Pushing it
+  // again shipped the exit twice; splitQuietItems now dedupes by href as well,
+  // so this is belt and braces on a defect that reached production once.
 
   // The community's own course, when the registry names one that has a map.
   // Committed geometry, not a query; the catch is the prerender contract.
