@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { BROKERS } from '@/lib/brand/contact'
 import { aboutFaceFromBroker, aboutPhoneE164 } from '@/app/about/_v3/about-faces'
+import { TEAM_FAQ_ITEMS } from './team-constants'
 
 const PAGE = readFileSync('app/team/page.tsx', 'utf8')
-const FOLD = PAGE.slice(PAGE.indexOf('return ('), PAGE.indexOf('<V3Ledger'))
+const FOLD = PAGE.slice(PAGE.indexOf('return ('), PAGE.indexOf('<V3Proof'))
 
 describe('team fold', () => {
   it('opens on the About faces row, not a Quiet graf', () => {
@@ -20,7 +21,27 @@ describe('team fold', () => {
 
   it('keeps seller off the first screen', () => {
     expect(PAGE).toContain("valuationHref('/team')")
-    expect(PAGE).toContain("...faqItems")
+    expect(PAGE).toContain('<V3Answers')
+    expect(PAGE).toContain('faqDoors')
+  })
+})
+
+describe('team roster', () => {
+  it('does not print a second broker ledger under the faces', () => {
+    expect(PAGE).not.toContain('V3Ledger')
+    expect(PAGE).not.toContain('brokerLedgerRow')
+    expect(PAGE).not.toContain('id="brokers"')
+  })
+})
+
+describe('team FAQ', () => {
+  it('renders TEAM_FAQ_ITEMS as V3Answers, not a Quiet prose wall', () => {
+    expect(PAGE).toContain('TEAM_FAQ_ITEMS')
+    expect(PAGE).toContain('V3Answers')
+    expect(PAGE).not.toContain("id=\"reviews-faq\"")
+    expect(PAGE).not.toMatch(/kind: 'prose' as const,\s*term: item\.question/)
+    expect(TEAM_FAQ_ITEMS.length).toBe(4)
+    expect(PAGE).toContain('type: \'faqPage\'')
   })
 })
 

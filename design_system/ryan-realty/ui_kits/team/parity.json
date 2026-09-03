@@ -2,7 +2,7 @@
   "route": "app/team/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic brokerage team pages: real broker names, Oregon licenses, transparent-PNG headshots, verbatim Google reviews, and a door to each /team/[slug] profile.",
-  "note": "Look 2026-08-14: Team = faces. Order is Breadcrumb, AboutFaces (live broker cutouts reused from about/_v3, compact H1, name door, Call and Text on the face row from the live broker phone), Ledger (licenses, Matt-Rebecca-Paul rank), Quiet (verbatim reviews + FAQ + edges), Footer. PUBLIC_UI.md opens About-family on Quiet + Sheet. Faces first. The family's Sheet lives on /contact and /team/[slug]. Seller lives on Sell. The next tap is the name or the number. Reviews: getReviews(24) sorted so non-Matt-named reviews surface first (design-audit #156), TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "note": "Live 2026-09-03. Index order is Breadcrumb, AboutFaces (live broker cutouts reused from about/_v3, compact H1, name door, Call and Text on the face row), V3Proof (newest four, record off — the strip of four must not sit beside a figure that says twenty-five), V3Answers (TEAM_FAQ_ITEMS as native disclosures, remaining edges in the left rail), Footer. The faces ARE the roster. A V3Ledger of the same three people was a second roster and is gone. The FAQ is no longer a Quiet prose wall. PUBLIC_UI.md opens About-family on Quiet + Sheet. The family's Sheet lives on /contact and /team/[slug]. Seller lives on Sell. Reviews: getReviews(24) newest four, TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,17 +16,17 @@
     },
     {
       "name": "AboutFaces",
-      "section": "First viewport. Same AboutFaces row as /about. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts. The first face fills the 390 fold. Name is the door to /team/[slug]. Call and text sit on that row from the live broker phone. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no card graf, no seller ask.",
+      "section": "First viewport. Same AboutFaces row as /about. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts. The first face fills the 390 fold. Name is the door to /team/[slug]. Call and text sit on that row from the live broker phone. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no card graf, no seller ask. This is the only roster on the page.",
       "blocking": true
     },
     {
-      "name": "V3Quiet",
-      "section": "Pattern 6, once, below the fold. Verbatim reviews (live pool or TESTIMONIALS), the same FAQ array the FAQPage JSON-LD uses, and outbound edges including Value my home. Seller does not open the page.",
+      "name": "V3Proof",
+      "section": "The newest four verified Google reviews, headingLevel 2, record={false} so a strip of four never sits beside a figure that says twenty-five. Door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews.",
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "Pattern 3, once, after the faces. One plain row per broker from getBrokers, ordered Matt, Rebecca, Paul. License in the detail line. Empty branch uses emptyMessage.",
+      "name": "V3Answers",
+      "section": "Pattern 8, closing. The same TEAM_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with Call / reviews / about / Value my home in the left rail. Replaces the Quiet prose wall 2026-09-03: FAQ blocks as expanded paragraphs are the wall of text TASTE.md bans by name. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -53,7 +53,15 @@
     },
     {
       "name": "V3Instrument",
-      "reason": "This page publishes people, not a market answer. Licenses sit on the Ledger rows."
+      "reason": "Index publishes people, not a market answer. Per-broker closings live on /team/[slug] as Instrument + Atlas."
+    },
+    {
+      "name": "V3Ledger",
+      "reason": "A license ledger under the faces was a second broker roster. Licenses sit on each /team/[slug] Quiet and on /about's Instrument."
+    },
+    {
+      "name": "V3Quiet",
+      "reason": "The FAQ was a Quiet prose wall. It is V3Answers now, the same move /about made. Origin prose is /about's job."
     },
     {
       "name": "V3Field",
@@ -62,26 +70,21 @@
   ],
   "removedComponents": [
     "KbHero — Old Mill poster and 'the broker you call' poetry H1.",
-    "KbAbout — intro prose and license ledger, rebuilt as Quiet + Ledger.",
-    "KbTeam — broker grid, rebuilt as V3Ledger rows from getBrokers.",
-    "KbTestimonials — rebuilt as V3Quiet prose from getReviews / TESTIMONIALS.",
+    "KbAbout — intro prose and license ledger, rebuilt as Faces.",
+    "KbTeam — broker grid, rebuilt as AboutFaces. A later V3Ledger of the same three people was a second roster and is gone 2026-09-03.",
+    "KbTestimonials — rebuilt as V3Proof (newest four, record off) from getReviews / TESTIMONIALS.",
     "KbSell — address capture. Index ask is /contact.",
-    "FAQBlock — rebuilt as V3Quiet prose from TEAM_FAQ_ITEMS.",
+    "FAQBlock — rebuilt as V3Answers from TEAM_FAQ_ITEMS (was V3Quiet prose 2026-08, a wall).",
     "SmoothScrollProvider.",
     "KbFooter — replaced by V3Footer outside <main>.",
     "kb-root and the kb.css import."
   ],
   "perBrokerPage": {
     "route": "app/team/[slug]/page.tsx",
-    "note": "Per-broker profile on the v3 barrel. Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only. (9) First viewport is AboutFaces, same cutout as /about and /team.",
+    "note": "Live 2026-09-03. Order is Breadcrumb, AboutFaces (canonical PNG cutout, Call and Text on the face row), Quiet (bio + title + Oregon license), Instrument (closed-sale figures and year chart off getBrokerSales), Atlas (every closing with a coordinate as a dot), Ledger (newest closings, photo tiles), Proof (reviews that name this broker or name no broker, record off, door to /reviews), BrokerValuationSheet (same submitBrokerSellerLead payload), Doors (call / text / email from the live phone and email). Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only. (9) First viewport is AboutFaces, same cutout as /about and /team.",
     "requiredComponents": [
       {
-        "name": "KbNav",
-        "section": "layout-owned public header",
-        "blocking": true
-      },
-      {
-        "name": "KbSectionTracker",
+        "name": "V3SectionTracker",
         "section": "tracking, pageType=broker",
         "blocking": true
       },
@@ -102,17 +105,37 @@
       },
       {
         "name": "V3Quiet",
-        "section": "bio + facts below the face, then filtered reviews, then call/text/email",
+        "section": "bio + title + Oregon license below the face",
+        "blocking": true
+      },
+      {
+        "name": "V3Instrument",
+        "section": "Pattern 1. Closed-sale figures and the year chart, off the same getBrokerSales rows the Atlas plots.",
+        "blocking": true
+      },
+      {
+        "name": "V3Atlas",
+        "section": "Every closing with a coordinate as a dot. Noun is closing/closings. fit=dots.",
         "blocking": true
       },
       {
         "name": "V3Ledger",
-        "section": "closings with recorded ClosePrice via formatPriceExact",
+        "section": "newest closings with recorded ClosePrice via formatPriceExact",
+        "blocking": true
+      },
+      {
+        "name": "V3Proof",
+        "section": "Reviews that name this broker, or name no broker. record={false}. Door to /reviews.",
         "blocking": true
       },
       {
         "name": "BrokerValuationSheet",
         "section": "Pattern 5, same capture contract as LeadCaptureBlock seller",
+        "blocking": true
+      },
+      {
+        "name": "V3Doors",
+        "section": "Call, text, and email from the live phone and email only.",
         "blocking": true
       },
       {
@@ -125,9 +148,22 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- the brokers, transparent PNGs",
-    "V3Ledger #brokers -- who you work with, Oregon licenses, each a door to /team/[slug]",
-    "V3Quiet #reviews-faq -- verbatim Google reviews + working with a Bend broker",
+    "AboutFaces -- the brokers, transparent PNGs, the only roster",
+    "V3Proof #proof -- the newest four Google reviews, record off",
+    "V3Answers #faq -- working with a Bend broker, four questions and four edges",
+    "V3Footer"
+  ],
+  "perBrokerSectionOrder": [
+    "V3SectionTracker + JSON-LD (not sections)",
+    "V3Breadcrumb",
+    "AboutFaces -- this broker's cutout",
+    "V3Quiet #profile -- bio, title, Oregon license",
+    "V3Instrument #record -- closed-sale figures and year chart",
+    "V3Atlas #closings -- every closing with a coordinate",
+    "V3Ledger #track-record -- newest closings",
+    "V3Proof #reviews -- reviews that name this broker, record off",
+    "BrokerValuationSheet -- seller capture",
+    "V3Doors #contact-broker -- call, text, email",
     "V3Footer"
   ]
 }

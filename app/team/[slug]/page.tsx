@@ -3,8 +3,10 @@
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
  * Faces first (same AboutFaces cutout as /about and /team). Quiet (identity)
- * then Ledger (closings) then Quiet (filtered reviews) then Sheet (valuation,
- * same submitBrokerSellerLead payload) then Quiet (call, text, email).
+ * then Instrument (closed-sale figures) then Atlas (closings as dots) then
+ * Ledger (newest closings) then Proof (filtered reviews, record off) then
+ * Sheet (valuation, same submitBrokerSellerLead payload) then Doors (call,
+ * text, email).
  *
  * THE PAGE CONTRACT, carried across: generateMetadata with the canonical-slug
  * fix, BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
