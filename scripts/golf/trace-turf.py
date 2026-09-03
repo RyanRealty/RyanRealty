@@ -66,6 +66,19 @@ DEFAULT_BAND = 'base'
 #   aspen-lakes — desert, with irrigated farm fields north of the property that
 #               looser starts taking in.
 #   juniper   — desert.
+#   lost-tracks, eagle-crest-resort — desert. Eagle Crest's Ridge course shows in
+#               the same frame and is excluded by the boundary, not the band.
+#   crooked-river-ranch — canyon rim. The property is in shadow at this exposure,
+#               so looser is the only band that reaches the fairways: 18 acres on
+#               base against 47.
+#   black-butte-big-meadow — pine, but base is the right band here for a reason
+#               the others do not have: looser traces 89 acres against base's 47,
+#               and at 89 the turf covers nearly the whole boundary, so the
+#               fairway corridors stop reading as corridors on the drawn map.
+#   caldera-links, meadow-lakes — base already traces the whole course. Meadow
+#               Lakes is wall-to-wall irrigated (it doubles as Prineville's
+#               wastewater disposal) and Caldera Links is nine short holes in a
+#               single corridor.
 #   bend-golf-country-club — in-town, pine and lawn around it. base is already
 #               clean at 46 acres; loose fills the corridors at 59 without
 #               reaching the neighbourhood, looser takes in the whole property.
@@ -86,12 +99,15 @@ PER_COURSE_BAND = {
     'aspen-lakes': 'loose',
     'juniper': 'loose',
     'bend-golf-country-club': 'loose',
+    'lost-tracks': 'loose',
+    'eagle-crest-resort': 'loose',
     # Ponderosa courses. The surround is dark pine canopy, which the value floor
     # excludes on its own, so the widest band is safe here and is the only one
     # that reaches turf lying in tree shadow.
     'sunriver-woodlands': 'looser',
     'black-butte-glaze-meadow': 'looser',
     'widgi-creek': 'looser',
+    'crooked-river-ranch': 'looser',
 }
 
 

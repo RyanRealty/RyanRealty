@@ -1,28 +1,41 @@
 /**
  * The course a community page draws.
  *
- * A resort can own more than one course (Sunriver three, Eagle Crest two) and a
- * course map runs the height of the property, so the page shows one and links
- * the rest through the exits it already carries. It shows the first course the
- * registry lists for that community which has a map, keeping the choice in
- * data/golf/courses.ts.
+ * A resort can own more than one course (Sunriver three, Eagle Crest three,
+ * Black Butte two) and a course map runs the height of the property, so the page
+ * shows one and links the rest through the exits it already carries.
+ *
+ * It shows the most complete map, not the first one listed. Black Butte Ranch is
+ * the case that forced this: Big Meadow comes first in the registry but has no
+ * hole routings in OSM at all, so its numbers mark greens and no hole prints a
+ * length, while Glaze Meadow next to it is routed and misses one hole. Ranking
+ * on what the file actually contains keeps that decision out of the registry's
+ * ordering, where it would be invisible.
  */
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { getCourseMap, hasCourseMap } from './course-map-registry'
 import type { CourseMapData } from './course-map'
 
-export function communityCourse(communitySlug: string): GolfCourse | null {
-  return GOLF_COURSES.find((c) => c.communitySlug === communitySlug && hasCourseMap(c.slug)) ?? null
+export type CommunityCourseMap = { course: GolfCourse; map: CourseMapData }
+
+/** Lower is better: routed beats green-anchored, then fewer absent holes. */
+function rank(map: CourseMapData): number {
+  return (map.anchor === 'green' ? 100 : 0) + (map.missingHoles?.length ?? 0)
 }
 
-export type CommunityCourseMap = { course: GolfCourse; map: CourseMapData }
+export function communityCourses(communitySlug: string): GolfCourse[] {
+  return GOLF_COURSES.filter((c) => c.communitySlug === communitySlug && hasCourseMap(c.slug))
+}
 
 export async function getCommunityCourseMap(
   communitySlug: string | null | undefined,
 ): Promise<CommunityCourseMap | null> {
   if (!communitySlug) return null
-  const course = communityCourse(communitySlug)
-  if (!course) return null
-  const map = await getCourseMap(course.slug)
-  return map ? { course, map } : null
+  let best: CommunityCourseMap | null = null
+  for (const course of communityCourses(communitySlug)) {
+    const map = await getCourseMap(course.slug)
+    if (!map) continue
+    if (!best || rank(map) < rank(best.map)) best = { course, map }
+  }
+  return best
 }

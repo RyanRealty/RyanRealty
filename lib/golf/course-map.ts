@@ -33,10 +33,18 @@ export type CourseMapData = {
   parReconciles: boolean
   yardsReconcile: boolean
   /**
-   * Published hole numbers with no routing in OSM, as strings. At most one:
-   * scripts/golf/build-course-maps.mjs refuses to write a course missing more.
+   * Published hole numbers with no routing in OSM, as strings. At most a quarter
+   * of the course: scripts/golf/build-course-maps.mjs refuses to write more.
    */
   missingHoles?: string[]
+  /**
+   * What each hole is pinned to. 'tee' is the normal case, where OSM has a
+   * routing and the number sits at the tee. 'green' means OSM has no routing for
+   * this course at all and the number sits on the green, whose own `ref` tag is
+   * the numbering — Big Meadow has 19 greens, 64 bunkers and not one hole way.
+   * A green-anchored hole has no length and no shape, so it claims neither.
+   */
+  anchor?: 'tee' | 'green'
   turfAcres: number | null
   holes: CourseHole[]
   shapes: CourseShape[]
@@ -131,9 +139,11 @@ function sentence(n: HoleNote): string {
   if (n.bunkers > 0) {
     const word = n.bunkers === 1 ? '1 bunker' : `${n.bunkers} bunkers`
     bits.push(
-      n.greensideBunkers > 0
-        ? `${word}, ${n.greensideBunkers} at the green`
-        : word,
+      n.greensideBunkers === n.bunkers
+        ? `${word} at the green`
+        : n.greensideBunkers > 0
+          ? `${word}, ${n.greensideBunkers} at the green`
+          : word,
     )
   }
   if (n.water) bits.push('water on the hole')
@@ -142,6 +152,7 @@ function sentence(n: HoleNote): string {
   if (n.teeBoxes >= 2) bits.push(`${n.teeBoxes} tee boxes`)
 
   if (bits.length === 0) return 'Nothing else is mapped on this hole.'
+
   const first = bits[0]!
   const rest = bits.slice(1)
   const head = first.charAt(0).toUpperCase() + first.slice(1)

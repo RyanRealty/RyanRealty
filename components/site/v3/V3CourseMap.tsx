@@ -129,6 +129,7 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
   const nines = courseNines(notes)
   const facts = courseFacts(data, notes)
   const missing = data.missingHoles ?? []
+  const greenAnchored = data.anchor === 'green'
   const first = notes[0]!
 
   const claim = [
@@ -171,13 +172,15 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
                   <path key={`${cls}-${i}`} className={cn(cls, sh.h && `H${sh.h}`)} d={path(sh.r)} />
                 )),
             )}
-            {data.holes.map((h) => (
-              <path
-                key={`route-${h.ref}`}
-                className={cn('v3-course__route', `H${h.ref}`)}
-                d={path(h.line, false)}
-              />
-            ))}
+            {data.holes
+              .filter((h) => h.line.length > 1)
+              .map((h) => (
+                <path
+                  key={`route-${h.ref}`}
+                  className={cn('v3-course__route', `H${h.ref}`)}
+                  d={path(h.line, false)}
+                />
+              ))}
           </svg>
 
           {/* The tap layer sits OVER the drawing in HTML, not inside the SVG.
@@ -264,6 +267,12 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
       </div>
 
       <V3CourseMapControl />
+      {greenAnchored ? (
+        <p className="v3-course__gap">
+          No hole routings are mapped for this course, so each number marks its green
+          rather than its tee, and no hole prints a length or a shape.
+        </p>
+      ) : null}
       {missing.length ? (
         <p className="v3-course__gap">
           {missing.length === 1
@@ -273,8 +282,11 @@ export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) 
       ) : null}
       <V3SourceLine
         source={v3Text(
-          'hole routings, greens, bunkers and tees from OpenStreetMap contributors, clipped to the course boundary; ' +
-            'fairway turf traced from Oregon statewide aerial imagery; par and yardage from the USGA National Course Rating Database',
+          (greenAnchored
+            ? 'greens, bunkers and tees from OpenStreetMap contributors'
+            : 'hole routings, greens, bunkers and tees from OpenStreetMap contributors') +
+            ', clipped to the course boundary; fairway turf traced from Oregon statewide aerial imagery; ' +
+            'par and yardage from the USGA National Course Rating Database',
         )}
       />
     </section>

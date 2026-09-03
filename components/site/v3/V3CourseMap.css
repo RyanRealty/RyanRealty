@@ -125,15 +125,17 @@
 }
 
 /* The property line. Only about 60 of Tetherow's 218 acres are mown, so without
-   the boundary the turf reads as unrelated fragments. */
+   the boundary the turf reads as unrelated fragments. Its fill sits well under
+   the turf's: on a wall-to-wall course like Meadow Lakes the two cover the same
+   ground, and at 3.5% against 16% they read as one flat mass. */
 .v3-course__bounds {
-  fill: color-mix(in srgb, var(--v3-navy) 3.5%, transparent);
+  fill: color-mix(in srgb, var(--v3-navy) 2%, transparent);
   stroke: var(--v3-hairline);
   stroke-width: 1.2;
 }
 
 .v3-course__turf {
-  fill: color-mix(in srgb, var(--v3-navy) 16%, transparent);
+  fill: color-mix(in srgb, var(--v3-navy) 20%, transparent);
 }
 
 .v3-course__rough {
@@ -211,7 +213,7 @@
 }
 
 /* The selected hole is emphasised; the rest of the course is not faded. Fading
-   wiped the map: turf sits at 16% of navy, and a 0.18 multiplier left about 3%
+   wiped the map: turf sits at 20% of navy, and a 0.18 multiplier left under 4%
    ink. */
 .v3-course__svg .v3-course__turf.is-on,
 .v3-course__svg .v3-course__fairway.is-on {

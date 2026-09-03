@@ -17,10 +17,9 @@
  * body comes from the aerial trace instead.
  *
  * WHAT IT REFUSES TO WRITE (CLAUDE.md §0):
- *   - a course missing more than one hole in eighteen. A single missing hole is
- *     written and NAMED in the file, so the page can say which hole is absent
- *     rather than quietly drawing a 17-hole course. A nine-hole course has to be
- *     complete: one hole there is an eighth of the round.
+ *   - a course missing more than a quarter of its published holes. Every absent
+ *     hole is named in the file so the page can state it rather than quietly
+ *     drawing a 17-hole course.
  *   - per-hole par, unless the holes sum to the published par. OSM per-hole par
  *     tags are partial: Tetherow's sum to 71 on a par-72 course.
  *   - per-hole yardage, unless the routings sum to within 1% of the published
@@ -95,11 +94,26 @@ const CATCHMENT_M = {
 const DEFAULT_CATCHMENT_M = 90
 
 /**
- * How much of a course may be missing and still be written: one hole in
- * eighteen. A share rather than a count, so a nine-hole course has to be
- * complete — one missing hole there is an eighth of the round.
+ * Catchments when the hole is anchored on its GREEN because OSM has no routing
+ * for it. Only what sits on the putting complex can be attributed: a fairway
+ * bunker 200 m back belongs to the hole but there is no line to measure it
+ * against, and claiming it from the green would be a guess.
  */
-const MAX_MISSING_SHARE = 1 / 18
+const GREEN_ANCHOR_CATCHMENT_M = {
+  green: 30,
+  bunker: 55,
+  water_hazard: 55,
+  lateral_water_hazard: 55,
+}
+
+/**
+ * How much of a course may be missing and still be written. The page names every
+ * absent hole, so the question is not whether a gap is hidden — it is not — but
+ * whether the drawing is still a map of that course. A quarter is the line:
+ * Eagle Crest Resort maps 14 of 18 and still draws every green, bunker and
+ * fairway on the property.
+ */
+const MAX_MISSING_SHARE = 0.25
 
 const RAD = Math.PI / 180
 
@@ -120,6 +134,8 @@ function centroid(ring) {
 
 /** Metres from a point to a polyline, projected flat about the line's latitude. */
 function distToLine(pt, line) {
+  // A green-anchored hole is a single point, not a line.
+  if (line.length === 1) return metres(pt, line[0])
   const k = Math.cos(line[0][1] * RAD)
   const P = ([lo, la]) => [lo * k * 111320, la * 111320]
   const p = P(pt)
@@ -273,10 +289,38 @@ function buildCourse(course, turf) {
     const prev = byRef.get(h.ref)
     if (!prev || len > prev.walked) byRef.set(h.ref, { ...h, walked: len })
   }
-  const routed = [...byRef.values()].sort((a, b) => Number(a.ref) - Number(b.ref))
+  let routed = [...byRef.values()].sort((a, b) => Number(a.ref) - Number(b.ref))
   for (const h of routed) {
     const m = h.metres ?? h.walked
     h.yards = m ? Math.round(m * 1.09361) : null
+  }
+
+  /**
+   * GREEN-ANCHORED FALLBACK. Big Meadow has 19 greens, 51 tees, 64 bunkers and
+   * not one `golf=hole` way, so there is nothing to hang a hole on — except that
+   * 18 of its greens carry `ref` 1 to 18, which IS the numbering, from the same
+   * source as everywhere else.
+   *
+   * So the hole becomes its green: a one-point "line" at the green centre. The
+   * routing is not inferred. Pairing a tee to a green by proximity is a matching
+   * problem with no unique answer (the tee for hole N sits beside green N-1), and
+   * a line drawn between a guessed pair is a shape the course does not have —
+   * which would then be measured for a dogleg and printed as one.
+   */
+  const anchor = routed.length > 0 ? 'tee' : 'green'
+  if (anchor === 'green') {
+    const byGreen = new Map()
+    for (const f of feats) {
+      if (f.kind !== 'green' || !f.tags.ref) continue
+      const ref = String(f.tags.ref)
+      const c = centroid(f.ring)
+      // Largest green wins a duplicate ref: a practice green is the smaller one.
+      const prev = byGreen.get(ref)
+      if (!prev || f.ring.length > prev.points) {
+        byGreen.set(ref, { ref, par: null, handicap: null, yards: null, points: f.ring.length, line: [c] })
+      }
+    }
+    routed = [...byGreen.values()].sort((a, b) => Number(a.ref) - Number(b.ref))
   }
 
   const ground = [
@@ -293,7 +337,15 @@ function buildCourse(course, turf) {
       continue
     }
     const c = centroid(f.ring)
-    const limit = CATCHMENT_M[f.kind] ?? DEFAULT_CATCHMENT_M
+    const limit =
+      anchor === 'green'
+        ? GREEN_ANCHOR_CATCHMENT_M[f.kind]
+        : (CATCHMENT_M[f.kind] ?? DEFAULT_CATCHMENT_M)
+    if (limit == null) {
+      // Green-anchored: a kind with no catchment is drawn and owned by nobody.
+      f.hole = null
+      continue
+    }
     let best = null
     let bestD = Infinity
     for (const h of routed) {
@@ -305,7 +357,7 @@ function buildCourse(course, turf) {
     }
     f.hole = bestD <= limit ? best : null
   }
-  return { holes: routed, ground }
+  return { holes: routed, ground, anchor }
 }
 
 function main() {
@@ -326,6 +378,7 @@ function main() {
       turf = null
     }
     const built = buildCourse(course, turf)
+    const greenAnchored = built.anchor === 'green'
 
     if (!pub) {
       held.push(`${slug}: no registry row (add it to data/golf/courses.ts)`)
@@ -356,6 +409,7 @@ function main() {
       parReconciles,
       yardsReconcile,
       missingHoles,
+      anchor: built.anchor,
       turfAcres: turf?.acres ?? null,
       holes: built.holes.map((h) => ({
         ref: h.ref,
@@ -379,7 +433,8 @@ function main() {
         `${String(out.holes.length).padStart(2)} holes  ${String(out.shapes.length).padStart(3)} shapes  ` +
         `par ${parReconciles ? `${osmPar} OK` : `${osmPar} vs ${pub.par} HELD`}  ` +
         `yards ${yardsReconcile ? `${osmYards} OK` : `${osmYards} vs ${pub.yards} HELD`}` +
-        (missingHoles.length ? `  missing hole ${missingHoles.join(', ')}` : ''),
+        (greenAnchored ? '  GREEN-ANCHORED' : '') +
+        (missingHoles.length ? `  missing ${missingHoles.join(', ')}` : ''),
     )
   }
 
