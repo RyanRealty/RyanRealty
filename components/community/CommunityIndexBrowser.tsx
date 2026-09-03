@@ -15,13 +15,19 @@
  *
  * Hydration safety: no Date, no Math.random, no typeof-window branches.
  * Server and client render identical markup from the same props.
+ *
+ * ON THE v3 REGISTER SINCE 2026-09-02. It used shadcn's Input, Label and
+ * ToggleGroup from @/components/ui and painted from the radix-nova stone
+ * neutral, so a public page carried two registers, two neutrals and two corner
+ * radii. The controls are barrel atoms now (V3Filter, V3Segmented) and the
+ * rows are the register's own — which also raised 600 links from 14px text in
+ * an 18px box to a 44px row.
  */
 
 import { useMemo, useRef, useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { V3Filter, V3Segmented } from '@/components/site/v3'
 import { useEngagementTracking } from '@/components/site/experience/useEngagementTracking'
+import './community-index.css'
 
 export type CommunityIndexItem = {
   slug: string
@@ -44,20 +50,18 @@ function itemHref(item: CommunityIndexItem): string {
 }
 
 function IndexLink({ item }: { item: CommunityIndexItem }) {
+  const where =
+    item.activeCount > 0
+      ? `${item.city} · ${item.activeCount} ${item.activeCount === 1 ? 'home' : 'homes'}`
+      : item.city
   return (
-    <li className="break-inside-avoid py-1">
-      <a
-        href={itemHref(item)}
-        className="text-sm font-medium text-primary underline-offset-2 hover:underline"
-      >
-        {item.name}
+    <li className="community-index__row">
+      {/* The whole row is the door. The city and the count used to sit OUTSIDE
+          the anchor, so the target was the name alone. */}
+      <a href={itemHref(item)} className="community-index__link">
+        <span className="community-index__name">{item.name}</span>
+        <span className="community-index__where">{where}</span>
       </a>
-      <span className="ml-2 text-xs tabular-nums text-muted-foreground">
-        {item.city}
-        {item.activeCount > 0
-          ? ` · ${item.activeCount} ${item.activeCount === 1 ? 'home' : 'homes'}`
-          : ''}
-      </span>
     </li>
   )
 }
@@ -127,43 +131,34 @@ export default function CommunityIndexBrowser({
 
   return (
     <div>
-      <Label htmlFor="community-search" className="sr-only">
-        {searchLabel}
-      </Label>
-      <Input
-        id="community-search"
-        type="search"
-        placeholder={searchPlaceholder}
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        className="mt-2 w-full max-w-md"
-        autoComplete="off"
-      />
-
-      {!matches ? (
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={(v) => {
-            if (v === 'az' || v === 'city') {
-              setViewMode(v)
-              trackInteract(`browse-${v}`)
-            }
-          }}
-          className="mt-4 inline-flex w-fit rounded-lg border border-border"
-        >
-          <ToggleGroupItem value="az" aria-label="Browse A to Z" className="text-xs">
-            A to Z
-          </ToggleGroupItem>
-          <ToggleGroupItem value="city" aria-label="Browse by city" className="text-xs">
-            By city
-          </ToggleGroupItem>
-        </ToggleGroup>
-      ) : null}
+      <div className="community-index__controls">
+        <V3Filter
+          label={searchLabel}
+          placeholder={searchPlaceholder}
+          value={query}
+          onValueChange={onQueryChange}
+        />
+        {!matches ? (
+          <V3Segmented
+            label="How to browse"
+            options={[
+              { key: 'az', label: 'A to Z' },
+              { key: 'city', label: 'By city' },
+            ]}
+            value={viewMode}
+            onValueChange={(v) => {
+              if (v === 'az' || v === 'city') {
+                setViewMode(v)
+                trackInteract(`browse-${v}`)
+              }
+            }}
+          />
+        ) : null}
+      </div>
 
       {matches ? (
-        <div className="mt-6">
-          <p className="text-xs text-muted-foreground tabular-nums">
+        <div>
+          <p className="community-index__count">
             {matches.length === 0
               ? emptyLabel
               : matches.length > MATCH_CAP
@@ -171,7 +166,7 @@ export default function CommunityIndexBrowser({
                 : `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`}
           </p>
           {matches.length > 0 ? (
-            <ul className="mt-3 sm:columns-2 lg:columns-3 gap-x-8">
+            <ul className="community-index__list">
               {matches.slice(0, MATCH_CAP).map((item) => (
                 <IndexLink key={itemHref(item)} item={item} />
               ))}
@@ -179,27 +174,24 @@ export default function CommunityIndexBrowser({
           ) : null}
         </div>
       ) : (
-        <div className="mt-2 divide-y divide-border border-t border-b border-border">
+        <div className="community-index__groups">
           {(viewMode === 'city' ? cityGroups : groups).map(([label, rows]) => (
-            <details key={label} className="group">
+            <details key={label} className="community-index__group">
               <summary
-                className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 [&::-webkit-details-marker]:hidden"
+                className="community-index__summary"
                 onClick={() => trackInteract(`expand-${label}`)}
               >
-                <span className="font-display text-lg text-foreground">{label}</span>
-                <span className="flex items-center gap-3">
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                <span className="community-index__label">{label}</span>
+                <span className="community-index__meta">
+                  <span>
                     {rows.length} {rows.length === 1 ? countNoun.singular : countNoun.plural}
                   </span>
-                  <span
-                    aria-hidden
-                    className="text-muted-foreground/50 transition-transform group-open:rotate-90"
-                  >
+                  <span aria-hidden className="community-index__mark">
                     &rsaquo;
                   </span>
                 </span>
               </summary>
-              <ul className="pb-4 sm:columns-2 lg:columns-3 gap-x-8">
+              <ul className="community-index__list">
                 {rows.map((item) => (
                   <IndexLink key={itemHref(item)} item={item} />
                 ))}

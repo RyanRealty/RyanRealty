@@ -1,5 +1,5 @@
 {
-  "count": 75,
+  "count": 73,
   "files": [
     "app/book/BookingClient.tsx",
     "app/buy/loading.tsx",
@@ -15,7 +15,6 @@
     "app/dev/components/ComponentGalleryClient.tsx",
     "app/error.tsx",
     "app/home-valuation/ValuationForm.tsx",
-    "app/homes-for-sale/loading.tsx",
     "app/housing-market/loading.tsx",
     "app/listing/[listingKey]/loading.tsx",
     "app/listing/by-address/[...slug]/loading.tsx",
@@ -41,7 +40,6 @@
     "components/TilesSlider.tsx",
     "components/VoiceSearchButton.tsx",
     "components/WelcomeBanner.tsx",
-    "components/community/CommunityIndexBrowser.tsx",
     "components/compare/CompareClient.tsx",
     "components/comparison/ComparisonTray.tsx",
     "components/console/ConsoleCommandPalette.tsx",

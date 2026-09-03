@@ -1,0 +1,33 @@
+/* Segmented control. Hairline box, filled selection, 44px rows. */
+.v3-segmented {
+  display: inline-flex;
+  border: var(--v3-rule-hairline);
+}
+
+.v3-segmented__item {
+  appearance: none;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-md);
+  background: transparent;
+  border: 0;
+  color: var(--v3-ink-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-segmented__item + .v3-segmented__item {
+  border-left: var(--v3-rule-hairline);
+}
+
+.v3-segmented__item:hover {
+  background: var(--v3-wash);
+}
+
+.v3-segmented__item[aria-pressed='true'] {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}

@@ -1,0 +1,130 @@
+/* ===========================================================================
+   COMMUNITY / SUBDIVISION INDEX — the long tail, on the v3 register.
+
+   It was shadcn: Input, Label and ToggleGroup from @/components/ui, painted
+   from the radix-nova stone neutral on a page whose palette is two colours,
+   with 10px radii next to 0px. 600 links set at 14px in an 18px box, on a
+   public page. Two registers on one page is the defect §3 exists to end.
+
+   Every value below resolves from components/site/v3/tokens.css. The rows keep
+   the 44px thumb floor, which is what the 18px anchors did not.
+   =========================================================================== */
+
+.community-index__groups {
+  margin-top: var(--v3-space-md);
+  border-top: var(--v3-rule-hairline);
+}
+
+.community-index__group {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.community-index__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.community-index__summary::-webkit-details-marker {
+  display: none;
+}
+
+.community-index__label {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: 1.1;
+}
+
+.community-index__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The chevron points RIGHT closed and DOWN open, the same as the footer
+   sitemap and the Atlas source fold. */
+.community-index__mark {
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.community-index__group[open] .community-index__mark {
+  transform: rotate(90deg);
+}
+
+.community-index__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--v3-space-md);
+  columns: 1;
+  column-gap: var(--v3-space-xl);
+}
+
+@media (min-width: 40rem) {
+  .community-index__list {
+    columns: 2;
+  }
+}
+
+@media (min-width: 64rem) {
+  .community-index__list {
+    columns: 3;
+  }
+}
+
+.community-index__row {
+  break-inside: avoid;
+}
+
+/* The whole row is the door, at the thumb floor. The link used to be the name
+   alone — 14px of text in an 18px box — with the city and the count outside it
+   in a second colour. */
+.community-index__link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-3xs) 0;
+  color: var(--v3-ink);
+  text-decoration: none;
+}
+
+.community-index__link:hover .community-index__name {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.community-index__name {
+  font-size: var(--v3-size-body);
+}
+
+.community-index__where {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-index__count {
+  margin: var(--v3-space-md) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.community-index__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--v3-space-md);
+  margin-top: var(--v3-space-md);
+}

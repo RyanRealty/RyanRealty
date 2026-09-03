@@ -245,6 +245,16 @@ export type {
  * the caller sizes the boxes so the reserved space is the space the real
  * content lands in.
  */
+/** A text filter over a list already on the page. The barrel had no search
+ *  control, so the index pages reached into @/components/ui for one. */
+export { V3Filter } from './V3Filter.client'
+export type { V3FilterProps } from './V3Filter.client'
+
+/** Two or three ways to look at one set. Controlled, and it renders NO panels —
+ *  V3ChartSwitch renders every panel, which is wrong for a 600-link list. */
+export { V3Segmented } from './V3Segmented.client'
+export type { V3SegmentedProps, V3SegmentedOption } from './V3Segmented.client'
+
 export { V3Placeholder } from './V3Placeholder'
 export type { V3PlaceholderProps } from './V3Placeholder'
 

@@ -1,0 +1,39 @@
+/* Text filter. One control, at the register's own weight. */
+.v3-filter__label {
+  display: block;
+  margin-bottom: var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Visually hidden, still read. Not display:none — a label a screen reader
+   cannot reach is a field with no name. */
+.v3-filter__label--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.v3-filter__field {
+  width: 100%;
+  max-width: 28rem;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  background: var(--v3-surface);
+  border: 0;
+  border-bottom: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  font: inherit;
+  font-size: var(--v3-size-body);
+}
+
+.v3-filter__field::placeholder {
+  color: var(--v3-ink-muted);
+}
