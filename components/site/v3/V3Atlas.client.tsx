@@ -1,16 +1,16 @@
 'use client'
 /**
  * PATTERN 8: ATLAS. The living map — every listing on the market as a point on
- * Central Oregon, every place as a touchable silhouette, a heat field where
- * homes crowd, pulses on real events, one price scrubber, one row of type
- * toggles, and a card that answers "what is here" on hover or tap. The
- * page's opening, replacing the photo-and-headline Stage; scoped to a
- * boundary, the living map of a city, a neighborhood, a community, a plat.
+ * Central Oregon, every place as a touchable silhouette, pulses on real
+ * events, one price scrubber, one row of type toggles, and a card that
+ * answers "what is here" on hover or tap. The page's opening, replacing the
+ * photo-and-headline Stage; scoped to a boundary, the living map of a city,
+ * a neighborhood, a community, a plat.
  *
  * Why it exists (Matt 2026-09-01): "a buyer does not want every home in
  * Central Oregon" — a buyer wants THEIR place, price, and type, and the site's
  * moat is that it knows every one of them. "Look alive like real activity
- * happening." "Heat maps on every page."
+ * happening."
  *
  * Honest by construction (section 0): every number the Atlas prints is a
  * count or a median of the dots on screen — the listings the caller passed,
@@ -19,18 +19,13 @@
  * A caller whose read came back short says so through `incomplete`, and the
  * Atlas then prints NO counts: a partial count is a wrong number.
  *
- * Three compositions behind one prop for the decision sheet; the losers are
- *   The map: a point per listing over a soft density field, every place a
- *   touchable silhouette. (Heat and split variants were graded and deleted
- *   2026-09-02; the decision sheet holds the record.)
+ * The map is a point per listing, every place a touchable silhouette. Heat
+ * and split variants were graded and deleted 2026-09-02; the decision sheet
+ * holds the record.
  *
- * LAYERS (evaluator passes one to three):
- *   canvas   the heat field — radial kernels, one bitmap, no DOM nodes. The
- *            kernel alpha scales with 1/√N and the whole field is composited
- *            under a ceiling, so 4,000 listings cannot saturate to black
- *            and hide the places drawn over them (pass three, P1).
+ * LAYERS:
  *   svg      silhouettes and the dots. Each place is drawn twice: a cream
- *            halo under a navy line, so the outline reads over any field.
+ *            halo under a navy line, so the outline reads over the basemap.
  *            Dots are zero-length stroked paths with non-scaling-stroke, so
  *            their diameter is screen pixels at any scale — the server-
  *            rendered map is the final map.
@@ -234,15 +229,6 @@ function nounFor(count: number, typesOn: readonly AtlasType[], allTypes: readonl
   const single = typesOn.length === 1 && typesOn.length !== allTypes.length ? NOUNS[typesOn[0]!.key] : null
   if (single) return count === 1 ? single[0] : single[1]
   return count === 1 ? 'listing' : 'listings'
-}
-
-/** Parse the navy token once, for the canvas. Falls back to the brand hex. */
-function readNavy(el: Element): [number, number, number] {
-  const raw = getComputedStyle(el).getPropertyValue('--v3-navy').trim()
-  const m = /^#([0-9a-f]{6})$/i.exec(raw)
-  if (!m) return [16, 39, 66]
-  const n = parseInt(m[1]!, 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
 type RegionShape = AtlasRegion & {
@@ -655,54 +641,6 @@ export function V3Atlas({
     return out
   }, [dots, isOn])
 
-
-  /* The heat field, on a canvas. Kernel alpha scales with 1/√N and the field
-     is composited under a ceiling, so density reads as darkness without ever
-     hiding the places drawn over it. */
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const canvas = canvasRef.current
-    const stage = stageRef.current
-    if (!canvas || !stage || !view) return
-    const dpr = Math.min(2, window.devicePixelRatio || 1)
-    canvas.width = Math.round(view.w * dpr)
-    canvas.height = Math.round(view.h * dpr)
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const off = document.createElement('canvas')
-    off.width = canvas.width
-    off.height = canvas.height
-    const octx = off.getContext('2d')
-    if (!octx) return
-    octx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const [r, g, b] = readNavy(stage)
-    const on = dots.filter((d) => isOn(d)).length
-    const base = 0.55
-    const alpha = Math.min(0.12, Math.max(0.012, base / Math.sqrt(Math.max(on, 1))))
-    const radius = 15
-    const paint = (x: number, y: number, a: number, rad: number) => {
-      const grad = octx.createRadialGradient(x, y, 0, x, y, rad)
-      grad.addColorStop(0, `rgba(${r},${g},${b},${a})`)
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`)
-      octx.fillStyle = grad
-      octx.beginPath()
-      octx.arc(x, y, rad, 0, Math.PI * 2)
-      octx.fill()
-    }
-    dots.forEach((d, i) => {
-      if (!isOn(d)) return
-      const [x, y] = toPx(xy[i]![0], xy[i]![1])
-      if (d.s === 'sold') paint(x, y, alpha * 0.6, radius * 0.9)
-      else paint(x, y, alpha, radius)
-    })
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.globalAlpha = 0.62
-    ctx.drawImage(off, 0, 0)
-    ctx.globalAlpha = 1
-    canvas.dataset.painted = '1'
-  }, [dots, xy, isOn, view, toPx])
-
   const active = pinned?.id ?? hover
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
   const activeStats = active ? regionStats.get(active) ?? { n: 0, median: null } : null
@@ -1053,8 +991,6 @@ export function V3Atlas({
                 setDotHit(null)
               }}
             >
-              <canvas ref={canvasRef} className="v3-atlas__heat" aria-hidden="true" />
-
               <svg
                 className="v3-atlas__svg"
                 viewBox={`0 0 ${proj.width} ${proj.height}`}

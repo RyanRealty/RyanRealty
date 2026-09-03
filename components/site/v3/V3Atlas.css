@@ -2,9 +2,8 @@
    PATTERN 8: ATLAS
    Styles for V3Atlas.client.tsx and nothing else. Every value resolves from
    ./tokens.css: navy tints for the marks, hairlines for the silhouettes, the
-   one exception hue nowhere. Motion: the heat fades in once; the pulses
-   breathe on their own layer and pause off-screen; reduced motion resolves
-   both to stills.
+   one exception hue nowhere. Motion: the pulses breathe on their own layer
+   and pause off-screen; reduced motion resolves them to stills.
    =========================================================================== */
 
 .v3.v3-atlas {
@@ -188,7 +187,7 @@
 }
 
 /* Body ----------------------------------------------------------------------
-   The frame holds the stage (canvas + svg + labels + pulses + card). */
+   The frame holds the stage (svg + labels + pulses + card). */
 .v3-atlas__body {
   display: grid;
   gap: 0;
@@ -245,7 +244,6 @@
   }
 }
 
-.v3-atlas__heat,
 .v3-atlas__svg,
 .v3-atlas__pulses,
 .v3-atlas__labels {
@@ -253,16 +251,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.v3-atlas__heat {
-  opacity: 0;
-  transition: opacity 400ms var(--v3-ease-out);
-  pointer-events: none;
-}
-
-.v3-atlas__heat[data-painted='1'] {
-  opacity: 1;
 }
 
 .v3-atlas__svg {
@@ -786,10 +774,6 @@
   .v3-atlas__pulse {
     opacity: 0.5;
     stroke-width: 8px;
-  }
-
-  .v3-atlas__heat {
-    transition: none;
   }
 }
 
