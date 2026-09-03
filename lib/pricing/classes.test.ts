@@ -8,8 +8,14 @@ import {
   classifyStory,
   classifyWater,
   extractRemarkFlags,
+  irrigationClassFromOwrd,
+  irrigationClassFromRemarks,
+  irrigationCompatible,
+  isCustomOrNewSubject,
   isNewBuild,
   newConstructionCompatible,
+  resolveIrrigationClass,
+  yearQualityCompatible,
   plausibleListedClose,
   hoaCompatible,
   lotCompatible,
@@ -135,6 +141,61 @@ describe('remark flags keep the matched phrase', () => {
     expect(f.updatedKitchen).toBe(true)
     expect(f.distressed).toBe(true)
     expect(f.distressedPhrase?.toLowerCase()).toMatch(/as[\s-]is/)
+  })
+
+  it('extracts irrigated, dry, horse, barn, and custom quality', () => {
+    const irrigated = extractRemarkFlags('Irrigated pasture with water rights and a horse barn.')
+    expect(irrigated.irrigated).toBe(true)
+    expect(irrigated.horseProperty).toBe(true)
+    expect(irrigated.barn).toBe(true)
+    const dry = extractRemarkFlags('Dry lot. No irrigation. No water rights.')
+    expect(dry.dry).toBe(true)
+    expect(dry.irrigated).toBe(false)
+    const custom = extractRemarkFlags('Custom built modern home, architect designed.')
+    expect(custom.customQuality).toBe(true)
+  })
+})
+
+describe('irrigation hard split', () => {
+  it('treats irrigated and dry as two different properties', () => {
+    expect(irrigationCompatible('irrigated', 'dry')).toBe(false)
+    expect(irrigationCompatible('dry', 'irrigated')).toBe(false)
+    expect(irrigationCompatible('irrigated', 'irrigated')).toBe(true)
+    expect(irrigationCompatible('irrigated', 'unknown')).toBe(true)
+  })
+
+  it('reads remarks and never infers dry from a missing OWRD map', () => {
+    expect(irrigationClassFromRemarks('Fully irrigated with ditch water.')).toBe('irrigated')
+    expect(irrigationClassFromRemarks('Non-irrigated dry acreage.')).toBe('dry')
+    expect(irrigationClassFromOwrd({ mappedIrrigationAcres: 12, hasPrivateAppurtenant: false })).toBe(
+      'irrigated',
+    )
+    expect(irrigationClassFromOwrd({ mappedIrrigationAcres: 0, hasPrivateAppurtenant: false })).toBe(
+      'unknown',
+    )
+    expect(resolveIrrigationClass('Dry lot, no irrigation.', { mappedIrrigationAcres: 8 })).toBe(
+      'irrigated',
+    )
+  })
+})
+
+describe('year and quality for custom / new subjects', () => {
+  it('refuses 1977–2000 stock for a 2024 custom Rim View subject', () => {
+    const subject = {
+      yearBuilt: 2024,
+      newConstructionYn: true,
+      remarks: 'Custom built modern home.',
+    }
+    expect(isCustomOrNewSubject(subject, 2026)).toBe(true)
+    expect(yearQualityCompatible(subject, { yearBuilt: 1990 }, 2026)).toBe(false)
+    expect(yearQualityCompatible(subject, { yearBuilt: 1999 }, 2026)).toBe(false)
+    expect(yearQualityCompatible(subject, { yearBuilt: 1977 }, 2026)).toBe(false)
+    expect(yearQualityCompatible(subject, { yearBuilt: 1980 }, 2026)).toBe(false)
+    expect(yearQualityCompatible(subject, { yearBuilt: 2022, remarks: 'Custom home' }, 2026)).toBe(true)
+  })
+
+  it('does not change the rule for an ordinary 1998 ranch', () => {
+    expect(yearQualityCompatible({ yearBuilt: 1998 }, { yearBuilt: 1977 }, 2026)).toBe(true)
   })
 })
 

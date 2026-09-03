@@ -53,6 +53,14 @@ describe('cmaSubjectToPricing', () => {
     expect(out.marketArea).toBeNull()
   })
 
+  it('carries remarks and an OWRD irrigation class onto the facts subject', () => {
+    const out = cmaSubjectToPricing(subject({ publicRemarks: 'Irrigated hay ground.' }), {
+      irrigationClass: 'irrigated',
+    })
+    expect(out.publicRemarks).toBe('Irrigated hay ground.')
+    expect(out.irrigationClass).toBe('irrigated')
+  })
+
   it('does not treat a 1-acre Redmond lot as rural just because Bend GIS has no mesh there', () => {
     const out = cmaSubjectToPricing(
       subject({

@@ -37,3 +37,23 @@ export function crossesMajorDivide(
 
   return false
 }
+
+function onKnownBank(area: string): boolean {
+  return parkwayWest.has(area) || parkwayEast.has(area) || deschutesWest.has(area) || deschutesEast.has(area)
+}
+
+/**
+ * Rural hole in crossesMajorDivide: unmapped vs a mapped Parkway/97 or
+ * Deschutes bank used to fail open. Do not assume they share a side.
+ * Both unmapped still fails open — we do not invent a bank.
+ */
+export function unmappedCrossesKnownBank(
+  subjectArea: string | null | undefined,
+  saleArea: string | null | undefined,
+): boolean {
+  const subject = subjectArea?.trim() || ''
+  const sale = saleArea?.trim() || ''
+  if (subject && sale) return false
+  if (!subject && !sale) return false
+  return onKnownBank(subject || sale)
+}

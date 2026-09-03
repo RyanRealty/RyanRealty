@@ -368,3 +368,19 @@ export function bathCountCompatible(subjectBaths: number | null, compBaths: numb
   if (compBaths == null || !Number.isFinite(compBaths) || compBaths <= 0) return false
   return Math.floor(subjectBaths) === Math.floor(compBaths)
 }
+
+/**
+ * Year/quality and acreage infrastructure live in lib/pricing/classes.ts —
+ * the facts-path source of truth. Re-exported so the listings fallback
+ * (lib/cma/comps.ts) stays on the same functions.
+ */
+export {
+  CUSTOM_NEW_YEAR_BAND,
+  acreageInfrastructureCompatible,
+  acreageInfrastructureFlags,
+  isCustomOrNewSubject,
+  remarksMarkCustomOrNew,
+  yearQualityCompatible,
+  type AcreageInfrastructureFlags,
+  type YearQualityInput,
+} from '@/lib/pricing/classes'

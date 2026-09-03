@@ -5,21 +5,27 @@
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
-import { crossesMajorDivide } from '@/lib/pricing/divides'
+import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import {
   classifyAgeBand,
   hoaCompatible,
+  horseInfrastructureCompatible,
+  irrigationClassFromRemarks,
+  irrigationCompatible,
+  isCustomOrNewSubject,
   isNewBuild,
   lotCompatible,
   newConstructionCompatible,
   plausibleListedClose,
   productCompatible,
+  resolveIrrigationClass,
   sewerCompatible,
   SAME_NEIGHBORHOOD_TIER_RATIO,
   similarPerformingSubdivision,
   waterCompatible,
-  type AgeBand,
+  yearQualityCompatible,
   type HoaClass,
+  type IrrigationClass,
   type LotClass,
   type ProductKey,
   type SewerClass,
@@ -61,6 +67,9 @@ export type PricingSubject = {
   newConstruction?: boolean | null
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
+  publicRemarks?: string | null
+  /** Subject irrigation from remarks and/or OWRD. Sales use remarks only. */
+  irrigationClass?: IrrigationClass | null
 }
 
 export type PricingSale = {
@@ -169,6 +178,13 @@ function applesOk(subject: PricingSubject, sale: PricingSale, level: AppleStrict
   if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
   if (!sewerCompatible(subject.sewerClass, sale.sewerClass)) return false
   if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
+  if (subject.ruralAcreage && unmappedCrossesKnownBank(subject.marketArea, sale.marketArea)) return false
+  const subjectIrrigation = resolveIrrigationClass(subject.publicRemarks, null, subject.irrigationClass)
+  const saleIrrigation = irrigationClassFromRemarks(sale.publicRemarks)
+  if (!irrigationCompatible(subjectIrrigation, saleIrrigation)) return false
+  if (subject.ruralAcreage || (subject.lotAcres ?? 0) >= 1) {
+    if (!horseInfrastructureCompatible(subject.publicRemarks, sale.publicRemarks)) return false
+  }
   if (!zoningCompatible(subject.zoning, sale.zoning)) return false
   if (level === 'product_lot' || level === 'utilities') return true
   return hoaCompatible(subject.hoaClass, sale.hoaClass)
@@ -214,7 +230,18 @@ function passesTier(
   if (!slopOk(subject.beds, sale.beds, tier.bedSlop)) return { ok: false, miles: null }
   if (!slopOk(subject.baths, sale.baths, tier.bathSlop)) return { ok: false, miles: null }
 
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstruction,
+      remarks: subject.publicRemarks,
+    },
+    asOfYear,
+  )
+  // Custom/new uses the 15-year generation band. The 0–2 year new-vs-resale
+  // cut would drop a 2022 custom peer for a 2024 custom subject.
   if (
+    !customOrNew &&
     !newConstructionCompatible(
       isNewBuild(subject.yearBuilt, asOfYear, subject.newConstruction),
       isNewBuild(sale.yearBuilt, asOfYear, sale.newConstruction),
@@ -222,9 +249,24 @@ function passesTier(
   ) {
     return { ok: false, miles: null }
   }
+  if (
+    !yearQualityCompatible(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstruction,
+        remarks: subject.publicRemarks,
+      },
+      { yearBuilt: sale.yearBuilt, newConstructionYn: sale.newConstruction, remarks: sale.publicRemarks },
+      asOfYear,
+    )
+  ) {
+    return { ok: false, miles: null }
+  }
 
   // Price-tier + neighborhood cuts on every rung that leaves the subdivision.
   // Same-subdivision sales are the same tier and the same polygon by definition.
+  // Custom/new year-quality peers skip the $/sqft tier cut so a North Rim
+  // custom sale is not tossed as "too luxury" against a custom subject.
   if (!tier.sameSubdivision) {
     const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude) ?? null
     const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
@@ -233,9 +275,18 @@ function passesTier(
     if (subjectArea !== saleArea) {
       return { ok: false, miles: null }
     }
+    const customPeer = isCustomOrNewSubject(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstruction,
+        remarks: subject.publicRemarks,
+      },
+      asOfYear,
+    )
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
     if (
+      !customPeer &&
       !similarPerformingSubdivision(
         subj?.medianPpsf ?? null,
         subj?.n ?? 0,
@@ -296,6 +347,37 @@ function bracketEligible(
   if (sale.closeDate >= asOf) return false
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
   if (!applesOk(subject, sale, 'product_lot')) return false
+  const asOfYear = Number(asOf.slice(0, 4))
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstruction,
+      remarks: subject.publicRemarks,
+    },
+    asOfYear,
+  )
+  if (
+    !customOrNew &&
+    !newConstructionCompatible(
+      isNewBuild(subject.yearBuilt, asOfYear, subject.newConstruction),
+      isNewBuild(sale.yearBuilt, asOfYear, sale.newConstruction),
+    )
+  ) {
+    return false
+  }
+  if (
+    !yearQualityCompatible(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstruction,
+        remarks: subject.publicRemarks,
+      },
+      { yearBuilt: sale.yearBuilt, newConstructionYn: sale.newConstruction, remarks: sale.publicRemarks },
+      asOfYear,
+    )
+  ) {
+    return false
+  }
   if (!glaWithinBand(subject.sqft, sale.sqft, GLA_BRACKET_BAND)) return false
   if (wantLarger) return sale.sqft > subject.sqft
   return sale.sqft < subject.sqft
@@ -358,6 +440,18 @@ function similarity(subject: PricingSubject, sale: PricingSale, asOf: string): n
       { lat: sale.latitude, lng: sale.longitude },
     ) ?? 2
   const dist = 1 / (1 + miles / 2)
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstruction,
+      remarks: subject.publicRemarks,
+    },
+    Number(asOf.slice(0, 4)),
+  )
+  if (customOrNew) {
+    // Year + quality outrank radius for this class (dist 0.18 used to beat age 0.16).
+    return size * 0.26 + recency * 0.20 + age * 0.28 + story * 0.14 + dist * 0.12
+  }
   return size * 0.28 + recency * 0.22 + age * 0.16 + story * 0.16 + dist * 0.18
 }
 
@@ -376,7 +470,7 @@ export function walkPricingLadder(
   const byKey = new Map<string, SelectedPricingComp>()
   const tiersUsed: string[] = []
   const trace: string[] = [
-    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, zoning when both sides have a zone, new vs resale, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, zoning when both sides have a zone, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
 
   if (!subject.sqft || subject.sqft < 300) {

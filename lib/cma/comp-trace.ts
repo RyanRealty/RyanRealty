@@ -50,10 +50,14 @@ export interface CompExclusionCounts {
   self: number
   /** Row lacks a close price, close date, ListingKey, or a usable sqft. */
   unusable_row: number
+  /** Custom/new subject vs a different construction generation (1970s–2000 vs 2024). */
+  year_quality: number
+  /** Acreage remarks: irrigated / horse / barns vs a dry lot (or the reverse). */
+  acreage_infrastructure: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
@@ -61,7 +65,7 @@ export function addExclusions(into: CompExclusionCounts, from: CompExclusionCoun
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.distance + x.duplicate + x.self + x.unusable_row
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -134,6 +138,10 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   duplicate: 'a tighter tier had already selected them',
   self: "they are the subject's own listing",
   unusable_row: 'their MLS row is missing a close price, close date, or living area',
+  year_quality:
+    'they are a different construction generation or quality tier than a custom or new-construction subject (a 1970s–2000 ranch does not price a 2024 custom)',
+  acreage_infrastructure:
+    'their remarks describe different acreage infrastructure (irrigated land, horse property, or barns against a dry lot, or the reverse)',
 }
 
 function band(d: CompSelectionDiagnostics): string {

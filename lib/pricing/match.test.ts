@@ -502,4 +502,251 @@ describe('walkPricingLadder', () => {
     )
     expect(out.comps.map((c) => c.listingKey)).not.toContain('HWY20')
   })
+
+  it('keeps Pronghorn comps inside Pronghorn and Caldera comps inside Caldera Springs', () => {
+    const pronghorn = walkPricingLadder(
+      subject({ subdivision: 'Pronghorn', subdivisionNorm: 'pronghorn' }),
+      [
+        sale({ listingKey: 'PRONG', subdivision: 'Pronghorn', subdivisionNorm: 'pronghorn', address: '1 Pronghorn' }),
+        sale({ listingKey: 'TOWN', subdivision: 'Kenwood', subdivisionNorm: 'kenwood', address: '2 Kenwood' }),
+      ],
+      { asOf },
+    )
+    expect(pronghorn.comps.map((c) => c.listingKey)).toEqual(['PRONG'])
+
+    const caldera = walkPricingLadder(
+      subject({
+        subdivision: 'Caldera Springs',
+        subdivisionNorm: 'caldera springs',
+        city: 'Sunriver',
+        citySlug: 'sunriver',
+      }),
+      [
+        sale({
+          listingKey: 'CALD',
+          subdivision: 'Caldera Springs',
+          subdivisionNorm: 'caldera springs',
+          city: 'Sunriver',
+          citySlug: 'sunriver',
+          address: '1 Caldera',
+        }),
+        sale({
+          listingKey: 'PLAIN',
+          subdivision: 'Deschutes River Recreation Homesites',
+          subdivisionNorm: 'deschutes river recreation homesites',
+          city: 'Sunriver',
+          citySlug: 'sunriver',
+          address: '2 Homesites',
+        }),
+      ],
+      { asOf },
+    )
+    expect(caldera.comps.map((c) => c.listingKey)).toEqual(['CALD'])
+  })
+
+  it('does not keep a dry acreage sale for an irrigated subject', () => {
+    const pool = [
+      sale({
+        listingKey: 'DRY',
+        address: '10 Dry Acre',
+        lotAcres: 10,
+        publicRemarks: 'Dry lot. No irrigation. No water rights.',
+      }),
+      sale({
+        listingKey: 'WET',
+        address: '11 Irrigated',
+        lotAcres: 12,
+        publicRemarks: 'Irrigated pasture with water rights.',
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        lotAcres: 10,
+        lotClass: 'ranch',
+        ruralAcreage: true,
+        publicRemarks: 'Irrigated hay ground.',
+        irrigationClass: 'irrigated',
+      }),
+      pool,
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['WET'])
+  })
+
+  it('does not keep the Rim View 1977–2000 set for a 2024 custom subject', () => {
+    const oldStock = [
+      sale({
+        listingKey: 'SUMMIT',
+        address: '1990 Summit',
+        beds: 4,
+        baths: 4,
+        yearBuilt: 1990,
+        subdivision: 'Summit',
+        subdivisionNorm: 'summit',
+        sqft: 4800,
+        lotAcres: 2,
+        closePrice: 1_650_000,
+        lastAsk: 1_650_000,
+        marketArea: 'bend-north-rim',
+      }),
+      sale({
+        listingKey: 'FALCON',
+        address: '1999 Falcon Ridge',
+        beds: 4,
+        baths: 4,
+        yearBuilt: 2000,
+        subdivision: 'Falcon Ridge',
+        subdivisionNorm: 'falcon ridge',
+        sqft: 4700,
+        lotAcres: 2.1,
+        closePrice: 1_700_000,
+        lastAsk: 1_700_000,
+        marketArea: 'bend-north-rim',
+      }),
+      sale({
+        listingKey: 'HOPPER',
+        address: '1977 Hopper',
+        beds: 4,
+        baths: 4,
+        yearBuilt: 1977,
+        subdivision: 'Hopper',
+        subdivisionNorm: 'hopper',
+        sqft: 4500,
+        lotAcres: 2,
+        closePrice: 1_645_000,
+        lastAsk: 1_645_000,
+        marketArea: 'bend-north-rim',
+      }),
+      sale({
+        listingKey: 'HUNNELL',
+        address: '1980 Hunnell',
+        beds: 4,
+        baths: 4,
+        yearBuilt: 1980,
+        subdivision: 'Hunnell',
+        subdivisionNorm: 'hunnell',
+        sqft: 4600,
+        lotAcres: 2.2,
+        publicRemarks: 'Irrigated horse property with a barn.',
+        closePrice: 1_775_000,
+        lastAsk: 1_775_000,
+        marketArea: 'bend-north-rim',
+      }),
+    ]
+    const customPeer = sale({
+      listingKey: 'NORTH_RIM',
+      address: '61225 Brosterhous',
+      beds: 4,
+      baths: 4,
+      yearBuilt: 2022,
+      subdivision: 'North Rim',
+      subdivisionNorm: 'north rim',
+      sqft: 5100,
+      lotAcres: 2.1,
+      publicRemarks: 'Custom built modern home.',
+      closePrice: 4_200_000,
+      lastAsk: 4_200_000,
+      closePpsf: 823,
+      latitude: 44.11,
+      longitude: -121.28,
+      marketArea: 'bend-north-rim',
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '19365 Rim View',
+        subdivision: 'Lakes At Tanager PUD',
+        subdivisionNorm: 'lakes at tanager pud',
+        yearBuilt: 2024,
+        newConstruction: true,
+        sqft: 4972,
+        lotAcres: 2,
+        lotClass: 'acreage',
+        beds: 4,
+        baths: 4,
+        publicRemarks: 'Custom built modern home.',
+        marketArea: 'bend-north-rim',
+      }),
+      [...oldStock, customPeer],
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('SUMMIT')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('FALCON')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('HOPPER')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('HUNNELL')
+    expect(out.comps.map((c) => c.listingKey)).toContain('NORTH_RIM')
+  })
+
+  it('takes a farther same-generation custom peer before nearby 2000 stock', () => {
+    const nearbyOlder = sale({
+      listingKey: 'NEAR_OLDER',
+      address: '10 Nearby Older',
+      yearBuilt: 2000,
+      subdivision: 'Old Tract',
+      subdivisionNorm: 'old tract',
+      sqft: 4900,
+      lotAcres: 2,
+      latitude: 44.0602,
+      longitude: -121.3202,
+      marketArea: 'bend-north-rim',
+      closeDate: '2026-07-01',
+    })
+    const farCustom = sale({
+      listingKey: 'FAR_CUSTOM',
+      address: '80 Custom Far',
+      yearBuilt: 2017,
+      subdivision: 'Custom Far',
+      subdivisionNorm: 'custom far',
+      sqft: 5000,
+      lotAcres: 2,
+      publicRemarks: 'Custom built home.',
+      latitude: 44.09,
+      longitude: -121.29,
+      marketArea: 'bend-north-rim',
+      closeDate: '2026-06-01',
+    })
+    const out = walkPricingLadder(
+      subject({
+        yearBuilt: 2018,
+        newConstruction: false,
+        sqft: 4972,
+        lotAcres: 2,
+        lotClass: 'acreage',
+        publicRemarks: 'Custom built modern home.',
+        subdivision: 'Lakes At Tanager PUD',
+        subdivisionNorm: 'lakes at tanager pud',
+        marketArea: 'bend-north-rim',
+      }),
+      [nearbyOlder, farCustom],
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
+  })
+
+  it('does not let a rural unmapped point fail open against a known Parkway bank', () => {
+    const pool = [
+      sale({
+        listingKey: 'LARK',
+        address: '10 Larkspur',
+        lotAcres: 6,
+        marketArea: 'bend-larkspur',
+        subdivision: 'Larkspur',
+        subdivisionNorm: 'larkspur',
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        lotAcres: 6.5,
+        lotClass: 'ranch',
+        ruralAcreage: true,
+        marketArea: null,
+        subdivision: null,
+        subdivisionNorm: null,
+        latitude: 44.2,
+        longitude: -121.4,
+      }),
+      pool,
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('LARK')
+  })
 })

@@ -261,6 +261,79 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
     expect(sel.comps).toHaveLength(1)
   })
 
+  it('refuses 1977–2000 stock for a 2024 custom Rim View subject', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'SUMMIT',
+        StreetNumber: '1990',
+        StreetName: 'Summit',
+        year_built: 1990,
+        TotalLivingAreaSqFt: 4800,
+        lot_size_acres: 2,
+        BedroomsTotal: 4,
+        BathroomsTotal: 4,
+      }),
+      closedRow({
+        ListingKey: 'NORTH_RIM',
+        StreetNumber: '61225',
+        StreetName: 'Brosterhous',
+        year_built: 2022,
+        TotalLivingAreaSqFt: 5100,
+        lot_size_acres: 2.1,
+        BedroomsTotal: 4,
+        BathroomsTotal: 4,
+        public_remarks: 'Custom built modern home.',
+      }),
+    ])
+    const sel = await selectComps(
+      subject({
+        streetAddress: '19365 Rim View',
+        yearBuilt: 2024,
+        newConstructionYn: true,
+        sqft: 4972,
+        lotAcres: 2,
+        beds: 4,
+        baths: 4,
+        publicRemarks: 'Custom built modern home.',
+        propertySubType: 'Single Family Residence',
+      }),
+    )
+    expect(sel.comps.map((c) => c.listingKey)).not.toContain('SUMMIT')
+    expect(sel.comps.map((c) => c.listingKey)).toContain('NORTH_RIM')
+    expect(sel.diagnostics.excluded_totals.year_quality).toBeGreaterThan(0)
+  })
+
+  it('does not keep a dry acreage sale for an irrigated subject', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'DRY',
+        StreetNumber: '10',
+        StreetName: 'Dry',
+        lot_size_acres: 10,
+        TotalLivingAreaSqFt: 2000,
+        public_remarks: 'Dry lot. No irrigation.',
+      }),
+      closedRow({
+        ListingKey: 'WET',
+        StreetNumber: '11',
+        StreetName: 'Irrigated',
+        lot_size_acres: 12,
+        TotalLivingAreaSqFt: 2100,
+        public_remarks: 'Irrigated pasture with water rights.',
+      }),
+    ])
+    const sel = await selectComps(
+      subject({
+        lotAcres: 10,
+        sqft: 2000,
+        publicRemarks: 'Irrigated hay ground.',
+      }),
+      { subjectIrrigation: 'irrigated' },
+    )
+    expect(sel.comps.map((c) => c.listingKey)).toEqual(['WET'])
+    expect(sel.diagnostics.excluded_totals.acreage_infrastructure).toBeGreaterThan(0)
+  })
+
   it('a DETACHED subject at the same bare address stays self — that is what the check always meant there', async () => {
     selectCmaCompsPool.mockResolvedValue([
       closedRow({ StreetNumber: '1', StreetName: 'Main', ListingKey: 'prior-sale-of-subject' }),

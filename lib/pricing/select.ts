@@ -15,6 +15,7 @@ import {
   classifyWater,
   citySlug,
   normSubdivision,
+  type IrrigationClass,
   type StoryClass,
 } from '@/lib/pricing/classes'
 import {
@@ -41,6 +42,7 @@ export function cmaSubjectToPricing(
     levelsRaw?: unknown
     storyClass?: StoryClass
     zoning?: string | null
+    irrigationClass?: IrrigationClass | null
   } = {},
 ): PricingSubject {
   const area = resolveMarketArea(subject.latitude, subject.longitude)
@@ -70,12 +72,20 @@ export function cmaSubjectToPricing(
     marketArea: area,
     newConstruction: subject.newConstructionYn ?? null,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
+    publicRemarks: subject.publicRemarks,
+    irrigationClass: extras.irrigationClass ?? null,
   }
 }
 
 export async function selectPricingComps(
   subject: CmaSubject,
-  opts: { asOf?: string; waterRaw?: unknown; sewerRaw?: unknown; levelsRaw?: unknown } = {},
+  opts: {
+    asOf?: string
+    waterRaw?: unknown
+    sewerRaw?: unknown
+    levelsRaw?: unknown
+    subjectIrrigation?: IrrigationClass | null
+  } = {},
 ): Promise<PricingMatchResult & { factsReady: boolean }> {
   const factsReady = (await countSalePricingFacts()) >= 1000
   if (!factsReady) {
@@ -96,6 +106,7 @@ export async function selectPricingComps(
     waterRaw,
     sewerRaw: opts.sewerRaw,
     levelsRaw: opts.levelsRaw,
+    irrigationClass: opts.subjectIrrigation,
   })
   const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
   const closeAfter = new Date(asOf)
@@ -146,6 +157,7 @@ export async function priceSubjectFromFacts(
     sewerRaw?: unknown
     levelsRaw?: unknown
     market?: CmaMarketContext | null
+    subjectIrrigation?: IrrigationClass | null
   } = {},
 ): Promise<{
   match: PricingMatchResult & { factsReady: boolean }
@@ -168,6 +180,7 @@ export async function priceSubjectFromFacts(
     waterRaw,
     sewerRaw: opts.sewerRaw,
     levelsRaw: opts.levelsRaw,
+    irrigationClass: opts.subjectIrrigation,
   })
   const index = await getPricingMarketIndex(pricingSubject.citySlug)
   const est = estimateClosePrice({
@@ -232,11 +245,14 @@ export function pickCompSource(match: { factsReady: boolean; comps?: unknown[] }
   return 'listings'
 }
 
-export async function selectCompsPreferringFacts(subject: CmaSubject): Promise<CompSelection> {
+export async function selectCompsPreferringFacts(
+  subject: CmaSubject,
+  opts: { subjectIrrigation?: IrrigationClass | null } = {},
+): Promise<CompSelection> {
   const { selectComps } = await import('@/lib/cma/comps')
-  const match = await selectPricingComps(subject)
+  const match = await selectPricingComps(subject, opts)
   if (pickCompSource(match) === 'facts') {
     return matchToCompSelection(subject, match)
   }
-  return selectComps(subject)
+  return selectComps(subject, opts)
 }

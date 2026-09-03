@@ -37,6 +37,7 @@ import {
   isPriceTierExclusion,
   narrativeMismatches,
   ppsf,
+  restoreCustomYearQualityPeers,
   splitSentences,
   type CompTier,
   type CompVerdict,
@@ -210,6 +211,9 @@ const SYSTEM =
   'subject; a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +
   'a kept comp of a different product type; and an exclusion reason the data does not actually show. Check your ' +
   'own set against those four before you answer. ' +
+  'CUSTOM AND NEW CONSTRUCTION: do not exclude a same-generation custom or new-construction peer as too luxury, ' +
+  'too expensive, or a premium tier. Year and quality outrank price. A 2022 custom sale is a peer to a 2024 custom ' +
+  'subject even when it sold higher. ' +
   // ── narrative discipline ───────────────────────────────────────────────────
   'THE NARRATIVE IS EVIDENCE, NOT SALES COPY. A seller reads it and an independent reviewer checks every clause ' +
   'against the data in this prompt. State what IS known: how many sales you kept, the $/sqft band, the rule that ' +
@@ -440,16 +444,42 @@ export async function judgeComps(
       }
     }
 
+    // Custom/new year-quality peers the model tossed as luxury come back.
+    const restored = restoreCustomYearQualityPeers({
+      subject: {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstructionYn,
+        remarks: subject.publicRemarks,
+      },
+      comps,
+      verdicts: judged.verdicts,
+    })
+    judged.verdicts = restored.verdicts
+    const protectedKeys = new Set(restored.restoredKeys)
+    if (restored.restoredKeys.length > 0) {
+      for (const key of restored.restoredKeys) {
+        const c = byKey.get(key)
+        if (!c) continue
+        const p = ppsf(c)
+        if (p > 0) {
+          judged.ppsfFloor = Math.min(judged.ppsfFloor || p, p)
+          judged.ppsfCeiling = Math.max(judged.ppsfCeiling || 0, p)
+        }
+        resolvedByCode.push(`${key}: restored, custom/new year-quality peer cannot be dropped as luxury`)
+      }
+    }
+
     // Band and strand violators get excluded. Their reason is written after the
     // band is re-anchored below, so the number in the reason is the number the
     // shipped set actually supports. Never prune below the floor: buildCma
-    // would discard the whole judgment anyway.
+    // would discard the whole judgment anyway. Custom year-quality peers stay.
     const codeExcluded: string[] = []
-    if (check.offendingKeptKeys.length > 0) {
+    const offending = check.offendingKeptKeys.filter((k) => !protectedKeys.has(k))
+    if (offending.length > 0) {
       const keptCount = judged.verdicts.filter((v) => v.tier !== 'exclude').length
-      const wouldRemain = keptCount - check.offendingKeptKeys.length
+      const wouldRemain = keptCount - offending.length
       if (wouldRemain >= RESOLVE_KEEP_FLOOR) {
-        for (const key of check.offendingKeptKeys) {
+        for (const key of offending) {
           const v = judged.verdicts.find((x) => x.listingKey === key)
           if (!v || v.tier === 'exclude' || !byKey.has(key)) continue
           v.tier = 'exclude'

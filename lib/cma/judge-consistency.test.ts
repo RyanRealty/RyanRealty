@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { alignNarrativeToPricedSet, checkJudgmentConsistency, type CompVerdict } from '@/lib/cma/judge-consistency'
+import {
+  alignNarrativeToPricedSet,
+  checkJudgmentConsistency,
+  restoreCustomYearQualityPeers,
+  type CompVerdict,
+} from '@/lib/cma/judge-consistency'
 import type { CmaComp } from '@/lib/cma/types'
 
 /** Minimal comp whose $/sqft is exactly what the test wants to assert on. */
@@ -243,5 +248,35 @@ describe('alignNarrativeToPricedSet', () => {
     )
     expect(out).toContain('Two comparable sales were retained')
     expect(out).not.toMatch(/Karena sale was excluded/i)
+  })
+})
+
+describe('restoreCustomYearQualityPeers', () => {
+  it('does not toss a custom peer as too luxury', () => {
+    const comps = [
+      comp('STOCK', '1990 Summit', 330, 4800),
+      { ...comp('PEER', '61225 Brosterhous', 823, 5100), yearBuilt: 2022, publicRemarks: 'Custom built home.' },
+    ]
+    const out = restoreCustomYearQualityPeers({
+      subject: { yearBuilt: 2024, newConstructionYn: true, remarks: 'Custom built modern home.' },
+      comps,
+      verdicts: [
+        verdict('STOCK', 'strong', 'same vintage'),
+        verdict('PEER', 'exclude', 'too luxury / too expensive', 'price-tier'),
+      ],
+    })
+    expect(out.restoredKeys).toEqual(['PEER'])
+    expect(out.verdicts.find((v) => v.listingKey === 'PEER')?.tier).toBe('weak')
+  })
+
+  it('leaves ordinary resale judgments alone', () => {
+    const comps = [comp('A', '100 Ash Ave', 450)]
+    const out = restoreCustomYearQualityPeers({
+      subject: { yearBuilt: 1998, remarks: null },
+      comps,
+      verdicts: [verdict('A', 'exclude', 'premium tier', 'price-tier')],
+    })
+    expect(out.restoredKeys).toEqual([])
+    expect(out.verdicts[0]?.tier).toBe('exclude')
   })
 })
