@@ -1,4 +1,65 @@
-# Current — 2026-09-02 (evaluator punch list, main) — seven form defects closed in the PRIMITIVES
+# Current — 2026-09-02 (golf course maps, main) — ten courses drawn hole by hole
+
+Matt asked for the course map on the golf communities: "a beautiful course map with
+hole descriptions or whatever," against his restated standard that a page must be the
+best page on the internet for its exact subject.
+
+**Shipped, all on origin/main, verified in production:** `V3CourseMap`, a new barrel
+pattern, on `/central-oregon/golf/[slug]` (10 courses) and on six community pages
+(Tetherow, Crosswater, Sunriver, Black Butte Ranch, Eagle Crest, Widgi Creek).
+
+| | |
+|---|---|
+| Courses with a map | Tetherow, Crosswater, Sunriver Meadows, Sunriver Woodlands, Eagle Crest Ridge, Aspen Lakes, Juniper, Bend Golf & Country Club, Widgi Creek, Glaze Meadow |
+| Committed geometry | `data/golf/course-maps/*.json`, 956 KB, one lazy import per page |
+| Refused | Caldera Links 8/9, Eagle Crest Resort 14/18, Lost Tracks 15/18, Big Meadow, Quail Run, River's Edge 0/18 |
+
+**Where the geometry comes from.** Two sources. OSM has the greens, bunkers, tees and
+hole routings but its fairway coverage is partial (12 of Tetherow's 18), so the
+fairway body is mown turf traced out of Oregon's OSIP 2018 aerial, clipped to the
+course's own named `leisure=golf_course` polygon. That boundary is load-bearing: a
+radius query around Crosswater's clubhouse also returns Caldera Links and the map
+then numbers 36 holes 1 to 18 twice.
+
+**The hole notes are measured, not written.** Dogleg is the turn angle of the routing
+on screen, bunker count is the number of bunker shapes that light when you select the
+hole, water is a drawn hazard. Sentence and picture come from one array, so the claim
+is checkable by looking. `lib/golf/course-map.ts`.
+
+**§0 refusals, all live.** Per-hole par prints only when the holes sum to the club's
+published par (Tetherow's OSM tags sum to 71 on a par-72 course, so Tetherow prints
+yardage and no par). Per-hole yardage only within 1% of the published card. Green
+square footage is measured and never published — OSM traces some greens as the whole
+complex and Crosswater would print an 18,300 sq ft putting surface. A course missing a
+hole says which one and prints no superlatives, because "longest hole" over 17 of 18
+can name the wrong hole. A stroke index outside 1..holes is dropped (OSM carries
+`handicap=-1` at Eagle Crest Ridge, which printed "Stroke index -1").
+
+**The turf threshold is picked by looking, per course.** `scripts/golf/trace-turf.py
+<slug> --sweep` renders the candidate bands as red overlays on the aerial side by
+side. It has to be per course because what the threshold separates turf FROM differs:
+sage at Tetherow (loose band, 60 acres), wet meadow at Crosswater (tight band — loose
+floods the Deschutes floodplain and reports 115 acres where 47 are fairway), pine
+shadow at Widgi Creek (widest band, 8 acres on the default against 46). Reasoning
+about HSV instead produced 3 acres on one attempt and 425 on another.
+
+**Traps found here.** The registry parser read single-quoted fields only, so River's
+Edge reported "no registry row" while sitting in `data/golf/courses.ts` — fixing it
+also surfaced Bend Golf & Country Club. The ArcGIS image server answers an oversized
+request with a JSON body that lands on disk as an unopenable `.png`. Fading the
+unselected course to emphasise one hole wiped the map: turf sits at 16% of navy and a
+0.18 multiplier left 3% ink, so the selected hole is emphasised and nothing is faded.
+
+**Pipeline, one command per stage:** `scripts/golf/fetch-osm-courses.py` →
+`scripts/golf/trace-turf.py <slug>` → `scripts/golf/build-course-maps.mjs`.
+
+**Open here:** the six refused courses need OSM hole routings that do not exist yet.
+Caldera Links needs its 9th, Eagle Crest Resort four holes, Lost Tracks three; Big
+Meadow, Quail Run and River's Edge have no `golf=hole` ways at all.
+
+---
+
+# Previous — 2026-09-02 (evaluator punch list, main) — seven form defects closed in the PRIMITIVES
 
 Matt picked the evaluator punch list. An 11-agent audit re-measured every open
 finding against the live build first, which was worth doing: **the "market chart has
