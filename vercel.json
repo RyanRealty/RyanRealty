@@ -162,6 +162,10 @@
       "schedule": "30 12 * * *"
     },
     {
+      "path": "/api/cron/prospecting-first-touch-drip",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/publisher-sweep",
       "schedule": "*/30 * * * *"
     },

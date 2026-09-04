@@ -444,11 +444,19 @@ export async function sendProspectingIntro(
 export async function sendProspectingEmailIntro(
   kind: ProspectKind,
   id: string,
-  args: { idempotencyKey: string; subjectOverride?: string | null; bodyOverride?: string | null },
+  args: {
+    idempotencyKey: string
+    subjectOverride?: string | null
+    bodyOverride?: string | null
+    /** Cron drip drain — skips interactive admin auth; cron route already gated. */
+    actor?: 'admin' | 'drip-cron'
+  },
 ): Promise<SendEmailIntroResult> {
   try {
-    // 1. Auth (mirrors the SMS intro step 1).
-    if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized', code: 'auth' }
+    // 1. Auth (mirrors the SMS intro step 1). Drip cron is gated by requireCronAuth.
+    if (args.actor !== 'drip-cron') {
+      if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized', code: 'auth' }
+    }
 
     const prospect = await getProspect(kind, id)
     if (!prospect) return { ok: false, error: 'Prospect not found.', code: 'not-found' }
@@ -732,6 +740,26 @@ export async function approveProspectDoc(
     const { approveCmaAction } = await import('@/app/actions/cma-admin')
     const res = await approveCmaAction(slug)
     if (res.error) return { ok: false, error: res.error }
+    // Approve → queue for the weekday first-touch drip (Expired OR FSBO).
+    // Does not send here — the cron drain owns owner email. Non-prospecting
+    // CMAs simply have no linked prospect row.
+    try {
+      const { findProspectForCmaSlug, enqueueProspectFirstTouchEmail } = await import(
+        '@/lib/data/prospecting/drip-queue'
+      )
+      const linked = await findProspectForCmaSlug(slug)
+      if (linked) {
+        const queued = await enqueueProspectFirstTouchEmail(linked.kind, linked.id)
+        if (!queued.ok) {
+          console.warn('[approveProspectDoc] drip enqueue failed (approve kept):', queued.error)
+        }
+      }
+    } catch (qe) {
+      console.warn(
+        '[approveProspectDoc] drip enqueue threw (approve kept):',
+        qe instanceof Error ? qe.message : qe,
+      )
+    }
     revalidateProspectCaches()
     return { ok: true }
   } catch (e) {

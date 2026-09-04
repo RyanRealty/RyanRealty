@@ -3,6 +3,9 @@ import 'server-only'
 /**
  * Drip-sequence resolution for the prospecting hub's one-click enroll.
  *
+ * Separate from the first-touch EMAIL drip queue (approve → queue → weekday
+ * 08:00 PT drain in drip-schedule.ts / drip-queue.ts / drip-drain.ts).
+ *
  * ONE resolution path shared by the detail read (button enabled/disabled
  * state) and enrollProspectInDripAction (app/actions/prospecting.ts), so the
  * UI and the action can never disagree about WHICH workflow a kind maps to.
