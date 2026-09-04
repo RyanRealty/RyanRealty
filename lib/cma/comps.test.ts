@@ -158,6 +158,8 @@ function diag(over: Partial<CompSelectionDiagnostics> = {}): CompSelectionDiagno
     market_area: null,
     market_area_resolved: false,
     rural_acreage: true,
+    pricing_source: 'listings',
+    custom_or_new: false,
     subject: { sqft: 2318, lot_acres: 5.34, subdivision: null, subdivision_raw: 'N/A', product_sub_type: 'Single Family Residence' },
     ladder: [],
     tiers_used: [],
@@ -203,7 +205,7 @@ describe('diagnoseStarvation — name the constraint, not the count', () => {
 
   it('says "no comparable sales on record" when no tier returned a single row', () => {
     const msg = diagnoseStarvation(diag({ ladder: [rung({ rows_returned: 0 })] }))!
-    expect(msg).toMatch(/No closed sale anywhere in the database matched/)
+    expect(msg).toMatch(/listings path: no closed sale anywhere in the database matched/i)
     expect(msg).toMatch(/no comparable sales on record/)
     // The bands are named so the reader can see WHAT was too tight.
     expect(msg).toContain('1,507-3,129 sqft')
@@ -238,7 +240,7 @@ describe('diagnoseStarvation — name the constraint, not the count', () => {
     const msg = diagnoseStarvation(
       diag({ ladder: [rung({ ran: false, skipped_reason: 'the subject sits outside every mapped neighborhood polygon' })] }),
     )!
-    expect(msg).toMatch(/No comp search could run/)
+    expect(msg).toMatch(/listings path: no comp search could run/i)
     expect(msg).toMatch(/outside every mapped neighborhood polygon/)
   })
 })

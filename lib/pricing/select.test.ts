@@ -89,6 +89,8 @@ describe('matchToCompSelection', () => {
     expect(awbrey.diagnostics.market_area).toBe('Awbrey Butte')
     expect(awbrey.diagnostics.market_area_resolved).toBe(true)
     expect(awbrey.diagnostics.rural_acreage).toBe(false)
+    expect(awbrey.diagnostics.pricing_source).toBe('facts')
+    expect(awbrey.diagnostics.starved_reason).toMatch(/facts path/i)
 
     const rural = matchToCompSelection(subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73 }), {
       comps: [],
@@ -100,6 +102,37 @@ describe('matchToCompSelection', () => {
     expect(rural.diagnostics.market_area).toBeNull()
     expect(rural.diagnostics.market_area_resolved).toBe(false)
     expect(rural.diagnostics.rural_acreage).toBe(true)
+  })
+
+  it('marks live Rim View custom/new on the facts diagnostics', () => {
+    const rim = matchToCompSelection(
+      subject({
+        streetAddress: '19365 Rim View',
+        yearBuilt: 2024,
+        newConstructionYn: true,
+        lotAcres: 2,
+        baths: 4,
+        sqft: 4972,
+        publicRemarks:
+          'Introducing a stunning mid-century modern home perched over Tumalo Creek. This to-be-built masterpiece offers 4 beds.',
+        propertySubType: 'Single Family Residence',
+        standardStatus: 'Canceled',
+        latitude: 44.1005,
+        longitude: -121.356541,
+      }),
+      {
+        comps: [{}, {}] as never[],
+        tiersUsed: ['nearby-2mi-18mo'],
+        trace: [],
+        reachedTarget: false,
+        starved: true,
+      },
+      { customOrNew: true },
+    )
+    expect(rim.diagnostics.pricing_source).toBe('facts')
+    expect(rim.diagnostics.custom_or_new).toBe(true)
+    expect(rim.diagnostics.starved_reason).toMatch(/facts path: only 2/i)
+    expect(rim.diagnostics.starved_reason).toMatch(/listings SQL tiers are not a fallback/i)
   })
 })
 
@@ -150,8 +183,20 @@ describe('pickCompSource', () => {
         2026,
       ),
     ).toBe(true)
+    // Fragile feed: YN false/null but year + remarks still force facts.
+    const ynFalse = isCustomOrNewSubject(
+      {
+        yearBuilt: 2024,
+        newConstructionYn: false,
+        remarks: liveRemarks,
+        propertySubType: 'Single Family Residence',
+      },
+      2026,
+    )
+    expect(ynFalse).toBe(true)
     expect(pickCompSource({ factsReady: true, comps: [{}, {}], customOrNew: custom })).toBe('facts')
     expect(pickCompSource({ factsReady: false, comps: [], customOrNew: custom })).toBe('facts')
+    expect(pickCompSource({ factsReady: true, comps: [], customOrNew: ynFalse })).toBe('facts')
   })
 
 })

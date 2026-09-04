@@ -206,11 +206,17 @@ export interface CompSelection {
   pricingSales?: import('@/lib/pricing/match').SelectedPricingComp[]
 }
 
-function emptyDiagnostics(subject: CmaSubject, note: string | null): CompSelectionDiagnostics {
+function emptyDiagnostics(
+  subject: CmaSubject,
+  note: string | null,
+  extras: { pricingSource?: 'facts' | 'listings'; customOrNew?: boolean } = {},
+): CompSelectionDiagnostics {
   return {
     market_area: null,
     market_area_resolved: false,
     rural_acreage: false,
+    pricing_source: extras.pricingSource ?? 'listings',
+    custom_or_new: extras.customOrNew ?? false,
     subject: {
       sqft: subject.sqft ?? null,
       lot_acres: subject.lotAcres ?? null,
@@ -318,7 +324,10 @@ export async function selectComps(
     const note =
       'Custom/new subject: listings SQL ladder is disabled. Comp selection stays on sale_pricing_facts only (no subdivision/competing-area/citywide SQL tiers).'
     trace.push(note)
-    const diagnostics = emptyDiagnostics(subject, note)
+    const diagnostics = emptyDiagnostics(subject, note, {
+      pricingSource: 'facts',
+      customOrNew: true,
+    })
     diagnostics.starved_reason = note
     return {
       comps: [],
@@ -651,6 +660,8 @@ export async function selectComps(
     market_area: subjectAreaName,
     market_area_resolved: subjectArea != null,
     rural_acreage: ruralAcreage,
+    pricing_source: 'listings',
+    custom_or_new: false,
     subject: {
       sqft: subject.sqft ?? null,
       lot_acres: subject.lotAcres ?? null,
@@ -675,7 +686,7 @@ export async function selectComps(
   }
   diagnostics.starved_reason = diagnoseStarvation(diagnostics)
   if (diagnostics.starved_reason && comps.length < MIN_COMPS) trace.push(diagnostics.starved_reason)
-  return { comps, excludedOutliers, tiersUsed, trace, diagnostics }
+  return { comps, excludedOutliers, tiersUsed, trace, diagnostics, pricingSource: 'listings' }
 }
 
 /**

@@ -94,6 +94,10 @@ export interface CompSelectionDiagnostics {
   market_area_resolved: boolean
   /** Acreage subject outside every mapped polygon — the class the rural tiers exist for. */
   rural_acreage: boolean
+  /** Which engine produced this set. Desk banners must not guess from tier names. */
+  pricing_source: 'facts' | 'listings'
+  /** True when year / NewConstructionYN / subtype / remarks put the subject in custom/new. */
+  custom_or_new: boolean
   subject: {
     sqft: number | null
     lot_acres: number | null
@@ -163,22 +167,28 @@ function band(d: CompSelectionDiagnostics): string {
  */
 export function diagnoseStarvation(d: CompSelectionDiagnostics): string | null {
   if (!d.starved) return null
+  const path =
+    d.pricing_source === 'facts'
+      ? 'facts path'
+      : d.custom_or_new
+        ? 'listings path (custom/new should never land here)'
+        : 'listings path'
   const ran = d.ladder.filter((t) => t.ran)
   if (ran.length === 0) {
     const why = d.ladder.map((t) => t.skipped_reason).find(Boolean)
-    return `No comp search could run for this subject${why ? `, because ${why}` : ''}.`
+    return `${path}: no comp search could run for this subject${why ? `, because ${why}` : ''}.`
   }
   const rows = ran.reduce((a, t) => a + t.rows_returned, 0)
   const held = d.candidates
   if (rows === 0) {
-    return `No closed sale anywhere in the database matched the search at any of the ${ran.length} tier(s) walked. The binding constraints were ${band(d)}. This subject has no comparable sales on record. It is not a search problem.`
+    return `${path}: no closed sale anywhere in the database matched the search at any of the ${ran.length} tier(s) walked. The binding constraints were ${band(d)}. This subject has no comparable sales on record. It is not a search problem.`
   }
   const ranked = (Object.keys(d.excluded_totals) as Array<keyof CompExclusionCounts>)
     .map((k) => ({ k, n: d.excluded_totals[k] }))
     .filter((e) => e.n > 0 && e.k !== 'duplicate' && e.k !== 'self')
     .sort((a, b) => b.n - a.n)
   const top = ranked[0]
-  const scarcity = `The widest tier walked (${ran[ran.length - 1]!.geography}, sold within ${ran[ran.length - 1]!.months_back} months) returned ${rows} candidate row(s) in total`
+  const scarcity = `${path}: the widest tier walked (${ran[ran.length - 1]!.geography}, sold within ${ran[ran.length - 1]!.months_back} months) returned ${rows} candidate row(s) in total`
   if (!top) {
     return `${scarcity}, and ${held} survived. The market simply has too few sales matching ${band(d)}. This subject has no comparable sales on record.`
   }

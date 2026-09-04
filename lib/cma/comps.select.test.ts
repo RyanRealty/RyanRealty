@@ -265,7 +265,9 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
     expect(sel.comps).toHaveLength(1)
   })
 
-  it('refuses 1977–2000 stock for a 2024 custom Rim View subject', async () => {
+  it('hard-refuses listings SQL tiers for a 2024 custom Rim View subject', async () => {
+    // Even if the pool would return Summit stock, custom/new must not walk
+    // subdivision/competing-area/citywide SQL tiers (prod #187 still showed them).
     selectCmaCompsPool.mockResolvedValue([
       closedRow({
         ListingKey: 'SUMMIT',
@@ -298,21 +300,23 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
         lotAcres: 2,
         beds: 4,
         baths: 4,
-        // Live canceled remarks — no "custom built"; year + NewConstructionYN carry class.
         publicRemarks:
           'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek. This to-be-built masterpiece offers 4 beds.',
         propertySubType: 'Single Family Residence',
       }),
     )
-    expect(sel.comps.map((c) => c.listingKey)).not.toContain('SUMMIT')
-    expect(sel.comps.map((c) => c.listingKey)).toContain('NORTH_RIM')
-    expect(sel.diagnostics.excluded_totals.year_quality).toBeGreaterThan(0)
+    expect(selectCmaCompsPool).not.toHaveBeenCalled()
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.tiersUsed).toEqual([])
+    expect(sel.pricingSource).toBe('facts')
+    expect(sel.diagnostics.pricing_source).toBe('facts')
+    expect(sel.diagnostics.custom_or_new).toBe(true)
+    expect(sel.diagnostics.ladder).toEqual([])
+    expect(sel.diagnostics.tiers_used).toEqual([])
+    expect(sel.trace.join(' ')).toMatch(/listings SQL ladder is disabled/i)
   })
 
-  it('keeps Perspective-class Awbrey peers for an unmapped Rim View custom subject', async () => {
-    // Live starve shape: subject outside Bend GIS (null mesh), Perspective is
-    // 3 baths / 1.19 acres inside Awbrey Butte. Unmapped bank + exact baths
-    // used to drop it; Hunnell-class unmapped stock must still lose on year.
+  it('hard-refuses listings SQL for unmapped Rim View even when pool has Perspective peers', async () => {
     selectCmaCompsPool.mockResolvedValue([
       closedRow({
         ListingKey: 'PERSPECTIVE',
@@ -324,26 +328,10 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
         BedroomsTotal: 4,
         BathroomsTotal: 3,
         public_remarks: 'Custom built modern home.',
-        // Awbrey Butte mesh — on a known Parkway bank.
         Latitude: 44.086736,
         Longitude: -121.342439,
         CloseDate: '2025-07-31',
         ClosePrice: 3300000,
-      }),
-      closedRow({
-        ListingKey: 'HUNNELL',
-        StreetNumber: '64835',
-        StreetName: 'Hunnell',
-        year_built: 1980,
-        TotalLivingAreaSqFt: 4382,
-        lot_size_acres: 2.82,
-        BedroomsTotal: 4,
-        BathroomsTotal: 4,
-        public_remarks: 'Irrigated horse property with a barn.',
-        Latitude: 44.12,
-        Longitude: -121.38,
-        CloseDate: '2025-08-08',
-        ClosePrice: 1800000,
       }),
     ])
     const sel = await selectComps(
@@ -358,14 +346,15 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
         publicRemarks:
           'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
         propertySubType: 'Single Family Residence',
-        // Live Rim View coords — outside every mapped Bend polygon.
         latitude: 44.1005,
         longitude: -121.356541,
       }),
     )
-    const keys = sel.comps.map((c) => c.listingKey)
-    expect(keys).toContain('PERSPECTIVE')
-    expect(keys).not.toContain('HUNNELL')
+    expect(selectCmaCompsPool).not.toHaveBeenCalled()
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.ladder).toEqual([])
+    expect(sel.diagnostics.pricing_source).toBe('facts')
+    expect(sel.diagnostics.custom_or_new).toBe(true)
   })
 
   it('does not keep a dry acreage sale for an irrigated subject', async () => {
