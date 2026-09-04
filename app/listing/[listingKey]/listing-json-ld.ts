@@ -26,13 +26,19 @@
 
 import { listingShareSummary } from '@/lib/share-metadata'
 import { listingDetailPath } from '@/lib/slug'
-import { cityHref } from '@/lib/site/place-href'
+import type { PlaceCrumb } from '@/lib/site/place-trail'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 export type ListingJsonLdInput = {
   listingKey: string
   /** Street line as the page prints it. */
   street: string
+  /**
+   * Visible place trail, ancestors first. Home / Homes for sale / Cities are
+   * not on this list. Last crumb is the address and has no href; JSON-LD
+   * gives it the canonical listing URL.
+   */
+  trail: readonly PlaceCrumb[]
   /**
    * The price of the WHOLE property, or null when withheld (a lease rate, a
    * fractional interest, or no price at all). Never the raw ListPrice, and
@@ -98,22 +104,18 @@ export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): st
 }
 
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
-  const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent } = input
+  const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent, trail } = input
   const canonicalPath = listingCanonicalPath(listing)
   const livingArea = listing.sqft ?? listing.totalLivingAreaSqFt
+  const ancestors = trail.filter((crumb) => crumb.href)
+  const here = street || `Listing ${listingKey}`
 
   return [
     {
       type: 'breadcrumb',
       items: [
-        { name: 'Home', url: '/' },
-        { name: 'Homes for sale', url: '/homes-for-sale' },
-        // A breadcrumb URL is a published claim about where the page lives, so
-        // it names the city's own page rather than a path that 308s to it.
-        ...(listing.city && cityHref(listing.citySlug)
-          ? [{ name: listing.city, url: cityHref(listing.citySlug)! }]
-          : []),
-        { name: street || `Listing ${listingKey}`, url: canonicalPath },
+        ...ancestors.map((crumb) => ({ name: crumb.label, url: crumb.href! })),
+        { name: here, url: canonicalPath },
       ],
     },
     {

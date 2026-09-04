@@ -27,4 +27,12 @@ describe('listing remainder composition', () => {
     expect(PAGE).not.toMatch(/Median to pending/)
     expect(PAGE).not.toMatch(/<ListingTourCard/)
   })
+
+  it('uses the place trail and drops the extra tour card', () => {
+    expect(PAGE).toMatch(/listingPlaceTrail/)
+    expect(PAGE).toMatch(/buildListingPriceBandChart/)
+    expect(PAGE).not.toMatch(/<ListingTourCard/)
+    expect(PAGE).not.toMatch(/label: 'Home'/)
+    expect(PAGE).not.toMatch(/label: 'Homes for sale'/)
+  })
 })

@@ -56,6 +56,7 @@ import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { neighborhoodPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -343,11 +344,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     covers: { ...placeTypeCoverPhotos(listingTiles), ...typeCovers },
   })
   const headline = neighborhoodHeadline(neighborhood.name)
-  const trail = [
-    { label: 'Home', href: '/' },
-    { label: cityName, href: `/cities/${citySlug}` },
-    { label: neighborhood.name },
-  ]
+  const trail = neighborhoodPageTrail({ label: cityName, slug: citySlug }, neighborhood.name)
   const ownedStill = communityImage(neighborhoodSlug) ?? communityImage(neighborhood.name)
   const [cityLibraryHeroUrl, nbhLibraryHeroUrl] = await Promise.all([
     withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'nbh:cityLibraryHero'),

@@ -76,6 +76,7 @@ import { getPlaceLinks } from '@/lib/place-links'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -386,7 +387,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
     segments: publicSegments,
     covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
   })
-  const trail = [{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]
+  const trail = cityPageTrail(cityName)
   const headline = `${cityName} homes for sale`
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,

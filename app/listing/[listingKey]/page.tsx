@@ -10,6 +10,7 @@ import {
   resolveListingAgent,
   getCalculatorDefaults,
   getBoundaryGeoJSON,
+  getAtlasTiles,
 } from '@/lib/data'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
 import { getListingsByBuilder } from '@/lib/data/listings/getListingsByBuilder'
@@ -18,6 +19,7 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { cityNeighborhoodHref } from '@/lib/site/place-href'
+import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
@@ -34,7 +36,6 @@ import {
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
-import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
@@ -50,6 +51,11 @@ import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingL
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
 import { buildListingAskClaim } from '@/components/site/listing-detail/listing-ask'
+import {
+  buildListingPriceBandChart,
+  closedPricesForLeftoverGrain,
+  leftoverClosedFromDate,
+} from '@/components/site/listing-detail/listing-price-bands'
 import { ListingMoreDoors } from '@/components/site/listing-detail/ListingMoreDoors'
 import {
   buildListingDoors,
@@ -93,6 +99,7 @@ import {
   V3SectionTracker,
   V3Atlas,
   V3Instrument,
+  V3Chart,
   V3Doors,
   V3ListingRow,
   v3Text,
@@ -110,11 +117,12 @@ void V3ListingRow
 
 /**
  * One house, one living map of its place, one instrument that says how this
- * ask sits versus nearby leftover, then doors for the rest. Not another
+ * home's price sits versus nearby leftover, then doors for the rest. Not another
  * 20-section stack.
  *
  *   hero        ListingHero (mosaic)
  *   main        PriceCtaStrip · OpenHouses · V3Instrument #ask
+ *               · V3Chart #price-bands (closed sales at the leftover grain)
  *               · V3Atlas #location (lot stroke + acreage on this map)
  *               · V3Doors · alerts · folds · ListingAttribution
  *   sidebar     ListingBrokerCTA (tour / call / text live here and on the bar)
@@ -283,7 +291,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, calcDefaults] =
+  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, leftoverClosedTiles, openHouses, reviews, publishedCma, builderTiles, calcDefaults] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -340,6 +348,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
                 `listing:leftoverPace:${grain.geoType}`,
               ),
             ),
+          )
+        : Promise.resolve([]),
+      listing.city && leftoverGrains.length > 0
+        ? withTimeoutFallback(
+            getAtlasTiles({
+              cities: [listing.city],
+              closedFromDate: leftoverClosedFromDate(),
+            }),
+            [],
+            4500,
+            'listing:leftoverCloses',
           )
         : Promise.resolve([]),
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
@@ -500,6 +519,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
     grain: leftoverGrain,
     updatedAt: leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
   })
+  const priceBandChart =
+    leftoverGrain && askClaim
+      ? buildListingPriceBandChart({
+          grainName: leftoverGrain.name,
+          closed: closedPricesForLeftoverGrain(leftoverClosedTiles, leftoverGrain).map((price) => ({
+            price,
+          })),
+        })
+      : null
   const neighborhoodDoor =
     placeContext.neighborhood?.label && neighborhoodDoorHref
       ? {
@@ -582,6 +610,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         />
       ) : null}
       {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
+      {priceBandChart ? <V3Chart {...priceBandChart} /> : null}
       {listingAtlas ? (
         <V3Atlas
           id="location"
@@ -730,6 +759,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     listingKey,
     street,
     wholePropertyPrice,
+    trail: breadcrumbs,
     listing,
     photoUrls: photos.map((p) => p.url),
     // THE TRUE LISTING AGENT, never a substitute (2026-08-27 audit: this

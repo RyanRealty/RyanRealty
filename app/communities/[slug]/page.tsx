@@ -62,6 +62,7 @@ import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-sourc
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { communityPageTrail } from '@/lib/site/place-trail'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
@@ -651,12 +652,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     faqs: pageFaqs,
   })
 
-  const trail = [
-    { label: 'Home', href: '/' },
-    { label: 'Communities', href: '/communities' },
-    ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-    { label: publicName },
-  ]
+  const trail = communityPageTrail(
+    cityName && citySlug ? { label: cityName, slug: citySlug } : null,
+    publicName,
+  )
 
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
