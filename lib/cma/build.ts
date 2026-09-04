@@ -420,6 +420,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         yearBuilt: subject.yearBuilt,
         newConstructionYn: subject.newConstructionYn,
         remarks: subject.publicRemarks,
+        propertySubType: subject.propertySubType,
       })
       const flagged = [
         ...new Set(
@@ -442,6 +443,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                     yearBuilt: subject.yearBuilt,
                     newConstructionYn: subject.newConstructionYn,
                     remarks: subject.publicRemarks,
+                    propertySubType: subject.propertySubType,
                   },
                   { yearBuilt: peer.yearBuilt, remarks: peer.publicRemarks },
                 ) &&

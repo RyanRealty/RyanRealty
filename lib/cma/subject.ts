@@ -222,7 +222,11 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     waterRaw: row['water'] ?? null,
     sewerRaw: row['sewer'] ?? null,
     levelsRaw: row['levels'] ?? null,
-    newConstructionYn: bool(row['new_construction_yn']),
+    newConstructionYn: (() => {
+      const fromCol = bool(row['new_construction_yn'])
+      if (fromCol != null) return fromCol
+      return bool(row['new_construction_details'])
+    })(),
   }
 }
 

@@ -116,6 +116,8 @@ export async function selectPricingComps(
       yearBuilt: pricingSubject.yearBuilt,
       newConstructionYn: pricingSubject.newConstruction,
       remarks: pricingSubject.publicRemarks,
+      propertySubType: subject.propertySubType,
+      standardStatus: subject.standardStatus,
     },
     asOfYear,
   )
@@ -264,8 +266,12 @@ export function pickCompSource(match: {
   comps?: unknown[]
   customOrNew?: boolean
 }): 'facts' | 'listings' {
-  if (!match.factsReady) return 'listings'
+  // Custom/new NEVER falls back to listings — even when facts are not ready.
+  // The listings ladder still uses exact baths + unmappedCrossesKnownBank and
+  // can pad TARGET_COMPS with 1970s stock (live Rim View 144→2, 47/34/33).
+  // Stay on facts and fail clean so recordBuildFailure clears the stale draft.
   if (match.customOrNew) return 'facts'
+  if (!match.factsReady) return 'listings'
   const n = match.comps?.length ?? 0
   if (n >= 3) return 'facts'
   return 'listings'
@@ -281,8 +287,11 @@ export async function selectCompsPreferringFacts(
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
     remarks: subject.publicRemarks,
+    propertySubType: subject.propertySubType,
+    standardStatus: subject.standardStatus,
   })
-  if (pickCompSource({ ...match, customOrNew }) === 'facts') {
+  // Belt: never invoke the listings ladder for custom/new, full stop.
+  if (customOrNew || pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match)
   }
   return selectComps(subject, opts)
