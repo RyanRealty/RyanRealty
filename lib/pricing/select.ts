@@ -72,6 +72,7 @@ export function cmaSubjectToPricing(
     ruralAcreage: isRuralAcreage(subject, area),
     marketArea: area,
     newConstruction: subject.newConstructionYn ?? null,
+    propertySubType: subject.propertySubType,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
     publicRemarks: subject.publicRemarks,
     irrigationClass: extras.irrigationClass ?? null,
@@ -281,8 +282,9 @@ export async function selectCompsPreferringFacts(
   subject: CmaSubject,
   opts: { subjectIrrigation?: IrrigationClass | null } = {},
 ): Promise<CompSelection> {
-  const { selectComps } = await import('@/lib/cma/comps')
-  const match = await selectPricingComps(subject, opts)
+  // Classify BEFORE any ladder. Custom/new must never load listings SQL tiers
+  // (subdivision / competing-area / citywide) — live Rim View after #187 still
+  // showed those when the refuse lived only after selectPricingComps returned.
   const customOrNew = isCustomOrNewSubject({
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
@@ -290,8 +292,13 @@ export async function selectCompsPreferringFacts(
     propertySubType: subject.propertySubType,
     standardStatus: subject.standardStatus,
   })
-  // Belt: never invoke the listings ladder for custom/new, full stop.
-  if (customOrNew || pickCompSource({ ...match, customOrNew }) === 'facts') {
+  if (customOrNew) {
+    const match = await selectPricingComps(subject, opts)
+    return matchToCompSelection(subject, match)
+  }
+  const { selectComps } = await import('@/lib/cma/comps')
+  const match = await selectPricingComps(subject, opts)
+  if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match)
   }
   return selectComps(subject, opts)

@@ -310,6 +310,26 @@ export async function selectComps(
     standardStatus: subject.standardStatus,
   })
 
+  // Defense in depth: custom/new NEVER walks listings SQL tiers. Production
+  // must stay on sale_pricing_facts via selectCompsPreferringFacts. Walking
+  // competing-area / citywide here re-starved Rim View (144→2, 47/34/33) and
+  // padded Summit/Falcon stock the facts year-quality gate already refused.
+  if (customOrNew) {
+    const note =
+      'Custom/new subject: listings SQL ladder is disabled. Comp selection stays on sale_pricing_facts only (no subdivision/competing-area/citywide SQL tiers).'
+    trace.push(note)
+    const diagnostics = emptyDiagnostics(subject, note)
+    diagnostics.starved_reason = note
+    return {
+      comps: [],
+      excludedOutliers: [],
+      tiersUsed: [],
+      trace,
+      pricingSource: 'facts',
+      diagnostics,
+    }
+  }
+
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)
   const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
 
