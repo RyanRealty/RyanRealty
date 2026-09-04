@@ -7,12 +7,18 @@
 // prepared preview + full guard chain (first touch is always manual, Matt
 // 2026-07-11 — nothing goes out from a list row). The legacy filter panel
 // (city/price/date-range/sort) did not survive the amnesia rebuild: the weekly
-// pass is scan → review → send, and the DAL still honors those params for any
-// old shared URL.
+// pass is scan → review → send. Default list order is oldest-first (date asc)
+// so first-touch desks work the oldest unsent row first; ?sort=&dir= still
+// honored for any old shared URL.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listProspects, classifyProspect, type ProspectBucket } from '@/lib/data'
-import type { ProspectKind, ProspectRow, ProspectStatusFilter } from '@/lib/data/prospecting/types'
+import type { ProspectKind, ProspectRow, ProspectStatusFilter, ProspectSortKey, SortDir } from '@/lib/data/prospecting/types'
+import {
+  PROSPECT_LIST_DEFAULT_DIR,
+  PROSPECT_LIST_DEFAULT_SORT,
+  resolveProspectListOrder,
+} from '@/lib/data/prospecting/types'
 import { formatDate } from '@/lib/format/date'
 import { Button, QueueRow, VerdictLine } from '@/components/admin/v2'
 import type { AdminState } from '@/components/admin/v2'
@@ -44,11 +50,21 @@ function price(n: number | null): string | null {
   return n == null ? null : `$${Math.round(n).toLocaleString('en-US')}`
 }
 
-function hrefFor(kind: ProspectKind, status: ProspectStatusFilter, q: string | null, page?: number): string {
+function hrefFor(
+  kind: ProspectKind,
+  status: ProspectStatusFilter,
+  q: string | null,
+  page?: number,
+  sort: ProspectSortKey = PROSPECT_LIST_DEFAULT_SORT,
+  dir: SortDir = PROSPECT_LIST_DEFAULT_DIR,
+): string {
   const p = new URLSearchParams()
   if (kind !== 'expired') p.set('kind', kind)
   if (status !== 'all') p.set('status', status)
   if (q) p.set('q', q)
+  // Only emit non-defaults so the durable oldest-first URL stays clean.
+  if (sort !== PROSPECT_LIST_DEFAULT_SORT) p.set('sort', sort)
+  if (dir !== PROSPECT_LIST_DEFAULT_DIR) p.set('dir', dir)
   if (page && page > 1) p.set('page', String(page))
   const qs = p.toString()
   return qs ? `/admin/prospecting?${qs}` : '/admin/prospecting'
@@ -124,8 +140,11 @@ export default async function ProspectingPage({
     : 'all'
   const q = str(sp.q) ?? null
   const page = Math.max(1, Number(str(sp.page) ?? '1') || 1)
+  // Desk first-touch wants oldest unsent on top (Matt 2026-09-03). Default
+  // asc; only an explicit ?dir=desc flips newest-first.
+  const { sort, dir } = resolveProspectListOrder(str(sp.sort), str(sp.dir))
 
-  const result = await listProspects({ kind, q, status, sort: 'date', dir: 'desc', page, pageSize: PAGE_SIZE })
+  const result = await listProspects({ kind, q, status, sort, dir, page, pageSize: PAGE_SIZE })
   const { summary } = result
   const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE))
 
@@ -226,16 +245,16 @@ export default async function ProspectingPage({
       {totalPages > 1 ? (
         <nav aria-label="Pages" style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '4px 0 16px' }}>
           {page > 1 ? (
-            <Link href={hrefFor(kind, status, q, page - 1)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-              Newer
+            <Link href={hrefFor(kind, status, q, page - 1, sort, dir)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+              Previous
             </Link>
           ) : null}
           <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             Page {page} of {totalPages}
           </span>
           {page < totalPages ? (
-            <Link href={hrefFor(kind, status, q, page + 1)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-              Older
+            <Link href={hrefFor(kind, status, q, page + 1, sort, dir)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+              Next
             </Link>
           ) : null}
         </nav>

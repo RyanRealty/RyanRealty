@@ -264,6 +264,26 @@ export const PROSPECT_SORT_KEYS: readonly ProspectSortKey[] = [
 
 export type SortDir = 'asc' | 'desc'
 
+/** Desk first-touch default: oldest unsent on top (Matt 2026-09-03). */
+export const PROSPECT_LIST_DEFAULT_SORT: ProspectSortKey = 'date'
+export const PROSPECT_LIST_DEFAULT_DIR: SortDir = 'asc'
+
+/**
+ * Resolve worklist sort/dir from optional query/filter inputs.
+ * Missing or unknown values fall back to oldest-first (date asc).
+ * Only an explicit `dir=desc` flips newest-first.
+ */
+export function resolveProspectListOrder(
+  sort?: string | null,
+  dir?: string | null,
+): { sort: ProspectSortKey; dir: SortDir } {
+  const resolvedSort: ProspectSortKey = PROSPECT_SORT_KEYS.includes(sort as ProspectSortKey)
+    ? (sort as ProspectSortKey)
+    : PROSPECT_LIST_DEFAULT_SORT
+  const resolvedDir: SortDir = dir === 'desc' ? 'desc' : PROSPECT_LIST_DEFAULT_DIR
+  return { sort: resolvedSort, dir: resolvedDir }
+}
+
 export interface ProspectListFilters {
   kind: ProspectKind
   q?: string | null
