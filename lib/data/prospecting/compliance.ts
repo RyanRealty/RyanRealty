@@ -156,7 +156,7 @@ export async function isRelistedNow(prospect: {
       const { data: anchor, error: anchorErr } = await sb
         .from('listings')
         .select('parcel_number')
-        .eq('ListingKey', prospect.listing_key)
+        .eq('ListingKey', prospect.listing_key) // @canonical-key prospect.listing_key is the RETS key
         .maybeSingle()
       if (anchorErr) {
         console.error('[prospecting] isRelistedNow parcel read failed:', anchorErr.message)

@@ -260,7 +260,7 @@ export async function resolveComplianceBatch(
       const { data: anchors, error: anchorErr } = await sb
         .from('listings')
         .select('ListingKey, parcel_number')
-        .in('ListingKey', keys)
+        .in('ListingKey', keys) // @canonical-key prospect.listing_key is the RETS key
       if (anchorErr) {
         console.error('[prospecting] resolveComplianceBatch parcel read failed:', anchorErr.message)
       } else {
@@ -478,7 +478,7 @@ export async function verifyNotRelisted(
       const { data: anchor, error: anchorErr } = await sb
         .from('listings')
         .select('parcel_number')
-        .eq('ListingKey', prospect.listing_key)
+        .eq('ListingKey', prospect.listing_key) // @canonical-key prospect.listing_key is the RETS key
         .maybeSingle()
       if (anchorErr) {
         console.error('[prospecting] verifyNotRelisted parcel read failed (fail-closed):', anchorErr.message)
