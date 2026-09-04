@@ -8,7 +8,16 @@
  * has actually shipped wrong at least once.
  */
 import { describe, expect, it } from 'vitest'
-import { courseFacts, courseNines, holeNotes, type CourseMapData, type CourseHole } from './course-map'
+import {
+  courseFacts,
+  courseMapKind,
+  courseNines,
+  holeNotes,
+  type CourseMapData,
+  type CourseHole,
+} from './course-map'
+import { courseMapRank } from './community-course'
+import { hasCourseMap } from './course-map-registry'
 
 const line = (n: number): [number, number][] => [
   [-121.3 + n * 0.001, 44.0],
@@ -155,5 +164,44 @@ describe('the measured sentence', () => {
     // A two-point way has no bend to report either, so there is no fact at all.
     const [note] = holeNotes(course({ holes: [hole(1)], shapes: [] }))
     expect(note?.note).toBe('Nothing else is mapped on this hole.')
+  })
+})
+
+describe('operator plates', () => {
+  const plate = {
+    src: '/golf/course-plates/test.jpg',
+    width: 100,
+    height: 80,
+    alt: 'Test scorecard',
+    attribution: 'Test scorecard, not a survey',
+  }
+
+  it('does not invent hole notes when the file is a plate', () => {
+    expect(holeNotes(course({ holes: [], shapes: [], plate }))).toEqual([])
+  })
+
+  it('names a plate as a plate, not as hole-by-hole geometry', () => {
+    expect(courseMapKind(course({ holes: [], shapes: [], plate }))).toBe('plate')
+    expect(courseMapKind(course())).toBe('holes')
+    expect(courseMapKind(course({ numbered: false }))).toBe('unnumbered')
+  })
+
+  it('ranks a plate behind any OSM routing so a sibling course keeps the map', () => {
+    // Pronghorn Nicklaus is routed; Fazio is a plate. The community page
+    // must keep Nicklaus. Same for Eagle Crest Ridge vs Challenge.
+    expect(courseMapRank(course({ holes: [], shapes: [], plate }))).toBeGreaterThan(
+      courseMapRank(course()),
+    )
+    expect(courseMapRank(course({ holes: [], shapes: [], plate }))).toBeGreaterThan(
+      courseMapRank(course({ anchor: 'green', missingHoles: ['9'] })),
+    )
+  })
+
+  it('treats a plate file as a map the page can load', () => {
+    expect(hasCourseMap('pronghorn-fazio')).toBe(true)
+    expect(hasCourseMap('rivers-edge')).toBe(true)
+    expect(hasCourseMap('greens-at-redmond')).toBe(true)
+    expect(hasCourseMap('desert-peaks')).toBe(true)
+    expect(hasCourseMap('eagle-crest-challenge')).toBe(true)
   })
 })

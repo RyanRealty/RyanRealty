@@ -36,6 +36,17 @@
   margin-top: var(--v3-space-lg);
 }
 
+.v3-course__plate {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--v3-cream);
+}
+
+.v3-course__platelink {
+  display: block;
+}
+
 /* Narrow: map, then the scorecard, then the card it drives. With the card
    directly under the map, every rail button sat an offscreen scroll from the
    thing it changes. */
@@ -56,6 +67,11 @@
       'stage aside'
       'rail  rail';
     align-items: start;
+  }
+
+  .v3-course__body--plate {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
   }
 
   .v3-course__stage {

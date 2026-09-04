@@ -1,0 +1,24 @@
+{
+  "slug": "rivers-edge",
+  "courseSlug": "rivers-edge",
+  "name": "River's Edge Golf Course",
+  "published": {
+    "par": 72,
+    "yards": 6562,
+    "holes": 18,
+    "designer": "Robert Muir Graves"
+  },
+  "parReconciles": false,
+  "yardsReconcile": false,
+  "turfAcres": null,
+  "holes": [],
+  "shapes": [],
+  "plate": {
+    "src": "/golf/course-plates/rivers-edge.jpg",
+    "width": 1040,
+    "height": 774,
+    "alt": "River's Edge Golf Course hole map from the club scorecard",
+    "attribution": "River's Edge scorecard, not a survey",
+    "href": "https://riversedgegolfbend.com/wp-content/uploads/2026/04/Updated-Scorecard.jpg"
+  }
+}

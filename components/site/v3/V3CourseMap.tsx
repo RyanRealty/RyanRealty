@@ -6,6 +6,9 @@
  * fairway coverage is partial (12 of Tetherow's 18), so the fairway body comes
  * from mown turf traced out of Oregon's 2018 aerial imagery, clipped to the
  * course's own OSM boundary. Pipeline: scripts/golf/build-course-maps.mjs.
+ * Five courses have no honest OSM routing; those files carry a `plate` — the
+ * club's own published scorecard or layout, rasterized, with a source line
+ * that says it is not a survey.
  *
  * HOLE NOTES ARE MEASURED. The dogleg is the turn angle of the routing, the
  * bunker count is the number of bunker shapes assigned to the hole, the water is
@@ -77,7 +80,76 @@ function figureLine(h: HoleNote): string | null {
   return bits.length ? bits.join(' · ') : null
 }
 
+function CoursePlateMap({ data, heading, id, className }: V3CourseMapProps) {
+  const plate = data.plate
+  if (!plate || !plate.attribution.trim()) return null
+
+  const headingId = id ? `${id}-heading` : undefined
+  const claim = [
+    data.published?.par ? `Par ${data.published.par}` : null,
+    data.published?.yards
+      ? `${data.published.yards.toLocaleString('en-US')} yards from the back tees`
+      : null,
+    data.published?.designer,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  const img = (
+    // Plain img, not next/image: these are owned files under public/golf/
+    // and must render without depending on image-host configuration.
+    // Intrinsic size is on the element so the block reserves its space.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className="v3-course__plate"
+      src={plate.src}
+      alt={plate.alt}
+      width={plate.width}
+      height={plate.height}
+    />
+  )
+
+  return (
+    <section
+      id={id}
+      className={cn(V3_ROOT_CLASS, 'v3-course', className)}
+      aria-labelledby={headingId}
+      data-course={data.slug}
+      data-plate=""
+    >
+      <V3Eyebrow>The course</V3Eyebrow>
+      <V3Heading level={2} id={headingId}>
+        {heading}
+      </V3Heading>
+      {claim ? <p className="v3-course__claim">{claim}</p> : null}
+
+      <div className="v3-course__body v3-course__body--plate">
+        <div className="v3-course__stage">
+          {plate.href ? (
+            <a
+              className="v3-course__platelink"
+              href={plate.href}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {img}
+            </a>
+          ) : (
+            img
+          )}
+        </div>
+      </div>
+
+      <V3SourceLine source={plate.attribution} />
+    </section>
+  )
+}
+
 export function V3CourseMap({ data, heading, id, className }: V3CourseMapProps) {
+  if (data.plate && data.holes.length === 0) {
+    return <CoursePlateMap data={data} heading={heading} id={id} className={className} />
+  }
+
   const notes = holeNotes(data)
   if (notes.length === 0) return null
 

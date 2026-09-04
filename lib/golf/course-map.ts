@@ -65,6 +65,31 @@ export type CourseMapData = {
   turfAcres: number | null
   holes: CourseHole[]
   shapes: CourseShape[]
+  /**
+   * Operator-published raster (scorecard or course map) used when OSM has no
+   * honest numbered routing. Drawn instead of the geometry. Not a survey —
+   * the page source line has to say so.
+   */
+  plate?: CoursePlate
+}
+
+/** A club-published scorecard or layout, served from public/golf/course-plates/. */
+export type CoursePlate = {
+  src: string
+  width: number
+  height: number
+  alt: string
+  /** Visible source line, e.g. "Juniper Preserve scorecard, not a survey". */
+  attribution: string
+  /** Canonical operator URL for the document this raster came from. */
+  href?: string
+}
+
+/** What the section heading may promise. A plate is not a hole-by-hole survey. */
+export function courseMapKind(data: CourseMapData): 'plate' | 'unnumbered' | 'holes' {
+  if (data.plate && data.holes.length === 0) return 'plate'
+  if (data.numbered === false) return 'unnumbered'
+  return 'holes'
 }
 
 export type HoleBend = 'left' | 'right' | 'straight' | null

@@ -18,8 +18,13 @@ import type { CourseMapData } from './course-map'
 
 export type CommunityCourseMap = { course: GolfCourse; map: CourseMapData }
 
-/** Lower is better: routed beats green-anchored, then fewer absent holes. */
-function rank(map: CourseMapData): number {
+/**
+ * Lower is better: routed beats green-anchored, then fewer absent holes.
+ * An operator plate with no OSM routing ranks last so a resort that already
+ * has a surveyed eighteen (Pronghorn Nicklaus, Eagle Crest Ridge) keeps it.
+ */
+export function courseMapRank(map: CourseMapData): number {
+  if (map.plate && map.holes.length === 0) return 1000
   return (map.anchor === 'green' ? 100 : 0) + (map.missingHoles?.length ?? 0)
 }
 
@@ -35,7 +40,7 @@ export async function getCommunityCourseMap(
   for (const course of communityCourses(communitySlug)) {
     const map = await getCourseMap(course.slug)
     if (!map) continue
-    if (!best || rank(map) < rank(best.map)) best = { course, map }
+    if (!best || courseMapRank(map) < courseMapRank(best.map)) best = { course, map }
   }
   return best
 }

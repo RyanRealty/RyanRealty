@@ -87,6 +87,7 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
+import { courseMapKind } from '@/lib/golf/course-map'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
@@ -764,12 +765,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             id="course"
             data={courseMap.map}
             heading={v3Text(
-              // 'hole by hole' promises numbered holes. Awbrey Glen and Quail
-              // Run are mapped and unnumbered, so the heading says what the
-              // section actually shows.
-              courseMap.map.numbered === false
-                ? `${courseMap.course.shortName}, drawn from the air`
-                : `${courseMap.course.shortName}, hole by hole`,
+              // 'hole by hole' promises numbered OSM holes. Unnumbered
+              // routings are drawn from the air. A plate is the club's own
+              // published card, not a survey.
+              courseMapKind(courseMap.map) === 'plate'
+                ? `${courseMap.course.shortName}, as the club prints it`
+                : courseMapKind(courseMap.map) === 'unnumbered'
+                  ? `${courseMap.course.shortName}, drawn from the air`
+                  : `${courseMap.course.shortName}, hole by hole`,
             )}
           />
         ) : null}

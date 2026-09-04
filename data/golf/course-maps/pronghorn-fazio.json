@@ -1,0 +1,24 @@
+{
+  "slug": "pronghorn-fazio",
+  "courseSlug": "pronghorn-fazio",
+  "name": "Pronghorn Tom Fazio Championship Course",
+  "published": {
+    "par": 72,
+    "yards": 7456,
+    "holes": 18,
+    "designer": "Tom Fazio"
+  },
+  "parReconciles": false,
+  "yardsReconcile": false,
+  "turfAcres": null,
+  "holes": [],
+  "shapes": [],
+  "plate": {
+    "src": "/golf/course-plates/pronghorn-fazio.jpg",
+    "width": 1440,
+    "height": 1980,
+    "alt": "Juniper Preserve Fazio Course scorecard and hole map",
+    "attribution": "Juniper Preserve Fazio scorecard, not a survey",
+    "href": "https://juniperpreserve.com/wp-content/uploads/2023/08/PRHF-SC.pdf"
+  }
+}
