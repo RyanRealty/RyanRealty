@@ -123,21 +123,20 @@ describe('design directive contracts', () => {
     const main = src.slice(src.indexOf('const main = ('), src.indexOf('const sidebar ='))
     const order = [
       'PriceCtaStrip',
+      'ListingAskInstrument',
+      'V3Atlas',
+      'ListingMoreDoors',
+      'ListingLikeThisAlerts',
       'DescriptionBlock',
-      'MortgageCalculator',
-      'ListingLocationMap',
-      'SchoolsBlock',
-      'ListingNeighborhoodSection',
       'PropertySpecs',
       'PropertyHistory',
-      'NeighborhoodMarketContext',
-      'ParksNearbyBlock',
+      'MortgageCalculator',
       'RentalAnalysis',
       'ListingAttribution',
     ]
     const positions = order.map((name) => main.indexOf(`<${name}`))
     expect(positions.every((p) => p >= 0)).toBe(true)
-    // Facts before prose, money before attribution, strictly increasing.
+    // Ask versus leftover, then the place map, then doors, then folds, then attribution.
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
@@ -179,7 +178,9 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<V3SectionTracker[\s/>]/)
     expect(src).toMatch(/<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
-    expect(src).toMatch(/<LivePricingRead\b/)
+    expect(src).toMatch(/<ListingAskInstrument\b/)
+    expect(src).not.toMatch(/<LivePricingRead\b/)
+    expect(src).not.toMatch(/<NeighborhoodMarketContext\b/)
     // The header stays layout-owned (app/layout.tsx mounts V3Chrome once).
     expect(src).not.toMatch(/<V3Chrome\b/)
   })
@@ -632,7 +633,10 @@ describe('design directive contracts', () => {
     const page = readSrc('app/listing/[listingKey]/page.tsx')
     const live = readSrc('components/site/listing-detail/LivePricingRead.tsx')
     const report = readSrc('components/site/listing-detail/HouseMeReport.tsx')
-    expect(page).toMatch(/<LivePricingRead/)
+    const ask = readSrc('components/site/listing-detail/listing-ask.ts')
+    expect(page).not.toMatch(/<LivePricingRead/)
+    expect(page).toMatch(/buildListingAskClaim/)
+    expect(ask).toMatch(/leftoverHudKpis|medianList/)
     expect(live).toMatch(/<HouseMeReport/)
     expect(report).toMatch(/listing_pricing_reads/)
     expect(report).not.toMatch(/0-10|0–10|5-year|5 year/)

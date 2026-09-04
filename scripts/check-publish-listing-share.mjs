@@ -50,11 +50,8 @@ checks.push({
 
 const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
-  label: 'listing detail passes the whole share subject into the hero',
-  ok:
-    /propertySubType=\{listing\.propertySubType\}/.test(page) &&
-    /subdivisionName=\{listing\.subdivisionName\}/.test(page) &&
-    /listNumber=\{listing\.listNumber\}/.test(page),
+  label: 'listing detail passes the whole share subject into the ask strip',
+  ok: /<PriceCtaStrip[\s\S]{0,400}listing=\{listingWithPhotos\}/.test(page),
 })
 
 const strip = src('components/site/listing-detail/PriceCtaStrip.tsx')
@@ -114,8 +111,8 @@ checks.push({
 
 const live = src('app/listing/[listingKey]/page.tsx')
 checks.push({
-  label: 'listing detail passes propertySubType into LivePricingRead',
-  ok: /propertySubType=\{listing\.propertySubType\}/.test(live),
+  label: 'listing detail does not remount HouseMe as a second ask claim',
+  ok: !/<LivePricingRead/.test(live) && /buildListingAskClaim/.test(live),
 })
 
 const failed = checks.filter((c) => !c.ok)

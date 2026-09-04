@@ -9,15 +9,10 @@ import {
   getReviews,
   resolveListingAgent,
   getCalculatorDefaults,
-  getRecentBlogPosts,
   getBoundaryGeoJSON,
 } from '@/lib/data'
-import { resolveFeaturedItems, tilesToFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
 import { getListingsByBuilder } from '@/lib/data/listings/getListingsByBuilder'
-import { findTrailsNear, findGolfNear } from '@/lib/explore/lifestyle-near'
-import { LifestyleNearSection } from '@/components/site/listing-detail/LifestyleNearSection'
-import { PlaceParentsSection } from '@/components/site/listing-detail/PlaceParentsSection'
 import { BuilderExploreSection } from '@/components/site/listing-detail/BuilderExploreSection'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
@@ -29,11 +24,9 @@ import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
-import { getListingPricingRead } from '@/lib/data/pricing/reads'
 import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
-import { LivePricingRead } from '@/components/site/listing-detail/LivePricingRead'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import {
   ListingUnavailable,
@@ -42,14 +35,10 @@ import {
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
 import { ListingTourCard } from '@/components/site/listing-detail/ListingTourCard'
-import { ListingRelatedGuides } from '@/components/site/listing-detail/ListingRelatedGuides'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
 import { DescriptionBlock } from '@/components/site/listing-detail/DescriptionBlock'
-import { NeighborhoodMarketContext } from '@/components/site/listing-detail/NeighborhoodMarketContext'
-import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
-import { ParksNearbyBlock } from '@/components/site/listing-detail/ParksNearbyBlock'
 import { GoverningDocumentsBlock } from '@/components/site/listing-detail/GoverningDocumentsBlock'
 import { getPlaceDocumentsForListing } from '@/lib/data/places/getPlaceDocumentsForListing'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
@@ -57,9 +46,19 @@ import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
-import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentityLine'
-import { ListingFeaturedHomes } from '@/components/site/listing-detail/ListingFeaturedHomes.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
+import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
+import { buildListingAskClaim } from '@/components/site/listing-detail/listing-ask'
+import { ListingMoreDoors } from '@/components/site/listing-detail/ListingMoreDoors'
+import {
+  buildListingDoors,
+  listingDoorsOrNull,
+  listingRentalEligible,
+} from '@/components/site/listing-detail/listing-doors'
+import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
+import { listingSimilarRail } from '@/components/site/listing-detail/listing-similar'
+import { ListingFold } from '@/components/site/listing-detail/ListingFold'
+import { ListingLotFigure } from '@/components/site/listing-detail/ListingLotFigure'
 import {
   leftoverListingGrains,
   listingBoundaryAttempts,
@@ -67,8 +66,6 @@ import {
   resolveListingPlaceAndMarket,
 } from '@/lib/listing/listing-place-market'
 
-import { loadListingNeighborhoodContent } from '@/lib/listing/listing-neighborhood-content'
-import { ListingNeighborhoodSection } from '@/components/site/listing-detail/ListingNeighborhoodSection'
 import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishOpenHouseBadgeLabel } from '@/lib/listing/publish-listing-card-badges'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
@@ -94,35 +91,34 @@ import {
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
   V3Atlas,
+  V3Instrument,
+  V3Doors,
+  V3ListingRow,
   v3Text,
 } from '@/components/site/v3'
-import { basemapForRegions, basemapForFrame, bboxOfGeometry } from '@/lib/geo/basemap-source'
-import { TAXLOT_DISCLAIMER, taxlotSourceFor } from '@/lib/data'
+import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 // Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
 void _TextMattCTAImport
 void ListingMobileContactBar
 void ListingVideoEmbed
+void V3Instrument
+void V3Doors
+void V3ListingRow
 
 /**
- * Listing-detail composition, ordered to the listing body chrome:
- * About → Payment calculator → Around this home → Schools → Property details
- * → Sale and tax history → leftover extras → nearby similar homes.
+ * One house, one living map of its place, one instrument that says how this
+ * ask sits versus nearby leftover, then doors for the rest. Not another
+ * 20-section stack.
  *
  *   hero        ListingHero (mosaic)
- *   main        PriceCtaStrip · OpenHouses · DescriptionBlock
- *               · MortgageCalculator · ListingLocationMap · SchoolsBlock
- *               · PropertySpecs · PropertyHistory · leftover extras
- *               · ListingAttribution (ODS §5-3)
- *   sidebar     ListingTourCard + ListingBrokerCTA (the desktop broker card)
- *   floating    ListingBrokerBar (the fixed phone bar, OUTSIDE the aside)
- *   full-width  ListingFeaturedHomes - nearby similar homes
- *
- * Two sections were retired here 2026-07-30: VacationRentalPotential (no
- * nightly-rate, occupancy, or City of Bend STR-permit source exists) and
- * TransparentCMASummary (every public.cmas row is a confidential client
- * document). Neither had ever rendered - both took a hardcoded null prop.
+ *   main        PriceCtaStrip · OpenHouses · V3Instrument #ask
+ *               · V3Atlas #location (lot stroke + acreage on this map)
+ *               · V3Doors · alerts · folds · ListingAttribution
+ *   sidebar     ListingTourCard + ListingBrokerCTA
+ *   floating    ListingBrokerBar (OUTSIDE the aside)
+ *   full-width  V3ListingRow strip of similar homes
  *
  * The mockup-parity CI gate verifies every requiredComponent in
  * design_system/ryan-realty/ui_kits/listing-detail/parity.json is
@@ -286,7 +282,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, pricingRead, calcDefaults, relatedGuides] =
+  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, publishedCma, builderTiles, calcDefaults] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -361,19 +357,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
             'listing:builder',
           )
         : Promise.resolve([]),
-      withTimeoutFallback(getListingPricingRead(listing.listingKey), null, 3000, 'listing:pricingRead'),
       // Payment rate from the ingested 30-yr series; null keeps the component default.
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
-      withTimeoutFallback(
-        getRecentBlogPosts({ cityName: listing.city ?? undefined, limit: 3 }),
-        [],
-        3000,
-        'listing:guides',
-      ),
     ])
 
   let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
-  let leftoverPace = EMPTY_PUBLIC_PACE
   let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
   let leftoverGrain = leftoverGrains[leftoverGrains.length - 1] ?? null
   for (let i = 0; i < leftoverGrains.length; i++) {
@@ -389,7 +377,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
     })
     if (leftoverHudPublishes(hud) || pace.pendingCount != null) {
       leftoverHud = hud
-      leftoverPace = pace
       leftoverLayers = layers
       leftoverGrain = grain
       break
@@ -406,33 +393,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
     relatedHomes.primary.length > 0
       ? relatedHomes.primary
       : [...relatedHomes.similar, ...relatedHomes.nearby]
+  const similarRows = listingSimilarRail(similarPool)
   const inventoryDoor = listingInventoryDoor(placeContext)
-  const [featuredItems, neighborhoodContent, placeBoundary] = await Promise.all([
-    withTimeoutFallback(
-      resolveFeaturedItems(similarPool.slice(0, 12), 12),
-      tilesToFeaturedItems(similarPool, 12),
-      3000,
-      'listing:featured',
-    ),
-    withTimeoutFallback(
-      loadListingNeighborhoodContent(listing.citySlug, listing.neighborhoodSlug),
-      null,
-      2000,
-      'listing:nabe-content',
-    ),
-    (async () => {
-      for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
-        const geometry = await withTimeoutFallback(
-          getBoundaryGeoJSON(attempt),
-          null,
-          1800,
-          `listing:boundary:${attempt.geoType}`,
-        )
-        if (geometry) return geometry
-      }
-      return null
-    })(),
-  ])
+  const placeBoundary = await (async () => {
+    for (const attempt of listingBoundaryAttempts(listing, placeContext)) {
+      const geometry = await withTimeoutFallback(
+        getBoundaryGeoJSON(attempt),
+        null,
+        1800,
+        `listing:boundary:${attempt.geoType}`,
+      )
+      if (geometry) return geometry
+    }
+    return null
+  })()
   // The living map around this home: the neighborhood (else the city) as the
   // frame, every listing inside it, the recorded plats as doors, this home
   // held. Same population and builder as the place pages.
@@ -521,6 +495,60 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const tourHref = listingContactHref(contactKey, 'tour') ?? '/contact?intent=tour'
   const askHref = listingContactHref(contactKey, 'question') ?? '/contact?intent=question'
   const brokerPhone = ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub ?? null
+
+  const askClaim = buildListingAskClaim({
+    ask: publishedSaleAsk,
+    wholePropertyPrice,
+    hud: leftoverHud,
+    grain: leftoverGrain,
+    updatedAt: leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
+  })
+  const neighborhoodDoor =
+    placeContext.neighborhood?.label && neighborhoodDoorHref
+      ? {
+          href: neighborhoodDoorHref,
+          name: placeContext.neighborhood.label,
+          homesForSale: leftoverHud?.active ?? null,
+        }
+      : leftoverGrain
+        ? {
+            href: leftoverGrain.hubHref,
+            name: leftoverGrain.name,
+            homesForSale: leftoverHud?.active ?? null,
+          }
+        : undefined
+  const parentDoor = placeContext.parents[0]
+  const listingDoors = listingDoorsOrNull(
+    buildListingDoors({
+      neighborhood: neighborhoodDoor,
+      elementarySchool: listing.elementarySchool,
+      middleSchool: listing.middleSchool,
+      highSchool: listing.highSchool,
+      schoolDistrict: listing.schoolDistrict,
+      plat:
+        platDocuments && platDocuments.documents.length > 0
+          ? {
+              href: `/subdivisions/${platDocuments.geoSlug}`,
+              name: platDocuments.platName,
+              documentCount: platDocuments.documents.length,
+            }
+          : undefined,
+      lat: listing.lat,
+      lng: listing.lng,
+      paymentHref: wholePropertyPrice != null ? '#payment' : undefined,
+      rental: listingRentalEligible({
+        propertyType: listing.propertyType,
+        beds: listing.beds,
+        wholePropertyPrice,
+      }),
+      cma: Boolean(publishedCma),
+      sitsInside:
+        parentDoor?.href && parentDoor.label
+          ? { href: parentDoor.href, name: parentDoor.label }
+          : undefined,
+    }),
+  )
+
   const hero = (
     <ListingHero
       photos={photos}
@@ -556,55 +584,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
         />
       ) : null}
-      <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
-      {wholePropertyPrice != null ? (
-        <MortgageCalculator
-          listPrice={wholePropertyPrice}
-          taxAnnualAmount={listing.taxAnnualAmount}
-          ratePct={calcDefaults?.mortgageRate ?? null}
-        />
-      ) : null}
-      {listingAtlas?.subjectParcel ? (
-        <V3Atlas
-          id="lot"
-          headingLevel={2}
-          headline={v3Text('The lot')}
-          dots={listingAtlas.atlas.dots.filter((d) => d.k === listing.listingKey)}
-          regions={[]}
-          frame={listingAtlas.subjectParcel.geometry}
-          basemap={basemapForFrame({ bbox: bboxOfGeometry(listingAtlas.subjectParcel.geometry) })}
-          quiet
-          types={[]}
-          events={[]}
-          source={`${listingAtlas.subjectParcel.acres != null ? `${listingAtlas.subjectParcel.acres.toLocaleString('en-US', { maximumFractionDigits: 2 })} acres on the county assessor's map. ` : ''}Tax lot ${listingAtlas.subjectParcel.taxlot}, ${taxlotSourceFor(listing.county)}. ${TAXLOT_DISCLAIMER}`}
-          highlight={{ key: listing.listingKey, label: 'This home' }}
-          parcels={listingAtlas.parcels.map((lot) => ({
-            id: lot.taxlot,
-            subject: lot.isSubject,
-            name: lot.isSubject ? 'This lot' : undefined,
-            geometry: lot.geometry,
-          }))}
-          className="is-stacked"
-        >
-          <p className="listing-detail__lot-figure">
-            <strong>
-              {listingAtlas.subjectParcel.acres != null
-                ? `${listingAtlas.subjectParcel.acres.toLocaleString('en-US', { maximumFractionDigits: 2 })} acres`
-                : 'Lot outlined'}
-            </strong>{' '}
-            on the county assessor&rsquo;s map, tax lot {listingAtlas.subjectParcel.taxlot}
-            {listingAtlas.subjectParcel.dialUrl ? (
-              <>
-                {' · '}
-                <a href={listingAtlas.subjectParcel.dialUrl} rel="nofollow noreferrer" target="_blank">
-                  County record
-                </a>
-              </>
-            ) : null}
-          </p>
-          <p className="listing-detail__lot-note">{TAXLOT_DISCLAIMER}</p>
-        </V3Atlas>
-      ) : null}
+      {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
       {listingAtlas ? (
         <V3Atlas
           id="location"
@@ -632,6 +612,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
           className="is-stacked"
         >
+          {listingAtlas.subjectParcel ? (
+            <ListingLotFigure parcel={listingAtlas.subjectParcel} county={listing.county} />
+          ) : null}
           {buildLifestyleLine({ city: listing.city }) ? (
             <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
           ) : null}
@@ -659,79 +642,57 @@ export default async function ListingDetailPage({ params }: PageProps) {
         inventoryLabel={inventoryDoor?.name}
         />
       )}
-      <SchoolsBlock listing={listingWithPhotos} />
-      {neighborhoodContent &&
-      (placeContext.neighborhood?.label ?? listing.neighborhoodName) &&
-      neighborhoodDoorHref ? (
-        <ListingNeighborhoodSection
-          name={placeContext.neighborhood?.label ?? listing.neighborhoodName ?? neighborhoodContent.name}
-          href={neighborhoodDoorHref}
-          content={neighborhoodContent}
-        />
-      ) : null}
-      <PropertySpecs listing={listingWithPhotos} />
-      {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
-      <PlaceIdentityLine place={placeContext} />
-      <LivePricingRead
-        read={pricingRead}
-        listPrice={wholePropertyPrice}
-        listingKey={listing.listingKey}
-        subjectAddress={street}
-        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
-        dom={listing.dom}
-        placeMedianDays={leftoverHud?.daysToPending ?? null}
-        placeName={leftoverGrain?.name ?? listing.city ?? listing.subdivisionName ?? null}
-        hoaMonthly={listing.hoaMonthly}
-        associationFee={listing.associationFee}
-        associationFeeFrequency={listing.associationFeeFrequency}
-        taxAnnualAmount={listing.taxAnnualAmount} propertySubType={listing.propertySubType}
-        propertyType={listing.propertyType}
-        subdivisionName={listing.subdivisionName}
-        city={listing.city}
-        listNumber={listing.listNumber}
-        hideCmaRequest={Boolean(publishedCma)}
-      />
-      {leftoverHud && leftoverGrain ? (
-        <NeighborhoodMarketContext
-          geoName={leftoverGrain.name}
-          hubHref={leftoverGrain.hubHref}
-          hud={leftoverHud}
-          leftoverPace={leftoverPace}
-          thisListPrice={wholePropertyPrice}
-          refreshedAt={leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt}
-          chartCitySlug={listing.citySlug ?? null}
-        />
-      ) : null}
-      {platDocuments ? (
-        <GoverningDocumentsBlock
-          platName={platDocuments.platName}
-          platHref={`/subdivisions/${platDocuments.geoSlug}`}
-          documents={platDocuments.documents}
-        />
-      ) : null}
-      <ParksNearbyBlock listing={listingWithPhotos} />
-      <ListingRelatedGuides posts={relatedGuides} city={listing.city} />
-      <LifestyleNearSection
-        lat={listing.lat}
-        lng={listing.lng}
-        items={
-          listing.lat != null && listing.lng != null
-            ? [
-                ...findTrailsNear(listing.lat, listing.lng, 10, 3),
-                ...findGolfNear(listing.lat, listing.lng, 15, 3),
-              ]
-            : []
-        }
-        eyebrow="Lifestyle"
-        title="Trails and golf nearby"
-      />
+      {listingDoors ? <ListingMoreDoors doors={listingDoors} /> : null}
       <ListingLikeThisAlerts
         city={listing.city}
         listPrice={wholePropertyPrice}
         beds={listing.beds}
       />
-      <RentalAnalysis listing={listing} />
-      <PublishedCmaSection cma={publishedCma} />
+      {listingWithPhotos.publicRemarks ? (
+        <ListingFold id="remarks" title="MLS remarks">
+          <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
+        </ListingFold>
+      ) : null}
+      <ListingFold id="specs" title="Property details">
+        <PropertySpecs listing={listingWithPhotos} />
+      </ListingFold>
+      {history.length > 0 ? (
+        <ListingFold id="history" title="Sale and tax history">
+          <PropertyHistory history={history} mode="meaningful-only" />
+        </ListingFold>
+      ) : null}
+      {wholePropertyPrice != null ? (
+        <ListingFold id="payment" title="Monthly payment">
+          <MortgageCalculator
+            listPrice={wholePropertyPrice}
+            taxAnnualAmount={listing.taxAnnualAmount}
+            ratePct={calcDefaults?.mortgageRate ?? null}
+          />
+        </ListingFold>
+      ) : null}
+      {platDocuments && platDocuments.documents.length > 0 ? (
+        <ListingFold id="plat" title="CC&Rs and governing documents">
+          <GoverningDocumentsBlock
+            platName={platDocuments.platName}
+            platHref={`/subdivisions/${platDocuments.geoSlug}`}
+            documents={platDocuments.documents}
+          />
+        </ListingFold>
+      ) : null}
+      {listingRentalEligible({
+        propertyType: listing.propertyType,
+        beds: listing.beds,
+        wholePropertyPrice,
+      }) ? (
+        <ListingFold id="rental" title="Rental numbers">
+          <RentalAnalysis listing={listing} />
+        </ListingFold>
+      ) : null}
+      {publishedCma ? (
+        <ListingFold id="cma" title="Our opinion of value">
+          <PublishedCmaSection cma={publishedCma} />
+        </ListingFold>
+      ) : null}
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
@@ -816,23 +777,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
           sidebar={sidebar}
           floating={floating}
         />
-        {featuredItems.length > 0 ? (
-          <ListingFeaturedHomes
-            items={featuredItems}
-            eyebrow={`Similar homes · ${featuredGeoName}`}
-            heading="Nearby similar homes"
-            viewAllHref={featuredViewAllHref}
-            viewAllLabel="View more homes"
+        {similarRows.length > 0 ? (
+          <ListingSimilarStrip
+            rows={similarRows}
+            placeName={featuredGeoName}
+            viewMoreHref={featuredViewAllHref}
           />
         ) : null}
-        {/* Ledger parents after the inventory rail (not a second card grid). */}
-        <PlaceParentsSection
-          parents={placeContext.parents}
-          eyebrow="Keep exploring"
-          title="This home sits inside"
-        />
         {listing.builderName && builderTiles.length > 0 ? (
-          <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
+          <ListingFold id="builder" title={`More by ${listing.builderName}`}>
+            <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
+          </ListingFold>
         ) : null}
       </main>
       {/* The tour and ask that KbFooter's listing band carried live on
