@@ -9,9 +9,9 @@
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getCommunityBySlug } from '@/app/actions/communities'
 import {
   cityDetachedSlug,
+  getCommunityBySlug,
   getDetachedOverlays,
   getGeoBoundaryMapData,
   getListingTiles,

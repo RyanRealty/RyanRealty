@@ -545,6 +545,7 @@ export {
   getCommunityDetailByName,
   getCommunityNeighborhoodCityBySlug,
 } from '@/lib/data/communities/subdivisionFlags'
+export { getCommunityBySlug } from '@/app/actions/communities'
 export type { CommunityRowForBackfill } from '@/lib/data/communities/subdivisionFlags'
 
 // CMA deterministic builder — subject/comp/market reads, document storage,
