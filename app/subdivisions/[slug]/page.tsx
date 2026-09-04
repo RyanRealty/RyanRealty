@@ -3,11 +3,13 @@
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. First screen is
- * H1 "{Name} homes for sale" + plat-inventory PlaceFaceStrip + PlaceSplitView.
- * Do not cage that screen in V3Stage or V3Field. Never say "plat" in visitor
- * copy. Giant 0 is forbidden on a timed-out read. Schools sit after the Split
- * when the MLS modal actually publishes. Section order is the parity contract
- * at design_system/ryan-realty/ui_kits/subdivision/parity.json.
+ * H1 "{Name} homes for sale" + plat-inventory PlaceFaceStrip + living atlas
+ * + PlaceSplitView, the same composition as city / neighborhood / community.
+ * The atlas ring is this place (self). Do not cage that screen in V3Stage or
+ * V3Field. Never say "plat" in visitor copy. Giant 0 is forbidden on a
+ * timed-out read. Schools sit after the Split when the MLS modal actually
+ * publishes. Section order is the parity contract at
+ * design_system/ryan-realty/ui_kits/subdivision/parity.json.
  *
  * THE RHYTHM RULE AND CONDITIONAL SECTIONS, DECLARED RATHER THAN HIDDEN. Four
  * of this page's sections render only when their data exists, and no ordering
@@ -157,6 +159,8 @@ import {
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { overlaysFromRegions } from '@/lib/place/child-rings'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { SubdivisionDocuments } from './SubdivisionDocuments'
@@ -446,7 +450,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     seedRing || splitListings.some((row) => row.Latitude != null && row.Longitude != null)
 
   // ── THE REST OF THE READS. Every one of them reaches the screen. ─────────
-  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter] =
+  const [salesHistory, subdivisionStats, subdivisionSchools, placeDocuments, placeCharacter, publicSegments] =
     await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -467,6 +471,12 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
       // Build years and HOA, measured from this plat's own member listings
       // (PLACE_CONTENT_RULES R1/R2/R3).
       withTimeoutFallback(getPlaceCharacter('subdivision', slug), null, 4500, 'sub:character'),
+      withTimeoutFallback(
+        getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: slug }),
+        [],
+        3000,
+        'sub:publicSegments',
+      ),
     ])
 
   // ── THE MARKET BAND READS ONE POPULATION AT A TIME ──────────────────────
@@ -498,7 +508,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     sfrCount: activeCount,
     sfrMedian: platFigures.medianListPrice,
     sfrMos: null,
-    segments: [],
+    segments: publicSegments,
     covers: { ...placeTypeCoverPhotos(splitListings), ...typeCovers },
   })
   const headline = `${displayName} homes for sale`
@@ -634,47 +644,26 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
-        {stagePosterSrc ? (
-          <PlaceAreaHero
-            eyebrow={splitCity ? `${displayName} · ${splitCity}` : displayName}
-            headline={headline}
-            posterSrc={stagePosterSrc}
-            stats={face.stats}
-            trail={[
-              { label: 'Home', href: '/' },
-              { label: 'Communities', href: '/communities' },
-              ...(resortSlug
-                ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-                : citySlug
-                  ? [{ label: cityName, href: `/cities/${citySlug}` }]
-                  : []),
-              { label: displayName },
-            ]}
-          />
-        ) : (
-          <V3Breadcrumb
-            trail={[
-              { label: 'Home', href: '/' },
-              { label: 'Communities', href: '/communities' },
-              ...(resortSlug
-                ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-                : citySlug
-                  ? [{ label: cityName, href: `/cities/${citySlug}` }]
-                  : []),
-              { label: displayName },
-            ]}
-          />
-        )}
-
-        {stagePosterSrc ? null : (
-          <div id="overview" className="place-opening">
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
-            <PlaceFaceStrip stats={face.stats} />
-            <V3SourceLine source={inventorySource} />
-          </div>
-        )}
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Communities', href: '/communities' },
+            ...(resortSlug
+              ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
+              : citySlug
+                ? [{ label: cityName, href: `/cities/${citySlug}` }]
+                : []),
+            { label: displayName },
+          ]}
+        />
+        <div id="overview" className="place-opening">
+          <V3Heading level={1} size="field">
+            {headline}
+          </V3Heading>
+          <PlaceFaceStrip stats={face.stats} />
+          <V3SourceLine source={inventorySource} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
+        </div>
         {canMapAtlas && (
           <V3Atlas
             id="atlas"
@@ -719,6 +708,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             city={splitCity}
             subdivision={splitSubdivision}
             boundaryGeojson={seedRing ? boundary.polygon : null}
+            overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
             seedRing={seedRing}
             placeQuery={placeQuery}
             listings={splitListings}

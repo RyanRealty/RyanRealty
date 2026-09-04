@@ -463,10 +463,21 @@ export function cityAboutItems(
     schoolDistrict?: string
     nearestAirport?: string
   } | null,
+  cityName?: string,
 ): V3QuietItem[] {
   const items: V3QuietItem[] = []
-  const prose = description?.trim()
-  if (prose) items.push({ kind: 'prose', body: prose })
+  const paragraphs = (description ?? '')
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+  if (paragraphs[0]) items.push({ kind: 'prose', body: paragraphs[0] })
+  if (paragraphs.length > 1) {
+    items.push({
+      kind: 'fold',
+      term: cityName ? `More about ${cityName}` : 'More about this city',
+      body: paragraphs.slice(1),
+    })
+  }
   const facts: Array<[string, string | undefined]> = [
     ['Population', quickFacts?.population],
     ['County', quickFacts?.county ? `${quickFacts.county} County` : undefined],
@@ -474,8 +485,8 @@ export function cityAboutItems(
     ['School district', quickFacts?.schoolDistrict],
     ['Nearest commercial airport', quickFacts?.nearestAirport],
   ]
-  for (const [term, body] of facts) {
-    if (body?.trim()) items.push({ kind: 'prose', term, body: body.trim() })
+  for (const [term, value] of facts) {
+    if (value?.trim()) items.push({ kind: 'fact', term, value: value.trim() })
   }
   return items
 }

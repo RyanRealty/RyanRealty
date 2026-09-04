@@ -1,0 +1,14 @@
+/* Folded place photo. Not a second H1 cage — lives inside .place-opening. */
+.place-opening__media {
+  margin-top: var(--v3-space-sm);
+  width: 100%;
+  max-width: var(--v3-measure);
+  height: var(--v3-carousel-h);
+  overflow: hidden;
+}
+.place-opening__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

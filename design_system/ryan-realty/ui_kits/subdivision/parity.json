@@ -3,7 +3,7 @@
   "mockup": null,
   "visualLanguage": "design_system/public/PUBLIC_UI.md. First screen is Split + plat inventory face, not a Stage or Field cage.",
   "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon \u2014 Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021\u20132025 counts sit below the fold.",
-  "note": "RESTYLED TO SPLIT + FACE 2026-08-29. First screen is V3Heading + PlaceFaceStrip + PlaceSplitView. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK: ci:publish-plat-figures still pins publishPlatFigures and the withheld pending/sold cells. Yearly closed counts stay in SubdivisionSalesHistory below the fold (REGISTRY section 4 withholds a closed price). Schools stay in SubdivisionSchools and still call getSubdivisionSchools; omit a level the modal does not publish. Blogs omit if none. Parks/trails stay Quiet edges, not an invented rail.",
+  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + folded PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -77,7 +77,7 @@
     },
     {
       "name": "PlaceTypeSlider",
-      "section": "Horizontal type cards. Replaces stacked V3PlacePropertyTypes Instruments.",
+      "section": "Horizontal type cards from getPublicPlaceSegments, the same leftover extra-type feed city / neighborhood / community use. Replaces stacked V3PlacePropertyTypes Instruments. Miss omits (slider hides when fewer than two cards).",
       "blocking": true
     },
     {

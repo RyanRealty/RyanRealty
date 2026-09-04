@@ -134,6 +134,8 @@ describe('subdivision page first screen', () => {
     expect(code).not.toMatch(/fetchSubdivMarketExtras/)
     expect(code).toMatch(/seedRing=\{seedRing\}/)
     expect(code).toMatch(/hasRealPlatPolygon\(/)
+    expect(code).toMatch(/getPublicPlaceSegments/)
+    expect(code).toMatch(/segments: publicSegments/)
   })
 
   it('Stage is a place-owned still, not a listing photo of one house', () => {

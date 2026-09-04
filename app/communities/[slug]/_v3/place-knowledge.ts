@@ -33,11 +33,6 @@ type Registry = {
   description?: string | null
 }
 
-/** A paragraph row, dropped when the body is empty. */
-function prose(term: string, body: string): V3QuietItem[] {
-  return body.trim().length > 0 ? [{ kind: 'prose', term, body }] : []
-}
-
 function childPlatItems(input: {
   name: string
   aliases: readonly string[]
@@ -197,7 +192,9 @@ export function buildPlaceKnowledge(input: {
     // the turf blend and where the bunker sand comes from — were in the config
     // and published nowhere, and they are the kind of thing no other page about
     // this course carries.
-    items.push(...prose('The course', specs.summary ?? ''))
+    if (specs.summary?.trim()) {
+      items.push({ kind: 'fold', term: 'The course', body: [specs.summary.trim()] })
+    }
     if (specs.par) items.push({ kind: 'fact', term: 'Par', value: String(specs.par) })
     if (specs.yardage) {
       items.push({ kind: 'fact', term: 'Yardage', value: specs.yardage.toLocaleString('en-US') })
@@ -234,7 +231,7 @@ export function buildPlaceKnowledge(input: {
     })
   }
   if (content?.membershipOfficePhone) {
-    items.push(...prose('Membership office', content.membershipOfficePhone))
+    items.push({ kind: 'fact', term: 'Membership office', value: content.membershipOfficePhone })
   }
 
   const builders = (content?.builders ?? [])
@@ -256,16 +253,18 @@ export function buildPlaceKnowledge(input: {
     }
   }
 
+  if (input.isResort) {
+    items.push({
+      kind: 'fold',
+      term: 'Second homes',
+      body: `Short-term rental potential in ${name} varies by HOA rules, community covenants, and Oregon regulations. Ask for the current rental guidelines before you assume what is permitted or what it could earn.`,
+    })
+    items.push({ label: `Ask about renting in ${name}`, href: input.contactHref })
+  }
+
   /**
-   * The authored story, last and folded.
-   *
-   * It used to open this section — five or six paragraphs above every figure —
-   * which is how #belonging became a 2,974px essay and why a reader could not
-   * find the HOA or the drive times without reading it first. The section now
-   * leads with what belonging costs and what the place is, and the story is one
-   * row the reader opens. Nothing is cut: the paragraphs are in the DOM for a
-   * crawler whether or not the disclosure is open, and the first of them is
-   * already on the page's first screen.
+   * The authored story, last and folded. First screen is H1 + face + atlas,
+   * so every about paragraph lives here as disclosure. Nothing is cut.
    */
   if (input.aboutParagraphs.length > 0) {
     items.push({
@@ -273,15 +272,6 @@ export function buildPlaceKnowledge(input: {
       term: `More about ${name}`,
       body: [...input.aboutParagraphs],
     })
-  }
-
-  if (input.isResort) {
-    items.push({
-      kind: 'prose',
-      term: 'Second homes',
-      body: `Short-term rental potential in ${name} varies by HOA rules, community covenants, and Oregon regulations. Ask for the current rental guidelines before you assume what is permitted or what it could earn.`,
-    })
-    items.push({ label: `Ask about renting in ${name}`, href: input.contactHref })
   }
 
   return items

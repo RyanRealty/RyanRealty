@@ -2,10 +2,12 @@
  * /cities/[slug] - the city node. Same template for Bend, Redmond, every city.
  *
  * First screen: H1 `{City} homes for sale`, leftover grain face
- * (publishPlaceFace grain city), flagship PlaceSplitView seeded from the city
- * polygon. Do not write ?shapes= onto this URL. Type chips live on Split, not
- * as first-screen property-type H2s. Time/Relate/Rank charts stay below the
- * fold off leftover monthly close + getCoreChartSeries.
+ * (publishPlaceFace grain city), living atlas, flagship PlaceSplitView seeded
+ * from the city polygon. Nested places draw as Atlas regions and Split
+ * overlayBoundaries (Bend neighborhoods, plats elsewhere). Do not write
+ * ?shapes= onto this URL. Type chips live on Split, not as first-screen
+ * property-type H2s. Time/Relate/Rank charts stay below the fold off leftover
+ * monthly close + getCoreChartSeries.
  *
  * Face numbers are leftover HUD for THIS slug. Miss omits. Median close 12mo
  * stays on the city chart, never as a fake list price. Do not hardcode a
@@ -108,6 +110,7 @@ import {
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
+import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
@@ -619,7 +622,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   const cityContent = getCityContent(cityName)
   const quickFacts = CITY_QUICK_FACTS[cityName] ?? null
   const description = cityContent?.description?.trim()
-  const aboutItems = cityAboutItems(description, quickFacts)
+  const aboutItems = cityAboutItems(description, quickFacts, cityName)
 
   const exploreItems = cityExploreItems(
     cityName,
@@ -653,26 +656,14 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        {stagePosterSrc ? (
-          <PlaceAreaHero
-            eyebrow={`${cityName} · Oregon`}
-            headline={headline}
-            posterSrc={stagePosterSrc}
-            trail={trail}
-            stats={face.stats}
-          />
-        ) : (
-          <V3Breadcrumb trail={trail} />
-        )}
-
-        {stagePosterSrc ? null : (
-          <div className="place-opening">
-            <V3Heading level={1} size="field">
-              {headline}
-            </V3Heading>
-            <PlaceFaceStrip stats={face.stats} />
-          </div>
-        )}
+        <V3Breadcrumb trail={trail} />
+        <div className="place-opening">
+          <V3Heading level={1} size="field">
+            {headline}
+          </V3Heading>
+          <PlaceFaceStrip stats={face.stats} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
+        </div>
         {(
           <V3Atlas
             id="atlas"
@@ -695,6 +686,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           id="homes"
           city={cityName}
           boundaryGeojson={cityGeojson}
+          overlayBoundaries={overlaysFromRegions(atlasRegions.slice(1))}
           seedRing
           placeQuery={`${cityName} Oregon`}
           searchParams={sp}

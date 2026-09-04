@@ -1,9 +1,10 @@
 /**
- * /communities/[slug] — master-plan grain. First screen is Split + leftover
- * face (count + median list). MOS / sold / verdict / DTP stay off the face.
- * Tetherow leftover is the 16 SFR pile, not alias Field length. Eagle Crest
- * does not seed an unreliable hull. Parity:
- * design_system/ryan-realty/ui_kits/community/parity.json.
+ * /communities/[slug] — master-plan grain. First screen is H1 + leftover face
+ * + living atlas, the same composition as city / neighborhood / subdivision.
+ * MOS / sold / verdict / DTP stay off the face. Tetherow leftover is the 16
+ * SFR pile, not alias Field length. Eagle Crest does not seed an unreliable
+ * hull. Nested plats draw as Atlas regions and Split overlayBoundaries.
+ * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
  * slug. publishPlaceFace({ grain: 'community', hud }) prints that leftover
@@ -55,7 +56,6 @@ import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
-import { atlasRegionName } from '@/lib/atlas/place-names'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
@@ -74,6 +74,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3CourseMap,
+  V3Heading,
   V3Instrument,
   V3Ledger,
   V3PlaceCharacter,
@@ -97,6 +98,7 @@ import {
   publishPlaceTypeCards,
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
+import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
 import { homesForSalePath, slugify } from '@/lib/slug'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -522,11 +524,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // its own page — the "broken out" rendering getCommunitySubdivisions was
   // built for. Spatial membership (centroid in polygon), county-GIS geometry
   // only, capped so a plat-dense resort cannot flood the map with paths.
-  const platCellOverlays = platCells.slice(0, 80).map((cell) => ({
-    label: cell.label,
-    href: `/subdivisions/${cell.slug}`,
-    geojson: cell.geometry,
-  }))
+  const platCellOverlays = overlaysFromChildCells(platCells)
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
   // every page). Population = every active, pending, and 30-day-closed
   // listing INSIDE the recorded boundary, read through the same builder the
@@ -559,16 +557,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   const atlasRegions: AtlasRegion[] = mapPolygon
     ? [
         { id: `community:${slug}`, kind: 'town', kindLabel: 'Community', name: publicName, href: `/communities/${slug}`, geometry: mapPolygon },
-        ...platCells.slice(0, 80).map(
-          (cell): AtlasRegion => ({
-            id: `subdivision:${cell.slug}`,
-            kind: 'neighborhood',
-            kindLabel: 'Subdivision',
-            name: atlasRegionName(cell.label) ?? cell.label,
-            href: `/subdivisions/${cell.slug}`,
-            geometry: cell.geometry,
-          }),
-        ),
+        ...regionsFromChildCells(platCells),
       ]
     : []
   const typeCovers = await withTimeoutFallback(
@@ -607,17 +596,11 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       ? richContent.aboutProse
       : [community.description ?? registryEntry?.description ?? ''].filter((p): p is string => Boolean(p && p.trim())))
   const faceAbout = firstAboutParagraph(aboutParagraphs)
-  /**
-   * The first paragraph is already on the first screen (`faceAbout`), so
-   * #belonging takes the rest. It was taking all of them, which printed that
-   * paragraph twice on one page — duplicated to the reader and to a crawler.
-   */
-  const belongingAbout = aboutParagraphs.filter((p) => p.trim() && p.trim() !== faceAbout)
 
   const knowledgeItems = buildPlaceKnowledge({
     name: publicName,
     city: cityName,
-    aboutParagraphs: belongingAbout,
+    aboutParagraphs: faceAbout ? aboutParagraphs : [],
     content: richContent,
     registry: registryEntry ?? null,
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
@@ -674,12 +657,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     { label: publicName },
   ]
 
-  const placeItems = [
-    ...(faceAbout ? [{ kind: 'prose' as const, body: faceAbout }] : []),
-    { label: `See ${publicName} houses`, href: '#homes' },
-    { label: `Search ${publicName} homes`, href: browseHref },
-  ]
-
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).
   const atlasView = atlas ?? EMPTY_PLACE_ATLAS
@@ -696,25 +673,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         <V3SectionTracker />
         <MetadataBlock schemas={communitySchemas} />
 
-        {stagePosterSrc ? (
-          <PlaceAreaHero
-            eyebrow={`${publicName} · ${cityName}`}
-            headline={headline}
-            posterSrc={stagePosterSrc}
-            trail={trail}
-            stats={face.stats}
-          />
-        ) : (
-          <V3Breadcrumb trail={trail} />
-        )}
-        {stagePosterSrc ? null : (
-          <V3Quiet id="place" heading={headline} headingLevel={1} items={placeItems} />
-        )}
-        {stagePosterSrc ? null : (
-          <section className={`${V3_ROOT_CLASS} place-face-block`} aria-label={`${publicName} live inventory`}>
-            {face.stats.length > 0 ? <PlaceFaceStrip stats={face.stats} /> : null}
-          </section>
-        )}
+        <V3Breadcrumb trail={trail} />
+        <div className="place-opening">
+          <V3Heading level={1} size="field">
+            {headline}
+          </V3Heading>
+          <PlaceFaceStrip stats={face.stats} />
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
+        </div>
         {(
           <V3Atlas
             id="atlas"
@@ -879,9 +845,12 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           eyebrow="Common questions"
           heading={`${publicName} real estate questions`}
           questions={pageFaqs.map((faq) => ({ question: faq.question, body: faq.answer }))}
-          doors={exploreItems.flatMap((item) =>
-            'href' in item && item.href ? [{ label: item.label, href: item.href }] : [],
-          )}
+          doors={[
+            { label: `See ${publicName} houses`, href: '#homes' },
+            ...exploreItems.flatMap((item) =>
+              'href' in item && item.href ? [{ label: item.label, href: item.href }] : [],
+            ),
+          ]}
           note={`Market figures on this page come from the regional MLS through Oregon Data Share.${
             asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
           }`}

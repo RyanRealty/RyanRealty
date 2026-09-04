@@ -59,6 +59,9 @@ describe('community first screen leftover face + split', () => {
 
   it('opens on Split, not V3Stage/V3Field as the cage', () => {
     expect(SRC).toMatch(/<PlaceSplitView/)
+    expect(SRC).toMatch(/<V3Heading/)
+    expect(SRC).not.toMatch(/headingLevel=\{1\}/)
+    expect(SRC).toMatch(/overlaysFromChildCells\(platCells\)/)
     expect(SRC).toMatch(/id="homes"/)
     expect(SRC).toMatch(/seedRing=\{seedRing\}/)
     // seedRing keys on having a TRUSTED polygon (county plat-union first,
