@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DRIP_SPACING_MINUTES,
   DRIP_TIMEZONE,
+  DRIP_WEEKDAY_START_MINUTES,
   canSendDripNow,
   isDripWeekday,
   isDripWindowOpen,
@@ -49,10 +50,10 @@ describe('drip-schedule — weekday 8am PT window', () => {
 })
 
 describe('drip-schedule — spacing / one-at-a-time', () => {
-  it('exposes a single spacing constant (TBD knob)', () => {
-    expect(typeof DRIP_SPACING_MINUTES).toBe('number')
-    expect(DRIP_SPACING_MINUTES).toBeGreaterThan(0)
+  it('hardcodes 08:00 America/Los_Angeles and 5-minute spacing', () => {
     expect(DRIP_TIMEZONE).toBe('America/Los_Angeles')
+    expect(DRIP_WEEKDAY_START_MINUTES).toBe(8 * 60)
+    expect(DRIP_SPACING_MINUTES).toBe(5)
   })
 
   it('blocks a second send inside the spacing window', () => {
