@@ -35,8 +35,17 @@ import { useRouter } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button, Dialog } from '@/components/admin/v2'
-import { enrollProspectInDripAction } from '@/app/actions/prospecting'
+import { Button, Dialog, TextField } from '@/components/admin/v2'
+import {
+  attachProspectPersonAction,
+  enrollProspectInDripAction,
+  searchProspectPersonAction,
+} from '@/app/actions/prospecting'
+import {
+  canOpenProspectSend,
+  prospectDripBlockedReason,
+  shouldHideProspectEnroll,
+} from '@/lib/data/prospecting/enroll-ui'
 import { PROSPECT_CHANNELS, type ProspectDetail } from '@/lib/data/prospecting/types'
 import { ProspectComplianceRibbon } from './ProspectComplianceRibbon.client'
 import { ProspectDocPill } from './ProspectDocPill.client'
@@ -100,25 +109,27 @@ export function ProspectDetailPanel({
   const router = useRouter()
   const [confirmEnroll, setConfirmEnroll] = useState(false)
   const [enrolling, startEnroll] = useTransition()
+  const [personQuery, setPersonQuery] = useState('')
+  const [personHits, setPersonHits] = useState<Array<{ id: number; name: string | null; email: string | null }>>([])
+  const [linkingPerson, startLinkPerson] = useTransition()
 
   // Display-only gating — the server action re-runs every guard at click time.
-  // A drip touches every channel it is configured for, so it needs an open
-  // channel — not merely an unblocked SMS one.
-  const dripBlockedReason = detail.compliance.allChannelsBlocked
-    ? 'No open channel. Never enroll.'
-    : detail.drip.enrolled
-      ? `Already in ${detail.drip.sequenceName ?? 'the drip workflow'}.`
-      : detail.personId == null
-        ? 'No CRM contact linked yet. Send the intro first.'
-        : detail.drip.sequenceId == null
-          ? 'No active drip workflow is configured for this kind.'
-          : null
+  // Relisted / off-market hard-skip matches Send (Aberdeen class).
+  const dripBlockedReason = prospectDripBlockedReason({
+    compliance: detail.compliance,
+    drip: detail.drip,
+    personId: detail.personId,
+  })
+  const hideEnroll = shouldHideProspectEnroll({
+    compliance: detail.compliance,
+    drip: detail.drip,
+  })
 
   function runEnroll() {
     const personId = detail.personId
     if (personId == null) return
     startEnroll(async () => {
-      const res = await enrollProspectInDripAction(personId, detail.kind)
+      const res = await enrollProspectInDripAction(personId, detail.kind, detail.id)
       if (res.ok) {
         toast.success(`Enrolled in ${res.sequence}.`)
         router.refresh()
@@ -134,8 +145,10 @@ export function ProspectDetailPanel({
     detail.compliance.offMarket ||
     PROSPECT_CHANNELS.some((c) => detail.compliance.channels[c].blocked)
 
-  const canOpenSend =
-    !detail.compliance.relisted && !detail.compliance.offMarket && !detail.compliance.allChannelsBlocked
+  const canOpenSend = canOpenProspectSend({
+    compliance: detail.compliance,
+    personId: detail.personId,
+  })
 
   const hasEngagement =
     detail.engagement.reportViews > 0 ||
@@ -199,6 +212,68 @@ export function ProspectDetailPanel({
           {detail.listPrice != null ? `Was ${formatPrice(detail.listPrice)}` : null}
           {dateValue ? ` · ${dateLabel} ${formatDate(dateValue)}` : ''}
         </p>
+        {detail.personId == null ? (
+          <div className="space-y-2" style={{ paddingTop: 8 }}>
+            <p style={quietTextStyle}>
+              No CRM contact linked. Attach one before send or drip — owner unknown blocks email
+              compose (Nugget / Covina class).
+            </p>
+            <TextField
+              label="Find person"
+              value={personQuery}
+              onChange={(e) => setPersonQuery(e.target.value)}
+              hint="Name, at least two characters."
+            />
+            <Button
+              type="button"
+              variant="quiet"
+              disabled={linkingPerson || personQuery.trim().length < 2}
+              onClick={() => {
+                startLinkPerson(async () => {
+                  const { data, error } = await searchProspectPersonAction(personQuery)
+                  if (error) toast.error(error)
+                  else setPersonHits(data)
+                })
+              }}
+            >
+              Search people
+            </Button>
+            {personHits.length > 0 ? (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {personHits.map((hit) => (
+                  <li key={hit.id} style={{ marginBottom: 6 }}>
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      className="w-full"
+                      disabled={linkingPerson}
+                      onClick={() => {
+                        startLinkPerson(async () => {
+                          const { data, error } = await attachProspectPersonAction({
+                            kind: detail.kind,
+                            prospectId: detail.id,
+                            personId: hit.id,
+                          })
+                          if (error || !data) {
+                            toast.error(error ?? 'Could not link this person.')
+                            return
+                          }
+                          setPersonHits([])
+                          setPersonQuery('')
+                          toast.success(`Linked to ${data.personName ?? hit.name ?? `people/${hit.id}`}.`)
+                          router.refresh()
+                        })
+                      }}
+                    >
+                      {hit.name ?? `people/${hit.id}`}
+                      {hit.email ? ` · ${hit.email}` : ''}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {showRibbon ? <ProspectComplianceRibbon compliance={detail.compliance} /> : null}
@@ -306,25 +381,31 @@ export function ProspectDetailPanel({
           <Button variant="quiet" touch className="flex-1" onClick={onOpenSend}>
             Send intro
           </Button>
+        ) : detail.doc.state === 'ready' && detail.personId == null && !detail.compliance.relisted && !detail.compliance.offMarket ? (
+          <Button variant="quiet" touch className="flex-1" disabled title="Link a CRM contact first">
+            Link contact to send
+          </Button>
         ) : null}
-        <Button
-          variant="quiet"
-          touch
-          className="flex-1"
-          disabled={Boolean(dripBlockedReason) || enrolling}
-          title={dripBlockedReason ?? undefined}
-          onClick={() => setConfirmEnroll(true)}
-        >
-          {enrolling ? (
-            <span className="flex items-center gap-1.5">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Enrolling…
-            </span>
-          ) : detail.drip.enrolled ? (
-            'In drip'
-          ) : (
-            'Enroll in drip'
-          )}
-        </Button>
+        {!hideEnroll ? (
+          <Button
+            variant="quiet"
+            touch
+            className="flex-1"
+            disabled={Boolean(dripBlockedReason) || enrolling}
+            title={dripBlockedReason ?? undefined}
+            onClick={() => setConfirmEnroll(true)}
+          >
+            {enrolling ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Enrolling…
+              </span>
+            ) : detail.drip.enrolled ? (
+              'In drip'
+            ) : (
+              'Enroll in drip'
+            )}
+          </Button>
+        ) : null}
         {crmHref ? (
           <Link
             href={crmHref}
@@ -335,7 +416,15 @@ export function ProspectDetailPanel({
           </Link>
         ) : null}
       </div>
-      {dripBlockedReason ? <p style={quietTextStyle}>{dripBlockedReason}</p> : null}
+      {hideEnroll ? (
+        <p style={quietTextStyle}>
+          {detail.compliance.relisted
+            ? 'Relisted or sold — enroll hidden (same hard-skip as send).'
+            : 'Off market — enroll hidden (same hard-skip as send).'}
+        </p>
+      ) : dripBlockedReason ? (
+        <p style={quietTextStyle}>{dripBlockedReason}</p>
+      ) : null}
 
       <Dialog
         open={confirmEnroll}

@@ -318,8 +318,8 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           </Button>
         )}
         {!personId ? (
-          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-            Tie this CMA to a CRM person to attach the PDF in Messages.
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-warn, var(--a-text-2))' }}>
+            Required before send: search and attach a CRM person above. Without a person link, email compose cannot open (Nugget / Covina class).
           </p>
         ) : null}
         {personId && !props.hasDocument ? (

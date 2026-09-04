@@ -37,3 +37,9 @@ export {
 } from './drip'
 
 export { listProspects, classifyProspect, type ProspectBucket } from './list'
+export {
+  canOpenProspectSend,
+  prospectDripBlockedReason,
+  prospectMarketBlocksOutreach,
+  shouldHideProspectEnroll,
+} from './enroll-ui'
