@@ -72,27 +72,22 @@
   margin-inline-start: auto;
 }
 
-/* Find me — always-on voice search. Navy pill so it is the clickable door. */
+/* Find me — mic in the bar, listening stage over the page. */
 .v3-chrome__findme-wrap {
   position: relative;
 }
 
 .v3-chrome__findme {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--v3-space-3xs);
+  width: var(--v3-tap);
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-sm);
-  border: 1px solid var(--v3-navy);
-  background: var(--v3-cream);
-  color: var(--v3-navy);
-  font-family: inherit;
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-medium);
-  line-height: 1;
+  padding: 0;
+  border: 0;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
   cursor: pointer;
 }
 
@@ -101,48 +96,136 @@
   color: var(--v3-cream);
 }
 
-.v3-chrome__findme-mic {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 0 currentColor;
-  animation: v3-findme-idle 2.4s var(--v3-ease-out) infinite;
+.v3-chrome__findme-icon {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
-.v3-chrome__findme.is-on .v3-chrome__findme-mic {
-  animation-name: v3-findme-listen;
-  animation-duration: 1.1s;
+.v3-chrome__findme:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
 }
 
-@keyframes v3-findme-idle {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--v3-navy) 35%, transparent); }
-  70% { box-shadow: 0 0 0 6px transparent; }
+.v3-findme-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  align-items: end;
 }
 
-@keyframes v3-findme-listen {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.35); opacity: 0.55; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .v3-chrome__findme-mic {
-    animation: none;
-  }
-}
-
-.v3-chrome__findme-err {
+.v3-findme-stage__scrim {
   position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 4;
-  margin: var(--v3-space-3xs) 0 0;
-  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--v3-navy) 45%, transparent);
+  cursor: pointer;
+}
+
+.v3-findme-stage__panel {
+  position: relative;
+  z-index: 1;
+  padding: var(--v3-space-lg) var(--v3-gutter) calc(var(--v3-space-xl) + env(safe-area-inset-bottom, 0px));
   background: var(--v3-cream);
+  color: var(--v3-navy);
+}
+
+.v3-findme-stage__eyebrow {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3-findme-stage__title {
+  margin: var(--v3-space-3xs) 0 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+}
+
+.v3-findme-stage__hint {
+  margin: var(--v3-space-xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+}
+
+.v3-findme-stage__form {
+  display: grid;
+  gap: var(--v3-space-sm);
+  margin-top: var(--v3-space-md);
+}
+
+.v3-findme-stage__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.v3-findme-stage__input {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--v3-rule-section);
+  background: transparent;
+  color: var(--v3-navy);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
+}
+
+.v3-findme-stage__input:focus {
+  outline: none;
+}
+
+.v3-findme-stage__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm);
+}
+
+.v3-findme-stage__go,
+.v3-findme-stage__mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-md);
+  border: 0;
+  font-family: inherit;
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  cursor: pointer;
+}
+
+.v3-findme-stage__go {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+.v3-findme-stage__go:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.v3-findme-stage__mic {
+  background: transparent;
+  color: var(--v3-navy);
   border: var(--v3-rule-hairline);
+}
+
+.v3-findme-stage__err {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-sm);
   color: var(--v3-ink);
-  font-size: var(--v3-size-source);
-  white-space: nowrap;
 }
 
 /* Destinations --------------------------------------------------------------

@@ -17,7 +17,7 @@ import { BuilderExploreSection } from '@/components/site/listing-detail/BuilderE
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
+import { cityNeighborhoodHref } from '@/lib/site/place-href'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
@@ -34,7 +34,7 @@ import {
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
-import { ListingTourCard } from '@/components/site/listing-detail/ListingTourCard'
+import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
 import { OpenHouses } from '@/components/site/listing-detail/OpenHouses'
 import { PropertySpecs } from '@/components/site/listing-detail/PropertySpecs'
@@ -67,7 +67,7 @@ import {
   resolveListingPlaceAndMarket,
 } from '@/lib/listing/listing-place-market'
 
-import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
+import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { publishOpenHouseBadgeLabel } from '@/lib/listing/publish-listing-card-badges'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
@@ -117,7 +117,7 @@ void V3ListingRow
  *   main        PriceCtaStrip · OpenHouses · V3Instrument #ask
  *               · V3Atlas #location (lot stroke + acreage on this map)
  *               · V3Doors · alerts · folds · ListingAttribution
- *   sidebar     ListingTourCard + ListingBrokerCTA
+ *   sidebar     ListingBrokerCTA (tour / call / text live here and on the bar)
  *   floating    ListingBrokerBar (OUTSIDE the aside)
  *   full-width  V3ListingRow strip of similar homes
  *
@@ -461,7 +461,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // One hop: an out-of-area city's page is /oregon/<slug> and /cities/<slug>
   // 308s there; a registry community used as a neighborhood slug 308s to
   // /communities/<slug> (lib/site/place-href).
-  const cityDoorHref = cityHref(listing.citySlug)
   const neighborhoodDoorHref =
     placeContext.neighborhood?.href ?? cityNeighborhoodHref(listing.citySlug, listing.neighborhoodSlug)
   const listingHref = listingDetailPath(
@@ -482,21 +481,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { mlsNumber: listing.listNumber },
   )
 
-  const breadcrumbs = [
-    { label: 'Home', href: '/' },
-    { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
-    ...(listing.city && cityDoorHref ? [{ label: listing.city, href: cityDoorHref }] : []),
-    { label: street || `Listing ${listingKey}` },
-  ]
+  const breadcrumbs = listingPlaceTrail({
+    city: listing.city && listing.citySlug ? { label: listing.city, slug: listing.citySlug } : null,
+    neighborhood: placeContext.neighborhood,
+    community: placeContext.curatedCommunity,
+    subdivision: placeContext.subdivision,
+    address: street || `Listing ${listingKey}`,
+  })
 
   // Media 1 is a reel when one exists (publishListingLeadMedia). 3D is a pill.
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
-  const tourHref = listingContactHref(contactKey, 'tour') ?? '/contact?intent=tour'
-  const askHref = listingContactHref(contactKey, 'question') ?? '/contact?intent=question'
-  const brokerPhone = ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub ?? null
-
   const askClaim = buildListingAskClaim({
     ask: publishedSaleAsk,
     wholePropertyPrice,
@@ -720,25 +716,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   ) : null
 
-  const sidebar = (
-    <>
-      <ListingTourCard
-        tourHref={tourHref}
-        askHref={askHref}
-        tel={brokerPhone}
-        sms={brokerPhone}
-      />
-      {ctaBroker ? (
-        <ListingBrokerCTA
-          defaultBroker={ctaBroker}
-          brokers={brokers}
-          listingKey={contactKey}
-          reviews={genericReviews}
-          lockToDefault={listingAgent != null}
-        />
-      ) : null}
-    </>
-  )
+  const sidebar = ctaBroker ? (
+    <ListingBrokerCTA
+      defaultBroker={ctaBroker}
+      brokers={brokers}
+      listingKey={contactKey}
+      reviews={genericReviews}
+      lockToDefault={listingAgent != null}
+    />
+  ) : null
 
   const listingJsonLdSchemas = buildListingJsonLd({
     listingKey,

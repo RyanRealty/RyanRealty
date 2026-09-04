@@ -620,9 +620,7 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {/* Always-on voice door. Speaks into parseSearchQuery and lands on
-              /homes-for-sale. Matt 2026-09-04: present on phone and desk,
-              labeled Find me, has to work. */}
+          {/* Mic in the bar. The listening stage is the feature. */}
           <FindMeVoice />
           {/* The broker's number, always visible (Matt 2026-09-01: a visitor
               could not find how to contact the brokerage — chrome failure on a

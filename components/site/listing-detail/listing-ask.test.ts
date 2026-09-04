@@ -4,6 +4,7 @@ import {
   buildListingAskClaim,
   buildListingAskHeadline,
   formatAskVsMedianDelta,
+  leftoverMarketReportHref,
   publishAskVsMedianPct,
 } from './listing-ask'
 
@@ -19,10 +20,11 @@ const HUD: LeftoverHudKpis = {
   sold12mo: 40,
 }
 
-const GRAIN = { name: 'Tetherow', hubHref: '/communities/tetherow' }
+const GRAIN = { name: 'Tetherow', hubHref: '/communities/tetherow', geoSlug: 'tetherow' }
+const SUNRIVER = { name: 'Sunriver', hubHref: '/communities/sunriver', geoSlug: 'sunriver' }
 
 describe('publishAskVsMedianPct', () => {
-  it('is (ask - median) / median * 100', () => {
+  it('is (price - median) / median * 100', () => {
     expect(publishAskVsMedianPct(1_200_000, 1_000_000)).toBe(20)
     expect(publishAskVsMedianPct(900_000, 1_000_000)).toBe(-10)
     expect(publishAskVsMedianPct(1_000_000, 1_000_000)).toBe(0)
@@ -49,40 +51,66 @@ describe('formatAskVsMedianDelta', () => {
   })
 })
 
+describe('leftoverMarketReportHref', () => {
+  it('is /housing-market/{slug} for a core grain and omitted otherwise', () => {
+    expect(leftoverMarketReportHref('sunriver')).toBe('/housing-market/sunriver')
+    expect(leftoverMarketReportHref('bend')).toBe('/housing-market/bend')
+    expect(leftoverMarketReportHref('tetherow')).toBeNull()
+    expect(leftoverMarketReportHref('larkspur')).toBeNull()
+  })
+})
+
 describe('buildListingAskHeadline', () => {
-  it('is one sentence the figures can support', () => {
+  it("is one sentence the figures can support, and never says ask", () => {
     expect(buildListingAskHeadline('Tetherow', 1_200_000, 1_000_000)).toBe(
-      'This ask sits 20.0% over the Tetherow median list',
+      "This home's price sits 20.0% over the Tetherow median list",
     )
     expect(buildListingAskHeadline('Southeast Bend', 900_000, 1_000_000)).toBe(
-      'This ask sits 10.0% under the Southeast Bend median list',
+      "This home's price sits 10.0% under the Southeast Bend median list",
+    )
+    expect(buildListingAskHeadline('Sunriver', 697_000, 1_000_000)).toBe(
+      "This home's price sits 30.3% under the Sunriver median list",
     )
     expect(buildListingAskHeadline('Tetherow', 1_000_000, 1_000_000)).toBe(
-      'This ask matches the Tetherow median list',
+      "This home's price matches the Tetherow median list",
     )
+    expect(buildListingAskHeadline('Sunriver', 697_000, 1_000_000)).not.toMatch(/ask/i)
   })
 })
 
 describe('buildListingAskClaim', () => {
-  it('prints leftover median and this ask, never a KPI jargon label', () => {
+  it('prints leftover median and this price, never a KPI jargon label', () => {
     const claim = buildListingAskClaim({
       ask: 1_200_000,
       wholePropertyPrice: 1_200_000,
       hud: HUD,
       grain: GRAIN,
     })
-    expect(claim?.headline).toBe('This ask sits 20.0% over the Tetherow median list')
+    expect(claim?.headline).toBe("This home's price sits 20.0% over the Tetherow median list")
     expect(claim?.figures[0]?.value).toBe('$1,200,000')
-    expect(claim?.figures[0]?.label).toBe('this ask')
+    expect(claim?.figures[0]?.label).toBe('this price')
     expect(claim?.figures[1]?.value).toBe('$1,000,000')
     expect(claim?.figures[1]?.label).toBe('Tetherow median list')
     expect(claim?.figures.map((f) => f.label).join(' ')).not.toMatch(/Median to pending/)
     expect(claim?.source).toMatch(/leftover membership, active single-family houses in Tetherow/)
-    expect(claim?.source).toMatch(/This ask is the published list price/)
-    expect(claim?.action.href).toBe('/communities/tetherow')
+    expect(claim?.source).toMatch(/This price is the published list price/)
+    expect(claim?.source).not.toMatch(/\bask\b/i)
+    expect(claim?.headline).not.toMatch(/ask/i)
+    expect(claim?.action).toBeUndefined()
   })
 
-  it('withholds a share ask against leftover whole-home median', () => {
+  it('sends a core grain to its market report, not search', () => {
+    const claim = buildListingAskClaim({
+      ask: 697_000,
+      wholePropertyPrice: 697_000,
+      hud: HUD,
+      grain: SUNRIVER,
+    })
+    expect(claim?.action).toEqual({ label: 'Sunriver market', href: '/housing-market/sunriver' })
+    expect(claim?.action?.href).not.toMatch(/homes-for-sale/)
+  })
+
+  it('withholds a share price against leftover whole-home median', () => {
     expect(
       buildListingAskClaim({
         ask: 1,
@@ -104,7 +132,7 @@ describe('buildListingAskClaim', () => {
     ).toBeNull()
   })
 
-  it('withholds when there is no sale ask', () => {
+  it('withholds when there is no sale price', () => {
     expect(
       buildListingAskClaim({
         ask: null,

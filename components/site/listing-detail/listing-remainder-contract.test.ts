@@ -25,5 +25,6 @@ describe('listing remainder composition', () => {
     expect(PAGE).not.toMatch(/<ListingFeaturedHomes/)
     expect(PAGE).not.toMatch(/id="lot"/)
     expect(PAGE).not.toMatch(/Median to pending/)
+    expect(PAGE).not.toMatch(/<ListingTourCard/)
   })
 })

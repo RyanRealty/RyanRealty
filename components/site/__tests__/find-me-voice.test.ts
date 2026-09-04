@@ -10,10 +10,10 @@ describe('FindMeVoice', () => {
     expect(CHROME).toContain('<FindMeVoice')
   })
 
-  it('sends speech through searchHrefForQuery, not a hardcoded Bend URL', () => {
+  it('opens a listening stage and sends speech through searchHrefForQuery', () => {
     expect(SRC).toContain('searchHrefForQuery')
-    expect(SRC).not.toContain('/homes-for-sale/bend?')
     expect(SRC).toContain('Find me a home')
     expect(SRC).toContain('v3-findme-stage')
+    expect(SRC).not.toContain('/homes-for-sale/bend?')
   })
 })

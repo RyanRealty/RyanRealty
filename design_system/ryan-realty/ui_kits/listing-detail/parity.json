@@ -75,11 +75,6 @@
       "section": "Similar homes as a capped strip of V3ListingRow, same relatedHomes ranking, one view-more href. Not the GSAP poster grid.",
       "blocking": true
     },
-    {
-      "name": "ListingTourCard",
-      "section": "Sticky tour / ask / call / text card. No second price.",
-      "blocking": true
-    },
 
     {
       "name": "MortgageCalculator",
@@ -179,8 +174,12 @@
       "reason": "Replaced 2026-09-03 by a capped V3ListingRow strip. The GSAP poster grid is not the listing remainder."
     },
     {
+      "name": "ListingTourCard",
+      "reason": "Tour / Call / Text live on ListingBrokerCTA and the mobile bar. The extra sidebar card is gone."
+    },
+    {
       "name": "NeighborhoodMarketContext",
-      "reason": "KPI grid plus Median to pending jargon. Replaced by one V3Instrument whose claim is this ask versus leftover median list."
+      "reason": "KPI grid plus Median to pending jargon. Replaced by one V3Instrument whose claim is this home's price versus leftover median list."
     },
     {
       "name": "LivePricingRead",
