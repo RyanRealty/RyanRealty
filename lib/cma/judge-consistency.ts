@@ -139,10 +139,77 @@ export function alignNarrativeToPricedSet(
   const verdictByKey = new Map(
     priced.map((c) => [c.listingKey, { listingKey: c.listingKey, tier: 'strong' as const, reason: 'priced' }]),
   )
-  const sentences = splitSentences(narrative)
+  // Fix the stated count against the set that actually priced BEFORE excising
+  // sentences — the count describes the whole set, not the sentence it sits in.
+  const counted = repairRetainedCount(narrative, priced.length)
+  const sentences = splitSentences(counted)
   const cleaned = sentences.filter((s) => narrativeMismatches(comps, verdictByKey, s).length === 0)
   if (cleaned.length === 0) return ''
   return cleaned.join(' ')
+}
+
+/**
+ * V6 support — the count the narrative claims it kept.
+ *
+ * The single most common real audit failure on the live corpus (2026-09-04):
+ * the prose opens "Three closed sales were retained" while the priced set holds
+ * four. The judge writes the sentence before the deterministic layer finishes
+ * dropping comps, so a later exclusion leaves the number stale. An auditor
+ * reading the document sees the narrative contradict the table directly beneath
+ * it and calls it fabricated evidence, which is the correct read: a seller
+ * would see the same thing.
+ *
+ * The count is not an opinion, so it is not left to the model. It is parsed,
+ * compared, and rewritten from the set that actually priced.
+ */
+const NUMBER_WORDS: ReadonlyArray<string> = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+  'nineteen', 'twenty',
+]
+
+/** "Three closed sales were retained" / "9 comparable sales were retained". */
+const RETAINED_COUNT_RE =
+  /\b(\d{1,2}|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b(\s+(?:closed|comparable|nearby|recent)){0,2}\s+sales\s+were\s+retained/i
+
+function wordToInt(token: string): number | null {
+  const t = token.trim().toLowerCase()
+  if (/^\d{1,2}$/.test(t)) return Number(t)
+  const i = NUMBER_WORDS.indexOf(t)
+  return i >= 0 ? i : null
+}
+
+function intToWord(n: number): string {
+  return n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n]! : String(n)
+}
+
+/** Match the casing of the token being replaced, so a sentence-opening word stays capitalised. */
+function matchCase(sample: string, replacement: string): string {
+  if (/^[A-Z]/.test(sample)) return replacement.charAt(0).toUpperCase() + replacement.slice(1)
+  return replacement
+}
+
+/** The retained count the narrative states, or null when it does not state one. */
+export function statedRetainedCount(narrative: string): number | null {
+  const m = RETAINED_COUNT_RE.exec(narrative ?? '')
+  if (!m) return null
+  return wordToInt(m[1] ?? '')
+}
+
+/**
+ * Rewrite the stated retained count to `actual`. Returns the narrative
+ * unchanged when it states no count, or already states the right one.
+ */
+export function repairRetainedCount(narrative: string, actual: number): string {
+  const text = narrative ?? ''
+  const m = RETAINED_COUNT_RE.exec(text)
+  if (!m) return text
+  const token = m[1] ?? ''
+  const stated = wordToInt(token)
+  if (stated == null || stated === actual) return text
+  const replacement = /^\d{1,2}$/.test(token.trim()) ? String(actual) : matchCase(token, intToWord(actual))
+  const at = m.index + m[0].indexOf(token)
+  return text.slice(0, at) + replacement + text.slice(at + token.length)
 }
 
 export function splitSentences(text: string): string[] {
@@ -259,6 +326,15 @@ export function checkJudgmentConsistency(args: {
 
   // V4 — the narrative contradicts the verdicts.
   for (const mismatch of narrativeMismatches(comps, verdictByKey, narrative)) violations.push(mismatch)
+
+  // V6 — the narrative states a retained count that is not the retained count.
+  const statedCount = statedRetainedCount(narrative)
+  const actualKept = verdicts.filter((v) => v.tier !== 'exclude').length
+  if (statedCount != null && statedCount !== actualKept) {
+    violations.push(
+      `The narrative says ${statedCount} sales were retained, but ${actualKept} carry a non-exclude verdict. Say the number you actually kept.`,
+    )
+  }
 
   // V5 — a candidate with no verdict is dropped with no reason on record.
   const missing = comps.filter((c) => !verdictByKey.has(c.listingKey))

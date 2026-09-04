@@ -4,6 +4,8 @@ import {
   checkJudgmentConsistency,
   restoreCustomYearQualityPeers,
   type CompVerdict,
+  statedRetainedCount,
+  repairRetainedCount,
 } from '@/lib/cma/judge-consistency'
 import type { CmaComp } from '@/lib/cma/types'
 
@@ -278,5 +280,48 @@ describe('restoreCustomYearQualityPeers', () => {
     })
     expect(out.restoredKeys).toEqual([])
     expect(out.verdicts[0]?.tier).toBe('exclude')
+  })
+})
+
+describe('V6 — the stated retained count', () => {
+  it('reads the count the narrative claims, word or digit', () => {
+    expect(statedRetainedCount('Three closed sales were retained, priced from $254 to $314 per square foot.')).toBe(3)
+    expect(statedRetainedCount('Nine comparable sales were retained.')).toBe(9)
+    expect(statedRetainedCount('7 sales were retained.')).toBe(7)
+    expect(statedRetainedCount('Four recent closed sales were retained.')).toBe(4)
+  })
+
+  it('returns null when no count is stated rather than guessing one', () => {
+    expect(statedRetainedCount('The retained sales cluster tightly on price.')).toBeNull()
+    expect(statedRetainedCount('')).toBeNull()
+  })
+
+  it('rewrites the count to the set that actually priced', () => {
+    // The live failure: prose says three, the priced set holds four.
+    expect(
+      repairRetainedCount('Three closed sales were retained, priced from $254 to $314 per square foot.', 4),
+    ).toBe('Four closed sales were retained, priced from $254 to $314 per square foot.')
+  })
+
+  it('keeps digits as digits and words as words', () => {
+    expect(repairRetainedCount('7 sales were retained.', 10)).toBe('10 sales were retained.')
+    expect(repairRetainedCount('Nine comparable sales were retained.', 10)).toBe('Ten comparable sales were retained.')
+  })
+
+  it('leaves a correct or absent count alone', () => {
+    const ok = 'Four closed sales were retained.'
+    expect(repairRetainedCount(ok, 4)).toBe(ok)
+    const none = 'The retained sales cluster tightly.'
+    expect(repairRetainedCount(none, 4)).toBe(none)
+  })
+
+  it('does not touch the rest of the sentence', () => {
+    const out = repairRetainedCount(
+      'Two comparable sales were retained, priced from $420 to $478 per square foot. The Karena sale was excluded.',
+      3,
+    )
+    expect(out).toContain('priced from $420 to $478 per square foot')
+    expect(out).toContain('The Karena sale was excluded.')
+    expect(out).toContain('Three comparable sales were retained')
   })
 })
