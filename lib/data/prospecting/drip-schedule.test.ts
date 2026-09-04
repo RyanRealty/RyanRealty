@@ -7,7 +7,6 @@ import {
   DRIP_SPACING_MINUTES,
   DRIP_TIMEZONE,
   DRIP_WEEKDAY_START_MINUTES,
-  DRIP_WEEKDAY_START_MINUTES,
   canSendDripNow,
   isDripWeekday,
   isDripWindowOpen,
