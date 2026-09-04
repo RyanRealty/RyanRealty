@@ -169,5 +169,62 @@ describe('existing-path wiring (no new gate)', () => {
     expect(SEND_SRC.slice(intro, email)).toMatch(/verifyNotRelisted/)
     expect(SEND_SRC.slice(email)).toMatch(/verifyNotRelisted/)
     expect(SEND_SRC).not.toMatch(/sendCmaToLead\([\s\S]{0,200}verifyNotRelisted/)
+    // FSBO Closed-since-detect: send passes detectedAt as expiryComparator.
+    expect(SEND_SRC).toMatch(/expiryComparator: kind === 'fsbo' \? prospect\.detectedAt : prospect\.expiredAt/)
+  })
+})
+
+describe('expiredOutreachListingHits — FSBO Closed-since-detect', () => {
+  const DETECT = '2026-07-15T00:00:00Z'
+  const AFTER = '2026-08-01T00:00:00Z'
+  const BEFORE = '2026-06-01T00:00:00Z'
+
+  it('blocks Active / Pending / Coming Soon at the FSBO address', () => {
+    expect(
+      expiredOutreachListingHits({
+        kind: 'fsbo',
+        listing: listing({ StandardStatus: 'Active', CloseDate: null, parcel_number: null }),
+        namePrefix: 'SMITH',
+        cityUpper: 'BEND',
+        expiryComparator: DETECT,
+        subjectParcel: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('blocks Closed with CloseDate after detected_at', () => {
+    expect(
+      expiredOutreachListingHits({
+        kind: 'fsbo',
+        listing: listing({
+          StandardStatus: 'Closed',
+          CloseDate: AFTER,
+          status_change_timestamp: AFTER,
+          parcel_number: null,
+        }),
+        namePrefix: 'SMITH',
+        cityUpper: 'BEND',
+        expiryComparator: DETECT,
+        subjectParcel: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('does not block Closed before detected_at', () => {
+    expect(
+      expiredOutreachListingHits({
+        kind: 'fsbo',
+        listing: listing({
+          StandardStatus: 'Closed',
+          CloseDate: BEFORE,
+          status_change_timestamp: BEFORE,
+          parcel_number: null,
+        }),
+        namePrefix: 'SMITH',
+        cityUpper: 'BEND',
+        expiryComparator: DETECT,
+        subjectParcel: null,
+      }),
+    ).toBe(false)
   })
 })

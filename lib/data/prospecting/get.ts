@@ -14,6 +14,11 @@ import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
+import {
+  EXPIRED_OUTREACH_ON_MARKET,
+  EXPIRED_OUTREACH_STATUS_OR,
+} from './compliance'
+import { isClosedStatus } from '@/lib/listing-status'
 import { blockAllChannels, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
@@ -167,6 +172,113 @@ export function resolvePersonId(row: RawRow): number | null {
   return null
 }
 
+/**
+ * Owner label for prospecting card / detail / send / CMA build.
+ * When a CRM person id is linked, prefer that person's name — assessor
+ * `owner_name` and the email/phone-matched CRM row can disagree (FSBO Desk:
+ * Clayton Mclain label → Gabriella Helleck people/CMA).
+ */
+export function resolveOwnerLabel(opts: {
+  ownerName: string | null
+  crmName: string | null | undefined
+  personId: number | null
+}): string | null {
+  if (opts.personId != null) {
+    const crm = String(opts.crmName ?? '').trim()
+    if (crm) return crm
+  }
+  const raw = String(opts.ownerName ?? '').trim()
+  return raw || null
+}
+
+/** Bounded name lookup for linked CRM people. Fail-soft: missing → empty map. */
+export async function fetchCrmPersonNames(personIds: number[]): Promise<Map<number, string>> {
+  const out = new Map<number, string>()
+  const ids = [...new Set(personIds.filter((id) => Number.isFinite(id)))]
+  if (ids.length === 0) return out
+  try {
+    const sb = createServiceClient()
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100)
+      const { data, error } = await sb.from('crm_people').select('id, name').in('id', chunk)
+      if (error) {
+        console.error('[prospecting] fetchCrmPersonNames failed:', error.message)
+        continue
+      }
+      for (const row of data ?? []) {
+        const id = Number((row as { id?: unknown }).id)
+        const name = String((row as { name?: unknown }).name ?? '').trim()
+        if (Number.isFinite(id) && name) out.set(id, name)
+      }
+    }
+  } catch (e) {
+    console.error('[prospecting] fetchCrmPersonNames threw:', e instanceof Error ? e.message : e)
+  }
+  return out
+}
+
+export function applyCrmOwnerNames<T extends { personId: number | null; ownerName: string | null }>(
+  rows: T[],
+  names: Map<number, string>,
+): T[] {
+  return rows.map((row) => {
+    if (row.personId == null) return row
+    const crm = names.get(row.personId)
+    if (!crm) return row
+    const next = resolveOwnerLabel({ ownerName: row.ownerName, crmName: crm, personId: row.personId })
+    return next === row.ownerName ? row : { ...row, ownerName: next }
+  })
+}
+
+/**
+ * Live MLS status at the prospect address for detail paint (Active / Pending /
+ * Coming Soon / Closed). Independent of Price History emptiness — "no prior
+ * MLS" is not a fail-closed live check.
+ */
+export async function fetchLiveMlsStatusAtAddress(
+  streetAddress: string | null,
+  city: string | null,
+): Promise<string | null> {
+  if (!streetAddress) return null
+  try {
+    const sb = createServiceClient()
+    const num = String(streetAddress).split(' ')[0]
+    const prefix = String(streetAddress).slice(num.length + 1).split(' ')[0]?.toUpperCase() ?? ''
+    if (!num || !prefix) return null
+    const cityUpper = String(city ?? '').toUpperCase()
+    const { data, error } = await sb
+      .from('listings')
+      .select('StreetName, City, StandardStatus, CloseDate, status_change_timestamp')
+      .eq('StreetNumber', num)
+      .or(EXPIRED_OUTREACH_STATUS_OR)
+    if (error) {
+      console.error('[prospecting] fetchLiveMlsStatusAtAddress failed:', error.message)
+      return null
+    }
+    const matches = ((data ?? []) as Array<Record<string, unknown>>).filter((l) => {
+      const streetName = String(l.StreetName ?? '').toUpperCase()
+      const c = String(l.City ?? '').toUpperCase()
+      return streetName.startsWith(prefix) && c === cityUpper
+    })
+    if (matches.length === 0) return null
+    const onMarket = matches.find((l) =>
+      (EXPIRED_OUTREACH_ON_MARKET as readonly string[]).includes(String(l.StandardStatus ?? '')),
+    )
+    if (onMarket) return String(onMarket.StandardStatus)
+    let best: { status: string; at: string } | null = null
+    for (const l of matches) {
+      const status = String(l.StandardStatus ?? '')
+      if (!isClosedStatus(status)) continue
+      const at = String(l.CloseDate ?? l.status_change_timestamp ?? '')
+      if (!best || at > best.at) best = { status, at }
+    }
+    return best?.status ?? null
+  } catch (e) {
+    console.error('[prospecting] fetchLiveMlsStatusAtAddress threw:', e instanceof Error ? e.message : e)
+    return null
+  }
+}
+
 /** doc ready + no compliance block + phone present + not already sent. */
 export function computeSendable(doc: ProspectDocState, compliance: { hardStop: boolean; relisted: boolean; offMarket: boolean; suppressedSms: boolean; noPhone: boolean }): boolean {
   return (
@@ -301,6 +413,7 @@ async function loadExpired(
     ;({ data: r, error } = await sb
       .from('expired_listings')
       .select(prospectSelectLegacy('expired'))
+      // @canonical-key — same expired listing_key self-lookup as the primary select.
       .eq('listing_key', id.trim())
       .maybeSingle())
   }
@@ -311,7 +424,9 @@ async function loadExpired(
   if (!r) return null
   const raw = r as unknown as RawRow
   const listing = await fetchExpiredListingJoin(sb, String(raw.listing_key))
-  const skeleton = await buildExpiredRowSkeleton(raw, listing)
+  let skeleton = await buildExpiredRowSkeleton(raw, listing)
+  const nameMap = await fetchCrmPersonNames(skeleton.personId != null ? [skeleton.personId] : [])
+  skeleton = applyCrmOwnerNames([skeleton], nameMap)[0]!
   const engagementMap = await getProspectEngagement('expired', [engagementKeyFor(skeleton)])
   return { row: finalizeRow(skeleton, engagementMap[skeleton.id]), raw, listing }
 }
@@ -336,7 +451,9 @@ async function loadFsbo(sb: Sb, id: string): Promise<{ row: ProspectRow; raw: Ra
   }
   if (!r) return null
   const raw = r as unknown as RawRow
-  const skeleton = await buildFsboRowSkeleton(raw)
+  let skeleton = await buildFsboRowSkeleton(raw)
+  const nameMap = await fetchCrmPersonNames(skeleton.personId != null ? [skeleton.personId] : [])
+  skeleton = applyCrmOwnerNames([skeleton], nameMap)[0]!
   const engagementMap = await getProspectEngagement('fsbo', [engagementKeyFor(skeleton)])
   return { row: finalizeRow(skeleton, engagementMap[skeleton.id]), raw }
 }
@@ -516,14 +633,15 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
   const loaded = await loadFsbo(sb, id)
   if (!loaded) return null
   const { row, raw } = loaded
-  const [priceHistory, drip, customOwnershipSince] = await Promise.all([
+  const [priceHistory, drip, customOwnershipSince, liveMlsStatus] = await Promise.all([
     fetchPriceHistory(row),
     getProspectDripState(kind, row.personId),
     fetchCustomOwnershipSince(sb, row.personId),
+    fetchLiveMlsStatusAtAddress(row.streetAddress, row.city),
   ])
   return {
     ...row,
-    standardStatus: null,
+    standardStatus: liveMlsStatus,
     subdivision: null,
     bedrooms: numOrNull(raw.bedrooms),
     bathrooms: numOrNull(raw.bathrooms),

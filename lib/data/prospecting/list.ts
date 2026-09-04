@@ -28,6 +28,8 @@ import {
   prospectSelect,
   prospectSelectLegacy,
   shouldRetryWithoutEmailColumns,
+  fetchCrmPersonNames,
+  applyCrmOwnerNames,
   type ExpiredListingJoin,
   type ProspectRowSkeleton,
 } from './get'
@@ -293,12 +295,18 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
     resolveDocsBatch(kind, rawRows),
     resolveComplianceBatch(kind, rawRows),
   ])
-  const skeletons: ProspectRowSkeleton[] = rawRows.map((r) => {
+  let skeletons: ProspectRowSkeleton[] = rawRows.map((r) => {
     const id = String(r[idKey])
     const doc: ProspectDocState = docMap.get(id) ?? { state: 'none' }
     const compliance = complianceMap.get(id) ?? FAILSAFE_COMPLIANCE
     return kind === 'expired' ? mapExpiredSkeleton(r, doc, compliance, null) : mapFsboSkeleton(r, doc, compliance)
   })
+  // Prefer CRM person name over assessor owner_name when personId is linked
+  // (FSBO Desk friction: label ≠ people row / CMA).
+  const crmNames = await fetchCrmPersonNames(
+    skeletons.map((s) => s.personId).filter((p): p is number => p != null),
+  )
+  skeletons = applyCrmOwnerNames(skeletons, crmNames)
 
   const classified = skeletons.map((skeleton) => {
     const sendable = computeSendable(skeleton.doc, skeleton.compliance)
