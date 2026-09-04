@@ -30,6 +30,7 @@ describe('listing remainder composition', () => {
 
   it('uses the place trail and drops the extra tour card', () => {
     expect(PAGE).toMatch(/listingPlaceTrail/)
+    expect(PAGE).toMatch(/listingAtlasHeadline/)
     expect(PAGE).toMatch(/buildListingPriceBandChart/)
     expect(PAGE).not.toMatch(/<ListingTourCard/)
     expect(PAGE).not.toMatch(/label: 'Home'/)

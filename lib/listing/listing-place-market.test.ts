@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { leftoverListingGrains, resolveListingPlaceAndMarket } from './listing-place-market'
+import {
+  leftoverListingGrains,
+  listingAtlasFrameIntent,
+  listingAtlasHeadline,
+  resolveListingPlaceAndMarket,
+} from './listing-place-market'
 
 const listing = {
   city: 'Bend',
@@ -29,6 +34,27 @@ describe('leftoverListingGrains', () => {
         hubHref: '/cities/bend',
       },
     ])
+  })
+
+  it('frames the listing atlas on a curated community, not the city', () => {
+    expect(
+      listingAtlasFrameIntent({
+        city: 'Bend',
+        citySlug: 'bend',
+        cityName: 'Bend',
+        neighborhoodSlug: null,
+        neighborhoodName: null,
+        communitySlug: 'northwest-crossing',
+        communityName: 'NorthWest Crossing',
+      }),
+    ).toEqual({
+      grain: 'community',
+      slug: 'northwest-crossing',
+      name: 'NorthWest Crossing',
+    })
+    expect(listingAtlasHeadline('NorthWest Crossing')).toBe(
+      "Here's what else is selling in NorthWest Crossing",
+    )
   })
 
   it('tries curated community as leftover neighborhood when no neighborhood slug', () => {

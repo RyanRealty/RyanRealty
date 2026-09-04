@@ -92,7 +92,7 @@
     },
     {
       "name": "V3Atlas",
-      "section": "The living map around this home (2026-09-02): the recorded neighborhood, else the city, as the frame; every listing of every type inside it as dots from buildPlaceAtlas; the recorded plats as doors; THIS home held (highlight). The Google location map stays as the fallback when no boundary resolves.",
+      "section": "The living map around this home: the recorded neighborhood or curated community (NorthWest Crossing), else the city, as the frame; listings inside that frame as dots; plats inside it as doors; THIS home held. Headline is what else is selling in that place. Google location map is the fallback when no boundary resolves.",
       "blocking": true
     },
     {

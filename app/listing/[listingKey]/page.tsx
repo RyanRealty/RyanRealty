@@ -47,6 +47,7 @@ import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
+import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
@@ -436,6 +437,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
     cityName: listing.city ?? null,
     neighborhoodSlug: listing.neighborhoodSlug ?? null,
     neighborhoodName: placeContext.neighborhood?.label ?? listing.neighborhoodName ?? null,
+    communitySlug: placeContext.curatedCommunity?.slug ?? null,
+    communityName: placeContext.curatedCommunity?.label ?? null,
     boundary: placeBoundary,
     lat: listing.lat ?? null,
     lng: listing.lng ?? null,
@@ -616,7 +619,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <V3Atlas
           id="location"
           headingLevel={2}
-          headline={v3Text(`${listingAtlas.frameName} around this home`)}
+          headline={v3Text(listingAtlasHeadline(listingAtlas.frameName))}
           dots={listingAtlas.atlas.dots}
           regions={listingAtlas.regions}
           basemap={basemapForRegions(listingAtlas.regions, {

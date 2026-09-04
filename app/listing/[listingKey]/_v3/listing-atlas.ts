@@ -1,9 +1,8 @@
 /**
- * The living map for a listing page: the home's own neighborhood (or, without
- * a recorded neighborhood, its city) as the frame, every listing of every
- * type inside it as dots, the recorded plats as doors — the same population
- * and the same builder the place pages read (buildPlaceAtlas), so a buyer on
- * a listing sees the map the neighborhood page shows, with this home held.
+ * The living map for a listing page: the home's own neighborhood or curated
+ * community (NorthWest Crossing), else its city, as the frame. Every listing
+ * of every type inside that frame as dots, the recorded plats as doors. Same
+ * population and builder the place pages read (buildPlaceAtlas), this home held.
  *
  * Every read is capped and falls back: a listing page never waits on the map
  * and never prints a count it could not read (the Atlas's incomplete branch).
@@ -11,13 +10,19 @@
 import type { AtlasRegion } from '@/components/site/v3'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS, type AtlasPopulation } from '@/lib/atlas/build-place-atlas'
 import { atlasRegionNames } from '@/lib/atlas/place-names'
-import { getBoundaryGeoJSON, getCommunitySubdivisions, getTaxlotsNear, type Taxlot } from '@/lib/data'
+import {
+  getBoundaryGeoJSON,
+  getCommunitySubdivisions,
+  getResortBoundaryGeoJSON,
+  getTaxlotsNear,
+  type Taxlot,
+} from '@/lib/data'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { outerRings, pointInRings } from '@/lib/geo/project-svg'
+import { listingAtlasFrameIntent } from '@/lib/listing/listing-place-market'
 import {
   cityHref,
   cityNeighborhoodHref,
-  hasCityNeighborhoodPages,
   subdivisionHref,
 } from '@/lib/site/place-href'
 
@@ -28,10 +33,10 @@ export type ListingAtlasScope = {
   cityName: string | null
   neighborhoodSlug: string | null
   neighborhoodName: string | null
+  communitySlug: string | null
+  communityName: string | null
   /**
-   * The boundary the page resolved by its own fallback chain — used as the
-   * CITY frame. The neighborhood frame is read here by its recorded slug, so
-   * the headline never names a neighborhood over a city's population.
+   * City fallback polygon when the finer grain has no recorded boundary.
    */
   boundary: GeoJSON.Polygon | GeoJSON.MultiPolygon | null
   /** The home's coordinate, so its own plat is always among the outlines. */
@@ -57,34 +62,67 @@ export type ListingAtlas = {
 
 const READ_MS = 4500
 
-export async function buildListingAtlas(scope: ListingAtlasScope): Promise<ListingAtlas | null> {
-  if (!scope.city.trim()) return null
-  // Neighborhood pages hang off /cities/<city> only. An out-of-area city's page
-  // is /oregon/<city> and has no children, so its frame is the city — asking for
-  // a neighborhood boundary there could only produce a door that 404s.
-  const wantsNeighborhood = !!(
-    scope.citySlug &&
-    scope.neighborhoodSlug &&
-    scope.neighborhoodName &&
-    hasCityNeighborhoodPages(scope.citySlug)
-  )
-  const neighborhoodBoundary = wantsNeighborhood
-    ? await withTimeoutFallback(
-        getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: `${scope.citySlug}-${scope.neighborhoodSlug}` }).catch(() => null),
+async function readPlaceBoundary(
+  slug: string,
+  citySlug: string | null,
+  preferResort: boolean,
+): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
+  if (preferResort) {
+    const resort = await withTimeoutFallback(
+      getResortBoundaryGeoJSON(slug).catch(() => null),
+      null,
+      READ_MS,
+      'listing:atlasResort',
+    )
+    if (resort) return resort
+  }
+  const slugs = citySlug && citySlug !== slug ? [slug, `${citySlug}-${slug}`] : [slug]
+  for (const geoSlug of slugs) {
+    for (const geoType of ['neighborhood', 'subdivision'] as const) {
+      const geometry = await withTimeoutFallback(
+        getBoundaryGeoJSON({ geoType, geoSlug }).catch(() => null),
         null,
         READ_MS,
-        'listing:atlasBoundary',
+        `listing:atlasBoundary:${geoType}:${geoSlug}`,
       )
-    : null
-  const hasNeighborhood = neighborhoodBoundary != null
-  const boundary = neighborhoodBoundary ?? scope.boundary
-  const frameName = hasNeighborhood ? scope.neighborhoodName! : (scope.cityName ?? scope.city)
-  // Every door here resolves in one request (lib/site/place-href). Built inline
-  // they did not: a listing in Medford pointed at /cities/medford, which
-  // answered 308 -> /oregon/medford.
-  const frameHref = hasNeighborhood
-    ? cityNeighborhoodHref(scope.citySlug, scope.neighborhoodSlug)
-    : cityHref(scope.citySlug)
+      if (geometry) return geometry
+    }
+  }
+  return null
+}
+
+export async function buildListingAtlas(scope: ListingAtlasScope): Promise<ListingAtlas | null> {
+  if (!scope.city.trim()) return null
+  const intent = listingAtlasFrameIntent(scope)
+  let grain = intent.grain
+  let frameName = intent.name
+  let frameSlug = intent.slug
+  let boundary =
+    grain === 'city'
+      ? scope.boundary
+      : await readPlaceBoundary(intent.slug!, scope.citySlug, grain === 'community')
+  if (!boundary && grain !== 'city' && scope.communitySlug && grain !== 'community') {
+    const community = await readPlaceBoundary(scope.communitySlug, scope.citySlug, true)
+    if (community) {
+      grain = 'community'
+      frameName = scope.communityName ?? scope.communitySlug
+      frameSlug = scope.communitySlug
+      boundary = community
+    }
+  }
+  if (!boundary && grain !== 'city') {
+    grain = 'city'
+    frameName = scope.cityName ?? scope.city
+    frameSlug = scope.citySlug
+    boundary = scope.boundary
+  }
+  const hasLocalFrame = grain !== 'city' && boundary != null
+  const frameHref =
+    grain === 'neighborhood'
+      ? cityNeighborhoodHref(scope.citySlug, frameSlug)
+      : grain === 'community' && frameSlug
+        ? `/communities/${frameSlug}`
+        : cityHref(scope.citySlug)
 
   // No recorded boundary (a city outside the mapped set): the frame is the
   // city's own listings, no outlines — one section for every listing, never a
@@ -97,8 +135,8 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
       'listing:atlas',
     ),
     withTimeoutFallback(
-      (hasNeighborhood
-        ? getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: `${scope.citySlug}-${scope.neighborhoodSlug}` })
+      (hasLocalFrame && frameSlug
+        ? getCommunitySubdivisions({ geoType: 'neighborhood', geoSlug: frameSlug })
         : scope.citySlug
           ? getCommunitySubdivisions({ geoType: 'city', geoSlug: scope.citySlug })
           : Promise.resolve([])
@@ -120,8 +158,8 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
   ])
 
   const withGeometry = plats.filter((c) => !!c.geometry)
-  const ranked = hasNeighborhood ? withGeometry : [...withGeometry].sort((a, b) => (b.activeHomes ?? 0) - (a.activeHomes ?? 0))
-  const cap = hasNeighborhood ? 80 : 60
+  const ranked = hasLocalFrame ? withGeometry : [...withGeometry].sort((a, b) => (b.activeHomes ?? 0) - (a.activeHomes ?? 0))
+  const cap = hasLocalFrame ? 80 : 60
   const cells = ranked.slice(0, cap)
   // The home's own plat is always outlined, cap or no cap (pass four, E2).
   if (scope.lat != null && scope.lng != null) {
@@ -133,9 +171,14 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     ...(boundary
       ? [
           {
-            id: hasNeighborhood ? `neighborhood:${scope.neighborhoodSlug}` : `city:${scope.citySlug ?? scope.city}`,
+            id:
+              grain === 'community'
+                ? `community:${frameSlug}`
+                : grain === 'neighborhood'
+                  ? `neighborhood:${frameSlug}`
+                  : `city:${scope.citySlug ?? scope.city}`,
             kind: 'town' as const,
-            kindLabel: hasNeighborhood ? 'Neighborhood' : 'City',
+            kindLabel: grain === 'community' ? 'Community' : grain === 'neighborhood' ? 'Neighborhood' : 'City',
             name: frameName,
             href: frameHref ?? '#',
             geometry: boundary,

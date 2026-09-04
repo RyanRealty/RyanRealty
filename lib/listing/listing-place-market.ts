@@ -172,7 +172,62 @@ export function listingBoundaryAttempts(
     out.push({ geoType, geoSlug: slug })
   }
   push('neighborhood', placeContext.neighborhood?.slug ?? listing.neighborhoodSlug)
+  push('neighborhood', placeContext.curatedCommunity?.slug)
+  push('subdivision', placeContext.curatedCommunity?.slug)
   push('subdivision', placeContext.subdivision?.slug ?? listing.subdivisionSlug)
   push('city', placeContext.city?.slug ?? listing.citySlug)
   return out
+}
+
+export type ListingAtlasFrameIntent =
+  | { grain: 'neighborhood'; slug: string; name: string }
+  | { grain: 'community'; slug: string; name: string }
+  | { grain: 'city'; slug: string | null; name: string }
+
+/**
+ * Finest place the listing atlas should frame. A city-neighborhood (Awbrey
+ * Butte) outranks a curated community (NorthWest Crossing) outranks the city.
+ * A raw MLS plat is not a frame: the map would be one lot-line, not the
+ * place the buyer is shopping.
+ */
+export function listingAtlasFrameIntent(input: {
+  city: string
+  citySlug: string | null
+  cityName: string | null
+  neighborhoodSlug: string | null
+  neighborhoodName: string | null
+  communitySlug: string | null
+  communityName: string | null
+}): ListingAtlasFrameIntent {
+  const neighborhoodSlug =
+    input.neighborhoodSlug && !NOISE_SLUGS.has(input.neighborhoodSlug)
+      ? input.neighborhoodSlug
+      : null
+  if (
+    input.citySlug &&
+    neighborhoodSlug &&
+    input.neighborhoodName &&
+    hasCityNeighborhoodPages(input.citySlug)
+  ) {
+    return {
+      grain: 'neighborhood',
+      slug: neighborhoodSlug,
+      name: input.neighborhoodName,
+    }
+  }
+  const communitySlug =
+    input.communitySlug && !NOISE_SLUGS.has(input.communitySlug) ? input.communitySlug : null
+  if (communitySlug && input.communityName) {
+    return { grain: 'community', slug: communitySlug, name: input.communityName }
+  }
+  return {
+    grain: 'city',
+    slug: input.citySlug,
+    name: input.cityName ?? input.city,
+  }
+}
+
+export function listingAtlasHeadline(frameName: string): string {
+  const name = frameName.trim()
+  return name ? `Here's what else is selling in ${name}` : "Here's what else is selling nearby"
 }
