@@ -103,6 +103,9 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
+    // Listing mosaic asks for quality={90}. Next 16 defaults qualities to [75]
+    // and silently serves 75 unless 90 is allowlisted.
+    qualities: [75, 90],
   },
   // Per-page prerender ceiling, in seconds.
   //
