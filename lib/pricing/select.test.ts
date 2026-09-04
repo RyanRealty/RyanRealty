@@ -118,18 +118,40 @@ describe('pickCompSource', () => {
     expect(pickCompSource({ factsReady: true, customOrNew: true, comps: [] })).toBe('facts')
   })
 
-  it('uses the listings ladder when facts are not ready', () => {
+  it('uses the listings ladder when ordinary facts are not ready', () => {
     expect(pickCompSource({ factsReady: false, comps: [{}, {}, {}] })).toBe('listings')
-    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [{}, {}] })).toBe('listings')
   })
-  it('live Rim View remarks classify custom so under-3 stays on facts (not listings)', () => {
-    const custom = isCustomOrNewSubject({
-      yearBuilt: null,
-      newConstructionYn: null,
-      remarks: 'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
-    }, 2026)
+
+  it('never falls back to listings for custom/new — even when facts are not ready', () => {
+    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [{}, {}] })).toBe('facts')
+    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [] })).toBe('facts')
+  })
+
+  it('live Rim View field shape classifies custom and never listings-falls-back', () => {
+    // Live canceled MLS 220182032: year_built 2024, new_construction_yn true,
+    // remarks say mid-century / to-be-built — never "custom built".
+    const liveRemarks =
+      'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek. This to-be-built masterpiece offers 4 beds.'
+    const custom = isCustomOrNewSubject(
+      {
+        yearBuilt: 2024,
+        newConstructionYn: true,
+        remarks: liveRemarks,
+        propertySubType: 'Single Family Residence',
+        standardStatus: 'Canceled',
+      },
+      2026,
+    )
     expect(custom).toBe(true)
+    // Remarks alone (lost year/YN) still classify via mid-century / to-be-built.
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: null, remarks: liveRemarks },
+        2026,
+      ),
+    ).toBe(true)
     expect(pickCompSource({ factsReady: true, comps: [{}, {}], customOrNew: custom })).toBe('facts')
+    expect(pickCompSource({ factsReady: false, comps: [], customOrNew: custom })).toBe('facts')
   })
 
 })

@@ -14,6 +14,7 @@ import {
   customBathCompatible,
   customLotCompatible,
   isCustomOrNewSubject,
+  subtypeMarksCustomOrNew,
   isNewBuild,
   newConstructionCompatible,
   resolveIrrigationClass,
@@ -256,15 +257,26 @@ describe('subdivision sentinel', () => {
 
 describe('customBathCompatible', () => {
   
-  it('live Rim View remarks (mid-century modern, no custom built) mark custom/new', () => {
+  it('live Rim View field shape classifies custom/new without saying custom built', () => {
+    const liveRemarks =
+      'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek. This to-be-built masterpiece offers 4 beds.'
+    // Actual canceled listing: year 2024 + NewConstructionYN true + SFR subtype.
     expect(
       isCustomOrNewSubject(
         {
-          yearBuilt: null,
-          newConstructionYn: null,
-          remarks:
-            'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+          yearBuilt: 2024,
+          newConstructionYn: true,
+          remarks: liveRemarks,
+          propertySubType: 'Single Family Residence',
+          standardStatus: 'Canceled',
         },
+        2026,
+      ),
+    ).toBe(true)
+    // Remarks-only path when year/YN are somehow absent.
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: null, remarks: liveRemarks },
         2026,
       ),
     ).toBe(true)
@@ -274,6 +286,8 @@ describe('customBathCompatible', () => {
         2026,
       ),
     ).toBe(true)
+    expect(subtypeMarksCustomOrNew('New Construction')).toBe(true)
+    expect(subtypeMarksCustomOrNew('Single Family Residence')).toBe(false)
   })
 
   it('allows a one-whole-bath gap (Perspective 3 vs Rim View 4)', () => {

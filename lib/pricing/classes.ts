@@ -471,6 +471,10 @@ export type YearQualityInput = {
   yearBuilt: number | null | undefined
   newConstructionYn?: boolean | null
   remarks?: string | null
+  /** MLS property_sub_type — "New Construction" is its own class even when YN is null. */
+  propertySubType?: string | null
+  /** MLS StandardStatus — live-shape callers pass it; does not alone classify. */
+  standardStatus?: string | null
 }
 
 function asOfYearOrNow(asOfYear?: number): number {
@@ -483,16 +487,23 @@ export function remarksMarkCustomOrNew(remarks: string | null | undefined): bool
   return flags.customQuality || flags.newConstruction
 }
 
-/** True when year, NewConstructionYN, or remarks put the subject in the custom/new class. */
+/** MLS PropertySubType / property_sub_type that names new construction. */
+export function subtypeMarksCustomOrNew(propertySubType: string | null | undefined): boolean {
+  if (!propertySubType?.trim()) return false
+  return /\bnew\s+construction\b/i.test(propertySubType)
+}
+
+/** True when year, NewConstructionYN, subtype, or remarks put the subject in the custom/new class. */
 export function isCustomOrNewSubject(input: YearQualityInput, asOfYear?: number): boolean {
   const asOf = asOfYearOrNow(asOfYear)
   if (input.newConstructionYn === true) return true
+  if (subtypeMarksCustomOrNew(input.propertySubType)) return true
   if (isNewBuild(input.yearBuilt, asOf, input.newConstructionYn) === true) return true
   const year = input.yearBuilt
   if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= 5) return true
-  // Live canceled Rim View: remarks carry "mid-century modern" without NewConstructionYN
-  // or "custom built". Without this, pickCompSource falls to listings and re-applies
-  // unmappedCrossesKnownBank + exact baths/lot (144→2, 47/34/33).
+  // Live canceled Rim View: remarks carry "mid-century modern" / "to-be-built" without
+  // the words "custom built". Without this, a subject that somehow lost year/YN
+  // falls to listings and re-applies unmappedCrossesKnownBank + exact baths/lot.
   return remarksMarkCustomOrNew(input.remarks)
 }
 

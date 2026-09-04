@@ -78,6 +78,8 @@ const LISTING_CMA_COLUMNS = [
   'levels',
   'concessions_amount',
   'new_construction_yn',
+  // Fallback when the typed column is null but Spark details still flag it.
+  'new_construction_details:details->>NewConstructionYN',
 ].join(', ')
 
 export type CmaListingRow = Record<string, unknown>

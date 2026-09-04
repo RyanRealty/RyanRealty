@@ -298,7 +298,9 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
         lotAcres: 2,
         beds: 4,
         baths: 4,
-        publicRemarks: 'Custom built modern home.',
+        // Live canceled remarks — no "custom built"; year + NewConstructionYN carry class.
+        publicRemarks:
+          'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek. This to-be-built masterpiece offers 4 beds.',
         propertySubType: 'Single Family Residence',
       }),
     )
