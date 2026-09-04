@@ -328,7 +328,13 @@ const REMARK_RULES: Array<{ key: RemarkBoolKey; phrase: keyof RemarkFlags; re: R
   },
   { key: 'remodeled', phrase: 'remodeledPhrase', re: /\b(?:fully\s+)?remodel(?:ed|ing)?\b|\bupdated throughout\b/i },
   { key: 'updatedKitchen', phrase: 'updatedKitchenPhrase', re: /\b(?:updated|new|remodeled)\s+kitchen\b|\bkitchen\s+remodel/i },
-  { key: 'newConstruction', phrase: 'newConstructionPhrase', re: /\bnew construction\b/i },
+  {
+    key: 'newConstruction',
+    phrase: 'newConstructionPhrase',
+    // Live Rim View (Canceled): remarks say "to-be-built masterpiece" / mid-century
+    // copy without the literal phrase "new construction" or "custom built".
+    re: /\bnew construction\b|\bto[\s-]+be[\s-]+built\b|\bbrand[\s-]+new\b|\bnever[\s-]+lived[\s-]+in\b|\bspec(?:ulative)?[\s-]+home\b/i,
+  },
   {
     key: 'distressed',
     phrase: 'distressedPhrase',
