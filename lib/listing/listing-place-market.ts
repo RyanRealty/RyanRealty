@@ -6,7 +6,7 @@
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
 import type { BoundaryGeoJSONInput } from '@/lib/data/geo/getBoundaryGeoJSON'
-import { cityHref, cityNeighborhoodHref } from '@/lib/site/place-href'
+import { cityHref, cityNeighborhoodHref, hasCityNeighborhoodPages } from '@/lib/site/place-href'
 
 const NOISE_SLUGS = new Set(['na', 'none', 'unknown', 'outside-city-limits'])
 

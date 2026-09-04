@@ -30,15 +30,22 @@
   list-style: none;
 }
 
+.v3-doors__item {
+  min-width: 0;
+}
+
 /* Stacked at 390: hairline between doors, none above the first (the section
    rule or the hero edge already closes that side). */
 .v3-doors__item + .v3-doors__item {
   border-top: var(--v3-rule-hairline);
 }
 
+/* minmax(0) let four columns shrink to nothing so display type painted
+   across neighbors. Floor the track so auto-fit wraps to two when the
+   band cannot hold four readable doors. */
 @media (min-width: 48rem) {
   .v3-doors__list {
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   }
 
   .v3-doors__item + .v3-doors__item {
@@ -82,6 +89,7 @@
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-heading);
   text-wrap: balance;
+  overflow-wrap: break-word;
 }
 
 .v3-doors__foot {
