@@ -1,10 +1,10 @@
 /**
  * Prospecting first-touch drip schedule (approve → queue → weekday drain).
  *
- * Lock (process): weekdays, window opens 08:00 America/Los_Angeles, then send
- * ONE approved Expired OR FSBO first-touch email per spacing interval until the
- * queue is empty. Spacing is intentionally a single constant — Matt has not
- * locked the gap yet (CoS: TBD). Change DRIP_SPACING_MINUTES in one place.
+ * LOCKED HARDCODE (Matt via CoS): weekdays, window opens 08:00 America/Los_Angeles,
+ * then send ONE approved Expired OR FSBO first-touch email every
+ * DRIP_SPACING_MINUTES (5) until the queue is empty. Single constant — do not
+ * change the number or vercel cron without Matt.
  *
  * Pure helpers only — no DB, no clock. The drain cron supplies `now` + last send.
  */
@@ -19,8 +19,8 @@ export const DRIP_WEEKDAY_START_MINUTES = 8 * 60
 /**
  * Minutes between drip sends (one-at-a-time cadence).
  *
- * TBD — Matt must confirm before treating 5 as locked. Keep this the only knob.
- * Do NOT re-label as HARDCODE or LOCKED until CoS confirms Matt locked spacing.
+ * LOCKED HARDCODE at 5 (Matt via CoS) — weekdays 8am America/Los_Angeles.
+ * Keep this the only spacing knob; do not change without Matt.
  */
 export const DRIP_SPACING_MINUTES = 5
 
