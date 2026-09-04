@@ -33,7 +33,8 @@ import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { composeInboundValuationCopy } from '@/lib/cma/inbound-packet'
+import { composeCmaFirstContact } from '@/lib/cma/first-contact'
+import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const MAX_PDF_BYTES = 25 * 1024 * 1024
@@ -54,6 +55,8 @@ interface CmaSendContext {
   valueLow: number | null
   valueHigh: number | null
   recommendedList: number | null
+  /** Decides the opening only. The pricing is identical across origins. */
+  origin: CmaOrigin
 }
 
 async function resolveSendContext(
@@ -89,6 +92,10 @@ async function resolveSendContext(
       valueLow: (row.value_low as number | null) ?? null,
       valueHigh: (row.value_high as number | null) ?? null,
       recommendedList: (row.recommended_list as number | null) ?? null,
+      origin: classifyCmaOrigin(
+        (row.request_source as string | null) ?? null,
+        (row.doc_type as string | null) ?? null,
+      ),
     },
     error: null,
   }
@@ -122,7 +129,7 @@ function emphasizeAddress(text: string, address: string | null): string {
 }
 
 function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html: string; text: string; subject: string } {
-  const copy = composeInboundValuationCopy(inboundFacts(ctx))
+  const copy = composeCmaFirstContact(ctx.origin, inboundFacts(ctx))
   const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
   const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
   const subject = override?.subject?.trim() || copy.subject
@@ -231,7 +238,7 @@ export interface SendCmaToLeadResult {
  */
 /** The default compose message (the link, signature, and footer append at send). */
 function defaultComposeText(ctx: CmaSendContext): string {
-  return composeInboundValuationCopy(inboundFacts(ctx)).bodyText
+  return composeCmaFirstContact(ctx.origin, inboundFacts(ctx)).bodyText
 }
 
 /**
@@ -335,6 +342,10 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       valueLow: (row.value_low as number | null) ?? null,
       valueHigh: (row.value_high as number | null) ?? null,
       recommendedList: (row.recommended_list as number | null) ?? null,
+      origin: classifyCmaOrigin(
+        (row.request_source as string | null) ?? null,
+        (row.doc_type as string | null) ?? null,
+      ),
     }
     const body = buildLeadBody(fakeCtx)
     return {
