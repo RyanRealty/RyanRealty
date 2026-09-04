@@ -108,6 +108,15 @@ export type {
 } from './V3Chart'
 
 /**
+ * JSON-LD injector. New public pages import this as MetadataBlock so they
+ * stay on the barrel (ci:public-ui). Grandfathered routes may still import
+ * the flat components/site/MetadataBlock.
+ */
+export { V3JsonLd, MetadataBlock } from './V3JsonLd'
+
+export type { V3JsonLdProps } from './V3JsonLd'
+
+/**
  * The segmented control the chart-room forms put over pre-rendered views of
  * one figure (range, sort, comparison). A client island; the panels arrive
  * server-rendered as children. An atom, not a seventh pattern.

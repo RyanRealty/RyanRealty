@@ -51,9 +51,9 @@ import {
   V3ListingRow,
   V3Quiet,
   V3SectionTracker,
+  MetadataBlock,
   type AtlasRegion,
 } from '@/components/site/v3'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { cn } from '@/lib/utils'
 import '@/components/search/search-ledger.css'

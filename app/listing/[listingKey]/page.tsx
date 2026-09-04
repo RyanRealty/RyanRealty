@@ -610,7 +610,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         />
       ) : null}
       {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
-      {priceBandChart ? <V3Chart {...priceBandChart} /> : null}
+      {priceBandChart ? <V3Chart id="price-bands" {...priceBandChart} /> : null}
       {listingAtlas ? (
         <V3Atlas
           id="location"
