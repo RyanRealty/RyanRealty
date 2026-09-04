@@ -51,6 +51,8 @@ import {
 import { buildCma } from '@/lib/cma/build'
 import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
+import { attachCmaToPerson } from '@/lib/data/cma/crm'
 import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
@@ -887,6 +889,7 @@ export type EnrollDripResult = { ok: true; sequence: string } | { ok: false; err
 export async function enrollProspectInDripAction(
   personId: number,
   kind: ProspectKind,
+  prospectId?: string | null,
 ): Promise<EnrollDripResult> {
   try {
     const session = await getSession()
@@ -897,6 +900,43 @@ export async function enrollProspectInDripAction(
     const pid = Number(personId)
     if (!Number.isFinite(pid) || pid <= 0) {
       return { ok: false, error: 'No CRM contact linked to this prospect yet.' }
+    }
+
+    const id = typeof prospectId === 'string' ? prospectId.trim() : ''
+    if (id) {
+      const prospect = await getProspect(kind, id)
+      if (!prospect) return { ok: false, error: 'Prospect not found.' }
+      if (prospect.compliance.offMarket) {
+        return { ok: false, error: 'This FSBO is off market. Not enrollable.' }
+      }
+      if (prospect.compliance.relisted) {
+        return { ok: false, error: 'This property has re-listed or sold. Enroll is not allowed.' }
+      }
+      if (kind === 'fsbo') {
+        const still = await verifyFsboStillActive(prospect.id)
+        if (still.verifyFailed) {
+          return { ok: false, error: 'Could not verify this is still FSBO. Enroll blocked until status is confirmed.' }
+        }
+        if (!still.active) {
+          return { ok: false, error: 'This FSBO is off market. Not enrollable.' }
+        }
+      }
+      const relistCheck = await verifyNotRelisted(kind, {
+        street_address: prospect.streetAddress,
+        city: prospect.city,
+        expiryComparator: kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt,
+        listing_key: kind === 'expired' ? prospect.id : null,
+        fsbo_url: kind === 'fsbo' ? prospect.id : null,
+      })
+      if (relistCheck.relisted) {
+        return { ok: false, error: 'This property is now active, pending, or sold. Enroll is not allowed.' }
+      }
+      if (relistCheck.verifyFailed) {
+        return { ok: false, error: 'Could not verify off-market status. Enroll blocked until MLS is confirmed.' }
+      }
+      if (prospect.compliance.allChannelsBlocked) {
+        return { ok: false, error: 'No open channel. Never enroll.' }
+      }
     }
 
     const seq = await resolveDripSequenceForKind(kind)
@@ -929,4 +969,84 @@ export async function sendProspectTest(args: {
 }): Promise<{ ok: boolean; error?: string }> {
   if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized' }
   return sendTemplateSelfTestAction({ channel: args.channel, subject: args.subject ?? null, body: args.body })
+}
+
+/** Name search for linking a CRM person on prospect detail (same as CMA attach). */
+export async function searchProspectPersonAction(
+  query: string,
+): Promise<{ data: Array<{ id: number; name: string | null; email: string | null }>; error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { data: [], error: 'Unauthorized' }
+    const hits = await searchPeopleByName({ query, brokerScope: null, limit: 8 })
+    return { data: hits, error: null }
+  } catch (e) {
+    console.error('[searchProspectPersonAction]', e)
+    return { data: [], error: 'Search failed' }
+  }
+}
+
+/**
+ * Link a CRM person onto an expired/FSBO prospect (outreach_crm_person_id).
+ * When a ready CMA is already on the row, also attach that CMA so Send from CRM works.
+ */
+export async function attachProspectPersonAction(input: {
+  kind: ProspectKind
+  prospectId: string
+  personId: number
+}): Promise<{ data: { personId: number; personName: string | null } | null; error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
+    const kind = input.kind
+    const prospectId = String(input.prospectId ?? '').trim()
+    const personId = Number(input.personId)
+    if (!prospectId || !Number.isFinite(personId) || personId <= 0) {
+      return { data: null, error: 'Pick a person to link.' }
+    }
+
+    const sb = createServiceClient()
+    const { data: person, error: personErr } = await sb
+      .from('crm_people')
+      .select('id, name')
+      .eq('id', personId)
+      .eq('deleted', false)
+      .maybeSingle()
+    if (personErr) return { data: null, error: personErr.message }
+    if (!person) return { data: null, error: 'Contact not found.' }
+
+    if (kind === 'expired') {
+      const { error } = await sb
+        .from('expired_listings')
+        .update({ outreach_crm_person_id: personId })
+        .eq('listing_key', prospectId)
+      if (error) return { data: null, error: error.message }
+    } else {
+      const { error } = await sb
+        .from('fsbo_listings')
+        .update({ outreach_crm_person_id: personId })
+        .eq('fsbo_url', prospectId)
+      if (error) return { data: null, error: error.message }
+    }
+
+    const detail = await getProspectDetail(kind, prospectId)
+    if (detail && (detail.doc.state === 'ready' || detail.doc.state === 'sent')) {
+      const slug = detail.doc.slug
+      if (slug) {
+        const cma = await attachCmaToPerson(slug, personId, { replace: true })
+        if (!cma.ok) {
+          console.warn('[attachProspectPersonAction] CMA link skipped:', cma.error)
+        }
+      }
+    }
+
+    revalidateProspectCaches([kind])
+    revalidatePerson(personId)
+    revalidatePath(`/admin/prospecting/${kind}/${encodeURIComponent(prospectId)}`)
+    return {
+      data: { personId, personName: (person.name as string | null) ?? null },
+      error: null,
+    }
+  } catch (e) {
+    console.error('[attachProspectPersonAction]', e)
+    return { data: null, error: 'Could not link this person to the prospect.' }
+  }
 }

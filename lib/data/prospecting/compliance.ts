@@ -12,7 +12,7 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { isSuppressed } from '@/lib/crm/suppressions'
+import { isSuppressed, isSuppressedByEmail, isSuppressedByPhone } from '@/lib/crm/suppressions'
 import { isClosedStatus } from '@/lib/listing-status'
 import {
   blockAllChannels,
@@ -324,7 +324,7 @@ export async function resolveComplianceState(
   prospect: ProspectComplianceInput,
   personId: number | null,
 ): Promise<ProspectComplianceState> {
-  const { hardStop, suppressedSms } = await computeHardStop(personId, prospect.compliance_hard_stop === true)
+  const { hardStop } = await computeHardStop(personId, prospect.compliance_hard_stop === true)
   const flags = toFlags(prospect.compliance_flags)
 
   // Per-channel resolution (see types.ts ProspectComplianceState). The email
@@ -342,6 +342,31 @@ export async function resolveComplianceState(
       console.error('[prospecting] per-channel suppression check threw, fail-closed:', e instanceof Error ? e.message : e)
       emailBlockReason = 'Compliance check unavailable'
       callBlockReason = 'Compliance check unavailable'
+    }
+  }
+
+  // Bear Creek class: CRM bounce / do-not-call must paint even when the prospect
+  // row only carries contact_email / contact_phone (value-keyed suppressions),
+  // or when person tags lag the Resend bounce webhook.
+  if (emailBlockReason == null && prospect.contact_email) {
+    try {
+      const byEmail = await isSuppressedByEmail(prospect.contact_email, 'email')
+      if (byEmail.suppressed) emailBlockReason = byEmail.reasons[0] ?? 'Opt-out on file'
+    } catch (e) {
+      console.error('[prospecting] email-keyed suppression threw, fail-closed:', e instanceof Error ? e.message : e)
+      emailBlockReason = 'Compliance check unavailable'
+    }
+  }
+  // Phone-keyed STOP / DNC when personId is null (or person-keyed sms missed it).
+  // computeHardStop already covers person SMS; this catches value-keyed rows.
+  let phoneKeyedSmsBlock: string | null = null
+  if (prospect.contact_phone) {
+    try {
+      const byPhone = await isSuppressedByPhone(prospect.contact_phone, 'sms')
+      if (byPhone.suppressed) phoneKeyedSmsBlock = byPhone.reasons[0] ?? 'Opt-out on file'
+    } catch (e) {
+      console.error('[prospecting] phone-keyed suppression threw, fail-closed:', e instanceof Error ? e.message : e)
+      phoneKeyedSmsBlock = 'Compliance check unavailable'
     }
   }
 
@@ -368,7 +393,10 @@ export async function resolveComplianceState(
   const channels: ProspectChannelBlocks = prospect.compliance_hard_stop === true
     ? blockAllChannels('Compliance hard stop on the record')
     : {
-        sms: { blocked: hardStop, reason: hardStop ? 'Blocked for SMS' : null },
+        sms: {
+          blocked: hardStop || phoneKeyedSmsBlock != null,
+          reason: hardStop ? 'Blocked for SMS' : phoneKeyedSmsBlock,
+        },
         email: { blocked: emailBlockReason != null, reason: emailBlockReason },
         call: { blocked: callBlockReason != null, reason: callBlockReason },
       }
@@ -389,5 +417,17 @@ export async function resolveComplianceState(
   if (relisted) reasons.push('Relisted in MLS')
   if (offMarket) reasons.push('Off market')
 
-  return { hardStop, flags, relisted, offMarket, suppressedSms, noPhone, noEmail, reasons, channels, allChannelsBlocked }
+  const smsBlocked = channels.sms.blocked
+  return {
+    hardStop: hardStop || smsBlocked,
+    flags,
+    relisted,
+    offMarket,
+    suppressedSms: smsBlocked,
+    noPhone,
+    noEmail,
+    reasons,
+    channels,
+    allChannelsBlocked,
+  }
 }

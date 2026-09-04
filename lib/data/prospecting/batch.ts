@@ -365,6 +365,56 @@ export async function resolveComplianceBatch(
     }
   }
 
+  // Value-keyed suppressions (Bear Creek): bounce / STOP painted from contact
+  // email or phone even when person_id is missing or tags lag the webhook.
+  const emailByValue = new Map<string, string>()
+  const phoneByValue = new Map<string, string>()
+  const emails = [
+    ...new Set(
+      rows
+        .map((r) => String((r.contact_email as string | null) ?? '').trim().toLowerCase())
+        .filter((e) => e.includes('@')),
+    ),
+  ]
+  const phones = [
+    ...new Set(
+      rows
+        .map((r) => String((r.contact_phone as string | null) ?? '').replace(/\D/g, '').slice(-10))
+        .filter((p) => p.length === 10),
+    ),
+  ]
+  if (emails.length > 0 || phones.length > 0) {
+    const valueKeys = [
+      ...emails,
+      ...phones.flatMap((p) => [p, `+1${p}`]),
+    ]
+    const { data: valueRows, error: valueErr } = await sb
+      .from('crm_suppressions')
+      .select('value, channel, reason')
+      .in('value', valueKeys)
+      .in('channel', ['all', 'sms', 'email', 'call'])
+    if (valueErr) {
+      console.error('[prospecting] resolveComplianceBatch value-keyed suppression failed:', valueErr.message)
+      // Fail-closed only for addresses we could not verify — do not wipe the whole page.
+      for (const e of emails) emailByValue.set(e, 'Compliance check unavailable')
+      for (const ph of phones) phoneByValue.set(ph, 'Compliance check unavailable')
+    } else {
+      for (const s of valueRows ?? []) {
+        const rawVal = String(s.value ?? '').trim().toLowerCase()
+        const ch = String(s.channel ?? '')
+        const why = `Opt-out on file (${String(s.reason ?? ch)})`
+        if (rawVal.includes('@')) {
+          if (ch === 'all' || ch === 'email') if (!emailByValue.has(rawVal)) emailByValue.set(rawVal, why)
+        } else {
+          const last10 = rawVal.replace(/\D/g, '').slice(-10)
+          if (last10.length === 10 && (ch === 'all' || ch === 'sms' || ch === 'call')) {
+            if (!phoneByValue.has(last10)) phoneByValue.set(last10, why)
+          }
+        }
+      }
+    }
+  }
+
   for (const raw of rows) {
     const id = String(raw[idKey])
     const street = (raw.street_address as string | null) ?? null
@@ -391,6 +441,21 @@ export async function resolveComplianceBatch(
     const channels: ProspectChannelBlocks = allChannelReason
       ? blockAllChannels(allChannelReason)
       : { sms: blockFor('sms'), email: blockFor('email'), call: blockFor('call') }
+
+    const emailKey = String((raw.contact_email as string | null) ?? '').trim().toLowerCase()
+    if (emailKey && !channels.email.blocked) {
+      const why = emailByValue.get(emailKey)
+      if (why) channels.email = { blocked: true, reason: why }
+    }
+    const phoneKey = String((raw.contact_phone as string | null) ?? '').replace(/\D/g, '').slice(-10)
+    if (phoneKey.length === 10) {
+      const why = phoneByValue.get(phoneKey)
+      if (why) {
+        for (const c of ['sms', 'call'] as ProspectChannel[]) {
+          if (!channels[c].blocked) channels[c] = { blocked: true, reason: why }
+        }
+      }
+    }
 
     const suppressedSms = channels.sms.blocked
     const hardStop = channels.sms.blocked
