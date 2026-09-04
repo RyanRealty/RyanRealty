@@ -191,6 +191,7 @@
 .v3-atlas__body {
   display: grid;
   gap: 0;
+  align-self: start;
 }
 
 .v3-atlas__frame {
@@ -267,7 +268,7 @@
 .v3-atlas__zoom {
   position: absolute;
   right: var(--v3-space-xs);
-  bottom: var(--v3-space-xs);
+  top: var(--v3-space-xs);
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -574,6 +575,11 @@
     padding-top: clamp(1.5rem, 4vw, 3rem);
   }
 
+  .v3-atlas__body {
+    position: sticky;
+    top: var(--v3-space-sm);
+  }
+
   .v3-atlas__frame {
     border-top: 0;
     border-bottom: 0;
@@ -582,7 +588,7 @@
 
   .v3-atlas__stage {
     min-height: 22rem;
-    max-height: min(92vh, 64rem);
+    max-height: min(70vh, calc(100dvh - 7rem));
   }
 
   /* A wide boundary (Larkspur, a river plat) stacks: the map takes the full

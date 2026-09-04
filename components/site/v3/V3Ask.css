@@ -143,6 +143,9 @@
 }
 
 .v3-ask__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v3-space-xs);
   margin-top: var(--v3-space-md);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-body);
@@ -181,8 +184,11 @@
 
 .v3-ask__consent button[role='checkbox'],
 .v3-ask__consent input[type='checkbox'] {
-  width: 1.25rem;
-  height: 1.25rem;
+  flex: none;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
   border: 1px solid var(--v3-ink-muted);
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface-raised);

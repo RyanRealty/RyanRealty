@@ -305,6 +305,8 @@
   .v3-footer__legal a {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: var(--v3-tap);
     min-height: var(--v3-tap);
     color: var(--v3-ink);
     font-size: var(--v3-size-body-sm);

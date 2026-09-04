@@ -384,6 +384,12 @@
   color: var(--v3-ink-muted);
 }
 
+.v3-proof__source a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+}
+
 /* G71: the source line was a 17px-tall text link. The box is the target. */
 @layer base {
   .v3-proof__source a {
