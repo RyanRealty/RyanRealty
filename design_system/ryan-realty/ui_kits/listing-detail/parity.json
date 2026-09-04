@@ -237,12 +237,14 @@
     "anchor": "#listing-like-alerts"
   },
   "sectionOrder": [
+    "ListingAskInstrument (ask versus leftover median)",
+    "V3Atlas #location with lot figure",
+    "ListingMoreDoors",
     "MetadataBlock",
     "ListingTracker",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "ListingDetailShell (ListingHero, PriceCtaStrip, OpenHouses, V3Instrument #ask, V3Atlas #location with lot figure, V3Doors, alerts, folds, ListingAttribution, ListingBrokerCTA)",
-    "V3ListingRow strip (similar homes)",
+    "ListingSimilarStrip (similar homes)",
     "BuilderExploreSection (folded when the builder has other actives)",
     "V3Footer (outside main)"
   ],
