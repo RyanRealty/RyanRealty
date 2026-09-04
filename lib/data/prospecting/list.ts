@@ -34,7 +34,20 @@ import {
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement } from './engagement'
 import { blockAllChannels } from './types'
-import type { ProspectComplianceState, ProspectDocState, ProspectKind, ProspectListFilters, ProspectListResult, ProspectRow, ProspectSortKey, ProspectStatusFilter, ProspectSummary, SortDir } from './types'
+import {
+  PROSPECT_LIST_DEFAULT_DIR,
+  PROSPECT_LIST_DEFAULT_SORT,
+  type ProspectComplianceState,
+  type ProspectDocState,
+  type ProspectKind,
+  type ProspectListFilters,
+  type ProspectListResult,
+  type ProspectRow,
+  type ProspectSortKey,
+  type ProspectStatusFilter,
+  type ProspectSummary,
+  type SortDir,
+} from './types'
 
 type RawRow = Record<string, unknown>
 
@@ -297,7 +310,7 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
   const wantBucket = filters.status ? STATUS_TO_BUCKET[filters.status] : undefined
   const filtered = wantBucket ? classified.filter((c) => c.bucket === wantBucket) : classified
 
-  sortClassified(filtered, filters.sort ?? 'date', filters.dir ?? 'desc')
+  sortClassified(filtered, filters.sort ?? PROSPECT_LIST_DEFAULT_SORT, filters.dir ?? PROSPECT_LIST_DEFAULT_DIR)
 
   const total = filtered.length
   const from = (page - 1) * pageSize
