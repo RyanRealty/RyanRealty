@@ -177,26 +177,28 @@ export async function rebrandCmaAction(input: {
 
 export async function rebuildCmaAction(
   input: RebuildCmaInput,
-): Promise<{ data: { slug: string; rebuilt_at: string | null } | null; error: string | null }> {
+): Promise<{ data: { slug: string; builtAt: string | null } | null; error: string | null }> {
   try {
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
     const slug = input.slug.trim().toLowerCase()
     const row = await getCmaAdminReviewRowBySlug(slug)
     if (!row) return { data: null, error: 'CMA not found' }
 
-    // Heartbeat BEFORE buildCma: a platform timeout mid-build used to leave
-    // Working cleared with the prior built_at (Rim View 2026-09-03 — tip not
-    // applied, UI still "built Sep 3"). Stamp build_started_at + built_at so
-    // the review label moves even when the worker dies before recordBuildFailure.
+    // Before buildCma (Rim View 2026-09-03): prefer build_started_at when the
+    // column exists; otherwise heartbeat built_at. Do NOT stamp built_at when
+    // build_started_at works — client fail-loud needs built_at to mean build
+    // finished (success or recordBuildFailure).
     const startedAt = new Date().toISOString()
     const startStamp = await updateCmaRowFieldsBySlug(slug, {
       build_started_at: startedAt,
       build_state: 'building',
-      built_at: startedAt,
       build_finished_at: null,
     })
     if (!startStamp.ok) {
-      return { data: null, error: startStamp.error ?? 'Could not mark rebuild as started' }
+      const heartbeat = await updateCmaRowFieldsBySlug(slug, { built_at: startedAt })
+      if (!heartbeat.ok) {
+        return { data: null, error: heartbeat.error ?? startStamp.error ?? 'Could not mark rebuild as started' }
+      }
     }
 
     const priceOverride =
@@ -259,9 +261,9 @@ export async function rebuildCmaAction(
         build_finished_at: finishedAt,
       }).catch((err) => console.error('[rebuildCmaAction] failed-state stamp', slug, err))
       const failedRow = await getCmaAdminReviewRowBySlug(slug).catch(() => null)
-      const rebuiltAt = (failedRow?.built_at as string | null) ?? startedAt
+      const builtAt = (failedRow?.built_at as string | null) ?? startedAt
       return {
-        data: { slug, rebuilt_at: rebuiltAt },
+        data: { slug, builtAt },
         error: result.error ?? 'Rebuild failed',
       }
     }
@@ -274,10 +276,10 @@ export async function rebuildCmaAction(
       build_finished_at: finishedAt,
     }).catch((err) => console.error('[rebuildCmaAction] ready-state stamp', slug, err))
     const after = await getCmaAdminReviewRowBySlug(slug).catch(() => null)
-    const rebuiltAt = (after?.built_at as string | null) ?? finishedAt
+    const builtAt = (after?.built_at as string | null) ?? finishedAt
     // A rebuild returns the CMA to draft for a fresh review before any send.
     refresh(slug)
-    return { data: { slug, rebuilt_at: rebuiltAt }, error: null }
+    return { data: { slug, builtAt }, error: null }
   } catch (e) {
     console.error('[rebuildCmaAction]', e)
     return { data: null, error: 'Rebuild failed unexpectedly' }

@@ -116,13 +116,11 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         router.refresh()
         return
       }
-      const rebuiltAt = data?.rebuilt_at ?? null
+      const builtAt = data?.builtAt ?? null
       const advanced =
-        Boolean(rebuiltAt) && (!preBuiltAt || String(rebuiltAt) > String(preBuiltAt))
+        Boolean(builtAt) && (!preBuiltAt || String(builtAt) > String(preBuiltAt))
       if (!advanced) {
-        toast.error(
-          'Rebuild finished but the document timestamp did not advance. Check the build error on this page — tip may not have applied.',
-        )
+        toast.error('Rebuild did not update built_at')
       } else {
         toast.success('Rebuilt. The preview below is the new document.')
       }
