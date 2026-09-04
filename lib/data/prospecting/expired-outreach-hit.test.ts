@@ -170,7 +170,7 @@ describe('existing-path wiring (no new gate)', () => {
     expect(SEND_SRC.slice(email)).toMatch(/verifyNotRelisted/)
     expect(SEND_SRC).not.toMatch(/sendCmaToLead\([\s\S]{0,200}verifyNotRelisted/)
     // FSBO Closed-since-detect: send passes detectedAt as expiryComparator.
-    expect(SEND_SRC).toMatch(/expiryComparator: kind === 'expired' \? prospect\.expiredAt : prospect\.detectedAt/)
+    expect(SEND_SRC).toMatch(/expiryComparator: kind === 'fsbo' \? prospect\.detectedAt : prospect\.expiredAt/)
   })
 })
 
