@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   try {
     const result = await drainProspectingFirstTouchDrip(new Date())
     return NextResponse.json({
-      ok: result.ok,
+
       timezone: DRIP_TIMEZONE,
       weekdayStartMinutes: DRIP_WEEKDAY_START_MINUTES,
       spacingMinutes: DRIP_SPACING_MINUTES,
