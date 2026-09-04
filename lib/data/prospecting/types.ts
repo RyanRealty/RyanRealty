@@ -106,10 +106,17 @@ export interface ProspectComplianceState {
   allChannelsBlocked: boolean
 }
 
-/** Channels still open for outreach, in preference order (email, sms, call). */
+/**
+ * Channels still open for outreach, in preference order (email, sms, call).
+ * Market hard-skip (relisted / off-market) clears the paint — EMAIL OK must not
+ * override Active MLS / sold-after-expire / FSBO-gone (Remarkable/Dodds class).
+ */
 export function openChannels(compliance: {
   channels: ProspectChannelBlocks
+  relisted?: boolean
+  offMarket?: boolean
 }): ProspectChannel[] {
+  if (compliance.relisted || compliance.offMarket) return []
   return (['email', 'sms', 'call'] as ProspectChannel[]).filter((c) => !compliance.channels[c].blocked)
 }
 

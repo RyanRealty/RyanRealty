@@ -36,7 +36,8 @@ export {
   type DripSequence,
 } from './drip'
 
-export { listProspects, classifyProspect, type ProspectBucket } from './list'
+export { listProspects } from './list'
+export { classifyProspect, type ProspectBucket } from './classify'
 export {
   canOpenProspectSend,
   prospectDripBlockedReason,

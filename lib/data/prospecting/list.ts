@@ -32,6 +32,9 @@ import {
   type ProspectRowSkeleton,
 } from './get'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
+import { classifyProspect, type ProspectBucket } from './classify'
+export type { ProspectBucket }
+export { classifyProspect }
 import { getProspectEngagement } from './engagement'
 import { blockAllChannels } from './types'
 import {
@@ -135,41 +138,7 @@ const cachedFetchFsboRows = makeResilientCached(
   [] as RawRow[],
 )
 
-export type ProspectBucket = 'sendable' | 'needs-audit' | 'sent' | 'excluded' | 'no-phone'
-type Bucket = ProspectBucket
-
-/**
- * The ONE bucket rule (worklist chips, summary counts, and the v2 page's
- * per-row state word all read this) — exported so the UI can never drift from
- * the classification the summary was computed with.
- */
-export function classifyProspect(
-  doc: ProspectDocState,
-  compliance: ProspectRowSkeleton['compliance'],
-  sendable: boolean,
-): Bucket {
-  return classify(doc, compliance, sendable)
-}
-
-function classify(doc: ProspectDocState, compliance: ProspectRowSkeleton['compliance'], sendable: boolean): Bucket {
-  if (doc.state === 'sent') return 'sent'
-  if (doc.state !== 'ready') return 'needs-audit'
-  // Doc ready, not yet sent. CHANNEL-AWARE (Matt 2026-08-05, the same collapse
-  // Brain Dump 2 banned): a DNC contact with an open email channel is a
-  // legitimately emailable prospect, not a red "Blocked" wall. A row is
-  // sendable when ANY deliverable channel (sms or email) is open — the
-  // channels map already folds compliance AND reachability per channel.
-  if (compliance.relisted || compliance.offMarket || compliance.allChannelsBlocked) return 'excluded'
-  const smsOpen = !compliance.channels.sms.blocked
-  const emailOpen = !compliance.channels.email.blocked
-  if (smsOpen || emailOpen) return 'sendable'
-  // Nothing deliverable. Pure missing-contact-info (no compliance block in
-  // play) stays the reachability bucket; anything else is a true exclusion.
-  if (compliance.noPhone && compliance.noEmail && !compliance.hardStop && !compliance.suppressedSms) return 'no-phone'
-  return sendable ? 'sendable' : 'excluded'
-}
-
-function computeSummary(classified: Array<{ bucket: Bucket }>): ProspectSummary {
+function computeSummary(classified: Array<{ bucket: ProspectBucket }>): ProspectSummary {
   const summary: ProspectSummary = { ...EMPTY_SUMMARY, total: classified.length }
   for (const { bucket } of classified) {
     if (bucket === 'sendable') summary.sendable++
@@ -190,7 +159,7 @@ const DOC_RANK: Record<ProspectDocState['state'], number> = {
   sent: 4,
 }
 
-type Classified = { skeleton: ProspectRowSkeleton; sendable: boolean; bucket: Bucket }
+type Classified = { skeleton: ProspectRowSkeleton; sendable: boolean; bucket: ProspectBucket }
 
 /**
  * In-memory sort over the classified set. Nulls always sink to the bottom
@@ -248,7 +217,7 @@ function sortClassified(rows: Classified[], key: ProspectSortKey, dir: SortDir):
   })
 }
 
-const STATUS_TO_BUCKET: Partial<Record<ProspectStatusFilter, Bucket>> = {
+const STATUS_TO_BUCKET: Partial<Record<ProspectStatusFilter, ProspectBucket>> = {
   sendable: 'sendable',
   'needs-audit': 'needs-audit',
   sent: 'sent',
@@ -302,7 +271,7 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
 
   const classified = skeletons.map((skeleton) => {
     const sendable = computeSendable(skeleton.doc, skeleton.compliance)
-    return { skeleton, sendable, bucket: classify(skeleton.doc, skeleton.compliance, sendable) }
+    return { skeleton, sendable, bucket: classifyProspect(skeleton.doc, skeleton.compliance, sendable, skeleton.personId) }
   })
 
   const summary = computeSummary(classified)
