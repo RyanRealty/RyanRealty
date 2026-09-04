@@ -1,59 +1,87 @@
 // @no-parity — internal admin surface, no public mockup contract
 //
-// /admin/cmas — the Seller-CMA worklist. P11C: migrated to the LOCKED admin v2
-// language (design_system/admin/ADMIN_UI.md) through the shared presentation
-// kit (@/components/admin/v2). Presentation only — this file is the shell
-// around CmaBoard, and the board is mounted unchanged.
+// /admin/cmas — THE CMA queue. Every origin, one list (Matt 2026-09-04).
 //
-// listCmasForAdmin (lib/data/sync/syncWrites.ts) filters to seller CMAs only
-// (doc_type='cma') — expired-audit documents live in the prospecting worklist,
-// not here. Filtering/pagination stay presentational in this page: the CMA
-// table is a few hundred rows (docs/DATABASE_SCHEMA_SNAPSHOT.md), well inside
-// one bounded window, so a second DAL surface isn't warranted for this size.
+// What this replaced: approving a CMA meant knowing which of four screens owned
+// it. /admin/cmas filtered doc_type='cma' and deliberately excluded expired
+// audits; /admin/prospecting owned expired + FSBO behind a different detail
+// page with a different set of buttons; /admin/valuations held inbound
+// requests; /cma-drafts was a dead prototype. Same build engine underneath the
+// whole time (buildCma → selectComps) — only the surfaces were split, which is
+// why the same job felt like four jobs.
 //
-// Carried over verbatim: requireAdminPage('prospecting.view'), WINDOW=500 and
-// PAGE_SIZE=24, the STATUSES set, str(), toWorklistStatus(), every field of
-// mapRow (including the hasDocument db:/public/cmas/ prefix rule), the
-// listCmasForAdmin({ limit: WINDOW, offset: 0 }) read, the summary counts
-// (total from the DAL; drafts/finalized/delivered/sent/published over the
-// window), the sorted city set, the status → city → q filter order and the q
-// lowercase match across address/subdivision/client name/client email, the
-// totalPages/page clamp and slice, the `?id=` detail lookup, the
-// CmaWorklistFilters object, the /admin/cmas/new href and its "Build CMA"
-// label, and every CmaBoard prop and action (approveCmaAction,
-// prepareCmaSendAction, sendCmaToLeadAction, sendTemplateSelfTestAction) with
-// basePath '/admin/cmas'.
+// The row carries what its origin makes relevant, so the list answers the
+// question without a click: an expired row shows the price they last listed at
+// against ours and the gap between them; an FSBO row shows what they are asking
+// today; a requested row shows who asked and when. One action per row, and its
+// label says what it will do — "Approve & send" goes now, "Approve & queue"
+// joins the weekday cold drip.
 //
-// Shape changed, data did not: the page title and its paragraph are gone (the
-// nav names this page — acceptance bar rule 1), replaced by the family's
-// verdict line, whose figures are summary.drafts / summary.delivered /
-// summary.published — the same counts the board's own numbers strip prints
-// directly beneath it. The shadcn button became the v2 button class on the
-// same link.
+// The audit is the load-bearing signal, not a footnote. It failed 210 of 418
+// live rows on 2026-09-04 for real defects, so `audit-failed` gets its own
+// state, its own filter, and no action at all — approveAndDeliverCma refuses
+// it server-side too (§0: a failed audit means the numbers or the narrative do
+// not hold up, and it is not going to a homeowner from here).
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { listCmasForAdmin } from '@/lib/data'
-import { approveCmaAction, prepareCmaSendAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
-import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
-import { VerdictLine } from '@/components/admin/v2'
-import { CmaBoard } from '@/app/admin/(protected)/cmas/_components/worklist/CmaBoard.client'
-import type {
-  CmaStatusFilter,
-  CmaWorklistFilters,
-  CmaWorklistRow,
-  CmaWorklistStatus,
-  CmaWorklistSummary,
-} from '@/app/admin/(protected)/cmas/_components/worklist/types'
+import { listCmaQueue, type CmaQueueRow, type CmaQueueState } from '@/lib/data'
+import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
+import { approveAndDeliverCma } from '@/app/actions/cma-queue'
+import { QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
+import { QueueAction } from '@/app/admin/(protected)/cmas/_components/queue/QueueAction.client'
+import { QueueFilters } from '@/app/admin/(protected)/cmas/_components/queue/QueueFilters.client'
+import type { AdminState } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
-// Upper bound on the window pulled from the DAL — wide enough to cover every
-// CMA the shop has realistically produced, bounded so the page never fetches
-// the whole table into the DOM (admin design standard, Law 1).
 const WINDOW = 500
-const PAGE_SIZE = 24
 
-const STATUSES: CmaStatusFilter[] = ['all', 'asked', 'draft', 'finalized', 'delivered', 'archived']
+
+/** Work-first order: what needs a person, then what is already moving. */
+const STATE_ORDER: CmaQueueState[] = [
+  'ready',
+  'unvetted',
+  'flagged',
+  'audit-failed',
+  'failed',
+  'building',
+  'queued',
+  'sent',
+]
+
+const STATE_LABEL: Record<CmaQueueState, string> = {
+  ready: 'Ready',
+  unvetted: 'Unvetted',
+  flagged: 'Flagged',
+  'audit-failed': 'Audit failed',
+  failed: 'Build failed',
+  building: 'Building',
+  queued: 'In drip',
+  sent: 'Sent',
+  archived: 'Archived',
+}
+
+const STATE_TONE: Record<CmaQueueState, AdminState> = {
+  ready: 'ok',
+  unvetted: 'waiting',
+  flagged: 'waiting',
+  'audit-failed': 'down',
+  failed: 'down',
+  building: 'waiting',
+  queued: 'accent',
+  sent: 'ok',
+  archived: 'waiting',
+}
+
+const ORIGIN_ORDER: CmaOrigin[] = [
+  'expired',
+  'fsbo',
+  'seller-valuation',
+  'lead-form',
+  'broker',
+  'internal',
+  'unknown',
+]
 
 function str(v: string | string[] | undefined): string | undefined {
   const s = Array.isArray(v) ? v[0] : v
@@ -61,165 +89,192 @@ function str(v: string | string[] | undefined): string | undefined {
   return t || undefined
 }
 
-function toWorklistStatus(raw: unknown): CmaWorklistStatus {
-  const s = String(raw ?? '')
-  return s === 'finalized' || s === 'delivered' || s === 'archived' ? s : 'draft'
+function usd(n: number | null): string {
+  if (n == null) return '—'
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`
+  return `$${Math.round(n / 1000)}k`
 }
 
-/** A person requested this value (seller LP or lead form) and it was never delivered. */
-function isAskedUnsent(r: CmaWorklistRow): boolean {
-  return (
-    (r.requestSource === 'seller-lp' || r.requestSource === 'lead-form') &&
-    r.deliveredAt == null &&
-    r.status !== 'archived'
-  )
+function pct(d: number | null): string | null {
+  if (d == null) return null
+  const p = Math.round(d * 100)
+  if (p === 0) return 'same'
+  return `${p > 0 ? '+' : ''}${p}%`
 }
 
-function mapRow(r: Record<string, unknown>): CmaWorklistRow {
-  const buildSummary = (r.build_summary ?? null) as { needs_review?: boolean } | null
-  const htmlPath = String(r.html_path ?? '')
-  return {
-    id: String(r.id),
-    slug: String(r.slug),
-    subjectAddress: String(r.subject_address ?? ''),
-    subjectSubdivision: (r.subject_subdivision as string | null) ?? null,
-    subjectCity: (r.subject_city as string | null) ?? null,
-    clientName: (r.client_name as string | null) ?? null,
-    clientEmail: (r.client_email as string | null) ?? null,
-    brokerSlug: (r.broker_slug as string | null) ?? null,
-    valueLow: (r.value_low as number | null) ?? null,
-    valueHigh: (r.value_high as number | null) ?? null,
-    recommendedList: (r.recommended_list as number | null) ?? null,
-    compsCount: (r.comps_count as number | null) ?? null,
-    status: toWorklistStatus(r.status),
-    createdAt: (r.created_at as string | null) ?? null,
-    finalizedAt: (r.finalized_at as string | null) ?? null,
-    deliveredAt: (r.delivered_at as string | null) ?? null,
-    builtAt: (r.built_at as string | null) ?? null,
-    buildError: (r.build_error as string | null) ?? null,
-    needsReview: buildSummary?.needs_review === true,
-    hasDocument: htmlPath.startsWith('db:') || htmlPath.startsWith('public/cmas/'),
-    publishedToListing: r.published_to_listing === true,
-    publishedAt: (r.published_at as string | null) ?? null,
-    listingKey: (r.subject_listing_key as string | null) ?? null,
-    requestSource: (r.request_source as string | null) ?? null,
+function age(iso: string | null): string {
+  if (!iso) return ''
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+  if (!Number.isFinite(days) || days < 0) return ''
+  if (days === 0) return 'today'
+  if (days < 31) return `${days}d`
+  return `${Math.floor(days / 30)}mo`
+}
+
+/**
+ * The money line — the reason this page exists. For an expired or FSBO row it
+ * is the comparison Matt asked for: what they had it at against what we say,
+ * and the gap. For a requested valuation there is no asking price, so it shows
+ * our range instead of a fake comparison.
+ */
+function moneyLine(r: CmaQueueRow): string {
+  const ours = usd(r.recommendedList)
+  if (r.theirPrice != null && r.theirPriceLabel) {
+    const delta = pct(r.theirPriceDelta)
+    return `${r.theirPriceLabel} ${usd(r.theirPrice)} → ours ${ours}${delta ? ` (${delta})` : ''}`
   }
+  if (r.valueLow != null && r.valueHigh != null) {
+    return `Our range ${usd(r.valueLow)}–${usd(r.valueHigh)} · rec ${ours}`
+  }
+  return `Our rec ${ours}`
 }
 
-export default async function AdminCmasPage({
+/** One line of why, when the state is something other than plain ready. */
+function whyLine(r: CmaQueueRow): string | null {
+  if (r.state === 'audit-failed') {
+    const n = r.auditCriticalCount
+    const head = n > 0 ? `Audit failed — ${n} critical` : 'Audit failed'
+    return r.auditSummary ? `${head}. ${r.auditSummary.slice(0, 140)}` : head
+  }
+  if (r.state === 'unvetted') return 'Audit did not run — nothing has checked this one.'
+  if (r.state === 'failed') return r.buildError ? `Build failed: ${r.buildError.slice(0, 140)}` : 'Build failed.'
+  if (r.state === 'flagged') return r.reviewReason ? r.reviewReason.slice(0, 140) : 'Flagged for review.'
+  if (r.state === 'queued') return 'Approved — waiting its turn in the weekday drip.'
+  return null
+}
+
+/** The row's one action, or null when there is nothing a click should do. */
+function actionLabelFor(r: CmaQueueRow): string | null {
+  if (r.state !== 'ready') return null
+  if (!r.contactEmail) return null
+  if (r.sendMode === 'now') return 'Approve & send'
+  if (r.sendMode === 'drip') return 'Approve & queue'
+  return 'Approve'
+}
+
+export default async function CmaQueuePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireAdminPage('prospecting.view')
-
   const sp = await searchParams
-  const qRaw = str(sp.q) ?? null
-  const q = (qRaw ?? '').toLowerCase()
-  const city = str(sp.city) ?? null
-  const statusRaw = str(sp.status)
-  const status: CmaStatusFilter = STATUSES.includes(statusRaw as CmaStatusFilter) ? (statusRaw as CmaStatusFilter) : 'all'
-  const requestedPage = Math.max(1, Number(str(sp.page) ?? '1') || 1)
+  const stateFilter = str(sp.state) as CmaQueueState | 'all' | undefined
+  const originFilter = str(sp.origin) as CmaOrigin | 'all' | undefined
 
-  const { rows: rawRows, total } = await listCmasForAdmin({ limit: WINDOW, offset: 0 })
-  const allRows = rawRows.map(mapRow)
+  const { rows, total } = await listCmaQueue({ limit: WINDOW })
 
-  const summary: CmaWorklistSummary = {
-    total,
-    drafts: allRows.filter((r) => r.status === 'draft').length,
-    finalized: allRows.filter((r) => r.status === 'finalized').length,
-    delivered: allRows.filter((r) => r.status === 'delivered').length,
-    sent: allRows.filter((r) => r.deliveredAt != null).length,
-    published: allRows.filter((r) => r.publishedToListing).length,
-    askedUnsent: allRows.filter(isAskedUnsent).length,
+  const counts = {
+    ready: rows.filter((r) => r.state === 'ready').length,
+    auditFailed: rows.filter((r) => r.state === 'audit-failed').length,
+    unvetted: rows.filter((r) => r.state === 'unvetted').length,
+    queued: rows.filter((r) => r.state === 'queued').length,
   }
-  const cities = Array.from(new Set(allRows.map((r) => r.subjectCity).filter((c): c is string => Boolean(c)))).sort()
+  const stateCounts = new Map<CmaQueueState, number>()
+  for (const r of rows) stateCounts.set(r.state, (stateCounts.get(r.state) ?? 0) + 1)
+  const originCounts = new Map<CmaOrigin, number>()
+  for (const r of rows) originCounts.set(r.origin, (originCounts.get(r.origin) ?? 0) + 1)
 
-  let filtered = allRows
-  if (status === 'asked') {
-    // The send queue's front of the line: a real person asked and nothing
-    // arrived. Oldest first — they have waited longest.
-    filtered = filtered
-      .filter(isAskedUnsent)
-      .sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')))
-  } else if (status !== 'all') filtered = filtered.filter((r) => r.status === status)
-  if (city) filtered = filtered.filter((r) => r.subjectCity === city)
-  if (q) {
-    filtered = filtered.filter((r) =>
-      [r.subjectAddress, r.subjectSubdivision, r.clientName, r.clientEmail]
-        .filter((v): v is string => Boolean(v))
-        .some((v) => v.toLowerCase().includes(q)),
-    )
-  }
+  let visible = rows
+  if (stateFilter && stateFilter !== 'all') visible = visible.filter((r) => r.state === stateFilter)
+  if (originFilter && originFilter !== 'all') visible = visible.filter((r) => r.origin === originFilter)
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const page = Math.min(requestedPage, totalPages)
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  // Work-first: readiness decides the order, recency breaks ties.
+  visible = [...visible].sort((a, b) => {
+    const ai = STATE_ORDER.indexOf(a.state)
+    const bi = STATE_ORDER.indexOf(b.state)
+    if (ai !== bi) return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi)
+    return (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+  })
 
-  const openId = str(sp.id) ?? null
-  const detail = openId ? (allRows.find((r) => r.id === openId) ?? null) : null
-
-  const filters: CmaWorklistFilters = { q: qRaw, city, status, page, pageSize: PAGE_SIZE }
 
   return (
-    <div className="av2-scope" style={{ maxWidth: 1152, margin: '0 auto' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          flexWrap: 'wrap',
-          margin: '0 0 14px',
-        }}
-      >
-        <VerdictLine tone={summary.askedUnsent > 0 || summary.drafts > 0 ? 'attention' : 'ok'}>
-          {summary.askedUnsent > 0 ? (
-            <>
-              <b>
-                <Link href="/admin/cmas?status=asked" style={{ color: 'inherit' }}>
-                  {summary.askedUnsent} {summary.askedUnsent === 1 ? 'person' : 'people'} asked for a value and never got it.
-                </Link>
-              </b>{' '}
-              {summary.drafts} drafts · {summary.delivered} delivered.
-            </>
-          ) : summary.drafts > 0 ? (
-            <>
-              <b>
-                {summary.drafts} draft{summary.drafts === 1 ? '' : 's'} waiting for your review.
-              </b>{' '}
-              {summary.delivered} delivered · {summary.published} live on a listing page.
-            </>
-          ) : summary.total > 0 ? (
-            <>
-              <b>No drafts waiting.</b> {summary.delivered} delivered · {summary.published} live on a
-              listing page.
-            </>
-          ) : (
-            <>
-              <b>No CMAs on the board.</b>
-            </>
-          )}
-        </VerdictLine>
-        <Link href="/admin/cmas/new" className="av2-btn av2-btn--touch" style={{ textDecoration: 'none' }}>
+    <>
+      <VerdictLine tone={counts.auditFailed > counts.ready ? 'attention' : 'ok'}>
+        {counts.ready} ready to send, {counts.auditFailed} failed audit, {counts.unvetted} unvetted
+        {counts.queued > 0 ? `, ${counts.queued} in the drip` : ''} — {total} CMAs in one queue.
+      </VerdictLine>
+
+      <QueueFilters
+        param="state"
+        basePath="/admin/cmas"
+        allLabel={`All ${rows.length}`}
+        active={stateFilter}
+        otherParams={{ origin: originFilter && originFilter !== 'all' ? originFilter : undefined }}
+        options={STATE_ORDER.filter((s) => (stateCounts.get(s) ?? 0) > 0).map((s) => ({
+          value: s,
+          label: STATE_LABEL[s],
+          count: stateCounts.get(s),
+        }))}
+      />
+
+      <QueueFilters
+        param="origin"
+        basePath="/admin/cmas"
+        allLabel="Every origin"
+        active={originFilter}
+        otherParams={{ state: stateFilter && stateFilter !== 'all' ? stateFilter : undefined }}
+        options={ORIGIN_ORDER.filter((o) => (originCounts.get(o) ?? 0) > 0).map((o) => ({
+          value: o,
+          label: CMA_ORIGIN_LABEL[o],
+          count: originCounts.get(o),
+        }))}
+      />
+
+      <SectionHead>
+        {visible.length} shown
+        {' · '}
+        <Link className="av2-btn av2-btn--quiet av2-btn--touch" href="/admin/cmas/new">
           Build CMA
         </Link>
-      </div>
+      </SectionHead>
 
-      <CmaBoard
-        filters={filters}
-        basePath="/admin/cmas"
-        rows={pageRows}
-        summary={summary}
-        cities={cities}
-        page={page}
-        totalPages={totalPages}
-        detail={detail}
-        approveAction={approveCmaAction}
-        prepareSendAction={prepareCmaSendAction}
-        sendAction={sendCmaToLeadAction}
-        testSendAction={sendTemplateSelfTestAction}
-      />
-    </div>
+      <ul className="av2-queue">
+        {visible.map((r) => {
+          const label = actionLabelFor(r)
+          const why = whyLine(r)
+          const who = r.contactName ?? r.contactEmail ?? 'no contact on file'
+          return (
+            <QueueRow
+              key={r.id}
+              kind={CMA_ORIGIN_LABEL[r.origin]}
+              kindTone={STATE_TONE[r.state]}
+              title={
+                <a href={`/admin/cmas/${r.slug}/view`} target="_blank" rel="noreferrer">
+                  {r.address || r.slug}
+                </a>
+              }
+              context={
+                <>
+                  <span>{moneyLine(r)}</span>
+                  {' · '}
+                  <span>{who}</span>
+                  {!r.contactEmail ? ' · no email' : ''}
+                  {why ? (
+                    <>
+                      <br />
+                      <span>{why}</span>
+                    </>
+                  ) : null}
+                </>
+              }
+              age={age(r.createdAt)}
+              hot={r.state === 'audit-failed' || r.state === 'failed'}
+              action={
+                label ? (
+                  <QueueAction slug={r.slug} label={label} approve={approveAndDeliverCma} />
+                ) : (
+                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={`/admin/cmas/${r.slug}`}>
+                    Open
+                  </Link>
+                )
+              }
+            />
+          )
+        })}
+      </ul>
+
+      {visible.length === 0 ? <p>Nothing matches that filter.</p> : null}
+    </>
   )
 }

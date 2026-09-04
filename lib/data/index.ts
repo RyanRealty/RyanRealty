@@ -579,6 +579,9 @@ export {
 } from '@/lib/data/cma/documents'
 export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
+// THE one CMA queue — every origin in a single list (Matt 2026-09-04).
+export { listCmaQueue, isSendableQueueState } from '@/lib/data/cma/unified-queue'
+export type { CmaQueueRow, CmaQueueState, CmaAuditVerdict } from '@/lib/data/cma/unified-queue'
 export type { CmaActionRow } from '@/lib/data/cma/queue'
 export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, stampCmaPersonId, attachCmaToPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
 

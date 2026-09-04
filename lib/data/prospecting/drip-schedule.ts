@@ -19,8 +19,8 @@ export const DRIP_WEEKDAY_START_MINUTES = 8 * 60
 /**
  * Minutes between drip sends (one-at-a-time cadence).
  *
- * TBD — Matt must confirm before treating 5 as locked. Keep this the only knob.
- * Do NOT re-label as HARDCODE or LOCKED until CoS confirms Matt locked spacing.
+ * LOCKED at 5 by Matt 2026-09-04 (~96 cold sends per weekday). Keep this the
+ * only knob — the cron ticks every minute and this constant is the real cadence.
  */
 export const DRIP_SPACING_MINUTES = 5
 
