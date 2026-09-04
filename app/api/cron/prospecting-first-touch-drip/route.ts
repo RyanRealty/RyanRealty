@@ -7,7 +7,7 @@
  * + FSBO still-active probe).
  *
  * Schedule ticks every minute; the spacing constant is the real cadence knob.
- * Do NOT switch vercel cron to */5 until Matt locks DRIP_SPACING_MINUTES.
+ * Do NOT switch vercel cron to a 5-minute crontab until Matt locks DRIP_SPACING_MINUTES.
  */
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
