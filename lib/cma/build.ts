@@ -13,6 +13,7 @@
 
 import {
   getCmaBrokerBySlugOrEmail,
+  getCmaAdminReviewRowBySlug,
   upsertCmaRowBySlug,
   updateCmaRowFieldsBySlug,
   replaceCmaComps,
@@ -162,23 +163,50 @@ async function recordBuildFailure(
   // kept-set document (Summit/Falcon/Hopper/Hunnell at $1.645M) looking live.
   // Keep the failure summary + build_error for the broker; clear html, comps,
   // and list figures so the draft cannot be mistaken for a priced set.
-  const cleared = await updateCmaRowFieldsBySlug(slug, {
+  // html_path is NOT NULL on public.cmas — nulling it aborts the whole update
+  // (live Rim View kept $1.645M Summit/Falcon after a8ab9ded for this reason).
+  // Empty string is not a stored document (cmaHasStoredHtml / canOpenCmaDocument).
+  const clearFields = {
     build_error: error.slice(0, 2000),
     built_at: new Date().toISOString(),
     ...(failureSummary ? { build_summary: failureSummary } : {}),
     html_content: null,
-    html_path: null,
+    html_path: '',
     render_args: null,
     citations: null,
     recommended_list: null,
     value_low: null,
     value_high: null,
     comps_count: 0,
-  }).catch(() => ({ ok: false as const }))
-  if (cleared && 'ok' in cleared && cleared.ok && 'id' in cleared && typeof cleared.id === 'string') {
-    await replaceCmaComps(cleared.id, []).catch(() => {})
+  }
+  const cleared: { ok: boolean; id?: string; error?: string } = await updateCmaRowFieldsBySlug(
+    slug,
+    clearFields,
+  ).catch((err) => {
+    console.error('[recordBuildFailure] clear update failed', slug, err)
+    return { ok: false }
+  })
+  let cmaId = cleared.ok && typeof cleared.id === 'string' ? cleared.id : null
+  // Update can succeed while .select('id') returns empty (RLS). Still wipe comps
+  // and retry the clear once so the admin rebuild path cannot keep $1.645M live.
+  if (!cmaId || !cleared.ok) {
+    const row = await getCmaAdminReviewRowBySlug(slug).catch(() => null)
+    if (row && typeof row.id === 'string') cmaId = row.id
+    if (!cleared.ok) {
+      await updateCmaRowFieldsBySlug(slug, clearFields).catch((err) => {
+        console.error('[recordBuildFailure] clear retry failed', slug, err)
+      })
+    }
+  }
+  if (cmaId) {
+    await replaceCmaComps(cmaId, []).catch((err) => {
+      console.error('[recordBuildFailure] replaceCmaComps([]) failed', slug, cmaId, err)
+    })
+  } else {
+    console.error('[recordBuildFailure] no cma id to clear comps for', slug)
   }
 }
+
 
 export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   const slug = input.slug.trim().toLowerCase()

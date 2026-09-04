@@ -119,9 +119,9 @@ export async function selectPricingComps(
     },
     asOfYear,
   )
-  // Custom/new: pull 24 months so the time-first ladder rungs have a pool.
+  // Custom/new: pull 30 months so the 24-month custom rungs have a pool.
   const closeAfter = new Date(asOf)
-  closeAfter.setMonth(closeAfter.getMonth() - (customOrNew ? 24 : 18))
+  closeAfter.setMonth(closeAfter.getMonth() - (customOrNew ? 30 : 18))
   const sqft = pricingSubject.sqft
   const [pool, ruralPool, cells] = await Promise.all([
     selectPricingFactsPool({
@@ -249,10 +249,25 @@ export function matchToCompSelection(
   }
 }
 
-/** Facts win when they produced a priceable set. Under 3 sales, use the listings ladder. */
-export function pickCompSource(match: { factsReady: boolean; comps?: unknown[] }): 'facts' | 'listings' {
+/**
+ * Facts win when they produced a priceable set. Under 3 sales, ordinary resale
+ * falls back to the listings ladder.
+ *
+ * Custom/new must NOT fall back: the listings ladder still uses exact baths and
+ * unmappedCrossesKnownBank, which re-starves Perspective-class peers and can
+ * pad TARGET_COMPS with 1970s stock the facts year-quality gate already refused
+ * (live Rim View after a8ab9ded). Stay on facts even at 1–2 comps so the build
+ * fails cleanly and recordBuildFailure can clear the stale kept-set draft.
+ */
+export function pickCompSource(match: {
+  factsReady: boolean
+  comps?: unknown[]
+  customOrNew?: boolean
+}): 'facts' | 'listings' {
+  if (!match.factsReady) return 'listings'
+  if (match.customOrNew) return 'facts'
   const n = match.comps?.length ?? 0
-  if (match.factsReady && n >= 3) return 'facts'
+  if (n >= 3) return 'facts'
   return 'listings'
 }
 
@@ -262,7 +277,12 @@ export async function selectCompsPreferringFacts(
 ): Promise<CompSelection> {
   const { selectComps } = await import('@/lib/cma/comps')
   const match = await selectPricingComps(subject, opts)
-  if (pickCompSource(match) === 'facts') {
+  const customOrNew = isCustomOrNewSubject({
+    yearBuilt: subject.yearBuilt,
+    newConstructionYn: subject.newConstructionYn,
+    remarks: subject.publicRemarks,
+  })
+  if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match)
   }
   return selectComps(subject, opts)

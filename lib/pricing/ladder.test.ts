@@ -28,4 +28,12 @@ describe('pricingTierLadder — time before distance', () => {
     expect(PRICING_TARGET_COMPS).toBe(8)
     expect(PRICING_MAX_COMPS).toBe(10)
   })
+
+  it('inserts wider custom time-first rungs before similar-sub for custom/new', () => {
+    const names = pricingTierLadder({ customOrNew: true }).map((t) => t.name)
+    expect(names).toContain('nearby-2mi-24mo')
+    expect(names).toContain('nearby-6mi-24mo')
+    expect(names.indexOf('nearby-2mi-12mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))
+    expect(names.indexOf('nearby-6mi-24mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))
+  })
 })

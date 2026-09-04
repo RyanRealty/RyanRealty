@@ -717,6 +717,46 @@ describe('walkPricingLadder', () => {
       marketArea: 'bend-awbrey-butte',
       closeDate: '2025-07-15',
     })
+    // Third same-gen peer so the live MIN_COMPS=3 floor can clear without
+    // falling back to the listings ladder that killed Perspective on baths.
+    const northRim2021 = sale({
+      listingKey: 'NORTH_RIM_2021',
+      address: '1900 NW North Rim',
+      beds: 4,
+      baths: 3,
+      yearBuilt: 2021,
+      subdivision: 'Bend North Rim',
+      subdivisionNorm: 'bend north rim',
+      sqft: 4200,
+      lotAcres: 1.05,
+      publicRemarks: 'Custom built modern home.',
+      closePrice: 2_950_000,
+      lastAsk: 2_950_000,
+      closePpsf: 702,
+      latitude: 44.089,
+      longitude: -121.34,
+      marketArea: 'bend-awbrey-butte',
+      closeDate: '2025-03-01',
+    })
+    // In-town lot must still die on lot character even for custom subjects.
+    const intownCustom = sale({
+      listingKey: 'INTOWN_CUSTOM',
+      address: '500 NW In Town Custom',
+      beds: 4,
+      baths: 4,
+      yearBuilt: 2022,
+      subdivision: 'Downtown',
+      subdivisionNorm: 'downtown',
+      sqft: 4800,
+      lotAcres: 0.2,
+      publicRemarks: 'Custom built modern home.',
+      closePrice: 2_100_000,
+      lastAsk: 2_100_000,
+      latitude: 44.058,
+      longitude: -121.315,
+      marketArea: 'bend-old-bend',
+      closeDate: '2025-08-01',
+    })
     const out = walkPricingLadder(
       subject({
         streetAddress: '19365 Rim View',
@@ -725,18 +765,27 @@ describe('walkPricingLadder', () => {
         yearBuilt: 2024,
         newConstruction: true,
         sqft: 4972,
-        lotAcres: 2,
+        // Live lot is 2 acres; keep a wider custom subject so customLotCompatible
+        // (not the 0.4× band) is what admits Perspective at 1.19.
+        lotAcres: 5,
         lotClass: 'acreage',
         ruralAcreage: true,
         beds: 4,
         baths: 4,
-        publicRemarks: 'Custom built modern home.',
+        // Live canceled listing remarks do NOT say "custom built" — newConstructionYn
+        // and yearBuilt carry the class. Water meter → public; sewer "Septic Needed"
+        // must classify unknown so public-sewer Awbrey peers are not hard-cut.
+        publicRemarks:
+          'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+        waterClass: 'public',
+        sewerClass: 'unknown',
+        hoaClass: 'hoa',
         // Live subject sits outside every mapped Bend polygon.
         marketArea: null,
-        latitude: 44.095,
-        longitude: -121.345,
+        latitude: 44.1005,
+        longitude: -121.356541,
       }),
-      [...oldStock, perspective, greenleaf],
+      [...oldStock, perspective, greenleaf, northRim2021, intownCustom],
       { asOf },
     )
     const keys = out.comps.map((c) => c.listingKey)
@@ -747,8 +796,12 @@ describe('walkPricingLadder', () => {
     expect(keys).not.toContain('WILD_RYE_2006')
     expect(keys).not.toContain('FAREWELL_2000')
     expect(keys).not.toContain('OKANE_1996')
+    expect(keys).not.toContain('INTOWN_CUSTOM')
     expect(keys).toContain('PERSPECTIVE')
     expect(keys).toContain('GREENLEAF')
+    expect(keys).toContain('NORTH_RIM_2021')
+    // Live admin floor is MIN_COMPS=3. Ladder "starved" means under TARGET 8.
+    expect(out.comps.length).toBeGreaterThanOrEqual(3)
   })
 
   it('takes a farther same-generation custom peer before nearby 2000 stock', () => {

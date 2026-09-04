@@ -86,12 +86,19 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     ...near(miles, months, apples),
     sqftBand: 0.25,
   })
+  // Live Rim View: same-gen peers are sparse inside 2mi/9mo. Push time and a
+  // modest radius before similar-sub / rural padding so a third Perspective-
+  // class sale can fill MIN_COMPS without reopening 1970s stock.
   const customTimeFirst: PricingTier[] = customOrNew
     ? [
         customNear(2, 12, 'utilities'),
         customNear(2, 18, 'utilities'),
+        customNear(2, 24, 'utilities'),
         customNear(4, 12, 'utilities'),
         customNear(4, 18, 'product_lot'),
+        customNear(4, 24, 'product_lot'),
+        customNear(6, 18, 'product_lot'),
+        customNear(6, 24, 'product_lot'),
       ]
     : []
   return [

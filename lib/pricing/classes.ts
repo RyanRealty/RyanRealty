@@ -68,6 +68,13 @@ export function classifyWater(raw: unknown): WaterClass {
 export function classifySewer(raw: unknown): SewerClass {
   const s = flattenUtility(raw).toLowerCase()
   if (!s.trim()) return 'unknown'
+  // MLS "Septic Needed" / "needs septic" is a to-be-built or lot checkbox —
+  // not an installed system. Live Rim View (Canceled new construction) ships
+  // sewer='Septic Needed' while Perspective-class peers are public sewer;
+  // treating the checkbox as hard septic starved the facts path after a8ab9ded.
+  if (/septic\s+needed|needs?\s+(?:a\s+)?septic|septic\s+required/.test(s)) {
+    return 'unknown'
+  }
   if (/septic|leach|sand filter|capping fill|holding tank|alternative treatment/.test(s)) {
     return 'septic'
   }
@@ -184,6 +191,20 @@ export function lotCompatible(subjectAcres: number | null, compAcres: number | n
   if (!subjectIsAcreage) return true
   return compAcres >= subjectAcres * 0.4 && compAcres <= subjectAcres * 2.5
 }
+/**
+ * Custom/new: keep the acreage vs in-town split, drop the 0.4×–2.5× band.
+ * Live Rim View (~2 acres) vs Perspective (1.19) is inside the ordinary band,
+ * but larger North Rim customs vs ~1-acre Awbrey peers were starving the set
+ * on lot-character while baths/divides were already fixed.
+ */
+export function customLotCompatible(subjectAcres: number | null, compAcres: number | null): boolean {
+  if (subjectAcres == null || compAcres == null) return true
+  const subjectIsAcreage = subjectAcres >= 1
+  const compIsAcreage = compAcres >= 1
+  return subjectIsAcreage === compIsAcreage
+}
+
+
 
 /** Close under 10% of last ask, or over 10× last ask, is a facts bug. */
 export const IMPLAUSIBLE_CLOSE_RATIO = 0.1

@@ -63,7 +63,12 @@ import {
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
-import type { IrrigationClass } from '@/lib/pricing/classes'
+import {
+  customBathCompatible,
+  customLotCompatible,
+  isCustomOrNewSubject,
+  type IrrigationClass,
+} from '@/lib/pricing/classes'
 
 export { realSubdivision }
 
@@ -297,6 +302,12 @@ export async function selectComps(
 
   const tiers = compTierLadder(subdivisionIlike)
   const ruralAcreage = isRuralAcreage(subject, subjectArea)
+  const customOrNew = isCustomOrNewSubject({
+    yearBuilt: subject.yearBuilt,
+    newConstructionYn: subject.newConstructionYn,
+    remarks: subject.publicRemarks,
+  })
+
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)
   const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
 
@@ -399,7 +410,12 @@ export async function selectComps(
 
       // HARD EXCLUSION at every tier (Matt 2026-07-28): acreage and in-town lots
       // are different products with different buyer pools, at any distance.
-      if (!lotCharacterCompatible(subject.lotAcres, comp.lotAcres)) {
+      if (customOrNew) {
+        if (!customLotCompatible(subject.lotAcres, comp.lotAcres)) {
+          rung.excluded.lot_character++
+          continue
+        }
+      } else if (!lotCharacterCompatible(subject.lotAcres, comp.lotAcres)) {
         rung.excluded.lot_character++
         continue
       }
@@ -442,7 +458,8 @@ export async function selectComps(
           subjectArea,
           resolveMarketArea(comp.latitude, comp.longitude),
         ) ||
-        (ruralAcreage &&
+        (!customOrNew &&
+          ruralAcreage &&
           unmappedCrossesKnownBank(subjectArea, resolveMarketArea(comp.latitude, comp.longitude)))
       ) {
         rung.excluded.crossed_divide++
@@ -459,7 +476,14 @@ export async function selectComps(
         continue
       }
 
-      if (!bathCountCompatible(subject.baths, comp.baths)) {
+      // Custom/new: ±1 whole bath (Perspective 3 vs Rim View 4). Exact floor
+      // match still holds for ordinary resale.
+      if (customOrNew) {
+        if (!customBathCompatible(subject.baths, comp.baths)) {
+          rung.excluded.bath_count++
+          continue
+        }
+      } else if (!bathCountCompatible(subject.baths, comp.baths)) {
         rung.excluded.bath_count++
         continue
       }

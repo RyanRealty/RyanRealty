@@ -9,6 +9,7 @@ import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divi
 import {
   classifyAgeBand,
   customBathCompatible,
+  customLotCompatible,
   hoaCompatible,
   horseInfrastructureCompatible,
   irrigationClassFromRemarks,
@@ -187,10 +188,11 @@ function applesOk(
   // match still holds for ordinary resale.
   if (customOrNew) {
     if (!customBathCompatible(subject.baths, sale.baths)) return false
-  } else if (!bathCountCompatible(subject.baths, sale.baths)) {
-    return false
+    if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
+  } else {
+    if (!bathCountCompatible(subject.baths, sale.baths)) return false
+    if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   }
-  if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
   // Water and sewer stay hard on every rung. A well house and a city-water
   // house are different products in this market; widening distance does not

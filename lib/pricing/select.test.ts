@@ -107,12 +107,18 @@ describe('pickCompSource', () => {
     expect(pickCompSource({ factsReady: true, comps: [{}, {}, {}] })).toBe('facts')
   })
 
-  it('falls back to listings when facts starve under 3', () => {
+  it('falls back to listings when ordinary facts starve under 3', () => {
     expect(pickCompSource({ factsReady: true, comps: [{}, {}] })).toBe('listings')
     expect(pickCompSource({ factsReady: true, comps: [] })).toBe('listings')
   })
 
+  it('stays on facts for custom/new even under 3 — listings would re-starve Perspective', () => {
+    expect(pickCompSource({ factsReady: true, customOrNew: true, comps: [{}, {}] })).toBe('facts')
+    expect(pickCompSource({ factsReady: true, customOrNew: true, comps: [] })).toBe('facts')
+  })
+
   it('uses the listings ladder when facts are not ready', () => {
     expect(pickCompSource({ factsReady: false, comps: [{}, {}, {}] })).toBe('listings')
+    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [{}, {}] })).toBe('listings')
   })
 })

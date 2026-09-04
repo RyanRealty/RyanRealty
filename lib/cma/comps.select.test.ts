@@ -15,9 +15,13 @@ vi.mock('@/lib/data', () => ({
 }))
 
 const divideSpy = vi.hoisted(() => vi.fn(() => false))
-vi.mock('@/lib/pricing/divides', () => ({
-  crossesMajorDivide: divideSpy,
-}))
+vi.mock('@/lib/pricing/divides', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/pricing/divides')>()
+  return {
+    ...actual,
+    crossesMajorDivide: divideSpy,
+  }
+})
 
 import { selectComps, selectCompsByKeys } from '@/lib/cma/comps'
 
@@ -301,6 +305,65 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
     expect(sel.comps.map((c) => c.listingKey)).not.toContain('SUMMIT')
     expect(sel.comps.map((c) => c.listingKey)).toContain('NORTH_RIM')
     expect(sel.diagnostics.excluded_totals.year_quality).toBeGreaterThan(0)
+  })
+
+  it('keeps Perspective-class Awbrey peers for an unmapped Rim View custom subject', async () => {
+    // Live starve shape: subject outside Bend GIS (null mesh), Perspective is
+    // 3 baths / 1.19 acres inside Awbrey Butte. Unmapped bank + exact baths
+    // used to drop it; Hunnell-class unmapped stock must still lose on year.
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'PERSPECTIVE',
+        StreetNumber: '2060',
+        StreetName: 'Perspective',
+        year_built: 2023,
+        TotalLivingAreaSqFt: 3963,
+        lot_size_acres: 1.19,
+        BedroomsTotal: 4,
+        BathroomsTotal: 3,
+        public_remarks: 'Custom built modern home.',
+        // Awbrey Butte mesh — on a known Parkway bank.
+        Latitude: 44.086736,
+        Longitude: -121.342439,
+        CloseDate: '2025-07-31',
+        ClosePrice: 3300000,
+      }),
+      closedRow({
+        ListingKey: 'HUNNELL',
+        StreetNumber: '64835',
+        StreetName: 'Hunnell',
+        year_built: 1980,
+        TotalLivingAreaSqFt: 4382,
+        lot_size_acres: 2.82,
+        BedroomsTotal: 4,
+        BathroomsTotal: 4,
+        public_remarks: 'Irrigated horse property with a barn.',
+        Latitude: 44.12,
+        Longitude: -121.38,
+        CloseDate: '2025-08-08',
+        ClosePrice: 1800000,
+      }),
+    ])
+    const sel = await selectComps(
+      subject({
+        streetAddress: '19365 Rim View',
+        yearBuilt: 2024,
+        newConstructionYn: true,
+        sqft: 4972,
+        lotAcres: 2,
+        beds: 4,
+        baths: 4,
+        publicRemarks:
+          'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+        propertySubType: 'Single Family Residence',
+        // Live Rim View coords — outside every mapped Bend polygon.
+        latitude: 44.1005,
+        longitude: -121.356541,
+      }),
+    )
+    const keys = sel.comps.map((c) => c.listingKey)
+    expect(keys).toContain('PERSPECTIVE')
+    expect(keys).not.toContain('HUNNELL')
   })
 
   it('does not keep a dry acreage sale for an irrigated subject', async () => {

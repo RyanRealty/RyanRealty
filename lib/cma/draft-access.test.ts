@@ -37,6 +37,17 @@ describe('CMA draft review access', () => {
     expect(canOpenCmaDocument({ html_content: null, html_path: null, render_args: null })).toBe(false)
   })
 
+  it('does not reopen a failed rebuild that only stamped built_at after clearing html', () => {
+    expect(
+      canOpenCmaDocument({
+        html_content: null,
+        html_path: null,
+        render_args: null,
+        built_at: '2026-09-04T03:00:00.000Z',
+      }),
+    ).toBe(false)
+  })
+
   it('opens a built draft from html_path without pulling html_content', () => {
     expect(
       canOpenCmaDocument({

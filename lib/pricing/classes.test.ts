@@ -12,6 +12,7 @@ import {
   irrigationClassFromRemarks,
   irrigationCompatible,
   customBathCompatible,
+  customLotCompatible,
   isCustomOrNewSubject,
   isNewBuild,
   newConstructionCompatible,
@@ -49,6 +50,11 @@ describe('classifySewer', () => {
     expect(classifySewer({ 'Public Sewer': true })).toBe('public')
     expect(classifySewer({ 'Private Sewer': true })).toBe('private')
     expect(classifySewer({ 'Septic Tank': true, 'Public Sewer': true })).toBe('septic')
+  })
+  it('treats MLS Septic Needed as unknown — not an installed septic system', () => {
+    expect(classifySewer('Septic Needed')).toBe('unknown')
+    expect(classifySewer({ 'Septic Needed': true })).toBe('unknown')
+    expect(sewerCompatible(classifySewer('Septic Needed'), 'public')).toBe(true)
   })
 })
 
@@ -256,3 +262,11 @@ describe('customBathCompatible', () => {
   })
 })
 
+describe('customLotCompatible', () => {
+  it('keeps acreage vs in-town hard but drops the ratio band for custom peers', () => {
+    expect(customLotCompatible(2, 1.19)).toBe(true)
+    expect(customLotCompatible(5, 1.19)).toBe(true)
+    expect(customLotCompatible(2, 0.25)).toBe(false)
+    expect(customLotCompatible(null, 1.19)).toBe(true)
+  })
+})
