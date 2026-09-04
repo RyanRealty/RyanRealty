@@ -3,7 +3,8 @@
  * Leftover / segment figures back the face. Photographed listings are a
  * separate set. Miss omits. Do not invent a count from list length.
  */
-import type { AtlasDot, AtlasPopulation, V3ListingRowData } from '@/components/site/v3'
+import type { AtlasPopulation } from '@/lib/atlas/build-place-atlas'
+import type { AtlasDot, V3ListingRowData } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'

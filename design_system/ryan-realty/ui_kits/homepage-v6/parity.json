@@ -76,8 +76,8 @@
       "section": "city / community / address search on the Stage"
     },
     {
-      "name": "HomeHomesField",
-      "section": "The route-local Field wrapper: V3Field with PlaceFieldMap in the map slot, type chips only (one scrolling row), listFlow, See all. Towns are Ledger doors, not a second Field chip row. V3Field and PlaceFieldMap are imported by THIS component, not the route file, so this entry is the one the import gate binds on. The Google map stays in the Field frame."
+      "name": "HomeHomesFieldBound",
+      "section": "Client island over HomeHomesField. Zoom/pan of the living atlas filters the photographed list. HomeHomesField still mounts V3Field + PlaceFieldMap; the route binds the Bound wrapper so the list tracks the camera."
     },
     {
       "name": "V3Ledger",
@@ -139,7 +139,7 @@
     "V3SectionTracker + analytics islands (not a section)",
     "V3Atlas #hero -- the living map, H1, HomeHeroSearch",
     "V3Doors #doors -- Buying / Selling / Investing, one live fact each",
-    "HomeHomesField -- the houses and the map in one frame, type chips, listFlow, See all",
+    "HomeHomesFieldBound -- photographed list bound to the atlas camera; HomeHomesField still owns the Field frame",
     "V3Ledger #towns -- each town's active count and median list price",
     "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
     "section #sell -- the seller ask, directly after the market verdict speaks to sellers (Matt 2026-09-01: moved up from last)",
