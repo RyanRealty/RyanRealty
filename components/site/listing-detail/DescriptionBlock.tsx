@@ -23,10 +23,7 @@ export function DescriptionBlock({ publicRemarks, className }: Props) {
   return (
     <section className={cn('section listing-about', open && 'is-open', className)}>
       <div className="sec-head">
-        <div>
-          <div className="eyebrow sec-index">About this home</div>
-          <h2 className="sec-title">About this home</h2>
-        </div>
+        <h2 className="sec-title">About this home</h2>
       </div>
 
       <div className="listing-about__copy">

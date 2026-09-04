@@ -66,7 +66,6 @@ import {
 } from '@/components/site/listing-detail/listing-doors'
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
 import { listingSimilarRail } from '@/components/site/listing-detail/listing-similar'
-import { ListingFold } from '@/components/site/listing-detail/ListingFold'
 import { ListingLotFigure } from '@/components/site/listing-detail/ListingLotFigure'
 import {
   leftoverListingGrains,
@@ -677,13 +676,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
         </div>
       ) : null}
       {wholePropertyPrice != null ? (
-        <ListingFold id="payment" title="Monthly payment">
+        <div id="payment">
           <MortgageCalculator
             listPrice={wholePropertyPrice}
             taxAnnualAmount={listing.taxAnnualAmount}
             ratePct={calcDefaults?.mortgageRate ?? null}
           />
-        </ListingFold>
+        </div>
       ) : null}
       {atlasBlock}
       <div id="schools">
@@ -692,36 +691,36 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <ListingAroundHere lat={listing.lat} lng={listing.lng} city={listing.city} />
       {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
       {priceBandChart ? <V3Chart id="price-bands" {...priceBandChart} /> : null}
-      <ListingFold id="specs" title="Property details">
+      <div id="specs">
         <PropertySpecs listing={listingWithPhotos} />
-      </ListingFold>
+      </div>
       {history.length > 0 ? (
-        <ListingFold id="history" title="Sale and tax history">
+        <div id="history">
           <PropertyHistory history={history} mode="meaningful-only" />
-        </ListingFold>
+        </div>
       ) : null}
       {platDocuments && platDocuments.documents.length > 0 ? (
-        <ListingFold id="plat" title="CC&Rs and governing documents">
+        <div id="plat">
           <GoverningDocumentsBlock
             platName={platDocuments.platName}
             platHref={`/subdivisions/${platDocuments.geoSlug}`}
             documents={platDocuments.documents}
           />
-        </ListingFold>
+        </div>
       ) : null}
       {publishedCma ? (
-        <ListingFold id="cma" title="Our opinion of value">
+        <div id="cma">
           <PublishedCmaSection cma={publishedCma} />
-        </ListingFold>
+        </div>
       ) : null}
       {listingRentalEligible({
         propertyType: listing.propertyType,
         beds: listing.beds,
         wholePropertyPrice,
       }) ? (
-        <ListingFold id="rental" title="Rental numbers">
+        <div id="rental">
           <RentalAnalysis listing={listing} />
-        </ListingFold>
+        </div>
       ) : null}
       {similarRows.length > 0 ? (
         <ListingSimilarStrip
@@ -731,9 +730,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
         />
       ) : null}
       {listing.builderName && builderTiles.length > 0 ? (
-        <ListingFold id="builder" title={`More by ${listing.builderName}`}>
+        <div id="builder">
           <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
-        </ListingFold>
+        </div>
       ) : null}
       <ListingLikeThisAlerts
         city={listing.city}
