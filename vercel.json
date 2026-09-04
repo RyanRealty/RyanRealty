@@ -163,7 +163,7 @@
     },
     {
       "path": "/api/cron/prospecting-first-touch-drip",
-      "schedule": "* * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/publisher-sweep",

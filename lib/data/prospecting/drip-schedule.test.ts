@@ -1,6 +1,6 @@
 /**
  * Schedule lock for the prospecting first-touch drip:
- * weekday 08:00 PT open, configurable spacing, one-at-a-time (spacing gate).
+ * weekday 08:00 PT open, HARDCODE 5m spacing, one-at-a-time (spacing gate).
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -51,12 +51,12 @@ describe('drip-schedule — weekday 8am PT window', () => {
 })
 
 describe('drip-schedule — spacing / one-at-a-time', () => {
-  it('exposes a single spacing constant (TBD knob; provisional default 5)', () => {
+  it('exposes LOCKED spacing constant (HARDCODE 5 minutes)', () => {
     expect(DRIP_TIMEZONE).toBe('America/Los_Angeles')
     expect(DRIP_WEEKDAY_START_MINUTES).toBe(8 * 60)
     expect(typeof DRIP_SPACING_MINUTES).toBe('number')
     expect(DRIP_SPACING_MINUTES).toBeGreaterThan(0)
-    // Provisional default until Matt confirms — change DRIP_SPACING_MINUTES only.
+    // LOCKED (Matt 2026-09-03): every 5 minutes.
     expect(DRIP_SPACING_MINUTES).toBe(5)
   })
 
