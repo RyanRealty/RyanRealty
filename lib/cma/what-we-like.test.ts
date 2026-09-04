@@ -222,9 +222,9 @@ describe('the single-doc fold', () => {
 
   it('the doc label and title never switch to audit', () => {
     const { html } = renderCmaHtml(withReview)
-    expect(html).toContain('Comparative Market Analysis')
+    expect(html).toContain('Pricing report')
     expect(html).not.toContain('Listing Audit')
-    expect(html).toContain('<title>CMA ·')
+    expect(html).toContain('<title>Pricing report ·')
   })
 
   it('one artifact, two media: screen hides the print page header', () => {

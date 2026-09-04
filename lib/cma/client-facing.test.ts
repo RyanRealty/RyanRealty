@@ -395,7 +395,7 @@ describe('engine output no longer contains the Tumalo leaks', () => {
     expect(html).toContain('Why $1,050,000')
     expect(html).toContain('strategic list')
     expect(html).toContain('Mountain(s)')
-    expect(html).toContain('Comparative Market Analysis')
+    expect(html).toContain('Pricing report')
     expect(html).not.toContain('Verification Trace')
     expect(html).not.toContain('broker price opinion')
     expect(html).toContain('Bend, Oregon 97703')
