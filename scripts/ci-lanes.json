@@ -232,6 +232,11 @@
       "lib/alerts/**",
       "lib/listing-alerts/**"
     ],
+    "ci:alias-plats": [
+      "data/subdivision-alias-plats.json",
+      "lib/subdivision-area-redirects.ts",
+      "scripts/check-subdivision-alias-plats.mjs"
+    ],
     "ci:approval-stamp-wired": [
       "app/api/cron/publisher-sweep/**",
       "app/api/social/publish/**",
@@ -559,6 +564,11 @@
       "lib/digest-email-templates.tsx",
       "design_system/**"
     ],
+    "ci:email-link-tracking": [
+      "app/**",
+      "lib/**",
+      "scripts/check-email-link-tracking.mjs"
+    ],
     "ci:email-quality": [
       "lib/email/**",
       "lib/email-templates/**",
@@ -599,6 +609,10 @@
       "app/lp/central-oregon-golf/**",
       "app/central-oregon/golf/**",
       "lib/golf-format.ts"
+    ],
+    "ci:grok-chokepoint": [
+      "app/**",
+      "lib/**"
     ],
     "ci:header-search": [
       "components/site/**",
@@ -706,6 +720,14 @@
       "app/reports/**",
       "app/housing-market/**",
       "app/blog/**"
+    ],
+    "ci:market-question": [
+      "app/cities/**",
+      "app/communities/**",
+      "app/zip/**",
+      "app/housing-market/**",
+      "lib/site/market-faq.ts",
+      "scripts/check-market-question-heading.mjs"
     ],
     "ci:market-report-bulk-ledger": [
       "lib/reports/**",
@@ -1148,11 +1170,6 @@
       "lib/sms/**",
       "app/api/**"
     ],
-    "ci:email-link-tracking": [
-      "app/**",
-      "lib/**",
-      "scripts/check-email-link-tracking.mjs"
-    ],
     "ci:ssg-budget": [
       "app/**"
     ],
@@ -1201,6 +1218,15 @@
     "ci:sync-cursor": [
       "lib/sync/**",
       "app/api/cron/**"
+    ],
+    "ci:taste-canon": [
+      "design_system/public/TASTE.md",
+      "design_system/ryan-realty/ui_kits/**/parity.json",
+      "scripts/taste-review-baseline.json",
+      "scripts/check-taste-canon.mjs",
+      "CLAUDE.md",
+      "AGENTS.md",
+      ".claude/skills/frontend-design/SKILL.md"
     ],
     "ci:tool-discipline": [
       "lib/**",
@@ -1258,28 +1284,6 @@
       "lib/crm/review-ask.ts",
       "app/cities/**",
       "app/communities/**"
-    ],
-    "ci:market-question": [
-      "app/cities/**",
-      "app/communities/**",
-      "app/zip/**",
-      "app/housing-market/**",
-      "lib/site/market-faq.ts",
-      "scripts/check-market-question-heading.mjs"
-    ],
-    "ci:alias-plats": [
-      "data/subdivision-alias-plats.json",
-      "lib/subdivision-area-redirects.ts",
-      "scripts/check-subdivision-alias-plats.mjs"
-    ],
-    "ci:taste-canon": [
-      "design_system/public/TASTE.md",
-      "design_system/ryan-realty/ui_kits/**/parity.json",
-      "scripts/taste-review-baseline.json",
-      "scripts/check-taste-canon.mjs",
-      "CLAUDE.md",
-      "AGENTS.md",
-      ".claude/skills/frontend-design/SKILL.md"
     ]
   },
   "nightly": [

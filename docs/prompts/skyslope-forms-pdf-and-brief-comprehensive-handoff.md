@@ -74,7 +74,7 @@ Last updated: 2026-04-11
 | Excel workbook | `scripts/skyslope-forms-transaction-workbook.mjs` |
 | Master audit markdown | `scripts/skyslope-forms-master-audit.mjs` |
 | Document taxonomy / `inferKind` / Word section | `scripts/skyslope-forms-document-taxonomy.mjs` |
-| Site AI (xAI Grok) for marketing text | `app/api/ai/generate-text/route.ts`, `app/api/ai/chat/route.ts` — **same `XAI_API_KEY` idea** as the advisory agent |
+| Site AI (xAI Grok) for marketing text | Both routes were DELETED 2026-09-04 (public, unauthenticated, own key). Every xAI call now goes through `lib/grok/`, held by `ci:grok-chokepoint` |
 
 ---
 
