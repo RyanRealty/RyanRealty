@@ -265,15 +265,7 @@
 }
 
 .v3-atlas__zoom {
-  position: absolute;
-  right: var(--v3-space-xs);
-  top: var(--v3-space-xs);
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  border: var(--v3-rule-hairline);
-  background: var(--v3-surface);
+  display: none;
 }
 
 .v3-atlas__zoom-btn {
@@ -580,6 +572,18 @@
   .v3-atlas__body {
     position: sticky;
     top: var(--v3-space-sm);
+    z-index: 0;
+  }
+
+  .v3-atlas__dock,
+  .v3-atlas__aside {
+    position: relative;
+    z-index: 2;
+    background: var(--v3-surface);
+  }
+
+  .v3-atlas.is-stacked .v3-atlas__body {
+    position: static;
   }
 
   .v3-atlas__frame {
@@ -912,18 +916,36 @@
 /* Labels (HTML, positioned from the measured view). */
 .v3-atlas__label {
   position: absolute;
-  transform: translate(-50%, 0);
-  padding: 0 0.3rem;
+  transform: translate(-50%, -50%);
+  max-width: 7.5rem;
+  padding: 0 0.25rem;
   color: var(--v3-ink);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-strong, 600);
   letter-spacing: var(--v3-track-eyebrow);
-  text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   text-shadow:
     0 0 4px var(--v3-cream),
     0 0 4px var(--v3-cream),
     0 0 8px var(--v3-cream);
+}
+
+.v3-atlas__label--place {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--v3-size-source);
+}
+
+.v3-atlas__label--home {
+  text-transform: uppercase;
+  white-space: nowrap;
+  max-width: none;
 }
 
 /* The card ----------------------------------------------------------------
@@ -989,11 +1011,11 @@
   margin: 0;
   padding-right: var(--v3-space-lg);
   font-family: var(--v3-font-display);
-  font-size: var(--v3-size-display-2);
-  line-height: var(--v3-leading-heading);
+  font-size: var(--v3-size-body-lg);
+  line-height: 1.2;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   overflow: hidden;
 }
 
@@ -1191,6 +1213,13 @@
   }
 }
 
+.v3-atlas__chip-name {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .v3-atlas__chip {
   flex: none;
   display: inline-flex;
@@ -1199,6 +1228,7 @@
   align-items: center;
   gap: var(--v3-space-3xs);
   min-height: var(--v3-tap);
+  max-width: 100%;
   padding: 0 var(--v3-space-xs);
   border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-pill);

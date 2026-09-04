@@ -105,7 +105,8 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD).toContain('mapSlot={undefined}')
     expect(ATLAS).toContain('zoomAt')
     expect(ATLAS).toContain('router.push')
-    expect(ATLAS).toContain('zoomToPlace')
+    expect(ATLAS).toContain('openPlace')
+    expect(ATLAS).toContain('pinchRef')
   })
 
   it('toggles types that exist in the set as Field lead chips', () => {
