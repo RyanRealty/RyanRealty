@@ -77,7 +77,8 @@ const REGISTRY_SHORT_NAME = {
   // are `Pronghorn Nicklaus` and `Pronghorn Fazio`. The operator scorecard
   // (PRH-SC.pdf, titled NICKLAUS COURSE, TIPS 7,379) matches this cluster's
   // par sequence and USGA CourseID 5779, so the join is Nicklaus. Fazio is
-  // not a key here: leftover untagged ways are not a second course.
+  // not a key here: leftover untagged ways are not a second course. Re-checked
+  // 2026-09-03 (OSM map API bbox + PRHF-SC.pdf); still no named Fazio cluster.
   pronghorn: 'Pronghorn Nicklaus',
 }
 

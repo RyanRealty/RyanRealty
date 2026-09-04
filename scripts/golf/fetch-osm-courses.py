@@ -105,15 +105,31 @@ NEIGHBORHOOD_COURSES = [
 ]
 
 # Found by the same sweep, not written, and why. These are here so the next run
-# does not rediscover them and reach a different conclusion.
+# does not rediscover them and reach a different conclusion. Re-checked
+# 2026-09-03 with OSM map API bboxes (no golf_course clip) and operator PDFs.
 #
-#   pronghorn-fazio — leftovers on the same property as the Nicklaus routing:
-#       an untagged duplicate `ref=17` farther west and two unnumbered ways.
-#       Nothing in the tags names them Fazio. Numbering them would invent a
-#       course, so they stay dropped. The Nicklaus eighteen is the cluster
-#       whose par sequence 4-5-3-4-4-4-3-5-4-4-4-4-4-3-5-5-3-4 matches the
-#       operator scorecard (PRH-SC.pdf, titled NICKLAUS COURSE, TIPS 7,379)
-#       and USGA CourseID 5779.
+#   pronghorn-fazio — operator PRHF-SC.pdf (juniperpreserve.com, 2023-08)
+#       names a west-side eighteen, par 4-5-4-3-4-4-4-3-5 / 4-3-5-4-4-4-3-4-5,
+#       TIPS 7,456. OSM has no second cluster: south of 44.175 and west of
+#       −121.195 are empty of golf=*. Leftovers on the Nicklaus west edge
+#       (untagged duplicate ref=17 and two unnumbered ways) are not named
+#       Fazio. The Nicklaus eighteen is the cluster whose par sequence
+#       4-5-3-4-4-4-3-5-4-4-4-4-4-3-5-5-3-4 matches PRH-SC.pdf (NICKLAUS
+#       COURSE, TIPS 7,379) and USGA CourseID 5779.
+#   rivers-edge — named leisure=golf_course way/818894228 plus three unnamed
+#       fragments and cartpaths. Zero hole/green/tee/fairway ways in an
+#       unclipped bbox around the polygon. Operator scorecard image is a
+#       numbered cartoon, not OSM geometry.
+#   greens-at-redmond — three named polygons (ways 320236405/407/409, ~30 ac
+#       empty of golf=*) and clubhouse way/806883881 at 44.242, −121.198.
+#       Eight holes in that bbox sit inside Juniper and already ship. Registry
+#       pin 44.2723 is 3 km north and empty.
+#   desert-peaks — named way/438313039 (69 ac, 44.6537, −121.1465) was missing
+#       from the old polygon cache. Still zero golf=* children. Below the
+#       9-hole floor.
+#   eagle-crest-challenge — OSM holes 12–14 match the Resort card (14 is par 4;
+#       Challenge's 14 is par 3). Ridge and Resort are complete 18s next door.
+#       Challenge itself has no cluster. Do not number a 3-hole scrap as 18.
 #   quail-run — eighteen routings inside its own OSM polygon and almost nothing
 #       else: one fairway, four water hazards, no greens, no tees, no bunkers,
 #       and no `ref` on any of it. It is drawn unnumbered like Awbrey Glen; the

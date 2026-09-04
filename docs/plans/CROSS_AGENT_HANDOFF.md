@@ -1,4 +1,25 @@
-# Current — 2026-09-03 (golf, Pronghorn Nicklaus) — twenty courses became twenty-one
+# Current — 2026-09-03 (golf Track C) — five remaining maps, second hunt, none shipped
+
+OSM map API bbox (unclipped `golf=*`) + operator PDFs. No honest numbered 18
+or 9. Do not invent. Do not re-open Nicklaus (`dfdfe4d2`).
+
+- **fazio** — `PRHF-SC.pdf` names the west 18 (TIPS 7,456). OSM south of 44.175
+  and west of −121.195 is empty. Leftover untagged 17 + two unnumbered ways
+  are not named Fazio.
+- **rivers-edge** — named polygon, cartpaths, zero hole/green/tee. Operator
+  card is a numbered cartoon, not geometry.
+- **greens-at-redmond** — clubhouse + three empty named polygons at 44.242,
+  −121.198. Eight nearby holes are Juniper's.
+- **desert-peaks** — named way/438313039 (69 ac), zero `golf=*` children.
+- **eagle-crest-challenge** — OSM 12–14 match Resort (14 par 4 vs Challenge
+  par 3). No Challenge cluster.
+
+Overpass still 504s. Do not trace cartoons onto the map. Local
+`wt/golf-maps-20260903` at `/Users/matthewryan/RyanRealty-wt-golf-maps-20260903`.
+
+---
+
+# Previous — 2026-09-03 (golf, Pronghorn Nicklaus) — twenty courses became twenty-one
 
 The naming is solved. Do not re-ask. Operator scorecard `PRH-SC.pdf` is titled
 **NICKLAUS COURSE**, TIPS 7,379 (USGA CourseID 5779). OSM par tags on the cluster
@@ -17,13 +38,6 @@ refused. `data/golf/courses.ts` par/yards untouched.
 **Join.** `REGISTRY_SHORT_NAME['pronghorn']` is `Pronghorn Nicklaus`, not
 `Pronghorn`. The registry has two shortNames on that property; the OSM cluster
 is one eighteen.
-
-**Carry forward:**
-- Overpass still 504s. `/tmp/region-golf-holes.json` and `/tmp/osm-courses.json`
-  are the cache; a tight bbox on `overpass.private.coffee` is the one harvest
-  that returned greens/tees/bunkers.
-- Five maps still missing: Fazio (unnamed leftovers), River's Edge, Greens at
-  Redmond, Desert Peaks, Eagle Crest Challenge.
 
 ---
 

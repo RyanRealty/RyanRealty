@@ -285,11 +285,37 @@ those OSM centroids. The file is `course-maps/pronghorn.json` with
 the card, so per-hole yardage is held; per-hole par prints. Leftover ways are
 not numbered and are not shipped as Fazio — nothing in the tags names them.
 
-Five registry courses still have no map: **Pronghorn Fazio** (leftovers unnamed),
-**River's Edge** (zero features inside its polygon, re-checked by distance),
-**The Greens at Redmond** (one clubhouse within 3 km), **Desert Peaks** (zero
-within 3 km of its polygon centroid), **Eagle Crest Challenge** (three holes,
-numbered 12–14, below the quarter-missing floor).
+**Second hunt, 2026-09-03 (Track C).** Two query shapes before "does not
+exist": (1) OSM map API `bbox` dumps — unclipped `golf=*`, no
+`leisure=golf_course` clip; Overpass named-polygon list as the join — and
+(2) operator / city PDFs (HEAD then download). Overpass still 504s on
+region queries; the map API bbox is the harvest that returned. None of the
+five shipped. Tracing a cartoon onto lon/lat would invent a routing.
+
+- **pronghorn-fazio** — operator scorecard
+  https://juniperpreserve.com/wp-content/uploads/2023/08/PRHF-SC.pdf titled
+  **FAZIO COURSE**, TIPS **7,456**, par 4-5-4-3-4-4-4-3-5 / 4-3-5-4-4-4-3-4-5.
+  `JPFullMap.pdf` puts Fazio (open circles) west of Nicklaus (filled). OSM
+  south of 44.175 and west of −121.195 has zero `golf=*`. Leftovers on the
+  Nicklaus west edge (untagged duplicate `ref=17` + two unnumbered ways) are
+  not named Fazio.
+- **rivers-edge** — named way/818894228 plus three unnamed fragments and
+  cartpaths; zero hole/green/tee/fairway in an unclipped bbox. Operator
+  scorecard (riversedgegolfbend.com, 2026-04 `Updated-Scorecard.jpg`) is a
+  numbered cartoon, not OSM geometry. No public PDF map.
+- **greens-at-redmond** — clubhouse way/806883881 and three named polygons
+  (320236405/407/409, ~30 ac, empty of `golf=*`) at 44.242, −121.198 — the
+  2575 SW Greens Blvd pin. Registry 44.2723 is 3 km north and empty. Eight
+  holes in that bbox sit inside Juniper and already ship as `juniper`.
+  golfthegreens.com has no scorecard PDF.
+- **desert-peaks** — named way/438313039 (69 ac, 44.6537, −121.1465) was
+  missing from the old polygon cache. Still zero `golf=*` children inside or
+  within 2.5 km. desertpeaksgolf.com ships rates, not a hole map. Below the
+  9-hole floor.
+- **eagle-crest-challenge** — OSM holes 12–14 match the Resort card (14 is
+  par 4; Challenge's 14 is par 3). Ridge and Resort are complete numbered
+  18s next door. Challenge itself has no cluster. eagle-crest.com has rate
+  PDFs, not a Challenge routing. Below the quarter-missing floor.
 
 **Attribution.** The public source line on every course-map section names
 OpenStreetMap contributors, the Oregon aerial, and the USGA database.
