@@ -14,6 +14,7 @@ import {
   classifyStory,
   classifyWater,
   citySlug,
+  isCustomOrNewSubject,
   normSubdivision,
   type IrrigationClass,
   type StoryClass,
@@ -109,8 +110,18 @@ export async function selectPricingComps(
     irrigationClass: opts.subjectIrrigation,
   })
   const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
+  const asOfYear = Number(asOf.slice(0, 4))
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: pricingSubject.yearBuilt,
+      newConstructionYn: pricingSubject.newConstruction,
+      remarks: pricingSubject.publicRemarks,
+    },
+    asOfYear,
+  )
+  // Custom/new: pull 24 months so the time-first ladder rungs have a pool.
   const closeAfter = new Date(asOf)
-  closeAfter.setMonth(closeAfter.getMonth() - 18)
+  closeAfter.setMonth(closeAfter.getMonth() - (customOrNew ? 24 : 18))
   const sqft = pricingSubject.sqft
   const [pool, ruralPool, cells] = await Promise.all([
     selectPricingFactsPool({

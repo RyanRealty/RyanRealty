@@ -8,6 +8,7 @@ import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea }
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import {
   classifyAgeBand,
+  customBathCompatible,
   hoaCompatible,
   horseInfrastructureCompatible,
   irrigationClassFromRemarks,
@@ -167,9 +168,28 @@ function zoningCompatible(subjectZone: string | null | undefined, saleZone: stri
   return a === b
 }
 
-function applesOk(subject: PricingSubject, sale: PricingSale, level: AppleStrictness): boolean {
+function applesOk(
+  subject: PricingSubject,
+  sale: PricingSale,
+  level: AppleStrictness,
+  asOfYear?: number,
+): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
-  if (!bathCountCompatible(subject.baths, sale.baths)) return false
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstruction,
+      remarks: subject.publicRemarks,
+    },
+    asOfYear,
+  )
+  // Custom/new: ±1 whole bath (Perspective 3ba vs Rim View 4ba). Exact floor
+  // match still holds for ordinary resale.
+  if (customOrNew) {
+    if (!customBathCompatible(subject.baths, sale.baths)) return false
+  } else if (!bathCountCompatible(subject.baths, sale.baths)) {
+    return false
+  }
   if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
   // Water and sewer stay hard on every rung. A well house and a city-water
@@ -178,7 +198,18 @@ function applesOk(subject: PricingSubject, sale: PricingSale, level: AppleStrict
   if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
   if (!sewerCompatible(subject.sewerClass, sale.sewerClass)) return false
   if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
-  if (subject.ruralAcreage && unmappedCrossesKnownBank(subject.marketArea, sale.marketArea)) return false
+  // Unmapped rural vs a mapped Parkway/Deschutes bank: keep for ordinary
+  // acreage. Custom/new outside the Bend GIS mesh (Rim View / North Rim) must
+  // still reach year-quality peers that land inside Awbrey Butte — inventing a
+  // bank from a null mesh starves the set. Both-mapped bank crosses still die
+  // above via crossesMajorDivide.
+  if (
+    !customOrNew &&
+    subject.ruralAcreage &&
+    unmappedCrossesKnownBank(subject.marketArea, sale.marketArea)
+  ) {
+    return false
+  }
   const subjectIrrigation = resolveIrrigationClass(subject.publicRemarks, null, subject.irrigationClass)
   const saleIrrigation = irrigationClassFromRemarks(sale.publicRemarks)
   if (!irrigationCompatible(subjectIrrigation, saleIrrigation)) return false
@@ -222,9 +253,9 @@ function passesTier(
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
   if (sale.sqft < sqftLo || sale.sqft > sqftHi) return { ok: false, miles: null }
-  if (!applesOk(subject, sale, tier.apples)) return { ok: false, miles: null }
 
   const asOfYear = Number(asOf.slice(0, 4))
+  if (!applesOk(subject, sale, tier.apples, asOfYear)) return { ok: false, miles: null }
   if (!ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) return { ok: false, miles: null }
   if (!storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) return { ok: false, miles: null }
   if (!slopOk(subject.beds, sale.beds, tier.bedSlop)) return { ok: false, miles: null }
@@ -270,11 +301,6 @@ function passesTier(
   if (!tier.sameSubdivision) {
     const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude) ?? null
     const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
-    // Mapped vs unmapped is a different market. Fail-open here let Highway 20
-    // sales into Boyd Acres because Bend GIS is the only mesh.
-    if (subjectArea !== saleArea) {
-      return { ok: false, miles: null }
-    }
     const customPeer = isCustomOrNewSubject(
       {
         yearBuilt: subject.yearBuilt,
@@ -283,6 +309,13 @@ function passesTier(
       },
       asOfYear,
     )
+    // Mapped vs unmapped is a different market for ordinary resale. Custom/new
+    // subjects outside the Bend GIS mesh still keep year-quality peers that
+    // resolve into a neighboring polygon (North Rim → Awbrey Butte). True
+    // Parkway/Deschutes crosses stay hard in applesOk.
+    if (subjectArea !== saleArea && !customPeer) {
+      return { ok: false, miles: null }
+    }
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
     if (
@@ -346,8 +379,8 @@ function bracketEligible(
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
   if (sale.closeDate >= asOf) return false
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
-  if (!applesOk(subject, sale, 'product_lot')) return false
   const asOfYear = Number(asOf.slice(0, 4))
+  if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
   const customOrNew = isCustomOrNewSubject(
     {
       yearBuilt: subject.yearBuilt,
@@ -466,7 +499,16 @@ export function walkPricingLadder(
 ): PricingMatchResult {
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
-  const tiers = opts.tiers ?? pricingTierLadder()
+  const asOfYearForLadder = Number(asOf.slice(0, 4))
+  const customLadder = isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstruction,
+      remarks: subject.publicRemarks,
+    },
+    asOfYearForLadder,
+  )
+  const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
   const byKey = new Map<string, SelectedPricingComp>()
   const tiersUsed: string[] = []
   const trace: string[] = [

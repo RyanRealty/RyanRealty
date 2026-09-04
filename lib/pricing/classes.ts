@@ -223,6 +223,17 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
 }
 
 /**
+ * Custom / new peers often differ by one whole bath (3 vs 4) without leaving
+ * the buyer pool. Ordinary subjects still use exact whole-bath matching via
+ * bathCountCompatible in market-area.ts.
+ */
+export function customBathCompatible(subjectBaths: number | null, compBaths: number | null): boolean {
+  if (subjectBaths == null || !Number.isFinite(subjectBaths) || subjectBaths <= 0) return true
+  if (compBaths == null || !Number.isFinite(compBaths) || compBaths <= 0) return false
+  return Math.abs(Math.floor(subjectBaths) - Math.floor(compBaths)) <= 1
+}
+
+/**
  * Subdivision price-tier. A 30% gap in median $/sqft is the "Tetherow vs
  * Stone Creek" / gated-expensive cut measured 2026-08-14. Thin cells (n < 5)
  * fail open — excluding on a four-sale sample invents a market.
