@@ -5,7 +5,8 @@
 export type AtlasCam = { k: number; x: number; y: number }
 
 export const ATLAS_K_MIN = 1
-export const ATLAS_K_MAX = 14
+/** CSS scale past this rasterizes the map into unreadable blocks. */
+export const ATLAS_K_MAX = 5
 
 export const ATLAS_CAM_HOME: AtlasCam = { k: 1, x: 0, y: 0 }
 

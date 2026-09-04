@@ -227,7 +227,6 @@
 .v3-atlas__world {
   position: absolute;
   inset: 0;
-  will-change: transform;
 }
 
 /* In a narrow column — a listing page's main column, or any phone — the stage
@@ -554,13 +553,13 @@
 /* Two columns from 64rem: the map takes the whole frame height. */
 @media (min-width: 64rem) {
   .v3-atlas__grid {
-    grid-template-columns: minmax(20rem, 5fr) minmax(0, 7fr);
-    grid-template-rows: auto auto 1fr;
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
     grid-template-areas:
       'head body'
       'dock body'
       'aside body';
-    max-width: var(--v3-measure);
+    max-width: none;
     margin: 0 auto;
     padding: 0 var(--v3-gutter);
   }
@@ -568,7 +567,11 @@
   .v3-atlas__head,
   .v3-atlas__aside,
   .v3-atlas__dock {
-    padding-right: var(--v3-space-xl, 2.5rem);
+    padding-right: var(--v3-space-md);
+  }
+
+  .v3-atlas__aside {
+    align-content: start;
   }
 
   .v3-atlas__head {

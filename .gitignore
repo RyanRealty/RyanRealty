@@ -102,6 +102,7 @@ next-env.d.ts
 # untracked skill fails ci:claude-canon in the isolated verify tree.
 !.claude/skills/page-grade/
 .claude/worktrees
+.worktrees
 .claude/cache
 .claude/projects
 # Shared: settings.json, hooks/, and any team-wide rules ARE checked in

@@ -22,6 +22,11 @@ describe('atlas-camera', () => {
     expect(my).toBeCloseTo(240, 0)
   })
 
+  it('fitRect never blows past ATLAS_K_MAX, so a small place stays readable', () => {
+    const cam = fitRect({ x0: 390, y0: 240, x1: 410, y1: 260 }, 800, 500)
+    expect(cam.k).toBeLessThanOrEqual(5)
+  })
+
   it('clamp keeps the stage covered after a wild pan', () => {
     const zoomed = zoomAt(ATLAS_CAM_HOME, 400, 250, 4, 800, 500)
     const wild = clampCam({ k: zoomed.k, x: 9999, y: -9999 }, 800, 500)

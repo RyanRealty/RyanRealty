@@ -1190,7 +1190,7 @@ export function V3Atlas({
                 </g>
                 {/* Sales wash: kernel density of closings. Under the inventory
                     marks and the place outlines. Not the old inventory fog. */}
-                {heat.cells.length > 0 ? (
+                {heat.cells.length > 0 && cam.k <= 1.35 ? (
                   <g className="v3-atlas__sales-heat" aria-hidden="true">
                     {heat.cells.map((c, i) => (
                       <rect
