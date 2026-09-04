@@ -16,6 +16,7 @@ import {
 } from '@/lib/cma/fsbo-cma-templates'
 import { primaryCmaPlaceLink, resolveCmaPlaceLinks, type CmaPlaceLink } from '@/lib/cma/cma-place-links'
 import { escapeHtml, usd } from '@/lib/cma/render-blocks'
+import { formatDate } from '@/lib/format/date'
 import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const esc = escapeHtml
@@ -40,12 +41,7 @@ export function factsFromCmaSurface(input: {
     .filter(Boolean)
     .join(', ')
   const reportDate = input.generatedAtIso
-    ? new Date(input.generatedAtIso).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'America/Los_Angeles',
-      })
+    ? formatDate(input.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })
     : null
 
   return {
