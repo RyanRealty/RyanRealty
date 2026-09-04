@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { propertySubTypeFromStatClass } from '@/lib/cma/assessor'
+// Static, not a dynamic import inside the test body: lib/cma/subject pulls a
+// heavy graph and the lazy import blew the 5s timeout under full-suite load.
+import { parseCmaAddress, subjectFromAssessorFacts } from '@/lib/cma/subject'
 
 /**
  * The mapping is read off the county's own vocabulary (119 distinct
@@ -63,5 +66,36 @@ describe('propertySubTypeFromStatClass', () => {
     // not a house. "Store - Store" starts with "Store", not "One story".
     expect(propertySubTypeFromStatClass('Store - Store')).toBeNull()
     expect(propertySubTypeFromStatClass('Store - Convenience')).toBeNull()
+  })
+})
+
+describe('subjectFromAssessorFacts address', () => {
+  it('keeps the street line the owner typed, casing and suffix intact', () => {
+    const raw = '2552 NE Lynda Ln, Bend, OR 97701'
+    const parsed = parseCmaAddress(raw)
+    expect(parsed).not.toBeNull()
+    const subject = subjectFromAssessorFacts(
+      parsed!,
+      {
+        taxlot: '171222DD00170',
+        latitude: 44.0821485,
+        longitude: -121.2648171,
+        sqft: 2258,
+        beds: 4,
+        baths: 2.5,
+        yearBuilt: 1999,
+        lotAcres: 0.19,
+        statClass: 'Two story',
+        dialUrl: 'https://dial.deschutes.org/Real/Index/171222DD00170',
+        geocodePrecision: 'ROOFTOP',
+      },
+      raw,
+    )
+    // Parsing lowercases and drops the suffix for SQL matching. A client reads
+    // this one.
+    expect(subject.streetAddress).toBe('2552 NE Lynda Ln')
+    expect(subject.propertySubType).toBe('Single Family Residence')
+    expect(subject.sqft).toBe(2258)
+    expect(subject.mlsNumber).toBeNull()
   })
 })

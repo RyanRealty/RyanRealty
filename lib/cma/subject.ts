@@ -245,7 +245,15 @@ export function subjectFromAssessorFacts(
   facts: AssessorFacts,
   raw: string,
 ): CmaSubject {
-  const streetAddress = `${parsed.streetNumber} ${parsed.streetNameTokens.join(' ')}`.trim()
+  // Use the street line the OWNER typed, not the parsed tokens. Parsing
+  // lowercases and strips the suffix for matching, which is right for a SQL
+  // ILIKE and wrong on a document a client reads: "2552 NE Lynda Ln" came back
+  // as "2552 ne lynda" on the first build off this path.
+  const enteredStreet = raw.split(',')[0]?.trim() ?? ''
+  const streetAddress =
+    enteredStreet.length > 0
+      ? enteredStreet
+      : `${parsed.streetNumber} ${parsed.streetNameTokens.join(' ')}`.trim()
   return {
     listingKey: null,
     mlsNumber: null,
