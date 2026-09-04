@@ -1,21 +1,19 @@
-# Current — 2026-09-03 (golf Track C) — five remaining maps, second hunt, none shipped
+# Current — 2026-09-04 (golf Track C) — five remaining maps ship as operator plates
 
-OSM map API bbox (unclipped `golf=*`) + operator PDFs. No honest numbered 18
-or 9. Do not invent. Do not re-open Nicklaus (`dfdfe4d2`).
+OSM still has no numbered 18/9 (unclipped cache, bbox XML, Overpass 504).
+Do not invent. Do not re-open Nicklaus (`dfdfe4d2`). Do not number leftover
+Pronghorn ways as Fazio.
 
-- **fazio** — `PRHF-SC.pdf` names the west 18 (TIPS 7,456). OSM south of 44.175
-  and west of −121.195 is empty. Leftover untagged 17 + two unnumbered ways
-  are not named Fazio.
-- **rivers-edge** — named polygon, cartpaths, zero hole/green/tee. Operator
-  card is a numbered cartoon, not geometry.
-- **greens-at-redmond** — clubhouse + three empty named polygons at 44.242,
-  −121.198. Eight nearby holes are Juniper's.
-- **desert-peaks** — named way/438313039 (69 ac), zero `golf=*` children.
-- **eagle-crest-challenge** — OSM 12–14 match Resort (14 par 4 vs Challenge
-  par 3). No Challenge cluster.
+Shipped rasters + `V3CourseMap` plate path. `hasCourseMap` true for plate OR holes.
 
-Overpass still 504s. Do not trace cartoons onto the map. Local
-`wt/golf-maps-20260903` at `/Users/matthewryan/RyanRealty-wt-golf-maps-20260903`.
+- **fazio** — PRHF-SC.pdf map+card. Juniper Preserve scorecard, not a survey.
+- **rivers-edge** — Updated-Scorecard.jpg map panel.
+- **greens-at-redmond** — golfthegreens.com scorecard map panel.
+- **desert-peaks** — operator `new-course-layout.jpg`.
+- **eagle-crest-challenge** — 2026 Ridge+Challenge PDF page 2 (Challenge only).
+
+Community rank prefers OSM, so Pronghorn still shows Nicklaus. Local
+`wt/golf-maps-20260903`. Do not push this branch.
 
 ---
 

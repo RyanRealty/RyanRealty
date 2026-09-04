@@ -1,0 +1,24 @@
+{
+  "slug": "desert-peaks",
+  "courseSlug": "desert-peaks",
+  "name": "Desert Peaks Golf Club",
+  "published": {
+    "par": 36,
+    "yards": 3231,
+    "holes": 9,
+    "designer": "City of Madras"
+  },
+  "parReconciles": false,
+  "yardsReconcile": false,
+  "turfAcres": null,
+  "holes": [],
+  "shapes": [],
+  "plate": {
+    "src": "/golf/course-plates/desert-peaks.jpg",
+    "width": 1160,
+    "height": 896,
+    "alt": "Desert Peaks Golf Club nine-hole course layout",
+    "attribution": "Desert Peaks course map, not a survey",
+    "href": "https://desertpeaksgolf.com/wp-content/uploads/2015/04/new-course-layout.jpg"
+  }
+}

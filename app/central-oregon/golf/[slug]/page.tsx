@@ -24,6 +24,7 @@ import { getGolfDetail } from '@/lib/data'
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { GOLF_ACCESS_LABEL, buildGolfFaq, cityToGeoSlug, displayCity } from '@/lib/golf-format'
 import { getCourseMap } from '@/lib/golf/course-map-registry'
+import { courseMapKind } from '@/lib/golf/course-map'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { publishNearbyListingsSource } from '@/lib/site/publish-nearby-listings-source'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -228,11 +229,14 @@ export default async function GolfDetailPage({ params }: Props) {
             id="holes"
             data={courseMap}
             heading={v3Text(
-              // 'hole by hole' promises numbered holes. Two courses are mapped
-              // and unnumbered in the source, so the heading says what is here.
-              courseMap.numbered === false
-                ? `${shortName}, drawn from the air`
-                : `${shortName}, hole by hole`,
+              // 'hole by hole' promises numbered OSM holes. Unnumbered
+              // routings are drawn from the air. A plate is the club's own
+              // published card, not a survey.
+              courseMapKind(courseMap) === 'plate'
+                ? `${shortName}, as the club prints it`
+                : courseMapKind(courseMap) === 'unnumbered'
+                  ? `${shortName}, drawn from the air`
+                  : `${shortName}, hole by hole`,
             )}
           />
         ) : null}

@@ -233,8 +233,9 @@ courses under "Pronghorn", so the course rows keep that name. Prose describing t
 
 ## Course-map geometry — `data/golf/course-maps/*.json`
 
-Added 2026-09-02. Twenty-one of the twenty-six courses have a committed geometry file
-that `V3CourseMap` draws hole by hole. Three sources, none of them a scorecard.
+Added 2026-09-02. Twenty-one of the twenty-six courses have a committed OSM
+geometry file that `V3CourseMap` draws hole by hole. Three sources, none of
+them a scorecard. The other five (2026-09-04) ship an operator plate instead.
 
 **Hole routings, greens, tees, bunkers and mapped water hazards: OpenStreetMap
 contributors**, under ODbL. Pulled per course by
@@ -317,5 +318,28 @@ five shipped. Tracing a cartoon onto lon/lat would invent a routing.
   18s next door. Challenge itself has no cluster. eagle-crest.com has rate
   PDFs, not a Challenge routing. Below the quarter-missing floor.
 
-**Attribution.** The public source line on every course-map section names
+**Attribution.** The public source line on every OSM course-map section names
 OpenStreetMap contributors, the Oregon aerial, and the USGA database.
+
+**Operator plates, 2026-09-04.** A third hunt (unclipped `golf=hole` in
+`/tmp/region-golf-holes.json`, the 2026-09-03 bbox XML dumps, live Overpass
+on tight clubhouse bboxes — public instance 504s, Eagle Crest Challenge
+returned 0) still found no honest numbered 18 or 9 for the five. They now
+ship the club's own published scorecard or layout as a raster in
+`public/golf/course-plates/`, drawn by `V3CourseMap` when `holes` is empty
+and `plate` is set. Not a survey. Per-hole par and yardage from those
+cartoons do not print.
+
+| slug | plate | operator document |
+|---|---|---|
+| pronghorn-fazio | map + card from PRHF-SC.pdf | https://juniperpreserve.com/wp-content/uploads/2023/08/PRHF-SC.pdf |
+| rivers-edge | map panel of Updated-Scorecard.jpg | https://riversedgegolfbend.com/wp-content/uploads/2026/04/Updated-Scorecard.jpg |
+| greens-at-redmond | map panel of the club scorecard | https://golfthegreens.com/wp-content/uploads/2021/03/the-greens-at-redmond-golf-course-scorecard1.jpeg |
+| desert-peaks | nine-hole layout | https://desertpeaksgolf.com/wp-content/uploads/2015/04/new-course-layout.jpg |
+| eagle-crest-challenge | Challenge page of the 2026 Ridge+Challenge card | https://www.eaglecrestgolforegon.com/wp-content/uploads/sites/9015/2026/02/scorecard-26-RIDGE-CHALLENGE-8.12a.pdf |
+
+Leftover untagged Pronghorn ways are still not numbered as Fazio. Eight OSM
+holes near The Greens stay on `juniper`. Eagle Crest 12–14 stay on Resort.
+`hasCourseMap` is true for a plate. A community page that already has an OSM
+eighteen (Pronghorn Nicklaus, Eagle Crest Ridge/Resort) keeps it: a plate
+ranks last.

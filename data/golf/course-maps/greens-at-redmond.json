@@ -1,0 +1,24 @@
+{
+  "slug": "greens-at-redmond",
+  "courseSlug": "greens-at-redmond",
+  "name": "The Greens at Redmond",
+  "published": {
+    "par": 58,
+    "yards": 3426,
+    "holes": 18,
+    "designer": "Robert Muir Graves"
+  },
+  "parReconciles": false,
+  "yardsReconcile": false,
+  "turfAcres": null,
+  "holes": [],
+  "shapes": [],
+  "plate": {
+    "src": "/golf/course-plates/greens-at-redmond.jpg",
+    "width": 1001,
+    "height": 891,
+    "alt": "The Greens at Redmond hole map from the club scorecard",
+    "attribution": "The Greens at Redmond scorecard, not a survey",
+    "href": "https://golfthegreens.com/wp-content/uploads/2021/03/the-greens-at-redmond-golf-course-scorecard1.jpeg"
+  }
+}
