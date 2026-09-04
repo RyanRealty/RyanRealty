@@ -2,6 +2,8 @@ import { getViewportSearch, type SearchFilters as ViewportFilters } from '@/app/
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import MapSearchView from '@/components/search/MapSearchView'
 import SearchFilters, { type SearchFiltersInitial } from '@/components/search/SearchFilters'
+import { PlaceSplitHomesBound } from '@/app/_v3/HomeHomesFieldBound.client'
+import { inAtlasView, type AtlasViewBounds } from '@/lib/geo/atlas-camera'
 import { publishPlaceSplitSeed } from '@/lib/search/publish-place-split-seed'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -74,6 +76,8 @@ export async function PlaceSplitView(props: {
   listings?: ListingTileRow[]
   totalCount?: number
   bounds?: MapBounds
+  /** Atlas camera box. Absent, the list follows the living atlas live. */
+  viewBounds?: AtlasViewBounds | null
   degraded?: boolean
   searchParams?: Record<string, string | string[] | undefined>
 }) {
@@ -192,25 +196,36 @@ export async function PlaceSplitView(props: {
           hideLocation
         />
       </div>
-      <MapSearchView
-        initialListings={listings ?? []}
-        initialTotalCount={totalCount ?? listings?.length ?? 0}
-        initialCapped={capped}
-        initialBounds={initialBounds}
-        filters={{ ...filters, view: 'list' }}
-        savedListingKeys={[]}
-        likedListingKeys={[]}
-        placeQuery={props.placeQuery}
-        boundaryGeojson={props.boundaryGeojson ?? undefined}
-        overlayBoundaries={props.overlayBoundaries}
-        initialPolygon={null}
-        initialShapes={null}
-        nowMs={Date.now()}
-        initialDegraded={degraded}
-        lockPlace
-        openHouseLabels={openHouseLabels}
-        listOnly
-      />
+      <PlaceSplitHomesBound
+        listings={listings ?? []}
+        totalCount={totalCount ?? listings?.length ?? 0}
+        bounds={props.viewBounds}
+        emptyInView="No photographed homes in this view of the map. Zoom out or pan to see the homes in this place."
+      >
+        <MapSearchView
+          initialListings={
+            props.viewBounds !== undefined
+              ? (listings ?? []).filter((row) => inAtlasView(row.Latitude, row.Longitude, props.viewBounds ?? null))
+              : (listings ?? [])
+          }
+          initialTotalCount={totalCount ?? listings?.length ?? 0}
+          initialCapped={capped}
+          initialBounds={initialBounds}
+          filters={{ ...filters, view: 'list' }}
+          savedListingKeys={[]}
+          likedListingKeys={[]}
+          placeQuery={props.placeQuery}
+          boundaryGeojson={props.boundaryGeojson ?? undefined}
+          overlayBoundaries={props.overlayBoundaries}
+          initialPolygon={null}
+          initialShapes={null}
+          nowMs={Date.now()}
+          initialDegraded={degraded}
+          lockPlace
+          openHouseLabels={openHouseLabels}
+          listOnly
+        />
+      </PlaceSplitHomesBound>
     </div>
   )
 }

@@ -62,10 +62,15 @@ import {
   ATLAS_K_MIN,
   fitRect,
   panBy,
+  publishAtlasView,
   screenToWorld,
+  visibleLonLat,
   zoomAt,
   type AtlasCam,
+  type AtlasViewBounds,
 } from '@/lib/geo/atlas-camera'
+
+export type { AtlasViewBounds }
 import {
   ATLAS_HEAT_WINDOW_DAYS,
   atlasHeatWindowLabel,
@@ -198,6 +203,11 @@ export type V3AtlasProps = {
   quiet?: boolean
   children?: ReactNode
   className?: string
+  /**
+   * Visible geographic box after pan/zoom. `null` at k===1 (full frame) so
+   * the photographed list below stays unfiltered at rest.
+   */
+  onViewChange?: (bounds: AtlasViewBounds | null) => void
 }
 
 /* -------------------------------------------------------------------------- */
@@ -288,6 +298,7 @@ export function V3Atlas({
   events,
   children,
   className,
+  onViewChange,
 }: V3AtlasProps) {
   const uid = useId()
   const router = useRouter()
@@ -487,6 +498,16 @@ export function V3Atlas({
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [view?.w, view?.h])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const next =
+        !view || view.scale <= 0 || cam.k === 1 ? null : visibleLonLat(cam, view, proj.toXY)
+      onViewChange?.(next)
+      publishAtlasView(next)
+    }, 100)
+    return () => window.clearTimeout(t)
+  }, [cam, view, proj, onViewChange])
 
   /* In view? The pulses only breathe while the reader can see them. */
   const sectionRef = useRef<HTMLElement>(null)

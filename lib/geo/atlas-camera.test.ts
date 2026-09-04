@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { ATLAS_CAM_HOME, clampCam, fitRect, panBy, screenToWorld, zoomAt } from './atlas-camera'
+import { makeProjection } from './project-svg'
+import {
+  ATLAS_CAM_HOME,
+  clampCam,
+  fitRect,
+  inAtlasView,
+  panBy,
+  screenToWorld,
+  visibleLonLat,
+  visibleWorld,
+  zoomAt,
+} from './atlas-camera'
 
 describe('atlas-camera', () => {
   it('at k=1 pan is a no-op: the map cannot leave the stage', () => {
@@ -34,5 +45,36 @@ describe('atlas-camera', () => {
     expect(wild.y).toBeLessThanOrEqual(0)
     expect(wild.x + 800 * wild.k).toBeGreaterThanOrEqual(800)
     expect(wild.y + 500 * wild.k).toBeGreaterThanOrEqual(500)
+  })
+
+  it('visibleWorld at k=1 is the stage', () => {
+    expect(visibleWorld(ATLAS_CAM_HOME, 800, 500)).toEqual({ x0: 0, y0: 0, x1: 800, y1: 500 })
+  })
+
+  it('visibleWorld after a 2x zoom is half the stage in world space', () => {
+    const cam = zoomAt(ATLAS_CAM_HOME, 400, 250, 2, 800, 500)
+    const box = visibleWorld(cam, 800, 500)
+    expect(box.x1 - box.x0).toBeCloseTo(400)
+    expect(box.y1 - box.y0).toBeCloseTo(250)
+  })
+
+  it('visibleLonLat inverts toPx + toXY back to the projection frame at rest', () => {
+    const b = { minLon: -121.5, maxLon: -121.0, minLat: 44.0, maxLat: 44.2 }
+    const proj = makeProjection(b, 1000)
+    const view = { w: proj.width, h: proj.height, scale: 1, ox: 0, oy: 0 }
+    const box = visibleLonLat(ATLAS_CAM_HOME, view, proj.toXY)
+    expect(box.minLon).toBeCloseTo(b.minLon, 4)
+    expect(box.maxLon).toBeCloseTo(b.maxLon, 4)
+    expect(box.minLat).toBeCloseTo(b.minLat, 3)
+    expect(box.maxLat).toBeCloseTo(b.maxLat, 4)
+  })
+
+  it('inAtlasView is unfiltered at null bounds and drops points without a coordinate when zoomed', () => {
+    const bounds = { minLat: 43, maxLat: 45, minLon: -122, maxLon: -120 }
+    expect(inAtlasView(44, -121, null)).toBe(true)
+    expect(inAtlasView(null, -121, null)).toBe(true)
+    expect(inAtlasView(44, -121, bounds)).toBe(true)
+    expect(inAtlasView(42, -121, bounds)).toBe(false)
+    expect(inAtlasView(null, -121, bounds)).toBe(false)
   })
 })
