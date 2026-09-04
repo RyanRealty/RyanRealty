@@ -127,6 +127,7 @@ describe('design directive contracts', () => {
       'V3Atlas',
       'ListingMoreDoors',
       'ListingLikeThisAlerts',
+      'ListingAroundHere',
       'DescriptionBlock',
       'PropertySpecs',
       'PropertyHistory',
@@ -144,12 +145,15 @@ describe('design directive contracts', () => {
     const parks = readSrc('components/site/listing-detail/ParksNearbyBlock.tsx')
     const life = readSrc('components/site/listing-detail/LifestyleNearSection.tsx')
     expect(parks).toMatch(/findParksNear/)
-    expect(life).toMatch(/isParkOrTrail \? \(/)
-    expect(life).toMatch(/<PlaceListThumb lat=\{thumb\?\.lat\}/)
+    expect(life).toMatch(/<PlaceListThumb lat=\{thumb\.lat\}/)
     expect(life).toMatch(/getTrailLineGeoJSON/)
-    expect(life).toMatch(/<span className="place-list__kind">\{item\.kind\}<\/span>/)
-    expect(life).toMatch(/<span className="place-list__name">\{item\.name\}<\/span>/)
-    expect(life).not.toMatch(/place-list__kind">\{item\.kind\}<\/span>\s*\{item\.name\}/)
+    expect(life).toMatch(/listing-near__kind/)
+    expect(life).toMatch(/listing-near__name/)
+    expect(life).toMatch(/GOLF_COURSES/)
+    expect(life).toMatch(/getEventBySlug/)
+    expect(life).toMatch(/Parks nearby/)
+    expect(life).toMatch(/Trails nearby/)
+    expect(life).toMatch(/Events nearby/)
     const css = readSrc('components/site/listing-detail/listing-detail.css')
     expect(css).toMatch(/\.listing-gallery__back/)
     const parkDetail = readSrc('app/parks/[slug]/page.tsx')

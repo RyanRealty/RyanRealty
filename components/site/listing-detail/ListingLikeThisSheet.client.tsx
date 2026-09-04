@@ -37,10 +37,12 @@ export function ListingLikeThisSheet({
   city,
   listPrice,
   beds,
+  photoUrl,
 }: {
   city: string
   listPrice: number | null | undefined
   beds: number | null | undefined
+  photoUrl?: string | null
 }) {
   const [status, setStatus] = useState<Status>('asking')
   const [problem, setProblem] = useState<string>('')
@@ -101,7 +103,7 @@ export function ListingLikeThisSheet({
 
   const askStep: V3SheetStep = {
     id: 'email',
-    label: `Where should similar ${city} listings go?`,
+    label: `Where should the next ${city} house like this land?`,
     children: 'One email per new listing. Unsubscribe any time.',
     field: {
       kind: 'email',
@@ -114,7 +116,7 @@ export function ListingLikeThisSheet({
       requiredMessage: 'An email is required so the alert has somewhere to land.',
       invalidMessage: 'That address does not look complete.',
     },
-    advanceLabel: 'Get alerts',
+    advanceLabel: 'Send me the next one',
   }
 
   const steps: readonly V3SheetStep[] =
@@ -122,7 +124,7 @@ export function ListingLikeThisSheet({
       ? [
           {
             id: 'sent',
-            label: `Set. Similar ${city} listings land by email when they hit the market.`,
+            label: `You are on it. Similar ${city} listings hit your inbox when they list.`,
             children: 'One email per new listing. Pause or unsubscribe from any alert email.',
           },
         ]
@@ -142,10 +144,15 @@ export function ListingLikeThisSheet({
           : 'email'
 
   return (
+    <div className="listing-alerts">
+      {photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="listing-alerts__photo" src={photoUrl} alt="" />
+      ) : null}
     <V3Sheet
       id="listing-like-alerts"
-      eyebrow="New listings"
-      heading={`Get new ${city} listings like this by email`}
+      eyebrow="Like this house"
+      heading={`The next ${city} house like this lands in your inbox`}
       steps={steps}
       trap={{ name: 'company', label: 'Company' }}
       currentStepId={currentStepId}
@@ -156,5 +163,6 @@ export function ListingLikeThisSheet({
       }}
       onAdvance={onAdvance}
     />
+    </div>
   )
 }

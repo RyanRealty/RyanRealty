@@ -52,7 +52,12 @@
     },
     {
       "name": "ListingLikeThisAlerts",
-      "section": "B1 capture wrapper. Mounts ListingLikeThisSheet and ListingAlertCoach. Jump target #listing-like-alerts.",
+      "section": "B1 capture wrapper. Mounts ListingLikeThisSheet and ListingAlertCoach. Jump target #listing-like-alerts. Photo-led capture, folds start open.",
+      "blocking": true
+    },
+    {
+      "name": "ListingAroundHere",
+      "section": "Parks, trails, events, golf, and city guides near this house, with map or post thumbs. Matt 2026-09-04: these belong on the listing, not only on place pages.",
       "blocking": true
     },
     {
@@ -187,7 +192,7 @@
     },
     {
       "name": "ParksNearbyBlock",
-      "reason": "Long tail is a parks door to the nearest park page, not a mid-page list."
+      "reason": "Parks return on ListingAroundHere as LifestyleNearSection map-thumb rows. This block stays as the parks-near publisher used by the contract test."
     },
     {
       "name": "PlaceParentsSection",
@@ -195,7 +200,7 @@
     },
     {
       "name": "ListingRelatedGuides",
-      "reason": "City guides are not the listing remainder. Folded off this route."
+      "reason": "City guides return on ListingAroundHere as a thumbnail grid from getRecentBlogPosts. Not a page-level import: the around-here wrapper mounts it."
     },
     {
       "name": "V3Field",

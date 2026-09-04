@@ -14,6 +14,7 @@ describe('listing remainder composition', () => {
     expect(PAGE).toMatch(/id="location"/)
     expect(PAGE).toMatch(/ListingMoreDoors|V3Doors/)
     expect(PAGE).toMatch(/ListingSimilarStrip|V3ListingRow/)
+    expect(PAGE).toMatch(/ListingAroundHere/)
     expect(PAGE).toMatch(/leftoverHudKpis/)
     expect(PAGE).toMatch(/publishListingSaleAsk/)
   })

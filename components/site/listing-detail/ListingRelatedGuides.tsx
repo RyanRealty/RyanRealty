@@ -16,12 +16,23 @@ export function ListingRelatedGuides({
   return (
     <section id="guides" className="listing-guides">
       <div className="sec-head">
-        <h2 className="sec-title">{city ? `${city} guides` : 'Guides'}</h2>
+        <h2 className="sec-title">{city ? `${city} guides` : 'City guides'}</h2>
       </div>
-      <ul>
+      <ul className="listing-guides__grid">
         {posts.map((post) => (
           <li key={post.id}>
-            <Link href={`/blog/${post.slug}`}>{post.title}</Link>
+            <Link href={`/blog/${post.slug}`} className="listing-guides__card">
+              {post.heroImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={post.heroImageUrl} alt="" className="listing-guides__thumb" />
+              ) : (
+                <span className="listing-guides__thumb listing-guides__thumb--empty" aria-hidden="true" />
+              )}
+              <span className="listing-guides__copy">
+                {post.category ? <span className="listing-guides__kind">{post.category}</span> : null}
+                <span className="listing-guides__name">{post.title}</span>
+              </span>
+            </Link>
           </li>
         ))}
       </ul>

@@ -3,10 +3,16 @@
  * Registry math only — no Supabase.
  */
 
-import { findParksNear } from '@/data/co-parks'
+import { findParksNear, type ParkType } from '@/data/co-parks'
 import { CO_TRAILS } from '@/data/co-trails'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { CO_EVENTS } from '@/data/co-events'
+
+const PARK_META: Record<ParkType, string> = {
+  state: 'State park',
+  city: 'City park',
+  'natural-area': 'Natural area',
+}
 
 function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180
@@ -83,23 +89,51 @@ export function findEventsNear(
     .slice(0, limit)
 }
 
-export function lifestyleNearLatLng(
-  lat: number | null | undefined,
-  lng: number | null | undefined,
-): LifestyleNearItem[] {
-  if (typeof lat !== 'number' || typeof lng !== 'number') return []
-  const parks = findParksNear(lat, lng, 4, 4).map((p) => ({
+export type LifestyleNearGroups = {
+  parks: LifestyleNearItem[]
+  trails: LifestyleNearItem[]
+  golf: LifestyleNearItem[]
+  events: LifestyleNearItem[]
+}
+
+const EMPTY_NEAR: LifestyleNearGroups = {
+  parks: [],
+  trails: [],
+  golf: [],
+  events: [],
+}
+
+function parkItems(lat: number, lng: number, radiusMiles = 4, limit = 6): LifestyleNearItem[] {
+  return findParksNear(lat, lng, radiusMiles, limit).map((p) => ({
     kind: 'park' as const,
     name: p.name,
     href: `/parks/${p.slug}`,
     distanceMiles: p.distanceMiles,
-    meta: 'Park',
+    meta: PARK_META[p.type],
   }))
-  const trails = findTrailsNear(lat, lng, 10, 3)
-  const golf = findGolfNear(lat, lng, 15, 3)
-  const events = findEventsNear(lat, lng, 25, 2)
-  // Interleave kinds so we don't get six parks only — take top by distance overall.
-  return [...parks, ...trails, ...golf, ...events]
+}
+
+/** Parks, trails, golf, and events as separate nearby groups. */
+export function lifestyleNearByKind(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): LifestyleNearGroups {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return EMPTY_NEAR
+  return {
+    parks: parkItems(lat, lng, 4, 6),
+    trails: findTrailsNear(lat, lng, 10, 4),
+    golf: findGolfNear(lat, lng, 15, 3),
+    events: findEventsNear(lat, lng, 25, 4),
+  }
+}
+
+export function lifestyleNearLatLng(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): LifestyleNearItem[] {
+  const groups = lifestyleNearByKind(lat, lng)
+  // Interleave kinds so a mixed rail does not show six parks only.
+  return [...groups.parks, ...groups.trails, ...groups.golf, ...groups.events]
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
     .slice(0, 9)
 }

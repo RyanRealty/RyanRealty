@@ -49,6 +49,19 @@ describe('publishPlaceListThumb', () => {
     expect(thumb.svg).toContain('stroke-linecap')
   })
 
+  it('falls back to a point when a path collapses to a pin', () => {
+    const collapsed = {
+      type: 'LineString' as const,
+      coordinates: [
+        [-121.32, 44.06],
+        [-121.32, 44.06],
+      ],
+    }
+    const thumb = publishPlaceListThumb({ lat: 44.06, lng: -121.32, geometry: collapsed })
+    expect(thumb.kind).toBe('point')
+    expect(thumb.svg).toContain('var(--v3-navy)')
+  })
+
   it('falls back to a point when the geometry is not a real ring or line', () => {
     expect(publishPlaceListThumb({ lat: 44, lng: -121, geometry: { type: 'Point', coordinates: [-121, 44] } }).kind).toBe(
       'point',

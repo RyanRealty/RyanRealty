@@ -47,6 +47,7 @@ import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistor
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { buildListingAtlas } from './_v3/listing-atlas'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
+import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
 import { buildListingAskClaim } from '@/components/site/listing-detail/listing-ask'
 import { ListingMoreDoors } from '@/components/site/listing-detail/ListingMoreDoors'
@@ -647,7 +648,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
         city={listing.city}
         listPrice={wholePropertyPrice}
         beds={listing.beds}
+        photoUrl={photos[0]?.url ?? listing.photoUrl}
       />
+      <ListingAroundHere lat={listing.lat} lng={listing.lng} city={listing.city} />
       {listingWithPhotos.publicRemarks ? (
         <ListingFold id="remarks" title="MLS remarks">
           <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />

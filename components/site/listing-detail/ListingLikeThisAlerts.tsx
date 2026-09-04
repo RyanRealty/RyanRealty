@@ -11,15 +11,17 @@ export function ListingLikeThisAlerts({
   city,
   listPrice,
   beds,
+  photoUrl,
 }: {
   city: string | null | undefined
   listPrice: number | null | undefined
   beds: number | null | undefined
+  photoUrl?: string | null
 }) {
   if (!city) return null
   return (
     <>
-      <ListingLikeThisSheet city={city} listPrice={listPrice} beds={beds} />
+      <ListingLikeThisSheet city={city} listPrice={listPrice} beds={beds} photoUrl={photoUrl} />
       <ListingAlertCoach city={city} />
     </>
   )

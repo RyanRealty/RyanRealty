@@ -11,8 +11,11 @@ export function ListingFold({
 }) {
   if (children == null || children === false) return null
   return (
-    <details id={id} className="listing-detail__fold">
-      <summary>{title}</summary>
+    <details id={id} className="listing-detail__fold" open>
+      <summary>
+        <span className="listing-detail__fold-caret" aria-hidden="true" />
+        {title}
+      </summary>
       <div className="listing-detail__fold-body">{children}</div>
     </details>
   )

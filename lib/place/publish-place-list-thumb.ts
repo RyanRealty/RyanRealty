@@ -158,6 +158,11 @@ export function publishPlaceListThumb(input: {
     if (lat > north) north = lat
   }
 
+  // A collapsed path is not a map. Show the existing point instead of a blank cream tile.
+  if (east - west < 1e-5 && north - south < 1e-5) {
+    return { kind: 'point', svg: pointSvg() }
+  }
+
   const kind: PlaceListThumbKind = geo.type === 'LineString' || geo.type === 'MultiLineString' ? 'path' : 'boundary'
   const fill = kind === 'boundary' ? ' color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream))' : 'none'
   const parts: string[] = []
