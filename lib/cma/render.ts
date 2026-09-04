@@ -37,6 +37,15 @@ import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { coverValueBlockHtml } from '@/lib/cma/cover-value'
+import {
+  cmaCoverIntroBlurbHtml,
+  cmaCoverLabelHtml,
+  cmaProductBarFromExtras,
+  cmaWhyListPageBody,
+  factsFromCmaSurface,
+  placeLabelHtml,
+  resolveSubjectPlaceLinks,
+} from '@/lib/cma/fsbo-cma-render'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -221,26 +230,64 @@ function coverPage(a: RenderCmaArgs): PageDef {
   ]
     .filter(Boolean)
     .join(' · ')
+  const coverFacts = factsFromCmaSurface({
+    subject: a.subject,
+    pricing: a.pricing,
+    clientName: a.client.name,
+    generatedAtIso: a.generatedAtIso,
+    broker: a.broker,
+  })
+  const places = resolveSubjectPlaceLinks({ subject: a.subject })
+  const primaryPlace = places[0] ?? null
+  const rivals = a.extras?.band?.rivals ?? []
+  const nearbyActives = rivals.filter((r) => r.status === 'Active')
+  const productBar = cmaProductBarFromExtras({
+    marketPresent: Boolean(a.market),
+    marketGeoLabel: a.market?.geoLabel ?? null,
+    placeLinks: places,
+    nearbyActiveCount:
+      nearbyActives.length > 0 ? nearbyActives.length : (a.extras?.band?.activeCount ?? null),
+    nearbyActiveLabels: nearbyActives.map((r) => r.address).filter(Boolean),
+    recentSoldCount: a.comps.length,
+    bandLo: a.extras?.band?.lo ?? null,
+    bandHi: a.extras?.band?.hi ?? null,
+    bandActiveCount: a.extras?.band?.activeCount ?? null,
+    closedSalePrices: a.comps
+      .map((c) => c.closePrice)
+      .filter((n) => typeof n === 'number' && Number.isFinite(n) && n > 0),
+  }).html
+  const subdivLinked = placeLabelHtml(a.subject.subdivision, primaryPlace?.href ?? null)
+  const specsHtml = (() => {
+    if (!specs) return ''
+    const plain = cleanText(a.subject.subdivision) ?? ''
+    if (!subdivLinked || !plain) return `<p class="cover-specs">${esc(specs)}</p>`
+    const idx = specs.indexOf(plain)
+    if (idx < 0) return `<p class="cover-specs">${esc(specs)}</p>`
+    return `<p class="cover-specs">${esc(specs.slice(0, idx))}${subdivLinked}${esc(specs.slice(idx + plain.length))}</p>`
+  })()
   return {
     cover: true,
-    meta: `Comparative Market Analysis · ${dateLong(a.generatedAtIso)}`,
+    meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
     body: `
   <div class="cover-stage">
     ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
     <div class="cover-veil" aria-hidden="true"></div>
     <div class="cover-mast">
-      <div class="cover-label">Comparative Market Analysis</div>
+      ${cmaCoverLabelHtml()}
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
       <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}<br/>${esc(composeInboundCoverLine(a.subject.streetAddress))}</div>
     </div>
     <div class="value-block">
       ${coverValueBlockHtml(a)}
-      ${specs ? `<p class="cover-specs">${esc(specs)}</p>` : ''}
+      ${cmaCoverIntroBlurbHtml(coverFacts)}
+      ${productBar}
+      ${specsHtml}
       <p class="cover-presented">${esc(prepared)}</p>
       <p class="hero-caption">${esc(hero.caption)}</p>
     </div>
   </div>`,
   }
+
 }
 
 const LENS_LABELS: Record<string, string> = {
@@ -300,6 +347,21 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   }
 }
 
+function whyListPage(a: RenderCmaArgs): PageDef {
+  const facts = factsFromCmaSurface({
+    subject: a.subject,
+    pricing: a.pricing,
+    clientName: a.client.name,
+    generatedAtIso: a.generatedAtIso,
+    broker: a.broker,
+  })
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Why list with a realtor`,
+    toc: 'Why most sellers list with a realtor',
+    body: cmaWhyListPageBody(facts),
+  }
+}
+
 function closingPage(a: RenderCmaArgs): PageDef {
   const disclosure = disclosurePage(a)
   const next = nextStepPage(a)
@@ -348,6 +410,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   rest.push(...assembleOpinionPages(a))
   const lastListing = expiredAuditPage(a)
   if (lastListing) rest.push(lastListing)
+  rest.push(whyListPage(a))
   rest.push(closingPage(a))
 
   const pages: PageDef[] = [coverPage(a), ...rest]
@@ -357,7 +420,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 <head>
 <meta charset="UTF-8" />
 <meta name="robots" content="noindex,nofollow" />
-<title>CMA · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
+<title>Pricing report · ${esc(a.subject.streetAddress)} · ${esc(a.subject.city)}, OR ${esc(a.subject.postalCode ?? '')}</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>${cmaStylesheet(SITE_URL)}</style>
 </head>
