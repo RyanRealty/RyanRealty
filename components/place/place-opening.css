@@ -1,11 +1,23 @@
-/* Folded place photo. Not a second H1 cage — lives inside .place-opening. */
-.place-opening__media {
-  margin-top: var(--v3-space-sm);
+/* Place opener: type in the gutter, photograph edge to edge.
+   Not a Stage H1 cage — the heading stays cream, the still bleeds. */
+.place-opening {
   width: 100%;
-  max-width: var(--v3-measure);
-  height: var(--v3-carousel-h);
+  margin: 0;
+  padding: 0;
+}
+
+.place-opening > :not(.place-opening__media) {
+  padding-inline: var(--v3-gutter);
+}
+
+.place-opening__media {
+  margin-top: var(--v3-hero-gap);
+  width: 100%;
+  max-width: none;
+  height: var(--v3-mosaic-h);
   overflow: hidden;
 }
+
 .place-opening__media img {
   display: block;
   width: 100%;

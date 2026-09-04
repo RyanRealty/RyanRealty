@@ -111,12 +111,8 @@
   }
 }
 
-/* Fallback H1 when there is no hero. Same gutter as the hero copy. */
-.place-opening {
-  width: 100%;
-  margin: var(--v3-space-md) 0 0;
-  padding: 0 var(--v3-gutter);
-}
+/* Place opener layout lives in components/place/place-opening.css so the
+   still can bleed. Do not re-gutter .place-opening here. */
 
 /* Place-page Split is a section, not the search app frame. */
 .place-split {

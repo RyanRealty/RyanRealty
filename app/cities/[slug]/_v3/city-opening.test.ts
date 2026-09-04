@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { cityStagePoster } from './city-opening'
 import { cityAboutItems } from './city-sections'
@@ -22,6 +24,17 @@ describe('cityStagePoster', () => {
     expect(
       cityStagePoster('https://cdn.example/photos/grok-imagine/imagine-place-city-bend.png', null),
     ).toBe('https://cdn.example/photos/grok-imagine/imagine-place-city-bend.png')
+  })
+})
+
+describe('place-opening still', () => {
+  it('bleeds the place photograph, never a measured carousel strip', () => {
+    const css = readFileSync(resolve('components/place/place-opening.css'), 'utf8')
+    expect(css).toMatch(/\.place-opening__media/)
+    expect(css).toMatch(/max-width:\s*none/)
+    expect(css).toMatch(/height:\s*var\(--v3-mosaic-h\)/)
+    expect(css).not.toMatch(/max-width:\s*var\(--v3-measure\)/)
+    expect(css).not.toMatch(/--v3-carousel-h/)
   })
 })
 

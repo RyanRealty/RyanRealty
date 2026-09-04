@@ -1,6 +1,6 @@
 import '@/components/place/place-opening.css'
 
-/** Place photo folded into the opener. Not an H1 cage. Miss omits. */
+/** Place still, full-bleed under the opener type. Not an H1 cage. Miss omits. */
 export function PlaceAreaHero({ posterSrc }: { posterSrc: string | null | undefined }) {
   if (!posterSrc) return null
   return (
