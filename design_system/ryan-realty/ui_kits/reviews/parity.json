@@ -1,0 +1,69 @@
+{
+  "route": "app/reviews/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3. THIS FILE BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
+  "competitiveTarget": "Beat brokerage testimonial walls and portal review widgets: every verified Google review on its month as a working strip, year chips that filter, full text in the served HTML, no aggregateRating on our own site, a door to a broker.",
+  "note": "Live 2026-09-03 leftover. Order is Breadcrumb, V3Proof as the page (figures, strip of every review on its month, year chips, one reading pane, full text under a disclosure via archive=true so the page is not a 7k px card list), V3Doors (write / team / homes / Value my home), Footer. Empty pool falls back to a Quiet with the Google URL. Reviews are quoted as written. No aggregateRating (self-serving). No star HUD, no paraphrase, no ticker. tasteReview is withheld until a separate evaluator grades the rendered page (design_system/public/TASTE.md). Do not invent a score.",
+  "requiredComponents": [
+    {
+      "name": "V3SectionTracker",
+      "section": "tracking island",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Reviews. Surface tone. Current page never a link.",
+      "blocking": true
+    },
+    {
+      "name": "V3Proof",
+      "section": "The page. headingLevel 1. Figures from the reviews table (count, average, first, newest, this-year). Strip of every review on its month. Year chips filter. archive=true: one reading pane plus a native disclosure holding every quote in the served HTML. Source is the Google reviews URL. record stays on so the strip is honest against the count figure.",
+      "blocking": true
+    },
+    {
+      "name": "V3Doors",
+      "section": "Four next steps: write, broker profiles, homes for sale, Value my home. Replaces the three-row Ledger plus Quiet edges, which stacked another list under the instrument.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main>.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx"
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Sheet",
+      "reason": "Capture already lives on /contact and /team/[slug]."
+    },
+    {
+      "name": "V3Ledger",
+      "reason": "A three-row next-step ledger under twenty-five cards was a stacked-section page. Doors carry the same four destinations."
+    },
+    {
+      "name": "V3Instrument",
+      "reason": "Proof is the record. A second figure row would restated the same count."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Live inventory opens Homes."
+    }
+  ],
+  "removedComponents": [
+    "Twenty-five always-open quote cards as the page (2026-09-03). Full text remains in HTML under the archive disclosure.",
+    "V3Ledger #next — rebuilt as V3Doors.",
+    "V3Quiet #edges — Google URL is the Proof source; Value my home is a door."
+  ],
+  "sectionOrder": [
+    "V3SectionTracker + Review JSON-LD (not sections)",
+    "V3Breadcrumb",
+    "V3Proof #reviews -- strip, year chips, reading pane, archive disclosure",
+    "V3Doors #next -- write, team, homes, Value my home",
+    "V3Footer"
+  ]
+}

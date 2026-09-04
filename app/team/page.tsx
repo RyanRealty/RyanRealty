@@ -2,12 +2,19 @@
  * /team - broker roster, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (2026-08-14): Team = faces. The first viewport is the live brokers'
- * canonical transparent PNGs (no card, no wash, no box). Name is the door.
- * Call and text sit on the face row. Ledger (licenses) then Quiet (reviews
- * and FAQ) sit below. PUBLIC_UI.md opens About-family on Quiet + Sheet.
- * Faces first. The family's Sheet stays on /contact and /team/[slug]. Seller
- * lives on Sell. The next tap is the name or the number.
+ * Look (2026-08-14, leftover 2026-09-03): Team = faces. The first viewport is
+ * the live brokers' canonical transparent PNGs (no card, no wash, no box).
+ * Name is the door. Call and text sit on the face row. Proof (newest four,
+ * record off) then Answers (the questions, as disclosures). The faces ARE the
+ * roster; a Ledger of the same three people was a second roster and is gone.
+ * PUBLIC_UI.md opens About-family on Quiet + Sheet. The family's Sheet stays
+ * on /contact and /team/[slug]. Seller lives on Sell. The next tap is the
+ * name or the number.
+ *
+ * THE CLOSING SECTION IS V3Answers, NOT A V3Quiet (2026-09-03). Same move
+ * /about made: TEAM_FAQ_ITEMS as native disclosures, remaining edges beside
+ * them. Nothing moved behind script — every answer is still in the served
+ * HTML, and the FAQPage JSON-LD names the same four.
  *
  * THE PAGE CONTRACT, carried across unchanged: export const metadata through
  * pageMetadata, MetadataBlock JSON-LD (CollectionPage + aboutOrganization +
@@ -29,21 +36,19 @@ import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Ledger,
-  V3Quiet,
+  V3Answers,
   V3SectionTracker,
-  type V3LedgerPlainRow,
-  type V3QuietItem,
+  type V3Answer,
+  type V3AnswersDoor,
   V3Proof,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
-import { brokerLedgerRow, TEAM_FAQ_ITEMS, TEAM_RANK } from './_v3/team-constants'
+import { TEAM_FAQ_ITEMS, TEAM_RANK } from './_v3/team-constants'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -70,12 +75,6 @@ export default async function TeamPage() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  const brokerRows = orderedBrokers
-    .map((b) => brokerLedgerRow(b))
-    .filter((row): row is V3LedgerPlainRow => row !== null)
-  const [firstBroker, ...restBrokers] = brokerRows
-
-
   // The newest verified reviews as a Proof band (record off: a strip of four
   // must not sit beside a figure that says twenty-five); the same shaping
   // /reviews prints, with the recorded testimonials as the empty-pool fallback.
@@ -84,12 +83,13 @@ export default async function TeamPage() {
   const reviewAverage = reviews.count > 0 ? reviews.averageRating : 5
   const newestReview = quotes.find((q) => q.date)?.date ?? null
 
-  const faqItems: V3QuietItem[] = [
-    ...TEAM_FAQ_ITEMS.map((item) => ({
-      kind: 'prose' as const,
-      term: item.question,
-      body: item.answer,
-    })),
+  const faqAnswers: V3Answer[] = TEAM_FAQ_ITEMS.map((item, index) => ({
+    question: item.question,
+    body: item.answer,
+    open: index === 0,
+  }))
+
+  const faqDoors: V3AnswersDoor[] = [
     { label: 'Call, text, or write', href: '/contact' },
     { label: 'Client reviews', href: '/reviews' },
     { label: 'About Ryan Realty', href: '/about' },
@@ -128,25 +128,6 @@ export default async function TeamPage() {
 
         <AboutFaces people={faces} heading="The brokers" />
 
-        {firstBroker ? (
-          <V3Ledger
-            id="brokers"
-            eyebrow={v3Text('Licensed in Oregon')}
-            heading={v3Text('Who you work with')}
-            rows={[firstBroker, ...restBrokers]}
-            action={{ label: v3Text('Call, text, or write'), href: '/contact', variant: 'primary' }}
-          />
-        ) : (
-          <V3Ledger
-            id="brokers"
-            eyebrow={v3Text('Licensed in Oregon')}
-            heading={v3Text('Who you work with')}
-            rows={[]}
-            emptyMessage={v3Text('Broker profiles did not return in this refresh.')}
-            action={{ label: v3Text('Call, text, or write'), href: '/contact', variant: 'primary' }}
-          />
-        )}
-
         {quotes.length > 0 ? (
           <V3Proof
             id="proof"
@@ -166,14 +147,13 @@ export default async function TeamPage() {
             record={false}
           />
         ) : null}
-        <V3Quiet
-          id="reviews-faq"
-          eyebrow="Clients and questions"
+        <V3Answers
+          id="faq"
+          eyebrow="Common questions"
           heading="Working with a Bend broker"
-          items={[
-            { label: 'All Google reviews', href: '/reviews' },
-            ...faqItems,
-          ]}
+          headingLevel={2}
+          questions={faqAnswers}
+          doors={faqDoors}
         />
       </main>
 

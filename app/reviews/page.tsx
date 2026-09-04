@@ -2,18 +2,20 @@
  * /reviews - Google reviews as written, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (2026-08-13): Reviews = Google quotes first. The first viewport is
- * live GBP text as written (V3Proof: figures, the record strip, year chips, the quotes), then Ledger (contact, team, homes),
- * then Quiet (Google + Value my home). PUBLIC_UI.md opens About on Quiet +
- * Sheet. Quotes are Quiet's job (verbatim proof) at inventory weight, compact
- * like AboutFaces so a quote is on screen at 390. The family's Sheet stays on
- * /contact and /team/[slug].
+ * Look (2026-09-03 leftover): Reviews = the record. The first viewport is
+ * live GBP text as an instrument (V3Proof: figures, the strip of every review
+ * on its month, year chips that filter, one reading pane). Full text stays in
+ * the served HTML under a disclosure (`archive`), not as a 7k px card list.
+ * Then Doors (contact, team, homes, valuation). PUBLIC_UI.md opens About on
+ * Quiet + Sheet. The family's Sheet stays on /contact and /team/[slug].
  *
  * Reviews are quoted as written. Brand-voice laws do not rewrite client text.
  * No aggregateRating on this page (self-serving on our own site).
  * No star HUD, no paraphrase, no ticker.
  *
  * D11: no invented quote. MLS remarks N/A.
+ *
+ * Parity: design_system/ryan-realty/ui_kits/reviews/parity.json
  */
 
 import type { Metadata } from 'next'
@@ -27,7 +29,7 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Ledger,
+  V3Doors,
   V3Proof,
   V3Quiet,
   V3SectionTracker,
@@ -109,6 +111,7 @@ export default async function ReviewsPage() {
             figures={figures}
             quotes={quotes}
             source={{ label: 'View every review on Google', href: GOOGLE_REVIEWS_URL }}
+            archive
           />
         ) : (
           <V3Quiet
@@ -120,38 +123,34 @@ export default async function ReviewsPage() {
           />
         )}
 
-        <V3Ledger
+        <V3Doors
           id="next"
-          eyebrow={v3Text('Next step')}
-          heading={v3Text('Talk to a broker')}
-          rows={[
+          name={v3Text('Talk to a broker')}
+          doors={[
             {
+              kicker: v3Text('Write'),
+              label: v3Text('Call, text, or write'),
+              fact: v3Text('A broker replies within one business day'),
               href: '/contact',
-              when: v3Text('Write'),
-              what: v3Text('Call, text, or write'),
-              detail: v3Text('A broker replies within one business day'),
             },
             {
+              kicker: v3Text('People'),
+              label: v3Text('Broker profiles'),
+              fact: v3Text('The licensed Oregon brokers'),
               href: '/team',
-              when: v3Text('People'),
-              what: v3Text('Broker profiles'),
-              detail: v3Text('Matt Ryan, Paul Stevenson, Rebecca Peterson'),
             },
             {
+              kicker: v3Text('Homes'),
+              label: v3Text('Homes for sale'),
+              fact: v3Text('Central Oregon listings'),
               href: listingsBrowsePath(),
-              when: v3Text('Homes'),
-              what: v3Text('Homes for sale'),
-              detail: v3Text('Central Oregon listings'),
             },
-          ]}
-        />
-
-        <V3Quiet
-          id="edges"
-          ariaLabel="Reviews and valuation"
-          items={[
-            { label: 'View reviews on Google', href: GOOGLE_REVIEWS_URL },
-            { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
+            {
+              kicker: v3Text('Sell'),
+              label: v3Text('Value my home'),
+              fact: v3Text('From recent comparable sales'),
+              href: valuationHref(ROUTE_PATH),
+            },
           ]}
         />
       </main>
