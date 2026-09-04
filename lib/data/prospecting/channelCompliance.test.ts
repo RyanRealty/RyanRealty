@@ -76,6 +76,28 @@ describe('openChannels', () => {
   })
 })
 
+describe('openChannels market hard-skip', () => {
+  const emailOpen = {
+    channels: {
+      sms: { blocked: true, reason: 'On the do-not-call registry' },
+      call: { blocked: true, reason: 'On the do-not-call registry' },
+      email: { blocked: false, reason: null },
+    },
+  }
+
+  it('does not paint Email OK when relisted (Remarkable/Dodds class)', () => {
+    expect(openChannels({ ...emailOpen, relisted: true, offMarket: false })).toEqual([])
+  })
+
+  it('does not paint Email OK when off market', () => {
+    expect(openChannels({ ...emailOpen, relisted: false, offMarket: true })).toEqual([])
+  })
+
+  it('still surfaces email when market is clear', () => {
+    expect(openChannels({ ...emailOpen, relisted: false, offMarket: false })).toEqual(['email'])
+  })
+})
+
 describe('blockAllChannels', () => {
   it('is total — every channel blocked and carrying the reason', () => {
     const blocks = blockAllChannels('Compliance check unavailable')

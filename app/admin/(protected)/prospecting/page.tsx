@@ -81,7 +81,11 @@ function hrefFor(
 function rowState(row: ProspectRow, bucket: ProspectBucket): { word: string; tone: AdminState } {
   if (bucket === 'sent') return { word: 'Sent', tone: 'ok' }
   if (bucket === 'sendable') return { word: 'Send', tone: 'ok' }
-  if (bucket === 'no-phone') return { word: 'No phone', tone: 'waiting' }
+  if (bucket === 'no-phone') {
+    // Pine Vista / Nugget: ready audit + contact points but no CRM person — not Send.
+    if (row.personId == null) return { word: 'Link contact', tone: 'waiting' }
+    return { word: 'No phone', tone: 'waiting' }
+  }
   if (bucket === 'excluded') return { word: 'Blocked', tone: 'down' }
   if (row.doc.state === 'building') return { word: 'Building', tone: 'waiting' }
   if (row.doc.state === 'failed') return { word: 'Failed', tone: 'down' }
@@ -110,8 +114,19 @@ function rowContext(row: ProspectRow, bucket: ProspectBucket): string {
     else if (row.doc.state === 'failed') bits.push(`build failed: ${row.doc.reason ?? 'unknown error'}`)
     else bits.push('no audit yet, build it first')
   } else if (bucket === 'no-phone') {
-    bits.push('audit ready, no phone on file')
-    if (!row.compliance.channels.email.blocked) bits.push('email is open')
+    if (row.personId == null) {
+      bits.push('audit ready, link a CRM contact before send')
+    } else {
+      bits.push('audit ready, no phone on file')
+      // Never paint email-open when market hard-skip would also hide Send.
+      if (
+        !row.compliance.relisted &&
+        !row.compliance.offMarket &&
+        !row.compliance.channels.email.blocked
+      ) {
+        bits.push('email is open')
+      }
+    }
   } else if (bucket === 'excluded') {
     const reasons = row.compliance.reasons
     bits.push(reasons.length > 0 ? reasons.join(' · ') : 'blocked')
@@ -222,7 +237,7 @@ export default async function ProspectingPage({
 
       <ul className="av2-queue">
         {result.rows.map((row) => {
-          const bucket = classifyProspect(row.doc, row.compliance, row.sendable)
+          const bucket = classifyProspect(row.doc, row.compliance, row.sendable, row.personId)
           const state = rowState(row, bucket)
           const openHref = `/admin/prospecting/${row.kind}/${encodeURIComponent(row.id)}`
           const needsBuild = bucket === 'needs-audit' && row.doc.state !== 'building'

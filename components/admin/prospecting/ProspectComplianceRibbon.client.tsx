@@ -15,7 +15,8 @@
  * of do-not-contact leads that were in fact perfectly emailable (Brain Dump 2,
  * 2026-07-28). Only `allChannelsBlocked` is destructive now; a single closed
  * channel is a warning that names the reason, and the open channels are stated
- * positively so the next action is obvious.
+ * positively so the next action is obvious. Relisted / off-market hard-skip
+ * clears Email OK paint via openChannels (Remarkable/Dodds class).
  *
  * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md). The
  * shadcn Badge trio became StateWord, which already carries the "status is text
