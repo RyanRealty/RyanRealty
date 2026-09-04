@@ -14,6 +14,7 @@ import {
   customBathCompatible,
   customLotCompatible,
   isCustomOrNewSubject,
+  remarksMarkCustomOrNew,
   isNewBuild,
   newConstructionCompatible,
   resolveIrrigationClass,
@@ -289,5 +290,51 @@ describe('customLotCompatible', () => {
     expect(customLotCompatible(5, 1.19)).toBe(true)
     expect(customLotCompatible(2, 0.25)).toBe(false)
     expect(customLotCompatible(null, 1.19)).toBe(true)
+  })
+})
+
+describe('live Rim View custom/new classification (fragile field shape)', () => {
+  const liveRemarks =
+    'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek that has views of ancient rock outcroppings and the sounds of rushing waters. This to-be-built masterpiece offers 4 beds, 3.5 baths, a study, and rec room spread across 4972 sf of luxurious living'
+
+  it('does not need the phrase custom built — live canceled remarks never say it', () => {
+    expect(remarksMarkCustomOrNew(liveRemarks)).toBe(true)
+    expect(remarksMarkCustomOrNew('Custom built modern home.')).toBe(true)
+    expect(remarksMarkCustomOrNew('Nice remodeled ranch on the westside.')).toBe(false)
+  })
+
+  it('classifies when NewConstructionYN is null/false and year is 2024', () => {
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 2024, newConstructionYn: null, remarks: liveRemarks }, 2026),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 2024, newConstructionYn: false, remarks: liveRemarks }, 2026),
+    ).toBe(true)
+  })
+
+  it('classifies null year + null NewConstructionYN from to-be-built remarks alone', () => {
+    expect(
+      isCustomOrNewSubject({ yearBuilt: null, newConstructionYn: null, remarks: liveRemarks }, 2026),
+    ).toBe(true)
+  })
+
+  it('classifies an MLS New Construction subtype even with empty remarks', () => {
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: null, remarks: null, propertySubType: 'New Construction' },
+        2026,
+      ),
+    ).toBe(true)
+  })
+
+  it('still refuses Summit-era stock on year quality even when mid-century remarks classify the subject', () => {
+    const subject = {
+      yearBuilt: 2024,
+      newConstructionYn: false,
+      remarks: 'Charming mid-century modern home with original hardwoods.',
+    }
+    expect(isCustomOrNewSubject(subject, 2026)).toBe(true)
+    expect(yearQualityCompatible(subject, { yearBuilt: 1990 }, 2026)).toBe(false)
+    expect(yearQualityCompatible(subject, { yearBuilt: 2022, remarks: 'Custom home' }, 2026)).toBe(true)
   })
 })

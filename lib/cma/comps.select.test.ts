@@ -347,14 +347,16 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
     const sel = await selectComps(
       subject({
         streetAddress: '19365 Rim View',
+        // LIVE fragile shape: do not force NewConstructionYN; remarks carry
+        // to-be-built without the phrase "custom built".
         yearBuilt: 2024,
-        newConstructionYn: true,
+        newConstructionYn: false,
         sqft: 4972,
         lotAcres: 2,
         beds: 4,
         baths: 4,
         publicRemarks:
-          'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+          'Introducing a stunning mid-century modern home perched over Tumalo Creek. This to-be-built masterpiece offers 4 beds and 3.5 baths.',
         propertySubType: 'Single Family Residence',
         // Live Rim View coords — outside every mapped Bend polygon.
         latitude: 44.1005,

@@ -67,6 +67,7 @@ export type PricingSubject = {
   /** City of Bend GIS mesh slug, or null outside every polygon. */
   marketArea?: string | null
   newConstruction?: boolean | null
+  propertySubType?: string | null
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
   publicRemarks?: string | null
@@ -181,6 +182,7 @@ function applesOk(
       yearBuilt: subject.yearBuilt,
       newConstructionYn: subject.newConstruction,
       remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
     },
     asOfYear,
   )
@@ -268,6 +270,7 @@ function passesTier(
       yearBuilt: subject.yearBuilt,
       newConstructionYn: subject.newConstruction,
       remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
     },
     asOfYear,
   )
@@ -388,6 +391,7 @@ function bracketEligible(
       yearBuilt: subject.yearBuilt,
       newConstructionYn: subject.newConstruction,
       remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
     },
     asOfYear,
   )
@@ -480,6 +484,7 @@ function similarity(subject: PricingSubject, sale: PricingSale, asOf: string): n
       yearBuilt: subject.yearBuilt,
       newConstructionYn: subject.newConstruction,
       remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
     },
     Number(asOf.slice(0, 4)),
   )
@@ -507,6 +512,7 @@ export function walkPricingLadder(
       yearBuilt: subject.yearBuilt,
       newConstructionYn: subject.newConstruction,
       remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
     },
     asOfYearForLadder,
   )

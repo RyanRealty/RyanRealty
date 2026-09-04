@@ -306,6 +306,7 @@ export async function selectComps(
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
     remarks: subject.publicRemarks,
+    propertySubType: subject.propertySubType,
   })
 
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)

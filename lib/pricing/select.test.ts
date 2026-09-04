@@ -118,9 +118,13 @@ describe('pickCompSource', () => {
     expect(pickCompSource({ factsReady: true, customOrNew: true, comps: [] })).toBe('facts')
   })
 
-  it('uses the listings ladder when facts are not ready', () => {
+  it('uses the listings ladder when facts are not ready for ordinary subjects', () => {
     expect(pickCompSource({ factsReady: false, comps: [{}, {}, {}] })).toBe('listings')
-    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [{}, {}] })).toBe('listings')
+  })
+
+  it('never listings-fallbacks custom/new — even when facts are not ready', () => {
+    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [{}, {}] })).toBe('facts')
+    expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [] })).toBe('facts')
   })
   it('live Rim View remarks classify custom so under-3 stays on facts (not listings)', () => {
     const custom = isCustomOrNewSubject({

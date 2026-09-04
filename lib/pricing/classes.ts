@@ -328,7 +328,13 @@ const REMARK_RULES: Array<{ key: RemarkBoolKey; phrase: keyof RemarkFlags; re: R
   },
   { key: 'remodeled', phrase: 'remodeledPhrase', re: /\b(?:fully\s+)?remodel(?:ed|ing)?\b|\bupdated throughout\b/i },
   { key: 'updatedKitchen', phrase: 'updatedKitchenPhrase', re: /\b(?:updated|new|remodeled)\s+kitchen\b|\bkitchen\s+remodel/i },
-  { key: 'newConstruction', phrase: 'newConstructionPhrase', re: /\bnew construction\b/i },
+  {
+    key: 'newConstruction',
+    phrase: 'newConstructionPhrase',
+    // Live Rim View (Canceled): remarks say "to-be-built masterpiece" / mid-century
+    // copy without the literal phrase "new construction" or "custom built".
+    re: /\bnew construction\b|\bto[\s-]+be[\s-]+built\b|\bbrand[\s-]+new\b|\bnever[\s-]+lived[\s-]+in\b|\bspec(?:ulative)?[\s-]+home\b/i,
+  },
   {
     key: 'distressed',
     phrase: 'distressedPhrase',
@@ -471,6 +477,8 @@ export type YearQualityInput = {
   yearBuilt: number | null | undefined
   newConstructionYn?: boolean | null
   remarks?: string | null
+  /** MLS property_sub_type — some feeds stamp "New Construction" here. */
+  propertySubType?: string | null
 }
 
 function asOfYearOrNow(asOfYear?: number): number {
@@ -483,16 +491,19 @@ export function remarksMarkCustomOrNew(remarks: string | null | undefined): bool
   return flags.customQuality || flags.newConstruction
 }
 
-/** True when year, NewConstructionYN, or remarks put the subject in the custom/new class. */
+/** True when year, NewConstructionYN, subtype, or remarks put the subject in the custom/new class. */
 export function isCustomOrNewSubject(input: YearQualityInput, asOfYear?: number): boolean {
   const asOf = asOfYearOrNow(asOfYear)
   if (input.newConstructionYn === true) return true
   if (isNewBuild(input.yearBuilt, asOf, input.newConstructionYn) === true) return true
   const year = input.yearBuilt
   if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= 5) return true
-  // Live canceled Rim View: remarks carry "mid-century modern" without NewConstructionYN
-  // or "custom built". Without this, pickCompSource falls to listings and re-applies
-  // unmappedCrossesKnownBank + exact baths/lot (144→2, 47/34/33).
+  const sub = input.propertySubType?.toLowerCase() ?? ''
+  if (sub.includes('new construction')) return true
+  // Live canceled Rim View: remarks carry "mid-century modern" / "to-be-built"
+  // without NewConstructionYN or "custom built". Without this, pickCompSource
+  // falls to listings and re-applies unmappedCrossesKnownBank + exact baths/lot
+  // (144→2, 47/34/33).
   return remarksMarkCustomOrNew(input.remarks)
 }
 

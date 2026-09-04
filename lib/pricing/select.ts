@@ -72,6 +72,7 @@ export function cmaSubjectToPricing(
     ruralAcreage: isRuralAcreage(subject, area),
     marketArea: area,
     newConstruction: subject.newConstructionYn ?? null,
+    propertySubType: subject.propertySubType,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
     publicRemarks: subject.publicRemarks,
     irrigationClass: extras.irrigationClass ?? null,
@@ -116,6 +117,7 @@ export async function selectPricingComps(
       yearBuilt: pricingSubject.yearBuilt,
       newConstructionYn: pricingSubject.newConstruction,
       remarks: pricingSubject.publicRemarks,
+      propertySubType: subject.propertySubType,
     },
     asOfYear,
   )
@@ -264,8 +266,12 @@ export function pickCompSource(match: {
   comps?: unknown[]
   customOrNew?: boolean
 }): 'facts' | 'listings' {
-  if (!match.factsReady) return 'listings'
+  // Custom/new must NEVER fall back to listings — exact baths, 0.4× lot, and
+  // unmappedCrossesKnownBank re-starve Perspective-class peers (live Rim View
+  // 144→2 / 47 divide / 34 lot / 33 bath). Prefer an honest facts starve (or
+  // empty set when facts are not ready) over Summit/Falcon padding.
   if (match.customOrNew) return 'facts'
+  if (!match.factsReady) return 'listings'
   const n = match.comps?.length ?? 0
   if (n >= 3) return 'facts'
   return 'listings'
@@ -281,6 +287,7 @@ export async function selectCompsPreferringFacts(
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
     remarks: subject.publicRemarks,
+    propertySubType: subject.propertySubType,
   })
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match)
