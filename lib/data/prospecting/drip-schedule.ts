@@ -1,10 +1,9 @@
 /**
  * Prospecting first-touch drip schedule (approve → queue → weekday drain).
  *
- * Lock (process): weekdays, window opens 08:00 America/Los_Angeles, then send
- * ONE approved Expired OR FSBO first-touch email per spacing interval until the
- * queue is empty. Spacing is intentionally a single constant — Matt has not
- * locked the gap yet (CoS: TBD). Change DRIP_SPACING_MINUTES in one place.
+ * LOCKED (Matt 2026-09-03): weekdays, window opens 08:00 America/Los_Angeles,
+ * then ONE approved Expired OR FSBO first-touch email every 5 minutes until the
+ * queue is empty. Spacing is HARDCODED — do not make it env-configurable.
  *
  * Pure helpers only — no DB, no clock. The drain cron supplies `now` + last send.
  */
@@ -16,12 +15,7 @@ export const DRIP_TIMEZONE = 'America/Los_Angeles'
 /** Local weekday minutes when the drip window opens (08:00). */
 export const DRIP_WEEKDAY_START_MINUTES = 8 * 60
 
-/**
- * Minutes between drip sends (one-at-a-time cadence).
- *
- * TBD — Matt must confirm before treating 5 as locked. Keep this the only knob.
- * Do NOT re-label as HARDCODE or LOCKED until CoS confirms Matt locked spacing.
- */
+/** Minutes between drip sends (one-at-a-time cadence). LOCKED at 5. */
 export const DRIP_SPACING_MINUTES = 5
 
 const WEEKDAYS = new Set(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
