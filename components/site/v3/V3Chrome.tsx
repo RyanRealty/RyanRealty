@@ -71,6 +71,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
+import { FindMeVoice } from './FindMeVoice.client'
 import './tokens.css'
 import './V3Chrome.css'
 
@@ -619,6 +620,10 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
+          {/* Always-on voice door. Speaks into parseSearchQuery and lands on
+              /homes-for-sale. Matt 2026-09-04: present on phone and desk,
+              labeled Find me, has to work. */}
+          <FindMeVoice />
           {/* The broker's number, always visible (Matt 2026-09-01: a visitor
               could not find how to contact the brokerage — chrome failure on a
               lead-gen site). Icon-only at 390, the number itself from 40rem.

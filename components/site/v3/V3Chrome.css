@@ -72,6 +72,79 @@
   margin-inline-start: auto;
 }
 
+/* Find me — always-on voice search. Navy pill so it is the clickable door. */
+.v3-chrome__findme-wrap {
+  position: relative;
+}
+
+.v3-chrome__findme {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-3xs);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border: 1px solid var(--v3-navy);
+  background: var(--v3-cream);
+  color: var(--v3-navy);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.v3-chrome__findme.is-on {
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+}
+
+.v3-chrome__findme-mic {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: v3-findme-idle 2.4s var(--v3-ease-out) infinite;
+}
+
+.v3-chrome__findme.is-on .v3-chrome__findme-mic {
+  animation-name: v3-findme-listen;
+  animation-duration: 1.1s;
+}
+
+@keyframes v3-findme-idle {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--v3-navy) 35%, transparent); }
+  70% { box-shadow: 0 0 0 6px transparent; }
+}
+
+@keyframes v3-findme-listen {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-chrome__findme-mic {
+    animation: none;
+  }
+}
+
+.v3-chrome__findme-err {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 4;
+  margin: var(--v3-space-3xs) 0 0;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  background: var(--v3-cream);
+  border: var(--v3-rule-hairline);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-source);
+  white-space: nowrap;
+}
+
 /* Destinations --------------------------------------------------------------
    Hidden below 56.25rem, where the overlay carries navigation. Hidden by
    display:none on purpose: a link a visitor cannot see must not be a link a
