@@ -602,8 +602,14 @@ export async function sendProspectingEmailIntro(
     // to also correct a stale mismatch). A drifted recipient here would email a
     // DIFFERENT address than the one the broker approved on screen.
     const railEmail = ((clientReady.row.client_email as string | null) ?? '').trim().toLowerCase()
-    if (railEmail !== toEmail) {
-      const stamped = await updateCmaRowFieldsBySlug(clientReady.slug, { client_email: toEmail })
+    const railName = ((clientReady.row.client_name as string | null) ?? '').trim()
+    const wantName = (prospect.ownerName ?? '').trim()
+    const pinFields: Record<string, string> = {}
+    if (railEmail !== toEmail) pinFields.client_email = toEmail
+    // Card / people / CMA must agree on the outreach recipient before send.
+    if (wantName && railName !== wantName) pinFields.client_name = wantName
+    if (Object.keys(pinFields).length > 0) {
+      const stamped = await updateCmaRowFieldsBySlug(clientReady.slug, pinFields)
       if (!stamped.ok) {
         await releaseProspectEmailSend(kind, id)
         return { ok: false, error: `Could not pin the recipient on the document (${stamped.error ?? 'update failed'}). No email was sent.`, code: 'send-failed' }

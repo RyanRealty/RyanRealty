@@ -90,6 +90,15 @@ function Spec({ label, value }: { label: string; value: string }) {
   )
 }
 
+/** Map MLS StandardStatus to the Desk paint labels (Sold for Closed*). */
+function paintMlsStatus(status: string | null | undefined): string | null {
+  const s = String(status ?? '').trim()
+  if (!s) return null
+  if (/^closed/i.test(s)) return 'Sold'
+  if (s === 'Active' || s === 'Pending' || s === 'Coming Soon') return s
+  return s
+}
+
 export function ProspectDetailPanel({
   detail,
   onBuild,
@@ -212,6 +221,18 @@ export function ProspectDetailPanel({
           {detail.listPrice != null ? `Was ${formatPrice(detail.listPrice)}` : null}
           {dateValue ? ` · ${dateLabel} ${formatDate(dateValue)}` : ''}
         </p>
+        {paintMlsStatus(detail.standardStatus) ? (
+          <p style={{ ...quietTextStyle, marginTop: 4 }}>
+            <span className="a-num" style={badgeStyle}>
+              MLS {paintMlsStatus(detail.standardStatus)}
+            </span>
+            {detail.kind === 'fsbo' ? (
+              <span style={{ marginLeft: 8, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                Live MLS check — not Price History
+              </span>
+            ) : null}
+          </p>
+        ) : null}
         {detail.personId == null ? (
           <div className="space-y-2" style={{ paddingTop: 8 }}>
             <p style={quietTextStyle}>
