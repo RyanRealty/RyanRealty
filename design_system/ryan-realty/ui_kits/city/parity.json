@@ -21,7 +21,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Cities > {City}. Surface tone. Current page never a link.",
+      "section": "Chrome. City name only (cityPageTrail). No Home, no Cities index. Surface tone. Current page never a link.",
       "blocking": true
     },
     {

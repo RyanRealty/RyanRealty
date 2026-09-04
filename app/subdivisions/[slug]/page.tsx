@@ -128,6 +128,7 @@ import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { subdivisionPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
@@ -645,16 +646,11 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         <V3SectionTracker />
 
         <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            ...(resortSlug
-              ? [{ label: resortLabel ?? displayName, href: `/communities/${resortSlug}` }]
-              : citySlug
-                ? [{ label: cityName, href: `/cities/${citySlug}` }]
-                : []),
-            { label: displayName },
-          ]}
+          trail={subdivisionPageTrail(
+            citySlug && placeCity ? { label: cityName, slug: citySlug } : null,
+            resortSlug ? { label: resortLabel ?? displayName, slug: resortSlug } : null,
+            displayName,
+          )}
         />
         <div id="overview" className="place-opening">
           <V3Heading level={1} size="field">
