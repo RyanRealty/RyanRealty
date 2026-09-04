@@ -262,9 +262,7 @@ export default async function ProspectingPage({
                   </Link>
                 ) : needsBuild ? (
                   <span style={{ display: 'inline-flex', gap: 8 }}>
-                    <form action={buildProspectDocFromWorklist}>
-                      <input type="hidden" name="kind" value={row.kind} />
-                      <input type="hidden" name="id" value={row.id} />
+                    <form action={buildProspectDocFromWorklist.bind(null, row.kind, row.id)}>
                       <Button variant="quiet" type="submit">
                         {row.doc.state === 'failed' ? 'Retry build' : 'Build audit'}
                       </Button>

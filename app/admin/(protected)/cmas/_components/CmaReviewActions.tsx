@@ -54,6 +54,8 @@ export interface CmaReviewActionsProps {
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
+  /** Pre-click built_at ISO — client asserts rebuild advanced this stamp. */
+  builtAt: string | null
 }
 
 const usd = formatPriceExact
@@ -61,6 +63,9 @@ const usd = formatPriceExact
 export function CmaReviewActions(props: CmaReviewActionsProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  // Rebuild-only pending: shared isPending also covers rebrand/approve/person
+  // search, which made Save show "Working…" for unrelated clicks (Rim View).
+  const [rebuildPending, setRebuildPending] = useState(false)
   const [clientName, setClientName] = useState(props.clientName ?? '')
   const [clientEmail, setClientEmail] = useState(props.clientEmail ?? '')
   const [clientPhone, setClientPhone] = useState(props.clientPhone ?? '')
@@ -85,14 +90,16 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       ? cmaCrmComposeHref({ personId, slug: props.slug, channel: 'email' })
       : null
 
-  function rebuild() {
+  async function rebuild() {
     const override = priceOverride.trim() ? Number(priceOverride.replace(/[^0-9.]/g, '')) : null
     if (priceOverride.trim() && (!Number.isFinite(override) || (override ?? 0) <= 0)) {
       toast.error('Price adjustment must be a positive number.')
       return
     }
-    startTransition(async () => {
-      const { error } = await rebuildCmaAction({
+    const preBuiltAt = props.builtAt
+    setRebuildPending(true)
+    try {
+      const { data, error } = await rebuildCmaAction({
         slug: props.slug,
         clientName: clientName.trim() || null,
         clientEmail: clientEmail.trim() || null,
@@ -104,12 +111,25 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         intent: intent || null,
         priceOverride: override,
       })
-      if (error) toast.error(error)
-      else {
-        toast.success('Rebuilt. The preview below is the new document.')
+      if (error) {
+        toast.error(error)
         router.refresh()
+        return
       }
-    })
+      const builtAt = data?.builtAt ?? null
+      const advanced =
+        Boolean(builtAt) && (!preBuiltAt || String(builtAt) > String(preBuiltAt))
+      if (!advanced) {
+        toast.error('Rebuild did not update built_at')
+      } else {
+        toast.success('Rebuilt. The preview below is the new document.')
+      }
+      router.refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Rebuild failed unexpectedly')
+    } finally {
+      setRebuildPending(false)
+    }
   }
 
   /**
@@ -287,8 +307,8 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           hint={`Data-supported recommendation: ${usd(props.recommendedList)}. Setting a number here re-anchors the tier grid on your price and notes the adjustment in the document. Leave blank to keep the computed value.`}
         />
 
-        <Button onClick={rebuild} disabled={isPending} variant="quiet" touch className="w-full">
-          {isPending ? 'Working…' : 'Save and rebuild'}
+        <Button onClick={rebuild} disabled={rebuildPending || isPending} variant="quiet" touch className="w-full">
+          {rebuildPending ? 'Working…' : 'Save and rebuild'}
         </Button>
       </div>
 

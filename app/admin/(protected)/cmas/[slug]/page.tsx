@@ -57,7 +57,7 @@ import { CmaReviewActions } from '@/app/admin/(protected)/cmas/_components/CmaRe
 import { CmaPublishControl } from '@/app/admin/(protected)/cmas/_components/CmaPublishControl'
 import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
+import { formatDateTime } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
@@ -167,7 +167,7 @@ export default async function AdminCmaReviewPage({
           ? ` · ${String(linkedPerson?.primaryEmail || row.client_email)}`
           : ''}
         {row.broker_slug ? ` · signed by ${String(row.broker_slug)}` : ''}
-        {` · built ${formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}`}
+        {` · built ${formatDateTime((row.built_at as string | null) ?? (row.created_at as string | null))}`}
       </p>
 
       {hasDocument ? (
@@ -243,6 +243,7 @@ export default async function AdminCmaReviewPage({
         brokerSlug={(row.broker_slug as string | null) ?? null}
         brokers={brokers}
         hasDocument={hasDocument}
+        builtAt={(row.built_at as string | null) ?? null}
       />
 
       <SectionHead>Listing page</SectionHead>

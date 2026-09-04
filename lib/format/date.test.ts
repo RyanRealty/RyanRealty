@@ -22,6 +22,10 @@ describe('formatDate (brand timezone, audit p1.4)', () => {
   it('formatDateTime includes a time', () => {
     expect(formatDateTime('2026-06-22T20:30:00.000Z')).toMatch(/Jun 22, 2026.*\d/)
   })
+  it('formatDateTime shows America/Los_Angeles clock (same-day rebuilds visible)', () => {
+    // Rim View built_at 2026-09-04T03:02:05.739Z — day-only formatDate hid same-day rebuilds.
+    expect(formatDateTime('2026-09-04T03:02:05.739Z')).toBe('Sep 3, 2026, 8:02 PM')
+  })
 })
 
 describe('formatCalendarDay', () => {
