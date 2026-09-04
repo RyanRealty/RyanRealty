@@ -151,6 +151,53 @@
   fill: var(--v3-ink);
 }
 
+.v3 .v3-chart__bar--ctx {
+  fill: color-mix(in srgb, var(--v3-ink) 28%, transparent);
+}
+
+.v3 .v3-chart__bar--home {
+  fill: var(--v3-ink);
+}
+
+.v3 .v3-chart__barref {
+  stroke: var(--v3-ink);
+  stroke-width: var(--v3-chart-stroke);
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3 .v3-chart__barref-label {
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -15%);
+  z-index: 2;
+  white-space: nowrap;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-label);
+  text-transform: none;
+  color: var(--v3-ink);
+  background: var(--v3-cream);
+  padding: 0 var(--v3-space-3xs);
+  pointer-events: none;
+}
+
+.v3 .v3-chart__barref-label--before {
+  transform: translate(calc(-100% + var(--v3-space-2xs)), -15%);
+}
+
+.v3 .v3-chart__x--all {
+  height: 2.4em;
+}
+
+.v3 .v3-chart__x--all .v3-chart__xtick {
+  white-space: normal;
+  max-width: 3.2rem;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: none;
+}
+
 /* Segment ink ladder — EIGHT monochrome stops (2026-08-27: the composition
    strip carries 8 real categories; three stops rendered six of them as one
    identical wash). Every stop derives from the one ink so a template swap
@@ -864,15 +911,26 @@
      SUBDIVISION-R6-5). From eight, every other label goes…
      …but never the last one: on a run the rule used to hide the year the claim
      beside it names (round five, SUBDIVISION-CHART-1). */
-  .v3 .v3-chart__x--ticks:has(> :nth-child(8)) .v3-chart__xtick:nth-child(2n):not(:last-child),
-  .v3 .v3-chart__x--ticks.is-wide-ticks:has(> :nth-child(5)) .v3-chart__xtick:nth-child(2n):not(:last-child) {
+  .v3 .v3-chart__x--ticks:not(.v3-chart__x--all):has(> :nth-child(8)) .v3-chart__xtick:nth-child(2n):not(:last-child),
+  .v3 .v3-chart__x--ticks.is-wide-ticks:not(.v3-chart__x--all):has(> :nth-child(5)) .v3-chart__xtick:nth-child(2n):not(:last-child) {
     visibility: hidden;
+  }
+
+  .v3 .v3-chart__x--all {
+    height: 3.4em;
+  }
+
+  .v3 .v3-chart__x--all .v3-chart__xtick {
+    white-space: nowrap;
+    max-width: none;
+    transform: translateX(-50%) rotate(-48deg);
+    transform-origin: top center;
   }
 
   /* An even run would then show the last two labels side by side: drop the
      one before it instead. */
-  .v3 .v3-chart__x--ticks:has(> :nth-child(8)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)),
-  .v3 .v3-chart__x--ticks.is-wide-ticks:has(> :nth-child(5)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)) {
+  .v3 .v3-chart__x--ticks:not(.v3-chart__x--all):has(> :nth-child(8)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)),
+  .v3 .v3-chart__x--ticks.is-wide-ticks:not(.v3-chart__x--all):has(> :nth-child(5)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)) {
     visibility: hidden;
   }
 }

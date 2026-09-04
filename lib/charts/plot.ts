@@ -95,6 +95,8 @@ export type BarPlot = {
   yMinLabel: string
   yMaxLabel: string
   ticks: { tick: string; x: number; y: number }[]
+  /** Vertical rule through a bar chart (this home's price). SVG x. */
+  ref?: { x: number; label: string }
   vbW: number
   vbH: number
 }
@@ -456,6 +458,30 @@ export function buildRangePlot(
   }
 }
 
+function barRefX(
+  bars: readonly BarRect[],
+  points: readonly PlotPointIn[],
+  refValue: number,
+): number | null {
+  if (bars.length === 0 || points.length !== bars.length) return null
+  const floors = points.map((p) => p.at)
+  if (floors.some((v) => v == null || !Number.isFinite(v))) return null
+  const first = floors[0]!
+  if (refValue < first) return bars[0]!.x
+  for (let i = 0; i < bars.length; i++) {
+    const lo = floors[i]!
+    const hi = i + 1 < floors.length ? floors[i + 1]! : Number.POSITIVE_INFINITY
+    const inBand = i === bars.length - 1 ? refValue >= lo : refValue >= lo && refValue < hi
+    if (!inBand) continue
+    const bar = bars[i]!
+    if (!Number.isFinite(hi) || hi <= lo) return bar.x + bar.w / 2
+    const frac = Math.min(1, Math.max(0, (refValue - lo) / (hi - lo)))
+    return bar.x + bar.w * frac
+  }
+  const last = bars[bars.length - 1]!
+  return last.x + last.w
+}
+
 export function buildBarPlot(
   series: readonly PlotSeriesIn[],
   opts?: {
@@ -468,6 +494,9 @@ export function buildBarPlot(
      * category with nothing in it has no bar to draw.
      */
     keepZeros?: boolean
+    /** Vertical rule. Needs `at` on each point as the band floor. */
+    refValue?: number
+    refLabel?: string
   },
 ): BarPlot | null {
   const layout = opts?.layout ?? 'vertical'
@@ -553,6 +582,24 @@ export function buildBarPlot(
     ticks.push({ tick: p.tick, x: x + barW / 2, y: VB_H - 6 })
   })
 
+  const refX =
+    opts?.refValue != null && opts.refLabel && opts.refLabel.trim().length > 0
+      ? barRefX(bars, points, opts.refValue)
+      : null
+  if (refX != null && opts?.refValue != null) {
+    const floors = points.map((p) => p.at)
+    for (let i = 0; i < bars.length; i++) {
+      const lo = floors[i]
+      const hi = i + 1 < floors.length ? floors[i + 1] : Number.POSITIVE_INFINITY
+      if (lo == null) continue
+      const inBand = i === bars.length - 1 ? opts.refValue >= lo : opts.refValue >= lo && opts.refValue < (hi ?? Infinity)
+      if (inBand) {
+        bars[i]!.highlight = true
+        break
+      }
+    }
+  }
+
   return {
     kind: 'bars',
     layout,
@@ -560,6 +607,7 @@ export function buildBarPlot(
     yMinLabel,
     yMaxLabel,
     ticks,
+    ref: refX != null && opts?.refLabel ? { x: refX, label: opts.refLabel } : undefined,
     vbW: VB_W,
     vbH: VB_H,
   }

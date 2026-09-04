@@ -526,6 +526,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           closed: closedPricesForLeftoverGrain(leftoverClosedTiles, leftoverGrain).map((price) => ({
             price,
           })),
+          listPrice: publishedSaleAsk,
         })
       : null
   const neighborhoodDoor =

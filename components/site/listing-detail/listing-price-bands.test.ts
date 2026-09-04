@@ -3,6 +3,7 @@ import {
   buildListingPriceBandChart,
   buildSmartPriceBandData,
   closedPricesForLeftoverGrain,
+  formatPriceBandTick,
   listingPriceBandClaim,
 } from './listing-price-bands'
 
@@ -93,18 +94,43 @@ describe('listingPriceBandClaim', () => {
   })
 })
 
+describe('formatPriceBandTick', () => {
+  it('is short enough to sit under a bar', () => {
+    expect(formatPriceBandTick(0, 200_000)).toBe('<200k')
+    expect(formatPriceBandTick(500_000, 600_000)).toBe('500–600')
+    expect(formatPriceBandTick(1_000_000, 1_250_000)).toBe('1–1.25')
+    expect(formatPriceBandTick(5_000_000, Infinity)).toBe('5m+')
+  })
+})
+
 describe('buildListingPriceBandChart', () => {
   it('omits when the grain has no closed rows', () => {
     expect(buildListingPriceBandChart({ grainName: 'Sunriver', closed: [] })).toBeNull()
   })
 
-  it('is a bars chart whose caption is the claim', () => {
+  it('is a bars chart whose claim is the sentence and ticks sit under the bars', () => {
     const chart = buildListingPriceBandChart({
       grainName: 'Sunriver',
       closed: [{ price: 710_000 }, { price: 720_000 }, { price: 1_200_000 }],
+      listPrice: 735_000,
     })
     expect(chart?.kind).toBe('bars')
-    expect(chart?.caption).toBe('2 of 3 Sunriver sales closed in $700–800K')
+    expect(chart?.run).toBe(true)
+    expect(chart?.barLabels).toBe('all')
+    expect(chart?.caption).toBe('Closed sales by price')
+    expect(chart?.claim).toBe('2 of 3 Sunriver sales closed in $700–800K')
     expect(chart?.series?.[0]?.points.map((p) => p.value)).toEqual([2, 1])
+    expect(chart?.series?.[0]?.points.map((p) => p.tick)).toEqual(['700–800', '1–1.25'])
+    expect(chart?.refValue).toBe(735_000)
+    expect(chart?.refLabel).toBe('$735,000')
+  })
+
+  it('omits the home line when this listing has no published ask', () => {
+    const chart = buildListingPriceBandChart({
+      grainName: 'Sunriver',
+      closed: [{ price: 710_000 }],
+    })
+    expect(chart?.refValue).toBeUndefined()
+    expect(chart?.refLabel).toBeUndefined()
   })
 })

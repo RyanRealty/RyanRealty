@@ -5,6 +5,7 @@
  * returns null so the caller omits the chart.
  */
 import { v3Text, type V3ChartProps } from '@/components/site/v3'
+import { formatListingAsk } from '@/lib/listing/publish-listing-ask'
 
 export type ClosedSalePrice = { price: number | null | undefined }
 
@@ -95,6 +96,18 @@ export function formatPriceBandLabel(min: number, max: number): string {
   return `${formatBandK(minK)}–${formatBandK(maxK)}`
 }
 
+/** Short axis tick so every band fits under its bar. */
+export function formatPriceBandTick(min: number, max: number): string {
+  const minK = min / 1000
+  const maxK = Number.isFinite(max) ? max / 1000 : Infinity
+  if (!Number.isFinite(maxK)) return minK >= 1000 ? `${formatM(minK)}m+` : `${minK}k+`
+  if (minK === 0) return maxK >= 1000 ? `<${formatM(maxK)}m` : `<${maxK}k`
+  if (minK >= 1000 && maxK >= 1000) return `${formatM(minK)}–${formatM(maxK)}`
+  if (minK < 1000 && maxK < 1000) return `${minK}–${maxK}`
+  if (maxK === 1000) return `${minK}–1m`
+  return `${formatBandK(minK)}–${formatBandK(maxK)}`
+}
+
 function uniqueSorted(values: number[]): number[] {
   return [...new Set(values)].sort((a, b) => a - b)
 }
@@ -153,23 +166,35 @@ export function listingPriceBandClaim(grainName: string, bands: readonly Listing
 export function buildListingPriceBandChart(input: {
   grainName: string
   closed: readonly ClosedSalePrice[]
+  listPrice?: number | null
 }): V3ChartProps | null {
   const bands = buildSmartPriceBandData(input.closed)
   if (!bands) return null
-  const caption = listingPriceBandClaim(input.grainName, bands)
-  if (!caption) return null
+  const claim = listingPriceBandClaim(input.grainName, bands)
+  if (!claim) return null
+  const listPrice =
+    input.listPrice != null && Number.isFinite(input.listPrice) && input.listPrice > 0
+      ? input.listPrice
+      : null
   return {
     id: 'price-bands',
-    caption: v3Text(caption),
+    caption: v3Text('Closed sales by price'),
+    claim: v3Text(claim),
     kind: 'bars',
+    run: true,
+    barLabels: 'all',
     baselineLabel: v3Text('0'),
+    ...(listPrice != null
+      ? { refValue: listPrice, refLabel: v3Text(formatListingAsk(listPrice)) }
+      : {}),
     series: [
       {
         name: v3Text('Closed sales'),
         points: bands.map((band) => ({
           value: band.count,
-          tick: v3Text(band.name),
+          tick: v3Text(formatPriceBandTick(band.min, band.max)),
           label: v3Text(`${band.count} sold`),
+          at: band.min,
         })),
       },
     ],

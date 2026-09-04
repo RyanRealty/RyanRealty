@@ -52,6 +52,29 @@ describe('shared chart plot', () => {
     expect(plot && plot.kind === 'bars' ? plot.yMaxLabel : '').toBe('80.0%')
   })
 
+  it('places a price reference through the bar that holds it', () => {
+    const plot = buildBarPlot(
+      [
+        {
+          name: 'Closed',
+          points: [
+            { value: 10, tick: '500–600', label: '10 sold', at: 500_000 },
+            { value: 4, tick: '600–700', label: '4 sold', at: 600_000 },
+            { value: 2, tick: '700–800', label: '2 sold', at: 700_000 },
+          ],
+        },
+      ],
+      { refValue: 635_000, refLabel: '$635,000' },
+    )
+    expect(plot?.kind).toBe('bars')
+    if (plot?.kind !== 'bars') return
+    expect(plot.ref?.label).toBe('$635,000')
+    const home = plot.bars[1]!
+    expect(home.highlight).toBe(true)
+    expect(plot.ref!.x).toBeGreaterThan(home.x)
+    expect(plot.ref!.x).toBeLessThan(home.x + home.w)
+  })
+
   it('vertical bar ticks leave room for 3-letter month labels', () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const plot = buildBarPlot([

@@ -142,10 +142,15 @@ export type V3ChartProps = {
    * row into the left edge of the track.
    */
   clampMax?: number
-  /** Range rows only: a vertical reference rule (the region figure, full ask). */
+  /** Range rows or vertical bars: a vertical reference rule (this home, the region). */
   refValue?: number
   /** Names the reference rule. Required for refValue to draw. */
   refLabel?: V3Text
+  /**
+   * Bars only. Print a label under every bar instead of thinning to the
+   * run's ends. Price bands use this so each range sits under its column.
+   */
+  barLabels?: 'ends' | 'all'
   /** Per-point dots with a native <title> reading. Lines only. */
   marks?: boolean
   /**
@@ -241,6 +246,8 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
       // year the chart skips. Dropping it drew a nine-year gap the same width
       // as a one-year gap (evaluator round five, TEAM-MATT-1).
       keepZeros: props.run === true,
+      refValue: props.refValue,
+      refLabel: props.refLabel,
     })
   }
   if (kind === 'mix') return buildMixPlot(series)
@@ -319,6 +326,7 @@ export function V3Chart({
   rangeBaseKeyLabel,
   layout,
   run,
+  barLabels,
   baselineLabel,
   emptyReason,
   id,
@@ -663,7 +671,9 @@ export function V3Chart({
                   key={`${b.index}-${b.tick}`}
                   className={cn(
                     'v3-chart__bar',
-                    !run && `v3-chart__bar--${Math.min(b.index, 2)}`,
+                    !run && !b.highlight && `v3-chart__bar--${Math.min(b.index, 2)}`,
+                    b.highlight && 'v3-chart__bar--home',
+                    plot.ref && !b.highlight && 'v3-chart__bar--ctx',
                   )}
                   x={b.x}
                   y={b.y}
@@ -674,7 +684,27 @@ export function V3Chart({
                   <title>{`${b.tick}: ${b.label}`}</title>
                 </rect>
               ))}
+              {plot.ref ? (
+                <line
+                  className="v3-chart__barref"
+                  x1={plot.ref.x}
+                  y1={8}
+                  x2={plot.ref.x}
+                  y2={plot.vbH - BAR_PAD_B}
+                />
+              ) : null}
             </svg>
+            {plot.ref ? (
+              <span
+                className={cn(
+                  'v3-chart__barref-label',
+                  plot.ref.x / plot.vbW > 0.72 && 'v3-chart__barref-label--before',
+                )}
+                style={{ left: `${(plot.ref.x / plot.vbW) * 100}%` }}
+              >
+                {plot.ref.label}
+              </span>
+            ) : null}
             {/* A bar answers a pointer like a line does: the crosshair, the
                 reading, arrow keys (evaluator pass two, C2). */}
             {plot.bars.length > 0 ? (
@@ -693,20 +723,24 @@ export function V3Chart({
             // at most six labels, the first and the last always among them,
             // each under the bar it names (pass six, S6: 29 bars, no year;
             // pass three D6: two bars labelled at the frame's ends).
+            // barLabels="all" keeps every range under its column (listing
+            // price bands).
             <div
               className={cn(
                 'v3-chart__x v3-chart__x--ticks',
+                barLabels === 'all' && 'v3-chart__x--all',
                 // Same rule as the line's row: a wide label thins earlier.
-                plot.bars.some((b) => b.tick.trim().length > 5) && 'is-wide-ticks',
+                barLabels !== 'all' && plot.bars.some((b) => b.tick.trim().length > 5) && 'is-wide-ticks',
               )}
               aria-hidden="true"
             >
-              {plot.bars
-                .filter((b, i, all) => {
-                  const step = Math.max(1, Math.ceil(all.length / 6))
-                  return i === all.length - 1 || (i % step === 0 && i < all.length - 1 - step / 2)
-                })
-                .map((b) => (
+              {(barLabels === 'all'
+                ? plot.bars
+                : plot.bars.filter((b, i, all) => {
+                    const step = Math.max(1, Math.ceil(all.length / 6))
+                    return i === all.length - 1 || (i % step === 0 && i < all.length - 1 - step / 2)
+                  })
+              ).map((b) => (
                   <span
                     key={`bx-${b.index}-${b.tick}`}
                     className="v3-chart__xtick"
