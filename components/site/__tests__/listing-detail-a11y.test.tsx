@@ -260,6 +260,8 @@ describe('gallery, tour, and street view occupy history so Back stays on the lis
   it('pins the gallery to the viewport instead of the dialog center translate', () => {
     expect(gallery).toMatch(/translate-x-0/)
     expect(gallery).toMatch(/translate-y-0/)
+    expect(gallery).toMatch(/max-w-none/)
+    expect(gallery).toMatch(/sm:max-w-none/)
     expect(tour).toMatch(/translate-x-0/)
     expect(tour).toMatch(/translate-y-0/)
     expect(street).toMatch(/translate-x-0/)

@@ -60,7 +60,7 @@ export function ListingStreetViewOverlay({ open, lat, lng, title, onClose }: Pro
         showCloseButton={false}
         aria-label="Street view"
         overlayClassName="listing-gallery__overlay z-[110]"
-        className="listing-gallery z-[110] top-0 left-0 translate-x-0 translate-y-0"
+        className="listing-gallery z-[110] inset-0 top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0 ring-0 sm:max-w-none"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <div className="listing-gallery__bar">

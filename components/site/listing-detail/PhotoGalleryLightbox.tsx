@@ -13,8 +13,9 @@ import type { VideoEmbed } from '@/lib/data/types/video'
 import './listing-detail.css'
 
 /**
- * Listing gallery. Desktop: 44px X top-left, tab row of media that exists,
- * Esc, ?photo=1. Mobile: labeled Back 44px, stacked stills, pills that exist.
+ * Listing gallery. The still is the room. Desktop chrome sits on the
+ * photograph: 44px X, type tabs for media that exists, Esc, ?photo=1.
+ * Mobile: labeled Back 44px, stacked stills, pills that exist.
  * Browser Back returns to the listing at the same scroll.
  */
 
@@ -175,7 +176,7 @@ export function PhotoGalleryLightbox({
         showCloseButton={false}
         aria-label="Photo gallery"
         overlayClassName="listing-gallery__overlay z-[110]"
-        className="listing-gallery z-[110] top-0 left-0 translate-x-0 translate-y-0"
+        className="listing-gallery z-[110] inset-0 top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0 ring-0 sm:max-w-none"
       >
           <DialogTitle className="sr-only">Photo gallery</DialogTitle>
           <div className="listing-gallery__bar">
