@@ -553,10 +553,10 @@
 /* Two columns from 64rem: the map takes the whole frame height. */
 @media (min-width: 64rem) {
   .v3-atlas__grid {
-    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
     grid-template-rows: auto auto auto;
     grid-template-areas:
-      'head body'
+      'head head'
       'dock body'
       'aside body';
     max-width: none;
@@ -564,18 +564,17 @@
     padding: 0 var(--v3-gutter);
   }
 
-  .v3-atlas__head,
+  .v3-atlas__head {
+    max-width: none;
+    margin: 0;
+    padding-top: clamp(1.25rem, 2.5vw, 2rem);
+    padding-right: 0;
+  }
+
   .v3-atlas__aside,
   .v3-atlas__dock {
     padding-right: var(--v3-space-md);
-  }
-
-  .v3-atlas__aside {
     align-content: start;
-  }
-
-  .v3-atlas__head {
-    padding-top: clamp(1.5rem, 4vw, 3rem);
   }
 
   .v3-atlas__body {
@@ -591,7 +590,7 @@
 
   .v3-atlas__stage {
     min-height: 22rem;
-    max-height: min(70vh, calc(100dvh - 7rem));
+    max-height: min(62vh, calc(100dvh - 14rem));
   }
 
   /* A wide boundary (Larkspur, a river plat) stacks: the map takes the full
