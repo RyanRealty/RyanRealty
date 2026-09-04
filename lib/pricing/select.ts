@@ -72,6 +72,7 @@ export function cmaSubjectToPricing(
     ruralAcreage: isRuralAcreage(subject, area),
     marketArea: area,
     newConstruction: subject.newConstructionYn ?? null,
+    propertySubType: subject.propertySubType,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
     publicRemarks: subject.publicRemarks,
     irrigationClass: extras.irrigationClass ?? null,
@@ -231,6 +232,13 @@ export function matchToCompSelection(
         subdivision_raw: subject.subdivision ?? null,
         product_sub_type: subject.propertySubType ?? null,
       },
+      custom_or_new: isCustomOrNewSubject({
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstructionYn,
+        remarks: subject.publicRemarks,
+        propertySubType: subject.propertySubType,
+        standardStatus: subject.standardStatus,
+      }),
       ladder: [],
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
@@ -281,8 +289,10 @@ export async function selectCompsPreferringFacts(
   subject: CmaSubject,
   opts: { subjectIrrigation?: IrrigationClass | null } = {},
 ): Promise<CompSelection> {
-  const { selectComps } = await import('@/lib/cma/comps')
-  const match = await selectPricingComps(subject, opts)
+  // Classify BEFORE any ladder work so a custom/new subject cannot reach the
+  // listings import even when facts are thin or countSalePricingFacts flakes.
+  // Live Rim View (Canceled, year 2024, NewConstructionYN, mid-century /
+  // to-be-built remarks) died 144→2 on listings tiers when this order was wrong.
   const customOrNew = isCustomOrNewSubject({
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
@@ -290,9 +300,10 @@ export async function selectCompsPreferringFacts(
     propertySubType: subject.propertySubType,
     standardStatus: subject.standardStatus,
   })
-  // Belt: never invoke the listings ladder for custom/new, full stop.
+  const match = await selectPricingComps(subject, opts)
   if (customOrNew || pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match)
   }
+  const { selectComps } = await import('@/lib/cma/comps')
   return selectComps(subject, opts)
 }

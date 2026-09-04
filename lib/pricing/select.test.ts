@@ -143,6 +143,20 @@ describe('pickCompSource', () => {
       2026,
     )
     expect(custom).toBe(true)
+    // Year alone (lost YN/remarks) still classifies.
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: 2024, newConstructionYn: null, remarks: null, propertySubType: 'Single Family Residence' },
+        2026,
+      ),
+    ).toBe(true)
+    // NewConstructionYN alone.
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: true, remarks: null },
+        2026,
+      ),
+    ).toBe(true)
     // Remarks alone (lost year/YN) still classify via mid-century / to-be-built.
     expect(
       isCustomOrNewSubject(
@@ -152,6 +166,8 @@ describe('pickCompSource', () => {
     ).toBe(true)
     expect(pickCompSource({ factsReady: true, comps: [{}, {}], customOrNew: custom })).toBe('facts')
     expect(pickCompSource({ factsReady: false, comps: [], customOrNew: custom })).toBe('facts')
+    // Pre-#187 bug: factsReady checked before customOrNew — must not regress.
+    expect(pickCompSource({ factsReady: false, comps: [{}, {}, {}], customOrNew: true })).toBe('facts')
   })
 
 })

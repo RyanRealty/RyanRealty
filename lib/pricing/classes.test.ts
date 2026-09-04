@@ -260,6 +260,9 @@ describe('customBathCompatible', () => {
   it('live Rim View field shape classifies custom/new without saying custom built', () => {
     const liveRemarks =
       'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek. This to-be-built masterpiece offers 4 beds.'
+    const flags = extractRemarkFlags(liveRemarks)
+    expect(flags.customQuality).toBe(true)
+    expect(flags.newConstruction).toBe(true)
     // Actual canceled listing: year 2024 + NewConstructionYN true + SFR subtype.
     expect(
       isCustomOrNewSubject(

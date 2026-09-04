@@ -94,6 +94,8 @@ export interface CompSelectionDiagnostics {
   market_area_resolved: boolean
   /** Acreage subject outside every mapped polygon — the class the rural tiers exist for. */
   rural_acreage: boolean
+  /** True when year / NewConstructionYN / subtype / remarks force the facts-only path. */
+  custom_or_new?: boolean
   subject: {
     sqft: number | null
     lot_acres: number | null

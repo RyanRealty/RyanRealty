@@ -310,6 +310,35 @@ export async function selectComps(
     standardStatus: subject.standardStatus,
   })
 
+  // Hard refuse: custom/new must never walk the listings ladder. Callers should
+  // use selectCompsPreferringFacts (facts-only). A direct selectComps hit here
+  // used to emit Lakes At Tanager / citywide SQL banners (live Rim View 144→2).
+  if (customOrNew) {
+    const note =
+      'Custom/new subject — listings ladder is forbidden. Stay on sale_pricing_facts; do not pad with Summit/Falcon/Hopper stock.'
+    trace.push(note)
+    const diagnostics: CompSelectionDiagnostics = {
+      ...emptyDiagnostics(subject, note),
+      market_area: subjectAreaName,
+      market_area_resolved: subjectArea != null,
+      rural_acreage: ruralAcreage,
+      custom_or_new: true,
+      starved: true,
+      starved_at: 'facts-only-hard-stop',
+      starved_reason: note,
+      candidates: 0,
+      final_count: 0,
+    }
+    return {
+      comps: [],
+      excludedOutliers: [],
+      tiersUsed: [],
+      trace,
+      diagnostics,
+      pricingSource: 'facts',
+    }
+  }
+
   const sqlSubType = compPoolPropertySubType(subject.propertySubType)
   const subTypeSql = sqlSubType ? ` AND property_sub_type='${sqlSubType}'` : ''
 
@@ -500,6 +529,7 @@ export async function selectComps(
             yearBuilt: subject.yearBuilt,
             newConstructionYn: subject.newConstructionYn,
             remarks: subject.publicRemarks,
+            propertySubType: subject.propertySubType,
           },
           { yearBuilt: comp.yearBuilt, remarks: comp.publicRemarks },
         )
