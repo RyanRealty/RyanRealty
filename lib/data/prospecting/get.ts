@@ -14,6 +14,7 @@ import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
+import { effectiveProspectPersonId } from './person-link'
 import { blockAllChannels, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
@@ -285,6 +286,18 @@ export async function buildFsboRowSkeleton(raw: RawRow): Promise<ProspectRowSkel
 
 // ── Public reads ─────────────────────────────────────────────────────────
 
+async function applySendPersonGate(sb: Sb, skeleton: ProspectRowSkeleton): Promise<ProspectRowSkeleton> {
+  if (skeleton.personId == null) return skeleton
+  const { data, error } = await sb.from('crm_people').select('id, emails, phones').eq('id', skeleton.personId).maybeSingle()
+  if (error) {
+    console.error('[prospecting] applySendPersonGate failed (fail-closed):', error.message)
+    return { ...skeleton, personId: null }
+  }
+  const personId = effectiveProspectPersonId(skeleton.personId, data)
+  return personId === skeleton.personId ? skeleton : { ...skeleton, personId }
+}
+
+
 async function loadExpired(
   sb: Sb,
   id: string,
@@ -311,7 +324,7 @@ async function loadExpired(
   if (!r) return null
   const raw = r as unknown as RawRow
   const listing = await fetchExpiredListingJoin(sb, String(raw.listing_key))
-  const skeleton = await buildExpiredRowSkeleton(raw, listing)
+  const skeleton = await applySendPersonGate(sb, await buildExpiredRowSkeleton(raw, listing))
   const engagementMap = await getProspectEngagement('expired', [engagementKeyFor(skeleton)])
   return { row: finalizeRow(skeleton, engagementMap[skeleton.id]), raw, listing }
 }
@@ -336,7 +349,7 @@ async function loadFsbo(sb: Sb, id: string): Promise<{ row: ProspectRow; raw: Ra
   }
   if (!r) return null
   const raw = r as unknown as RawRow
-  const skeleton = await buildFsboRowSkeleton(raw)
+  const skeleton = await applySendPersonGate(sb, await buildFsboRowSkeleton(raw))
   const engagementMap = await getProspectEngagement('fsbo', [engagementKeyFor(skeleton)])
   return { row: finalizeRow(skeleton, engagementMap[skeleton.id]), raw }
 }

@@ -41,3 +41,26 @@ export function classifyProspect(
   }
   return sendable ? 'sendable' : 'excluded'
 }
+
+/**
+ * List row state word from the shared bucket. Extracted so unit tests can prove
+ * no-person + email-open never paints SEND (Link contact instead).
+ */
+export function prospectWorklistStateWord(
+  bucket: ProspectBucket,
+  personId: number | null,
+  docState?: ProspectDocState['state'],
+): 'Sent' | 'Send' | 'Link contact' | 'No phone' | 'Blocked' | 'Building' | 'Failed' | 'Build' {
+  if (bucket === 'sent') return 'Sent'
+  if (bucket === 'sendable') return 'Send'
+  if (bucket === 'no-phone') {
+    // Pine Vista / Nugget: ready audit + contact points but no CRM person — not Send.
+    if (personId == null) return 'Link contact'
+    return 'No phone'
+  }
+  if (bucket === 'excluded') return 'Blocked'
+  if (docState === 'building') return 'Building'
+  if (docState === 'failed') return 'Failed'
+  return 'Build'
+}
+

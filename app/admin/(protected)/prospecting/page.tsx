@@ -12,7 +12,7 @@
 // honored for any old shared URL.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { listProspects, classifyProspect, type ProspectBucket } from '@/lib/data'
+import { listProspects, classifyProspect, prospectWorklistStateWord, type ProspectBucket } from '@/lib/data'
 import type { ProspectKind, ProspectRow, ProspectStatusFilter, ProspectSortKey, SortDir } from '@/lib/data/prospecting/types'
 import {
   PROSPECT_EXPIRED_DEFAULT_CITY,
@@ -79,17 +79,14 @@ function hrefFor(
 
 /** The row's state word + tone, from the same rule the summary counts use. */
 function rowState(row: ProspectRow, bucket: ProspectBucket): { word: string; tone: AdminState } {
-  if (bucket === 'sent') return { word: 'Sent', tone: 'ok' }
-  if (bucket === 'sendable') return { word: 'Send', tone: 'ok' }
-  if (bucket === 'no-phone') {
-    // Pine Vista / Nugget: ready audit + contact points but no CRM person — not Send.
-    if (row.personId == null) return { word: 'Link contact', tone: 'waiting' }
-    return { word: 'No phone', tone: 'waiting' }
-  }
-  if (bucket === 'excluded') return { word: 'Blocked', tone: 'down' }
-  if (row.doc.state === 'building') return { word: 'Building', tone: 'waiting' }
-  if (row.doc.state === 'failed') return { word: 'Failed', tone: 'down' }
-  return { word: 'Build', tone: 'waiting' }
+  const word = prospectWorklistStateWord(bucket, row.personId, row.doc.state)
+  const tone: AdminState =
+    word === 'Send' || word === 'Sent'
+      ? 'ok'
+      : word === 'Blocked' || word === 'Failed'
+        ? 'down'
+        : 'waiting'
+  return { word, tone }
 }
 
 /** Plain-words readiness line — why this row can send, or exactly what stops it. */

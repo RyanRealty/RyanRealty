@@ -4,7 +4,7 @@
  * same gate class as canOpenProspectSend / enroll hide (#180/#188).
  */
 import { describe, expect, it } from 'vitest'
-import { classifyProspect } from './classify'
+import { classifyProspect, prospectWorklistStateWord } from './classify'
 import { blockAllChannels, type ProspectComplianceState, type ProspectDocState } from './types'
 
 function compliance(over: Partial<ProspectComplianceState> = {}): ProspectComplianceState {
@@ -45,6 +45,13 @@ describe('classifyProspect SEND paint', () => {
     expect(classifyProspect(ready, compliance(), true, null)).toBe('no-phone')
   })
 
+  it('no person linked → Link contact / not SEND even if channel looks email-open', () => {
+    const bucket = classifyProspect(ready, compliance(), true, null)
+    expect(bucket).not.toBe('sendable')
+    expect(prospectWorklistStateWord(bucket, null, ready.state)).toBe('Link contact')
+    expect(prospectWorklistStateWord(bucket, null, ready.state)).not.toBe('Send')
+  })
+
   it('paints sendable when email open, market clear, and person linked', () => {
     expect(classifyProspect(ready, compliance(), true, 18198)).toBe('sendable')
   })
@@ -61,5 +68,9 @@ describe('classifyProspect SEND paint', () => {
         1,
       ),
     ).toBe('excluded')
+  })
+
+  it('never returns sendable after farm-stub gate nulls personId', () => {
+    expect(classifyProspect(ready, compliance(), true, null)).toBe('no-phone')
   })
 })

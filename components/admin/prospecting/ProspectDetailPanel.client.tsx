@@ -123,6 +123,7 @@ export function ProspectDetailPanel({
   const hideEnroll = shouldHideProspectEnroll({
     compliance: detail.compliance,
     drip: detail.drip,
+    personId: detail.personId,
   })
 
   function runEnroll() {
@@ -276,7 +277,7 @@ export function ProspectDetailPanel({
         ) : null}
       </div>
 
-      {showRibbon ? <ProspectComplianceRibbon compliance={detail.compliance} /> : null}
+      {showRibbon ? <ProspectComplianceRibbon compliance={detail.compliance} personId={detail.personId} /> : null}
 
       <div className="flex items-center gap-2">
         <ProspectDocPill doc={detail.doc} />

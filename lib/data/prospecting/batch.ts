@@ -239,6 +239,31 @@ function personIdOf(raw: RawRow): number | null {
   return null
 }
 
+/**
+ * Batch CRM outbound contact shape for send-person gating (Pine Vista farm stubs).
+ * Missing person → absent from map (treated as contactless by effectiveProspectPersonId).
+ */
+export async function resolvePersonOutboundBatch(
+  personIds: Array<number | null | undefined>,
+): Promise<Map<number, { emails: unknown; phones: unknown }>> {
+  const out = new Map<number, { emails: unknown; phones: unknown }>()
+  const ids = [...new Set(personIds.filter((p): p is number => typeof p === 'number' && Number.isFinite(p)))]
+  if (ids.length === 0) return out
+  const sb = createServiceClient()
+  const { data, error } = await sb.from('crm_people').select('id, emails, phones').in('id', ids)
+  if (error) {
+    // Fail-closed: contactless (no map entry) so SEND cannot paint on an unverified stub.
+    console.error('[prospecting] resolvePersonOutboundBatch failed:', error.message)
+    return out
+  }
+  for (const row of data ?? []) {
+    const id = Number(row.id)
+    if (!Number.isFinite(id)) continue
+    out.set(id, { emails: row.emails, phones: row.phones })
+  }
+  return out
+}
+
 export async function resolveComplianceBatch(
   kind: ProspectKind,
   rows: RawRow[],
