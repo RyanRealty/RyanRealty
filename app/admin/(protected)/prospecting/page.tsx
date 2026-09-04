@@ -15,8 +15,10 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listProspects, classifyProspect, type ProspectBucket } from '@/lib/data'
 import type { ProspectKind, ProspectRow, ProspectStatusFilter, ProspectSortKey, SortDir } from '@/lib/data/prospecting/types'
 import {
+  PROSPECT_EXPIRED_DEFAULT_CITY,
   PROSPECT_LIST_DEFAULT_DIR,
   PROSPECT_LIST_DEFAULT_SORT,
+  resolveProspectListCity,
   resolveProspectListOrder,
 } from '@/lib/data/prospecting/types'
 import { formatDate } from '@/lib/format/date'
@@ -57,11 +59,16 @@ function hrefFor(
   page?: number,
   sort: ProspectSortKey = PROSPECT_LIST_DEFAULT_SORT,
   dir: SortDir = PROSPECT_LIST_DEFAULT_DIR,
+  city: string | null = null,
+  cityExplicitAll = false,
 ): string {
   const p = new URLSearchParams()
   if (kind !== 'expired') p.set('kind', kind)
   if (status !== 'all') p.set('status', status)
   if (q) p.set('q', q)
+  // Expired defaults to City of Bend — only emit city when cleared or non-default.
+  if (cityExplicitAll) p.set('city', 'all')
+  else if (city && !(kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY)) p.set('city', city)
   // Only emit non-defaults so the durable oldest-first URL stays clean.
   if (sort !== PROSPECT_LIST_DEFAULT_SORT) p.set('sort', sort)
   if (dir !== PROSPECT_LIST_DEFAULT_DIR) p.set('dir', dir)
@@ -143,8 +150,12 @@ export default async function ProspectingPage({
   // Desk first-touch wants oldest unsent on top (Matt 2026-09-03). Default
   // asc; only an explicit ?dir=desc flips newest-first.
   const { sort, dir } = resolveProspectListOrder(str(sp.sort), str(sp.dir))
+  // Expired defaults to City of Bend (not outskirts). ?city=all clears.
+  const cityParam = str(sp.city)
+  const cityExplicitAll = (cityParam ?? '').toLowerCase() === 'all'
+  const city = resolveProspectListCity(kind, cityParam)
 
-  const result = await listProspects({ kind, q, status, sort, dir, page, pageSize: PAGE_SIZE })
+  const result = await listProspects({ kind, q, city, status, sort, dir, page, pageSize: PAGE_SIZE })
   const { summary } = result
   const totalPages = Math.max(1, Math.ceil(result.total / PAGE_SIZE))
 
@@ -167,12 +178,37 @@ export default async function ProspectingPage({
             <b>{summary.sendable} ready to send</b> · {summary.needsAudit} need an audit · {summary.sent} sent
           </VerdictLine>
         </div>
-        <ProspectFilterSelect kind={kind} status={status} q={q} counts={counts} />
+        <ProspectFilterSelect kind={kind} status={status} q={q} city={city} counts={counts} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '0 0 8px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>City</span>
+        <Link
+          href={hrefFor(kind, status, q, 1, sort, dir, PROSPECT_EXPIRED_DEFAULT_CITY, false)}
+          className="av2-btn av2-btn--quiet"
+          style={{
+            textDecoration: 'none',
+            fontWeight: !cityExplicitAll && city === PROSPECT_EXPIRED_DEFAULT_CITY ? 600 : 400,
+          }}
+        >
+          City of Bend
+        </Link>
+        <Link
+          href={hrefFor(kind, status, q, 1, sort, dir, null, true)}
+          className="av2-btn av2-btn--quiet"
+          style={{ textDecoration: 'none', fontWeight: cityExplicitAll ? 600 : 400 }}
+        >
+          All cities
+        </Link>
       </div>
 
       <form method="GET" style={{ margin: '4px 0 16px' }}>
         {kind !== 'expired' ? <input type="hidden" name="kind" value={kind} /> : null}
         {status !== 'all' ? <input type="hidden" name="status" value={status} /> : null}
+        {cityExplicitAll ? <input type="hidden" name="city" value="all" /> : null}
+        {!cityExplicitAll && city && !(kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY) ? (
+          <input type="hidden" name="city" value={city} />
+        ) : null}
         <input
           className="av2-input"
           style={{ width: '100%' }}
@@ -235,6 +271,8 @@ export default async function ProspectingPage({
           <li className="av2-sysnote" style={{ padding: 16 }}>
             {q
               ? 'No prospects match. Try fewer letters or a street name.'
+              : kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY && !cityExplicitAll
+                ? 'No City of Bend expireds in this bucket. Switch City to All cities for outskirts.'
               : status === 'all'
                 ? `No ${kind === 'expired' ? 'expired listings' : 'FSBOs'} captured yet.`
                 : `Nothing in this bucket right now.`}
@@ -245,7 +283,7 @@ export default async function ProspectingPage({
       {totalPages > 1 ? (
         <nav aria-label="Pages" style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '4px 0 16px' }}>
           {page > 1 ? (
-            <Link href={hrefFor(kind, status, q, page - 1, sort, dir)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+            <Link href={hrefFor(kind, status, q, page - 1, sort, dir, city, cityExplicitAll)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
               Previous
             </Link>
           ) : null}
@@ -253,7 +291,7 @@ export default async function ProspectingPage({
             Page {page} of {totalPages}
           </span>
           {page < totalPages ? (
-            <Link href={hrefFor(kind, status, q, page + 1, sort, dir)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+            <Link href={hrefFor(kind, status, q, page + 1, sort, dir, city, cityExplicitAll)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
               Next
             </Link>
           ) : null}
