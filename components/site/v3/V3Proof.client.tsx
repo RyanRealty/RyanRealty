@@ -8,15 +8,16 @@
  * on its month so the years read at a glance, and year chips that filter.
  * On /reviews the strip and chips ARE the instrument (`archive`): full text
  * stays in the served HTML under a disclosure, not as a 7k px card list.
- * Compact bands (`record={false}`, homepage / about / team) still print a
- * short set of cards and ignore `archive`.
+ * Compact bands (`record={false}`, homepage / about / team) are a reader:
+ * one review in full, the rest as picks. Stars always print from the live
+ * rating. Ignore `archive`.
  *
  * Honesty: every figure and every string arrives formatted from the caller
  * (the barrel never formats, ci:public-v3 rule 3). Nothing in a quote is
  * cut: `pull` is the first sentence whole and `rest` is every sentence after
  * it, so the page prints the review exactly as it was written. The strip's
- * marks are the reviews themselves, one each; there is no aggregate rating
- * markup on the page (self-serving reviews carry none).
+ * marks are the reviews themselves, one each. Stars are the live 1-5 rating.
+ * There is no aggregateRating JSON-LD on the page (self-serving).
  */
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -77,7 +78,14 @@ function Marks({ rating }: { rating: number }) {
   return (
     <span className="v3-proof__marks" aria-label={`${n} of 5`}>
       {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={cn('v3-proof__mark', i < n && 'is-on')} aria-hidden="true" />
+        <svg
+          key={i}
+          className={cn('v3-proof__star', i < n && 'is-on')}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M12 2.5l2.6 6.3 6.9.6-5.2 4.5 1.6 6.7L12 16.8 6.1 20.6l1.6-6.7L2.5 9.4l6.9-.6L12 2.5z" />
+        </svg>
       ))}
     </span>
   )
@@ -95,7 +103,7 @@ function QuoteFigure({
   return (
     <figure className="v3-proof__quote">
       <blockquote className="v3-proof__words">
-        <p className={cn('v3-proof__pull', (!displayPull || q.pull.length > 90) && 'is-long')}>{q.pull}</p>
+        <p className={cn('v3-proof__pull', !displayPull && 'is-long')}>{q.pull}</p>
         {q.rest.map((para) => (
           <p key={para.slice(0, 48)} className="v3-proof__para">
             {para}
@@ -134,7 +142,15 @@ export function V3Proof({
     if (scrollLock.current) return
     setFocus(qid)
   }, [])
-  const showMarks = useMemo(() => quotes.some((q) => q.rating < 5), [quotes])
+  const showMarks = quotes.length > 0
+  const compactReading = useMemo(() => {
+    if (record) return null
+    if (focus) {
+      const hit = quotes.find((q) => q.id === focus)
+      if (hit) return hit
+    }
+    return quotes[0] ?? null
+  }, [record, focus, quotes])
   const layerRef = useRef<HTMLDivElement>(null)
   const asArchive = record && archive
 
@@ -273,12 +289,17 @@ export function V3Proof({
 
       {figures.length > 0 ? (
         <dl className="v3-proof__figures">
-          {figures.map((f) => (
-            <div key={`${f.value} ${f.label}`} className="v3-proof__figure">
-              <dt className="v3-proof__figure-value">{f.value}</dt>
-              <dd className="v3-proof__figure-label">{f.label}</dd>
-            </div>
-          ))}
+          {figures.map((f) => {
+            const n = Number(f.value)
+            const isScore = /average/.test(f.label) && Number.isFinite(n) && n >= 1 && n <= 5
+            return (
+              <div key={`${f.value} ${f.label}`} className="v3-proof__figure">
+                <dt className="v3-proof__figure-value">{f.value}</dt>
+                {isScore ? <Marks rating={n} /> : null}
+                <dd className="v3-proof__figure-label">{f.label}</dd>
+              </div>
+            )
+          })}
         </dl>
       ) : null}
 
@@ -448,17 +469,14 @@ export function V3Proof({
             </ul>
           </details>
         </div>
-      ) : (
-        <ul className={cn('v3-proof__list', !record && 'v3-proof__list--compact')}>
+      ) : record ? (
+        <ul className="v3-proof__list">
           {shown.map((q) => (
             <li
               key={q.id}
               id={`${uid}-q-${q.id}`}
               className={cn('v3-proof__item', focus === q.id && 'is-focus')}
               onPointerEnter={() => hoverCard(q.id)}
-              /* A touch has no hover: tapping a card lit nothing, so on a phone
-                 the field answered nothing at all (evaluator round six). A tap
-                 lights its mark on the strip above, which is sticky. */
               onClick={() => hoverCard(q.id)}
               onPointerLeave={() => {
                 if (!scrollLock.current) setFocus((f) => (f === q.id ? null : f))
@@ -468,6 +486,28 @@ export function V3Proof({
             </li>
           ))}
         </ul>
+      ) : (
+        <div className="v3-proof__reader">
+          <div id={`${uid}-read`} className="v3-proof__reading">
+            {compactReading ? <QuoteFigure q={compactReading} displayPull showMarks={showMarks} /> : null}
+          </div>
+          <ul className="v3-proof__picks">
+            {quotes.map((q) => (
+              <li key={q.id}>
+                <button
+                  type="button"
+                  className={cn('v3-proof__pick', compactReading?.id === q.id && 'is-on')}
+                  aria-pressed={compactReading?.id === q.id}
+                  onClick={() => setFocus(q.id)}
+                >
+                  <Marks rating={q.rating} />
+                  <span className="v3-proof__pick-pull">{q.pull}</span>
+                  <span className="v3-proof__pick-who">{q.author}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <p className="v3-proof__source">

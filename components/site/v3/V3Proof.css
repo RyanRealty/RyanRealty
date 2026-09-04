@@ -73,6 +73,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.v3-proof__figure .v3-proof__marks {
+  margin-top: var(--v3-space-3xs);
+}
+
 .v3-proof__figure-label {
   margin: var(--v3-space-3xs) 0 0;
   font-size: var(--v3-size-eyebrow);
@@ -362,20 +366,86 @@
 
 .v3-proof__marks {
   display: inline-flex;
-  gap: 0.2rem;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+}
+
+.v3-proof__star {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: none;
+  fill: none;
+  stroke: var(--v3-navy);
+  stroke-width: 1.5;
+}
+
+.v3-proof__star.is-on {
+  fill: var(--v3-navy);
+  stroke: var(--v3-navy);
+}
+
+.v3-proof__who .v3-proof__marks {
   margin-inline-start: auto;
 }
 
-.v3-proof__mark {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  border: 1px solid var(--v3-navy);
-  background: transparent;
+.v3-proof__reader {
+  display: grid;
+  gap: var(--v3-space-lg);
+  margin-top: var(--v3-space-lg);
 }
 
-.v3-proof__mark.is-on {
-  background: var(--v3-navy);
+@media (min-width: 48rem) {
+  .v3-proof__reader {
+    grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+    align-items: start;
+  }
+}
+
+.v3-proof__reader .v3-proof__reading {
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+
+.v3-proof__picks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-proof__pick {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  border: 0;
+  border-top: var(--v3-rule-hairline);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.v3-proof__pick.is-on {
+  box-shadow: inset var(--v3-rule-weight-section) 0 0 var(--v3-navy);
+  padding-left: var(--v3-space-sm);
+}
+
+.v3-proof__pick-pull {
+  overflow: hidden;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.v3-proof__pick-who {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
 }
 
 .v3-proof__source {
