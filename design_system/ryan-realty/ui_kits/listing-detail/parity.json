@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Home / Homes for sale / city / street. belowNav default clears the fixed V3Chrome mast.",
+      "section": "City landing → neighborhood landing if any → planned community landing if any → subdivision landing if any → address (no href). Never Home, never Homes for sale, never Cities. Doors from listingPlaceTrail / place-href land on /cities, /communities, /subdivisions. belowNav default clears the fixed V3Chrome mast.",
       "blocking": true
     },
     {
@@ -57,7 +57,12 @@
     },
     {
       "name": "V3Instrument",
-      "section": "How this ask sits versus leftover median list at the finest leftover grain that publishes. Figures are leftover HUD plus this list price. One claim sentence. Optional chart omitted when it would be a second claim.",
+      "section": "How this home's price sits versus leftover median list at the finest leftover grain that publishes. Figures are leftover HUD plus this list price (label this price). Headline uses formatAskVsMedianDelta. Action is `{name} market` to /housing-market/{slug} for CORE_CITY_SLUGS; omit when the grain has no market report. Visitor copy never says ask.",
+      "blocking": true
+    },
+    {
+      "name": "V3Chart",
+      "section": "Under the instrument: bars of closed-sale counts by smart price bands for that leftover grain. Caption is a claim about where those sales closed. Omit when the grain has no closed rows.",
       "blocking": true
     },
     {
@@ -70,12 +75,6 @@
       "section": "Similar homes as a capped strip of V3ListingRow, same relatedHomes ranking, one view-more href. Not the GSAP poster grid.",
       "blocking": true
     },
-    {
-      "name": "ListingTourCard",
-      "section": "Sticky tour / ask / call / text card. No second price.",
-      "blocking": true
-    },
-
     {
       "name": "MortgageCalculator",
       "section": "Estimated monthly payment.",
@@ -175,7 +174,11 @@
     },
     {
       "name": "NeighborhoodMarketContext",
-      "reason": "KPI grid plus Median to pending jargon. Replaced by one V3Instrument whose claim is this ask versus leftover median list."
+      "reason": "KPI grid plus Median to pending jargon. Replaced by one V3Instrument whose claim is this home's price versus leftover median list."
+    },
+    {
+      "name": "ListingTourCard",
+      "reason": "Tour / Call / Text live on ListingBrokerCTA and the mobile bar. The extra sidebar card is gone."
     },
     {
       "name": "LivePricingRead",
@@ -237,7 +240,8 @@
     "anchor": "#listing-like-alerts"
   },
   "sectionOrder": [
-    "ListingAskInstrument (ask versus leftover median)",
+    "ListingAskInstrument (this price versus leftover median)",
+    "V3Chart #price-bands (closed-sale counts at the leftover grain)",
     "V3Atlas #location with lot figure",
     "ListingMoreDoors",
     "MetadataBlock",

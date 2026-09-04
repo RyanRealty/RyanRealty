@@ -1,25 +1,28 @@
 /**
- * The listing instrument's one claim: how this ask sits versus leftover
+ * The listing instrument's one claim: how this home's price sits versus leftover
  * median list at the finest leftover grain that publishes.
  *
- * Two operands, one sentence. This ask is publishListingSaleAsk. The median
- * is leftoverHudKpis.medianList. A fractional share (ask is not the whole
- * home) and a lease rate (no sale ask) withhold rather than compare unlike
+ * Two operands, one sentence. This price is publishListingSaleAsk. The median
+ * is leftoverHudKpis.medianList. A fractional share (price is not the whole
+ * home) and a lease rate (no sale price) withhold rather than compare unlike
  * things. HouseMe / listing_pricing_reads is a second claim and stays off
- * this sentence.
+ * this sentence. Visitor copy never says "ask".
  */
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { v3Text, type V3InstrumentFigure, type V3InstrumentFigures } from '@/components/site/v3'
 
 const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
+const MARKET_SLUGS = new Set<string>(CORE_CITY_SLUGS)
 
 export type ListingAskGrain = {
   name: string
   hubHref: string
+  geoSlug?: string
 }
 
 export type ListingAskClaim = {
@@ -28,7 +31,13 @@ export type ListingAskClaim = {
   figures: V3InstrumentFigures
   source: string
   updated?: string
-  action: { label: string; href: string }
+  action?: { label: string; href: string }
+}
+
+export function leftoverMarketReportHref(geoSlug: string | null | undefined): string | null {
+  const slug = typeof geoSlug === 'string' ? geoSlug.trim().toLowerCase() : ''
+  if (!slug || !MARKET_SLUGS.has(slug)) return null
+  return `/housing-market/${slug}`
 }
 
 export function publishAskVsMedianPct(ask: number, median: number): number | null {
@@ -58,8 +67,8 @@ export function buildListingAskHeadline(grainName: string, ask: number, median: 
   if (!name) return null
   const delta = formatAskVsMedianDelta(ask, median)
   if (!delta) return null
-  if (delta.kind === 'match') return `This ask matches the ${name} median list`
-  return `This ask sits ${delta.label} ${delta.kind} the ${name} median list`
+  if (delta.kind === 'match') return `This home's price matches the ${name} median list`
+  return `This home's price sits ${delta.label} ${delta.kind} the ${name} median list`
 }
 
 function stampFrom(iso: string | null | undefined): string | undefined {
@@ -82,19 +91,20 @@ export function buildListingAskClaim(input: {
   const name = grain?.name.trim() ?? ''
   if (ask == null || !(ask > 0)) return null
   if (median == null || !(median > 0)) return null
-  if (!grain || !name || !grain.hubHref) return null
-  // A share ask is not the leftover pile's whole-home median.
+  if (!grain || !name) return null
+  // A share price is not the leftover pile's whole-home median.
   if (input.wholePropertyPrice != null && input.wholePropertyPrice !== ask) return null
 
   const headline = buildListingAskHeadline(name, ask, median)
   if (!headline) return null
 
+  const placeHref = grain.hubHref.trim() || undefined
   const figures: V3InstrumentFigure[] = [
-    { value: v3Text(formatPriceExact(ask)), label: v3Text('this ask') },
+    { value: v3Text(formatPriceExact(ask)), label: v3Text('this price') },
     {
       value: v3Text(formatPriceExact(median)),
       label: v3Text(`${name} median list`),
-      href: grain.hubHref,
+      ...(placeHref ? { href: placeHref } : {}),
     },
   ]
   const active = input.hud?.active
@@ -102,7 +112,7 @@ export function buildListingAskClaim(input: {
     figures.push({
       value: v3Text(active.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
-      href: grain.hubHref,
+      ...(placeHref ? { href: placeHref } : {}),
     })
   }
   const mos = input.hud?.monthsSupply
@@ -119,12 +129,15 @@ export function buildListingAskClaim(input: {
 
   const mosPrints = mos != null && mos > 0
   const source = [
-    `leftover membership, active single-family houses in ${name}. This ask is the published list price.`,
+    `leftover membership, active single-family houses in ${name}. This price is the published list price.`,
     mosPrints ? MOS_METHODOLOGY_CLAUSE : '',
     mosPrints ? MOS_THRESHOLD_CLAUSE : '',
   ]
     .filter(Boolean)
     .join(' ')
+
+  const marketHref = leftoverMarketReportHref(grain.geoSlug)
+  const action = marketHref ? { label: `${name} market`, href: marketHref } : undefined
 
   return {
     eyebrow: name,
@@ -132,6 +145,6 @@ export function buildListingAskClaim(input: {
     figures: [first, ...rest],
     source,
     updated: stampFrom(input.updatedAt),
-    action: { label: `See homes in ${name}`, href: grain.hubHref },
+    ...(action ? { action } : {}),
   }
 }
