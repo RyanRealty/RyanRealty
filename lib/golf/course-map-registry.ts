@@ -27,19 +27,24 @@
  * each green to the nearest next tee; where hole 1 starts and where the turn
  * falls would be a guess, and a number on a map is a claim.
  *
- * What is actually missing, and what each is missing:
- *   - Pronghorn Fazio — leftovers on the same property as the Nicklaus routing
- *     (an untagged duplicate ref=17 farther west and two unnumbered ways).
- *     Nothing in the tags names them Fazio. Numbering them would invent a
- *     course.
- *   - River's Edge — its polygon contains zero golf features. Checked again by
- *     distance rather than containment: still zero.
- *   - The Greens at Redmond — one clubhouse building and nothing else within
- *     three kilometres of it.
- *   - Desert Peaks — zero golf features within three kilometres of its own
- *     polygon's centroid.
- *   - Eagle Crest Challenge — three holes, numbered 12, 13 and 14. Below the
- *     quarter-missing floor in build-course-maps.mjs.
+ * What is actually missing, and what each is missing (re-checked 2026-09-03
+ * by OSM map API bbox — no leisure=golf_course clip — and by operator PDF):
+ *   - Pronghorn Fazio — operator PRHF-SC.pdf names a west-side eighteen
+ *     (par 4-5-4-3-4-4-4-3-5 / 4-3-5-4-4-4-3-4-5, TIPS 7,456). OSM has no
+ *     second cluster: south of 44.175 and west of −121.195 are empty of
+ *     golf=*. Leftovers on the Nicklaus west edge (untagged duplicate ref=17
+ *     and two unnumbered ways) are not named Fazio.
+ *   - River's Edge — named polygon plus three unnamed fragments and cartpaths;
+ *     zero hole/green/tee/fairway ways. Operator scorecard is a numbered
+ *     cartoon, not geometry.
+ *   - The Greens at Redmond — clubhouse and three named polygons (~30 ac,
+ *     empty of golf=*) at 44.242, −121.198. Eight holes in that bbox sit
+ *     inside Juniper and already ship as juniper.
+ *   - Desert Peaks — named way/438313039 (69 ac) was missing from the old
+ *     polygon cache. Still zero golf=* children. Below the 9-hole floor.
+ *   - Eagle Crest Challenge — OSM holes 12–14 match the Resort card (14 is
+ *     par 4; Challenge's 14 is par 3). Ridge and Resort are complete 18s
+ *     next door. Challenge itself has no cluster.
  *   - Old Back Nine — nine unnumbered routings, and no row in
  *     data/golf/courses.ts to check them against.
  */
