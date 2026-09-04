@@ -50,9 +50,12 @@ describe('drip-schedule — weekday 8am PT window', () => {
 })
 
 describe('drip-schedule — spacing / one-at-a-time', () => {
-  it('hardcodes 08:00 America/Los_Angeles and 5-minute spacing', () => {
+  it('exposes a single spacing constant (TBD knob; provisional default 5)', () => {
     expect(DRIP_TIMEZONE).toBe('America/Los_Angeles')
     expect(DRIP_WEEKDAY_START_MINUTES).toBe(8 * 60)
+    expect(typeof DRIP_SPACING_MINUTES).toBe('number')
+    expect(DRIP_SPACING_MINUTES).toBeGreaterThan(0)
+    // Provisional default until Matt confirms — change DRIP_SPACING_MINUTES only.
     expect(DRIP_SPACING_MINUTES).toBe(5)
   })
 
