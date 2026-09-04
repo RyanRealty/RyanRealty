@@ -258,11 +258,29 @@ function subjectRecencyKey(row: CmaListingRow): [number, number, number] {
   return [onMarket, latest, num(row['photos_count']) ?? 0]
 }
 
+function isLandOnlyListing(row: CmaListingRow): boolean {
+  const sub = (str(row['property_sub_type']) ?? '').toLowerCase()
+  if (/residential\s+lots?|land\b|acreage/.test(sub) && !/single family|townhouse|condo|manufactured|multi/.test(sub)) {
+    return true
+  }
+  const sqft = num(row['TotalLivingAreaSqFt'])
+  // A bare lot at the same address must not outrank the improved dwelling for CMA subject.
+  return (sqft == null || sqft <= 0) && /lots?|land/.test(sub)
+}
+
+function preferImprovedSubjectRows(rows: CmaListingRow[]): CmaListingRow[] {
+  const improved = rows.filter((r) => !isLandOnlyListing(r))
+  return improved.length > 0 ? improved : rows
+}
+
 /** Pick the single most recent listing of a property from a candidate set.
  *  Exported for the regression test that locks "CMAs always use the most recent
- *  listing" (Matt directive 2026-07-10). */
+ *  listing" (Matt directive 2026-07-10). When house + lot share an address,
+ *  prefer the improved dwelling so a newer Residential Lots row cannot steal
+ *  the subject (live Rim View: Lakes At Tanager house vs lot). */
 export function pickMostRecentListing(rows: CmaListingRow[]): CmaListingRow {
-  return rows.slice().sort((a, b) => {
+  const pool = preferImprovedSubjectRows(rows)
+  return pool.slice().sort((a, b) => {
     const ka = subjectRecencyKey(a)
     const kb = subjectRecencyKey(b)
     return kb[0] - ka[0] || kb[1] - ka[1] || kb[2] - ka[2]

@@ -763,20 +763,18 @@ describe('walkPricingLadder', () => {
         subdivision: 'Lakes At Tanager PUD',
         subdivisionNorm: 'lakes at tanager pud',
         yearBuilt: 2024,
-        newConstruction: true,
+        // LIVE: NewConstructionYN can be null/false in fragile feeds — remarks
+        // (mid-century / to-be-built) and year must still classify custom/new.
+        newConstruction: false,
+        propertySubType: 'Single Family Residence',
         sqft: 4972,
-        // Live lot is 2 acres; keep a wider custom subject so customLotCompatible
-        // (not the 0.4× band) is what admits Perspective at 1.19.
-        lotAcres: 5,
+        lotAcres: 2,
         lotClass: 'acreage',
         ruralAcreage: true,
         beds: 4,
         baths: 4,
-        // Live canceled listing remarks do NOT say "custom built" — newConstructionYn
-        // and yearBuilt carry the class. Water meter → public; sewer "Septic Needed"
-        // must classify unknown so public-sewer Awbrey peers are not hard-cut.
         publicRemarks:
-          'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+          'Introducing a stunning mid-century modern home perched over a turn in Tumalo Creek that has views of ancient rock outcroppings. This to-be-built masterpiece offers 4 beds, 3.5 baths, a study, and rec room spread across 4972 sf of luxurious living.',
         waterClass: 'public',
         sewerClass: 'unknown',
         hoaClass: 'hoa',
@@ -801,6 +799,113 @@ describe('walkPricingLadder', () => {
     expect(keys).toContain('GREENLEAF')
     expect(keys).toContain('NORTH_RIM_2021')
     // Live admin floor is MIN_COMPS=3. Ladder "starved" means under TARGET 8.
+    expect(out.comps.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('keeps Perspective when live yearBuilt is null and NewConstructionYN is null (to-be-built remarks)', () => {
+    const perspective = sale({
+      listingKey: 'PERSPECTIVE',
+      address: '2060 NW Perspective Dr',
+      beds: 4,
+      baths: 3,
+      yearBuilt: 2023,
+      subdivision: 'Bend North Rim',
+      subdivisionNorm: 'bend north rim',
+      sqft: 3963,
+      lotAcres: 1.19,
+      publicRemarks: 'Custom built modern home.',
+      closePrice: 3_300_000,
+      lastAsk: 3_300_000,
+      closePpsf: 833,
+      latitude: 44.086736,
+      longitude: -121.342439,
+      marketArea: 'bend-awbrey-butte',
+      closeDate: '2025-07-31',
+    })
+    const greenleaf = sale({
+      listingKey: 'GREENLEAF',
+      address: '3481 Greenleaf',
+      beds: 4,
+      baths: 4,
+      yearBuilt: 2020,
+      subdivision: 'Bend North Rim',
+      subdivisionNorm: 'bend north rim',
+      sqft: 4515,
+      lotAcres: 1,
+      publicRemarks: 'Custom built home.',
+      closePrice: 3_740_000,
+      lastAsk: 3_740_000,
+      closePpsf: 828,
+      latitude: 44.091874,
+      longitude: -121.336916,
+      marketArea: 'bend-awbrey-butte',
+      closeDate: '2025-07-15',
+    })
+    const northRim2021 = sale({
+      listingKey: 'NORTH_RIM_2021',
+      address: '1900 NW North Rim',
+      beds: 4,
+      baths: 3,
+      yearBuilt: 2021,
+      subdivision: 'Bend North Rim',
+      subdivisionNorm: 'bend north rim',
+      sqft: 4200,
+      lotAcres: 1.05,
+      publicRemarks: 'Custom built modern home.',
+      closePrice: 2_950_000,
+      lastAsk: 2_950_000,
+      closePpsf: 702,
+      latitude: 44.089,
+      longitude: -121.34,
+      marketArea: 'bend-awbrey-butte',
+      closeDate: '2025-03-01',
+    })
+    const summit = sale({
+      listingKey: 'SUMMIT',
+      address: '1990 NW Summit Dr',
+      beds: 4,
+      baths: 4,
+      yearBuilt: 1990,
+      subdivision: 'Awbrey Butte',
+      subdivisionNorm: 'awbrey butte',
+      sqft: 4800,
+      lotAcres: 2,
+      closePrice: 1_800_000,
+      lastAsk: 1_800_000,
+      marketArea: 'bend-awbrey-butte',
+      closeDate: '2025-08-01',
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '19365 Rim View',
+        subdivision: 'Lakes At Tanager PUD',
+        subdivisionNorm: 'lakes at tanager pud',
+        yearBuilt: null,
+        newConstruction: null,
+        propertySubType: 'Single Family Residence',
+        sqft: 4972,
+        lotAcres: 2,
+        lotClass: 'acreage',
+        ruralAcreage: true,
+        beds: 4,
+        baths: 4,
+        publicRemarks:
+          'Introducing a stunning mid-century modern home perched over Tumalo Creek. This to-be-built masterpiece offers 4 beds and 3.5 baths.',
+        waterClass: 'public',
+        sewerClass: 'unknown',
+        hoaClass: 'hoa',
+        marketArea: null,
+        latitude: 44.1005,
+        longitude: -121.356541,
+      }),
+      [summit, perspective, greenleaf, northRim2021],
+      { asOf },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).not.toContain('SUMMIT')
+    expect(keys).toContain('PERSPECTIVE')
+    expect(keys).toContain('GREENLEAF')
+    expect(keys).toContain('NORTH_RIM_2021')
     expect(out.comps.length).toBeGreaterThanOrEqual(3)
   })
 

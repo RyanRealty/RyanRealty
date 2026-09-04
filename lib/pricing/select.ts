@@ -212,8 +212,24 @@ export async function priceSubjectFromFacts(
 export function matchToCompSelection(
   subject: CmaSubject,
   match: PricingMatchResult,
+  opts: { customOrNew?: boolean } = {},
 ): CompSelection & { pricingSales: SelectedPricingComp[] } {
   const area = resolveMarketArea(subject.latitude, subject.longitude)
+  const customOrNew =
+    opts.customOrNew ??
+    isCustomOrNewSubject({
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstructionYn,
+      remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
+      standardStatus: subject.standardStatus,
+    })
+  const underMin = match.comps.length < PRICING_MIN_COMPS
+  const starvedReason = underMin
+    ? `facts path: only ${match.comps.length} apples-to-apples sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Custom/new stays on facts — listings SQL tiers are not a fallback.`
+    : match.starved
+      ? `facts path: reached ${match.comps.length} sale(s) but not the ${PRICING_TARGET_COMPS}-sale target. The set is still priceable.`
+      : null
   return {
     comps: match.comps.map(pricingSaleToCmaComp),
     excludedOutliers: [],
@@ -225,6 +241,8 @@ export function matchToCompSelection(
       market_area: marketAreaName(area),
       market_area_resolved: area != null,
       rural_acreage: isRuralAcreage(subject, area),
+      pricing_source: 'facts',
+      custom_or_new: customOrNew,
       subject: {
         sqft: subject.sqft ?? null,
         lot_acres: subject.lotAcres ?? null,
@@ -237,7 +255,7 @@ export function matchToCompSelection(
       reached_target: match.reachedTarget,
       starved: match.starved,
       starved_at: match.starved ? match.tiersUsed[match.tiersUsed.length - 1] ?? null : null,
-      starved_reason: match.starved ? 'The pricing ladder did not reach five apples-to-apples sales.' : null,
+      starved_reason: starvedReason,
       target_comps: PRICING_TARGET_COMPS,
       min_comps: PRICING_MIN_COMPS,
       candidates: match.comps.length,
@@ -294,12 +312,12 @@ export async function selectCompsPreferringFacts(
   })
   if (customOrNew) {
     const match = await selectPricingComps(subject, opts)
-    return matchToCompSelection(subject, match)
+    return matchToCompSelection(subject, match, { customOrNew })
   }
   const { selectComps } = await import('@/lib/cma/comps')
   const match = await selectPricingComps(subject, opts)
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
-    return matchToCompSelection(subject, match)
+    return matchToCompSelection(subject, match, { customOrNew })
   }
   return selectComps(subject, opts)
 }

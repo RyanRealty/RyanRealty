@@ -105,6 +105,38 @@ describe('pickMostRecentListing', () => {
     expect(subject.postalCode).toBe('97703')
     expect(subject.baths).toBe(3)
   })
+
+  it('prefers the improved Rim View house over a newer Residential Lots row at the same address', () => {
+    const house: CmaListingRow = {
+      ListingKey: 'HOUSE',
+      ListNumber: '220182032',
+      StandardStatus: 'Canceled',
+      property_sub_type: 'Single Family Residence',
+      TotalLivingAreaSqFt: 4972,
+      OnMarketDate: '2024-05-07T00:00:00+00:00',
+      photos_count: 20,
+      StreetNumber: '19365',
+      StreetName: 'Rim View',
+      City: 'Bend',
+      year_built: 2024,
+      new_construction_yn: true,
+    }
+    const lot: CmaListingRow = {
+      ListingKey: 'LOT',
+      ListNumber: '220199999',
+      StandardStatus: 'Active',
+      property_sub_type: 'Residential Lots',
+      TotalLivingAreaSqFt: null,
+      OnMarketDate: '2025-08-01T00:00:00+00:00',
+      photos_count: 4,
+      StreetNumber: '19365',
+      StreetName: 'Rim View',
+      City: 'Bend',
+    }
+    // Active lot would otherwise win onMarket — CMA must keep the dwelling.
+    expect(pickMostRecentListing([lot, house]).ListingKey).toBe('HOUSE')
+    expect(pickMostRecentListing([house, lot]).ListingKey).toBe('HOUSE')
+  })
 })
 
 describe('parseCmaAddress — unit designators', () => {
