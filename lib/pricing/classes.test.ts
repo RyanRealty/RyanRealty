@@ -255,6 +255,27 @@ describe('subdivision sentinel', () => {
 })
 
 describe('customBathCompatible', () => {
+  
+  it('live Rim View remarks (mid-century modern, no custom built) mark custom/new', () => {
+    expect(
+      isCustomOrNewSubject(
+        {
+          yearBuilt: null,
+          newConstructionYn: null,
+          remarks:
+            'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+        },
+        2026,
+      ),
+    ).toBe(true)
+    expect(
+      isCustomOrNewSubject(
+        { yearBuilt: null, newConstructionYn: false, remarks: 'To be built on a view lot.' },
+        2026,
+      ),
+    ).toBe(true)
+  })
+
   it('allows a one-whole-bath gap (Perspective 3 vs Rim View 4)', () => {
     expect(customBathCompatible(4, 3)).toBe(true)
     expect(customBathCompatible(4, 4)).toBe(true)
