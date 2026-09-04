@@ -73,7 +73,12 @@ const REGISTRY_SHORT_NAME = {
   'awbrey-glen': 'Awbrey Glen',
   'broken-top': 'Broken Top',
   'brasada-canyons': 'Brasada Canyons',
-  pronghorn: 'Pronghorn',
+  // The OSM cluster is keyed `pronghorn`. Registry shortNames on that property
+  // are `Pronghorn Nicklaus` and `Pronghorn Fazio`. The operator scorecard
+  // (PRH-SC.pdf, titled NICKLAUS COURSE, TIPS 7,379) matches this cluster's
+  // par sequence and USGA CourseID 5779, so the join is Nicklaus. Fazio is
+  // not a key here: leftover untagged ways are not a second course.
+  pronghorn: 'Pronghorn Nicklaus',
 }
 
 /**

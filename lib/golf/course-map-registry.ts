@@ -6,28 +6,32 @@
  * asked for is loaded; a course with no file renders the rest of its page
  * unchanged.
  *
- * Twenty of the registry's twenty-six courses have a file. Each of the six
+ * Twenty-one of the registry's twenty-six courses have a file. Each of the five
  * that do not was checked twice, by two differently shaped queries, because the
  * first version of this comment reported an absence that was not there. It said
  * OpenStreetMap had no hole geometry for ten courses. What was true is that a
  * fetch clipping every feature to a named `leisure=golf_course` polygon could
  * not SEE their holes: half the region's 363 `golf=hole` ways sit inside no such
- * polygon. Broken Top and Brasada Canyons each carry a complete, numbered
- * eighteen and are now built from their own hole cluster instead.
+ * polygon. Broken Top, Brasada Canyons and Pronghorn Nicklaus each carry a
+ * complete, numbered eighteen and are built from their own hole cluster instead.
  *
- * Two of the twenty carry no hole numbers. Awbrey Glen and Quail Run each have
- * eighteen `golf=hole` ways and exactly one tag on every feature — `golf` — so
- * their routings draw, select and describe themselves, and nothing on the page
- * prints a hole number. A routing order could be reconstructed by chaining each
- * green to the nearest next tee; where hole 1 starts and where the turn falls
- * would be a guess, and a number on a map is a claim.
+ * Pronghorn Nicklaus is named from the operator scorecard (PRH-SC.pdf, titled
+ * NICKLAUS COURSE, TIPS 7,379 yards) whose per-hole par sequence matches the
+ * OSM tags on this cluster and the USGA row (CourseID 5779). Measured routings
+ * run ~8% under the card, so per-hole yardage is held; the drawing is not.
+ *
+ * Two of the twenty-one carry no hole numbers. Awbrey Glen and Quail Run each
+ * have eighteen `golf=hole` ways and exactly one tag on every feature — `golf`
+ * — so their routings draw, select and describe themselves, and nothing on the
+ * page prints a hole number. A routing order could be reconstructed by chaining
+ * each green to the nearest next tee; where hole 1 starts and where the turn
+ * falls would be a guess, and a number on a map is a claim.
  *
  * What is actually missing, and what each is missing:
- *   - Pronghorn Nicklaus, Pronghorn Fazio — one complete numbered eighteen on
- *     the property, par summing to 72. Both courses are par 72, at 7,379 and
- *     7,456 yards, and nothing in the tags says which one is mapped. The
- *     measured routings run 8-9% under both cards, so length cannot separate
- *     them either. A course map has to name its course.
+ *   - Pronghorn Fazio — leftovers on the same property as the Nicklaus routing
+ *     (an untagged duplicate ref=17 farther west and two unnumbered ways).
+ *     Nothing in the tags names them Fazio. Numbering them would invent a
+ *     course.
  *   - River's Edge — its polygon contains zero golf features. Checked again by
  *     distance rather than containment: still zero.
  *   - The Greens at Redmond — one clubhouse building and nothing else within
@@ -59,6 +63,7 @@ const COURSE_MAPS: Record<string, Loader> = {
   juniper: () => import('@/data/golf/course-maps/juniper.json'),
   'lost-tracks': () => import('@/data/golf/course-maps/lost-tracks.json'),
   'meadow-lakes': () => import('@/data/golf/course-maps/meadow-lakes.json'),
+  'pronghorn-nicklaus': () => import('@/data/golf/course-maps/pronghorn.json'),
   'quail-run': () => import('@/data/golf/course-maps/quail-run.json'),
   'sunriver-meadows': () => import('@/data/golf/course-maps/sunriver-meadows.json'),
   'sunriver-woodlands': () => import('@/data/golf/course-maps/sunriver-woodlands.json'),
