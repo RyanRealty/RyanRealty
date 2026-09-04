@@ -1,7 +1,7 @@
 {
   "route": "app/listing/[listingKey]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Redfin listing mosaic: stills of this house in the grid, 3D / floor / street as type on the photos, map in its own section. Not a Google static jammed into the mosaic.",
+  "competitiveTarget": "Redfin listing detail section order, our data: mosaic, price, about, payment, around-this-home map, schools, parks, market, property details, sale and tax history, CC&Rs, opinion of value, rental, similar homes. Climate, Walk Score, and Redfin Estimate are omitted when we have no source. Nothing that we publish is parked only behind a door.",
   "note": "Rolled onto the v3 barrel 2026-08-27 (P9, the B ratchet's last page). Chrome: V3_ROOT_CLASS + .listing-detail on one main, V3Breadcrumb, V3SectionTracker, ONE V3Footer outside main; app/layout.tsx owns the header (V3Chrome). The listing body (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, lifestyle, history, money, attribution) is the listing-detail register, restyled in place: the kb.css carriers it used (.mkt market surface, .houseme-rows re-ink, .lst-* featured rail, section rise, scroll-margin anchors, mobile/desktop density ramps) were ported into listing-detail.css under .listing-detail, values unchanged, on v3 tokens. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. V3Footer carries the ODS slot and no button. No kb-root, no page kb.css, no Lenis smooth scroll (anchors land via scroll-margin-top like every v3 page).",
   "dataChanges": {
     "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. Live pricing read is stamp-only (getListingPricingRead). JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
@@ -47,7 +47,12 @@
     },
     {
       "name": "DescriptionBlock",
-      "section": "About this home. public_remarks displayed as authored. MLS remarks are never rewritten.",
+      "section": "About this home, visible in the stack after price (Redfin order). public_remarks displayed as authored. MLS remarks are never rewritten.",
+      "blocking": true
+    },
+    {
+      "name": "SchoolsBlock",
+      "section": "Assigned schools as a full section after the map, not only a door. MLS school names plus our /schools pages when registered.",
       "blocking": true
     },
     {

@@ -50,6 +50,7 @@ import { buildListingAtlas } from './_v3/listing-atlas'
 import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
+import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
 import { buildListingAskClaim } from '@/components/site/listing-detail/listing-ask'
 import {
@@ -117,18 +118,17 @@ void V3Doors
 void V3ListingRow
 
 /**
- * One house, one living map of its place, one instrument that says how this
- * home's price sits versus nearby leftover, then doors for the rest. Not another
- * 20-section stack.
+ * One house, Redfin's section order, our data. Nothing that we publish is
+ * parked behind a door at the bottom of the page.
  *
  *   hero        ListingHero (mosaic)
- *   main        PriceCtaStrip · OpenHouses · V3Instrument #ask
- *               · V3Chart #price-bands (closed sales at the leftover grain)
- *               · V3Atlas #location (lot stroke + acreage on this map)
- *               · V3Doors · alerts · folds · ListingAttribution
+ *   main        PriceCtaStrip · OpenHouses · About · payment
+ *               · V3Atlas #location · Schools · parks/trails/golf/events
+ *               · V3Instrument #ask · V3Chart #price-bands
+ *               · details · history · CC&Rs · CMA · rental
+ *               · similar homes · builder · alerts · doors · attribution
  *   sidebar     ListingBrokerCTA (tour / call / text live here and on the bar)
  *   floating    ListingBrokerBar (OUTSIDE the aside)
- *   full-width  V3ListingRow strip of similar homes
  *
  * The mockup-parity CI gate verifies every requiredComponent in
  * design_system/ryan-realty/ui_kits/listing-detail/parity.json is
@@ -594,6 +594,64 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   )
 
+  const atlasBlock = listingAtlas ? (
+    <V3Atlas
+      id="location"
+      headingLevel={2}
+      headline={v3Text(listingAtlasHeadline(listingAtlas.frameName))}
+      dots={listingAtlas.atlas.dots}
+      regions={listingAtlas.regions}
+      basemap={basemapForRegions(listingAtlas.regions, {
+        dots: listingAtlas.atlas.dots,
+        fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
+      })}
+      types={listingAtlas.atlas.types}
+      events={listingAtlas.atlas.events}
+      source={listingAtlas.atlas.source}
+      stamp={listingAtlas.atlas.stamp}
+      incomplete={!listingAtlas.atlas.complete}
+      highlight={{ key: listing.listingKey, label: 'This home' }}
+      outlinedOf={listingAtlas.outlinedOf}
+      fit={listingAtlas.dotsFrame ? 'dots' : 'regions'}
+      parcels={listingAtlas.parcels.map((lot) => ({
+        id: lot.taxlot,
+        subject: lot.isSubject,
+        name: lot.isSubject ? 'This lot' : undefined,
+        geometry: lot.geometry,
+      }))}
+      className="is-stacked"
+    >
+      {listingAtlas.subjectParcel ? (
+        <ListingLotFigure parcel={listingAtlas.subjectParcel} county={listing.county} />
+      ) : null}
+      {buildLifestyleLine({ city: listing.city }) ? (
+        <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
+      ) : null}
+      {listingAtlas.frameHref ? (
+        <p className="v3-atlas__door">
+          <a href={listingAtlas.frameHref}>Every home for sale in {listingAtlas.frameName}</a>
+        </p>
+      ) : null}
+    </V3Atlas>
+  ) : (
+    <ListingLocationMap
+      lat={listing.lat}
+      lng={listing.lng}
+      boundary={placeBoundary}
+      lifestyleLine={buildLifestyleLine({ city: listing.city })}
+      addressLine={street}
+      photoUrl={photos[0]?.url ?? listing.photoUrl}
+      price={publishedSaleAsk}
+      beds={listing.beds}
+      baths={listing.baths}
+      sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+      cityLine={listing.city}
+      href={listingHref}
+      inventoryHref={inventoryDoor?.href}
+      inventoryLabel={inventoryDoor?.name}
+    />
+  )
+
   const main = (
     <>
       <PriceCtaStrip
@@ -613,85 +671,10 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
         />
       ) : null}
-      {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
-      {priceBandChart ? <V3Chart id="price-bands" {...priceBandChart} /> : null}
-      {listingAtlas ? (
-        <V3Atlas
-          id="location"
-          headingLevel={2}
-          headline={v3Text(listingAtlasHeadline(listingAtlas.frameName))}
-          dots={listingAtlas.atlas.dots}
-          regions={listingAtlas.regions}
-          basemap={basemapForRegions(listingAtlas.regions, {
-            dots: listingAtlas.atlas.dots,
-            fit: listingAtlas.dotsFrame ? 'dots' : 'regions',
-          })}
-          types={listingAtlas.atlas.types}
-          events={listingAtlas.atlas.events}
-          source={listingAtlas.atlas.source}
-          stamp={listingAtlas.atlas.stamp}
-          incomplete={!listingAtlas.atlas.complete}
-          highlight={{ key: listing.listingKey, label: 'This home' }}
-          outlinedOf={listingAtlas.outlinedOf}
-          fit={listingAtlas.dotsFrame ? 'dots' : 'regions'}
-          parcels={listingAtlas.parcels.map((lot) => ({
-            id: lot.taxlot,
-            subject: lot.isSubject,
-            name: lot.isSubject ? 'This lot' : undefined,
-            geometry: lot.geometry,
-          }))}
-          className="is-stacked"
-        >
-          {listingAtlas.subjectParcel ? (
-            <ListingLotFigure parcel={listingAtlas.subjectParcel} county={listing.county} />
-          ) : null}
-          {buildLifestyleLine({ city: listing.city }) ? (
-            <p className="listing-detail__lifestyle">{buildLifestyleLine({ city: listing.city })}</p>
-          ) : null}
-          {listingAtlas.frameHref ? (
-            <p className="v3-atlas__door">
-              <a href={listingAtlas.frameHref}>Every home for sale in {listingAtlas.frameName}</a>
-            </p>
-          ) : null}
-        </V3Atlas>
-      ) : (
-        <ListingLocationMap
-        lat={listing.lat}
-        lng={listing.lng}
-        boundary={placeBoundary}
-        lifestyleLine={buildLifestyleLine({ city: listing.city })}
-        addressLine={street}
-        photoUrl={photos[0]?.url ?? listing.photoUrl}
-        price={publishedSaleAsk}
-        beds={listing.beds}
-        baths={listing.baths}
-        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
-        cityLine={listing.city}
-        href={listingHref}
-        inventoryHref={inventoryDoor?.href}
-        inventoryLabel={inventoryDoor?.name}
-        />
-      )}
-      {listingDoors ? <ListingMoreDoors doors={listingDoors} /> : null}
-      <ListingLikeThisAlerts
-        city={listing.city}
-        listPrice={wholePropertyPrice}
-        beds={listing.beds}
-        photoUrl={photos[0]?.url ?? listing.photoUrl}
-      />
-      <ListingAroundHere lat={listing.lat} lng={listing.lng} city={listing.city} />
       {listingWithPhotos.publicRemarks ? (
-        <ListingFold id="remarks" title="MLS remarks">
+        <div id="remarks">
           <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
-        </ListingFold>
-      ) : null}
-      <ListingFold id="specs" title="Property details">
-        <PropertySpecs listing={listingWithPhotos} />
-      </ListingFold>
-      {history.length > 0 ? (
-        <ListingFold id="history" title="Sale and tax history">
-          <PropertyHistory history={history} mode="meaningful-only" />
-        </ListingFold>
+        </div>
       ) : null}
       {wholePropertyPrice != null ? (
         <ListingFold id="payment" title="Monthly payment">
@@ -700,6 +683,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
             taxAnnualAmount={listing.taxAnnualAmount}
             ratePct={calcDefaults?.mortgageRate ?? null}
           />
+        </ListingFold>
+      ) : null}
+      {atlasBlock}
+      <div id="schools">
+        <SchoolsBlock listing={listingWithPhotos} />
+      </div>
+      <ListingAroundHere lat={listing.lat} lng={listing.lng} city={listing.city} />
+      {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
+      {priceBandChart ? <V3Chart id="price-bands" {...priceBandChart} /> : null}
+      <ListingFold id="specs" title="Property details">
+        <PropertySpecs listing={listingWithPhotos} />
+      </ListingFold>
+      {history.length > 0 ? (
+        <ListingFold id="history" title="Sale and tax history">
+          <PropertyHistory history={history} mode="meaningful-only" />
         </ListingFold>
       ) : null}
       {platDocuments && platDocuments.documents.length > 0 ? (
@@ -711,6 +709,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
           />
         </ListingFold>
       ) : null}
+      {publishedCma ? (
+        <ListingFold id="cma" title="Our opinion of value">
+          <PublishedCmaSection cma={publishedCma} />
+        </ListingFold>
+      ) : null}
       {listingRentalEligible({
         propertyType: listing.propertyType,
         beds: listing.beds,
@@ -720,11 +723,25 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <RentalAnalysis listing={listing} />
         </ListingFold>
       ) : null}
-      {publishedCma ? (
-        <ListingFold id="cma" title="Our opinion of value">
-          <PublishedCmaSection cma={publishedCma} />
+      {similarRows.length > 0 ? (
+        <ListingSimilarStrip
+          rows={similarRows}
+          placeName={featuredGeoName}
+          viewMoreHref={featuredViewAllHref}
+        />
+      ) : null}
+      {listing.builderName && builderTiles.length > 0 ? (
+        <ListingFold id="builder" title={`More by ${listing.builderName}`}>
+          <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
         </ListingFold>
       ) : null}
+      <ListingLikeThisAlerts
+        city={listing.city}
+        listPrice={wholePropertyPrice}
+        beds={listing.beds}
+        photoUrl={photos[0]?.url ?? listing.photoUrl}
+      />
+      {listingDoors ? <ListingMoreDoors doors={listingDoors} /> : null}
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
@@ -800,18 +817,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
           sidebar={sidebar}
           floating={floating}
         />
-        {similarRows.length > 0 ? (
-          <ListingSimilarStrip
-            rows={similarRows}
-            placeName={featuredGeoName}
-            viewMoreHref={featuredViewAllHref}
-          />
-        ) : null}
-        {listing.builderName && builderTiles.length > 0 ? (
-          <ListingFold id="builder" title={`More by ${listing.builderName}`}>
-            <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
-          </ListingFold>
-        ) : null}
       </main>
       {/* The tour and ask that KbFooter's listing band carried live on
           PriceCtaStrip, the broker sidebar, and the mobile bar; V3Footer

@@ -118,26 +118,27 @@ describe('design directive contracts', () => {
     }
   })
 
-  it('D88 — listing-detail sections follow the buyer decision sequence', () => {
+  it('D88 — listing-detail sections follow Redfin order with our data', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
     const main = src.slice(src.indexOf('const main = ('), src.indexOf('const sidebar ='))
     const order = [
-      'PriceCtaStrip',
-      'ListingAskInstrument',
-      'V3Atlas',
-      'ListingMoreDoors',
-      'ListingLikeThisAlerts',
-      'ListingAroundHere',
-      'DescriptionBlock',
-      'PropertySpecs',
-      'PropertyHistory',
-      'MortgageCalculator',
-      'RentalAnalysis',
-      'ListingAttribution',
+      '<PriceCtaStrip',
+      '<DescriptionBlock',
+      '<MortgageCalculator',
+      '{atlasBlock}',
+      '<SchoolsBlock',
+      '<ListingAroundHere',
+      '<ListingAskInstrument',
+      '<PropertySpecs',
+      '<PropertyHistory',
+      '<RentalAnalysis',
+      '<ListingSimilarStrip',
+      '<ListingLikeThisAlerts',
+      '<ListingMoreDoors',
+      '<ListingAttribution',
     ]
-    const positions = order.map((name) => main.indexOf(`<${name}`))
+    const positions = order.map((token) => main.indexOf(token))
     expect(positions.every((p) => p >= 0)).toBe(true)
-    // Ask versus leftover, then the place map, then doors, then folds, then attribution.
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
