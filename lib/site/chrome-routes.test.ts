@@ -33,7 +33,7 @@ describe("shouldHideDefaultChrome", () => {
 
   it("HIDES on KB routes but KEEPS on their non-KB siblings", () => {
     // KB (own chrome) → hidden
-    for (const path of ["/about", "/cities/bend", "/communities/tetherow", "/listing/220189422", "/sell", "/sell/valuation", "/housing-market", "/housing-market/central-oregon"]) {
+    for (const path of ["/about", "/cities/bend", "/cities/bend/types/condos", "/communities/tetherow", "/communities/sunriver/types/condos", "/listing/220189422", "/sell", "/sell/valuation", "/housing-market", "/housing-market/central-oregon"]) {
       expect(shouldHideDefaultChrome(path), `KB ${path}`).toBe(true)
     }
     // non-KB siblings → default chrome kept

@@ -1,0 +1,65 @@
+{
+  "route": "app/communities/[slug]/types/[type]/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. Same place-type class as /cities/[slug]/types/[type].",
+  "competitiveTarget": "Beat Zillow / Redfin community type filters. A dedicated community+type page with leftover/segment stats, the parent community atlas, and photographed listings of that type, instead of a search-results URL. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
+  "note": "H1 is `{Type} in {Place}` (Condos in Sunriver). Face is leftover HUD for single-family (community grain, no MOS) and getPublicPlaceSegments for extra types. Unknown type notFound().",
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + WebPage + ItemList when photographed listings exist.",
+      "blocking": true
+    },
+    {
+      "name": "V3SectionTracker",
+      "section": "Analytics island.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "City → type name. No Home.",
+      "blocking": true
+    },
+    {
+      "name": "V3Heading",
+      "section": "H1 `{Type} in {Place}`.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceFaceStrip",
+      "section": "Leftover / segment count and median. Miss omits. No MOS.",
+      "blocking": true
+    },
+    {
+      "name": "V3Atlas",
+      "section": "Parent community atlas when a trusted boundary exists.",
+      "blocking": true
+    },
+    {
+      "name": "V3ListingRow",
+      "section": "Photographed listings of this type.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Outside main.",
+      "blocking": true
+    }
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-04",
+    "score": 62,
+    "beats": "Zillow and Redfin community type filters: leftover community stats and photographed listings on a real URL, not a search preset.",
+    "evaluator": "structure-pass pending rendered desktop and 375px"
+  },
+  "sectionOrder": [
+    "V3SectionTracker",
+    "MetadataBlock",
+    "V3Breadcrumb",
+    "V3Heading",
+    "PlaceFaceStrip",
+    "V3Atlas",
+    "photographed listings #homes",
+    "V3Quiet",
+    "V3Footer"
+  ]
+}

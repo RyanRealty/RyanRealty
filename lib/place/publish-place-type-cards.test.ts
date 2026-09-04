@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  PLACE_TYPE_PAGE_SLUGS,
+  PLACE_TYPE_SEARCH_PRESET,
   placeTypeCoverPhotos,
+  placeTypeKeyFromPageSlug,
+  placeTypeLandingPath,
   placeTypeSearchHref,
   publishPlaceTypeCards,
 } from './publish-place-type-cards'
@@ -41,44 +45,88 @@ describe('publishPlaceTypeCards', () => {
     })
     expect(cards[0]?.key).toBe('sfr')
     expect(cards[0]?.active).toBe(false)
-    // Place+type landing path (2026-09-01): a crawlable page, not a query search.
-    expect(cards[0]?.href).toBe('/homes-for-sale/redmond/single-family')
+    expect(cards[0]?.href).toBe('/cities/redmond/types/single-family')
     expect(cards[0]?.photoUrl).toBe('https://cdn.example/sfr.jpg')
-    expect(cards.find((c) => c.key === 'land')?.href).toBe('/homes-for-sale/redmond/lots-and-land')
-    expect(cards.find((c) => c.key === 'condo')?.href).toBe('/homes-for-sale/redmond/condos')
+    expect(cards.find((c) => c.key === 'land')?.href).toBe('/cities/redmond/types/lots-and-land')
+    expect(cards.find((c) => c.key === 'condo')?.href).toBe('/cities/redmond/types/condos')
     expect(cards.find((c) => c.key === 'condo')?.photoUrl).toBe('https://cdn.example/condo.jpg')
+  })
+
+  it('opens the community type page when browsePath is the community node', () => {
+    const cards = publishPlaceTypeCards({
+      browsePath: '/communities/sunriver',
+      placeName: 'Sunriver',
+      sfrCount: 40,
+      sfrMedian: 800000,
+      sfrMos: null,
+      segments: [condo],
+    })
+    expect(cards[0]?.href).toBe('/communities/sunriver/types/single-family')
+    expect(cards.find((c) => c.key === 'condo')?.href).toBe('/communities/sunriver/types/condos')
   })
 })
 
 describe('placeTypeSearchHref', () => {
-  it('uses the condos / townhomes / multi-family / lots presets', () => {
+  it('uses the condos / townhomes / multi-family / lots city type pages', () => {
     expect(placeTypeSearchHref('/homes-for-sale/bend', 'condo', { propertySubTypes: 'Condominium' })).toBe(
-      '/homes-for-sale/bend/condos',
+      '/cities/bend/types/condos',
     )
     expect(placeTypeSearchHref('/homes-for-sale/bend', 'townhome', { propertySubTypes: 'Townhouse' })).toBe(
-      '/homes-for-sale/bend/townhomes',
+      '/cities/bend/types/townhomes',
     )
     expect(placeTypeSearchHref('/homes-for-sale/redmond', 'multifamily_2_4', { propertyType: 'multi-family' })).toBe(
-      '/homes-for-sale/redmond/multi-family',
+      '/cities/redmond/types/multi-family',
     )
     expect(placeTypeSearchHref('/homes-for-sale/redmond', 'land', { propertyType: 'Land' })).toBe(
-      '/homes-for-sale/redmond/lots-and-land',
+      '/cities/redmond/types/lots-and-land',
+    )
+    expect(placeTypeSearchHref('/cities/bend', 'condo', { propertySubTypes: 'Condominium' })).toBe(
+      '/cities/bend/types/condos',
     )
   })
 
   it('every type key resolves a landing path; unknown keys keep a defined query', () => {
     expect(
       placeTypeSearchHref('/homes-for-sale/redmond', 'farm', { propertyType: 'farm' }),
-    ).toBe('/homes-for-sale/redmond/farms')
+    ).toBe('/cities/redmond/types/farms')
     expect(
       placeTypeSearchHref('/homes-for-sale/redmond', 'manufactured_park', {
         propertySubTypes: 'In Park',
       }),
-    ).toBe('/homes-for-sale/redmond/manufactured-in-park')
-    // The query fallback survives for a key outside the preset map.
+    ).toBe('/cities/redmond/types/manufactured-in-park')
     expect(
       placeTypeSearchHref('/homes-for-sale/redmond', 'not-a-key', { propertyType: 'farm' }),
     ).toBe('/homes-for-sale/redmond?propertyType=farm')
+  })
+
+  it('keeps a neighborhood search preset until that grain has a type page', () => {
+    expect(
+      placeTypeSearchHref('/homes-for-sale/bend/awbrey-butte', 'condo', { propertySubTypes: 'Condominium' }),
+    ).toBe('/homes-for-sale/bend/awbrey-butte/condos')
+  })
+})
+
+describe('placeTypeLandingPath', () => {
+  it('rewrites city search and place nodes under /types/', () => {
+    expect(placeTypeLandingPath('/homes-for-sale/redmond', 'condos')).toBe('/cities/redmond/types/condos')
+    expect(placeTypeLandingPath('/cities/redmond', 'condos')).toBe('/cities/redmond/types/condos')
+    expect(placeTypeLandingPath('/communities/tetherow', 'single-family')).toBe(
+      '/communities/tetherow/types/single-family',
+    )
+    expect(placeTypeLandingPath('/homes-for-sale/bend/tetherow', 'condos')).toBeNull()
+  })
+})
+
+describe('placeTypeKeyFromPageSlug', () => {
+  it('maps preset slugs and rejects unknown types', () => {
+    expect(placeTypeKeyFromPageSlug('condos')).toBe('condo')
+    expect(placeTypeKeyFromPageSlug('single-family')).toBe('sfr')
+    expect(placeTypeKeyFromPageSlug('lots-and-land')).toBe('land')
+    expect(placeTypeKeyFromPageSlug('not-a-type')).toBeNull()
+  })
+
+  it('keeps the page slug list in lockstep with the preset map', () => {
+    expect([...PLACE_TYPE_PAGE_SLUGS].sort()).toEqual(Object.values(PLACE_TYPE_SEARCH_PRESET).sort())
   })
 })
 

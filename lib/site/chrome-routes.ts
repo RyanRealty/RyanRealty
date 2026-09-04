@@ -35,7 +35,9 @@ export const KB_ROUTES: RegExp[] = [
   /^\/blog(\/[^/]+)?$/,
   /^\/buy(\/[^/]+)?$/, // /buy + /buy/<intent> lead landing (KB)
   /^\/cities(\/[^/]+(\/[^/]+)?)?$/, // /cities, /cities/<slug>, /cities/<slug>/<neighborhood>
+  /^\/cities\/[^/]+\/types\/[^/]+$/, // /cities/<slug>/types/<type>
   /^\/communities(\/[^/]+)?$/, // /communities, /communities/<slug>
+  /^\/communities\/[^/]+\/types\/[^/]+$/, // /communities/<slug>/types/<type>
   /^\/compare$/,
   /^\/contact$/,
   /^\/faq$/,

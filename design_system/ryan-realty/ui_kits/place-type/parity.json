@@ -1,0 +1,65 @@
+{
+  "route": "app/cities/[slug]/types/[type]/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. No mockup in this directory: the place-type class is the city/community type-card landing, not a Tetherow one-off.",
+  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker type-filtered city results. Those surfaces dump the visitor into a search grid. This page is a place-type node: leftover count and median that already back the type card, a living atlas of the parent city with the type stated in the claim, and a photographed list of that type. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
+  "note": "H1 is `{Type} in {Place}` (Condos in Redmond). Face stats are leftover HUD for single-family and getPublicPlaceSegments for extra types. Miss omits. Photographed V3ListingRow list does not reprint leftover as list length. Atlas reuses buildPlaceAtlas for the city; dots filter only when leftover type is 1:1 with AtlasDot.t. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + WebPage + ItemList when photographed listings exist.",
+      "blocking": true
+    },
+    {
+      "name": "V3SectionTracker",
+      "section": "Analytics island.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "City → type name. No Home.",
+      "blocking": true
+    },
+    {
+      "name": "V3Heading",
+      "section": "H1 `{Type} in {Place}`.",
+      "blocking": true
+    },
+    {
+      "name": "PlaceFaceStrip",
+      "section": "Leftover / segment count and median. Miss omits.",
+      "blocking": true
+    },
+    {
+      "name": "V3Atlas",
+      "section": "Parent city atlas. Type-filtered dots when 1:1. Omitted when the city has no recorded boundary.",
+      "blocking": true
+    },
+    {
+      "name": "V3ListingRow",
+      "section": "Photographed listings of this type. Count on the face is leftover, not this list length.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Outside main.",
+      "blocking": true
+    }
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-04",
+    "score": 62,
+    "beats": "Zillow and Redfin type-filtered city search URLs: leftover count and median on a dedicated place-type page, not a query-string grid.",
+    "evaluator": "structure-pass pending rendered desktop and 375px"
+  },
+  "sectionOrder": [
+    "V3SectionTracker",
+    "MetadataBlock",
+    "V3Breadcrumb",
+    "V3Heading",
+    "PlaceFaceStrip",
+    "V3Atlas",
+    "photographed listings #homes",
+    "V3Quiet",
+    "V3Footer"
+  ]
+}

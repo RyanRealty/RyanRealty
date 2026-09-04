@@ -1,0 +1,10 @@
+/* Place-type photographed ledger. Tokens only. */
+.place-type-homes {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-xl);
+}
+
+.place-type-homes .v3-heading {
+  margin-bottom: var(--v3-space-sm);
+}
