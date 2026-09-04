@@ -100,7 +100,7 @@ import {
 } from '@/lib/place/publish-place-type-cards'
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromChildCells, regionsFromChildCells } from '@/lib/place/child-rings'
-import { homesForSalePath, slugify } from '@/lib/slug'
+import { slugify } from '@/lib/slug'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
@@ -572,7 +572,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     'comm:typeThumbs',
   )
   const typeCards = publishPlaceTypeCards({
-    browsePath: homesForSalePath(cityName, community.subdivision),
+    browsePath: `/communities/${slug}`,
     placeName: publicName,
     sfrCount: hud.active,
     sfrMedian: hud.medianList,

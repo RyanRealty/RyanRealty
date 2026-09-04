@@ -3,8 +3,9 @@
  * Detached leftover is the first card. Extra types come from public segments.
  * Miss omits. Nothing is invented.
  *
- * Each card is a door into the SEO search for that type (preset path when one
- * exists, otherwise the defined query on /homes-for-sale/{place}).
+ * Each card opens the place-type page (`/cities/{slug}/types/{preset}` or
+ * `/communities/{slug}/types/{preset}`). A homes-for-sale city path rewrites
+ * to the city type page. Unknown keys keep a defined query.
  */
 import {
   publicSegmentDisplayBits,
@@ -44,8 +45,8 @@ export const PLACE_TYPE_COVER_SPECS: ReadonlyArray<{
   { key: 'business', propertyType: 'H' },
 ]
 
-/** Existing indexable search presets that match a leftover type card 1:1. */
-const PLACE_TYPE_SEARCH_PRESET: Partial<Record<PlaceTypeKey, string>> = {
+/** Place-type URL slugs. Same values the old search presets used. */
+export const PLACE_TYPE_SEARCH_PRESET: Partial<Record<PlaceTypeKey, string>> = {
   sfr: 'single-family',
   condo: 'condos',
   townhome: 'townhomes',
@@ -56,6 +57,47 @@ const PLACE_TYPE_SEARCH_PRESET: Partial<Record<PlaceTypeKey, string>> = {
   farm: 'farms',
   commercial_sale: 'commercial',
   business: 'businesses',
+}
+
+export const PLACE_TYPE_PAGE_SLUGS = [
+  'single-family',
+  'condos',
+  'townhomes',
+  'multi-family',
+  'lots-and-land',
+  'manufactured-on-land',
+  'manufactured-in-park',
+  'farms',
+  'commercial',
+  'businesses',
+] as const
+
+export type PlaceTypePageSlug = (typeof PLACE_TYPE_PAGE_SLUGS)[number]
+
+const PRESET_TO_KEY = Object.fromEntries(
+  Object.entries(PLACE_TYPE_SEARCH_PRESET).map(([key, slug]) => [slug, key]),
+) as Record<string, PlaceTypeKey>
+
+export function placeTypeKeyFromPageSlug(slug: string): PlaceTypeKey | null {
+  const key = PRESET_TO_KEY[slug.trim().toLowerCase()]
+  return key ?? null
+}
+
+/**
+ * City `/homes-for-sale/{city}` and already-canonical `/cities/{slug}` /
+ * `/communities/{slug}` bases become `/…/types/{preset}`. A three-segment
+ * search path (neighborhood / plat) keeps the search preset until those
+ * grains have a type page.
+ */
+export function placeTypeLandingPath(browsePath: string, preset: string): string | null {
+  const base = browsePath.trim().replace(/\/+$/, '') || '/homes-for-sale'
+  const cities = base.match(/^\/cities\/([^/]+)$/)
+  if (cities) return `/cities/${cities[1]}/types/${preset}`
+  const communities = base.match(/^\/communities\/([^/]+)$/)
+  if (communities) return `/communities/${communities[1]}/types/${preset}`
+  const citySearch = base.match(/^\/homes-for-sale\/([^/]+)$/)
+  if (citySearch) return `/cities/${citySearch[1]}/types/${preset}`
+  return null
 }
 
 export function placeTypeCoverPhotos(
@@ -98,9 +140,13 @@ export function placeTypeSearchHref(
   key: string,
   filter: { propertyType?: string; propertySubTypes?: string },
 ): string {
-  const base = browsePath.trim() || '/homes-for-sale'
+  const base = browsePath.trim().replace(/\/+$/, '') || '/homes-for-sale'
   const preset = PLACE_TYPE_SEARCH_PRESET[key as PlaceTypeKey]
-  if (preset) return `${base}/${preset}`
+  if (preset) {
+    const landing = placeTypeLandingPath(base, preset)
+    if (landing) return landing
+    return `${base}/${preset}`
+  }
   const params = new URLSearchParams()
   if (filter.propertyType) params.set('propertyType', filter.propertyType)
   if (filter.propertySubTypes) params.set('propertySubTypes', filter.propertySubTypes)
