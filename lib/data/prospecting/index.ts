@@ -27,7 +27,7 @@ export {
   type ProspectEngagementMap,
 } from './engagement'
 
-export { getProspect, getProspectDetail } from './get'
+export { getProspect, getProspectDetail, resolveOwnerLabel, applyCrmOwnerNames } from './get'
 
 export {
   dripIntentTagFor,
