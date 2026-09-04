@@ -24,9 +24,6 @@
     "app/admin/(protected)/prospecting/FilterSelect.tsx": {
       "select": 1
     },
-    "app/admin/(protected)/prospecting/page.tsx": {
-      "input": 5
-    },
     "app/admin/(protected)/reports/page.tsx": {
       "h2": 1
     },

@@ -22,7 +22,7 @@ import {
   resolveProspectListOrder,
 } from '@/lib/data/prospecting/types'
 import { formatDate } from '@/lib/format/date'
-import { Button, QueueRow, VerdictLine } from '@/components/admin/v2'
+import { Button, HiddenField, QueueRow, SearchField, VerdictLine } from '@/components/admin/v2'
 import type { AdminState } from '@/components/admin/v2'
 import { buildProspectDocFromWorklist } from './actions'
 import { ProspectFilterSelect } from './FilterSelect'
@@ -218,16 +218,14 @@ export default async function ProspectingPage({
       </div>
 
       <form method="GET" style={{ margin: '4px 0 16px' }}>
-        {kind !== 'expired' ? <input type="hidden" name="kind" value={kind} /> : null}
-        {status !== 'all' ? <input type="hidden" name="status" value={status} /> : null}
-        {cityExplicitAll ? <input type="hidden" name="city" value="all" /> : null}
+        {kind !== 'expired' ? <HiddenField name="kind" value={kind} /> : null}
+        {status !== 'all' ? <HiddenField name="status" value={status} /> : null}
+        {cityExplicitAll ? <HiddenField name="city" value="all" /> : null}
         {!cityExplicitAll && city && !(kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY) ? (
-          <input type="hidden" name="city" value={city} />
+          <HiddenField name="city" value={city} />
         ) : null}
-        <input
-          className="av2-input"
+        <SearchField
           style={{ width: '100%' }}
-          type="search"
           name="q"
           defaultValue={q ?? ''}
           placeholder="Search by address or owner…"
@@ -263,8 +261,8 @@ export default async function ProspectingPage({
                 ) : needsBuild ? (
                   <span style={{ display: 'inline-flex', gap: 8 }}>
                     <form action={buildProspectDocFromWorklist}>
-                      <input type="hidden" name="kind" value={row.kind} />
-                      <input type="hidden" name="id" value={row.id} />
+                      <HiddenField name="kind" value={row.kind} />
+                      <HiddenField name="id" value={row.id} />
                       <Button variant="quiet" type="submit">
                         {row.doc.state === 'failed' ? 'Retry build' : 'Build audit'}
                       </Button>
