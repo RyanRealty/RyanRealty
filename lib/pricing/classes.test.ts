@@ -11,6 +11,7 @@ import {
   irrigationClassFromOwrd,
   irrigationClassFromRemarks,
   irrigationCompatible,
+  customBathCompatible,
   isCustomOrNewSubject,
   isNewBuild,
   newConstructionCompatible,
@@ -246,3 +247,12 @@ describe('subdivision sentinel', () => {
     expect(normSubdivision('Kenwood')).toBe('kenwood')
   })
 })
+
+describe('customBathCompatible', () => {
+  it('allows a one-whole-bath gap (Perspective 3 vs Rim View 4)', () => {
+    expect(customBathCompatible(4, 3)).toBe(true)
+    expect(customBathCompatible(4, 4)).toBe(true)
+    expect(customBathCompatible(4, 2)).toBe(false)
+  })
+})
+

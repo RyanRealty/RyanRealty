@@ -158,11 +158,26 @@ async function recordBuildFailure(
         ...(meta.contractChecks ? { contract_at_failure: meta.contractChecks } : {}),
       }
     : null
-  await updateCmaRowFieldsBySlug(slug, {
+  // Matt 2026-09-03 (Rim View): a failed rebuild must not leave the prior
+  // kept-set document (Summit/Falcon/Hopper/Hunnell at $1.645M) looking live.
+  // Keep the failure summary + build_error for the broker; clear html, comps,
+  // and list figures so the draft cannot be mistaken for a priced set.
+  const cleared = await updateCmaRowFieldsBySlug(slug, {
     build_error: error.slice(0, 2000),
     built_at: new Date().toISOString(),
     ...(failureSummary ? { build_summary: failureSummary } : {}),
-  }).catch(() => {})
+    html_content: null,
+    html_path: null,
+    render_args: null,
+    citations: null,
+    recommended_list: null,
+    value_low: null,
+    value_high: null,
+    comps_count: 0,
+  }).catch(() => ({ ok: false as const }))
+  if (cleared && 'ok' in cleared && cleared.ok && 'id' in cleared && typeof cleared.id === 'string') {
+    await replaceCmaComps(cleared.id, []).catch(() => {})
+  }
 }
 
 export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {

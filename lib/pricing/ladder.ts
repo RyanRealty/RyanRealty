@@ -35,7 +35,8 @@ export type PricingTier = {
   disclosure?: string
 }
 
-export function pricingTierLadder(): PricingTier[] {
+export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): PricingTier[] {
+  const customOrNew = opts.customOrNew === true
   const sub = (months: number, sqftBand = 0.15, suffix = ''): PricingTier => ({
     name: `subdivision-${months}mo${suffix}`,
     monthsBack: months,
@@ -77,6 +78,22 @@ export function pricingTierLadder(): PricingTier[] {
     disclosure:
       'These sales are outside the subject subdivision. They come from subdivisions whose recent median sale price per square foot is within 30% of the subject subdivision — the same buyer pool, not a gated or much-cheaper tract.',
   })
+  // Custom/new: widen TIME at a modest radius before opening more geography.
+  // Same-generation peers are sparse; a 9-month 1-mile ring starves North Rim.
+  // GLA ±25%: live Perspective (3963) vs Rim View (4972) is 20.3% — inside
+  // the listings fallback band, outside the ordinary 20% utilities band.
+  const customNear = (miles: number, months: number, apples: AppleStrictness): PricingTier => ({
+    ...near(miles, months, apples),
+    sqftBand: 0.25,
+  })
+  const customTimeFirst: PricingTier[] = customOrNew
+    ? [
+        customNear(2, 12, 'utilities'),
+        customNear(2, 18, 'utilities'),
+        customNear(4, 12, 'utilities'),
+        customNear(4, 18, 'product_lot'),
+      ]
+    : []
   return [
     sub(3),
     sub(6),
@@ -92,6 +109,7 @@ export function pricingTierLadder(): PricingTier[] {
     near(2, 3, 'utilities'),
     near(2, 6, 'utilities'),
     near(2, 9, 'utilities'),
+    ...customTimeFirst,
     similar(3),
     similar(6),
     similar(9),

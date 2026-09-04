@@ -159,7 +159,7 @@ export async function updateCmaRowFieldsBySlug(
   slug: string,
   updates: Record<string, unknown>,
   options?: { onlyWhenStatus?: string },
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; id?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
   let q = sb.from('cmas').update(updates).eq('slug', slug.trim().toLowerCase())
@@ -169,7 +169,8 @@ export async function updateCmaRowFieldsBySlug(
   if (options?.onlyWhenStatus && (data ?? []).length === 0) {
     return { ok: false, error: `row is no longer status '${options.onlyWhenStatus}'` }
   }
-  return { ok: true }
+  const id = (data ?? [])[0]?.id
+  return { ok: true, ...(typeof id === 'string' ? { id } : {}) }
 }
 
 /** Delete a cmas row (and its comps) by id. */
