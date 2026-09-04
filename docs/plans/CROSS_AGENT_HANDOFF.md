@@ -1930,16 +1930,17 @@ run exists for the new SHA before waiting on it.
 
 # Prior — 2026-08-18 (cursor-loop-chain) — place-pages this-month median + chrome-only reject slice
 
-**Surface:** Cursor cloud `bc-812b6297` (`cursor/loop-chain-2026-08-18t02-04-a235`). **Time:** 2026-08-18 ~02:42 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Claimed parent only as `cursor-loop-chain-bc-812b6297-2026-08-18t02-04`. Product **`c2c6c0fb0`** landed on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (332 leftover lines). Release skipped: another session (`cursor-loop-chain-2026-08-18-bc-0a79e0c8`) holds the parent `in_progress`. Do not steal. Do not `completeWorkNode`. Loop stays **ARMED**. Do not start a new ship class from this session.
+**Surface:** Cursor cloud `bc-812b6297` shipped the class; `bc-0a79e0c8` (`cursor/loop-chain-2026-08-18t02-04-0a8f`) independently reproduced the same 8 at 390+1280 and released the parent. **Time:** 2026-08-18 ~02:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 340). Product **`c2c6c0fb0`** is on **`main`** (class `0ed74366e` + compile follow-up). Vercel Production **READY** for `c2c6c0fb0` (`7dQpSydh4ZJfEFAGnPrVgttrkuZ8`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (332 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
 **Done**
 - Slice (8 place-pages lines) at 390+1280: `/housing-market/powell-butte` this-month median absent **reproduced** then class-fixed. Cache city `powell butte` methodology `v3-2026-05-07` August monthly `sold_count=1` `median_sale_price=null`; July complete `$1,262,500` / 6; YTD `$1,200,000` / 35; rolling 365d `$1,334,500` / 52. Seven `/subdivisions/{slug}` chrome-only lines (altura, american-west, antler-crossing, arborwood, awbrey-meadows, big-sky-country, arrowdale) **rejected** — H1 + “No active listings…” + sales history at 390/1280.
 - Class: `publishCompleteMonthMedian` publishes this-month median only when the current-month cache row has a verified median; otherwise last complete month as `{Month} median sale`. Wired DAL `getCompleteMonthlyMarketDetail` + public housing-market + `_v3` figures + broker SMS `market_stats` + G-publish-complete-month-median (6/6).
 - Prod probe after READY `c2c6c0fb0`: Powell Butte **July median sale `$1,263,000`** (`formatPrice` nearest-thousand of `$1,262,500`); 0× “this month median”. After shots `/opt/cursor/artifacts/after_powell-butte_{390,1280}.png`, `/opt/cursor/artifacts/after_altura_{390,1280}.png`.
 - Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover place-pages + other families stay on the inbox.
+- Twin `bc-0a79e0c8` confirmed the same 8 at 390+1280 after READY: live Powell Butte still shows July median sale $1,263,000; seven plat pages show H1 + empty-state. Parent released so leftover lines stay the inbox.
 
 **Next**
-- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. Leave the parent claim with `cursor-loop-chain-2026-08-18-bc-0a79e0c8`.
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. Parent is released.
 
 **Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
 
