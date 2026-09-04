@@ -183,16 +183,36 @@
 }
 
 .v3-ask__consent button[role='checkbox'],
-.v3-ask__consent input[type='checkbox'] {
+.v3-ask__consent input[type='checkbox'],
+.v3-ask__consent [data-slot='checkbox'] {
+  box-sizing: border-box;
   flex: none;
   width: var(--v3-tap);
   height: var(--v3-tap);
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
+  padding: 0;
   border: 1px solid var(--v3-ink-muted);
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface-raised);
   color: var(--v3-ink);
+}
+
+/* shadcn `after:-inset-x-3 after:-inset-y-2` on size-4 measured 42×34.
+   Insets would ignore width; pin a tap-sized pad on the control. */
+.v3-ask__consent button[role='checkbox']::after,
+.v3-ask__consent [data-slot='checkbox']::after {
+  content: '';
+  position: absolute;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
 }
 
 .v3-ask__consent button[role='checkbox'][data-state='checked'] {

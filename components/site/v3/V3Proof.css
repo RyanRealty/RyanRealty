@@ -385,6 +385,7 @@
 }
 
 .v3-proof__source a {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   min-height: var(--v3-tap);
