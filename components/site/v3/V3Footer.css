@@ -216,15 +216,16 @@
   border-bottom: var(--v3-rule-hairline);
 }
 
-/* Thumb minimum on the widths a thumb is used at. Above the wide stop the
-   footer is pointer territory and a 44px row in a twelve-row column would push
-   the legal line most of a viewport further down for no one's benefit; 2rem
-   still clears the WCAG 2.5.8 target minimum. */
+/* Thumb floor at every width. Unlayered so a utility or the old 1440
+   `min-height: 2rem` cannot shrink the row; G71 measures CSS px at 1440. */
+.v3-footer__column-list a {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+}
+
 @layer base {
   .v3-footer__column-list a {
-    display: flex;
-    align-items: center;
-    min-height: var(--v3-tap);
     padding: var(--v3-space-3xs) 0;
     color: var(--v3-ink);
     font-size: var(--v3-size-body-sm);
@@ -239,12 +240,6 @@
 .v3-footer__column-list a:hover,
 .v3-footer__column-list a:focus-visible {
   text-decoration-color: currentColor;
-}
-
-@media (min-width: 56.25rem) {
-  .v3-footer__column-list a {
-    min-height: 2rem;
-  }
 }
 
 /* The fold lives ONLY where the sitemap is ONE column.
@@ -273,7 +268,7 @@
   }
 
   .v3-footer__column-title {
-    min-height: 0;
+    /* Still a <summary>, so still a control. Keep the tap floor. */
     padding: 0;
     margin-bottom: var(--v3-space-2xs);
   }
@@ -301,13 +296,18 @@
   list-style: none;
 }
 
+/* Unlayered: min-width does not apply to `display: inline`, and @layer base
+   loses to utilities. Short labels (DMCA) measured 42px wide. */
+.v3-footer__legal a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+}
+
 @layer base {
   .v3-footer__legal a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--v3-tap);
-    min-height: var(--v3-tap);
     color: var(--v3-ink);
     font-size: var(--v3-size-body-sm);
     text-decoration: underline;
