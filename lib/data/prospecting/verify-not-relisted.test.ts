@@ -176,3 +176,71 @@ describe('verifyNotRelisted — sold after expire', () => {
     expect(out.relisted).toBe(false)
   })
 })
+
+describe('verifyNotRelisted — FSBO Closed after detect + MLS relist', () => {
+  it('blocks a Closed sale after FSBO detect on the same street + city', async () => {
+    listingsCalls = 0
+    streetRows = [
+      {
+        StreetNumber: '123',
+        StreetName: 'SMITH',
+        City: 'Bend',
+        StandardStatus: 'Closed',
+        CloseDate: '2026-07-15',
+        status_change_timestamp: '2026-07-15T00:00:00Z',
+        parcel_number: null,
+      },
+    ]
+    const out = await verifyNotRelisted('fsbo', {
+      street_address: '123 Smith St',
+      city: 'Bend',
+      expiryComparator: EXPIRE,
+    })
+    expect(out.verifyFailed).toBe(false)
+    expect(out.relisted).toBe(true)
+  })
+
+  it('blocks an Active MLS relist for FSBO (no detect comparator needed)', async () => {
+    listingsCalls = 0
+    streetRows = [
+      {
+        StreetNumber: '123',
+        StreetName: 'SMITH',
+        City: 'Bend',
+        StandardStatus: 'Active',
+        CloseDate: null,
+        status_change_timestamp: '2026-07-01T00:00:00Z',
+        parcel_number: null,
+      },
+    ]
+    const out = await verifyNotRelisted('fsbo', {
+      street_address: '123 Smith St',
+      city: 'Bend',
+      expiryComparator: EXPIRE,
+    })
+    expect(out.verifyFailed).toBe(false)
+    expect(out.relisted).toBe(true)
+  })
+
+  it('does not block a Closed sale before FSBO detect', async () => {
+    listingsCalls = 0
+    streetRows = [
+      {
+        StreetNumber: '123',
+        StreetName: 'SMITH',
+        City: 'Bend',
+        StandardStatus: 'Closed',
+        CloseDate: '2025-01-01',
+        status_change_timestamp: '2025-01-01T00:00:00Z',
+        parcel_number: null,
+      },
+    ]
+    const out = await verifyNotRelisted('fsbo', {
+      street_address: '123 Smith St',
+      city: 'Bend',
+      expiryComparator: EXPIRE,
+    })
+    expect(out.verifyFailed).toBe(false)
+    expect(out.relisted).toBe(false)
+  })
+})

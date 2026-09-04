@@ -17,6 +17,7 @@ export {
   resolveComplianceState,
   expiredOutreachListingHits,
   normalizeParcelNumber,
+  parcelFromEnrichmentNotes,
   type ProspectComplianceInput,
 } from './compliance'
 
