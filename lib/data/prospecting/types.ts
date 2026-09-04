@@ -284,6 +284,28 @@ export function resolveProspectListOrder(
   return { sort: resolvedSort, dir: resolvedDir }
 }
 
+/** Expired desk default: City of Bend only (not outskirts / metro). */
+export const PROSPECT_EXPIRED_DEFAULT_CITY = 'Bend'
+
+/**
+ * Resolve worklist city filter. Expired defaults to City of Bend so desks
+ * work Bend expireds first (with date asc). Pass `city=all` to clear.
+ * FSBO has no city default — only an explicit city applies.
+ */
+export function resolveProspectListCity(
+  kind: ProspectKind,
+  city?: string | null,
+): string | null {
+  const raw = city?.trim() ?? ''
+  if (kind !== 'expired') {
+    if (!raw || raw.toLowerCase() === 'all') return null
+    return raw
+  }
+  if (!raw) return PROSPECT_EXPIRED_DEFAULT_CITY
+  if (raw.toLowerCase() === 'all') return null
+  return raw
+}
+
 export interface ProspectListFilters {
   kind: ProspectKind
   q?: string | null

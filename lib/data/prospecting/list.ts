@@ -219,7 +219,15 @@ function sortClassified(rows: Classified[], key: ProspectSortKey, dir: SortDir):
   rows.sort((a, b) => {
     let cmp = 0
     if (key === 'date') {
-      cmp = dateOf(a.skeleton).localeCompare(dateOf(b.skeleton))
+      // Null/empty dates sink regardless of dir. Otherwise asc puts '' first and
+      // preserves the DB newest-first fetch order among undated rows — FSBO
+      // status=all looked newest-first on page 1 while sendable (dated) passed.
+      const ad = dateOf(a.skeleton)
+      const bd = dateOf(b.skeleton)
+      if (!ad && !bd) cmp = 0
+      else if (!ad) return 1
+      else if (!bd) return -1
+      else cmp = ad.localeCompare(bd)
     } else if (key === 'owner' || key === 'city' || key === 'address') {
       const av = textOf(a.skeleton)
       const bv = textOf(b.skeleton)
