@@ -1,12 +1,12 @@
 /**
  * Prospecting first-touch drip drain.
  *
- * Weekdays from 08:00 America/Los_Angeles, send ONE queued Expired OR FSBO
- * first-touch email per DRIP_SPACING_MINUTES (TBD constant) until the queue is
+ * LOCKED (Matt 2026-09-03): weekdays from 08:00 America/Los_Angeles, then ONE
+ * queued Expired OR FSBO first-touch email every 5 minutes until the queue is
  * empty. Before each send: fail-closed live-status hard-skip (verifyNotRelisted
  * + FSBO still-active probe).
  *
- * Schedule ticks every minute; the spacing constant is the real cadence knob.
+ * Vercel schedule: every 5 minutes. Spacing gate still enforces one-at-a-time.
  */
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
@@ -28,7 +28,6 @@ export async function GET(request: Request) {
       timezone: DRIP_TIMEZONE,
       weekdayStartMinutes: DRIP_WEEKDAY_START_MINUTES,
       spacingMinutes: DRIP_SPACING_MINUTES,
-      spacingNote: 'TBD — Matt must confirm DRIP_SPACING_MINUTES before treating as locked',
       ...rest,
     })
   } catch (err) {
