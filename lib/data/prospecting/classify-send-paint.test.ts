@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { classifyProspect } from './classify'
-import { blockAllChannels, type ProspectComplianceState, type ProspectDocState } from './types'
+import { blockAllChannels, openChannels, type ProspectComplianceState, type ProspectDocState } from './types'
 
 function compliance(over: Partial<ProspectComplianceState> = {}): ProspectComplianceState {
   return {
@@ -61,5 +61,31 @@ describe('classifyProspect SEND paint', () => {
         1,
       ),
     ).toBe('excluded')
+  })
+
+  it('never returns sendable after farm-stub gate nulls personId', () => {
+    expect(classifyProspect(ready, compliance(), true, null)).toBe('no-phone')
+  })
+})
+
+describe('Pine Vista shape — audit ready, skip-trace open, contactless farm stub', () => {
+  // 20397 Pine Vista / John Arzner: listing has phone+email; CRM person 56859 emails/phones [].
+  const pineVista = compliance({
+    noPhone: false,
+    noEmail: false,
+    channels: {
+      sms: { blocked: false, reason: null },
+      email: { blocked: false, reason: null },
+      call: { blocked: false, reason: null },
+    },
+  })
+
+  it('with effective personId null: no-phone bucket (Link contact), not Send', () => {
+    expect(classifyProspect(ready, pineVista, true, null)).toBe('no-phone')
+  })
+
+  it('openChannels: no-person wins over text+email open', () => {
+    expect(openChannels({ ...pineVista, personId: null })).toEqual([])
+    expect(openChannels({ ...pineVista, personId: 56859 })).toEqual(['email', 'sms', 'call'])
   })
 })

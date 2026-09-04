@@ -37,9 +37,16 @@ import {
 
 const CHANNEL_LABEL: Record<ProspectChannel, string> = { sms: 'Text', email: 'Email', call: 'Call' }
 
-export function ProspectComplianceRibbon({ compliance }: { compliance: ProspectComplianceState }) {
+export function ProspectComplianceRibbon({
+  compliance,
+  personId,
+}: {
+  compliance: ProspectComplianceState
+  /** Effective send person; null clears Email/Text OK (Pine Vista farm-stub class). */
+  personId?: number | null
+}) {
   const blocked = PROSPECT_CHANNELS.filter((c) => compliance.channels[c].blocked)
-  const open = openChannels(compliance)
+  const open = openChannels({ ...compliance, personId })
 
   // Nothing to say: every channel open and no market-status caveat.
   if (blocked.length === 0 && !compliance.relisted && !compliance.offMarket) return null

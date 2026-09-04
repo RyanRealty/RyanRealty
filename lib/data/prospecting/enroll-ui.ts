@@ -31,14 +31,20 @@ export function prospectDripBlockedReason(args: {
 }
 
 /**
- * Hide Enroll when MLS relist / off-market hard-skip would also hide Send.
- * Keep "In drip" visible if already enrolled so status is not erased.
+ * Hide Enroll when MLS relist / off-market hard-skip would also hide Send,
+ * or when no effective CRM person is linked (Link contact / owner-attach instead
+ * of a disabled Enroll button). Keep "In drip" visible if already enrolled.
  */
 export function shouldHideProspectEnroll(args: {
   compliance: { relisted: boolean; offMarket: boolean }
   drip: { enrolled: boolean }
+  /** Effective send person (null = unlinked or contactless farm stub). */
+  personId?: number | null
 }): boolean {
-  return prospectMarketBlocksOutreach(args.compliance) && !args.drip.enrolled
+  if (args.drip.enrolled) return false
+  if (prospectMarketBlocksOutreach(args.compliance)) return true
+  if (args.personId === null) return true
+  return false
 }
 
 /** Send rail requires a linked person (CMA compose / owner-unknown class). */

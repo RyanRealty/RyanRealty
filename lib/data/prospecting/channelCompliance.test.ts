@@ -96,6 +96,16 @@ describe('openChannels market hard-skip', () => {
   it('still surfaces email when market is clear', () => {
     expect(openChannels({ ...emailOpen, relisted: false, offMarket: false })).toEqual(['email'])
   })
+
+  it('does not paint Email OK when personId is null (Pine Vista farm-stub)', () => {
+    expect(openChannels({ ...emailOpen, relisted: false, offMarket: false, personId: null })).toEqual([])
+  })
+
+  it('still surfaces email when personId is linked', () => {
+    expect(openChannels({ ...emailOpen, relisted: false, offMarket: false, personId: 18198 })).toEqual([
+      'email',
+    ])
+  })
 })
 
 describe('blockAllChannels', () => {

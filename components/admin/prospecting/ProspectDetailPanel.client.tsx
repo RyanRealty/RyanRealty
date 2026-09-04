@@ -123,6 +123,7 @@ export function ProspectDetailPanel({
   const hideEnroll = shouldHideProspectEnroll({
     compliance: detail.compliance,
     drip: detail.drip,
+    personId: detail.personId,
   })
 
   function runEnroll() {
@@ -276,7 +277,7 @@ export function ProspectDetailPanel({
         ) : null}
       </div>
 
-      {showRibbon ? <ProspectComplianceRibbon compliance={detail.compliance} /> : null}
+      {showRibbon ? <ProspectComplianceRibbon compliance={detail.compliance} personId={detail.personId} /> : null}
 
       <div className="flex items-center gap-2">
         <ProspectDocPill doc={detail.doc} />
@@ -420,7 +421,11 @@ export function ProspectDetailPanel({
         <p style={quietTextStyle}>
           {detail.compliance.relisted
             ? 'Relisted or sold — enroll hidden (same hard-skip as send).'
-            : 'Off market — enroll hidden (same hard-skip as send).'}
+            : detail.compliance.offMarket
+              ? 'Off market — enroll hidden (same hard-skip as send).'
+              : detail.personId == null
+                ? 'Link a CRM contact before enrolling.'
+                : null}
         </p>
       ) : dripBlockedReason ? (
         <p style={quietTextStyle}>{dripBlockedReason}</p>

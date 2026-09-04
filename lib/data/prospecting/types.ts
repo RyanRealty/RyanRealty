@@ -110,13 +110,18 @@ export interface ProspectComplianceState {
  * Channels still open for outreach, in preference order (email, sms, call).
  * Market hard-skip (relisted / off-market) clears the paint — EMAIL OK must not
  * override Active MLS / sold-after-expire / FSBO-gone (Remarkable/Dodds class).
+ * No effective CRM person (null personId) also clears — skip-trace email-open must
+ * not win over Link contact / owner-attach (Pine Vista farm-stub class).
  */
 export function openChannels(compliance: {
   channels: ProspectChannelBlocks
   relisted?: boolean
   offMarket?: boolean
+  /** When explicitly null, no-person wins over channel OK chips. Omit to ignore. */
+  personId?: number | null
 }): ProspectChannel[] {
   if (compliance.relisted || compliance.offMarket) return []
+  if (compliance.personId === null) return []
   return (['email', 'sms', 'call'] as ProspectChannel[]).filter((c) => !compliance.channels[c].blocked)
 }
 
