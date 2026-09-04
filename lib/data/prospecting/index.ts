@@ -44,3 +44,12 @@ export {
   prospectMarketBlocksOutreach,
   shouldHideProspectEnroll,
 } from './enroll-ui'
+
+export {
+  DRIP_SPACING_MINUTES,
+  DRIP_TIMEZONE,
+  DRIP_WEEKDAY_START_MINUTES,
+  canSendDripNow,
+  isDripWeekday,
+  isDripWindowOpen,
+} from './drip-schedule'
