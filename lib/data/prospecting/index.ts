@@ -38,6 +38,7 @@ export {
 
 export { listProspects } from './list'
 export { classifyProspect, type ProspectBucket } from './classify'
+export { crmPersonHasOutboundContact, effectiveProspectPersonId } from './person-link'
 export {
   canOpenProspectSend,
   prospectDripBlockedReason,

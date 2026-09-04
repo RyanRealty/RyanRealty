@@ -47,6 +47,25 @@ describe('shouldHideProspectEnroll', () => {
       }),
     ).toBe(false)
   })
+
+  it('hides enroll when no CRM person (Pine Vista / owner-attach)', () => {
+    expect(
+      shouldHideProspectEnroll({
+        compliance: { relisted: false, offMarket: false },
+        drip: { enrolled: false },
+        personId: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('does not hide enroll when personId omitted (backward compatible)', () => {
+    expect(
+      shouldHideProspectEnroll({
+        compliance: { relisted: false, offMarket: false },
+        drip: { enrolled: false },
+      }),
+    ).toBe(false)
+  })
 })
 
 describe('prospectDripBlockedReason', () => {

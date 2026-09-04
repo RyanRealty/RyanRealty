@@ -31,11 +31,12 @@ import {
   type ExpiredListingJoin,
   type ProspectRowSkeleton,
 } from './get'
-import { resolveDocsBatch, resolveComplianceBatch } from './batch'
+import { resolveDocsBatch, resolveComplianceBatch, resolvePersonOutboundBatch } from './batch'
 import { classifyProspect, type ProspectBucket } from './classify'
 export type { ProspectBucket }
 export { classifyProspect }
 import { getProspectEngagement } from './engagement'
+import { effectiveProspectPersonId } from './person-link'
 import { blockAllChannels } from './types'
 import {
   PROSPECT_LIST_DEFAULT_DIR,
@@ -268,6 +269,13 @@ export async function listProspects(filters: ProspectListFilters): Promise<Prosp
     const compliance = complianceMap.get(id) ?? FAILSAFE_COMPLIANCE
     return kind === 'expired' ? mapExpiredSkeleton(r, doc, compliance, null) : mapFsboSkeleton(r, doc, compliance)
   })
+
+  // Pine Vista class: farm stubs with empty CRM emails/phones are not send-persons.
+  const outboundById = await resolvePersonOutboundBatch(skeletons.map((s) => s.personId))
+  for (const skeleton of skeletons) {
+    const linked = skeleton.personId
+    skeleton.personId = effectiveProspectPersonId(linked, linked != null ? outboundById.get(linked) : null)
+  }
 
   const classified = skeletons.map((skeleton) => {
     const sendable = computeSendable(skeleton.doc, skeleton.compliance)
