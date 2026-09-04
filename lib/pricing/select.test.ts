@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CmaSubject } from '@/lib/cma/types'
 import { cmaSubjectToPricing, matchToCompSelection, pickCompSource } from '@/lib/pricing/select'
+import { isCustomOrNewSubject } from '@/lib/pricing/classes'
 
 function subject(over: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -121,4 +122,14 @@ describe('pickCompSource', () => {
     expect(pickCompSource({ factsReady: false, comps: [{}, {}, {}] })).toBe('listings')
     expect(pickCompSource({ factsReady: false, customOrNew: true, comps: [{}, {}] })).toBe('listings')
   })
+  it('live Rim View remarks classify custom so under-3 stays on facts (not listings)', () => {
+    const custom = isCustomOrNewSubject({
+      yearBuilt: null,
+      newConstructionYn: null,
+      remarks: 'Introducing a stunning mid-century modern home perched over Tumalo Creek.',
+    }, 2026)
+    expect(custom).toBe(true)
+    expect(pickCompSource({ factsReady: true, comps: [{}, {}], customOrNew: custom })).toBe('facts')
+  })
+
 })

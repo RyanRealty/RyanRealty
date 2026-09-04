@@ -353,7 +353,9 @@ const REMARK_RULES: Array<{ key: RemarkBoolKey; phrase: keyof RemarkFlags; re: R
   {
     key: 'customQuality',
     phrase: 'customQualityPhrase',
-    re: /\bcustom[\s-]+(?:built|home|house|residence|construction|designed|estate|modern)\b|\bmodern[\s-]+custom\b|\barchitect(?:urally)?[\s-]*designed\b/i,
+    // Live Rim View canceled remarks say "mid-century modern" / never "custom built".
+    // To-be-built / under construction also mark the new/custom buyer pool.
+    re: /\bcustom[\s-]+(?:built|home|house|residence|construction|designed|estate|modern)\b|\bmodern[\s-]+custom\b|\barchitect(?:urally)?[\s-]*designed\b|\bmid[\s-]?century(?:\s+modern)?\b|\bto[\s-]?be[\s-]?built\b|\bunder\s+construction\b/i,
   },
 ]
 
@@ -488,6 +490,9 @@ export function isCustomOrNewSubject(input: YearQualityInput, asOfYear?: number)
   if (isNewBuild(input.yearBuilt, asOf, input.newConstructionYn) === true) return true
   const year = input.yearBuilt
   if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= 5) return true
+  // Live canceled Rim View: remarks carry "mid-century modern" without NewConstructionYN
+  // or "custom built". Without this, pickCompSource falls to listings and re-applies
+  // unmappedCrossesKnownBank + exact baths/lot (144→2, 47/34/33).
   return remarksMarkCustomOrNew(input.remarks)
 }
 
