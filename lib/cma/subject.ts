@@ -27,6 +27,8 @@ const DIRECTIONALS = new Set([
   'north', 'south', 'east', 'west', 'northeast', 'northwest', 'southeast', 'southwest',
 ])
 
+import { assessorTrace, propertySubTypeFromStatClass, resolveAssessorFacts, type AssessorFacts } from '@/lib/cma/assessor'
+
 export interface ParsedAddress {
   streetNumber: string
   streetNameTokens: string[]
@@ -230,6 +232,63 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
   }
 }
 
+/**
+ * A subject the MLS has never carried, built from the county assessor.
+ *
+ * Everything the MLS would have supplied and the assessor cannot — status,
+ * list price, remarks, photo, HOA — stays null rather than being invented.
+ * The report then has no listing history to show for this home, which is
+ * correct: there isn't one.
+ */
+export function subjectFromAssessorFacts(
+  parsed: ParsedAddress,
+  facts: AssessorFacts,
+  raw: string,
+): CmaSubject {
+  const streetAddress = `${parsed.streetNumber} ${parsed.streetNameTokens.join(' ')}`.trim()
+  return {
+    listingKey: null,
+    mlsNumber: null,
+    streetAddress,
+    unitNumber: null,
+    city: parsed.city ?? '',
+    state: 'OR',
+    postalCode: parsed.postalCode,
+    subdivision: null,
+    latitude: facts.latitude,
+    longitude: facts.longitude,
+    beds: facts.beds,
+    baths: facts.baths,
+    sqft: facts.sqft,
+    lotAcres: facts.lotAcres,
+    // The comp ladder pins its SQL pool from this. Null opens the pool to every
+    // product in the county and then discards most of it, which is how a good
+    // subject reaches zero comps.
+    propertySubType: propertySubTypeFromStatClass(facts.statClass),
+    yearBuilt: facts.yearBuilt,
+    garageSpaces: null,
+    photoUrl: null,
+    publicRemarks: null,
+    viewDescription: null,
+    taxAnnual: null,
+    standardStatus: null,
+    lastListPrice: null,
+    lastListDate: null,
+    // Stated plainly. A home with no MLS record has no listing history, and an
+    // empty line here would read as "we did not look".
+    listingHistoryLine: `${streetAddress} has no record in the MLS. Facts below come from the Deschutes County assessor.`,
+    associationYn: null,
+    associationFee: null,
+    associationFeeFrequency: null,
+    hoaMonthly: null,
+    hoaAnnualCost: null,
+    waterRaw: null,
+    sewerRaw: null,
+    levelsRaw: facts.statClass,
+    newConstructionYn: null,
+  }
+}
+
 export interface ResolveSubjectResult {
   subject: CmaSubject | null
   /** Human-readable trace of how the subject was resolved (citations). */
@@ -377,19 +436,45 @@ export async function resolveCmaSubject(opts: {
       const best = pickMostRecentListing(rows)
       const subject = rowToSubject(best)
       subject.streetAddress = applyEnteredStreetDirectional(subject.streetAddress, parsed)
-      return {
-        subject,
-        trace: subjectTrace(
-          `Entered by address "${raw}" (StreetName ILIKE '${prefix}%').`,
-          best,
-          rows.length,
-        ),
+      let trace = subjectTrace(
+        `Entered by address "${raw}" (StreetName ILIKE '${prefix}%').`,
+        best,
+        rows.length,
+      )
+      // An MLS row with no living area cannot form a price-per-sqft comp set,
+      // so the build dies at zero comps with a row in hand. Backfill the ONE
+      // missing measurement from the assessor and say where it came from.
+      if (subject.sqft == null) {
+        const assessor = await resolveAssessorFacts(raw)
+        if (assessor?.sqft != null) {
+          subject.sqft = assessor.sqft
+          if (subject.beds == null) subject.beds = assessor.beds
+          if (subject.baths == null) subject.baths = assessor.baths
+          if (subject.yearBuilt == null) subject.yearBuilt = assessor.yearBuilt
+          if (subject.lotAcres == null) subject.lotAcres = assessor.lotAcres
+          trace += ` MLS row carried no living area; ${assessor.sqft} sqft taken from the Deschutes County assessor (taxlot ${assessor.taxlot}).`
+        }
       }
+      return { subject, trace }
     }
   }
+  // No MLS row. Most people asking what their home is worth have never listed
+  // it, so this is the common case, not the edge one — fall back to the county
+  // assessor rather than returning nothing.
+  const assessor = await resolveAssessorFacts(raw)
+  if (assessor && assessor.sqft != null) {
+    return {
+      subject: subjectFromAssessorFacts(parsed, assessor, raw),
+      trace: assessorTrace(assessor, raw),
+    }
+  }
+
+  const parcelNote = assessor
+    ? ` The Deschutes assessor has taxlot ${assessor.taxlot} at this address but no improvement on record${assessor.lotAcres != null ? ` (${assessor.lotAcres} acres)` : ''}, so there is no house to price.`
+    : ''
   return {
     subject: null,
-    trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${prefixes.map((c) => `${c}%`).join("' or '")}', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.`,
+    trace: `No listings row matched StreetNumber=${parsed.streetNumber}, StreetName ILIKE '${prefixes.map((c) => `${c}%`).join("' or '")}', city ${parsed.city ?? 'any'}, zip ${parsed.postalCode ?? 'any'}. The property may never have been MLS-listed.${parcelNote}`,
   }
 }
 
