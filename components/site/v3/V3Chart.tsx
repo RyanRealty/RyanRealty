@@ -712,7 +712,14 @@ export function V3Chart({
                 columns={plot.bars.map((b) => ({
                   frac: (b.x + b.w / 2) / plot.vbW,
                   tick: b.tick,
-                  readings: [{ name: barSeriesName, label: b.label, frac: b.y / plot.vbH, emphasis: true }],
+                  readings: [
+                    {
+                      name: run ? '' : barSeriesName,
+                      label: b.label,
+                      frac: b.y / plot.vbH,
+                      emphasis: true,
+                    },
+                  ],
                 }))}
                 label={caption}
               />

@@ -106,6 +106,8 @@ describe('homepage Field stays on the barrel', () => {
     expect(ATLAS).toContain('zoomAt')
     expect(ATLAS).toContain('router.push')
     expect(ATLAS).toContain('openPlace')
+    expect(ATLAS).toContain('setPinned')
+    expect(ATLAS).toContain('v3-atlas__label--active')
     expect(ATLAS).toContain('pinchRef')
   })
 

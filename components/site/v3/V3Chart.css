@@ -187,15 +187,16 @@
 }
 
 .v3 .v3-chart__x--all {
-  height: 2.4em;
+  height: 3.2em;
 }
 
 .v3 .v3-chart__x--all .v3-chart__xtick {
-  white-space: normal;
-  max-width: 3.2rem;
-  line-height: 1.15;
+  white-space: nowrap;
+  max-width: none;
   text-align: center;
   text-transform: none;
+  transform: translateX(-50%) rotate(-42deg);
+  transform-origin: top center;
 }
 
 /* Segment ink ladder — EIGHT monochrome stops (2026-08-27: the composition
@@ -917,14 +918,7 @@
   }
 
   .v3 .v3-chart__x--all {
-    height: 3.4em;
-  }
-
-  .v3 .v3-chart__x--all .v3-chart__xtick {
-    white-space: nowrap;
-    max-width: none;
-    transform: translateX(-50%) rotate(-48deg);
-    transform-origin: top center;
+    height: 3.6em;
   }
 
   /* An even run would then show the last two labels side by side: drop the

@@ -882,6 +882,23 @@
   letter-spacing: var(--v3-track-display);
 }
 
+/* Four leftover figures in the listing column cannot share one row of
+   display numerals. Two columns until the page is wide enough for four.
+   Beats .v3.v3-instrument .v3-instrument__figures at 48rem. */
+.listing-detail .v3.v3-instrument .v3-instrument__figures {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 90rem) {
+  .listing-detail .v3.v3-instrument .v3-instrument__figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.listing-detail .v3.v3-instrument .v3-figure__value {
+  white-space: nowrap;
+}
+
 .listing-alerts {
   display: grid;
   margin: var(--v3-space-lg) 0;

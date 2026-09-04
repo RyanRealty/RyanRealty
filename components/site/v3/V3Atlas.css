@@ -854,6 +854,22 @@
   text-transform: uppercase;
 }
 
+.v3-atlas__label--active {
+  z-index: 2;
+  max-width: none;
+  padding: 0.15rem 0.45rem;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: none;
+  text-shadow: none;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+  display: block;
+}
+
 /* A listing sold in the last 30 days: counted in the claim, so drawn — a
    hollow, lighter mark; its pulse says when. */
 .v3-atlas__dot--sold {

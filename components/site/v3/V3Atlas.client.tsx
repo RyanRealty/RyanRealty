@@ -813,9 +813,15 @@ export function V3Atlas({
 
   const openPlace = useCallback(
     (shape: PlacedShape) => {
-      if (shape.href) router.push(shape.href)
+      const at = shape.anchor
+        ? toPx(...proj.toXY(shape.anchor[0], shape.anchor[1]))
+        : pointer
+          ? screenToWorld(camRef.current, pointer.x, pointer.y)
+          : ([0, 0] as const)
+      setPinned((prev) => (prev?.id === shape.id ? null : { id: shape.id, at: [at[0], at[1]] }))
+      setHover(shape.id)
     },
-    [router],
+    [pointer, proj, toPx],
   )
 
   /* Every place as a door a thumb can hit: on a phone most silhouettes are
@@ -1405,7 +1411,7 @@ export function V3Atlas({
                         })
                     : null}
                   {towns
-                    .filter((s) => s.anchor && !isFrame(s))
+                    .filter((s) => s.anchor && !isFrame(s) && s.id !== active)
                     .map((s) => {
                       const [x, y] = toPx(...proj.toXY(s.anchor![0], s.anchor![1]))
                       return (
@@ -1416,7 +1422,7 @@ export function V3Atlas({
                     })}
                   {cam.k > 1.25
                     ? places
-                        .filter((s) => s.anchor && !isFrame(s))
+                        .filter((s) => s.anchor && !isFrame(s) && s.id !== active)
                         .slice(0, 20)
                         .map((s) => {
                           const [x, y] = toPx(...proj.toXY(s.anchor![0], s.anchor![1]))
@@ -1431,6 +1437,18 @@ export function V3Atlas({
                           )
                         })
                     : null}
+                  {activeShape && activeShape.anchor && !isFrame(activeShape) ? (
+                    <span
+                      key={`on-${activeShape.id}`}
+                      className="v3-atlas__label v3-atlas__label--active"
+                      style={{
+                        left: toPx(...proj.toXY(activeShape.anchor[0], activeShape.anchor[1]))[0],
+                        top: toPx(...proj.toXY(activeShape.anchor[0], activeShape.anchor[1]))[1],
+                      }}
+                    >
+                      {shortPlaceLabel(activeShape.name)}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
               </div>
