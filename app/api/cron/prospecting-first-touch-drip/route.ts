@@ -22,7 +22,6 @@ export async function GET(request: Request) {
   try {
     const result = await drainProspectingFirstTouchDrip(new Date())
     return NextResponse.json({
-      ok: result.ok,
       spacingMinutes: DRIP_SPACING_MINUTES,
       spacingNote: 'TBD — Matt must confirm DRIP_SPACING_MINUTES before treating as locked',
       ...result,
