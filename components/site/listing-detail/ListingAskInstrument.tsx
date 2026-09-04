@@ -12,7 +12,11 @@ export function ListingAskInstrument({ claim }: { claim: ListingAskClaim }) {
       foldAfter={3}
       source={v3Text(claim.source)}
       updated={claim.updated ? v3Text(claim.updated) : undefined}
-      action={{ label: v3Text(claim.action.label), href: claim.action.href, variant: 'ghost' }}
+      action={
+        claim.action
+          ? { label: v3Text(claim.action.label), href: claim.action.href, variant: 'ghost' }
+          : undefined
+      }
     />
   )
 }
