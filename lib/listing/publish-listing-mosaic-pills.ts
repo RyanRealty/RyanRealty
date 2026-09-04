@@ -1,6 +1,7 @@
 /**
- * Mosaic captions and gallery tabs. Floor / 3D / map occupy mosaic tiles,
- * not cream lozenges. The photo count is quiet type on the mosaic.
+ * Mosaic captions and gallery tabs. The mosaic is stills of this house.
+ * Photo count, 3D, floor, and street view are quiet type on the mosaic.
+ * The map is not a caption and not a tile.
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -21,13 +22,23 @@ export function publishListingMosaicPills(input: {
   hasStreetView?: boolean
 }): ListingMosaicPill[] {
   if (input.photoCount <= 0) return []
-  return [
+  const pills: ListingMosaicPill[] = [
     {
       id: 'photos',
       label: `${input.photoCount} photos`,
       action: 'gallery',
     },
   ]
+  if (publishListingVirtualTour(input.videos)) {
+    pills.push({ id: 'tour', label: '3D', action: 'tour' })
+  }
+  if ((input.floorPlanCount ?? 0) > 0) {
+    pills.push({ id: 'floor', label: 'Floor', action: 'floor' })
+  }
+  if (input.hasStreetView) {
+    pills.push({ id: 'street', label: 'Street view', action: 'street' })
+  }
+  return pills
 }
 
 export type ListingGalleryTabId =

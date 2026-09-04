@@ -61,8 +61,8 @@ export function TextMattCTA({
     <div
       className={className ?? undefined}
       style={{
-        border: 'var(--v3-panel-border)',
-        background: 'var(--v3-panel-bg)',
+        border: '1px solid var(--v3-navy)',
+        background: 'var(--v3-cream)',
         padding: 'var(--v3-space-md)',
       }}
     >

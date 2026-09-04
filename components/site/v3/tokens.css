@@ -462,13 +462,13 @@
 /* ---------------------------------------------------------------------------
    2c. THE LISTING LOOK
    Product-detail chrome. Same navy, cream, Amboqia, Geist. Swap by mounting
-   V3_LISTING_CLASS beside V3_ROOT_CLASS. Paper behind the page, cream panels,
-   1px rules, reading-size type. Not Ledger (too dense). Not a new palette.
+   V3_LISTING_CLASS beside V3_ROOT_CLASS. Cream page, 1px rules, reading-size
+   type. Not Ledger (too dense). Not a gray paper wash. Not a new palette.
    --------------------------------------------------------------------------- */
 
 .v3.v3--listing,
 .v3--listing .v3 {
-  --v3-surface: color-mix(in srgb, var(--v3-navy) 4%, var(--v3-cream));
+  --v3-surface: var(--v3-cream);
   --v3-rule-weight-section: 1px;
   --v3-rule-section: 1px solid color-mix(in srgb, var(--v3-navy) 10%, transparent);
   --v3-panel-bg: var(--v3-cream);

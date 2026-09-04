@@ -1,10 +1,11 @@
 /**
- * Listing mosaic: one lead cell + stacked stills and leftover media tiles.
+ * Listing mosaic: one lead cell plus up to four stills of THIS house.
  * Lead is 3:2 cover-crop. A marketing reel, when leftover has one, is the lead.
- * Floor, 3D, and a Google map sit as tiles when those media exist.
+ * 3D, floor, and street view are captions on the mosaic, not tiles.
+ * The map is the atlas below the fold, never a Google static in the grid.
  */
 
-export const LISTING_MOSAIC_THUMB_COUNT = 2
+export const LISTING_MOSAIC_THUMB_COUNT = 4
 export const LISTING_MOSAIC_SIDE_MAX = 4
 export const LISTING_MOSAIC_PHOTO_QUALITY = 90
 export const LISTING_MOSAIC_LEAD_SIZES = '(max-width: 63.99rem) 100vw, 66vw'
@@ -22,44 +23,24 @@ export function publishListingMosaicThumbs<T>(
   return photos.slice(start, start + LISTING_MOSAIC_THUMB_COUNT)
 }
 
-export type ListingMosaicTile =
-  | { kind: 'photo'; photoIndex: number }
-  | { kind: 'tour' }
-  | { kind: 'floor' }
-  | { kind: 'map' }
+export type ListingMosaicTile = { kind: 'photo'; photoIndex: number }
 
 /**
- * Side cells beside the lead. Photos only: two stills. When 3D, a floor
- * plan, or a map exist, those occupy real tiles and the stack can grow
- * to four. No fake 3D. No map tile without a key+point (caller sets hasMap).
+ * Side cells beside the lead. Stills of this house only, up to four.
+ * Do not mint 3D, floor, or map tiles. Miss omits. Do not invent a cell.
  */
 export function publishListingMosaicTiles(input: {
   photoCount: number
   leadIsVideo: boolean
-  hasTour: boolean
-  hasFloor: boolean
-  hasMap: boolean
 }): ListingMosaicTile[] {
-  const extras: ListingMosaicTile[] = []
-  if (input.hasTour) extras.push({ kind: 'tour' })
-  if (input.hasFloor) extras.push({ kind: 'floor' })
-  if (input.hasMap) extras.push({ kind: 'map' })
-
   const photoStart = input.leadIsVideo ? 0 : 1
   const available = Math.max(0, input.photoCount - photoStart)
-  // Photos only: two stills. One extra (usually the map): two stills plus
-  // that tile, so the extra can span the bottom of the stack. Two or three
-  // extras: fill up to four cells.
-  const photoCap =
-    extras.length === 0
-      ? LISTING_MOSAIC_THUMB_COUNT
-      : Math.min(LISTING_MOSAIC_THUMB_COUNT, Math.max(0, LISTING_MOSAIC_SIDE_MAX - extras.length))
-  const photoSlots = Math.min(available, photoCap)
+  const photoSlots = Math.min(available, LISTING_MOSAIC_SIDE_MAX)
   const photos: ListingMosaicTile[] = []
   for (let i = 0; i < photoSlots; i += 1) {
     photos.push({ kind: 'photo', photoIndex: photoStart + i })
   }
-  return [...photos, ...extras]
+  return photos
 }
 
 /**

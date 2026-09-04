@@ -566,6 +566,7 @@
   bottom: var(--v3-space-sm);
   z-index: 3;
   display: flex;
+  gap: var(--v3-space-sm);
   pointer-events: none;
 }
 
@@ -626,15 +627,15 @@
 
 .listing-mosaic__caption,
 .listing-mosaic__tile-label {
-  color: var(--v3-navy);
+  color: var(--v3-cream);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
   letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
+  text-transform: none;
   text-shadow:
-    0 0 0.35rem var(--v3-cream),
-    0 0 0.7rem var(--v3-cream);
+    0 0 0.35rem var(--v3-navy),
+    0 0 0.7rem var(--v3-navy);
 }
 
 .listing-mosaic__caption {
@@ -721,6 +722,10 @@
     grid-column: 1 / -1;
   }
 
+  .listing-mosaic__thumbs:not(.is-wide) .listing-mosaic__thumb:only-child {
+    grid-row: 1 / -1;
+  }
+
   .listing-mosaic__lead img,
   .listing-mosaic__lead video,
   .listing-mosaic__lead iframe,
@@ -768,13 +773,12 @@
   gap: var(--v3-space-md);
 }
 
-/* Listing chrome: leftover sections keep their data; this is the skin.
-   Paper behind the column, cream panels in the column. Face and the
-   back-to-results link stay unboxed. */
+/* Cream page, hairline between sections. Face and the back-to-results
+   link stay unboxed. Do not wrap the column in gray paper plus cream cards. */
 .listing-detail-main > *:not(.listing-face):not(a) {
-  background: var(--v3-cream);
-  border: 1px solid color-mix(in srgb, var(--v3-navy) 10%, transparent);
-  padding: var(--v3-space-md) var(--v3-space-lg);
+  background: transparent;
+  border: 0;
+  padding: var(--v3-space-md) 0;
 }
 
 .listing-detail-main .v3.v3-quiet,
@@ -796,7 +800,7 @@
 
 .listing-panel {
   background: var(--v3-cream);
-  border: 1px solid color-mix(in srgb, var(--v3-navy) 10%, transparent);
+  border: 1px solid var(--v3-navy);
   padding: var(--v3-space-md) var(--v3-space-lg);
 }
 
@@ -805,8 +809,8 @@
   margin-inline: auto;
   margin-top: var(--v3-space-md);
   padding: var(--v3-space-md) var(--v3-gutter);
-  background: var(--v3-cream);
-  border: 1px solid color-mix(in srgb, var(--v3-navy) 10%, transparent);
+  background: transparent;
+  border: 0;
 }
 
 .listing-detail > .v3.v3-ledger + .v3.v3-ledger,

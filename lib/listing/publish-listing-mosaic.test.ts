@@ -8,12 +8,12 @@ import {
 describe('publishListingMosaicThumbs', () => {
   const photos = ['p1', 'p2', 'p3', 'p4', 'p5']
 
-  it('mosaic grid: two stacked stills beside a photo lead', () => {
-    expect(publishListingMosaicThumbs(photos, false)).toEqual(['p2', 'p3'])
+  it('mosaic grid: up to four stills beside a photo lead', () => {
+    expect(publishListingMosaicThumbs(photos, false)).toEqual(['p2', 'p3', 'p4', 'p5'])
   })
 
-  it('video lead: first two stills sit in the stacked cells', () => {
-    expect(publishListingMosaicThumbs(photos, true)).toEqual(['p1', 'p2'])
+  it('video lead: first four stills sit in the side cells', () => {
+    expect(publishListingMosaicThumbs(photos, true)).toEqual(['p1', 'p2', 'p3', 'p4'])
   })
 
   it('does not invent empty cells when the house has one photo', () => {
@@ -22,77 +22,29 @@ describe('publishListingMosaicThumbs', () => {
 })
 
 describe('publishListingMosaicTiles', () => {
-  const photosOnly = {
-    photoCount: 35,
-    leadIsVideo: false,
-    hasTour: false,
-    hasFloor: false,
-    hasMap: false,
-  }
-
-  it('photos only: two stills, no invented 3D or map', () => {
-    expect(publishListingMosaicTiles(photosOnly)).toEqual([
+  it('fills up to four stills and never mints 3D, floor, or map tiles', () => {
+    expect(
+      publishListingMosaicTiles({ photoCount: 35, leadIsVideo: false }).map((t) => t.kind),
+    ).toEqual(['photo', 'photo', 'photo', 'photo'])
+    expect(publishListingMosaicTiles({ photoCount: 35, leadIsVideo: false })).toEqual([
       { kind: 'photo', photoIndex: 1 },
       { kind: 'photo', photoIndex: 2 },
+      { kind: 'photo', photoIndex: 3 },
+      { kind: 'photo', photoIndex: 4 },
     ])
   })
 
-  it('17733 Meadow House: 3D, floor, and map occupy real tiles', () => {
-    const tiles = publishListingMosaicTiles({
-      photoCount: 35,
-      leadIsVideo: false,
-      hasTour: true,
-      hasFloor: true,
-      hasMap: true,
-    })
-    expect(tiles.map((t) => t.kind)).toEqual(['photo', 'tour', 'floor', 'map'])
-    expect(tiles.some((t) => t.kind === 'tour')).toBe(true)
-  })
-
-  it('does not mint a 3D tile when leftover has no tour', () => {
-    const tiles = publishListingMosaicTiles({
-      photoCount: 12,
-      leadIsVideo: false,
-      hasTour: false,
-      hasFloor: true,
-      hasMap: true,
-    })
-    expect(tiles.map((t) => t.kind)).toEqual(['photo', 'photo', 'floor', 'map'])
-  })
-
-  it('omits the map tile when the caller has no key or point', () => {
-    const tiles = publishListingMosaicTiles({
-      photoCount: 8,
-      leadIsVideo: true,
-      hasTour: true,
-      hasFloor: false,
-      hasMap: false,
-    })
-    expect(tiles.map((t) => t.kind)).toEqual(['photo', 'photo', 'tour'])
-  })
-
-  it('one extra media keeps two house stills so the extra can span', () => {
-    expect(
-      publishListingMosaicTiles({
-        photoCount: 35,
-        leadIsVideo: false,
-        hasTour: false,
-        hasFloor: false,
-        hasMap: true,
-      }).map((t) => t.kind),
-    ).toEqual(['photo', 'photo', 'map'])
+  it('video lead starts the side stills at the first photo', () => {
+    expect(publishListingMosaicTiles({ photoCount: 8, leadIsVideo: true })).toEqual([
+      { kind: 'photo', photoIndex: 0 },
+      { kind: 'photo', photoIndex: 1 },
+      { kind: 'photo', photoIndex: 2 },
+      { kind: 'photo', photoIndex: 3 },
+    ])
   })
 
   it('does not invent a photo cell when the house has one still', () => {
-    expect(
-      publishListingMosaicTiles({
-        photoCount: 1,
-        leadIsVideo: false,
-        hasTour: true,
-        hasFloor: false,
-        hasMap: true,
-      }).map((t) => t.kind),
-    ).toEqual(['tour', 'map'])
+    expect(publishListingMosaicTiles({ photoCount: 1, leadIsVideo: false })).toEqual([])
   })
 })
 
