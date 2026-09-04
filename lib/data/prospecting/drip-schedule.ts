@@ -9,6 +9,8 @@
  * Pure helpers only — no DB, no clock. The drain cron supplies `now` + last send.
  */
 
+import { zonedDayMinutes } from '@/lib/format/date'
+
 export const DRIP_TIMEZONE = 'America/Los_Angeles'
 
 /** Local weekday minutes when the drip window opens (08:00). */
@@ -27,29 +29,14 @@ export type DripScheduleDecision =
   | { ok: true }
   | { ok: false; reason: 'weekend' | 'before-window' | 'spacing' }
 
-function localParts(now: Date, timeZone: string): { day: string; minutes: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timeZone || DRIP_TIMEZONE,
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(now)
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  const day = get('weekday') || 'Mon'
-  const hour = Number(get('hour')) % 24
-  const minute = Number(get('minute'))
-  return { day, minutes: hour * 60 + minute }
-}
-
 /** True when `now` is Mon–Fri in the drip timezone. */
 export function isDripWeekday(now: Date, timeZone: string = DRIP_TIMEZONE): boolean {
-  return WEEKDAYS.has(localParts(now, timeZone).day)
+  return WEEKDAYS.has(zonedDayMinutes(now, timeZone).day)
 }
 
 /** True when local time is at/after the weekday start (08:00). Weekends always false. */
 export function isDripWindowOpen(now: Date, timeZone: string = DRIP_TIMEZONE): boolean {
-  const { day, minutes } = localParts(now, timeZone)
+  const { day, minutes } = zonedDayMinutes(now, timeZone)
   if (!WEEKDAYS.has(day)) return false
   return minutes >= DRIP_WEEKDAY_START_MINUTES
 }

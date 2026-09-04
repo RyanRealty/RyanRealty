@@ -8,7 +8,7 @@
  */
 import 'server-only'
 
-import { verifyNotRelisted } from '@/lib/data/prospecting/batch'
+import { verifyFsboStillActive, verifyNotRelisted } from '@/lib/data/prospecting/batch'
 import {
   getLastDripSentAt,
   hardSkipQueuedFirstTouch,
@@ -16,6 +16,7 @@ import {
   type QueuedDripItem,
 } from '@/lib/data/prospecting/drip-queue'
 import { canSendDripNow, DRIP_SPACING_MINUTES } from '@/lib/data/prospecting/drip-schedule'
+import { sendProspectingEmailIntro } from '@/app/actions/prospecting'
 
 export type DripDrainResult =
   | { ok: true; action: 'idle'; reason: 'weekend' | 'before-window' | 'spacing' | 'empty' }
@@ -47,8 +48,10 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
     const relistCheck = await verifyNotRelisted(next.kind, {
       street_address: next.streetAddress,
       city: next.city,
+      // Expired: off-market ts. FSBO: detected_at (Closed after detect hard-skips).
       expiryComparator: next.expiredAt,
       listing_key: next.kind === 'expired' ? next.id : null,
+      fsbo_url: next.kind === 'fsbo' ? next.id : null,
     })
     if (relistCheck.relisted || relistCheck.verifyFailed) {
       const reason = relistCheck.verifyFailed
@@ -58,9 +61,20 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
       skipped++
       continue
     }
+    if (next.kind === 'fsbo') {
+      const still = await verifyFsboStillActive(next.id)
+      if (still.verifyFailed || !still.active) {
+        await hardSkipQueuedFirstTouch(
+          next.kind,
+          next.id,
+          still.verifyFailed ? 'fsbo-status-verify-failed' : 'fsbo-off-market',
+        )
+        skipped++
+        continue
+      }
+    }
 
     const idempotencyKey = `drip:${next.kind}:${next.id}:${next.queuedAt}`
-    const { sendProspectingEmailIntro } = await import('@/app/actions/prospecting')
     const sent = await sendProspectingEmailIntro(next.kind, next.id, {
       idempotencyKey,
       actor: 'drip-cron',
