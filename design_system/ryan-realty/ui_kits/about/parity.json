@@ -16,7 +16,7 @@
     },
     {
       "name": "AboutFaces",
-      "section": "First viewport. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts. The first face fills the 390 fold. Name is the door to /team/[slug]. Call and text sit on that row from the live broker phone. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no mission graf.",
+      "section": "First viewport. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts at conversation scale (card-photo token, not a 70vh yearbook). Name is the door to /team/[slug]. Title, Call, and Text sit under the portrait from the live broker phone and title. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no mission graf.",
       "blocking": true
     },
     {

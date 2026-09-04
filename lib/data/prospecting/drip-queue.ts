@@ -227,3 +227,62 @@ export async function getLastDripSentAt(): Promise<Date | null> {
   if (stamps.length === 0) return null
   return new Date(Math.max(...stamps))
 }
+
+/**
+ * Everything currently sitting in the first-touch drip queue (FIFO order).
+ *
+ * `peekOldestQueuedFirstTouch` answers "what drains next"; this answers "what
+ * is waiting, and how long is the runway" — the queue-depth read the admin
+ * worklist needs so a staged batch is never invisible.
+ */
+export async function listQueuedFirstTouch(limit = 500): Promise<QueuedDripItem[]> {
+  const sb = createServiceClient()
+  const [expRes, fsboRes] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select('listing_key, outreach_email_queued_at, street_address, city, expired_at, status_change_timestamp')
+      .eq('outreach_email_status', 'queued')
+      .not('outreach_email_queued_at', 'is', null)
+      .is('outreach_email_sent_at', null)
+      .order('outreach_email_queued_at', { ascending: true })
+      .limit(limit),
+    sb
+      .from('fsbo_listings')
+      .select('fsbo_url, outreach_email_queued_at, street_address, city, detected_at')
+      .eq('outreach_email_status', 'queued')
+      .not('outreach_email_queued_at', 'is', null)
+      .is('outreach_email_sent_at', null)
+      .order('outreach_email_queued_at', { ascending: true })
+      .limit(limit),
+  ])
+  if (expRes.error) throw new Error(`list expired queue failed: ${expRes.error.message}`)
+  if (fsboRes.error) throw new Error(`list fsbo queue failed: ${fsboRes.error.message}`)
+
+  const items: QueuedDripItem[] = []
+  for (const row of expRes.data ?? []) {
+    if (!row.outreach_email_queued_at) continue
+    items.push({
+      kind: 'expired',
+      id: String(row.listing_key),
+      queuedAt: String(row.outreach_email_queued_at),
+      streetAddress: (row.street_address as string | null) ?? null,
+      city: (row.city as string | null) ?? null,
+      expiredAt:
+        ((row.expired_at as string | null) ?? null) ||
+        ((row.status_change_timestamp as string | null) ?? null),
+    })
+  }
+  for (const row of fsboRes.data ?? []) {
+    if (!row.outreach_email_queued_at) continue
+    items.push({
+      kind: 'fsbo',
+      id: String(row.fsbo_url),
+      queuedAt: String(row.outreach_email_queued_at),
+      streetAddress: (row.street_address as string | null) ?? null,
+      city: (row.city as string | null) ?? null,
+      expiredAt: (row.detected_at as string | null) ?? null,
+    })
+  }
+  items.sort((a, b) => a.queuedAt.localeCompare(b.queuedAt))
+  return items.slice(0, limit)
+}

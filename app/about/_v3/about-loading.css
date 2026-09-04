@@ -37,8 +37,7 @@
   }
 }
 
-/* The three cutouts stand on one baseline (.about-faces__grid is align-items:
-   end). A hairline at the foot of each reserved slot says three faces land
+/* A hairline at the foot of each reserved slot says three faces land
    here, in the register's own vocabulary, without painting a card behind any
    of them. Not animated: a rule is not content arriving. */
 .v3 .about-loading__slot {

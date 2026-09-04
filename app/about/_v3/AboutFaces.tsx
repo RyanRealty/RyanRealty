@@ -1,7 +1,8 @@
 /**
- * First viewport of /about: the live brokers, cutout PNGs on cream.
- * No card, no wash, no border — the transparent edge is the composition
- * (CLAUDE.md §3). The name is the door. Call and text sit on that row.
+ * First viewport of /about and /team: the live brokers, cutout PNGs on cream
+ * at conversation scale. No card, no wash, no border — the transparent edge
+ * is the composition (CLAUDE.md §3). The name is the door. Title, Call, and
+ * Text sit under the portrait, not jammed on one line.
  */
 
 import Link from 'next/link'
@@ -39,7 +40,12 @@ export function AboutFaces({
   return (
     <section
       id="faces"
-      className={cn(V3_ROOT_CLASS, 'about-faces', headingLevel === 1 && 'about-faces--lead')}
+      className={cn(
+        V3_ROOT_CLASS,
+        'about-faces',
+        headingLevel === 1 && 'about-faces--lead',
+        shown.length === 1 && 'about-faces--solo',
+      )}
       aria-labelledby="faces-heading"
     >
       <div className="about-faces__head">
@@ -68,8 +74,9 @@ export function AboutFaces({
               <Link href={person.href} className="about-faces__name">
                 {person.name}
               </Link>
+              {person.title ? <p className="about-faces__title">{person.title}</p> : null}
               {person.tel ? (
-                <>
+                <div className="about-faces__reach-row">
                   <a
                     href={`tel:${person.tel}`}
                     className="about-faces__reach"
@@ -84,7 +91,7 @@ export function AboutFaces({
                   >
                     Text
                   </a>
-                </>
+                </div>
               ) : null}
             </div>
           </li>
