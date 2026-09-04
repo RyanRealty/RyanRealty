@@ -22,7 +22,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getProspect, getProspectDetail, updateCmaRowFieldsBySlug } from '@/lib/data'
-import { verifyNotRelisted } from '@/lib/data/prospecting/batch'
+import { verifyFsboStillActive, verifyNotRelisted } from '@/lib/data/prospecting/batch'
 import { resolveDripSequenceForKind } from '@/lib/data/prospecting/drip'
 import {
   claimProspectSend,
@@ -173,6 +173,17 @@ export async function sendProspectingIntro(
     const docUrl = `${SITE_URL}/cma/${clientReady.slug}`
 
     // 4–6. Non-negotiable exclusions, from the live-computed compliance state.
+    // Still FSBO? Live re-read fail-closed — scraper may have marked gone since the drawer loaded.
+    if (kind === 'fsbo') {
+      const still = await verifyFsboStillActive(prospect.id)
+      if (still.verifyFailed) {
+        return { ok: false, error: 'Could not verify this is still FSBO. Send blocked until status is confirmed.', code: 'off-market' }
+      }
+      if (!still.active) {
+        return { ok: false, error: 'This FSBO is off market. Not sendable.', code: 'off-market' }
+      }
+    }
+
     if (prospect.compliance.offMarket) {
       return { ok: false, error: 'This FSBO is off market. Not sendable.', code: 'off-market' }
     }
@@ -188,8 +199,11 @@ export async function sendProspectingIntro(
     const relistCheck = await verifyNotRelisted(kind, {
       street_address: prospect.streetAddress,
       city: prospect.city,
-      expiryComparator: prospect.expiredAt,
+      // Expired: off-market timestamp. FSBO: detected_at — Closed after detect hard-skips.
+      expiryComparator: kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt,
       listing_key: kind === 'expired' ? prospect.id : null,
+      // FSBO: verify loads enrichment taxlot / live status from fsbo_listings.
+      fsbo_url: kind === 'fsbo' ? prospect.id : null,
     })
     if (relistCheck.relisted) {
       return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
@@ -465,6 +479,17 @@ export async function sendProspectingEmailIntro(
     }
 
     // 4–6. Non-negotiable exclusions (mirrors SMS steps 4–6, fail-closed relist).
+    // Still FSBO? Live re-read fail-closed — scraper may have marked gone since the drawer loaded.
+    if (kind === 'fsbo') {
+      const still = await verifyFsboStillActive(prospect.id)
+      if (still.verifyFailed) {
+        return { ok: false, error: 'Could not verify this is still FSBO. Send blocked until status is confirmed.', code: 'off-market' }
+      }
+      if (!still.active) {
+        return { ok: false, error: 'This FSBO is off market. Not sendable.', code: 'off-market' }
+      }
+    }
+
     if (prospect.compliance.offMarket) {
       return { ok: false, error: 'This FSBO is off market. Not sendable.', code: 'off-market' }
     }
@@ -477,8 +502,11 @@ export async function sendProspectingEmailIntro(
     const relistCheck = await verifyNotRelisted(kind, {
       street_address: prospect.streetAddress,
       city: prospect.city,
-      expiryComparator: prospect.expiredAt,
+      // Expired: off-market timestamp. FSBO: detected_at — Closed after detect hard-skips.
+      expiryComparator: kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt,
       listing_key: kind === 'expired' ? prospect.id : null,
+      // FSBO: verify loads enrichment taxlot / live status from fsbo_listings.
+      fsbo_url: kind === 'fsbo' ? prospect.id : null,
     })
     if (relistCheck.relisted) {
       return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }

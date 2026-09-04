@@ -65,6 +65,19 @@ export type ExpiredOutreachListing = {
  * is the original relist. Closed with CloseDate (else status_change_timestamp)
  * after expiryComparator is the sold-after-expire extend — still `relisted`.
  */
+/**
+ * Prefer a real APN when present. Owner-lookup writes
+ * `taxlot <APN>` into enrichment_notes for FSBOs (no listing_key → no
+ * listings.parcel_number anchor), so scrape that when the column is absent.
+ */
+export function parcelFromEnrichmentNotes(notes: string | null | undefined): string | null {
+  if (!notes) return null
+  // Owner-lookup writes `taxlot <APN>` — require a digit so plain English
+  // after the word "taxlot" is not treated as a parcel.
+  const m = String(notes).match(/\btaxlot\s+([A-Za-z0-9_-]*\d[A-Za-z0-9_-]*)/i)
+  return m ? normalizeParcelNumber(m[1]) : null
+}
+
 export function expiredOutreachListingHits(opts: {
   kind: ProspectKind
   listing: ExpiredOutreachListing
@@ -81,14 +94,16 @@ export function expiredOutreachListingHits(opts: {
   if (!addressMatch && !parcelMatch) return false
 
   const status = (opts.listing.StandardStatus as string | null) ?? null
-  if (opts.kind === 'fsbo') {
-    return (EXPIRED_OUTREACH_ON_MARKET as readonly string[]).includes(String(status ?? ''))
-  }
-
+  // Active / Pending / Coming Soon at the address or parcel — block for both
+  // kinds. Expired still requires the on-market event to be newer than expire
+  // when a comparator is present; FSBO was never in MLS, so any current
+  // on-market match is new brokerage activity and hard-skips.
   if ((EXPIRED_OUTREACH_ON_MARKET as readonly string[]).includes(String(status ?? ''))) {
+    if (opts.kind === 'fsbo') return true
     return opts.expiryComparator == null || String(opts.listing.status_change_timestamp ?? '') > opts.expiryComparator
   }
 
+  // Closed after expire (expired) OR after FSBO detect (fsbo) — same hard-skip.
   if (!isClosedStatus(status) || opts.expiryComparator == null) return false
   const soldAt = String(opts.listing.CloseDate ?? opts.listing.status_change_timestamp ?? '')
   return soldAt !== '' && soldAt > opts.expiryComparator
@@ -205,34 +220,61 @@ export async function isRelistedNow(prospect: {
 }
 
 /**
- * FSBO re-list check (spec §6.4 #2) — the same MLS Active/Pending/Coming Soon
- * address match used for expireds, minus the status_change_timestamp compare
- * (an FSBO was never in MLS to begin with, so any current on-market match at
- * the address is new activity — there is no prior expiry event to compare
- * against, unlike the expired-listing case).
+ * FSBO live-status hard-skip (Matt 2026-09-03) — same paint as expired:
+ * Active/Pending/Coming Soon at the address OR parcel, OR Closed since
+ * `detected_at` (CloseDate else status_change_timestamp > detect comparator).
+ * Prefer `parcel_number` when present; else scrape taxlot from enrichment_notes.
+ * Fail-open on read error (worklist). Send re-runs fail-closed via verifyNotRelisted.
  */
 export async function isFsboRelistedNow(prospect: {
   street_address: string | null
   city: string | null
+  detected_at?: string | null
+  parcel_number?: string | null
+  enrichment_notes?: string | null
 }): Promise<boolean> {
   if (!prospect.street_address) return false
   try {
     const sb = createServiceClient()
     const num = String(prospect.street_address).split(' ')[0]
     const namePrefix = String(prospect.street_address).slice(num.length + 1).split(' ')[0]?.toUpperCase() ?? ''
-    const { data: onMarket, error } = await sb
+    const cityUpper = String(prospect.city ?? '').toUpperCase()
+    const subjectParcel =
+      normalizeParcelNumber(prospect.parcel_number) ??
+      parcelFromEnrichmentNotes(prospect.enrichment_notes)
+    const streetQ = sb
       .from('listings')
-      .select('StreetName, City')
+      .select(EXPIRED_OUTREACH_LISTING_SELECT)
       .eq('StreetNumber', num)
-      .in('StandardStatus', ['Active', 'Pending', 'Coming Soon'])
-    if (error) {
-      console.error('[prospecting] isFsboRelistedNow read failed:', error.message)
+      .or(EXPIRED_OUTREACH_STATUS_OR)
+    const parcelQ = subjectParcel
+      ? sb
+          .from('listings')
+          .select(EXPIRED_OUTREACH_LISTING_SELECT)
+          .eq('parcel_number', subjectParcel)
+          .or(EXPIRED_OUTREACH_STATUS_OR)
+      : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
+    if (streetRes.error) {
+      console.error('[prospecting] isFsboRelistedNow read failed:', streetRes.error.message)
       return false
     }
-    return (onMarket ?? []).some(
-      (l) =>
-        String(l.StreetName ?? '').toUpperCase().startsWith(namePrefix) &&
-        String(l.City ?? '').toUpperCase() === String(prospect.city ?? '').toUpperCase(),
+    if (parcelRes.error) {
+      console.error('[prospecting] isFsboRelistedNow parcel probe failed:', parcelRes.error.message)
+    }
+    const rows = [
+      ...((streetRes.data ?? []) as ExpiredOutreachListing[]),
+      ...((parcelRes.data ?? []) as ExpiredOutreachListing[]),
+    ]
+    return rows.some((l) =>
+      expiredOutreachListingHits({
+        kind: 'fsbo',
+        listing: l,
+        namePrefix,
+        cityUpper,
+        expiryComparator: prospect.detected_at ?? null,
+        subjectParcel,
+      }),
     )
   } catch (e) {
     console.error('[prospecting] isFsboRelistedNow threw:', e instanceof Error ? e.message : e)
@@ -254,7 +296,13 @@ export interface ProspectComplianceInput {
   status_change_timestamp?: string | null
   /** expired only — resolves listings.parcel_number for same-taxlot hits. */
   listing_key?: string | null
-  /** fsbo only — offMarket = status !== 'active'. */
+  /** fsbo only — Closed-after-detect comparator (detected_at). */
+  detected_at?: string | null
+  /** Prefer when present — same-taxlot MLS hit without relying on street spelling. */
+  parcel_number?: string | null
+  /** fsbo — taxlot scraped from owner-lookup enrichment_notes when no parcel column. */
+  enrichment_notes?: string | null
+  /** fsbo only — offMarket = status !== 'active' (no longer FSBO). */
   status?: string | null
   outreach_crm_person_id?: number | null
   fub_person_id?: number | null
@@ -305,7 +353,13 @@ export async function resolveComplianceState(
           status_change_timestamp: prospect.status_change_timestamp ?? null,
           listing_key: prospect.listing_key ?? null,
         })
-      : await isFsboRelistedNow({ street_address: prospect.street_address, city: prospect.city })
+      : await isFsboRelistedNow({
+          street_address: prospect.street_address,
+          city: prospect.city,
+          detected_at: prospect.detected_at ?? null,
+          parcel_number: prospect.parcel_number ?? null,
+          enrichment_notes: prospect.enrichment_notes ?? null,
+        })
 
   const offMarket = kind === 'fsbo' ? (prospect.status ?? 'active') !== 'active' : false
   const noPhone = !hasSendablePhone(prospect.contact_phone)

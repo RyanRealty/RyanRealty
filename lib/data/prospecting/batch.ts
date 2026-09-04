@@ -16,10 +16,10 @@ import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import {
   EXPIRED_OUTREACH_LISTING_SELECT,
-  EXPIRED_OUTREACH_ON_MARKET,
   EXPIRED_OUTREACH_STATUS_OR,
   expiredOutreachListingHits,
   normalizeParcelNumber,
+  parcelFromEnrichmentNotes,
   type ExpiredOutreachListing,
 } from './compliance'
 import {
@@ -254,6 +254,9 @@ export async function resolveComplianceBatch(
   const listingByNumber = new Map<string, ExpiredOutreachListing[]>()
   const listingByParcel = new Map<string, ExpiredOutreachListing[]>()
   const parcelByListingKey = new Map<string, string>()
+  // Expired: parcel from the original MLS listing_key. FSBO: prefer an explicit
+  // parcel_number column when present, else taxlot from enrichment_notes.
+  const parcelByFsboId = new Map<string, string>()
   if (kind === 'expired') {
     const keys = [...new Set(rows.map((r) => String(r.listing_key ?? '')).filter(Boolean))]
     if (keys.length > 0) {
@@ -270,21 +273,29 @@ export async function resolveComplianceBatch(
         }
       }
     }
+  } else {
+    for (const r of rows) {
+      const id = String(r.fsbo_url ?? '')
+      if (!id) continue
+      const parcel = parcelFromEnrichmentNotes(r.enrichment_notes as string | null)
+      if (parcel) parcelByFsboId.set(id, parcel)
+    }
   }
-  const parcels = [...new Set(parcelByListingKey.values())]
+  const parcels = [
+    ...new Set([
+      ...parcelByListingKey.values(),
+      ...parcelByFsboId.values(),
+    ]),
+  ]
   if (nums.length > 0 || parcels.length > 0) {
+    // Both kinds use the Closed-inclusive status OR — FSBO hard-skips Closed
+    // after detect the same way expired hard-skips Closed after expire.
     const streetQ =
       nums.length > 0
-        ? kind === 'expired'
-          ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('StreetNumber', nums).or(EXPIRED_OUTREACH_STATUS_OR)
-          : sb
-              .from('listings')
-              .select(EXPIRED_OUTREACH_LISTING_SELECT)
-              .in('StreetNumber', nums)
-              .in('StandardStatus', [...EXPIRED_OUTREACH_ON_MARKET])
+        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('StreetNumber', nums).or(EXPIRED_OUTREACH_STATUS_OR)
         : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
     const parcelQ =
-      kind === 'expired' && parcels.length > 0
+      parcels.length > 0
         ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).in('parcel_number', parcels).or(EXPIRED_OUTREACH_STATUS_OR)
         : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
     const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
@@ -384,11 +395,15 @@ export async function resolveComplianceBatch(
     const suppressedSms = channels.sms.blocked
     const hardStop = channels.sms.blocked
 
-    // Relist + sold-after-expire match (in memory). Same `relisted` flag.
+    // Relist + sold-after-expire/detect match (in memory). Same `relisted` flag.
     const numKey = streetNumber(street)
     const prefix = namePrefix(street)
-    const subjectParcel = kind === 'expired' ? (parcelByListingKey.get(id) ?? null) : null
-    const expiryComparator = (raw.status_change_timestamp as string | null) ?? (raw.expired_at as string | null) ?? null
+    const subjectParcel =
+      kind === 'expired' ? (parcelByListingKey.get(id) ?? null) : (parcelByFsboId.get(id) ?? null)
+    const expiryComparator =
+      kind === 'fsbo'
+        ? ((raw.detected_at as string | null) ?? null)
+        : ((raw.status_change_timestamp as string | null) ?? (raw.expired_at as string | null) ?? null)
     const candidates = [
       ...(numKey ? listingByNumber.get(numKey) ?? [] : []),
       ...(subjectParcel ? listingByParcel.get(subjectParcel) ?? [] : []),
@@ -451,11 +466,10 @@ export async function resolveComplianceBatch(
  * send must fail CLOSED — a read error must BLOCK, never silently solicit a
  * property that may be back on the market. Returns `verifyFailed:true` on any
  * read error so the caller refuses. `expiryComparator` is the prospect's
- * off-market timestamp; for expired we count on-market listings newer than it
- * AND Closed sales whose CloseDate (else status_change_timestamp) is newer —
- * both paint as `relisted`. For fsbo any current on-market match blocks.
- * Same street match as before; also same parcel_number when `listing_key`
- * resolves one.
+ * off-market / detect timestamp: for expired, on-market newer than expire AND
+ * Closed sales whose CloseDate (else status_change_timestamp) is newer than expire; for FSBO, any current on-market match AND Closed after
+ * `detected_at`. Prefer `parcel_number` when present (expired: via listing_key;
+ * FSBO: explicit parcel or taxlot from enrichment_notes).
  */
 export async function verifyNotRelisted(
   kind: ProspectKind,
@@ -464,6 +478,10 @@ export async function verifyNotRelisted(
     city: string | null
     expiryComparator: string | null
     listing_key?: string | null
+    parcel_number?: string | null
+    enrichment_notes?: string | null
+    /** FSBO natural key — loads parcel/taxlot from fsbo_listings when present. */
+    fsbo_url?: string | null
   },
 ): Promise<{ relisted: boolean; verifyFailed: boolean }> {
   if (!prospect.street_address) return { relisted: false, verifyFailed: false }
@@ -473,8 +491,22 @@ export async function verifyNotRelisted(
     if (!numKey) return { relisted: false, verifyFailed: false }
     const prefix = namePrefix(prospect.street_address)
     const city = String(prospect.city ?? '').toUpperCase()
-    let subjectParcel: string | null = null
-    if (kind === 'expired' && prospect.listing_key) {
+    let subjectParcel: string | null =
+      normalizeParcelNumber(prospect.parcel_number) ??
+      parcelFromEnrichmentNotes(prospect.enrichment_notes)
+    if (!subjectParcel && kind === 'fsbo' && prospect.fsbo_url) {
+      const { data: fsboRow, error: fsboErr } = await sb
+        .from('fsbo_listings')
+        .select('enrichment_notes')
+        .eq('fsbo_url', prospect.fsbo_url)
+        .maybeSingle()
+      if (fsboErr) {
+        console.error('[prospecting] verifyNotRelisted fsbo parcel read failed (fail-closed):', fsboErr.message)
+        return { relisted: false, verifyFailed: true }
+      }
+      subjectParcel = parcelFromEnrichmentNotes(fsboRow?.enrichment_notes as string | null)
+    }
+    if (!subjectParcel && kind === 'expired' && prospect.listing_key) {
       const { data: anchor, error: anchorErr } = await sb
         .from('listings')
         .select('parcel_number')
@@ -486,18 +518,14 @@ export async function verifyNotRelisted(
       }
       subjectParcel = normalizeParcelNumber(anchor?.parcel_number)
     }
-    const streetQ =
-      kind === 'expired'
-        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).eq('StreetNumber', numKey).or(EXPIRED_OUTREACH_STATUS_OR)
-        : sb
-            .from('listings')
-            .select(EXPIRED_OUTREACH_LISTING_SELECT)
-            .eq('StreetNumber', numKey)
-            .in('StandardStatus', [...EXPIRED_OUTREACH_ON_MARKET])
-    const parcelQ =
-      kind === 'expired' && subjectParcel
-        ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).eq('parcel_number', subjectParcel).or(EXPIRED_OUTREACH_STATUS_OR)
-        : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const streetQ = sb
+      .from('listings')
+      .select(EXPIRED_OUTREACH_LISTING_SELECT)
+      .eq('StreetNumber', numKey)
+      .or(EXPIRED_OUTREACH_STATUS_OR)
+    const parcelQ = subjectParcel
+      ? sb.from('listings').select(EXPIRED_OUTREACH_LISTING_SELECT).eq('parcel_number', subjectParcel).or(EXPIRED_OUTREACH_STATUS_OR)
+      : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
     const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
     if (streetRes.error) {
       console.error('[prospecting] verifyNotRelisted read failed (fail-closed):', streetRes.error.message)
@@ -525,5 +553,32 @@ export async function verifyNotRelisted(
   } catch (e) {
     console.error('[prospecting] verifyNotRelisted threw (fail-closed):', e instanceof Error ? e.message : e)
     return { relisted: false, verifyFailed: true }
+  }
+}
+
+/**
+ * Fail-closed live FSBO status re-read for the SEND path.
+ * Worklist paint uses the row snapshot (`status !== 'active'` → offMarket);
+ * send must not solicit a listing the scraper has since marked gone.
+ */
+export async function verifyFsboStillActive(
+  fsboUrl: string,
+): Promise<{ active: boolean; verifyFailed: boolean }> {
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('fsbo_listings')
+      .select('status')
+      .eq('fsbo_url', fsboUrl)
+      .maybeSingle()
+    if (error) {
+      console.error('[prospecting] verifyFsboStillActive read failed (fail-closed):', error.message)
+      return { active: false, verifyFailed: true }
+    }
+    if (!data) return { active: false, verifyFailed: false }
+    return { active: ((data.status as string | null) ?? 'active') === 'active', verifyFailed: false }
+  } catch (e) {
+    console.error('[prospecting] verifyFsboStillActive threw (fail-closed):', e instanceof Error ? e.message : e)
+    return { active: false, verifyFailed: true }
   }
 }
