@@ -7,8 +7,12 @@
  */
 import { useMemo, useState } from 'react'
 import { V3Button, V3Field } from '@/components/site/v3'
+import { inAtlasView, type AtlasViewBounds } from '@/lib/geo/atlas-camera'
 import type { HomeFieldItem } from './home-field-items'
 import { HOME_FIELD_LIMIT } from './home-constants'
+
+const EMPTY_IN_VIEW =
+  'No photographed homes in this view of the map. Zoom out or pan to see more.'
 
 export function HomeHomesField({
   fieldItems,
@@ -17,6 +21,7 @@ export function HomeHomesField({
   seeAll,
   emptyMessage,
   displayLimit = HOME_FIELD_LIMIT,
+  bounds = null,
 }: {
   fieldItems: HomeFieldItem[]
   boundary?: unknown
@@ -24,6 +29,8 @@ export function HomeHomesField({
   seeAll?: { href: string; label: string }
   emptyMessage: string
   displayLimit?: number
+  /** Null (full frame) leaves the list unfiltered. */
+  bounds?: AtlasViewBounds | null
 }) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const types = useMemo(() => {
@@ -36,13 +43,19 @@ export function HomeHomesField({
     }
     return next
   }, [fieldItems])
+  const inView = useMemo(
+    () => fieldItems.filter((item) => inAtlasView(item.lat, item.lng, bounds)),
+    [fieldItems, bounds],
+  )
   const visible = useMemo(() => {
     const set =
       selectedTypes.length === 0
-        ? fieldItems
-        : fieldItems.filter((item) => selectedTypes.includes(item.typeKey))
+        ? inView
+        : inView.filter((item) => selectedTypes.includes(item.typeKey))
     return set.slice(0, displayLimit)
-  }, [fieldItems, selectedTypes, displayLimit])
+  }, [inView, selectedTypes, displayLimit])
+  const listEmptyMessage =
+    bounds != null && fieldItems.length > 0 && inView.length === 0 ? EMPTY_IN_VIEW : emptyMessage
 
   const typeLead =
     types.length > 1 ? (
@@ -83,7 +96,7 @@ export function HomeHomesField({
       lead={typeLead}
       listFlow={listFlow}
       action={seeAll}
-      emptyMessage={emptyMessage}
+      emptyMessage={listEmptyMessage}
     />
   )
 }

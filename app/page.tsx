@@ -42,7 +42,7 @@ import {
   V3Proof,
 } from '@/components/site/v3'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { HomeHomesField } from './_v3/HomeHomesField'
+import { HomeHomesFieldBound } from './_v3/HomeHomesFieldBound.client'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
@@ -311,7 +311,7 @@ export default async function Home() {
 
         <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 
-        <HomeHomesField
+        <HomeHomesFieldBound
           fieldItems={fieldItems}
           boundary={regionBoundary ?? undefined}
           listFlow
