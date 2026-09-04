@@ -15,13 +15,24 @@ import {
 } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingLeadMedia } from '@/lib/listing/publish-listing-lead-media'
 import { publishListingMosaicPills } from '@/lib/listing/publish-listing-mosaic-pills'
-import { publishListingMosaicThumbs } from '@/lib/listing/publish-listing-mosaic'
+import {
+  LISTING_MOSAIC_CAROUSEL_SIZES,
+  LISTING_MOSAIC_LEAD_SIZES,
+  LISTING_MOSAIC_PHOTO_QUALITY,
+  LISTING_MOSAIC_THUMB_SIZES,
+  LISTING_MOSAIC_THUMB_WIDE_SIZES,
+  preferListingMosaicPhotoUrl,
+  publishListingMosaicThumbs,
+  publishListingMosaicTiles,
+  type ListingMosaicTile,
+} from '@/lib/listing/publish-listing-mosaic'
+import { publishListingFaceMapSrc } from '@/lib/listing/publish-listing-face-map'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
 
 /**
  * Listing media mosaic. Media 1 is a VIDEO reel when one exists,
- * else the first still of THIS house. 3D is a pill, not the lead frame.
- * Price and facts live under the media. No map chip on the media.
+ * else the first still of THIS house. 3D is a tile, not the lead frame.
+ * Price and facts live under the media. Map is a mosaic tile, not a chip.
  */
 
 type Props = {
@@ -75,6 +86,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
   const [tourOpen, setTourOpen] = useState(false)
   const [streetOpen, setStreetOpen] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
+  const [allowAutoplay, setAllowAutoplay] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
   const reel = publishListingHeroVideo(videos)
@@ -86,6 +98,12 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
   const hasStreetView =
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+  const mapSrc = publishListingFaceMapSrc({
+    lat,
+    lng,
+    key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  })
+  const hasMap = mapSrc != null
   const mosaicPills = publishListingMosaicPills({
     photoCount: total,
     videos,
@@ -93,11 +111,21 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
     hasStreetView,
   })
   const thumbs = publishListingMosaicThumbs(photos, heroVideo != null)
-  const emptyThumbSlots = Math.max(0, 2 - thumbs.length)
+  const tiles = publishListingMosaicTiles({
+    photoCount: total,
+    leadIsVideo: heroVideo != null,
+    hasTour: virtualTour != null,
+    hasFloor: floorPlans.length > 0,
+    hasMap,
+  })
+  const emptyThumbSlots = tiles.some((t) => t.kind !== 'photo')
+    ? 0
+    : Math.max(0, 2 - thumbs.length)
   const carouselStills = heroVideo ? photos : photos.slice(1)
   const leadOpenLabel = lead?.kind === 'video' ? 'Open video' : null
-  const mediaPills = mosaicPills.filter((p) => p.id !== 'photos')
   const photoPill = mosaicPills.find((p) => p.id === 'photos')
+  const tilesWide = tiles.length > 2
+  const thumbSizes = tilesWide ? LISTING_MOSAIC_THUMB_WIDE_SIZES : LISTING_MOSAIC_THUMB_SIZES
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -109,14 +137,19 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
   }, [total])
 
   useEffect(() => {
-    if (!heroVideo || heroVideo.embedType !== 'video-tag') return
     if (typeof window === 'undefined') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    setAllowAutoplay(true)
+  }, [])
+
+  useEffect(() => {
+    if (!heroVideo || heroVideo.embedType !== 'video-tag') return
+    if (!allowAutoplay) return
     const el = videoRef.current
     if (!el) return
     el.muted = true
     void el.play().catch(() => {})
-  }, [heroVideo])
+  }, [heroVideo, allowAutoplay])
 
   if (!hasLeadMedia) return null
 
@@ -157,6 +190,24 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
     }
   }
 
+  function openTile(tile: ListingMosaicTile) {
+    if (tile.kind === 'photo') {
+      openGallery(tile.photoIndex)
+      return
+    }
+    if (tile.kind === 'tour') {
+      openEmbed('tour')
+      return
+    }
+    if (tile.kind === 'floor') {
+      openGallery(0, 'floor')
+      return
+    }
+    setStreetOpen(true)
+  }
+
+  const extraTiles = tiles.filter((t) => t.kind !== 'photo')
+
   return (
     <div id="listing-hero-visual" className={cn('listing-mosaic', className)}>
       <div className="listing-mosaic__carousel">
@@ -169,6 +220,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
               videoRef={videoRef}
               onTap={openLead}
               openLabel={leadOpenLabel ?? 'Open video'}
+              allowAutoplay={allowAutoplay}
             />
           </div>
         ) : photos[0] ? (
@@ -178,16 +230,34 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
             onClick={() => openGallery(0)}
             aria-label={`Open photo 1 of ${total}`}
           >
-            <Image
+            <MosaicStill
               src={photos[0].url}
               alt={photos[0].caption ?? `${altBase} 1 of ${total}`}
-              fill
-              sizes="100vw"
+              sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
               priority
-              className="object-cover"
             />
           </button>
         ) : null}
+        {extraTiles.map((tile) => (
+          <button
+            key={`carousel-${tile.kind}`}
+            type="button"
+            className={cn('listing-mosaic__slide', tile.kind === 'floor' && 'is-plan')}
+            onClick={() => openTile(tile)}
+            aria-label={tileLabel(tile)}
+          >
+            <MosaicTileMedia
+              tile={tile}
+              photos={photos}
+              floorPlans={floorPlans}
+              tour={virtualTour}
+              mapSrc={mapSrc}
+              altBase={altBase}
+              sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
+            />
+            <span className="listing-mosaic__tile-label">{tileLabel(tile)}</span>
+          </button>
+        ))}
         {carouselStills.map((photo, i) => {
           const photoIndex = heroVideo ? i : i + 1
           return (
@@ -198,12 +268,10 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
               onClick={() => openGallery(photoIndex)}
               aria-label={`Open photo ${photoIndex + 1} of ${total}`}
             >
-              <Image
+              <MosaicStill
                 src={photo.url}
                 alt={photo.caption ?? `${altBase} ${photoIndex + 1} of ${total}`}
-                fill
-                sizes="100vw"
-                className="object-cover"
+                sizes={LISTING_MOSAIC_CAROUSEL_SIZES}
               />
             </button>
           )
@@ -220,6 +288,7 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
               videoRef={videoRef}
               onTap={openLead}
               openLabel={leadOpenLabel ?? 'Open video'}
+              allowAutoplay={allowAutoplay}
             />
           </div>
         ) : (
@@ -245,40 +314,49 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
               videoRef={videoRef}
               onTap={openLead}
               openLabel={leadOpenLabel ?? 'Open video'}
+              allowAutoplay={allowAutoplay}
             />
           ) : photos[0] ? (
-            <Image
+            <MosaicStill
               src={photos[0].url}
               alt={photos[0].caption ?? `${altBase} 1 of ${total}`}
-              fill
-              sizes="66vw"
+              sizes={LISTING_MOSAIC_LEAD_SIZES}
               priority
-              className="object-cover"
             />
           ) : null}
         </button>
         )}
-        <div className="listing-mosaic__thumbs">
-          {thumbs.map((photo, i) => {
-            const photoIndex = heroVideo ? i : i + 1
-            return (
-              <button
-                key={`${photoIndex}-${photo.url}`}
-                type="button"
-                className="listing-mosaic__thumb"
-                onClick={() => openGallery(photoIndex)}
-                aria-label={`Open photo ${photoIndex + 1} of ${total}`}
-              >
-                <Image
-                  src={photo.url}
-                  alt={photo.caption ?? `${altBase} ${photoIndex + 1} of ${total}`}
-                  fill
-                  sizes="17vw"
-                  className="object-cover"
-                />
-              </button>
-            )
-          })}
+        <div className={cn('listing-mosaic__thumbs', tilesWide && 'is-wide')}>
+          {tiles.map((tile) => (
+            <button
+              key={tile.kind === 'photo' ? `photo-${tile.photoIndex}` : tile.kind}
+              type="button"
+              className={cn(
+                'listing-mosaic__thumb',
+                tile.kind === 'floor' && 'is-plan',
+                tile.kind !== 'photo' && 'is-media',
+              )}
+              onClick={() => openTile(tile)}
+              aria-label={
+                tile.kind === 'photo'
+                  ? `Open photo ${tile.photoIndex + 1} of ${total}`
+                  : tileLabel(tile)
+              }
+            >
+              <MosaicTileMedia
+                tile={tile}
+                photos={photos}
+                floorPlans={floorPlans}
+                tour={virtualTour}
+                mapSrc={mapSrc}
+                altBase={altBase}
+                sizes={thumbSizes}
+              />
+              {tile.kind !== 'photo' ? (
+                <span className="listing-mosaic__tile-label">{tileLabel(tile)}</span>
+              ) : null}
+            </button>
+          ))}
           {Array.from({ length: emptyThumbSlots }, (_, i) => (
             <div key={`empty-thumb-${i}`} className="listing-mosaic__thumb" aria-hidden />
           ))}
@@ -288,43 +366,16 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
       {openHouseLabel ? (
         <div className="listing-mosaic__open-house">{openHouseLabel}</div>
       ) : null}
-      {mosaicPills.length > 0 ? (
-        <div className="listing-mosaic__pills">
-          <div className="listing-mosaic__pills-media">
-            {mediaPills.map((pill) => (
-              <button
-                key={pill.id}
-                type="button"
-                className="listing-mosaic__badge"
-                onClick={() => {
-                  if (pill.action === 'video' || pill.action === 'tour') {
-                    openEmbed(pill.action)
-                    return
-                  }
-                  if (pill.action === 'street') {
-                    setStreetOpen(true)
-                    return
-                  }
-                  openGallery(0, pill.action === 'floor' ? 'floor' : 'photos')
-                }}
-                aria-label={pill.label}
-              >
-                {pill.label}
-              </button>
-            ))}
-          </div>
-          {photoPill ? (
-            <div className="listing-mosaic__pills-count">
-              <button
-                type="button"
-                className="listing-mosaic__badge"
-                onClick={() => openGallery(0)}
-                aria-label={photoPill.label}
-              >
-                {photoPill.label}
-              </button>
-            </div>
-          ) : null}
+      {photoPill ? (
+        <div className="listing-mosaic__captions">
+          <button
+            type="button"
+            className="listing-mosaic__caption"
+            onClick={() => openGallery(0)}
+            aria-label={photoPill.label}
+          >
+            {photoPill.label}
+          </button>
         </div>
       ) : null}
 
@@ -371,6 +422,92 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
   )
 }
 
+function tileLabel(tile: ListingMosaicTile): string {
+  if (tile.kind === 'tour') return '3D'
+  if (tile.kind === 'floor') return 'Floor'
+  if (tile.kind === 'map') return 'Map'
+  return 'Photo'
+}
+
+function MosaicStill({
+  src,
+  alt,
+  sizes,
+  priority = false,
+  contain = false,
+}: {
+  src: string
+  alt: string
+  sizes: string
+  priority?: boolean
+  contain?: boolean
+}) {
+  return (
+    <Image
+      src={preferListingMosaicPhotoUrl(src)}
+      alt={alt}
+      fill
+      sizes={sizes}
+      quality={LISTING_MOSAIC_PHOTO_QUALITY}
+      priority={priority}
+      className={contain ? 'object-contain' : 'object-cover'}
+    />
+  )
+}
+
+function MosaicTileMedia({
+  tile,
+  photos,
+  floorPlans,
+  tour,
+  mapSrc,
+  altBase,
+  sizes,
+}: {
+  tile: ListingMosaicTile
+  photos: ReadonlyArray<ListingPhoto>
+  floorPlans: ReadonlyArray<ListingPhoto>
+  tour: VideoEmbed | null
+  mapSrc: string | null
+  altBase: string
+  sizes: string
+}) {
+  if (tile.kind === 'photo') {
+    const photo = photos[tile.photoIndex]
+    if (!photo) return null
+    return (
+      <MosaicStill
+        src={photo.url}
+        alt={photo.caption ?? `${altBase} ${tile.photoIndex + 1}`}
+        sizes={sizes}
+      />
+    )
+  }
+  if (tile.kind === 'floor') {
+    const plan = floorPlans[0]
+    if (!plan) return null
+    return (
+      <MosaicStill
+        src={plan.url}
+        alt={plan.caption ?? 'Floor plan'}
+        sizes={sizes}
+        contain
+      />
+    )
+  }
+  if (tile.kind === 'tour') {
+    const src = tour?.posterUrl ?? photos[0]?.url
+    if (!src) return <span className="listing-mosaic__tile-fallback" aria-hidden />
+    return <MosaicStill src={src} alt="3D tour" sizes={sizes} />
+  }
+  if (!mapSrc) return null
+  return (
+    // Static Maps is not on the Next image host list. Same <img> path as PlaceFieldMap.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={mapSrc} alt="Map of this home" />
+  )
+}
+
 function VideoLayer({
   video,
   posterUrl,
@@ -378,6 +515,7 @@ function VideoLayer({
   videoRef,
   onTap,
   openLabel,
+  allowAutoplay,
 }: {
   video: VideoEmbed
   posterUrl?: string
@@ -385,6 +523,7 @@ function VideoLayer({
   videoRef: React.RefObject<HTMLVideoElement | null>
   onTap: () => void
   openLabel: string
+  allowAutoplay: boolean
 }) {
   if (video.embedType === 'iframe') {
     return (
@@ -394,6 +533,7 @@ function VideoLayer({
         altBase={altBase}
         onOpen={onTap}
         openLabel={openLabel}
+        allowAutoplay={allowAutoplay}
       />
     )
   }
@@ -403,7 +543,7 @@ function VideoLayer({
       src={video.url}
       poster={video.posterUrl ?? posterUrl}
       muted
-      autoPlay
+      autoPlay={allowAutoplay}
       loop
       playsInline
       onClick={onTap}
@@ -438,20 +578,23 @@ function IframeHeroLayer({
   altBase,
   onOpen,
   openLabel,
+  allowAutoplay,
 }: {
   video: VideoEmbed
   posterUrl?: string
   altBase: string
   onOpen: () => void
   openLabel: string
+  allowAutoplay: boolean
 }) {
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
-  const embedSrc = getAutoplayEmbedUrl(video)
+  const embedSrc = allowAutoplay ? getAutoplayEmbedUrl(video) : null
 
   useEffect(() => {
+    if (!embedSrc) return
     function onMessage(event: MessageEvent) {
-      if (isPlayerReadyMessage(event, embedSrc)) setReady(true)
+      if (embedSrc && isPlayerReadyMessage(event, embedSrc)) setReady(true)
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -461,9 +604,9 @@ function IframeHeroLayer({
     <>
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={posterUrl} alt={altBase} />
+        <img src={preferListingMosaicPhotoUrl(posterUrl)} alt={altBase} />
       ) : null}
-      {failed ? null : (
+      {failed || !embedSrc ? null : (
         <iframe
           src={embedSrc}
           title={`Listing video for ${altBase}`}
@@ -475,12 +618,10 @@ function IframeHeroLayer({
       )}
       <button
         type="button"
-        className="listing-mosaic__open-tour"
+        className="listing-mosaic__hit"
         onClick={onOpen}
         aria-label={openLabel}
-      >
-        {openLabel}
-      </button>
+      />
     </>
   )
 }

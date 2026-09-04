@@ -1,7 +1,6 @@
 /**
- * Pills painted ON the listing mosaic. Only pills that exist.
- * Price never lives on media. Floor plan / street / redesign stay off
- * until this listing actually has that media.
+ * Mosaic captions and gallery tabs. Floor / 3D / map occupy mosaic tiles,
+ * not cream lozenges. The photo count is quiet type on the mosaic.
  */
 
 import type { VideoEmbed } from '@/lib/data/types/video'
@@ -21,23 +20,14 @@ export function publishListingMosaicPills(input: {
   floorPlanCount?: number
   hasStreetView?: boolean
 }): ListingMosaicPill[] {
-  const pills: ListingMosaicPill[] = []
-  const video = publishListingHeroVideo(input.videos)
-  const tour = publishListingVirtualTour(input.videos)
-  if (video) pills.push({ id: 'video', label: 'Video', action: 'video' })
-  if (tour) pills.push({ id: 'tour', label: '3D', action: 'tour' })
-  if ((input.floorPlanCount ?? 0) > 0) {
-    pills.push({ id: 'floor', label: 'Floor plan', action: 'floor' })
-  }
-  if (input.hasStreetView) pills.push({ id: 'street', label: 'Street view', action: 'street' })
-  if (input.photoCount > 0) {
-    pills.push({
+  if (input.photoCount <= 0) return []
+  return [
+    {
       id: 'photos',
       label: `${input.photoCount} photos`,
       action: 'gallery',
-    })
-  }
-  return pills
+    },
+  ]
 }
 
 export type ListingGalleryTabId =

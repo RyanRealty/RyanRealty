@@ -22,45 +22,22 @@ const tour: VideoEmbed = {
 }
 
 describe('publishListingMosaicPills', () => {
-  it('omits pills this listing does not have', () => {
-    expect(publishListingMosaicPills({ photoCount: 12, videos: [] })).toEqual([
-      { id: 'photos', label: '12 photos', action: 'gallery' },
-    ])
+  it('omits the photo caption when this listing has no stills', () => {
     expect(publishListingMosaicPills({ photoCount: 0, videos: [] })).toEqual([])
   })
 
-  it('adds Video and 3D only when those media exist', () => {
-    const pills = publishListingMosaicPills({ photoCount: 8, videos: [reel, tour] })
-    expect(pills.map((p) => p.id)).toEqual(['video', 'tour', 'photos'])
-  })
-
-  it('1564 Elgin: Floor plan pill only when a plan still exists', () => {
-    const withPlan = publishListingMosaicPills({
-      photoCount: 37,
+  it('photo count is the only mosaic caption; 3D floor and street are tiles', () => {
+    const pills = publishListingMosaicPills({
+      photoCount: 35,
       videos: [reel, tour],
-      floorPlanCount: 1,
-    })
-    expect(withPlan.map((p) => p.id)).toEqual(['video', 'tour', 'floor', 'photos'])
-    expect(withPlan.find((p) => p.id === 'floor')?.label).toBe('Floor plan')
-    expect(withPlan.find((p) => p.id === 'photos')?.label).toBe('37 photos')
-
-    const noPlan = publishListingMosaicPills({ photoCount: 6, videos: [] })
-    expect(noPlan.map((p) => p.id)).toEqual(['photos'])
-  })
-
-  it('909 Delaware: Street view pill only when this home has a point', () => {
-    const withStreet = publishListingMosaicPills({
-      photoCount: 46,
-      videos: [tour],
       floorPlanCount: 1,
       hasStreetView: true,
     })
-    expect(withStreet.map((p) => p.id)).toEqual(['tour', 'floor', 'street', 'photos'])
-    expect(withStreet.find((p) => p.id === 'street')?.label).toBe('Street view')
-    expect(publishListingMosaicPills({ photoCount: 46, videos: [tour] }).map((p) => p.id)).toEqual([
-      'tour',
-      'photos',
-    ])
+    expect(pills).toEqual([{ id: 'photos', label: '35 photos', action: 'gallery' }])
+    expect(pills.map((p) => p.id)).not.toContain('tour')
+    expect(pills.map((p) => p.id)).not.toContain('floor')
+    expect(pills.map((p) => p.id)).not.toContain('street')
+    expect(pills.map((p) => p.id)).not.toContain('video')
   })
 })
 
