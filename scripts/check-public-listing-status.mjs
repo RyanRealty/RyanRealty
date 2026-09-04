@@ -42,6 +42,10 @@ const ALLOWLIST = new Map([
     'lib/data/prospecting/expired-outreach-hit.test.ts',
     'broker expired-outreach test — names Coming Soon as an MLS input, never renders it',
   ],
+  [
+    'lib/data/prospecting/fsbo-live-status-hard-skip.test.ts',
+    'broker FSBO live-status hard-skip test — names Coming Soon as an MLS input, never renders it',
+  ],
   ['lib/data/prospecting/get.ts', 'broker prospecting tooling'],
   ['lib/data/expired/outreach.ts', 'expired-listing outreach: re-list guard'],
   ['components/console/StatusPill.tsx', 'admin console status pill — no public importer'],
