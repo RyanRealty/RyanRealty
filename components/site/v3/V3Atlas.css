@@ -948,6 +948,16 @@
   pointer-events: auto;
 }
 
+/* Listing atlas: the card must not cover THIS HOME. Sit under the stage. */
+.v3-atlas.is-stacked .v3-atlas__card {
+  position: static;
+  max-width: none;
+  min-width: 0;
+  box-shadow: none;
+  border-inline: 0;
+  border-bottom: 0;
+}
+
 .v3-atlas__card-close {
   display: none;
   position: absolute;
