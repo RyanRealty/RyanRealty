@@ -382,23 +382,29 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
   }
 }
 
-function subdivisionYearChartSvg(years: readonly { year: number; count: number }[]): string {
+function chartUsd(n: number): string {
+  return `$${Math.round(n / 1000)}K`
+}
+
+function subdivisionYearChartSvg(
+  years: readonly { year: number; count: number; medianClose: number }[],
+): string {
   const plot = buildLinePlot([
     {
-      name: 'Closed sales',
+      name: 'Median close',
       points: years
-        .filter((y) => y.year > 0 && y.count > 0)
+        .filter((y) => y.year > 0 && y.medianClose > 0)
         .map((y) => ({
-          value: y.count,
+          value: y.medianClose,
           tick: String(y.year),
-          label: String(y.count),
+          label: chartUsd(y.medianClose),
           at: y.year,
         })),
     },
   ])
   if (!plot) return ''
   return renderPrintChartSvg(plot, {
-    caption: 'Closed sales by year',
+    caption: 'Median close by year',
     colors: PRINT_NAVY_CREAM,
   })
 }

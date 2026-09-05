@@ -142,6 +142,58 @@ describe('print CMA layout', () => {
     expect(page!.body).not.toContain('class="map-img"')
   })
 
+  it('plots median close, not sale count, so a price rise cannot look like a crash', () => {
+    // Diamond Bar Ranch as printed on 2465 7th: prices roughly doubled,
+    // volume fell. Plotting count above the median-close table drew a crash.
+    const years = [
+      { year: 2016, count: 16, medianClose: 239449, medianPpsf: 153 },
+      { year: 2017, count: 20, medianClose: 260549, medianPpsf: 160 },
+      { year: 2018, count: 20, medianClose: 273000, medianPpsf: 169 },
+      { year: 2019, count: 21, medianClose: 299900, medianPpsf: 189 },
+      { year: 2020, count: 19, medianClose: 333000, medianPpsf: 212 },
+      { year: 2021, count: 11, medianClose: 433000, medianPpsf: 271 },
+      { year: 2022, count: 8, medianClose: 459500, medianPpsf: 299 },
+      { year: 2023, count: 7, medianClose: 480000, medianPpsf: 286 },
+      { year: 2024, count: 5, medianClose: 492000, medianPpsf: 281 },
+      { year: 2025, count: 6, medianClose: 484500, medianPpsf: 291 },
+      { year: 2026, count: 12, medianClose: 456000, medianPpsf: 280 },
+    ]
+    const page = subdivisionChapterPage({
+      subject,
+      comps: [comp],
+      market: null,
+      pricing,
+      mapDataUri: null,
+      generatedAtIso: '2026-09-05T00:00:00.000Z',
+      excludedOutliers: [],
+      subdivisionStory: {
+        ...story,
+        facts: {
+          ...story.facts,
+          name: 'Diamond Bar Ranch',
+          totalSales: 145,
+          years,
+        },
+      },
+    })
+    expect(page).not.toBeNull()
+    const html = page!.body
+    expect(html).toMatch(/Median close by year/i)
+    expect(html).not.toMatch(/Closed sales by year/i)
+    const d = html.match(/<path d="([^"]+)"/)?.[1] ?? ''
+    const ys = [...d.matchAll(/[ML]([\d.]+),([\d.]+)/g)].map((m) => Number(m[2]))
+    expect(ys).toHaveLength(years.length)
+    const i2016 = years.findIndex((y) => y.year === 2016)
+    const i2024 = years.findIndex((y) => y.year === 2024)
+    const iCountFloor = years.findIndex((y) => y.count === 5)
+    expect(iCountFloor).toBe(i2024)
+    // Higher close sits higher on the chart (smaller SVG y). 2024 is the
+    // peak close and the volume floor: it must be the top of the line, not
+    // the bottom.
+    expect(ys[i2024]!).toBeLessThan(ys[i2016]!)
+    expect(ys[i2024]!).toBe(Math.min(...ys))
+  })
+
   it('does not insert a contents sheet', () => {
     const { html } = renderCmaHtml(args())
     expect(html).not.toContain('>Contents<')

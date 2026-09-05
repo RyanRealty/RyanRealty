@@ -9,7 +9,7 @@
  * Caught by rendering a real CMA for 833 Maple, not by any fixture.
  */
 import { describe, expect, it } from 'vitest'
-import { buildBarPlot } from '@/lib/charts/plot'
+import { buildBarPlot, buildLinePlot } from '@/lib/charts/plot'
 import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
 
 const points = [
@@ -40,5 +40,27 @@ describe('print bar chart emphasis', () => {
     const plot = buildBarPlot([{ name: 'days', points }])!
     const svg = renderPrintChartSvg(plot, { caption: 'c', colors: PRINT_NAVY_CREAM })
     expect(opacities(svg).filter((o) => o === '1')).toHaveLength(1)
+  })
+})
+
+describe('print line chart', () => {
+  it('names the y range and the years on the line, not only in aria', () => {
+    const plot = buildLinePlot([
+      {
+        name: 'Median close',
+        points: [
+          { value: 239000, tick: '2016', label: '$239K', at: 2016 },
+          { value: 333000, tick: '2020', label: '$333K', at: 2020 },
+          { value: 492000, tick: '2024', label: '$492K', at: 2024 },
+        ],
+      },
+    ])!
+    const svg = renderPrintChartSvg(plot, { caption: 'Median close by year', colors: PRINT_NAVY_CREAM })
+    expect(svg).toContain('$239K')
+    expect(svg).toContain('$492K')
+    expect(svg).toContain('2016')
+    expect(svg).toContain('2024')
+    expect(svg).toContain('Median close by year')
+    expect(svg).toContain('<text')
   })
 })

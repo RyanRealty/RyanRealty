@@ -34,6 +34,10 @@ export function renderPrintChartSvg(
   const aria = esc(caption)
 
   if (plot.kind === 'line') {
+    const gutterL = 44
+    const gutterB = 16
+    const vbW = plot.vbW + gutterL
+    const vbH = plot.vbH + gutterB
     const paths = plot.lines
       .map((line, i) => {
         const stroke = i === 0 ? colors.ink : colors.muted
@@ -41,7 +45,17 @@ export function renderPrintChartSvg(
         return `<path d="${esc(line.d)}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${dash}/>`
       })
       .join('')
-    return `<svg viewBox="0 0 ${plot.vbW} ${plot.vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" style="width:100%;height:auto;display:block;">${paths}</svg>`
+    const ticks = plot.lines[0]?.points.filter((p) => p.plot) ?? []
+    const xLabels = ticks
+      .map((p, i) => {
+        if (i !== 0 && i !== ticks.length - 1 && i % 2 === 1) return ''
+        return `<text x="${(p.x + gutterL).toFixed(2)}" y="${(plot.vbH + 12).toFixed(2)}" text-anchor="middle" font-size="8" fill="${colors.muted}">${esc(p.tick)}</text>`
+      })
+      .join('')
+    const yMaxY = plot.scale.t + 3
+    const yMinY = plot.scale.t + plot.scale.h
+    const yLabels = `<text x="${gutterL - 4}" y="${yMaxY.toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}">${esc(plot.yMaxLabel)}</text><text x="${gutterL - 4}" y="${yMinY.toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}">${esc(plot.yMinLabel)}</text>`
+    return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;"><g transform="translate(${gutterL},0)">${paths}</g>${yLabels}${xLabels}</svg><p class="small">${aria}. ${esc(plot.yMinLabel)} to ${esc(plot.yMaxLabel)}.</p>`
   }
 
   if (plot.kind === 'mix') {
