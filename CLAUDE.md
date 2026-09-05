@@ -250,12 +250,12 @@ fade-up · 2s loops · 20s Ken Burns; ease-out entrances, ≤16px travel, always
 and "the design system" are the same thing here, not a choice. Build every UI element from
 `@/components/ui/`. Do NOT hand-roll raw HTML controls on product surfaces.
 
-**There is no per-surface mockup any more.** The eleven `ui_kits/<surface>/index.html` files
-were KB-era targets, retired 2026-08-26 and deleted 2026-08-27; the visual target for a public
-page is the pattern set in `design_system/public/PUBLIC_UI.md`, built from `components/site/v3`.
-The surviving `parity.json` beside each still binds — its `requiredComponents` list is what
-stops a page silently losing a section, and `ci:mockup-parity` reads it with or without a
-mockup.
+**No per-surface mockup any more** (retired 2026-08-26, deleted 2026-08-27); the target is
+[`PUBLIC_UI.md`](design_system/public/PUBLIC_UI.md), built from `components/site/v3`. The
+`parity.json` beside each binds and is THE PAGE PLAN —
+[`PAGE_PLAN.md`](design_system/public/PAGE_PLAN.md): class, objective, the questions the page
+must answer, the rival it beats. `ci:page-plan` walks every public route and asks for one
+(25/112 had one on 2026-09-05). Grind: `/site-consistency`, one class at a time.
 
 **The table below is for ADMIN and PRODUCT surfaces.** On the public site the equivalent
 rule is: build from the v3 barrel, and a section that fits no existing pattern gets a NEW
@@ -302,12 +302,10 @@ headshot, use Jax.
 
 ## Migration from the retired v1 spec
 
-Everything above IS the v2 answer, so the old side-by-side table is gone. The retired v1
-tokens — retired `#D4AF37`, retired `#C8A864`, retired `#F2EBDD`, AzoSans body type, the
-gold logo bar — are held out by
-[`check-claude-canon.mjs`](scripts/check-claude-canon.mjs), which fails any line
-reintroducing one without marking it retired. Already-rendered videos in `public/v5_library/`
-stay as-is. New renders use v2; a re-render migrates to v2.
+The retired v1 tokens — retired `#D4AF37`, `#C8A864`, `#F2EBDD`, AzoSans body type, the gold
+logo bar — are held out by [`check-claude-canon.mjs`](scripts/check-claude-canon.mjs), which
+fails any line reintroducing one without marking it retired. Rendered videos in
+`public/v5_library/` stay as-is; a re-render migrates to v2.
 
 ## Skill self-binding
 
@@ -394,6 +392,7 @@ next.
 | Brand voice — punctuation, invented quotes, Value my home | gated | `check-brand-voice.mjs` (vocabulary in `brand-voice-vocabulary.cjs`) |
 | Design tokens — no off-brand hex, no raw controls | gated | `lint-design-tokens.js` |
 | Mockup parity per surface | gated | `check-mockup-parity.mjs` |
+| Every PUBLIC ROUTE has a page plan: class, objective, answers, named rival | gated (ratchet) | `check-page-plan.mjs` |
 | DAL boundary — no raw `.from()` outside `lib/data/` | gated | `check-dal-boundary.mjs` |
 | Every `app/<route>/page.tsx` imports the DAL | gated | `check-page-dal.mjs` |
 | `listings` mixed-case columns are quoted | gated | `check-dal-column-quoting.mjs` |

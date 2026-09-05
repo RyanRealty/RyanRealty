@@ -92,6 +92,11 @@ next-env.d.ts
 # lives in docs/plans/ADMIN_PRODUCT/ (tracked); leaving the runner local-only would strand the
 # OS on one machine and hide it from Cursor, breaking the pack's own cross-agent handoff story.
 !.claude/skills/admin-product-os/
+# ...and site-consistency — the page-plan grinder (2026-09-05). CLAUDE.md and
+# design_system/public/PAGE_PLAN.md both cite it as the way the 87 unplanned routes get
+# planned; local-only it would strand the standard on one machine, which is the exact
+# failure the page plans exist to end.
+!.claude/skills/site-consistency/
 # ...and page-grade — KILLED 2026-08-16 refuse stub. CLAUDE.md cites it; an
 # untracked skill fails ci:claude-canon in the isolated verify tree.
 !.claude/skills/page-grade/

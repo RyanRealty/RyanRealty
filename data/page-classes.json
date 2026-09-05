@@ -1,0 +1,171 @@
+{
+  "note": "The closed page-class list and the route -> class routing table. Canon: design_system/public/PAGE_PLAN.md. Read by scripts/check-page-plan.mjs (ci:page-plan). A class owns the spine; a route may ADD to it, never silently drop from it. `spine: []` means the class has not been ground yet - ci:page-plan reports it, and /site-consistency fills it one class at a time. Do NOT invent a spine here without working the class's real pages; a speculative spine is the drift this file exists to stop.",
+  "classes": {
+    "home": {
+      "job": "Orient, then route to a job: buy, sell, or look.",
+      "opens": "Field",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "inventory": {
+      "job": "Find a home.",
+      "opens": "Field (Ledger register on the search surfaces)",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "listing": {
+      "job": "Decide on this house.",
+      "opens": "Stage (this house's media)",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "place": {
+      "job": "Evaluate this place.",
+      "opens": "per grain - PUBLIC_UI.md section 3 per-destination openings table",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "market": {
+      "job": "Understand the market: present, past, and what it means.",
+      "opens": "Instrument",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "seller": {
+      "job": "Get the number, decide whether to sell.",
+      "opens": "Stage then Sheet (the address field is the spine)",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "guide": {
+      "job": "Understand the area around the house.",
+      "opens": "varies by subject",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "brokerage": {
+      "job": "Decide whether to trust this shop with the largest transaction of their life.",
+      "opens": "Quiet + Sheet (faces first)",
+      "benchmarkRequired": true,
+      "spine": [
+        {
+          "id": "MetadataBlock",
+          "kind": "component",
+          "why": "ONE structured-data chokepoint for the class. Measured 2026-09-05: /about and /team emit through MetadataBlock, /reviews through a bespoke reviews-jsonld.ts, and /contact and /videos hand-roll raw <script type=\"application/ld+json\" dangerouslySetInnerHTML> tags in the page body (three and four of them respectively). Three emission paths in one class is how the markup drifts from the visible copy - the neighborhood contract already states the house rule: one derivation feeds both."
+        },
+        {
+          "id": "V3Breadcrumb",
+          "kind": "component",
+          "why": "The up-rung. Carried by all seven brokerage pages already; the spine records it so it cannot be lost."
+        },
+        {
+          "id": "#proof",
+          "kind": "section",
+          "why": "A trust class must show proof. Measured 2026-09-05: /join, /contact, /refer-a-client and /videos carry no V3Proof - four of seven pages whose whole job is deciding whether to trust this shop. A waiver is available and must name why this page is the exception."
+        },
+        {
+          "id": "V3Quiet|V3Answers",
+          "kind": "component",
+          "why": "The outbound edges and the FAQ. Either primitive satisfies it: V3Answers superseded the closing V3Quiet on 2026-09-02 (the about contract records the swap - 1,491px of prose with no figure and no control is the wall of text TASTE.md bans). A trust page that dead-ends is a dead end in the exploration graph (PRODUCT.md job 2)."
+        },
+        {
+          "id": "V3Footer",
+          "kind": "component",
+          "why": "Chrome. Single-source, held by ci:chrome-single-source."
+        }
+      ],
+      "mustAnswer": [
+        "Who are these people and can I see their faces?",
+        "What have they actually done - how many sales, how long, licensed as what?",
+        "Where do they work, and do they know MY area?",
+        "What do their past clients say?",
+        "How do I reach a human right now?"
+      ],
+      "groundedAt": "2026-09-05"
+    },
+    "tool": {
+      "job": "Compute one thing and understand the answer.",
+      "opens": "Sheet",
+      "benchmarkRequired": true,
+      "spine": []
+    },
+    "capture": {
+      "job": "Convert a campaign click. Paid traffic, not organic.",
+      "opens": "Stage then Sheet",
+      "benchmarkRequired": false,
+      "benchmarkExemptReason": "Paid and campaign landing pages are measured by conversion rate in the ad platform, not by organic SERP position against a rival page. Their competitive test lives in the Meta/Google campaign, not here."
+    },
+    "system": {
+      "job": "A utility the site needs. Not a content page and not a destination.",
+      "opens": "n/a",
+      "benchmarkRequired": false,
+      "benchmarkExemptReason": "Legal, unsubscribe, offline, feed, dev sandboxes and token-gated surfaces carry no organic intent. There is no rival page to beat."
+    }
+  },
+  "routing": [
+    {
+      "match": "^app/dev/",
+      "class": "system"
+    },
+    {
+      "match": "^app/(privacy|terms|accessibility|dmca|fair-housing|cookies|data-deletion|offline|feed|site-index|resources)/page\\.tsx$",
+      "class": "system"
+    },
+    {
+      "match": "^app/(alerts/unsubscribe|newsletter/unsubscribe|newsletter|book|activity|marketing/request)/page\\.tsx$",
+      "class": "system"
+    },
+    {
+      "match": "^app/(sign|cma-drafts)/\\[",
+      "class": "system"
+    },
+    {
+      "match": "^app/lp/",
+      "class": "capture"
+    },
+    {
+      "match": "^app/(motivated-sellers)(/|/page\\.tsx)",
+      "class": "capture"
+    },
+    {
+      "match": "^app/page\\.tsx$",
+      "class": "home"
+    },
+    {
+      "match": "^app/listing/",
+      "class": "listing"
+    },
+    {
+      "match": "^app/(search|buy|open-houses|price-drops|our-homes|luxury-homes-bend|compare)(/|/page\\.tsx)",
+      "class": "inventory"
+    },
+    {
+      "match": "^app/(cities|communities|subdivisions|neighborhoods|zip|oregon|areas)(/|/page\\.tsx)",
+      "class": "place"
+    },
+    {
+      "match": "^app/(housing-market|months-of-supply|reports|pulse|how-we-get-our-numbers)(/|/page\\.tsx)",
+      "class": "market"
+    },
+    {
+      "match": "^app/sell(/|/page\\.tsx)",
+      "class": "seller"
+    },
+    {
+      "match": "^app/(central-oregon|parks|schools|builders|area-guides|blog|faq)(/|/page\\.tsx)",
+      "class": "guide"
+    },
+    {
+      "match": "^app/(about|team|reviews|join|contact|refer-a-client|videos)(/|/page\\.tsx)",
+      "class": "brokerage"
+    },
+    {
+      "match": "^app/tools/",
+      "class": "tool"
+    },
+    {
+      "match": "^app/invest/page\\.tsx$",
+      "class": "market"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 {
   "route": "app/invest/page.tsx",
+  "pageClass": "market",
   "visualLanguage": "design_system/public/PUBLIC_UI.md patterns, built from components/site/v3. No KB-era mockup — the pattern set is the target (same basis as every post-2026-08-27 page).",
   "competitiveTarget": "No Central Oregon brokerage has an investor destination at all — competitors bury multi-family in a search filter. This page wins by honesty: live per-type counts with the Market Truth trace, the rental math one tap away on every eligible listing, and NO cash-flow promises (the internal DSCR analysis shows Bend does not cash-flow on long-term rentals at financing rates; the page's stance is inventory + math, never hype).",
   "note": "Matt ruling 2026-09-01 (decisions.md): investor becomes a real job with /invest as the door and the listing-page investor lens as the depth layer. Every figure is a getPublicPlaceSegments region row — the same numbers the housing-market and search pages print (one source, §0). Stale internal analysis figures are never republished here. Capture is the income-property alert (multi-family pin — a narrowing filter). Detached/SFR is deliberately absent: that is the buyer story.",
