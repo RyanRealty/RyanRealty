@@ -32,7 +32,7 @@ describe('sellBendLedgerRows', () => {
       pendingCount: 295,
       saleToOriginal: 0.97,
     })
-    expect(rows.every((r) => r.weight == null)).toBe(true)
+    expect(rows.every((r) => r.weight === undefined)).toBe(true)
     expect(rows.map((r) => r.what)).toEqual(['Under contract now', 'Sale price against the first asking price'])
   })
 })

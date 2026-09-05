@@ -6,7 +6,7 @@
  * the rest of the sentence as detail. Display numerals for "3 businesses
  * for sale" was the 27-cell pile-up.
  */
-import { v3Text, type V3LedgerRow } from '@/components/site/v3'
+import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
 import {
   publicSegmentItems,
   type PublicSegmentRow,
@@ -36,10 +36,10 @@ function splitWindow(label: string): { what: string; detail?: string } {
 export function sellBendLedgerRows(
   segments: readonly PublicSegmentRow[],
   pace: PublicPaceRow,
-): V3LedgerRow[] {
+): V3LedgerFigureRow[] {
   const segs = publicSegmentItems(segments, 'bend')
   const maxN = Math.max(0, ...segs.map((s) => Number(s.value.replace(/,/g, '')) || 0))
-  const typeRows: V3LedgerRow[] = segs.map((item) => {
+  const typeRows: V3LedgerFigureRow[] = segs.map((item) => {
     const n = Number(item.value.replace(/,/g, '')) || 0
     const bits = item.label.split(' · ').slice(1)
     const name = titleLine(item.noun)
@@ -53,7 +53,7 @@ export function sellBendLedgerRows(
     }
   })
 
-  const paceRows: V3LedgerRow[] = publicPaceItems(pace).map((item) => {
+  const paceRows: V3LedgerFigureRow[] = publicPaceItems(pace).map((item) => {
     const { what, detail } = splitWindow(item.label)
     return {
       href: BEND_MARKET_HREF,
