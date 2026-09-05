@@ -3,8 +3,7 @@
  * Count and dollars never share an axis.
  */
 
-import { buildBarPlot, buildLinePlot } from '@/lib/charts/plot'
-import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
+import { PRINT_NAVY_CREAM, renderPrintPairedSvg } from '@/lib/charts/print-svg'
 
 export type TrendPoint = {
   periodStart: string
@@ -24,13 +23,11 @@ function monthLabel(iso: string): string {
   return d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
 }
 
-function monthAt(iso: string): number {
-  const y = Number(iso.slice(0, 4))
-  const m = Number(iso.slice(5, 7))
-  return y * 12 + m
-}
-
 function chartUsd(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
+  }
   return `$${Math.round(n / 1000)}K`
 }
 
@@ -80,52 +77,38 @@ export function medianCloseLineSvg(points: TrendPoint[]): string {
   <p class="small">Range $${Math.round(min).toLocaleString('en-US')} to $${Math.round(max).toLocaleString('en-US')}.</p>`
 }
 
-/** New listings (count) and median ask (dollars) as two charts. Never one axis. */
+/** New listings (count) over median ask (dollars). One calendar. Two scales. */
 export function listingTrendSvg(points: ListingTrendPoint[]): string {
   const series = [...points].sort((a, b) => a.month.localeCompare(b.month))
   if (series.length < 4) return ''
   if (!series.some((p) => p.newListings > 0 || (p.medianAsk != null && p.medianAsk > 0))) return ''
 
-  const countPlot = buildBarPlot(
-    [
-      {
-        name: 'New listings',
-        points: series.map((p) => ({
-          value: p.newListings,
-          tick: monthLabel(p.month),
-          label: String(p.newListings),
-        })),
-      },
-    ],
-    {
-      keepZeros: true,
-      baselineLabel: '0',
-      // Time series: every month is the series. Do not navy-fill September
-      // just because it is index 0.
-      highlightTicks: series.map((p) => monthLabel(p.month)),
+  const counts = series.map((p) => p.newListings)
+  const asks = series.map((p) => (p.medianAsk != null && p.medianAsk > 0 ? p.medianAsk : null))
+  const finiteAsks = asks.filter((n): n is number => n != null)
+  const maxCount = Math.max(...counts, 0)
+  const minAsk = finiteAsks.length ? Math.min(...finiteAsks) : 0
+  const maxAsk = finiteAsks.length ? Math.max(...finiteAsks) : 0
+
+  return renderPrintPairedSvg({
+    top: {
+      kicker: 'New listings',
+      values: counts,
+      labels: counts.map((n) => (n > 0 ? String(n) : '')),
+      yMinLabel: '0',
+      yMaxLabel: String(maxCount),
+      fromZero: true,
     },
-  )
-  const askPlot = buildLinePlot([
-    {
-      name: 'Median ask',
-      points: series.map((p) => ({
-        value: p.medianAsk != null && p.medianAsk > 0 ? p.medianAsk : Number.NaN,
-        tick: monthLabel(p.month),
-        label: p.medianAsk != null && p.medianAsk > 0 ? chartUsd(p.medianAsk) : '',
-        at: monthAt(p.month),
-      })),
+    bottom: {
+      kicker: 'Median ask',
+      values: asks,
+      labels: asks.map((n) => (n != null ? chartUsd(n) : '')),
+      yMinLabel: finiteAsks.length ? chartUsd(minAsk) : '0',
+      yMaxLabel: finiteAsks.length ? chartUsd(maxAsk) : '0',
+      fromZero: false,
     },
-  ])
-  const parts: string[] = []
-  if (countPlot) {
-    parts.push(
-      renderPrintChartSvg(countPlot, { caption: 'New listings by month', colors: PRINT_NAVY_CREAM }),
-    )
-  }
-  if (askPlot) {
-    parts.push(
-      renderPrintChartSvg(askPlot, { caption: 'Median asking price', colors: PRINT_NAVY_CREAM }),
-    )
-  }
-  return parts.join('')
+    ticks: series.map((p) => monthLabel(p.month)),
+    caption: 'New listings and asking prices',
+    colors: PRINT_NAVY_CREAM,
+  })
 }

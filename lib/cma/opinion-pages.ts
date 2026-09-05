@@ -406,6 +406,7 @@ function subdivisionYearChartSvg(
   return renderPrintChartSvg(plot, {
     caption: 'Median close by year',
     colors: PRINT_NAVY_CREAM,
+    kicker: 'Median close',
   })
 }
 

@@ -565,7 +565,7 @@ describe('design directive contracts', () => {
     expect(adminWrap).not.toMatch(/from ['"]recharts['"]/)
     expect(cma).toMatch(/from '@\/lib\/charts\/plot'/)
     expect(cma).toMatch(/from '@\/lib\/charts\/print-svg'/)
-    expect(readSrc('lib/cma/comps-price-chart.ts')).toMatch(/from '@\/lib\/charts\/plot'/)
+    expect(readSrc('lib/cma/comps-price-chart.ts')).toMatch(/from '@\/lib\/charts\/print-svg'/)
     const live = [
       'components/market/MarketCoreCharts.tsx',
       'components/reports/SalesReportCharts.tsx',

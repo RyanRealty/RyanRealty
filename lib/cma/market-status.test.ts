@@ -248,7 +248,9 @@ describe('market charts', () => {
       { month: '2025-12', newListings: 5, medianAsk: 2_080_000 },
     ])
     expect(svg).toContain('<path')
-    expect(svg).toContain('New listings')
+    expect(svg).toContain('NEW LISTINGS')
+    expect(svg).toContain('MEDIAN ASK')
+    expect((svg.match(/<svg/g) ?? []).length).toBe(1)
   })
 
   it('keeps empty months and does not plot listing count on the asking-price scale', () => {
@@ -273,8 +275,10 @@ describe('market charts', () => {
     expect(svg).toContain('>5</text>')
     expect(svg).not.toContain('stroke-dasharray')
     expect(svg).not.toContain('Solid line is new listings')
-    // Every month is the series. September is not special.
-    expect([...svg.matchAll(/<rect[^>]*opacity="1"/g)]).toHaveLength(8)
+    expect(svg).toContain('NEW LISTINGS')
+    expect(svg).toContain('MEDIAN ASK')
+    expect((svg.match(/<svg/g) ?? []).length).toBe(1)
+    expect(svg).not.toContain('rx="2"')
   })
 })
 

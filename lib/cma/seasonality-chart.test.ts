@@ -40,5 +40,7 @@ describe('seasonalityChartSvg', () => {
     expect(svg).not.toContain('PropertyType=')
     expect(svg).toContain('>0</text>')
     expect(svg).toContain('>21</text>')
+    expect(svg).toContain('<circle')
+    expect(svg).not.toContain('rx="2"')
   })
 })

@@ -19,29 +19,35 @@ const points = [
   { value: 12, tick: 'May', label: '12' },
 ]
 
-function opacities(svg: string): string[] {
-  return [...svg.matchAll(/<rect[^>]*opacity="([\d.]+)"/g)].map((m) => m[1]!)
+function filledDots(svg: string): number {
+  return [...svg.matchAll(/<circle[^>]*fill="#102742"/g)].length
+}
+
+function hollowDots(svg: string): number {
+  return [...svg.matchAll(/<circle[^>]*fill="none"/g)].length
 }
 
 describe('print bar chart emphasis', () => {
-  it('emphasizes only the named bars, never the first bar as well', () => {
+  it('fills only the named marks, never the first month as well', () => {
     const plot = buildBarPlot([{ name: 'days', points }], { highlightTicks: ['Apr', 'May'] })!
     const svg = renderPrintChartSvg(plot, { caption: 'c', colors: PRINT_NAVY_CREAM })
-    const solid = opacities(svg).filter((o) => o === '1')
-    // Exactly two: April and May. January must not ride along on index 0.
-    expect(solid).toHaveLength(2)
-    const bars = plot.bars
-    expect(bars.find((b) => b.tick === 'Jan')!.highlight).toBe(false)
-    expect(bars.filter((b) => b.highlight).map((b) => b.tick).sort()).toEqual(['Apr', 'May'])
+    expect(filledDots(svg)).toBe(2)
+    expect(hollowDots(svg)).toBe(2)
+    expect(barsOf(plot)).toEqual(['Apr', 'May'])
   })
 
-  it('still emphasizes the first bar when no bars are named', () => {
-    // Charts that declare no highlights keep the primary-series convention.
+  it('fills every mark when none are named', () => {
     const plot = buildBarPlot([{ name: 'days', points }])!
     const svg = renderPrintChartSvg(plot, { caption: 'c', colors: PRINT_NAVY_CREAM })
-    expect(opacities(svg).filter((o) => o === '1')).toHaveLength(1)
+    expect(filledDots(svg)).toBe(4)
+    expect(hollowDots(svg)).toBe(0)
   })
 })
+
+function barsOf(plot: { bars: { tick: string; highlight: boolean }[] }): string[] {
+  expect(plot.bars.find((b) => b.tick === 'Jan')!.highlight).toBe(false)
+  return plot.bars.filter((b) => b.highlight).map((b) => b.tick).sort()
+}
 
 describe('print bar chart scale', () => {
   it('names the y range and the bar values, not only the month ticks', () => {
@@ -57,7 +63,8 @@ describe('print bar chart scale', () => {
     expect(svg).toContain('>50</text>')
     expect(svg).toContain('>10</text>')
     expect(svg).toContain('Median days to pending by close month')
-    expect(svg).toContain('0 to 50')
+    expect(svg).toContain('<circle')
+    expect(svg).not.toContain('rx="2"')
   })
 })
 

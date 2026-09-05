@@ -26,5 +26,6 @@ export function seasonalityChartSvg(x: CmaSeasonality): string {
   return renderPrintChartSvg(plot, {
     caption: 'Median days to pending by close month',
     colors: PRINT_NAVY_CREAM,
+    kicker: 'Days to pending',
   })
 }
