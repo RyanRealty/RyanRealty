@@ -53,6 +53,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
+  V3Ledger,
   V3Proof,
   V3Quiet,
   V3Sheet,
@@ -64,6 +65,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SellCapture } from './_v3/SellCapture'
 import { SellValueForm } from './_v3/SellValueForm'
+import { sellBendLedgerRows } from './_v3/sell-market-rows'
 import './_v3/sell-stage.css'
 import {
   BEND_MARKET_TRACE_SCOPE,
@@ -133,20 +135,9 @@ export default async function SellPage() {
       href: '/months-of-supply',
     })
   }
-  for (const item of publicSegmentItems(publicSegments, 'bend')) {
-    bendFigures.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-      href: item.href,
-    })
-  }
-  for (const item of publicPaceItems(publicPace)) {
-    bendFigures.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
   const [firstBendFigure, ...restBendFigures] = bendFigures
+  const alsoRows = sellBendLedgerRows(publicSegments, publicPace)
+  const [firstAlsoRow, ...restAlsoRows] = alsoRows
 
   const leftoverTrace =
     publicPaceItems(publicPace).length > 0
@@ -158,7 +149,7 @@ export default async function SellPage() {
       : ''
   const bendTrace =
     bend != null
-      ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}${leftoverTrace}${extraTrace}`
+      ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
       : BEND_MARKET_TRACE_SCOPE
 
   const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
@@ -266,7 +257,6 @@ export default async function SellPage() {
               `${bend.activeCount.toLocaleString('en-US')} detached homes for sale. ${bend.mosLabel} months of supply is a ${bend.verdictLabel}.`,
             )}
             figures={[firstBendFigure, ...restBendFigures]}
-            foldAfter={3}
             source={v3Text(bendTrace)}
             updated={v3Text(formatDate(bend.computedAt))}
             action={{
@@ -289,6 +279,21 @@ export default async function SellPage() {
             ]}
           />
         )}
+
+        {firstAlsoRow ? (
+          <V3Ledger
+            id="bend-also"
+            eyebrow={v3Text('Bend, Oregon')}
+            heading={v3Text('What else is listed, and how listings move')}
+            rows={[firstAlsoRow, ...restAlsoRows]}
+            encode="bar"
+            source={v3Text(
+              `${BEND_MARKET_TRACE_SCOPE}${leftoverTrace}${extraTrace}`.trim(),
+            )}
+            updated={bend ? v3Text(formatDate(bend.computedAt)) : undefined}
+            action={{ label: v3Text('Full Bend market report'), href: '/housing-market/bend' }}
+          />
+        ) : null}
 
         <V3Sheet
           id="listing-plan"

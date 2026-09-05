@@ -26,7 +26,12 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 2 (Stage already emitted the h1). Three lead Bend figures (median, homes for sale, months of supply) with foldAfter=3 for the long tail. Ask is ghost Value my home.",
+      "section": "Pattern 1, level 2. Three lead Bend figures (median, homes for sale, months of supply). Ask is ghost Value my home.",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "#bend-also. Extra product types and leftover pace as scannable rows. Count is the figure, the rest of the sentence is detail. Bar-encode type counts only.",
       "blocking": true
     },
     {
@@ -110,6 +115,7 @@
     "V3Breadcrumb",
     "V3Stage (SellCapture SellValueForm on the photograph)",
     "V3Instrument (Bend pulse) or V3Quiet empty",
+    "V3Ledger #bend-also -- other types and leftover pace, not a 27-figure grid",
     "V3Sheet #listing-plan",
     "V3Proof #reviews when live Google reviews exist",
     "V3Quiet #selling-questions (FAQ, track record, doors)",

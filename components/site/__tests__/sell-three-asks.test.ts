@@ -40,8 +40,13 @@ describe('/sell three asks became one', () => {
     expect(formAt).toBeLessThan(stageClose)
   })
 
-  it('folds the Bend stat wall so three figures answer, the rest stay one tap away', () => {
-    expect(page).toContain('foldAfter={3}')
+  it('keeps three Bend answers as figures and the rest as a ledger, not one numeral grid', () => {
+    expect(page).toMatch(/<V3Ledger/)
+    expect(page).toContain('sellBendLedgerRows')
+    expect(page).toContain('What else is listed, and how listings move')
+    expect(page).not.toContain('foldAfter={3}')
+    expect(page).not.toMatch(/for \(const item of publicSegmentItems/)
+    expect(page).not.toMatch(/for \(const item of publicPaceItems/)
   })
 
   it('address step is label + empty field + Value my home', () => {
