@@ -1,6 +1,10 @@
 /**
  * Client CMA charts. A real path through priced months, not a dead bar.
+ * Count and dollars never share an axis.
  */
+
+import { buildBarPlot, buildLinePlot } from '@/lib/charts/plot'
+import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
 
 export type TrendPoint = {
   periodStart: string
@@ -18,6 +22,16 @@ export type ListingTrendPoint = {
 function monthLabel(iso: string): string {
   const d = new Date(`${iso.slice(0, 7)}-01T00:00:00Z`)
   return d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
+}
+
+function monthAt(iso: string): number {
+  const y = Number(iso.slice(0, 4))
+  const m = Number(iso.slice(5, 7))
+  return y * 12 + m
+}
+
+function chartUsd(n: number): string {
+  return `$${Math.round(n / 1000)}K`
 }
 
 function linePath(xs: number[], ys: number[]): string {
@@ -66,49 +80,52 @@ export function medianCloseLineSvg(points: TrendPoint[]): string {
   <p class="small">Range $${Math.round(min).toLocaleString('en-US')} to $${Math.round(max).toLocaleString('en-US')}.</p>`
 }
 
-/** New listings and median ask over the last year. */
+/** New listings (count) and median ask (dollars) as two charts. Never one axis. */
 export function listingTrendSvg(points: ListingTrendPoint[]): string {
-  const series = points.filter((p) => p.newListings > 0 || p.medianAsk != null)
+  const series = [...points].sort((a, b) => a.month.localeCompare(b.month))
   if (series.length < 4) return ''
-  const W = 720
-  const H = 240
-  const left = 8
-  const right = W - 24
-  const top = 18
-  const bottom = 178
-  const counts = series.map((p) => p.newListings)
-  const yCount = scaleY(counts, top, bottom)
-  const xs = series.map((_, i) => left + ((right - left) * i) / Math.max(series.length - 1, 1))
-  const countPath = linePath(xs, counts.map(yCount))
-  const asks = series.map((p) => p.medianAsk).filter((n): n is number => n != null && n > 0)
-  const askPath =
-    asks.length >= 4
-      ? (() => {
-          const yAsk = scaleY(asks, top, bottom)
-          const askXs: number[] = []
-          const askYs: number[] = []
-          series.forEach((p, i) => {
-            if (p.medianAsk != null && p.medianAsk > 0) {
-              askXs.push(xs[i]!)
-              askYs.push(yAsk(p.medianAsk))
-            }
-          })
-          return askXs.length >= 4
-            ? `<path d="${linePath(askXs, askYs)}" fill="none" stroke="#102742" stroke-width="2" stroke-dasharray="6 5" stroke-linejoin="round"/>`
-            : ''
-        })()
-      : ''
-  const labels = xs
-    .map(
-      (x, i) =>
-        `<text x="${x.toFixed(1)}" y="${bottom + 22}" text-anchor="middle" font-size="11" fill="#102742" opacity="0.75">${monthLabel(series[i]!.month)}</text>`,
+  if (!series.some((p) => p.newListings > 0 || (p.medianAsk != null && p.medianAsk > 0))) return ''
+
+  const countPlot = buildBarPlot(
+    [
+      {
+        name: 'New listings',
+        points: series.map((p) => ({
+          value: p.newListings,
+          tick: monthLabel(p.month),
+          label: String(p.newListings),
+        })),
+      },
+    ],
+    {
+      keepZeros: true,
+      baselineLabel: '0',
+      // Time series: every month is the series. Do not navy-fill September
+      // just because it is index 0.
+      highlightTicks: series.map((p) => monthLabel(p.month)),
+    },
+  )
+  const askPlot = buildLinePlot([
+    {
+      name: 'Median ask',
+      points: series.map((p) => ({
+        value: p.medianAsk != null && p.medianAsk > 0 ? p.medianAsk : Number.NaN,
+        tick: monthLabel(p.month),
+        label: p.medianAsk != null && p.medianAsk > 0 ? chartUsd(p.medianAsk) : '',
+        at: monthAt(p.month),
+      })),
+    },
+  ])
+  const parts: string[] = []
+  if (countPlot) {
+    parts.push(
+      renderPrintChartSvg(countPlot, { caption: 'New listings by month', colors: PRINT_NAVY_CREAM }),
     )
-    .join('')
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="New listings and median ask" class="trend-svg">
-    <path d="${countPath}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${askPath}
-    <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
-    ${labels}
-  </svg>
-  <p class="small">Solid line is new listings. Dashed line is median ask when a month has a priced list.</p>`
+  }
+  if (askPlot) {
+    parts.push(
+      renderPrintChartSvg(askPlot, { caption: 'Median asking price', colors: PRINT_NAVY_CREAM }),
+    )
+  }
+  return parts.join('')
 }

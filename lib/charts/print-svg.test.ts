@@ -43,6 +43,24 @@ describe('print bar chart emphasis', () => {
   })
 })
 
+describe('print bar chart scale', () => {
+  it('names the y range and the bar values, not only the month ticks', () => {
+    const plot = buildBarPlot([{ name: 'days', points }], {
+      highlightTicks: ['Apr', 'May'],
+      baselineLabel: '0',
+    })!
+    const svg = renderPrintChartSvg(plot, {
+      caption: 'Median days to pending by close month',
+      colors: PRINT_NAVY_CREAM,
+    })
+    expect(svg).toContain('>0</text>')
+    expect(svg).toContain('>50</text>')
+    expect(svg).toContain('>10</text>')
+    expect(svg).toContain('Median days to pending by close month')
+    expect(svg).toContain('0 to 50')
+  })
+})
+
 describe('print line chart', () => {
   it('names the y range and the years on the line, not only in aria', () => {
     const plot = buildLinePlot([
@@ -62,5 +80,6 @@ describe('print line chart', () => {
     expect(svg).toContain('2024')
     expect(svg).toContain('Median close by year')
     expect(svg).toContain('<text')
+    expect(svg).toContain('<circle')
   })
 })

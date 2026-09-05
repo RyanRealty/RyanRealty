@@ -249,8 +249,33 @@ export function buildLinePlot(
   let xStartAt = Infinity
   let xEndAt = -Infinity
 
+  const takeX = (xKey: number, tick: string) => {
+    if (xKey < xMin) xMin = xKey
+    if (xKey > xMax) xMax = xKey
+    if (xKey < xStartAt) {
+      xStartAt = xKey
+      xStart = tick
+    }
+    if (xKey > xEndAt) {
+      xEndAt = xKey
+      xEnd = tick
+    }
+  }
+
+  // X domain is the calendar (or the declared `at` keys), including months
+  // with no y. Dropping them lets a later priced month slide into their slot.
+  series.forEach((s) => {
+    s.points.forEach((point, order) => {
+      if (useAt) {
+        if (point.at == null || !isFiniteNumber(point.at)) return
+        takeX(point.at, point.tick)
+        return
+      }
+      takeX(order, point.tick)
+    })
+  })
+
   for (const row of finite) {
-    const xKey = useAt ? (row.point.at as number) : row.order
     if (row.point.value < yMin) {
       yMin = row.point.value
       yMinLabel = row.point.label
@@ -258,16 +283,6 @@ export function buildLinePlot(
     if (row.point.value > yMax) {
       yMax = row.point.value
       yMaxLabel = row.point.label
-    }
-    if (xKey < xMin) xMin = xKey
-    if (xKey > xMax) xMax = xKey
-    if (xKey < xStartAt) {
-      xStartAt = xKey
-      xStart = row.point.tick
-    }
-    if (xKey > xEndAt) {
-      xEndAt = xKey
-      xEnd = row.point.tick
     }
   }
   if (yMinLabel == null || yMaxLabel == null || xStart == null || xEnd == null) return null
@@ -287,12 +302,11 @@ export function buildLinePlot(
   const lines: LinePlot['lines'] = []
   series.forEach((s) => {
     const plotted: PlottedPoint[] = s.points.map((point, order) => {
-      const plot =
-        isFiniteNumber(point.value) &&
-        (!useAt || (point.at != null && isFiniteNumber(point.at)))
+      const hasAt = !useAt || (point.at != null && isFiniteNumber(point.at))
+      const plot = isFiniteNumber(point.value) && hasAt
       const xKey = useAt && point.at != null ? point.at : order
       return {
-        x: plot ? xOf(xKey) : 0,
+        x: hasAt ? xOf(xKey) : 0,
         y: plot ? yOf(point.value) : 0,
         plot,
         label: point.label,

@@ -45,17 +45,30 @@ export function renderPrintChartSvg(
         return `<path d="${esc(line.d)}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"${dash}/>`
       })
       .join('')
-    const ticks = plot.lines[0]?.points.filter((p) => p.plot) ?? []
+    const ticks = plot.lines[0]?.points ?? []
     const xLabels = ticks
       .map((p, i) => {
-        if (i !== 0 && i !== ticks.length - 1 && i % 2 === 1) return ''
+        if (!p.tick) return ''
+        if (ticks.length > 12 && i !== 0 && i !== ticks.length - 1 && i % 2 === 1) return ''
         return `<text x="${(p.x + gutterL).toFixed(2)}" y="${(plot.vbH + 12).toFixed(2)}" text-anchor="middle" font-size="8" fill="${colors.muted}">${esc(p.tick)}</text>`
+      })
+      .join('')
+    const dots = plot.lines
+      .map((line, i) => {
+        const fill = i === 0 ? colors.ink : colors.muted
+        return line.points
+          .filter((p) => p.plot)
+          .map(
+            (p) =>
+              `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2.5" fill="${fill}"/>`,
+          )
+          .join('')
       })
       .join('')
     const yMaxY = plot.scale.t + 3
     const yMinY = plot.scale.t + plot.scale.h
     const yLabels = `<text x="${gutterL - 4}" y="${yMaxY.toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}">${esc(plot.yMaxLabel)}</text><text x="${gutterL - 4}" y="${yMinY.toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}">${esc(plot.yMinLabel)}</text>`
-    return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;"><g transform="translate(${gutterL},0)">${paths}</g>${yLabels}${xLabels}</svg><p class="small">${aria}. ${esc(plot.yMinLabel)} to ${esc(plot.yMaxLabel)}.</p>`
+    return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;"><g transform="translate(${gutterL},0)">${paths}${dots}</g>${yLabels}${xLabels}</svg><p class="small">${aria}. ${esc(plot.yMinLabel)} to ${esc(plot.yMaxLabel)}.</p>`
   }
 
   if (plot.kind === 'mix') {
@@ -95,10 +108,25 @@ export function renderPrintChartSvg(
       if (plot.layout === 'horizontal') {
         return `<text x="${(b.x + 4).toFixed(2)}" y="${(b.y + 8).toFixed(2)}" font-size="9" fill="${colors.ink}">${esc(b.tick)} ${esc(b.label)}</text>`
       }
-      return `<text x="${(b.x + b.w / 2).toFixed(2)}" y="${(plot.vbH - 6).toFixed(2)}" text-anchor="middle" font-size="9" fill="${colors.muted}">${esc(b.tick)}</text>`
+      return `<text x="${(b.x + b.w / 2).toFixed(2)}" y="${(plot.vbH - 6).toFixed(2)}" text-anchor="middle" font-size="8" fill="${colors.muted}">${esc(b.tick)}</text>`
     })
     .join('')
-  return `<svg viewBox="0 0 ${plot.vbW} ${plot.vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${rects}${labels}</svg>`
+  if (plot.layout === 'horizontal') {
+    return `<svg viewBox="0 0 ${plot.vbW} ${plot.vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${rects}${labels}</svg>`
+  }
+  const gutterL = 44
+  const gutterT = 12
+  const vbW = plot.vbW + gutterL
+  const vbH = plot.vbH + gutterT
+  const values = plot.bars
+    .map((b) => {
+      return `<text x="${(b.x + b.w / 2).toFixed(2)}" y="${(b.y - 2).toFixed(2)}" text-anchor="middle" font-size="8" fill="${colors.ink}">${esc(b.label)}</text>`
+    })
+    .join('')
+  const baseline = Math.max(...plot.bars.map((b) => b.y + b.h))
+  const top = Math.min(...plot.bars.map((b) => b.y))
+  const yLabels = `<text x="${gutterL - 4}" y="${(top + gutterT + 3).toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}">${esc(plot.yMaxLabel)}</text><text x="${gutterL - 4}" y="${(baseline + gutterT).toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}">${esc(plot.yMinLabel)}</text>`
+  return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;"><g transform="translate(${gutterL},${gutterT})">${rects}${values}${labels}</g>${yLabels}</svg><p class="small">${aria}. ${esc(plot.yMinLabel)} to ${esc(plot.yMaxLabel)}.</p>`
 }
 
 /** Client-facing packets. Matches CLAUDE.md §3 navy / cream. */

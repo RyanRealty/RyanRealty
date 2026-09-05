@@ -38,5 +38,7 @@ describe('seasonalityChartSvg', () => {
     expect(svg).not.toMatch(/>ug</)
     expect(svg).not.toContain('Supabase')
     expect(svg).not.toContain('PropertyType=')
+    expect(svg).toContain('>0</text>')
+    expect(svg).toContain('>21</text>')
   })
 })

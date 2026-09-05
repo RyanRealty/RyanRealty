@@ -108,7 +108,8 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
 
 export function renderListingTrendHtml(area: CmaMarketArea | null | undefined): string {
   const svg = area?.listingTrend ? listingTrendSvg(area.listingTrend) : ''
-  return svg ? `<div class="szn is-hero" data-anim="chart">${svg}</div>` : ''
+  if (!svg || !area) return ''
+  return `<div class="szn is-hero" data-anim="chart">${svg}</div><p class="small">${esc(area.label)}.</p>`
 }
 
 export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {

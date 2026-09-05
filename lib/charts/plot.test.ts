@@ -18,6 +18,14 @@ describe('shared chart plot', () => {
     expect(d).toMatch(/^M/)
     expect(d).not.toMatch(/[CQST]/)
     expect((d.match(/M/g) ?? []).length).toBe(2)
+    // Empty February keeps its slot. March does not slide into it.
+    if (plot?.kind === 'line') {
+      const pts = plot.lines[0]!.points
+      expect(pts[1]!.tick).toBe('Feb')
+      expect(pts[1]!.plot).toBe(false)
+      expect(pts[1]!.x).toBeGreaterThan(pts[0]!.x)
+      expect(pts[1]!.x).toBeLessThan(pts[2]!.x)
+    }
   })
 
   it('mixes composition as one stacked bar, not a line through types', () => {

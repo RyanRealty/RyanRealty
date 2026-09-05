@@ -96,12 +96,13 @@ function seasonalityScene(a: OpinionSceneArgs): string {
   const svg = seasonalityChartSvg(x)
   if (!svg) return ''
   const fastest = x.fastestMonths.length ? x.fastestMonths.join(' and ') : null
+  const city = a.subject.city.trim() || 'this city'
   return `
   <section class="sc sc-cream" id="seasonality">
     <div class="in wide">
       <div class="kick r">When to list</div>
-      <h2 class="h r">When homes here sell fastest</h2>
-      <p class="lede r">Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales.${
+      <h2 class="h r">When homes in ${esc(city)} sell fastest</h2>
+      <p class="lede r">Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales in ${esc(city)}.${
         fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
       }</p>
       <div class="r">${svg}</div>

@@ -302,10 +302,12 @@ describe('when-to-list chapter', () => {
   it('draws the chart and carries its own source line', () => {
     const page = seasonalityPage({ ...bareArgs, extras: { seasonality } } as never)
     expect(page).not.toBeNull()
-    expect(page!.toc).toBe('When homes here sell fastest')
+    expect(page!.toc).toBe('When homes in Bend sell fastest')
+    expect(page!.body).toContain('When homes in Bend sell fastest')
     expect(page!.body).toContain('<svg')
-    expect(page!.body).toContain('3 years and 240 closed sales')
+    expect(page!.body).toContain('3 years and 240 closed sales in Bend')
     expect(page!.body).toContain('The shortest waits land in January.')
+    expect(page!.body).not.toContain('When homes here sell fastest')
     // Every figure on a client page traces to a named source (CLAUDE.md §0).
     expect(page!.body).toContain('Closed single-family sales in Bend, 2023 through 2026.')
   })

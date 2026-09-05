@@ -425,12 +425,14 @@ export function seasonalityPage(a: OpinionPageArgs): CmaPageDef | null {
   const svg = seasonalityChartSvg(x)
   if (!svg) return null
   const fastest = x.fastestMonths.length ? x.fastestMonths.join(' and ') : null
+  const city = a.subject.city.trim() || 'this city'
+  const heading = `When homes in ${city} sell fastest`
   return {
-    meta: `${esc(a.subject.streetAddress)} · When homes here sell fastest`,
-    toc: 'When homes here sell fastest',
+    meta: `${esc(a.subject.streetAddress)} · ${esc(heading)}`,
+    toc: heading,
     body: `
-  <h2 class="section">When homes here sell fastest</h2>
-  <p>Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales.${
+  <h2 class="section">${esc(heading)}</h2>
+  <p>Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales in ${esc(city)}.${
     fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
   }</p>
   <div class="szn is-hero" data-anim="chart">${svg}</div>

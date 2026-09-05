@@ -248,7 +248,33 @@ describe('market charts', () => {
       { month: '2025-12', newListings: 5, medianAsk: 2_080_000 },
     ])
     expect(svg).toContain('<path')
-    expect(svg).toContain('new listings')
+    expect(svg).toContain('New listings')
+  })
+
+  it('keeps empty months and does not plot listing count on the asking-price scale', () => {
+    // Diamond Bar 2465: Oct and Jan had no new lists. Filtering them out, then
+    // independently scaling count (0–5) and ask ($395k–$420k) onto one axis,
+    // is the same lie as plotting sale-count on a median-close chart.
+    const svg = listingTrendSvg([
+      { month: '2025-09', newListings: 2, medianAsk: 400_000 },
+      { month: '2025-10', newListings: 0, medianAsk: null },
+      { month: '2025-11', newListings: 4, medianAsk: 410_000 },
+      { month: '2025-12', newListings: 3, medianAsk: 405_000 },
+      { month: '2026-01', newListings: 0, medianAsk: null },
+      { month: '2026-02', newListings: 1, medianAsk: 395_000 },
+      { month: '2026-03', newListings: 2, medianAsk: 398_000 },
+      { month: '2026-04', newListings: 5, medianAsk: 420_000 },
+    ])
+    expect(svg).toContain('Oct')
+    expect(svg).toContain('Jan')
+    expect(svg).toContain('$395K')
+    expect(svg).toContain('$420K')
+    expect(svg).toContain('>0</text>')
+    expect(svg).toContain('>5</text>')
+    expect(svg).not.toContain('stroke-dasharray')
+    expect(svg).not.toContain('Solid line is new listings')
+    // Every month is the series. September is not special.
+    expect([...svg.matchAll(/<rect[^>]*opacity="1"/g)]).toHaveLength(8)
   })
 })
 

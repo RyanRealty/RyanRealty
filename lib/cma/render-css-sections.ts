@@ -260,6 +260,7 @@ export function cmaSectionStyles(): string {
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
   table.comp-matrix td.is-diff { font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
+  .szn svg { width: 100%; height: auto; display: block; margin: 6px 0 2px; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .photo-tile { margin: 0; overflow: hidden; }
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }
