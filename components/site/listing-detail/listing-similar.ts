@@ -40,7 +40,9 @@ export function listingSimilarRail(tiles: readonly ListingTile[], cap = SIMILAR_
 }
 
 function haystack(tile: ListingTile): string[] {
-  return [tile.subdivisionName, tile.boundarySubdivision, tile.neighborhoodName, tile.boundaryNeighborhood]
+  // ListingTile carries the neighborhood as boundaryNeighborhood only — the
+  // neighborhoodName field lives on a different type in the same module.
+  return [tile.subdivisionName, tile.boundarySubdivision, tile.boundaryNeighborhood]
     .filter((s): s is string => !!s && s.trim().length > 0 && s !== 'N/A')
     .map((s) => s.trim().toLowerCase())
 }

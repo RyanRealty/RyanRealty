@@ -286,10 +286,6 @@
       "schedule": "0 17 * * 1"
     },
     {
-      "path": "/api/cron/studio-slate",
-      "schedule": "10 13 * * *"
-    },
-    {
       "path": "/api/cron/offline-conversions",
       "schedule": "0 15 * * *"
     },

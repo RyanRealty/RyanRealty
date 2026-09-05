@@ -1,3 +1,8 @@
+// cron: manual-only Matt 2026-09-04 — unscheduled. This was the largest line on
+// the xAI bill: four Grok Imagine clips every day at 13:10 UTC, $42.30 of the
+// $62.62 spent in the week to 2026-09-04, against a Studio nobody was shipping
+// from. The route still works; run it by hand with ?force=true when a slate is
+// actually wanted, and re-add the vercel.json entry to put it back on a clock.
 /**
  * Studio daily slate cron.
  *
