@@ -1,10 +1,9 @@
-# Current — 2026-09-05 (CMA competition list + format)
+# Current — 2026-09-05 (CMA first-contact letter)
 
-Competition at this price is a thumbnail list against a "This home" row.
-All named homes in the band print (cap 80). Competition sits next to the
-price. House facts and legal share one page. Cover prints 29 for sale /
-12 under contract, not a cream slab. 2465 7th rebuilt. Fail-pile rebuild
-still running on the local xAI key.
+Expired/FSBO CMA email is a full letter: Matt intro, why we wrote, the
+numbers, walk-through invite, reviews/about, and a place-page merge field.
+Asked reports skip the relist ask. Send dialog uses the template, not Grok.
+Fail-pile rebuild still running on the local xAI key.
 
 Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
 mix. Golf Track C stays on local `wt/golf-maps-20260903`.

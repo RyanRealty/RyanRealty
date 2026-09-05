@@ -25,7 +25,7 @@ import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
 import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
-import { composeCmaFirstContact } from '@/lib/cma/first-contact'
+import { composeCmaFirstContact, cmaFirstContactFactsFromRow } from '@/lib/cma/first-contact'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import '../_components/cma-review.css'
 
@@ -100,13 +100,14 @@ export default async function AdminCmaReviewPage({
           ? 'Approve & queue'
           : 'Approve'
       : null
+  const signingBroker = brokers.find((b) => b.slug === String(row.broker_slug ?? ''))
   const firstContact = composeCmaFirstContact(origin, {
+    ...cmaFirstContactFactsFromRow(row, {
+      brokerName: signingBroker?.displayName ?? 'Matt Ryan',
+      firstName: (clientLabel ?? '').trim().split(/\s+/)[0] || null,
+      lastListPrice: lastList,
+    }),
     address: subjectAddress || null,
-    firstName: (clientLabel ?? '').trim().split(/\s+/)[0] || null,
-    valueLow: (row.value_low as number | null) ?? null,
-    valueHigh: (row.value_high as number | null) ?? null,
-    recommendedList: (row.recommended_list as number | null) ?? null,
-    lastListPrice: lastList,
   })
 
   const previewSrc = canOpenDocument

@@ -34,7 +34,7 @@ import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { composeCmaFirstContact } from '@/lib/cma/first-contact'
+import { composeCmaFirstContact, cmaFirstContactFactsFromRow, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 
@@ -60,6 +60,7 @@ interface CmaSendContext {
   lastListPrice: number | null
   /** Decides the opening only. The pricing is identical across origins. */
   origin: CmaOrigin
+  facts: CmaFirstContactFacts
 }
 
 async function resolveSendContext(
@@ -94,11 +95,17 @@ async function resolveSendContext(
     row.build_summary,
     await getCmaProspectAsk(String(row.id)),
   )
+  const clientName = (row.client_name as string | null) ?? null
+  const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
+    brokerName: brokerRow.displayName,
+    firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
+    lastListPrice,
+  })
   return {
     ctx: {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
-      clientName: (row.client_name as string | null) ?? null,
+      clientName,
       clientEmail,
       brokerRow,
       valueLow: (row.value_low as number | null) ?? null,
@@ -106,6 +113,7 @@ async function resolveSendContext(
       recommendedList: (row.recommended_list as number | null) ?? null,
       origin,
       lastListPrice,
+      facts,
     },
     error: null,
   }
@@ -119,16 +127,19 @@ export interface CmaSendOverride {
   bodyText?: string | null
 }
 
-function inboundFacts(ctx: CmaSendContext) {
-  const firstName = (ctx.clientName ?? '').trim().split(/\s+/)[0] || null
-  return {
-    address: ctx.subjectAddress?.trim() || null,
-    firstName,
-    valueLow: ctx.valueLow,
-    valueHigh: ctx.valueHigh,
-    recommendedList: ctx.recommendedList,
-    lastListPrice: ctx.lastListPrice,
-  }
+function inboundFacts(ctx: CmaSendContext): CmaFirstContactFacts {
+  return ctx.facts
+}
+
+function linkifyHttp(html: string): string {
+  return html.replace(/https:\/\/[^\s<]+/g, (url) => `<a href="${url}">${url}</a>`)
+}
+
+function bodyParagraphsHtml(bodyText: string, address: string | null): string {
+  return bodyText
+    .split(/\n{2,}/)
+    .map((p) => `<p style="margin:0 0 16px 0;">${linkifyHttp(emphasizeAddress(p, address)).replace(/\n/g, '<br/>')}</p>`)
+    .join('')
 }
 
 function emphasizeAddress(text: string, address: string | null): string {
@@ -188,15 +199,9 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
     return { html, text, subject }
   }
 
-  const numbersHtml = copy.numbers
-    ? `<p style="margin:0 0 16px 0;">${emphasizeAddress(copy.numbers, ctx.subjectAddress)}</p>`
-    : ''
   const bodyHtml = `
 <div style="padding:32px 34px 8px;">
-  <p style="margin:0 0 16px 0;">${escapeHtml(copy.greeting)}</p>
-  <p style="margin:0 0 16px 0;">${emphasizeAddress(copy.plan, ctx.subjectAddress)}</p>
-  ${numbersHtml}
-  <p style="margin:0 0 16px 0;">${escapeHtml(copy.close)}</p>
+  ${bodyParagraphsHtml(copy.bodyText, ctx.subjectAddress)}
   <p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>
   <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
 </div>`
@@ -253,69 +258,6 @@ function defaultComposeText(ctx: CmaSendContext): string {
 }
 
 /**
- * AI-drafted compose prefill (Matt 2026-09-01: every send is drafted into the
- * review dialog, he edits and approves — this NEVER sends). Source-aware
- * frame: a form request gets "here is what you asked for", an expired listing
- * gets the sorry-your-home-didn't-sell opening. FSBO stays on the gated
- * template (first-touch template rules) and internal-qa needs no prose.
- * Numbers discipline (§0): the model receives the document's own figures and
- * may reference NOTHING else. Falls back to the deterministic template on any
- * model failure or timeout, so the dialog always opens.
- */
-async function draftComposeText(
-  ctx: CmaSendContext,
-  requestSource: string | null,
-  requestedAt: string | null,
-): Promise<string> {
-  if (requestSource === 'fsbo-cron' || requestSource === 'internal-qa') return defaultComposeText(ctx)
-  try {
-    const { generateGrokText } = await import('@/lib/grok/text')
-    const first = (ctx.clientName ?? '').trim().split(/\s+/)[0] || null
-    const address = ctx.subjectAddress?.trim() || 'the home'
-    const ageDays = requestedAt
-      ? Math.floor((Date.now() - new Date(requestedAt).getTime()) / 86_400_000)
-      : null
-    const frame =
-      requestSource === 'seller-lp' || requestSource === 'lead-form'
-        ? `They asked us for this home value through our website form${ageDays != null ? ` ${ageDays} day${ageDays === 1 ? '' : 's'} ago` : ''}. The message delivers what they asked for.${ageDays != null && ageDays > 3 ? ' Include one short apology sentence for the wait. No excuses.' : ''}`
-        : requestSource === 'expired-listing-cron'
-          ? 'Their listing with another brokerage expired without selling. Open with one brief, kind acknowledgment that the home did not sell, then offer the analysis as something useful whatever they decide next.'
-          : 'They did not ask for this report. Be brief and useful. No pitch.'
-    const numbers =
-      ctx.valueLow != null && ctx.valueHigh != null
-        ? `The report's value range is $${ctx.valueLow.toLocaleString('en-US')} to $${ctx.valueHigh.toLocaleString('en-US')}.`
-        : 'The report carries the value range; do not state numbers in the message.'
-    const { GROK_MODELS } = await import('@/lib/grok/client')
-    const res = await generateGrokText({
-      // textFast: the reasoning model regularly blows the dialog's 10s budget
-      // (verified 2026-09-01 — every draft fell back to the template).
-      model: GROK_MODELS.textFast,
-      system: [
-        'You draft one short email body for a Ryan Realty broker in Bend, Oregon, delivering a home value report. The broker reviews and edits before sending. ',
-        'Voice: direct, specific, kind, honest. Plain English. Short sentences. State the fact, then stop — never write a sentence whose job is to explain the previous sentence. ',
-        'HARD RULES: no em dashes, no semicolons, no exclamation marks, no emoji. ',
-        'Banned words: stunning, gorgeous, charming, nestled, boasts, dream home, truly, luxurious, delve, seamless, elevate, vibrant, curated. No manufactured urgency. ',
-        'Numbers: you may reference ONLY the value range provided. Never invent prices, dates, market claims, or facts. ',
-        "Open with a greeting line ('Hi <name>,' or 'Hi there,'). Then 2 to 4 short sentences. Do not write a signature, a link, or a subject line — those append automatically. Under 110 words. Output ONLY the email body text.",
-      ].join(''),
-      prompt: `Recipient: ${first ?? 'name unknown (open with "Hi there,")'}
-Home: ${address}
-Context: ${frame}
-${numbers}
-The full report is attached as a PDF and readable online (the link appends after your text — you can say "the report is attached" but write no URL).`,
-      maxTokens: 300,
-      temperature: 0.4,
-      timeoutMs: 10_000,
-    })
-    const text = res.text.trim()
-    return text.length > 40 ? text : defaultComposeText(ctx)
-  } catch (e) {
-    console.warn('[cma/send] AI draft fell back to template:', e instanceof Error ? e.message : e)
-    return defaultComposeText(ctx)
-  }
-}
-
-/**
  * Compose-dialog prefill: the default subject + message text (sans footer) and
  * the doc facts, so the broker edits from a working baseline. Read-only.
  */
@@ -341,34 +283,42 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       (row.request_source as string | null) ?? null,
       (row.doc_type as string | null) ?? null,
     )
+    const lastListPrice = resolveTheirPrice(
+      origin,
+      row.build_summary,
+      await getCmaProspectAsk(String(row.id)),
+    )
+    const brokerRow = {
+      slug: (brokerRaw?.slug as string) ?? 'matthew-ryan',
+      displayName: (brokerRaw?.display_name as string) ?? 'Matt Ryan',
+      title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
+      email: (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com',
+      phone: (brokerRaw?.phone as string | null) ?? null,
+      photoUrl: (brokerRaw?.photo_url as string | null) ?? null,
+    }
+    const clientName = (row.client_name as string | null) ?? null
     const fakeCtx: CmaSendContext = {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
-      clientName: (row.client_name as string | null) ?? null,
+      clientName,
       clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || 'pending@placeholder',
-      brokerRow: {
-        slug: (brokerRaw?.slug as string) ?? 'matthew-ryan',
-        displayName: (brokerRaw?.display_name as string) ?? 'Matt Ryan',
-        title: (brokerRaw?.title as string) ?? 'Owner & Principal Broker',
-        email: (brokerRaw?.email as string | null) ?? 'matt@ryan-realty.com',
-        phone: (brokerRaw?.phone as string | null) ?? null,
-        photoUrl: (brokerRaw?.photo_url as string | null) ?? null,
-      },
+      brokerRow,
       valueLow: (row.value_low as number | null) ?? null,
       valueHigh: (row.value_high as number | null) ?? null,
       recommendedList: (row.recommended_list as number | null) ?? null,
       origin,
-      lastListPrice: resolveTheirPrice(
-        origin,
-        row.build_summary,
-        await getCmaProspectAsk(String(row.id)),
-      ),
+      lastListPrice,
+      facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
+        brokerName: brokerRow.displayName,
+        firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
+        lastListPrice,
+      }),
     }
     const body = buildLeadBody(fakeCtx)
     return {
       ok: true,
       subject: body.subject,
-      bodyText: await draftComposeText(fakeCtx, (row.request_source as string | null) ?? null, (row.created_at as string | null) ?? null),
+      bodyText: defaultComposeText(fakeCtx),
       docUrl: `${SITE_URL}/cma/${slug}`,
       clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || null,
       clientName: (row.client_name as string | null) ?? null,
@@ -376,11 +326,10 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     }
   }
   const body = buildLeadBody(ctx)
-  const sourceRow = await getCmaAdminRowBySlug(slug)
   return {
     ok: true,
     subject: body.subject,
-    bodyText: await draftComposeText(ctx, (sourceRow?.request_source as string | null) ?? null, (sourceRow?.created_at as string | null) ?? null),
+    bodyText: defaultComposeText(ctx),
     docUrl: `${SITE_URL}/cma/${ctx.slug}`,
     clientEmail: ctx.clientEmail,
     clientName: ctx.clientName,

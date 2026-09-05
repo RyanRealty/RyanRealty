@@ -1,5 +1,12 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { composeCmaFirstContact, composeCmaFirstContactSubject } from '@/lib/cma/first-contact'
+import { checkBrandVoice } from '@/lib/voice/check'
+import { blamesPriorAgent } from '@/lib/crm/first-touch-copy'
+import {
+  cmaFirstContactFactsFromRow,
+  composeCmaFirstContact,
+  composeCmaFirstContactSubject,
+} from '@/lib/cma/first-contact'
 import type { CmaOrigin } from '@/lib/cma/origin'
 
 const FACTS = {
@@ -8,6 +15,8 @@ const FACTS = {
   valueLow: 585_000,
   valueHigh: 625_000,
   recommendedList: 605_000,
+  brokerName: 'Matt Ryan',
+  city: 'Bend',
 }
 
 const ORIGINS: CmaOrigin[] = ['expired', 'fsbo', 'seller-valuation', 'lead-form', 'broker', 'internal', 'unknown']
@@ -73,10 +82,96 @@ describe('first-contact copy', () => {
 
   it('never blames the prior agent on an expired', () => {
     const c = composeCmaFirstContact('expired', FACTS)
+    expect(blamesPriorAgent(`${c.subject} ${c.bodyText}`)).toBe(false)
     const all = `${c.subject} ${c.bodyText}`.toLowerCase()
-    for (const word of ['agent', 'realtor', 'broker', 'overpriced', 'mistake', 'failed you']) {
-      expect(all).not.toContain(word)
-    }
+    expect(all).not.toContain('overpriced')
+    expect(all).not.toContain('failed you')
+    expect(all).not.toContain('your last agent')
+  })
+
+  it('introduces the brokerage, invites a talk, and links about and reviews on an expired send', () => {
+    const c = composeCmaFirstContact('expired', FACTS)
+    expect(c.bodyText).toContain('This is Matt Ryan, owner of Ryan Realty in Bend')
+    expect(c.bodyText).toContain('boutique brokerage')
+    expect(c.bodyText).toContain('came off the market without a sale')
+    expect(c.bodyText).toContain('If anything in those numbers is unclear')
+    expect(c.bodyText).toContain('If you list again we would like the work')
+    expect(c.bodyText).toContain('https://ryan-realty.com/reviews')
+    expect(c.bodyText).toContain('https://ryan-realty.com/about')
+    expect(c.bodyText).toContain('Call anytime')
+    expect(c.bodyText).toContain('We wish you the best with the house')
+    expect(c.bodyText).not.toMatch(/\bCMA\b/)
+    const voice = checkBrandVoice(c.bodyText)
+    expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
+  })
+
+  it('names the neighborhood page when one is on the subject', () => {
+    const c = composeCmaFirstContact('expired', {
+      ...FACTS,
+      neighborhoodName: 'Riverwest',
+      neighborhoodSlug: 'riverwest',
+    })
+    expect(c.bodyText).toContain('what is selling in Riverwest')
+    expect(c.bodyText).toMatch(/\/cities\/bend\/riverwest/)
+    expect(c.bodyText).not.toContain('what is selling in Bend')
+  })
+
+  it('falls back to the city page when there is no neighborhood', () => {
+    const c = composeCmaFirstContact('expired', { ...FACTS, city: 'Redmond' })
+    expect(c.bodyText).toContain('what is selling in Redmond')
+    expect(c.bodyText).toMatch(/\/cities\/redmond/)
+  })
+
+  it('does not invent a place link when the city is unknown', () => {
+    const c = composeCmaFirstContact('expired', {
+      address: '1005 Butler Market',
+      firstName: 'Michelle',
+      valueLow: 585_000,
+      valueHigh: 625_000,
+      recommendedList: 605_000,
+    })
+    expect(c.bodyText).not.toContain('what is selling in')
+  })
+
+  it('does not pitch a relist on an asked report', () => {
+    const c = composeCmaFirstContact('seller-valuation', FACTS)
+    expect(c.bodyText).not.toContain('came off the market')
+    expect(c.bodyText).not.toContain('If you list again')
+    expect(c.bodyText).toContain('This is Matt Ryan')
+    expect(c.bodyText).toContain('If anything in those numbers is unclear')
+  })
+
+  it('reads city and neighborhood off a cmas row without inventing them', () => {
+    const facts = cmaFirstContactFactsFromRow(
+      {
+        subject_address: '2465 7th',
+        subject_city: 'Redmond',
+        subject_subdivision: 'Diamond Bar Ranch',
+        client_name: 'Blair Auld',
+        value_low: 378000,
+        value_high: 407000,
+        recommended_list: 392000,
+        render_args: {
+          market: { geoLabel: 'Redmond', geoSlug: 'redmond' },
+          subject: { city: 'Redmond', subdivision: 'Diamond Bar Ranch' },
+        },
+      },
+      { brokerName: 'Matt Ryan', lastListPrice: 460000 },
+    )
+    expect(facts.city).toBe('Redmond')
+    expect(facts.subdivision).toBe('Diamond Bar Ranch')
+    expect(facts.firstName).toBe('Blair')
+    expect(facts.lastListPrice).toBe(460000)
+    const letter = composeCmaFirstContact('expired', facts)
+    expect(letter.bodyText).toContain('what is selling in Diamond Bar Ranch')
+    expect(letter.bodyText).toMatch(/\/subdivisions\/diamond-bar-ranch/)
+    expect(letter.bodyText).not.toContain('what is selling in Redmond')
+  })
+
+  it('keeps the letter on the send rail instead of a model rewrite', () => {
+    const src = readFileSync(new URL('./send.ts', import.meta.url), 'utf8')
+    expect(src).toContain('composeCmaFirstContact')
+    expect(src).not.toContain('generateGrokText')
   })
 
   it('falls back cleanly with no name and no address', () => {

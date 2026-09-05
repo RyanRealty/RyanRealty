@@ -38,7 +38,7 @@ export type CmaRenderSource = {
 
 /** Metadata-only admin review read. Never pulls html_content / citations / render_args. */
 export const CMA_ADMIN_REVIEW_COLUMNS =
-  'id, slug, doc_type, status, subject_address, subject_city, subject_listing_key, subject_beds, subject_baths, subject_sqft, client_name, client_email, client_phone, client_notes, broker_slug, built_at, created_at, finalized_at, delivered_at, archived_at, html_path, recommended_list, value_low, value_high, published_to_listing, published_at, published_by, comps_count, build_error, build_summary, price_override, person_id, request_source'
+  'id, slug, doc_type, status, subject_address, subject_city, subject_subdivision, subject_listing_key, subject_beds, subject_baths, subject_sqft, client_name, client_email, client_phone, client_notes, broker_slug, built_at, created_at, finalized_at, delivered_at, archived_at, html_path, recommended_list, value_low, value_high, published_to_listing, published_at, published_by, comps_count, build_error, build_summary, price_override, person_id, request_source'
 
 /**
  * Full cmas row (including html_content + citations) by slug.
