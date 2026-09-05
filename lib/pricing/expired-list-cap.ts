@@ -7,7 +7,7 @@
  * compute a higher comp-supported number; the printed list band is clipped
  * to the failed ask. Equal is allowed. Above is not.
  *
- * Live (Active / Pending / Coming Soon) and Closed subjects are untouched:
+ * Live (Active / Pending) and Closed subjects are untouched:
  * a live ask is shown beside the comps (never blended), and a closed sale
  * is not a failed ask.
  */

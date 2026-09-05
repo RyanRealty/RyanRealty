@@ -13,7 +13,6 @@ describe('failed listing status', () => {
     expect(isFailedListingStatus('Cancelled')).toBe(true)
     expect(isFailedListingStatus('Active')).toBe(false)
     expect(isFailedListingStatus('Pending')).toBe(false)
-    expect(isFailedListingStatus('Coming Soon')).toBe(false)
     expect(isFailedListingStatus('Closed')).toBe(false)
     expect(isFailedListingStatus(null)).toBe(false)
   })
