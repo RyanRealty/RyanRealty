@@ -1,0 +1,22 @@
+/* Keep Approve above the phone tab bar and out from under the FAB. */
+.cma-send-dock {
+  position: sticky;
+  bottom: calc(var(--a-tabbar-h, 56px) + 12px);
+  z-index: 6;
+  background: var(--a-bg);
+  padding: 8px 0;
+}
+@media (min-width: 1024px) {
+  .cma-send-dock {
+    position: static;
+    bottom: auto;
+    padding: 0;
+    background: transparent;
+  }
+}
+
+@media (max-width: 1023px) {
+  .cma-review-copy {
+    padding-right: 72px;
+  }
+}

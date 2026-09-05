@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cmaQueueHref,
   cmaQueueMoneyLine,
+  cmaQueueWhoLine,
   filterCmaQueueRows,
+  resolveTheirPrice,
   sortCmaQueueRows,
   theirPriceFromBuildSummary,
   type CmaQueueViewRow,
@@ -28,21 +31,43 @@ function row(over: Partial<CmaQueueViewRow> = {}): CmaQueueViewRow {
 }
 
 describe('cmaQueueMoneyLine', () => {
-  it('always shows range and recommended, and last list on an expired', () => {
+  it('leads with compact rec, then range, then exact last list on an expired', () => {
     const line = cmaQueueMoneyLine(row())
-    expect(line).toContain('$585,000')
-    expect(line).toContain('$625,000')
-    expect(line).toContain('$605,000')
+    expect(line.startsWith('Rec $605K')).toBe(true)
+    expect(line).toContain('$585K-$625K')
     expect(line).toContain('Last list $650,000')
+    expect(line.indexOf('Rec $605K')).toBeLessThan(line.indexOf('$585K-$625K'))
+    expect(line.indexOf('$585K-$625K')).toBeLessThan(line.indexOf('Last list'))
   })
 
   it('does not invent a last list on a requested valuation', () => {
     const line = cmaQueueMoneyLine(
       row({ origin: 'seller-valuation', theirPrice: null, theirPriceLabel: null, theirPriceDelta: null }),
     )
-    expect(line).toContain('$585,000-$625,000')
-    expect(line).toContain('rec $605,000')
+    expect(line.startsWith('Rec $605K')).toBe(true)
+    expect(line).toContain('$585K-$625K')
     expect(line).not.toContain('Last list')
+  })
+})
+
+describe('cmaQueueWhoLine', () => {
+  it('drops city when the address already names it', () => {
+    expect(cmaQueueWhoLine(row({ address: '3802 Petrosa, Bend, OR 97701', city: 'Bend' }))).toBe('Jane Owner')
+  })
+
+  it('keeps city when the address does not name it', () => {
+    expect(cmaQueueWhoLine(row({ address: '3802 Petrosa', city: 'Bend' }))).toBe('Bend · Jane Owner')
+  })
+})
+
+describe('cmaQueueHref', () => {
+  it('omits state when the list is on the default ready door', () => {
+    expect(cmaQueueHref({})).toBe('/admin/cmas')
+    expect(cmaQueueHref({ state: 'ready' })).toBe('/admin/cmas')
+    expect(cmaQueueHref({ state: 'work' })).toBe('/admin/cmas?state=work')
+    expect(cmaQueueHref({ state: 'audit-failed', city: 'Bend' })).toBe(
+      '/admin/cmas?city=Bend&state=audit-failed',
+    )
   })
 })
 
@@ -75,9 +100,23 @@ describe('filterCmaQueueRows', () => {
     }),
   ]
 
-  it('defaults to work and hides sent rows', () => {
-    const visible = filterCmaQueueRows(rows, {}, now)
+  it('defaults to ready, not the whole work pile', () => {
+    const extra = [
+      row({ address: '1 Audit Ln', state: 'audit-failed', createdAt: '2026-09-03T12:00:00.000Z' }),
+      row({ address: '2 Unvetted', state: 'unvetted', createdAt: '2026-09-03T12:00:00.000Z' }),
+    ]
+    const visible = filterCmaQueueRows([...rows, ...extra], {}, now)
+    expect(visible.every((r) => r.state === 'ready')).toBe(true)
     expect(visible.map((r) => r.address)).toEqual(['123 Main St', '2100 NW'])
+  })
+
+  it('still opens the work pile when asked', () => {
+    const extra = row({ address: '1 Audit Ln', state: 'audit-failed' })
+    expect(filterCmaQueueRows([...rows, extra], { state: 'work' }, now).map((r) => r.address)).toEqual([
+      '123 Main St',
+      '2100 NW',
+      '1 Audit Ln',
+    ])
   })
 
   it('filters by city, origin, address, rec band, and created window', () => {
@@ -107,5 +146,15 @@ describe('theirPriceFromBuildSummary', () => {
     expect(theirPriceFromBuildSummary(summary, 'fsbo')).toBe(749_900)
     expect(theirPriceFromBuildSummary(summary, 'seller-valuation')).toBeNull()
     expect(theirPriceFromBuildSummary({}, 'expired')).toBeNull()
+  })
+})
+
+describe('resolveTheirPrice', () => {
+  it('prefers the prospect row, then the summary, and never invents one on a request', () => {
+    const summary = { subject: { last_list_price: 749_900 } }
+    expect(resolveTheirPrice('expired', summary, 774_900)).toBe(774_900)
+    expect(resolveTheirPrice('expired', summary, null)).toBe(749_900)
+    expect(resolveTheirPrice('expired', {}, null)).toBeNull()
+    expect(resolveTheirPrice('seller-valuation', summary, 774_900)).toBeNull()
   })
 })

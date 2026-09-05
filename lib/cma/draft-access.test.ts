@@ -58,7 +58,7 @@ describe('CMA draft review access', () => {
     ).toBe(true)
   })
 
-  it('puts Review CMA first on the admin entity page', () => {
+  it('keeps Review CMA and Open PDF as quiet document links, never the page primary', () => {
     const actions = adminCmaEntityActions({
       slug: 'cma-850-quince-redmond-97756',
       canOpenDocument: true,
@@ -68,9 +68,8 @@ describe('CMA draft review access', () => {
       id: 'review-cma',
       label: 'Review CMA',
       href: '/admin/cmas/cma-850-quince-redmond-97756/view',
-      primary: true,
+      primary: false,
     })
-    expect(actions[0]?.primary).toBe(true)
-    expect(actions.some((a) => a.id === 'review-cma' && a.primary)).toBe(true)
+    expect(actions.every((a) => a.primary === false)).toBe(true)
   })
 })

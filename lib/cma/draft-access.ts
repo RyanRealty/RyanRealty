@@ -50,7 +50,7 @@ export type AdminCmaEntityAction = {
   primary: boolean
 }
 
-/** Entity-page actions in visual order. Review CMA is first when a document exists. */
+/** Entity-page document links. Neither is the page primary — Approve is. */
 export function adminCmaEntityActions(opts: {
   slug: string
   canOpenDocument: boolean
@@ -63,7 +63,7 @@ export function adminCmaEntityActions(opts: {
       id: 'review-cma',
       label: 'Review CMA',
       href: brokerCmaViewHref(slug),
-      primary: true,
+      primary: false,
     })
   }
   if (opts.hasPdf) {

@@ -13,7 +13,10 @@ import { QueueAction } from '@/app/admin/(protected)/cmas/_components/queue/Queu
 import { QueueFilters } from '@/app/admin/(protected)/cmas/_components/queue/QueueFilters.client'
 import type { AdminState } from '@/components/admin/v2'
 import {
+  CMA_QUEUE_DEFAULT_STATE,
+  cmaQueueHref,
   cmaQueueMoneyLine,
+  cmaQueueWhoLine,
   filterCmaQueueRows,
   sortCmaQueueRows,
   type CmaCreatedWindow,
@@ -41,7 +44,7 @@ const STATE_LABEL: Record<CmaQueueState, string> = {
 }
 
 const STATE_TONE: Record<CmaQueueState, AdminState> = {
-  ready: 'ok',
+  ready: 'waiting',
   unvetted: 'waiting',
   flagged: 'waiting',
   'audit-failed': 'down',
@@ -128,7 +131,7 @@ export default async function CmaQueuePage({
     q: str(sp.q),
     city: str(sp.city),
     origin: str(sp.origin) as CmaOrigin | 'all' | undefined,
-    state: (str(sp.state) as CmaQueueViewState | 'all' | 'work' | undefined) ?? 'work',
+    state: (str(sp.state) as CmaQueueViewState | 'all' | 'work' | undefined) ?? CMA_QUEUE_DEFAULT_STATE,
     created: str(sp.created) as CmaCreatedWindow | undefined,
     rec: str(sp.rec) as CmaRecBand | undefined,
     sort: str(sp.sort) as CmaQueueSort | undefined,
@@ -156,12 +159,25 @@ export default async function CmaQueuePage({
     .map((v) => byId.get(v.id))
     .filter((r): r is CmaQueueRow => !!r)
 
+  const door = (href: string, label: string) => (
+    <Link href={href} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+      {label}
+    </Link>
+  )
+
   return (
-    <>
+    <div style={{ paddingBottom: 88 }}>
       <VerdictLine tone={counts.auditFailed > counts.ready ? 'attention' : 'ok'}>
-        {counts.ready} ready to send, {counts.sent} sent, {counts.auditFailed} failed audit, {counts.unvetted}{' '}
-        unvetted
-        {counts.queued > 0 ? `, ${counts.queued} in the drip` : ''}. {total} CMAs.
+        {door(cmaQueueHref({ state: 'ready' }), String(counts.ready))} ready to send,{' '}
+        {door(cmaQueueHref({ state: 'sent' }), String(counts.sent))} sent,{' '}
+        {door(cmaQueueHref({ state: 'audit-failed' }), String(counts.auditFailed))} failed audit,{' '}
+        {door(cmaQueueHref({ state: 'unvetted' }), String(counts.unvetted))} unvetted
+        {counts.queued > 0 ? (
+          <>
+            , {door(cmaQueueHref({ state: 'queued' }), String(counts.queued))} in the drip
+          </>
+        ) : null}
+        . {door(cmaQueueHref({ state: 'all' }), String(total))} CMAs.
       </VerdictLine>
 
       <QueueFilters
@@ -189,7 +205,9 @@ export default async function CmaQueuePage({
         {visible.map((r) => {
           const label = actionLabelFor(r)
           const why = whyLine(r)
-          const who = r.contactName ?? r.contactEmail ?? 'no contact on file'
+          const money = cmaQueueMoneyLine(r)
+          const recBit = money.split(' · ')[0]
+          const restBit = money.split(' · ').slice(1).join(' · ')
           return (
             <QueueRow
               key={r.id}
@@ -202,15 +220,14 @@ export default async function CmaQueuePage({
               }
               context={
                 <>
-                  <span>{cmaQueueMoneyLine(r)}</span>
-                  {r.city ? (
-                    <>
-                      {' · '}
-                      <span>{r.city}</span>
-                    </>
-                  ) : null}
+                  <span>
+                    <span style={{ color: 'var(--a-text)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {recBit}
+                    </span>
+                    {restBit ? ` · ${restBit}` : ''}
+                  </span>
                   {' · '}
-                  <span>{who}</span>
+                  <span>{cmaQueueWhoLine(r)}</span>
                   {!r.contactEmail ? ' · no email' : ''}
                   {why ? (
                     <>
@@ -237,6 +254,6 @@ export default async function CmaQueuePage({
       </ul>
 
       {visible.length === 0 ? <p>Nothing matches that filter.</p> : null}
-    </>
+    </div>
   )
 }

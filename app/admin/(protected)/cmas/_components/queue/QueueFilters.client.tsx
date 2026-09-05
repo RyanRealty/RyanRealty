@@ -9,28 +9,17 @@ import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { SearchField, ToolbarSelect } from '@/components/admin/v2'
 import type { CmaOrigin } from '@/lib/cma/origin'
-import type {
-  CmaCreatedWindow,
-  CmaQueueSort,
-  CmaQueueViewFilters,
-  CmaQueueViewState,
-  CmaRecBand,
+import {
+  CMA_QUEUE_DEFAULT_STATE,
+  cmaQueueHref,
+  type CmaCreatedWindow,
+  type CmaQueueSort,
+  type CmaQueueViewFilters,
+  type CmaQueueViewState,
+  type CmaRecBand,
 } from '@/lib/cma/queue-view'
 
 type Option = { value: string; label: string; count?: number }
-
-function hrefFor(filters: CmaQueueViewFilters): string {
-  const p = new URLSearchParams()
-  if (filters.q) p.set('q', filters.q)
-  if (filters.city) p.set('city', filters.city)
-  if (filters.origin && filters.origin !== 'all') p.set('origin', filters.origin)
-  if (filters.state && filters.state !== 'work') p.set('state', filters.state)
-  if (filters.created && filters.created !== 'all') p.set('created', filters.created)
-  if (filters.rec && filters.rec !== 'all') p.set('rec', filters.rec)
-  if (filters.sort && filters.sort !== 'work') p.set('sort', filters.sort)
-  const q = p.toString()
-  return q ? `/admin/cmas?${q}` : '/admin/cmas'
-}
 
 export function QueueFilters({
   filters,
@@ -47,35 +36,35 @@ export function QueueFilters({
 
   const go = useCallback(
     (patch: Partial<CmaQueueViewFilters>) => {
-      router.push(hrefFor({ ...filters, ...patch }))
+      router.push(cmaQueueHref({ ...filters, ...patch }))
     },
     [filters, router],
   )
 
   return (
-    <div className="av2-toolbar" style={{ flexWrap: 'wrap', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
           const fd = new FormData(e.currentTarget)
           go({ q: String(fd.get('q') ?? '').trim() || undefined })
         }}
-        style={{ display: 'flex', gap: 8, flex: '1 1 220px', minWidth: 180 }}
       >
         <SearchField
           aria-label="Address, city, or client"
           name="q"
           defaultValue={filters.q ?? ''}
           placeholder="Address or client"
-          style={{ width: '100%' }}
+          style={{ width: '100%', maxWidth: 'none' }}
         />
       </form>
 
-      <ToolbarSelect
-        aria-label="Status"
-        value={filters.state ?? 'work'}
-        onChange={(e) => go({ state: e.target.value as CmaQueueViewState | 'all' | 'work' })}
-      >
+      <div className="av2-toolbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <ToolbarSelect
+          aria-label="Status"
+          value={filters.state ?? CMA_QUEUE_DEFAULT_STATE}
+          onChange={(e) => go({ state: e.target.value as CmaQueueViewState | 'all' | 'work' })}
+        >
         <option value="work">Needs action</option>
         <option value="all">All CMAs</option>
         {stateOptions.map((o) => (
@@ -148,6 +137,7 @@ export function QueueFilters({
         <option value="price-asc">Price low-high</option>
         <option value="city">City</option>
       </ToolbarSelect>
+      </div>
     </div>
   )
 }

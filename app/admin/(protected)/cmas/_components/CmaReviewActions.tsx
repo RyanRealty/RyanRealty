@@ -26,6 +26,7 @@ import {
 } from '@/app/actions/cma-admin'
 import { approveAndDeliverCma } from '@/app/actions/cma-queue'
 import { cmaClientIntentLabel, isCmaClientIntent, type CmaClientIntent } from '@/lib/cma/client-intent'
+import './cma-review.css'
 
 export interface CmaReviewActionsProps {
   cmaId: string
@@ -166,9 +167,11 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   return (
     <div className="space-y-5">
       {props.sendLabel ? (
-        <Button onClick={approveAndSend} disabled={isPending || !props.hasDocument} touch className="w-full">
-          {isPending ? 'Working…' : props.sendLabel}
-        </Button>
+        <div className="cma-send-dock">
+          <Button onClick={approveAndSend} disabled={isPending || !props.hasDocument} touch className="w-full">
+            {isPending ? 'Working…' : props.sendLabel}
+          </Button>
+        </div>
       ) : isDraft ? (
         <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
           Approve (draft to final)
@@ -327,15 +330,19 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         </div>
       </details>
 
-      <div style={{ borderTop: '1px solid var(--a-border)' }} />
-
-      <Button onClick={toggleArchive} variant="quiet" touch className="w-full" disabled={isPending}>
-        {isArchived ? 'Restore from archive' : 'Archive CMA'}
-      </Button>
-
-      <Button onClick={() => setDeleteOpen(true)} variant="danger" touch className="w-full" disabled={isPending}>
-        Delete CMA
-      </Button>
+      <details>
+        <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          Remove
+        </summary>
+        <div className="space-y-2" style={{ marginTop: 12 }}>
+          <Button onClick={toggleArchive} variant="quiet" touch className="w-full" disabled={isPending}>
+            {isArchived ? 'Restore from archive' : 'Archive CMA'}
+          </Button>
+          <Button onClick={() => setDeleteOpen(true)} variant="danger" touch className="w-full" disabled={isPending}>
+            Delete CMA
+          </Button>
+        </div>
+      </details>
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}

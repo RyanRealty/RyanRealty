@@ -16,6 +16,12 @@ function client() {
 
 export type CmaAdminRow = Record<string, unknown>
 
+function num(v: unknown): number | null {
+  if (v == null) return null
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 export type CmaServeHead = {
   html_path: string | null
   status: string
@@ -73,6 +79,38 @@ export async function getCmaAdminReviewRowBySlug(slug: string): Promise<CmaAdmin
     throw new Error(`getCmaAdminReviewRowBySlug failed: ${error.message}`)
   }
   return (data ?? null) as CmaAdminRow | null
+}
+
+/**
+ * Last list (expired) or current ask (FSBO) from the prospect row that owns
+ * this CMA. Queue already joins this; review and send were only reading
+ * build_summary.subject.last_list_price, which most live expired rows never
+ * stamped.
+ */
+export async function getCmaProspectAsk(cmaId: string): Promise<number | null> {
+  const sb = client()
+  if (!sb) return null
+  const id = String(cmaId ?? '').trim()
+  if (!id) return null
+  const [exp, fsbo] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select('list_price, original_list_price')
+      .eq('cma_id', id)
+      .limit(1),
+    sb.from('fsbo_listings').select('list_price').eq('cma_id', id).limit(1),
+  ])
+  if (exp.error) {
+    console.error('[getCmaProspectAsk] expired', exp.error.message)
+    throw new Error(`getCmaProspectAsk expired failed: ${exp.error.message}`)
+  }
+  if (fsbo.error) {
+    console.error('[getCmaProspectAsk] fsbo', fsbo.error.message)
+    throw new Error(`getCmaProspectAsk fsbo failed: ${fsbo.error.message}`)
+  }
+  const expRow = (exp.data ?? [])[0] as { list_price?: unknown; original_list_price?: unknown } | undefined
+  const fsboRow = (fsbo.data ?? [])[0] as { list_price?: unknown } | undefined
+  return num(expRow?.list_price) ?? num(expRow?.original_list_price) ?? num(fsboRow?.list_price)
 }
 
 /** Tiny existence + status read. Used so a wrong slug 404s instead of hanging. */

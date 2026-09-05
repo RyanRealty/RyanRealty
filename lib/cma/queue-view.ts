@@ -6,8 +6,11 @@
  * "what the row says about price."
  */
 
-import { formatPriceExact } from '@/lib/format/money'
+import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import type { CmaOrigin } from '@/lib/cma/origin'
+
+/** Bare `/admin/cmas` opens the ready door, not the whole work pile. */
+export const CMA_QUEUE_DEFAULT_STATE: CmaQueueViewState | 'all' | 'work' = 'ready'
 
 export type CmaQueueViewState =
   | 'failed'
@@ -113,7 +116,7 @@ export function filterCmaQueueRows(
   const q = (filters.q ?? '').trim().toLowerCase()
   const city = (filters.city ?? '').trim().toLowerCase()
   const origin = filters.origin && filters.origin !== 'all' ? filters.origin : null
-  const state = filters.state ?? 'work'
+  const state = filters.state ?? CMA_QUEUE_DEFAULT_STATE
 
   return rows.filter((r) => {
     if (q && !haystack(r).includes(q)) return false
@@ -160,12 +163,12 @@ export function cmaQueueMoneyLine(r: Pick<
   CmaQueueViewRow,
   'valueLow' | 'valueHigh' | 'recommendedList' | 'theirPrice' | 'theirPriceLabel' | 'theirPriceDelta'
 >): string {
-  const rec = formatPriceExact(r.recommendedList)
+  const rec = `Rec ${formatPriceCompact(r.recommendedList)}`
   const range =
     r.valueLow != null && r.valueHigh != null
-      ? `${formatPriceExact(r.valueLow)}-${formatPriceExact(r.valueHigh)}`
+      ? `${formatPriceCompact(r.valueLow)}-${formatPriceCompact(r.valueHigh)}`
       : null
-  const head = range ? `${range} · rec ${rec}` : `Rec ${rec}`
+  const head = range ? `${rec} · ${range}` : rec
   if (r.theirPrice != null && r.theirPriceLabel) {
     const delta =
       r.theirPriceDelta == null
@@ -178,9 +181,45 @@ export function cmaQueueMoneyLine(r: Pick<
   return head
 }
 
+export function cmaQueueWhoLine(
+  r: Pick<CmaQueueViewRow, 'address' | 'city' | 'contactName' | 'contactEmail'>,
+): string {
+  const who = r.contactName ?? r.contactEmail ?? 'no contact on file'
+  const city = (r.city ?? '').trim()
+  if (!city) return who
+  if ((r.address ?? '').toLowerCase().includes(city.toLowerCase())) return who
+  return `${city} · ${who}`
+}
+
+export function cmaQueueHref(filters: CmaQueueViewFilters): string {
+  const p = new URLSearchParams()
+  if (filters.q) p.set('q', filters.q)
+  if (filters.city) p.set('city', filters.city)
+  if (filters.origin && filters.origin !== 'all') p.set('origin', filters.origin)
+  if (filters.state && filters.state !== CMA_QUEUE_DEFAULT_STATE) p.set('state', filters.state)
+  if (filters.created && filters.created !== 'all') p.set('created', filters.created)
+  if (filters.rec && filters.rec !== 'all') p.set('rec', filters.rec)
+  if (filters.sort && filters.sort !== 'work') p.set('sort', filters.sort)
+  const q = p.toString()
+  return q ? `/admin/cmas?${q}` : '/admin/cmas'
+}
+
 export function theirPriceFromBuildSummary(summary: unknown, origin: CmaOrigin): number | null {
   if (origin !== 'expired' && origin !== 'fsbo') return null
   const sub = (summary as { subject?: { last_list_price?: unknown } } | null)?.subject
   const n = typeof sub?.last_list_price === 'number' ? sub.last_list_price : Number(sub?.last_list_price)
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** Prospect row wins (queue already does this). Summary is the fallback. */
+export function resolveTheirPrice(
+  origin: CmaOrigin,
+  summary: unknown,
+  prospectAsk: number | null | undefined,
+): number | null {
+  if (origin !== 'expired' && origin !== 'fsbo') return null
+  if (typeof prospectAsk === 'number' && Number.isFinite(prospectAsk) && prospectAsk > 0) {
+    return prospectAsk
+  }
+  return theirPriceFromBuildSummary(summary, origin)
 }

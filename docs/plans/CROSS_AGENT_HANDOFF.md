@@ -1,4 +1,15 @@
-# Current — 2026-09-05 (Studio slate off)
+# Current — 2026-09-05 (CMA screens from looking)
+
+`/admin/cmas` opens the 34 ready rows, not the 416-row work pile. Rec is first
+and compact. Review shows last list from the prospect row, quiet document
+links, one Approve. Archive/delete sit under Remove.
+
+Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
+mix. Golf Track C stays on local `wt/golf-maps-20260903`.
+
+---
+
+# Previous — 2026-09-05 (Studio slate off)
 
 Studio does not create on a clock. `/api/cron/studio-slate` is unscheduled
 and no-ops unless `STUDIO_SLATE_ENABLED=1`. Produce from `/admin/studio` only.

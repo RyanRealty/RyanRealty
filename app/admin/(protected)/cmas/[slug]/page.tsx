@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { getCmaAdminReviewRowBySlug, listActiveBrokersForCma } from '@/lib/data'
+import { getCmaAdminReviewRowBySlug, getCmaProspectAsk, listActiveBrokersForCma } from '@/lib/data'
 import { getPersonForCmaKickoff } from '@/lib/data/crm/cmaKickoff'
 import { parseCmaClientIntent } from '@/lib/cma/client-intent'
 import {
@@ -24,9 +24,10 @@ import { formatDate } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
-import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin } from '@/lib/cma/origin'
+import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
 import { composeCmaFirstContact } from '@/lib/cma/first-contact'
-import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { resolveTheirPrice } from '@/lib/cma/queue-view'
+import '../_components/cma-review.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,7 +85,8 @@ export default async function AdminCmaReviewPage({
     (row.request_source as string | null) ?? null,
     (row.doc_type as string | null) ?? null,
   )
-  const lastList = theirPriceFromBuildSummary(summary, origin)
+  const lastList = resolveTheirPrice(origin, summary, await getCmaProspectAsk(String(row.id)))
+  const lastListLabel = theirPriceLabelFor(origin) ?? 'Last list'
   const auditVerdict = String((summary?.audit as { verdict?: string } | null)?.verdict ?? '').toLowerCase()
   const sendMode = sendModeForOrigin(origin)
   const sendLabel =
@@ -114,13 +116,15 @@ export default async function AdminCmaReviewPage({
       : null
 
   return (
-    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      {canOpenDocument ? (
-        <div style={{ margin: '0 0 16px' }}>
-          <CmaReviewDocumentButton slug={safeSlug} />
-        </div>
-      ) : null}
-
+    <div
+      className="av2-scope"
+      style={{
+        maxWidth: 960,
+        margin: '0 auto',
+        padding: 16,
+        paddingBottom: 'calc(var(--a-tabbar-h, 56px) + 80px)',
+      }}
+    >
       <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
         <Link href="/admin/cmas" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
           CMAs
@@ -155,17 +159,20 @@ export default async function AdminCmaReviewPage({
         {` · built ${formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}`}
       </p>
 
-      {hasDocument ? (
-        <p style={{ margin: '12px 0 0' }}>
-          <a
-            href={`/api/cma/${safeSlug}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="av2-btn av2-btn--quiet av2-btn--touch"
-            style={{ textDecoration: 'none' }}
-          >
-            Open PDF
-          </a>
+      {canOpenDocument || hasDocument ? (
+        <p style={{ margin: '12px 0 0', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {canOpenDocument ? <CmaReviewDocumentButton slug={safeSlug} /> : null}
+          {hasDocument ? (
+            <a
+              href={`/api/cma/${safeSlug}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="av2-btn av2-btn--quiet av2-btn--touch"
+              style={{ textDecoration: 'none' }}
+            >
+              Open PDF
+            </a>
+          ) : null}
         </p>
       ) : null}
 
@@ -182,7 +189,9 @@ export default async function AdminCmaReviewPage({
             label: 'Value range',
             value: `${usd((row.value_low as number | null) ?? null)}-${usd((row.value_high as number | null) ?? null)}`,
           },
-          ...(lastList != null ? [{ key: 'last-list', label: 'Last list', value: usd(lastList) }] : []),
+          ...(lastList != null
+            ? [{ key: 'last-list', label: lastListLabel, value: usd(lastList) }]
+            : []),
           { key: 'comps', label: 'Comps', value: String(row.comps_count ?? '—') },
         ]}
       />
@@ -204,7 +213,10 @@ export default async function AdminCmaReviewPage({
       ) : null}
 
       <SectionHead>Review and send</SectionHead>
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', whiteSpace: 'pre-wrap' }}>
+      <p
+        className="cma-review-copy"
+        style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', whiteSpace: 'pre-wrap' }}
+      >
         {firstContact.bodyText}
       </p>
       <CmaReviewActions

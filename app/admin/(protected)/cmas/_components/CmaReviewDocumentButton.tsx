@@ -11,8 +11,8 @@ export function CmaReviewDocumentButton({ slug }: { slug: string }) {
       href={brokerCmaViewHref(slug)}
       target="_blank"
       rel="noopener noreferrer"
-      className="av2-btn av2-btn--touch"
-      style={{ textDecoration: 'none', width: '100%' }}
+      className="av2-btn av2-btn--quiet av2-btn--touch"
+      style={{ textDecoration: 'none' }}
       data-cma-first-action="review-cma"
     >
       Review CMA

@@ -20,6 +20,7 @@
 import {
   getCmaAdminRowBySlug,
   getCmaBrokerBySlugOrEmail,
+  getCmaProspectAsk,
   updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail,
   stampCmaLinkOnPerson,
@@ -35,7 +36,7 @@ import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact } from '@/lib/cma/first-contact'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
-import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { resolveTheirPrice } from '@/lib/cma/queue-view'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const MAX_PDF_BYTES = 25 * 1024 * 1024
@@ -84,6 +85,15 @@ async function resolveSendContext(
     phone: (brokerRaw?.phone as string | null) ?? null,
     photoUrl: (brokerRaw?.photo_url as string | null) ?? null,
   }
+  const origin = classifyCmaOrigin(
+    (row.request_source as string | null) ?? null,
+    (row.doc_type as string | null) ?? null,
+  )
+  const lastListPrice = resolveTheirPrice(
+    origin,
+    row.build_summary,
+    await getCmaProspectAsk(String(row.id)),
+  )
   return {
     ctx: {
       slug,
@@ -94,17 +104,8 @@ async function resolveSendContext(
       valueLow: (row.value_low as number | null) ?? null,
       valueHigh: (row.value_high as number | null) ?? null,
       recommendedList: (row.recommended_list as number | null) ?? null,
-      origin: classifyCmaOrigin(
-        (row.request_source as string | null) ?? null,
-        (row.doc_type as string | null) ?? null,
-      ),
-      lastListPrice: theirPriceFromBuildSummary(
-        row.build_summary,
-        classifyCmaOrigin(
-          (row.request_source as string | null) ?? null,
-          (row.doc_type as string | null) ?? null,
-        ),
-      ),
+      origin,
+      lastListPrice,
     },
     error: null,
   }
@@ -336,6 +337,10 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       return { ok: false, error: 'This CMA is archived. Restore it before sending.' }
     }
     const brokerRaw = await getCmaBrokerBySlugOrEmail({ slug: (row.broker_slug as string | null) ?? null })
+    const origin = classifyCmaOrigin(
+      (row.request_source as string | null) ?? null,
+      (row.doc_type as string | null) ?? null,
+    )
     const fakeCtx: CmaSendContext = {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
@@ -352,16 +357,11 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       valueLow: (row.value_low as number | null) ?? null,
       valueHigh: (row.value_high as number | null) ?? null,
       recommendedList: (row.recommended_list as number | null) ?? null,
-      origin: classifyCmaOrigin(
-        (row.request_source as string | null) ?? null,
-        (row.doc_type as string | null) ?? null,
-      ),
-      lastListPrice: theirPriceFromBuildSummary(
+      origin,
+      lastListPrice: resolveTheirPrice(
+        origin,
         row.build_summary,
-        classifyCmaOrigin(
-          (row.request_source as string | null) ?? null,
-          (row.doc_type as string | null) ?? null,
-        ),
+        await getCmaProspectAsk(String(row.id)),
       ),
     }
     const body = buildLeadBody(fakeCtx)
