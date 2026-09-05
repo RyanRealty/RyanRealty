@@ -1,5 +1,6 @@
 {
   "route": "app/communities/[slug]/types/[type]/page.tsx",
+  "pageClass": "place",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. Same place-type class as /cities/[slug]/types/[type].",
   "competitiveTarget": "Beat Zillow / Redfin community type filters. A dedicated community+type page with leftover/segment stats, the parent community atlas, and photographed listings of that type, instead of a search-results URL. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
   "note": "H1 is `{Type} in {Place}` (Condos in Sunriver). Face is leftover HUD for single-family (community grain, no MOS) and getPublicPlaceSegments for extra types. Unknown type notFound().",

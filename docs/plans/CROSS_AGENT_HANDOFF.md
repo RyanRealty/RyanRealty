@@ -1,4 +1,40 @@
-# Current — 2026-09-05 (CMA screens from looking)
+# Current — 2026-09-05 (page plans: the route is the unit)
+
+Matt: pages inconsistent, wrong content on the page. Measured cause — 25 page
+plans for 112 public routes, and every gate that reads a plan enumerates the
+CONTRACTS THAT EXIST (`readdirSync(KITS)`), so the 87 unplanned pages were
+invisible to `ci:page-purpose`, `ci:mockup-parity`, `ci:mockup-coverage` and
+`ci:taste-canon` rather than failing them.
+
+Shipped: `ci:page-plan` (`scripts/check-page-plan.mjs`) walks `app/` and asks
+each ROUTE for its plan. Canon `design_system/public/PAGE_PLAN.md`. Eleven page
+classes + routing table in `data/page-classes.json` — all 112 routes classify,
+zero unmatched. Contract schema gains `pageClass`, `objective`, `mustAnswer`
+(each question bound to a `#section-id` that renders, or `null` for a recorded
+gap), `benchmark` (named rival URL + live GSC position + non-empty `loses[]`).
+Three shrink-only ratchets seeded: 87 uncovered routes, 24 legacy contracts,
+4 spine-debt rows. Six break tests pass.
+
+Benchmark is an OUTCOME, never a rubric — page-grade died 2026-08-16 for
+scoring pages against one, so nothing here can be satisfied by deleting content.
+`loses[]` may not be empty.
+
+Brokerage class ground from its real pages: `/contact` and `/videos` hand-roll
+raw `ld+json` script tags while `/about` and `/team` use `MetadataBlock` and
+`/reviews` uses a bespoke `reviews-jsonld.ts` — three emission paths in one
+class; four of seven pages carry no proof section. Those are the 4 spine-debt
+rows. `/about` is the worked exemplar and has left the legacy ratchet (25→24).
+
+NEXT: run `/site-consistency` on the brokerage class — it is ground but only
+`/about` is planned. One class per run, never one page. The other 87 routes
+follow by class.
+
+Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
+mix. Golf Track C stays on local `wt/golf-maps-20260903`.
+
+---
+
+# Previous — 2026-09-05 (CMA screens from looking)
 
 `/admin/cmas` opens the 34 ready rows, not the 416-row work pile. Rec is first
 and compact. Review shows last list from the prospect row, quiet document

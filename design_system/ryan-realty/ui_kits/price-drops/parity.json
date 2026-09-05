@@ -1,5 +1,6 @@
 {
   "route": "app/price-drops/page.tsx",
+  "pageClass": "inventory",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). There is no index.html in this directory. The visual target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
   "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses (count is a caption, never an Instrument hero), Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search.",
   "deletions": [

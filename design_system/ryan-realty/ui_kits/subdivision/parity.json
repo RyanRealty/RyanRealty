@@ -1,9 +1,10 @@
 {
   "route": "app/subdivisions/[slug]/page.tsx",
+  "pageClass": "place",
   "mockup": null,
   "visualLanguage": "design_system/public/PUBLIC_UI.md. First screen is Split + plat inventory face, not a Stage or Field cage.",
-  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon \u2014 Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021\u20132025 counts sit below the fold.",
-  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + full-bleed PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
+  "competitiveTarget": "Beat the Zillow and Redfin subdivision pages. First screen is H1 '{Name} homes for sale', a plat-inventory face (count + median list from getPlatPublicInventory via publishPlatFigures), and flagship PlaceSplitView of that counted set. Ridge is a /subdivisions URL, not /communities/ridge. Seed a map ring only when GIS stored a real polygon — Ridge historically has none, so the camera is pin bounds, never an invented hull. Never say plat on the public page. Giant 0 is forbidden on a timed-out read. Schools only if the MLS modal publishes. Yearly sold 2021–2025 counts sit below the fold.",
+  "note": "Place-page class opener, amended 2026-09-03. Order is V3Breadcrumb, place-opening (V3Heading `{Name} homes for sale` + PlaceFaceStrip plat-inventory face + V3SourceLine + full-bleed PlaceAreaHero photo), V3Atlas (self ring), PlaceTypeSlider (getPublicPlaceSegments, same leftover extra-type feed as the other grains), PlaceSplitView of the counted set (overlayBoundaries from atlas children, empty here because this grain is self), SubdivisionSchools, Instrument (plat market below the fold), SubdivisionSalesHistory + SubdivisionMarketCharts, V3PlaceCharacter, SubdivisionDocuments, Footer. Face SoR is getPlatPublicInventory + publishPlatFigures; publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) — no MOS, DTP, 30-day sold, parent leftover, or closed-12mo on the live face. THE PARENT PULSE IS GONE AND MUST NOT COME BACK. Seed a map ring only when GIS stored a real polygon. Yearly closed counts stay in SubdivisionSalesHistory below the fold. Schools stay in SubdivisionSchools; omit a level the modal does not publish. Parks/trails stay Quiet edges, not an invented rail.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -98,17 +99,17 @@
     "Place, with address and containedInPlace only when the page resolved a city, and hasMap only when a polygon or at least one plotted listing exists."
   ],
   "dataLayer": [
-    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) \u2014 the stored polygon, if any. Seed Split ring only when it is a real polygon. Ridge historically has none; do not invent a hull.",
-    "getPlatPublicInventory(slug) \u2014 THE COUNTED SET: recorded SFR + PUBLIC_ACTIVE. Face count and median and Split listings come from this set. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
-    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) \u2014 hydrates the counted keys for PlaceSplitView. Filtered back to the counted set.",
-    "publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) \u2014 live face. MOS / DTP / 30d sold / leftover parent / closed-12mo stay off the face.",
-    "publishPlatFigures \u2014 plat median may publish; days-to-pending and 30-day sold withhold. ci:publish-plat-figures.",
-    "getSubdivisionCounts(slug) \u2014 Market Truth recorded detached counts and extras, below the fold.",
-    "getSubdivisionSalesHistory(slug) \u2014 yearly Ledger below the fold, counts only.",
-    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) \u2014 this place's own cache row. ci:subdivision-stats-integrity pins the period.",
-    "getSubdivisionSchools(city, alias) \u2014 only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
-    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) \u2014 documents and character.",
-    "getIndexableSubdivisions() \u2014 robots policy in generateMetadata AND the place's city."
+    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) — the stored polygon, if any. Seed Split ring only when it is a real polygon. Ridge historically has none; do not invent a hull.",
+    "getPlatPublicInventory(slug) — THE COUNTED SET: recorded SFR + PUBLIC_ACTIVE. Face count and median and Split listings come from this set. Do not fall back to a capped featured fetch or an unfiltered pin count; those were the 12 / 14 / 26 split on Ridge At Eagle Crest (2026-08-16).",
+    "getListingTiles({ listingKeys, status: 'active', propertyType: 'A', limit: 250 }) — hydrates the counted keys for PlaceSplitView. Filtered back to the counted set.",
+    "publishPlaceFace({ grain: 'subdivision', hud: null, active, medianList }) — live face. MOS / DTP / 30d sold / leftover parent / closed-12mo stay off the face.",
+    "publishPlatFigures — plat median may publish; days-to-pending and 30-day sold withhold. ci:publish-plat-figures.",
+    "getSubdivisionCounts(slug) — Market Truth recorded detached counts and extras, below the fold.",
+    "getSubdivisionSalesHistory(slug) — yearly Ledger below the fold, counts only.",
+    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) — this place's own cache row. ci:subdivision-stats-integrity pins the period.",
+    "getSubdivisionSchools(city, alias) — only when a registry match exists; omit a level the modal does not publish. ci:subdivision-stats-integrity pins the call.",
+    "getPlaceDocuments('subdivision', slug) and getPlaceCharacter('subdivision', slug) — documents and character.",
+    "getIndexableSubdivisions() — robots policy in generateMetadata AND the place's city."
   ],
   "sectionOrder": [
     "MetadataBlock",
@@ -133,7 +134,7 @@
     "VideoTourRail",
     "PublicSubdivisionCounts",
     "SubdivisionExploreTail, and with it KbExploreTowns and KbSell",
-    "The parent-market band and fetchSubdivMarketExtras (another geography under this heading \u2014 3f34bf65, 2026-08-16)",
+    "The parent-market band and fetchSubdivMarketExtras (another geography under this heading — 3f34bf65, 2026-08-16)",
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
   ]
 }

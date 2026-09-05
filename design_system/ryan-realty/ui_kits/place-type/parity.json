@@ -1,5 +1,6 @@
 {
   "route": "app/cities/[slug]/types/[type]/page.tsx",
+  "pageClass": "place",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. Built from components/site/v3. No mockup in this directory: the place-type class is the city/community type-card landing, not a Tetherow one-off.",
   "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker type-filtered city results. Those surfaces dump the visitor into a search grid. This page is a place-type node: leftover count and median that already back the type card, a living atlas of the parent city with the type stated in the claim, and a photographed list of that type. Unique title, canonical, ItemList when listings exist. Breadcrumb is City then type, no Home.",
   "note": "H1 is `{Type} in {Place}` (Condos in Redmond). Face stats are leftover HUD for single-family and getPublicPlaceSegments for extra types. Miss omits. Photographed V3ListingRow list does not reprint leftover as list length. Atlas reuses buildPlaceAtlas for the city; dots filter only when leftover type is 1:1 with AtlasDot.t. Unknown type notFound(). Do not collide with app/cities/[slug]/[neighborhoodSlug].",

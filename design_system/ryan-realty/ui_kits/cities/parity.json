@@ -1,5 +1,6 @@
 {
   "route": "app/cities/page.tsx",
+  "pageClass": "place",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
   "competitiveTarget": "Beat portal city-directory pages with leftover regional inventory and a ledger of Central Oregon cities, not a link farm.",
   "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: V3Breadcrumb, Instrument (region pulse), Ledger (featured cities), Quiet (the rest of each city's doors), Ledger (the remaining cities), Sheet (SFR alerts), Quiet (edges), V3Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company). REQUIRED-COMPONENTS RECONCILED 2026-08-26: this contract's requiredComponents still named the five KB-era components its own removedComponents list said the migration replaces, so the gate required exactly what the contract forbade. The v3 names below are the ones the route now imports; removedComponents is unchanged and is the record of what each one replaced.",

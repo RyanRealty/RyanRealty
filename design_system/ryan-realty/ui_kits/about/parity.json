@@ -1,5 +1,74 @@
 {
   "route": "app/about/page.tsx",
+  "pageClass": "brokerage",
+  "objective": "A buyer or seller deciding whether to hand this shop the largest transaction of their life. The page completes when they tap a broker name, a phone number, or a text link — the next act is a person, never a form.",
+  "mustAnswer": [
+    {
+      "question": "Who are these people and can I see their faces?",
+      "answeredBy": "#about",
+      "note": "AboutFaces renders the three live brokers as alpha-matted PNGs above this section; #about carries the origin facts under them."
+    },
+    {
+      "question": "What have they actually done — how long, licensed as what?",
+      "answeredBy": "#record"
+    },
+    {
+      "question": "Where do they work, and do they know MY area?",
+      "answeredBy": "#service-area"
+    },
+    {
+      "question": "What do their past clients say?",
+      "answeredBy": "#proof"
+    },
+    {
+      "question": "How do I reach a human right now?",
+      "answeredBy": null,
+      "note": "OPEN GAP, recorded not papered over. Call and Text sit on the AboutFaces row, which is a control inside another section and not a section of its own, so there is no id to bind. The brokerage-class grind decides whether the reach act earns its own section here or stays a face-row control; /contact owns the family Sheet today."
+    }
+  ],
+  "benchmark": {
+    "measuredAt": "2026-09-05",
+    "queries": [
+      "bend real estate agent",
+      "bend oregon realtors",
+      "ryan realty bend"
+    ],
+    "rivals": [
+      {
+        "url": "https://www.bendpremierrealestate.com/about-us/",
+        "note": "The nearest about-class rival. Present on 5 of 10 canonical commercial queries per the 2026-05-13 audit — the most of any local brokerage."
+      },
+      {
+        "url": "https://www.bendpremierrealestate.com/strong-leadership",
+        "note": "Their leadership narrative asset: four named leaders, titles, tenure, 120+ stated combined years."
+      }
+    ],
+    "ourPosition": {
+      "source": "marketing_channel_daily, channel=gsc, scope=page, scope_id=https://ryan-realty.com/about",
+      "readVia": "lib/data/analytics/getGscMetrics.ts getGscScopeAggregate(scope=\"page\") — verified 2026-09-05 by targeted row read",
+      "latestSampledDay": "2026-09-03",
+      "impressions": 3,
+      "clicks": 0,
+      "position": 5,
+      "coverageWarning": "GSC ingestion keeps only the top 25 pages per day. /reviews, /join, /contact, /refer-a-client and /videos returned NO rows in the 2026-06-08..2026-09-04 window. That is NOT SAMPLED, never zero impressions (CLAUDE.md section 0, absence from one query shape)."
+    },
+    "wins": [
+      "Live city inventory and the service area as an interactive Atlas map on the about page itself. No rival about page audited on 2026-05-13 carried live inventory of any kind.",
+      "Verified Google reviews with their record (count, average, newest) from the same getReviews read /reviews uses — one derivation, not a second set of quotes.",
+      "Per-figure verification traces. The 2026-05-13 audit found no local competitor publishes source, table, filter and row count beside a market figure; it also found the three rivals publishing a Bend median for the same July disagreed by 04K with no methodology stated."
+    ],
+    "loses": [
+      "No named leadership asset. The rival publishes four leaders with titles, tenure and 120+ combined years; /about states founded date, firm license and principal broker, and no aggregate experience or transaction-volume claim at all.",
+      "No sitewide Organization / RealEstateAgent JSON-LD. It exists on exactly one route today, /lp/bend, so the brand entity is asserted on a campaign landing page and not on the page about the brand.",
+      "The rival carries 600+ blog posts since 2015 (~12/month in 2026) feeding internal links into its brand pages. /about receives no comparable internal link flow.",
+      "As of the 2026-05-13 SERP sweep, ryan-realty.com appeared on 0 of the 10 canonical commercial queries while this rival appeared on 5."
+    ],
+    "nextMove": "Emit RealEstateAgent JSON-LD sitewide rather than only on /lp/bend, and give the record section the named-experience facts the rival publishes and we hold but do not state.",
+    "sources": [
+      "docs/competitor-intelligence-2026-05-13.md",
+      "marketing_channel_daily via getGscScopeAggregate"
+    ]
+  },
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, a concrete origin, live city inventory, and direct-broker doors. Zero marketing-speak except the locked D11 mission sentence.",
   "note": "Look 2026-08-14: About = faces. Order is Breadcrumb, AboutFaces (live broker cutouts, compact H1, name door, Call and Text on the face row), Quiet (origin facts only), Instrument (founded / firm license / principal broker, no seller ask), Atlas (the service area as the living map, from buildPlaceAtlas), Proof (the newest reviews), Quiet (locked D11 mission below the fold, then FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job (owned media) without V3Stage's full-bleed frame, which would box the transparent PNGs. The family's Sheet lives on /contact and /team/[slug]. A new on-page form here would be a new capture contract. Seller lives on Sell. The next tap is the name or the number. D11: the mission sentence is the one virtue-word exception, exact words, We, and it does not ship on the first screen. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
