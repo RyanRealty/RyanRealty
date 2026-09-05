@@ -2,7 +2,7 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "status": "v3-broadside-2026-08-28",
-  "note": "Homepage on the components/site/v3 barrel, Broadside register. Stage (owned Old Mill / Bend flyover, D11 H1, search is the only Stage action) then Field of homes (barrel list + map, type chips one scrolling row, listFlow + See all, no leftover count caption). Towns and communities are barrel Ledgers without leftover CITY or remainder copy. Chart Room is the mid-page Instrument. index.html is the retired KB mockup, kept as history, not the visual target.",
+  "note": "Homepage on the components/site/v3 barrel, Broadside register. Stage (owned Old Mill / Bend flyover, D11 H1, search is the only Stage action) then the living Atlas then Field of homes (barrel list, type chips one scrolling row, listFlow + See all, no leftover count caption). Towns and communities are barrel Ledgers without leftover CITY or remainder copy. Chart Room is the mid-page Instrument. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
@@ -63,8 +63,12 @@
       "section": "analytics island"
     },
     {
+      "name": "V3Stage",
+      "section": "#hero -- owned Old Mill / Bend flyover, D11 H1, HomeHeroSearch is the only Stage action"
+    },
+    {
       "name": "V3Atlas",
-      "section": "#hero -- the living map: every active home as a point on Central Oregon, every town/community/neighborhood a touchable silhouette, type toggles, a price scrubber, a card with the place's live count and median. The H1 (D11 lock) and the search sit in its head. Replaces the photo Stage (Matt 2026-09-01: the opening must be the data itself)."
+      "section": "#atlas -- the living map: every active home as a point on Central Oregon, every town/community/neighborhood a touchable silhouette. Hover animates the place, opens the info card, and lights the homes inside it."
     },
     {
       "name": "V3Doors",
@@ -93,7 +97,7 @@
     }
   ],
   "purpose": {
-    "_": "Locked v3 homepage. Stage then Field. Chart Room mid-page.",
+    "_": "Locked v3 homepage. Stage then Atlas then Field. Chart Room mid-page.",
     "job": "Turn someone who typed a money query into a search they can act on. The visitor arrived wanting to look at houses. Search is the Stage action. Homes are the next screen.",
     "primaryAction": "Search city, community, or address. See homes is the secondary door into regional browse.",
     "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell).",
@@ -137,7 +141,8 @@
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Atlas #hero -- the living map, H1, HomeHeroSearch",
+    "V3Stage #hero -- owned flyover, D11 H1, HomeHeroSearch",
+    "V3Atlas #atlas -- the living map of every listing",
     "V3Doors #doors -- Buying / Selling / Investing, one live fact each",
     "HomeHomesFieldBound -- photographed list bound to the atlas camera; HomeHomesField still owns the Field frame",
     "V3Ledger #towns -- each town's active count and median list price",

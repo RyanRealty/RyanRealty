@@ -3,8 +3,8 @@
  * PATTERN 8: ATLAS. The living map — every listing on the market as a point on
  * Central Oregon, every place as a touchable silhouette, a sales-heat wash
  * from closings, pulses on real events, one price scrubber, one row of type
- * toggles, and a card that answers "what is here" on hover or tap. The page's
- * opening, replacing the photo-and-headline Stage; scoped to a boundary, the
+ * toggles, and a card that answers "what is here" on hover or tap. The
+ * homepage Stage (owned flyover) sits above it; scoped to a boundary, the
  * living map of a city, a neighborhood, a community, a plat.
  *
  * Why it exists (Matt 2026-09-01): "a buyer does not want every home in
@@ -76,6 +76,7 @@ import {
   isAtlasPulseSold,
   salesHeatField,
 } from '@/lib/atlas/sales-heat'
+import { atlasLabelBox, packAtlasLabels, type AtlasLabelCandidate } from '@/lib/atlas/pack-labels'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Atlas.css'
@@ -451,18 +452,6 @@ export function V3Atlas({
     return () => ro.disconnect()
   }, [proj.width, proj.height])
 
-  /* The held home's label is centred on its dot, so half of it hangs either
-     side: it must be clamped by its own width or a long label leaves the
-     stage. Measured after paint; until then 48, the width of "This home". */
-  const homeLabelRef = useRef<HTMLSpanElement>(null)
-  const [homeInset, setHomeInset] = useState(48)
-  useEffect(() => {
-    const el = homeLabelRef.current
-    if (!el) return
-    const half = el.getBoundingClientRect().width / 2
-    if (half > 0) setHomeInset(Math.round(half) + 8)
-  }, [highlight, view])
-
   const toPx = useCallback(
     (x: number, y: number): readonly [number, number] => (view ? [view.ox + x * view.scale, view.oy + y * view.scale] : [0, 0]),
     [view],
@@ -727,6 +716,10 @@ export function V3Atlas({
   const active = pinned?.id ?? hover
   const activeShape = active ? paths.find((s) => s.id === active) ?? null : null
   const activeStats = active ? regionStats.get(active) ?? { n: 0, median: null } : null
+  const inActivePlace = useCallback(
+    (i: number) => Boolean(active && (membership[i] ?? []).includes(active)),
+    [active, membership],
+  )
 
   /* Every dot in stage pixels, so the nearest one to a pointer is a scan and
      not a projection per event. */
@@ -895,11 +888,99 @@ export function V3Atlas({
 
   /* Choropleth fill step, 0..4, by share of the strongest place. */
 
+  const screenOf = useCallback(
+    (lon: number, lat: number): readonly [number, number] => {
+      const [x, y] = toPx(...proj.toXY(lon, lat))
+      return [x * cam.k + cam.x, y * cam.k + cam.y]
+    },
+    [toPx, proj, cam.k, cam.x, cam.y],
+  )
+
+  const packedLabels = useMemo(() => {
+    if (!view) return []
+    const candidates: AtlasLabelCandidate[] = []
+    if (highlight) {
+      const d = dots.find((dot) => dot.k === highlight.key)
+      if (d) {
+        const [x, y] = screenOf(d.lng, d.lat)
+        const text = highlight.label
+        candidates.push({ id: 'home', kind: 'home', text, x, y: y - 14, rank: 10_000, ...atlasLabelBox(text, 'home') })
+      }
+    }
+    for (const s of towns) {
+      if (!s.anchor || isFrame(s) || s.id === active) continue
+      const text = shortPlaceLabel(s.name)
+      const [x, y] = screenOf(s.anchor[0], s.anchor[1])
+      candidates.push({
+        id: s.id,
+        kind: 'town',
+        text,
+        x,
+        y: y + 6,
+        rank: 1_000 + s.area * 1e6,
+        ...atlasLabelBox(text, 'town'),
+      })
+    }
+    if (cam.k > 1.2) {
+      for (const s of places) {
+        if (!s.anchor || isFrame(s) || s.id === active || !s.bbox) continue
+        const [x0, y0] = screenOf(s.bbox.minLon, s.bbox.maxLat)
+        const [x1, y1] = screenOf(s.bbox.maxLon, s.bbox.minLat)
+        if (Math.min(Math.abs(x1 - x0), Math.abs(y1 - y0)) < 32) continue
+        const text = shortPlaceLabel(s.name)
+        const [x, y] = screenOf(s.anchor[0], s.anchor[1])
+        const n = regionStats.get(s.id)?.n ?? 0
+        candidates.push({
+          id: `pl-${s.id}`,
+          kind: 'place',
+          text,
+          x,
+          y,
+          rank: 100 + n * 8 + s.area * 1e6,
+          ...atlasLabelBox(text, 'place'),
+        })
+      }
+    }
+    if (activeShape?.anchor && !isFrame(activeShape)) {
+      const text = shortPlaceLabel(activeShape.name)
+      const [x, y] = screenOf(activeShape.anchor[0], activeShape.anchor[1])
+      candidates.push({
+        id: `on-${activeShape.id}`,
+        kind: 'active',
+        text,
+        x,
+        y,
+        rank: 9_000,
+        ...atlasLabelBox(text, 'active'),
+      })
+    }
+    return packAtlasLabels(candidates, view)
+  }, [view, highlight, dots, towns, places, active, activeShape, cam.k, screenOf, isFrame, regionStats])
+
+  const activeHomes = useMemo(() => {
+    if (!active || incomplete) return []
+    const rows: { href: string; price: string; type: string }[] = []
+    for (const i of counts.listed) {
+      const d = dots[i]
+      if (!d?.href || d.s === 'closed' || d.s === 'sold') continue
+      if (!(membership[i] ?? []).includes(active)) continue
+      rows.push({
+        href: d.href,
+        price: d.p != null ? fmtShort(d.p) : 'Price withheld',
+        type: types.find((t) => t.key === d.t)?.label ?? 'Listing',
+      })
+      if (rows.length >= 3) break
+    }
+    return rows
+  }, [active, incomplete, counts.listed, dots, membership, types])
+
   const cardAnchor = pinned
     ? ([pinned.at[0] * cam.k + cam.x, pinned.at[1] * cam.k + cam.y] as const)
     : pointer
       ? ([pointer.x, pointer.y] as const)
-      : null
+      : activeShape?.anchor
+        ? screenOf(activeShape.anchor[0], activeShape.anchor[1])
+        : null
   const cardStyle =
     cardAnchor && view
       ? {
@@ -910,7 +991,7 @@ export function V3Atlas({
 
   /* The readout for one mark: what it is, what it costs, when it moved. */
   const tip = (() => {
-    if (dotHit == null || pinned || !view) return null
+    if (dotHit == null || pinned || hover || !view) return null
     const d = dots[dotHit]
     const p = dotPx[dotHit]
     if (!d || !p) return null
@@ -954,8 +1035,9 @@ export function V3Atlas({
     )
   })()
 
+  const showCard = Boolean(activeShape && activeStats && (pinned || hover))
   const card =
-    pinned && activeShape && activeStats ? (
+    showCard && activeShape && activeStats ? (
       <div ref={cardRef} className={cn('v3-atlas__card', pinned && 'is-pinned')} role="status" style={cardStyle}>
         <button type="button" className="v3-atlas__card-close" onClick={dismiss} aria-label="Close">
           ×
@@ -979,6 +1061,25 @@ export function V3Atlas({
             ) : null}
           </p>
         )}
+        {activeHomes.length > 0 ? (
+          <ul className="v3-atlas__card-homes">
+            {activeHomes.map((h) => (
+              <li key={h.href}>
+                {pinned ? (
+                  <Link href={h.href} className="v3-atlas__card-home">
+                    <span className="v3-atlas__card-home-price">{h.price}</span>
+                    <span className="v3-atlas__card-home-type">{h.type}</span>
+                  </Link>
+                ) : (
+                  <span className="v3-atlas__card-home">
+                    <span className="v3-atlas__card-home-price">{h.price}</span>
+                    <span className="v3-atlas__card-home-type">{h.type}</span>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <Link href={activeShape.href} className="v3-atlas__card-door">
           {/* A long plat name is already the card's heading; repeating all 64
               characters here printed it twice, once clipped and once one word
@@ -1249,6 +1350,7 @@ export function V3Atlas({
                             d.s === 'closed' && 'v3-atlas__dot--closed',
                             highlight && d.k === highlight.key && 'is-home',
                             !isOn(d) && 'is-off',
+                            active && !inActivePlace(i) && 'is-away',
                           )}
                         />
                       )
@@ -1345,6 +1447,33 @@ export function V3Atlas({
                     />
                   ))}
                 </g>
+                {/* Homes in the hovered/pinned place, painted ON TOP of the
+                    fill so the inventory that belongs here is the thing you
+                    see, not a wash of every other mark. */}
+                {active ? (
+                  <g className="v3-atlas__dots v3-atlas__dots--here" aria-hidden="true">
+                    {dots.map((d, i) => {
+                      if (!isOn(d) || !inActivePlace(i)) return null
+                      if (d.s === 'sold' && !closingsMap && d.k !== highlight?.key) return null
+                      const [x, y] = xy[i]!
+                      return (
+                        <path
+                          key={`here-${d.k}`}
+                          d={`M${x.toFixed(1)} ${y.toFixed(1)}h0`}
+                          className={cn(
+                            'v3-atlas__dot',
+                            'is-here',
+                            `v3-atlas__dot--${d.t}`,
+                            d.s === 'pending' && 'v3-atlas__dot--pending',
+                            d.s === 'sold' && 'v3-atlas__dot--sold',
+                            d.s === 'closed' && 'v3-atlas__dot--closed',
+                            highlight && d.k === highlight.key && 'is-home',
+                          )}
+                        />
+                      )
+                    })}
+                  </g>
+                ) : null}
                 {/* 6. Lot lines. The assessor's recorded shape of a parcel:
                     the subject in full ink, its neighbours as hairlines, and
                     a disclaimer beside the map because this is not a survey. */}
@@ -1382,76 +1511,29 @@ export function V3Atlas({
                   )
                 })}
               </svg>
+              </div>
 
-              {/* Town labels in real type, placed from the measured view. */}
-              {view ? (
+              {/* Names sit in SCREEN space, outside the camera transform, so
+                  zoom does not stack type on itself. Packed so one name
+                  occupies a point. */}
+              {view && packedLabels.length > 0 ? (
                 <div className="v3-atlas__labels" aria-hidden="true">
-                  {highlight
-                    ? dots
-                        .filter((d) => d.k === highlight.key)
-                        .slice(0, 1)
-                        .map((d) => {
-                          const [x, y] = toPx(...proj.toXY(d.lng, d.lat))
-                          return (
-                            <span
-                              key="home"
-                              ref={homeLabelRef}
-                              className="v3-atlas__label v3-atlas__label--home"
-                              style={{
-                                // Clamped by the label's own measured width, not
-                                // a constant: "This home" and a longer label do
-                                // not have the same half.
-                                left: view ? Math.min(Math.max(x, homeInset), view.w - homeInset) : x,
-                                top: y - 14,
-                              }}
-                            >
-                              {highlight.label}
-                            </span>
-                          )
-                        })
-                    : null}
-                  {towns
-                    .filter((s) => s.anchor && !isFrame(s) && s.id !== active)
-                    .map((s) => {
-                      const [x, y] = toPx(...proj.toXY(s.anchor![0], s.anchor![1]))
-                      return (
-                        <span key={s.id} className="v3-atlas__label" style={{ left: x, top: y + 6 }}>
-                          {shortPlaceLabel(s.name)}
-                        </span>
-                      )
-                    })}
-                  {cam.k > 1.25
-                    ? places
-                        .filter((s) => s.anchor && !isFrame(s) && s.id !== active)
-                        .slice(0, 20)
-                        .map((s) => {
-                          const [x, y] = toPx(...proj.toXY(s.anchor![0], s.anchor![1]))
-                          return (
-                            <span
-                              key={`pl-${s.id}`}
-                              className="v3-atlas__label v3-atlas__label--place"
-                              style={{ left: x, top: y }}
-                            >
-                              {shortPlaceLabel(s.name)}
-                            </span>
-                          )
-                        })
-                    : null}
-                  {activeShape && activeShape.anchor && !isFrame(activeShape) ? (
+                  {packedLabels.map((l) => (
                     <span
-                      key={`on-${activeShape.id}`}
-                      className="v3-atlas__label v3-atlas__label--active"
-                      style={{
-                        left: toPx(...proj.toXY(activeShape.anchor[0], activeShape.anchor[1]))[0],
-                        top: toPx(...proj.toXY(activeShape.anchor[0], activeShape.anchor[1]))[1],
-                      }}
+                      key={l.id}
+                      className={cn(
+                        'v3-atlas__label',
+                        l.kind === 'home' && 'v3-atlas__label--home',
+                        l.kind === 'place' && 'v3-atlas__label--place',
+                        l.kind === 'active' && 'v3-atlas__label--active',
+                      )}
+                      style={{ left: l.x, top: l.y }}
                     >
-                      {shortPlaceLabel(activeShape.name)}
+                      {l.text}
                     </span>
-                  ) : null}
+                  ))}
                 </div>
               ) : null}
-              </div>
 
               {tip}
             </div>
@@ -1495,6 +1577,13 @@ export function V3Atlas({
                   type="button"
                   className={cn('v3-atlas__chip', active === r.shape.id && 'is-active')}
                   aria-pressed={active === r.shape.id}
+                  onPointerEnter={() => {
+                    setDotHit(null)
+                    setHover(r.shape.id)
+                  }}
+                  onPointerLeave={() => {
+                    if (!pinned) setHover(null)
+                  }}
                   onClick={() => openPlace(r.shape)}
                 >
                   <span className="v3-atlas__chip-name">{shortPlaceLabel(r.shape.name)}</span>

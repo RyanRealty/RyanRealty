@@ -11,12 +11,20 @@ const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'ut
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
-  it('mounts HomeHeroSearch inside the Atlas head (the Stage is retired on the homepage, 2026-09-01)', () => {
+  it('mounts HomeHeroSearch on the Stage over the owned flyover; Atlas is the map', () => {
+    expect(PAGE).toMatch(/<V3Stage/)
+    expect(PAGE).toMatch(/videoSrc=\{HERO_VIDEO\}/)
+    expect(PAGE).toMatch(/posterSrc=\{HERO_POSTER\}/)
     expect(PAGE).toMatch(/<HomeHeroSearch/)
     expect(PAGE).toMatch(/<V3Atlas/)
-    expect(PAGE).not.toMatch(/<V3Stage/)
     expect(PAGE).not.toMatch(/action=\{\{\s*label:\s*['"]See homes['"]/)
     expect(PAGE).not.toMatch(/>See homes</)
+    const stageAt = PAGE.indexOf('<V3Stage')
+    const searchAt = PAGE.indexOf('<HomeHeroSearch')
+    const atlasAt = PAGE.indexOf('<V3Atlas')
+    expect(stageAt).toBeGreaterThan(-1)
+    expect(searchAt).toBeGreaterThan(stageAt)
+    expect(searchAt).toBeLessThan(atlasAt)
   })
 
   it('reuses SearchSuggest and searchHrefForQuery', () => {
@@ -109,6 +117,11 @@ describe('homepage Field stays on the barrel', () => {
     expect(ATLAS).toContain('setPinned')
     expect(ATLAS).toContain('v3-atlas__label--active')
     expect(ATLAS).toContain('pinchRef')
+    expect(ATLAS).toContain("from '@/lib/atlas/pack-labels'")
+    expect(ATLAS).toContain('packAtlasLabels')
+    expect(ATLAS).toContain('is-here')
+    expect(ATLAS).toContain('v3-atlas__card-homes')
+    expect(ATLAS).toContain('setHover(s.id)')
   })
 
   it('toggles types that exist in the set as Field lead chips', () => {
@@ -145,17 +158,20 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).toContain('flex: none')
   })
 
-  it('opens with the Atlas then Field, Chart Room mid-page', () => {
+  it('opens with the Stage then Atlas then Field, Chart Room mid-page', () => {
+    expect(PAGE).toMatch(/<V3Stage/)
     expect(PAGE).toMatch(/<V3Atlas/)
     expect(PAGE).toMatch(/<HomeHomesField/)
     expect(PAGE).toMatch(/<V3Instrument/)
     expect(PAGE).toMatch(/id="towns"/)
-    const stageAt = PAGE.indexOf('<V3Atlas')
+    const stageAt = PAGE.indexOf('<V3Stage')
+    const atlasAt = PAGE.indexOf('<V3Atlas')
     const fieldAt = PAGE.indexOf('<HomeHomesField')
     const townsAt = PAGE.indexOf('id="towns"')
     const marketAt = PAGE.indexOf('<V3Instrument')
     expect(stageAt).toBeGreaterThan(-1)
-    expect(fieldAt).toBeGreaterThan(stageAt)
+    expect(atlasAt).toBeGreaterThan(stageAt)
+    expect(fieldAt).toBeGreaterThan(atlasAt)
     expect(townsAt).toBeGreaterThan(fieldAt)
     expect(marketAt).toBeGreaterThan(townsAt)
   })

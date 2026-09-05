@@ -303,6 +303,10 @@
   overflow: visible;
 }
 
+.v3-atlas__labels {
+  z-index: 2;
+}
+
 /* The legend ----------------------------------------------------------------
    Text toggles with the type mark, one wrapping row, the scrubber under. */
 .v3-atlas__dock {
@@ -707,7 +711,13 @@
 
 .v3-atlas__town:hover,
 .v3-atlas__town.is-active {
-  fill: color-mix(in srgb, var(--v3-navy) 8%, transparent);
+  fill: color-mix(in srgb, var(--v3-navy) 14%, transparent);
+  stroke: var(--v3-navy);
+  stroke-width: 2.2px;
+}
+
+.v3-atlas__town.is-active {
+  animation: v3-atlas-wake var(--v3-dur-rise) var(--v3-ease-out);
 }
 
 /* Sales heat: navy alpha on cream, four steps, no second hue. */
@@ -751,14 +761,21 @@
   stroke-width: var(--atlas-width, var(--atlas-width-d));
   vector-effect: non-scaling-stroke;
   cursor: pointer;
-  transition: fill var(--v3-dur-state) var(--v3-ease-out);
+  transition:
+    fill var(--v3-dur-state) var(--v3-ease-out),
+    stroke var(--v3-dur-state) var(--v3-ease-out),
+    stroke-width var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .v3-atlas__place:hover,
 .v3-atlas__place.is-active {
-  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 18%, transparent);
+  --atlas-fill-d: color-mix(in srgb, var(--v3-navy) 22%, transparent);
   --atlas-stroke-d: var(--v3-navy);
-  --atlas-width-d: 1.6px;
+  --atlas-width-d: 2.4px;
+}
+
+.v3-atlas__place.is-active {
+  animation: v3-atlas-wake var(--v3-dur-rise) var(--v3-ease-out);
 }
 
 .v3-atlas__place:focus-visible {
@@ -884,6 +901,20 @@
   opacity: 0.06;
 }
 
+.v3-atlas__dot.is-away {
+  opacity: 0.08;
+}
+
+.v3-atlas__dot.is-here {
+  stroke: var(--v3-navy);
+  stroke-width: 6.5px;
+  opacity: 1;
+}
+
+.v3-atlas__dots--here {
+  pointer-events: none;
+}
+
 /* Pulses --------------------------------------------------------------------
    Stroked points whose stroke grows in screen pixels and fades: a ring on
    a real event. Own layer, slots per kind, paused off-screen. */
@@ -917,9 +948,26 @@
   100% { stroke-width: 26px; opacity: 0; }
 }
 
+@keyframes v3-atlas-wake {
+  0% {
+    fill: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+    stroke-width: 1.1px;
+  }
+  40% {
+    fill: color-mix(in srgb, var(--v3-navy) 28%, transparent);
+    stroke-width: 3.2px;
+  }
+  100% {
+    fill: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+    stroke-width: 2.4px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v3-atlas__pulse,
-  .v3-atlas__live-item::before {
+  .v3-atlas__live-item::before,
+  .v3-atlas__place.is-active,
+  .v3-atlas__town.is-active {
     animation: none;
   }
 
@@ -1054,6 +1102,42 @@
 .v3-atlas__card-label {
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
+}
+
+.v3-atlas__card-homes {
+  margin: var(--v3-space-2xs) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0;
+}
+
+.v3-atlas__card-home {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--v3-space-xs);
+  align-items: baseline;
+  min-height: 0;
+  line-height: 1.3;
+  color: var(--v3-ink);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+a.v3-atlas__card-home {
+  pointer-events: auto;
+  min-height: var(--v3-tap);
+  align-items: center;
+}
+
+.v3-atlas__card-home-price {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body);
+}
+
+.v3-atlas__card-home-type {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
 }
 
 .v3-atlas__card-door {

@@ -30,6 +30,7 @@ import {
   V3_ROOT_CLASS,
   v3Text,
   V3Atlas,
+  V3Stage,
   type AtlasRegion,
   V3Doors,
   V3Instrument,
@@ -47,6 +48,8 @@ import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
 import {
+  HERO_VIDEO,
+  HERO_POSTER,
   HOME_FIELD_POOL,
   HOME_TILE_FETCH,
   HOME_COMMUNITY_TRACE,
@@ -70,8 +73,8 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage. Stage (owned Old Mill / Bend flyover, one line, search action)
- * then Field of homes on the v3 barrel. Chart Room is mid-page.
+ * Homepage. Stage (owned Old Mill / Bend flyover, D11 H1, search action)
+ * then the living Atlas, then Field of homes on the v3 barrel. Chart Room is mid-page.
  */
 export const revalidate = 300
 
@@ -293,10 +296,21 @@ export default async function Home() {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
 
-        <V3Atlas
+        <V3Stage
           id="hero"
           headingLevel={1}
+          eyebrow="Central Oregon"
           headline={v3Text('Homes for Sale in Central Oregon')}
+          posterSrc={HERO_POSTER}
+          videoSrc={HERO_VIDEO}
+        >
+          <HomeHeroSearch />
+        </V3Stage>
+
+        <V3Atlas
+          id="atlas"
+          headingLevel={2}
+          headline={v3Text('Every listing on the map')}
           dots={atlasDots}
           regions={atlasRegions}
           types={atlas.types}
@@ -305,9 +319,7 @@ export default async function Home() {
           stamp={atlas.stamp}
           incomplete={!atlas.complete}
           basemap={regionBasemap()}
-        >
-          <HomeHeroSearch />
-        </V3Atlas>
+        />
 
         <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 
