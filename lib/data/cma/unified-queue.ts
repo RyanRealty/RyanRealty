@@ -25,6 +25,7 @@ import {
   type CmaOrigin,
   type CmaSendMode,
 } from '@/lib/cma/origin'
+import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -345,7 +346,7 @@ export async function listCmaQueue(options: {
     const hasDocument = hasRealDocument(r.html_path)
     const status = String(r.status ?? 'draft')
     const recommendedList = num(r.recommended_list)
-    const theirPrice = ctx?.theirPrice ?? null
+    const theirPrice = ctx?.theirPrice ?? theirPriceFromBuildSummary(summary, origin)
     const deliveredAt = str(r.delivered_at)
     const emailSentAt = ctx?.emailSentAt ?? null
     const queuedAt = ctx?.queuedAt ?? null

@@ -292,4 +292,24 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.pass).toBe(false)
     expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
   })
+
+  it('hard-fails when the recommended list sits above a failed last ask', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    pricing.recommended = 800_000
+    pricing.highEnd = 850_000
+    pricing.conservative = 760_000
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      failedAsk: 749_900,
+    })
+    expect(contract.pass).toBe(false)
+    expect(contract.checks.find((c) => c.id === 'expired-list-cap')!.pass).toBe(false)
+  })
 })

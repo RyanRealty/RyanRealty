@@ -1,12 +1,10 @@
-# Current — 2026-09-05 (deep-audit punchlist e2e)
+# Current — 2026-09-05 (CMA queue + expired list cap)
 
-Shipped the 2026-09-04 deep-audit punchlist that does not need Matt's OAuth,
-Studio approve, or loop re-arm. Goal: `docs/plans/ENTERPRISE_MAP/DEEP_AUDIT_PUNCHLIST_E2E_2026-09-05.md`.
-Report: `out/audits/deep-audit-2026-09-04.md`.
+`/admin/cmas` is the one list: filter by address, city, origin, created date, recommended price. Rows show range, rec, and last list on expireds. Review is numbers + the origin-aware email + Approve & send.
 
-Still Matt-gated: X reconnect, LinkedIn reconnect, 13 Studio drafts, Next 16.1.6→16.3.4, dropping DEAD tables, 8 Learn windows.
+Expired CMAs cannot print a list above the failed last ask (engine clip + accuracy contract). Asked/FSBO/expired copy still differs only in the opening.
 
-Golf Track C remains on local `wt/golf-maps-20260903`. Do not push that branch.
+Uncommitted deep-audit punchlist files remain in the working tree. Do not mix. Golf Track C stays on local `wt/golf-maps-20260903`.
 
 ---
 

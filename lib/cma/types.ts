@@ -188,6 +188,13 @@ export interface CmaPricing {
   currentAsk?: number | null
   /** What ask×0.98÷sale-to-list implies (the moat's close pick). Admin context. */
   askDerivedList?: number | null
+  /**
+   * Failed-listing last ask (Expired / Withdrawn / Canceled). When set, no
+   * printed list number may sit above it. Null on live or closed subjects.
+   */
+  failedAsk?: number | null
+  /** True when the printed list band was clipped to failedAsk. */
+  failedAskCapped?: boolean
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

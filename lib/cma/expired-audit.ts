@@ -464,20 +464,20 @@ export function applyFailedAskCap(
   const none: FailedAskCapResult = { applied: false, cappedTo: null, uncappedRecommended: null }
   const ask = args.lastFailedListPrice
   if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
-  if (!args.offMarketDate) return none
-  const off = new Date(args.offMarketDate)
-  if (Number.isNaN(off.getTime())) return none
-  const asOf = args.asOf ?? new Date()
-  const months = (asOf.getTime() - off.getTime()) / (30.44 * 24 * 3600 * 1000)
-  if (months > FAILED_ASK_RECENCY_MONTHS || months < 0) return none
 
-  // Backtest-calibrated ceilings, tightest to loosest: the median outcome
-  // bounds the conservative tier, the 75th percentile bounds the
-  // recommendation, and the failed ask itself stays the hard cap on the
-  // stretch tier. Ratios ordered median < p75 < 1, so tier ordering holds.
+  let recent = false
+  if (args.offMarketDate) {
+    const off = new Date(args.offMarketDate)
+    if (!Number.isNaN(off.getTime())) {
+      const asOf = args.asOf ?? new Date()
+      const months = (asOf.getTime() - off.getTime()) / (30.44 * 24 * 3600 * 1000)
+      recent = months >= 0 && months <= FAILED_ASK_RECENCY_MONTHS
+    }
+  }
+
   const round1k = (n: number) => Math.round(n / 1000) * 1000
-  const consCeil = round1k(FAILED_ASK_BACKTEST.closeMedianRatio * ask)
-  const recCeil = round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)
+  const consCeil = recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeMedianRatio * ask)) : ask
+  const recCeil = recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask
   if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= ask) return none
 
   const uncapped = pricing.recommended
@@ -487,12 +487,16 @@ export function applyFailedAskCap(
   pricing.needsReview = true
   pricing.reviewReason = [
     pricing.reviewReason,
-    `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`,
+    recent
+      ? `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`
+      : `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that failed to sell. The printed list sits at or below that ask.`,
   ]
     .filter(Boolean)
     .join(' ')
   pricing.notes.push(
-    `Your last listing asked ${usd(ask)} and did not sell. ${FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')} Central Oregon homes failed to sell and later sold between ${FAILED_ASK_BACKTEST.runstamp.slice(0, 4) === '2026' ? '2023 and 2026' : 'the measured window'}. The median one closed at ${(FAILED_ASK_BACKTEST.closeMedianRatio * 100).toFixed(1)}% of the asking price that failed. ${FAILED_ASK_BACKTEST.shareClosedAboveAskPct}% closed above it. The list prices in this report are capped against those outcomes.`,
+    recent
+      ? `Your last listing asked ${usd(ask)} and did not sell. ${FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')} Central Oregon homes failed to sell and later sold between ${FAILED_ASK_BACKTEST.runstamp.slice(0, 4) === '2026' ? '2023 and 2026' : 'the measured window'}. The median one closed at ${(FAILED_ASK_BACKTEST.closeMedianRatio * 100).toFixed(1)}% of the asking price that failed. ${FAILED_ASK_BACKTEST.shareClosedAboveAskPct}% closed above it. The list prices in this report are capped against those outcomes.`
+      : `Your last listing asked ${usd(ask)} and did not sell. The recommendation sits at or below that price.`,
   )
   return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
 }

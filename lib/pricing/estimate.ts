@@ -25,6 +25,8 @@ import {
   type MarketIndexPoint,
   type MarketPath,
 } from '@/lib/pricing/market-path'
+import { failedListAsk } from '@/lib/pricing/expired-list-cap'
+import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 
 const SIZE_ADJ_FACTOR = 0.5
 const MS_PER_MONTH = 30.44 * 86_400_000
@@ -286,6 +288,18 @@ export function listPriceFromEngine(opts: {
   }
 }
 
+function clipCoverToFailedAsk(pricing: CmaPricing, failedAsk: number | null | undefined): CmaPricing {
+  const ask = failedAsk != null && Number.isFinite(failedAsk) && failedAsk > 0 ? failedAsk : null
+  if (ask == null) return pricing
+  const next: CmaPricing = { ...pricing, notes: [...pricing.notes] }
+  const beforeRec = next.recommended
+  const beforeHigh = next.highEnd
+  applyExpiredFailedAskCap(next, { lastFailedListPrice: ask, offMarketDate: null })
+  next.failedAsk = ask
+  next.failedAskCapped = next.recommended !== beforeRec || next.highEnd !== beforeHigh
+  return next
+}
+
 /** Write the engine list onto the CMA cover. A broker override still wins. */
 export function applyEngineRecommendedList(
   pricing: CmaPricing,
@@ -293,12 +307,12 @@ export function applyEngineRecommendedList(
     EngineListResult,
     'recommendedList' | 'predictedClose' | 'conservativeList' | 'highEndList' | 'source'
   >,
-  opts: { priceOverride?: number | null; lastAsk?: number | null } = {},
+  opts: { priceOverride?: number | null; lastAsk?: number | null; failedAsk?: number | null } = {},
 ): CmaPricing {
   const close =
     engine.predictedClose != null && engine.predictedClose > 0 ? engine.predictedClose : (pricing.predictedClose ?? null)
   if (opts.priceOverride != null && Number.isFinite(opts.priceOverride) && opts.priceOverride > 0) {
-    return { ...pricing, predictedClose: close }
+    return clipCoverToFailedAsk({ ...pricing, predictedClose: close }, opts.failedAsk)
   }
   const list = engine.recommendedList
   if (list == null || !Number.isFinite(list) || list <= 0) {
@@ -327,37 +341,36 @@ export function applyEngineRecommendedList(
     const bandHigh = Math.max(conservative, highEnd)
     const recommended = round1000((bandLow + bandHigh) / 2)
     const ask = opts.lastAsk != null && opts.lastAsk > 0 ? opts.lastAsk : null
-    return {
-      ...pricing,
-      recommended,
-      conservative: bandLow,
-      highEnd: bandHigh,
-      valueLow: bandLow,
-      valueHigh: bandHigh,
-      predictedClose: close,
-      currentAsk: ask,
-      askDerivedList: list,
-      // No note: pricing.notes RENDERS on the seller pricing page, and the
-      // first run of this branch printed the internal directive — rule name,
-      // Matt's date stamp and all — into client copy on three documents
-      // (caught by adversarial verify 2026-08-27). The ask line on the cover
-      // and build_summary.pricing carry everything this note said.
-      notes: pricing.notes,
-    }
+    return clipCoverToFailedAsk(
+      {
+        ...pricing,
+        recommended,
+        conservative: bandLow,
+        highEnd: bandHigh,
+        valueLow: bandLow,
+        valueHigh: bandHigh,
+        predictedClose: close,
+        currentAsk: ask,
+        askDerivedList: list,
+        notes: pricing.notes,
+      },
+      opts.failedAsk,
+    )
   }
 
-  return {
-    ...pricing,
-    recommended: list,
-    conservative,
-    highEnd,
-    valueLow: conservative,
-    valueHigh: highEnd,
-    predictedClose: close,
-    // Same rule as the ask branch: notes render to the seller, and "not
-    // Method 3" is engine language. build_summary records the engine's role.
-    notes: pricing.notes,
-  }
+  return clipCoverToFailedAsk(
+    {
+      ...pricing,
+      recommended: list,
+      conservative,
+      highEnd,
+      valueLow: conservative,
+      valueHigh: highEnd,
+      predictedClose: close,
+      notes: pricing.notes,
+    },
+    opts.failedAsk,
+  )
 }
 
 function asOfIndexPoint(points: MarketIndexPoint[], asOf: string): MarketIndexPoint | null {
@@ -376,6 +389,7 @@ export function applyEngineCoverToCmaPricing(
   input: {
     subjectSqft: number
     lastAsk: number | null | undefined
+    failedAsk?: number | null
     adjusted: Array<{ ppsfTimeAdjusted: number }>
     pricingSales: Array<{ closePrice: number; originalAsk: number | null; selectionTier?: string }>
     marketIndex: MarketIndexPoint[]
@@ -403,7 +417,11 @@ export function applyEngineCoverToCmaPricing(
     qualitySet,
     methodFallback: pricing.method3 ?? pricing.method1Mid,
   })
-  return applyEngineRecommendedList(pricing, engine, { priceOverride: input.priceOverride, lastAsk: input.lastAsk })
+  return applyEngineRecommendedList(pricing, engine, {
+    priceOverride: input.priceOverride,
+    lastAsk: input.lastAsk,
+    failedAsk: input.failedAsk,
+  })
 }
 
 /** computePricing + engine cover. Keeps lib/cma/build.ts from growing. */
@@ -433,6 +451,7 @@ export function priceCmaSet(args: {
   return applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,
     lastAsk: currentListAsk(args.subject),
+    failedAsk: failedListAsk(args.subject),
     adjusted: args.adjusted,
     pricingSales: args.selection.pricingSales ?? [],
     marketIndex: args.marketIndex,

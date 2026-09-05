@@ -17,6 +17,7 @@ export type InboundPacketFacts = {
   valueLow: number | null
   valueHigh: number | null
   recommendedList: number | null
+  lastListPrice?: number | null
 }
 
 export type InboundValuationCopy = {
@@ -85,7 +86,9 @@ export function composeInboundNumbersClause(facts: InboundPacketFacts): string |
   const rec = finiteMoney(facts.recommendedList)
   if (lo == null || hi == null || rec == null) return null
   const named = trim(facts.address) ?? 'this home'
-  return `Closed sales near ${named} support ${formatFirstTouchUsd(lo)} to ${formatFirstTouchUsd(hi)}. Recommended list: ${formatFirstTouchUsd(rec)}.`
+  const last = finiteMoney(facts.lastListPrice)
+  const lastClause = last != null ? ` Last list was ${formatFirstTouchUsd(last)}.` : ''
+  return `Closed sales near ${named} support ${formatFirstTouchUsd(lo)} to ${formatFirstTouchUsd(hi)}. Recommended list: ${formatFirstTouchUsd(rec)}.${lastClause}`
 }
 
 export function composeInboundValuationCopy(facts: InboundPacketFacts): InboundValuationCopy {

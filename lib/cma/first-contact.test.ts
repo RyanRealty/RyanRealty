@@ -40,6 +40,11 @@ describe('first-contact copy', () => {
     expect(new Set(bodies).size).toBe(1)
   })
 
+  it('names the failed last list on an expired send', () => {
+    const expired = composeCmaFirstContact('expired', { ...FACTS, lastListPrice: 650_000 })
+    expect(expired.numbers).toContain('Last list was $650,000')
+  })
+
   it('subjects say why we are writing', () => {
     expect(composeCmaFirstContactSubject('expired', '2240 Oak')).toBe('2240 Oak, and what sold while it was listed')
     expect(composeCmaFirstContactSubject('fsbo', '2240 Oak')).toBe('2240 Oak, and what it is competing with')

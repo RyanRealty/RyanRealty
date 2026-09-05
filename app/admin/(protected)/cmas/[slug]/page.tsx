@@ -1,44 +1,7 @@
 // @no-parity — internal admin tool, no public mockup contract.
 //
-// /admin/cmas/[slug] — per-CMA review page. P11C: migrated to the LOCKED admin
-// v2 language (design_system/admin/ADMIN_UI.md) through the shared
-// presentation kit (@/components/admin/v2). Presentation only. This is an
-// ENTITY page (ADMIN_UI §3 pattern 5), so the h1 is the subject address —
-// content, not page-title chrome — and it renders through EntityTitle.
-//
-// Matt SEES the CMA (large rendered iframe of the stored document — never raw
-// code), edits client info + price adjustment (rebuild), approves the draft,
-// and sends through the CRM — a tracked email from the signing broker's own
-// mailbox (Resend fallback). Sending is an explicit click.
-//
-// Carried over verbatim: getSession() → getAdminRoleForEmail(), both
-// /admin/access-denied redirects (no role, and the report_viewer role), the
-// slug normalisation (trim + lowercase), the Promise.all over
-// getCmaAdminRowBySlug + listActiveBrokersForCma, notFound() on a missing row,
-// the broker { slug, displayName } mapping, status / hasStoredHtml /
-// isLegacyFile / hasDocument / buildError / summary / marketSummary, the
-// listingKey trim, cmaPublishRefusals(row) and cmaPublishConcerns(row) — the
-// same functions the publish action enforces, so the panel can never offer a
-// button the server would refuse — the three-way previewSrc (stored → /cma/<slug>,
-// legacy file → html_path minus the public prefix, otherwise null), the
-// `/api/cma/<slug>/pdf` target=_blank link, the /admin/cmas href, every
-// CmaReviewActions prop (cmaId, slug, status, clientName, clientEmail,
-// clientPhone, recommendedList, priceOverride, brokerSlug — the signing
-// broker, unchanged in value and resolution — brokers, hasDocument), and every
-// CmaPublishControl prop (slug, subjectAddress, listingKey, valueLow,
-// valueHigh, published, publishedAt, publishedBy, blockers, concerns).
-//
-// Every §0 figure is byte-identical to the pre-migration page: recommended
-// list and the value range still run through formatPriceExact, comps is still
-// String(row.comps_count ?? '—'), and the market cell still prints
-// `${geo_label ?? '—'} · ${months_of_supply} MoS` with the same null rules.
-//
-// Shape changed, data did not: the KPI card strip became the family's
-// typographic numbers strip, the shadcn Badge became a state word carrying the
-// same status text, the console panels became v2 section heads, and the
-// two-column desktop grid became the locked pattern-5 stack (one 960px lane) —
-// which is why the build-error sentence no longer says "the panel on the
-// right".
+// /admin/cmas/[slug] — per-CMA review page. Numbers, origin, the email that
+// will go out, then Approve & send. Extra form work sits under details.
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
@@ -61,13 +24,14 @@ import { formatDate } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
+import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin } from '@/lib/cma/origin'
+import { composeCmaFirstContact } from '@/lib/cma/first-contact'
+import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
 
 export const dynamic = 'force-dynamic'
 
 const usd = formatPriceExact
 
-/** The retired Badge variants, one for one: default → ok, secondary → accent,
- *  outline → waiting. Same three-way split, now carried by text + color. */
 function statusState(status: string): AdminState {
   switch (status) {
     case 'finalized':
@@ -113,17 +77,35 @@ export default async function AdminCmaReviewPage({
   const canOpenDocument = canOpenCmaDocument(row)
   const buildError = (row.build_error as string | null) ?? null
   const summary = (row.build_summary as Record<string, unknown> | null) ?? null
-  const marketSummary = (summary?.market as Record<string, unknown> | null) ?? null
-
-  // Publish eligibility is computed HERE, by the SAME function the publish
-  // action enforces (which is itself the public guard's own rules, stated in
-  // words). The control renders these reasons verbatim, so the panel can never
-  // offer a button the server would refuse.
   const listingKey = String(row.subject_listing_key ?? '').trim()
   const blockers = cmaPublishRefusals(row)
-  // The other half of the same rule: what does not block, stated in the audit's
-  // own words rather than summarised into a flag.
   const concerns = cmaPublishConcerns(row)
+  const origin = classifyCmaOrigin(
+    (row.request_source as string | null) ?? null,
+    (row.doc_type as string | null) ?? null,
+  )
+  const lastList = theirPriceFromBuildSummary(summary, origin)
+  const auditVerdict = String((summary?.audit as { verdict?: string } | null)?.verdict ?? '').toLowerCase()
+  const sendMode = sendModeForOrigin(origin)
+  const sendLabel =
+    status === 'draft' &&
+    hasDocument &&
+    Boolean(linkedPerson?.primaryEmail || row.client_email) &&
+    auditVerdict !== 'fail'
+      ? sendMode === 'now'
+        ? 'Approve & send'
+        : sendMode === 'drip'
+          ? 'Approve & queue'
+          : 'Approve'
+      : null
+  const firstContact = composeCmaFirstContact(origin, {
+    address: subjectAddress || null,
+    firstName: (clientLabel ?? '').trim().split(/\s+/)[0] || null,
+    valueLow: (row.value_low as number | null) ?? null,
+    valueHigh: (row.value_high as number | null) ?? null,
+    recommendedList: (row.recommended_list as number | null) ?? null,
+    lastListPrice: lastList,
+  })
 
   const previewSrc = canOpenDocument
     ? brokerCmaViewHref(safeSlug)
@@ -151,6 +133,9 @@ export default async function AdminCmaReviewPage({
       </div>
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
+        {CMA_ORIGIN_INTENT[origin]}
+      </p>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
         {clientLabel && personId ? (
           <>
             Prepared for{' '}
@@ -163,7 +148,7 @@ export default async function AdminCmaReviewPage({
         ) : (
           'No client on file'
         )}
-        {(linkedPerson?.primaryEmail || row.client_email)
+        {linkedPerson?.primaryEmail || row.client_email
           ? ` · ${String(linkedPerson?.primaryEmail || row.client_email)}`
           : ''}
         {row.broker_slug ? ` · signed by ${String(row.broker_slug)}` : ''}
@@ -195,16 +180,10 @@ export default async function AdminCmaReviewPage({
           {
             key: 'range',
             label: 'Value range',
-            value: `${usd((row.value_low as number | null) ?? null)} – ${usd((row.value_high as number | null) ?? null)}`,
+            value: `${usd((row.value_low as number | null) ?? null)}-${usd((row.value_high as number | null) ?? null)}`,
           },
+          ...(lastList != null ? [{ key: 'last-list', label: 'Last list', value: usd(lastList) }] : []),
           { key: 'comps', label: 'Comps', value: String(row.comps_count ?? '—') },
-          {
-            key: 'market',
-            label: 'Market',
-            value: marketSummary
-              ? `${String(marketSummary.geo_label ?? '—')} · ${marketSummary.months_of_supply != null ? `${marketSummary.months_of_supply} MoS` : '—'}`
-              : '—',
-          },
         ]}
       />
 
@@ -225,6 +204,9 @@ export default async function AdminCmaReviewPage({
       ) : null}
 
       <SectionHead>Review and send</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', whiteSpace: 'pre-wrap' }}>
+        {firstContact.bodyText}
+      </p>
       <CmaReviewActions
         cmaId={String(row.id)}
         slug={safeSlug}
@@ -243,40 +225,31 @@ export default async function AdminCmaReviewPage({
         brokerSlug={(row.broker_slug as string | null) ?? null}
         brokers={brokers}
         hasDocument={hasDocument}
+        sendLabel={sendLabel}
       />
 
-      <SectionHead>Listing page</SectionHead>
-      <CmaPublishControl
-        slug={safeSlug}
-        subjectAddress={subjectAddress || safeSlug}
-        listingKey={listingKey || null}
-        valueLow={(row.value_low as number | null) ?? null}
-        valueHigh={(row.value_high as number | null) ?? null}
-        published={row.published_to_listing === true}
-        publishedAt={(row.published_at as string | null) ?? null}
-        publishedBy={(row.published_by as string | null) ?? null}
-        blockers={blockers}
-        concerns={concerns}
-      />
-
-      <SectionHead>Document preview</SectionHead>
-      {previewSrc ? (
-        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-          Open Review CMA above to read the document. The preview is not inlined here so this
-          page stays fast.
-        </p>
-      ) : (
-        <p
-          style={{
-            padding: '32px 8px',
-            textAlign: 'center',
-            fontSize: 'var(--a-text-sm)',
-            color: 'var(--a-text-2)',
-          }}
-        >
+      <details style={{ marginTop: 24 }}>
+        <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          Listing page
+        </summary>
+        <CmaPublishControl
+          slug={safeSlug}
+          subjectAddress={subjectAddress || safeSlug}
+          listingKey={listingKey || null}
+          valueLow={(row.value_low as number | null) ?? null}
+          valueHigh={(row.value_high as number | null) ?? null}
+          published={row.published_to_listing === true}
+          publishedAt={(row.published_at as string | null) ?? null}
+          publishedBy={(row.published_by as string | null) ?? null}
+          blockers={blockers}
+          concerns={concerns}
+        />
+      </details>
+      {!previewSrc ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 16 }}>
           No document yet. Use Save and rebuild to generate it.
         </p>
-      )}
+      ) : null}
     </div>
   )
 }

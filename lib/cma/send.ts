@@ -35,6 +35,7 @@ import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { composeCmaFirstContact } from '@/lib/cma/first-contact'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
+import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const MAX_PDF_BYTES = 25 * 1024 * 1024
@@ -55,6 +56,7 @@ interface CmaSendContext {
   valueLow: number | null
   valueHigh: number | null
   recommendedList: number | null
+  lastListPrice: number | null
   /** Decides the opening only. The pricing is identical across origins. */
   origin: CmaOrigin
 }
@@ -96,6 +98,13 @@ async function resolveSendContext(
         (row.request_source as string | null) ?? null,
         (row.doc_type as string | null) ?? null,
       ),
+      lastListPrice: theirPriceFromBuildSummary(
+        row.build_summary,
+        classifyCmaOrigin(
+          (row.request_source as string | null) ?? null,
+          (row.doc_type as string | null) ?? null,
+        ),
+      ),
     },
     error: null,
   }
@@ -117,6 +126,7 @@ function inboundFacts(ctx: CmaSendContext) {
     valueLow: ctx.valueLow,
     valueHigh: ctx.valueHigh,
     recommendedList: ctx.recommendedList,
+    lastListPrice: ctx.lastListPrice,
   }
 }
 
@@ -345,6 +355,13 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       origin: classifyCmaOrigin(
         (row.request_source as string | null) ?? null,
         (row.doc_type as string | null) ?? null,
+      ),
+      lastListPrice: theirPriceFromBuildSummary(
+        row.build_summary,
+        classifyCmaOrigin(
+          (row.request_source as string | null) ?? null,
+          (row.doc_type as string | null) ?? null,
+        ),
       ),
     }
     const body = buildLeadBody(fakeCtx)

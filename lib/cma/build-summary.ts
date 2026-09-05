@@ -144,6 +144,13 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
       method1_mid: i.pricing.method1Mid,
       method2: i.pricing.method2,
       method3: i.pricing.method3,
+      failed_ask: i.pricing.failedAsk ?? null,
+      failed_ask_capped: i.pricing.failedAskCapped === true,
+    },
+    subject: {
+      last_list_price: i.subject.lastListPrice,
+      standard_status: i.subject.standardStatus,
+      city: i.subject.city,
     },
     market: i.market
       ? {

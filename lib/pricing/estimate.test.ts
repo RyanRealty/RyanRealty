@@ -554,4 +554,44 @@ describe('listPriceFromEngine is the only cover number', () => {
     expect(cover.highEnd).toBeGreaterThan(cover.recommended)
     expect(cover.method3).not.toBe(cover.recommended)
   })
+
+  it('never prints a list above a failed last ask', () => {
+    const board = {
+      method1Low: 800_000,
+      method1Mid: 850_000,
+      method1High: 900_000,
+      method2: 840_000,
+      method3: 850_000,
+      convergenceSpreadPct: 2,
+      converged: true,
+      conservative: 800_000,
+      recommended: 850_000,
+      highEnd: 900_000,
+      valueLow: 800_000,
+      valueHigh: 900_000,
+      confidence: 'High' as const,
+      confidenceReason: 'tight set',
+      needsReview: false,
+      reviewReason: null,
+      compPpsfCv: 0.04,
+      priceOverride: null,
+      improvementsValueAdd: null,
+      notes: [] as string[],
+    }
+    const cover = applyEngineRecommendedList(
+      board,
+      {
+        recommendedList: 850_000,
+        predictedClose: 830_000,
+        conservativeList: 800_000,
+        highEndList: 900_000,
+        source: 'comps',
+      },
+      { failedAsk: 749_900 },
+    )
+    expect(cover.recommended).toBeLessThanOrEqual(749_900)
+    expect(cover.highEnd).toBeLessThanOrEqual(749_900)
+    expect(cover.failedAsk).toBe(749_900)
+    expect(cover.notes.join(' ')).toMatch(/did not sell/i)
+  })
 })

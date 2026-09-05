@@ -56,6 +56,7 @@ export function evaluateAccuracyContract(args: {
   marketContextPresent: boolean
   subjectSubType?: string | null
   subjectBaths?: number | null
+  failedAsk?: number | null
 }): AccuracyContract {
   const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths } = args
   const checks: ContractCheck[] = []
@@ -95,6 +96,18 @@ export function evaluateAccuracyContract(args: {
     pass: pricing.conservative <= pricing.recommended && pricing.recommended <= pricing.highEnd,
     detail: `Conservative $${pricing.conservative.toLocaleString()} ≤ recommended $${pricing.recommended.toLocaleString()} ≤ high end $${pricing.highEnd.toLocaleString()}.`,
   })
+  const failedAsk = args.failedAsk ?? pricing.failedAsk ?? null
+  if (failedAsk != null && failedAsk > 0) {
+    const over = pricing.recommended > failedAsk || pricing.highEnd > failedAsk
+    checks.push({
+      id: 'expired-list-cap',
+      severity: 'hard',
+      pass: !over,
+      detail: over
+        ? `Expired last list was $${failedAsk.toLocaleString()}. Recommended $${pricing.recommended.toLocaleString()} / high end $${pricing.highEnd.toLocaleString()} sits above the price that already failed to sell.`
+        : `Expired last list $${failedAsk.toLocaleString()} caps the printed list. Recommended $${pricing.recommended.toLocaleString()} and high end $${pricing.highEnd.toLocaleString()} sit at or below it.`,
+    })
+  }
   if (pricing.currentAsk != null && pricing.currentAsk > 0) {
     // INFO, never gates: on a live-listed subject the ask ships BESIDE the
     // comp evidence (Matt 2026-08-27, show both never blend). The gap is a
