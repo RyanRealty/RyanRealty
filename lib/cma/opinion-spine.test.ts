@@ -263,7 +263,7 @@ function firstPage(html: string): string {
 const BANNED = /how we would market|what we would do|not the (whole )?ZIP|High confidence|Moderate confidence|Confidence:|Method 1|Method 2|Method 3|RVM/i
 
 describe('print CMA price-opinion spine', () => {
-  it('always renders cover numbers, snapshot, facts, sales/map/matrix, disclosure', () => {
+  it('always renders cover numbers, snapshot, sales/map/matrix, disclosure', () => {
     const { html } = renderCmaHtml(args())
     const cover = firstPage(html)
     expect(cover).toContain('Recommended list')
@@ -271,7 +271,7 @@ describe('print CMA price-opinion spine', () => {
     expect(cover).toContain('List $470,000 to $490,000')
     expect(cover).not.toContain('Expected close')
     expect(html).toContain('<h2 class="section">The house</h2>')
-    expect(html).toContain('<h2 class="section">Property facts</h2>')
+    expect(html).not.toContain('<h2 class="section">Property facts</h2>')
     expect(html).toContain('The sales that set the number')
     expect(html).toContain('Side by side')
     expect(html).toContain('Comp map')
@@ -281,13 +281,11 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toMatch(BANNED)
     const recAt = html.indexOf('$475,000')
     const snapAt = html.indexOf('<h2 class="section">The house</h2>')
-    const factsAt = html.indexOf('<h2 class="section">Property facts</h2>')
     const salesAt = html.indexOf('The sales that set the number')
     const discAt = html.indexOf('<h2 class="section">Disclosure</h2>')
     expect(recAt).toBeGreaterThan(0)
     expect(snapAt).toBeGreaterThan(recAt)
-    expect(factsAt).toBeGreaterThan(snapAt)
-    expect(salesAt).toBeGreaterThan(factsAt)
+    expect(salesAt).toBeGreaterThan(snapAt)
     expect(discAt).toBeGreaterThan(salesAt)
   })
 
@@ -342,7 +340,7 @@ describe('print CMA price-opinion spine', () => {
         },
       }),
     )
-    expect(html).toContain('Legal, owner, and flood')
+    expect(html).not.toContain('<h2 class="section">Legal, owner, and flood</h2>')
     expect(html).toContain('151000000')
     expect(html).toContain('Zone X. Not a Special Flood Hazard Area.')
     expect(html).toContain('<h2 class="section">Photos</h2>')
@@ -361,8 +359,8 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('Net at recommended list')
     expect(html).toContain('$467,000')
     expect(html).not.toMatch(BANNED)
-    const factsAt = html.indexOf('<h2 class="section">Property facts</h2>')
-    const legalAt = html.indexOf('Legal, owner, and flood')
+    const houseAt = html.indexOf('<h2 class="section">The house</h2>')
+    const legalAt = html.indexOf('151000000')
     const photosAt = html.indexOf('<h2 class="section">Photos</h2>')
     const statusAt = html.indexOf('Status in this market')
     const soldAt = html.indexOf('What 3 bedroom / 2 bath homes sold for')
@@ -372,8 +370,9 @@ describe('print CMA price-opinion spine', () => {
     const permitsAt = html.indexOf('Permits and ownership')
     const netAt = html.indexOf('Seller net at list')
     const discAt = html.indexOf('<h2 class="section">Disclosure</h2>')
-    expect(legalAt).toBeGreaterThan(factsAt)
-    expect(photosAt).toBeGreaterThan(legalAt)
+    expect(legalAt).toBeGreaterThan(houseAt)
+    expect(legalAt).toBeLessThan(photosAt)
+    expect(photosAt).toBeGreaterThan(houseAt)
     expect(statusAt).toBeGreaterThan(photosAt)
     expect(soldAt).toBeGreaterThan(statusAt)
     expect(kpiAt).toBeGreaterThan(soldAt)

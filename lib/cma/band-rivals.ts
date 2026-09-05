@@ -1,13 +1,13 @@
 /**
  * Named homes competing at the recommended list. Counts stay on
- * CmaBandPosition. This module names the houses and draws the cards.
+ * CmaBandPosition. This module names the houses and draws the list.
  */
 
 import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 
 const esc = escapeHtml
 
-export const BAND_RIVAL_CAP = 20
+export const BAND_RIVAL_CAP = 80
 
 export type CmaBandRival = {
   listingKey: string
@@ -35,6 +35,7 @@ export type CmaBandSubject = {
   recommendedList: number | null
   latitude: number | null
   longitude: number | null
+  photoUrl?: string | null
 }
 
 export type BandStreetRow = {
@@ -126,15 +127,25 @@ export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | nu
   const bits: string[] = []
   if (subject.recommendedList != null && subject.recommendedList > 0) {
     const d = Math.round(r.listPrice - subject.recommendedList)
-    if (d === 0) bits.push('same as the recommended list')
-    else if (d > 0) bits.push(`${usd(d)} above the recommended list`)
-    else bits.push(`${usd(-d)} below the recommended list`)
+    if (d === 0) bits.push('same as this list')
+    else if (d > 0) bits.push(`${usd(d)} above this list`)
+    else bits.push(`${usd(-d)} below this list`)
   }
   if (r.sqft != null && r.sqft > 0 && subject.sqft != null && subject.sqft > 0) {
     const d = Math.round(r.sqft - subject.sqft)
     if (d === 0) bits.push('same size')
     else if (d > 0) bits.push(`${int(d)} sqft larger`)
     else bits.push(`${int(-d)} sqft smaller`)
+  }
+  if (r.beds != null && subject.beds != null && r.beds !== subject.beds) {
+    const d = r.beds - subject.beds
+    bits.push(d > 0 ? `${int(d)} more bed${d === 1 ? '' : 's'}` : `${int(-d)} fewer bed${d === -1 ? '' : 's'}`)
+  }
+  if (r.baths != null && subject.baths != null && r.baths !== subject.baths) {
+    const d = r.baths - subject.baths
+    const abs = Math.abs(d)
+    const label = abs === 1 ? 'bath' : 'baths'
+    bits.push(d > 0 ? `${abs % 1 === 0 ? int(abs) : abs.toFixed(1)} more ${label}` : `${abs % 1 === 0 ? int(abs) : abs.toFixed(1)} fewer ${label}`)
   }
   if (r.yearBuilt != null && subject.yearBuilt != null) {
     const d = r.yearBuilt - subject.yearBuilt
@@ -149,6 +160,38 @@ export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | nu
   return bits.length ? bits.join(' · ') : null
 }
 
+function subjectFactsLine(s: CmaBandSubject): string | null {
+  return joinFacts([
+    s.beds != null ? `${int(s.beds)} bd` : null,
+    s.baths != null ? `${s.baths % 1 === 0 ? int(s.baths) : s.baths.toFixed(1)} ba` : null,
+    s.sqft != null && s.sqft > 0 ? `${int(s.sqft)} sqft` : null,
+    s.yearBuilt != null ? String(s.yearBuilt) : null,
+    s.lotAcres != null && s.lotAcres > 0 ? `${s.lotAcres.toFixed(2)} ac` : null,
+  ])
+}
+
+function subjectRow(subject: CmaBandSubject | null | undefined): string {
+  if (!subject) return ''
+  const facts = subjectFactsLine(subject)
+  const photo = sparkPhotoAt(subject.photoUrl ?? null, '320x320')
+  const img = photo
+    ? `<img class="rival-ph" src="${esc(photo)}" alt="This home" />`
+    : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
+  const ask =
+    subject.recommendedList != null && subject.recommendedList > 0
+      ? `<div class="rival-ask">${usd(subject.recommendedList)}</div>`
+      : `<div class="rival-ask"></div>`
+  return `<article class="rival-row is-subject">
+    ${img}
+    <div class="rival-body">
+      <div class="rival-addr">This home</div>
+      ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
+      <div class="rival-meta">Recommended list</div>
+    </div>
+    ${ask}
+  </article>`
+}
+
 function rivalRow(r: CmaBandRival, subject: CmaBandSubject | null | undefined): string {
   const photo = sparkPhotoAt(r.photoUrl, '320x320')
   const img = photo
@@ -156,8 +199,7 @@ function rivalRow(r: CmaBandRival, subject: CmaBandSubject | null | undefined): 
     : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
   const facts = rivalFactsLine(r)
   const vs = rivalVsSubjectLine(r, subject)
-  const days =
-    r.daysOnMarket != null && r.daysOnMarket >= 0 ? `${int(r.daysOnMarket)} days on market` : null
+  const days = r.daysOnMarket != null && r.daysOnMarket >= 0 ? `${int(r.daysOnMarket)} days` : null
   const meta = joinFacts([days, vs])
   return `<article class="rival-row">
     ${img}
@@ -194,9 +236,11 @@ export function renderBandRivalsHtml(input: {
     actives.length + pendings.length < input.activeCount + input.pendingCount
       ? ` Nearest ${int(actives.length + pendings.length)} shown, with size and price against this home.`
       : ' Size and price against this home.'
+  const subjectBlock = input.subject ? `<div class="rival-list">${subjectRow(input.subject)}</div>` : ''
   return `
   <h2 class="section">Who you are competing with at this price</h2>
   <p>${esc(activeLead)} ${esc(pendingLead)}${esc(shown)}</p>
+  ${subjectBlock}
   ${
     actives.length > 0
       ? `<h3 class="subhead">For sale now</h3><div class="rival-list">${rows(actives)}</div>`
@@ -231,6 +275,7 @@ export function renderBandRivalsSceneHtml(input: {
       <div class="kick r">At this price</div>
       <h2 class="h r">${esc(headline)}</h2>
       <p class="lede r">${int(input.pendingCount)} under contract in the same band. Size and price against this home.</p>
+      ${input.subject ? `<div class="rival-list r">${subjectRow(input.subject)}</div>` : ''}
       ${actives.length ? `<h3 class="sub r">For sale now</h3><div class="rival-list r">${rows(actives)}</div>` : ''}
       ${pendings.length ? `<h3 class="sub r">Under contract</h3><div class="rival-list r">${rows(pendings)}</div>` : ''}
     </div>

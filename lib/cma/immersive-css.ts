@@ -88,15 +88,16 @@ table.comp-matrix td.is-diff{font-weight:600}
 h3.subhead{font-size:17px;font-weight:600;margin:26px 0 8px}
 h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:20px 0 6px}
 .rival-list{margin-top:8px;border-top:1px solid var(--ink12)}
-.rival-row{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--ink12)}
+.rival-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start;padding:8px 0;border-bottom:1px solid var(--ink12)}
+.rival-row.is-subject{border-bottom:2px solid currentColor}
 .sc-navy .rival-list,.sc-navy .rival-row{border-color:rgba(250,248,244,.14)}
-.rival-ph{width:72px;height:72px;object-fit:cover;display:block;background:var(--navy)}
-.rival-ph.is-empty{min-height:72px}
+.rival-ph{width:64px;height:64px;object-fit:cover;display:block;background:var(--navy)}
+.rival-ph.is-empty{min-height:64px}
 .rival-body{min-width:0}
 .rival-addr{font-size:16px;font-weight:600}
-.rival-facts{font-size:13px;font-variant-numeric:tabular-nums;margin-top:3px;opacity:.85}
+.rival-facts{font-size:13px;font-variant-numeric:tabular-nums;margin-top:2px;opacity:.85}
 .rival-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rival-meta{font-size:13px;opacity:.7;margin-top:3px}
+.rival-meta{font-size:13px;opacity:.7;margin-top:2px;line-height:1.35}
 .pin-map-wrap{margin:12px 0 20px}
 .pin-map{width:100%;height:auto;display:block;border:1px solid var(--ink12)}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}

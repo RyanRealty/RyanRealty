@@ -34,7 +34,7 @@ describe('rivalAddress', () => {
 })
 
 describe('pickBandRivals', () => {
-  it('keeps the nearest homes, up to the cap, actives and pendings separately', () => {
+  it('keeps the nearest homes, actives and pendings separately, up to the cap', () => {
     const actives = Array.from({ length: 24 }, (_, i) =>
       rival({
         listingKey: `A${i}`,
@@ -54,9 +54,23 @@ describe('pickBandRivals', () => {
       }),
     )
     const picked = pickBandRivals([...actives, ...pendings], { latitude: 44.27, longitude: -121.17 })
-    expect(picked.filter((r) => r.status === 'Active')).toHaveLength(20)
+    expect(picked.filter((r) => r.status === 'Active')).toHaveLength(24)
     expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(10)
     expect(picked[0]?.address).toBe('100 Active')
+  })
+
+  it('caps a huge band so the report cannot print thousands of rows', () => {
+    const actives = Array.from({ length: 90 }, (_, i) =>
+      rival({
+        listingKey: `A${i}`,
+        address: `${100 + i} Active`,
+        status: 'Active',
+        latitude: 44.27 + i * 0.01,
+        longitude: -121.17,
+      }),
+    )
+    const picked = pickBandRivals(actives, { latitude: 44.27, longitude: -121.17 })
+    expect(picked).toHaveLength(80)
   })
 
   it('drops unnamed rows', () => {
@@ -114,13 +128,42 @@ describe('renderBandRivalsHtml', () => {
         recommendedList: 392000,
         latitude: 44.27,
         longitude: -121.17,
+        photoUrl: 'https://cdn.example/subject.jpg',
       },
     })
     expect(html).toContain('825 Poplar')
     expect(html).toContain('3 bd')
     expect(html).toContain('1,280 sqft')
-    expect(html).toContain('$25,250 above the recommended list')
+    expect(html).toContain('$25,250 above this list')
     expect(html).toContain('160 sqft smaller')
-    expect(html).toContain('0 days on market')
+    expect(html).toContain('0 days')
+    expect(html).toContain('This home')
+    expect(html).toContain('1,440 sqft')
+    expect(html).toContain('$392,000')
+    expect(html).toContain('is-subject')
+    expect(html).toContain('https://cdn.example/subject.jpg')
+  })
+
+  it('names bed and bath gaps against the subject', () => {
+    const html = renderBandRivalsHtml({
+      city: 'Redmond',
+      lo: 353000,
+      hi: 431000,
+      activeCount: 1,
+      pendingCount: 0,
+      rivals: [rival({ address: '12 Pine', beds: 4, baths: 3, listPrice: 417250 })],
+      subject: {
+        beds: 3,
+        baths: 2,
+        sqft: 1440,
+        yearBuilt: 2004,
+        lotAcres: 0.14,
+        recommendedList: 392000,
+        latitude: 44.27,
+        longitude: -121.17,
+      },
+    })
+    expect(html).toContain('1 more bed')
+    expect(html).toContain('1 more bath')
   })
 })

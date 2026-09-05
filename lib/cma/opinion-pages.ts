@@ -130,19 +130,52 @@ function sold90Band(a: OpinionPageArgs): CmaSoldBand | null {
 
 export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
   const s = a.subject
+  const overlay = a.extras?.propertyFacts
   const baths =
     s.baths == null
       ? null
       : s.baths === 1
         ? '1 bath'
         : `${dec(s.baths, s.baths % 1 !== 0 ? 1 : 0)} baths`
+  const type = overlay?.propertyType?.trim() || typeLabel(s.propertySubType)
+  const stories = overlay?.stories?.trim() || mlsField(s.levelsRaw)
   const rows: Array<[string, string]> = []
+  if (type) rows.push(['Type', type])
   if (s.beds != null) rows.push(['Beds', String(s.beds)])
   if (baths) rows.push(['Baths', baths])
   if (s.sqft != null) rows.push(['Living area', `${int(s.sqft)} sq ft`])
   if (s.lotAcres != null) rows.push(['Lot', `${dec(s.lotAcres, 2)} acres`])
   if (s.yearBuilt != null) rows.push(['Year built', String(s.yearBuilt)])
+  if (s.garageSpaces != null) rows.push(['Garage', `${int(s.garageSpaces)} spaces`])
+  if (stories) rows.push(['Stories', stories])
+  if (overlay?.fireplaces != null) rows.push(['Fireplaces', int(overlay.fireplaces)])
   if (s.standardStatus?.trim()) rows.push(['Status', s.standardStatus.trim()])
+  const parcelAcres = a.parcels?.subject.acres ?? a.site?.parcelAcres ?? null
+  if (parcelAcres != null) {
+    const mls = s.lotAcres ?? null
+    const differs =
+      mls != null && mls > 0 && Math.abs(mls - parcelAcres) / Math.min(mls, parcelAcres) > 0.1
+    if (differs) {
+      rows.push([
+        'Lot, county record',
+        `${dec(parcelAcres, 2)} acres — the county record and the MLS listing disagree on this lot`,
+      ])
+    }
+  }
+  const L = a.extras?.legal
+  const site = a.site
+  const parcel = L?.parcel?.trim() || site?.taxAccount?.trim() || null
+  const taxlot = L?.taxlot?.trim() || site?.taxlot?.trim() || null
+  const owner = L?.owner?.trim() || null
+  const timeOwned = L?.timeOwned?.trim() || null
+  const vesting = L?.vesting?.trim() || null
+  const flood = floodLine(L?.flood ?? site?.flood)
+  if (parcel) rows.push(['Parcel', parcel])
+  if (taxlot) rows.push(['Taxlot', taxlot])
+  if (owner) rows.push(['Owner', owner])
+  if (timeOwned) rows.push(['Time owned', timeOwned])
+  if (vesting) rows.push(['Vesting', vesting])
+  if (flood) rows.push(['Flood', flood])
   const aerial = a.mapDataUri
     ? `<img class="map-img" src="${esc(a.mapDataUri)}" alt="Map of ${esc(s.streetAddress)} and the sales that priced it" />`
     : ''
@@ -448,6 +481,7 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
         recommendedList: a.pricing.recommended,
         latitude: a.subject.latitude,
         longitude: a.subject.longitude,
+        photoUrl: a.subject.photoUrl,
       },
     }),
   }
@@ -546,9 +580,6 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const rest: CmaPageDef[] = []
   rest.push(snapshotPage(a))
-  rest.push(factsPage(a))
-  const legal = legalPage(a)
-  if (legal) rest.push(legal)
   const photos = photosPage(a)
   if (photos) rest.push(photos)
   rest.push(
@@ -572,6 +603,8 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
       tiersUsed: a.tiersUsed,
     }),
   )
+  const competition = competitionPage(a)
+  if (competition) rest.push(competition)
   const status = statusGridPage(a)
   if (status) rest.push(status)
   const sold90 = sold90Page(a)
@@ -584,8 +617,6 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   if (seasonality) rest.push(seasonality)
   const volume = marketVolumePage(a)
   if (volume) rest.push(volume)
-  const competition = competitionPage(a)
-  if (competition) rest.push(competition)
   rest.push(salesAndMapPage(a))
   // Straight after the sales, while the comp numbers on the tiles still refer
   // to the grid the reader just read.

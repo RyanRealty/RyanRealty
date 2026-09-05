@@ -394,21 +394,22 @@ export function cmaSectionStyles(): string {
   .rival-list { margin: 4px 0 12px; border-top: 1px solid var(--navy-line); }
   .rival-row {
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr) auto;
-    gap: 10px;
-    align-items: center;
-    padding: 7px 0;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: start;
+    padding: 6px 0;
     border-bottom: 1px solid var(--navy-line);
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  .rival-ph { width: 56px; height: 56px; object-fit: cover; display: block; background: var(--navy-fill); }
-  .rival-ph.is-empty { min-height: 56px; }
+  .rival-row.is-subject { border-bottom: 2px solid var(--navy); }
+  .rival-ph { width: 48px; height: 48px; object-fit: cover; display: block; background: var(--navy-fill); }
+  .rival-ph.is-empty { min-height: 48px; }
   .rival-body { min-width: 0; }
-  .rival-addr { font-size: 11.5px; font-weight: 600; }
-  .rival-facts { font-size: 10px; font-variant-numeric: tabular-nums; margin-top: 2px; }
-  .rival-ask { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .rival-meta { font-size: 9.5px; opacity: 0.72; margin-top: 2px; }
+  .rival-addr { font-size: 11px; font-weight: 600; }
+  .rival-facts { font-size: 9.5px; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .rival-ask { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 1px; }
+  .rival-meta { font-size: 9px; opacity: 0.72; margin-top: 1px; line-height: 1.35; }
   .pin-map-wrap { margin: 10px 0 14px; }
   .pin-map { width: 100%; height: auto; display: block; border: 1px solid var(--navy-line); }
 

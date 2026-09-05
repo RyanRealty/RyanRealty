@@ -239,22 +239,16 @@ function coverPage(a: RenderCmaArgs): PageDef {
   })
   const places = resolveSubjectPlaceLinks({ subject: a.subject })
   const primaryPlace = places[0] ?? null
-  const rivals = a.extras?.band?.rivals ?? []
-  const nearbyActives = rivals.filter((r) => r.status === 'Active')
+  const band = a.extras?.band
   const productBar = cmaProductBarFromExtras({
     marketPresent: Boolean(a.market),
     marketGeoLabel: a.market?.geoLabel ?? null,
     placeLinks: places,
-    nearbyActiveCount:
-      nearbyActives.length > 0 ? nearbyActives.length : (a.extras?.band?.activeCount ?? null),
-    nearbyActiveLabels: nearbyActives.map((r) => r.address).filter(Boolean),
+    nearbyActiveCount: band?.activeCount ?? null,
+    nearbyPendingCount: band?.pendingCount ?? null,
+    nearbyActiveLabels: [],
     recentSoldCount: a.comps.length,
-    bandLo: a.extras?.band?.lo ?? null,
-    bandHi: a.extras?.band?.hi ?? null,
-    bandActiveCount: a.extras?.band?.activeCount ?? null,
-    closedSalePrices: a.comps
-      .map((c) => c.closePrice)
-      .filter((n) => typeof n === 'number' && Number.isFinite(n) && n > 0),
+    closedSalePrices: [],
   }).html
   const subdivLinked = placeLabelHtml(a.subject.subdivision, primaryPlace?.href ?? null)
   const specsHtml = (() => {

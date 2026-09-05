@@ -84,6 +84,7 @@ function competitionScene(a: OpinionSceneArgs): string {
       recommendedList: a.pricing.recommended,
       latitude: a.subject.latitude,
       longitude: a.subject.longitude,
+      photoUrl: a.subject.photoUrl,
     },
   })
 }

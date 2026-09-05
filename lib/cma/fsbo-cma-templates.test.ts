@@ -131,6 +131,8 @@ describe('CMA product bar', () => {
  marketGeoLabel: 'Bend',
  neighborhood: { label: 'Old Bend', href: 'https://ryan-realty.com/communities/bend-old-bend' },
  nearbyActiveCount: 12,
+ nearbyPendingCount: 3,
+ nearbyActiveLabels: ['12 Pine', '88 Ranch'],
  recentSoldCount: 8,
  priceBandLo: '$600,000',
  priceBandHi: '$700,000',
@@ -138,8 +140,9 @@ describe('CMA product bar', () => {
  })
  expect(bar.marketDataLine).toContain('Bend')
  expect(bar.placeLinks).toHaveLength(1)
- expect(bar.competitionSummary).toContain('12 nearby active')
- expect(bar.competitionSummary).toContain('8 recent solds')
+ expect(bar.competitionSummary).toContain('12 for sale')
+ expect(bar.competitionSummary).toContain('3 under contract')
+ expect(bar.competitionSummary).not.toContain('incl.')
  expect(bar.priceBandSummary).toContain('$600,000')
  expect(bar.priceBandSummary).toContain('$700,000')
  const html = cmaProductBarHtml(bar)

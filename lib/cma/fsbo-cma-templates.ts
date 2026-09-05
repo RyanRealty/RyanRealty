@@ -466,7 +466,8 @@ export function buildCmaProductBar(input: {
   subdivision?: { label: string; href: string } | null
   /** Nearby ACTIVE listings in the subject band (not city-wide Active Now). */
   nearbyActiveCount?: number | null
-  /** Optional named nearby actives for the competition line. */
+  nearbyPendingCount?: number | null
+  /** Optional named nearby actives. Cover omits names; the list page names them. */
   nearbyActiveLabels?: readonly string[] | null
   recentSoldCount?: number | null
   priceBandLo?: string | null
@@ -506,21 +507,18 @@ export function buildCmaProductBar(input: {
     input.nearbyActiveCount != null && Number.isFinite(input.nearbyActiveCount)
       ? Math.round(input.nearbyActiveCount)
       : null
+  const pending =
+    input.nearbyPendingCount != null && Number.isFinite(input.nearbyPendingCount)
+      ? Math.round(input.nearbyPendingCount)
+      : null
   const sold =
     input.recentSoldCount != null && Number.isFinite(input.recentSoldCount)
       ? Math.round(input.recentSoldCount)
       : null
-  const names = (input.nearbyActiveLabels ?? [])
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 3)
   let competitionSummary: string | null = null
   if (nearby != null) {
-    const named = names.length ? ` (incl. ${names.join(', ')})` : ''
-    competitionSummary =
-      sold != null
-        ? `${nearby} nearby active${nearby === 1 ? '' : 's'}${named} · ${sold} recent solds in this report`
-        : `${nearby} nearby active${nearby === 1 ? '' : 's'}${named}`
+    const pendingBit = pending != null && pending > 0 ? ` · ${pending} under contract` : ''
+    competitionSummary = `${nearby} for sale${pendingBit}`
   } else if (sold != null) {
     competitionSummary = `${sold} recent solds in this report`
   }

@@ -115,6 +115,7 @@ export function cmaProductBarFromExtras(input: {
   marketPresent: boolean
   placeLinks?: CmaPlaceLink[] | null
   nearbyActiveCount?: number | null
+  nearbyPendingCount?: number | null
   nearbyActiveLabels?: readonly string[] | null
   recentSoldCount?: number | null
   bandLo?: number | null
@@ -127,6 +128,7 @@ export function cmaProductBarFromExtras(input: {
     marketGeoLabel: input.marketGeoLabel,
     placeLinks: input.placeLinks ?? [],
     nearbyActiveCount: input.nearbyActiveCount,
+    nearbyPendingCount: input.nearbyPendingCount,
     nearbyActiveLabels: input.nearbyActiveLabels,
     recentSoldCount: input.recentSoldCount,
     priceBandLo: input.bandLo != null ? usd(input.bandLo) : null,
