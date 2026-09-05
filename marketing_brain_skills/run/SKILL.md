@@ -18,8 +18,8 @@ dispatch producers. Do not spawn producer subagents. Do not load
 `video_production_skills/**`. Do not treat `automation_skills/content_engine`
 as a video factory.
 
-**Media / social production is the Studio:** `lib/studio/`, `/admin/studio`,
-`/api/cron/studio-slate`. Drafts land `ready`. Matt's §1 stamp plus
+**Media / social production is the Studio:** `lib/studio/`, `/admin/studio`.
+The slate cron is off. Drafts land `ready`. Matt's §1 stamp plus
 `/api/cron/publisher-sweep` → `/api/social/publish`.
 
 CMA, newsletter, CRM, and the Facebook seller report stay as TypeScript

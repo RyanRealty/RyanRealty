@@ -53,7 +53,7 @@ Then merge new paths into this file under the right heading.
 
 ### A1 — gitignored Claude clones (REFUSE)
 
-- `/Users/matthewryan/RyanRealty/.claude/skills/facebook-seller-growth/SKILL.md` *(REFUSE stub. Live skill is `.cursor/skills/facebook-seller-growth`. Follow Up Boss is retired. CRM is `crm_people`.)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/facebook-seller-growth/SKILL.md` *(REFUSE stub. Live skill is `.cursor/skills/facebook-seller-growth`. CRM is `crm_people`.)*
 
 ### A2 — Claude local (`~/.claude/skills`)
 

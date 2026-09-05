@@ -28,7 +28,7 @@ action_types:
 
 Do not load `video_production_skills/**/SKILL.md`. Do not load `social_media_skills/coming-soon-teaser`. Remotion is retired. Hourly SKILL.md producers are off.
 
-**Media / social production is the Studio** (CLAUDE.md §4): `lib/studio/`, `/admin/studio`, `/api/cron/studio-slate`. Prompts come from `lib/studio/craft.ts`. Drafts land `ready`. Matt's §1 stamp plus `/api/cron/publisher-sweep` → `/api/social/publish`.
+**Media / social production is the Studio** (CLAUDE.md §4): `lib/studio/`, `/admin/studio`. The slate cron is off. Prompts come from `lib/studio/craft.ts`. Drafts land `ready`. Matt's §1 stamp plus `/api/cron/publisher-sweep` → `/api/social/publish`.
 
 **Inbox + `/marketing/request` file a row and run no producer** (CLAUDE.md §5). CMA, newsletter, CRM, and the Facebook seller report stay as TypeScript products.
 

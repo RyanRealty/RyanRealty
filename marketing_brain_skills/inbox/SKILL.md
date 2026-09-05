@@ -15,8 +15,8 @@ Hourly SKILL.md producers are off (CLAUDE.md §5, 2026-08-18). Inbox +
 `/marketing/request` insert a `marketing_brain_actions` row and stop. Do not
 dispatch a producer. Do not load `video_production_skills/**`.
 
-**Media / social production is the Studio:** `lib/studio/`, `/admin/studio`,
-`/api/cron/studio-slate`. Drafts land `ready`. Matt's §1 stamp plus
+**Media / social production is the Studio:** `lib/studio/`, `/admin/studio`.
+The slate cron is off. Drafts land `ready`. Matt's §1 stamp plus
 `/api/cron/publisher-sweep` → `/api/social/publish`.
 
 # Marketing Brain.  Inbox

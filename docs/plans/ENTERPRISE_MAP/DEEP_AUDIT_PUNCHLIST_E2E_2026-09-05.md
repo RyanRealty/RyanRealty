@@ -12,7 +12,7 @@ A broker (or the next agent) can trust the live loops without reading May 2026 f
 4. **Queues are honest.** Fossil producer `in_production`/`pending` rows are killed. Sense/ready counts can be split later; CMA ready is not treated as Studio ready in health copy where we touch it. Seller sequence no longer dies on unresolved `%address%` when an address exists on the person.
 5. **Security and hygiene land.** `likes` anon cannot read `user_id`. `cma_deliveries` RLS doc matches live. Leftover render-worker PII payload is deleted. High-confidence FKs added where orphan counts are zero.
 6. **Nightly G55 is green** for the listing-detail remainder restyle (12 unused modules gone, tests retargeted).
-7. **Skill/docs drift no longer routes agents into deleted video SKILLs, Follow Up Boss, or AgentFire WordPress as the live factory.**
+7. **Skill/docs drift no longer routes agents into deleted video SKILLs or AgentFire WordPress as the live factory.**
 8. **Producer inventory no longer lists deleted Remotion scripts.** `test-all-producers.mjs` refuses.
 
 ## What a real user does

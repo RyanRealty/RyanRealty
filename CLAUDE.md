@@ -334,8 +334,8 @@ vision, stills, edits, motion). Model ids sit in `lib/grok/client.ts`, gated by
 `ci:grok-models`. Never call `api.x.ai` elsewhere.
 
 
-**Production is the Studio:** [`lib/studio/`](lib/studio/), `/admin/studio`,
-`/api/cron/studio-slate`. Drafts land `ready`; only Matt's approval plus
+**Production is the Studio:** [`lib/studio/`](lib/studio/), `/admin/studio`.
+Slate cron is off. Drafts land `ready`; only Matt's approval plus
 `publisher-sweep` posts (§1).
 **Read [`docs/GROK_CRAFT_CANON.md`](docs/GROK_CRAFT_CANON.md) before generating.**
 Non-negotiable: vision-inspect a hero still BEFORE paying for motion; 6s, one

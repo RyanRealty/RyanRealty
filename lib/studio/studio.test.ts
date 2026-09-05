@@ -8,7 +8,7 @@ import {
   type ShotSpec,
 } from './craft'
 import { centralOregonPlate, getStudioFormat, listingShot, STUDIO_FORMAT_LIST } from './formats'
-import { planSlate, type StudioTrigger } from './slate'
+import { isStudioSlateEnabled, planSlate, type StudioTrigger } from './slate'
 import { unauthorisedFigures, weakOpener, writeCaption } from './caption'
 import { addSpend, assertBudget, imageCost, newLedger, SpendCapError, videoCost } from './spend'
 import { normalizeVerdict } from '@/lib/grok/vision'
@@ -247,6 +247,13 @@ describe('slate', () => {
   it('never exceeds the requested size', () => {
     expect(planSlate({ pulse, triggers, max: 1, today: new Date('2026-08-24T12:00:00Z') })).toHaveLength(1)
     expect(planSlate({ pulse, triggers, max: 0, today: new Date('2026-08-24T12:00:00Z') })).toHaveLength(0)
+  })
+
+  it('the morning slate is off unless STUDIO_SLATE_ENABLED is set', () => {
+    expect(isStudioSlateEnabled({})).toBe(false)
+    expect(isStudioSlateEnabled({ STUDIO_SLATE_ENABLED: 'off' })).toBe(false)
+    expect(isStudioSlateEnabled({ STUDIO_SLATE_ENABLED: '1' })).toBe(true)
+    expect(isStudioSlateEnabled({ STUDIO_SLATE_ENABLED: 'true' })).toBe(true)
   })
 })
 

@@ -16,8 +16,8 @@
  * an expensive day: the slate refuses to start if today's drafts are already
  * at the ceiling.
  *
- * Schedule: unscheduled as of 2026-09-04 (manual `?force=true` only). Do not
- * re-add a vercel.json clock until Matt is clearing the ready queue.
+ * Schedule: OFF. Unscheduled in vercel.json. The handler no-ops unless
+ * STUDIO_SLATE_ENABLED=1. Produce from /admin/studio.
  * Auth: Authorization: Bearer $CRON_SECRET
  *
  * Manual:
@@ -32,7 +32,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { produceStudioDraft } from '@/lib/studio/produce'
-import { planSlate } from '@/lib/studio/slate'
+import { isStudioSlateEnabled, planSlate } from '@/lib/studio/slate'
 import type { StudioFormatId } from '@/lib/studio/formats'
 import { studioAdapters } from '@/app/admin/(protected)/studio/adapters'
 import { countStudioDraftsSince } from '@/lib/data/studio/drafts'
@@ -54,13 +54,21 @@ export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)
   if (denied) return denied
 
+  const startedAt = new Date().toISOString()
+  if (!isStudioSlateEnabled()) {
+    return NextResponse.json({
+      ok: true,
+      skipped: 'Studio slate is off. Produce from /admin/studio. Set STUDIO_SLATE_ENABLED=1 to put the clock back on.',
+      startedAt,
+    })
+  }
+
   const url = new URL(request.url)
   const dryRun = url.searchParams.get('dryRun') === 'true'
   const max = Math.min(5, Math.max(1, Number(url.searchParams.get('max')) || DEFAULT_MAX))
   const force = url.searchParams.get('force') === 'true'
   const formatOverride = url.searchParams.get('format')
   const subjectOverride = url.searchParams.get('subject') ?? undefined
-  const startedAt = new Date().toISOString()
 
   const midnight = new Date()
   midnight.setUTCHours(0, 0, 0, 0)

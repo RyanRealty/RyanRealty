@@ -38,6 +38,18 @@ export type SlateInput = {
   today?: Date
 }
 
+/**
+ * Morning slate is OFF unless STUDIO_SLATE_ENABLED is 1/true/on.
+ * /admin/studio console produce is unaffected. Matt 2026-09-05: do not
+ * create Studio drafts on a clock.
+ */
+export function isStudioSlateEnabled(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  const v = (env.STUDIO_SLATE_ENABLED ?? '').trim().toLowerCase()
+  return v === '1' || v === 'true' || v === 'on'
+}
+
 function dayIndex(date: Date): number {
   const start = Date.UTC(date.getUTCFullYear(), 0, 0)
   return Math.floor((date.getTime() - start) / 86_400_000)

@@ -1,4 +1,11 @@
-# Current — 2026-09-05 (CMA queue + expired list cap)
+# Current — 2026-09-05 (Studio slate off)
+
+Studio does not create on a clock. `/api/cron/studio-slate` is unscheduled
+and no-ops unless `STUDIO_SLATE_ENABLED=1`. Produce from `/admin/studio` only.
+
+---
+
+# Previous — 2026-09-05 (CMA queue + expired list cap)
 
 `/admin/cmas` is the one list: filter by address, city, origin, created date, recommended price. Rows show range, rec, and last list on expireds. Review is numbers + the origin-aware email + Approve & send.
 
