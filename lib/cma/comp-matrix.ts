@@ -14,7 +14,7 @@
 
 import { cleanText, dateLong, dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
-import { subjectNoun, subjectPossessive } from '@/lib/cma/land-pricing'
+import { subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 const ACRES_TO_SQFT = 43560
@@ -227,18 +227,7 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       return `${heading}${matrixTable([subj, ...group], noun)}`
     })
     .join('')
-  const sizeNoun = subjectNoun(subject) === 'home' ? 'living area' : 'acreage'
-  const split =
-    groups.length > 1
-      ? ` The sales run across ${groups.length} tables so every column stays readable. Your ${noun} repeats at the head of each one.`
-      : ''
-  // subjectPossessive returns 'house', never 'home' — comparing against 'home'
-  // here silently dropped this sentence from every improved report.
-  const perFoot =
-    noun === 'house'
-      ? ' Sale price per square foot is close price over living area.'
-      : ''
   return `
   <h3 class="subhead">Side by side</h3>
-  <p>Subject in the first column. Each kept sale is a column. Sale date is when that sale closed. This sale as your ${noun} is the sold price after bringing that sale to today and to your ${sizeNoun}.${perFoot} Lot square feet is acres times 43,560.${split}</p>${tables}`
+  ${tables}`
 }

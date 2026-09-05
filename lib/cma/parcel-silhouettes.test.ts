@@ -78,7 +78,7 @@ describe('renderParcelSilhouettesHtml', () => {
         comps: [parcel({ n: 1 }), parcel({ n: 2, geometry: square(0.024) })],
       }),
     )
-    expect(html).toContain('too widely in size to share one scale')
+    expect(html).toContain('Each lot is drawn to fit its own frame.')
     expect(html).not.toContain('drawn at the same scale')
     // Each fills its own frame, so the outlines are near-identical in width.
     const [a, b] = paths(html)

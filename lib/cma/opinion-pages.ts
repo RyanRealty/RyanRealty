@@ -282,7 +282,7 @@ export function statusGridPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: 'Status in this market',
     body: `
   <h2 class="section">Status in this market</h2>
-  <p>${esc(area.label)}. The sales we kept, against what is for sale, under contract, expired, and closed.</p>
+  <p>${esc(area.label)}.</p>
   ${html}`,
   }
 }
@@ -498,7 +498,7 @@ export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
   <h2 class="section">The sales that set the number</h2>
   <p>${esc(story.body)}</p>
   ${renderCompMatrixHtml(a.subject, a.comps)}
-  ${pinMap ? `<h3 class="subhead">Comp map</h3><div class="pin-map-wrap">${pinMap}</div>` : ''}
+  ${pinMap ? `<h3 class="subhead">Comp map</h3><div class="pin-map-wrap">${pinMap}</div>${story.legend ? `<p>${esc(story.legend)}</p>` : ''}` : ''}
   ${pinMap ? `<h3 class="subhead">Marker key</h3>${renderCompMapKeyHtml(a.subject, a.comps)}` : ''}
   ${strip}`,
   }

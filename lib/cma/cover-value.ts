@@ -64,7 +64,7 @@ export function coverValueBlockHtml(a: CoverArgs): string {
     }</div>
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
-    <div class="vb-detail">${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
+    <div class="vb-detail">${a.comps.length} closed MLS sales. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
 }
 
 export function immersiveHeroNumberHtml(a: CoverArgs): string {

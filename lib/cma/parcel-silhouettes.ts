@@ -199,8 +199,8 @@ export function renderParcelSilhouettesHtml(set: CmaParcelSet | null): string {
     .join('')
 
   const note = shared
-    ? 'Every lot below is drawn at the same scale, so a bigger outline is a bigger lot.'
-    : 'These lots differ too widely in size to share one scale, so each is drawn to fit its own frame. Compare the acreage, not the outlines.'
+    ? 'Every lot below is drawn at the same scale.'
+    : 'Each lot is drawn to fit its own frame.'
 
   const barSvg = bar
     ? `<svg class="lot-scale" viewBox="0 0 ${TILE} 18" role="img" aria-label="${esc(`Scale bar: ${bar.label}`)}">

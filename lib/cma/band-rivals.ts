@@ -234,8 +234,8 @@ export function renderBandRivalsHtml(input: {
       : 'None under contract in this band right now.'
   const shown =
     actives.length + pendings.length < input.activeCount + input.pendingCount
-      ? ` Nearest ${int(actives.length + pendings.length)} shown, with size and price against this home.`
-      : ' Size and price against this home.'
+      ? ` Nearest ${int(actives.length + pendings.length)} shown.`
+      : ''
   const subjectBlock = input.subject ? `<div class="rival-list">${subjectRow(input.subject)}</div>` : ''
   return `
   <h2 class="section">Who you are competing with at this price</h2>
@@ -274,7 +274,7 @@ export function renderBandRivalsSceneHtml(input: {
     <div class="in wide">
       <div class="kick r">At this price</div>
       <h2 class="h r">${esc(headline)}</h2>
-      <p class="lede r">${int(input.pendingCount)} under contract in the same band. Size and price against this home.</p>
+      <p class="lede r">${int(input.pendingCount)} under contract in the same band.</p>
       ${input.subject ? `<div class="rival-list r">${subjectRow(input.subject)}</div>` : ''}
       ${actives.length ? `<h3 class="sub r">For sale now</h3><div class="rival-list r">${rows(actives)}</div>` : ''}
       ${pendings.length ? `<h3 class="sub r">Under contract</h3><div class="rival-list r">${rows(pendings)}</div>` : ''}

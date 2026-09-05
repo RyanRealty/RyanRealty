@@ -160,7 +160,7 @@ function strategyLine(input: {
     return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)}.`
   }
   if (p.priceOverride != null && p.priceOverride > 0 && p.recommended < p.method3) {
-    return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)} after review.`
+    return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)}.`
   }
   return null
 }
@@ -292,7 +292,7 @@ export function whyWeKeptComp(comp: CmaAdjustedComp): {
   if (comp.competingArea) {
     return {
       tier,
-      sentence: `Kept as a competing-area sale${comp.proximity ? `, ${comp.proximity} from the subject` : ''} to bracket the range.`,
+      sentence: `Kept as a competing-area sale${comp.proximity ? `, ${comp.proximity} from the subject` : ''}.`,
     }
   }
   if (comp.proximity) {

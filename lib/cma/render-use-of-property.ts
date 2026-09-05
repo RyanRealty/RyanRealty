@@ -140,7 +140,7 @@ export function propertyUsePage(input: {
   const income =
     rental && rental.income.length > 0
       ? `<h3 class="subhead">Cited income figures</h3>
-  <p class="small">Only figures we can name a source for. There is no nightly rate or occupancy model in this report.</p>
+  <p class="small">No nightly rate or occupancy model is in this report.</p>
   ${rentalIncomeBlock(rental.income)}
   ${rental.economicsNote ? `<p class="small">${esc(rental.economicsNote)}</p>` : ''}`
       : ''

@@ -30,7 +30,7 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
-import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import { sellerFacingFindingMeaning, type ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { composeInboundCoverLine } from '@/lib/cma/inbound-packet'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -296,16 +296,17 @@ function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
   const ea = a.expiredAudit
   if (!ea || ea.findings.length === 0) return null
   const blocks = ea.findings
-    .map(
-      (f) => `
+    .map((f) => {
+      const meaning = sellerFacingFindingMeaning(f.meaning)
+      return `
   <h3 class="subhead">${esc(LENS_LABELS[f.lens] ?? f.lens)}</h3>
   <p>${esc(f.fact)}</p>
-  <p class="small">${esc(f.meaning)}</p>`,
-    )
+  ${meaning ? `<p class="small">${esc(meaning)}</p>` : ''}`
+    })
     .join('')
   return {
     meta: `${esc(a.subject.streetAddress)} · Your Last Listing`,
-    toc: 'Your last listing, and our take',
+    toc: 'Your last listing',
     body: `
   <h2 class="section">Your Last Listing</h2>
   <p>Your home came off the market without selling.</p>
@@ -333,7 +334,7 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
     ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}">Email ${first}</a>` : ''}
     ${onMarket ? '' : `<a class="ghost" href="${consultUrl}">Book a conversation</a>`}
   </div>
-  ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here. It comes to ${first}'s phone.</p>` : ''}`,
+  ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here.</p>` : ''}`,
   }
 }
 

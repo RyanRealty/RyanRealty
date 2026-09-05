@@ -174,18 +174,17 @@ describe('land columns', () => {
     expect(renderCompMatrixHtml(subject, [comp])).toMatch(/This sale as your house/)
   })
 
-  it('keeps the per-square-foot sentence on an improved report', () => {
-    // Regression: subjectPossessive returns 'house', never 'home'. Comparing
-    // against 'home' silently dropped this sentence from EVERY home report,
-    // and only the clean-tree typecheck caught it.
-    expect(renderCompMatrixHtml(subject, [comp])).toMatch(
-      /Sale price per square foot is close price over living area/,
-    )
+  it('prints sale price per square foot on an improved report', () => {
+    expect(renderCompMatrixHtml(subject, [comp])).toContain('Sale price / sqft')
+    expect(renderCompMatrixHtml(subject, [comp])).toContain('$478/sf')
   })
 
-  it('drops that sentence on land, where there is no living area', () => {
+  it('does not lecture the per-square-foot formula', () => {
+    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(
+      /Sale price per square foot is close price over living area/,
+    )
     expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(
-      /Sale price per square foot/,
+      /Sale price per square foot is close price over living area/,
     )
   })
 

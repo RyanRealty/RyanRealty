@@ -224,14 +224,10 @@ export function composeCmaCoverIntro(facts: FsboCmaMergeFacts): {
 
  const suggestedLine = suggested ? `Suggested list price: ${suggested}` : null
  const rangeLine = lo && hi ? `Suggested range: ${lo} - ${hi}` : null
- const askLine = ask
- ? `Sold comps, active competition, and how your current ask (${ask}) sits against the set.`
- : `Sold comps, active competition, and how your ask sits against the set.`
+ const askLine = ask ? `Current ask: ${ask}.` : null
 
  const qBits = [agent, phone, calendar].filter(Boolean)
- const questionsLine = qBits.length
- ? `Questions on any line? ${qBits.join(' · ')}`
- : null
+ const questionsLine = qBits.length ? qBits.join(' · ') : null
 
  const fullText = [title, preparedLine, placeLine, '', body, '', suggestedLine, rangeLine, '', askLine, '', questionsLine]
  .filter((l) => l !== null)

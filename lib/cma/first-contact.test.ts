@@ -96,7 +96,7 @@ describe('first-contact copy', () => {
     expect(c.bodyText).toContain('Reply or call to walk through the numbers')
     expect(c.bodyText).toContain('https://ryan-realty.com/reviews')
     expect(c.bodyText).toContain('https://ryan-realty.com/about')
-    expect(c.bodyText).toContain('Call anytime')
+    expect(c.bodyText).not.toContain('Call anytime')
     expect(c.bodyText).not.toMatch(/\bCMA\b/)
     const voice = checkBrandVoice(c.bodyText)
     expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
@@ -108,14 +108,14 @@ describe('first-contact copy', () => {
       neighborhoodName: 'Riverwest',
       neighborhoodSlug: 'riverwest',
     })
-    expect(c.bodyText).toContain('what is selling in Riverwest')
+    expect(c.bodyText).toContain('Riverwest:')
     expect(c.bodyText).toMatch(/\/cities\/bend\/riverwest/)
-    expect(c.bodyText).not.toContain('what is selling in Bend')
+    expect(c.bodyText).not.toContain('Bend:')
   })
 
   it('falls back to the city page when there is no neighborhood', () => {
     const c = composeCmaFirstContact('expired', { ...FACTS, city: 'Redmond' })
-    expect(c.bodyText).toContain('what is selling in Redmond')
+    expect(c.bodyText).toContain('Redmond:')
     expect(c.bodyText).toMatch(/\/cities\/redmond/)
   })
 
@@ -127,7 +127,8 @@ describe('first-contact copy', () => {
       valueHigh: 625_000,
       recommendedList: 605_000,
     })
-    expect(c.bodyText).not.toContain('what is selling in')
+    expect(c.bodyText).not.toContain('ryan-realty.com/cities')
+    expect(c.bodyText).not.toContain('ryan-realty.com/subdivisions')
   })
 
   it('does not pitch a relist on an asked report', () => {
@@ -160,9 +161,9 @@ describe('first-contact copy', () => {
     expect(facts.firstName).toBe('Blair')
     expect(facts.lastListPrice).toBe(460000)
     const letter = composeCmaFirstContact('expired', facts)
-    expect(letter.bodyText).toContain('what is selling in Diamond Bar Ranch')
+    expect(letter.bodyText).toContain('Diamond Bar Ranch:')
     expect(letter.bodyText).toMatch(/\/subdivisions\/diamond-bar-ranch/)
-    expect(letter.bodyText).not.toContain('what is selling in Redmond')
+    expect(letter.bodyText).not.toContain('Redmond:')
   })
 
   it('keeps the letter on the send rail instead of a model rewrite', () => {

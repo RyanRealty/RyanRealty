@@ -44,11 +44,7 @@ export type CmaFirstContactFacts = InboundPacketFacts & {
 }
 
 /** The one close every origin shares. The send rail appends the report URL to it. */
-const CLOSE_ASKED = 'The report is attached as a PDF. You can also read it online.'
-const CLOSE_EXPIRED =
-  'The report is attached as a PDF. It covers the sales that set the number, what happened on the listing, and what you would net at the recommended list.'
-const CLOSE_FSBO =
-  'The report is attached as a PDF. It covers the sales that set the number and the homes competing with yours right now.'
+const CLOSE = 'The report is attached as a PDF.'
 
 export function composeCmaFirstContactSubject(origin: CmaOrigin, address: string | null): string {
   const named = trim(address)
@@ -76,10 +72,8 @@ function planFor(origin: CmaOrigin, named: string): string {
   return `The number for ${named}, and the sales that set it.`
 }
 
-function closeFor(origin: CmaOrigin): string {
-  if (origin === 'expired') return CLOSE_EXPIRED
-  if (origin === 'fsbo') return CLOSE_FSBO
-  return CLOSE_ASKED
+function closeFor(): string {
+  return CLOSE
 }
 
 function offerFor(): string {
@@ -101,7 +95,7 @@ function areaLine(facts: CmaFirstContactFacts): string | null {
     inMappedNeighborhood: inNabe,
   })
   if (!place) return null
-  return `If you want to see what is selling in ${place.label}, that page is ${publicHref(place.href)}.`
+  return `${place.label}: ${publicHref(place.href)}.`
 }
 
 function resourceParagraphs(origin: CmaOrigin, facts: CmaFirstContactFacts): string[] {
@@ -112,10 +106,6 @@ function resourceParagraphs(origin: CmaOrigin, facts: CmaFirstContactFacts): str
   const area = areaLine(facts)
   if (area) out.push(area)
   return out
-}
-
-function wishFor(): string {
-  return 'Call anytime.'
 }
 
 export function cmaFirstContactPreview(origin: CmaOrigin, address: string | null): string {
@@ -139,9 +129,8 @@ export function composeCmaFirstContact(
   const intro = introFor(facts.brokerName ?? null)
   const plan = planFor(origin, named)
   const numbers = composeInboundNumbersClause(facts)
-  const close = closeFor(origin)
+  const close = closeFor()
   const offer = offerFor()
-  const wish = wishFor()
   const bodyText = [
     greeting,
     intro,
@@ -150,7 +139,6 @@ export function composeCmaFirstContact(
     close,
     offer,
     ...resourceParagraphs(origin, facts),
-    wish,
   ]
     .filter((p): p is string => Boolean(p && p.trim()))
     .join('\n\n')

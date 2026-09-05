@@ -35,6 +35,25 @@ export const STANDARD_LISTING_FEE_PCT = 3.0
  *  under the current rules; the seller decides. Shown as an assumption line. */
 export const BUYER_BROKER_ASSUMPTION_PCT = 2.5
 
+/** Keep a market-move fact. Drop stored lecture from older builds. */
+export function sellerFacingFindingMeaning(raw: string | null | undefined): string {
+  const t = (raw ?? '').trim()
+  if (!t) return ''
+  const sentences = t.split(/(?<=\.)\s+/).map((s) => s.trim()).filter(Boolean)
+  const move = sentences.filter((s) => /\bmoved \d+(?:\.\d+)?% (?:up|down) over the past year\.?$/i.test(s))
+  if (move.length) {
+    return move.map((s) => (/[.]$/.test(s) ? s : `${s}.`)).join(' ')
+  }
+  if (
+    /narrows the pool|teaches buyers|stale listings|inherits the history|gives buyers less reason|shifts the relist|not unrecoverable|sends no new signal|cross-shop|defensible|room above the last ask|restarts the clock/i.test(
+      t,
+    )
+  ) {
+    return ''
+  }
+  return t
+}
+
 export interface ExpiredFailureFinding {
   /** Which of the audit lenses this belongs to. 'Ownership' is deliberately
    *  display-cased: the renderer (lib/cma/render.ts expiredAuditPage) falls
@@ -43,7 +62,7 @@ export interface ExpiredFailureFinding {
   lens: 'pricing' | 'time-on-market' | 'price-cuts' | 'attempts' | 'presentation' | 'Ownership'
   /** The factual observation (numbers, no adjectives). */
   fact: string
-  /** What it means for the relist, plainly stated. */
+  /** Extra fact, or empty when the observation stands alone. */
   meaning: string
 }
 
@@ -119,12 +138,7 @@ export function buildOwnershipFinding(args: {
         history.lastSalePrice ? ` at ${usd(history.lastSalePrice)}` : ''
       }.`
 
-  const meaning =
-    years >= 5
-      ? 'That much time in one home shifts the relist conversation from the last ask to your net. The net sheet in this report runs the numbers at the recommended price.'
-      : 'A recent purchase price anchors expectations. The comparable sales in this report are the market\'s current answer, independent of what was paid.'
-
-  return { lens: 'Ownership', fact, meaning }
+  return { lens: 'Ownership', fact, meaning: '' }
 }
 
 /**
@@ -157,26 +171,26 @@ export function buildFailureFindings(args: {
     const yoy = market?.yoyMedianPriceDeltaPct
     const marketMoveNote =
       yoy != null && Math.abs(yoy) >= 2
-        ? ` ${market?.geoLabel ?? 'The market'} moved ${Math.abs(yoy).toFixed(1)}% ${yoy > 0 ? 'up' : 'down'} over the past year, so part of any gap reflects the market shifting after the listing period.`
+        ? `${market?.geoLabel ?? 'The market'} moved ${Math.abs(yoy).toFixed(1)}% ${yoy > 0 ? 'up' : 'down'} over the past year.`
         : ''
     if (askAboveRange) {
       const overPct = ((finalAsk - pricing.highEnd) / pricing.highEnd) * 100
       findings.push({
         lens: 'pricing',
         fact: `The final asking price was ${usd(finalAsk)}. The comparable sales support ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} today, which puts that ask ${overPct.toFixed(1)}% above the top of the supported range.`,
-        meaning: `At that number today, the ask sits above what the closed sales support. Buyers cross-shop the same comparables, and a price above the supported range narrows the pool.${marketMoveNote}`,
+        meaning: marketMoveNote,
       })
     } else if (finalAsk >= pricing.conservative) {
       findings.push({
         lens: 'pricing',
         fact: `The final asking price was ${usd(finalAsk)}, inside the ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} range the comparable sales support today.`,
-        meaning: `Measured against today's comparables, the last price is defensible.${marketMoveNote}`,
+        meaning: marketMoveNote,
       })
     } else {
       findings.push({
         lens: 'pricing',
         fact: `The final asking price was ${usd(finalAsk)}, below the ${usd(pricing.conservative)} to ${usd(pricing.highEnd)} range the comparable sales support today.`,
-        meaning: `Measured against today's comparables, a relist has room above the last ask.${marketMoveNote}`,
+        meaning: marketMoveNote,
       })
     }
   }
@@ -201,16 +215,10 @@ export function buildFailureFindings(args: {
   })()
   const medianDom = market?.medianDom ?? null
   if (cycleDom != null && medianDom != null && medianDom > 0) {
-    const ratio = cycleDom / medianDom
     findings.push({
       lens: 'time-on-market',
       fact: `${cycleDom} days on market for the final listing period, against a ${Math.round(medianDom)}-day median for ${market?.geoLabel ?? 'the market'}.`,
-      meaning:
-        ratio >= 2
-          ? 'A listing sitting at multiple times the median reads as stale to buyers and their agents, and stale listings tend to draw lower offers.'
-          : ratio >= 1.2
-            ? 'Longer than typical, but not unrecoverable. A reset with correct pricing restarts the clock.'
-            : 'Time on market was inside the normal band.',
+      meaning: '',
     })
   }
 
@@ -222,19 +230,16 @@ export function buildFailureFindings(args: {
     const cut = cycle.originalListPrice - cycle.finalListPrice
     const cutPct = (cut / cycle.originalListPrice) * 100
     const cuts = cycle.priceCutCount ?? 0
-    const material = cutPct >= 3 || cuts >= 2
     findings.push({
       lens: 'price-cuts',
       fact: `The ask moved from ${usd(cycle.originalListPrice)} to ${usd(cycle.finalListPrice)}, a ${usd(cut)} reduction (${cutPct.toFixed(1)}%)${cuts > 0 ? ` over ${cuts} cut${cuts === 1 ? '' : 's'}` : ''}.`,
-      meaning: material
-        ? 'Chasing the market down teaches buyers to wait. Starting at the supported number outperforms starting high and cutting.'
-        : 'The path shows one modest adjustment during the listing period.',
+      meaning: '',
     })
   } else if (cycle && cycle.originalListPrice && cycle.originalListPrice === cycle.finalListPrice && askAboveRange) {
     findings.push({
       lens: 'price-cuts',
       fact: `The asking price never moved from ${usd(cycle.originalListPrice)} across the full listing period.`,
-      meaning: 'A static price on a sitting listing sends no new signal to the market.',
+      meaning: '',
     })
   }
 
@@ -243,7 +248,7 @@ export function buildFailureFindings(args: {
     findings.push({
       lens: 'attempts',
       fact: `This property has been listed ${history.attemptsCount} times, with ${history.failedAttemptsCount} attempts ending without a sale${history.peakAskingPrice ? `, peaking at ${usd(history.peakAskingPrice)}` : ''}.`,
-      meaning: 'Buyers and their agents can see the full history. The next attempt has to look different on day one, in price and in presentation, or it inherits the history.',
+      meaning: '',
     })
   }
 
@@ -255,14 +260,14 @@ export function buildFailureFindings(args: {
       // "MLS record shows" — media can be reduced after a listing terminates,
       // so the fact claims only what the record proves today (audit finding).
       fact: `The MLS record shows ${photosCount} photos on the listing.`,
-      meaning: 'A thin photo set gives buyers less reason to book a showing.',
+      meaning: '',
     })
   }
   if (remarksLen > 0 && remarksLen < 400) {
     findings.push({
       lens: 'presentation',
       fact: `The public description ran ${remarksLen} characters.`,
-      meaning: 'A short description leaves the specific features that differentiate this home unsaid, and portals index every word.',
+      meaning: '',
     })
   }
 
@@ -493,10 +498,6 @@ export function applyFailedAskCap(
   ]
     .filter(Boolean)
     .join(' ')
-  pricing.notes.push(
-    recent
-      ? `Your last listing asked ${usd(ask)} and did not sell. ${FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')} Central Oregon homes failed to sell and later sold between ${FAILED_ASK_BACKTEST.runstamp.slice(0, 4) === '2026' ? '2023 and 2026' : 'the measured window'}. The median one closed at ${(FAILED_ASK_BACKTEST.closeMedianRatio * 100).toFixed(1)}% of the asking price that failed. ${FAILED_ASK_BACKTEST.shareClosedAboveAskPct}% closed above it. The list prices in this report are capped against those outcomes.`
-      : `Your last listing asked ${usd(ask)} and did not sell. The recommendation sits at or below that price.`,
-  )
+  pricing.notes.push(`Your last listing asked ${usd(ask)} and did not sell.`)
   return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
 }

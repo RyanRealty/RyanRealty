@@ -88,14 +88,14 @@ describe('cma_cover_intro_v1', () => {
  expect(cover.body).toMatch(/pricing report/i)
  expect(cover.body).not.toMatch(/comparative market analysis/i)
  expect(cover.body).not.toMatch(/Lenders order appraisals/i)
- expect(cover.askLine).toContain('$679,000')
+ expect(cover.askLine).toContain('Current ask: $679,000')
  expect(cover.fullText).toContain('Sarah Nguyen')
+ expect(cover.fullText).not.toMatch(/Questions on any line/i)
  })
 
  it('omits current-ask sentence when ask unknown', () => {
  const cover = composeCmaCoverIntro({ ...FULL, currentAskPrice: null })
- expect(cover.askLine).not.toMatch(/\$\d/)
- expect(cover.askLine).toContain('how your ask sits')
+ expect(cover.askLine).toBeNull()
  })
 })
 

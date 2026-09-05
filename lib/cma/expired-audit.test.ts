@@ -14,6 +14,7 @@ import {
   buildServicesList,
   buildThisHomeMarketingPlan,
   feeLine,
+  sellerFacingFindingMeaning,
 } from './expired-audit'
 import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
 import { checkBrandVoice } from '@/lib/voice/check'
@@ -266,5 +267,23 @@ describe('buildNetSheet — close price minus seller concessions', () => {
   it('does not invent a concession line when the set did not resolve one', () => {
     const sheet = buildNetSheet(pricing, { expectedConcessions: null })
     expect(sheet.lines.some((l) => l.label.startsWith('Seller concessions'))).toBe(false)
+  })
+})
+
+describe('sellerFacingFindingMeaning', () => {
+  it('keeps a market-move fact and drops stored lecture', () => {
+    expect(
+      sellerFacingFindingMeaning(
+        'At that number today, the ask sits above what the closed sales support. Buyers cross-shop the same comparables, and a price above the supported range narrows the pool. Redmond moved 4.1% down over the past year.',
+      ),
+    ).toBe('Redmond moved 4.1% down over the past year.')
+    expect(
+      sellerFacingFindingMeaning(
+        'A listing sitting at multiple times the median reads as stale to buyers and their agents, and stale listings tend to draw lower offers.',
+      ),
+    ).toBe('')
+    expect(sellerFacingFindingMeaning('Redmond moved 2.0% up over the past year.')).toBe(
+      'Redmond moved 2.0% up over the past year.',
+    )
   })
 })

@@ -17,7 +17,7 @@ import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaAdjustedComp, CmaBroker, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
-import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import { FAILED_ASK_BACKTEST, sellerFacingFindingMeaning } from '@/lib/cma/expired-audit'
 import { formatDate } from '@/lib/format/date'
 import { subjectPossessive } from '@/lib/cma/land-pricing'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
@@ -117,7 +117,6 @@ function salesScene(a: OpinionSceneArgs): string {
     <div class="in wide">
       <div class="kick r">The sales that set it</div>
       <h2 class="h r">The sales that set the number</h2>
-      <p class="lede r">Subject in the first column. Each kept sale is a column.</p>
       <div class="r">${renderCompMatrixHtml(a.subject, a.comps)}</div>
       ${pinMap ? `<div class="pin-map-wrap r">${pinMap}</div>` : ''}
       <div class="r">${renderCompStripHtml(a.comps, subjectPossessive(a.subject))}</div>
@@ -209,13 +208,14 @@ function expiredScene(a: OpinionSceneArgs): string {
   const orig = s.lastListPrice != null && s.lastListPrice > 0 ? s.lastListPrice : null
   const findings = audit.findings.slice(0, 3)
   const cards = findings
-    .map(
-      (f) => `<div class="story-card r">
+    .map((f) => {
+      const meaning = sellerFacingFindingMeaning(f.meaning)
+      return `<div class="story-card r">
         <div class="story-lens">${esc(f.lens)}</div>
         <div class="story-fact">${esc(f.fact)}</div>
-        <div class="story-mean">${esc(f.meaning)}</div>
-      </div>`,
-    )
+        ${meaning ? `<div class="story-mean">${esc(meaning)}</div>` : ''}
+      </div>`
+    })
     .join('')
   const b = FAILED_ASK_BACKTEST
   return `
@@ -243,8 +243,7 @@ function nextScene(a: OpinionSceneArgs): string {
       ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
-        <h2 class="h r">We have not seen inside your home.</h2>
-        <p class="lede r">Call or text.</p>
+        <h2 class="h r">Call or text.</h2>
         <div class="cta r">
           ${tel ? `<a class="btn pri" href="tel:${esc(tel)}">Call ${esc(br.phone ?? '')}</a>` : ''}
           ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}

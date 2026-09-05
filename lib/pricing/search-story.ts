@@ -12,7 +12,10 @@ export type CompSearchStory = {
   radiusMiles: number | null
   usedSimilarSubdivisions: boolean
   headline: string
+  /** What the search did. No map legend. */
   body: string
+  /** Outline / circle / pin labels. Print next to the map only. */
+  legend: string | null
 }
 
 export function parseTierRadiusMiles(tier: string): number | null {
@@ -48,7 +51,8 @@ export function describeCompSearch(opts: {
       radiusMiles: null,
       usedSimilarSubdivisions: false,
       headline: name ? `Sales near ${name}` : 'Sales next to this home',
-      body: name
+      body: name ? `Sales near ${name}.` : 'Sales next to this home.',
+      legend: name
         ? `The pins are the sales we kept. The outline is the ${name} subdivision when that boundary is on file.`
         : 'The pins on this map are the sales we kept.',
     }
@@ -69,7 +73,8 @@ export function describeCompSearch(opts: {
       radiusMiles: null,
       usedSimilarSubdivisions: false,
       headline: `Sales inside ${name}`,
-      body: `We stayed inside the ${name} subdivision${monthBit}. The outline is that subdivision. The pins are the sales we kept.`,
+      body: `We stayed inside the ${name} subdivision${monthBit}.`,
+      legend: 'The outline is that subdivision. The pins are the sales we kept.',
     }
   }
   if (!leftSubdivision) {
@@ -80,7 +85,8 @@ export function describeCompSearch(opts: {
       radiusMiles: null,
       usedSimilarSubdivisions: false,
       headline: 'Sales next to this home',
-      body: `We used the closest recent closed sales${monthBit}. The pins on this map are those sales.`,
+      body: `We used the closest recent closed sales${monthBit}.`,
+      legend: 'The pins on this map are those sales.',
     }
   }
 
@@ -98,7 +104,10 @@ export function describeCompSearch(opts: {
     usedSimilarSubdivisions: usedSimilar,
     headline: name ? `${name}, then ${where}` : `A wider search${radiusMiles != null ? `, ${radiusMiles} miles` : ''}`,
     body: name
-      ? `There were not enough recent sales inside ${name}, so we ${radiusBit}${similarBit}${monthBit}. The outline is the subdivision. The circle is the search. The pins are the sales we kept.`
-      : `There were not enough recent sales next to this home, so we ${radiusBit}${similarBit}${monthBit}. The circle is the search. The pins are the sales we kept.`,
+      ? `There were not enough recent sales inside ${name}, so we ${radiusBit}${similarBit}${monthBit}.`
+      : `There were not enough recent sales next to this home, so we ${radiusBit}${similarBit}${monthBit}.`,
+    legend: name
+      ? 'The outline is the subdivision. The circle is the search. The pins are the sales we kept.'
+      : 'The circle is the search. The pins are the sales we kept.',
   }
 }

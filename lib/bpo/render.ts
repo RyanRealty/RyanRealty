@@ -425,7 +425,7 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
     <div class="eyebrow">Broker Price Opinion · ${escapeHtml(subject.streetAddress)}</div>
     ${OFFER_MARK_START}${offerBlock(offer)}${OFFER_MARK_END}
     <h2 class="sec" style="margin-top:12px;">${escapeHtml(search.headline)}</h2>
-    <p class="sub">${escapeHtml(search.body)}</p>
+    <p class="sub">${escapeHtml([search.body, search.legend].filter(Boolean).join(' '))}</p>
     ${args.mapDataUri ? `<img class="map-img" src="${args.mapDataUri}" alt="${escapeHtml(search.headline)}" />` : ''}
     <h2 class="sec">Comparable sales</h2>
     <table>

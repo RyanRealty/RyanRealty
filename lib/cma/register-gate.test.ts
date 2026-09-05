@@ -11,7 +11,7 @@ describe('CMA register shell — inbound packet', () => {
       clientName: 'Pat',
     })
     expect(html).toContain('Your report on 1842 NW Foo St')
-    expect(html).toContain('The recommended list for 1842 NW Foo St, and why')
+    expect(html).toContain('The recommended list for 1842 NW Foo St')
     expect(html).toContain('Who you are competing with at that price')
     expect(html).toContain('The sales that set the number')
     expect(html).not.toMatch(/how we would market|listing video|flyers/i)
@@ -21,7 +21,7 @@ describe('CMA register shell — inbound packet', () => {
     expect(blamesPriorAgent(html)).toBe(false)
     const visible = [
       'Your report on 1842 NW Foo St is ready',
-      'The recommended list for 1842 NW Foo St, and why',
+      'The recommended list for 1842 NW Foo St',
       'Who you are competing with at that price',
       'The sales that set the number',
     ]

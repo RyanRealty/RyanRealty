@@ -86,7 +86,7 @@ export function bendItems(zone: string, lotSqft: number | null, acres: number | 
       verdict: 'confirm',
       headline: 'Division here runs through townhomes and middle housing rather than single-unit lots.',
       detail:
-        'High Density Residential does not list a single-unit detached dwelling as a permitted use, so Table 2.1.500 shows no single-unit lot area for the zone. The lot standards that do apply are a 1,250 sqft minimum for a duplex, 2,500 sqft for a triplex or quadplex, a 1,200 sqft average per unit for townhomes, and no minimum lot area at all for multi-unit development. Minimum density is 21.7 units per gross acre with no maximum. A land division here is a townhome or middle-housing division, and the real number turns on access, utilities, and design review. Worth a planning conversation before you price the upside.',
+        'High Density Residential does not list a single-unit detached dwelling as a permitted use, so Table 2.1.500 shows no single-unit lot area for the zone. The lot standards that do apply are a 1,250 sqft minimum for a duplex, 2,500 sqft for a triplex or quadplex, a 1,200 sqft average per unit for townhomes, and no minimum lot area at all for multi-unit development. Minimum density is 21.7 units per gross acre with no maximum. A land division here is a townhome or middle-housing division.',
       citation: 'Bend Development Code Table 2.1.200, Table 2.1.500, Table 2.1.600',
       url: 'https://bend.municipal.codes/BDC/2.1.500',
       verifiedOn: V2,

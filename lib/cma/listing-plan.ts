@@ -75,7 +75,7 @@ export function buildFailedAskItem(
   if (!(pricing.recommended > 0)) return null
   return {
     trigger: `The last listing asked ${usd(ask)} and did not sell.`,
-    action: `We price the relist at ${usd(pricing.recommended)}, the number the comp set supports today.`,
+    action: `We price the relist at ${usd(pricing.recommended)}.`,
     basis: `Last list ${usd(ask)} against the recommended list of ${usd(pricing.recommended)}.`,
   }
 }
@@ -90,7 +90,7 @@ export function buildSubdivisionItem(extras: CmaExtras): ListingPlanItem | null 
   if (!sp || sp.medianClose == null) return null
   return {
     trigger: `${sp.name} carries a median closed price of ${usd(sp.medianClose)} over its last ${sp.closedCount} sales.`,
-    action: `We market against ${sp.name}'s own closed sales, not the citywide median, so buyers compare this home to the ${sp.closedCount} homes they have actually seen sell here.`,
+    action: `We market against ${sp.name}'s own closed sales, not the citywide median.`,
     basis: `${sp.name} median close ${usd(sp.medianClose)} across ${sp.closedCount} sales.`,
   }
 }
@@ -106,7 +106,7 @@ export function buildCrowdedBandItem(extras: CmaExtras): ListingPlanItem | null 
   if (b.activeCount < b.pendingCount * BAND_CROWDED_RATIO) return null
   return {
     trigger: `${b.activeCount} homes are active in this price band right now, against ${b.pendingCount} pending.`,
-    action: `With ${b.activeCount} homes already listed in this band, we lead the launch on what makes this one different rather than on price alone.`,
+    action: `We list at the supported number.`,
     basis: `${b.activeCount} homes like yours are for sale in this band now, from ${usd(b.lo)} to ${usd(b.hi)}.`,
   }
 }
@@ -122,7 +122,7 @@ export function buildEarlyExposureItem(extras: CmaExtras): ListingPlanItem | nul
   if (dom < BAND_DOM_HIGH_DAYS) return null
   return {
     trigger: `Active listings in this price band carry a median of ${dom} days on market.`,
-    action: `The median home in this band sits ${b.activeMedianDom} days. We front-load showings and feedback into the first two weeks, while the listing is new.`,
+    action: `We schedule showings in the first two weeks.`,
     basis: `Homes in this band have been listed a median of ${dom} days, from ${usd(b.lo)} to ${usd(b.hi)}.`,
   }
 }
@@ -230,6 +230,6 @@ export function buildListingPlan(args: {
 
   return {
     items,
-    source: 'Every line above traces to a figure already computed in this report.',
+    source: 'Figures already in this report.',
   }
 }

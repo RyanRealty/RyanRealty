@@ -1,8 +1,9 @@
-# Current — 2026-09-05 (CMA mannered prose stripped)
+# Current — 2026-09-05 (CMA mannered prose, second pass)
 
-Seller CMA copy is facts only: cover, why-list, next step, first-contact
-letter, and the locked mannered-prose test. 2465 7th needs a rebuild to
-pick up stored HTML. Fail-pile rebuild still running on the local xAI key.
+Seller CMA copy is facts only. Audit "meaning" lecture is gone at source and
+stripped at render so stored rows clean up without a rebuild. 2465 7th print
+HTML was re-rendered from render_args. Fail-pile rebuild still running on the
+local xAI key. Do not send letters.
 
 Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
 mix. Golf Track C stays on local `wt/golf-maps-20260903`.

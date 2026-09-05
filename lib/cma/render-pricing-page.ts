@@ -21,7 +21,7 @@ function saleToListPct(ratio: number | null | undefined): string | null {
   return dec(pct, 1)
 }
 
-function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string): string {
+function adjustmentRows(comps: CmaAdjustedComp[], noun: string): string {
   if (comps.length === 0) return ''
   // The Style column appears only when it moved a number on this document.
   const anyStory = comps.some((c) => (c.storyAdjustment ?? 0) !== 0)
@@ -41,7 +41,6 @@ function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string
     .join('')
   return `
   <h3 class="subhead">What each sale becomes on your house</h3>
-  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}.${anyStory ? ' Style adjusts a one-story sale against a two-story home, or the reverse.' : ''} As your ${noun} is that sale as if it were your ${noun}.</p>
   <table class="kv is-wide comps-adjust">
     <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th>${anyStory ? '<th class="v">Style</th>' : ''}<th class="v">As your ${noun}</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -53,22 +52,20 @@ function sellerNetBlock(p: CmaPricing): string {
   if (!n || n.knownCount === 0) return ''
   return `
   <h3 class="subhead">Close price and seller net</h3>
-  <p>Typical seller concessions in this set come off list before commission and closing costs. Net at list is on the seller-net chapter.</p>
   <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
 
-function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null, sizeNoun: string): string {
+function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null): string {
   const bits = [
     ...(searchBody ? [searchBody] : []),
-    `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your ${sizeNoun}.`,
+    `${n} closed ${n === 1 ? 'sale' : 'sales'}.`,
     'Closed MLS sales only. Automated estimates are not used.',
-    'The close is the contract price. Concessions come off after that.',
     // Derived from the ladders' own constants, not prose: the facts ladder
     // targets 8, the listings fallback targets 5, and hardcoding "eight" put a
     // claim on three documents their own build record contradicted (adversarial
     // verify 2026-08-27). The floor-of-both phrasing is true on every path.
-    `The search keeps going until at least ${Math.min(PRICING_TARGET_COMPS, TARGET_COMPS)} closed sales when the pool allows, and never prices on more than ${Math.max(PRICING_MAX_COMPS, MAX_COMPS)}.`,
-    'In the same neighborhood we drop a subdivision whose typical dollar per foot is more than 15 percent off yours. Across the city that cut is 30 percent.',
+    `At least ${Math.min(PRICING_TARGET_COMPS, TARGET_COMPS)} closed sales when the pool allows. Cap is ${Math.max(PRICING_MAX_COMPS, MAX_COMPS)}.`,
+    'A subdivision more than 15 percent off the subject dollar per foot is dropped. Across the city that cut is 30 percent.',
   ]
   if (market?.geoLabel) {
     bits.push(`The market read is ${market.geoLabel}.`)
@@ -98,10 +95,6 @@ export function pricingPage(input: {
   // Two different words: the TITLE reads "How this home is priced", the
   // possessive reads "as your house". subjectNoun gives 'home', never 'house'.
   const possessive = subjectPossessive(s)
-  // Land is adjusted to ACREAGE, not to living area. Telling the owner of a
-  // vacant parcel that comps were brought "to your living area" describes an
-  // adjustment the engine did not make.
-  const sizeNoun = noun === 'home' ? 'living area' : 'acreage'
   const pricedTitle = `How this ${noun} is priced`
   return {
     meta: `${esc(s.streetAddress)} · ${pricedTitle}`,
@@ -117,8 +110,8 @@ export function pricingPage(input: {
     <div class="stat"><div class="lbl">List high</div><div class="val">${usd(p.highEnd)}</div></div>
   </div>
   <h3 class="subhead">How we priced this</h3>
-  ${howWePriced(input.comps.length, input.market, search.body, sizeNoun)}
-  ${adjustmentRows(input.comps, possessive, sizeNoun)}
+  ${howWePriced(input.comps.length, input.market, search.body)}
+  ${adjustmentRows(input.comps, possessive)}
   ${sellerNetBlock(p)}
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
 `,

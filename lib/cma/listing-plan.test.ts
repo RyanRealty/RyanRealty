@@ -104,7 +104,7 @@ describe('buildCrowdedBandItem', () => {
     expect(item).not.toBeNull()
     expect(item!.trigger).toContain('10 homes are active')
     expect(item!.trigger).toContain('2 pending')
-    expect(item!.action).toContain('10 homes already listed')
+    expect(item!.action).toContain('We list at the supported number')
   })
 
   it('fires at the exact 2x boundary', () => {

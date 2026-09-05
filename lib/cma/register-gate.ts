@@ -113,13 +113,13 @@ export function renderRegisterShell(params: { slug: string; address: string | nu
     <h1>Your report on ${addr} is ready</h1>
     <p>Sign in to open the report.</p>
     <ul class="benefits">
-      <li>The recommended list for ${addr}, and why</li>
+      <li>The recommended list for ${addr}</li>
       <li>Who you are competing with at that price</li>
       <li>The sales that set the number</li>
     </ul>
     <a class="cta" href="${startHref}"><span class="g">G</span> Continue with Google</a>
-    ${params.clientName ? `<p class="who">Prepared for ${escapeHtml(params.clientName)}. Sign in to confirm it is you.</p>` : ''}
-    <p class="fine">Private report. We never share your information. <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a></p>
+    ${params.clientName ? `<p class="who">Prepared for ${escapeHtml(params.clientName)}.</p>` : ''}
+    <p class="fine">Private report. <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a></p>
   `,
   )
 }
@@ -136,8 +136,8 @@ export function renderConsentShell(params: {
   return shell(
     `Your report on ${addr} · Ryan Realty`,
     `
-    <h1>You're in, ${escapeHtml(params.viewerEmail)}</h1>
-    <p>Two optional choices before your report on ${addr} opens. Your report opens either way.</p>
+    <h1>Signed in as ${escapeHtml(params.viewerEmail)}</h1>
+    <p>Two optional choices.</p>
     <form method="POST" action="/api/cma/register" style="margin-top:18px">
       <input type="hidden" name="slug" value="${escapeHtml(params.slug)}">
       <label class="consent">

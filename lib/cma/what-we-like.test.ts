@@ -255,8 +255,8 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     expect(r.cappedTo).toBe(1645000)
     expect(x.needsReview).toBe(true)
     expect(x.reviewReason).toContain('$2,275,000')
-    expect(x.notes.join(' ')).toContain('3,394')
-    expect(x.notes.join(' ')).toContain('94.2%')
+    expect(x.notes.join(' ')).toContain('Your last listing asked $1,675,000 and did not sell.')
+    expect(x.notes.join(' ')).not.toContain('3,394')
   })
 
   it('the calibration constants match the committed research artifact', async () => {

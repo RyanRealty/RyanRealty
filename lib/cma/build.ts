@@ -681,7 +681,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // 4.7. LAST-LISTING REVIEW (Matt 2026-08-05, superseding the 2026-07-14
     // separate audit doc): there is ONE CMA document. When the subject's most
     // recent MLS cycle came off the market without selling, the doc gains a
-    // "your last listing — what happened and our take" section built from the
+    // "your last listing" section built from the
     // same deterministic failure analysis. No separate docType decides this —
     // the LISTING HISTORY does, so an expired subject kicked off from any door
     // gets the review and a clean-history subject never does. (The legacy

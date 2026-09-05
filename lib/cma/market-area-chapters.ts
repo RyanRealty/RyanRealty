@@ -142,7 +142,6 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
       <div class="in wide">
         <div class="kick r">This market</div>
         <h2 class="h r">${esc(area!.label)}</h2>
-        <p class="lede r">The sales we kept, against what is for sale, under contract, expired, and closed. Same product class.</p>
         <div class="r">${status}</div>
       </div>
     </section>`)
@@ -204,7 +203,6 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
       meta: `${esc(a.subject.streetAddress)} · Market area`,
       toc: 'This market',
       body: `<h2 class="section">${esc(area.label)}</h2>
-      <p>The sales we kept, against what is for sale, under contract, expired, and closed. Same product class.</p>
       ${status}`,
     })
   }

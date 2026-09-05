@@ -4,6 +4,7 @@ import { composeCmaBottomWhyList, composeCmaCoverIntro, emptyFsboCmaMergeFacts }
 import { whyThisListPrice } from '@/lib/cma/client-facing'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
+import { renderConsentShell, renderRegisterShell } from '@/lib/cma/register-gate'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 /**
@@ -11,7 +12,7 @@ import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from '@/lib/c
  * soften the sentence before it. Facts stay. Interpretation goes.
  */
 const MANNERED =
-  /full picture now|no pressure either way|room to negotiate|strategic list|matches what buyers|Lenders order appraisals|We spent time on why|wish you the best|boutique brokerage|the better path for this sale|all-time low|Under each one is our take|It is not a second list price|You have the full picture|left on the table|gets sharper in both directions|One quick sign-in confirms/i
+  /full picture now|no pressure either way|room to negotiate|strategic list|matches what buyers|Lenders order appraisals|We spent time on why|wish you the best|boutique brokerage|the better path for this sale|all-time low|Under each one is our take|It is not a second list price|You have the full picture|left on the table|gets sharper in both directions|One quick sign-in confirms|narrows the pool|teaches buyers to wait|stale listings tend|inherits the history|gives buyers less reason|Questions on any line|and our take|Call anytime|It covers the sales|If you want to see|Sign in to confirm|We have not seen inside|each adjusted for when it sold|The close is the contract price|so buyers compare this home|rather than on price alone|while the listing is new|shifts the relist conversation|not unrecoverable|sends no new signal|to bracket the range|how your ask sits against|It comes to \w+'s phone|Size and price against this home|The sales we kept, against what is for sale|Worth a planning conversation/i
 
 const subject: CmaSubject = {
   listingKey: null,
@@ -197,5 +198,20 @@ describe('CMA seller copy has no mannered prose', () => {
       'https://ryan-realty.com',
     )
     assertPlain('immersive-html', immersive)
+
+    assertPlain(
+      'register-shell',
+      renderRegisterShell({ slug: 'cma-x', address: '2465 7th', clientName: 'Blair Auld' }),
+    )
+    assertPlain(
+      'consent-shell',
+      renderConsentShell({
+        slug: 'cma-x',
+        address: '2465 7th',
+        viewerEmail: 'blair@example.com',
+        smsConsentText: 'I agree to receive text messages from Ryan Realty',
+        claiming: false,
+      }),
+    )
   })
 })
