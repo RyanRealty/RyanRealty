@@ -175,6 +175,7 @@
   "sectionOrder": [
     "V3SectionTracker",
     "MetadataBlock",
+    "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading",
     "PlaceFaceStrip",

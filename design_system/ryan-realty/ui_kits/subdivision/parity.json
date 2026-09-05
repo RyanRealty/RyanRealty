@@ -113,8 +113,7 @@
   "sectionOrder": [
     "MetadataBlock",
     "V3SectionTracker",
-    "V3Breadcrumb",
-    "V3Heading #overview ({Name} homes for sale) + PlaceFaceStrip",
+    "V3Heading #overview (photograph owns the fold: breadcrumb, H1, leftover face on the still)",
     "V3Atlas #atlas -- the living map scoped to the subdivision (renders only with a recorded boundary and at least one listing inside it)",
     "PlaceTypeSlider (horizontal leftover type cards)",
     "PlaceSplitView #homes",

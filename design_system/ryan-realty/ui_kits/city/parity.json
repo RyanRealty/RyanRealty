@@ -153,6 +153,7 @@
     "CityPageTracker",
     "V3SectionTracker",
     "MetadataBlock",
+    "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading (H1 `{City} homes for sale`)",
     "PlaceFaceStrip (leftover city grain)",
