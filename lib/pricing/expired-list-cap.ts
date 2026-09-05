@@ -57,7 +57,7 @@ export function capListBandToFailedAsk(
   if (cap == null) return { ...band, capped: false, failedAsk: null }
   const conservative = Math.min(band.conservative, cap)
   let recommended = Math.min(band.recommended, cap)
-  let highEnd = Math.min(band.highEnd, cap)
+  const highEnd = Math.min(band.highEnd, cap)
   if (recommended > highEnd) recommended = highEnd
   if (conservative > recommended) {
     return {
