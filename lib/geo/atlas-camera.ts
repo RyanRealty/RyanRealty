@@ -4,7 +4,8 @@
  */
 export type AtlasCam = { k: number; x: number; y: number }
 
-export const ATLAS_K_MIN = 1
+/** Home fit is k=1. Below 1 the place shrinks in the frame so the visitor can zoom out. */
+export const ATLAS_K_MIN = 0.5
 /** CSS scale past this rasterizes the map into unreadable blocks. */
 export const ATLAS_K_MAX = 5
 
@@ -12,12 +13,14 @@ export const ATLAS_CAM_HOME: AtlasCam = { k: 1, x: 0, y: 0 }
 
 export function clampCam(cam: AtlasCam, w: number, h: number): AtlasCam {
   const k = Math.min(ATLAS_K_MAX, Math.max(ATLAS_K_MIN, cam.k))
-  const minX = w - w * k
-  const minY = h - h * k
+  const worldW = w * k
+  const worldH = h * k
+  const clampAxis = (span: number, world: number, v: number) =>
+    world >= span ? Math.min(0, Math.max(span - world, v)) : Math.min(span - world, Math.max(0, v))
   return {
     k,
-    x: Math.min(0, Math.max(minX, cam.x)),
-    y: Math.min(0, Math.max(minY, cam.y)),
+    x: clampAxis(w, worldW, cam.x),
+    y: clampAxis(h, worldH, cam.y),
   }
 }
 

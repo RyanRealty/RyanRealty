@@ -265,7 +265,14 @@
 }
 
 .v3-atlas__zoom {
-  display: none;
+  position: absolute;
+  right: var(--v3-space-sm);
+  bottom: var(--v3-space-sm);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  border: var(--v3-rule-hairline);
+  background: var(--v3-surface);
 }
 
 .v3-atlas__zoom-btn {
@@ -290,6 +297,10 @@
 
 .v3-atlas__zoom-btn:not(:disabled):hover {
   background: color-mix(in srgb, var(--v3-navy) 6%, var(--v3-cream));
+}
+
+.v3-atlas__zoom-btn + .v3-atlas__zoom-btn {
+  border-top: var(--v3-rule-hairline);
 }
 
 .v3-atlas__svg {

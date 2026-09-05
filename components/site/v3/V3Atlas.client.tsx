@@ -58,6 +58,8 @@ import { recordFrame } from '@/lib/geo/record-frame'
 import { decodeBasemapFeature, type Basemap, type BasemapFeature } from '@/lib/geo/basemap'
 import {
   ATLAS_CAM_HOME,
+  ATLAS_K_MAX,
+  ATLAS_K_MIN,
   panBy,
   publishAtlasView,
   screenToWorld,
@@ -471,7 +473,9 @@ export function V3Atlas({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
       const r = el.getBoundingClientRect()
-      const factor = e.deltaY < 0 ? 1.18 : 1 / 1.18
+      const dy = e.deltaY
+      if (dy === 0) return
+      const factor = e.ctrlKey ? Math.exp(-dy * 0.01) : dy < 0 ? 1.18 : 1 / 1.18
       setCam((c) => zoomAt(c, e.clientX - r.left, e.clientY - r.top, factor, r.width, r.height))
     }
     el.addEventListener('wheel', onWheel, { passive: false })
@@ -764,6 +768,13 @@ export function V3Atlas({
     const r = el.getBoundingClientRect()
     return { px: e.clientX - r.left, py: e.clientY - r.top }
   }
+
+  const zoomBy = useCallback((factor: number) => {
+    const el = stageRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    setCam((c) => zoomAt(c, r.width / 2, r.height / 2, factor, r.width, r.height))
+  }, [])
 
   const onMove = useCallback(
     (e: React.PointerEvent) => {
@@ -1194,6 +1205,26 @@ export function V3Atlas({
 
         <div className="v3-atlas__body">
           <div className="v3-atlas__frame">
+            <div className="v3-atlas__zoom" role="group" aria-label="Map zoom">
+              <button
+                type="button"
+                className="v3-atlas__zoom-btn"
+                aria-label="Zoom in"
+                disabled={cam.k >= ATLAS_K_MAX - 1e-6}
+                onClick={() => zoomBy(1.18)}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="v3-atlas__zoom-btn"
+                aria-label="Zoom out"
+                disabled={cam.k <= ATLAS_K_MIN + 1e-6}
+                onClick={() => zoomBy(1 / 1.18)}
+              >
+                −
+              </button>
+            </div>
             <div
               ref={stageRef}
               className="v3-atlas__stage"

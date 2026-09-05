@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { makeProjection } from './project-svg'
 import {
   ATLAS_CAM_HOME,
+  ATLAS_K_MIN,
   clampCam,
   fitRect,
   inAtlasView,
@@ -15,6 +16,14 @@ import {
 describe('atlas-camera', () => {
   it('at k=1 pan is a no-op: the map cannot leave the stage', () => {
     expect(panBy(ATLAS_CAM_HOME, 40, -20, 800, 500)).toEqual(ATLAS_CAM_HOME)
+  })
+
+  it('zoom out from home is allowed, and stops at the floor', () => {
+    const out = zoomAt(ATLAS_CAM_HOME, 400, 250, 1 / 1.18, 800, 500)
+    expect(out.k).toBeLessThan(1)
+    expect(out.k).toBeGreaterThanOrEqual(ATLAS_K_MIN)
+    const floor = zoomAt(ATLAS_CAM_HOME, 400, 250, 0.01, 800, 500)
+    expect(floor.k).toBe(ATLAS_K_MIN)
   })
 
   it('zoom-at keeps the point under the cursor', () => {
@@ -36,6 +45,15 @@ describe('atlas-camera', () => {
   it('fitRect never blows past ATLAS_K_MAX, so a small place stays readable', () => {
     const cam = fitRect({ x0: 390, y0: 240, x1: 410, y1: 260 }, 800, 500)
     expect(cam.k).toBeLessThanOrEqual(5)
+  })
+
+  it('zoom-out past home still keeps the map on the stage', () => {
+    const cam = zoomAt(ATLAS_CAM_HOME, 400, 250, 0.5, 800, 500)
+    expect(cam.k).toBe(ATLAS_K_MIN)
+    expect(cam.x).toBeGreaterThanOrEqual(0)
+    expect(cam.y).toBeGreaterThanOrEqual(0)
+    expect(cam.x + 800 * cam.k).toBeLessThanOrEqual(800)
+    expect(cam.y + 500 * cam.k).toBeLessThanOrEqual(500)
   })
 
   it('clamp keeps the stage covered after a wild pan', () => {
