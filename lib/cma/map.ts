@@ -12,6 +12,7 @@ import { getBoundaryGeoJSON } from '@/lib/data'
 import { buildGoogleStaticMapUrl, type CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry } from '@/lib/cma/map-overlay'
 import { describeCompSearch } from '@/lib/pricing/search-story'
+import { us97IntersectsDisk } from '@/lib/pricing/highway-cross'
 import { slugify } from '@/lib/slug'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 
@@ -60,7 +61,11 @@ export async function buildCmaMapDataUri(
   if (
     story.radiusMiles != null &&
     subject.latitude != null &&
-    subject.longitude != null
+    subject.longitude != null &&
+    !us97IntersectsDisk(
+      { lat: subject.latitude, lng: subject.longitude },
+      story.radiusMiles,
+    )
   ) {
     const circle = pathParam(
       '0x10274299',

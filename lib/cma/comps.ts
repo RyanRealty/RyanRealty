@@ -26,9 +26,9 @@
  * vs in-town lot) is never comparable regardless of distance. Custom / new
  * subjects add year-built and quality (19365 Rim View: do not pad TARGET_COMPS
  * with 1970s–2000 stock). Acreage subjects add remarks infrastructure
- * (irrigation, horse property, barns). US-97 / Parkway / Deschutes stays
- * lib/pricing/divides.ts on every rung, including rural — unmapped rural
- * points fail open there; we do not invent a second road list.
+ * (irrigation, horse property, barns). US-97 / Parkway / Deschutes: Bend
+ * neighborhood banks in divides.ts plus the TIGER centerline so unmapped
+ * ground (Redmond, Tumalo) cannot fail open across 97.
  */
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
@@ -63,6 +63,7 @@ import {
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
+import { crossesUs97 } from '@/lib/pricing/highway-cross'
 import {
   customBathCompatible,
   customLotCompatible,
@@ -478,16 +479,17 @@ export async function selectComps(
       }
 
       // HARD EXCLUSION at every tier (Never cross US-97 / Bend Parkway /
-      // Deschutes — CMA_SUNSTONE_CONTRACT). The facts ladder has carried this
-      // cut since divides.ts shipped; this FALLBACK ladder silently dropped it,
-      // which is defect D5: 828 Florida (west of the Parkway) was priced from
-      // Archie Briggs / Star Ridge / Rimrock sales across it, $481/sqft against
-      // an Old Bend subject. Both sides must resolve to a mapped bank; an
-      // unmapped point fails open, same as Path A.
+      // Deschutes — CMA_SUNSTONE_CONTRACT). Neighborhood banks cover the Bend
+      // GIS mesh. The TIGER centerline covers unmapped ground (Redmond,
+      // Tumalo) so both-unmapped no longer fails open across 97.
       if (
         crossesMajorDivide(
           subjectArea,
           resolveMarketArea(comp.latitude, comp.longitude),
+        ) ||
+        crossesUs97(
+          { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+          { lat: comp.latitude ?? NaN, lng: comp.longitude ?? NaN },
         ) ||
         (!customOrNew &&
           ruralAcreage &&

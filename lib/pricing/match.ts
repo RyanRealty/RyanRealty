@@ -6,6 +6,7 @@
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
+import { crossesUs97 } from '@/lib/pricing/highway-cross'
 import {
   classifyAgeBand,
   customBathCompatible,
@@ -203,6 +204,14 @@ function applesOk(
   if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
   if (!sewerCompatible(subject.sewerClass, sale.sewerClass)) return false
   if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
+  if (
+    crossesUs97(
+      { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+      { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
+    )
+  ) {
+    return false
+  }
   // Unmapped rural vs a mapped Parkway/Deschutes bank: keep for ordinary
   // acreage. Custom/new outside the Bend GIS mesh (Rim View / North Rim) must
   // still reach year-quality peers that land inside Awbrey Butte — inventing a

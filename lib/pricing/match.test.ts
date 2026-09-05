@@ -933,7 +933,7 @@ describe('walkPricingLadder', () => {
       lotAcres: 2,
       publicRemarks: 'Custom built home.',
       latitude: 44.09,
-      longitude: -121.29,
+      longitude: -121.33,
       marketArea: 'bend-north-rim',
       closeDate: '2026-06-01',
     })

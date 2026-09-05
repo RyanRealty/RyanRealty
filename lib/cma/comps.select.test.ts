@@ -221,6 +221,33 @@ describe('selectComps — the fallback ladder carries the divide cut (D5)', () =
     const sel = await selectComps(subject())
     expect(sel.comps.length).toBeGreaterThan(0)
   })
+
+  it('blocks a Redmond sale across US-97 when both sides are unmapped (D11)', async () => {
+    // Diamond Bar Ranch vs The Meadows. divides.ts fails open; the centerline must not.
+    divideSpy.mockReturnValue(false)
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'meadows',
+        StreetNumber: '757',
+        StreetName: 'Maple',
+        City: 'Redmond',
+        SubdivisionName: 'The Meadows',
+        Latitude: 44.292272,
+        Longitude: -121.175827,
+      }),
+    ])
+    const sel = await selectComps(
+      subject({
+        streetAddress: '2465 7th',
+        city: 'Redmond',
+        subdivision: 'Diamond Bar Ranch',
+        latitude: 44.298938,
+        longitude: -121.162046,
+      }),
+    )
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.excluded_totals.crossed_divide).toBeGreaterThan(0)
+  })
 })
 
 describe('selectComps — a condo building is not "self" (the 363 Bluff starvation)', () => {
