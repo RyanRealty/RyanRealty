@@ -16,6 +16,12 @@ function rival(over: Partial<CmaBandRival> = {}): CmaBandRival {
     photoUrl: over.photoUrl ?? null,
     latitude: over.latitude ?? 44.27,
     longitude: over.longitude ?? -121.17,
+    beds: over.beds ?? 3,
+    baths: over.baths ?? 2,
+    sqft: over.sqft ?? 1280,
+    yearBuilt: over.yearBuilt ?? 1974,
+    lotAcres: over.lotAcres ?? 0.16,
+    propertySubType: over.propertySubType ?? 'Single Family Residence',
   }
 }
 
@@ -28,8 +34,8 @@ describe('rivalAddress', () => {
 })
 
 describe('pickBandRivals', () => {
-  it('keeps eight actives and eight pendings, nearest first', () => {
-    const actives = Array.from({ length: 12 }, (_, i) =>
+  it('keeps the nearest homes, up to the cap, actives and pendings separately', () => {
+    const actives = Array.from({ length: 24 }, (_, i) =>
       rival({
         listingKey: `A${i}`,
         address: `${100 + i} Active`,
@@ -48,8 +54,8 @@ describe('pickBandRivals', () => {
       }),
     )
     const picked = pickBandRivals([...actives, ...pendings], { latitude: 44.27, longitude: -121.17 })
-    expect(picked.filter((r) => r.status === 'Active')).toHaveLength(8)
-    expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(8)
+    expect(picked.filter((r) => r.status === 'Active')).toHaveLength(20)
+    expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(10)
     expect(picked[0]?.address).toBe('100 Active')
   })
 
@@ -75,6 +81,46 @@ describe('renderBandRivalsHtml', () => {
     expect(html).toContain('123 Heritage')
     expect(html).toContain('88 Ranch')
     expect(html).toContain('$469,000')
+    expect(html).toContain('rival-list')
+    expect(html).toContain('rival-row')
+    expect(html).not.toContain('rival-grid')
     expect(html).not.toMatch(/Supabase|not the ZIP|confidence/i)
+  })
+
+  it('puts house stats next to a thumbnail and measures them against the subject', () => {
+    const html = renderBandRivalsHtml({
+      city: 'Redmond',
+      lo: 353000,
+      hi: 431000,
+      activeCount: 29,
+      pendingCount: 12,
+      rivals: [
+        rival({
+          address: '825 Poplar',
+          listPrice: 417250,
+          beds: 3,
+          baths: 2,
+          sqft: 1280,
+          yearBuilt: 1974,
+          daysOnMarket: 0,
+        }),
+      ],
+      subject: {
+        beds: 3,
+        baths: 2,
+        sqft: 1440,
+        yearBuilt: 2004,
+        lotAcres: 0.14,
+        recommendedList: 392000,
+        latitude: 44.27,
+        longitude: -121.17,
+      },
+    })
+    expect(html).toContain('825 Poplar')
+    expect(html).toContain('3 bd')
+    expect(html).toContain('1,280 sqft')
+    expect(html).toContain('$25,250 above the recommended list')
+    expect(html).toContain('160 sqft smaller')
+    expect(html).toContain('0 days on market')
   })
 })

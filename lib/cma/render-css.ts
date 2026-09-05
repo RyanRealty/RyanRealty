@@ -237,6 +237,19 @@ export function cmaStylesheet(siteUrl: string): string {
     border-radius: 0;
   }
   .page-cover .vb-detail { display: none; }
+  /* The product bar is a cream slab with inline colors. On the photo cover that
+     reads as a white box over the house. Keep the facts, drop the slab. */
+  .page-cover .cma-product-bar {
+    background: transparent !important;
+    color: rgba(250, 248, 244, 0.86) !important;
+    border-top: 1px solid rgba(250, 248, 244, 0.28) !important;
+    margin: 12px 0 0;
+    padding: 10px 0 0;
+  }
+  .page-cover .cma-product-bar a { color: var(--cream); }
+  .cma-product-bar { font-size: 11px; line-height: 1.45; }
+  .product-bar-item { margin: 0 0 3px; }
+  .product-bar-k { font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 9px; margin-right: 8px; opacity: 0.7; }
   .page-cover .vb-range {
     max-width: 36em;
   }

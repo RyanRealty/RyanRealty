@@ -439,6 +439,16 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
       activeCount: b.activeCount,
       pendingCount: b.pendingCount,
       rivals,
+      subject: {
+        beds: a.subject.beds,
+        baths: a.subject.baths,
+        sqft: a.subject.sqft,
+        yearBuilt: a.subject.yearBuilt,
+        lotAcres: a.subject.lotAcres,
+        recommendedList: a.pricing.recommended,
+        latitude: a.subject.latitude,
+        longitude: a.subject.longitude,
+      },
     }),
   }
 }

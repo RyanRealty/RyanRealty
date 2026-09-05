@@ -7,7 +7,7 @@ import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 
 const esc = escapeHtml
 
-export const BAND_RIVAL_CAP = 8
+export const BAND_RIVAL_CAP = 20
 
 export type CmaBandRival = {
   listingKey: string
@@ -18,7 +18,23 @@ export type CmaBandRival = {
   photoUrl: string | null
   latitude: number | null
   longitude: number | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  yearBuilt?: number | null
+  lotAcres?: number | null
   propertySubType?: string | null
+}
+
+export type CmaBandSubject = {
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  yearBuilt: number | null
+  lotAcres: number | null
+  recommendedList: number | null
+  latitude: number | null
+  longitude: number | null
 }
 
 export type BandStreetRow = {
@@ -61,20 +77,96 @@ export function pickBandRivals(
   return [...actives, ...pendings]
 }
 
-function rivalCard(r: CmaBandRival): string {
-  const photo = sparkPhotoAt(r.photoUrl, '640x480')
+function milesBetween(
+  a: { latitude: number | null; longitude: number | null },
+  b: { latitude: number | null; longitude: number | null },
+): number | null {
+  if (
+    a.latitude == null ||
+    a.longitude == null ||
+    b.latitude == null ||
+    b.longitude == null ||
+    !Number.isFinite(a.latitude) ||
+    !Number.isFinite(a.longitude) ||
+    !Number.isFinite(b.latitude) ||
+    !Number.isFinite(b.longitude)
+  ) {
+    return null
+  }
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const R = 3958.7613
+  const dLat = toRad(b.latitude - a.latitude)
+  const dLng = toRad(b.longitude - a.longitude)
+  const lat1 = toRad(a.latitude)
+  const lat2 = toRad(b.latitude)
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)))
+}
+
+function joinFacts(parts: Array<string | null | undefined>): string | null {
+  const kept = parts.filter((p): p is string => Boolean(p && p.trim()))
+  return kept.length ? kept.join(' · ') : null
+}
+
+export function rivalFactsLine(r: CmaBandRival): string | null {
+  return joinFacts([
+    r.beds != null ? `${int(r.beds)} bd` : null,
+    r.baths != null ? `${r.baths % 1 === 0 ? int(r.baths) : r.baths.toFixed(1)} ba` : null,
+    r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
+    r.yearBuilt != null ? String(r.yearBuilt) : null,
+    r.lotAcres != null && r.lotAcres > 0 ? `${r.lotAcres.toFixed(2)} ac` : null,
+    r.sqft != null && r.sqft > 0 && r.listPrice > 0
+      ? `${usd(Math.round(r.listPrice / r.sqft))}/sf`
+      : null,
+  ])
+}
+
+export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | null | undefined): string | null {
+  if (!subject) return null
+  const bits: string[] = []
+  if (subject.recommendedList != null && subject.recommendedList > 0) {
+    const d = Math.round(r.listPrice - subject.recommendedList)
+    if (d === 0) bits.push('same as the recommended list')
+    else if (d > 0) bits.push(`${usd(d)} above the recommended list`)
+    else bits.push(`${usd(-d)} below the recommended list`)
+  }
+  if (r.sqft != null && r.sqft > 0 && subject.sqft != null && subject.sqft > 0) {
+    const d = Math.round(r.sqft - subject.sqft)
+    if (d === 0) bits.push('same size')
+    else if (d > 0) bits.push(`${int(d)} sqft larger`)
+    else bits.push(`${int(-d)} sqft smaller`)
+  }
+  if (r.yearBuilt != null && subject.yearBuilt != null) {
+    const d = r.yearBuilt - subject.yearBuilt
+    if (d === 0) bits.push('same year')
+    else if (d > 0) bits.push(`${int(d)} year${Math.abs(d) === 1 ? '' : 's'} newer`)
+    else bits.push(`${int(-d)} year${Math.abs(d) === 1 ? '' : 's'} older`)
+  }
+  const mi = milesBetween(r, subject)
+  if (mi != null && mi >= 0.05) {
+    bits.push(mi >= 10 ? `${int(mi)} mi` : `${mi.toFixed(1)} mi`)
+  }
+  return bits.length ? bits.join(' · ') : null
+}
+
+function rivalRow(r: CmaBandRival, subject: CmaBandSubject | null | undefined): string {
+  const photo = sparkPhotoAt(r.photoUrl, '320x320')
   const img = photo
     ? `<img class="rival-ph" src="${esc(photo)}" alt="${esc(r.address)}" />`
     : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
+  const facts = rivalFactsLine(r)
+  const vs = rivalVsSubjectLine(r, subject)
   const days =
     r.daysOnMarket != null && r.daysOnMarket >= 0 ? `${int(r.daysOnMarket)} days on market` : null
-  return `<article class="rival-card">
+  const meta = joinFacts([days, vs])
+  return `<article class="rival-row">
     ${img}
     <div class="rival-body">
       <div class="rival-addr">${esc(r.address)}</div>
-      <div class="rival-ask">${usd(r.listPrice)}</div>
-      ${days ? `<div class="rival-meta">${esc(days)}</div>` : ''}
+      ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
+      ${meta ? `<div class="rival-meta">${esc(meta)}</div>` : ''}
     </div>
+    <div class="rival-ask">${usd(r.listPrice)}</div>
   </article>`
 }
 
@@ -85,11 +177,11 @@ export function renderBandRivalsHtml(input: {
   activeCount: number
   pendingCount: number
   rivals: readonly CmaBandRival[]
+  subject?: CmaBandSubject | null
 }): string {
   const actives = input.rivals.filter((r) => r.status === 'Active')
   const pendings = input.rivals.filter((r) => r.status === 'Pending')
-  const activeCards = actives.map(rivalCard).join('')
-  const pendingCards = pendings.map(rivalCard).join('')
+  const rows = (list: readonly CmaBandRival[]) => list.map((r) => rivalRow(r, input.subject)).join('')
   const activeLead =
     actives.length > 0
       ? `${int(input.activeCount)} home${input.activeCount === 1 ? '' : 's'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`
@@ -98,17 +190,21 @@ export function renderBandRivalsHtml(input: {
     input.pendingCount > 0
       ? `${int(input.pendingCount)} under contract in the same band.`
       : 'None under contract in this band right now.'
+  const shown =
+    actives.length + pendings.length < input.activeCount + input.pendingCount
+      ? ` Nearest ${int(actives.length + pendings.length)} shown, with size and price against this home.`
+      : ' Size and price against this home.'
   return `
   <h2 class="section">Who you are competing with at this price</h2>
-  <p>${esc(activeLead)} ${esc(pendingLead)}</p>
+  <p>${esc(activeLead)} ${esc(pendingLead)}${esc(shown)}</p>
   ${
     actives.length > 0
-      ? `<h3 class="subhead">For sale now</h3><div class="rival-grid">${activeCards}</div>`
+      ? `<h3 class="subhead">For sale now</h3><div class="rival-list">${rows(actives)}</div>`
       : ''
   }
   ${
     pendings.length > 0
-      ? `<h3 class="subhead">Under contract</h3><div class="rival-grid">${pendingCards}</div>`
+      ? `<h3 class="subhead">Under contract</h3><div class="rival-list">${rows(pendings)}</div>`
       : ''
   }`
 }
@@ -120,10 +216,11 @@ export function renderBandRivalsSceneHtml(input: {
   activeCount: number
   pendingCount: number
   rivals: readonly CmaBandRival[]
+  subject?: CmaBandSubject | null
 }): string {
   const actives = input.rivals.filter((r) => r.status === 'Active')
   const pendings = input.rivals.filter((r) => r.status === 'Pending')
-  const cards = (rows: readonly CmaBandRival[]) => rows.map(rivalCard).join('')
+  const rows = (list: readonly CmaBandRival[]) => list.map((r) => rivalRow(r, input.subject)).join('')
   const headline =
     actives.length > 0
       ? `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}`
@@ -133,9 +230,9 @@ export function renderBandRivalsSceneHtml(input: {
     <div class="in wide">
       <div class="kick r">At this price</div>
       <h2 class="h r">${esc(headline)}</h2>
-      <p class="lede r">${int(input.pendingCount)} under contract in the same band.</p>
-      ${actives.length ? `<h3 class="sub r">For sale now</h3><div class="rival-grid r">${cards(actives)}</div>` : ''}
-      ${pendings.length ? `<h3 class="sub r">Under contract</h3><div class="rival-grid r">${cards(pendings)}</div>` : ''}
+      <p class="lede r">${int(input.pendingCount)} under contract in the same band. Size and price against this home.</p>
+      ${actives.length ? `<h3 class="sub r">For sale now</h3><div class="rival-list r">${rows(actives)}</div>` : ''}
+      ${pendings.length ? `<h3 class="sub r">Under contract</h3><div class="rival-list r">${rows(pendings)}</div>` : ''}
     </div>
   </section>`
 }

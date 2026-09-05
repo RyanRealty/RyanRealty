@@ -87,15 +87,16 @@ table.comp-matrix thead th:first-child,table.comp-matrix tbody th{text-align:lef
 table.comp-matrix td.is-diff{font-weight:600}
 h3.subhead{font-size:17px;font-weight:600;margin:26px 0 8px}
 h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:20px 0 6px}
-.rival-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
-.rival-card{background:var(--cream);border:1px solid var(--ink12);overflow:hidden}
-.sc-navy .rival-card{background:rgba(250,248,244,.06);border-color:rgba(250,248,244,.14)}
-.rival-ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
-.rival-ph.is-empty{min-height:96px;background:var(--navy)}
-.rival-body{padding:14px 16px 16px}
+.rival-list{margin-top:8px;border-top:1px solid var(--ink12)}
+.rival-row{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--ink12)}
+.sc-navy .rival-list,.sc-navy .rival-row{border-color:rgba(250,248,244,.14)}
+.rival-ph{width:72px;height:72px;object-fit:cover;display:block;background:var(--navy)}
+.rival-ph.is-empty{min-height:72px}
+.rival-body{min-width:0}
 .rival-addr{font-size:16px;font-weight:600}
-.rival-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;margin-top:6px;font-variant-numeric:tabular-nums}
-.rival-meta{font-size:13px;opacity:.7;margin-top:4px}
+.rival-facts{font-size:13px;font-variant-numeric:tabular-nums;margin-top:3px;opacity:.85}
+.rival-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rival-meta{font-size:13px;opacity:.7;margin-top:3px}
 .pin-map-wrap{margin:12px 0 20px}
 .pin-map{width:100%;height:auto;display:block;border:1px solid var(--ink12)}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}

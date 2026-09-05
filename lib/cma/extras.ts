@@ -223,6 +223,11 @@ export function computeFinancing(rows: CmaClosedSkinnyRow[], city: string, since
   }
 }
 
+function finiteOrNull(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBandRival | null {
   const address = rivalAddress(row)
   const listPrice = Number(row.ListPrice)
@@ -232,10 +237,15 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
     address,
     listPrice,
     status,
-    daysOnMarket: row.DaysOnMarket,
+    daysOnMarket: daysOnMarketOf(row.OnMarketDate) ?? (Number.isFinite(Number(row.DaysOnMarket)) ? Number(row.DaysOnMarket) : null),
     photoUrl: row.PhotoURL,
     latitude: row.Latitude,
     longitude: row.Longitude,
+    beds: finiteOrNull(row.BedroomsTotal),
+    baths: finiteOrNull(row.BathroomsTotal),
+    sqft: finiteOrNull(row.TotalLivingAreaSqFt),
+    yearBuilt: finiteOrNull(row.year_built),
+    lotAcres: finiteOrNull(row.lot_size_acres),
     propertySubType: row.property_sub_type ?? null,
   }
 }

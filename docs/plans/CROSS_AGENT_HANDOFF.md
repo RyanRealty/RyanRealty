@@ -1,4 +1,15 @@
-# Current — 2026-09-05 (CMA first-build audit)
+# Current — 2026-09-05 (CMA competition list)
+
+Competition at this price is a thumbnail list with beds/baths/sqft/year/lot
+and vs-subject price/size/year/distance. Cover product bar no longer a cream
+slab on the photo. Fail-pile rebuild still running on the local xAI key.
+
+Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
+mix. Golf Track C stays on local `wt/golf-maps-20260903`.
+
+---
+
+# Previous — 2026-09-05 (CMA first-build audit)
 
 Judge/audit run on the local xAI key (`lib/grok`), not Anthropic. Failed last
 list is stamped before the audit. Fabricated judge prose is replaced with an
