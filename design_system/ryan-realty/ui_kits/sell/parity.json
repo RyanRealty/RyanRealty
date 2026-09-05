@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Stage",
-      "section": "Pattern 4, opens the page. headingLevel 1, height compact so H1 clears chrome and the address step shares the first 390 viewport. H1 is the seo-shell head term. Quiet eyebrow is 3% listing plan. The primitive requires an action prop. The page hides it (sell-stage-poster) so the filled primary is the capture submit.",
+      "section": "Pattern 4, opens the page. headingLevel 1, height tall. H1 is the seo-shell head term. Quiet eyebrow is 3% listing plan. SellCapture + SellValueForm sit on the photograph as the Stage children. The primitive requires an action prop. The page hides it (sell-stage-poster) so the filled primary is the capture submit.",
       "blocking": true
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 2 (Stage already emitted the h1). Bend pulse figures, each a door, under the Bend pulse trace. Ask is ghost Value my home.",
+      "section": "Pattern 1, level 2 (Stage already emitted the h1). Three lead Bend figures (median, homes for sale, months of supply) with foldAfter=3 for the long tail. Ask is ghost Value my home.",
       "blocking": true
     },
     {
@@ -35,8 +35,12 @@
       "blocking": true
     },
     {
+      "name": "V3Proof",
+      "section": "Live Google reviews. Same getReviews read the homepage and /reviews use. Compact band, record=false."
+    },
+    {
       "name": "V3Quiet",
-      "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, verbatim Google reviews, outbound doors including Value my home and valuationHref('/sell').",
+      "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, outbound doors including Value my home and valuationHref('/sell').",
       "blocking": true
     },
     {
@@ -104,11 +108,11 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Stage",
-    "SellCapture (SellValueForm)",
+    "V3Stage (SellCapture SellValueForm on the photograph)",
     "V3Instrument (Bend pulse) or V3Quiet empty",
-    "V3Sheet (3% plan)",
-    "V3Quiet (FAQ, proof, doors)",
+    "V3Sheet #listing-plan",
+    "V3Proof #reviews when live Google reviews exist",
+    "V3Quiet #selling-questions (FAQ, track record, doors)",
     "V3Footer"
   ],
   "openDefects": {

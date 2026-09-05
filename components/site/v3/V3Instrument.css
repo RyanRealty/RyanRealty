@@ -134,7 +134,9 @@
 
 @media (min-width: 48rem) {
   .v3.v3-instrument .v3-instrument__figures {
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    /* 10rem was too tight for a list price in display numerals: $950,000
+       ran into the next figure (sell page, 2026-09-04). */
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   }
 
   .v3.v3-instrument .v3-instrument__figures--single {

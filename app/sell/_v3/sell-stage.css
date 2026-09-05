@@ -5,3 +5,56 @@
 .v3.v3-stage.sell-stage-poster .v3-stage-copy .v3-btn {
   display: none;
 }
+
+/* The ask sits on the photograph as a cream slab, not in a cream void
+   under it. Tokens only. 44px controls. */
+.v3.v3-stage .sell-stage-ask {
+  width: min(100%, var(--v3-measure-text));
+  padding: var(--v3-space-md);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+.v3.v3-stage .sell-stage-ask__head {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  margin-bottom: var(--v3-space-sm);
+}
+
+.v3.v3-stage .sell-stage-ask form {
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+.v3.v3-stage .sell-stage-ask input,
+.v3.v3-stage .sell-stage-ask textarea {
+  min-height: var(--v3-tap);
+  border: 2px solid var(--v3-ink);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+.v3.v3-stage .sell-stage-ask button[type='submit'] {
+  min-height: var(--v3-tap);
+}
+
+/* The 3% plan is a plan, not a narrow column of hyphens in a cream sea. */
+.v3.v3-sheet.sell-plan {
+  max-width: var(--v3-measure);
+  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap));
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-sheet.sell-plan .v3-sheet-step {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--v3-space-xl);
+    row-gap: var(--v3-space-lg);
+    align-items: start;
+  }
+
+  .v3.v3-sheet.sell-plan .v3-sheet-question,
+  .v3.v3-sheet.sell-plan .v3-sheet-prose {
+    grid-column: 1 / -1;
+  }
+}

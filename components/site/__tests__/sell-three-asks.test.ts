@@ -29,6 +29,21 @@ describe('/sell three asks became one', () => {
     expect(css).toContain('.v3-btn')
   })
 
+  it('puts the address ask on the Stage photograph, not in a cream void under it', () => {
+    expect(page).toContain('placement="stage"')
+    expect(page).toContain('height="tall"')
+    const stageAt = page.indexOf('<V3Stage')
+    const formAt = page.indexOf('<SellValueForm')
+    const stageClose = page.indexOf('</V3Stage>')
+    expect(stageAt).toBeGreaterThan(-1)
+    expect(formAt).toBeGreaterThan(stageAt)
+    expect(formAt).toBeLessThan(stageClose)
+  })
+
+  it('folds the Bend stat wall so three figures answer, the rest stay one tap away', () => {
+    expect(page).toContain('foldAfter={3}')
+  })
+
   it('address step is label + empty field + Value my home', () => {
     expect(form).toContain('Home address')
     expect(form).toContain('Value my home')
