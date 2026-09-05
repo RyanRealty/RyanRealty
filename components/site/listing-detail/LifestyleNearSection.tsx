@@ -1,9 +1,10 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import Link from 'next/link'
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import { lifestyleNearByKind } from '@/lib/explore/lifestyle-near'
 import { getParkBySlug } from '@/data/co-parks'
 import { getTrailBySlug } from '@/data/co-trails'
-import { getEventBySlug } from '@/data/co-events'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import { getParkBoundaryGeoJSON, getTrailLineGeoJSON } from '@/lib/data'
 import { PlaceListThumb } from '@/components/site/PlaceListThumb'
@@ -15,7 +16,37 @@ type Props = {
   items?: LifestyleNearItem[]
 }
 
-type NearThumb = { lat: number; lng: number; geometry: unknown } | null
+type NearThumb = { lat: number; lng: number; geometry: unknown; img?: string } | null
+
+const GOLF_MAP_FILE: Record<string, string> = {
+  'broken-top-club': 'broken-top',
+  'bend-golf-club': 'bend-golf-country-club',
+  'pronghorn-nicklaus': 'pronghorn',
+}
+
+function golfMapFile(slug: string): string {
+  return GOLF_MAP_FILE[slug] ?? slug
+}
+
+function golfPlateSrc(slug: string): string | null {
+  const file = golfMapFile(slug)
+  const publicPath = `/golf/course-plates/${file}.jpg`
+  return existsSync(join(process.cwd(), 'public', publicPath)) ? publicPath : null
+}
+
+function golfHoleGeometry(slug: string): unknown {
+  const file = golfMapFile(slug)
+  const disk = join(process.cwd(), 'data/golf/course-maps', `${file}.json`)
+  if (!existsSync(disk)) return null
+  try {
+    const raw = JSON.parse(readFileSync(disk, 'utf8')) as { holes?: { line?: number[][] }[] }
+    const lines = (raw.holes ?? []).filter((h) => Array.isArray(h.line) && h.line.length >= 2).map((h) => h.line!)
+    if (lines.length === 0) return null
+    return { type: 'MultiLineString', coordinates: lines }
+  } catch {
+    return null
+  }
+}
 
 function slugFromHref(href: string, prefix: string): string | null {
   if (!href.startsWith(prefix)) return null
@@ -49,14 +80,19 @@ async function resolveThumbs(items: LifestyleNearItem[]): Promise<NearThumb[]> {
       if (item.kind === 'golf') {
         const slug = slugFromHref(item.href, '/central-oregon/golf/')
         const course = slug ? GOLF_COURSES.find((c) => c.slug === slug) : undefined
-        if (!course) return null
-        return { lat: course.lat, lng: course.lng, geometry: null }
+        const lat = item.lat ?? course?.lat
+        const lng = item.lng ?? course?.lng
+        if (lat == null || lng == null || !slug) return null
+        return {
+          lat,
+          lng,
+          geometry: golfHoleGeometry(slug),
+          img: golfPlateSrc(slug) ?? undefined,
+        }
       }
       if (item.kind === 'event') {
-        const slug = slugFromHref(item.href, '/central-oregon/events/')
-        const event = slug ? getEventBySlug(slug) : undefined
-        if (!event || event.lat == null || event.lng == null) return null
-        return { lat: event.lat, lng: event.lng, geometry: null }
+        if (item.lat == null || item.lng == null) return null
+        return { lat: item.lat, lng: item.lng, geometry: null }
       }
       return null
     }),
@@ -86,7 +122,11 @@ function NearGroup({
           return (
             <li key={`${item.kind}-${item.href}`}>
               <Link href={item.href} className="listing-near__row">
-                {thumb ? (
+                {thumb?.img ? (
+                  // Course plate is a recorded scorecard map, not a stock photo.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="listing-near__photo" src={thumb.img} alt="" />
+                ) : thumb ? (
                   <PlaceListThumb lat={thumb.lat} lng={thumb.lng} geometry={thumb.geometry} />
                 ) : (
                   <span className="listing-near__empty" aria-hidden="true" />

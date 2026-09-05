@@ -65,7 +65,11 @@ import {
   listingRentalEligible,
 } from '@/components/site/listing-detail/listing-doors'
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
-import { listingSimilarRail } from '@/components/site/listing-detail/listing-similar'
+import {
+  listingSimilarDedupe,
+  listingSimilarInPlace,
+  listingSimilarRail,
+} from '@/components/site/listing-detail/listing-similar'
 import { ListingLotFigure } from '@/components/site/listing-detail/ListingLotFigure'
 import {
   leftoverListingGrains,
@@ -261,8 +265,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   // Place ladder + market grain (Exploration System). See CONTEXT.md.
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
-  const featuredGeoName = marketGeo?.name ?? listing.city ?? 'Nearby'
-  const featuredViewAllHref = marketGeo && marketGeo.geoType !== 'city' ? subdivisionListingsPath(listing.city, marketGeo.name) : homesForSalePath(listing.city)
+  const featuredGeoName =
+    placeContext.curatedCommunity?.label ?? marketGeo?.name ?? listing.city ?? 'Nearby'
+  const featuredViewAllHref =
+    placeContext.curatedCommunity
+      ? `/communities/${placeContext.curatedCommunity.slug}`
+      : marketGeo && marketGeo.geoType !== 'city'
+        ? subdivisionListingsPath(listing.city, marketGeo.name)
+        : homesForSalePath(listing.city)
 
   // Every arm is timeout-guarded (not just .catch): the listing page is the #1
   // ad-landing surface, and an unbounded pooler stall on any of these used to
@@ -409,10 +419,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // adds homes the primary set doesn't already show (avoid double tile walls).
   // One inventory rail only (experience rule: no two card grids in a row).
   // Ranking already merges similar_listings_mv + place proximity.
-  const similarPool =
-    relatedHomes.primary.length > 0
-      ? relatedHomes.primary
-      : [...relatedHomes.similar, ...relatedHomes.nearby]
+  const similarPool = listingSimilarDedupe(
+    listingSimilarInPlace(
+      relatedHomes.nearby.length > 0
+        ? relatedHomes.nearby
+        : [...relatedHomes.similar, ...relatedHomes.primary],
+      [
+        placeContext.curatedCommunity?.label,
+        placeContext.neighborhood?.label,
+        listing.subdivisionName,
+      ].filter((n): n is string => !!n && n !== 'N/A'),
+    ),
+  )
   const similarRows = listingSimilarRail(similarPool)
   const inventoryDoor = listingInventoryDoor(placeContext)
   const placeBoundary = await (async () => {

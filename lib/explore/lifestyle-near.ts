@@ -31,6 +31,8 @@ export type LifestyleNearItem = {
   href: string
   distanceMiles: number
   meta?: string
+  lat?: number
+  lng?: number
 }
 
 export function findTrailsNear(
@@ -64,6 +66,8 @@ export function findGolfNear(
     href: `/central-oregon/golf/${c.slug}`,
     distanceMiles: haversineMiles(lat, lng, c.lat, c.lng),
     meta: `${c.holes} holes · ${c.city}`,
+    lat: c.lat,
+    lng: c.lng,
   }))
     .filter((c) => c.distanceMiles <= radiusMiles)
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
@@ -83,6 +87,8 @@ export function findEventsNear(
       href: `/central-oregon/events/${e.slug}`,
       distanceMiles: haversineMiles(lat, lng, e.lat as number, e.lng as number),
       meta: e.category?.replace(/-/g, ' ') ?? 'Event',
+      lat: e.lat as number,
+      lng: e.lng as number,
     }))
     .filter((e) => e.distanceMiles <= radiusMiles)
     .sort((a, b) => a.distanceMiles - b.distanceMiles)

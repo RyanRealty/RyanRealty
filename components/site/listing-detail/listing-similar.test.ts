@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingSimilarRail, listingTileToRow, SIMILAR_RAIL_CAP } from './listing-similar'
+import {
+  listingSimilarDedupe,
+  listingSimilarInPlace,
+  listingSimilarRail,
+  listingTileToRow,
+  SIMILAR_RAIL_CAP,
+} from './listing-similar'
 
 function tile(over: Partial<ListingTile> = {}): ListingTile {
   return {
@@ -62,5 +68,28 @@ describe('listingSimilarRail', () => {
       tile({ listingKey: `k${i}`, listNumber: `n${i}` }),
     )
     expect(listingSimilarRail(tiles)).toHaveLength(SIMILAR_RAIL_CAP)
+  })
+})
+
+describe('listingSimilarInPlace', () => {
+  it('keeps the named place and drops another city', () => {
+    const kept = listingSimilarInPlace(
+      [
+        tile({ listingKey: 'a', subdivisionName: 'NorthWest Crossing' }),
+        tile({ listingKey: 'b', subdivisionName: 'Caldera Springs', boundarySubdivision: 'Caldera Springs' }),
+      ],
+      ['NorthWest Crossing'],
+    )
+    expect(kept.map((t) => t.listingKey)).toEqual(['a'])
+  })
+})
+
+describe('listingSimilarDedupe', () => {
+  it('drops a second listing at the same street', () => {
+    const kept = listingSimilarDedupe([
+      tile({ listingKey: '1', listNumber: '1', listPrice: 475_000 }),
+      tile({ listingKey: '2', listNumber: '2', listPrice: 439_500 }),
+    ])
+    expect(kept).toHaveLength(1)
   })
 })

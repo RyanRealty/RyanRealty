@@ -151,7 +151,7 @@ describe('design directive contracts', () => {
     expect(life).toMatch(/listing-near__kind/)
     expect(life).toMatch(/listing-near__name/)
     expect(life).toMatch(/GOLF_COURSES/)
-    expect(life).toMatch(/getEventBySlug/)
+    expect(life).toMatch(/item\.lat/)
     expect(life).toMatch(/Parks nearby/)
     expect(life).toMatch(/Trails nearby/)
     expect(life).toMatch(/Events nearby/)
