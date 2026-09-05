@@ -1,8 +1,9 @@
-# Current — 2026-09-05 (CMA screens from looking)
+# Current — 2026-09-05 (CMA first-build audit)
 
-`/admin/cmas` opens the 34 ready rows, not the 416-row work pile. Rec is first
-and compact. Review shows last list from the prospect row, quiet document
-links, one Approve. Archive/delete sit under Remove.
+Judge/audit run on the local xAI key (`lib/grok`), not Anthropic. Failed last
+list is stamped before the audit. Fabricated judge prose is replaced with an
+honest retained-count line so first builds can pass. CLI rebuild of the fail
+pile is running: `npx tsx scripts/_rebuild-failing-cmas.ts`.
 
 Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
 mix. Golf Track C stays on local `wt/golf-maps-20260903`.

@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   alignNarrativeToPricedSet,
   checkJudgmentConsistency,
+  honestComparabilityLine,
   restoreCustomYearQualityPeers,
   type CompVerdict,
   statedRetainedCount,
   repairRetainedCount,
 } from '@/lib/cma/judge-consistency'
+import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import type { CmaComp } from '@/lib/cma/types'
 
 /** Minimal comp whose $/sqft is exactly what the test wants to assert on. */
@@ -250,6 +252,27 @@ describe('alignNarrativeToPricedSet', () => {
     )
     expect(out).toContain('Two comparable sales were retained')
     expect(out).not.toMatch(/Karena sale was excluded/i)
+  })
+})
+
+describe('honestComparabilityLine', () => {
+  it('states the priced count without naming a street or a price the set does not have', () => {
+    const line = honestComparabilityLine({ keptCount: 4, excludedCount: 2 })
+    expect(line.startsWith('Four closed sales were retained.')).toBe(true)
+    expect(line).toContain('2 candidate sales were excluded')
+    const findings = checkNarrativeIntegrity({
+      narrative: line,
+      comps: [
+        { listingKey: 'A', address: '1 Oak', closePrice: 500000, city: 'Bend' },
+        { listingKey: 'B', address: '2 Pine', closePrice: 510000, city: 'Bend' },
+        { listingKey: 'C', address: '3 Elm', closePrice: 520000, city: 'Bend' },
+        { listingKey: 'D', address: '4 Ash', closePrice: 530000, city: 'Bend' },
+      ] as never,
+      excluded: [],
+      subject: { streetAddress: '9 Main', city: 'Bend', subdivision: null },
+      market: null,
+    })
+    expect(findings).toEqual([])
   })
 })
 

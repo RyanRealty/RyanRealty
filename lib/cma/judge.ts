@@ -313,7 +313,7 @@ async function sendJudgeTurn(messages: GrokMessage[]): Promise<JudgeTurn> {
     schema: JUDGE_SCHEMA,
     schemaName: 'record_comp_judgment',
     maxTokens: 2500,
-    reasoningEffort: 'high',
+    reasoningEffort: 'low',
   })
   return { payload: res.value, raw: res.raw, costUsd: res.costUsd ?? 0 }
 }

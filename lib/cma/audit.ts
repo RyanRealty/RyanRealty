@@ -291,7 +291,7 @@ export async function auditCma(args: {
       schema: AUDIT_SCHEMA,
       schemaName: 'record_audit',
       maxTokens: 2500,
-      reasoningEffort: 'high',
+      reasoningEffort: 'low',
     })
     const costUsd = +(res.costUsd ?? 0).toFixed(4)
     const out = res.value as {

@@ -212,6 +212,29 @@ export function repairRetainedCount(narrative: string, actual: number): string {
   return text.slice(0, at) + replacement + text.slice(at + token.length)
 }
 
+/**
+ * A comparability line that can only say what the priced set is.
+ *
+ * The live fail pile is almost all fabricated judge prose (wrong retained
+ * count, a kept sale called excluded, a ppsf bracket no priced sale reaches).
+ * When the model sentence does not survive the integrity check, this is what
+ * ships — count plus how many candidates were dropped. No street, no price.
+ */
+export function honestComparabilityLine(args: { keptCount: number; excludedCount: number }): string {
+  const n = Math.max(0, Math.floor(args.keptCount))
+  const word = n < NUMBER_WORDS.length ? NUMBER_WORDS[n]! : String(n)
+  const cap = word.charAt(0).toUpperCase() + word.slice(1)
+  const sales = n === 1 ? 'sale was retained' : 'sales were retained'
+  const dropped = Math.max(0, Math.floor(args.excludedCount))
+  const drop =
+    dropped <= 0
+      ? ''
+      : dropped === 1
+        ? ' One candidate sale was excluded as a different market segment.'
+        : ` ${dropped} candidate sales were excluded as a different market segment.`
+  return `${cap} closed ${sales}.${drop}`
+}
+
 export function splitSentences(text: string): string[] {
   return text
     .split(/(?<=[.!?])\s+/)

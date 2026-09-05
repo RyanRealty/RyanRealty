@@ -33,7 +33,7 @@ import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summ
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
-import { alignNarrativeToPricedSet } from '@/lib/cma/judge-consistency'
+import { alignNarrativeToPricedSet, honestComparabilityLine } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { resolveCmaSiteData } from '@/lib/cma/county'
@@ -238,6 +238,30 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
+    // Stamp the failed last cycle onto the subject BEFORE pricing and audit.
+    // The engine cap keys off standardStatus; the auditor reads lastListPrice.
+    // Fetching this after the audit was why first builds failed on rec-above-ask
+    // and why live ready rows still printed above last list.
+    const streetTokens = subject.streetAddress.trim().split(/\s+/)
+    const streetNumber = streetTokens[0] && /^\d+$/.test(streetTokens[0]) ? streetTokens[0] : null
+    const namePrefix = streetNumber ? streetTokens.slice(1).join(' ') : null
+    const cycleRows =
+      streetNumber && namePrefix
+        ? await getBpoListingCyclesByAddress({
+            streetNumber,
+            streetNameIlike: `${namePrefix}%`,
+            cityIlike: subject.city || null,
+            postalCode: subject.postalCode,
+          })
+        : []
+    const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
+    const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
+    if (lastCycleFailed) {
+      const row0 = cycleRows[0] ?? {}
+      const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
+      if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
+      subject.standardStatus = cycleStatus
+    }
 
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
     // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
@@ -379,7 +403,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (p && judgment) {
         const excludedCount = selection.comps.length - set.length
         const weakCount = adj.filter((c) => tierByKey.get(c.listingKey) === 'weak').length
-        const narrative = alignNarrativeToPricedSet(set, judgment.narrative)
+        let narrative = alignNarrativeToPricedSet(set, judgment.narrative)
+        const integrity = checkNarrativeIntegrity({
+          narrative,
+          comps: adj,
+          excluded: excludedForAudit(),
+          subject,
+          market,
+        })
+        if (!narrative.trim() || integrity.length > 0) {
+          narrative = honestComparabilityLine({ keptCount: adj.length, excludedCount })
+        }
+        judgment.narrative = narrative
         p.notes.push(
           `Comparable review: ${set.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
             excludedCount ? `, ${excludedCount} excluded as a different market segment` : ''
@@ -398,6 +433,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const err = 'Pricing could not be computed (subject sqft missing).'
       await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
       return { ok: false, error: err, slug }
+    }
+    if (lastCycleFailed) {
+      const row0 = cycleRows[0] ?? {}
+      const offDate = String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null
+      applyFailedAskCap(pricing, {
+        lastFailedListPrice: subject.lastListPrice,
+        offMarketDate: offDate,
+      })
     }
 
     // 4.4. Adversarial accuracy audit — an independent second pass whose only
@@ -465,6 +508,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           compsForPricing = remaining
           adjusted = repriced.adj
           pricing = repriced.p
+          if (lastCycleFailed) {
+            const row0 = cycleRows[0] ?? {}
+            applyFailedAskCap(pricing, {
+              lastFailedListPrice: subject.lastListPrice,
+              offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+            })
+          }
           selection.trace.push(
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed and the analysis re-priced on the ${remaining.length}-comp set, then re-audited.`,
           )
@@ -534,6 +584,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             if (rebuilt.p) {
               adjusted = rebuilt.adj
               pricing = rebuilt.p
+              if (lastCycleFailed) {
+                const row0 = cycleRows[0] ?? {}
+                applyFailedAskCap(pricing, {
+                  lastFailedListPrice: subject.lastListPrice,
+                  offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+                })
+              }
               selection.trace.push(
                 `Adversarial audit narrative repair: ${proseFindings.length} finding(s) about the prose were returned to the comparability model, the corrected narrative passed the deterministic integrity check, and the analysis was re-audited on it. No comp and no price changed.`,
               )
@@ -632,37 +689,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // longer changes the document.)
     let expiredAudit: ExpiredAuditData | null = null
     {
-      const tokens = subject.streetAddress.trim().split(/\s+/)
-      const streetNumber = tokens[0] && /^\d+$/.test(tokens[0]) ? tokens[0] : null
-      const namePrefix = streetNumber ? tokens.slice(1).join(' ') : null
-      const cycleRows =
-        streetNumber && namePrefix
-          ? await getBpoListingCyclesByAddress({
-              streetNumber,
-              streetNameIlike: `${namePrefix}%`,
-              cityIlike: subject.city || null,
-              postalCode: subject.postalCode,
-            })
-          : []
-      const lastStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
-      const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(lastStatus)
       if (lastCycleFailed) {
-        // The failed-ask ceiling (Matt 2026-08-05): never recommend above the
-        // price this market just rejected. Subject last list is the fallback
-        // when the cycle query is empty.
-        const row0 = cycleRows[0] ?? {}
-        const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
-        const lastAsk = Number.isFinite(cycleAsk) && cycleAsk > 0 ? cycleAsk : subject.lastListPrice
-        const offDate = String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null
-        const cap = applyFailedAskCap(pricing, {
-          lastFailedListPrice: lastAsk != null && lastAsk > 0 ? lastAsk : null,
-          offMarketDate: offDate,
-        })
-        if (cap.applied) {
-          console.warn(
-            `[cma/build] failed-ask ceiling: comps supported ${cap.uncappedRecommended} > failed ask ${cap.cappedTo} — list tiers capped (${slug})`,
-          )
-        }
         const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
         const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
         expiredAudit = {
@@ -801,9 +828,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       return { ok: false, error: err, slug }
     }
 
-    // 5.6. Advisory Orwell-rules review (W11.3) — runs ALONGSIDE the deterministic
-    // hard-fail gate above, never replacing it. Purely advisory: never throws,
-    // never blocks the build. Attached to the result for the admin review UI.
+    // 5.6. Advisory Orwell-rules review (W11.3). Anthropic is dark; reviewProse
+    // degrades when the key is missing. Judge + audit use the local xAI key.
     const voiceReview = await reviewProse(authoredProse, { context: 'cma' }).catch(() => null)
 
     // 6. Render.
