@@ -8,6 +8,7 @@ import {
   MAP_SEARCH,
   PRIMARY_NAV,
   VALUATION_FORM,
+  footerColumnLinks,
 } from './site-nav'
 import { getPlaceLinks, canonicalCommunitySlug } from './place-links'
 
@@ -106,6 +107,36 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     const market = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Market')
     const hrefs = market?.links.map((l) => l.href) ?? []
     expect(hrefs).toContain('/newsletter')
+  })
+
+  it('footer Places column is the place grain, not a flat equal-weight list', () => {
+    const areas = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Areas')
+    expect(areas?.groups?.map((g) => g.heading)).toEqual([
+      'Cities',
+      'Neighborhoods and communities',
+      'Subdivisions',
+      'Around here',
+    ])
+    expect(areas?.groups?.map((g) => g.depth)).toEqual([1, 2, 3, undefined])
+    const hrefs = footerColumnLinks(areas!).map((l) => l.href)
+    expect(areas?.links.map((l) => l.href)).toEqual(hrefs)
+    expect(hrefs).toEqual([
+      '/cities',
+      '/cities/bend',
+      '/cities/redmond',
+      '/cities/sisters',
+      '/cities/sunriver',
+      '/cities/la-pine',
+      '/neighborhoods',
+      '/communities',
+      '/subdivisions',
+      '/schools',
+      '/parks',
+      '/central-oregon/trails',
+      '/central-oregon/events',
+    ])
+    expect(hrefs.some((h) => /^\/subdivisions\/.+/.test(h))).toBe(false)
+    expect(hrefs.some((h) => /^\/communities\/.+/.test(h))).toBe(false)
   })
 
   it('no group lists the same href twice', () => {

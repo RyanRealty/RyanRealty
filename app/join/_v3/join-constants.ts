@@ -86,13 +86,28 @@ export const JOIN_FAQ_ITEMS = [
 export const JOIN_CONTACT_HREF = '/contact?inquiry=Join%20the%20team'
 
 /** Join is off-graph recruiting. The footer must not sell a CMA. */
-export function joinFooterColumns<T extends { heading: string; links: readonly { href: string; label: string }[] }>(
-  columns: readonly T[],
-): T[] {
+export function joinFooterColumns<
+  T extends {
+    heading: string
+    links: readonly { href: string; label: string }[]
+    groups?: readonly { heading: string; links: readonly { href: string; label: string }[] }[]
+  },
+>(columns: readonly T[]): T[] {
+  const keep = (href: string) => href !== '/sell#get-value'
   return columns
-    .map((column) => ({
-      ...column,
-      links: column.links.filter((link) => link.href !== '/sell#get-value'),
-    }))
+    .map((column) => {
+      const links = column.links.filter((link) => keep(link.href))
+      const groups = column.groups
+        ?.map((group) => ({
+          ...group,
+          links: group.links.filter((link) => keep(link.href)),
+        }))
+        .filter((group) => group.links.length > 0)
+      return {
+        ...column,
+        links,
+        ...(column.groups ? { groups } : {}),
+      }
+    })
     .filter((column) => column.links.length > 0)
 }

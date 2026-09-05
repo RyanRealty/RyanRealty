@@ -370,7 +370,7 @@ export type { V3ChromeProps, V3ChromeGroup, V3ChromeLive, V3ChromeLiveGroup, V3C
 /** V3_FOOTER_COLUMNS and V3_FOOTER_LEGAL are the canonical site-nav projections. */
 export { V3Footer, V3_FOOTER_COLUMNS, V3_FOOTER_LEGAL } from './V3Footer'
 
-export type { V3FooterProps, V3FooterColumn, V3FooterLink } from './V3Footer'
+export type { V3FooterProps, V3FooterColumn, V3FooterCluster, V3FooterLink } from './V3Footer'
 
 export { V3Breadcrumb } from './V3Breadcrumb'
 

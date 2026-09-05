@@ -216,6 +216,48 @@
   border-bottom: var(--v3-rule-hairline);
 }
 
+/* Clustered columns: the group title captions the list below it. Closing
+   hairlines on every sub-list would sandwich each title between two rules. */
+.v3-footer__clusters .v3-footer__column-list li:last-child {
+  border-bottom: 0;
+}
+
+.v3-footer__clusters .v3-footer__cluster:last-child .v3-footer__column-list li:last-child {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+/* Place grain: city > neighborhoods/communities >> subdivisions.
+   Depth is padding, not a second type size, so the column title stays the
+   only tracked uppercase at column rank. Cluster titles are the same
+   eyebrow language one step quieter. */
+.v3-footer__cluster + .v3-footer__cluster {
+  margin-top: var(--v3-space-xs);
+}
+
+.v3-footer__cluster[data-depth='2'] {
+  padding-left: var(--v3-space-sm);
+}
+
+.v3-footer__cluster[data-depth='3'] {
+  padding-left: var(--v3-space-md);
+}
+
+.v3-footer__cluster:not([data-depth]) {
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-footer__cluster-title {
+  margin: 0;
+  padding: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  line-height: var(--v3-leading-note);
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--v3-ink-muted);
+}
+
 /* Thumb floor at every width. Unlayered so a utility or the old 1440
    `min-height: 2rem` cannot shrink the row; G71 measures CSS px at 1440. */
 .v3-footer__column-list a {

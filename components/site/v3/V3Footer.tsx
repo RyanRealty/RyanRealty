@@ -59,10 +59,20 @@ export type V3FooterLink = {
   label: string
 }
 
+export type V3FooterCluster = {
+  /** Visible group label inside the column. Not a destination. */
+  heading: string
+  links: readonly V3FooterLink[]
+  /** Place-grain step: 1 city, 2 neighborhood/community, 3 subdivision. */
+  depth?: 1 | 2 | 3
+}
+
 export type V3FooterColumn = {
   /** The column title AND the accessible name of the nav landmark it opens. */
   heading: string
   links: readonly V3FooterLink[]
+  /** When present, the column renders these labeled clusters instead of a flat list. */
+  groups?: readonly V3FooterCluster[]
 }
 
 /**
@@ -95,6 +105,7 @@ export const V3_FOOTER_COLUMNS: readonly V3FooterColumn[] = KB_FOOTER_COLUMNS.ma
   (column) => ({
     heading: LOCKED_LABEL[column.heading] ?? column.heading,
     links: column.links,
+    groups: column.groups,
   }),
 )
 
@@ -144,8 +155,10 @@ function text(value: string | undefined): string | undefined {
  * dropped rather than dereferenced, because this repo's tsconfig has no
  * noUncheckedIndexedAccess and `[cols[0]]` type-checks against an empty array.
  */
-function links(items: readonly V3FooterLink[] | undefined): V3FooterLink[] {
-  const seen = new Set<string>()
+function collectLinks(
+  items: readonly V3FooterLink[] | undefined,
+  seen: Set<string>,
+): V3FooterLink[] {
   const out: V3FooterLink[] = []
   for (const item of items ?? []) {
     const href = text(item?.href)
@@ -157,15 +170,90 @@ function links(items: readonly V3FooterLink[] | undefined): V3FooterLink[] {
   return out
 }
 
+function links(items: readonly V3FooterLink[] | undefined): V3FooterLink[] {
+  return collectLinks(items, new Set())
+}
+
+function clustersOf(
+  groups: readonly V3FooterCluster[] | undefined,
+  seen: Set<string>,
+): V3FooterCluster[] {
+  const out: V3FooterCluster[] = []
+  for (const group of groups ?? []) {
+    const heading = text(group?.heading)
+    const rows = collectLinks(group?.links, seen)
+    if (!heading || rows.length === 0) continue
+    out.push(group.depth ? { heading, links: rows, depth: group.depth } : { heading, links: rows })
+  }
+  return out
+}
+
 function columnsOf(input: readonly V3FooterColumn[]): V3FooterColumn[] {
   const out: V3FooterColumn[] = []
   for (const column of input) {
     const heading = text(column?.heading)
-    const rows = links(column?.links)
-    if (!heading || rows.length === 0) continue
-    out.push({ heading, links: rows })
+    if (!heading) continue
+    const seen = new Set<string>()
+    const groups = clustersOf(column?.groups, seen)
+    const rows = groups.length > 0 ? groups.flatMap((g) => g.links) : collectLinks(column?.links, seen)
+    if (rows.length === 0) continue
+    out.push(groups.length > 0 ? { heading, links: rows, groups } : { heading, links: rows })
   }
   return out
+}
+
+function clusterDomId(column: string, group: string): string {
+  const slug = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  return `v3-footer-${slug(column)}-${slug(group)}`
+}
+
+function LinkList({
+  heading,
+  items,
+}: {
+  heading: string
+  items: readonly V3FooterLink[]
+}) {
+  return (
+    <ul className="v3-footer__column-list">
+      {items.map((link) => (
+        <li key={`${heading}-${link.href}`}>
+          <Link href={link.href}>{link.label}</Link>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function ColumnLinks({ column }: { column: V3FooterColumn }) {
+  if (column.groups && column.groups.length > 0) {
+    return (
+      <div className="v3-footer__clusters">
+        {column.groups.map((group) => {
+          const id = clusterDomId(column.heading, group.heading)
+          return (
+            <div
+              className="v3-footer__cluster"
+              data-depth={group.depth}
+              role="group"
+              aria-labelledby={id}
+              key={id}
+            >
+              <p id={id} className="v3-footer__cluster-title">
+                {group.heading}
+              </p>
+              <LinkList heading={`${column.heading}-${group.heading}`} items={group.links} />
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+  return <LinkList heading={column.heading} items={column.links} />
 }
 
 /* -------------------------------------------------------------------------- */
@@ -292,13 +380,7 @@ export function V3Footer({
                   {column.heading}
                   <span className="v3-footer__count">{column.links.length}</span>
                 </summary>
-                <ul className="v3-footer__column-list">
-                  {column.links.map((link) => (
-                    <li key={`${column.heading}-${link.href}`}>
-                      <Link href={link.href}>{link.label}</Link>
-                    </li>
-                  ))}
-                </ul>
+                <ColumnLinks column={column} />
               </details>
             </nav>
           ))}

@@ -31,9 +31,32 @@ export type NavGroup = {
   children: NavLink[]
 }
 
+/**
+ * A labeled cluster inside a footer column. Places uses this so the geo
+ * ladder is visible: city → neighborhoods / master-planned communities →
+ * subdivisions. `depth` is that ladder step (1/2/3); omit it for a cluster
+ * that is not on the ladder (schools, parks, trails).
+ */
+export type FooterCluster = {
+  heading: string
+  links: NavLink[]
+  depth?: 1 | 2 | 3
+}
+
 export type FooterGroup = {
   heading: string
   links: NavLink[]
+  /** When present, the footer renders these instead of a single list. */
+  groups?: FooterCluster[]
+}
+
+/** Flatten a column's destinations. Groups, when present, are the source. */
+export function footerColumnLinks(column: FooterGroup): NavLink[] {
+  return column.groups?.length ? column.groups.flatMap((g) => g.links) : column.links
+}
+
+function footerFromGroups(heading: string, groups: FooterCluster[]): FooterGroup {
+  return { heading, groups, links: groups.flatMap((g) => g.links) }
 }
 
 const NEWSLETTER_SUBSCRIBE: NavLink = {
@@ -295,24 +318,37 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/videos', label: 'Video tours' },
     ],
   },
-  {
-    heading: 'Areas',
-    links: [
-      { href: '/cities', label: 'All cities' },
-      { href: '/cities/bend', label: 'Bend homes' },
-      { href: '/cities/redmond', label: 'Redmond homes' },
-      { href: '/cities/sisters', label: 'Sisters homes' },
-      { href: '/cities/sunriver', label: 'Sunriver homes' },
-      { href: '/cities/la-pine', label: 'La Pine homes' },
-      { href: '/communities', label: 'All communities' },
-      { href: '/neighborhoods', label: 'All neighborhoods' },
-      { href: '/subdivisions', label: 'All subdivisions' },
-      { href: '/schools', label: 'Schools' },
-      { href: '/parks', label: 'Parks' },
-      { href: '/central-oregon/trails', label: 'Trails' },
-      { href: '/central-oregon/events', label: 'Events' },
-    ],
-  },
+  footerFromGroups('Areas', [
+    {
+      heading: 'Cities',
+      depth: 1,
+      links: [{ href: '/cities', label: 'All cities' }, ...CITY_LINKS.slice(0, 5)],
+    },
+    {
+      // Indexes only. Dumping every GIS neighborhood or curated community
+      // here would hide the ladder the column exists to show.
+      heading: 'Neighborhoods and communities',
+      depth: 2,
+      links: [
+        { href: '/neighborhoods', label: 'All neighborhoods' },
+        { href: '/communities', label: 'All communities' },
+      ],
+    },
+    {
+      heading: 'Subdivisions',
+      depth: 3,
+      links: [{ href: '/subdivisions', label: 'All subdivisions' }],
+    },
+    {
+      heading: 'Around here',
+      links: [
+        { href: '/schools', label: 'Schools' },
+        { href: '/parks', label: 'Parks' },
+        { href: '/central-oregon/trails', label: 'Trails' },
+        { href: '/central-oregon/events', label: 'Events' },
+      ],
+    },
+  ]),
   {
     heading: 'Market',
     links: [
