@@ -1,3 +1,7 @@
+/**
+ * reachability: entry-point HouseMe / listing_pricing_reads claim (parked off
+ * the listing page 2026-09-03; share publisher + houseme-report tests still import it)
+ */
 import { cn } from '@/lib/utils'
 import { Body } from '@/components/site/primitives'
 import type { ListingPricingReadRow } from '@/lib/data/pricing/reads'

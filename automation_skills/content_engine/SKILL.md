@@ -1,249 +1,72 @@
 ---
 name: content_engine
 description: >
-  THE entry point for ALL content production at Ryan Realty. Invoke this skill whenever Matt
-  says: "build a video", "create a video for", "make a market report video", "make a listing
-  video for", "make a meme about", "make a neighborhood guide for", "build content about",
-  "produce a social post", "fire the content engine", "kick off content for", "do a [format]
-  for [topic]", "make a [format] video", "create a reel for", "listing reveal", "earth zoom",
-  "news clip", "avatar update", "weekend events", "listing launch", "area guide", "depth
-  parallax", "flyer", "just listed flyer", "open house flyer", "property one-sheet", or any
-  request to produce a video, reel, image post, flyer, or social content.
-  No format skill may be invoked directly.  ALL content production routes through here first.
-  NOT for pure code/data/text tasks with no content deliverable.
+  STOP. Video producer SKILLs are gone. This file is not the live content factory.
+  Do not load video_production_skills/**. Media production is Studio (CLAUDE.md §4).
+  Inbox and /marketing/request file a marketing_brain_actions row and run no producer
+  (CLAUDE.md §5). Still-live static/social SKILLs: flyer, list-kit, blog-post, IG,
+  meme_lord. CMA is a TypeScript product. Use this skill only to refuse the retired
+  video matrix and to point at Studio / publisher-sweep.
 when_to_use: >
-  Also fires on: "build me a [city] market report", "shoot a reel for [address]", "post about
-  [topic]", "generate content for [listing]", "run the content pipeline for", "make something
-  about [trend]", "content for [neighborhood]", "put together a video on [topic]". This
-  orchestrator runs storyboard → build → QA → Matt review → publish → post-mortem in a
-  closed loop and enforces every guardrail. If in doubt whether a request is content
-  production, load this skill.
+  Fires if an agent is about to load a deleted video SKILL or treat this file as
+  THE entry point for all content. Stop, then route media to Studio.
 output_type: operational
 target_platforms: []
-asset_destination: no asset; state mutation only (logged in marketing_decisions)
-auto_inputs: ["current campaign/account state"]
-required_inputs: ["account_id OR campaign_id"]
-optional_inputs: ["budget_delta_pct", "pause_reason"]
-estimated_runtime_min: 3
-cost_usd_estimate: $0.01-$0.10 per call (mostly API quota; minimal Anthropic)
-thumbnail_uri: out/proof/2026-05-17/exemplars/sample.html
+asset_destination: no asset; routing only
+auto_inputs: ["CLAUDE.md §4", "CLAUDE.md §5"]
+required_inputs: ["intent"]
+optional_inputs: []
+estimated_runtime_min: 1
+cost_usd_estimate: $0
+thumbnail_uri: none
 example_outputs: []
 action_types:
   - content:*
 ---
 
-# Content Engine
+# STOP - video producer SKILLs are gone
 
-**STOP — video producer SKILLs are gone.** Do not load `video_production_skills/**/SKILL.md` or `social_media_skills/coming-soon-teaser`. Video rules are `CLAUDE.md` §4. Live dispatch is `marketing_brain_actions` + `producer-runtime` (if `PRODUCER_RUNTIME_ENABLED`) or the inbox/weekly writers. Still-live social SKILLs: flyer, list-kit, blog-post, IG, meme_lord, CMA.
+Do not load `video_production_skills/**/SKILL.md`. Do not load `social_media_skills/coming-soon-teaser`. Remotion is retired. Hourly SKILL.md producers are off.
 
-**Status:** Partial fossil. Locked 2026-05-17. Video half is dead.  
+**Media / social production is the Studio** (CLAUDE.md §4): `lib/studio/`, `/admin/studio`, `/api/cron/studio-slate`. Prompts come from `lib/studio/craft.ts`. Drafts land `ready`. Matt's §1 stamp plus `/api/cron/publisher-sweep` → `/api/social/publish`.
 
+**Inbox + `/marketing/request` file a row and run no producer** (CLAUDE.md §5). CMA, newsletter, CRM, and the Facebook seller report stay as TypeScript products.
 
-## Purpose
+This skill is not THE entry point for all content production. Do not storyboard, render, or QA video from this file.
 
-Top-level orchestrator. Maps Matt's natural-language content requests to the right format
-skill, then runs the closed-loop pipeline: storyboard → build → QA → Matt review → publish
-→ post-mortem. Enforces data accuracy, draft-first, anti-slop, and viral guardrails at
-every step.
+**Status:** Deprecated. Locked 2026-09-05 (D7). Video half is dead.
 
-## Closed-loop pipeline
+## Live routing (non-video only)
 
-```
-RESEARCH → STORYBOARD → BUILD → QA PASS → MATT REVIEW → PUBLISH → POST-MORTEM
-               ↑                               ↓
-               └──────── feedback_loop ────────┘
-```
-
-## Format routing matrix
-
-| Matt says | Format skill | Path |
+| Matt says | Load | Path |
 |---|---|---|
-| market report / market data / city stats | `data_viz_video` (primary) | `video_production_skills/data_viz_video/SKILL.md` |
-| market report (ffmpeg stat-card path) | `market_report_video` (alt) | `video_production_skills/market_report_video/SKILL.md` |
-| listing video / listing reveal / reel for [address] | `listing_reveal` | `video_production_skills/listing_reveal/SKILL.md` |
-| listing launch / full launch package | `listing_launch` | `video_production_skills/listing_launch/SKILL.md` |
-| earth zoom / zoom from space / aerial reveal | `earth_zoom` | `video_production_skills/earth_zoom/SKILL.md` |
-| news clip / real estate news / breaking news | `news-video` (canonical) | `video_production_skills/news-video/SKILL.md` |
-| avatar update / talking head / Synthesia | `news_video` (avatar path) | `video_production_skills/news_video/SKILL.md` |
-| neighborhood guide / neighborhood tour / area guide | `neighborhood_tour` | `video_production_skills/neighborhood_tour/SKILL.md` |
-| area guides / neighborhood reel (B-roll, no VO) | `area_guides` | `video_production_skills/area_guides/SKILL.md` |
-| weekend events | `social_calendar` | `video_production_skills/social_calendar/SKILL.md` |
-| avatar market update | `avatar_market_update` | `video_production_skills/avatar_market_update/SKILL.md` |
-| meme video / meme reel / meme about [topic] | `meme_content` | `video_production_skills/meme_content/SKILL.md` |
-| meme image / image post / carousel | `meme_lord` | `social_media_skills/meme_lord/SKILL.md` |
-| depth parallax / parallax photo | `depth_parallax` | `video_production_skills/depth_parallax/SKILL.md` |
-| depthflow / depthflow render | `depthflow_pipeline` | `video_production_skills/depthflow_pipeline/SKILL.md` |
-| google maps flyover / 3D aerial / cinematic aerial | `google_maps_flyover` | `video_production_skills/google_maps_flyover/SKILL.md` |
-| gaussian splat | `gaussian_splat` | `video_production_skills/gaussian_splat/SKILL.md` |
+| video / reel / listing tour / news clip / market video / earth zoom / avatar / meme reel | Studio | `CLAUDE.md` §4, `lib/studio/`, `/admin/studio` |
+| publish / ship to socials | publisher-sweep | `automation_skills/automation/publish/SKILL.md` then `/api/cron/publisher-sweep` → `/api/social/publish` |
 | flyer / just-listed flyer / open house / print one-sheet | `flyer-design` | `social_media_skills/flyer-design/SKILL.md` |
-| list kit / at-active kit / full marketing package / all the listing assets | `list-kit` | `social_media_skills/list-kit/SKILL.md` |
-| IG single post / just-listed post / just-sold post / coming-soon post / price-improvement post / featured listing / agent intro post / brag stat post / press feature post / market data card / S1-S10 by number | `ig-single-post` | `social_media_skills/ig-single-post/SKILL.md` |
-| IG carousel / swipe post / listing carousel / Pattern A / Pattern B / Pattern C / Pattern D | `instagram-carousel` | `social_media_skills/instagram-carousel/SKILL.md` |
-| coming-soon teaser / pre-active reel / coming-soon reel | `coming-soon-teaser` | `social_media_skills/coming-soon-teaser/SKILL.md` |
-| TikTok listing tour / TikTok tour for <address> / TikTok-optimized listing | `tiktok-listing-tour` | `video_production_skills/tiktok-listing-tour/SKILL.md` |
-| YouTube long-form / YT walkthrough / YouTube walkthrough / yt longform listing | `youtube-long-form-walkthrough` | `video_production_skills/youtube-long-form-walkthrough/SKILL.md` |
-| open-house stories / open-house frames / IG stories for the open house | `open-house-stories` | `social_media_skills/open-house-stories/SKILL.md` |
-| under-contract post / pending post / pending announcement | `under-contract-announcement` | `social_media_skills/under-contract-announcement/SKILL.md` |
-| sold post / sold deal / closing post / LinkedIn sold / sold summary | `sold-deal-summary` | `social_media_skills/sold-deal-summary/SKILL.md` |
-| LinkedIn document carousel / LinkedIn PDF / LinkedIn doc carousel / linkedin carousel | `linkedin-document-carousel` | `social_media_skills/linkedin-document-carousel/SKILL.md` |
-| agent coop / agent-to-agent email / coop eflyer / agent eflyer | `agent-coop-eflyer` | `social_media_skills/agent-coop-eflyer/SKILL.md` |
-| postcard / farm mailer / direct mail postcard / neighbor postcard | `postcard-farm-mailer` | `social_media_skills/postcard-farm-mailer/SKILL.md` |
-| yard sign / sign rider / yard sign rider | `yard-sign-rider` | `social_media_skills/yard-sign-rider/SKILL.md` |
-| neighbor note / neighbor outreach / handwritten neighbor card | `neighbor-outreach-note` | `social_media_skills/neighbor-outreach-note/SKILL.md` |
-| CMA / comparative market analysis / "what's this property worth" / "pricing opinion on" | `cma` | `marketing_brain_skills/producers/cma/SKILL.md` |
+| list kit / full listing asset package | `list-kit` | `social_media_skills/list-kit/SKILL.md` |
+| IG single post | `ig-single-post` | `social_media_skills/ig-single-post/SKILL.md` |
+| IG carousel | `instagram-carousel` | `social_media_skills/instagram-carousel/SKILL.md` |
+| meme image / image post | `meme_lord` | `social_media_skills/meme_lord/SKILL.md` |
+| blog post / SEO article | `blog-post` | `social_media_skills/blog-post/SKILL.md` (Supabase `blog_posts` on the Next site) |
+| CMA / what is this property worth | TypeScript CMA | `lib/cma/` + `marketing_brain_skills/producers/cma/SKILL.md` |
 
-**Retired / archive only (do not route to):** `market_report_video` is canonical only when
-Matt explicitly requests the ffmpeg stat-card path. `news_video` (underscore) is the avatar
-path.  use `news-video` (hyphen) for standard news clips.
+If the request is video or motion, stop here and open Studio. Do not invent a Remotion, Replicate, or ElevenLabs render path from this skill.
 
-**Document deliverables (CMA):** The content engine routes a CMA to the
-`cma` producer, but a CMA does not run the video/social storyboard or
-QA branches. The CMA producer owns its own pipeline (HTML build → PDF
-render → 25 MB size check → Matt review → finalize + repository write).
-The content engine's role is route-and-respect, not orchestrate. See
-`marketing_brain_skills/producers/cma/SKILL.md` for the full recipe.
+## Hard constraints
 
-## Procedure
-
-**Step 1.  Parse intent**
-Extract: format type, topic/address/city, target platforms (if stated), any constraints
-("skip storyboard", "just build it", "no VO", "publish to IG only").
-
-**Step 2.  Route to format skill**
-Match intent to the routing matrix above. Load that skill's SKILL.md. If ambiguous between
-two formats, ask Matt one clarifying question before proceeding.
-
-**Step 3.  Research**
-Pull all data the format skill requires before touching the BEATS array:
-- **Annual volume / composition (M2):** `node scripts/analytics/content-market-claims.mjs --year=<YYYY> --type=all --json` → `analytics_mart_market_annual` (same as site DAL `getCoMarketAnnual`). Do **not** invent sold-count or $ volume; if the script fails, omit the annual claim.
-- **Monthly city pulse:** `market_pulse_live` + `market_stats_cache` (and Spark reconcile when required by CLAUDE.md §0)
-- Listing data: Spark API (`SPARK_API_BASE_URL` + `SPARK_API_KEY`) via DAL where the app already wraps it
-- News: WebSearch (24-72h window)
-- Generate `citations.json` stub.  one entry per figure, source named
-
-**Step 4.  Cost gate**
-Estimate render + API cost (ElevenLabs chars, Replicate credits, Supabase reads). Write to
-`out/<slug>/gate.json`. If estimate > $5: surface to Matt for approval before proceeding.
-
-**Step 5.  Storyboard pass**
-Unless Matt said "skip storyboard" or "just build it": present a 30-second skim of the
-proposed BEATS array, VO script, and overlay plan. Wait for Matt's "go" before building.
-
-**Step 6.  Build**
-Invoke format skill. Render to `out/<format>/<slug>/` (gitignored.  never to
-`public/v5_library/` directly). All stats must be verified before render starts.
-
-**Step 7.  QA pass**
-Branch on deliverable type:
-
-- **Video / motion:** Auto-invoke `video_production_skills/quality_gate/SKILL.md`. Run:
-  - `ffprobe` duration check (30-60s)
-  - `ffmpeg blackdetect` (zero sequences at pix_th=0.05)
-  - Frame extracts at 0%, 25%, 50%, 85%.  visual confirm motion, register shifts, kinetic reveal
-  - Banned-word grep across VO script + captions
-  - Verify every on-screen number appears in `citations.json`
-
-- **Static flyer / one-sheet:** Auto-invoke the gate in `social_media_skills/flyer-design/SKILL.md`.
-  - **Photography:** Multi-photo layout with **distinct** alternates (hero + filmstrip); intentional
-    hero crop / zoom (no distant “postage stamp”); never duplicate the same file three ways.
-  - **`design_review_checklist.json`:** every line item `pass` before the draft is described as
-    ready (trained-eye self-audit.  “ready” still means **draft for Matt**, not distributed).
-  - Verify mobile readability, `citations.json`, `fonts_used.json`, `provenance.json`,
-    `design_scorecard.json`.
-
-If QA fails: fix and re-render (max 2 auto-iterations). After 2 failures: report to Matt
-with specific failure reason. Do NOT present a broken draft.
-
-**Step 8.  Present to Matt (mandatory contact sheet)**
-
-Generate an HTML contact sheet at `out/proof/<YYYY-MM-DD>/<batch-slug>/contact-sheet.html` (or
-`out/proof/<YYYY-MM-DD>/contact-sheet.html` if it's the day's only batch). The contact sheet must
-include, per deliverable in the batch:
-
-- The rendered image embedded inline (`<img>` at native or scaled-to-viewport).
-- Videos embedded with HTML5 `<video controls>` so Matt can play them in-browser.
-- Carousels shown as a slide grid with slide numerals.
-- Captions in a readable `<pre>` block (monospace, copyable).
-- A verification trace block (one row per figure: source · filter · value · fetched_at).
-- File paths shown alongside each deliverable.
-- A status pill per deliverable (DRAFT / APPROVED / REVISIONS NEEDED / BLOCKED).
-- An approval prompt at the bottom listing the structured chat replies Matt should send
-  (`approve <slug>`, `revise <slug>: <feedback>`, `ship all`, `kill <slug>`).
-
-Surface BOTH links to Matt.  file:// for guaranteed access, and localhost for one-click open:
-
-```
-Draft ready.  contact sheet:
-  → http://localhost:<port>/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
-  → file:///Users/matthewryan/RyanRealty/out/proof/<YYYY-MM-DD>/<batch>/contact-sheet.html
-
-Open the link, review each card, then reply with one of:
-  • approve <slug>.  commits + pushes that deliverable to public/
-  • approve all.  commits + pushes everything in the batch
-  • revise <slug>: <note>.  feedback I'll act on
-  • kill <slug>.  drop that deliverable from the batch
-```
-
-Then stop. Do not commit. Do not push. Wait.
-
-**Per "Contact sheet required" (locked 2026-05-14):** never describe a draft via file paths
-alone. Matt approves from the visual review. Every content draft surface must include the HTML
-contact sheet AND a clickable link. Brand the contact sheet to v2 (navy `#102742` on cream
-`#faf8f4`, Geist body, Amboqia headlines).
-
-**Step 9.  On approval: publish**
-Invoke `video_production_skills/content_pipeline/SKILL.md` with platform defaults (see
-table below). Copy render to `public/v5_library/`. Commit + push to `main` immediately.
-
-**Step 10.  On rejection: feedback loop**
-Capture Matt's rejection reason in writing. Write a rule update or note to the relevant
-format SKILL.md. Return to Step 5 with adjusted brief.
-
-**Step 11.  Post-mortem (48h after publish)**
-Check platform analytics. Write performance note to `automation_skills/content_engine/log.md`.
-Feed signal back to format skill's reference files.
-
-## Hard constraints.  immutable
-
-1. ALL content production routes through this orchestrator. No agent invokes a format skill
-   directly without this skill running first.
-2. Storyboard pass is mandatory. Skip only when Matt explicitly says "skip storyboard" or
-   "just build it."
-3. QA pass is mandatory after every render. Cannot be skipped under any circumstance.
-4. Matt approval is mandatory before publish. Silence is not approval. A passing scorecard
-   is not approval. A successful build is not approval.
-5. Feedback loop runs on every rejection. No silent retries without capturing the reason.
-6. Every stat ships with a verification trace. No trace, no ship.
-7. Render target is always `out/` first. `public/v5_library/` only after Matt approval.
-8. Static flyers must pass `flyer-design` photography + typography + `design_review_checklist`
-   gates before Matt sees them. Never describe a flyer as “client-ready” or “for distribution.”
-
-## Platform defaults (when Matt doesn't specify)
-
-| Format | Default platforms |
-|---|---|
-| `listing_reveal`, `listing_launch` | IG Reels, TikTok, YT Shorts, FB Reels, LinkedIn, X |
-| `data_viz_video`, `market_report_video` | IG Reels, TikTok, YT Shorts, FB Reels, LinkedIn |
-| `news-video` | IG Reels, TikTok, X, Threads |
-| `earth_zoom` | IG Reels, TikTok, YT Shorts |
-| `meme_content` | IG Reels, TikTok, X, Threads |
-| `neighborhood_tour`, `area_guides` | IG Reels, YT Shorts, FB Reels, Pinterest |
-| `avatar_market_update` | YT (long), LinkedIn, FB Feed |
-| `social_calendar` | IG Reels, FB Feed, GBP Event post |
-| `meme_lord` (image) | IG Feed, FB Feed, X, Threads |
-| `flyer-design` (static) | IG Feed, FB Feed, LinkedIn, email/PDF handout |
-
-Matt can override: "publish to ONLY {platform list}" or "build but don't publish."
+1. Never load `video_production_skills/**`.
+2. Never dispatch a producer-runtime worker from this skill.
+3. Matt approval is mandatory before publish. Silence is not approval.
+4. Every stat ships with a verification trace (CLAUDE.md §0). No trace, no ship.
+5. Voice: `marketing_brain_skills/brand-voice/VOICE.md`.
 
 ## See also
 
-- `video_production_skills/quality_gate/SKILL.md`.  QA pass (Step 7)
-- `video_production_skills/content_pipeline/SKILL.md`.  publish routing (Step 9)
-- `video_production_skills/viral-playbook/SKILL.md`.  what's working NOW (2026 formats, hooks, hold rules, growth) — load before deciding WHAT to make
-- `video_production_skills/tool-mastery/SKILL.md`.  how to correctly use every AI tool (Replicate video models, ElevenLabs audio, Flux/Ideogram image) — load before deciding HOW to build it
-- `video_production_skills/VIDEO_PRODUCTION_SKILL.md`.  master hard constraints
-- `social_media_skills/flyer-design/SKILL.md`.  static flyers + design review gate
-- `automation_skills/triggers/listing_trigger/SKILL.md`.  automated listing pipeline
+- `CLAUDE.md` §4. Studio (`lib/studio/`, `/admin/studio`, publisher-sweep)
+- `CLAUDE.md` §5. Producer runtime retired
+- `automation_skills/automation/publish/SKILL.md`. Live publish path
+- `social_media_skills/platform-best-practices/SKILL.md`. Platform rule layer
+- `social_media_skills/flyer-design/SKILL.md`. Static flyers
 
 ---
 
@@ -260,47 +83,47 @@ Matt can override: "publish to ONLY {platform list}" or "build but don't publish
 
 ## 1. What it makes
 
-(See body sections above for what it makes detail. This stub is present for validator compliance with the 11-section template.)
+Nothing. This skill refuses the retired video factory and points media at Studio.
 
 ## 2. Input contract
 
-(See body sections above for input contract detail. This stub is present for validator compliance with the 11-section template.)
+Natural-language intent. If it is video, route to Studio. If it is a still-live static SKILL above, load that SKILL.md.
 
 ## 3. Tool stack
 
-(See body sections above for tool stack detail. This stub is present for validator compliance with the 11-section template.)
+Studio (`lib/studio/`, `/admin/studio`). Publish via publisher-sweep. No Remotion. No `video_production_skills/**`.
 
 ## 4. Platform stack
 
-(See body sections above for platform stack detail. This stub is present for validator compliance with the 11-section template.)
+Live social delivery is `/api/cron/publisher-sweep` → `/api/social/publish`. Blog is `public.blog_posts` on the Next site.
 
 ## 5. The recipe
 
-(See body sections above for the recipe detail. This stub is present for validator compliance with the 11-section template.)
+Stop. Point at Studio or a still-live static SKILL. File a `marketing_brain_actions` row if the request came from inbox or `/marketing/request`. Run no producer.
 
 ## 6. Asset library wiring
 
-(See body sections above for asset library wiring detail. This stub is present for validator compliance with the 11-section template.)
+`data/asset-library/manifest.json` and `lib/asset-library.mjs` still exist for stills. Video is Studio.
 
 ## 7. Publishing flow
 
-(See body sections above for publishing flow detail. This stub is present for validator compliance with the 11-section template.)
+Matt §1 stamp on a Studio `ready` draft. Then publisher-sweep. See `automation_skills/automation/publish/SKILL.md`.
 
 ## 8. QA gate
 
-(See body sections above for qa gate detail. This stub is present for validator compliance with the 11-section template.)
+Studio craft rules in `CLAUDE.md` §4 and `docs/GROK_CRAFT_CANON.md`. Do not invoke a deleted quality_gate SKILL.
 
 ## 9. Failure modes
 
-(See body sections above for failure modes detail. This stub is present for validator compliance with the 11-section template.)
+Loading `video_production_skills/**` is a failure. Dispatching a producer from this skill is a failure. Publishing without Matt's stamp is a failure.
 
 ## 10. Mandatory references
 
-See the Mandatory references block above for the 8 required citations.
+See the Mandatory references block above.
 
 ## 11. Tool gap suggestions
 
-Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+None. Do not restore Remotion or a second video factory.
 
 ## Content-producer additional references
 

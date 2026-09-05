@@ -112,6 +112,13 @@ describe('renderCrmMerge — every catalog token resolves', () => {
     expect(out).toBe('Good morning, from Matt Ryan re: 123 Sample Ln, Bend OR 97701')
   })
 
+  it('%address% falls back to the contact street when no property context', () => {
+    const person = { ...FULL_PERSON, custom: {} }
+    const out = renderCrmMerge('saw %address% come off the market', person)
+    expect(out).toBe('saw 123 Sample Ln, Bend OR, 97701 come off the market')
+    expect(findUnresolvedMergeTokens(out)).toEqual([])
+  })
+
   it('%inquiry_address% falls back to the last viewed address', () => {
     const person = { ...FULL_PERSON, custom: {} }
     const ctx = { ...FULL_CTX, property: { ...FULL_CTX.property, address: null } }

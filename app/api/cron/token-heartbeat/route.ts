@@ -86,7 +86,11 @@ async function pingLinkedIn(): Promise<PlatformResult> {
     return { platform: 'linkedin', status: 'ok', message: `access_token len ${token.length}` }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'unknown'
-    if (msg.includes('not connected') || msg.includes('not configured')) {
+    if (
+      msg.includes('not connected') ||
+      msg.includes('not configured') ||
+      msg.includes('no refresh token')
+    ) {
       return { platform: 'linkedin', status: 'skipped', message: msg }
     }
     return { platform: 'linkedin', status: 'failed', message: msg }

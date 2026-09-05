@@ -1,9 +1,9 @@
 ---
 name: blog-post
-description: Generate and publish SEO-optimized long-form blog posts on Ryan Realty's AgentFire WordPress site at ryan-realty.com.  full schema markup, embedded YouTube video, internal cross-links, image alt text, and the WP REST API publish path. Use this skill whenever the user requests a blog post, says "write a blog post for [topic]", "publish to the blog", "draft a blog post about [city/neighborhood/listing]", "post this to ryan-realty.com", or asks for written long-form content destined for the website. Use this skill ALWAYS when the monthly-market-report-orchestrator routes deliverable #3. Do NOT use this skill for social-media captions, email newsletters, or video-script copy.  those have their own skills. The blog at ryan-realty.com is AgentFire-hosted WordPress (NOT Vercel).  this is the only blog destination.
+description: Generate and publish SEO-optimized long-form blog posts on the Ryan Realty Next site via Supabase public.blog_posts (rendered at /blog and /blog/[slug]). Full schema markup on the Next page, internal cross-links, image alt text, and the blog_posts upsert path. Use this skill whenever the user requests a blog post, says "write a blog post for [topic]", "publish to the blog", "draft a blog post about [city/neighborhood/listing]", "post this to ryan-realty.com", or asks for written long-form content destined for the website. Do NOT use this skill for social-media captions, email newsletters, or video-script copy. AgentFire WordPress is retired. The live blog is the Next app.
 output_type: text
-target_platforms: ["email", "agentfire_blog"]
-asset_destination: Supabase asset-library bucket + out/proof/<date>/<slug>/
+target_platforms: ["email"]
+asset_destination: public.blog_posts (status draft then published) + out/proof/<date>/<slug>/
 auto_inputs: ["brand voice rules", "market data from Supabase"]
 required_inputs: ["topic OR mls_id"]
 optional_inputs: ["tone_override", "length_override"]
@@ -18,69 +18,67 @@ action_types:
   - content:seo_blog
 ---
 
-# Blog Post Skill.  Ryan Realty (AgentFire WordPress)
+# Blog Post Skill.  Ryan Realty (Next site, Supabase blog_posts)
 
 ## Required references.  load these BEFORE producing any content
 
 Two canonical rule layers are non-negotiable inheritance for every Ryan Realty piece. CLAUDE.md "Skill self-binding (2026-05-13)" makes this mandatory.
 
-1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`, sand `#e8e2d4`), three type families (Amboqia Boriango display, Geist sans body/UI, Azo Sans Medium accent), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
+1. **[`design_system/ryan-realty/SKILL.md`](../../design_system/ryan-realty/SKILL.md)**.  visual brand spec. Colors (navy `#102742`, cream `#faf8f4`), type (Amboqia Boriango display, Geist sans body/UI), heritage + modern register, mascot Jax, voice rules, banned vocab, the asset cheat sheet, the broker headshots (transparent PNGs).
 
-2. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions). Synthesized from research on 30+ top real estate creators.
+2. **[`social_media_skills/platform-best-practices/SKILL.md`](../platform-best-practices/SKILL.md)**.  2026 platform rule layer. The cross-platform decision matrix (logo when, agent face when, aspect, length, hook, captions, posting cadence) + the Ryan Realty application matrix (per-surface decisions).
 
 A piece of content that ships without consulting BOTH of these is non-compliant.
 
 ---
 
-**Scope:** Generate SEO-optimized long-form blog posts and publish them to Ryan Realty's WordPress site at `ryan-realty.com` (AgentFire-hosted). The skill covers: research → outline → draft → SEO optimization → schema markup → image alt text → WordPress REST API publish.
+**Scope:** Generate SEO-optimized long-form blog posts and publish them to `public.blog_posts`. The live Next site renders them at `/blog` and `/blog/[slug]` via `lib/data/blog/*` (`getBlogPostBySlug`, `getPublishedBlogPosts`). Do not publish through WordPress REST. AgentFire WordPress is retired.
 
-**Status:** Canonical 2026-05-07. AgentFire WordPress is the production blog destination per Matt directive.  see `video_production_skills/AGENT_HANDOFF.md`.
+**Status:** Canonical 2026-09-05. Publishing path is Supabase `blog_posts` on the Next site.
 
 ---
 
 ## 1. When to use / when not to use
 
 **Use this skill for:**
-- Monthly market report blog post (deliverable #3 from `monthly-market-report-orchestrator`)
+- Monthly market report blog post
 - Neighborhood guide blog posts
 - Listing spotlight blog posts
 - Real estate news / market commentary blog posts
 - Buyer's guides, seller's guides, evergreen content
-- Anything destined for `ryan-realty.com` as a published article
+- Anything destined for `ryan-realty.com/blog/{slug}` as a published article
 
 **Do NOT use for:**
-- Instagram / TikTok / FB Reels captions (use `publisher/SKILL.md` platform-specific copy)
-- Email newsletters (route to `marketing:email-sequence` or equivalent)
-- Video script (lives in the corresponding video-production skill, e.g. `market-data-video/SKILL.md`)
+- Instagram / TikTok / FB Reels captions (use `automation_skills/automation/publish/SKILL.md` after Studio)
+- Email newsletters (TypeScript newsletter product)
+- Video script (Studio, CLAUDE.md §4 / `lib/studio/`)
 - Internal docs, runbooks, or non-customer-facing content
+- AgentFire WordPress / WP REST (`/wp-json/wp/v2/posts`). That destination is dead.
 
 ---
 
-## 2. The publish destination is AgentFire WordPress
+## 2. The publish destination is Supabase blog_posts on the Next site
 
-**ONE blog destination:** `https://ryan-realty.com` (AgentFire-hosted WordPress).
+**ONE blog destination:** `public.blog_posts` rendered by the Next app at `https://ryan-realty.com/blog/{slug}`.
 
-**NOT** the Vercel app at `ryanrealty.vercel.app`.  that hosts the MLS dashboard, not the blog. The Vercel app and the AgentFire WP coexist on the same domain at the production cutover (`ryan-realty.com` for blog/marketing content; `ryanrealty.vercel.app` and future app subdomain for the dashboard).
+**NOT** AgentFire WordPress. **NOT** `POST /wp-json/wp/v2/posts`. **NOT** `WP_AGENTFIRE_*` env vars. The WordPress cutover already shipped; leftover WP REST recipes are fossils.
 
-**AgentFire WordPress REST API endpoint:**
-```
-https://ryan-realty.com/wp-json/wp/v2/posts
-```
+**Read path (DAL, required):**
+- `lib/data/blog/getBlogPostBySlug.ts` (public page, `status='published'`)
+- `lib/data/blog/getPublishedBlogPosts.ts` (index)
+- `lib/data/blog/getRelatedBlogPosts.ts`
+- `lib/data/blog/getRecentBlogPosts.ts`
 
-**Authentication:** WordPress Application Passwords. Required env vars in `.env.local`:
-```
-WP_AGENTFIRE_USER=<wordpress-user>
-WP_AGENTFIRE_APP_PASSWORD=<application-password>
-WP_AGENTFIRE_SITE_URL=https://ryan-realty.com
-```
+**Write path:** service-role upsert on `public.blog_posts` (same shape as `scripts/seed-blog-posts.ts`). Columns: `title`, `slug`, `content`, `excerpt`, `category`, `tags`, `hero_image_url`, `seo_title`, `seo_description`, `status` (`draft` | `published`), `published_at`, `author_broker_id`.
 
-**Auth header:**
+**Live URL after publish:**
 ```
-Authorization: Basic <base64(WP_AGENTFIRE_USER:WP_AGENTFIRE_APP_PASSWORD)>
-Content-Type: application/json
+https://ryan-realty.com/blog/{slug}
 ```
 
-If env vars are missing, halt with: "AgentFire WordPress credentials not configured. Add `WP_AGENTFIRE_USER` and `WP_AGENTFIRE_APP_PASSWORD` to `.env.local`. Generate the application password at WP Admin → Users → Profile → Application Passwords."
+Drafts stay `status='draft'` and are not selected by `getBlogPostBySlug`. Do not flip to `published` until Matt's §1 stamp.
+
+If you need a bulk seed pattern, follow `scripts/seed-blog-posts.ts` (upsert on `slug`). Do not invent a WordPress client.
 
 ---
 
@@ -92,101 +90,34 @@ If env vars are missing, halt with: "AgentFire WordPress credentials not configu
 - **Brand suffix:** end with " | Ryan Realty"
 - **Pattern:** `{Primary Keyword} {Period or Modifier} | Ryan Realty`
 - **Example:** "Bend Oregon Real Estate Market Report.  April 2026 | Ryan Realty"
+- Store in `seo_title` (and `title` if they match)
 
 ### 3.2 Meta description
 - **Length:** 150-160 characters (truncated above 160)
 - **Lede with the headline stat + period:** "Bend's median home price hit $699K in April 2026, down 13.4% from last year. See the full market breakdown..."
-- **CTA hook at the end:** "Read the full report →"
+- Store in `seo_description`
 
 ### 3.3 URL slug (canonical)
-- **Pattern by content type:**
-  - Market report: `/market-report/{city-slug}/{YYYY-MM}` (e.g. `/market-report/bend/2026-04`)
-  - Neighborhood guide: `/neighborhoods/{city-slug}/{neighborhood-slug}`
-  - Listing spotlight: `/listings/{listingkey}`
-  - Evergreen: `/blog/{slug}`
+- **Pattern:** `/blog/{slug}` only. The Next route is `app/blog/[slug]/page.tsx`.
 - **Slug rules:** lowercase, hyphens only, no stop words ("a", "the", "of"), no numbers unless meaningful (year/month OK)
+- Do not invent `/market-report/{city}/{YYYY-MM}` WordPress permalinks. A market-report post is still `/blog/{slug}`.
 
 ### 3.4 Open Graph + Twitter Card
-- `og:title`.  same as title tag, brand suffix optional (Twitter card truncates more aggressively)
-- `og:description`.  same as meta description
-- `og:image`.  1200×630 hero image (chart screenshot, location photo, or generated cover card)
-- `og:type`.  `article` for posts, `video.other` for video-led posts
-- `og:url`.  canonical URL
-- `twitter:card`.  `summary_large_image`
+The Next page builds metadata from `seo_title`, `seo_description`, and `hero_image_url`. Provide those columns. Do not POST to WP media.
 
-### 3.5 Structured data (JSON-LD blocks in `<head>`)
-
-**Always include `Article`:**
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "{title}",
-  "description": "{meta description}",
-  "image": "{og:image URL}",
-  "datePublished": "{ISO 8601}",
-  "dateModified": "{ISO 8601}",
-  "author": {
-    "@type": "Person",
-    "name": "Matt Ryan",
-    "url": "https://ryan-realty.com/about/matt-ryan"
-  },
-  "publisher": {
-    "@type": "RealEstateAgent",
-    "name": "Ryan Realty",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "https://ryan-realty.com/wp-content/uploads/.../logo.png"
-    }
-  }
-}
-```
-
-**For market reports / neighborhood guides.  add `Place`:**
-```json
-{
-  "@type": "Place",
-  "name": "{City}, OR",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "{City}",
-    "addressRegion": "OR",
-    "addressCountry": "US"
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": "{lat}",
-    "longitude": "{lng}"
-  }
-}
-```
-
-**For posts with embedded video.  add `VideoObject`:**
-```json
-{
-  "@type": "VideoObject",
-  "name": "{video title}",
-  "description": "{video description}",
-  "thumbnailUrl": "{thumb URL}",
-  "uploadDate": "{ISO}",
-  "duration": "PT{minutes}M{seconds}S",
-  "contentUrl": "{video file URL or YouTube watch URL}",
-  "embedUrl": "{YouTube embed URL}"
-}
-```
-
-Validate every JSON-LD block against [Google's Rich Results Test](https://search.google.com/test/rich-results) before publish. Halt if any required field fails.
+### 3.5 Structured data
+The Next page emits Article JSON-LD via `generateBlogSchema` in `lib/structured-data.ts`. Do not hand-author WordPress JSON-LD blocks into post HTML. Do not cite `wp-content/uploads` logo paths.
 
 ### 3.6 Heading hierarchy
-- **One H1 only** (the page title.  WordPress wraps the post title in H1 automatically; do NOT add another H1 in the post body).
+- **One H1 only** (the page title. the Next page wraps `title` in H1; do NOT add another H1 in `content`).
 - **H2 = each major section** (e.g. "Median Sale Price", "Months of Supply", "Days on Market", "Top Neighborhoods").
-- **H3 = sub-sections within an H2** (e.g. "How Bend compares to last year").
+- **H3 = sub-sections within an H2**.
 - Don't skip levels (no H4 inside H2 without an H3 between).
 
 ### 3.7 Internal links
-- Link to the **previous month's report** (e.g. April 2026 post links to March 2026 post): "Last month's [Bend market report](/market-report/bend/2026-03)..."
-- Link to **the city's neighborhood guides** when neighborhoods are mentioned: "Petrosa led closed sales.  see our [Petrosa neighborhood guide](/neighborhoods/bend/petrosa)..."
-- Link to **the relevant listing search**: "Currently 1,149 active SFR listings in Bend.  [see them all](/search/bend-sfr)..."
+- Link to **prior posts** on `/blog/{slug}`.
+- Link to **place pages** that exist on the Next site (`/cities/...`, `/communities/...`, neighborhood routes).
+- Link to **listing search** (`/homes-for-sale/...` or `/search/...` as the live nav uses).
 - Aim for 3-5 internal links per 1,000 words. Anchor text is descriptive, not "click here."
 
 ### 3.8 External links
@@ -194,119 +125,90 @@ Validate every JSON-LD block against [Google's Rich Results Test](https://search
 - Do NOT link to competitor brokerages or aggregator portals (Zillow, Realtor.com, Redfin) unless absolutely necessary for context.
 
 ### 3.9 Image alt text
-- **Every image** must have descriptive alt text.  no decorative images without alt.
-- **Pattern for charts:** `"{Stat name} chart for {city} {period}.  {key value}"` (e.g. "Median sale price line chart for Bend April 2026.  $699K, +52% since 2019")
-- **Pattern for photos:** `"{Subject}.  {location context}"` (e.g. "Smith Rock State Park near Bend, Oregon")
+- **Every image** in `content` must have descriptive alt text.
+- **Pattern for charts:** `"{Stat name} chart for {city} {period}.  {key value}"`
+- **Pattern for photos:** `"{Subject}.  {location context}"`
 - **Never:** "image1.jpg", "untitled", "photo of [thing]" without context.
 
-### 3.10 Embedded YouTube video
-- Use **WordPress oEmbed** (paste the YouTube URL on its own line) OR an iframe with `loading="lazy"` and `title="..."`.
-- Place the video **above the fold** (right after the lede paragraph) for video-led posts.
-- Add the `VideoObject` JSON-LD (per §3.5).
-- Always include a **transcript or chapter timestamps** below the video (helps SEO + accessibility + AI search).
+### 3.10 Embedded video
+If the post embeds a companion video, that video is a Studio draft (`CLAUDE.md` §4 / `lib/studio/`), not a Remotion render and not a `video_production_skills/**` producer. Use a standard iframe or hosted URL in `content`. Do not use WordPress oEmbed.
 
 ### 3.11 Word count
 - **Market report:** 800-1,500 words
 - **Neighborhood guide:** 1,000-2,000 words
-- **Listing spotlight:** 400-800 words (shorter is fine.  the listing page does the heavy lifting)
+- **Listing spotlight:** 400-800 words
 - **Evergreen guide:** 1,500-3,000 words
-- **Below the floor:** halt and add depth (FAQ, deeper analysis, comparison context).
-- **Above the ceiling:** split into multiple posts or move depth to a downloadable PDF.
+- **Below the floor:** halt and add depth.
+- **Above the ceiling:** split into multiple posts.
 
 ### 3.12 Tone + voice
-- **Authoritative but accessible**.  Matt is a licensed principal broker; the post should sound like a knowledgeable local expert, not a generic content mill.
-- **Numbers carry units** always: "$699,000" not "$699,000.00", "46 days" not "46d", "98.5%" not ".985".
+- Authoritative but accessible. Matt is a licensed principal broker.
+- Numbers carry units always: "$699,000" not "$699,000.00", "46 days" not "46d", "98.5%" not ".985".
+- `marketing_brain_skills/brand-voice/VOICE.md` is the only voice source.
 
 ---
 
 ## 4. Generation flow
 
-1. **Receive data + media from orchestrator**.  the `monthly-market-report-orchestrator` (or direct caller) provides:
-   - Verified data (cache row + `*_sfr` columns + history + extras)
-   - YouTube long-form video URL (already uploaded)
-   - Hero image (chart screenshot or generated cover)
-   - Featured image gallery (optional.  chart screenshots, hero photos)
+1. **Pull verified data.** Cache row + DAL. CLAUDE.md §0. Generate `citations.json` next to the draft. Every figure traces.
+2. **Outline first.** H1 title, H2 sections, H3 subsections. The data dictates section order.
+3. **Draft body HTML** into `content`. Hero still goes in `hero_image_url`, not a WP featured-image id.
+4. **SEO checklist.** title length ≤60, meta description 150-160, internal links 3-5, alt text on every image, slug correct, banned words removed.
+5. **Upsert `public.blog_posts` as `status='draft'`.** Do not set `published`.
+6. **Surface the draft to Matt** (row id, slug, excerpt, citations.json). There is no WordPress preview URL.
+7. **On Matt's "go"** (explicit, this session): set `status='published'`, `published_at=now()`. Live URL is `/blog/{slug}`.
+8. Sitemap picks up published rows from `app/sitemap.ts`. Do not ping a Yoast sitemap.
 
-2. **Outline first**.  H1 title, H2 sections, H3 subsections. Confirm the outline matches the data story before drafting. The data dictates the section order, not the template.
-
-3. **Draft body**.  write each section. Embed the YouTube video right after the lede. Embed chart images at the section that discusses them.
-
-4. **Add JSON-LD blocks**.  Article + Place + VideoObject (if video). Validate each.
-
-5. **SEO checklist**.  title length ≤60, meta description 150-160, internal links 3-5, alt text on every image, slug correct, OG image set, all banned words removed.
-
-6. **Publish via WP REST API** as DRAFT first (`status: 'draft'`).
-
-7. **Surface preview URL to Matt:**
-   ```
-   https://ryan-realty.com/?p={draft-id}&preview=true
-   ```
-
-8. **On Matt's "go"**.  toggle status to 'publish' via PATCH to the same post:
-   ```
-   PATCH /wp-json/wp/v2/posts/{id}
-   { "status": "publish" }
-   ```
-   Then ping the sitemap (`https://ryan-realty.com/sitemap_index.xml`).  most SEO plugins auto-update; if not, trigger Yoast/Rank Math sitemap rebuild.
+Companion video, if any, is Studio then publisher-sweep. This skill does not render video.
 
 ---
 
-## 5. Featured-image upload
+## 5. Featured image
 
-Upload featured image to WP Media Library FIRST (gets media ID), then attach to the post.
+Set `hero_image_url` to a public HTTPS URL (asset library or a tracked `public/` still). Do not `POST /wp-json/wp/v2/media`. Do not store a WordPress media id.
 
-```
-POST /wp-json/wp/v2/media
-Content-Type: image/jpeg
-Content-Disposition: attachment; filename="bend-april-2026-cover.jpg"
-{binary}
-
-→ returns { id: 12345, source_url: "https://ryan-realty.com/wp-content/uploads/..." }
-```
-
-Then in the post payload, set `featured_media: 12345`.
+Default still source: `data/asset-library/manifest.json` via `lib/asset-library.mjs`, or a Studio still. Not `video_production_skills/media-sourcing`.
 
 ---
 
 ## 6. Categories + tags
 
-Standard WordPress taxonomies.  pull existing IDs from `/wp-json/wp/v2/categories` and `/wp-json/wp/v2/tags`, or create on the fly.
+These are columns on `blog_posts`, not WordPress taxonomies.
 
-**Standard categories:**
-- Market Reports (slug: `market-reports`)
-- Neighborhood Guides (slug: `neighborhood-guides`)
-- Listing Spotlights (slug: `listings`)
-- Buyer Resources (slug: `buyers`)
-- Seller Resources (slug: `sellers`)
-- News (slug: `news`)
+**Known category strings already in seed content (reuse; do not invent WP slugs):**
+- Market Updates
+- Market Analysis
+- Buying Guides
+- First-Time Buyers
+- Home Improvement
+- Lifestyle & Living
 
-**Tag patterns:**
+**Tag patterns (text[]):**
 - City: `bend`, `redmond`, `sisters`, `la-pine`, `prineville`, `sunriver`
 - Year: `2026`, `2025`
 - Type: `monthly-report`, `quarterly-report`, `ytd-report`
 - Topic: `median-price`, `inventory`, `mortgage-rates`
 
-Each post gets 1 category + 3-8 tags.
+Each post gets 1 `category` + 3-8 `tags`.
 
 ---
 
 ## 7. Pre-publish QA checklist
 
-Before flipping draft → publish:
+Before flipping draft → published:
 
-- [ ] Title ≤60 chars
-- [ ] Meta description 150-160 chars
-- [ ] Slug matches §3.3 pattern
-- [ ] OG image uploaded + set
-- [ ] All JSON-LD blocks validate (Rich Results Test passes)
-- [ ] H1 present (auto from title), H2 hierarchy correct
+- [ ] Title ≤60 chars (`seo_title`)
+- [ ] Meta description 150-160 chars (`seo_description`)
+- [ ] Slug is `/blog/{slug}` and unique
+- [ ] `hero_image_url` set
+- [ ] H1 not duplicated in `content`
 - [ ] 3-5 internal links present
 - [ ] All images have descriptive alt text
-- [ ] Video embedded above fold (if video-led post)
 - [ ] Word count in target range (§3.11)
 - [ ] Banned-word grep returns zero hits
 - [ ] All numbers carry units
 - [ ] Verification trace covers every figure on the page
+- [ ] No WordPress REST call was made
 
 If ANY fail, halt before publishing.
 
@@ -316,26 +218,26 @@ If ANY fail, halt before publishing.
 
 Three normalized broker headshots live at `design_system/ryan-realty/assets/team/`:
 
-- `matt-ryan.jpg`.  Matt Ryan (owner / principal broker)
-- `paul-stevenson.jpg`.  Paul Stevenson
-- `rebecca-peterson.jpg`.  Rebecca Peterson
+- `matt-ryan.png`.  Matt Ryan (owner / principal broker)
+- `paul-stevenson.png`.  Paul Stevenson
+- `rebecca-peterson.png`.  Rebecca Peterson
 
-All 800×1200 px, pure white bg, identical head height, natural color. Specs in `design_system/ryan-realty/MANIFEST.md` §"assets/team/".
+Set `author_broker_id` to the matching `brokers.id`. The Next page joins `display_name`, `slug`, `photo_url`. Do not upload a headshot to a WP Media Library.
 
-**Author byline rule:** Every blog post that features a specific agent (listing spotlight, agent commentary, market insight attributed to a broker) must include that broker's headshot in the author byline block. Upload the headshot to the WP Media Library if not already there, then reference the media ID in the `author_image` custom field or theme avatar override. For brokerage-brand posts (monthly market reports, neighborhood guides), no individual headshot is required.  use the Ryan Realty logo from `design_system/ryan-realty/assets/brand/logo-blue.png`.
+For brokerage-brand posts (monthly market reports, neighborhood guides), author may be the brokerage default. For a listing spotlight attributed to a broker, set that broker's id.
 
 ---
 
 ## 9. See also
 
-- `video_production_skills/monthly-market-report-orchestrator/SKILL.md`.  the orchestrator that calls this skill
-- `video_production_skills/youtube-long-form-market-report/SKILL.md`.  the long-form video this post embeds
-- `video_production_skills/market-data-video/SKILL.md`.  short-form companion + canonical data dictionary (every figure in this blog post traces back to a column documented there)
-- `video_production_skills/media-sourcing/SKILL.md`.  choose hero image source (asset library, Unsplash, Shutterstock, Imagen, Nano Banana, Grok Imagine, etc.). Locked default for blog hero: chart screenshot from the YouTube long-form OR a generated cover card from Imagen 4 / Nano Banana 2.
-- `video_production_skills/AGENT_HANDOFF.md`.  confirms AgentFire WP is the production blog destination
-- `social_media_skills/facebook-lead-gen-ad/SKILL.md`.  paired ad sub-skill
-- WordPress REST API: https://developer.wordpress.org/rest-api/reference/posts/
-- AgentFire docs: https://help.agentfire.com/ (account-specific)
+- `CLAUDE.md` §4. Studio (`lib/studio/`, `/admin/studio`) for any companion video
+- `CLAUDE.md` §5. Inbox files a row, runs no producer
+- `automation_skills/automation/publish/SKILL.md`. publisher-sweep → `/api/social/publish`
+- `lib/data/blog/getBlogPostBySlug.ts`. public read path
+- `scripts/seed-blog-posts.ts`. upsert-on-slug pattern
+- `social_media_skills/facebook-lead-gen-ad/SKILL.md`. paired ad sub-skill
+
+Do not load `video_production_skills/**`. Do not load AgentFire handoff docs as the live destination.
 
 ---
 
@@ -352,11 +254,11 @@ All 800×1200 px, pure white bg, identical head height, natural color. Specs in 
 
 ## 10. Mandatory references
 
-See the Mandatory references block above for the 8 required citations.
+See the Mandatory references block above for the required citations.
 
 ## 11. Tool gap suggestions
 
-Tool gap suggestions: see tool-acquisition-recommendations.md for the aggregated list across all producers.
+Tool gap suggestions: none that restore WordPress REST or `video_production_skills/**`.
 
 ## Content-producer additional references
 

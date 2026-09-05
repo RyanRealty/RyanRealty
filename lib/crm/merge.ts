@@ -269,7 +269,7 @@ export function renderCrmMerge(
     // PROPERTY
     '%customSellerPropertyAddress%': customAddress,
     '%customPropertyAddress%': customAddress,
-    '%address%': customAddress,
+    '%address%': customAddress ?? fullAddress,
     '%property_price%': val(ctx?.property?.price),
     '%property_mls_number%': val(ctx?.property?.mlsNumber),
     '%last_viewed_address%': val(ctx?.property?.lastViewedAddress),
@@ -284,7 +284,7 @@ export function renderCrmMerge(
     '%first%': first,
     '{{first_name}}': first,
     '{{firstName}}': first,
-    '{{address}}': customAddress,
+    '{{address}}': customAddress ?? fullAddress,
     '{{cma_link}}': cmaLink,
     // CRM-imported template aliases (2026-07-02 mobile audit): 17 of the 37
     // live SMS templates still carry CRM token names — one already reached a

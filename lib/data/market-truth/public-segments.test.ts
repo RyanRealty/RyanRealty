@@ -391,18 +391,12 @@ describe('public place pages', () => {
     const jsonFeed = readFileSync(resolve('lib/data/market/getMarketPulseJsonFeed.ts'), 'utf8')
     const jsonRoute = readFileSync(resolve('app/data/market/[geoType]/[geoSlug]/route.ts'), 'utf8')
     const sell = readFileSync(resolve('app/sell/page.tsx'), 'utf8')
-    const listing = readFileSync(
-      resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),
-      'utf8',
-    )
     const sellerLp = readFileSync(resolve('app/lp/seller-home-value/page.tsx'), 'utf8')
     const expired = readFileSync(resolve('app/lp/expired-listing/page.tsx'), 'utf8')
     const buyer = readFileSync(resolve('app/lp/buyer-listing-alerts/page.tsx'), 'utf8')
     expect(jsonFeed).toMatch(/getPublicPlaceSegments/)
     expect(jsonRoute).toMatch(/extraSegments/)
     expect(sell).toMatch(/getPublicPlaceSegments/)
-    expect(listing).toMatch(/getPublicPlaceSegments/)
-    expect(listing).toMatch(/PublicProductTypes/)
     expect(sellerLp).toMatch(/getPublicPlaceSegments/)
     expect(expired).toMatch(/getPublicPlaceSegments/)
     expect(buyer).toMatch(/getPublicPlaceSegments/)

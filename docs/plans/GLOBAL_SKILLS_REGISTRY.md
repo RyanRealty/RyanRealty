@@ -2,7 +2,7 @@
 
 **Purpose:** One index of every `SKILL.md` this machine uses for Cursor agents, Claude Code, and Cowork sessions (plus TC-side skills). **Read this** when choosing which skill to load before substantive work.
 
-**Inventory date:** 2026-04-22  
+**Inventory date:** 2026-09-05 (D7: git mirror wins; no resurrected video_production_skills rows)  
 **Canonical path (Claude ecosystem):** `~/.claude/GLOBAL_SKILLS_REGISTRY.md`  
 **Git mirror (Ryan Realty repo):** `docs/plans/GLOBAL_SKILLS_REGISTRY.md` — keep identical when you refresh the inventory.
 
@@ -33,12 +33,13 @@ Then merge new paths into this file under the right heading.
 
 ---
 
-## Inventory (112 paths under `~/.cursor` + TC + repo `.cursor/skills`; section **F** lists additional repo video skills)
+## Inventory (112 paths under `~/.cursor` + TC + repo `.cursor/skills`; section **F** records deleted video skills. Do not load them.)
 
 ### A — RyanRealty project (`.cursor/skills`)
 
 - `/Users/matthewryan/RyanRealty/.claude/skills/page-grade/SKILL.md` *(KILLED 2026-08-16 — refuse stub. Do not grade.)*
 - `/Users/matthewryan/RyanRealty/.cursor/skills/page-grade/SKILL.md` *(KILLED 2026-08-16 — refuse stub. Do not grade.)*
+- `/Users/matthewryan/RyanRealty/.cursor/skills/facebook-seller-growth/SKILL.md` *(live weekly seller-growth routine. CRM is `crm_people` via `sendEvent`. Review at `/admin/crm`. Do not load the REFUSE clones in A1/A2.)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/frontend-design/SKILL.md` *(building/reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/hallmark/SKILL.md` *(anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/domain-context/SKILL.md` *(author/maintain repo-root CONTEXT.md ubiquitous-language doc — canonical terms + avoid-lists + flagged ambiguities; adapted from Matt Pocock's course-video-manager 2026-07-11)*
@@ -49,6 +50,14 @@ Then merge new paths into this file under the right heading.
 - `/Users/matthewryan/RyanRealty/.cursor/skills/oregon-real-estate-oref/SKILL.md`
 - `/Users/matthewryan/RyanRealty/.cursor/skills/professional-word-docx/SKILL.md`
 - `/Users/matthewryan/RyanRealty/.cursor/skills/skyslope-api/SKILL.md`
+
+### A1 — gitignored Claude clones (REFUSE)
+
+- `/Users/matthewryan/RyanRealty/.claude/skills/facebook-seller-growth/SKILL.md` *(REFUSE stub. Live skill is `.cursor/skills/facebook-seller-growth`. Follow Up Boss is retired. CRM is `crm_people`.)*
+
+### A2 — Claude local (`~/.claude/skills`)
+
+- `/Users/matthewryan/.claude/skills/facebook-seller-growth/SKILL.md` *(REFUSE stub. Same as A1.)*
 
 ### B — TRANSACTION COORDINATOR (mounted TC / other Claude projects)
 
@@ -194,7 +203,7 @@ Then merge new paths into this file under the right heading.
 
 All `video_production_skills/**/SKILL.md` files were removed 2026-06-15. Do not load them. What remains:
 
-- `video_production_skills/captions/canonical/{SingleWordCaption.tsx,safe-zones.ts,load-amboqia.ts}` — Remotion caption helpers, not skills
-- Video hard rules: `CLAUDE.md` §4
+- Caption modules only (not skills): `video_production_skills/captions/canonical/` if still on disk. Do not load SKILL.md from that tree.
+- Video hard rules: `CLAUDE.md` §4. Live factory is Studio (`lib/studio/`, `/admin/studio`).
 - Live publish path: `/api/cron/publisher-sweep` → `/api/social/publish` (see `automation_skills/automation/publish/SKILL.md`)
 - Still-live social SKILL: `social_media_skills/blog-post/SKILL.md` (site `blog_posts`, not AgentFire WordPress)

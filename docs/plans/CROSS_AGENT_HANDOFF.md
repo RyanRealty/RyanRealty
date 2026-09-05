@@ -1,4 +1,16 @@
-# Current — 2026-09-04 (golf Track C) — five remaining maps ship as operator plates
+# Current — 2026-09-05 (deep-audit punchlist e2e)
+
+Shipped the 2026-09-04 deep-audit punchlist that does not need Matt's OAuth,
+Studio approve, or loop re-arm. Goal: `docs/plans/ENTERPRISE_MAP/DEEP_AUDIT_PUNCHLIST_E2E_2026-09-05.md`.
+Report: `out/audits/deep-audit-2026-09-04.md`.
+
+Still Matt-gated: X reconnect, LinkedIn reconnect, 13 Studio drafts, Next 16.1.6→16.3.4, dropping DEAD tables, 8 Learn windows.
+
+Golf Track C remains on local `wt/golf-maps-20260903`. Do not push that branch.
+
+---
+
+# Previous — 2026-09-04 (golf Track C) — five remaining maps ship as operator plates
 
 OSM still has no numbered 18/9 (unclipped cache, bbox XML, Overpass 504).
 Do not invent. Do not re-open Nicklaus (`dfdfe4d2`). Do not number leftover

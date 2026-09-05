@@ -14,6 +14,11 @@ import { readIntegrationHealth } from './integration-health'
 import { readSearchCompletenessAccept } from './search-completeness'
 import { readVideoDecisionDocket } from './video-docket'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
+import {
+  AUTH_TABLE_TO_HEARTBEAT,
+  classifyTokenHealth,
+  consecutiveHeartbeatFailures,
+} from './token-health'
 
 export type SignalStatus = 'ok' | 'unreadable'
 
@@ -272,6 +277,7 @@ export async function collectCompanyScoreboardSignals(
     audienceHold,
     cmaRes,
     joinStats,
+    heartbeatRes,
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
@@ -304,6 +310,13 @@ export async function collectCompanyScoreboardSignals(
     readMetaAudienceHold(sb, now),
     sb.from('cmas').select('id', { count: 'exact', head: true }),
     readJoinConversionStats(sb, now),
+    sb
+      .from('sync_logs')
+      .select('endpoint,response_status,logged_at')
+      .like('endpoint', 'token_heartbeat:%')
+      .gte('logged_at', since7d)
+      .order('logged_at', { ascending: false })
+      .limit(200),
     ...SOCIAL_TABLES.map((table) =>
       sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
     ),
@@ -332,6 +345,14 @@ export async function collectCompanyScoreboardSignals(
     brain.measured = brain.byStatus.measured ?? 0
   }
 
+  const heartbeatByEndpoint = new Map<string, Array<{ response_status: number | null }>>()
+  for (const row of heartbeatRes.data ?? []) {
+    const ep = String((row as { endpoint?: string }).endpoint ?? '')
+    const list = heartbeatByEndpoint.get(ep) ?? []
+    list.push({ response_status: (row as { response_status?: number | null }).response_status ?? null })
+    heartbeatByEndpoint.set(ep, list)
+  }
+
   const tokens: TokenHealth[] = SOCIAL_TABLES.map((table, i) => {
     const res = tokenResults[i] as {
       data: Array<{ expires_at?: string; refresh_token?: string | null }> | null
@@ -346,8 +367,15 @@ export async function collectCompanyScoreboardSignals(
     }
     const expiresAt = rows[0]?.expires_at ?? null
     const refreshTokenPresent = Boolean(rows[0]?.refresh_token?.trim())
-    const pastExpiry = expiresAt ? Date.parse(expiresAt) < now.getTime() : false
-    const status = !pastExpiry ? 'valid' : refreshTokenPresent ? 'auto-refresh' : 'needs-reauth'
+    const endpoint = AUTH_TABLE_TO_HEARTBEAT[table]
+    const failStreak = consecutiveHeartbeatFailures(heartbeatByEndpoint.get(endpoint) ?? [])
+    const status = classifyTokenHealth({
+      rows: rows.length,
+      expiresAt,
+      refreshTokenPresent,
+      nowMs: now.getTime(),
+      consecutiveHeartbeatFailures: failStreak,
+    })
     return { table, rows: rows.length, expiresAt, refreshTokenPresent, status }
   })
 

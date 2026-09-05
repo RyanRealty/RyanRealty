@@ -48,7 +48,7 @@ export const maxDuration = 60
 type CheckStatus = 'green' | 'yellow' | 'red' | 'info'
 interface Check { name: string; status: CheckStatus; value: string; note?: string }
 
-const CHANNELS = ['ga4', 'gsc', 'fub', 'meta_page', 'instagram', 'x', 'youtube', 'linkedin', 'tiktok', 'gbp']
+const CHANNELS = ['ga4', 'gsc', 'meta_page', 'instagram', 'x', 'youtube', 'linkedin', 'tiktok', 'gbp']
 
 export async function GET(req: NextRequest) {
   const denied = requireCronAuth(req)
@@ -72,7 +72,8 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .maybeSingle()
     if (!data?.fetched_at) {
-      push(`snapshot:${chan}`, 'red', 'no rows ever', 'OAuth not completed for this platform')
+      const parked = chan === 'linkedin' ? 'PARKED — reconnect is Matt-gated (§1)' : 'OAuth not completed for this platform'
+      push(`snapshot:${chan}`, chan === 'linkedin' ? 'yellow' : 'red', 'no rows ever', parked)
       continue
     }
     const hours = (Date.now() - new Date(data.fetched_at).getTime()) / 3600000
@@ -133,9 +134,22 @@ export async function GET(req: NextRequest) {
       .eq('status', status)
     if (status === 'pending') push('queue:pending', (count || 0) > 20 ? 'red' : (count || 0) > 10 ? 'yellow' : 'green', `${count || 0} pending`)
     else if (status === 'in_production') push('queue:in_production', (count || 0) > 5 ? 'yellow' : 'green', `${count || 0} in_production`)
-    else if (status === 'ready') push('queue:ready', (count || 0) === 0 ? 'yellow' : 'green', `${count || 0} ready`)
+    else if (status === 'ready') push('queue:ready', 'info', `${count || 0} ready (all products — CMA + studio + fossils)`)
     else if (status === 'approved') push('queue:approved', (count || 0) > 3 ? 'yellow' : 'green', `${count || 0} approved waiting publish`)
     else if (status === 'executed') push('queue:executed_lifetime', 'info', String(count || 0))
+  }
+  {
+    const { count: studioReady } = await supabase
+      .from('marketing_brain_actions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'ready')
+      .eq('generated_by', 'grok-studio')
+    push(
+      'queue:studio_ready',
+      (studioReady || 0) === 0 ? 'yellow' : 'green',
+      `${studioReady || 0} grok-studio ready`,
+      (studioReady || 0) === 0 ? 'Studio queue is empty — slate is manual' : 'Waiting on Matt §1 approve',
+    )
   }
 
   // Performance + cost
@@ -170,7 +184,7 @@ export async function GET(req: NextRequest) {
     ANTHROPIC_API_KEY: true,
     PRODUCER_RUNTIME_ENABLED: false,
     RESEND_FROM: false,
-    WP_AGENTFIRE_APP_PASSWORD: false,
+    CURSOR_API_KEY: false,
   })) {
     const set = !!process.env[env] && process.env[env] !== 'false'
     push(`env:${env}`, set ? 'green' : required ? 'red' : 'yellow',

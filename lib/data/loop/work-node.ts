@@ -94,7 +94,12 @@ export function isStaleInProgress(
 
 /** Cloud-agent owner sessions are the Cursor agent id the sentinel stamped. */
 export function isCloudAgentSession(owner: string | null): boolean {
-  return typeof owner === 'string' && /^bc-[0-9a-f][0-9a-f-]{6,}/i.test(owner.trim())
+  if (typeof owner !== 'string') return false
+  const s = owner.trim()
+  // Cursor cloud agent ids are `bc-<uuid>`. Cloud-bot sessions stamp
+  // `cursor-cloud-bc-<hex>-…` which the old /^bc-/ prefix missed, leaving
+  // FLEET-PUNCH claims stranded (deep-audit 2026-09-04).
+  return /^(bc-|cursor-cloud-bc-)/i.test(s)
 }
 
 /**

@@ -236,6 +236,7 @@ export async function GET(request: NextRequest) {
       .update({
         status: 'executed',
         published_at: publishedAt,
+        executed_at: publishedAt,
         executor_response: {
           ...executorResponse,
           publish_result: publishBody,

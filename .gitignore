@@ -86,19 +86,13 @@ next-env.d.ts
 # ...and the crm-e2e + tc-builder loop skills — promoted to tracked (W13.3, 2026-07-21) so the in-house CRM/TC build loops survive clones + are visible to Cursor
 !.claude/skills/crm-e2e/
 !.claude/skills/tc-builder/
-# ...and experience-rollout — tracked (its exception was implicit; made explicit for consistency, W13.3)
-!.claude/skills/experience-rollout/
 # ...and endtoend — the /endtoend mission protocol (2026-07-30), tracked so it survives clones + is visible to Cursor
 !.claude/skills/endtoend/
 # ...and admin-product-os — the runner half of the Admin Product OS (2026-08-04). Its memory
 # lives in docs/plans/ADMIN_PRODUCT/ (tracked); leaving the runner local-only would strand the
 # OS on one machine and hide it from Cursor, breaking the pack's own cross-agent handoff story.
 !.claude/skills/admin-product-os/
-# ...and public-product-os — the runner half of the Public Product OS (2026-08-11). Same
-# reasoning as admin-product-os: memory lives in docs/plans/PUBLIC_PRODUCT/ (tracked); an
-# untracked runner strands the OS on one machine.
-!.claude/skills/public-product-os/
-# ...and page-grade — the public UX grind (2026-08-14). CLAUDE.md cites it; an
+# ...and page-grade — KILLED 2026-08-16 refuse stub. CLAUDE.md cites it; an
 # untracked skill fails ci:claude-canon in the isolated verify tree.
 !.claude/skills/page-grade/
 .claude/worktrees

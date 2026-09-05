@@ -161,7 +161,6 @@ checks.push({
 for (const surface of [
   { path: 'app/communities/[slug]/page.tsx', label: 'community charts pass toPublicCoreChartSeries' },
   { path: 'app/cities/[slug]/page.tsx', label: 'city charts pass toPublicCoreChartSeries' },
-  { path: 'components/site/listing-detail/NeighborhoodMarketContext.tsx', label: 'listing market charts pass toPublicCoreChartSeries' },
 ]) {
   const text = src(surface.path)
   checks.push({
@@ -169,6 +168,13 @@ for (const surface of [
     ok:
       /from ['"]@\/lib\/market\/publish-public-chart-source['"]/.test(text) &&
       /toPublicCoreChartSeries\(/.test(text),
+  })
+}
+{
+  const listing = src('app/listing/[listingKey]/page.tsx')
+  checks.push({
+    label: 'listing ask instrument is leftover HUD, not a pulse chart',
+    ok: /leftoverHudKpis/.test(listing) && /buildListingAskClaim/.test(listing),
   })
 }
 

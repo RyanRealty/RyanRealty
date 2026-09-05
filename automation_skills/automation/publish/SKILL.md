@@ -1,10 +1,12 @@
 ---
 name: publish
-description: Canonical skill for shipping approved content to social platforms. Fires when user says "publish to", "post this", "ship this content", "send to {platform}", "distribute the video", "distribute the reel", "go live with this", "publish the listing video", "drop this on IG", "drop this on TikTok", "drop this on YouTube", "drop this on LinkedIn", "drop this on X", "drop this on Pinterest", "drop this on Threads", "drop this on GBP", "drop this on Buffer", or any phrase requesting content delivery to a social platform. This is THE canonical publish skill — every other skill that produces shippable content hands off here. NOT for rendering, drafting, or scoring (use video production skills for those).
+description: Canonical skill for shipping approved content to social platforms. Fires when user says "publish to", "post this", "ship this content", "send to {platform}", "distribute the video", "distribute the reel", "go live with this", "publish the listing video", "drop this on IG", "drop this on TikTok", "drop this on YouTube", "drop this on LinkedIn", "drop this on X", "drop this on Pinterest", "drop this on Threads", "drop this on GBP", "drop this on Buffer", or any phrase requesting content delivery to a social platform. This is THE canonical publish skill. Live path is Studio ready drafts plus Matt's stamp plus /api/cron/publisher-sweep to /api/social/publish. NOT for rendering or drafting (use CLAUDE.md §4 / lib/studio). Do not load video_production_skills.
 when_to_use: Also fires on "push this live", "schedule this post", "cross-post this", "fan out to all platforms", "send the market report", "put this on socials", "queue this for Buffer", "post the listing reel", "publish the news clip". Always fires AFTER Matt has given explicit approval — this skill never self-approves.
 ---
 
 # Publish Skill
+
+**Live path:** Studio drafts (`lib/studio/`, `/admin/studio`) land `ready`. Matt's §1 stamp plus `/api/cron/publisher-sweep` → `/api/social/publish`. Do not load `video_production_skills/**`. Remotion is retired.
 
 Executes the final delivery of Matt-approved content to one or more social platforms via `/api/social/publish`. Enforces the gate.json precondition and the per-platform best-practice matrix before any API call is made.
 
@@ -97,6 +99,7 @@ Then stop. Do not re-attempt failed platforms without Matt's instruction.
 
 ## See also
 
-- `automation_skills/automation/post_scheduler/SKILL.md` — queue management before publish
-- `automation_skills/automation/buffer_poster/SKILL.md` — Buffer-specific cross-post flow
-- `video_production_skills/VIDEO_PRODUCTION_SKILL.md` — render pipeline that produces the asset handed to this skill
+- `CLAUDE.md` §4 — Studio (`lib/studio/`, `/admin/studio`) produces the asset handed to this skill
+- `/api/cron/publisher-sweep` — live sweep that calls `/api/social/publish`
+- `automation_skills/automation/post_scheduler/SKILL.md` — KILLED; do not run it
+- `automation_skills/automation/buffer_poster/SKILL.md` — KILLED; do not run it

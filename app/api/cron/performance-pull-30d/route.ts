@@ -81,10 +81,9 @@ export async function GET(req: NextRequest) {
 
   const { data: actions, error: fetchError } = await supabase
     .from('marketing_brain_actions')
-    .select('id, action_type, executor_response, executed_at, target')
+    .select('id, action_type, executor_response, executed_at, published_at, target')
     .eq('status', 'executed')
-    .gte('executed_at', windowStart)
-    .lte('executed_at', windowEnd)
+    .or(`and(executed_at.gte.${windowStart},executed_at.lte.${windowEnd}),and(published_at.gte.${windowStart},published_at.lte.${windowEnd})`)
 
   if (fetchError) {
     return NextResponse.json({ error: fetchError.message }, { status: 500 })

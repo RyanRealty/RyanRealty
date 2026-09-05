@@ -55,7 +55,7 @@ export const PRODUCERS = {
   // The video producers that ARE real (use existing canonical Remotion comps)
   // are listed below in the existing-asset wrappers section.
 
-  'clip_compilation':              { runner: 'python3', script: 'scripts/build_clip_compilation.py', section: 'B' },  // stitches 3 real bend_pulse parts — actually real
+  // clip_compilation — script deleted 2026-08-18 with Remotion factory.
 
   // ─── Section B — text producers (Node mjs) ────────────────────────────────
   'newsletter':                    { runner: 'node', script: 'scripts/build-newsletter.mjs', section: 'B' },
@@ -96,50 +96,13 @@ export const PRODUCERS = {
   'monthly_market_report_orchestrator':   { runner: 'node', script: 'scripts/build-monthly-market-report-orchestrator.mjs', section: 'A' },
   'listing_launch_orchestrator':          { runner: 'node', script: 'scripts/build-listing-launch-orchestrator.mjs', section: 'A' },
 
-  // ─── Section B — existing-asset wrappers (copy canonical pre-rendered) ────
-  'listing_tour_video':            { runner: 'python3', script: 'scripts/build_listing_tour_video.py', section: 'B' },
-  'neighborhood_tour':             { runner: 'python3', script: 'scripts/build_neighborhood_tour.py', section: 'B' },
-  'market_data_video':             { runner: 'python3', script: 'scripts/build_market_data_video.py', section: 'B' },
-  'market_pulse_short':            { runner: 'python3', script: 'scripts/build_market_pulse_short.py', section: 'B' },
-  'market_report_video':           { runner: 'python3', script: 'scripts/build_market_report_video.py', section: 'B' },
   'cma':                           { runner: 'python3', script: 'scripts/build_cma_wrapper.py', section: 'B' },
   'flyer_design':                  { runner: 'python3', script: 'scripts/build_flyer_design_wrapper.py', section: 'B' },
-
-  // ─── Real Remotion + Photorealistic 3D Tiles productions (added 2026-05-19) ──
-  // Source comp at video/tumalo-aerial/. Wrapper verifies MP4 + refreshes sidecars.
-  'earth_zoom':                    { runner: 'python3', script: 'scripts/build_earth_zoom_real.py', section: 'B' },
-  'google_maps_flyover':           { runner: 'python3', script: 'scripts/build_google_maps_flyover_real.py', section: 'B' },
   'ig_single_post':                { runner: 'python3', script: 'scripts/build_ig_single_post_wrapper.py', section: 'B' },
 
-  // ─── Real Remotion compositions (added 2026-05-20) ──────────────────────────
-  // These replace the PIL slideshow mockups removed 2026-05-19.
-  // Source comps at video/<slug>/. Build scripts wrap `npx remotion render` +
-  // QA gate (check_first_frame.py, blackdetect, duration verify).
-  // skipE2E: true on these Remotion-render producers — unit test would take 5-10 min/each.
-  // Run manually via the producer workflow with --with-renders flag if needed.
-  'news_video':      { runner: 'python3', script: 'scripts/build_news_video.py',      section: 'B', remotion: 'video/news_video',      comp: 'BendMedianPriceNews', skipE2E: true },
-  'listing_reveal':  { runner: 'python3', script: 'scripts/build_listing_reveal.py',  section: 'B', remotion: 'video/listing_reveal',   comp: 'ListingReveal',         skipE2E: true },
-  'data_viz_video':  { runner: 'python3', script: 'scripts/build_data_viz_video.py',  section: 'B', remotion: 'video/data_viz_video',   comp: 'DataVizVideo',          skipE2E: true },
-  // news_video_avatar: BLOCKED — requires Synthesia/HeyGen API + Matt avatar training.
-  //   See video/news_video_avatar/README.md for the unblock plan.
-
-  // ─── Real Remotion compositions (added 2026-05-20, second batch) ──────────
-  // These complete four producers that previously had slop slideshow mockups.
-  // Each has a full Remotion comp + build script.
-  // Pipeline per script: banned-words check → data/photo fetch → synth_vo →
-  //   npx remotion render → check_first_frame.py → sidecars → draft surface.
-  'area_guides':         { runner: 'python3', script: 'scripts/build_area_guides.py',         section: 'B', remotion: 'video/area_guides',         comp: 'AreaGuide',         skipE2E: true },
-  'meme_content':        { runner: 'python3', script: 'scripts/build_meme_content.py',        section: 'B', remotion: 'video/meme_content',        comp: 'MemeComp',          skipE2E: true },
-  'tiktok_listing_tour': { runner: 'python3', script: 'scripts/build_tiktok_listing_tour.py', section: 'B', remotion: 'video/tiktok_listing_tour', comp: 'TikTokListingTour', skipE2E: true },
-  'map_route_video':         { runner: 'python3', script: 'scripts/build_map_route_video.py',         section: 'B', remotion: 'video/map_route_video',         comp: 'MapRouteVideo',         skipE2E: true },
-  'school_district_overlay': { runner: 'python3', script: 'scripts/build_school_district_overlay.py', section: 'B', remotion: 'video/school_district_overlay', comp: 'SchoolDistrictOverlay', skipE2E: true },
-  'walkability_overlay':     { runner: 'python3', script: 'scripts/build_walkability_overlay.py',     section: 'B', remotion: 'video/walkability_overlay',     comp: 'WalkabilityOverlay',    skipE2E: true },
-  'youtube_long_form_market_report': { runner: 'python3', script: 'scripts/build_youtube_long_form_market_report.py', section: 'B', remotion: 'video/market-report-yt-long', comp: 'YouTubeMarketReport', skipE2E: true },
-  // avatar_market_update: BLOCKED on SYNTHESIA_AVATAR_ID.
-  //   SYNTHESIA_API_KEY is present. Configure an avatar at app.synthesia.io,
-  //   add SYNTHESIA_AVATAR_ID to .env.local, then build AvatarMarketComp.
-  //   See video/avatar_market_update/README.md.
-  //   Build script: scripts/build_avatar_market_update.py (self-documenting error when ID missing).
+  // Remotion video producers (listing_tour_video, news_video, earth_zoom_real,
+  // youtube_long_form_market_report, …) were deleted 2026-08-18 with the
+  // Remotion factory. Live video is Studio: lib/studio + /admin/studio.
 }
 
 export default PRODUCERS

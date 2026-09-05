@@ -12,6 +12,13 @@ describe('loop sentinel — kill switch (Matt 2026-08-21 re-arm)', () => {
     expect(sentinel).toMatch(/kill switch \(LOOP_SENTINEL=off\)/)
     expect(status).toMatch(/armed: !isLoopSentinelDisarmed\(\)/)
   })
+
+  it('records every skip to sync_logs so kill-switch vs missing key vs launch fail is visible', () => {
+    expect(sentinel).toMatch(/endpoint: 'loop_sentinel:skip'/)
+    expect(sentinel).toMatch(/recordSentinelSkip/)
+    expect(sentinel).toMatch(/loop_sentinel:stale-release/)
+    expect(sentinel).toMatch(/isStaleInProgress/)
+  })
 })
 
 describe('loop sentinel — no daily launch cap (Matt 2026-08-16)', () => {

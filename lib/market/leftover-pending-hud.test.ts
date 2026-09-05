@@ -13,7 +13,8 @@ const files = {
   community: readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8'),
   zip: readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8'),
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
-  listing: readFileSync(resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'), 'utf8'),
+  listing: readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8'),
+  listingAsk: readFileSync(resolve('components/site/listing-detail/listing-ask.ts'), 'utf8'),
   search: readFileSync(resolve('lib/market/search-city-sfr-publish.ts'), 'utf8'),
   event: readFileSync(resolve('lib/data/events/getEventDetail.ts'), 'utf8'),
   golf: readFileSync(resolve('lib/data/golf/getGolfDetail.ts'), 'utf8'),
@@ -82,8 +83,8 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
   it('search snapshot and listing KPI print leftover pending', () => {
     expect(files.snapshot).toMatch(/hud\.pending/)
     expect(files.snapshot).toMatch(/Under contract now/)
-    expect(files.listing).toMatch(/hud\.pending/)
-    expect(files.listing).toMatch(/Under contract now/)
+    expect(files.listing).toMatch(/leftoverHudKpis/)
+    expect(files.listingAsk).toMatch(/leftoverHudKpis/)
     expect(files.listing).not.toMatch(/leftover\.pendingCount/)
   })
 

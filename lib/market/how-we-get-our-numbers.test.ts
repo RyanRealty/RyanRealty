@@ -64,17 +64,10 @@ describe('HUD and leftover panels jump to the dictionary', () => {
   // section source line instead of per-KPI how-links, and the dictionary page
   // itself survives behind the chrome footer's Market column. HUD_KPI_HOW's
   // label coverage is asserted above against the dictionary's own entries.
-  // PublicProductTypes survives on its one remaining mount (the listing page's
-  // NeighborhoodMarketContext) and keeps its how-link.
   it('the surviving product-types strip carries a how-link', () => {
     const types = readFileSync(resolve('app/cities/[slug]/PublicProductTypes.tsx'), 'utf8')
     expect(types).toMatch(/MetricHowLink/)
     expect(types).toMatch(/PANEL_HOW\.products/)
-    const listing = readFileSync(
-      resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),
-      'utf8',
-    )
-    expect(listing).toMatch(/PublicProductTypes/)
   })
   it('the dictionary page renders every entry id', () => {
     const page = readFileSync(resolve('app/how-we-get-our-numbers/page.tsx'), 'utf8')

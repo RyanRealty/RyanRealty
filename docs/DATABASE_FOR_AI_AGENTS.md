@@ -246,7 +246,7 @@ Pricing matcher (`lib/pricing/match.ts`) on top of facts. Refuse a comps-implied
 |---|---|---|
 | `public.cmas` | 1 | Finalized per-property CMA deliverables. One row per finalized CMA. |
 | `public.cma_comps` | 8 | Linking table: comp listings used per CMA. |
-| `public.cma_deliveries` | 21 | Delivery tracking (email/print/portal). ⚠️ RLS currently disabled — see §9 security note. |
+| `public.cma_deliveries` | 27 | Delivery tracking (email/print/portal). RLS enabled 2026-05-21 (anon sees 0). |
 | `public.valuations` | 0 | Estimated values per property (system-generated). |
 | `public.valuation_comps` | 0 | Comps backing a valuation. |
 | `public.valuation_requests` | 0 | Home-valuation form submissions. |
@@ -722,7 +722,7 @@ AND "PropertyType" = 'A';
 
 ❌ **Don't run `tag_all_listings_boundaries()` casually.** It iterates 540K+ listings × 3,237 polygons. Run it once, after polygon updates.
 
-⚠️ **Security note:** `public.cma_deliveries` currently has RLS disabled (and `public.spatial_ref_sys`, but that's a benign PostGIS system table). `cma_deliveries` contains client delivery records — should be locked down. Open issue.
+⚠️ **Security note:** `public.cma_deliveries` has RLS enabled (migration `20260521170000`). Anon key HEAD is 0 of 27 service-role rows (verified 2026-09-04). `public.spatial_ref_sys` is a benign PostGIS system table. `likes` previously exposed `user_id` to anon via `USING (true)` — tightened 2026-09-05.
 
 ---
 

@@ -203,7 +203,9 @@ export async function runMeasurementLoop(opts: RunMeasurementLoopOptions = {}): 
   // can use it as supplemental context and so Matt has an audit trail of each
   // measurement-loop run. Soft-fail: a write error here does not affect the
   // returned report or any measurement data already written.
-  if (!opts.dryRun && report.measurements_succeeded > 0) {
+  // Always leave a digest, including 0-candidate days. A silent successful
+  // run is indistinguishable from a cron that never fired (deep-audit 2026-09-04).
+  if (!opts.dryRun) {
     await persistLoopDigest(report).catch((err) => {
       const msg = err instanceof Error ? err.message : String(err)
       console.error('runMeasurementLoop: digest write failed (non-fatal):', msg)
@@ -238,9 +240,9 @@ async function findUnmeasuredCandidates(maxCandidates: number): Promise<Candidat
   // Pull executed action rows from last 90 days with non-null executor_response
   const { data: rows, error } = await supabase
     .from('marketing_brain_actions')
-    .select('id, action_type, topic, executed_at, executor_response')
+    .select('id, action_type, topic, executed_at, published_at, executor_response')
     .eq('status', 'executed')
-    .gte('executed_at', ninetyDaysAgo)
+    .or(`executed_at.gte.${ninetyDaysAgo},published_at.gte.${ninetyDaysAgo}`)
     .order('executed_at', { ascending: false })
     .limit(500)
 
@@ -252,9 +254,18 @@ async function findUnmeasuredCandidates(maxCandidates: number): Promise<Candidat
   const scanned = rows?.length ?? 0
   const candidates: MeasurementCandidate[] = []
 
-  for (const row of (rows ?? []) as Array<{ id: string; action_type: string; topic: string | null; executed_at: string; executor_response: Record<string, unknown> | null }>) {
+  for (const row of (rows ?? []) as Array<{
+    id: string
+    action_type: string
+    topic: string | null
+    executed_at: string | null
+    published_at: string | null
+    executor_response: Record<string, unknown> | null
+  }>) {
     if (!row.executor_response) continue
-    const publishedPosts = extractPublishedPosts(row.executor_response, row.executed_at)
+    const stamp = row.executed_at || row.published_at
+    if (!stamp) continue
+    const publishedPosts = extractPublishedPosts(row.executor_response, stamp)
     if (publishedPosts.length === 0) continue
 
     for (const post of publishedPosts) {

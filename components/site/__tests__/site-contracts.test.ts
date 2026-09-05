@@ -143,9 +143,8 @@ describe('design directive contracts', () => {
   })
 
   it('park and trail list thumbs are always a map from existing geo', () => {
-    const parks = readSrc('components/site/listing-detail/ParksNearbyBlock.tsx')
     const life = readSrc('components/site/listing-detail/LifestyleNearSection.tsx')
-    expect(parks).toMatch(/findParksNear/)
+    expect(life).toMatch(/getParkBySlug/)
     expect(life).toMatch(/<PlaceListThumb lat=\{thumb\.lat\}/)
     expect(life).toMatch(/getTrailLineGeoJSON/)
     expect(life).toMatch(/listing-near__kind/)
@@ -636,13 +635,11 @@ describe('design directive contracts', () => {
 
   it('D112 — listing HouseMe report is stamp-backed and refuses invention', () => {
     const page = readSrc('app/listing/[listingKey]/page.tsx')
-    const live = readSrc('components/site/listing-detail/LivePricingRead.tsx')
     const report = readSrc('components/site/listing-detail/HouseMeReport.tsx')
     const ask = readSrc('components/site/listing-detail/listing-ask.ts')
     expect(page).not.toMatch(/<LivePricingRead/)
     expect(page).toMatch(/buildListingAskClaim/)
     expect(ask).toMatch(/leftoverHudKpis|medianList/)
-    expect(live).toMatch(/<HouseMeReport/)
     expect(report).toMatch(/listing_pricing_reads/)
     expect(report).not.toMatch(/0-10|0–10|5-year|5 year/)
     expect(report).not.toMatch(/\bAI\b/)

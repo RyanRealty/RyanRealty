@@ -1,32 +1,37 @@
 ---
 name: marketing-brain-run
 description: >
-  Top-level marketing brain invocation. Runs the weekly cycle, dispatches all
-  generated action items to their assigned producers in parallel, surfaces
-  drafts for review. Use when Matt says "run the brain", "run the marketing brain",
-  "marketing brain please", "what should we make this week", "/marketing-brain",
-  "brain please", "brain run", "weekly brain", or any equivalent.
+  Top-level marketing brain invocation. Files action rows from the weekly
+  cycle. Does not dispatch producers. Media production is Studio
+  (CLAUDE.md §4). Use when Matt says "run the brain", "run the marketing
+  brain", "marketing brain please", "what should we make this week",
+  "/marketing-brain", "brain please", "brain run", "weekly brain", or
+  any equivalent.
 action_types: []
 ---
 
+# STOP. File a row. Run no producer.
+
+Hourly SKILL.md producers are off (CLAUDE.md §5, 2026-08-18). This skill may
+run the weekly cycle and insert `marketing_brain_actions` rows. It does not
+dispatch producers. Do not spawn producer subagents. Do not load
+`video_production_skills/**`. Do not treat `automation_skills/content_engine`
+as a video factory.
+
+**Media / social production is the Studio:** `lib/studio/`, `/admin/studio`,
+`/api/cron/studio-slate`. Drafts land `ready`. Matt's §1 stamp plus
+`/api/cron/publisher-sweep` → `/api/social/publish`.
+
+CMA, newsletter, CRM, and the Facebook seller report stay as TypeScript
+products. Voice: `marketing_brain_skills/brand-voice/VOICE.md`.
+
 # Marketing Brain.  Run
 
-**Scope:** Single entry point for a full brain pass. Calls `runWeeklyCycle()`,
-reads all pending action rows it generated, dispatches each to its assigned
-producer in parallel, waits for all to surface drafts, then composes one
-summary report for Matt. Nothing is committed or published without Matt's
-explicit approval after he sees the summary.
+**Scope:** Single entry point for a brain pass. Calls `runWeeklyCycle()` if
+Matt asked for the weekly look, reads pending action rows, surfaces them.
+Nothing is committed or published without Matt's explicit approval.
 
-**Status:** Canonical. Locked 2026-05-13.
-
-**Producer-layer freeze (Matt directive 2026-06-09, G45):** the cycle still
-runs its audits and generates briefs, and `comms:`/`analyze:` actions still
-execute autonomously. `content:*` rows surface to Matt as briefs, but their
-execution defaults to the LIVE AGENT working in-session via
-`marketing_brain_skills/produce/` (same action row, same approval gate, same
-measurement) instead of dispatch to the autonomous producer-runtime. Do not
-add producers or REGISTRY rows — `ci:producer-freeze` fails the build. See
-CLAUDE.md "Producer-layer freeze."
+**Status:** Canonical. Locked 2026-09-05 to CLAUDE.md §5.
 
 ---
 
@@ -41,8 +46,8 @@ Matt says any of:
 - "brain please" / "brain run" / "weekly brain"
 - "give me the brain report"
 
-For direct producer invocation (skipping the cycle), use
-`marketing_brain_skills/produce/SKILL.md` instead.
+For a one-off media request, open Studio (`/admin/studio`). Do not route
+through `marketing_brain_skills/produce/` as a factory.
 
 ---
 
@@ -50,29 +55,23 @@ For direct producer invocation (skipping the cycle), use
 
 | Reference | Why |
 |---|---|
-| `CLAUDE.md` §0.  Data Accuracy | Every stat in every action row traces to a verified source |
-| `CLAUDE.md` §0.5.  Draft-First, Commit-Last | Nothing is committed until Matt explicitly approves |
-| `marketing_brain_skills/producers/REGISTRY.md` | Maps action_types to producers; read before dispatch |
-| `marketing_brain_skills/weekly-cycle/SKILL.md` | Describes what `runWeeklyCycle()` does and what it returns |
-| `marketing_brain_skills/generate-briefs/SKILL.md` | Describes the action rows that come out of the cycle |
-| `automation_skills/content_engine/SKILL.md` | All `content:*` actions route through here, not directly to producers |
+| `CLAUDE.md` §0. Data Accuracy | Every stat traces to a verified source |
+| `CLAUDE.md` §4. Studio | Live media path |
+| `CLAUDE.md` §5. Producer runtime retired | File a row, run no producer |
+| `marketing_brain_skills/weekly-cycle/SKILL.md` | What `runWeeklyCycle()` does |
+| `marketing_brain_skills/generate-briefs/SKILL.md` | How action rows are written |
 
 ---
 
 ## 3. Procedure
 
-### Step 0.  Record cycle start time
+### Step 0. Record cycle start time
 
 ```typescript
 const cycle_started_at = new Date().toISOString()
 ```
 
-This timestamp gates which rows the brain dispatches.  only rows created
-after `cycle_started_at` are new from this run.
-
-### Step 1.  Run the weekly cycle
-
-Invoke the existing weekly-cycle route:
+### Step 1. Run the weekly cycle (if Matt asked for a cycle)
 
 ```sh
 curl -X GET \
@@ -80,24 +79,16 @@ curl -X GET \
   "https://ryanrealty.vercel.app/api/cron/marketing-weekly-cycle?asOfDate=<yesterday>&dryRun=false&windowDays=7"
 ```
 
-Or call `runWeeklyCycle({ asOfDate, dryRun: false })` directly from TypeScript
-at `lib/marketing-brain/weekly-cycle.ts`.
+Or call `runWeeklyCycle({ asOfDate, dryRun: false })` from TypeScript at
+`lib/marketing-brain/weekly-cycle.ts`.
 
-**DryRun mode:** If Matt says "dry run" or "just show me what you'd make",
-pass `dryRun=true`. The cycle generates action rows in memory and returns
-the `WeeklyCycleReport` without writing to Supabase. Surface the would-be
-action list to Matt and stop there.  nothing dispatches in dry-run.
+**DryRun mode:** If Matt says "dry run", pass `dryRun=true`. Surface the
+would-be action list and stop. Nothing dispatches.
 
-**Custom date:** If Matt specifies a date ("run the brain as of last Monday"),
-parse the date and pass it as `asOfDate`. Defaults to yesterday UTC.
+**Custom date:** If Matt specifies a date, pass it as `asOfDate`. Defaults
+to yesterday UTC. `windowDays` defaults to 7. Never exceed 90.
 
-**WindowDays:** Defaults to 7. If Matt says "shorter lookback" or "just the
-last 3 days", pass `windowDays=3`. Never exceed 90.
-
-Wait for the cycle to complete. Log `WeeklyCycleReport.errors`.  if any
-channel returned `{ error: 'insufficient_data' }`, note it in the summary.
-
-### Step 2.  Read new pending action rows
+### Step 2. Read new pending action rows
 
 ```sql
 SELECT id, action_type, target, assigned_producer, payload, generation_reason, status
@@ -107,137 +98,60 @@ WHERE status = 'pending'
 ORDER BY created_at;
 ```
 
-**If 0 rows:** The brain found nothing actionable this cycle. Surface the
-`WeeklyCycleReport` channel summary to Matt and explain why (low anomaly
-density, signals below threshold, maxBriefs already reached from prior runs).
-Do not dispatch. Do not fabricate action items.
+**If 0 rows:** Surface the cycle summary. Do not fabricate action items.
 
-**If rows exist:** Proceed to dispatch.
+**If rows exist:** List them. Do not dispatch.
 
-### Step 3.  Partition by action category
+### Step 3. Do not dispatch producers
 
-Split rows into two groups:
+Content, site, ops, comms, and analyze rows stay `pending`. Inbox and
+`/marketing/request` already file a row and stop. This skill does the same.
 
-**Group A.  Content actions** (`action_type LIKE 'content:%'`):
-Route through `automation_skills/content_engine/SKILL.md`. The content engine
-is the universal content bus.  no content producer is invoked directly.
+If a row is media (`content:*` video / reel / social motion): tell Matt the
+live path is Studio (`/admin/studio`). Do not invoke a producer SKILL.md.
 
-**Group B.  Non-content actions** (`action_type LIKE 'site:%'` or
-`'ops:%'` or `'comms:%'` or `'analyze:%'`):
-Dispatch directly to the producer at `assigned_producer`. Load that producer's
-`SKILL.md` to understand the execution procedure.
+If a row is CMA / newsletter / CRM / Facebook seller report: those are
+TypeScript products, not SKILL.md producers.
 
-### Step 4.  Dispatch in parallel
+### Step 4. Compose the summary report
 
-Spawn one subagent per action row. All subagents run in parallel.
-
-For each **content action row** (Group A), spawn:
-> Subagent: Load `automation_skills/content_engine/SKILL.md`.
-> Action row id: `<id>`. Action type: `<action_type>`. Target: `<target>`.
-> Payload: `<payload>`. Execute per content_engine procedure.
-> UPDATE `marketing_brain_actions` row status as you proceed.
-> Surface draft path when ready.
-
-For each **non-content action row** (Group B), spawn:
-> Subagent: Load `<assigned_producer>/SKILL.md`.
-> Action row id: `<id>`. Action type: `<action_type>`. Target: `<target>`.
-> Payload: `<payload>`. Execute per that producer's SKILL.md procedure.
-> UPDATE `marketing_brain_actions` row status as you proceed.
-> Surface output when ready.
-
-**Concurrency note:** Spawn all subagents in a single message. Do not wait
-for one to finish before starting the next. The brain's value is parallel
-production, not sequential.
-
-### Step 5.  Wait for all subagents
-
-Each subagent must reach one of two terminal states:
-- `ready`.  draft surfaced, action row updated, path returned
-- `killed`.  unrecoverable failure, action row updated with error, diagnosis returned
-
-Do NOT set any action row to `approved` or `executed` during this skill.
-Those transitions happen only after Matt's explicit approval.
-
-**Partial failure is acceptable.** If 2 of 7 producers fail, surface all 7
-in the report (5 drafts + 2 failures with diagnosis). Do not block the
-report on failed producers.
-
-### Step 6.  Compose the summary report
-
-Surface ONE message to Matt containing everything:
+Surface ONE message to Matt:
 
 ```
 Marketing Brain.  Run Complete
 Cycle date: <as_of_date> | Generated: <iso_timestamp>
 
 CYCLE STATS
-  Channels diagnosed: <N> (<M> with errors.  see below)
-  Action rows generated: <N>
-  Voice failures: <N> (rows in 'pending' with voice violation.  review these)
+  Channels diagnosed: <N>
+  Action rows filed: <N> (pending; no producer ran)
+  Voice failures: <N>
   Cycle errors: <error count>
 
-DRAFTS READY (<N> of <total>)
+ROWS FILED (not produced)
 
   [1] <action_type>.  <target>
-      Producer: <assigned_producer>
-      Draft: <path or preview URL>
-      [Video: Duration <Xs> · Size <N> MB · Scorecard <N>/100]
-      [Flyer/Carousel: Slides <N> · citations.json at <path>]
-      Reason: <generation_reason from action row>
+      Reason: <generation_reason>
       Action row: <id>
+      Next: Studio for media, or the matching TypeScript product
 
-  [2]..
+MEDIA
+  Production is Studio (`/admin/studio`). Publish is publisher-sweep
+  after Matt's §1 stamp. Do not load video_production_skills.
 
-FAILURES (<N>)
-
-  [6] <action_type>.  <target>
-      Producer: <assigned_producer>
-      Failure: <one-line diagnosis>
-      Recovery: <suggested fix or ask>
-      Action row: <id>
-
-CHANNEL GAPS (channels with insufficient_data)
-  <channel_name>: <error>.  <what this likely means>
-
-VOICE FAILURES (briefs generated but blocked by voice validation)
-  <topic>.  violations: <§6.X rule cited>
-  [These sit as 'pending' in marketing_brain_actions. Review and edit or kill.]
-
-VERIFICATION TRACES
-  All figures in content drafts trace to citations.json next to each draft.
-  Full WeeklyCycleReport at: [path or inline if small]
-
-Reply to each draft individually:
-  "ship [1]" / "kill [1]" / "redo [1] with <change>"
-Or reply "ship all" to approve every ready draft at once.
+Reply:
+  "open studio" / "kill [1]" / "leave pending"
 ```
 
-Then STOP. Do not commit. Do not push. Do not move any file from `out/`
-to `public/`. Wait for Matt's explicit approval signal.
+Then STOP. Do not commit. Do not push. Do not move files from `out/` to
+`public/`. Do not set `approved` or `executed`.
 
-### Step 7.  On approval
+### Step 5. On rejection
 
-When Matt says "ship [N]" / "ship all" / "approved" / "go":
+When Matt says "kill [N]":
+- UPDATE `status='killed'`, `executor_response={"kill_reason":"<Matt's words>"}`
 
-1. For each approved action row:
-   - Content: move render from `out/` to `public/v5_library/` (or appropriate path)
-   - Site: merge the PR or apply the edit
-   - Ops: execute the API call
-   - UPDATE `status='approved'` then `status='executed'`, set `approved_by='matt'`, `approved_at=now()`
-
-2. `git add` the specific approved files (not `git add -A`)
-3. Commit with message citing the action_type(s) and target(s)
-4. Push to `origin/main` immediately
-
-### Step 8.  On rejection
-
-When Matt says "kill [N]" or "redo [N] with <change>":
-
-- **Kill:** UPDATE `status='killed'`, `executor_response={"kill_reason":"<Matt's words>"}`
-- **Redo:** Capture Matt's change instruction. Invoke the producer again with the
-  updated payload. This is a new subagent.  do not mutate the existing action row;
-  instead UPDATE it with the amended payload and reset `status='pending'` for
-  the re-run, or INSERT a new row if the change is substantial.
+When Matt says "redo" or "make the video":
+- Open Studio. Do not reset the row into a producer dispatch.
 
 ---
 
@@ -247,31 +161,21 @@ When Matt says "kill [N]" or "redo [N] with <change>":
 
 ```
 Matt: "run the brain dry"
-Agent: runs cycle with dryRun=true; surfaces would-be action list with
-       generation_reason for each; no Supabase writes; no dispatch.
+Agent: cycle with dryRun=true; surface would-be rows; no dispatch.
 ```
 
 ### Specific date
 
 ```
 Matt: "run the brain as of last Monday"
-Agent: calculates last Monday's date; passes asOfDate=YYYY-MM-DD
+Agent: pass asOfDate=YYYY-MM-DD
 ```
 
-### Specific deliverable only
-
-```
-Matt: "run the brain but only make the listing video for 220189422"
-Agent: runs cycle (or skips if Matt says "skip the cycle"), then
-       dispatches ONLY the action row matching that target.
-       All other rows stay in 'pending'.
-```
-
-### Force-generate a specific action type
+### Force a video
 
 ```
 Matt: "brain, I need a news clip about the wildfire risk story"
-Agent: this is NOT a brain run.  route to marketing_brain_skills/produce/SKILL.md.
+Agent: this is NOT a producer run. Open Studio (CLAUDE.md §4).
 ```
 
 ---
@@ -280,29 +184,25 @@ Agent: this is NOT a brain run.  route to marketing_brain_skills/produce/SKILL.m
 
 | error | handling |
 |---|---|
-| Weekly cycle API returns 5xx | Retry once after 30s. If still failing, surface the error to Matt with the HTTP status and response body. Do NOT proceed to dispatch. |
-| Zero action rows after cycle | Report to Matt. Do not fabricate rows. Offer to run a dry-run with extended windowDays to see what signals exist. |
-| Producer subagent times out (>30 min) | Mark that action row `status='killed'` with `executor_response={"kill_reason":"timeout"}`. Include in summary under FAILURES. |
-| Supabase write fails on status update | Log the error. Continue with other subagents. Include in summary under FAILURES. |
-| All producers fail | Surface the full failure report. Offer to retry individual producers. Do not commit. |
+| Weekly cycle API returns 5xx | Retry once after 30s. If still failing, surface the error. Do not invent rows. |
+| Zero action rows after cycle | Report to Matt. Do not fabricate rows. |
+| Agent starts loading a producer SKILL.md | Stop. File-a-row rule outranks the old dispatch recipe. |
 
 ---
 
 ## 6. What is NOT a brain run
 
-- "Make a listing video for 1234 NW Foo" → `marketing_brain_skills/produce/SKILL.md`
-- "Update the home page copy" → `marketing_brain_skills/produce/SKILL.md`
-- "Run the weekly cycle but don't dispatch anything" → dry-run mode (above)
+- "Make a listing video for 1234 NW Foo" → Studio (`/admin/studio`)
+- "Update the home page copy" → site code, not a producer
 - "Check the marketing dashboard" → `app/dashboard/marketing/page.tsx` (read-only)
 
 ---
 
 ## 7. See also
 
-- `marketing_brain_skills/produce/SKILL.md`.  direct producer invocation (bypasses cycle)
-- `marketing_brain_skills/producers/REGISTRY.md`.  producer lookup table
-- `marketing_brain_skills/weekly-cycle/SKILL.md`.  what the cycle does and returns
-- `marketing_brain_skills/generate-briefs/SKILL.md`.  how action rows are generated
-- `automation_skills/content_engine/SKILL.md`.  content action dispatch bus
-- `CLAUDE.md` §0.  Data Accuracy mandate (outranks everything)
-- `CLAUDE.md` §0.5.  Draft-First, Commit-Last (outranks everything)
+- `CLAUDE.md` §4. Studio
+- `CLAUDE.md` §5. Producer runtime retired
+- `marketing_brain_skills/inbox/SKILL.md`. Same rule: file a row, run no producer
+- `automation_skills/content_engine/SKILL.md`. STOP stub for the retired video matrix
+- `automation_skills/automation/publish/SKILL.md`. publisher-sweep
+- `CLAUDE.md` §0. Data Accuracy

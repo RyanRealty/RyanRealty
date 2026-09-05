@@ -2,8 +2,8 @@
 name: platform-best-practices
 description: |
   Canonical rule layer for social-media content production at Ryan Realty.
-  Every content skill (list-kit, instagram-carousel, listing-tour-video,
-  flyer-design, blog-post, facebook-lead-gen-ad, …) MUST load this skill
+  Every content skill (list-kit, instagram-carousel, Studio video,
+  flyer-design, blog-post, facebook-lead-gen-ad) MUST load this skill
   before producing output. It codifies the 2026 best practices for IG,
   TikTok, YouTube (Shorts + long-form), Facebook (Reels + feed + paid),
   and LinkedIn.  synthesized from research on the top 30+ real estate
@@ -281,7 +281,7 @@ This spec applies to all short-form video (IG Reels, TikTok, YouTube Shorts, Fac
 
 **Transitions:** Smooth 200-300ms crossfade between sentences. Previous sentence fades out, next fades in, both partially visible during the window. NEVER hard cut between sentences.
 
-**Timing:** Synced to natural speech cadence via ElevenLabs `/v1/forced-alignment` word-level timestamps.  never to clock-time slots or Remotion Sequence boundaries.
+**Timing:** Synced to natural speech cadence. never to clock-time slots. Video production is Studio (`CLAUDE.md` §4 / `lib/studio/`), not Remotion.
 
 **Placement safe zone (portrait 1080×1920):** y 1480-1720, x 90-990. Captions NEVER render over stats, charts, logos, title cards, animated overlays, or any other visual component. If a competing element occupies the caption zone for a beat, the caption is suppressed for that beat.
 
@@ -298,7 +298,7 @@ This spec applies to all short-form video (IG Reels, TikTok, YouTube Shorts, Fac
 
 **Music bed levels:** -18 LUFS under VO. No percussion on premium/luxury listings. Lo-fi ambient on entry/mid market listings. High-energy electronic (Daniel Heider model) for luxury drone tours only.  must match cut cadence.
 
-**ElevenLabs VO.  mandatory for all Remotion-rendered video:** Voice: Victoria, ID `qSeXEcewz7tA0Q0qk9fH`. Settings: stability 0.40, similarity 0.80, style 0.50, use_speaker_boost true, model eleven_turbo_v2_5. Load `video_production_skills/elevenlabs_voice/SKILL.md` for the full spec. No other voice. No other settings without explicit Matt direction.
+**Voiceover on Studio video:** Follow `CLAUDE.md` §4 and `lib/studio/craft.ts`. Remotion is retired. Do not load `video_production_skills/elevenlabs_voice/SKILL.md`. No other voice without explicit Matt direction.
 
 ---
 
@@ -390,7 +390,7 @@ This resolves every "should X appear" question for content produced in this repo
 | **LinkedIn document carousel** | Title slide + final slide | Profile headshot sufficient | 150-250 words; short paragraphs; white space | 6-10 slides | First 210 chars = the entire hook | LI research §Document posts |
 | **LinkedIn native video** | Optional (personal: no; company: yes) | Yes.  face drives engagement | Burned-in or upload SRT | 30s-3 min | Same first-line hook rule as text | LI research §Native video |
 | **LinkedIn text post** | No | No | 150-250 words; paragraphs 1-3 lines | n/a | Contrarian data point or confession | LI research §Hook structures |
-| **News clip (Remotion)** | No (IG/TikTok/YT Shorts rules apply) | No.  VO only; VO-driven content | Navy pill with warm stone 2px top border; Geist 500 56px | 30-45s | Price shock, market stat, or breaking local angle | CLAUDE.md §Video Build Hard Rules |
+| **News clip (Studio)** | No (IG/TikTok/YT Shorts rules apply) | No.  VO only; VO-driven content | Navy pill with warm stone 2px top border; Geist 500 56px | 30-45s | Price shock, market stat, or breaking local angle | CLAUDE.md §4 Studio |
 | **Flyer (print/email)** | Yes.  full brand system | Optional headshot | Amboqia headlines, Geist body, AzoSans labels | n/a | n/a | Design System v2 heritage register |
 | **Email newsletter** | Header only: logo-blue.png on cream | Optional headshot in signature | Geist body; sentence case headings | n/a | Subject line: specific stat or local angle | Cross-platform branding research |
 
@@ -419,13 +419,8 @@ This skill MUST be referenced in the "Required references" section of every cont
 - `social_media_skills/blog-post/SKILL.md`
 - `social_media_skills/facebook-lead-gen-ad/SKILL.md`
 - `social_media_skills/meme_lord/SKILL.md`
-- `video_production_skills/listing-tour-video/SKILL.md`
-- `video_production_skills/listing_reveal/SKILL.md`
-- `video_production_skills/listing_launch/SKILL.md`
-- `video_production_skills/market-data-video/SKILL.md`
-- `video_production_skills/news-video/SKILL.md`
-- `video_production_skills/neighborhood-overview/SKILL.md`
-- `video_production_skills/weekend-events-video/SKILL.md`
+- Studio video (`CLAUDE.md` §4, `lib/studio/`, `/admin/studio`). Do not load `video_production_skills/**`.
+- Publish path: `/api/cron/publisher-sweep` → `/api/social/publish` (`automation_skills/automation/publish/SKILL.md`)
 
 ---
 
@@ -444,3 +439,4 @@ All rules in this skill trace to one of five primary research documents:
 ## Changelog
 
 - 2026-05-13: Initial canonical skill. Synthesized from 5 research docs covering top 30+ creators across IG/TikTok/YouTube/FB/LinkedIn.
+- 2026-09-05: D7. Strip Remotion / `video_production_skills/**` load orders. Point video at Studio + publisher-sweep.

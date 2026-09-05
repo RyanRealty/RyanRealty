@@ -76,12 +76,10 @@ checks.push({
     !ticker.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
 })
 
-const featured = src('lib/kb/resolve-featured-items.ts')
+const similar = src('components/site/listing-detail/ListingSimilarStrip.tsx')
 checks.push({
-  label: 'KB featured addresses gate through publishStreetLine',
-  ok:
-    /from ['"]@\/lib\/listing\/publish-street-line['"]/.test(featured) &&
-    /publishStreetLine\(/.test(featured),
+  label: 'listing similar-homes strip does not invent a street from raw MLS parts',
+  ok: !similar.includes('[t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join'),
 })
 
 const slug = src('lib/slug.ts')

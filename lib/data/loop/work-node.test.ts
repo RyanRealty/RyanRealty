@@ -96,6 +96,8 @@ describe('orphan auto-release (dead cloud sessions never hold the floor)', () =>
 
   it('recognizes cloud-agent owner sessions and nothing else', () => {
     expect(isCloudAgentSession('bc-13c50db8-d7f2-4c5a-9b18-61ba7166475b')).toBe(true)
+    expect(isCloudAgentSession('cursor-cloud-bc-f9ff79aa-2026-08-19t14-11')).toBe(true)
+    expect(isCloudAgentSession('cursor-cma-douglas-2026-08-17')).toBe(false)
     expect(isCloudAgentSession('grok-2026-08-15')).toBe(false)
     expect(isCloudAgentSession('DISARM-HOLD (Matt: planning mode)')).toBe(false)
     expect(isCloudAgentSession(null)).toBe(false)

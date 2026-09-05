@@ -1,6 +1,7 @@
 'use client'
 
 /**
+ * reachability: entry-point listing market chart tabs (parked off listing 2026-09-03 remainder restyle; core-charts.test still mounts it)
  * MarketCoreCharts — tabbed city-scope series on the listing market block.
  * Geometry is V3Chart (lib/charts/plot). Tabs stay client. A tab with fewer
  * than two points is omitted. Zero chartable tabs render nothing.

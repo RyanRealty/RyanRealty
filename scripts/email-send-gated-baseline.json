@@ -13,9 +13,9 @@
       "kind": "internal",
       "reason": "Internal: one digest email per BROKER (Matt/Rebecca/Paul), not a lead. No consent record applies; permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
     },
-    "app/api/cron/loop-health-check/route.ts:431": {
+    "app/api/cron/loop-health-check/route.ts:445": {
       "kind": "internal",
-      "reason": "Internal: consolidated pipeline-heartbeat staleness alert to MATT_ALERT_EMAIL/matt@ryan-realty.com only (G-heartbeat, Wave A 2026-07-21). Never a lead. Healthy runs send nothing. Line shifted 359->368 by the W1.1 westside-probe filter. Line shifted 368->380 when G8 added the SkySlope inbound-mirror probe above the alert (2026-08-16). Line shifted 380->388 when G11 added the Meta audience hold probe above the alert (2026-08-16). Line shifted 388->431 when G-stat-source added the macro-rate-series probe above the alert (2026-08-17)."
+      "reason": "Internal: consolidated pipeline-heartbeat staleness alert to MATT_ALERT_EMAIL/matt@ryan-realty.com only (G-heartbeat, Wave A 2026-07-21). Never a lead. Healthy runs send nothing. Line shifted 359->368 by the W1.1 westside-probe filter. Line shifted 368->380 when G8 added the SkySlope inbound-mirror probe above the alert (2026-08-16). Line shifted 380->388 when G11 added the Meta audience hold probe above the alert (2026-08-16). Line shifted 388->431 when G-stat-source added the macro-rate-series probe above the alert (2026-08-17). Line shifted 431->445 when studio_ready queue split was added above the alert (2026-09-05)."
     },
     "app/api/cron/marketing-optimization-report/route.ts:162": {
       "kind": "internal",

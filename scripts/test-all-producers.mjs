@@ -1,6 +1,19 @@
 #!/usr/bin/env node
 /**
- * End-to-end producer verification.
+ * RETIRED 2026-08-18. Hourly SKILL.md producers are off. Live media is Studio
+ * (lib/studio, /admin/studio, publisher-sweep). This harness would spawn
+ * deleted Remotion scripts and write rogue out/ trees.
+ *
+ * Exit 2 so a red run is not mistaken for a production break.
+ */
+console.error(
+  'test-all-producers.mjs is retired (2026-08-18). Studio is production. Do not run this harness.',
+)
+process.exit(2)
+
+/**
+ * End-to-end producer verification (dead). Kept below the refuse so git blame
+ * still finds the old contract.
  *
  * Runs every producer script in scripts/run-producer.mjs::PRODUCERS against
  * the canonical fixture and verifies:

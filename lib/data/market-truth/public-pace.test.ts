@@ -67,15 +67,10 @@ describe('public pace surfaces', () => {
     expect(hub).toMatch(/getPublicDetachedPace/)
     expect(zip).toMatch(/getPublicDetachedPace/)
     expect(sell).toMatch(/getPublicDetachedPace/)
-    const listing = readFileSync(
-      resolve('components/site/listing-detail/NeighborhoodMarketContext.tsx'),
-      'utf8',
-    )
     const annual = readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8')
     const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'), 'utf8')
     const reports = readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8')
     const lp = readFileSync(resolve('app/lp/seller-home-value/page.tsx'), 'utf8')
-    expect(listing).toMatch(/getPublicDetachedPace/)
     expect(annual).toMatch(/getPublicDetachedPace/)
     expect(region).toMatch(/getPublicDetachedPace/)
     expect(reports).toMatch(/getPublicDetachedPace/)

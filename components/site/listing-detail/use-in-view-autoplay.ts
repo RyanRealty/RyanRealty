@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
+ * reachability: entry-point listing featured-rail autoplay (rail deleted 2026-09-03; hook kept for a future V3ListingRow video strip)
  * Feed-style viewport autoplay — the "the video plays when it scrolls into
  * focus" behavior from IG / TikTok / FB. Tracks every registered card's
  * intersection ratio + its distance to the viewport center, and returns the key

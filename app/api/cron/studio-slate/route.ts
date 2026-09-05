@@ -16,7 +16,8 @@
  * an expensive day: the slate refuses to start if today's drafts are already
  * at the ceiling.
  *
- * Schedule: 13:10 UTC daily (see vercel.json), which is early morning local.
+ * Schedule: unscheduled as of 2026-09-04 (manual `?force=true` only). Do not
+ * re-add a vercel.json clock until Matt is clearing the ready queue.
  * Auth: Authorization: Bearer $CRON_SECRET
  *
  * Manual:

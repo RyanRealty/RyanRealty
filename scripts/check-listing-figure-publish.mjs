@@ -503,11 +503,6 @@ const WIRED = [
   ['components/site/primitives/Price.tsx', 'publishMoneyText'],
   ['lib/listing/publish-listing-share.ts', 'publishPricePerSqft'],
   ['lib/listing/publish-listing-ask.ts', 'publishSaleAskAmount'],
-  // The featured rail: the ONE source for the homepage, every city and community
-  // page, and the listing page's nearby-homes band. It handed KbFeatured a raw
-  // ListPrice, so 725 Broadway Street (a Bend commercial lease) published "$2"
-  // as an ask in the rail on 735 Purcell's own page.
-  ['lib/kb/resolve-featured-items.ts', 'publishSaleAskAmount'],
   // The whole-property surfaces. Each one makes a claim about the DWELLING —
   // its yield, its monthly cost, its machine-readable offer, its share card,
   // its price-band promise — so each takes the whole-property price, never the

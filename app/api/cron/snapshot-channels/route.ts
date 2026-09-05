@@ -17,6 +17,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 300
 export const runtime = 'nodejs'
@@ -28,13 +29,13 @@ const PLATFORMS = [
   'meta-ads',
   'meta-page',
   'x',
-  'linkedin',
   'tiktok',
   'gbp',
   'youtube',
-  // Was on disk with a fan-out comment but omitted here — orphan until 2026-08-08 map pass.
-  'google-ads',
 ] as const
+// Parked / never-wrote children (deep-audit 2026-09-04): linkedin (no refresh
+// token), google-ads (no oauth table, 0 marketing_channel_daily rows). Keep
+// the child routes; do not fan out until Matt reconnects (§1).
 
 export async function GET(request: NextRequest) {
   const denied = requireCronAuth(request)
@@ -68,12 +69,28 @@ export async function GET(request: NextRequest) {
   )
 
   const ok_count = Object.values(results).filter((r) => r.ok).length
+  const failed = PLATFORMS.filter((p) => !results[p]?.ok)
+  const invoked_at = new Date().toISOString()
+  try {
+    const sb = createServiceClient()
+    await sb.from('sync_logs').insert({
+      endpoint: 'snapshot-channels',
+      method: 'GET',
+      response_status: failed.length > 0 ? 207 : 200,
+      records_returned: ok_count,
+      environment: process.env.VERCEL_ENV ?? 'development',
+      error_message: failed.length ? failed.join(',') : null,
+      alert_sent: false,
+    })
+  } catch (err) {
+    console.error('[snapshot-channels] roll-up log failed:', err)
+  }
   return NextResponse.json({
     invoked_via: 'snapshot-channels (Phase 11.5 consolidated alias)',
     platforms: PLATFORMS.length,
     ok_count,
-    failed: PLATFORMS.filter((p) => !results[p]?.ok),
+    failed,
     results,
-    invoked_at: new Date().toISOString(),
+    invoked_at,
   })
 }

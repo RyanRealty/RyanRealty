@@ -8,21 +8,30 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 
+/** A sweep seed row (posted_at only) is not a measurement. */
+export function contentPerformanceHasMetrics(row: {
+  metrics_48h?: unknown
+  metrics_7d?: unknown
+  metrics_30d?: unknown
+}): boolean {
+  return row.metrics_48h != null || row.metrics_7d != null || row.metrics_30d != null
+}
+
 /**
- * Flip status to `measured` once content_performance has at least one row
- * for the action.
+ * Flip status to `measured` once content_performance has real window metrics.
  */
 export async function markActionMeasuredIfReady(actionId: string): Promise<void> {
   const supabase = createServiceClient()
-  const { count, error: cErr } = await supabase
+  const { data, error: cErr } = await supabase
     .from('content_performance')
-    .select('id', { count: 'planned', head: true })
+    .select('metrics_48h,metrics_7d,metrics_30d')
     .eq('action_id', actionId)
+    .limit(20)
   if (cErr) {
     console.error('markActionMeasuredIfReady count:', cErr.message)
     return
   }
-  if ((count ?? 0) < 1) return
+  if (!(data ?? []).some((row) => contentPerformanceHasMetrics(row))) return
   const { error } = await supabase
     .from('marketing_brain_actions')
     .update({ status: 'measured' })
@@ -38,7 +47,7 @@ export async function reconcileExecutedWithPerformance(): Promise<void> {
   const supabase = createServiceClient()
   const { data: perfRows, error: pErr } = await supabase
     .from('content_performance')
-    .select('action_id')
+    .select('action_id,metrics_48h,metrics_7d,metrics_30d')
     .not('action_id', 'is', null)
     .limit(500)
   if (pErr) {
@@ -48,6 +57,7 @@ export async function reconcileExecutedWithPerformance(): Promise<void> {
   const ids = [
     ...new Set(
       (perfRows ?? [])
+        .filter((r) => contentPerformanceHasMetrics(r))
         .map((r: { action_id: string }) => r.action_id)
         .filter(Boolean),
     ),

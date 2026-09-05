@@ -24,7 +24,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { releaseWorkNode } from './work-graph'
-import { shouldAutoRelease } from './work-node'
+import { isStaleInProgress, shouldAutoRelease } from './work-node'
 
 const REPO_URL = 'https://github.com/RyanRealty/RyanRealty'
 const ACTIVE_WINDOW_MIN = 180
@@ -91,11 +91,34 @@ export function isLoopSentinelDisarmed(): boolean {
  * the successor launches immediately. Kill switch, activity standdown,
  * and the open-work check always apply. There is no daily launch cap.
  */
+async function recordSentinelSkip(
+  reason: string,
+  extra: { openNodes?: number; orphanReleases?: number } = {},
+): Promise<void> {
+  try {
+    const sb = createServiceClient()
+    await sb.from('sync_logs').insert({
+      endpoint: 'loop_sentinel:skip',
+      method: 'GET',
+      response_status: 204,
+      environment: process.env.VERCEL_ENV ?? 'development',
+      error_message: reason,
+      alert_sent: false,
+      records_returned: extra.openNodes ?? null,
+    })
+  } catch (err) {
+    console.error('[loop-sentinel] skip log write failed:', err)
+  }
+}
+
 export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean }): Promise<SentinelDecision> {
   // Kill switch. Matt arms with "arm the loop" and disarms with "disarm the loop".
   // Armed 2026-08-21 — default on. LOOP_SENTINEL=off still no-ops.
+  // This mission does not flip LOOP_SENTINEL; it only records the skip.
   if (isLoopSentinelDisarmed()) {
-    return { action: 'skipped', reason: 'kill switch (LOOP_SENTINEL=off)' }
+    const decision = { action: 'skipped' as const, reason: 'kill switch (LOOP_SENTINEL=off)' }
+    await recordSentinelSkip(decision.reason)
+    return decision
   }
 
   const sb = createServiceClient()
@@ -105,7 +128,11 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
     .from('loop_work_nodes')
     .select('id,state,owner_session,updated_at')
     .in('state', ['open', 'in_progress'])
-  if (error) return { action: 'skipped', reason: `graph unreadable (${error.message}) — refusing to launch blind` }
+  if (error) {
+    const decision = { action: 'skipped' as const, reason: `graph unreadable (${error.message}) — refusing to launch blind` }
+    await recordSentinelSkip(decision.reason)
+    return decision
+  }
 
   const apiKey = process.env.CURSOR_API_KEY?.trim()
 
@@ -114,8 +141,38 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
   // instead of waiting out the standdown. One status fetch per distinct owner.
   const releasedIds = new Set<string>()
   let orphanReleases = 0
+
+  // Stale in_progress (3+ days) is stranded work whether or not the owner is
+  // a Cursor cloud agent. Human-named sessions like cursor-cma-douglas-… sat
+  // 443h with no API status to query (deep-audit 2026-09-04).
+  for (const claim of (nodes ?? []).filter((n) => n.state === 'in_progress')) {
+    const node = { state: 'in_progress' as const, updatedAt: String(claim.updated_at) }
+    if (!isStaleInProgress(node, new Date(now))) continue
+    if (opts.dry) {
+      orphanReleases += 1
+      releasedIds.add(String(claim.id))
+      continue
+    }
+    const { error: relErr } = await releaseWorkNode(String(claim.id))
+    if (relErr) {
+      console.error('[loop-sentinel] stale release failed:', relErr)
+      continue
+    }
+    orphanReleases += 1
+    releasedIds.add(String(claim.id))
+    await sb.from('sync_logs').insert({
+      endpoint: 'loop_sentinel:stale-release',
+      method: 'POST',
+      response_status: 200,
+      environment: process.env.VERCEL_ENV ?? 'development',
+      error_message: `node ${claim.id} released (in_progress older than 3 days)`,
+      alert_sent: false,
+      sync_cycle_id: claim.owner_session == null ? null : String(claim.owner_session),
+    })
+  }
+
   if (apiKey) {
-    const claims = (nodes ?? []).filter((n) => n.state === 'in_progress')
+    const claims = (nodes ?? []).filter((n) => n.state === 'in_progress' && !releasedIds.has(String(n.id)))
     const statusByOwner = new Map<string, RunStatus>()
     for (const claim of claims) {
       const owner = claim.owner_session == null ? null : String(claim.owner_session)
@@ -159,17 +216,25 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
       now - Date.parse(String(n.updated_at)) < ACTIVE_WINDOW_MIN * 60_000,
   )
   if (freshActive) {
-    return { action: 'skipped', reason: 'a session is actively working (fresh in_progress node)', orphanReleases }
+    const decision = { action: 'skipped' as const, reason: 'a session is actively working (fresh in_progress node)', orphanReleases }
+    await recordSentinelSkip(decision.reason, { orphanReleases })
+    return decision
   }
 
   // Released orphans are open again and count as eligible work.
   const openNodes =
     (nodes ?? []).filter((n) => n.state === 'open').length + releasedIds.size
   if (openNodes === 0) {
-    return { action: 'skipped', reason: 'no eligible open nodes (all done or blocked)', openNodes, orphanReleases }
+    const decision = { action: 'skipped' as const, reason: 'no eligible open nodes (all done or blocked)', openNodes, orphanReleases }
+    await recordSentinelSkip(decision.reason, { openNodes, orphanReleases })
+    return decision
   }
 
-  if (!apiKey) return { action: 'skipped', reason: 'CURSOR_API_KEY missing in this environment', openNodes }
+  if (!apiKey) {
+    const decision = { action: 'skipped' as const, reason: 'CURSOR_API_KEY missing in this environment', openNodes }
+    await recordSentinelSkip(decision.reason, { openNodes })
+    return decision
+  }
 
   const { data: launches } = await sb
     .from('sync_logs')
@@ -180,7 +245,9 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
   const recent = launches ?? []
   const last = recent[0]
   if (!opts.handoff && last?.logged_at && now - Date.parse(String(last.logged_at)) < BOOT_GUARD_MIN * 60_000) {
-    return { action: 'skipped', reason: `boot guard (launched within ${BOOT_GUARD_MIN} min — agent may not have claimed yet)`, openNodes, orphanReleases }
+    const decision = { action: 'skipped' as const, reason: `boot guard (launched within ${BOOT_GUARD_MIN} min — agent may not have claimed yet)`, openNodes, orphanReleases }
+    await recordSentinelSkip(decision.reason, { openNodes, orphanReleases })
+    return decision
   }
   // State-based busy check: relaunch the MOMENT the previous agent is done,
   // never on a timer. Newest run ACTIVE = still working, stand down. UNKNOWN
@@ -190,7 +257,9 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
   if (!opts.handoff && last?.sync_cycle_id) {
     const status = await fetchNewestRunStatus(String(last.sync_cycle_id), apiKey)
     if (status === 'ACTIVE') {
-      return { action: 'skipped', reason: 'previous loop agent still working (run active)', openNodes, orphanReleases }
+      const decision = { action: 'skipped' as const, reason: 'previous loop agent still working (run active)', openNodes, orphanReleases }
+      await recordSentinelSkip(decision.reason, { openNodes, orphanReleases })
+      return decision
     }
   }
 
@@ -230,7 +299,9 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
   }
   const agentId = body?.agent?.id ?? body?.id
   if (!resp.ok || !agentId) {
-    return { action: 'skipped', reason: `launch failed: HTTP ${resp.status} ${JSON.stringify(body).slice(0, 200)}`, openNodes, orphanReleases }
+    const decision = { action: 'skipped' as const, reason: `launch failed: HTTP ${resp.status} ${JSON.stringify(body).slice(0, 200)}`, openNodes, orphanReleases }
+    await recordSentinelSkip(decision.reason, { openNodes, orphanReleases })
+    return decision
   }
 
   const { error: logErr } = await sb.from('sync_logs').insert({
