@@ -1,5 +1,6 @@
 import type { PlaceFaceStat } from '@/lib/market/publish-place-face'
 import '@/components/search/search-ledger.css'
+import '@/components/place/place-opening.css'
 
 /** Face KPI strip. Only cells the publisher emitted. Miss omits. */
 export function PlaceFaceStrip({

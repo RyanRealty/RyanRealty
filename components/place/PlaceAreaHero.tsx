@@ -1,6 +1,6 @@
 import '@/components/place/place-opening.css'
 
-/** Place still, full-bleed under the opener type. Not an H1 cage. Miss omits. */
+/** Place still. With `.place-opening--media` it is the fold, not a strip under cream type. Miss omits. */
 export function PlaceAreaHero({ posterSrc }: { posterSrc: string | null | undefined }) {
   if (!posterSrc) return null
   return (

@@ -52,6 +52,7 @@ describe('city opening', () => {
   const page = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
 
   it('opens on leftover city face + PlaceSplitView, not Stage or CityHomesField', () => {
+    expect(page).toMatch(/place-opening--media/)
     expect(page).toMatch(/leftoverHudKpis\(\{/)
     expect(page).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
     expect(page).toMatch(/<PlaceFaceStrip/)

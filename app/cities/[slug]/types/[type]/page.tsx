@@ -198,10 +198,12 @@ export default async function CityPlaceTypePage({ params }: Props) {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: cityName, href: placeHref }, { label: spec.h1Type }]} />
         <div className="place-opening">
-          <V3Heading level={1} size="field">
-            {headline}
-          </V3Heading>
-          <PlaceFaceStrip stats={face} />
+          <div className="place-opening__copy">
+            <V3Heading level={1} size="field">
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face} />
+          </div>
         </div>
         {atlasRegions.length > 0 ? (
           <V3Atlas

@@ -526,13 +526,16 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         <V3SectionTracker />
         <MetadataBlock schemas={neighborhoodSchemas} />
 
-        <V3Breadcrumb trail={trail} />
-        <div className="place-opening">
-          <V3Heading level={1} size="field">
-            {headline}
-          </V3Heading>
-          <PlaceFaceStrip stats={face.stats} />
+        <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
           <PlaceAreaHero posterSrc={stagePosterSrc} />
+          {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
+          <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+          <div className="place-opening__copy">
+            <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+          </div>
         </div>
         {(
           <V3Atlas

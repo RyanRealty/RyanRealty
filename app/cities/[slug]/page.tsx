@@ -1,8 +1,9 @@
 /**
  * /cities/[slug] - the city node. Same template for Bend, Redmond, every city.
  *
- * First screen: H1 `{City} homes for sale`, leftover grain face
- * (publishPlaceFace grain city), living atlas, flagship PlaceSplitView seeded
+ * First screen: place still owns the fold. H1 `{City} homes for sale` and
+ * leftover grain face sit on the photograph (not a cream bar above it).
+ * Then living atlas, flagship PlaceSplitView seeded
  * from the city polygon. Nested places draw as Atlas regions and Split
  * overlayBoundaries (Bend neighborhoods, plats elsewhere). Do not write
  * ?shapes= onto this URL. Type chips live on Split, not as first-screen
@@ -657,13 +658,16 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={citySchemas} />
 
-        <V3Breadcrumb trail={trail} />
-        <div className="place-opening">
-          <V3Heading level={1} size="field">
-            {headline}
-          </V3Heading>
-          <PlaceFaceStrip stats={face.stats} />
+        <div className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}>
           <PlaceAreaHero posterSrc={stagePosterSrc} />
+          {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
+          <V3Breadcrumb trail={trail} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+          <div className="place-opening__copy">
+            <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+          </div>
         </div>
         {(
           <V3Atlas

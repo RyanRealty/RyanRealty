@@ -104,7 +104,7 @@ describe('neighborhood page first screen', () => {
     expect(code).not.toMatch(/<V3Stage\b/)
     expect(code).toMatch(/neighborhoodHeadline\(\s*neighborhood\.name\s*\)/)
     expect(code).toMatch(/overlayBoundaries=\{overlaysFromChildCells\(atlasPlats\)\}/)
-    expect(code).toMatch(/className="place-opening"/)
+    expect(code).toMatch(/place-opening/)
   })
 
   it('does not write ?shapes= and does not print leftover MOS on the face', () => {

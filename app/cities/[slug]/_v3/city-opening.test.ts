@@ -28,12 +28,12 @@ describe('cityStagePoster', () => {
 })
 
 describe('place-opening still', () => {
-  it('bleeds the place photograph, never a measured carousel strip', () => {
+  it('bleeds the place photograph as the fold, never a cream type bar above it', () => {
     const css = readFileSync(resolve('components/place/place-opening.css'), 'utf8')
     expect(css).toMatch(/\.place-opening__media/)
-    expect(css).toMatch(/max-width:\s*none/)
-    expect(css).toMatch(/height:\s*var\(--v3-mosaic-h\)/)
-    expect(css).not.toMatch(/max-width:\s*var\(--v3-measure\)/)
+    expect(css).toMatch(/\.place-opening--media/)
+    expect(css).toMatch(/\.place-opening__media \{[\s\S]*?max-width:\s*none/)
+    expect(css).toMatch(/min-height:\s*max\(62vh,\s*26rem\)/)
     expect(css).not.toMatch(/--v3-carousel-h/)
   })
 })

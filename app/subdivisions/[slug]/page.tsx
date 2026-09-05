@@ -645,20 +645,27 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
-        <V3Breadcrumb
-          trail={subdivisionPageTrail(
-            citySlug && placeCity ? { label: cityName, slug: citySlug } : null,
-            resortSlug ? { label: resortLabel ?? displayName, slug: resortSlug } : null,
-            displayName,
-          )}
-        />
-        <div id="overview" className="place-opening">
-          <V3Heading level={1} size="field">
-            {headline}
-          </V3Heading>
-          <PlaceFaceStrip stats={face.stats} />
-          <V3SourceLine source={inventorySource} />
+        <div
+          id="overview"
+          className={stagePosterSrc ? 'place-opening place-opening--media' : 'place-opening'}
+        >
           <PlaceAreaHero posterSrc={stagePosterSrc} />
+          {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
+          <V3Breadcrumb
+            trail={subdivisionPageTrail(
+              citySlug && placeCity ? { label: cityName, slug: citySlug } : null,
+              resortSlug ? { label: resortLabel ?? displayName, slug: resortSlug } : null,
+              displayName,
+            )}
+            tone={stagePosterSrc ? 'on-media' : 'surface'}
+          />
+          <div className="place-opening__copy">
+            <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
+              {headline}
+            </V3Heading>
+            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
+            <V3SourceLine source={inventorySource} onMedia={Boolean(stagePosterSrc)} />
+          </div>
         </div>
         {canMapAtlas && (
           <V3Atlas
