@@ -111,7 +111,7 @@ export function renderRegisterShell(params: { slug: string; address: string | nu
     `Your report on ${addr} · Ryan Realty`,
     `
     <h1>Your report on ${addr} is ready</h1>
-    <p>One quick sign-in confirms it reaches the right person.</p>
+    <p>Sign in to open the report.</p>
     <ul class="benefits">
       <li>The recommended list for ${addr}, and why</li>
       <li>Who you are competing with at that price</li>

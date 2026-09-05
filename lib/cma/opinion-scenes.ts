@@ -244,14 +244,14 @@ function nextScene(a: OpinionSceneArgs): string {
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">We have not seen inside your home.</h2>
-        <p class="lede r">Thirty minutes on site and this estimate gets sharper in both directions.</p>
+        <p class="lede r">Call or text.</p>
         <div class="cta r">
           ${tel ? `<a class="btn pri" href="tel:${esc(tel)}">Call ${esc(br.phone ?? '')}</a>` : ''}
           ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}
           <a class="btn ter" href="?print=1">Read the full report</a>
         </div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Licensed in Oregon, ${esc(br.licenseNumber)}` : ''}</div>
-        <div class="fine r">Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${esc(a.clientName ?? a.client?.name ?? 'the owner')}. This is a comparative market analysis. It is not an appraisal.</div>
+        <div class="fine r">Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${esc(a.clientName ?? a.client?.name ?? 'the owner')}. This is a pricing report. It is not an appraisal.</div>
       </div>
     </div>
   </section>`

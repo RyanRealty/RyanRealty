@@ -308,7 +308,7 @@ function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
     toc: 'Your last listing, and our take',
     body: `
   <h2 class="section">Your Last Listing</h2>
-  <p>Your home came off the market without selling. The numbers below come straight from the MLS record and the verified comparable sales in this report. Under each one is our take.</p>
+  <p>Your home came off the market without selling.</p>
   ${blocks}`,
   }
 }
@@ -319,11 +319,7 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   const tel = phoneHref(b.phone)
   const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
   const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
-  const lead = isAudit
-    ? `You have the full picture now. The price story, what the last listing left on the table, and the number the market supports today. When you are ready to talk it through, the fastest path is a call or a text. No pressure either way.`
-    : onMarket
-      ? `You have the full picture now. The recent sales, where they land against the current price, and what the market supports today. When you want to talk it through, the fastest path is a call or a text.`
-      : `You have the full picture now. When you want to talk through the range or the timing, the fastest path is a call or a text. No pressure either way.`
+  const lead = 'Call or text.'
   const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}`
   return {
     meta: `${esc(a.subject.streetAddress)} · Your Next Step`,
@@ -337,7 +333,7 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
     ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}">Email ${first}</a>` : ''}
     ${onMarket ? '' : `<a class="ghost" href="${consultUrl}">Book a conversation</a>`}
   </div>
-  ${isAudit ? `<p class="cta-reply-note">Or simply reply to the text that brought you here. It comes straight to ${first}'s phone.</p>` : ''}`,
+  ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here. It comes to ${first}'s phone.</p>` : ''}`,
   }
 }
 
@@ -351,7 +347,7 @@ function whyListPage(a: RenderCmaArgs): PageDef {
   })
   return {
     meta: `${esc(a.subject.streetAddress)} · Why list with a realtor`,
-    toc: 'Why most sellers list with a realtor',
+    toc: 'How recent sellers sold',
     body: cmaWhyListPageBody(facts),
   }
 }

@@ -124,7 +124,6 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
 } {
  const first = trim(facts.ownerFirstName) ?? 'there'
  const address = trim(facts.propertyAddress) ?? 'your home'
- const city = trim(facts.propertyCity) ?? 'the area'
  const lo = moneyOrNull(facts.priceRangeLow)
  const hi = moneyOrNull(facts.priceRangeHigh)
  const suggested = moneyOrNull(facts.suggestedListPrice)
@@ -137,9 +136,9 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
  const rangeLine =
  lo && hi
  ? suggested
- ? `Attached PDF. Short version: based on those comps, a realistic list range looks like ${lo}-${hi}. Suggested list: ${suggested}.`
- : `Attached PDF. Short version: based on those comps, a realistic list range looks like ${lo}-${hi}.`
- : 'Attached PDF - recent nearby sales and current competition, with a suggested asking range.'
+ ? `The report is attached. Closed sales nearby support ${lo} to ${hi}. Recommended list: ${suggested}.`
+ : `The report is attached. Closed sales nearby support ${lo} to ${hi}.`
+ : 'The report is attached.'
 
  const contactBits = [phone, email].filter(Boolean).join(' · ')
  const bookLine = calendar
@@ -157,13 +156,11 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
  const lines = [
  `Hi ${first},`,
  '',
- `I put together a pricing report for ${address} - a side-by-side of recent nearby sales and current competition, with a suggested asking range.`,
+ `Pricing report for ${address}.`,
  '',
  rangeLine,
  '',
- `Most buyers shopping ${city} work with an agent and compare every listing against recent solds. If your ask sits outside what those solds support, showings and offers usually stall.`,
- '',
- `If you want, I can walk you through the comps on a short call and talk through what a Ryan Realty listing would look like for this address - MLS exposure, buyer outreach, and the Oregon disclosure/paperwork side.`,
+ `Reply or call to walk through the numbers.`,
  '',
  bookLine,
  orReply,
@@ -223,15 +220,13 @@ export function composeCmaCoverIntro(facts: FsboCmaMergeFacts): {
  : null
  const placeLine = city ? `${city}, Oregon` : null
 
- const body = city
- ? `This is a comparative market analysis - a pricing report based on recent nearby sales and active listings similar to your home. It is not an appraisal. Lenders order appraisals after an offer. This report is for setting an asking price that matches what buyers in ${city} are actually paying.`
- : `This is a comparative market analysis - a pricing report based on recent nearby sales and active listings similar to your home. It is not an appraisal. Lenders order appraisals after an offer. This report is for setting an asking price that matches what buyers are actually paying.`
+ const body = 'This is a pricing report based on recent nearby sales. It is not an appraisal.'
 
  const suggestedLine = suggested ? `Suggested list price: ${suggested}` : null
  const rangeLine = lo && hi ? `Suggested range: ${lo} - ${hi}` : null
  const askLine = ask
- ? `Inside: sold comps, active competition, adjustments for differences, and how your current ask (${ask}) sits against the set.`
- : `Inside: sold comps, active competition, adjustments for differences, and how your ask sits against the set.`
+ ? `Sold comps, active competition, and how your current ask (${ask}) sits against the set.`
+ : `Sold comps, active competition, and how your ask sits against the set.`
 
  const qBits = [agent, phone, calendar].filter(Boolean)
  const questionsLine = qBits.length
@@ -284,29 +279,26 @@ export function composeCmaBottomWhyList(facts: FsboCmaMergeFacts): {
  const agent = trim(facts.agentName)
  const ctaBits = [calendar, phone, email].filter(Boolean).join(' · ')
 
- const heading = 'Why most sellers list with a realtor'
+ const heading = 'How recent sellers sold'
 
  const bodyText = [
  heading,
  '',
- 'Pricing is one job. Getting the home in front of the buyers who can close - and managing offers, inspections, and Oregon disclosures - is the rest.',
- '',
- 'National picture (shares only):',
- `• ${s.fsbo} of recent sellers sold FSBO - an all-time low.¹`,
+ `• ${s.fsbo} of recent sellers sold FSBO.¹`,
  `• ${s.seller} of sellers used a real estate agent or broker.¹`,
  `• ${s.buyer} of buyers purchased through an agent or broker.¹`,
- `• ${s.knew} of FSBO sellers already knew their buyer (friend, relative, neighbor, tenant).¹ If you don't already have that buyer, you are competing for the other group.`,
+ `• ${s.knew} of FSBO sellers already knew their buyer (friend, relative, neighbor, tenant).¹`,
  `• ${s.tryHire} of sellers who start on their own later hire an agent.²`,
  '',
  "Oregon note: selling FSBO does not remove the Seller's Property Disclosure Statement requirement for most 1-4 unit residential sales. You still complete and deliver it to each buyer who makes a written offer (ORS 105.464, 105.465).",
  '',
- `What a Ryan Realty listing adds for ${address}:`,
- '• MLS + portal distribution so agent-represented buyers can find the home',
- '• Pricing and repositioning against live comps (not a one-time PDF)',
- '• Showing coordination and offer management',
- '• Contract, disclosure, and closing coordination with your escrow/title team',
+ `A Ryan Realty listing for ${address} includes:`,
+ '• MLS and portal distribution',
+ '• Pricing against live comps',
+ '• Showing and offer management',
+ '• Contract, disclosure, and closing coordination',
  '',
- 'Next step: walk these comps together and decide if listing with Ryan Realty is the better path for this sale.',
+ 'Walk these comps on a call.',
  ctaBits || null,
  agent ? `${agent}, Ryan Realty` : 'Ryan Realty',
  ]
@@ -321,24 +313,22 @@ export function composeCmaBottomWhyList(facts: FsboCmaMergeFacts): {
  const bodyHtml = `
  <section class="cma-why-list" data-template="${CMA_BOTTOM_WHY_LIST_V1}" style="background:${FSBO_CMA_BRAND.cream};color:${FSBO_CMA_BRAND.navy}">
  <h2 class="section">${esc(heading)}</h2>
- <p>Pricing is one job. Getting the home in front of the buyers who can close - and managing offers, inspections, and Oregon disclosures - is the rest.</p>
- <h3 class="subhead">National picture (shares only)</h3>
  <ul class="note-list">
- <li>${esc(s.fsbo)} of recent sellers sold FSBO - an all-time low.<sup>1</sup></li>
+ <li>${esc(s.fsbo)} of recent sellers sold FSBO.<sup>1</sup></li>
  <li>${esc(s.seller)} of sellers used a real estate agent or broker.<sup>1</sup></li>
  <li>${esc(s.buyer)} of buyers purchased through an agent or broker.<sup>1</sup></li>
- <li>${esc(s.knew)} of FSBO sellers already knew their buyer (friend, relative, neighbor, tenant).<sup>1</sup> If you don't already have that buyer, you are competing for the other group.</li>
+ <li>${esc(s.knew)} of FSBO sellers already knew their buyer (friend, relative, neighbor, tenant).<sup>1</sup></li>
  <li>${esc(s.tryHire)} of sellers who start on their own later hire an agent.<sup>2</sup></li>
  </ul>
  <p><strong>Oregon note:</strong> selling FSBO does not remove the Seller's Property Disclosure Statement requirement for most 1-4 unit residential sales. You still complete and deliver it to each buyer who makes a written offer (ORS 105.464, 105.465).</p>
- <h3 class="subhead">What a Ryan Realty listing adds for ${esc(address)}</h3>
+ <h3 class="subhead">A Ryan Realty listing for ${esc(address)}</h3>
  <ul class="note-list">
- <li>MLS + portal distribution so agent-represented buyers can find the home</li>
- <li>Pricing and repositioning against live comps (not a one-time PDF)</li>
- <li>Showing coordination and offer management</li>
- <li>Contract, disclosure, and closing coordination with your escrow/title team</li>
+ <li>MLS and portal distribution</li>
+ <li>Pricing against live comps</li>
+ <li>Showing and offer management</li>
+ <li>Contract, disclosure, and closing coordination</li>
  </ul>
- <p class="cta-lead">Next step: walk these comps together and decide if listing with Ryan Realty is the better path for this sale.</p>
+ <p class="cta-lead">Walk these comps on a call.</p>
  ${ctaBits ? `<p>${esc(ctaBits)}</p>` : ''}
  <p>${esc(agent ? `${agent}, Ryan Realty` : 'Ryan Realty')}</p>
  <div class="trace"><div class="t-hd">Sources</div>${esc(footnotes).replace(/\n/g, '<br/>')}</div>
@@ -363,13 +353,11 @@ export const FSBO_CMA_FIRST_TOUCH_EMAIL_SEED = {
  body: [
  'Hi %contact_first_name%,',
  '',
- 'I put together a pricing report for %address% - a side-by-side of recent nearby sales and current competition, with a suggested asking range.',
+ 'Pricing report for %address%.',
  '',
- 'Attached PDF. Short version: based on those comps, a realistic list range looks like %customPriceRangeLow%-%customPriceRangeHigh%. Suggested list: %customSuggestedListPrice%.',
+ 'The report is attached. Closed sales nearby support %customPriceRangeLow% to %customPriceRangeHigh%. Recommended list: %customSuggestedListPrice%.',
  '',
- 'Most buyers shopping %contact_address_city% work with an agent and compare every listing against recent solds. If your ask sits outside what those solds support, showings and offers usually stall.',
- '',
- 'If you want, I can walk you through the comps on a short call and talk through what a Ryan Realty listing would look like for this address - MLS exposure, buyer outreach, and the Oregon disclosure/paperwork side.',
+ 'Reply or call to walk through the numbers.',
  '',
  'Book here: %calendar_link%',
  'Or reply with a time that works. %agent_phone% · %agent_email%',

@@ -61,17 +61,17 @@ export function composeCmaFirstContactSubject(origin: CmaOrigin, address: string
 function introFor(brokerName: string | null): string {
   const name = trim(brokerName) ?? 'Matt Ryan'
   if (/^matt ryan$/i.test(name)) {
-    return 'This is Matt Ryan, owner of Ryan Realty in Bend. We are a boutique brokerage.'
+    return 'This is Matt Ryan, owner of Ryan Realty in Bend.'
   }
-  return `This is ${name} with Ryan Realty in Bend. We are a boutique brokerage.`
+  return `This is ${name} with Ryan Realty in Bend.`
 }
 
 function planFor(origin: CmaOrigin, named: string): string {
   if (origin === 'expired') {
-    return `Your listing on ${named} came off the market without a sale. We spent time on why, and on what the closed sales nearby support now.`
+    return `Your listing on ${named} came off the market without a sale.`
   }
   if (origin === 'fsbo') {
-    return `You are selling ${named} yourself. We built a read on what the closed sales support, and what a buyer shopping that price is seeing instead.`
+    return `You are selling ${named} yourself.`
   }
   return `The number for ${named}, and the sales that set it.`
 }
@@ -82,14 +82,8 @@ function closeFor(origin: CmaOrigin): string {
   return CLOSE_ASKED
 }
 
-function offerFor(origin: CmaOrigin): string {
-  if (origin === 'expired') {
-    return 'If you list again we would like the work. If anything in those numbers is unclear, reply or call and we will walk through how we got there.'
-  }
-  if (origin === 'fsbo') {
-    return 'If you decide to list with us we would like the work. If anything in those numbers is unclear, reply or call and we will walk through how we got there.'
-  }
-  return 'If anything in those numbers is unclear, reply or call and we will walk through how we got there.'
+function offerFor(): string {
+  return 'Reply or call to walk through the numbers.'
 }
 
 function areaLine(facts: CmaFirstContactFacts): string | null {
@@ -120,11 +114,8 @@ function resourceParagraphs(origin: CmaOrigin, facts: CmaFirstContactFacts): str
   return out
 }
 
-function wishFor(origin: CmaOrigin): string {
-  if (origin === 'expired' || origin === 'fsbo') {
-    return 'Call anytime if you want to talk about the report or how we sell homes. We wish you the best with the house either way.'
-  }
-  return 'Call anytime if you want to talk about the report or how we sell homes.'
+function wishFor(): string {
+  return 'Call anytime.'
 }
 
 export function cmaFirstContactPreview(origin: CmaOrigin, address: string | null): string {
@@ -149,8 +140,8 @@ export function composeCmaFirstContact(
   const plan = planFor(origin, named)
   const numbers = composeInboundNumbersClause(facts)
   const close = closeFor(origin)
-  const offer = offerFor(origin)
-  const wish = wishFor(origin)
+  const offer = offerFor()
+  const wish = wishFor()
   const bodyText = [
     greeting,
     intro,

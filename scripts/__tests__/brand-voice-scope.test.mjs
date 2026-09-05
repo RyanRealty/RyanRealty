@@ -127,15 +127,14 @@ describe('function-scoped public copy', () => {
       expect(at, `not found: ${needle}`).toBeGreaterThan(-1)
       return ranges.some((r) => at >= r.start && at < r.end)
     }
-    expect(covers('The full report is attached')).toBe(true)
+    expect(covers('The report for')).toBe(true)
     expect(covers('no assigned broker email available')).toBe(false)
   })
 
   it('keeps the two bodies of the sent email on the same sentences', () => {
     const src = readFileSync(join(ROOT, 'lib/cma-delivery.ts'), 'utf8')
     for (const sentence of [
-      'The full report is attached. It walks through the comparable sales we used, what we adjusted for, and where the number could move.',
-      'If you want to talk through it, or have us walk through in person, just reply to this email or call. No pressure either way.',
+      'Reply or call to walk through the numbers.',
     ]) {
       expect(src.split(sentence).length - 1, sentence).toBe(2)
     }

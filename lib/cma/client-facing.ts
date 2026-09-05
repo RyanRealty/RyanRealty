@@ -157,7 +157,7 @@ function strategyLine(input: {
     return `Your last listing asked ${usd(input.failedAsk)} and did not sell. This list stays under that ask.`
   }
   if (p.priceOverride != null && p.priceOverride > 0 && p.recommended > p.method3) {
-    return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)}, a strategic list with room to negotiate.`
+    return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)}.`
   }
   if (p.priceOverride != null && p.priceOverride > 0 && p.recommended < p.method3) {
     return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)} after review.`
@@ -202,17 +202,17 @@ export function whyThisListPrice(input: {
   if (ceiling && floor && ceiling !== floor) {
     bullets.push({
       label: ceiling.address,
-      text: `Sold at ${usd(ceiling.closePrice)}. As your ${noun}, ${usd(ceiling.adjustedPrice)}. That is the top of this set.`,
+      text: `Sold at ${usd(ceiling.closePrice)}. As your ${noun}, ${usd(ceiling.adjustedPrice)}. Highest in this set.`,
     })
     if (best && best !== ceiling && best !== floor) {
       bullets.push({
         label: best.address,
-        text: `The closest match. As your ${noun}, ${usd(best.adjustedPrice)}.`,
+        text: `As your ${noun}, ${usd(best.adjustedPrice)}.`,
       })
     }
     bullets.push({
       label: floor.address,
-      text: `Sold at ${usd(floor.closePrice)}. As your ${noun}, ${usd(floor.adjustedPrice)}. That is the floor of this set.`,
+      text: `Sold at ${usd(floor.closePrice)}. As your ${noun}, ${usd(floor.adjustedPrice)}. Lowest in this set.`,
     })
   } else if (best) {
     bullets.push({

@@ -92,14 +92,11 @@ describe('first-contact copy', () => {
   it('introduces the brokerage, invites a talk, and links about and reviews on an expired send', () => {
     const c = composeCmaFirstContact('expired', FACTS)
     expect(c.bodyText).toContain('This is Matt Ryan, owner of Ryan Realty in Bend')
-    expect(c.bodyText).toContain('boutique brokerage')
     expect(c.bodyText).toContain('came off the market without a sale')
-    expect(c.bodyText).toContain('If anything in those numbers is unclear')
-    expect(c.bodyText).toContain('If you list again we would like the work')
+    expect(c.bodyText).toContain('Reply or call to walk through the numbers')
     expect(c.bodyText).toContain('https://ryan-realty.com/reviews')
     expect(c.bodyText).toContain('https://ryan-realty.com/about')
     expect(c.bodyText).toContain('Call anytime')
-    expect(c.bodyText).toContain('We wish you the best with the house')
     expect(c.bodyText).not.toMatch(/\bCMA\b/)
     const voice = checkBrandVoice(c.bodyText)
     expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
@@ -138,7 +135,7 @@ describe('first-contact copy', () => {
     expect(c.bodyText).not.toContain('came off the market')
     expect(c.bodyText).not.toContain('If you list again')
     expect(c.bodyText).toContain('This is Matt Ryan')
-    expect(c.bodyText).toContain('If anything in those numbers is unclear')
+    expect(c.bodyText).toContain('Reply or call to walk through the numbers')
   })
 
   it('reads city and neighborhood off a cmas row without inventing them', () => {

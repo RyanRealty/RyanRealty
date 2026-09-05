@@ -623,13 +623,11 @@ export function composeCmaEmail(params: {
   const text = [
     greeting,
     '',
-    `Thanks for asking us to take a look at ${fullAddress}.`,
+    `The report for ${fullAddress} is attached.`,
     '',
-    `Based on actual recent sales near you, our best estimate is ${value}${range}.`,
+    `Closed sales nearby support the number in the report. Recommended list ${value}${range}.`,
     '',
-    `The full report is attached. It walks through the comparable sales we used, what we adjusted for, and where the number could move.`,
-    '',
-    `If you want to talk through it, or have us walk through in person, just reply to this email or call. No pressure either way.`,
+    `Reply or call to walk through the numbers.`,
     '',
     brokerName ? brokerName : 'Ryan Realty',
     brokerEmail || '',
@@ -643,15 +641,14 @@ export function composeCmaEmail(params: {
   const html = `
 <div style="font-family:${EMAIL_FONT_STACK};font-size:16px;line-height:1.55;color:#102742;max-width:580px;margin:0 auto">
   <p>${greeting}</p>
-  <p>Thanks for asking us to take a look at <strong>${escapeHtml(fullAddress)}</strong>.</p>
-  <p>Based on actual recent sales near you, our best estimate is
+  <p>The report for <strong>${escapeHtml(fullAddress)}</strong> is attached.</p>
+  <p>Closed sales nearby support the number in the report. Recommended list
     <strong style="font-variant-numeric:tabular-nums;font-size:18px">${escapeHtml(
       value
     )}</strong>${
       range ? `<span style="color:#102742aa">${escapeHtml(range)}</span>` : ''
     }.</p>
-  <p>The full report is attached. It walks through the comparable sales we used, what we adjusted for, and where the number could move.</p>
-  <p>If you want to talk through it, or have us walk through in person, just reply to this email or call. No pressure either way.</p>
+  <p>Reply or call to walk through the numbers.</p>
   <p style="margin-top:28px">${escapeHtml(brokerName ?? 'Ryan Realty')}<br>
   ${brokerEmail ? `<a href="mailto:${encodeURIComponent(brokerEmail)}" style="color:#102742">${escapeHtml(brokerEmail)}</a><br>` : ''}
   ${brokerPhone ? `<a href="tel:${encodeURIComponent(brokerPhone)}" style="color:#102742">${escapeHtml(brokerPhone)}</a>` : ''}

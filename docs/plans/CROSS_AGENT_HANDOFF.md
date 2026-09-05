@@ -1,9 +1,8 @@
-# Current — 2026-09-05 (CMA first-contact letter)
+# Current — 2026-09-05 (CMA mannered prose stripped)
 
-Expired/FSBO CMA email is a full letter: Matt intro, why we wrote, the
-numbers, walk-through invite, reviews/about, and a place-page merge field.
-Asked reports skip the relist ask. Send dialog uses the template, not Grok.
-Fail-pile rebuild still running on the local xAI key.
+Seller CMA copy is facts only: cover, why-list, next step, first-contact
+letter, and the locked mannered-prose test. 2465 7th needs a rebuild to
+pick up stored HTML. Fail-pile rebuild still running on the local xAI key.
 
 Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
 mix. Golf Track C stays on local `wt/golf-maps-20260903`.

@@ -41,7 +41,7 @@ function adjustmentRows(comps: CmaAdjustedComp[], noun: string, sizeNoun: string
     .join('')
   return `
   <h3 class="subhead">What each sale becomes on your house</h3>
-  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}.${anyStory ? ' Style adjusts a one-story sale against a two-story home, or the reverse.' : ''} As your ${noun} is that sale as if it were your ${noun}. It is not a second list price.</p>
+  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your ${sizeNoun}.${anyStory ? ' Style adjusts a one-story sale against a two-story home, or the reverse.' : ''} As your ${noun} is that sale as if it were your ${noun}.</p>
   <table class="kv is-wide comps-adjust">
     <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th>${anyStory ? '<th class="v">Style</th>' : ''}<th class="v">As your ${noun}</th></tr></thead>
     <tbody>${rows}</tbody>

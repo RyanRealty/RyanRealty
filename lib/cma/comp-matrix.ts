@@ -240,5 +240,5 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       : ''
   return `
   <h3 class="subhead">Side by side</h3>
-  <p>Subject in the first column. Each kept sale is a column. Sale date is when that sale closed. This sale as your ${noun} is the sold price after bringing that sale to today and to your ${sizeNoun}. It is not a second list price.${perFoot} Lot square feet is acres times 43,560.${split}</p>${tables}`
+  <p>Subject in the first column. Each kept sale is a column. Sale date is when that sale closed. This sale as your ${noun} is the sold price after bringing that sale to today and to your ${sizeNoun}.${perFoot} Lot square feet is acres times 43,560.${split}</p>${tables}`
 }
