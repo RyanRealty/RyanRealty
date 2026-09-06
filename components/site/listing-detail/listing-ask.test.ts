@@ -20,8 +20,9 @@ const HUD: LeftoverHudKpis = {
   sold12mo: 40,
 }
 
-const GRAIN = { name: 'Tetherow', hubHref: '/communities/tetherow', geoSlug: 'tetherow' }
-const SUNRIVER = { name: 'Sunriver', hubHref: '/communities/sunriver', geoSlug: 'sunriver' }
+const GRAIN = { name: 'Tetherow', hubHref: '/communities/tetherow', geoSlug: 'tetherow', geoType: 'neighborhood' as const }
+const SUNRIVER = { name: 'Sunriver', hubHref: '/communities/sunriver', geoSlug: 'sunriver', geoType: 'neighborhood' as const }
+const BEND = { name: 'Bend', hubHref: '/cities/bend', geoSlug: 'bend', geoType: 'city' as const }
 
 describe('publishAskVsMedianPct', () => {
   it('is (price - median) / median * 100', () => {
@@ -97,6 +98,20 @@ describe('buildListingAskClaim', () => {
     expect(claim?.source).not.toMatch(/\bask\b/i)
     expect(claim?.headline).not.toMatch(/ask/i)
     expect(claim?.action).toBeUndefined()
+    expect(claim?.figures.map((f) => f.label).join(' ')).not.toMatch(/months of supply/i)
+    expect(claim?.source).not.toMatch(/months of supply|absorption/i)
+  })
+
+  it('prints months of supply only at city grain', () => {
+    const claim = buildListingAskClaim({
+      ask: 700_000,
+      wholePropertyPrice: 700_000,
+      hud: HUD,
+      grain: BEND,
+    })
+    expect(claim?.figures.some((f) => f.label === 'months of supply')).toBe(true)
+    expect(claim?.figures.find((f) => f.label === 'months of supply')?.value).toBeTruthy()
+    expect(claim?.source).toMatch(/leftover membership, active single-family houses in Bend/)
   })
 
   it('sends a core grain to its market report, not search', () => {

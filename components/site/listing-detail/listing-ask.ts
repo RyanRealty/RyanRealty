@@ -13,6 +13,7 @@ import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
+import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { v3Text, type V3InstrumentFigure, type V3InstrumentFigures } from '@/components/site/v3'
 
@@ -23,6 +24,8 @@ export type ListingAskGrain = {
   name: string
   hubHref: string
   geoSlug?: string
+  /** Leftover grain for MOS trust — city/region only may print months of supply. */
+  geoType?: 'city' | 'region' | 'neighborhood' | 'community' | 'subdivision' | 'zip'
 }
 
 export type ListingAskClaim = {
@@ -115,7 +118,11 @@ export function buildListingAskClaim(input: {
       ...(placeHref ? { href: placeHref } : {}),
     })
   }
-  const mos = input.hud?.monthsSupply
+  // Cos Look #6: ask claim keeps median/active; MOS only at city/region
+  // (geo-grain-trust). Community/subdivision/neighborhood withhold MOS.
+  const grainTrusted =
+    input.grain?.geoType != null && isSoldAttributionTrusted(input.grain.geoType)
+  const mos = grainTrusted ? input.hud?.monthsSupply : null
   if (mos != null && mos > 0) {
     figures.push({
       value: v3Text(formatMonthsOfSupply(mos)),
