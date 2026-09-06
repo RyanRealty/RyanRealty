@@ -204,6 +204,9 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 .inv-hero{margin:8px 0 28px}
 .inv-verdict{display:block;margin-top:18px;font-size:15px;font-weight:600;letter-spacing:.04em}
 .szn.is-hero{margin-top:36px}
+table.comp-matrix thead th.v{vertical-align:bottom;text-align:center}
+table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;margin:0 0 8px}
+table.comp-matrix .matrix-addr{display:block}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .month-ledger-wrap{display:flex;flex-direction:column;gap:28px;margin:8px 0 4px}
 table.month-ledger{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}

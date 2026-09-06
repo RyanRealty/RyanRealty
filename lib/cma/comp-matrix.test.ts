@@ -41,7 +41,7 @@ const comp = {
 describe('renderCompMatrixHtml', () => {
   it('prints a subject column and one column per sale with the RPR facts', () => {
     const html = renderCompMatrixHtml(subject, [comp])
-    expect(html).toContain('Side by side')
+    expect(html).toContain('The sales that set the list')
     expect(html).toContain('class="kv is-wide comp-matrix"')
     expect(html).toContain('648 Douglas')
     expect(html).toContain('1. 947 6th')
@@ -57,9 +57,10 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toContain('Garage')
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
-    expect(html).toContain('This sale as your house')
+    expect(html).toContain('Adjusted close')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
+    expect(html).not.toContain('matrix-thumb')
     expect(html).not.toMatch(/[—;]/)
   })
 
@@ -168,10 +169,10 @@ describe('land columns', () => {
     expect(html).toMatch(/31,363/)
   })
 
-  it('labels the adjusted-price row for the product', () => {
-    expect(renderCompMatrixHtml(landSubject, [landComp])).toMatch(/This sale as your lot/)
-    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(/as your house/)
-    expect(renderCompMatrixHtml(subject, [comp])).toMatch(/This sale as your house/)
+  it('labels the adjusted-price row as adjusted close', () => {
+    expect(renderCompMatrixHtml(landSubject, [landComp])).toContain('Adjusted close')
+    expect(renderCompMatrixHtml(subject, [comp])).toContain('Adjusted close')
+    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(/as your house/i)
   })
 
   it('prints sale price per square foot on an improved report', () => {
@@ -188,9 +189,19 @@ describe('land columns', () => {
     )
   })
 
-  it('never says "as your home" — the document idiom is "as your house"', () => {
-    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(/as your home/i)
-    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(/as your home/i)
+  it('never says "as your house"', () => {
+    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(/as your house/i)
+    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(/as your house/i)
+  })
+
+  it('puts a thumbnail above each column when a photo exists', () => {
+    const html = renderCompMatrixHtml(
+      { ...subject, photoUrl: 'https://cdn.example/subject.jpg' },
+      [{ ...comp, photoUrl: 'https://cdn.example/comp.jpg' }],
+    )
+    expect(html).toContain('matrix-thumb')
+    expect(html).toContain('https://cdn.example/subject.jpg')
+    expect(html).toContain('https://cdn.example/comp.jpg')
   })
 
   it('still prints living area for an improved comp', () => {

@@ -34,7 +34,6 @@ import type { CmaSiteData } from '@/lib/cma/county'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
-import { whyPage } from '@/lib/cma/render-why-page'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 import { assembleCompFlyerPages } from '@/lib/cma/opinion-flyers'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -177,9 +176,6 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
   if (timeOwned) rows.push(['Time owned', timeOwned])
   if (vesting) rows.push(['Vesting', vesting])
   if (flood) rows.push(['Flood', flood])
-  const aerial = a.mapDataUri
-    ? `<img class="map-img" src="${esc(a.mapDataUri)}" alt="Map of ${esc(s.streetAddress)} and the sales that priced it" />`
-    : ''
   const history = s.listingHistoryLine?.trim()
     ? `<p>${esc(s.listingHistoryLine.trim())}</p>`
     : ''
@@ -189,7 +185,6 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
     toc: sectionTitle,
     body: `
   <h2 class="section">${sectionTitle}</h2>
-  ${aerial}
   ${kvTable(rows)}
   ${history}`,
   }
@@ -602,20 +597,6 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const rest: CmaPageDef[] = []
   rest.push(snapshotPage(a))
-  const photos = photosPage(a)
-  if (photos) rest.push(photos)
-  rest.push(
-    whyPage({
-      subject: a.subject,
-      comps: a.comps,
-      market: a.market,
-      pricing: a.pricing,
-      equity: a.equity,
-      expiredAudit: a.expiredAudit,
-      generatedAtIso: a.generatedAtIso,
-      excludedOutliers: a.excludedOutliers,
-    }),
-  )
   rest.push(
     pricingPage({
       subject: a.subject,
@@ -623,6 +604,7 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
       market: a.market,
       pricing: a.pricing,
       tiersUsed: a.tiersUsed,
+      mapDataUri: a.mapDataUri,
     }),
   )
   const competition = competitionPage(a)
@@ -641,9 +623,6 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   if (seasonality) rest.push(seasonality)
   const volume = marketVolumePage(a)
   if (volume) rest.push(volume)
-  rest.push(salesAndMapPage(a))
-  // Straight after the sales, while the comp numbers on the tiles still refer
-  // to the grid the reader just read.
   const lotLines = lotLinesPage(a)
   if (lotLines) rest.push(lotLines)
   rest.push(...assembleCompFlyerPages(a.comps, subjectPossessive(a.subject)))

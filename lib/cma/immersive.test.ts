@@ -66,10 +66,9 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).not.toContain('listing video')
     expect(html).not.toMatch(/what your home is worth/i)
     expect(html).not.toMatch(/What every listing gets/i)
-    const whyAt = html.indexOf('id="why-this-price"')
-    const evidenceAt = html.indexOf('id="evidence"')
+    const whyAt = html.indexOf('id="how-we-got-the-price"')
     expect(whyAt).toBeGreaterThan(0)
-    expect(evidenceAt).toBeGreaterThan(whyAt)
+    expect(html).toContain('How we got the price')
   })
 
   it('the failed-listing scene renders with the backtest constants', () => {

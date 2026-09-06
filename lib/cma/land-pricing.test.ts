@@ -83,11 +83,11 @@ describe('what the document calls the subject', () => {
   it('titles the subject section per product', () => {
     expect(subjectSectionTitle(lot)).toBe('The lot')
     expect(subjectSectionTitle(acreage)).toBe('The land')
-    expect(subjectSectionTitle(home)).toBe('The house')
+    expect(subjectSectionTitle(home)).toBe('Home location')
   })
 
   it('calls a farm with a dwelling a house, not land', () => {
-    expect(subjectSectionTitle({ propertySubType: 'Agriculture', lotAcres: 38, sqft: 2400 })).toBe('The house')
+    expect(subjectSectionTitle({ propertySubType: 'Agriculture', lotAcres: 38, sqft: 2400 })).toBe('Home location')
   })
 })
 

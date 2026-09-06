@@ -1,4 +1,14 @@
-# Current — 2026-09-06 (Wave A: LP 301s)
+# Current — 2026-09-06 (CMA one comps story)
+
+Seller CMA spine is Home location, then How we got the price (one
+matrix with thumbs + map), then who they compete with. Why $X, Photos,
+and the second comps table are gone. "As your house" is Adjusted close.
+2465 rebuilt. Rec $401k. Hayden Ranch pins still plot; TIGER US-97 says
+same side. Do not send.
+
+---
+
+# Previous — 2026-09-06 (Wave A: LP 301s)
 
 Place and sell LPs 308 to the inventory winners. `/lp/tetherow` → community,
 `/lp/bend` → `/cities/bend`, seller LPs → `/sell`, buyer alerts → Homes Field,

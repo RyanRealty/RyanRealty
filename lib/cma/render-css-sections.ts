@@ -246,6 +246,9 @@ export function cmaSectionStyles(): string {
   @media screen { .comp-matrix-wrap { overflow-x: auto; } }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
+  table.comp-matrix thead th.v { vertical-align: bottom; text-align: center; }
+  table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
+  table.comp-matrix .matrix-addr { display: block; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
     white-space: normal;

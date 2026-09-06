@@ -3,7 +3,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
-import { salesAndMapPage, subdivisionChapterPage } from './opinion-pages'
+import { subdivisionChapterPage } from './opinion-pages'
+import { pricingPage } from './render-pricing-page'
 import { printWiderMarketPages } from './market-area-chapters'
 import { cmaStylesheet } from './render-css'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -107,22 +108,20 @@ function args(): RenderCmaArgs {
 }
 
 describe('print CMA layout', () => {
-  it('keeps one map on the sales chapter, not a pin map plus a second static map', () => {
-    const page = salesAndMapPage({
+  it('keeps one map on the price chapter, not a pin map plus a second static map', () => {
+    const page = pricingPage({
       subject,
       comps: [comp],
       market: null,
       pricing,
       mapDataUri: 'data:image/png;base64,aaa',
-      generatedAtIso: '2026-08-18T00:00:00.000Z',
-      excludedOutliers: [],
     })
     expect(page.body).toContain('pin-map')
     expect(page.body).toContain('data:image/png;base64,aaa')
     expect(page.body).not.toContain('class="map-img"')
     expect(page.body).not.toContain('<svg')
     expect(page.body).toContain('comp-matrix')
-    expect(page.body).toContain('Side by side')
+    expect(page.body).toContain('The sales that set the list')
     expect(page.body).toContain('Sale price / sqft')
     expect(page.body).toContain('Lot sqft')
   })

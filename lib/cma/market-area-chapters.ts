@@ -169,7 +169,6 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
   const inventory = renderInventoryBoardHtml(a.market)
   const trend = renderListingTrendHtml(area)
   const facts = propertyIntelligenceBlock(a.site)
-  const photos = renderPhotoSetHtml(a)
   const parts: string[] = []
   if (status) {
     parts.push(`<section class="sc sc-cream" id="status-grid">
@@ -213,15 +212,6 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
         <div class="kick r">The parcel</div>
         <h2 class="h r">Facts, flood, and site</h2>
         <div class="r facts-block">${facts}</div>
-      </div>
-    </section>`)
-  }
-  if (photos) {
-    parts.push(`<section class="sc sc-cream tight" id="photo-set">
-      <div class="in wide">
-        <div class="kick r">The house</div>
-        <h2 class="h r">${esc(a.subject.streetAddress)}</h2>
-        <div class="r">${photos}</div>
       </div>
     </section>`)
   }

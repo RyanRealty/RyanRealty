@@ -110,14 +110,14 @@ export function subjectPossessive(subject: {
   return noun === 'home' ? 'house' : noun
 }
 
-/** Section title for the subject page: "The house" / "The lot" / "The land". */
+/** Section title for the subject page: home location, or the lot / land. */
 export function subjectSectionTitle(subject: {
   propertySubType: string | null
   lotAcres: number | null
   sqft?: number | null
 }): string {
   const noun = subjectNoun(subject)
-  return noun === 'home' ? 'The house' : noun === 'lot' ? 'The lot' : 'The land'
+  return noun === 'home' ? 'Home location' : noun === 'lot' ? 'The lot' : 'The land'
 }
 
 export type LandAdjustedComp = {

@@ -4,12 +4,9 @@
  */
 
 import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
-import { renderCompStripHtml } from '@/lib/cma/comp-strip'
-import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
-import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
-import { clientSourceLine, whyThisListPrice } from '@/lib/cma/client-facing'
+import { clientSourceLine } from '@/lib/cma/client-facing'
+import { pricingPage } from '@/lib/cma/render-pricing-page'
 import { immersiveWiderMarketChapters, renderBandOutcomesHtml } from '@/lib/cma/market-area-chapters'
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -19,7 +16,6 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { FAILED_ASK_BACKTEST, sellerFacingFindingMeaning } from '@/lib/cma/expired-audit'
 import { formatDate } from '@/lib/format/date'
-import { subjectPossessive } from '@/lib/cma/land-pricing'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/getTaxlots'
 import { renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
@@ -44,23 +40,19 @@ export type OpinionSceneArgs = {
   parcels?: CmaParcelSet | null
 }
 
-function whyScene(a: OpinionSceneArgs): string {
-  const why = whyThisListPrice(a)
-  const bullets = why.bullets
-    .map((b) => `<div class="like r"><div class="like-h">${esc(b.label)}</div><div class="like-d">${esc(b.text)}</div></div>`)
-    .join('')
-  const chart = compsPriceChartSvg({ comps: a.comps, recommended: a.pricing.recommended })
+function priceScene(a: OpinionSceneArgs): string {
+  const page = pricingPage({
+    subject: a.subject,
+    comps: a.comps,
+    market: a.market,
+    pricing: a.pricing,
+    mapDataUri: a.mapDataUri,
+  })
   return `
-  <section class="sc sc-cream" id="why-this-price">
-    <div class="in">
-      <div class="kick r">Why that number</div>
-      <h2 class="h r">${esc(why.heading)}</h2>
-      <p class="lede r">${esc(why.coverSentence)}</p>
-      ${chart ? `<div class="szn r" data-anim="chart">${chart}</div>` : ''}
-      ${bullets ? `<div class="like-grid">${bullets}</div>` : ''}
-      ${why.market ? `<p class="body r">${esc(why.market)}</p>` : ''}
-      ${why.ownership ? `<p class="body r">${esc(why.ownership)}</p>` : ''}
-      ${why.strategy ? `<p class="body r">${esc(why.strategy)}</p>` : ''}
+  <section class="sc sc-cream" id="how-we-got-the-price">
+    <div class="in wide">
+      <div class="kick r">The list</div>
+      <div class="r">${page.body}</div>
     </div>
   </section>`
 }
@@ -120,20 +112,6 @@ function outcomesScene(a: OpinionSceneArgs): string {
       <div class="kick r">This price band</div>
       <h2 class="h r">Sold and unsold in this band</h2>
       <div class="r">${html}</div>
-    </div>
-  </section>`
-}
-
-function salesScene(a: OpinionSceneArgs): string {
-  const pinMap = renderCompPinMapHtml(a.subject, a.comps, a.mapDataUri)
-  return `
-  <section class="sc sc-cream" id="evidence">
-    <div class="in wide">
-      <div class="kick r">The sales that set it</div>
-      <h2 class="h r">The sales that set the number</h2>
-      <div class="r">${renderCompMatrixHtml(a.subject, a.comps)}</div>
-      ${pinMap ? `<div class="pin-map-wrap r">${pinMap}</div>` : ''}
-      <div class="r">${renderCompStripHtml(a.comps, subjectPossessive(a.subject))}</div>
     </div>
   </section>`
 }
@@ -272,10 +250,9 @@ function nextScene(a: OpinionSceneArgs): string {
 
 export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   return [
-    whyScene(a),
+    priceScene(a),
     competitionScene(a),
     outcomesScene(a),
-    salesScene(a),
     lotLinesScene(a),
     subdivisionScene(a),
     seasonalityScene(a),

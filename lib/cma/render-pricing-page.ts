@@ -5,13 +5,15 @@
 
 import { PRICING_TARGET_COMPS, PRICING_MAX_COMPS } from '@/lib/pricing/ladder'
 import { TARGET_COMPS, MAX_COMPS } from '@/lib/cma/comps'
-import { dateLong, dec, escapeHtml, usd, usdSigned } from '@/lib/cma/render-blocks'
+import { dec, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
+import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { renderCompMapKeyHtml } from '@/lib/cma/comp-strip'
+import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
-import { subjectNoun, subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -21,31 +23,7 @@ function saleToListPct(ratio: number | null | undefined): string | null {
   return dec(pct, 1)
 }
 
-function adjustmentRows(comps: CmaAdjustedComp[], noun: string): string {
-  if (comps.length === 0) return ''
-  // The Style column appears only when it moved a number on this document.
-  const anyStory = comps.some((c) => (c.storyAdjustment ?? 0) !== 0)
-  const rows = comps
-    .map((c) => {
-      const close = c.closePrice != null ? usd(c.closePrice) : ''
-      return `<tr>
-      <td>${esc(c.address)}</td>
-      <td>${esc(c.closeDate ? dateLong(c.closeDate) : '-')}</td>
-      <td class="num">${close}</td>
-      <td class="num">${usdSigned(c.timeAdjustment)}</td>
-      <td class="num">${usdSigned(c.sizeAdjustment)}</td>${anyStory ? `
-      <td class="num">${usdSigned(c.storyAdjustment ?? 0)}</td>` : ''}
-      <td class="num">${usd(c.adjustedPrice)}</td>
-    </tr>`
-    })
-    .join('')
-  return `
-  <h3 class="subhead">What each sale becomes on your house</h3>
-  <table class="kv is-wide comps-adjust">
-    <thead><tr><th>Sale</th><th class="v">Sold</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th>${anyStory ? '<th class="v">Style</th>' : ''}<th class="v">As your ${noun}</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`
-}
+
 
 function sellerNetBlock(p: CmaPricing): string {
   const n = p.sellerNet
@@ -83,6 +61,7 @@ export function pricingPage(input: {
   market: CmaMarketContext | null
   pricing: CmaPricing
   tiersUsed?: string[]
+  mapDataUri?: string | null
 }): CmaPageDef {
   const p = input.pricing
   const s = input.subject
@@ -91,16 +70,12 @@ export function pricingPage(input: {
   const recPpsf = sqft ? usd(Math.round(p.recommended / sqft)) : null
   const notes = clientFacingNotes(p.notes, p)
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
-  const noun = subjectNoun(s)
-  // Two different words: the TITLE reads "How this home is priced", the
-  // possessive reads "as your house". subjectNoun gives 'home', never 'house'.
-  const possessive = subjectPossessive(s)
-  const pricedTitle = `How this ${noun} is priced`
+  const pinMap = renderCompPinMapHtml(s, input.comps, input.mapDataUri ?? null)
   return {
-    meta: `${esc(s.streetAddress)} · ${pricedTitle}`,
-    toc: pricedTitle,
+    meta: `${esc(s.streetAddress)} · How we got the price`,
+    toc: 'How we got the price',
     body: `
-  <h2 class="section">${pricedTitle}</h2>
+  <h2 class="section">How we got the price</h2>
   <p>${esc(listPriceLead(p, { perSqft: recPpsf }))}${
     range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
   }${range.note ? ` ${esc(range.note)}` : ''}</p>
@@ -111,7 +86,8 @@ export function pricingPage(input: {
   </div>
   <h3 class="subhead">How we priced this</h3>
   ${howWePriced(input.comps.length, input.market, search.body)}
-  ${adjustmentRows(input.comps, possessive)}
+  ${renderCompMatrixHtml(s, input.comps)}
+  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${search.legend ? `<p>${esc(search.legend)}</p>` : ''}<h3 class="subhead">Marker key</h3>${renderCompMapKeyHtml(s, input.comps)}` : ''}
   ${sellerNetBlock(p)}
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
 `,

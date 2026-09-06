@@ -6,7 +6,6 @@
 import { whyWeKeptComp } from '@/lib/cma/client-facing'
 import { dateLong, dec, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
-import { subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 
@@ -36,7 +35,7 @@ function soldPpsf(c: CmaAdjustedComp): string | null {
   return `${usd(Math.round(c.closePrice / c.sqft))}/sf`
 }
 
-export function renderCompStripHtml(comps: readonly CmaAdjustedComp[], noun: string = 'house'): string {
+export function renderCompStripHtml(comps: readonly CmaAdjustedComp[], _noun: string = 'house'): string {
   const rows = comps
     .map((c, i) => {
       const pin = i + 1
@@ -60,7 +59,7 @@ export function renderCompStripHtml(comps: readonly CmaAdjustedComp[], noun: str
         <div class="comp-nums">
           <div class="comp-n"><span class="comp-nl">Sold</span><span class="comp-nv">${usd(c.closePrice)}</span></div>
           ${ppsf ? `<div class="comp-n"><span class="comp-nl">Sold $/sf</span><span class="comp-nv">${esc(ppsf)}</span></div>` : ''}
-          <div class="comp-n"><span class="comp-nl">This sale as your ${noun}</span><span class="comp-nv">${usd(c.adjustedPrice)}</span></div>
+          <div class="comp-n"><span class="comp-nl">Adjusted close</span><span class="comp-nv">${usd(c.adjustedPrice)}</span></div>
         </div>
         ${facts ? `<div class="comp-facts">${esc(facts)}</div>` : ''}
         ${c.proximity ? `<div class="comp-facts">${esc(c.proximity)}</div>` : ''}
@@ -74,7 +73,6 @@ export function renderCompStripHtml(comps: readonly CmaAdjustedComp[], noun: str
 }
 
 export function renderCompMapKeyHtml(subject: CmaSubject, comps: readonly CmaAdjustedComp[]): string {
-  const noun = subjectPossessive(subject)
   const subjectLine = joinFacts([
     subject.beds != null ? `${int(subject.beds)} bd` : null,
     subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} ba` : null,
@@ -87,7 +85,7 @@ export function renderCompMapKeyHtml(subject: CmaSubject, comps: readonly CmaAdj
       const facts = bedsBathsSqftYear(c)
       const ppsf = soldPpsf(c)
       const time = marketTime(c)
-      const money = joinFacts([`Sold ${dateLong(c.closeDate)}`, usd(c.closePrice), ppsf, `as your ${noun} ${usd(c.adjustedPrice)}`])
+      const money = joinFacts([`Sold ${dateLong(c.closeDate)}`, usd(c.closePrice), ppsf, `adjusted close ${usd(c.adjustedPrice)}`])
       const meta = joinFacts([c.proximity, time])
       return `<div class="k" data-comp="${i + 1}" data-pin="${i + 1}"><span class="pin">${i + 1}</span><div class="txt"><strong>${esc(c.address)}</strong>${money ? `<br/>${esc(money)}` : ''}${facts ? `<br/>${esc(facts)}` : ''}${meta ? `<br/>${esc(meta)}` : ''}<br/>${esc(why.sentence)}</div></div>`
     }),

@@ -136,10 +136,10 @@ describe('assembleOpinionPages format', () => {
   it('puts house facts and legal on the subject page instead of empty follow-on sheets', () => {
     const pages = assembleOpinionPages(args())
     const tocs = pages.map((p) => p.toc)
-    expect(tocs).toContain('The house')
+    expect(tocs).toContain('Home location')
     expect(tocs).not.toContain('Property facts')
     expect(tocs).not.toContain('Legal, owner, and flood')
-    const house = pages.find((p) => p.toc === 'The house')
+    const house = pages.find((p) => p.toc === 'Home location')
     expect(house?.body).toContain('Garage')
     expect(house?.body).toContain('2 spaces')
     expect(house?.body).toContain('Parcel')
@@ -150,7 +150,7 @@ describe('assembleOpinionPages format', () => {
 
   it('puts competition next to the price, before the market chapters', () => {
     const tocs = assembleOpinionPages(args()).map((p) => p.toc)
-    const price = tocs.indexOf('How this home is priced')
+    const price = tocs.indexOf('How we got the price')
     const competition = tocs.indexOf('Who you are competing with at this price')
     expect(price).toBeGreaterThanOrEqual(0)
     expect(competition).toBe(price + 1)

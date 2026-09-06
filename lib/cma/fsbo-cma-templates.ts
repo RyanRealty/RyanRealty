@@ -535,7 +535,7 @@ export function cmaProductBarHtml(bar: CmaProductBar): string {
     const links = bar.placeLinks
       .map((l) => `<a href="${escapeAttr(l.href)}">${escapeMinimal(l.label)}</a>`)
       .join(' · ')
-    parts.push(`<div class="product-bar-item"><span class="product-bar-k">Place</span> ${links}</div>`)
+    parts.push(`<div class="product-bar-item"><span class="product-bar-k">Home location</span> ${links}</div>`)
   }
   if (bar.competitionSummary) {
     parts.push(

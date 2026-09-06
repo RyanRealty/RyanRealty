@@ -193,11 +193,9 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
-    const whyAt = html.indexOf('Why $')
-    const salesAt = html.indexOf('The sales that set the number')
+    const priceAt = html.indexOf('How we got the price')
     expect(coverAt).toBeGreaterThan(0)
-    expect(whyAt).toBeGreaterThan(coverAt)
-    expect(salesAt).toBeGreaterThan(whyAt)
+    expect(priceAt).toBeGreaterThan(coverAt)
   })
 
   it('does not render a this-home marketing plan when one is provided on the row', () => {

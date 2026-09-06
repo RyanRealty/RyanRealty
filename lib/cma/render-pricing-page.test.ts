@@ -53,9 +53,9 @@ describe('pricingPage', () => {
       pricing,
       tiersUsed: ['subdivision-3mo'],
     })
-    expect(page.toc).toBe('How this home is priced')
+    expect(page.toc).toBe('How we got the price')
     const html = page.body
-    expect(html).toContain('How this home is priced')
+    expect(html).toContain('How we got the price')
     expect(html).toContain('How we priced this')
     expect(html).not.toContain('Expected close')
     expect(html).toContain('$655,000')
@@ -68,9 +68,10 @@ describe('pricingPage', () => {
     expect(html).toContain('15 percent')
     expect(html).toContain('30 percent')
     expect(html).toContain('98.9 percent of list')
-    expect(html).toContain('What each sale becomes on your house')
+    expect(html).toContain('The sales that set the list')
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
+    expect(html).toContain('Adjusted close')
     expect(html).toContain('Recommended list')
     expect(html).toContain('List low')
     expect(html).toContain('List high')
@@ -83,27 +84,17 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/anchors the recommendation/)
     expect(html).not.toContain('a check against the expected close, not the list')
     expect(html).not.toContain('Method 1 ·')
-    expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/[—;]/)
+    expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/;/)
   })
 })
 
-describe('pricingPage — the two nouns are not the same word', () => {
+describe('pricingPage — no "as your house"', () => {
   const land = { streetAddress: '1 Elkwood', city: 'Chiloquin', subdivision: null, sqft: null, lotAcres: 0.69, propertySubType: 'Residential Lots' } as unknown as CmaSubject
   const page = (s: CmaSubject) => pricingPage({ subject: s, comps, market, pricing, tiersUsed: ['subdivision-3mo'] })
 
-  it('titles a house report "home" but writes the possessive as "house"', () => {
-    const html = page(subject).body
-    expect(html).toContain('How this home is priced')
-    expect(html).toMatch(/As your house/)
-    // The bug this guards: subjectNoun gives 'home', and "as your home" is not
-    // the document's idiom.
-    expect(html).not.toMatch(/as your home/i)
-  })
-
-  it('says lot in both places on a land report', () => {
-    const html = page(land).body
-    expect(html).toContain('How this lot is priced')
-    expect(html).toMatch(/As your lot/)
-    expect(html).not.toMatch(/as your house/i)
+  it('does not say as your house', () => {
+    expect(page(subject).body).not.toMatch(/as your house/i)
+    expect(page(land).body).not.toMatch(/as your house/i)
+    expect(page(land).toc).toBe('How we got the price')
   })
 })

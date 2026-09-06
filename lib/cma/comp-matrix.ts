@@ -12,9 +12,8 @@
  * long an address happens to be.
  */
 
-import { cleanText, dateLong, dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
+import { cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd, usdSigned } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
-import { subjectPossessive } from '@/lib/cma/land-pricing'
 
 const esc = escapeHtml
 const ACRES_TO_SQFT = 43560
@@ -48,7 +47,7 @@ function dash(v: string | null | undefined): string {
   return cleanText(v) ?? '-'
 }
 
-type Col = { key: string; label: string; cells: string[] }
+type Col = { key: string; label: string; cells: string[]; photoUrl: string | null }
 
 function subjectCol(subject: CmaSubject): Col {
   const living = subject.sqft
@@ -57,6 +56,7 @@ function subjectCol(subject: CmaSubject): Col {
   return {
     key: 'subject',
     label: subject.streetAddress,
+    photoUrl: subject.photoUrl?.trim() || null,
     cells: [
       dash(subject.propertySubType),
       '-',
@@ -92,13 +92,14 @@ function compCol(comp: CmaAdjustedComp, index: number): Col {
   return {
     key: `c${index + 1}`,
     label: `${index + 1}. ${comp.address}`,
+    photoUrl: comp.photoUrl?.trim() || null,
     cells: [
       dash(comp.propertySubType),
       usd(comp.closePrice),
       soldSf != null ? `${usd(soldSf)}/sf` : '-',
       comp.listPrice != null ? usd(comp.listPrice) : '-',
       listSf != null ? `${usd(listSf)}/sf` : '-',
-      dateLong(comp.closeDate),
+      comp.closeDate ? dateLong(comp.closeDate) : '-',
       comp.beds != null ? int(comp.beds) : '-',
       comp.baths != null ? dec(comp.baths, comp.baths % 1 !== 0 ? 1 : 0) : '-',
       // Guarded the same way the subject column is: a land comp carries no
@@ -147,7 +148,7 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'Brought to today', figure: true },
   { label: 'Style (one story vs two)', figure: true },
   { label: 'Brought to your size', figure: true },
-  { label: 'This sale as your house', figure: true }, // label rewritten per product in matrixTable
+  { label: 'Adjusted close', figure: true },
 ]
 
 /**
@@ -177,7 +178,7 @@ function groupHeading(startIndex: number, size: number): string {
   return size === 1 ? `Sale ${first}` : `Sales ${first} through ${last}`
 }
 
-function matrixTable(cols: Col[], noun: string): string {
+function matrixTable(cols: Col[]): string {
   // Fixed layout reads its widths from the colgroup, so the table is exactly
   // 100% of the content box no matter what any cell holds.
   const valueWidth = Math.floor(((100 - LABEL_COL_PCT) / cols.length) * 100) / 100
@@ -185,7 +186,15 @@ function matrixTable(cols: Col[], noun: string): string {
     `<colgroup><col style="width:${LABEL_COL_PCT}%">` +
     cols.map(() => `<col style="width:${valueWidth}%">`).join('') +
     `</colgroup>`
-  const head = `<tr><th>Fact</th>${cols.map((c) => `<th class="v">${esc(c.label)}</th>`).join('')}</tr>`
+  const head = `<tr><th>Fact</th>${cols
+    .map((c) => {
+      const src = c.photoUrl ? sparkPhotoAt(c.photoUrl, '320x240') ?? c.photoUrl : null
+      const img = src
+        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
+        : ''
+      return `<th class="v">${img}<span class="matrix-addr">${esc(c.label)}</span></th>`
+    })
+    .join('')}</tr>`
   const body = ROWS.map((row, i) => {
     // A row every column left blank carries nothing. On a land matrix that is
     // Bedrooms, Bathrooms, Living sqft, Year built and Garage — five empty
@@ -199,8 +208,7 @@ function matrixTable(cols: Col[], noun: string): string {
         return `<td class="v${row.figure ? ' n' : ''}${diff ? ' is-diff' : ''}">${esc(val)}</td>`
       })
       .join('')
-    const label = row.label === 'This sale as your house' ? `This sale as your ${noun}` : row.label
-    return `<tr><th>${esc(label)}</th>${tds}</tr>`
+    return `<tr><th>${esc(row.label)}</th>${tds}</tr>`
   }).join('')
   return `
   <div class="comp-matrix-wrap">
@@ -214,7 +222,6 @@ function matrixTable(cols: Col[], noun: string): string {
 
 export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdjustedComp[]): string {
   if (comps.length === 0) return ''
-  const noun = subjectPossessive(subject)
   const subj = subjectCol(subject)
   const compCols = comps.map((c, i) => compCol(c, i))
   const groups = splitEvenly(compCols)
@@ -224,10 +231,11 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       const heading =
         groups.length > 1 ? `<h4 class="subhead">${esc(groupHeading(seen, group.length))}</h4>` : ''
       seen += group.length
-      return `${heading}${matrixTable([subj, ...group], noun)}`
+      return `${heading}${matrixTable([subj, ...group])}`
     })
     .join('')
   return `
-  <h3 class="subhead">Side by side</h3>
-  ${tables}`
+  <h3 class="subhead">The sales that set the list</h3>
+  ${tables}
+  <p class="small">Adjusted close moves the sale for time and size so it can sit next to this house.</p>`
 }
