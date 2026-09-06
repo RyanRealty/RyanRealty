@@ -8,7 +8,7 @@
  */
 
 import { MOS_PLAIN_LABEL } from '@/lib/market/classify'
-import { v3Text, type V3ChartPoint, type V3ChartProps } from '@/components/site/v3'
+import { v3Text, type V3ChartProps } from '@/components/site/v3'
 
 function formatHomes(n: number): string {
   return n.toLocaleString('en-US')
@@ -28,19 +28,16 @@ export function buildMosSupplyChart(input: {
 
   const homesLabel = formatHomes(homesForSale)
   const salesLabel = formatMonthlyPace(monthOfSales)
-  const points: V3ChartPoint[] = [
-    { value: homesForSale, tick: v3Text('Homes for sale'), label: v3Text(homesLabel) },
-    { value: monthOfSales, tick: v3Text('A month of sales'), label: v3Text(salesLabel) },
-  ]
   const caption = `${MOS_PLAIN_LABEL.charAt(0).toUpperCase()}${MOS_PLAIN_LABEL.slice(1)}`
   return {
     caption: v3Text(caption),
-    kind: 'bars',
-    barLabels: 'all',
-    baselineLabel: v3Text('0'),
+    kind: 'range',
     claim: v3Text(
       `${homesLabel} homes for sale vs ${salesLabel} sales a month. ${mosText} months of homes on the market.`,
     ),
-    series: [{ name: v3Text('Homes'), points }],
+    rows: [
+      { tick: v3Text('Homes for sale'), value: homesForSale, label: v3Text(homesLabel) },
+      { tick: v3Text('A month of sales'), value: monthOfSales, label: v3Text(salesLabel) },
+    ],
   }
 }

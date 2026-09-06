@@ -31,6 +31,7 @@
 
 import type { Metadata } from 'next'
 import {
+  getBrokerageListings,
   getBrokerageTrackRecord,
   getReviews,
   getSellBendMarket,
@@ -66,6 +67,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SellCapture } from './_v3/SellCapture'
 import { SellValueForm } from './_v3/SellValueForm'
 import { sellBendLedgerRows } from './_v3/sell-market-rows'
+import { sellListingRows, OUR_LISTINGS_TRACE } from './_v3/sell-listings'
 import './_v3/sell-stage.css'
 import {
   BEND_MARKET_TRACE_SCOPE,
@@ -97,18 +99,20 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SellPage() {
-  const [bend, heroSrc, trackRecord, publicPace, publicSegments, reviewSummary] = await Promise.all([
-    getSellBendMarket(),
-    getSurfaceImage('hero', {
-      geoTags: ['central-oregon'],
-      seed: ROUTE_PATH,
-      fallback: SELL_POSTER,
-    }),
-    getBrokerageTrackRecord(),
-    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
-    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
-    getReviews(6).catch(() => null),
-  ])
+  const [bend, heroSrc, trackRecord, publicPace, publicSegments, reviewSummary, listings] =
+    await Promise.all([
+      getSellBendMarket(),
+      getSurfaceImage('hero', {
+        geoTags: ['central-oregon'],
+        seed: ROUTE_PATH,
+        fallback: SELL_POSTER,
+      }),
+      getBrokerageTrackRecord(),
+      getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
+      getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
+      getReviews(6).catch(() => null),
+      getBrokerageListings().catch(() => []),
+    ])
 
   const bendFigures: V3InstrumentFigure[] = []
   if (bend?.medianListPrice != null) {
@@ -151,6 +155,9 @@ export default async function SellPage() {
     bend != null
       ? `${BEND_MARKET_TRACE_SCOPE} ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
       : BEND_MARKET_TRACE_SCOPE
+
+  const listingRows = sellListingRows(listings)
+  const [firstListing, ...restListings] = listingRows
 
   const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount =
@@ -333,6 +340,28 @@ export default async function SellPage() {
             record={false}
           />
         ) : null}
+
+        {firstListing ? (
+          <V3Ledger
+            id="our-listings"
+            eyebrow={v3Text('Ryan Realty')}
+            heading={v3Text('Our listings')}
+            rows={[firstListing, ...restListings]}
+            source={v3Text(OUR_LISTINGS_TRACE)}
+            action={{ label: v3Text('All office listings'), href: '/our-homes' }}
+          />
+        ) : (
+          <V3Ledger
+            id="our-listings"
+            eyebrow={v3Text('Ryan Realty')}
+            heading={v3Text('Our listings')}
+            rows={[]}
+            emptyMessage={v3Text(
+              'No Ryan Realty office listing is on the market in this refresh.',
+            )}
+            action={{ label: v3Text('Homes for sale'), href: '/homes-for-sale' }}
+          />
+        )}
 
         <V3Quiet
           id="selling-questions"

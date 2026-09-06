@@ -93,7 +93,11 @@ import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 import { buildNeighborhoodSchemas } from './neighborhood-schemas'
-import { neighborhoodMarketChartCards } from './_v3/neighborhood-market-charts'
+import {
+  leftoverClosedCount,
+  placeCostChart,
+  tooFewSalesItems,
+} from '@/app/cities/[slug]/_v3/place-graphics'
 import { NeighborhoodAlertsSheet } from './_v3/NeighborhoodAlertsSheet.client'
 import { dailyLifeRows } from './_v3/neighborhood-daily-life'
 import {
@@ -395,15 +399,8 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         placeMedianChartCaption(neighborhood.name),
       )
     : undefined
-
-  // The approved chart-room forms (Unit NEIGHBORHOOD 2026-08-19), as Instrument
-  // cards. Closed-side cards read the district polygon assignment; the
-  // asking-price card reads the same inventory row this page's count comes
-  // from. Neighborhood pulse and stats-cache closed figures are not charted.
-  const marketCards = await neighborhoodMarketChartCards({
-    geoSlug: boundaryNeighborhoodSlug,
-    districtName: neighborhood.name,
-  })
+  const closedN = leftoverClosedCount(hud, placeMonthly ? chartMonths.months : [])
+  const costChart = placeMonthly ? placeCostChart(closedN, medianChart) : undefined
 
   /* ── The ledgers ───────────────────────────────────────────────────────── */
 
@@ -568,18 +565,40 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
           />
         </div>
 
-        {firstMarketFigure && (medianChart || marketCards.length > 0) ? (
+        {/* Subdivisions inside the boundary - every row is a door. */}
+        {firstSub ? (
+          <V3Ledger
+            id="subdivisions"
+            eyebrow={v3Text(`${neighborhood.name} · Subdivisions`)}
+            heading={v3Text('Subdivisions')}
+            rows={[firstSub, ...restSub]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
+            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
+            action={{ label: v3Text(`All ${cityName} homes`), href: `/homes-for-sale/${citySlug}` }}
+          />
+        ) : null}
+
+        {costChart && firstMarketFigure ? (
           <V3Instrument
             id="market"
             level={2}
-            eyebrow={v3Text(`${neighborhood.name} · Market`)}
-            headline={v3Text(`${neighborhood.name} market`)}
+            eyebrow={v3Text(`${neighborhood.name} · Typical price`)}
+            headline={v3Text(`Typical price in ${neighborhood.name}`)}
             figures={[firstMarketFigure, ...restMarketFigures]}
-            foldAfter={2}
+            chartFirst
+            foldAfter={0}
             source={v3Text(neighborhoodMarketTrace(neighborhood.name, false))}
-            chart={medianChart}
-            cards={marketCards}
+            chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+          />
+        ) : placeMonthly && firstMarketFigure && !costChart ? (
+          <V3Quiet
+            id="market"
+            heading={`Typical price in ${neighborhood.name}`}
+            items={tooFewSalesItems()}
           />
         ) : null}
 
@@ -599,22 +618,6 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={`${neighborhood.name} · ${cityName}`}
             heading={neighborhood.name}
             items={aboutItems}
-          />
-        ) : null}
-
-        {/* Subdivisions inside the boundary - every row is a door. */}
-        {firstSub ? (
-          <V3Ledger
-            id="subdivisions"
-            eyebrow={v3Text(`${neighborhood.name} · Subdivisions`)}
-            heading={v3Text('Subdivisions')}
-            rows={[firstSub, ...restSub]}
-            // A comparison, so the counts draw as lengths too: TASTE bans a
-            // ledger past six rows that encodes nothing. The share comes off
-            // the same counts the figures print (placeFigureRows).
-            encode="bar"
-            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
-            action={{ label: v3Text(`All ${cityName} homes`), href: `/homes-for-sale/${citySlug}` }}
           />
         ) : null}
 

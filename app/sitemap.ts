@@ -134,7 +134,6 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // long-tail intent landing pages are crawlable.
     { url: `${baseUrl}/sell/for-sale-by-owner`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/sell/expired-listings`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
-    { url: `${baseUrl}/sell/inherited-home`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/buy/first-time-home-buyer`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/buy/relocation`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },
     { url: `${baseUrl}/buy/investment`, lastModified: now, changeFrequency: 'monthly', priority: 0.55 },

@@ -31,6 +31,11 @@ export default function ListingMobileContactBar({
               Call
             </a>
           ) : null}
+          {tel ? (
+            <a href={`sms:${tel}`} className="lmc-icon" aria-label={`Text ${firstName}`}>
+              Text
+            </a>
+          ) : null}
         </div>
       </div>
     </div>

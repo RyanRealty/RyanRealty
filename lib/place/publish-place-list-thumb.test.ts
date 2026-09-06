@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { publishPlaceListThumb, readPlaceListThumbGeo } from './publish-place-list-thumb'
+import {
+  bakePlaceListThumbSvgForImg,
+  placeListThumbDataUri,
+  publishPlaceListThumb,
+  readPlaceListThumbGeo,
+} from './publish-place-list-thumb'
 
 const smith = {
   type: 'Polygon' as const,
@@ -69,5 +74,28 @@ describe('publishPlaceListThumb', () => {
     const blank = publishPlaceListThumb({ lat: Number.NaN, lng: -121 })
     expect(blank.kind).toBe('point')
     expect(blank.svg).not.toContain('<path')
+  })
+})
+
+describe('placeListThumbDataUri', () => {
+  it('bakes cream and navy so an <img> data URI is not a black square', () => {
+    const uri = placeListThumbDataUri({ lat: 44.0582, lng: -121.3153 })
+    expect(uri.startsWith('data:image/svg+xml')).toBe(true)
+    const svg = decodeURIComponent(uri.replace('data:image/svg+xml;charset=utf-8,', ''))
+    expect(svg).toContain('#faf8f4')
+    expect(svg).toContain('#102742')
+    expect(svg).not.toContain('var(--v3-cream)')
+    expect(svg).not.toContain('var(--v3-navy)')
+  })
+
+  it('bakes the boundary fill, not a color-mix that an <img> cannot resolve', () => {
+    const baked = bakePlaceListThumbSvgForImg(
+      '<rect fill="var(--v3-cream)"/><path fill="color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream))" stroke="var(--v3-navy)"/>',
+    )
+    expect(baked).toContain('#faf8f4')
+    expect(baked).toContain('#102742')
+    expect(baked).toContain('#d4d6d8')
+    expect(baked).not.toContain('var(--')
+    expect(baked).not.toContain('color-mix')
   })
 })

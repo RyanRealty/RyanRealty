@@ -538,7 +538,8 @@ export default async function MonthsOfSupplyPage() {
             headline={v3Text('Months of supply')}
             note={v3Text(MOS_METHODOLOGY_CLAUSE)}
             figures={[firstRegionFigure, ...restRegionFigures]}
-            foldAfter={2}
+            chartFirst
+            foldAfter={0}
             source={v3Text(regionTrace)}
             updated={regionStamp ? v3Text(regionStamp) : undefined}
             chart={mosChart}

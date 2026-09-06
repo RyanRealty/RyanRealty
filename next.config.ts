@@ -357,6 +357,7 @@ const nextConfig: NextConfig = {
       { source: '/lp/central-oregon-golf', destination: '/central-oregon/golf', permanent: true },
       { source: '/luxury-homes-bend', destination: '/homes-for-sale/bend?minPrice=1500000', permanent: true },
       { source: '/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
+      { source: '/sell/inherited-home', destination: '/sell', permanent: true },
       // /lp/listings/<key> was never a route; the listing itself lives at /listing/<key>.
       { source: '/lp/listings/:listingKey', destination: '/listing/:listingKey', permanent: true },
 

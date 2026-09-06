@@ -116,8 +116,11 @@ describe('neighborhood page first screen', () => {
     expect(code).not.toMatch(/\bplat\b|\bnest\b|\bsibling\b|\bCDP\b|\bFeeders\b/)
   })
 
-  it('folds leftover market figures and does not title the about as in plain words', () => {
-    expect(code).toMatch(/foldAfter=\{2\}/)
+  it('folds leftover market figures behind the one cost chart and does not title the about as in plain words', () => {
+    expect(code).toMatch(/chartFirst/)
+    expect(code).toMatch(/foldAfter=\{0\}/)
+    expect(code).toMatch(/tooFewSalesItems/)
+    expect(code.indexOf('id="subdivisions"')).toBeLessThan(code.indexOf('id="market"'))
     expect(code).not.toMatch(/in plain words/)
   })
 })

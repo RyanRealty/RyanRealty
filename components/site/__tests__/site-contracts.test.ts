@@ -124,23 +124,20 @@ describe('design directive contracts', () => {
     }
   })
 
-  it('D88 — listing-detail sections follow Redfin order with our data', () => {
+  it('D88 — listing-detail sections follow the 12-section house URL', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
-    const main = src.slice(src.indexOf('const main = ('), src.indexOf('const sidebar ='))
+    const main = src.slice(src.indexOf('const main = ('), src.indexOf('const floating ='))
     const order = [
       '<PriceCtaStrip',
-      '<DescriptionBlock',
+      '<PropertySpecs',
       '<MortgageCalculator',
       '{atlasBlock}',
       '<SchoolsBlock',
       '<ListingAroundHere',
-      '<ListingAskInstrument',
-      '<PropertySpecs',
-      '<PropertyHistory',
-      '<RentalAnalysis',
+      '<ListingTaxHistory',
+      '<GoverningDocumentsBlock',
       '<ListingSimilarStrip',
-      '<ListingLikeThisAlerts',
-      '<ListingMoreDoors',
+      '<ListingBrokerCTA',
       '<ListingAttribution',
     ]
     const positions = order.map((token) => main.indexOf(token))
@@ -186,9 +183,9 @@ describe('design directive contracts', () => {
     expect(ld).toMatch(/type:\s*'realEstateListing'/)
     expect(ld).toMatch(/type:\s*'breadcrumb'/)
     expect(src).toMatch(/<V3SectionTracker[\s/>]/)
-    expect(src).toMatch(/<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
-    expect(src).toMatch(/<ListingAskInstrument\b/)
+    expect(src).not.toMatch(/<ListingLikeThisAlerts\b/)
+    expect(src).not.toMatch(/<ListingAskInstrument\b/)
     expect(src).not.toMatch(/<LivePricingRead\b/)
     expect(src).not.toMatch(/<NeighborhoodMarketContext\b/)
     // The header stays layout-owned (app/layout.tsx mounts V3Chrome once).
@@ -217,7 +214,8 @@ describe('design directive contracts', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/leftoverHudKpis/)
     expect(src).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
-    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*hud\.active/)
+    expect(src).toMatch(/sfrCount:\s*hud\.active/)
+    expect(src).toMatch(/activeCount:\s*hud\.active/)
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=\s*publishedInventory\.count/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
@@ -642,10 +640,9 @@ describe('design directive contracts', () => {
   it('D112 — listing HouseMe report is stamp-backed and refuses invention', () => {
     const page = readSrc('app/listing/[listingKey]/page.tsx')
     const report = readSrc('components/site/listing-detail/HouseMeReport.tsx')
-    const ask = readSrc('components/site/listing-detail/listing-ask.ts')
     expect(page).not.toMatch(/<LivePricingRead/)
-    expect(page).toMatch(/buildListingAskClaim/)
-    expect(ask).toMatch(/leftoverHudKpis|medianList/)
+    expect(page).not.toMatch(/buildListingAskClaim/)
+    expect(page).not.toMatch(/<HouseMeReport/)
     expect(report).toMatch(/listing_pricing_reads/)
     expect(report).not.toMatch(/0-10|0–10|5-year|5 year/)
     expect(report).not.toMatch(/\bAI\b/)

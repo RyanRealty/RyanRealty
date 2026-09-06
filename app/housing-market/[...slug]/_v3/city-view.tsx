@@ -146,7 +146,8 @@ export function CityMarketView({
           /* First viewport is the verdict + chart, not the leftover KPI wall.
              Pace, mix, extra-type, and closed-period tiles fold the way city
              place pages fold the long tail. */
-          foldAfter={2}
+          chartFirst
+          foldAfter={0}
           source={v3Text(trace)}
           updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           chart={chart}

@@ -86,6 +86,18 @@ describe('ZIP page Market Truth overlay', () => {
 })
 
 describe('ZIP page is on the v3 barrel', () => {
+  it('opens on this ZIP houses and never a city still', () => {
+    expect(PAGE).not.toMatch(/\bcityHero\b/)
+    expect(PAGE).not.toMatch(/<V3Stage/)
+    expect(PAGE).not.toMatch(/\bpreferPlaceHero\b/)
+    const breadcrumb = PAGE.indexOf('<V3Breadcrumb')
+    const field = PAGE.indexOf('<ZipHomesField')
+    const market = PAGE.indexOf('<V3Instrument')
+    expect(breadcrumb).toBeGreaterThan(-1)
+    expect(field).toBeGreaterThan(breadcrumb)
+    expect(market).toBeGreaterThan(field)
+  })
+
   it('renders the barrel and reaches into no other design register', () => {
     expect(PAGE).toMatch(/from '@\/components\/site\/v3'/)
     expect(PAGE).toMatch(/V3_ROOT_CLASS/)

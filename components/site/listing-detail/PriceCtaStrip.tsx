@@ -97,6 +97,14 @@ type Props = {
    * Omit / null → DEFAULT_PITI_RATE inside computeMonthlyPiti.
    */
   ratePct?: number | null
+  /**
+   * Face Est. $/mo leftover. The house page keeps the one number in Payment
+   * (computeMonthlyPiti). Tests still render the face label by default.
+   */
+  showEstPayment?: boolean
+  showAlerts?: boolean
+  callHref?: string | null
+  textHref?: string | null
   className?: string
 }
 
@@ -122,6 +130,10 @@ export function PriceCtaStrip({
   scheduleHref,
   askHref,
   ratePct,
+  showEstPayment = true,
+  showAlerts = true,
+  callHref,
+  textHref,
   className,
 }: Props) {
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
@@ -190,12 +202,14 @@ export function PriceCtaStrip({
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')
-  const estPayment = publishListingEstPayment({
-    listPrice: headlinePrice,
-    taxAnnual: listing.taxAnnualAmount,
-    hoaMonthly: listing.hoaMonthly,
-    mortgageRate: ratePct,
-  })?.label ?? null
+  const estPayment = showEstPayment
+    ? publishListingEstPayment({
+        listPrice: headlinePrice,
+        taxAnnual: listing.taxAnnualAmount,
+        hoaMonthly: listing.hoaMonthly,
+        mortgageRate: ratePct,
+      })?.label ?? null
+    : null
   const lastDrop = history ? publishListingLastDrop(history) : null
   const listedBy = publishListingListedBy({
     listAgentName: listing.listAgentName,
@@ -347,43 +361,52 @@ export function PriceCtaStrip({
       <div className="listing-face__actions">
       {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
           Desktop keeps the inline wrap. */}
-      <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-stretch">
+      <div className="listing-ask-row mt-5">
         <a
           href={tourHref}
-          className="btn alt w-full text-center sm:w-auto"
+          className="btn alt"
           style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          Schedule a tour <span className="arr">→</span>
+          Tour
         </a>
-        <div className="grid grid-cols-3 gap-2.5 sm:contents">
+        {callHref ? (
+          <a href={callHref} className="btn" style={OUTLINE_BTN_STYLE}>
+            Call
+          </a>
+        ) : (
           <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
             Ask a question
           </a>
-          <button
-            type="button"
-            className="btn"
-            style={OUTLINE_BTN_STYLE}
-            onClick={handleSave}
-            disabled={saveState === 'saving'}
-            aria-pressed={saveState === 'saved'}
-            aria-label={saveAriaLabel}
-          >
-            {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            style={OUTLINE_BTN_STYLE}
-            onClick={handleShare}
-            aria-label={`Share ${propertyName}`}
-          >
-            Share
-          </button>
-        </div>
+        )}
+        {textHref ? (
+          <a href={textHref} className="btn" style={OUTLINE_BTN_STYLE}>
+            Text
+          </a>
+        ) : null}
+        <button
+          type="button"
+          className="btn"
+          style={OUTLINE_BTN_STYLE}
+          onClick={handleSave}
+          disabled={saveState === 'saving'}
+          aria-pressed={saveState === 'saved'}
+          aria-label={saveAriaLabel}
+        >
+          {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving...' : 'Save'}
+        </button>
+        <button
+          type="button"
+          className="btn"
+          style={OUTLINE_BTN_STYLE}
+          onClick={handleShare}
+          aria-label={`Share ${propertyName}`}
+        >
+          Share
+        </button>
       </div>
 
-      {/* Alert path: full-width outline control (was text link only — too easy to
-          miss vs Tour/Ask/Save). Jumps to B1 #listing-like-alerts capture. */}
+      {showAlerts ? (
+        <>
       <a
         href="#listing-like-alerts"
         className="btn mt-3 w-full text-center sm:w-auto"
@@ -397,6 +420,8 @@ export function PriceCtaStrip({
           ? 'Free email when a new home lists in this city near this price. Unsubscribe any time.'
           : 'Free email when a new home lists in this city. Unsubscribe any time.'}
       </p>
+        </>
+      ) : null}
       </div>
       {guestSaveOpen && saveState !== 'saved' ? (
         <div style={{ marginTop: '0.75rem' }}>

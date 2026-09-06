@@ -18,7 +18,6 @@ function cleanField(raw: string | null): string | null {
 }
 
 export function SchoolsBlock({ listing, className }: Props) {
-  const district = cleanField(listing.schoolDistrict)
   const cards: Array<{ level: string; name: string }> = [
     { level: 'Elementary', name: cleanField(listing.elementarySchool) ?? '' },
     { level: 'Middle', name: cleanField(listing.middleSchool) ?? '' },
@@ -27,13 +26,12 @@ export function SchoolsBlock({ listing, className }: Props) {
 
   const rows: V3LedgerPlainRow[] = cards.map((c) => {
     const registered = findSchoolByName(c.name)
-    const rating =
-      registered?.greatSchoolsRating != null ? `${registered.greatSchoolsRating}/10` : null
+    const grades = registered?.grades ?? null
     return {
       href: registered ? `/schools/${registered.slug}` : '/schools',
       when: v3Text(c.level),
       what: v3Text(c.name),
-      detail: v3Text([rating, district].filter(Boolean).join(' · ') || c.level),
+      detail: v3Text(grades ? `${grades} · nearby` : 'Nearby'),
       id: `school-${c.level}`,
     }
   })
@@ -43,8 +41,7 @@ export function SchoolsBlock({ listing, className }: Props) {
   return (
     <V3Ledger
       className={className}
-      heading={v3Text('Schools')}
-      eyebrow={v3Text('Education')}
+      heading={v3Text('Schools nearby')}
       rows={[first, ...rest]}
     />
   )

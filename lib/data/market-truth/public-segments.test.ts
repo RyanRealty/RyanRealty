@@ -395,7 +395,10 @@ describe('public place pages', () => {
     expect(jsonRoute).toMatch(/extraSegments/)
     expect(sell).toMatch(/getPublicPlaceSegments/)
     const citiesIndex = readFileSync(resolve('app/cities/page.tsx'), 'utf8')
-    expect(citiesIndex).toMatch(/getPublicPlaceSegments/)
+    // Wave H: the cities index is an A–Z directory of city doors. Property-type
+    // segments stay on the city member page, not on this index.
+    expect(citiesIndex).not.toMatch(/getPublicPlaceSegments/)
+    expect(citiesIndex).toMatch(/<V3Ledger/)
     // The homepage's region-scoped property-type run was CUT 2026-08-27 (Matt,
     // on the Search Console data): eight filter sections between the inventory
     // and every ask on a page judged on conversion, duplicating the city-scoped

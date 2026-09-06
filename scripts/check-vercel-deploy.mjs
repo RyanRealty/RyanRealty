@@ -398,7 +398,23 @@ async function main() {
       if (state === 'READY') {
         const url = deployment.url ? `https://${deployment.url}` : '(no url)'
         out(`READY in ${(Date.now() - startedAt) / 1000}s — ${url}`)
-        out('check production URL: https://ryanrealty.vercel.app')
+        out('check production URL: https://ryan-realty.com')
+        try {
+          const live = await fetch('https://ryan-realty.com/', {
+            method: 'GET',
+            redirect: 'follow',
+            headers: { 'user-agent': 'RyanRealty-deploy-verify' },
+            signal: AbortSignal.timeout(20_000),
+          })
+          out(`ryan-realty.com GET ${live.status}`)
+          if (live.status >= 500) {
+            err(`production host https://ryan-realty.com returned ${live.status}`)
+            process.exit(1)
+          }
+        } catch (e) {
+          err(`ryan-realty.com check failed: ${e instanceof Error ? e.message : String(e)}`)
+          process.exit(2)
+        }
         const regressed = usingCliFallback
           ? false
           : await reportBuildTelemetry(apiToken, teamId, deployId)

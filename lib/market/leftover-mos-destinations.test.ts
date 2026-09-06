@@ -11,7 +11,6 @@ const files = {
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
   home: readFileSync(resolve('app/page.tsx'), 'utf8'),
   reports: readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8'),
-  listing: readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8'),
   searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
   housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
   // SiteHeader was deleted 2026-08-27 with the legacy chrome. V3Chrome is the
@@ -42,9 +41,10 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
   })
 
   it('listing place market is leftover HUD, not pulse fill', () => {
-    expect(files.listing).toMatch(/leftoverHudKpis/)
-    expect(files.listing).toMatch(/leftoverListingGrains/)
-    expect(files.listing).not.toMatch(/getMarketPulse\(/)
+    const listing = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
+    expect(listing).not.toMatch(/leftoverHudKpis/)
+    expect(listing).not.toMatch(/leftoverListingGrains/)
+    expect(listing).not.toMatch(/getMarketPulse\(/)
   })
 
   it('the chrome takes MOS from leftoverHudKpis, not a pulse fill', () => {

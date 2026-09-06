@@ -143,6 +143,7 @@ export default async function ParksIndexPage() {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon parks')}
             note={v3Text(caption)}
+            layout="places"
             rows={[firstRow, ...restRows]}
           />
         ) : (

@@ -104,8 +104,13 @@ import type { Metadata } from 'next'
 import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
-import { getGeoBoundaryMapData, getListingTiles, getMarketStats, getCityHeroUrlsBySlug } from '@/lib/data'
-import { cityLibraryHero, cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
+import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
+import {
+  placeCostChart,
+  platRecentClosedCount,
+  tooFewSalesItems,
+} from '@/app/cities/[slug]/_v3/place-graphics'
 import { communityImage } from '@/lib/geo-images'
 import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import {
@@ -512,21 +517,13 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     covers: { ...placeTypeCoverPhotos(splitListings), ...typeCovers },
   })
   const headline = displayName
-  const emptyHeroes: Record<string, string> = {}
-  const [cityHeroes, cityLibraryHeroUrl, platLibraryHeroUrl] = citySlug
-    ? await Promise.all([
-        withTimeoutFallback(getCityHeroUrlsBySlug(), emptyHeroes, 3000, 'sub:cityHeroes'),
-        withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'sub:cityLibraryHero'),
-        withTimeoutFallback(placeLibraryHero('subdivision', slug), null, 3000, 'sub:libraryHero'),
-      ])
-    : [
-        emptyHeroes,
-        null,
-        await withTimeoutFallback(placeLibraryHero('subdivision', slug), null, 3000, 'sub:libraryHero'),
-      ]
-  const stagePosterSrc =
-    cityStagePoster(communityImage(slug), platLibraryHeroUrl) ??
-    cityStagePoster(citySlug ? cityHeroes[citySlug] : null, cityLibraryHeroUrl)
+  const platLibraryHeroUrl = await withTimeoutFallback(
+    placeLibraryHero('subdivision', slug),
+    null,
+    3000,
+    'sub:libraryHero',
+  )
+  const stagePosterSrc = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -571,6 +568,8 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const statsPeriodLabel = subdivisionStats ? PERIOD_LABEL[subdivisionStats.periodType] : ''
   const [firstPlatFigure, ...restPlatFigures] = marketFigures
   const salesChart = subdivisionSalesChart(displayName, salesHistory)
+  const closedN = platRecentClosedCount(salesHistory)
+  const soldChart = placeCostChart(closedN, salesChart)
 
   // ONE SENTENCE PER POPULATION THAT ACTUALLY REACHED THE PAGE, and the sentences
   // are joined rather than concatenated: each trace is written to follow the word
@@ -726,22 +725,30 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
 
         {/* Pattern 1, Instrument — the plat's own market, one population. */}
-        {firstPlatFigure ? (
+        {soldChart && firstPlatFigure ? (
           <V3Instrument
             id="market-report"
             level={2}
             eyebrow={v3Text(
-              statsPeriodLabel ? `${displayName} · ${statsPeriodLabel}` : `${displayName} · Market`,
+              statsPeriodLabel ? `${displayName} · ${statsPeriodLabel}` : `${displayName} · Sold`,
             )}
-            headline={v3Text(`${displayName} on record`)}
+            headline={v3Text(`What sold in ${displayName}`)}
             figures={[firstPlatFigure, ...restPlatFigures]}
+            chartFirst
+            foldAfter={0}
             source={v3Text(marketTrace)}
             updated={
               subdivisionStats?.refreshedAt
                 ? v3Text(formatDate(subdivisionStats.refreshedAt))
                 : undefined
             }
-            chart={salesChart}
+            chart={soldChart}
+          />
+        ) : firstPlatFigure && !soldChart ? (
+          <V3Quiet
+            id="market-report"
+            heading={`What sold in ${displayName}`}
+            items={tooFewSalesItems()}
           />
         ) : null}
 
@@ -751,7 +758,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
           displayName={displayName}
           history={salesHistory}
           cityName={cityName}
-          chart={firstPlatFigure ? undefined : salesChart}
+          chart={soldChart && firstPlatFigure ? undefined : soldChart}
           charts={
             <SubdivisionMarketCharts
               slug={slug}

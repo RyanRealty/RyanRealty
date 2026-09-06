@@ -2,7 +2,7 @@
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
   "competitiveTarget": "Beat portal city-directory pages with leftover regional inventory and a ledger of Central Oregon cities, not a link farm.",
-  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: V3Breadcrumb, Instrument (region pulse), Ledger (featured cities), Quiet (the rest of each city's doors), Ledger (the remaining cities), Sheet (SFR alerts), Quiet (edges), V3Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company). REQUIRED-COMPONENTS RECONCILED 2026-08-26: this contract's requiredComponents still named the five KB-era components its own removedComponents list said the migration replaces, so the gate required exactly what the contract forbade. The v3 names below are the ones the route now imports; removedComponents is unchanged and is the record of what each one replaced.",
+  "note": "PAGE_INVENTORY §3 (2026-09-06 Wave H). A–Z directory. Live counts on the rows, doors. Not a mini-Bend KPI Instrument. Caption carries the region count and months-of-supply verdict. Section order: V3Breadcrumb, Ledger (every city A–Z), Quiet (the rest of each city's doors), Sheet (SFR alerts), Quiet (edges), V3Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -20,13 +20,8 @@
       "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "Instrument — the live region pulse: active count, median list, months of supply with its verdict, pending now, days to contract.",
-      "blocking": true
-    },
-    {
       "name": "V3Ledger",
-      "section": "Ledger — the featured cities, then the remaining cities. Every row a door, the live count in the value column.",
+      "section": "Ledger — every city A–Z. Every row a door, the live count in the value column. Caption, not a five-number Instrument.",
       "blocking": true
     },
     {
@@ -46,7 +41,7 @@
     },
     {
       "name": "leftoverHudKpis",
-      "section": "Instrument — leftover region stats (active count, median list, months of supply). Miss omits.",
+      "section": "Ledger caption — leftover region stats (active count, median list, months of supply). Miss omits.",
       "blocking": true
     },
     {
@@ -85,8 +80,7 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "V3Instrument #region-pulse -- the regional answer with its trace",
-    "V3Ledger #featured-cities -- EVERY city in one ledger, featured first with the richer leftover rows, each row a door (merged from two overlapping ledgers 2026-08-27)",
+    "V3Ledger #featured-cities -- EVERY city A–Z in one ledger, live count on the row, each row a door",
     "V3Quiet #city-doors -- deep filter doors per featured city; ci:westside-backlog pins the Bend luxury door here",
     "RegionalAlertSheet -- the ask",
     "V3Quiet #edges -- search every listing",

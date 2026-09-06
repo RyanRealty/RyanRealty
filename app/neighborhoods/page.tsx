@@ -1,21 +1,9 @@
 // @no-parity — place-family index, built from the v3 barrel like /cities
 /**
- * Neighborhoods index — the City of Bend districts, on components/site/v3.
+ * Neighborhoods index — A–Z directory of City of Bend districts.
  *
- * PUBLIC_UI.md (locked 2026-08-11) section 3, three patterns, no two adjacent
- * sharing one:
- *
- *   Instrument  the live answer: how many homes are for sale across the
- *               districts, and how many districts there are.
- *   Ledger      one row per district, every row a door into the district page.
- *   Quiet       the outbound edges, including the Oregon Data Share citation
- *               that MarketSources used to carry.
- *
- * Chrome is layout-owned (app/layout.tsx mounts V3Chrome); the footer is
- * route-owned and sits outside <main>. MetadataBlock stays: it is JSON-LD, not
- * visual language, and ci:ai-structured-data pins this route to it by name.
- *
- * Each row opens the existing neighborhood detail at /cities/{city}/{slug}.
+ * PAGE_INVENTORY §3: live counts on the rows, doors. Not a mini-Bend KPI
+ * Instrument.
  */
 
 import type { Metadata } from 'next'
@@ -34,17 +22,19 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   V3Breadcrumb,
   V3Footer,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
   V3_FOOTER_COLUMNS,
   V3_ROOT_CLASS,
   v3Text,
-  type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
+import {
+  indexBarWeight,
+  liveForSaleLabel,
+} from '@/app/cities/_v3/cities-index-constants'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const revalidate = 1800
@@ -58,17 +48,8 @@ export const metadata: Metadata = pageMetadata({
   path: '/neighborhoods',
 })
 
-/**
- * The section 0 trace for the district rows. The population is named because
- * two other tables also hold a per-neighborhood "active" figure and disagree
- * with this one (getBendNeighborhoodLedger's header, the 52 / 62 / 63 split on
- * Awbrey Butte).
- */
 const LEDGER_TRACE =
   'live MLS through Oregon Data Share, active single-family listings inside each district boundary polygon. The median is the list price of those same listings'
-
-const PULSE_TRACE =
-  'live MLS through Oregon Data Share, single-family only, summed across the City of Bend neighborhood districts'
 
 const NEIGHBORHOOD_SENTENCE: Record<string, string> = {
   'awbrey-butte': 'West-side volcanic butte above downtown Bend, with Cascade views from the ridge.',
@@ -116,41 +97,37 @@ export default async function NeighborhoodsPage() {
           heroImageUrl: null as string | null,
         }))
 
-  const featured = source.map((n) => {
-    const href = `/cities/${n.citySlug}/${n.slug}`
-    const stats = ledgerByHref.get(href)
-    const hero = cityHero(n.citySlug)
-    const pooled =
-      pickSurfaceImage(heroPhotoPool, {
-        geoTags: [n.citySlug],
-        seed: n.slug,
-        fallback: hero.src,
-      }) ?? hero.src
-    const photoSrc = preferPlaceHero(n.heroImageUrl, pooled)
-    return {
-      slug: n.slug,
-      name: n.name,
-      citySlug: n.citySlug,
-      cityName: n.cityName,
-      href,
-      sentence: NEIGHBORHOOD_SENTENCE[n.slug] ?? null,
-      photoSrc,
-      photoAlt: `${n.name}, ${n.cityName} Oregon`,
-      photoIsPlace: Boolean(n.heroImageUrl?.trim()) || photoSrc !== hero.src,
-      activeCount: stats?.activeCount ?? (ledger.length > 0 && n.citySlug === 'bend' ? 0 : null),
-      medianListPrice: stats?.medianListPrice ?? null,
-    }
-  })
+  const featured = source
+    .map((n) => {
+      const href = `/cities/${n.citySlug}/${n.slug}`
+      const stats = ledgerByHref.get(href)
+      const hero = cityHero(n.citySlug)
+      const pooled =
+        pickSurfaceImage(heroPhotoPool, {
+          geoTags: [n.citySlug],
+          seed: n.slug,
+          fallback: hero.src,
+        }) ?? hero.src
+      const photoSrc = preferPlaceHero(n.heroImageUrl, pooled)
+      return {
+        slug: n.slug,
+        name: n.name,
+        citySlug: n.citySlug,
+        cityName: n.cityName,
+        href,
+        sentence: NEIGHBORHOOD_SENTENCE[n.slug] ?? null,
+        photoSrc,
+        photoAlt: `${n.name}, ${n.cityName} Oregon`,
+        photoIsPlace: Boolean(n.heroImageUrl?.trim()) || photoSrc !== hero.src,
+        activeCount: stats?.activeCount ?? (ledger.length > 0 && n.citySlug === 'bend' ? 0 : null),
+        medianListPrice: stats?.medianListPrice ?? null,
+      }
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const totalActive = featured.reduce((sum, n) => sum + (n.activeCount ?? 0), 0)
-
-  /**
-   * A count column is published only when EVERY district has a measured count.
-   * A degraded ledger read returns [], and `?? 0` on a timeout would print
-   * thirteen fake zeros (city-places invariant 4). So the value column either
-   * carries a real number for every row or the ledger carries none at all.
-   */
   const countsPublishable = ledger.length > 0 && featured.every((n) => n.activeCount != null)
+  const maxCount = Math.max(0, ...featured.map((n) => n.activeCount ?? 0))
 
   const rowBase = featured.map((n) => ({
     id: n.slug,
@@ -162,30 +139,19 @@ export default async function NeighborhoodsPage() {
       const bits = [median ? `Median list ${median}` : null, n.sentence].filter(Boolean)
       return bits.length > 0 ? v3Text(bits.join(' · ')) : undefined
     })(),
-    // Only a photograph of the district itself. The city hero is a fallback,
-    // and the Ledger's media slot takes no fallbacks.
     media: n.photoIsPlace ? { src: n.photoSrc } : undefined,
     ariaLabel: v3Text(`Homes for sale in ${n.name}, ${n.cityName} Oregon`),
   }))
 
   const figureRows: V3LedgerFigureRow[] = rowBase.map((row, i) => ({
     ...row,
-    value: v3Text(`${formatCount(featured[i]?.activeCount ?? 0)} for sale`),
+    value: v3Text(liveForSaleLabel(featured[i]?.activeCount ?? 0)),
+    weight: indexBarWeight(featured[i]?.activeCount, maxCount),
   }))
   const plainRows: V3LedgerPlainRow[] = rowBase
 
-  const figures: V3InstrumentFigure[] = []
-  if (countsPublishable && totalActive > 0) {
-    figures.push({
-      value: v3Text(formatCount(totalActive)),
-      label: v3Text('Active homes across these districts'),
-    })
-  }
-  figures.push({
-    value: v3Text(formatCount(featured.length)),
-    label: v3Text('Neighborhood districts'),
-  })
-  const [leadFigure, ...restFigures] = figures
+  const [firstFigureRow, ...restFigureRows] = figureRows
+  const [firstPlainRow, ...restPlainRows] = plainRows
 
   const schemas: SchemaInput[] = [
     {
@@ -197,8 +163,10 @@ export default async function NeighborhoodsPage() {
     },
   ]
 
-  const [firstFigureRow, ...restFigureRows] = figureRows
-  const [firstPlainRow, ...restPlainRows] = plainRows
+  const caption =
+    countsPublishable && totalActive > 0
+      ? `${formatCount(totalActive)} homes for sale across these districts.`
+      : null
 
   return (
     <>
@@ -231,34 +199,23 @@ export default async function NeighborhoodsPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Neighborhoods' }]} />
 
-        {leadFigure ? (
-          <V3Instrument
-            id="neighborhoods-pulse"
-            level={1}
-            eyebrow={v3Text('Live market')}
-            headline={v3Text('Bend, neighborhood by neighborhood.')}
-            note={v3Text(
-              'The City of Bend neighborhood districts. Live single-family inventory from the regional MLS, refreshed through the day.',
-            )}
-            figures={[leadFigure, ...restFigures]}
-            source={v3Text(PULSE_TRACE)}
-            action={{ label: v3Text('Bend guide'), href: '/cities/bend', variant: 'primary' }}
-          />
-        ) : null}
-
         {countsPublishable && firstFigureRow ? (
           <V3Ledger
             id="bend-neighborhoods"
+            headingLevel={1}
             eyebrow={v3Text('City of Bend')}
-            heading={v3Text('Pick a district. See what is listed.')}
+            heading={v3Text('Bend neighborhoods')}
+            note={v3Text(caption || 'City of Bend neighborhood districts.')}
             rows={[firstFigureRow, ...restFigureRows]}
+            encode="bar"
             source={v3Text(LEDGER_TRACE)}
           />
         ) : firstPlainRow ? (
           <V3Ledger
             id="bend-neighborhoods"
+            headingLevel={1}
             eyebrow={v3Text('City of Bend')}
-            heading={v3Text('Pick a district. See what is listed.')}
+            heading={v3Text('Bend neighborhoods')}
             note={v3Text(
               'The live inventory read did not return on this refresh, so these rows name the districts without a count.',
             )}
@@ -267,8 +224,8 @@ export default async function NeighborhoodsPage() {
         ) : (
           <V3Ledger
             id="bend-neighborhoods"
-            eyebrow={v3Text('City of Bend')}
-            heading={v3Text('Pick a district. See what is listed.')}
+            headingLevel={1}
+            heading={v3Text('Bend neighborhoods')}
             rows={[]}
             emptyMessage={v3Text('The neighborhood directory returned no district on this refresh.')}
           />
@@ -282,15 +239,13 @@ export default async function NeighborhoodsPage() {
             { label: 'Search all listings', href: '/search' },
             { label: 'All cities', href: '/cities' },
             { label: 'Communities', href: '/communities' },
-            { label: 'Recorded plats', href: '/subdivisions' },
+            { label: 'Subdivisions', href: '/subdivisions' },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
           ]}
           note="Filter by price, beds, and location across every city on the list. Oregon Data Share is the regional MLS cooperative behind the live listing and market data on this page."
         />
       </main>
 
-      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
-          only when it is NOT nested in sectioning content. */}
       <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )

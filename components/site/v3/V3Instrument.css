@@ -89,6 +89,12 @@
   padding-top: var(--v3-space-lg);
 }
 
+.v3.v3-instrument .v3-instrument__headline + .v3-instrument__chart,
+.v3.v3-instrument .v3-instrument__note + .v3-instrument__chart {
+  margin-top: var(--v3-space-lg);
+  padding-top: 0;
+}
+
 /* A lone figure is the headline figure, at lead size, so it takes the row. */
 /* The fold: a native disclosure holding the long-tail figures. Broadside
    chrome — a tracked small-caps summary on the hairline, no box, no shadow. */

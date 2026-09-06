@@ -1,11 +1,23 @@
+// @no-breadcrumb — leftover catch-all. Named leaves own their URLs.
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import LeadLandingPage from '@/components/landing/LeadLandingPage'
-import { getSellLanding } from '@/lib/lead-landing-content'
-import { getSession } from '@/app/actions/auth'
-import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
+import { notFound, permanentRedirect } from 'next/navigation'
+import {
+  EXPIRED_ROUTE,
+  FSBO_ROUTE,
+  ROUTE_PATH,
+} from '../_v3/sell-constants'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * Catch-all only. Dedicated files own /sell/for-sale-by-owner,
+ * /sell/expired-listings, and /sell/inherited-home (308 in next.config).
+ * Unknown slugs 404. Not a redirect-only page — a /sell/:intent 308
+ * would steal valuation, FSBO, and expired.
+ */
+const FOLD: Record<string, string> = {
+  'for-sale-by-owner': FSBO_ROUTE,
+  'expired-listings': EXPIRED_ROUTE,
+  'inherited-home': ROUTE_PATH,
+}
 
 type Props = {
   params: Promise<{ intent: string }>
@@ -13,38 +25,17 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { intent } = await params
-  const config = getSellLanding(intent)
-  if (!config) return { title: 'Page Not Found' }
+  const dest = FOLD[intent]
+  if (!dest) return { title: 'Page Not Found', robots: { index: false, follow: false } }
   return {
-    title: config.seoTitle,
-    description: config.seoDescription,
-    alternates: { canonical: `${siteUrl}${config.path}` },
-    openGraph: {
-      title: config.seoTitle,
-      description: config.seoDescription,
-      url: `${siteUrl}${config.path}`,
-      siteName: 'Ryan Realty',
-      type: 'website',
-      images: [{ url: config.heroImageUrl, width: 1200, height: 630, alt: config.imageAlt }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: config.seoTitle,
-      description: config.seoDescription,
-      images: [config.heroImageUrl],
-    },
+    robots: { index: false, follow: true },
+    alternates: { canonical: dest },
   }
 }
 
-export default async function SellLeadIntentPage({ params }: Props) {
+export default async function SellIntentFoldPage({ params }: Props) {
   const { intent } = await params
-  const config = getSellLanding(intent)
-  if (!config) notFound()
-
-  // Session + identity-bridge reads kept (they pin this route's dynamic
-  // rendering mode); the CRM page-view mirror they fed was deleted with the
-  // CRM decommission — first-party visitor_sessions covers page views now.
-  await Promise.all([getSession(), getPersonIdFromCookie()])
-
-  return <LeadLandingPage config={config} />
+  const dest = FOLD[intent]
+  if (dest) permanentRedirect(dest)
+  notFound()
 }

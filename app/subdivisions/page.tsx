@@ -1,26 +1,10 @@
 // @no-parity — place-family index, built from the v3 barrel like /neighborhoods
 /**
- * Subdivisions index — recorded plats across Central Oregon, on
- * components/site/v3.
+ * Subdivisions index — A–Z directory of recorded subdivisions across
+ * Central Oregon. Visitor copy uses subdivision / the place name, never “plat.”
  *
- * PUBLIC_UI.md (locked 2026-08-11) section 3:
- *
- *   Instrument  the live answer: homes for sale across these plats, and how
- *               many plats are in the index.
- *   Ledger      one row per featured plat, every row a door.
- *   Sheet       the A-to-Z browser: a filter set over the full index. It is the
- *               pre-barrel client component (components/community/
- *               CommunityIndexBrowser); the pattern it serves is Sheet, and it
- *               is not re-skinned in this pass.
- *   Quiet       the outbound edges, including the Oregon Data Share citation
- *               that MarketSources used to carry.
- *
- * Featured rows and the A-to-Z list are recorded child plats from the
- * community registry (not marketing community slugs). The county-wide
- * indexable set still feeds the sitemap. It is too heavy to render here.
- *
- * MetadataBlock stays: JSON-LD is not visual language, and ci:ai-structured-data
- * pins this route to it by name.
+ * PAGE_INVENTORY §3: live counts on the rows, doors. Not a mini-Bend KPI
+ * Instrument.
  */
 
 import type { Metadata } from 'next'
@@ -44,7 +28,6 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3Heading,
-  V3Instrument,
   V3Lede,
   V3Ledger,
   V3Quiet,
@@ -52,10 +35,13 @@ import {
   V3_FOOTER_COLUMNS,
   V3_ROOT_CLASS,
   v3Text,
-  type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
+import {
+  indexBarWeight,
+  liveForSaleLabel,
+} from '@/app/cities/_v3/cities-index-constants'
 import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const revalidate = 1800
@@ -63,22 +49,14 @@ export const revalidate = 1800
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Central Oregon subdivisions and recorded plats',
+  title: 'Central Oregon subdivisions',
   description:
-    'Recorded plats across Central Oregon with live single-family inventory from the regional MLS.',
+    'Subdivisions across Central Oregon with live single-family inventory from the regional MLS.',
   path: '/subdivisions',
 })
 
-/**
- * The section 0 traces. The plat population is named because three other reads
- * once answered the same question differently (plat-public-inventory's header,
- * the Ridge At Eagle Crest 12 / 14 / 26 split).
- */
 const LEDGER_TRACE =
-  'live MLS through Oregon Data Share, active single-family listings filed under each plat name (Active and Active Under Contract, Coming Soon excluded). The median is the list price of those same listings'
-
-const PULSE_TRACE =
-  'live MLS through Oregon Data Share, single-family active inventory on recorded plats inside the known communities'
+  'live MLS through Oregon Data Share, active single-family listings filed under each subdivision name (Active and Active Under Contract, Coming Soon excluded). The median is the list price of those same listings'
 
 function fmtPrice(n: number | null | undefined): string | null {
   return formatIndexMedianUsd(n)
@@ -100,29 +78,31 @@ export default async function SubdivisionsPage() {
     cap: 12,
   })
 
-  const featured = featuredSeeds.map((p) => {
-    const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
-    const live = parentHeroBySlug[p.parentSlug]
-    const curated = communityImage(p.parentSlug)
-    const fallbackHero = cityHero(p.citySlug)
-    const pooled = pickSurfaceImage(heroPhotoPool, {
-      geoTags: [p.citySlug],
-      seed: p.slug,
-      fallback: curated ?? fallbackHero.src,
+  const featured = featuredSeeds
+    .map((p) => {
+      const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
+      const live = parentHeroBySlug[p.parentSlug]
+      const curated = communityImage(p.parentSlug)
+      const fallbackHero = cityHero(p.citySlug)
+      const pooled = pickSurfaceImage(heroPhotoPool, {
+        geoTags: [p.citySlug],
+        seed: p.slug,
+        fallback: curated ?? fallbackHero.src,
+      })
+      const photoSrc = preferPlaceHero(live, curated ?? pooled ?? fallbackHero.src)
+      const placeOwned = Boolean(live || curated)
+      return {
+        ...p,
+        href: `/subdivisions/${p.slug}`,
+        sentence: `${p.name} is in ${p.parent}, ${p.city}.`,
+        photoSrc,
+        photoAlt: placeOwned ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
+        photoIsPlat: placeOwned,
+        activeCount: inventoryOk ? (inv?.activeCount ?? 0) : null,
+        medianPrice: inventoryOk ? (inv?.medianListPrice ?? null) : null,
+      }
     })
-    const photoSrc = preferPlaceHero(live, curated ?? pooled ?? fallbackHero.src)
-    const placeOwned = Boolean(live || curated)
-    return {
-      ...p,
-      href: `/subdivisions/${p.slug}`,
-      sentence: `${p.name} is a recorded plat in ${p.parent}, ${p.city}.`,
-      photoSrc,
-      photoAlt: placeOwned ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
-      photoIsPlat: placeOwned,
-      activeCount: inventoryOk ? (inv?.activeCount ?? 0) : null,
-      medianPrice: inventoryOk ? (inv?.medianListPrice ?? null) : null,
-    }
-  })
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const azSeen = new Set<string>()
   const azSource = childPlats.flatMap((p) => {
@@ -144,6 +124,7 @@ export default async function SubdivisionsPage() {
     ? azSource.reduce((sum, p) => sum + (p.activeCount ?? 0), 0)
     : null
   const platCount = azSource.length
+  const maxCount = Math.max(0, ...featured.map((p) => p.activeCount ?? 0))
 
   const rowBase = featured.map((p) => ({
     id: p.slug,
@@ -155,32 +136,16 @@ export default async function SubdivisionsPage() {
       const bits = [median ? `Median list ${median}` : null, p.sentence].filter(Boolean)
       return bits.length > 0 ? v3Text(bits.join(' · ')) : undefined
     })(),
-    // A curated photograph of the parent community only. The pooled city frame
-    // is a fallback, and the Ledger's media slot takes no fallbacks.
     media: p.photoIsPlat ? { src: p.photoSrc } : undefined,
     ariaLabel: v3Text(`Homes for sale in ${p.name}, ${p.city} Oregon`),
   }))
 
-  // A degraded inventory read publishes no counts at all rather than a column
-  // of zeros that would each read as "nothing for sale here".
   const figureRows: V3LedgerFigureRow[] = rowBase.map((row, i) => ({
     ...row,
-    value: v3Text(`${formatCount(featured[i]?.activeCount ?? 0)} for sale`),
+    value: v3Text(liveForSaleLabel(featured[i]?.activeCount ?? 0)),
+    weight: indexBarWeight(featured[i]?.activeCount, maxCount),
   }))
   const plainRows: V3LedgerPlainRow[] = rowBase
-
-  const figures: V3InstrumentFigure[] = []
-  if (totalActive != null && totalActive > 0) {
-    figures.push({
-      value: v3Text(formatCount(totalActive)),
-      label: v3Text('Homes for sale across these plats'),
-    })
-  }
-  figures.push({
-    value: v3Text(formatCount(platCount)),
-    label: v3Text('Community plats in this index'),
-  })
-  const [leadFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -195,6 +160,11 @@ export default async function SubdivisionsPage() {
   const [firstFigureRow, ...restFigureRows] = figureRows
   const [firstPlainRow, ...restPlainRows] = plainRows
 
+  const caption =
+    totalActive != null && totalActive > 0
+      ? `${formatCount(totalActive)} homes for sale across ${formatCount(platCount)} subdivisions.`
+      : `${formatCount(platCount)} subdivisions inside the known communities.`
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -208,7 +178,7 @@ export default async function SubdivisionsPage() {
               '@type': 'CollectionPage',
               name: 'Central Oregon subdivisions',
               description:
-                'Recorded plats across Central Oregon, with live MLS inventory.',
+                'Subdivisions across Central Oregon, with live MLS inventory.',
               url: `${siteUrl}/subdivisions`,
               publisher: { '@type': 'Organization', name: 'Ryan Realty' },
               mainEntity: {
@@ -226,69 +196,56 @@ export default async function SubdivisionsPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Subdivisions' }]} />
 
-        {leadFigure ? (
-          <V3Instrument
-            id="subdivisions-pulse"
-            level={1}
-            eyebrow={v3Text('Live market')}
-            headline={v3Text('Recorded plats across Central Oregon.')}
-            note={v3Text(
-              'County plats with live single-family inventory. Each name opens the listings and sales history for that plat.',
-            )}
-            figures={[leadFigure, ...restFigures]}
-            source={v3Text(PULSE_TRACE)}
-            action={{ label: v3Text('Search all listings'), href: '/search', variant: 'primary' }}
-          />
-        ) : null}
-
         {inventoryOk && firstFigureRow ? (
           <V3Ledger
             id="featured-plats"
-            eyebrow={v3Text('Recorded plats')}
-            heading={v3Text('Plats inside the known communities')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Central Oregon subdivisions')}
+            note={v3Text(caption)}
             rows={[firstFigureRow, ...restFigureRows]}
+            encode="bar"
             source={v3Text(LEDGER_TRACE)}
           />
         ) : firstPlainRow ? (
           <V3Ledger
             id="featured-plats"
-            eyebrow={v3Text('Recorded plats')}
-            heading={v3Text('Plats inside the known communities')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Central Oregon subdivisions')}
             note={v3Text(
-              'The live inventory read did not return on this refresh, so these rows name the plats without a count.',
+              'The live inventory read did not return on this refresh, so these rows name the subdivisions without a count.',
             )}
             rows={[firstPlainRow, ...restPlainRows]}
           />
         ) : (
           <V3Ledger
             id="featured-plats"
-            eyebrow={v3Text('Recorded plats')}
-            heading={v3Text('Plats inside the known communities')}
+            headingLevel={1}
+            heading={v3Text('Central Oregon subdivisions')}
             rows={[]}
-            emptyMessage={v3Text('The community registry returned no child plat on this refresh.')}
+            emptyMessage={v3Text('The community registry returned no subdivision on this refresh.')}
           />
         )}
 
-        {/* Pattern 5, Sheet: a filter set over the full index. The control is
-            the pre-barrel client browser, which owns its own markup. */}
         <section
           id="all-plats"
           aria-labelledby="all-plats-heading"
           className="mx-auto w-full max-w-5xl px-5 pb-16"
         >
           <V3Heading level={2} id="all-plats-heading">
-            Community plats, A to Z
+            Subdivisions, A to Z
           </V3Heading>
           <V3Lede>
-            {formatCount(platCount)} recorded plats inside the known communities. Search by name
+            {formatCount(platCount)} subdivisions inside the known communities. Search by name
             or city.
           </V3Lede>
           <CommunityIndexBrowser
             items={azSource}
-            searchLabel="Search plats by name or city"
-            searchPlaceholder="Search by plat or city name"
-            emptyLabel="No plats match your search."
-            countNoun={{ singular: 'plat', plural: 'plats' }}
+            searchLabel="Search subdivisions by name or city"
+            searchPlaceholder="Search by subdivision or city name"
+            emptyLabel="No subdivisions match your search."
+            countNoun={{ singular: 'subdivision', plural: 'subdivisions' }}
           />
         </section>
 
@@ -307,8 +264,6 @@ export default async function SubdivisionsPage() {
         />
       </main>
 
-      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo
-          only when it is NOT nested in sectioning content. */}
       <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )

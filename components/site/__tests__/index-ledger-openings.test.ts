@@ -15,6 +15,10 @@ const INDEX_PAGES = [
   'app/central-oregon/venues/page.tsx',
   'app/parks/page.tsx',
   'app/schools/page.tsx',
+  'app/cities/page.tsx',
+  'app/neighborhoods/page.tsx',
+  'app/communities/page.tsx',
+  'app/subdivisions/page.tsx',
 ] as const
 
 function read(rel: string): string {
@@ -34,6 +38,19 @@ describe('index pages open on the rows', () => {
     const src = read(rel)
     expect(src).not.toMatch(/data\/co-(events|trails|venues|parks|schools)\.ts/)
     expect(src).not.toContain('blog_posts')
+  })
+
+  it('place indexes never print plat to the visitor, and parks/trails show map thumbs', () => {
+    const subdivisions = read('app/subdivisions/page.tsx')
+    expect(subdivisions).not.toMatch(/v3Text\([^)]*[Pp]lat/)
+    expect(subdivisions).not.toMatch(/countNoun=\{\{\s*singular:\s*'plat'/)
+    expect(subdivisions).toMatch(/countNoun=\{\{\s*singular:\s*'subdivision'/)
+    const parks = read('app/parks/page.tsx')
+    const trails = read('app/central-oregon/trails/page.tsx')
+    expect(parks).toMatch(/layout="places"/)
+    expect(trails).toMatch(/layout="places"/)
+    expect(parks).toMatch(/placeListThumbDataUri/)
+    expect(trails).toMatch(/placeListThumbDataUri/)
   })
 
   it.each(INDEX_PAGES)('%s keeps Value my home off the opening Ledger', (rel) => {

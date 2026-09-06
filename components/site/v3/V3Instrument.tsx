@@ -158,6 +158,11 @@ export type V3InstrumentProps = {
    * Omit to render every figure open (the default, unchanged).
    */
   foldAfter?: number
+  /**
+   * Draw the chart after the verdict (and note) and before the figure tiles.
+   * Market hub / MOS definition: the drawing IS the number.
+   */
+  chartFirst?: boolean
   /** The supporting figures, left to right in the order the caller passes them. */
   figures: V3InstrumentFigures
   /**
@@ -236,6 +241,7 @@ const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
 export function V3Instrument({
   headline,
   foldAfter,
+  chartFirst = false,
   figures,
   source,
   updated,
@@ -281,7 +287,7 @@ export function V3Instrument({
   return (
     <section
       id={id}
-      className={cn(V3_ROOT_CLASS, 'v3-instrument', className)}
+      className={cn(V3_ROOT_CLASS, 'v3-instrument', chartFirst && 'v3-instrument--chart-first', className)}
       aria-labelledby={headlineId}
       aria-label={headlineId ? undefined : headline}
     >
@@ -296,13 +302,35 @@ export function V3Instrument({
       {note ? <p className="v3-instrument__note">{note}</p> : null}
 
       {(() => {
+        const charts = (
+          <>
+            {chart ? (
+              <div className="v3-instrument__chart">
+                <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
+              </div>
+            ) : null}
+            {chartSecondary ? (
+              <div className="v3-instrument__chart">
+                <V3Chart
+                  {...chartSecondary}
+                  id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
+                />
+              </div>
+            ) : null}
+            {cards && cards.length > 0 ? (
+              <div className="v3-instrument__cards">
+                {cards.map((card, i) => (
+                  <V3ChartCard key={card.id ?? `${i}-${card.title}`} {...card} />
+                ))}
+              </div>
+            ) : null}
+          </>
+        )
         const renderFigure = (figure: (typeof figures)[number], i: number) => {
           const key = `${i}-${figure.label}`
           const rendered = (
             <V3Figure value={figure.value} label={figure.label} emphasis={emphasis} />
           )
-          // A door wraps the whole figure, so the value and the label are one target and
-          // the accessible name reads as the stat it opens.
           return figure.href ? (
             <Link
               key={key}
@@ -317,19 +345,25 @@ export function V3Instrument({
           )
         }
         const foldAt =
-          foldAfter != null && foldAfter > 0 && figures.length > foldAfter + 1 ? foldAfter : null
+          foldAfter === 0 && figures.length > 0
+            ? 0
+            : foldAfter != null && foldAfter > 0 && figures.length > foldAfter + 1
+              ? foldAfter
+              : null
         const lead = foldAt != null ? figures.slice(0, foldAt) : figures
         const tail = foldAt != null ? figures.slice(foldAt) : []
-        return (
+        const figureBlock = (
           <>
-            <div
-              className={cn(
-                'v3-instrument__figures',
-                figures.length === 1 && 'v3-instrument__figures--single',
-              )}
-            >
-              {lead.map(renderFigure)}
-            </div>
+            {lead.length > 0 ? (
+              <div
+                className={cn(
+                  'v3-instrument__figures',
+                  figures.length === 1 && 'v3-instrument__figures--single',
+                )}
+              >
+                {lead.map(renderFigure)}
+              </div>
+            ) : null}
             {tail.length > 0 ? (
               <details className="v3-instrument__fold">
                 <summary className="v3-instrument__fold-summary">
@@ -342,30 +376,18 @@ export function V3Instrument({
             ) : null}
           </>
         )
+        return chartFirst ? (
+          <>
+            {charts}
+            {figureBlock}
+          </>
+        ) : (
+          <>
+            {figureBlock}
+            {charts}
+          </>
+        )
       })()}
-
-      {chart ? (
-        <div className="v3-instrument__chart">
-          <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
-        </div>
-      ) : null}
-
-      {chartSecondary ? (
-        <div className="v3-instrument__chart">
-          <V3Chart
-            {...chartSecondary}
-            id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
-          />
-        </div>
-      ) : null}
-
-      {cards && cards.length > 0 ? (
-        <div className="v3-instrument__cards">
-          {cards.map((card, i) => (
-            <V3ChartCard key={card.id ?? `${i}-${card.title}`} {...card} />
-          ))}
-        </div>
-      ) : null}
 
       <V3SourceLine source={trace} className="v3-instrument__source" />
 

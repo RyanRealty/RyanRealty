@@ -70,15 +70,17 @@ describe('city opening', () => {
   })
 
   it('does not re-ask the market question the hero already answered', () => {
-    expect(page).toMatch(/const marketHeadline = `The \$\{cityName\} market`/)
+    expect(page).toMatch(/const marketHeadline = `Typical price in \$\{cityName\}`/)
     expect(page).not.toMatch(/Is \$\{cityName\} a buyer's or seller's market\?/)
     expect(page).toMatch(/placeMedianChartCaption\(cityName\)/)
     expect(page).toMatch(/browsePath: homesForSalePath\(cityName\)/)
     expect(page).toMatch(/layout="pulse"/)
   })
 
-  it('folds leftover market figures and does not title the about as in plain words', () => {
-    expect(page).toMatch(/foldAfter=\{2\}/)
+  it('folds leftover market figures behind the one cost chart and does not title the about as in plain words', () => {
+    expect(page).toMatch(/chartFirst/)
+    expect(page).toMatch(/foldAfter=\{0\}/)
+    expect(page).toMatch(/cityVerdictCaption/)
     expect(page).not.toMatch(/in plain words/)
   })
 })
@@ -263,9 +265,12 @@ describe('master-plan opening', () => {
     expect(page).not.toMatch(/id="facts"/)
     expect(page).toMatch(/<V3Atlas/)
     expect(page).toMatch(/placeMedianChart\(/)
-    expect(page).toMatch(/foldAfter=\{2\}/)
+    expect(page).toMatch(/chartFirst/)
+    expect(page).toMatch(/foldAfter=\{0\}/)
     expect(page.indexOf('place-opening__caption')).toBeLessThan(page.indexOf('<V3Atlas'))
     expect(page.indexOf('<V3Atlas')).toBeLessThan(page.indexOf('id="market"'))
+    expect(page.indexOf('id="subdivisions"')).toBeLessThan(page.indexOf('id="market"'))
+    expect(page).not.toMatch(/cityStagePoster\(cityHeroes/)
   })
 
   it('keeps the counted set even when a tile has no photograph', () => {
@@ -280,7 +285,7 @@ describe('master-plan opening', () => {
 })
 
 describe('communities index rows', () => {
-  it('puts belonging in the row, not a home count', () => {
+  it('puts the live count on the door and belonging in the detail', () => {
     const content = {
       membershipTiers: [{ name: 'Golf membership' }],
       amenities: [{ name: '18-hole course' }],
@@ -292,11 +297,13 @@ describe('communities index rows', () => {
       city: 'Bend',
       belonging: belongingLine(content),
       photoSrc: communityImage('tetherow'),
+      activeCount: 17,
+      medianLine: 'Median list $1,200,000',
     })
     expect(row?.what).toBe('Tetherow')
-    expect(row?.detail).toBe('Golf membership. 18-hole course.')
+    expect(row?.value).toBe('17 for sale')
+    expect(row?.detail).toBe('Median list $1,200,000 · Golf membership. 18-hole course.')
     expect(row?.href).toBe('/communities/tetherow')
-    expect(row && 'value' in row).toBe(false)
   })
 })
 

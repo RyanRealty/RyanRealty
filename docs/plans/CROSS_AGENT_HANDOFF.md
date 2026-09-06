@@ -1,4 +1,16 @@
-# Current — 2026-09-06 (CMA letter+375 look-pass)
+# Current — 2026-09-06 (Waves C–H public inventory)
+
+Hub MOS drawing is first viewport (`chartFirst` + `foldAfter={0}`, range
+rows). Place pages omit thin cost charts (n<6). Listing is the 12-section
+house URL with tax. About/team Call/Text first. FSBO and expired sit on
+`/sell`; inherited 308s to `/sell`. Indexes A–Z with live counts; ZIP
+houses first; park thumbs are maps not black squares. Production host is
+https://ryan-realty.com. LOOP_SENTINEL stays off. Do not mix `_cma-*`.
+Keep `/luxury-homes-bend` nav hrefs. Keep LP `actions.ts` for `/sell`.
+
+---
+
+# Previous — 2026-09-06 (CMA letter+375 look-pass)
 
 2465 letter+375 look-pass after cover crop, 4+4 similar competition, 375
 matrix scroll, unique sold ticks, both unsolds. Rec $389k. Title on the

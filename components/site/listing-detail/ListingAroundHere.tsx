@@ -1,28 +1,17 @@
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-import { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
+import { lifestyleNearByKind } from '@/lib/explore/lifestyle-near'
 import { LifestyleNearSection } from './LifestyleNearSection'
-import { ListingRelatedGuides } from './ListingRelatedGuides'
 
-/** Parks, trails, golf, events, and guides near this listing. */
+/** Parks and trails near this house. Same thumbs as the indexes. */
 export async function ListingAroundHere({
   lat,
   lng,
-  city,
 }: {
   lat: number | null | undefined
   lng: number | null | undefined
-  city: string | null | undefined
+  city?: string | null | undefined
 }) {
-  const posts = await withTimeoutFallback(
-    getRecentBlogPosts({ limit: 3, cityName: city ?? undefined }),
-    [],
-    3000,
-    'listing:guides',
-  )
-  return (
-    <>
-      <LifestyleNearSection lat={lat} lng={lng} />
-      <ListingRelatedGuides posts={posts} city={city} />
-    </>
-  )
+  const grouped = lifestyleNearByKind(lat, lng)
+  const items = [...grouped.parks, ...grouped.trails]
+  if (items.length === 0) return null
+  return <LifestyleNearSection lat={lat} lng={lng} items={items} />
 }

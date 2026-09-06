@@ -112,7 +112,8 @@ export function CommunityMarketView({
           headline={v3Text(headline)}
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
           /* First viewport is the verdict + chart, not the leftover KPI wall. */
-          foldAfter={2}
+          chartFirst
+          foldAfter={0}
           source={v3Text(trace)}
           updated={
             live.figures.length > 0 && closed.length === 0 && refreshedAt

@@ -10,9 +10,9 @@ const AGENT = readFileSync(resolve('lib/agent/tools/market.ts'), 'utf8')
 
 describe('listing and overlay MOS cannot print pulse 48', () => {
   it('listing KPI MOS is leftover HUD, never cache or pulse fill', () => {
-    expect(LISTING).toMatch(/leftoverHudKpis/)
-    expect(LISTING).toMatch(/leftoverListingGrains/)
-    expect(LISTING).toMatch(/leftoverHudPublishes/)
+    expect(LISTING).not.toMatch(/leftoverHudKpis/)
+    expect(LISTING).not.toMatch(/leftoverListingGrains/)
+    expect(LISTING).not.toMatch(/<ListingAskInstrument/)
     expect(ASK).toMatch(/formatMonthsOfSupply/)
     expect(ASK).toMatch(/leftoverHudKpis/)
     expect(ASK).not.toMatch(/pulse\?\.monthsOfSupply \?\? stats\?\.monthsOfSupply/)

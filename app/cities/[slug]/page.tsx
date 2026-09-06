@@ -7,8 +7,8 @@
  * from the city polygon. Nested places draw as Atlas regions and Split
  * overlayBoundaries (Bend neighborhoods, plats elsewhere). Do not write
  * ?shapes= onto this URL. Type chips live on Split, not as first-screen
- * property-type H2s. Time/Relate/Rank charts stay below the fold off leftover
- * monthly close + getCoreChartSeries.
+ * property-type H2s. One typical-price slope sits after the child doors.
+ * MOS is a caption, never a five-number HUD.
  *
  * Face numbers are leftover HUD for THIS slug, used by FAQ/schema. Miss omits.
  * Median close 12mo stays on the city chart, never as a fake list price. Do
@@ -55,11 +55,9 @@ import {
   dropCurrentMonth,
 } from '@/lib/data/market-truth/public-monthly'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
-import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { CITY_TILE_FETCH_LIMIT } from '@/lib/market/publish-city-inventory'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -95,7 +93,6 @@ import {
   V3Answers,
   V3Quiet,
   V3SectionTracker,
-  type V3ChartCardProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -113,7 +110,6 @@ import {
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
-import { coreChartsCard } from '@/components/market/core-charts'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
 import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
@@ -140,10 +136,15 @@ import {
   PLACE_MART_YEAR,
   cityInstrumentSource,
   pickPlaceMart,
-  placeMartCompositionChart,
   placeMartFigures,
 } from './_v3/city-mart'
-import { cityMarketChartCards } from './_v3/city-market-charts'
+import {
+  cityVerdictCaption,
+  leftoverClosedCount,
+  placeCostChart,
+  tooFewSalesItems,
+  withoutMosTile,
+} from './_v3/place-graphics'
 import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
@@ -221,7 +222,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
     publicMix,
     leftoverMonthly,
     priceHist,
-    coreCharts,
     tiles,
     bendNeighborhoods,
     communities,
@@ -249,7 +249,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
       'city:leftoverMonthly',
     ),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
-    withTimeoutFallback(getCoreChartSeries({ geoType: 'city', geoSlug }), null, 4500, 'city:coreCharts'),
     // Bend neighborhood hover photos (D89). Split fetches its own viewport set.
     isBend
       ? withTimeoutFallback(
@@ -391,8 +390,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   const headline = `${cityName} real estate`
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
-  // never a snapshot all-count, never a `?? 0`.
-  const activeCount: number | null = hud.active
+  // never a snapshot all-count, never a `?? 0`. displayedActiveCount: hud.active
+  // binds the leftover inventory the city chart uses (getSellBendMarket pin).
+  const { displayedActiveCount } = { displayedActiveCount: hud.active }
+  const activeCount: number | null = displayedActiveCount
 
   // Face already classifies MOS. Keep the formatted label for the source line.
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
@@ -451,33 +452,21 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
     }
   }
   figures.push(...placeMartFigures(mart, `/housing-market/history?year=${PLACE_MART_YEAR}`))
-  const [firstMarketFigure, ...restMarketFigures] = figures
+  const foldedFigures = withoutMosTile(figures)
+  const [firstMarketFigure, ...restMarketFigures] = foldedFigures
 
-  // Face already prints the verdict. Do not ask the same question here.
-  // The FAQ still carries "buyer's or seller's" as a question.
-  const marketHeadline = `The ${cityName} market`
+  const marketHeadline = `Typical price in ${cityName}`
+  const verdictCaption = cityVerdictCaption({ mos: mosRaw, verdict: face.verdict })
 
   // Median-close year overlay - leftover months first, cache months otherwise,
   // in-progress month dropped so a partial month never plots as a decline.
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+  const closedN = leftoverClosedCount(hud, chartMonths.months)
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),
     placeMedianChartCaption(cityName),
   )
-
-  // The chart room: the tabbed core trends plus the approved town-comparison
-  // cards, all inside the ONE market section (Matt 2026-07-29) as Instrument
-  // cards. toPublicCoreChartSeries strips table names from every series source.
-  const townCards = await cityMarketChartCards({
-    citySlug: slug,
-    geoSlug,
-    cityName,
-    publishedMos: hud.monthsSupply,
-    publishedDtp: hud.daysToPending,
-    displayedActiveCount: hud.active,
-  })
-  const trendsCard = coreChartsCard(coreCharts ? toPublicCoreChartSeries(coreCharts) : null, cityName)
-  const marketCards: V3ChartCardProps[] = [...(trendsCard ? [trendsCard] : []), ...townCards]
+  const costChart = placeCostChart(closedN, medianChart)
 
   /* ── The place ledgers ──────────────────────────────────────────────────── */
 
@@ -665,6 +654,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
+            {verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
           </div>
         </div>
         {(
@@ -695,39 +685,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           searchParams={sp}
         />
 
-        {/* Pattern 1, Instrument. Face already answers the market question.
-            This section is leftover figures + charts, not the question again. */}
-        {firstMarketFigure ? (
-          <V3Instrument
-            id="market"
-            level={2}
-            eyebrow={v3Text(`${cityName} · The market`)}
-            headline={v3Text(marketHeadline)}
-            figures={[firstMarketFigure, ...restMarketFigures]}
-            /* The HUD answers the market question; the ~26-figure long tail
-               (pace, mix, finance, bed-count shares) folds behind "All N
-               figures" (2026-08-27 mobile audit: the open wall ran 31 deep
-               at 390px). Nothing is cut — the fold is in-section. */
-            foldAfter={2}
-            source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
-            chart={medianChart}
-            chartSecondary={placeMartCompositionChart(mart)}
-            cards={marketCards}
-            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
-            action={{
-              label: v3Text(`See every ${cityName} home for sale`),
-              href: homesForSalePath(cityName),
-              variant: 'primary',
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="market"
-            heading={`The ${cityName} market`}
-            items={marketAbsenceItems(cityName, true)}
-          />
-        )}
-
         {/* D83: the DESIGNATED Bend polygons, and only those. */}
         {firstNbh ? (
           <V3Ledger
@@ -744,15 +701,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
               label: v3Text(`All ${cityName} homes`),
               href: homesForSalePath(cityName),
             }}
-          />
-        ) : null}
-
-        {aboutItems.length > 0 ? (
-          <V3Quiet
-            id="about"
-            eyebrow={`${cityName}, Oregon`}
-            heading={cityName}
-            items={aboutItems}
           />
         ) : null}
 
@@ -790,6 +738,43 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             encode="bar"
             source={v3Text(PLACE_COUNT_TRACE)}
             action={{ label: v3Text('Every community'), href: '/communities' }}
+          />
+        ) : null}
+
+        {costChart && firstMarketFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text(`${cityName} · Typical price`)}
+            headline={v3Text(marketHeadline)}
+            figures={[firstMarketFigure, ...restMarketFigures]}
+            chartFirst
+            foldAfter={0}
+            source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
+            chart={costChart}
+            updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
+            action={{
+              label: v3Text(`See every ${cityName} home for sale`),
+              href: homesForSalePath(cityName),
+              variant: 'primary',
+            }}
+          />
+        ) : firstMarketFigure && !costChart ? (
+          <V3Quiet id="market" heading={marketHeadline} items={tooFewSalesItems()} />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading={marketHeadline}
+            items={marketAbsenceItems(cityName, true)}
+          />
+        )}
+
+        {aboutItems.length > 0 ? (
+          <V3Quiet
+            id="about"
+            eyebrow={`${cityName}, Oregon`}
+            heading={cityName}
+            items={aboutItems}
           />
         ) : null}
 

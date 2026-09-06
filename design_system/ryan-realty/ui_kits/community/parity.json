@@ -1,7 +1,7 @@
 {
   "route": "app/communities/[slug]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves — HOA, membership, drive times, course, builders, schools, and the second-home reality — beside the live inventory instead of on a separate marketing page.",
+  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves \u2014 HOA, membership, drive times, course, builders, schools, and the second-home reality \u2014 beside the live inventory instead of on a separate marketing page.",
   "note": "First screen, amended 2026-09-03: the place-page class opener. Order is V3Breadcrumb, place-opening (V3Heading `{Community} homes for sale` + PlaceFaceStrip leftover count/median + full-bleed PlaceAreaHero photo, never Quiet H1 and never an H1 photo cage), V3Atlas (child plats as regions), PlaceTypeSlider, PlaceSplitView (overlayBoundaries from overlaysFromChildCells / getCommunitySubdivisions), Instrument #market, Quiet #belonging (facts and chips as the display, extra prose and the authored story under disclosure), V3CourseMap when mapped, V3PlaceCharacter, Ledger subdivisions, Sheet, Ledger open houses, Ledger activity, V3Answers #faq, Footer. leftoverHudKpis grain stays neighborhood keyed by the bare slug; publishPlaceFace({ grain: 'community', hud }) prints leftover active + leftover median list. Tetherow leftover is the 16 SFR pile, not alias Field length ~25. MOS / sold / verdict / DTP stay off the face. seedRing keys on a TRUSTED polygon: county plat-union first, reliable stored boundary second. Child plat cells draw as Atlas regions AND Split overlayBoundaries, each a door to its page. Type strips, not H2s. Eagle Crest schools are Redmond 2J / getDistrictForCity('Redmond') only. Amenity blogs via getBlogPostsBySlugs. Never plat/nest/parent/child/sibling/CDP/Feeders on visitor copy. THE PUBLIC NAME IS THE REGISTRY LABEL. NO IN-PAGE REDIRECT. buildMarketFaq runs unconditionally with source 'market-truth'.",
   "dataChanges": {
     "figureCorrected": "The reliable-boundary branch published listings_in_boundary's pin count under the label 'Active single-family'. That RPC filters on status only and caps at 200 rows, so the number counted condos, land, and townhomes, and the median printed beside it came from a DIFFERENT set (the same listings narrowed to propertyType 'A'). The count is now the single-family actives inside the same boundary: the set the label claims and the set its median is computed from. On a community with no condos or land it is the same number.",
@@ -37,7 +37,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, below the fold. Rolling leftover closed sales for this community. Live inventory is the face strip, not this Instrument. Value my home is not this page's opening ask.",
+      "section": "Pattern 1, AFTER village bars. Slope or strip of THIS community's closes, never Bend's median. chartFirst + foldAfter={0}. Too-few closes render Quiet. MOS stays off this grain.",
       "blocking": true
     },
     {
@@ -47,7 +47,7 @@
     },
     {
       "name": "publishPlaceFace",
-      "section": "Face publisher. Community grain withholds MOS. Call is publishPlaceFace({ grain: 'community', hud }) — leftover 16 for Tetherow, never alias Field length.",
+      "section": "Face publisher. Community grain withholds MOS. Call is publishPlaceFace({ grain: 'community', hud }) \u2014 leftover 16 for Tetherow, never alias Field length.",
       "blocking": true
     },
     {
@@ -57,7 +57,7 @@
     },
     {
       "name": "CommunityAlertSheet",
-      "section": "Pattern 5, once, at app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx. The node's one on-page ask, wrapping V3Sheet. The capture contract is unchanged: submitSearchAlertSignup, the same filters object (city always, subdivision when the community has one), the same field name 'email', the same trap name 'company', and the same two post-success effects in the same order — the guest-watch residual and the alert_create measurement event built by buildAlertCreatePayload('daily'). REPAIR 2026-08-12: two pieces had left with the honeypot and only the honeypot was declared. The honeypot is restored through V3Sheet's sheet-level `trap` prop (a trap is a property of the working surface, not one of its questions), so the action's first defence, the naive-bot filter in FRONT of the per-IP limiter, is back on a public write path and the sheet sends the trap's own answer rather than a hardcoded no-bot value. The standing disclosure is restored as step prose: 'One email per new listing. Unsubscribe any time.' on the asking step, and 'One email per new listing. Pause or unsubscribe from any alert email.' on the confirmation. The third piece was a LINK ('Sign in to manage alerts'), and V3Sheet renders prose rather than nodes on purpose, so the route to manage a subscription is a door in the closing Quiet block: 'Manage your listing alerts' to /login?returnUrl=%2Faccount%2Fsaved-searches.",
+      "section": "Pattern 5, once, at app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx. The node's one on-page ask, wrapping V3Sheet. The capture contract is unchanged: submitSearchAlertSignup, the same filters object (city always, subdivision when the community has one), the same field name 'email', the same trap name 'company', and the same two post-success effects in the same order \u2014 the guest-watch residual and the alert_create measurement event built by buildAlertCreatePayload('daily'). REPAIR 2026-08-12: two pieces had left with the honeypot and only the honeypot was declared. The honeypot is restored through V3Sheet's sheet-level `trap` prop (a trap is a property of the working surface, not one of its questions), so the action's first defence, the naive-bot filter in FRONT of the per-IP limiter, is back on a public write path and the sheet sends the trap's own answer rather than a hardcoded no-bot value. The standing disclosure is restored as step prose: 'One email per new listing. Unsubscribe any time.' on the asking step, and 'One email per new listing. Pause or unsubscribe from any alert email.' on the confirmation. The third piece was a LINK ('Sign in to manage alerts'), and V3Sheet renders prose rather than nodes on purpose, so the route to manage a subscription is a door in the closing Quiet block: 'Manage your listing alerts' to /login?returnUrl=%2Faccount%2Fsaved-searches.",
       "blocking": true
     },
     {
@@ -97,7 +97,7 @@
     },
     {
       "name": "V3CourseMap",
-      "section": "#course -- the community's own golf course, drawn from its geometry: OSM greens, bunkers, tees and hole routings clipped to the course's named boundary, fairway turf traced out of Oregon's 2018 aerial, and a card per hole measured off the same shapes the map draws. ONE course per page even where the resort owns three (Sunriver, Eagle Crest): a map runs the height of the property, and the other courses are already exits in the closing Quiet block. Renders only for a community whose registry row names a course with a committed map file -- Tetherow, Crosswater, Sunriver, Eagle Crest today; Woodlands, Widgi Creek and Glaze Meadow map 17 of 18 holes in OSM and are refused at build. Per-hole par and yardage print only when they reconcile with the club's published card (CLAUDE.md §0).",
+      "section": "#course -- the community's own golf course, drawn from its geometry: OSM greens, bunkers, tees and hole routings clipped to the course's named boundary, fairway turf traced out of Oregon's 2018 aerial, and a card per hole measured off the same shapes the map draws. ONE course per page even where the resort owns three (Sunriver, Eagle Crest): a map runs the height of the property, and the other courses are already exits in the closing Quiet block. Renders only for a community whose registry row names a course with a committed map file -- Tetherow, Crosswater, Sunriver, Eagle Crest today; Woodlands, Widgi Creek and Glaze Meadow map 17 of 18 holes in OSM and are refused at build. Per-hole par and yardage print only when they reconcile with the club's published card (CLAUDE.md \u00a70).",
       "blocking": false
     }
   ],
@@ -115,29 +115,29 @@
     }
   ],
   "removedComponents": [
-    "V3Stage + CommunityStage + V3Field + PlaceFieldMap + V3PlacePropertyTypes — first screen is PlaceSplitView + leftover PlaceFaceStrip (count + median list). Type strips, not property-type H2s. MOS stays off the face.",
-    "KbHero — the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
-    "KbResortOverview + KbAbout — the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
-    "KbFeatured + KbTicker — the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
-    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) — replaced by V3Field with PlaceFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
-    "KbMarketHud + MarketCoreCharts + KbMarketChart — the market HUD and both chart modules. The barrel has no chart primitive and the pattern set is closed, so the charts are DELETED here rather than reproduced. For most communities the trend series was the parent CITY's anyway (the community's own close history is too thin for a multi-year line), and the city market report that owns those charts is a door from every closed-sale figure and from the closing block. The gap is reported to the P9 orchestrator: a chart primitive is the barrel's largest missing piece.",
-    "KbCommunities — the other-resorts rail. A door to /communities carries it.",
-    "KbOpenHouses — the open-house list. City-scoped; a door to /open-houses/<city> carries it.",
-    "KbActivity — the live activity feed. City-scoped and previously mislabelled with the community's name; a door to /housing-market carries it.",
-    "KbArticles — the blog rail. Amenity posts the config points at are doors in the knowledge block; the rest are reachable from /blog through the footer.",
-    "KbExploreTowns — the other-cities ledger. The footer's sitemap projection and the city doors carry it.",
-    "KbSchools — the district block, rebuilt as a knowledge row plus a door to the district page.",
-    "CommunityGolfLinks — the reverse golf edge, rebuilt as doors in the closing block, read from the same data/golf/courses registry.",
-    "KbTestimonials + KbTeam — brokerage proof. It belongs to the About cluster, and the footer carries the doors.",
-    "KbBuyCta + KbSell — two more asks on a page that now makes one ask per viewport: the opening Instrument's search button, then the alert sheet's submit four sections down (PUBLIC_UI.md section 1). The sell door is an edge in the closing block, and it goes through lib/site/valuation-href so the lead it produces still names this page.",
-    "KbAreaGuideVideo — the per-location guide video. It needs Stage, which is the deferred fifth pattern.",
-    "KbCommunityAlerts — replaced by CommunityAlertSheet. The action, the filters, the field name, the 'company' honeypot, the frequency and unsubscribe disclosure, and both post-success effects are all carried across. NOTHING OF THE CAPTURE CONTRACT IS DELETED HERE any more: the first cut of the migration dropped the honeypot and the standing disclosure, declared only the honeypot, and left an email-capture form on a licensed broker's site collecting an address with no frequency statement, no unsubscribe statement, and no route to manage the subscription. The 2026-08-12 repair restored all three (see the CommunityAlertSheet entry above). The one thing that did NOT come back as-is is the shape of the manage link: it was an <a> inside the block, and it is a door in the closing Quiet block now, because V3Sheet renders prose rather than nodes. That is the section's one remaining barrel gap.",
-    "FAQBlock — the questions moved into the closing V3Quiet and its FAQPage JSON-LD moved into the MetadataBlock array.",
-    "MarketSources — the Oregon Data Share citation now rides in the source lines under the figures and in the closing block's note.",
-    "SmoothScrollProvider — the Lenis wrapper. The v3 register does not depend on it, and PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments, neither of which is on this page.",
-    "The freestanding phone line and the second-home note — the phone is in the footer and the chrome; the second-home paragraph is a knowledge row with its own contact door.",
+    "V3Stage + CommunityStage + V3Field + PlaceFieldMap + V3PlacePropertyTypes \u2014 first screen is PlaceSplitView + leftover PlaceFaceStrip (count + median list). Type strips, not property-type H2s. MOS stays off the face.",
+    "KbHero \u2014 the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
+    "KbResortOverview + KbAbout \u2014 the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
+    "KbFeatured + KbTicker \u2014 the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
+    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) \u2014 replaced by V3Field with PlaceFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
+    "KbMarketHud + MarketCoreCharts + KbMarketChart \u2014 the market HUD and both chart modules. The barrel has no chart primitive and the pattern set is closed, so the charts are DELETED here rather than reproduced. For most communities the trend series was the parent CITY's anyway (the community's own close history is too thin for a multi-year line), and the city market report that owns those charts is a door from every closed-sale figure and from the closing block. The gap is reported to the P9 orchestrator: a chart primitive is the barrel's largest missing piece.",
+    "KbCommunities \u2014 the other-resorts rail. A door to /communities carries it.",
+    "KbOpenHouses \u2014 the open-house list. City-scoped; a door to /open-houses/<city> carries it.",
+    "KbActivity \u2014 the live activity feed. City-scoped and previously mislabelled with the community's name; a door to /housing-market carries it.",
+    "KbArticles \u2014 the blog rail. Amenity posts the config points at are doors in the knowledge block; the rest are reachable from /blog through the footer.",
+    "KbExploreTowns \u2014 the other-cities ledger. The footer's sitemap projection and the city doors carry it.",
+    "KbSchools \u2014 the district block, rebuilt as a knowledge row plus a door to the district page.",
+    "CommunityGolfLinks \u2014 the reverse golf edge, rebuilt as doors in the closing block, read from the same data/golf/courses registry.",
+    "KbTestimonials + KbTeam \u2014 brokerage proof. It belongs to the About cluster, and the footer carries the doors.",
+    "KbBuyCta + KbSell \u2014 two more asks on a page that now makes one ask per viewport: the opening Instrument's search button, then the alert sheet's submit four sections down (PUBLIC_UI.md section 1). The sell door is an edge in the closing block, and it goes through lib/site/valuation-href so the lead it produces still names this page.",
+    "KbAreaGuideVideo \u2014 the per-location guide video. It needs Stage, which is the deferred fifth pattern.",
+    "KbCommunityAlerts \u2014 replaced by CommunityAlertSheet. The action, the filters, the field name, the 'company' honeypot, the frequency and unsubscribe disclosure, and both post-success effects are all carried across. NOTHING OF THE CAPTURE CONTRACT IS DELETED HERE any more: the first cut of the migration dropped the honeypot and the standing disclosure, declared only the honeypot, and left an email-capture form on a licensed broker's site collecting an address with no frequency statement, no unsubscribe statement, and no route to manage the subscription. The 2026-08-12 repair restored all three (see the CommunityAlertSheet entry above). The one thing that did NOT come back as-is is the shape of the manage link: it was an <a> inside the block, and it is a door in the closing Quiet block now, because V3Sheet renders prose rather than nodes. That is the section's one remaining barrel gap.",
+    "FAQBlock \u2014 the questions moved into the closing V3Quiet and its FAQPage JSON-LD moved into the MetadataBlock array.",
+    "MarketSources \u2014 the Oregon Data Share citation now rides in the source lines under the figures and in the closing block's note.",
+    "SmoothScrollProvider \u2014 the Lenis wrapper. The v3 register does not depend on it, and PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments, neither of which is on this page.",
+    "The freestanding phone line and the second-home note \u2014 the phone is in the footer and the chrome; the second-home paragraph is a knowledge row with its own contact door.",
     "NOT removed, and it was undeclared while it was: the freestanding freshness signal (<p class=\"community-freshness-signal\">Market data updated {asOfLabel}</p>, old page.tsx:794). It is a sentence in the closing Quiet block's note now, off the same clock the Dataset's dateModified publishes.",
-    "boundary-derived hero facts strip — folded into the Instrument's figures.",
+    "boundary-derived hero facts strip \u2014 folded into the Instrument's figures.",
     "KbMarketHud + PublicProductTypes + PublicPaceStats + PublicMixStats + MarketCoreCharts - re-expressed, not dropped: the KPI row, pace items, and mix figures are the market Instrument's figures off the same leftoverHudKpis pile; the property-type panel is the V3PlacePropertyTypes enumeration; the core trend tabs are one V3ChartCard switcher (coreChartsCard through toPublicCoreChartSeries, city-relabeled on the sparse fallback). One market section per page (Matt 2026-07-29) holds because every chart rides inside the Instrument.",
     "V3PlaceDocuments (the Ledger form) - re-expressed as Quiet legal doors (communityDocumentItems): Ledger would be this route's sixth pattern, which stays a lock break even under the 2026-08-26 exception. Every document keeps its recording reference and county in the label and the R7 amendment caveat closes the list.",
     "KbResortOverview - the same config renders through buildPlaceKnowledge into the belonging Quiet (D100 on the barrel). The component and its publishFactValue helper left with their last mount; the surviving surface takes typed config values, so the em-dash-string class the helper guarded cannot reach it.",
@@ -148,15 +148,15 @@
     "KbFeatured, KbListingMap, KbTicker, KbExploreTowns, KbCommunities, KbArticles, KbTestimonials, KbTeam, KbBuyCta, KbCommunityAlerts, FAQBlock, MarketSources, KbFooter, SmoothScrollProvider, CommunityGolfLinks, PlaceInventoryMap - the KB register on this route: inventory is the Field, capture is the Sheet, the FAQ and every edge (golf courses included) live in the closing Quiet, the ODS citation is the freshness sentence, and chrome is V3Chrome/V3Footer."
   ],
   "deletedDataReads": [
-    "getRegionPulse — fed KbSell's fallback figures and the HUD's county median. Both sections are gone.",
-    "getPriceHistory (community and city) + getCoreChartSeries (community and city) — fed the two chart modules. Gone with the charts.",
-    "getMarketStatsCacheRowForGeo — fed one figure, the sale-to-list ratio, in the HUD. Its period basis differs from the rolling_365d window the other closed-sale figures use, so it would have put two windows in one figure set.",
-    "getAllCitySnapshots — fed KbExploreTowns.",
-    "getCommunitiesForIndex + allCommunities — fed KbCommunities.",
-    "getRecentBlogPosts — fed KbArticles.",
-    "getOpenHousesWithListings — fed KbOpenHouses.",
-    "getActivityFeedWithFallbackMulti — fed KbActivity.",
-    "getAreaGuideVideo — fed KbAreaGuideVideo.",
+    "getRegionPulse \u2014 fed KbSell's fallback figures and the HUD's county median. Both sections are gone.",
+    "getPriceHistory (community and city) + getCoreChartSeries (community and city) \u2014 fed the two chart modules. Gone with the charts.",
+    "getMarketStatsCacheRowForGeo \u2014 fed one figure, the sale-to-list ratio, in the HUD. Its period basis differs from the rolling_365d window the other closed-sale figures use, so it would have put two windows in one figure set.",
+    "getAllCitySnapshots \u2014 fed KbExploreTowns.",
+    "getCommunitiesForIndex + allCommunities \u2014 fed KbCommunities.",
+    "getRecentBlogPosts \u2014 fed KbArticles.",
+    "getOpenHousesWithListings \u2014 fed KbOpenHouses.",
+    "getActivityFeedWithFallbackMulti \u2014 fed KbActivity.",
+    "getAreaGuideVideo \u2014 fed KbAreaGuideVideo.",
     "Every read the page still performs is rendered. Nothing is fetched into a positional hole in the Promise.all."
   ],
   "jsonLd": {
@@ -184,7 +184,7 @@
     "getCommunityBySlug": "app/actions/communities. Identity, city, subdivision, description. notFound() when absent, in both generateMetadata and the page.",
     "getGeoSnapshot": "geo_type='community', geoKey='<city>:<subdivision>' lowercase. The always-present fallback pair (count and median computed from one active set by the same view) and the JSON-LD's fallback stamp.",
     "getMarketPulse": "geo_type='neighborhood', geo_slug = the bare community slug. market_pulse_live carries no neighborhood rows today, so this is normally null and the page is built for that: it supplies months of supply and days to pending only when a row exists.",
-    "getMarketStats": "geo_type='neighborhood', periodType='rolling_365d'. market_stats_cache. Median sale price, sold count, and median days on market — the level-2 Instrument's whole figure set and the DOM and sold-count FAQ answers.",
+    "getMarketStats": "geo_type='neighborhood', periodType='rolling_365d'. market_stats_cache. Median sale price, sold count, and median days on market \u2014 the level-2 Instrument's whole figure set and the DOM and sold-count FAQ answers.",
     "getGeoBoundaryMapData": "listings_in_boundary + boundary_geojson. Supplies the in-boundary listing keys and the stored polygon. The keys are re-fetched as tiles with propertyType 'A' so the published count matches the label.",
     "getResortBoundaryGeoJSON": "the county plat union. ALWAYS draws when present, even for a slug in the oversized-hull baseline, because the baseline gates only the STORED hull.",
     "getListingTiles": "listing_tile_mv. Three shapes: by in-boundary listing keys, by city (then narrowed by MLS subdivision name), or replaced entirely by the alias-matched resort set. status 'active', propertyType 'A' in every shape.",
@@ -208,11 +208,11 @@
     "V3Atlas #atlas -- the living map scoped to the community (renders only with a trusted boundary and at least one listing inside it)",
     "PlaceTypeSlider (type cards, not H2s)",
     "PlaceSplitView #homes",
-    "V3Instrument #market (leftover sold history as own series) or V3Quiet (stated absence)",
+    "V3Ledger #subdivisions (registry child subdivisions, SFR-counted from the same city set as the face; omitted when the registry names none)",
+    "V3Instrument #market (this community's typical-price slope after villages; never Bend's median) or V3Quiet (too few / stated absence)",
     "V3Quiet #belonging",
     "V3CourseMap #course (the community's own course, when the registry names one with a map)",
     "V3PlaceCharacter",
-    "V3Ledger #subdivisions (registry child subdivisions, SFR-counted from the same city set as the face; omitted when the registry names none)",
     "CommunityAlertSheet",
     "V3Ledger #open-houses",
     "V3Ledger #activity",

@@ -19,8 +19,8 @@ describe('community page leftover 12-month sold overlay', () => {
     expect(SRC).not.toMatch(/stats\?\.soldCount/)
   })
 
-  it('keeps leftover median sold and sale-to-list', () => {
-    expect(SRC).toMatch(/publicPaceItems\(publicPace\)/)
+  it('keeps leftover median sold as the folded cost figures', () => {
+    expect(SRC).toMatch(/leftoverSoldHistoryFigures\(hud, publicPace\)/)
     expect(SRC).toMatch(/leftoverHudKpis/)
     expect(SRC).toMatch(/leftoverMarketFigures/)
   })
@@ -53,7 +53,7 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/<PlaceFaceStrip[^>]*>[\s\S]{0,80}monthsOfSupply/)
     expect(SRC).not.toMatch(/publishPlaceFace\([\s\S]{0,120}grain: 'city'/)
     expect(SRC).toMatch(/monthsOfSupply:\s*null/)
-    expect(SRC).toMatch(/The \$\{publicName\} market/)
+    expect(SRC).toMatch(/Typical price in \$\{publicName\}/)
     expect(SRC).not.toMatch(/has \$\{mosLabel\} months of supply/)
   })
 
@@ -83,8 +83,9 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/belongingCaption\(/)
     expect(SRC).toMatch(/belongingFigures\(richContent, placeCharacter\)/)
     expect(SRC).not.toMatch(/id="facts"/)
-    expect(SRC).toMatch(/foldAfter=\{2\}/)
-    expect(SRC).toMatch(/startsWith\('at least'\)/)
+    expect(SRC).toMatch(/chartFirst/)
+    expect(SRC).toMatch(/foldAfter=\{0\}/)
+    expect(SRC).toMatch(/tooFewSalesItems/)
     expect(SRC).not.toMatch(/id="place-about"/)
   })
 

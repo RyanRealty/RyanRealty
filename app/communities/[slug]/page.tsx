@@ -31,9 +31,12 @@ import {
   getPriceHistory,
   getDetachedOverlays,
   cityDetachedSlug,
-  getCityHeroUrlsBySlug,
 } from '@/lib/data'
-import { cityLibraryHero, cityStagePoster } from '@/app/cities/[slug]/_v3/city-opening'
+import {
+  leftoverClosedCount,
+  placeCostChart,
+  tooFewSalesItems,
+} from '@/app/cities/[slug]/_v3/place-graphics'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { getCommunitySeoAbout } from '@/lib/community-seo-content'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
@@ -46,25 +49,21 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import {
   getPublicDetachedMonthly,
   leftoverNeighborhoodOrCityMonthly,
 } from '@/lib/data/market-truth/public-monthly'
-import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { loadSubdivisionTypeBits } from '@/lib/market/publish-subdivision-type-bits'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { communityPageTrail } from '@/lib/site/place-trail'
-import { valuationHref } from '@/lib/site/valuation-href'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
@@ -85,7 +84,6 @@ import {
   V3Atlas,
   type AtlasRegion,
   V3SectionTracker,
-  type V3ChartCardProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
@@ -105,7 +103,6 @@ import { slugify } from '@/lib/slug'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
-import { coreChartsCard } from '@/components/market/core-charts'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
 import {
@@ -132,11 +129,9 @@ import {
 import { resortQuietItems } from '../_v3/resort-doors'
 import {
   leftoverMarketFigures,
-  CITY_PACE_KEYS_ON_THE_HUD,
   placeMedianChart,
   placeMedianChartCaption,
 } from '@/app/cities/[slug]/_v3/city-sections'
-import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-figures'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
@@ -228,12 +223,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     citySfrRead,
     richContent,
     cityPriceHist,
-    commCoreCharts,
     publicPace,
     publicSegments,
     leftoverCityMonthly,
     leftoverNeighborhoodMonthly,
-    publicMix,
     commOverlays,
     placeDocuments,
     placeCharacter,
@@ -253,7 +246,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof getListingTiles>>, ok: true }),
     withTimeoutFallback(getResortCommunityContent(resortSlug), null, 2500, 'comm:content'),
     withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
-    withTimeoutFallback(getCoreChartSeries({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 4500, 'comm:coreCharts'),
     withTimeoutFallback(
       getPublicDetachedPace({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
       EMPTY_PUBLIC_PACE,
@@ -283,12 +275,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       'comm:leftoverNeighborhoodMonthly',
     ),
     withTimeoutFallback(
-      getPublicDetachedMix({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
-      EMPTY_PUBLIC_MIX,
-      3000,
-      'comm:publicMix',
-    ),
-    withTimeoutFallback(
       getDetachedOverlays([{ geoType: 'neighborhood', geoSlug: neighborhoodSlug }]),
       new Map(),
       3000,
@@ -312,14 +298,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
   const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
-  const emptyHeroes: Record<string, string> = {}
-  const [cityHeroes, cityLibraryHeroUrl] = await Promise.all([
-    withTimeoutFallback(getCityHeroUrlsBySlug(), emptyHeroes, 3000, 'comm:cityHeroes'),
-    withTimeoutFallback(cityLibraryHero(citySlug), null, 3000, 'comm:cityLibraryHero'),
-  ])
-  const stagePosterSrc =
-    stagePoster(slug, community.heroImageUrl, libraryHero) ??
-    cityStagePoster(cityHeroes[citySlug], cityLibraryHeroUrl)
+  const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)
   const belongingLine = belongingCaption(belonging)
@@ -430,7 +409,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     `${publicName} subdivision`,
   )
 
-  const marketHeadline = `The ${publicName} market`
+  const marketHeadline = `Typical price in ${publicName}`
 
   const leftoverStamp =
     commMt?.headlines?.computedAt ?? commMt?.inventory?.computedAt ?? snapshot?.refreshedAt ?? null
@@ -471,25 +450,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     monthsOfSupply: '/months-of-supply',
   })
   const soldHistory = leftoverSoldHistoryFigures(hud, publicPace)
-  const soldLabels = new Set(soldHistory.map((figure) => String(figure.label)))
   const isFaceOrMosLabel = (label: string): boolean =>
     label === 'median list price' ||
     label.includes('for sale') ||
     label === 'months of supply'
-  const restMarket: V3InstrumentFigure[] = leftoverFigures.filter((figure) => {
-    const label = String(figure.label)
-    return !isFaceOrMosLabel(label) && !soldLabels.has(label)
-  })
-  for (const item of publicPaceItems(publicPace)) {
-    if (CITY_PACE_KEYS_ON_THE_HUD.has(item.key)) continue
-    if (item.key === 'medClose') continue
-    restMarket.push({ value: v3Text(item.value), label: v3Text(item.label) })
-  }
-  for (const figure of buildPublicMixFigures(publicMix)) {
-    if (String(figure.value).startsWith('at least')) continue
-    restMarket.push(figure)
-  }
-  const marketFigures = [...soldHistory, ...restMarket]
+  const marketFigures =
+    soldHistory.length > 0
+      ? soldHistory
+      : leftoverFigures.filter((figure) => !isFaceOrMosLabel(String(figure.label)))
   const [firstMarketFigure, ...restMarketFigures] = marketFigures
 
   const communityCacheSparse = isTrendSeriesTooSparse(priceHist)
@@ -508,11 +476,8 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         buildYearSeries(chartMonths.months, 5),
         placeMedianChartCaption(publicName),
       )
-
-  const coreChartsRaw = chartIsCityLevel ? null : commCoreCharts
-  const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : null
-  const trendsCard = coreChartsCard(coreCharts, publicName, undefined)
-  const marketCards: V3ChartCardProps[] = trendsCard ? [trendsCard] : []
+  const closedN = leftoverClosedCount(hud, chartIsCityLevel ? [] : chartMonths.months)
+  const costChart = chartIsCityLevel ? undefined : placeCostChart(closedN, medianChart)
 
   const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
   const listedCount = fieldTiles.length
@@ -726,21 +691,38 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           searchParams={sp}
         />
 
-        {firstMarketFigure ? (
+        {/* Subdivisions inside the community - every row is a door, mirroring
+            the neighborhood page's ledger so the two grains read the same. */}
+        {firstChildSub ? (
+          <V3Ledger
+            id="subdivisions"
+            eyebrow={v3Text(`${publicName} · Subdivisions`)}
+            heading={v3Text('Subdivisions')}
+            rows={[firstChildSub, ...restChildSub]}
+            // A comparison, so the counts draw as lengths too: TASTE bans a
+            // ledger past six rows that encodes nothing. The share comes off
+            // the same counts the figures print (placeFigureRows).
+            encode="bar"
+            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
+            action={{ label: v3Text(`All ${publicName} homes`), href: browseHref }}
+          />
+        ) : null}
+
+        {costChart && firstMarketFigure ? (
           <V3Instrument
             id="market"
             level={2}
-            eyebrow={v3Text(`${publicName} · Sold`)}
+            eyebrow={v3Text(`${publicName} · Typical price`)}
             headline={v3Text(marketHeadline)}
             figures={[firstMarketFigure, ...restMarketFigures]}
-            foldAfter={2}
+            chartFirst
+            foldAfter={0}
             source={v3Text(
               `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
                 `detached single-family houses assigned to ${publicName} by boundary membership. ` +
                 `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
             )}
-            chart={medianChart}
-            cards={marketCards}
+            chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}
             action={{
               label: v3Text(`Search ${publicName} homes`),
@@ -748,10 +730,12 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
               variant: 'primary',
             }}
           />
+        ) : firstMarketFigure && !costChart ? (
+          <V3Quiet id="market" heading={marketHeadline} items={tooFewSalesItems()} />
         ) : (
           <V3Quiet
             id="market"
-            heading={`The ${publicName} market`}
+            heading={marketHeadline}
             items={[
               {
                 kind: 'prose',
@@ -789,23 +773,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         ) : null}
 
         <V3PlaceCharacter placeName={publicName} character={placeCharacter} />
-
-        {/* Subdivisions inside the community - every row is a door, mirroring
-            the neighborhood page's ledger so the two grains read the same. */}
-        {firstChildSub ? (
-          <V3Ledger
-            id="subdivisions"
-            eyebrow={v3Text(`${publicName} · Subdivisions`)}
-            heading={v3Text('Subdivisions')}
-            rows={[firstChildSub, ...restChildSub]}
-            // A comparison, so the counts draw as lengths too: TASTE bans a
-            // ledger past six rows that encodes nothing. The share comes off
-            // the same counts the figures print (placeFigureRows).
-            encode="bar"
-            source={v3Text(`${PLACE_COUNT_TRACE}; other property types are that subdivision's own counted segments, the same rows its page prints`)}
-            action={{ label: v3Text(`All ${publicName} homes`), href: browseHref }}
-          />
-        ) : null}
 
         <CommunityAlertSheet
           communityName={publicName}

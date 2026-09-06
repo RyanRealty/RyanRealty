@@ -1,30 +1,14 @@
-// @data-free. Leftover written-CMA intake. No live figures. Capture is ValuationForm.
+// @data-free. Same capture as /sell, more room. Chrome fill XOR the form. No Stage ghost.
 /**
  * /sell/valuation - the written-CMA leftover, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Sell-family leftover.
- * Three of the six patterns, no two adjacent alike: Breadcrumb, Stage, Sheet
- * (ValuationForm), Quiet, Footer.
- *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
- * pageMetadata (title "Home Valuation in Central Oregon", keywords may keep
- * search-demand "what is my home worth Bend"), MetadataBlock breadcrumb
- * JSON-LD, V3SectionTracker pageType="sell-valuation", the route, and the
- * capture contract. ValuationForm still calls submitValuationRequest with the
- * same field names. This page is a second intake beside /sell#get-value. The
- * lease keeps it. It does not 301 it. E-CUT owns that cut.
- *
- * D11: visible CTA/headline is "Value my home" / "Get your home's value".
- * Title and H1 stay search-first. Breadcrumb is "Home valuation", not
- * "What's your home worth".
- *
- * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider,
- * primitives H2/H3/Eyebrow/Body/CTAButton, shadcn Card, the sticky mobile
- * bar. Method steps and the 3% close survive as Quiet prose and doors.
+ * Same SellValueForm as /sell (submitSellerLPForm). The form sits in a Sheet
+ * under a compact Stage, not on the photograph and not next to a Stage ghost.
+ * Chrome fills Value my home on /sell/* leaves. 375: Stage is H1 only so the
+ * header is not a second filled control stacked on a ghost.
  */
 
 import type { Metadata } from 'next'
-import ValuationForm from '@/app/home-valuation/ValuationForm'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { CONTACT } from '@/lib/brand/contact'
@@ -38,6 +22,8 @@ import {
   V3SectionTracker,
 } from '@/components/site/v3'
 import { SellCapture } from '../_v3/SellCapture'
+import { SellValueForm } from '../_v3/SellValueForm'
+import '../_v3/sell-stage.css'
 import {
   VALUATION_ROUTE,
   VALUATION_FORM_ANCHOR,
@@ -45,7 +31,6 @@ import {
   SELL_POSTER,
   VALUE_STEPS,
   VALUATION_FAQ_ITEMS,
-  FORM_ANCHOR,
   ROUTE_PATH,
 } from '../_v3/sell-constants'
 
@@ -68,7 +53,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function SellValuationPage() {
   return (
     <>
-      <main className={V3_ROOT_CLASS}>
+      <main className={`${V3_ROOT_CLASS} sell-valuation`}>
         <V3SectionTracker />
         <MetadataBlock
           schemas={[
@@ -113,19 +98,20 @@ export default function SellValuationPage() {
         <V3Stage
           headingLevel={1}
           height="compact"
+          className="sell-stage-valuation"
           eyebrow={VALUATION_STAGE_EYEBROW}
           headline="Home valuation in Central Oregon"
           posterSrc={SELL_POSTER}
-          action={{ label: 'Value my home', href: VALUATION_FORM_ANCHOR, variant: 'ghost' }}
         />
 
         <SellCapture
           id="valuation-form"
           headingId="valuation-form-heading"
           eyebrow="Free. No listing agreement."
-          heading="Get your home's value"
+          ariaLabel="Value my home"
+          placement="page"
         >
-          <ValuationForm />
+          <SellValueForm pagePath={VALUATION_ROUTE} formId="get-value" />
         </SellCapture>
 
         <V3Quiet
@@ -144,12 +130,12 @@ export default function SellValuationPage() {
               body: item.answer,
             })),
             {
-              kind: 'prose' as const,
+              kind: 'prose',
               term: 'If you decide to list',
               body: 'The listing fee is 3% of the sale price. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week.',
             },
             { label: 'See the listing plan', href: `${ROUTE_PATH}#listing-plan` },
-            { label: 'Value my home', href: `${ROUTE_PATH}${FORM_ANCHOR}` },
+            { label: 'Value my home', href: VALUATION_FORM_ANCHOR },
             { label: 'Talk to a broker', href: '/contact?inquiry=Selling' },
             { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
           ]}

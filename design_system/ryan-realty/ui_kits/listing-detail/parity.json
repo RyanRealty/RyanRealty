@@ -1,136 +1,113 @@
 {
   "route": "app/listing/[listingKey]/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Redfin listing detail section order, our data: mosaic, price, about, payment, around-this-home map, schools, parks, market, property details, sale and tax history, CC&Rs, opinion of value, rental, similar homes. Climate, Walk Score, and Redfin Estimate are omitted when we have no source. Nothing that we publish is parked only behind a door.",
-  "note": "Rolled onto the v3 barrel 2026-08-27 (P9, the B ratchet's last page). Chrome: V3_ROOT_CLASS + .listing-detail on one main, V3Breadcrumb, V3SectionTracker, ONE V3Footer outside main; app/layout.tsx owns the header (V3Chrome). The listing body (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, lifestyle, history, money, attribution) is the listing-detail register, restyled in place: the kb.css carriers it used (.mkt market surface, .houseme-rows re-ink, .lst-* featured rail, section rise, scroll-margin anchors, mobile/desktop density ramps) were ported into listing-detail.css under .listing-detail, values unchanged, on v3 tokens. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. V3Footer carries the ODS slot and no button. No kb-root, no page kb.css, no Lenis smooth scroll (anchors land via scroll-margin-top like every v3 page).",
+  "competitiveTarget": "Zillow Showcase. Photos plus 3D / floor plan / map tabs, one monthly payment with P&I tax HOA, nearby schools, tax history, lot size. We add place climb, assessor lot lines, published CC&Rs, a live broker, and one payment formula (computeMonthlyPiti).",
+  "note": "PAGE_INVENTORY listing (house URL) 12 sections. Tour / Call / Text is the ask. Face Est. $/mo is off the page so Payment is the one number. Cookies cannot cover the ask. No leftover HUD, CMA, rental, or doors on this route.",
   "dataChanges": {
-    "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. Live pricing read is stamp-only (getListingPricingRead). JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
-    "similarHomes": "A capped strip of V3ListingRow from the same relatedHomes ranking (primary, else similar+nearby). One view-more href. ListingFeaturedHomes GSAP poster grid is not composed on this route.",
-    "exploreSections": "LifestyleNearSection, PlaceParentsSection, BuilderExploreSection moved from components/site/explore/ into components/site/listing-detail/ unchanged (this page was their last importer; the explore register is now empty). Every fact they published - trail/golf names and distances, parent-place doors, builder homes with asks - survives byte-identical."
+    "unchanged": "Every listing figure traces to getListingDetail, photos, videos, history, open houses, brokers, reviews, related homes, plat documents, taxlots. JSON-LD RealEstateListing + BreadcrumbList still emit from MetadataBlock. Payment is computeMonthlyPiti only.",
+    "similarHomes": "A capped strip of V3ListingRow from the same relatedHomes ranking, same parent. One view-more href.",
+    "exploreSections": "Parks and trails nearby via LifestyleNearSection thumbs. Golf, events, and city guides are omitted on this house page."
   },
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + RealEstateListing JSON-LD. Emitted here, not in ListingDetailShell. Canonical URL is listingDetailPath. Description is listingShareSummary, never publicRemarks.",
+      "section": "BreadcrumbList + RealEstateListing JSON-LD.",
       "blocking": true
     },
     {
       "name": "V3SectionTracker",
-      "section": "Page-level analytics island from the v3 barrel. page_type derives from the path taxonomy; observes .v3 section[id].",
+      "section": "Page-level analytics island.",
       "blocking": true
     },
     {
       "name": "ListingTracker",
-      "section": "Per-listing view event. Lives in components/listing, outside the five registers ci:public-ui measures.",
+      "section": "Per-listing view event.",
       "blocking": true
     },
     {
       "name": "V3Breadcrumb",
-      "section": "City landing → neighborhood landing if any → planned community landing if any → subdivision landing if any → address (no href). Never Home, never Homes for sale, never Cities. Doors from listingPlaceTrail / place-href land on /cities, /communities, /subdivisions. belowNav default clears the fixed V3Chrome mast.",
+      "section": "City \u2192 neighborhood \u2192 community \u2192 plat \u2192 street.",
       "blocking": true
     },
     {
       "name": "ListingHero",
-      "section": "ld-photo-grid full-bleed hero (photo grid or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to photo grid otherwise.",
-      "blocking": true,
-      "notes": "Media mosaic. Media 1 is a reel or 3D tour via publishListingLeadMedia, else the first still of this house. Price and facts live under the media. Virtual tours still mount ListingVideoEmbed in the main column."
+      "section": "Media with price, beds, baths, sqft, street on it. Tabs if leftover: photos, 3D, floor plan, map. No empty navy panel.",
+      "blocking": true
     },
     {
       "name": "PriceCtaStrip",
-      "section": "H1 is the street. One exact-dollar ask. Facts, city + true place, status, days, and an honest price-change line from listing history. Save / Share / alerts stay. THE PAGE PRIMARY at 390: filled Schedule a tour.",
+      "section": "H1 is the street. One ask: Tour / Call / Text. Face Est. $/mo is off.",
       "blocking": true
     },
     {
       "name": "PropertySpecs",
-      "section": "Key facts grid.",
-      "blocking": true
-    },
-    {
-      "name": "DescriptionBlock",
-      "section": "About this home, visible in the stack after price (Redfin order). public_remarks displayed as authored. MLS remarks are never rewritten.",
+      "section": "Facts: type, lot, year, HOA if any, $/sqft. House-row language.",
       "blocking": true
     },
     {
       "name": "SchoolsBlock",
-      "section": "Assigned schools as a full section after the map, not only a door. MLS school names plus our /schools pages when registered.",
-      "blocking": true
-    },
-    {
-      "name": "ListingLikeThisAlerts",
-      "section": "B1 capture wrapper. Mounts ListingLikeThisSheet and ListingAlertCoach. Jump target #listing-like-alerts. Photo-led capture, folds start open.",
+      "section": "Schools nearby. Do not claim assigned.",
       "blocking": true
     },
     {
       "name": "ListingAroundHere",
-      "section": "Parks, trails, events, golf, and city guides near this house, with map or post thumbs. Matt 2026-09-04: these belong on the listing, not only on place pages.",
-      "blocking": true
-    },
-    {
-      "name": "V3Instrument",
-      "section": "How this home's price sits versus leftover median list at the finest leftover grain that publishes. Figures are leftover HUD plus this list price (label this price). Headline uses formatAskVsMedianDelta. Action is `{name} market` to /housing-market/{slug} for CORE_CITY_SLUGS; omit when the grain has no market report. Visitor copy never says ask.",
-      "blocking": true
-    },
-    {
-      "name": "V3Chart",
-      "section": "Under the instrument: bars of closed-sale counts by smart price bands for that leftover grain. Caption is a claim about where those sales closed. Omit when the grain has no closed rows.",
-      "blocking": true
-    },
-    {
-      "name": "V3Doors",
-      "section": "Long tail as 2-4 doors (place, schools, plat, parks, payment, rental, CMA, sits inside), one live fact each.",
+      "section": "Parks and trails nearby, same thumbs as the indexes.",
       "blocking": true
     },
     {
       "name": "V3ListingRow",
-      "section": "Similar homes as a capped strip of V3ListingRow, same relatedHomes ranking, one view-more href. Not the GSAP poster grid.",
+      "section": "Similar homes as a capped strip of V3ListingRow, same parent.",
+      "blocking": true
+    },
+    {
+      "name": "ListingSimilarStrip",
+      "section": "Similar in the same parent, same house row.",
       "blocking": true
     },
     {
       "name": "MortgageCalculator",
-      "section": "Estimated monthly payment.",
+      "section": "One payment: computeMonthlyPiti. Line items P&I, tax, HOA.",
       "blocking": true
     },
     {
-      "name": "PropertyHistory",
-      "section": "Property history from listing_history.",
+      "name": "ListingTaxHistory",
+      "section": "One assessed figure plus county assessor link. Omit when none leftover.",
+      "blocking": true
+    },
+    {
+      "name": "GoverningDocumentsBlock",
+      "section": "CC&Rs that bind this house: published plat docs. Omit when none leftover.",
       "blocking": true
     },
     {
       "name": "V3Atlas",
-      "section": "The living map around this home: the recorded neighborhood or curated community (NorthWest Crossing), else the city, as the frame; listings inside that frame as dots; plats inside it as doors; THIS home held. Headline is what else is selling in that place. Google location map is the fallback when no boundary resolves.",
+      "section": "This lot + climb. Assessor lot lines. Google map is the fallback.",
       "blocking": true
     },
     {
       "name": "ListingLocationMap",
-      "section": "Location map.",
+      "section": "Fallback location map when Atlas has no frame.",
       "blocking": true
     },
-
     {
       "name": "ListingDetailShell",
-      "section": "Layout only: full-bleed hero, main + sticky sidebar, BackToResults. Does not emit JSON-LD.",
+      "section": "Layout only: full-bleed hero, main + sticky sidebar.",
       "blocking": true
     },
     {
       "name": "TextMattCTA",
-      "section": "Sticky broker contact card. Rendered via ListingBrokerCTA.client. Page imports the name so the mockup-parity gate sees it.",
+      "section": "Who listed: live broker. Firm proof if the person has no record.",
       "blocking": true
     },
     {
       "name": "ListingMobileContactBar",
-      "section": "Mobile sticky broker bar. Imported here under its real name so the mockup-parity gate sees it.",
+      "section": "Mobile sticky Tour / Call / Text. Hidden while the cookie bar is up.",
       "blocking": true
     },
     {
       "name": "PhotoGalleryLightbox",
-      "section": "Fullscreen lightbox consumed by ListingHero (D75). Lives in the listing register (components/site/listing-detail/PhotoGalleryLightbox.tsx); the page imports the name so the mockup-parity gate sees it.",
+      "section": "Fullscreen lightbox consumed by ListingHero.",
       "blocking": true
-    },
-    {
-      "name": "PublishedCmaSection",
-      "path": "components/site/listing-detail/PublishedCmaSection.tsx",
-      "blocking": true,
-      "why": "Our published opinion of value. Folded behind a door. Renders only for a document with published_to_listing true that also passed its audit."
     },
     {
       "name": "V3Footer",
@@ -250,29 +227,22 @@
     "anchor": "#listing-like-alerts"
   },
   "sectionOrder": [
-    "ListingHero",
-    "V3Atlas #location with lot figure",
-    "PriceCtaStrip",
-    "DescriptionBlock (about this home)",
+    "V3Breadcrumb",
+    "ListingHero (price, beds, baths, sqft, street on the media)",
+    "PriceCtaStrip Tour / Call / Text",
+    "PropertySpecs facts",
     "MortgageCalculator #payment",
-    "SchoolsBlock #schools",
-    "ListingAroundHere",
-    "ListingAskInstrument (this price versus leftover median)",
-    "V3Chart #price-bands (closed-sale counts at the leftover grain)",
-    "PropertySpecs #specs",
-    "PropertyHistory #history",
+    "V3Atlas #location with lot figure",
+    "SchoolsBlock #schools nearby",
+    "ListingAroundHere parks / trails",
+    "ListingTaxHistory #tax",
     "GoverningDocumentsBlock #plat",
-    "PublishedCmaSection #cma",
-    "RentalAnalysis #rental",
-    "ListingSimilarStrip (similar homes)",
-    "BuilderExploreSection #builder",
-    "ListingLikeThisAlerts",
-    "ListingMoreDoors",
+    "ListingSimilarStrip",
+    "ListingBrokerCTA #listed",
     "ListingAttribution",
     "MetadataBlock",
     "ListingTracker",
     "V3SectionTracker",
-    "V3Breadcrumb",
     "V3Footer (outside main)"
   ],
   "openDefects": {

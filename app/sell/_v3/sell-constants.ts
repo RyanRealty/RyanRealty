@@ -6,12 +6,17 @@ import type { V3SheetStep } from '@/components/site/v3'
 
 export const ROUTE_PATH = '/sell'
 export const VALUATION_ROUTE = '/sell/valuation'
+export const FSBO_ROUTE = '/sell/for-sale-by-owner'
+export const EXPIRED_ROUTE = '/sell/expired-listings'
+export const INHERITED_ROUTE = '/sell/inherited-home'
 export const FORM_ANCHOR = '#get-value'
 export const VALUATION_FORM_ANCHOR = '#valuation-form'
 export const SELL_POSTER = '/images/homepage/tetherow-golf-aerial.jpg'
 /** Stage context line. One phrase, not a sentence. */
 export const SELL_STAGE_EYEBROW = '3% listing plan'
 export const VALUATION_STAGE_EYEBROW = 'Written CMA in 24 hours'
+export const FSBO_HEADLINE = 'Selling for sale by owner in Central Oregon'
+export const EXPIRED_HEADLINE = 'Expired listings in Central Oregon'
 
 export const FAQ_ITEMS = [
   {
@@ -135,6 +140,42 @@ export const VALUE_STEPS = [
     body: 'Square footage, beds and baths, lot size, condition, and upgrades adjust the range for your property.',
   },
 ] as const
+
+export const FSBO_FAQ_ITEMS = [
+  {
+    question: 'Can I still try FSBO first?',
+    answer:
+      'Yes. The comparative market analysis is free and requires no listing agreement. You decide after you see the comps.',
+  },
+  {
+    question: 'Do you provide pricing without a listing agreement?',
+    answer:
+      'Yes. Three closed comps, three active comps, and the list-price range those six support. No contract to get that number.',
+  },
+] as const
+
+export const FSBO_SITUATION = {
+  term: 'Selling on your own',
+  body: 'Price, buyer screening, and repair fights are where FSBO sales usually break. The CMA is free and needs no listing agreement.',
+} as const
+
+export const EXPIRED_FAQ_ITEMS = [
+  {
+    question: 'How quickly can we relist?',
+    answer:
+      'From a signed agreement to live on MLS is typically 5 to 7 business days. Professional photos within 48 hours.',
+  },
+  {
+    question: 'Can we relist without major renovations?',
+    answer:
+      'Usually yes. Price, photos, and exposure stall most expired listings, not the house.',
+  },
+] as const
+
+export const EXPIRED_SITUATION = {
+  term: 'If the last listing expired',
+  body: 'Price, photos, and exposure stall most expired listings. A written CMA is the first step before a relaunch.',
+} as const
 
 export const VALUATION_FAQ_ITEMS = [
   {

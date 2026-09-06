@@ -31,7 +31,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, once, level 2, BELOW the fold. Leftover monthly close only when cityFallback is false. District chart cards. Face cells (count + median) may repeat as figures so the chart has a home. MOS does not print here.",
+      "section": "Pattern 1, once, level 2, AFTER plat bars. One typical-price slope for THIS neighborhood when leftover monthly is not a city fallback and n >= 6. chartFirst + foldAfter={0}. Too-few closes render Quiet. MOS does not print here.",
       "blocking": true
     },
     {
@@ -176,10 +176,10 @@
     "V3Atlas #atlas -- the living map scoped to the neighborhood (renders only with a recorded boundary and at least one listing inside it)",
     "PlaceTypeSlider",
     "#homes",
+    "#subdivisions",
     "#market",
     "#daily-life",
     "#about",
-    "#subdivisions",
     "V3PlaceDocuments",
     "V3PlaceCharacter",
     "#activity",

@@ -122,6 +122,7 @@ export default async function TrailsIndexPage() {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon trails')}
             note={v3Text(caption)}
+            layout="places"
             rows={[firstRow, ...restRows]}
           />
         ) : (

@@ -84,8 +84,11 @@ describe('public pace surfaces', () => {
     expect(searchLayer).toMatch(/getPublicDetachedPace/)
     expect(searchLayer).toMatch(/isPlainCityPage/)
     const citiesIndex = readFileSync(resolve('app/cities/page.tsx'), 'utf8')
-    expect(citiesIndex).toMatch(/getPublicDetachedPace/)
-    expect(citiesIndex).toMatch(/Under contract now/)
+    // Wave H: the cities index is an A–Z directory. Pace KPIs belong on
+    // city member pages and /housing-market, not a mini-Bend Instrument here.
+    expect(citiesIndex).not.toMatch(/<V3Instrument/)
+    expect(citiesIndex).toMatch(/leftoverHudKpis/)
+    expect(citiesIndex).not.toMatch(/Under contract now/)
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
     // The homepage still READS pace -- it feeds leftoverHudKpis for the Field
     // count -- but it no longer prints pace items. /housing-market owns the run.
@@ -98,9 +101,9 @@ describe('public pace surfaces', () => {
       'utf8',
     )
     expect(community).toMatch(/getPublicDetachedPace/)
-    // v3 community page (2026-08-26): the pace items print as Instrument
-    // figures through publicPaceItems.
-    expect(community).toMatch(/publicPaceItems/)
+    // Community grain: pace feeds leftover HUD / sold history. The items
+    // themselves print on city and hub, not as a second community figure run.
+    expect(community).not.toMatch(/publicPaceItems/)
     expect(neighborhood).toMatch(/getPublicDetachedPace/)
     // Neighborhood face is count + median list. Pace still feeds FAQ JSON-LD
     // via leftoverHudKpis; publicPaceItems do not print on this grain.

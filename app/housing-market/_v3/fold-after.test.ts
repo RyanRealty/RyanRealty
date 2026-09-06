@@ -9,18 +9,23 @@ const region = readFileSync(resolve('app/housing-market/central-oregon/page.tsx'
 const geoMeta = readFileSync(resolve('app/housing-market/[...slug]/page.tsx'), 'utf8')
 
 describe('market instruments fold the leftover KPI wall', () => {
-  it('passes foldAfter={2} on the hub, city, community, and region opening instruments', () => {
-    expect(hub).toMatch(/foldAfter=\{2\}/)
-    expect(city).toMatch(/foldAfter=\{2\}/)
-    expect(community).toMatch(/foldAfter=\{2\}/)
-    expect(region).toMatch(/foldAfter=\{2\}/)
+  it('opens on the chart, with leftover tiles folded, on hub city community and region', () => {
+    expect(hub).toMatch(/chartFirst/)
+    expect(hub).toMatch(/foldAfter=\{0\}/)
+    expect(city).toMatch(/chartFirst/)
+    expect(city).toMatch(/foldAfter=\{0\}/)
+    expect(community).toMatch(/chartFirst/)
+    expect(community).toMatch(/foldAfter=\{0\}/)
+    expect(region).toMatch(/chartFirst/)
+    expect(region).toMatch(/foldAfter=\{0\}/)
   })
 
-  it('draws MOS two-bar on the hub opening instrument, not two leftover tiles', () => {
+  it('draws MOS on the hub opening instrument, not two leftover tiles above the chart', () => {
     expect(hub).toMatch(/buildMosSupplyChart/)
     expect(hub).toMatch(/chart=\{mosChart \?\? regionChart\}/)
     expect(hub).toMatch(/label: v3Text\('a month of sales'\)/)
-    expect(hub).toMatch(/foldAfter=\{2\}/)
+    expect(hub).toMatch(/chartFirst/)
+    expect(hub).toMatch(/foldAfter=\{0\}/)
   })
 
   it('does not retarget {city} homes for sale in market metadata keywords', () => {

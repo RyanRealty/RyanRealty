@@ -141,5 +141,10 @@ describe('subdivision page first screen', () => {
   it('Stage is a place-owned still, not a listing photo of one house', () => {
     expect(code).toMatch(/placeLibraryHero\('subdivision'/)
     expect(code).not.toMatch(/splitListings\.find\(\(row\) => row\.PhotoURL\)\?\.PhotoURL/)
+    expect(code).not.toMatch(/cityLibraryHero/)
+    expect(code).not.toMatch(/getCityHeroUrlsBySlug/)
+    expect(code).toMatch(/chartFirst/)
+    expect(code).toMatch(/foldAfter=\{0\}/)
+    expect(code).toMatch(/tooFewSalesItems/)
   })
 })

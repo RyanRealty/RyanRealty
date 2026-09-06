@@ -193,10 +193,28 @@ export function publishPlaceListThumb(input: {
   return { kind, svg: wrap(parts.join('')) }
 }
 
+/**
+ * Data-URI SVGs are a separate document. CSS variables from the page do not
+ * resolve, so `fill="var(--v3-cream)"` paints black. Bake the brand hexes
+ * (same values as tokens.css --v3-navy / --v3-cream) before encoding.
+ * Inline PlaceListThumb on listing detail still uses the var() SVG.
+ */
+const THUMB_NAVY = '#102742'
+const THUMB_CREAM = '#faf8f4'
+const THUMB_BOUNDARY_FILL = '#d4d6d8'
+
+export function bakePlaceListThumbSvgForImg(svg: string): string {
+  return svg
+    .replaceAll('color-mix(in srgb, var(--v3-navy) 16%, var(--v3-cream))', THUMB_BOUNDARY_FILL)
+    .replaceAll('var(--v3-navy)', THUMB_NAVY)
+    .replaceAll('var(--v3-cream)', THUMB_CREAM)
+}
+
 export function placeListThumbDataUri(input: {
   lat?: number | null
   lng?: number | null
   geometry?: unknown
 }): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(publishPlaceListThumb(input).svg)}`
+  const svg = bakePlaceListThumbSvgForImg(publishPlaceListThumb(input).svg)
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }

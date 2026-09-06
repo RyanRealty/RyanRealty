@@ -4,6 +4,8 @@
  * geographic facts, not market claims.
  */
 
+import { formatCount } from '@/lib/format/count'
+
 export const FEATURED_CITY_SLUGS = [
   'bend',
   'redmond',
@@ -48,4 +50,14 @@ export const CITY_SENTENCE_FALLBACK: Record<string, string> = {
 export function firstSentence(text: string): string {
   const m = text.match(/^.*?[.?](?=\s|$)/)
   return (m ? m[0] : text).trim()
+}
+
+/** Share of the largest live count in the same directory, for V3Ledger encode="bar". */
+export function indexBarWeight(count: number | null | undefined, max: number): number | undefined {
+  if (count == null || !Number.isFinite(count) || !(max > 0)) return undefined
+  return count / max
+}
+
+export function liveForSaleLabel(count: number): string {
+  return count > 0 ? `${formatCount(count)} for sale` : 'None listed now'
 }

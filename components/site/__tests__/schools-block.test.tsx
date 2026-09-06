@@ -16,11 +16,10 @@ describe('SchoolsBlock leftover ratings', () => {
       }),
     )
     expect(html).toMatch(/William E Miller Elem/)
-    expect(html).toMatch(/8\/10/)
     expect(html).toMatch(/Pacific Crest Middle/)
-    expect(html).toMatch(/6\/10/)
     expect(html).toMatch(/Summit High/)
-    expect(html).toMatch(/10\/10/)
+    expect(html).toMatch(/nearby/)
+    expect(html).not.toMatch(/8\/10/)
     expect(html).not.toMatch(/Amity Creek/)
   })
 })

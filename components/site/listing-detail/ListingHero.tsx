@@ -28,12 +28,21 @@ import {
   publishListingMosaicTiles,
 } from '@/lib/listing/publish-listing-mosaic'
 import { isOffsiteTourHost } from '@/lib/listing/publish-listing-on-site-tour'
+import { formatPriceExact } from '@/lib/format/money'
+import { publishListingHeroKeyStats } from '@/lib/listing/publish-listing-hero-stats'
+import dynamic from 'next/dynamic'
+
+const ListingMediaMap = dynamic(() => import('./ListingLocationMap.client'), {
+  ssr: false,
+  loading: () => <div className="listing-mosaic__map-slot" aria-hidden />,
+})
 
 /**
- * Listing media mosaic. Media 1 is a VIDEO reel when one exists,
- * else the first still of THIS house. Side cells are stills of this house.
- * 3D, floor, and street view are captions. The map is the atlas below.
+ * Listing media mosaic. Price, beds, baths, sqft, and street sit on the
+ * media. Tabs (when leftover): photos, 3D, floor plan, map. No empty navy.
  */
+
+type MediaTab = 'photos' | 'tour' | 'floor' | 'map'
 
 type Props = {
   photos: ReadonlyArray<ListingPhoto>
@@ -44,6 +53,10 @@ type Props = {
   lng?: number | null
   openHouseLabel?: string | null
   className?: string
+  price?: number | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
 }
 
 function getAutoplayEmbedUrl(video: VideoEmbed): string {
@@ -79,7 +92,20 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
   }
 }
 
-export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat, lng, openHouseLabel, className }: Props) {
+export function ListingHero({
+  photos,
+  floorPlans = [],
+  videos,
+  addressLine,
+  lat,
+  lng,
+  openHouseLabel,
+  className,
+  price,
+  beds,
+  baths,
+  sqft,
+}: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [galleryPane, setGalleryPane] = useState<'photos' | 'floor'>('photos')
   const [embed, setEmbed] = useState<VideoEmbed | null>(null)
@@ -87,17 +113,26 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
   const [streetOpen, setStreetOpen] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [allowAutoplay, setAllowAutoplay] = useState(false)
+  const [mediaTab, setMediaTab] = useState<MediaTab>(() => {
+    if (photos.length > 0) return 'photos'
+    if (floorPlans.length > 0) return 'floor'
+    if (lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)) return 'map'
+    return 'photos'
+  })
   const videoRef = useRef<HTMLVideoElement>(null)
   const total = photos.length
   const reel = publishListingHeroVideo(videos)
   const virtualTour = publishListingVirtualTour(videos)
   const lead = publishListingLeadMedia(videos)
   const heroVideo = lead?.kind === 'video' ? lead.video : null
-  const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0
+  const hasMap =
+    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+  const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0 || hasMap
   const canUnmute = publishListingHeroUnmute(heroVideo)
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
-  const hasStreetView =
-    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+  const hasStreetView = hasMap
+  const onMediaFacts = publishListingHeroKeyStats({ beds, baths, sqft }).join(' · ')
+  const onSiteTour = virtualTour && !isOffsiteTourHost(virtualTour.url) ? virtualTour : null
   const mosaicPills = publishListingMosaicPills({
     photoCount: total,
     videos,
@@ -178,15 +213,17 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
 
   function openCaption(pill: ListingMosaicPill) {
     if (pill.action === 'gallery') {
-      openGallery(0)
+      setMediaTab('photos')
       return
     }
     if (pill.action === 'floor') {
+      setMediaTab('floor')
       openGallery(0, 'floor')
       return
     }
     if (pill.action === 'tour') {
-      openEmbed('tour')
+      setMediaTab('tour')
+      if (!onSiteTour) openEmbed('tour')
       return
     }
     if (pill.action === 'street') {
@@ -194,8 +231,28 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
     }
   }
 
+  const showMap = mediaTab === 'map' && hasMap
+  const showTour = mediaTab === 'tour' && onSiteTour
+
   return (
     <div id="listing-hero-visual" className={cn('listing-mosaic', className)}>
+      {showTour ? (
+        <div className="listing-mosaic__pane">
+          <iframe
+            src={onSiteTour.url}
+            title={`3D tour of ${addressLine ?? 'this home'}`}
+            allow="fullscreen; xr-spatial-tracking"
+            allowFullScreen
+          />
+        </div>
+      ) : null}
+      {showMap ? (
+        <div className="listing-mosaic__pane">
+          <ListingMediaMap lat={lat!} lng={lng!} zoom={16} />
+        </div>
+      ) : null}
+      {showMap || showTour ? null : (
+      <>
       <div className="listing-mosaic__carousel">
         {heroVideo ? (
           <div className="listing-mosaic__slide">
@@ -314,23 +371,50 @@ export function ListingHero({ photos, floorPlans = [], videos, addressLine, lat,
           })}
         </div>
       </div>
+      </>
+      )}
 
       {openHouseLabel ? (
         <div className="listing-mosaic__open-house">{openHouseLabel}</div>
       ) : null}
-      {mosaicPills.length > 0 ? (
-        <div className="listing-mosaic__captions">
+      {price != null || onMediaFacts || addressLine ? (
+        <div className="listing-mosaic__on-media">
+          {price != null ? (
+            <p className="listing-mosaic__on-ask">{formatPriceExact(price)}</p>
+          ) : null}
+          {onMediaFacts ? <p className="listing-mosaic__on-facts">{onMediaFacts}</p> : null}
+          {addressLine ? <p className="listing-mosaic__on-street">{addressLine}</p> : null}
+        </div>
+      ) : null}
+      {mosaicPills.length > 0 || hasMap ? (
+        <div className="listing-mosaic__captions" role="tablist" aria-label="Listing media">
           {mosaicPills.map((pill) => (
             <button
               key={pill.id}
               type="button"
-              className="listing-mosaic__caption"
+              className={cn(
+                'listing-mosaic__caption',
+                ((pill.action === 'gallery' && mediaTab === 'photos') ||
+                  (pill.action === 'floor' && mediaTab === 'floor') ||
+                  (pill.action === 'tour' && mediaTab === 'tour')) &&
+                  'is-on',
+              )}
               onClick={() => openCaption(pill)}
               aria-label={pill.label}
             >
               {pill.label}
             </button>
           ))}
+          {hasMap ? (
+            <button
+              type="button"
+              className={cn('listing-mosaic__caption', mediaTab === 'map' && 'is-on')}
+              onClick={() => setMediaTab('map')}
+              aria-label="Map"
+            >
+              Map
+            </button>
+          ) : null}
         </div>
       ) : null}
 

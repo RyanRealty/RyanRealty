@@ -83,7 +83,7 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
   it('search snapshot and listing KPI print leftover pending', () => {
     expect(files.snapshot).toMatch(/hud\.pending/)
     expect(files.snapshot).toMatch(/Under contract now/)
-    expect(files.listing).toMatch(/leftoverHudKpis/)
+    expect(files.listing).not.toMatch(/leftoverHudKpis/)
     expect(files.listingAsk).toMatch(/leftoverHudKpis/)
     expect(files.listing).not.toMatch(/leftover\.pendingCount/)
   })

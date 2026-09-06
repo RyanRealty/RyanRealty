@@ -51,7 +51,7 @@ export function TextMattCTA({
   className,
 }: Props) {
   const tourHref = primaryCta?.href ?? `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
-  const tourLabel = primaryCta?.label ?? 'Schedule a tour'
+  const tourLabel = primaryCta?.label ?? 'Tour'
   const phone = broker.phoneDirect ?? broker.phoneFub ?? null
 
   const quote = reviews?.reviews?.[0] ?? null

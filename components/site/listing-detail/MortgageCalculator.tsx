@@ -110,8 +110,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
     <section className={className}>
       <div className="sec-head">
         <div>
-          <div className="eyebrow sec-index">Estimate</div>
-          <h2 className="sec-title">Payment calculator</h2>
+          <h2 className="sec-title">Payment</h2>
         </div>
       </div>
 
