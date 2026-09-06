@@ -582,7 +582,7 @@ describe('design directive contracts', () => {
     expect(readSrc('app/admin/(protected)/reports/custom/CustomReportBuilder.tsx')).toMatch(/ReportTimeSeriesChart/)
     expect(readSrc('app/admin/(protected)/financials/page.tsx')).toMatch(/<AChart/)
     expect(readSrc('lib/cma/opinion-scenes.ts')).toMatch(/from '@\/lib\/cma\/comps-price-chart'/)
-    expect(readSrc('lib/cma/seasonality-chart.ts')).toMatch(/month-ledger/)
+    expect(readSrc('lib/cma/seasonality-chart.ts')).toMatch(/from '@\/lib\/charts\/plot'/)
     const rechartsHits = [...walkTs('app'), ...walkTs('components')].filter((file) =>
       /from ['"]recharts['"]/.test(readFileSync(file, 'utf8')),
     )

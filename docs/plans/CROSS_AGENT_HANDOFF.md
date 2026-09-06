@@ -1,9 +1,10 @@
-# Current — 2026-09-05 (CMA charts a seller can read)
+# Current — 2026-09-05 (dataviz skill)
 
-Listing-trend and Redmond seasonality are month ledgers (Listed/Ask, and
-Days), not dual-axis or lollipops-from-zero. Why $X and sold-vs-unsold
-are named lollipop rows. 2465 7th re-rendered. Rec $401k unchanged.
-Do not send letters.
+`.claude/skills/dataviz/` is the chart method TASTE.md named and that
+this session did not load. Form first, navy on cream, thin marks, Geist
+on figures, never dual axis, never a number on every stem. Seasonality
+on 2465 is now a line with Apr/May labeled. Rec $401k unchanged. Do not
+send.
 
 Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
 mix. Golf Track C stays on local `wt/golf-maps-20260903`.

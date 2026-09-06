@@ -210,9 +210,9 @@ table.month-ledger{width:100%;border-collapse:collapse;table-layout:fixed;margin
 table.month-ledger th{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.55;padding:0 6px 12px;text-align:center}
 table.month-ledger th.stub,table.month-ledger tbody th.stub{width:4.2rem;text-align:left;padding-left:0;letter-spacing:.12em}
 table.month-ledger td{text-align:center;padding:0 6px 8px;vertical-align:top}
-table.month-ledger .n{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(26px,3.2vw,40px);line-height:1}
-table.month-ledger .n.is-zero{opacity:.4;font-size:clamp(20px,2.4vw,28px)}
-table.month-ledger .n.is-fast{box-shadow:inset 0 -2px 0 currentColor}
+table.month-ledger .n{font-family:Geist,system-ui,sans-serif;font-size:clamp(16px,2vw,20px);line-height:1.15;font-variant-numeric:tabular-nums;font-weight:600}
+table.month-ledger .n.is-zero{opacity:.4;font-weight:400}
+table.month-ledger .n.is-fast{box-shadow:inset 0 -1.5px 0 currentColor}
 table.month-ledger .a{font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums}
 .photo-set{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
 .photo-tile{margin:0;overflow:hidden;background:var(--navy)}

@@ -249,10 +249,16 @@ export function renderPrintPairedSvg(input: {
   return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${parts.join('')}</svg>`
 }
 
-function renderLinePlot(plot: LinePlot, caption: string, colors: PrintChartColors, kicker?: string): string {
+function renderLinePlot(
+  plot: LinePlot,
+  caption: string,
+  colors: PrintChartColors,
+  kicker?: string,
+  highlightTicks?: readonly string[],
+): string {
   const gutterL = 56
   const gutterB = 16
-  const gutterT = kicker ? 14 : 0
+  const gutterT = kicker ? 14 : 8
   const vbW = plot.vbW + gutterL
   const vbH = plot.vbH + gutterB + gutterT
   const aria = esc(caption)
@@ -273,19 +279,30 @@ function renderLinePlot(plot: LinePlot, caption: string, colors: PrintChartColor
     plot.vbH + 12 + gutterT,
     colors,
   )
+  const hi = new Set(highlightTicks ?? [])
   const dots = plot.lines
-    .map((line, i) => {
-      const fill = i === 0 ? colors.ink : colors.muted
-      return line.points
+    .map((line) =>
+      line.points
         .filter((p) => p.plot)
-        .map((p) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2.8" fill="${fill}"/>`)
-        .join('')
-    })
+        .map((p) => {
+          const on = hi.size === 0 || hi.has(p.tick)
+          const cx = p.x.toFixed(2)
+          const cy = p.y.toFixed(2)
+          if (on && hi.size > 0) {
+            return `<circle cx="${cx}" cy="${cy}" r="3.2" fill="${colors.ink}"/><text x="${cx}" y="${(p.y - 8).toFixed(2)}" text-anchor="middle" font-size="9" fill="${colors.ink}" ${TEXT}>${esc(p.label)}</text>`
+          }
+          if (hi.size > 0) {
+            return `<circle cx="${cx}" cy="${cy}" r="2.4" fill="none" stroke="${colors.ink}" stroke-width="1.1" ${HAIR}/>`
+          }
+          return `<circle cx="${cx}" cy="${cy}" r="2.8" fill="${colors.ink}"/>`
+        })
+        .join(''),
+    )
     .join('')
   const yMaxY = plot.scale.t + 3 + gutterT
   const yMinY = baseY + gutterT
   const yLabels = yRail(gutterL, yMaxY, yMinY, plot.yMaxLabel, plot.yMinLabel, colors)
-  return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${kick}<g transform="translate(${gutterL},${gutterT})">${baseline}${paths}${dots}</g>${yLabels}${labels}</svg><p class="small">${aria}.</p>`
+  return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${kick}<g transform="translate(${gutterL},${gutterT})">${baseline}${paths}${dots}</g>${yLabels}${labels}</svg>`
 }
 
 function renderBarPlot(plot: BarPlot, caption: string, colors: PrintChartColors, kicker?: string): string {
@@ -510,11 +527,11 @@ export function renderPrintOutcomeStripSvg(input: {
 
 export function renderPrintChartSvg(
   plot: AnyPlot,
-  opts: { caption: string; colors: PrintChartColors; kicker?: string },
+  opts: { caption: string; colors: PrintChartColors; kicker?: string; highlightTicks?: readonly string[] },
 ): string {
-  const { caption, colors, kicker } = opts
+  const { caption, colors, kicker, highlightTicks } = opts
 
-  if (plot.kind === 'line') return renderLinePlot(plot, caption, colors, kicker)
+  if (plot.kind === 'line') return renderLinePlot(plot, caption, colors, kicker, highlightTicks)
 
   if (plot.kind === 'mix') {
     const segs = plot.segments

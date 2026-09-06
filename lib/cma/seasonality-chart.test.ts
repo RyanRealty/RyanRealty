@@ -18,7 +18,7 @@ const MONTHS = [
 ]
 
 describe('seasonalityChartSvg', () => {
-  it('keeps full 3-letter month ticks, including Aug', () => {
+  it('draws a line, labels the short months, and does not stamp a number on every stem', () => {
     const x: CmaSeasonality = {
       byMonth: MONTHS.map((monthName, i) => ({
         month: i + 1,
@@ -33,18 +33,18 @@ describe('seasonalityChartSvg', () => {
       source: "Supabase listings, City='Redmond', PropertyType='A'",
     }
     const svg = seasonalityChartSvg(x)
-    expect(svg).toContain('month-ledger')
-    expect(svg).toContain('Aug')
-    expect(svg).toContain('Apr')
-    expect(svg).toContain('Days')
-    expect(svg).toContain('is-fast')
-    expect(svg).toContain('>10<')
-    expect(svg).toContain('>21<')
+    expect(svg).toContain('<path')
+    expect(svg).toContain('>Aug</text>')
+    expect(svg).toContain('>Apr</text>')
+    expect(svg).toContain('>13<')
     expect(svg).not.toMatch(/>ug</)
     expect(svg).not.toContain('Supabase')
     expect(svg).not.toContain('PropertyType=')
-    expect(svg).not.toContain('<circle')
+    expect(svg).not.toContain('month-ledger')
     expect(svg).not.toContain('DAYS TO PENDING')
-    expect(svg).not.toContain('<path')
+    expect(svg).not.toContain('rx="2"')
+    // April is 13 (10+3). January 10 and December 21 sit on the axis, not as stem labels.
+    const labeled = [...svg.matchAll(/font-size="9"[^>]*>\d+</g)].length
+    expect(labeled).toBeLessThan(4)
   })
 })

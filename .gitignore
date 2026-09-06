@@ -95,6 +95,9 @@ next-env.d.ts
 # ...and page-grade — KILLED 2026-08-16 refuse stub. CLAUDE.md cites it; an
 # untracked skill fails ci:claude-canon in the isolated verify tree.
 !.claude/skills/page-grade/
+# ...and dataviz — TASTE.md names this method. An untracked skill is how CMA
+# charts get invented from memory (2026-09-05).
+!.claude/skills/dataviz/
 .claude/worktrees
 .worktrees
 .claude/cache

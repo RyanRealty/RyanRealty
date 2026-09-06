@@ -272,9 +272,9 @@ export function cmaSectionStyles(): string {
     color: var(--muted);
   }
   table.month-ledger td { text-align: center; padding: 0 4px 6px; vertical-align: top; }
-  table.month-ledger .n { font-family: var(--display); font-size: 22px; line-height: 1; color: var(--navy); }
-  table.month-ledger .n.is-zero { color: var(--muted); font-size: 16px; }
-  table.month-ledger .n.is-fast { box-shadow: inset 0 -2px 0 var(--navy); }
+  table.month-ledger .n { font-family: Geist, system-ui, sans-serif; font-size: 14px; line-height: 1.2; color: var(--navy); font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.month-ledger .n.is-zero { color: var(--muted); font-weight: 400; }
+  table.month-ledger .n.is-fast { box-shadow: inset 0 -1.5px 0 var(--navy); }
   table.month-ledger .a { font-size: 10px; color: var(--navy); margin-top: 6px; font-variant-numeric: tabular-nums; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .photo-tile { margin: 0; overflow: hidden; }

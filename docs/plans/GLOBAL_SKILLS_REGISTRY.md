@@ -40,6 +40,7 @@ Then merge new paths into this file under the right heading.
 - `/Users/matthewryan/RyanRealty/.claude/skills/page-grade/SKILL.md` *(KILLED 2026-08-16 — refuse stub. Do not grade.)*
 - `/Users/matthewryan/RyanRealty/.cursor/skills/page-grade/SKILL.md` *(KILLED 2026-08-16 — refuse stub. Do not grade.)*
 - `/Users/matthewryan/RyanRealty/.cursor/skills/facebook-seller-growth/SKILL.md` *(live weekly seller-growth routine. CRM is `crm_people` via `sendEvent`. Review at `/admin/crm`. Do not load the REFUSE clones in A1/A2.)*
+- `/Users/matthewryan/RyanRealty/.claude/skills/dataviz/SKILL.md` *(any chart, graph, plot, CMA print SVG, stat tile — form first, navy-on-cream, thin marks. Load before drawing.)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/frontend-design/SKILL.md` *(building/reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/hallmark/SKILL.md` *(anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/domain-context/SKILL.md` *(author/maintain repo-root CONTEXT.md ubiquitous-language doc — canonical terms + avoid-lists + flagged ambiguities; adapted from Matt Pocock's course-video-manager 2026-07-11)*
