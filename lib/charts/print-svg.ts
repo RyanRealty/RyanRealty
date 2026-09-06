@@ -480,15 +480,13 @@ export function renderPrintOutcomeStripSvg(input: {
   if (sold.length < 3 || unsold.length < 1 || !Number.isFinite(input.list) || input.list <= 0) {
     return ''
   }
-  const soldMin = sold[0]!
-  const keptUnsold = unsold.filter((u) => u >= soldMin * 0.97)
-  const plotUnsold = keptUnsold.length > 0 ? keptUnsold : unsold
+  const plotUnsold = unsold
   const lastAsk =
     input.lastAsk != null && Number.isFinite(input.lastAsk) && input.lastAsk > 0 ? input.lastAsk : null
 
   const rows: { tick: string; value: number; label: string; filled: boolean }[] = [
     ...sold.map((v) => ({
-      tick: 'Sold',
+      tick: moneyK(v),
       value: v,
       label: moneyK(v),
       filled: false,

@@ -181,7 +181,7 @@ describe('assembleOpinionPages format', () => {
           priceHi: 494000,
           selected: {
             key: 'selected',
-            label: 'These sales',
+            label: 'Used in the list',
             count: 3,
             low: 390000,
             median: 410000,
@@ -222,5 +222,47 @@ describe('assembleOpinionPages format', () => {
     expect(body).toContain("Didn't sell")
     expect(body).toContain('$460K')
     expect(body).toContain('Closed = sale price')
+  })
+
+  it('omits a citywide 90-day median that does not describe this house', () => {
+    const pages = assembleOpinionPages({
+      ...args(),
+      extras: {
+        ...args().extras!,
+        sold90: {
+          count: 76,
+          low: 390000,
+          median: 477450,
+          high: 1350000,
+          bedsLabel: '3 bedroom / 2 bath',
+          source: 'test',
+        },
+      },
+    })
+    expect(pages.map((p) => p.toc).join(' ')).not.toMatch(/What 3 bedroom/)
+  })
+
+  it('does not print a citywide dollar-volume leftover page', () => {
+    const pages = assembleOpinionPages({
+      ...args(),
+      market: {
+        geoLabel: 'Redmond',
+        monthsOfSupply: 4,
+        saleToListRatio: 0.978,
+        medianDom: 21,
+        medianSalePrice: 532311,
+        yearMart: {
+          source: 'mart',
+          geoType: 'city',
+          geoLabel: 'Redmond',
+          geoSlug: 'redmond',
+          year: 2025,
+          soldCount: 1029,
+          totalVolume: 589287488,
+          computedAt: '2026-09-06',
+        },
+      } as never,
+    })
+    expect(pages.map((p) => p.toc).join(' ')).not.toMatch(/closed sales, 2025/i)
   })
 })

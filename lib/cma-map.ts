@@ -101,6 +101,35 @@ const STYLE_PARAMS: string[] = [
   'feature:administrative.land_parcel|visibility:off',
 ]
 
+/** Degrees. About 40 meters at Central Oregon latitude. */
+const STACK_DEG = 0.00036
+
+/**
+ * Google mid markers on the same rooftop cover each other. Nudge later pins
+ * so sale 4 next door to the subject still has a visible number.
+ */
+export function spreadStackedMapPoints(points: CmaMapPoint[]): CmaMapPoint[] {
+  const out = points.map((p) => ({ ...p }))
+  const min2 = STACK_DEG * STACK_DEG
+  for (let i = 1; i < out.length; i++) {
+    const a = out[i]!
+    for (let j = 0; j < i; j++) {
+      const b = out[j]!
+      const dlat = a.lat - b.lat
+      const dlng = a.lng - b.lng
+      if (dlat * dlat + dlng * dlng >= min2) continue
+      const angle = i * 2.1
+      out[i] = {
+        ...a,
+        lat: b.lat + STACK_DEG * Math.cos(angle),
+        lng: b.lng + STACK_DEG * Math.sin(angle),
+      }
+      break
+    }
+  }
+  return out
+}
+
 export function buildGoogleStaticMapUrl(
   points: CmaMapPoint[],
   apiKey: string,

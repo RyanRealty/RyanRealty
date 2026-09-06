@@ -243,7 +243,10 @@ export function cmaSectionStyles(): string {
      no error and no visible truncation. In print the box stays visible, so any
      future overflow is loud instead of silent. */
   .comp-matrix-wrap { overflow-x: visible; margin: 8px 0 14px; }
-  @media screen { .comp-matrix-wrap { overflow-x: auto; } }
+  @media screen {
+    .comp-matrix-wrap { overflow-x: auto; }
+    table.comp-matrix { min-width: 44rem; }
+  }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
   table.comp-matrix thead th.v { vertical-align: bottom; text-align: center; }

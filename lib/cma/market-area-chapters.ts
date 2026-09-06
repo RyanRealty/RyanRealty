@@ -42,7 +42,6 @@ function statusBoards(area: CmaMarketArea): string {
   const others = [area.active, area.pending, area.expired, area.closed].filter(
     (b): b is CmaStatusBucket => Boolean(b && b.count > 0),
   )
-  const heroMeta = tileMeta(selected)
   const tiles = others
     .map(
       (b) => `<div class="status-tile">
@@ -55,7 +54,6 @@ function statusBoards(area: CmaMarketArea): string {
   return `<div class="status-hero">
       <div class="status-hero-n">${int(selected.count)}</div>
       <div class="status-hero-l">${esc(selected.label)}</div>
-      ${heroMeta ? `<div class="status-hero-m">${esc(heroMeta)}</div>` : ''}
     </div>
     ${tiles ? `<div class="status-tiles">${tiles}</div>` : ''}`
 }

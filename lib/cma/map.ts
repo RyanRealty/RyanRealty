@@ -9,7 +9,7 @@
  */
 
 import { getBoundaryGeoJSON } from '@/lib/data'
-import { buildGoogleStaticMapUrl, type CmaMapPoint } from '@/lib/cma-map'
+import { buildGoogleStaticMapUrl, spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry } from '@/lib/cma/map-overlay'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { us97IntersectsDisk } from '@/lib/pricing/highway-cross'
@@ -82,7 +82,12 @@ export async function buildCmaMapDataUri(
     if (circle) paths.push(circle)
   }
   try {
-    const url = buildGoogleStaticMapUrl(points, apiKey, paths, points.length === 1 ? { zoom: 15 } : undefined)
+    const url = buildGoogleStaticMapUrl(
+      spreadStackedMapPoints(points),
+      apiKey,
+      paths,
+      points.length === 1 ? { zoom: 15 } : undefined,
+    )
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())

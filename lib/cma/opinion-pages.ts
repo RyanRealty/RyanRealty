@@ -292,6 +292,11 @@ export function statusGridPage(a: OpinionPageArgs): CmaPageDef | null {
 export function sold90Page(a: OpinionPageArgs): CmaPageDef | null {
   const band = sold90Band(a)
   if (!band || band.count < 3) return null
+  const rec = a.pricing.recommended
+  if (rec > 0 && band.median != null && band.median > 0) {
+    const ratio = band.median / rec
+    if (ratio > 1.2 || ratio < 1 / 1.2) return null
+  }
   const html = renderSold90Html({ sold90: band } as CmaMarketArea)
   if (!html) return null
   return {
@@ -369,7 +374,7 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: 'Seller net at list',
     body: `
   <h2 class="section">Seller net at list</h2>
-  <p>Typical seller concessions in this set are ${usd(concession)}. Net at list is list minus that number, before commission and closing costs.</p>
+  <p>Net at list is list minus ${usd(concession)}, before commission and closing costs. That concession is the median of the sales that set this list, including sales that reported none.</p>
   <div class="stat-strip is-3">
     ${low != null ? `<div class="stat"><div class="lbl">Net at list low</div><div class="val">${usd(low)}</div></div>` : ''}
     ${rec != null ? `<div class="stat"><div class="lbl">Net at recommended list</div><div class="val">${usd(rec)}</div></div>` : ''}
@@ -380,7 +385,7 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
     <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(a.pricing.recommended)}</div></div>
     <div class="stat"><div class="lbl">List high</div><div class="val">${usd(a.pricing.highEnd)}</div></div>
   </div>
-  ${n.knownCount > 0 ? `<p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>` : ''}`,
+  ${n.knownCount > 0 ? `<p class="small">${n.givenCount} of ${n.knownCount} sales that set this list reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>` : ''}`,
   }
 }
 
@@ -455,18 +460,8 @@ export function seasonalityPage(a: OpinionPageArgs): CmaPageDef | null {
  * same CmaMarketContext, and a second verdict computed a second way is exactly
  * the divergence CLAUDE.md §0 forbids in a client valuation document.
  */
-export function marketVolumePage(a: OpinionPageArgs): CmaPageDef | null {
-  const y = a.market?.yearMart
-  if (!y || y.source !== 'mart' || y.soldCount <= 0 || y.totalVolume <= 0) return null
-  const geo = y.geoType === 'city' ? y.geoLabel : 'Central Oregon'
-  return {
-    meta: `${esc(a.subject.streetAddress)} · ${esc(geo)} closed sales, ${esc(String(y.year))}`,
-    toc: `${geo} closed sales, ${y.year}`,
-    body: `
-  <h2 class="section">${esc(geo)} closed sales, ${esc(String(y.year))}</h2>
-  <p>${esc(geo)} closed ${esc(usd(Math.round(y.totalVolume)))} across ${esc(int(y.soldCount))} sales, all property types.</p>
-  <p class="small">Closed sales in ${esc(geo)} for ${esc(String(y.year))}, all property types, pulled ${esc(dateLong(y.computedAt))}.</p>`,
-  }
+export function marketVolumePage(_a: OpinionPageArgs): CmaPageDef | null {
+  return null
 }
 
 export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {

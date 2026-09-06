@@ -3,8 +3,6 @@
  * matcher rules and the sales brought to this house.
  */
 
-import { PRICING_TARGET_COMPS, PRICING_MAX_COMPS } from '@/lib/pricing/ladder'
-import { TARGET_COMPS, MAX_COMPS } from '@/lib/cma/comps'
 import { dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
@@ -29,24 +27,14 @@ function sellerNetBlock(p: CmaPricing): string {
   if (!n || n.knownCount === 0) return ''
   return `
   <h3 class="subhead">Close price and seller net</h3>
-  <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
+  <p class="small">${n.givenCount} of ${n.knownCount} sales that set this list reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
 
 function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null): string {
   const bits = [
     ...(searchBody ? [searchBody] : []),
     `${n} closed ${n === 1 ? 'sale' : 'sales'}.`,
-    'Closed MLS sales only. Automated estimates are not used.',
-    // Derived from the ladders' own constants, not prose: the facts ladder
-    // targets 8, the listings fallback targets 5, and hardcoding "eight" put a
-    // claim on three documents their own build record contradicted (adversarial
-    // verify 2026-08-27). The floor-of-both phrasing is true on every path.
-    `At least ${Math.min(PRICING_TARGET_COMPS, TARGET_COMPS)} closed sales when the pool allows. Cap is ${Math.max(PRICING_MAX_COMPS, MAX_COMPS)}.`,
-    'A subdivision more than 15 percent off the subject dollar per foot is dropped. Across the city that cut is 30 percent.',
   ]
-  if (market?.geoLabel) {
-    bits.push(`The market read is ${market.geoLabel}.`)
-  }
   const stl = saleToListPct(market?.saleToListRatio ?? null)
   if (stl && market) {
     bits.push(`Recent ${market.geoLabel} sales have been closing at ${stl} percent of list.`)

@@ -202,9 +202,9 @@ function selectedBucket(comps: CmaAdjustedComp[]): CmaStatusBucket {
   const ppsfs = comps.filter((c) => c.closePrice > 0 && c.sqft > 0).map((c) => c.closePrice / c.sqft)
   const doms = comps.map((c) => c.domTotal).filter((n): n is number => n != null && n >= 0)
   return (
-    bucketFrom('selected', 'These sales', prices, ppsfs, doms) ?? {
+    bucketFrom('selected', 'Used in the list', prices, ppsfs, doms) ?? {
       key: 'selected',
-      label: 'These sales',
+      label: 'Used in the list',
       count: comps.length,
       low: null,
       median: null,

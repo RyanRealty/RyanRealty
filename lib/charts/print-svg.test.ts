@@ -106,7 +106,8 @@ describe('print outcome strip', () => {
       caption: 'Sold and unsold in this band',
       colors: PRINT_NAVY_CREAM,
     })
-    expect(svg).toContain('Sold')
+    expect(svg).not.toMatch(/>Sold</)
+    expect(svg).toContain('$380K')
     expect(svg).toContain('This list')
     expect(svg).toContain("Didn't sell")
     expect(svg).toContain('Last ask')

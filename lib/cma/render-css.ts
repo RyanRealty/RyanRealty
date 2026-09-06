@@ -91,9 +91,21 @@ export function cmaStylesheet(siteUrl: string): string {
     .page.page-cover { padding: 0; }
     .cover-stage { min-height: 100svh; }
     .cover-title { font-size: 36px; }
-    .cover-mast { top: 20px; left: 18px; right: 18px; }
+    .cover-mast { top: 0; left: 0; right: 0; padding: 20px 18px 48px; }
     .page-cover .value-block { padding: 20px 18px 24px; }
     .value-block .vb-price { font-size: 44px; }
+    .page-cover .cma-product-bar { display: none; }
+    .cover-specs {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cover-presented {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hero-caption { display: none; }
   }
 
   .pg-header {
@@ -173,17 +185,30 @@ export function cmaStylesheet(siteUrl: string): string {
     z-index: 1;
     background: linear-gradient(
       180deg,
-      rgba(16, 39, 66, 0.58) 0%,
-      rgba(16, 39, 66, 0.12) 38%,
-      rgba(16, 39, 66, 0.82) 100%
+      rgba(16, 39, 66, 0.98) 0%,
+      rgba(16, 39, 66, 0.9) 18%,
+      rgba(16, 39, 66, 0.55) 30%,
+      rgba(16, 39, 66, 0.1) 44%,
+      rgba(16, 39, 66, 0.88) 100%
     );
   }
   .cover-mast {
     position: absolute;
-    top: 32px;
-    left: 36px;
-    right: 36px;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 2;
+    padding: 32px 36px 112px;
+    background: linear-gradient(
+      180deg,
+      rgba(16, 39, 66, 0.98) 0%,
+      rgba(16, 39, 66, 0.92) 42%,
+      rgba(16, 39, 66, 0.62) 74%,
+      rgba(16, 39, 66, 0) 100%
+    );
+  }
+  @media screen and (max-width: 700px) {
+    .cover-mast { padding: 20px 18px 48px; }
   }
   .cover-label {
     font-size: 11px;
@@ -208,11 +233,13 @@ export function cmaStylesheet(siteUrl: string): string {
 
   .hero-photo {
     position: absolute;
-    inset: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
+    height: 158%;
+    top: -30%;
+    max-height: none;
     object-fit: cover;
-    object-position: center 40%;
+    object-position: center 28%;
     border-radius: 0;
     background: var(--navy);
     margin: 0;
@@ -232,7 +259,7 @@ export function cmaStylesheet(siteUrl: string): string {
     bottom: 0;
     z-index: 2;
     margin: 0;
-    background: transparent;
+    background: linear-gradient(180deg, rgba(16, 39, 66, 0) 0%, rgba(16, 39, 66, 0.88) 18%, rgba(16, 39, 66, 0.96) 42%);
     padding: 28px 36px 32px;
     border-radius: 0;
   }

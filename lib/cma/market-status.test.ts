@@ -179,7 +179,7 @@ describe('market status grain', () => {
     expect(area!.expired).toBeNull()
     const html = renderStatusGridHtml(area)
     expect(html).not.toMatch(/\bN\/A\b/)
-    expect(html).toContain('These sales')
+    expect(html).toContain('Used in the list')
     expect(html).not.toContain('Expired or withdrawn')
   })
 
@@ -296,6 +296,7 @@ describe('market charts', () => {
     )
     expect(svg).toContain('<path')
     expect(svg).toContain('M')
+    expect(svg).toContain('Median close')
     expect(svg).not.toContain('<rect')
   })
 

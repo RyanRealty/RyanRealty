@@ -198,6 +198,7 @@ describe('CMA letter register — no capsule chrome', () => {
     expect(page.body).not.toMatch(CAPSULE)
     expect(page.body).toContain('Adjusted close')
     expect(page.body).not.toMatch(/as your house/i)
+    expect(page.body).not.toMatch(/subdivision-\dmo|nearby-\dmi|city-\dmo|subdivision comp/i)
   })
 
   it('use-of-property marks answers in type, not chips', () => {

@@ -54,8 +54,8 @@ describe('pickBandRivals', () => {
       }),
     )
     const picked = pickBandRivals([...actives, ...pendings], { latitude: 44.27, longitude: -121.17 })
-    expect(picked.filter((r) => r.status === 'Active')).toHaveLength(24)
-    expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(10)
+    expect(picked.filter((r) => r.status === 'Active')).toHaveLength(4)
+    expect(picked.filter((r) => r.status === 'Pending')).toHaveLength(4)
     expect(picked[0]?.address).toBe('100 Active')
   })
 
@@ -70,7 +70,32 @@ describe('pickBandRivals', () => {
       }),
     )
     const picked = pickBandRivals(actives, { latitude: 44.27, longitude: -121.17 })
-    expect(picked).toHaveLength(80)
+    expect(picked).toHaveLength(4)
+  })
+
+  it('keeps similar beds and size ahead of a nearer mismatch', () => {
+    const picked = pickBandRivals(
+      [
+        rival({
+          listingKey: 'NEAR',
+          address: '1 Near',
+          beds: 2,
+          sqft: 880,
+          latitude: 44.2701,
+          longitude: -121.17,
+        }),
+        rival({
+          listingKey: 'FIT',
+          address: '9 Fit',
+          beds: 3,
+          sqft: 1440,
+          latitude: 44.275,
+          longitude: -121.17,
+        }),
+      ],
+      { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 1440 },
+    )
+    expect(picked.map((r) => r.address)).toEqual(['9 Fit'])
   })
 
   it('drops unnamed rows', () => {

@@ -41,7 +41,7 @@ export function compFlyerPage(
     meta: `Comparable Sale ${index + 1} of ${comps.length}${place ? ` · ${esc(place)}` : ''}`,
     toc: index === 0 ? 'Comparable sale detail, one page each' : undefined,
     body: `
-  <p class="flyer-kicker">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''}${comp.selectionTier ? ` · ${esc(comp.selectionTier)} comp` : ''}</p>
+  <p class="flyer-kicker">Closed ${monthYear(comp.closeDate)}${comp.daysToOffer != null ? ` · ${int(comp.daysToOffer)}d to offer` : ''}</p>
   <h1 class="flyer-title">${esc(comp.address)}</h1>
   <div class="flyer-sub">${esc(comp.city)}, Oregon${cleanText(comp.subdivision) ? ` · ${esc(cleanText(comp.subdivision)!)}` : ''}${comp.mlsNumber ? ` · MLS ${esc(comp.mlsNumber)}` : ''}${comp.proximity ? ` · ${esc(comp.proximity)} from the subject` : ''}</div>
   ${hero ? `<img class="flyer-hero" src="${esc(hero)}" alt="${esc(comp.address)}" />` : '<div class="flyer-hero is-empty">Photo not retained on the closed listing</div>'}

@@ -151,6 +151,29 @@ describe('print CMA magazine cover', () => {
     expect(css).toMatch(/\.cover-stage\s*\{[^}]*min-height:\s*9/)
     expect(css).not.toMatch(/\.page-cover\s+\.hero-photo\s*\{[^}]*height:\s*280px/)
   })
+
+  it('crops the cover photo down so MLS location arrows at the top of the frame sit off the page', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.hero-photo\s*\{[^}]*height:\s*1[3-9]\d%/)
+    expect(css).toMatch(/\.hero-photo\s*\{[^}]*top:\s*-/)
+    expect(css).not.toMatch(/\.hero-photo\s*\{[^}]*inset:\s*0/)
+  })
+
+  it('hides the cover product bar on a phone so the specs line stays in view', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(
+      /@media screen and \(max-width: 700px\)[\s\S]*\.page-cover \.cma-product-bar\s*\{[^}]*display:\s*none/,
+    )
+    expect(css).toMatch(
+      /@media screen and \(max-width: 700px\)[\s\S]*\.cover-specs\s*\{[^}]*white-space:\s*nowrap/,
+    )
+  })
+
+  it('puts an opaque navy field behind the cover title so MLS location type in the photo cannot sit on the address', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    expect(css).toMatch(/\.cover-mast\s*\{[^}]*background:\s*linear-gradient/)
+    expect(css).toMatch(/\.cover-mast\s*\{[^}]*top:\s*0/)
+  })
 })
 
 describe('immersive CMA first screen', () => {

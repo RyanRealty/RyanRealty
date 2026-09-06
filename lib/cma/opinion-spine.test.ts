@@ -106,7 +106,7 @@ const marketArea: CmaMarketArea = {
   priceHi: 600000,
   selected: {
     key: 'selected',
-    label: 'These sales',
+    label: 'Used in the list',
     count: 1,
     low: 485000,
     median: 485000,
@@ -347,7 +347,7 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('Current listing')
     expect(html).not.toContain('https://cdn.example/now.jpg')
     expect(html).toContain('Status in this market')
-    expect(html).toContain('These sales')
+    expect(html).toContain('Used in the list')
     expect(html).toContain('For sale now')
     expect(html).toContain('What 3 bedroom / 2 bath homes sold for')
     expect(html).toContain('How fast this market is moving')
@@ -357,6 +357,8 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('Seller net at list')
     expect(html).toContain('Net at recommended list')
     expect(html).toContain('$467,000')
+    expect(html).not.toMatch(/typical concessions/)
+    expect(html).toContain('sales that set this list')
     expect(html).not.toMatch(BANNED)
     const houseAt = html.indexOf('<h2 class="section">Home location</h2>')
     const legalAt = html.indexOf('151000000')

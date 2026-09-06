@@ -50,9 +50,9 @@ export function medianCloseLineSvg(points: TrendPoint[]): string {
   if (priced.length < 6) return ''
   const W = 720
   const H = 220
-  const left = 8
+  const left = 56
   const right = W - 24
-  const top = 18
+  const top = 28
   const bottom = 168
   const vals = priced.map((p) => p.medianSalePrice!)
   const y = scaleY(vals, top, bottom)
@@ -69,12 +69,15 @@ export function medianCloseLineSvg(points: TrendPoint[]): string {
   const min = Math.min(...vals)
   const max = Math.max(...vals)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg">
+    <text x="${left}" y="14" font-size="11" fill="#102742" opacity="0.7">Median close</text>
+    <text x="${left}" y="${(y(max) + 4).toFixed(1)}" font-size="11" fill="#102742" opacity="0.7">${chartUsd(max)}</text>
+    <text x="${left}" y="${(y(min) + 4).toFixed(1)}" font-size="11" fill="#102742" opacity="0.7">${chartUsd(min)}</text>
     <path d="${area}" fill="#102742" fill-opacity="0.08"/>
     <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
     ${dots}
   </svg>
-  <p class="small">Range $${Math.round(min).toLocaleString('en-US')} to $${Math.round(max).toLocaleString('en-US')}.</p>`
+  <p class="small">Median close by month. Range ${chartUsd(min)} to ${chartUsd(max)}.</p>`
 }
 
 function ledgerTable(chunk: readonly ListingTrendPoint[]): string {

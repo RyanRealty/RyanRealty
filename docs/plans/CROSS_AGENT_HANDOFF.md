@@ -1,10 +1,9 @@
-# Current — 2026-09-06 (CMA home, price, competition)
+# Current — 2026-09-06 (CMA letter+375 look-pass)
 
-Seller CMA spine: Home location (subject pin only), How we got the price
-(one matrix with thumbs, then close-to-list math), then who they compete
-with. Photos, Why $X, marker key, and "as your house" are gone. US-97
-frontage sales do not price an inland subject. 2465 rebuilt: rec $389k.
-Do not send.
+2465 letter+375 look-pass after cover crop, 4+4 similar competition, 375
+matrix scroll, unique sold ticks, both unsolds. Rec $389k. Title on the
+cover is clean. A faint MLS location arrow can still ghost in the sky.
+Do not mix public-page WIP. Skills read: tdd, dataviz.
 
 ---
 

@@ -7,7 +7,7 @@ import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 
 const esc = escapeHtml
 
-export const BAND_RIVAL_CAP = 80
+export const BAND_RIVAL_CAP = 4
 
 export type CmaBandRival = {
   listingKey: string
@@ -61,18 +61,37 @@ function dist2(
   return dLat * dLat + dLng * dLng
 }
 
+function rivalFitsSubject(
+  r: CmaBandRival,
+  subject?: { beds?: number | null; sqft?: number | null } | null,
+): boolean {
+  if (!subject) return true
+  if (subject.beds != null && r.beds != null && r.beds !== subject.beds) return false
+  if (subject.sqft != null && subject.sqft > 0 && r.sqft != null && r.sqft > 0) {
+    if (Math.abs(r.sqft - subject.sqft) / subject.sqft > 0.25) return false
+  }
+  return true
+}
+
 export function pickBandRivals(
   rivals: readonly CmaBandRival[],
-  subject?: { latitude: number | null; longitude: number | null } | null,
+  subject?: {
+    latitude: number | null
+    longitude: number | null
+    beds?: number | null
+    sqft?: number | null
+  } | null,
   cap = BAND_RIVAL_CAP,
 ): CmaBandRival[] {
   const named = rivals.filter((r) => r.address.trim() && r.listPrice > 0)
+  const similar = named.filter((r) => rivalFitsSubject(r, subject))
+  const pool = similar.length > 0 ? similar : named
   const slat = subject?.latitude
   const slng = subject?.longitude
   const ranked =
     slat != null && slng != null && Number.isFinite(slat) && Number.isFinite(slng)
-      ? [...named].sort((a, b) => dist2(a, slat, slng) - dist2(b, slat, slng))
-      : [...named]
+      ? [...pool].sort((a, b) => dist2(a, slat, slng) - dist2(b, slat, slng))
+      : [...pool]
   const actives = ranked.filter((r) => r.status === 'Active').slice(0, cap)
   const pendings = ranked.filter((r) => r.status === 'Pending').slice(0, cap)
   return [...actives, ...pendings]

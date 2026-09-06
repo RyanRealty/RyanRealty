@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildGoogleStaticMapUrl } from './cma-map'
+import { buildGoogleStaticMapUrl, spreadStackedMapPoints } from './cma-map'
 
 // buildGoogleStaticMapUrl renders the comp map embedded in every CMA deliverable.
 // Lock the param contract so a Google Static Maps API change is caught. Audit p3.2.
@@ -31,5 +31,20 @@ describe('buildGoogleStaticMapUrl', () => {
     const qs = new URLSearchParams(buildGoogleStaticMapUrl([], 'K').split('?')[1])
     expect(qs.getAll('markers')).toHaveLength(0)
     expect(qs.get('key')).toBe('K')
+  })
+})
+
+describe('spreadStackedMapPoints', () => {
+  it('nudges a comp that sits on the subject pin, and leaves the subject still', () => {
+    const subject = { label: 'S', color: 'red', lat: 44.298938, lng: -121.162046 }
+    const stacked = { label: '4', color: '0x102742', lat: 44.299258, lng: -121.162046 }
+    const far = { label: '1', color: '0x102742', lat: 44.298387, lng: -121.161005 }
+    const out = spreadStackedMapPoints([subject, stacked, far])
+    expect(out[0]).toEqual(subject)
+    expect(out[2]).toEqual(far)
+    expect(out[1]!.lat).not.toBe(stacked.lat)
+    const dlat = out[1]!.lat - subject.lat
+    const dlng = out[1]!.lng - subject.lng
+    expect(Math.hypot(dlat, dlng)).toBeGreaterThan(0.0002)
   })
 })
