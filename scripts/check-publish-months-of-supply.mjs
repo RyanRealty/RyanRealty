@@ -87,7 +87,10 @@ const leftoverHudSurfaces = [
     path: 'app/housing-market/reports/page.tsx',
     label: 'housing-market reports hub gates MOS through leftoverHudKpis',
   },
-
+  {
+    path: 'app/listing/[listingKey]/page.tsx',
+    label: 'listing page gates MOS through leftoverHudKpis',
+  },
   {
     path: 'app/search/og/[...slug]/route.tsx',
     label: 'search OG gates MOS through leftoverHudKpis',
@@ -167,14 +170,6 @@ for (const surface of leftoverHudSurfaces) {
     ok:
       /from ['"]@\/lib\/market\/publish-leftover-hud['"]/.test(text) &&
       /leftoverHudKpis\(/.test(text),
-  })
-}
-
-{
-  const listing = src('app/listing/[listingKey]/page.tsx')
-  checks.push({
-    label: 'listing page gates MOS through leftoverHudKpis',
-    ok: !/leftoverHudKpis\(/.test(listing) && !/buildListingAskClaim/.test(listing),
   })
 }
 
