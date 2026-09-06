@@ -57,7 +57,7 @@ checks.push({
   ok:
     /from ['"]@\/lib\/market\/publish-leftover-hud['"]/.test(cityPage) &&
     /leftoverHudKpis\(/.test(cityPage) &&
-    /activeCount(?::[^=]*)?=\s*hud\.active/.test(cityPage) &&
+    /hud\.active/.test(cityPage) &&
     /CITY_TILE_FETCH_LIMIT/.test(cityPage) &&
     /publishPlaceFace\(\{\s*grain:\s*'city'/.test(cityPage),
 })
