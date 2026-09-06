@@ -1,0 +1,132 @@
+/* Homepage stacked house carousels. Tokens only. */
+
+.v3.home-rail,
+.home-rails {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-xl) 0 var(--v3-space-md);
+}
+
+* + .v3.home-rail,
+* + .home-rails {
+  border-top: var(--v3-rule-section);
+}
+
+.home-rail--empty {
+  padding: var(--v3-space-xl) var(--v3-gutter);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.home-rail__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  padding: 0 var(--v3-gutter) var(--v3-space-sm);
+}
+
+.home-rail__title {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+}
+
+.home-rail__track {
+  display: flex;
+  gap: var(--v3-space-md);
+  padding: 0 var(--v3-gutter) var(--v3-space-sm);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.home-rail__item {
+  flex: 0 0 min(17.5rem, 78vw);
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+/* Vertical Zillow-style card face on the rail (photo over copy). */
+.v3.v3-lrow.v3-lrow--card,
+.v3 .v3-lrow.v3-lrow--card {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  min-height: 0;
+  height: 100%;
+  background: var(--v3-surface);
+  border: var(--v3-rule-hairline);
+}
+
+.home-rail__media {
+  position: relative;
+  width: 100%;
+}
+
+.v3-lrow--card .v3-lrow__media,
+.home-rail__card .v3-lrow__media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  min-height: var(--v3-carousel-h);
+}
+
+.home-rail__copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm);
+  text-decoration: none;
+  color: inherit;
+}
+
+.home-rail__copy .v3-lrow__price {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-medium);
+}
+
+.home-rail__save {
+  position: absolute;
+  top: var(--v3-space-2xs);
+  right: var(--v3-space-2xs);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v3-cream) 88%, transparent);
+  color: var(--v3-navy);
+  cursor: pointer;
+}
+
+.home-rail__save:hover,
+.home-rail__save:focus-visible {
+  background: var(--v3-cream);
+}
+
+.home-rail__save--on {
+  color: var(--v3-navy);
+}
+
+.home-rail__save-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.home-rail__save:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

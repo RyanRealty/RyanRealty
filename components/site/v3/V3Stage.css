@@ -56,7 +56,8 @@
   position: relative;
   display: grid;
   align-items: end;
-  min-height: max(62vh, 26rem);
+  /* Full-bleed door: keep the Stage tall enough that the poster is not a trimmed strip. */
+  min-height: max(72vh, 28rem);
   overflow: hidden;
   isolation: isolate;
   background: var(--v3-surface-inverse);
@@ -112,6 +113,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Prefer the skyline / mill band; avoid letterboxed top/bottom crop on wide frames. */
+  object-position: center 40%;
 }
 
 .v3 .v3-stage-video {

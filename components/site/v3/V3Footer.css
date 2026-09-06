@@ -142,8 +142,8 @@
 }
 
 /* Sitemap -------------------------------------------------------------------
-   One column while it is folded. From 56.25rem, three across: Markets, Sell,
-   About. Markets carries town clusters under one heading (H13). `minmax(0, 1fr)`
+   One column while it is folded. From 56.25rem, three across: Markets, Company,
+   Contact. Markets carries town clusters under one heading (H13). `minmax(0, 1fr)`
    rather than `1fr` so a long label wraps instead of forcing the grid wider
    than the page. */
 .v3-footer__columns {
@@ -166,7 +166,7 @@
   }
 }
 
-/* The fold. A phone gets Markets / Sell / About; a pointer gets the whole sitemap.
+/* The fold. A phone gets Markets / Company / Contact; a pointer gets the whole sitemap.
    See the comment in V3Footer.tsx for why this is a native details and not a
    client component. */
 .v3-footer__fold {

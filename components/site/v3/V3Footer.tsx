@@ -7,8 +7,8 @@
  * DESTINATIONS COME FROM lib/site-nav.ts. Not one href is typed in this file.
  * The column set is a REQUIRED prop, and the value every public page passes is
  * V3_FOOTER_COLUMNS below, which is KB_FOOTER_COLUMNS itself rather than a copy
- * of it: city columns (Bend, Redmond, Sisters, Sunriver, then the smaller
- * cities), then Sell, then About. The legal row defaults to LEGAL_LINKS, so a
+ * of it: Markets town clusters (Bend, Redmond, Sisters, Sunriver, then the smaller
+ * cities), then Company, then Contact. The legal row defaults to LEGAL_LINKS, so a
  * caller cannot drop the privacy, terms, accessibility, fair-housing, DMCA, or
  * site-index links by forgetting a prop. A surface that legitimately needs a
  * different set (a tokenized service node, an off-graph annex) passes one and
@@ -79,8 +79,7 @@ export type V3FooterColumn = {
 /**
  * The canonical sitemap columns: lib/site-nav.ts for every destination and
  * heading. Header chrome still remaps Buy/Areas to Homes/Places; the footer
- * does not — PAGE_OUTLINE.md Footer is city-named SEO anchors, not the top-bar
- * intent labels.
+ * keeps Markets town clusters plus denser Company / Contact groups.
  */
 export const V3_FOOTER_COLUMNS: readonly V3FooterColumn[] = KB_FOOTER_COLUMNS.map(
   (column) => ({

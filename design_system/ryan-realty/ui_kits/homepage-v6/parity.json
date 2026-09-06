@@ -1,8 +1,8 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "redfin-shaped-home-2026-09-06",
-  "note": "Homepage on the components/site/v3 barrel. Redfin-shaped lock (Matt 2026-09-06): Search hero, Recommended homes, Buy/Sell/Invest doors, Talk to a broker, Browse places chips, V3Proof, Footer. No Atlas, no HomeExploreMap, no town ledger, no market essay on home. index.html is the retired KB mockup, kept as history, not the visual target.",
+  "status": "zillow-shaped-home-2026-09-06",
+  "note": "Homepage on the components/site/v3 barrel. Expanded Home lock (Matt 2026-09-06 after Zillow+Redfin compare): full-bleed Search hero, stacked Zillow-style house carousels, illustrated Buy/Sell/Invest doors, Talk to a broker, Browse places chips, V3Proof, denser V3Footer (Markets/Company/Contact). No Atlas, no HomeExploreMap, no town ledger, no market essay on home. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
@@ -18,7 +18,7 @@
     },
     {
       "name": "KbFeatured",
-      "where": "HomeHomesField: photographed homes, barrel Field language, See all to Field."
+      "where": "HomeHomesRails: stacked photographed house carousels (SplitCardMedia cards), See all to Field."
     },
     {
       "name": "KbListingMap",
@@ -30,7 +30,7 @@
     },
     {
       "name": "KbSell",
-      "where": "Sell door is Value my home to /sell. Form lives on /sell and chrome Sell leaves."
+      "where": "Sell door is Value my home to /sell (illustrated). Form lives on /sell and chrome Sell leaves."
     },
     {
       "name": "KbCommunityAlerts",
@@ -50,7 +50,7 @@
     },
     {
       "name": "KbFooter",
-      "where": "V3Footer outside <main>"
+      "where": "V3Footer outside <main> \u2014 denser Markets / Company / Contact"
     },
     {
       "name": "SmoothScrollProvider",
@@ -80,7 +80,7 @@
     },
     {
       "name": "V3Stage",
-      "section": "#hero -- owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch is the only Stage action",
+      "section": "#hero -- full-bleed owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch is the only Stage action",
       "blocking": true
     },
     {
@@ -89,13 +89,13 @@
       "blocking": true
     },
     {
-      "name": "HomeHomesField",
-      "section": "Recommended photographed homes (listFlow + See all to Field). One house row.",
+      "name": "HomeHomesRails",
+      "section": "Stacked Zillow-style house carousels (local Bend-area actives + honest price-cut / new rows when data exists). SplitCardMedia cards with badges/save.",
       "blocking": true
     },
     {
       "name": "V3Doors",
-      "section": "#doors -- Buy / Sell / Invest. Sell label is Value my home.",
+      "section": "#doors -- illustrated Buy / Sell / Invest. Sell label is Value my home.",
       "blocking": true
     },
     {
@@ -115,13 +115,13 @@
     },
     {
       "name": "V3Footer",
-      "section": "footer outside main",
+      "section": "footer outside main -- denser Markets / Company / Contact",
       "blocking": true
     }
   ],
   "purpose": {
-    "_": "Locked Redfin-shaped homepage 2026-09-06. Search first. Then houses. Then sell/agent. Short. No Atlas, map block, town ledger, or market essay on home.",
-    "job": "Turn someone who typed a money query into a search they can act on. Search is the Stage action. Recommended homes and Buy/Sell/Invest doors follow.",
+    "_": "Locked expanded Home 2026-09-06 (Zillow-shaped after Redfin cut). Full-bleed search. Stacked house carousels. Illustrated doors. No Atlas, map block, town ledger, or market essay on home.",
+    "job": "Turn someone who typed a money query into a search they can act on. Search is the Stage action. Photographed house rails and Buy/Sell/Invest doors follow.",
     "primaryAction": "Search city, community, or address. See all homes opens the Field.",
     "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell).",
     "questionsItMustAnswer": [
@@ -141,7 +141,7 @@
       "whatItOwesSEO": "One H1 Ryan Realty, Bend. Town and resort names as real doors. JSON-LD that matches the visible figures."
     },
     "dataAvailable": [
-      "live active listings with photo, price, address, beds/baths/sqft",
+      "live active listings with photo, price, address, beds/baths/sqft, badges we already encode",
       "city and resort doors",
       "Google reviews, the three brokers, the approved Bend flyover clip"
     ],
@@ -150,33 +150,35 @@
       "Hosting a Google Map block. /homes-for-sale owns the map.",
       "Hosting a town KPI ledger. /cities owns town figures.",
       "Hosting a market essay. /housing-market owns the market answer.",
-      "Hosting a second contact form. Value my home lives on /sell."
+      "Hosting a second contact form. Value my home lives on /sell.",
+      "Inventing personalization labels (Homes for You as a fake preference feed)."
     ]
   },
   "openDefects": {
-    "_": "Redfin-shaped home lock 2026-09-06.",
+    "_": "Expanded Home lock 2026-09-06 (Zillow-shaped after thin Redfin cut).",
     "items": [
-      "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel Field again.",
-      "RESOLVED: overlapping rail. V3Field listFlow keeps the list in document flow; See all is the Field action.",
-      "RESOLVED 2026-09-06: Atlas, HomeExploreMap, town ledger, and market Instrument removed from home per Matt Redfin lock."
+      "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel SplitCardMedia cards on rails.",
+      "RESOLVED: overlapping rail. Stacked carousels replace the lonely Field grid.",
+      "RESOLVED 2026-09-06: Atlas, HomeExploreMap, town ledger, and market Instrument removed from home per Matt lock.",
+      "WAITING: Looking tasteReview after this stack ships (do not invent scores)."
     ]
   },
-  "competitiveTarget": "Beat Redfin and Zillow on a clean local brokerage door: brand H1, working search, photographed homes, Buy/Sell/Invest, brokers, place chips, proof.",
+  "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place chips, proof.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- owned flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch",
-    "HomeHomesField -- recommended photographed homes (listFlow + See all)",
-    "V3Doors #doors -- Buy / Sell / Invest, Sell = Value my home",
+    "V3Stage #hero -- full-bleed owned flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch",
+    "HomeHomesRails -- stacked house carousels (local actives + honest price-cut / new rows when data exists)",
+    "V3Doors #doors -- illustrated Buy / Sell / Invest, Sell = Value my home",
     "AboutFaces -- Talk to a broker",
     "V3Quiet #places -- Browse places city/resort chips as doors",
     "V3Proof #proof -- Google reviews",
-    "V3Footer"
+    "V3Footer -- Markets / Company / Contact"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
+    "evaluatedAt": null,
     "score": null,
-    "beats": "Redfin-shaped door: search first, then houses, then sell/agent. No Atlas or market essay competing with the buy job.",
-    "evaluator": "pending eyes-on after reshape",
+    "beats": "Waiting eyes-on after expanded Home ships. Looking tasteReview waits until this stack lands.",
+    "evaluator": "pending Looking after ship",
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png"

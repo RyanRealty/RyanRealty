@@ -7,8 +7,10 @@
  * 2026-09-01), replacing the 2026-08-16 ArrivalIntent bar that was killed for
  * how it looked, not for what it did. The difference is register: no buttons,
  * no cards, no fills. Hairline dividers, Amboqia for the intent line, one
- * muted fact under it, and a chevron that concedes it is a door. The whole
- * band weighs less than a Stage and routes harder than a nav.
+ * muted fact under it, and a chevron that concedes it is a door. Optional
+ * illustration art sits above the kicker when the caller has an owned still
+ * (Home lock 2026-09-06 expanded). The whole band weighs less than a Stage
+ * and routes harder than a nav.
  *
  * Barrel law honored here:
  *  - Server component, real anchors, works before hydration.
@@ -33,6 +35,10 @@ export type V3Door = {
   /** One live fact under the promise. Omit rather than estimate (section 0). */
   fact?: V3Text
   href: string
+  /** Optional owned still. When set, art sits above the kicker. */
+  imageSrc?: string
+  /** Accessible name for the still. Defaults to empty decorative. */
+  imageAlt?: string
 }
 
 export type V3DoorsProps = {
@@ -66,6 +72,12 @@ export function V3Doors({ id, name, doors, className }: V3DoorsProps) {
         {doors.slice(0, 4).map((door) => (
           <li key={door.href} className="v3-doors__item">
             <Link href={door.href} className="v3-doors__door">
+              {door.imageSrc ? (
+                <span className="v3-doors__art" aria-hidden={door.imageAlt ? undefined : true}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={door.imageSrc} alt={door.imageAlt ?? ''} width={640} height={400} decoding="async" />
+                </span>
+              ) : null}
               <span className="v3-doors__kicker">{door.kicker}</span>
               <span className="v3-doors__label">{door.label}</span>
               <span className="v3-doors__foot">

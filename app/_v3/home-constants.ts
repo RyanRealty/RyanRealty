@@ -12,13 +12,11 @@
 export const HERO_VIDEO = '/videos/hero-optimized.mp4'
 export const HERO_POSTER = '/images/hero/hero-old-mill-master-4k.jpg'
 
-/** Preview Field: map + list in one frame. Cap is high enough to read as
- *  inventory, not a four-card platter. See all opens the rest. Do not dump
- *  a novel of cards above the map — the map stays first. */
+/** Legacy Field preview caps (HomeHomesField). Home `/` now uses stacked
+ *  carousels via homeRailRows; these remain for any leftover Field consumers. */
 export const HOME_FIELD_LIMIT = 12
 
-/** Mixed-type pool the type toggle filters. Larger than the visible cap so
- *  a House / Land pick still has rows, without dumping 13 cards on 390. */
+/** Legacy mixed-type Field pool size. Prefer homeRailRows on Home `/`. */
 export const HOME_FIELD_POOL = 24
 
 /** Tile fetch ceiling. The DAL's own note: 5000 covers the full active

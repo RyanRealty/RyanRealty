@@ -61,7 +61,7 @@ Content is the point. **URLs** are what we cut.
 
 | Family | URLs | Why |
 |---|---|---|
-| Home | `/` | Door. Search first. Then houses. Then sell/agent. No Atlas on home. |
+| Home | `/` | Door. Full-bleed search hero, Zillow-style house carousels, illustrated Buy/Sell/Invest, brokers, places, proof. No Atlas on home. |
 | Search | `/homes-for-sale` and filtered paths | The buy job. One Field. |
 | Listing | house URL | This house. |
 | Place indexes | `/cities`, `/neighborhoods`, `/communities`, `/subdivisions` | Directories. Not a fourth Bend. |
@@ -157,16 +157,16 @@ A number belongs to a section or it does not print. Beat the competitor **and** 
 
 ### Home `/`
 
-**Beat:** Redfin-shaped door. Search first. Then houses. Then sell/agent. Short.
-**Lock 2026-09-06:** No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
+**Beat:** Zillow-style door after Redfin compare. Full-bleed search, stacked house carousels, illustrated doors, sell/agent.
+**Lock 2026-09-06 (expanded):** No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
-1. Search (hero → Homes). Brand H1 `Ryan Realty, Bend`  
-2. Recommended homes (photographed actives, see-all → Field)  
-3. Doors: Buy · Sell · Invest (Sell = `Value my home`, never “see what your home is worth”)  
+1. Full-bleed hero with search. Brand H1 `Ryan Realty, Bend`  
+2. Stacked house carousels (local Bend-area actives plus honest price-cut / new rows when data exists). Zillow card face via V3ListingRow / SplitCardMedia. No fake personalization.  
+3. Doors: Buy · Sell · Invest with illustrations (Sell = `Value my home`, never “see what your home is worth”)  
 4. Talk to a broker (three faces → `/team/[slug]`)  
 5. Browse places (city/resort chips as doors, not a KPI grid)  
 6. Proof (V3Proof Google reviews)  
-7. Footer  
+7. Footer (V3Footer denser Markets / Company / Contact)  
 
 ### Homes `/homes-for-sale`
 

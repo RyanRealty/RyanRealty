@@ -121,3 +121,20 @@
   transform: translateX(calc(var(--v3-travel) * 0.4));
   color: var(--v3-ink);
 }
+
+/* Optional owned still above the kicker (Home illustrated doors). */
+.v3-doors__art {
+  display: block;
+  overflow: hidden;
+  margin: 0 0 var(--v3-space-sm);
+  aspect-ratio: 8 / 5;
+  background: var(--v3-wash);
+}
+
+.v3-doors__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}

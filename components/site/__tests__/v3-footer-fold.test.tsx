@@ -112,8 +112,8 @@ describe('the footer fold', () => {
     const out = html()
     expect(V3_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
       'Markets',
-      'Sell',
-      'About',
+      'Company',
+      'Contact',
     ])
     expect(out).toContain('Homes for sale in Bend')
     expect(out).toContain('Bend housing market')

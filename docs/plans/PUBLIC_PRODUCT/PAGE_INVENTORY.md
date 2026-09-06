@@ -34,18 +34,18 @@ Saved = account icon. Value my home fills only on `/sell/*` leaves, not on `/sel
 
 ## 1. Home `/`
 
-**Job.** Door. Search first. Then houses. Then sell/agent. Short.
-**Lock 2026-09-06:** Redfin-shaped (Matt). No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
+**Job.** Door. Full-bleed search hero, then Zillow-style house carousels, then sell/agent. Not a thin Redfin table.
+**Lock 2026-09-06 (expanded):** After Zillow+Redfin compare (Matt). No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
 | # | Section | Notes |
 |---|---|---|
-| 1 | Search | Hero → Homes. Buy-first. 375 placeholder short. Brand H1 `Ryan Realty, Bend` (seo-shell); job line under OK. |
-| 2 | Recommended homes | Photographed actives, one house row. See-all → Field. |
-| 3 | Doors | Buy · Sell · Invest. Sell = `Value my home`. Never “see what your home is worth.” |
+| 1 | Hero | Full-bleed Stage (not trimmed/letterboxed). Search over it. Brand H1 `Ryan Realty, Bend` (seo-shell); job line under OK. |
+| 2 | House carousels | Stacked “Homes for You”-type rails (not one lonely Field grid). At least recommended / local Bend-area actives. Add 1–2 more honest rows when data exists (price cuts, new). No fake personalization labels. Cards: photo, overlay badges we already encode (price cut, 3D/video, new, open, pending), save/heart, price, beds \| baths \| sqft \| status, street, listing attribution only if Field already has it. Use V3ListingRow / SplitCardMedia. Do not invent badge kinds. |
+| 3 | Doors | Buy · Sell · Invest with **illustrations** (art on each door). Sell = `Value my home`. Never “see what your home is worth.” |
 | 4 | Talk to a broker | Three faces → `/team/[slug]`. |
 | 5 | Browse places | City/resort chips as doors — not KPI grid. |
 | 6 | Proof | V3Proof Google reviews. |
-| 7 | Footer | Existing footer. |
+| 7 | Footer | V3Footer denser Markets / Company / Contact (navy/cream). Not a sparse SEO dump. |
 
 ---
 

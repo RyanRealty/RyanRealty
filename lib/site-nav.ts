@@ -9,7 +9,7 @@
  * Projections from this file (do not re-author separate trees):
  *   KB_TOP_NAV     — desktop top bar + caret panels (KbNav)
  *   KB_MENU_GROUPS — Menu+ / mobile overlay
- *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Markets clusters, then Sell, then About)
+ *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Markets clusters, then Company, then Contact)
  *   PRIMARY_NAV    — alias of KB_TOP_NAV for reachability gate + legacy imports
  *
  * Gate: scripts/check-nav-reachability.mjs
@@ -359,8 +359,8 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 // ─── Footers (projections) ────────────────────────────────────────────────────
 
 /**
- * Public sitemap: Markets (town clusters), then Sell, then About.
- * PAGE_OUTLINE.md Footer. Header stays Buy / Areas / Market / Sell / About.
+ * Public sitemap: denser Markets / Company / Contact (Home lock 2026-09-06).
+ * Town clusters stay under Markets for SEO. Header stays Buy / Areas / Market / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
 
@@ -377,16 +377,22 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
     ...FOOTER_MORE_CITIES.map((label) => cityFooterCluster(label)),
   ]),
   {
-    heading: 'Sell',
-    links: [VALUATION_FORM, { href: '/our-homes', label: 'Our listings' }],
-  },
-  {
-    heading: 'About',
+    heading: 'Company',
     links: [
+      { href: '/about', label: 'About Ryan Realty' },
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
-      { href: '/contact', label: 'Contact' },
+      { href: '/our-homes', label: 'Our listings' },
+      { href: '/invest', label: 'Invest' },
+      { href: '/housing-market', label: 'Housing market' },
+    ],
+  },
+  {
+    heading: 'Contact',
+    links: [
+      { href: '/contact', label: 'Contact us' },
       { href: '/book', label: 'Book a broker' },
+      VALUATION_FORM,
     ],
   },
 ]
