@@ -452,16 +452,17 @@ describe('design directive contracts', () => {
     }
   })
 
-  // The community page also lost its activity feed and its blog rail to the same
-  // cap; both are back, on the same city-scoped honesty.
+  // Community activity is place-scoped (or omitted when thin).
   it('the community page carries the activity feed and amenity blogs only', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/id="activity"/)
     expect(src).toMatch(/buildActivityItems\(/)
+    expect(src).toMatch(/placeActivity/)
     expect(src).toMatch(/getBlogPostsBySlugs/)
     expect(src).not.toMatch(/getRecentBlogPosts/)
     expect(src).not.toMatch(/id="guides"/)
-    expect(src).toMatch(/Live · \$\{cityName\}/)
+    expect(src).toMatch(/Live · \$\{publicName\}/)
+    expect(src).not.toMatch(/Live · \$\{cityName\}/)
   })
   it('D91 — market structured data cannot vanish (MARKET_TRUTH D26)', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')

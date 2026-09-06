@@ -180,7 +180,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     readCityOpenHouses(cityName),
     getActivityFeedWithFallbackMulti({ cities: [cityName], limit: 8 }).catch(() => []),
   ])
-  const [firstAct, ...restAct] = activityRows(buildActivityItems(communityActivity, { staleNewAfterDays: 21 }))
   const citySlug = community.citySlug
 
   const subdivisionLc = community.subdivision.toLowerCase().trim()
@@ -200,15 +199,21 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     : []
   const publicName = registryEntry?.label ?? community.name
   const placeAliases = [community.subdivision, publicName, ...childAliases]
-  const placeOpenHouses = openHouses.filter((oh) => {
-    const sub = oh.subdivisionName?.trim().toLowerCase()
+  const placeNameMatch = (raw: string | null | undefined): boolean => {
+    const sub = raw?.trim().toLowerCase()
     if (!sub) return false
     return placeAliases.some((alias) => {
       const name = alias.trim().toLowerCase()
       return Boolean(name) && (sub === name || sub.includes(name) || name.includes(sub))
     })
-  })
+  }
+  const placeOpenHouses = openHouses.filter((oh) => placeNameMatch(oh.subdivisionName))
   const [firstOh, ...restOh] = openHouseRows(placeOpenHouses)
+  // Activity must be THIS community (PLACE_PAGES). Omit when thin.
+  const placeActivity = communityActivity.filter((row) => placeNameMatch(row.SubdivisionName))
+  const [firstAct, ...restAct] = activityRows(
+    buildActivityItems(placeActivity, { staleNewAfterDays: 21 }),
+  )
 
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
   const neighborhoodSlug = slug
@@ -796,11 +801,11 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           <V3Ledger
             id="activity"
             layout="pulse"
-            eyebrow={v3Text(`Live · ${cityName}`)}
+            eyebrow={v3Text(`Live · ${publicName}`)}
             heading={v3Text('Latest market activity')}
             rows={[firstAct, ...restAct]}
             source={v3Text(
-              `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on ${cityName} homes`,
+              `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on ${publicName} homes`,
             )}
             action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
           />

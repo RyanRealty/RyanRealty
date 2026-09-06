@@ -665,18 +665,14 @@ export function V3Atlas({
 
   const claim = useMemo(() => {
     if (incomplete) return 'Live counts are unavailable right now. The map shows what could be read.'
+    // SITE_PAGES / PLACE_PAGES kill list: no "N listings of every type for sale…"
+    // under the Atlas headline. Inventory counts live in the dock; the map is
+    // the spectacle. Closings maps may still name the close count without the
+    // "every type" filler.
+    if (!closingsMap) return ''
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
-    // "Tap a place" is an instruction only where places are drawn: under a
-    // filter that leaves none, it pointed at nothing (TEAM-MATT-4).
-    const every = allTypesOn ? ' of every type' : ''
-    if (closingsMap) {
-      return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${every}${ceiling}.`
-    }
-    if (counts.forSale <= 0 && counts.pending <= 0 && counts.sold <= 0) {
-      return 'Switch a type back on, or slide the price.'
-    }
-    return `${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)}${every} for sale${ceiling}.`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap])
+    return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${ceiling}.`
+  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, closingsMap])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */
@@ -1190,7 +1186,7 @@ export function V3Atlas({
           >
             {headline}
           </Heading>
-          {quiet ? null : (
+          {quiet || !claim ? null : (
             <p className="v3-atlas__claim" aria-live="polite">
               {claim}
             </p>
