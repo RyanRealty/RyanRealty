@@ -1,12 +1,40 @@
-# Current — 2026-09-06 (Waves C–H public inventory)
+# Current — 2026-09-06 (Cos takeover: public punch list)
 
-Hub MOS drawing is first viewport (`chartFirst` + `foldAfter={0}`, range
-rows). Place pages omit thin cost charts (n<6). Listing is the 12-section
-house URL with tax. About/team Call/Text first. FSBO and expired sit on
-`/sell`; inherited 308s to `/sell`. Indexes A–Z with live counts; ZIP
-houses first; park thumbs are maps not black squares. Production host is
-https://ryan-realty.com. LOOP_SENTINEL stays off. Do not mix `_cma-*`.
-Keep `/luxury-homes-bend` nav hrefs. Keep LP `actions.ts` for `/sell`.
+Owner: Chief of Staff (Grok Bot). Took over Grok Build session
+`01a06fc0-b2f2-7eb2-9e66-a7d1b8f12d07` ("Public UI punch list and place-page
+spec") after weekly Grok Build limit. Mini: Matthews-Mini
+`b9f01f4a-2e5a-46bb-abf3-70c65d76b6e4` · `~/RyanRealty` · branch `main`.
+
+**Ship state**
+- Local tip `cf7f714a` (+3 older) **ahead of origin/main by 4 commits** — NOT
+  pushed yet. Commits: `7c40065e` hub MOS first · `c04e8a97` sell redirects /
+  city index types · `9153b113` listing 12-section order · `cf7f714a` stop
+  requiring leftover MOS HUD on listing.
+- Staged (uncommitted): `scripts/check-publish-place-index-truth.mjs` loosen
+  `hud.active` gate. Pre-commit **failed** on `ci:entity-scope`: 
+  `app/admin/(protected)/people/[id]/page.tsx` unscoped dynamic reader;
+  baseline grew 1→2. Do NOT widen blindly — fix scope or documented baseline.
+- Production host https://ryan-realty.com. LOOP_SENTINEL off. Do not mix `_cma-*`.
+
+**Spec locked**
+- `docs/plans/PUBLIC_PRODUCT/` — SITE_PAGES, PAGE_INVENTORY, PLACE_PAGES,
+  DATA_GRAPHICS, PAGE_OUTLINE. Looking (1440+375 shots) is the done gate.
+
+**Next (resume here)**
+1. Unblock push: entity-scope on people/[id] OR finish/abort the staged gate
+   file, then `git push origin main` from Mini (not Cursor cloud while spend
+   is tight).
+2. Parallel bots: Public Look (eyes-on 1440/375) + Public Patch (existing
+   pages only) against inventory winners — Homes Field, hub MOS, Tetherow,
+   listing remainder, About/team Call/Text.
+3. Keep drip/first-touch desks separate (Expired/FSBO Desk); Soft Tail +
+   Clear Night skipped; Rim HOLD until rebuild stamp lands if still open.
+
+**Do not**
+- Cursor cloud agents unless Matt opens spend.
+- Relitigate place openings vs leftover HUD.
+- Touch CMA `_cma-*` worktrees in this thread.
+
 
 ---
 
