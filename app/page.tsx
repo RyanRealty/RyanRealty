@@ -125,7 +125,7 @@ export default async function Home() {
     {
       kicker: v3Text('Buy'),
       label: v3Text('Find your place'),
-      href: '/homes-for-sale?view=map',
+      href: publishRegionalSearchHref(),
       fact: v3Text(`${townCount} towns across Central Oregon`),
       imageSrc: DOOR_ART.buy,
       imageAlt: 'Bend from above at Drake Park',
