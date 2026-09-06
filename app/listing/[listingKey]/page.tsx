@@ -39,6 +39,7 @@ import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
+import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { buildListingAskClaim } from '@/components/site/listing-detail/listing-ask'
 import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
@@ -509,6 +510,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       </div>
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
       {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
+      <div id="history">
+        <PropertyHistory history={history} mode="meaningful-only" />
+      </div>
       <div id="tax">
         <ListingTaxHistory
           taxYear={listing.taxYear}
