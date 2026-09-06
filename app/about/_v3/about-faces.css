@@ -166,8 +166,9 @@
     white-space: normal;
   }
 
+  /* House-of-faces density: card-photo scale so /team 1440 Call/Text stay in fold. */
   .about-faces__photo-link {
-    width: min(100%, var(--v3-carousel-h));
+    width: min(100%, var(--v3-card-photo-w));
   }
 
   .about-faces--solo .about-faces__grid {
@@ -176,13 +177,13 @@
 
   .about-faces--solo .about-faces__item {
     display: grid;
-    grid-template-columns: minmax(0, var(--v3-carousel-h)) minmax(0, 1fr);
+    grid-template-columns: minmax(0, var(--v3-card-photo-w)) minmax(0, 1fr);
     align-items: center;
     gap: var(--v3-space-md);
   }
 
   .about-faces--solo .about-faces__photo-link {
-    width: min(100%, var(--v3-carousel-h));
+    width: min(100%, var(--v3-card-photo-w));
   }
 
   .about-faces--solo .about-faces__name {

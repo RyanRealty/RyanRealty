@@ -43,3 +43,17 @@ describe('team face phones', () => {
     expect(matt?.href).toBe('/team/matthew-ryan')
   })
 })
+
+describe('team roster density', () => {
+  it('keeps 1440 roster photos at card-photo scale, not carousel posters', () => {
+    const css = readFileSync('app/about/_v3/about-faces.css', 'utf8')
+    expect(css).not.toMatch(/70vh/)
+    const desktop = css.slice(css.indexOf('@media (min-width: 48rem)'))
+    const rosterPhoto = desktop.slice(
+      desktop.indexOf('.about-faces__photo-link'),
+      desktop.indexOf('.about-faces--solo .about-faces__grid'),
+    )
+    expect(rosterPhoto).toMatch(/--v3-card-photo-w/)
+    expect(rosterPhoto).not.toMatch(/--v3-carousel-h/)
+  })
+})
