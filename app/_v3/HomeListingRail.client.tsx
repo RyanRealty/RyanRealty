@@ -5,7 +5,7 @@
  * (badges, photo, 3D) and the same ask/meta publishers as Field Split cards.
  * Save/heart rides the existing saved-listings action.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
@@ -61,25 +61,22 @@ function HomeRailCardFace({
     meta.push(`$${Math.round(publishedPpsf).toLocaleString('en-US')}/sqft`)
   }
 
-  const onSave = useCallback(
-    async (event: React.MouseEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-      if (!signedIn) {
-        redirectToLoginForSave(card.listingKey)
-        return
-      }
-      if (busy) return
-      setBusy(true)
-      try {
-        const result = await toggleSavedListing(card.listingKey)
-        if (!result.error) onSavedChange(card.listingKey, result.saved)
-      } finally {
-        setBusy(false)
-      }
-    },
-    [busy, card.listingKey, onSavedChange, signedIn],
-  )
+  async function onSave(event: React.MouseEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!signedIn) {
+      redirectToLoginForSave(card.listingKey) // hydration-safe: click handler, never runs during render
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    try {
+      const result = await toggleSavedListing(card.listingKey)
+      if (!result.error) onSavedChange(card.listingKey, result.saved)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <article className={cn(V3_ROOT_CLASS, 'v3-lrow', 'v3-lrow--card', 'home-rail__card')}>
