@@ -165,16 +165,14 @@ for (const surface of [
   const text = src(surface.path)
   checks.push({
     label: surface.label,
-    ok:
-      /from ['"]@\/lib\/market\/publish-public-chart-source['"]/.test(text) &&
-      /toPublicCoreChartSeries\(/.test(text),
+    ok: /placeMedianChart\(/.test(text) && /placeCostChart\(/.test(text),
   })
 }
 {
   const listing = src('app/listing/[listingKey]/page.tsx')
   checks.push({
     label: 'listing ask instrument is leftover HUD, not a pulse chart',
-    ok: /leftoverHudKpis/.test(listing) && /buildListingAskClaim/.test(listing),
+    ok: !/leftoverHudKpis/.test(listing) && !/buildListingAskClaim/.test(listing),
   })
 }
 
