@@ -321,6 +321,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     cityStagePoster(cityHeroes[citySlug], cityLibraryHeroUrl)
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)
+  const [firstBelonging, ...restBelonging] = belonging
 
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
@@ -686,13 +687,13 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             </V3Heading>
           </div>
         </div>
-        {belonging.length > 0 ? (
+        {firstBelonging ? (
           <V3Instrument
             id="facts"
             level={2}
             eyebrow={v3Text(publicName)}
             headline={v3Text(`What ${publicName} is`)}
-            figures={belonging}
+            figures={[firstBelonging, ...restBelonging]}
             foldAfter={2}
             source={v3Text(belongingTrace(publicName))}
           />
