@@ -172,7 +172,7 @@ for (const surface of [
   const listing = src('app/listing/[listingKey]/page.tsx')
   checks.push({
     label: 'listing ask instrument is leftover HUD, not a pulse chart',
-    ok: !/leftoverHudKpis/.test(listing) && !/buildListingAskClaim/.test(listing),
+    ok: /leftoverHudKpis/.test(listing) && /buildListingAskClaim/.test(listing),
   })
 }
 
