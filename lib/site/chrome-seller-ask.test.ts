@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { chromeShowsSellerAsk } from './chrome-seller-ask'
 
 describe('chromeShowsSellerAsk', () => {
-  it('shows the filled ask on Sell leaves, not on /sell itself', () => {
+  it('shows the filled ask on Sell leaves, not on /sell or /sell/valuation', () => {
     expect(chromeShowsSellerAsk('/sell')).toBe(false)
     for (const path of ['/sell/valuation', '/sell/valuation?from=/cities/bend']) {
+      expect(chromeShowsSellerAsk(path), path).toBe(false)
+    }
+    for (const path of ['/sell/for-sale-by-owner', '/sell/expired-listings']) {
       expect(chromeShowsSellerAsk(path), path).toBe(true)
     }
   })

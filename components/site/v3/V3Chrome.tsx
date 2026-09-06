@@ -36,11 +36,11 @@
  * about in development, because dropping it would delete destinations, which is
  * the one thing this rebuild may not do.
  *
- * ONE FILLED ASK, and only on Sell: the valuation label from VALUATION_FORM
- * (`/sell#get-value`). Buyer, place, market, about, and listing chrome do not
- * fill Value my home (Page Grade 2026-08-14 wrong-job-chrome). The door stays
- * in the Sell nav group. The footer never carries a second solid button
- * (PUBLIC_UI.md section 1, founding directive 3).
+ * ONE FILLED ASK on Sell leaves that do not already own the form submit
+ * (chromeShowsSellerAsk): FSBO/expired fill chrome; /sell and /sell/valuation
+ * keep the form as the only filled Value my home. Buyer/place/market/about/
+ * listing chrome never fill it. The door stays in the Sell nav group. The
+ * footer never carries a second solid button (PUBLIC_UI.md section 1).
  *
  * WHAT THIS DELIBERATELY DOES NOT CARRY, versus KbNav:
  *  - The suggest-search field. It reached into components/search, which drags a

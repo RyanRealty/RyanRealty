@@ -4,8 +4,9 @@
  *
  * Same SellValueForm as /sell (submitSellerLPForm). The form sits in a Sheet
  * under a compact Stage, not on the photograph and not next to a Stage ghost.
- * Chrome fills Value my home on /sell/* leaves. 375: Stage is H1 only so the
- * header is not a second filled control stacked on a ghost.
+ * Chrome does not fill Value my home here — the form submit is the one filled
+ * ask (PAGE_INVENTORY chrome XOR form). That also keeps the 375 header from
+ * overflowing. Other /sell/* leaves still fill chrome.
  */
 
 import type { Metadata } from 'next'
