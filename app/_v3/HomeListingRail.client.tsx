@@ -92,16 +92,17 @@ function HomeRailCardFace({
           priority={priority}
           tourLabel={card.tourLabel}
         />
-        <button
+        <V3Button
           type="button"
+          variant="ghost"
           className={cn('home-rail__save', saved && 'home-rail__save--on')}
-          aria-label={saved ? 'Remove saved home' : 'Save home'}
-          aria-pressed={saved}
+          ariaLabel={saved ? 'Remove saved home' : 'Save home'}
+          ariaPressed={saved}
           disabled={busy}
           onClick={onSave}
         >
           <HeartIcon filled={saved} className="home-rail__save-icon" />
-        </button>
+        </V3Button>
       </div>
       <Link href={card.href} className="v3-lrow__copy home-rail__copy">
         <span className="v3-lrow__price">{ask ?? 'Price on request'}</span>
