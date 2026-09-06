@@ -25,11 +25,6 @@
       "blocking": true
     },
     {
-      "name": "PlaceFaceStrip",
-      "section": "Leftover / segment count and median. Miss omits.",
-      "blocking": true
-    },
-    {
       "name": "V3Atlas",
       "section": "Parent city atlas. Type-filtered dots when 1:1. Omitted when the city has no recorded boundary.",
       "blocking": true
@@ -56,7 +51,6 @@
     "MetadataBlock",
     "V3Breadcrumb",
     "V3Heading",
-    "PlaceFaceStrip",
     "V3Atlas",
     "photographed listings #homes",
     "V3Quiet",

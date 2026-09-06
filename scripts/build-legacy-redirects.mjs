@@ -311,6 +311,13 @@ async function main() {
     // dumping its equity on generic /homes-for-sale while Google ranked our
     // sitemap page for "luxury homes bend" (144 imp, 0 clicks).
     '/luxury-homes-bend-oregon': '/luxury-homes-bend',
+    // Tetherow: one URL. LP chrome, the Heath LP (not its own MLS plat),
+    // the city/community search surface, and the blog slug that cannibalized
+    // the community page all 301 to /communities/tetherow.
+    '/lp/tetherow': '/communities/tetherow',
+    '/lp/tetherow/heath': '/communities/tetherow',
+    '/homes-for-sale/bend/tetherow': '/communities/tetherow',
+    '/tetherow-resort-living-real-estate': '/communities/tetherow',
   }
   Object.assign(map, OVERRIDES)
 

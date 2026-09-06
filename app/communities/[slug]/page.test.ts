@@ -44,7 +44,7 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).not.toMatch(/active:\s*aliasAwareCount/)
     expect(SRC).not.toMatch(/active:\s*fieldItems\.length/)
     expect(SRC).not.toMatch(/active:\s*listedCount/)
-    expect(SRC).toMatch(/<PlaceFaceStrip stats=\{face\.stats\}/)
+    expect(SRC).not.toMatch(/<PlaceFaceStrip/)
   })
 
   it('keeps MOS, sold, verdict, and DTP off the face', () => {

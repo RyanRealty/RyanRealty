@@ -1,9 +1,10 @@
 /**
- * /communities/[slug] — master-plan grain. First screen is H1 + leftover face
- * + living atlas, the same composition as city / neighborhood / subdivision.
- * MOS / sold / verdict / DTP stay off the face. Tetherow leftover is the 16
- * SFR pile, not alias Field length. Eagle Crest does not seed an unreliable
- * hull. Nested plats draw as Atlas regions and Split overlayBoundaries.
+ * /communities/[slug] — master-plan grain. First screen is H1 `{Name} homes
+ * for sale` + living atlas, the same composition as city / neighborhood /
+ * subdivision. Atlas is the inventory graphic. MOS / sold / verdict / DTP stay
+ * off the face. Tetherow leftover is the 16 SFR pile, not alias Field length.
+ * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
+ * regions and Split overlayBoundaries.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -89,7 +90,6 @@ import {
 } from '@/components/site/v3'
 import { getCommunityCourseMap } from '@/lib/golf/community-course'
 import { courseMapKind } from '@/lib/golf/course-map'
-import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
@@ -681,7 +681,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           </div>
         </div>
         {(

@@ -110,14 +110,14 @@ describe('subdivision page first screen', () => {
 
   it('opens on Split + plat inventory face, not a Stage/Field cage', () => {
     expect(page).toMatch(/from ['"]@\/components\/search\/PlaceSplitView['"]/)
-    expect(page).toMatch(/from ['"]@\/components\/place\/PlaceFaceStrip['"]/)
+    expect(page).not.toMatch(/from ['"]@\/components\/place\/PlaceFaceStrip['"]/)
     expect(page).toMatch(/from ['"]@\/lib\/market\/publish-place-face['"]/)
     expect(code).toMatch(/publishPlaceFace\(\{/)
     expect(code).toMatch(/grain:\s*['"]subdivision['"]/)
     expect(code).toMatch(/hud:\s*null/)
     expect(code).not.toMatch(/<V3Field\b/)
     expect(code).not.toMatch(/<V3Stage\b/)
-    expect(code).toMatch(/const headline = `\$\{displayName\} homes for sale`/)
+    expect(code).toMatch(/const headline = displayName/)
     expect(code).not.toMatch(/heading=\{v3Text\(`Homes for sale in \$\{displayName\}`\)\}/)
   })
 

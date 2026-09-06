@@ -30,6 +30,26 @@ const EXEMPT_PATH_PARTS = [
 
 const REQUIRED_FILE_CONTRACTS = [
   {
+    file: 'app/search/page.tsx',
+    checks: [
+      {
+        id: 'search-index-canonical-alternates',
+        pattern: /alternates:\s*\{\s*canonical:/m,
+        message: 'Search index metadata must define a canonical URL.',
+      },
+      {
+        id: 'search-index-noindex-policy',
+        pattern: /shouldNoIndexSearchVariant\(/m,
+        message: 'Search index metadata must apply noindex policy helper.',
+      },
+      {
+        id: 'search-index-strip-view-bbox',
+        pattern: /appendIndexableSearchParams\(/m,
+        message: 'Search index canonical must strip view/bbox via appendIndexableSearchParams.',
+      },
+    ],
+  },
+  {
     file: 'app/search/[...slug]/page.tsx',
     checks: [
       {

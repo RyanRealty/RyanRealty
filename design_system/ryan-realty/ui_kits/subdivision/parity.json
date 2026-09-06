@@ -27,12 +27,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "H1 '{Name} homes for sale'. Never 'plat'. Never Homes for sale in {Name}.",
-      "blocking": true
-    },
-    {
-      "name": "PlaceFaceStrip",
-      "section": "Live face: inventory count + median list from publishPlaceFace grain subdivision, hud null, plat inventory overrides.",
+      "section": "H1 is the plat name. Never 'plat'. Never Homes for sale in {Name}.",
       "blocking": true
     },
     {

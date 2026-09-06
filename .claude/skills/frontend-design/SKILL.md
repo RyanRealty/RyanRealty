@@ -5,15 +5,17 @@ description: Build distinctive, production-grade web UI for Ryan Realty that avo
 
 # Frontend design (Ryan Realty)
 
-Use this skill for any web surface: landing pages (`/lp/*`), site pages, heroes, sections, components. It is the design-taste layer that sits on top of the shadcn/ui component rule and the `design_system/ryan-realty/` brand spec.
+Use this skill for any public web surface. **Page inventory and section lists:**
+[`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`](../../../docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md).
+Places: [`PLACE_PAGES.md`](../../../docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md).
+Place pages are the landing pages. Do not design a second `/lp/*` chrome.
+It is the design-taste layer on top of the v3 barrel (`components/site/v3`) and
+`design_system/ryan-realty/` for print/admin.
 
 **Required reference for any DATA-DISPLAY section or chart:**
-[`design_system/public/TASTE.md`](../../../design_system/public/TASTE.md) — the judging
-ritual (render, screenshot, answer the five questions before shipping), the house
-chart method (the `dataviz` skill parameterized to navy-on-cream: emphasis over
-categorical, ≤3 series, `--rr-exception` as the only second hue), and the
-variants rule (new data sections ship 2–3 variants on a decision sheet; Matt
-picks; losers are deleted in the pick's commit).
+read [`../dataviz/SKILL.md`](../dataviz/SKILL.md) first (form → color → marks →
+look). Then [`design_system/public/TASTE.md`](../../../design_system/public/TASTE.md)
+— the judging ritual, navy-on-cream parameters, and the variants rule.
 
 ## Why this exists (the diagnosis)
 
@@ -59,7 +61,7 @@ Anthropic's skill assumes you get to invent a new aesthetic per project. **We do
   - **Dominant + sharp accent**, not timid and evenly-distributed. Let navy or cream dominate a section and punch one accent (the warning/gold star token, a single navy block), instead of gray cards floating on white.
   - **Asymmetry, overlap, grid-breaking, generous negative space.** Kill the equal-columns, everything-centered reflex. Offset blocks. Let one element bleed or oversize.
   - **One orchestrated page-load** with staggered reveals on the hero, not scattered micro-animations everywhere.
-  - **Structural variety between pages** (Hallmark's core idea): two Ryan Realty pages must not share the same section rhythm. `/lp/seller-home-value` and `/lp/sell-your-home` should feel like different pages, not color-swaps of one template.
+  - **Structural variety between grains** (Hallmark): a city, a neighborhood, and Tetherow must not share the same first screen. They share chrome and house-row language. `/sell` is Stage+Sheet. Do not fork `/lp/seller-home-value` as a second look.
   - **Atmosphere over flat fills:** use real Central Oregon photography (the canonical Old Mill hero and the `design_system/ryan-realty/assets/` library) and subtle texture, not solid blocks, for depth. One contained dark navy moment per page is good, full-bleed-dark everywhere is not (we learned that one already).
   - **Meticulous detail:** spacing rhythm, optical alignment, consistent radii, hover states. This is where "designed" beats "generated."
 
@@ -75,7 +77,7 @@ Anthropic's skill assumes you get to invent a new aesthetic per project. **We do
 
 These move design quality more than any single rule. Adopted from designers on X (Afonso Matos, Aakash Gupta) and Hallmark's pre-emit self-critique.
 
-- **Screenshot to score to iterate loop.** Render the page with Playwright (we already render LPs this way), take a full-page screenshot, then *look at it* and score it 1 to 10 against: hierarchy, intentionality, restraint, specificity, structural variety, detail. Anything under 8 gets a concrete revision pass. Repeat until it holds. Do not ship a page you have not looked at as an image.
+- **Screenshot loop, then a SEPARATE evaluator.** The builder takes 1440 and 375 PNGs and looks. The builder does **not** assign the score. A second agent grades those PNGs with TASTE.md's table and writes `tasteReview` including `shots.desktop` and `shots.mobile375`. Self-score ≥ 8 is the failure Anthropic named. Green tests are not this loop. Atlas is the named good object.
 - **Design-critique subagent.** Before showing Matt, hand the screenshot to a fresh reviewer (the `design:design-critique` skill / a Sonnet subagent) prompted to find what reads as generic-AI and what a senior designer would change. Fix those, then surface.
 - **Commit the direction first.** State the one-sentence visual thesis for the page before writing JSX. If you cannot say what makes it memorable, you are about to build generic-safe again.
 - **Pre-emit critique stamp.** Score the artifact (Philosophy, Hierarchy, Execution, Specificity, Restraint, Variety) before handing back. Below 3 on any axis triggers a revision.
@@ -94,7 +96,8 @@ When running any Hallmark verb on Ryan Realty work, **pin the theme to the Ryan 
 
 ```
 [ ] Stated the one-sentence visual thesis for this page before building
-[ ] Looks distinct from our other LPs (no shared section rhythm)
+[ ] Matches SITE_PAGES.md / PLACE_PAGES.md section list for this grain
+[ ] Same V3Button / house row as the rest of the shop (no LP kit)
 [ ] Dominant color + one sharp accent, not gray cards on white
 [ ] At least one asymmetric / grid-breaking / oversized element
 [ ] One orchestrated hero load, not scattered animations
@@ -102,7 +105,7 @@ When running any Hallmark verb on Ryan Realty work, **pin the theme to the Ryan 
 [ ] ci:design-tokens clean (no hex, no arbitrary brackets)
 [ ] shadcn/ui components, not raw HTML
 [ ] Brand-voice clean (no em-dash, no banned words)
-[ ] Rendered + screenshotted + self-scored >= 8, design-critique pass done
+[ ] 1440 + 375 PNGs on disk; SEPARATE evaluator wrote tasteReview.shots (not a self-score)
 [ ] Mobile verified at 320 / 375 / 414 / 768
 ```
 

@@ -46,11 +46,6 @@
       "blocking": true
     },
     {
-      "name": "PlaceFaceStrip",
-      "section": "Leftover face: count + median list only. publishPlaceFace grain community, leftoverHudKpis grain neighborhood keyed by bare slug. MOS / sold / verdict / DTP stay off the face. Leftover miss omits the cell. Do not pass alias 25 as an active override.",
-      "blocking": true
-    },
-    {
       "name": "publishPlaceFace",
       "section": "Face publisher. Community grain withholds MOS. Call is publishPlaceFace({ grain: 'community', hud }) — leftover 16 for Tetherow, never alias Field length.",
       "blocking": true
@@ -209,7 +204,7 @@
     "MetadataBlock",
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
-    "PlaceFaceStrip (leftover count + median list; no MOS)",
+    "V3Heading (H1 `{Community} homes for sale`)",
     "V3Atlas #atlas -- the living map scoped to the community (renders only with a trusted boundary and at least one listing inside it)",
     "PlaceTypeSlider (type cards, not H2s)",
     "PlaceSplitView #homes",

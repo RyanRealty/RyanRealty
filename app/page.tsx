@@ -73,28 +73,31 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage. Stage (owned Old Mill / Bend flyover, D11 H1, search action)
+ * Homepage. Stage (owned Old Mill / Bend flyover, branded H1, search action)
  * then the living Atlas, then Field of homes on the v3 barrel. Chart Room is mid-page.
+ * PAGE_OUTLINE: `/` wins Ryan Realty / Ryan Realty Bend. Search owns the
+ * regional homes-for-sale query. absolute title skips the layout suffix so
+ * the SERP is brand once.
  */
 export const revalidate = 300
 
 export const metadata: Metadata = {
-  title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
+  title: { absolute: 'Ryan Realty, Bend' },
   description:
     `Active homes for sale in ${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`,
   alternates: { canonical: siteUrl },
   openGraph: {
-    title: 'Homes for Sale in Central Oregon | Ryan Realty',
+    title: 'Ryan Realty, Bend',
     description:
       'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. Live list prices, days on market, and closed comps.',
     url: siteUrl,
     siteName: 'Ryan Realty',
     type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Homes for Sale in Central Oregon' }],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty, Bend' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
+    title: 'Ryan Realty, Bend',
     description: 'Active Central Oregon homes for sale. List prices and days on market, town by town.',
   },
 }
@@ -300,7 +303,7 @@ export default async function Home() {
           id="hero"
           headingLevel={1}
           eyebrow="Central Oregon"
-          headline={v3Text('Homes for Sale in Central Oregon')}
+          headline={v3Text('Ryan Realty, Bend')}
           posterSrc={HERO_POSTER}
           videoSrc={HERO_VIDEO}
         >

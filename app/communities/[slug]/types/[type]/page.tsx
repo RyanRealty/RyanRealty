@@ -2,9 +2,9 @@
  * /communities/[slug]/types/[type] — one property type in one community.
  * Same place-type class as /cities/[slug]/types/[type].
  *
- * Face is leftover / segment stats that back the type card. Atlas is the
- * parent community map, type-filtered on dots when the leftover type is 1:1
- * with the atlas. Photographed listings are their own set. Miss omits.
+ * Atlas is the parent community map, type-filtered on dots when the leftover
+ * type is 1:1 with the atlas. Photographed listings are their own set. Miss
+ * omits. Do not print leftover KPIs on the opening.
  */
 
 import { notFound } from 'next/navigation'
@@ -30,7 +30,6 @@ import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import {
   asPlaceBoundary,
   atlasViewForType,
-  placeTypeFaceStats,
   placeTypeHeadline,
   placeTypeListingRows,
   placeTypeMetadataCopy,
@@ -52,7 +51,6 @@ import {
   MetadataBlock,
   type AtlasRegion,
 } from '@/components/site/v3'
-import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { cn } from '@/lib/utils'
 import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
 import '@/components/search/search-ledger.css'
@@ -168,8 +166,6 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
   })
   const segment = publicSegments.find((row) => row.segment === spec.key)
   const count = spec.key === 'sfr' ? hud.active : (segment?.activeCount ?? null)
-  const median = spec.key === 'sfr' ? hud.medianList : (segment?.medianList ?? null)
-  const face = placeTypeFaceStats({ spec, count, median, mos: null })
   const headline = placeTypeHeadline(spec, publicName)
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count })
 
@@ -241,7 +237,6 @@ export default async function CommunityPlaceTypePage({ params }: Props) {
             <V3Heading level={1} size="field">
               {headline}
             </V3Heading>
-            <PlaceFaceStrip stats={face} />
           </div>
         </div>
         {atlasRegions.length > 0 ? (

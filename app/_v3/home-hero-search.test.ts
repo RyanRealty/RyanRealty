@@ -11,6 +11,15 @@ const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'ut
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
+  it('Stage H1 and document title are brand, not the regional search query', () => {
+    expect(PAGE).toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
+    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend'\s*\}/)
+    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
+    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
+    expect(PAGE).not.toMatch(/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/)
+    expect(PAGE).not.toMatch(/title: 'Homes for Sale in Central Oregon/)
+  })
+
   it('mounts HomeHeroSearch on the Stage over the owned flyover; Atlas is the map', () => {
     expect(PAGE).toMatch(/<V3Stage/)
     expect(PAGE).toMatch(/videoSrc=\{HERO_VIDEO\}/)

@@ -584,6 +584,6 @@ task. Everything else fires on trigger match.
 | Supabase market-data tables | §7 and the three docs it names |
 | Asset library | manifest at `data/asset-library/manifest.json`, CLI at [`lib/asset-library.mjs`](lib/asset-library.mjs). Photos carry vision grades — search the `vision_*` fields. |
 | CMA / valuation | [`lib/cma/`](lib/cma/) + [`marketing_brain_skills/producers/cma/SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md). Recorded in `public.cmas` + `cma_comps`. |
-| Public UI/UX grind / next version of the site / page grade | **KILLED 2026-08-16.** Do not run page-grade. The skill is a refuse stub. Look is Matt keep/kill on real pages. Product of record: [`docs/plans/PUBLIC_PRODUCT/PRODUCT.md`](docs/plans/PUBLIC_PRODUCT/PRODUCT.md). |
+| Public site pages (menu, keep/cut, sections, LPs) | [`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`](docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md) then [`PLACE_PAGES.md`](docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md). Those override leftover-HUD tests and `/lp` skills. Page-grade is **KILLED**. Do not scaffold `/lp/*`. |
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.

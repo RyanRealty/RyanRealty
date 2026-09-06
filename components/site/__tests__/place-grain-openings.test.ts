@@ -55,7 +55,8 @@ describe('city opening', () => {
     expect(page).toMatch(/place-opening--media/)
     expect(page).toMatch(/leftoverHudKpis\(\{/)
     expect(page).toMatch(/publishPlaceFace\(\{\s*grain:\s*'city',/)
-    expect(page).toMatch(/<PlaceFaceStrip/)
+    expect(page).toMatch(/const headline = `\$\{cityName\} real estate`/)
+    expect(page).not.toMatch(/<PlaceFaceStrip/)
     expect(page).toMatch(/<PlaceSplitView/)
     expect(page).toMatch(/getBoundaryGeoJSON\(\{\s*geoType:\s*'city'/)
     expect(page).not.toMatch(/<CityHomesField/)
@@ -95,8 +96,8 @@ describe('neighborhood pace', () => {
     expect(neighborhoodFieldCaption({ placeName: 'Awbrey Butte', count: 0, totalQualifying: 0 })).toBeNull()
   })
 
-  it('headline is the neighborhood then homes for sale', () => {
-    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte homes for sale')
+  it('headline is the neighborhood name', () => {
+    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte')
   })
 
   it('about is one paragraph', () => {

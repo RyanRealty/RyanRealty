@@ -668,21 +668,18 @@ export function V3Atlas({
     const ceiling = atCeiling ? '' : ` under ${fmtShort(maxPrice)}`
     // "Tap a place" is an instruction only where places are drawn: under a
     // filter that leaves none, it pointed at nothing (TEAM-MATT-4).
-    const how =
-      drawnPlaces.length > 0
-        ? ' Pinch or scroll to zoom. Tap a place to open it, a mark to open the home.'
-        : dots.length > 0
-          ? ' Pinch or scroll to zoom. Tap a mark to open the home.'
-          : ' Switch a type back on, or slide the price.'
     const every = allTypesOn ? ' of every type' : ''
     if (closingsMap) {
-      return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${every}${ceiling}.${how}`
+      return `${counts.closed.toLocaleString('en-US')} ${filterPhrase}${noun(counts.closed)}${every}${ceiling}.`
+    }
+    if (counts.forSale <= 0 && counts.pending <= 0 && counts.sold <= 0) {
+      return 'Switch a type back on, or slide the price.'
     }
     const parts = [`${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)}${every} for sale${ceiling}`]
     if (counts.pending > 0) parts.push(`${counts.pending.toLocaleString('en-US')} pending`)
     if (counts.sold > 0) parts.push(`${counts.sold.toLocaleString('en-US')} sold in the last 30 days`)
-    return `${parts.join(', ')}.${how}`
-  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap, drawnPlaces.length, dots.length])
+    return `${parts.join(', ')}.`
+  }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap])
 
   /* The pulses: the newest real events, with slots per kind so closes always
      show; capped so the map breathes and the main thread never notices. */

@@ -162,6 +162,13 @@ screen are a lock break. A listing that looks like another product is a lock bre
 Master-plan is not a neighborhood with a nicer name. Tetherow is an exemplar of the
 master-plan template, not a one-off product.
 
+**2026-09-05 lock.** What is ON each page, keep/cut, LP retirement, and section order
+live in [`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`](../../docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md)
+and [`PLACE_PAGES.md`](../../docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md). This file is tokens,
+patterns, chrome, and the opening table below. If a leftover-HUD test, LP skill, or
+ui_kit parity note fights those two files, **those two files win.** Rewrite the test
+in the same commit as the page. Do not clone Bend onto Tetherow to keep CI green.
+
 **Per-destination openings.** What each grain OPENS on. This is what keeps five
 place types from reading as one page, and it binds whatever the pattern set holds:
 
@@ -205,8 +212,14 @@ navy or cream must be re-checked against this table before it ships.
   settling. Both must complete instantly under reduced motion.
 - **Continuity motion:** an edge that carries context animates the carry (the place chip
   travels, the filtered count counts to its new value) — this is directive 5 made visible.
+- **Data-flex motion (Matt 2026-09-05):** hover, scrub, replay, and draw-on of a
+  series the visitor caused are the product. Atlas and V3Chart are allowed to
+  move when the motion *is* the reading. This is how we show we have the data.
+  Grow those primitives. Do not add a second chart library.
 - **Banned:** parallax for its own sake, carousels as a default, entrance animations on
-  every section, motion over live numbers while they load.
+  every section, motion over live numbers while they load (the figure must not
+  count up from zero as a trick). `prefers-reduced-motion` gets the same chart
+  already drawn.
 
 ## 6. THE LOOK — the two registers (Matt 2026-08-26)
 

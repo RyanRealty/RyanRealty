@@ -5,6 +5,26 @@ function firstParam(value: string | string[] | undefined): string | null {
   return value ?? null
 }
 
+/** Camera/UI state. Never copy onto a search canonical (crawl trap). */
+export const SEARCH_CANONICAL_STRIP_KEYS = ['view', 'bbox'] as const
+
+/**
+ * Copy indexable query keys onto a search canonical URL. Drops `view` and
+ * `bbox` so `/homes-for-sale?view=list` and map pans do not mint a new URL.
+ */
+export function appendIndexableSearchParams(
+  url: URL,
+  searchParams: QueryParams | undefined,
+): void {
+  if (!searchParams) return
+  const strip = new Set<string>(SEARCH_CANONICAL_STRIP_KEYS)
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (strip.has(key)) continue
+    const raw = firstParam(value)
+    if (raw != null && raw !== '') url.searchParams.set(key, raw)
+  }
+}
+
 export function shouldNoIndexSearchVariant(searchParams: QueryParams | undefined): boolean {
   if (!searchParams) return false
   const page = Number(firstParam(searchParams.page) ?? '1')
@@ -37,6 +57,7 @@ export function shouldNoIndexSearchVariant(searchParams: QueryParams | undefined
     'sort',
     'includeClosed',
     'view',
+    'bbox',
     'perPage',
   ]
   return blockedKeys.some((key) => {

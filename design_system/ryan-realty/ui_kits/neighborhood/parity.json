@@ -21,12 +21,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "Page H1 via neighborhoodHeadline: `{Neighborhood} homes for sale`. Not a Stage or Field cage.",
-      "blocking": true
-    },
-    {
-      "name": "PlaceFaceStrip",
-      "section": "Face of polygon SFR count + median list only. publishPlaceFace({ grain: 'neighborhood', hud, active: inventory.activeCount, medianList: inventory.medianListPrice }). MOS, sold count, verdict, DTP omit even if leftover HUD has them.",
+      "section": "Page H1 via neighborhoodHeadline: the neighborhood name. Not a Stage or Field cage.",
       "blocking": true
     },
     {
@@ -178,7 +173,6 @@
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading",
-    "PlaceFaceStrip",
     "V3Atlas #atlas -- the living map scoped to the neighborhood (renders only with a recorded boundary and at least one listing inside it)",
     "PlaceTypeSlider",
     "#homes",

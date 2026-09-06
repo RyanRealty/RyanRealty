@@ -42,12 +42,12 @@ const pages = [
     label: 'neighborhood page opening count names the neighborhood, not the city',
     forbid: /lead=\{`in \$\{cityName\}/,
     // Split + polygon-inventory face. H1 is neighborhoodHeadline
-    // ("Awbrey Butte homes for sale"). Face count is publishPlaceFace grain
+    // (the neighborhood name). Face count is publishPlaceFace grain
     // neighborhood (inventory.activeCount), never "in ${cityName}".
     v3: {
       module: 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
       builder: 'neighborhoodHeadline',
-      names: '${placeName} homes for sale',
+      names: 'return placeName',
     },
   },
   {

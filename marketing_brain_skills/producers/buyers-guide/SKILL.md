@@ -40,7 +40,7 @@ example_outputs:
 
 # STOP - UNUSED / DO NOT DISPATCH
 
-Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Shipped TypeScript product (if any) is the live path.
+Inbox, weekly-cycle, and producer-runtime do not assign this producer. Do not dispatch it. Do not invent a cron or writer. Do not create `/lp/<community>/buyers-guide/`. Place pages are the landing pages (`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`). If a guide PDF is needed later, it is a download from `/communities/<slug>`, not a second chrome.
 
 
 # buyers-guide
@@ -493,7 +493,7 @@ pending -> in_production -> executed (email sent successfully)
 - `design_system/ryan-realty/SKILL.md`
 - `marketing_brain_skills/brand-voice/VOICE.md`
 - `data/resort-communities.json`
-- `public/lp/tetherow/index.html`. Content reference for the parallel LP
+- `docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`. Place pages are the landing pages. Do not author `/lp/<community>/buyers-guide/`.
 
 **Producers this integrates with:**
 

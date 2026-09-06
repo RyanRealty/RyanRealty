@@ -54,8 +54,8 @@ function tile(over: Partial<ListingTile> = {}): ListingTile {
 }
 
 describe('neighborhoodHeadline', () => {
-  it('is the neighborhood name then homes for sale', () => {
-    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte homes for sale')
+  it('is the neighborhood name', () => {
+    expect(neighborhoodHeadline('Awbrey Butte')).toBe('Awbrey Butte')
   })
 })
 
@@ -88,7 +88,7 @@ describe('neighborhood page first screen', () => {
 
   it('opens on Split + polygon-inventory face, not a Stage/Field cage', () => {
     expect(page).toMatch(/from ['"]@\/components\/search\/PlaceSplitView['"]/)
-    expect(page).toMatch(/from ['"]@\/components\/place\/PlaceFaceStrip['"]/)
+    expect(page).not.toMatch(/from ['"]@\/components\/place\/PlaceFaceStrip['"]/)
     expect(page).toMatch(/from ['"]@\/lib\/market\/publish-place-face['"]/)
     expect(code).toMatch(/publishPlaceFace\(\{/)
     expect(code).toMatch(/grain:\s*['"]neighborhood['"]/)

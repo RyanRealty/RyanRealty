@@ -3,12 +3,12 @@
  * /subdivisions/[slug] — the plat grain, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. First screen is
- * H1 "{Name} homes for sale" + plat-inventory PlaceFaceStrip + living atlas
- * + PlaceSplitView, the same composition as city / neighborhood / community.
- * The atlas ring is this place (self). Do not cage that screen in V3Stage or
- * V3Field. Never say "plat" in visitor copy. Giant 0 is forbidden on a
- * timed-out read. Schools sit after the Split when the MLS modal actually
- * publishes. Section order is the parity contract at
+ * H1 the plat name + living atlas + PlaceSplitView, the same composition as
+ * city / neighborhood / community. Atlas is the inventory graphic. The atlas
+ * ring is this place (self). Do not cage that screen in V3Stage or V3Field.
+ * Never say "plat" in visitor copy. Giant 0 is forbidden on a timed-out read.
+ * Schools sit after the Split when the MLS modal actually publishes. Section
+ * order is the parity contract at
  * design_system/ryan-realty/ui_kits/subdivision/parity.json.
  *
  * THE RHYTHM RULE AND CONDITIONAL SECTIONS, DECLARED RATHER THAN HIDDEN. Four
@@ -148,7 +148,6 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, V3Quiet, type AtlasRegion } from '@/components/site/v3'
 import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
@@ -512,7 +511,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     segments: publicSegments,
     covers: { ...placeTypeCoverPhotos(splitListings), ...typeCovers },
   })
-  const headline = `${displayName} homes for sale`
+  const headline = displayName
   const emptyHeroes: Record<string, string> = {}
   const [cityHeroes, cityLibraryHeroUrl, platLibraryHeroUrl] = citySlug
     ? await Promise.all([
@@ -663,7 +662,6 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
             <V3SourceLine source={inventorySource} onMedia={Boolean(stagePosterSrc)} />
           </div>
         </div>

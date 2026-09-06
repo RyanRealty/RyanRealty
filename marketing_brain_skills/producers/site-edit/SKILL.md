@@ -24,6 +24,8 @@ example_outputs: []
 
 # Site Edit Producer
 
+Before any copy/CTA edit, read [`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`](../../../docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md). Do not restyle a page into `/lp` language. Do not add a second button look.
+
 **Scope:** Targeted edits to existing Next.js page files in the `app/` directory. 
 hero subheads, paragraph text, button labels, SEO metadata, OG tags, and CTA
 placement or color. This producer does NOT create new pages (that is

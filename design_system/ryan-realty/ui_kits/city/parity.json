@@ -26,12 +26,7 @@
     },
     {
       "name": "V3Heading",
-      "section": "Page H1: `${cityName} homes for sale`. Not a Stage cage.",
-      "blocking": true
-    },
-    {
-      "name": "PlaceFaceStrip",
-      "section": "Leftover grain face. publishPlaceFace({ grain: 'city', hud }). Actives, median list, MOS, verdict, DTP. Miss omits. Median close is not a face cell.",
+      "section": "Page H1: `${cityName} real estate`. Search owns homes for sale. Not a Stage cage.",
       "blocking": true
     },
     {
@@ -155,8 +150,7 @@
     "MetadataBlock",
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
-    "V3Heading (H1 `{City} homes for sale`)",
-    "PlaceFaceStrip (leftover city grain)",
+    "V3Heading (H1 `{City} real estate`)",
     "V3Atlas #atlas -- the living map scoped to the city (renders only with a recorded boundary and at least one listing inside it)",
     "PlaceTypeSlider (horizontal leftover type cards)",
     "PlaceSplitView (flagship Split, city polygon seed)",

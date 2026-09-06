@@ -23,7 +23,7 @@ describe('place-type pages', () => {
   it('opens on Type in Place, leftover face, atlas, photographed rows', () => {
     for (const src of [CITY, COMM]) {
       expect(src).toMatch(/placeTypeHeadline/)
-      expect(src).toMatch(/<PlaceFaceStrip/)
+      expect(src).not.toMatch(/<PlaceFaceStrip/)
       expect(src).toMatch(/<V3Atlas/)
       expect(src).toMatch(/id="homes"/)
       expect(src).toMatch(/<V3ListingRow/)

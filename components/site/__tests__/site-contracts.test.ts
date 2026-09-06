@@ -14,6 +14,12 @@ import { isResilientMarketFaq } from '../../../scripts/lib/kb-market-faq-resilie
  * These tests give G25 (the design-directive registry gate) a real
  * gate to reference for component-contract directives that are not
  * naturally caught by ESLint or `lint-design-tokens.js`.
+ *
+ * 2026-09-05: leftover-face / “community first fold is Split not Stage”
+ * assertions are fossils of the Bend-clone opener. Product lock is
+ * docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md + PLACE_PAGES.md. Rewrite those
+ * assertions in the same commit as the place-page rebuild. Do not “fix”
+ * Tetherow by matching Bend to keep this file green.
  */
 
 function stripTsComments(src: string): string {
@@ -265,12 +271,12 @@ describe('design directive contracts', () => {
   })
 
   it('D86 — city imagery sources from the VERIFIED cityHero registry (Family 4, 2026-06-10)', () => {
-    // First screen is leftover face + PlaceSplitView, not a Stage still.
+    // First screen is PlaceAreaHero + H1 + PlaceSplitView, not a Stage still.
     // Ledger imagery still resolves through buildOtherCityItems → cityHero()
     // and renders NO thumbnail for an unverified city.
     const src = readSrc('app/cities/[slug]/page.tsx')
     expect(src).toMatch(/<PlaceSplitView/)
-    expect(src).toMatch(/<PlaceFaceStrip/)
+    expect(src).not.toMatch(/<PlaceFaceStrip/)
     expect(src).not.toMatch(/<V3Stage/)
     expect(src).not.toMatch(/<CityHomesField/)
     expect(src).toMatch(/buildOtherCityItems\(/)

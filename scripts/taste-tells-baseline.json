@@ -1,0 +1,5 @@
+{
+  "note": "ci:taste-canon — SHRINK-ONLY. Source files that still carry a named slop tell (PlaceFaceStrip leftover HUD on a place opening, or Atlas how-to caption). Rebuild removes the tell and this row. No file may be added.",
+  "generatedAt": "2026-09-06T00:30:00.000Z",
+  "files": []
+}

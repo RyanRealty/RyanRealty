@@ -33,7 +33,7 @@ import { listingDetailPath } from '@/lib/slug'
 
 /** H1. The counted set is this neighborhood, never the city. */
 export function neighborhoodHeadline(placeName: string): string {
-  return `${placeName} homes for sale`
+  return placeName
 }
 
 /** Polygon inventory tiles as Split rows. Face count does not read this length. */

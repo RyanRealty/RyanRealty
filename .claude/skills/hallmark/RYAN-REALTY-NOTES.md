@@ -11,7 +11,7 @@ Hallmark (by @nutlope, MIT) is vendored here verbatim. It is a general anti-AI-s
 
 ## What to use Hallmark FOR (the genuinely useful parts)
 
-- **`hallmark audit <path>`** — ranked anti-pattern punch list on an existing page. Read-only. Great first pass on `/lp/*` and site surfaces.
+- **`hallmark audit <path>`** — ranked anti-pattern punch list on an existing page. Read-only. Public pages: v3 routes, not `/lp/*`. Page lists: `docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`.
 - **`hallmark study <screenshot|URL>`** — extract design DNA from a reference (never copies pixels), produce a diagnosis.
 - **`hallmark redesign <path>`** — rework visual structure inside existing implementation boundaries (respects routes, components, copy intent).
 - **The disciplines + anti-patterns + slop-test references** — structural variety, no re-drawn browser chrome, no italic headers, mobile gates at 320/375/414/768. These are brand-agnostic and apply as-is.

@@ -1223,10 +1223,16 @@
       "design_system/public/TASTE.md",
       "design_system/ryan-realty/ui_kits/**/parity.json",
       "scripts/taste-review-baseline.json",
+      "scripts/taste-review-shots-baseline.json",
+      "scripts/taste-tells-baseline.json",
       "scripts/check-taste-canon.mjs",
       "CLAUDE.md",
       "AGENTS.md",
-      ".claude/skills/frontend-design/SKILL.md"
+      ".claude/skills/frontend-design/SKILL.md",
+      "app/cities/**/page.tsx",
+      "app/communities/**/page.tsx",
+      "app/subdivisions/**/page.tsx",
+      "components/site/v3/V3Atlas.client.tsx"
     ],
     "ci:tool-discipline": [
       "lib/**",

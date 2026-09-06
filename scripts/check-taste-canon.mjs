@@ -1,30 +1,19 @@
 #!/usr/bin/env node
 /**
  * check-taste-canon.mjs — TASTE IS A GATE, NOT A DOC (Matt, 2026-09-01).
+ * Pixel receipts 2026-09-05 (X research: a JSON score without PNGs is the bug).
  *
- * "Every future coding session must be able to have the same taste. Whether
- * it's Claude, whether it's Grok, whatever — if I point it at the repo and
- * tell it to start working, it will need to use this." A rule that lives in
- * prose is skipped by the next agent (CLAUDE.md §6). This gate makes two
- * things mechanical:
+ * 1. Pointers cannot rot (CLAUDE.md, AGENTS.md, frontend-design → TASTE.md).
+ * 2. Every public parity.json has a tasteReview, or sits in the shrink-only
+ *    unreviewed baseline.
+ * 3. A tasteReview is complete only with desktop + 375 PNG paths that exist
+ *    and an evaluator that is not the builder ("pending" is not an evaluator).
+ *    Shotless reviews sit in taste-review-shots-baseline.json (shrink-only).
+ * 4. Named slop tells (leftover HUD / PlaceFaceStrip on place openings, Atlas
+ *    how-to caption) sit in taste-tells-baseline.json (shrink-only). New files
+ *    may not grow the list. A score cannot outvote a tell.
  *
- *   1. THE POINTERS CANNOT ROT. CLAUDE.md, AGENTS.md (the cross-agent file
- *      Cursor and every other tool reads), and the frontend-design skill must
- *      each cite design_system/public/TASTE.md. Delete the pointer, fail.
- *
- *   2. EVERY PUBLIC PAGE RECORDS ITS EVALUATOR PASS. Each public route's
- *      parity.json carries a `tasteReview` block:
- *        { "evaluatedAt": "YYYY-MM-DD", "score": <0-100>,
- *          "beats": "<the named page this one must beat, and on what>",
- *          "evaluator": "<separate agent, never the builder>" }
- *      TASTE.md's own finding is that self-evaluation fails, so the block is
- *      the receipt that a second agent graded the rendered page. Routes that
- *      predate the rule sit in scripts/taste-review-baseline.json, which is
- *      SHRINK-ONLY: a page may leave the baseline by earning a review; no
- *      route may be added. Every route created after 2026-09-01 needs the
- *      block from its first commit.
- *
- * Seed the baseline once with `--write-baseline`. Wired as ci:taste-canon.
+ * Seed unreviewed with `--write-baseline`. Wired as ci:taste-canon.
  */
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -32,6 +21,8 @@ import { join } from 'node:path'
 const ROOT = process.cwd()
 const KITS = 'design_system/ryan-realty/ui_kits'
 const BASELINE = 'scripts/taste-review-baseline.json'
+const SHOTS_BASELINE = 'scripts/taste-review-shots-baseline.json'
+const TELLS_BASELINE = 'scripts/taste-tells-baseline.json'
 const CANON = 'design_system/public/TASTE.md'
 const POINTERS = ['CLAUDE.md', 'AGENTS.md', '.claude/skills/frontend-design/SKILL.md']
 const WRITE_BASELINE = process.argv.includes('--write-baseline')
@@ -50,27 +41,24 @@ for (const rel of POINTERS) {
   }
 }
 
-const contracts = readdirSync(join(ROOT, KITS), { withFileTypes: true })
-  .filter((e) => e.isDirectory())
-  .map((e) => `${KITS}/${e.name}/parity.json`)
-  .filter((rel) => existsSync(join(ROOT, rel)))
-
-const unreviewed = []
-let reviewed = 0
-for (const rel of contracts) {
-  let d
+function readJson(rel, label) {
   try {
-    d = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'))
+    return JSON.parse(readFileSync(join(ROOT, rel), 'utf8'))
   } catch {
-    continue // ci:mockup-coverage owns unparseable contracts
+    failures.push(`${rel} is missing or malformed — ${label}`)
+    return null
   }
-  const route = typeof d.route === 'string' ? d.route.trim() : ''
-  if (!route.startsWith('app/') || route.startsWith('app/admin')) continue
-  if (!existsSync(join(ROOT, route))) continue
-  const tr = d.tasteReview
-  const ok =
-    tr &&
-    typeof tr === 'object' &&
+}
+
+function shotOk(rel) {
+  if (typeof rel !== 'string' || !rel.trim()) return false
+  if (rel.includes('..') || rel.startsWith('/')) return false
+  return existsSync(join(ROOT, rel))
+}
+
+function reviewShape(tr) {
+  if (!tr || typeof tr !== 'object') return { json: false, shots: false, evaluator: false }
+  const json =
     /^\d{4}-\d{2}-\d{2}$/.test(String(tr.evaluatedAt ?? '')) &&
     Number.isFinite(tr.score) &&
     tr.score >= 0 &&
@@ -79,8 +67,43 @@ for (const rel of contracts) {
     tr.beats.trim().length >= 20 &&
     typeof tr.evaluator === 'string' &&
     tr.evaluator.trim().length > 0
-  if (ok) reviewed += 1
-  else unreviewed.push(rel)
+  const evaluator = json && !/\bpending\b/i.test(tr.evaluator) && !/\bself[- ]?score/i.test(tr.evaluator)
+  const shots =
+    tr.shots &&
+    typeof tr.shots === 'object' &&
+    shotOk(tr.shots.desktop) &&
+    shotOk(tr.shots.mobile375)
+  return { json, shots, evaluator }
+}
+
+const kitDirs = readdirSync(join(ROOT, KITS), { withFileTypes: true })
+  .filter((e) => e.isDirectory())
+  .map((e) => `${KITS}/${e.name}/parity.json`)
+  .filter((rel) => existsSync(join(ROOT, rel)))
+
+const unreviewed = []
+const shotless = []
+let complete = 0
+for (const rel of kitDirs) {
+  let d
+  try {
+    d = JSON.parse(readFileSync(join(ROOT, rel), 'utf8'))
+  } catch {
+    continue
+  }
+  const route = typeof d.route === 'string' ? d.route.trim() : ''
+  if (!route.startsWith('app/') || route.startsWith('app/admin')) continue
+  if (!existsSync(join(ROOT, route))) continue
+  const { json, shots, evaluator } = reviewShape(d.tasteReview)
+  if (!json) {
+    unreviewed.push(rel)
+    continue
+  }
+  if (!shots || !evaluator) {
+    shotless.push(rel)
+    continue
+  }
+  complete += 1
 }
 
 if (WRITE_BASELINE) {
@@ -89,7 +112,7 @@ if (WRITE_BASELINE) {
     JSON.stringify(
       {
         note:
-          'ci:taste-canon — SHRINK-ONLY. Public routes whose parity.json has no tasteReview block yet. A route leaves by earning an evaluator pass (design_system/public/TASTE.md); no route may be added.',
+          'ci:taste-canon — SHRINK-ONLY. Public routes whose parity.json has no tasteReview JSON yet. A route leaves by earning an evaluator pass; no route may be added.',
         generatedAt: new Date().toISOString(),
         routes: unreviewed.sort(),
       },
@@ -101,23 +124,50 @@ if (WRITE_BASELINE) {
   process.exit(0)
 }
 
-let baseline = []
-try {
-  const b = JSON.parse(readFileSync(join(ROOT, BASELINE), 'utf8'))
-  baseline = Array.isArray(b.routes) ? b.routes : []
-} catch {
-  failures.push(`${BASELINE} is missing or malformed — seed it with --write-baseline.`)
-}
+const b = readJson(BASELINE, 'seed with --write-baseline')
+const baseline = Array.isArray(b?.routes) ? b.routes : []
 const baselineSet = new Set(baseline)
-const newUnreviewed = unreviewed.filter((rel) => !baselineSet.has(rel))
-const stale = baseline.filter((rel) => !unreviewed.includes(rel))
-
-for (const rel of newUnreviewed) {
+for (const rel of unreviewed.filter((r) => !baselineSet.has(r))) {
   failures.push(
-    `${rel} has no valid tasteReview block. Run the TASTE.md evaluator pass (a SEPARATE agent grades ` +
-      `the rendered page at desktop and 375px) and record { evaluatedAt, score, beats, evaluator }.`,
+    `${rel} has no tasteReview JSON. Record { evaluatedAt, score, beats, evaluator, shots: { desktop, mobile375 } } after a SEPARATE agent grades rendered 1440 and 375.`,
   )
 }
+
+const sb = readJson(SHOTS_BASELINE, 'shotless reviews baseline')
+const shotBase = Array.isArray(sb?.routes) ? sb.routes : []
+const shotSet = new Set(shotBase)
+for (const rel of shotless.filter((r) => !shotSet.has(r))) {
+  failures.push(
+    `${rel} tasteReview has no on-disk desktop + 375 PNGs (or evaluator is still "pending"). ` +
+      `Bind shots.desktop and shots.mobile375 to files in the repo. A score without pictures is not a pass.`,
+  )
+}
+const shotStale = shotBase.filter((rel) => !shotless.includes(rel))
+
+const TELL_FILES = [
+  { rel: 'components/site/v3/V3Atlas.client.tsx', re: /Pinch or scroll to zoom/ },
+  { rel: 'app/cities/[slug]/page.tsx', re: /<PlaceFaceStrip/ },
+  { rel: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx', re: /<PlaceFaceStrip/ },
+  { rel: 'app/communities/[slug]/page.tsx', re: /<PlaceFaceStrip/ },
+  { rel: 'app/subdivisions/[slug]/page.tsx', re: /<PlaceFaceStrip/ },
+]
+const dirty = []
+for (const { rel, re } of TELL_FILES) {
+  const abs = join(ROOT, rel)
+  if (!existsSync(abs)) continue
+  const src = readFileSync(abs, 'utf8')
+  if (re.test(src)) dirty.push(rel)
+}
+const tb = readJson(TELLS_BASELINE, 'taste tells baseline')
+const tellBase = Array.isArray(tb?.files) ? tb.files : []
+const tellSet = new Set(tellBase)
+for (const rel of dirty.filter((r) => !tellSet.has(r))) {
+  failures.push(
+    `${rel} introduces a taste tell (leftover HUD PlaceFaceStrip or Atlas how-to caption). ` +
+      `A tasteReview score cannot outvote this. Remove the tell; do not grow ${TELLS_BASELINE}.`,
+  )
+}
+const tellStale = tellBase.filter((rel) => !dirty.includes(rel))
 
 if (failures.length > 0) {
   console.error('taste-canon FAILED:')
@@ -126,7 +176,9 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `taste-canon OK — pointers intact · ${reviewed} public route(s) carry an evaluator pass · ` +
-    `${unreviewed.length} still in the shrink-only baseline` +
-    (stale.length > 0 ? ` (${stale.length} baseline row(s) may now be removed: ${stale.join(', ')})` : ''),
+  `taste-canon OK — pointers intact · ${complete} complete review(s) with PNGs · ` +
+    `${unreviewed.length} unreviewed (baseline) · ${shotless.length} shotless (baseline) · ` +
+    `${dirty.length} known tell(s)` +
+    (shotStale.length ? ` · remove from shots baseline: ${shotStale.join(', ')}` : '') +
+    (tellStale.length ? ` · remove from tells baseline: ${tellStale.join(', ')}` : ''),
 )

@@ -2,11 +2,11 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "status": "v3-broadside-2026-08-28",
-  "note": "Homepage on the components/site/v3 barrel, Broadside register. Stage (owned Old Mill / Bend flyover, D11 H1, search is the only Stage action) then the living Atlas then Field of homes (barrel list, type chips one scrolling row, listFlow + See all, no leftover count caption). Towns and communities are barrel Ledgers without leftover CITY or remainder copy. Chart Room is the mid-page Instrument. index.html is the retired KB mockup, kept as history, not the visual target.",
+  "note": "Homepage on the components/site/v3 barrel, Broadside register. Stage (owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, search is the only Stage action) then the living Atlas then Field of homes (barrel list, type chips one scrolling row, listFlow + See all, no leftover count caption). Towns and communities are barrel Ledgers without leftover CITY or remainder copy. Chart Room is the mid-page Instrument. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
-      "where": "V3Stage with the same clip, poster, D11 H1. Search is the only Stage action via HomeHeroSearch (SearchSuggest + searchHrefForQuery)."
+      "where": "V3Stage with the same clip, poster, branded H1 (Ryan Realty, Bend). Search is the only Stage action via HomeHeroSearch (SearchSuggest + searchHrefForQuery)."
     },
     {
       "name": "KbExploreTowns",
@@ -64,7 +64,7 @@
     },
     {
       "name": "V3Stage",
-      "section": "#hero -- owned Old Mill / Bend flyover, D11 H1, HomeHeroSearch is the only Stage action"
+      "section": "#hero -- owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch is the only Stage action"
     },
     {
       "name": "V3Atlas",
@@ -141,7 +141,7 @@
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- owned flyover, D11 H1, HomeHeroSearch",
+    "V3Stage #hero -- owned flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch",
     "V3Atlas #atlas -- the living map of every listing",
     "V3Doors #doors -- Buying / Selling / Investing, one live fact each",
     "HomeHomesFieldBound -- photographed list bound to the atlas camera; HomeHomesField still owns the Field frame",

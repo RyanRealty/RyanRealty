@@ -60,20 +60,15 @@ const MONEY_PATHS = [
 const REQUIRED = [
   {
     file: 'app/page.tsx',
-    // The FACT this locks is the D11 homepage H1 and lead, not the prop that
-    // carries them. KB spelled the H1 as titleTop/titleBottom; the v3 register
-    // has no such prop, its patterns take `headline` (V3InstrumentProps.headline)
-    // and the empty branch uses Quiet `heading=`. Writing a prop literally named
-    // titleTop on a v3 page to satisfy a regex would be gate-gaming, so the check
-    // accepts either register's spelling.
-    // BOTH ARMS ARE EXACT LITERALS. The v3 arm pins
-    // headline={v3Text('Homes for Sale in Central Oregon')} (VOICE.md D11) and
-    // the D11 lead sentence must appear as a literal in this file (the gate does
-    // not scan app/_v3/).
+    // PAGE_OUTLINE SEO lock: `/` wins branded queries. Search owns
+    // "Central Oregon homes for sale". KB spelled the H1 as titleTop/titleBottom;
+    // v3 takes `headline`. BOTH ARMS ARE EXACT LITERALS. The v3 arm pins
+    // headline={v3Text('Ryan Realty, Bend')} and the D11 lead sentence must
+    // appear as a literal in this file (the gate does not scan app/_v3/).
     checks: [
       {
-        re: /titleTop\s*=\s*["']Central Oregon["'][\s\S]{0,800}titleBottom\s*=\s*["']Homes for Sale["']|headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}|heading\s*=\s*["']Homes for Sale in Central Oregon["']/,
-        msg: 'H1 must be the D11 lock: KB titleTop="Central Oregon" + titleBottom="Homes for Sale", or v3 headline={v3Text(\'Homes for Sale in Central Oregon\')} / heading="Homes for Sale in Central Oregon"',
+        re: /titleTop\s*=\s*["']Ryan Realty["'][\s\S]{0,800}titleBottom\s*=\s*["']Bend["']|headline=\{v3Text\('Ryan Realty, Bend'\)\}|heading\s*=\s*["']Ryan Realty, Bend["']/,
+        msg: 'H1 must be brand: Ryan Realty, Bend (search owns "Homes for Sale in Central Oregon")',
       },
       {
         re: /Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne\. Live list prices and days on market\./,
@@ -83,7 +78,10 @@ const REQUIRED = [
         re: /<HomeHeroSearch/,
         msg: 'Homepage Stage action is search (HomeHeroSearch), not a leftover count sentence',
       },
-      { re: /title:\s*['"]Homes for Sale/i, msg: 'metadata title must lead with "Homes for Sale"' },
+      {
+        re: /title:\s*(?:\{\s*absolute:\s*)?['"]Ryan Realty, Bend['"]/,
+        msg: 'metadata title must be "Ryan Realty, Bend" (absolute, so the layout suffix does not double the brand)',
+      },
     ],
   },
   {
@@ -97,16 +95,15 @@ const REQUIRED = [
     //
     // BOTH ARMS ARE EXACT LITERALS, DELIBERATELY, the same discipline as the
     // market hub's arm below. The v3 arm pins the interpolated head term the page
-    // actually opens with, `${cityName} homes for sale`, in the sentence case
-    // design_system/public/PUBLIC_UI.md requires, so the H1 still carries the
-    // term the city money route ranks on while being the place verdict the
-    // locked Places opening asks for. Change the page's H1 and this must change
-    // with it, which is the point of a required contract.
+    // actually opens with, `${cityName} real estate`, in the sentence case
+    // design_system/public/PUBLIC_UI.md requires. Search owns "homes for sale".
+    // Change the page's H1 and this must change with it, which is the point of
+    // a required contract.
     // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
       {
-        re: /titleBottom\s*=\s*["']Homes for Sale["']|[`'"]\$\{cityName\} homes for sale\b/,
-        msg: 'city H1 must carry the head term: KB titleBottom="Homes for Sale", or a v3 headline literal opening "${cityName} homes for sale"',
+        re: /titleBottom\s*=\s*["']Homes for Sale["']|[`'"]\$\{cityName\} real estate\b/,
+        msg: 'city H1 must carry the head term: KB titleBottom="Homes for Sale", or a v3 headline literal opening "${cityName} real estate"',
       },
       { re: /title:\s*[`'"]Homes for Sale in \$\{/i, msg: 'city metadata title must be "Homes for Sale in ${city}…"' },
     ],
@@ -227,8 +224,19 @@ const REQUIRED = [
   {
     file: 'app/search/page.tsx',
     checks: [
-      { re: /Homes for Sale/, msg: 'search index title/H1 builders must use "Homes for Sale"' },
-      { re: /return ['"]Homes for Sale['"]/, msg: 'empty-filter title must be exact "Homes for Sale"' },
+      { re: /homes for sale/i, msg: 'search index title/H1 builders must use "homes for sale"' },
+      {
+        re: /return ['"]Central Oregon homes for sale['"]/,
+        msg: 'empty-filter title must be "Central Oregon homes for sale"',
+      },
+      {
+        re: /appendIndexableSearchParams\(/,
+        msg: 'search index canonical must strip view/bbox via appendIndexableSearchParams',
+      },
+      {
+        re: /shouldNoIndexSearchVariant\(/,
+        msg: 'search index must noindex view/bbox/filter variants',
+      },
     ],
   },
   {
@@ -441,12 +449,20 @@ if (existsSync(HERO)) {
       msg: 'Homepage Stage has one action (search). Do not also ship See homes.',
     })
   }
-  if (!/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/.test(homeSrc)) {
+  if (!/headline=\{v3Text\('Ryan Realty, Bend'\)\}/.test(homeSrc)) {
     violations.push({
       file: 'app/page.tsx',
       kind: 'hero-default',
       id: 'v3-hero-lock',
-      msg: 'KbHero is deleted, so the v3 hero must carry the D11 literal headline={v3Text(\'Homes for Sale in Central Oregon\')} in app/page.tsx',
+      msg: 'KbHero is deleted, so the v3 hero must carry headline={v3Text(\'Ryan Realty, Bend\')} in app/page.tsx',
+    })
+  }
+  if (/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/.test(homeSrc)) {
+    violations.push({
+      file: 'app/page.tsx',
+      kind: 'hero-default',
+      id: 'search-query-on-home',
+      msg: 'Homepage H1 must not be "Homes for Sale in Central Oregon" — that query belongs to /homes-for-sale',
     })
   }
 }

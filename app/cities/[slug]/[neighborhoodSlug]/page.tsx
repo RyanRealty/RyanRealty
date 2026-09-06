@@ -1,11 +1,11 @@
 /**
  * /cities/[slug]/[neighborhoodSlug] — the neighborhood node.
  *
- * First screen: H1 `{Neighborhood} homes for sale`, PlaceFaceStrip (polygon
- * SFR count + median list only), living atlas, PlaceSplitView seeded from
- * getGeoBoundaryMapData. Nested subdivision rings draw as Atlas regions and
- * Split overlayBoundaries, the same class prop community uses. Do not write
- * ?shapes= onto this URL. Do not cage the first screen in V3Stage or V3Field.
+ * First screen: H1 is the neighborhood name on the photograph, living atlas,
+ * PlaceSplitView seeded from getGeoBoundaryMapData. Nested subdivision rings
+ * draw as Atlas regions and Split overlayBoundaries, the same class prop
+ * community uses. Do not write ?shapes= onto this URL. Do not cage the first
+ * screen in V3Stage or V3Field. Do not print leftover KPIs on the photo.
  *
  * Face SoR is getNeighborhoodPublicInventory. leftoverHudKpis still feeds
  * buildMarketFaq JSON-LD. MOS, sold count, verdict, and DTP do not print on
@@ -77,7 +77,6 @@ import {
   V3SectionTracker,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
@@ -138,7 +137,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title =
     neighborhood.seoTitle?.trim() ||
-    `${neighborhood.name} homes for sale | ${neighborhood.cityName}, Oregon`
+    `${neighborhood.name} · ${neighborhood.cityName}, Oregon`
 
   const inventory =
     citySlug === 'bend'
@@ -534,7 +533,6 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           </div>
         </div>
         {(

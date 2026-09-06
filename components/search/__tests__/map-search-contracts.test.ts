@@ -713,11 +713,22 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
   const page = readSrc('app/search/page.tsx')
 
   it('keeps one composed h1 that is not sr-only', () => {
-    expect(page).toMatch(
-      /const h1Text = \[filters\.subdivision, filters\.city \? `\$\{filters\.city\}` : null, 'Homes for Sale'\]/,
-    )
+    expect(page).toMatch(/const h1Place =/)
+    expect(page).toMatch(/\|\| 'Central Oregon'/)
+    expect(page).toMatch(/const h1Text = `\$\{h1Place\} homes for sale`/)
     expect(page).not.toMatch(/<h1 className="sr-only">/)
     expect(page.match(/<h1\b/g)?.length).toBe(1)
+  })
+
+  it('empty filters title the regional query, not a geography-less Homes for Sale', () => {
+    expect(page).toMatch(/if \(parts\.length === 0\) return 'Central Oregon homes for sale'/)
+    expect(page).not.toMatch(/return 'Homes for Sale'/)
+  })
+
+  it('canonical strips view/bbox and noindexes those variants', () => {
+    expect(page).toMatch(/appendIndexableSearchParams\(canonical, sp\)/)
+    expect(page).toMatch(/shouldNoIndexSearchVariant\(sp\)/)
+    expect(page).not.toMatch(/canonical\.searchParams\.set\(k, String\(v\)\)/)
   })
 
   it('puts that h1 in the filter dock as one compact line', () => {

@@ -1,24 +1,24 @@
 /**
  * /cities/[slug] - the city node. Same template for Bend, Redmond, every city.
  *
- * First screen: place still owns the fold. H1 `{City} homes for sale` and
- * leftover grain face sit on the photograph (not a cream bar above it).
- * Then living atlas, flagship PlaceSplitView seeded
+ * First screen: place still owns the fold. H1 `{City} real estate` sits on the
+ * photograph (not a cream bar above it). Search owns "homes for sale". Atlas
+ * is the inventory graphic. Then living atlas, flagship PlaceSplitView seeded
  * from the city polygon. Nested places draw as Atlas regions and Split
  * overlayBoundaries (Bend neighborhoods, plats elsewhere). Do not write
  * ?shapes= onto this URL. Type chips live on Split, not as first-screen
  * property-type H2s. Time/Relate/Rank charts stay below the fold off leftover
  * monthly close + getCoreChartSeries.
  *
- * Face numbers are leftover HUD for THIS slug. Miss omits. Median close 12mo
- * stays on the city chart, never as a fake list price. Do not hardcode a
- * count, MoS, or median.
+ * Face numbers are leftover HUD for THIS slug, used by FAQ/schema. Miss omits.
+ * Median close 12mo stays on the city chart, never as a fake list price. Do
+ * not hardcode a count, MoS, or median. Do not print leftover KPIs on the photo.
  *
  * Section order: design_system/ryan-realty/ui_kits/city/parity.json.
  *
  * THE MARKET SECTION IS THE LEFTOVER HUD, NOT PULSE (MARKET_TRUTH D19/D26/D78).
- * leftoverHudKpis is the one pile; publishPlaceFace filters it for the face
- * strip. Pulse and the stats cache never fill a tile. buildMarketFaq is called
+ * leftoverHudKpis is the one pile; publishPlaceFace filters it for FAQ/schema
+ * grain. Pulse and the stats cache never fill a tile. buildMarketFaq is called
  * UNCONDITIONALLY with source 'market-truth' (D91).
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, generateStaticParams
@@ -99,7 +99,6 @@ import {
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { V3Atlas, type AtlasRegion } from '@/components/site/v3'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
@@ -389,7 +388,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
     covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
   })
   const trail = cityPageTrail(cityName)
-  const headline = `${cityName} homes for sale`
+  const headline = `${cityName} real estate`
 
   // §0 UNKNOWN IS NOT ZERO (D78): the hero count is leftover HUD - never tiles,
   // never a snapshot all-count, never a `?? 0`.
@@ -666,7 +665,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
-            <PlaceFaceStrip stats={face.stats} tone={stagePosterSrc ? 'on-media' : 'surface'} />
           </div>
         </div>
         {(

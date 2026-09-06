@@ -1,10 +1,10 @@
 /**
  * /cities/[slug]/types/[type] — one property type in one city.
  *
- * H1 `{Type} in {Place}`. Face is leftover / segment stats that back the
- * type card. Atlas is the parent city map, type-filtered on dots when the
- * leftover type is 1:1 with the atlas. Photographed listings are their own
- * set. Miss omits. Do not invent a count from list length.
+ * H1 `{Type} in {Place}`. Atlas is the parent city map, type-filtered on
+ * dots when the leftover type is 1:1 with the atlas. Photographed listings
+ * are their own set. Miss omits. Do not invent a count from list length.
+ * Do not print leftover KPIs on the opening.
  *
  * Parity: design_system/ryan-realty/ui_kits/place-type/parity.json.
  */
@@ -32,7 +32,6 @@ import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import {
   asPlaceBoundary,
   atlasViewForType,
-  placeTypeFaceStats,
   placeTypeHeadline,
   placeTypeListingRows,
   placeTypeMetadataCopy,
@@ -54,7 +53,6 @@ import {
   MetadataBlock,
   type AtlasRegion,
 } from '@/components/site/v3'
-import { PlaceFaceStrip } from '@/components/place/PlaceFaceStrip'
 import { cn } from '@/lib/utils'
 import '@/components/search/search-ledger.css'
 import './_v3/place-type-page.css'
@@ -151,9 +149,6 @@ export default async function CityPlaceTypePage({ params }: Props) {
   })
   const segment = publicSegments.find((row) => row.segment === spec.key)
   const count = spec.key === 'sfr' ? hud.active : (segment?.activeCount ?? null)
-  const median = spec.key === 'sfr' ? hud.medianList : (segment?.medianList ?? null)
-  const mos = spec.key === 'sfr' ? hud.monthsSupply : (segment?.monthsOfSupply ?? null)
-  const face = placeTypeFaceStats({ spec, count, median, mos })
   const headline = placeTypeHeadline(spec, cityName)
   const copy = placeTypeMetadataCopy({ spec, placeName: cityName, count })
   const listOk = listRead.ok
@@ -202,7 +197,6 @@ export default async function CityPlaceTypePage({ params }: Props) {
             <V3Heading level={1} size="field">
               {headline}
             </V3Heading>
-            <PlaceFaceStrip stats={face} />
           </div>
         </div>
         {atlasRegions.length > 0 ? (

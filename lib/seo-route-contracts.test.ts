@@ -38,9 +38,12 @@ describe('SEO route metadata contracts', () => {
   })
 
   it('enforces noindex policy helpers for variant routes', () => {
+    const searchIndex = readRouteFile('app/search/page.tsx')
     const searchPage = readRouteFile('app/search/[...slug]/page.tsx')
     const blogIndex = readRouteFile('app/blog/page.tsx')
 
+    expect(searchIndex).toMatch(/shouldNoIndexSearchVariant\(/)
+    expect(searchIndex).toMatch(/appendIndexableSearchParams\(/)
     expect(searchPage).toMatch(/shouldNoIndexSearchVariant\(/)
     expect(blogIndex).toMatch(/shouldNoIndexBlogIndex\(/)
   })

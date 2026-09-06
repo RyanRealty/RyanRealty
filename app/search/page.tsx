@@ -13,6 +13,7 @@ import { getGeocodedListings } from '@/app/actions/geocode'
 import { getSession } from '@/app/actions/auth'
 import type { SearchFilters as SearchFiltersState } from '@/app/actions/search'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
+import { appendIndexableSearchParams, shouldNoIndexSearchVariant } from '@/lib/seo-routing'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getLikedListingKeys } from '@/app/actions/likes'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
@@ -180,7 +181,7 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
   if (filters.baths != null && filters.baths > 0) parts.push(`${filters.baths}+ Bath`)
   const loc = [filters.subdivision, filters.city].filter(Boolean).join(', ')
   if (loc) parts.push(loc)
-  if (parts.length === 0) return 'Homes for Sale'
+  if (parts.length === 0) return 'Central Oregon homes for sale'
   return `${parts.join(' ')} Homes for Sale`
 }
 
@@ -198,14 +199,14 @@ export async function generateMetadata({
       : 'Homes for sale across Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const canonical = new URL('/homes-for-sale', siteUrl)
-  Object.entries(sp).forEach(([k, v]) => {
-    if (v != null && v !== '') canonical.searchParams.set(k, String(v))
-  })
+  appendIndexableSearchParams(canonical, sp)
   const ogImage = `${siteUrl}/api/og?type=default`
+  const noindex = shouldNoIndexSearchVariant(sp)
   return {
     title,
     description,
     alternates: { canonical: canonical.toString() },
+    robots: noindex ? { index: false, follow: true } : undefined,
     openGraph: { title, description, url: canonical.toString(), images: [{ url: ogImage, width: 1200, height: 630 }] },
     twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
   }
@@ -388,9 +389,9 @@ export default async function SearchPage({
     postalCode: sp.postalCode ?? '',
   }
 
-  const h1Text = [filters.subdivision, filters.city ? `${filters.city}` : null, 'Homes for Sale']
-    .filter(Boolean)
-    .join(' ')
+  const h1Place =
+    [filters.subdivision, filters.city].filter(Boolean).join(' ') || 'Central Oregon'
+  const h1Text = `${h1Place} homes for sale`
 
   // split/map are the viewport-fit "app frame" views — no document scroll,
   // the shell fills whatever room is left below the chrome. list keeps

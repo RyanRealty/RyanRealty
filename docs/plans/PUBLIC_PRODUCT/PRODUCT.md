@@ -34,7 +34,7 @@ From Matt Aug 11–14, still binding:
 4. Market knowledge is explorable: present, past, and what it means. Named basis only. No invented forecasts.
 5. Context follows the visitor: place, search, intent, identity.
 6. Chrome: Homes · Places · Market · Sell · About. Saved is an account affordance, not a nav word. CTA is **Value my home** / **Get my home's value**. Never the worth-question on a button.
-7. One shop, five place rhythms: city, neighborhood, master-plan, plat, listing. Tetherow is the master-plan exemplar, not a one-off. A listing that looks like another product is a lock break.
+7. One shop, five place rhythms: city, neighborhood, master-plan, plat, listing. Tetherow is the master-plan exemplar, not a one-off. A listing that looks like another product is a lock break. **Locked inventory (every page, sections in order):** [`PAGE_INVENTORY.md`](PAGE_INVENTORY.md). Keep/cut: [`SITE_PAGES.md`](SITE_PAGES.md). Places: [`PLACE_PAGES.md`](PLACE_PAGES.md). Those override leftover-HUD tests and `/lp` skills.
 8. Brand: navy `#102742` / cream `#faf8f4`, Amboqia + Geist. Voice: say the fact, then stop.
 9. 390 is truth. Send test: would you text this URL to a buyer, a seller, or a referrer.
 10. Fees: one 3% plan. Written CMA in 24 hours, every day. No save until contact exists.

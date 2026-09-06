@@ -39,7 +39,21 @@ agree on the cause, and it is not the model's ceiling:
 ## The binding ritual (builder)
 
 After building any public surface: render it at desktop and 375px, screenshot
-both, and answer these in the session before handing it to the evaluator:
+both, **look at the screenshots as a person would**, and answer these in the
+session before handing it to the evaluator. `ci:gates` passing is not this
+pass. Reading the component is not this pass. Matt 2026-09-05: we build, we
+read the code, we do not look, and a human opens it and it is gross.
+
+The object to copy when a data surface needs to feel like this shop: **V3Atlas**
+(cream field, navy marks, place names, toggles that reveal more). Not a Google
+default map. Not a row of percent tiles. If Atlas itself is cramped, a caption
+is teaching zoom, or a leftover rail is stealing the field, that is a format
+bug on a good object — fix the format, do not replace Atlas with a portal map.
+
+Place pages: the differentiator is graphics that translate sales data for
+people who do not sell houses. Spec: `docs/plans/PUBLIC_PRODUCT/DATA_GRAPHICS.md`.
+One question per drawing. MOS is two bars (homes for sale vs a month of sales),
+not a tile that says 3.9.
 
 1. **What is this section's claim?** Every data section is a sentence first,
    figures second. If you cannot state the claim in one plain sentence, the
@@ -64,7 +78,29 @@ both, and answer these in the session before handing it to the evaluator:
    clarity, speed, how easy it is to reach a broker. If you cannot name a win,
    the section is not done.
 
-## The critique pass is a SEPARATE agent (mandatory since 2026-09-01)
+## The receipt (`tasteReview` on the route's `parity.json`) is not a score in a
+JSON file. As of 2026-09-05 it is:
+
+```json
+{
+  "evaluatedAt": "YYYY-MM-DD",
+  "score": 0,
+  "beats": "named competing page and the metric we win",
+  "evaluator": "separate agent id — never the builder, never 'pending'",
+  "shots": {
+    "desktop": "path/to/1440.png",
+    "mobile375": "path/to/375.png"
+  }
+}
+```
+
+Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
+them. Leftover HUD (`PlaceFaceStrip` on a place opening) and the Atlas
+"pinch to zoom" sentence are mechanical tells: a score of 86 cannot outvote
+them (`scripts/taste-tells-baseline.json`, shrink-only). X research:
+`docs/research/taste-on-x-2026-09-05.md`.
+
+The critique pass is a SEPARATE agent (mandatory since 2026-09-01)
 
 The builder never grades its own page. After the ritual, spawn an evaluator
 (`Agent`, any model, with the desktop + 375px screenshots and the rendered
@@ -154,8 +190,13 @@ standing set for this site:
 
 - **Editorial data journalism** (the claim-first headline over a chart; the
   scrubber that lets the reader find their own year; annotation on the mark).
-- **Stripe / Linear restraint** (hairlines, tabular numerals, one accent, and
-  motion only where it explains cause and effect).
+- **Stripe / Linear restraint** (hairlines, tabular numerals, one accent).
+  Motion that *is* the data (draw-on, scrub, replay, Atlas density) is the flex.
+  Motion that decorates (bounce, entrance on every section, numbers counting
+  up on load) stays banned. Reduced-motion: same graphic, already complete.
+- **The trading-desk / premium-chart bar** (Matt 2026-09-05): density, hover,
+  animation that explains the series. Not their palette. Not a second library.
+  Navy on cream, our plot.ts geometry, our Atlas. Every kept page ships one.
 - **The best portal place pages** as the FLOOR, not the target: they have the
   data and show it flat. We beat them on depth (every subdivision, every
   property type, closed sales the portals do not show), on interaction, and on

@@ -62,7 +62,7 @@ needs them (single-family, 30-year fixed).
 Title, H1, and meta are search-first. Body, SMS, captions, and packets still
 obey the law.
 
-Homepage H1: `Homes for Sale in Central Oregon`
+Homepage H1: `Ryan Realty, Bend` (search owns `Central Oregon homes for sale`)
 
 Homepage lead: `Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.`
 
@@ -99,7 +99,7 @@ Not governed: code, comments, commit messages, logs, internal docs, admin UI
 | Surface | Line |
 |---|---|
 | Market / packet | 131 homes are for sale in Bend between $504,000 and $616,000. The median one has been listed 53 days. |
-| Homepage H1 | Homes for Sale in Central Oregon |
+| Homepage H1 | Ryan Realty, Bend |
 | Homepage lead | Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market. |
 | Buyer SMS | 123 Main is listed at $895,000. Want a short comparison and what to think about offering? |
 | IG caption | New on Awbrey Butte. 4 bed, 3 bath, $1.12M. Views, a usable lot, and a house that shows well. |
