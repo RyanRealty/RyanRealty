@@ -17,7 +17,7 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-const SANDBOX = join(REPO, '.perf-budget-gate-sandbox')
+const SANDBOX = join(REPO, `.perf-budget-gate-sandbox-${process.pid}-${Math.random().toString(36).slice(2, 8)}`)
 
 const FILES = [
   'scripts/check-search-perf-budget.mjs',

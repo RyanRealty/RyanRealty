@@ -19,12 +19,19 @@ describe('chrome homepage H-fixes', () => {
   })
 
   it('hides Menu when primary nav is visible (H1)', () => {
+    // Must beat the later base `.v3-chrome__menu-btn { display: inline-flex }` rule.
     expect(CHROME_CSS).toMatch(
-      /@media \(min-width: 56\.25rem\)[\s\S]*?\.v3-chrome__menu-btn \{[\s\S]*?display: none/,
+      /@media \(min-width: 56\.25rem\) \{[\s\S]*?\.v3\.v3-chrome \.v3-chrome__menu-btn \{[\s\S]*?display: none/,
     )
+    const hideAt = CHROME_CSS.indexOf('.v3.v3-chrome .v3-chrome__menu-btn')
+    const baseAt = CHROME_CSS.indexOf('.v3-chrome__menu-btn,\n.v3-chrome__close')
+    expect(hideAt).toBeGreaterThan(-1)
+    expect(baseAt).toBeGreaterThan(-1)
+    expect(hideAt).toBeGreaterThan(baseAt)
   })
 
   it('keeps phone at the 44px tap floor (H7)', () => {
+    expect(CHROME_CSS).toMatch(/\.v3-chrome__phone \{[\s\S]*?flex: none/)
     expect(CHROME_CSS).toMatch(/\.v3-chrome__phone \{[\s\S]*?min-width: var\(--v3-tap\)/)
     expect(CHROME_CSS).toMatch(/\.v3-chrome__phone \{[\s\S]*?min-height: var\(--v3-tap\)/)
   })
@@ -47,5 +54,9 @@ describe('chrome homepage H-fixes', () => {
     expect(PAGE).toContain('home-explore-map__legend')
     expect(PAGE).toContain('For sale')
     expect(PAGE).toContain('home-explore-map__legend-mark')
+    expect(PAGE).toContain('mapHeadline')
+    expect(PAGE).not.toContain('Homes on the map')
+    expect(PAGE).toContain('List prices on the pins. Tap a pin for the home.')
+    expect(PAGE).toContain('Navy pin. Price appears when you point at it.')
   })
 })

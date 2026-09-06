@@ -43,8 +43,9 @@ describe('homepage market figures stay on the leftover pile', () => {
     expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
   })
 
-  it('does not print MARKET TRUTH LEFTOVER on the year overlay caption', () => {
-    expect(SRC).toContain("placeMedianChartCaption('Central Oregon')")
+  it('does not print MARKET TRUTH LEFTOVER; homepage skips the year chart (H9)', () => {
+    expect(SRC).not.toContain('placeMedianChartCaption')
+    expect(SRC).not.toContain('placeMedianChart')
     expect(SRC).not.toContain('Market Truth leftover')
   })
 })

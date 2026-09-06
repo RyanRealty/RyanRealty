@@ -63,7 +63,8 @@ describe('leftover monthly chart overlay', () => {
     expect(city).toMatch(/getPublicDetachedMonthly/)
     expect(hub).toMatch(/getPublicDetachedMonthly/)
     expect(region).toMatch(/getPublicDetachedMonthly/)
-    expect(home).toMatch(/getPublicDetachedMonthly/)
+    // H9: homepage drops the YoY chart. Monthly leftover stays on market/place pages.
+    expect(home).not.toMatch(/getPublicDetachedMonthly/)
     expect(cities).toMatch(/getPublicDetachedMonthly/)
     expect(zip).toMatch(/getPublicDetachedMonthly/)
     expect(annual).toMatch(/getPublicDetachedMonthly/)

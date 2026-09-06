@@ -693,7 +693,7 @@ describe('design directive contracts', () => {
 
   // D99/D101 v3 spelling. The homepage market section reads the live leftover
   // pile (leftoverHudKpis -> leftoverMarketFigures), never the stats cache;
-  // it mounts ONE chart derivation (placeMedianChart), not the market hub atom.
+  // H9: homepage skips the YoY chart; full series lives on /housing-market.
   it('D99 — homepage market section is the live leftover pile, not a cache read (§0)', () => {
     const page = readSrc('app/page.tsx')
     expect(page).toMatch(/leftoverMarketFigures\(hud/)
@@ -703,10 +703,12 @@ describe('design directive contracts', () => {
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage mounts one chart derivation, not the market hub atom', () => {
+  it('D101 — homepage skips the median chart; market hub atom stays off home (H9)', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/placeMedianChart\(/)
+    expect(page).not.toMatch(/placeMedianChart/)
     expect(page).not.toMatch(/buildRegionMedianChart/)
+    expect(page).toMatch(/<V3Instrument/)
+    expect(page).toMatch(/foldAfter=\{1\}/)
   })
 
   it('D102 — KbFeatured has no remaining page mount (E-CUT retired /area-guides)', () => {

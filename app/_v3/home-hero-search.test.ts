@@ -166,8 +166,10 @@ describe('homepage Field stays on the barrel', () => {
     expect(FIELD).not.toContain('count=')
   })
 
-  it('does not print MARKET TRUTH LEFTOVER on the market chart', () => {
-    expect(PAGE).toContain("placeMedianChartCaption('Central Oregon')")
+  it('does not mount a market chart on the homepage (H9)', () => {
+    expect(PAGE).not.toContain('placeMedianChart')
+    expect(PAGE).not.toContain('placeMedianChartCaption')
+    expect(PAGE).not.toContain('chart={medianChart}')
     expect(PAGE).not.toContain('Market Truth leftover')
   })
 
@@ -178,7 +180,7 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).toContain('flex: none')
   })
 
-  it('opens Stage → Doors → Field → explore map → towns → market (H8/H9)', () => {
+  it('opens Stage → Doors → Field → explore map → towns → market; reviews deferred (H8/H9)', () => {
     expect(PAGE).toMatch(/<V3Stage/)
     expect(PAGE).not.toMatch(/<V3Atlas/)
     expect(PAGE).toMatch(/<V3Doors/)
@@ -186,6 +188,11 @@ describe('homepage Field stays on the barrel', () => {
     expect(PAGE).toMatch(/<HomeExploreMap/)
     expect(PAGE).toMatch(/<V3Instrument/)
     expect(PAGE).toMatch(/id="towns"/)
+    expect(PAGE).toMatch(/townItems\.slice\(0, 3\)/)
+    expect(PAGE).toMatch(/foldAfter=\{1\}/)
+    expect(PAGE).not.toMatch(/<V3Proof/)
+    expect(PAGE).toMatch(/id="reviews"/)
+    expect(PAGE).toMatch(/Read Google reviews/)
     expect(PAGE).not.toMatch(/<SellCapture/)
     expect(PAGE).not.toMatch(/id="communities"/)
     const stageAt = PAGE.indexOf('<V3Stage')
@@ -194,12 +201,14 @@ describe('homepage Field stays on the barrel', () => {
     const mapAt = PAGE.indexOf('<HomeExploreMap')
     const townsAt = PAGE.indexOf('id="towns"')
     const marketAt = PAGE.indexOf('<V3Instrument')
+    const reviewsAt = PAGE.indexOf('id="reviews"')
     expect(stageAt).toBeGreaterThan(-1)
     expect(doorsAt).toBeGreaterThan(stageAt)
     expect(fieldAt).toBeGreaterThan(doorsAt)
     expect(mapAt).toBeGreaterThan(fieldAt)
     expect(townsAt).toBeGreaterThan(mapAt)
     expect(marketAt).toBeGreaterThan(townsAt)
+    expect(reviewsAt).toBeGreaterThan(marketAt)
   })
 
   it('gives the towns Ledger room under the sticky chrome', () => {

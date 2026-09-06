@@ -255,10 +255,6 @@
     margin-inline-start: var(--v3-space-sm);
   }
 
-  /* H1: primary nav visible — Menu is redundant beside Homes/Places/Market/Sell/About. */
-  .v3-chrome__menu-btn {
-    display: none;
-  }
 }
 
 .v3-chrome__group {
@@ -403,6 +399,8 @@
   justify-content: center;
   gap: var(--v3-space-3xs);
   box-sizing: border-box;
+  /* H7: never flex-shrink below the 44px tap floor on a crowded mobile bar. */
+  flex: none;
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
   padding: var(--v3-space-2xs);
@@ -550,6 +548,14 @@
   .v3-chrome__menu-btn,
   .v3-chrome__close {
     padding: 0 var(--v3-space-sm);
+  }
+}
+
+/* H1: when primary nav is visible, Menu is redundant beside Homes/Places/Market/Sell/About.
+   Lives after the base .v3-chrome__menu-btn { display: inline-flex } so it wins source order. */
+@media (min-width: 56.25rem) {
+  .v3.v3-chrome .v3-chrome__menu-btn {
+    display: none;
   }
 }
 
