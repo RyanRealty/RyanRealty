@@ -11,8 +11,6 @@ const files = {
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
   home: readFileSync(resolve('app/page.tsx'), 'utf8'),
   reports: readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8'),
-  expired: readFileSync(resolve('app/lp/expired-listing/page.tsx'), 'utf8'),
-  buyer: readFileSync(resolve('app/lp/buyer-listing-alerts/page.tsx'), 'utf8'),
   listing: readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8'),
   searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
   housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),

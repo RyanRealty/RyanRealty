@@ -66,6 +66,10 @@ let totalDeductions = 0
 const grades = {}
 
 for (const dir of dirs) {
+  const page = readFileSync(join(dir, 'page.tsx'), 'utf8')
+  // Folded LPs 308 to the inventory winner. Conversion is graded on /sell
+  // and the Homes Field, not on a redirect stub.
+  if (/permanentRedirect\(/.test(page) && /Never renders UI/.test(page)) continue
   const blob = filesIn(dir).map((f) => readFileSync(f, 'utf8')).join('\n')
   // A page that mounts a shared LP form (e.g. <SellerLPForm/>) delegates its
   // conversion wiring to that form, which is graded where it lives. Credit it.

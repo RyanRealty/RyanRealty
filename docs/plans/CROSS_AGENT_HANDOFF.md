@@ -1,4 +1,13 @@
-# Current — 2026-09-06 (remaining taste defects)
+# Current — 2026-09-06 (Wave A: LP 301s)
+
+Place and sell LPs 308 to the inventory winners. `/lp/tetherow` → community,
+`/lp/bend` → `/cities/bend`, seller LPs → `/sell`, buyer alerts → Homes Field,
+luxury → Bend search `$1.5M+`. Capture stays on `/sell` (SellValueForm).
+LOOP_SENTINEL stays off. Do not mix `_cma-*`.
+
+Next: Wave B search chrome (Google UI, email-first 375, one view toggle).
+
+# Previous — 2026-09-06 (remaining taste defects)
 
 Four leftover first-viewport defects from the site-pages e2e review:
 

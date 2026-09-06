@@ -121,5 +121,5 @@ export const BUY_EXITS: V3QuietItem[] = [
   { label: 'Price drops', href: '/price-drops' },
   { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
   { label: 'Area guides', href: '/area-guides' },
-  { label: 'Longer alert form', href: '/lp/buyer-listing-alerts' },
+  { label: 'Longer alert form', href: '/homes-for-sale' },
 ]

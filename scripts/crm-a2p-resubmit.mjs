@@ -38,11 +38,10 @@ const CONSENT_TEXT =
 
 const CTA_URLS = [
   'https://ryan-realty.com/contact',
+  'https://ryan-realty.com/sell',
   'https://ryan-realty.com/sell/valuation',
-  'https://ryan-realty.com/lp/seller-home-value',
-  'https://ryan-realty.com/lp/sell-your-home',
-  'https://ryan-realty.com/lp/buyer-listing-alerts',
-  'https://ryan-realty.com/lp/expired-listing',
+  'https://ryan-realty.com/homes-for-sale',
+  'https://ryan-realty.com/sell/expired-listings',
 ];
 
 const MESSAGE_FLOW =

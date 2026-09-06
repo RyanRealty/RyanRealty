@@ -36,15 +36,14 @@ checks.push({
     !/id="sell-value-name"[\s\S]{0,180}required/.test(sellForm),
 })
 
-const lpForm = src('app/lp/seller-home-value/SellerLPForm.tsx')
 checks.push({
-  label: 'seller LP qualify does not require name; confirm uses the publisher',
+  label: 'seller capture qualify does not require name; confirm uses the publisher',
   ok:
-    /from ['"]@\/lib\/sell\/publish-sell-valuation['"]/.test(lpForm) &&
-    /publishSellValuationConfirm\(isHot\)/.test(lpForm) &&
-    !lpForm.includes('Please enter your name.') &&
-    !/one business day/i.test(lpForm) &&
-    !/id="seller-lp-name"[\s\S]{0,180}required/.test(lpForm),
+    /from ['"]@\/lib\/sell\/publish-sell-valuation['"]/.test(sellForm) &&
+    /publishSellValuationConfirm\(isHot\)/.test(sellForm) &&
+    !sellForm.includes('Please enter your name.') &&
+    !/one business day/i.test(sellForm) &&
+    !/id="sell-value-name"[\s\S]{0,180}required/.test(sellForm),
 })
 
 const ac = src('components/seller-lp/AddressAutocomplete.tsx')

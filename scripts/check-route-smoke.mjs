@@ -87,6 +87,16 @@ const SKIP_ROUTES = new Map([
 // /reports and /housing-market/reports on the same cold start (HTTP 0).
 const HOP_ROUTES = new Map([
   ['/reports', { status: 308, pathname: '/housing-market/reports' }],
+  ['/lp/tetherow', { status: 308, pathname: '/communities/tetherow' }],
+  ['/lp/tetherow/heath', { status: 308, pathname: '/communities/tetherow' }],
+  ['/lp/bend', { status: 308, pathname: '/cities/bend' }],
+  ['/lp/seller-home-value', { status: 308, pathname: '/sell' }],
+  ['/lp/sell-your-home', { status: 308, pathname: '/sell' }],
+  ['/lp/buyer-listing-alerts', { status: 308, pathname: '/homes-for-sale' }],
+  ['/lp/expired-listing', { status: 308, pathname: '/sell/expired-listings' }],
+  ['/lp/fsbo', { status: 308, pathname: '/sell/for-sale-by-owner' }],
+  ['/lp/central-oregon-golf', { status: 308, pathname: '/central-oregon/golf' }],
+  ['/luxury-homes-bend', { status: 308, pathname: '/homes-for-sale/bend' }],
 ])
 
 function timeoutFor(path) {
@@ -144,8 +154,6 @@ const ROUTES = INVENTORY_ROUTES
       { path: '/contact', name: 'contact' },
       { path: '/sell', name: 'sell' },
       { path: '/housing-market', name: 'housing market hub' },
-      { path: '/lp/seller-home-value', name: 'seller LP' },
-      { path: '/lp/buyer-listing-alerts', name: 'buyer LP' },
       ...(LISTING_KEY
         ? [{ path: `/listing/${LISTING_KEY}`, name: 'listing detail' }]
         : []),

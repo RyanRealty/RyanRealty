@@ -340,11 +340,23 @@ const nextConfig: NextConfig = {
       { source: '/sellers', destination: '/sell', permanent: true },
       { source: '/best-neighborhoods-bend-oregon', destination: '/cities', permanent: true },
 
-      // Landing pages linked/advertised but never built — keep funnel traffic on a
-      // live LP instead of a dead end (307: revisit if these LPs ship later).
-      { source: '/lp/bend-luxury-concierge', destination: '/lp/bend', permanent: false },
-      { source: '/lp/awbrey-butte', destination: '/lp/bend', permanent: false },
-      { source: '/lp/woodside-ranch', destination: '/lp/bend', permanent: false },
+      // PAGE_INVENTORY fold: place/sell URLs are the landings. Ads keep working
+      // because they follow. Next 16 page-level permanentRedirect() is a 200
+      // shell, so the 308 must live here (ci:redirect-only).
+      { source: '/lp/tetherow', destination: '/communities/tetherow', permanent: true },
+      { source: '/lp/tetherow/heath', destination: '/communities/tetherow', permanent: true },
+      { source: '/lp/bend', destination: '/cities/bend', permanent: true },
+      { source: '/lp/bend-luxury-concierge', destination: '/cities/bend', permanent: true },
+      { source: '/lp/awbrey-butte', destination: '/cities/bend', permanent: true },
+      { source: '/lp/woodside-ranch', destination: '/cities/bend', permanent: true },
+      { source: '/lp/seller-home-value', destination: '/sell', permanent: true },
+      { source: '/lp/sell-your-home', destination: '/sell', permanent: true },
+      { source: '/lp/buyer-listing-alerts', destination: '/homes-for-sale', permanent: true },
+      { source: '/lp/expired-listing', destination: '/sell/expired-listings', permanent: true },
+      { source: '/lp/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
+      { source: '/lp/central-oregon-golf', destination: '/central-oregon/golf', permanent: true },
+      { source: '/luxury-homes-bend', destination: '/homes-for-sale/bend?minPrice=1500000', permanent: true },
+      { source: '/fsbo', destination: '/sell/for-sale-by-owner', permanent: true },
       // /lp/listings/<key> was never a route; the listing itself lives at /listing/<key>.
       { source: '/lp/listings/:listingKey', destination: '/listing/:listingKey', permanent: true },
 

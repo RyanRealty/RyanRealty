@@ -9,7 +9,7 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 55,
+    "nonV3ImportSites": 53,
     "legacyPages": 0,
     "mixedPages": 52
   },
@@ -53,9 +53,11 @@
     "app/central-oregon/venues/page.tsx",
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
     "app/cities/[slug]/page.tsx",
+    "app/cities/[slug]/types/[type]/page.tsx",
     "app/cities/page.tsx",
     "app/cma-drafts/[id]/page.tsx",
     "app/communities/[slug]/page.tsx",
+    "app/communities/[slug]/types/[type]/page.tsx",
     "app/communities/page.tsx",
     "app/compare/page.tsx",
     "app/contact/page.tsx",
@@ -77,6 +79,7 @@
     "app/housing-market/reports/archive/[city]/page.tsx",
     "app/housing-market/reports/page.tsx",
     "app/how-we-get-our-numbers/page.tsx",
+    "app/invest/page.tsx",
     "app/join/page.tsx",
     "app/listing/[listingKey]/page.tsx",
     "app/listing/by-address/[...slug]/page.tsx",
@@ -203,12 +206,15 @@
       "v3": 1
     },
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
-      "v3": 1,
+      "v3": 2,
       "legacy": 1
     },
     "app/cities/[slug]/page.tsx": {
-      "v3": 1,
+      "v3": 2,
       "legacy": 1
+    },
+    "app/cities/[slug]/types/[type]/page.tsx": {
+      "v3": 1
     },
     "app/cities/page.tsx": {
       "legacy": 1,
@@ -220,6 +226,9 @@
     "app/communities/[slug]/page.tsx": {
       "v3": 1,
       "legacy": 1
+    },
+    "app/communities/[slug]/types/[type]/page.tsx": {
+      "v3": 1
     },
     "app/communities/page.tsx": {
       "legacy": 1,
@@ -287,19 +296,15 @@
     "app/how-we-get-our-numbers/page.tsx": {
       "v3": 1
     },
+    "app/invest/page.tsx": {
+      "v3": 1
+    },
     "app/join/page.tsx": {
       "legacy": 1,
       "v3": 1
     },
     "app/listing/[listingKey]/page.tsx": {
       "legacy": 1,
-      "v3": 1
-    },
-    "app/lp/tetherow/heath/page.tsx": {
-      "legacy": 1,
-      "primitives": 1
-    },
-    "app/luxury-homes-bend/page.tsx": {
       "v3": 1
     },
     "app/marketing/request/page.tsx": {
@@ -395,7 +400,7 @@
       "v3": 1
     },
     "app/subdivisions/[slug]/page.tsx": {
-      "v3": 1,
+      "v3": 2,
       "legacy": 1
     },
     "app/subdivisions/page.tsx": {

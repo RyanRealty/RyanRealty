@@ -178,13 +178,13 @@ const CHECKS = [
       '  and appreciation-calculator siblings.',
   },
   {
-    file: 'app/lp/bend/page.tsx',
-    label: 'lp/bend: Dataset + BreadcrumbList',
-    all: ['Dataset', 'BreadcrumbList'],
+    file: 'app/cities/[slug]/page.tsx',
+    label: 'city: MetadataBlock schemas (Dataset + breadcrumb live in city-schemas)',
+    all: ['MetadataBlock', 'citySchemas'],
     why:
-      'The Bend LP renders a 6-stat KPI grid from live data and MUST emit a Dataset\n' +
-      '  carrying those stats plus a BreadcrumbList so AI engines can navigate to\n' +
-      '  this tier-1 search-authority surface.',
+      '/cities/bend is the Bend place URL. The Bend LP 301s here. City JSON-LD\n' +
+      '  (BreadcrumbList + Dataset) is built in city-schemas and mounted via\n' +
+      '  MetadataBlock on this page.',
   },
   {
     file: 'app/search/[...slug]/SearchPageJsonLd.tsx',

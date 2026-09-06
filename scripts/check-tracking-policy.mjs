@@ -109,13 +109,13 @@ check('CAPI supports Limited Data Use', /data_processing_options/.test(capiLib),
 // ── 4. Browser-pixel <-> CAPI dedup via one server-generated event_id ────────
 // research: dedup requires the SAME server-generated event_id on both paths (3-0).
 const sellerAction = read('app/lp/seller-home-value/actions.ts')
-const sellerForm = read('app/lp/seller-home-value/SellerLPForm.tsx')
+const sellerForm = read('app/sell/_v3/SellValueForm.tsx')
 check('Server generates a dedup event_id', /generateEventId\s*\(|const\s+eventId\b/.test(sellerAction),
-  'Seller LP action must generate a server event_id for pixel<->CAPI dedup.')
+  'Seller capture action must generate a server event_id for pixel<->CAPI dedup.')
 check('event_id forwarded to CAPI', /event_id\s*:\s*eventId|eventId\s*,/.test(sellerAction),
-  'Seller LP action must pass the server event_id to the Meta CAPI call.')
+  'Seller capture action must pass the server event_id to the Meta CAPI call.')
 check('event_id forwarded to browser pixel', /eventID\s*:\s*result\.eventId|eventID\s*:/.test(sellerForm),
-  'SellerLPForm.tsx must pass the same server event_id to fbq(..., { eventID }) so the pixel + CAPI dedup.')
+  'SellValueForm must pass the same server event_id to fbq(..., { eventID }) so the pixel + CAPI dedup.')
 
 // ── 5. Click-ID + UTM capture on the lead path (enables offline ROAS upload) ─
 // research: persist click IDs (fbclid/gclid) + UTMs to the lead row so offline

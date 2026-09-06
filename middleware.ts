@@ -224,7 +224,7 @@ function screenBotRequest(request: NextRequest, pathname: string): string | null
  * root. Add buyer/recruit/etc. here as we ship them.
  */
 const HOST_LP_ROOT_REWRITES: Record<string, string> = {
-  'seller.ryan-realty.com': '/lp/seller-home-value',
+  'seller.ryan-realty.com': '/sell',
   // Future:
   // 'buyer.ryan-realty.com': '/lp/buyer-listing-alerts',
 }
@@ -527,9 +527,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (1) Host-based rewrite for LP subdomains ──────────────────────────
-  // seller.ryan-realty.com/ → /lp/seller-home-value (transparent rewrite —
+  // seller.ryan-realty.com/ → /sell (transparent rewrite —
   // browser still shows seller.ryan-realty.com/). Only rewrites the root path
-  // so the subdomain can also serve /lp/west-bend-value etc. later.
+  // so the subdomain can also serve later seller leaves.
   const subdomainLpRoot = HOST_LP_ROOT_REWRITES[host]
   if (subdomainLpRoot && (pathname === '/' || pathname === '')) {
     const rewriteUrl = url.clone()

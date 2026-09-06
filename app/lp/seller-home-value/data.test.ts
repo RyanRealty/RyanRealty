@@ -29,7 +29,6 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
 import { getBendMarketSnapshot } from './data'
 
 const SRC = readFileSync(resolve('app/lp/seller-home-value/data.ts'), 'utf8')
-const PAGE = readFileSync(resolve('app/lp/seller-home-value/page.tsx'), 'utf8')
 
 const MT_BEND: SellBendMarket = {
   activeCount: 771,
@@ -124,11 +123,7 @@ describe('seller LP leftover source contract', () => {
     expect(SRC).not.toMatch(/getMarketPulseRowForGeo/)
   })
 
-  it('omits the 90-day median sale tile and labels leftover 90-day DTP', () => {
-    expect(PAGE).toMatch(/last 90 days/)
-    expect(PAGE).toMatch(/publishDaysLabel\(snap\.medianDaysToPending\)/)
-    expect(PAGE).toMatch(/snap\?\.soldCount30d/)
-    expect(PAGE).not.toMatch(/Closed in the last 90 days/)
-    expect(PAGE).not.toMatch(/daysToContract/)
+  it('does not map leftover daysToContract onto a DOM tile', () => {
+    expect(SRC).not.toMatch(/daysToContract/)
   })
 })

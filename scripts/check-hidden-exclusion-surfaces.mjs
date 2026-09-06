@@ -101,7 +101,6 @@ const CURATED_ALLOWLIST = new Map([
   ['app/account/page.tsx', "account dashboard: the user's own saved + recently-viewed tiles, not a search"],
   ['app/account/history/page.tsx', "the user's own viewing history, not a browse of inventory"],
   ['app/account/saved-homes/page.tsx', "the user's own saved homes, not a browse of inventory"],
-  ['app/lp/bend/page.tsx', 'marketing landing-page curated strip, not a browse-results search'],
 ])
 
 function parse(src) {
