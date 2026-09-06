@@ -318,7 +318,7 @@ export default async function Home() {
               <li>
                 <span className="home-explore-map__legend-mark" aria-hidden="true" />
                 <span className="home-explore-map__legend-label">For sale</span>
-                <span>— navy pin with price on hover</span>
+                <span>. Navy pin with price on hover</span>
               </li>
             </ul>
           </div>
@@ -381,7 +381,7 @@ export default async function Home() {
             eyebrow="Ryan Realty · Google"
             headline={`${reviewCount} Google reviews`}
             headingLevel={2}
-            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. One featured review in full; three more as picks.`}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. One featured review in full. Three more as picks.`}
             figures={[
               { value: String(reviewCount), label: 'Google reviews' },
               { value: reviewAverage.toFixed(1), label: 'average of 5' },
