@@ -6,6 +6,7 @@
  * encode). No fake personalization labels on the rails themselves.
  */
 import type { ListingTile } from '@/lib/data/types/listing'
+import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
@@ -34,9 +35,7 @@ export type HomeRailCard = {
 }
 
 const BEND_AREA = new Set(
-  ['bend', 'redmond', 'sisters', 'sunriver', 'la pine', 'terrebonne', 'tumalo'].map((s) =>
-    s.toLowerCase(),
-  ),
+  REPORT_CITY_LABELS.map((s) => s.toLowerCase()),
 )
 
 const NEW_WINDOW_DAYS = 7
