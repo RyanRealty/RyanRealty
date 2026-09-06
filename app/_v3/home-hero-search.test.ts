@@ -11,12 +11,14 @@ const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'ut
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
-  it('Stage H1 states the job; document title stays brand (H5)', () => {
-    expect(PAGE).toMatch(/headline=\{v3Text\('Find homes in Central Oregon'\)\}/)
+  it('Stage H1 is brand; job line sits under it (H5 + ci:seo-shell)', () => {
+    expect(PAGE).toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
+    expect(PAGE).toContain('home-hero-search__job')
+    expect(PAGE).toContain('Find homes in Central Oregon')
     expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend'\s*\}/)
     expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
     expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
-    expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
+    expect(PAGE).not.toMatch(/headline=\{v3Text\('Find homes in Central Oregon'\)\}/)
   })
 
   it('mounts HomeHeroSearch on the Stage; explore Google Map is below doors and homes (H8)', () => {

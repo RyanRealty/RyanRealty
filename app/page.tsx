@@ -180,7 +180,13 @@ export default async function Home() {
     regionAtlas?.regions?.filter((r) => r.kind === 'community').length ?? 0
 
   const mapPins = fieldItems
-    .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng))
+    .filter(
+      (item): item is (typeof item) & { lat: number; lng: number } =>
+        typeof item.lat === 'number' &&
+        Number.isFinite(item.lat) &&
+        typeof item.lng === 'number' &&
+        Number.isFinite(item.lng),
+    )
     .map((item) => ({
       id: item.id,
       href: item.href,
@@ -278,10 +284,11 @@ export default async function Home() {
           id="hero"
           headingLevel={1}
           eyebrow="Central Oregon"
-          headline={v3Text('Find homes in Central Oregon')}
+          headline={v3Text('Ryan Realty, Bend')}
           posterSrc={HERO_POSTER}
           videoSrc={HERO_VIDEO}
         >
+          <p className="home-hero-search__job">Find homes in Central Oregon</p>
           <HomeHeroSearch />
         </V3Stage>
 

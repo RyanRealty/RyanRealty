@@ -78,3 +78,14 @@
   background: var(--v3-surface);
   color: var(--v3-ink);
 }
+
+/* Critiquito H5: job line under brand H1 (ci:seo-shell keeps H1 brand). */
+.v3 .home-hero-search__job {
+  margin: 0 0 var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-shadow: var(--v3-media-shadow);
+}
