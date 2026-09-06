@@ -32,13 +32,64 @@ export function AboutFaces({
    */
   headingLevel?: 1 | 2
   size?: 'roster' | 'portrait'
-  /** Call / Text on the face row. Off on /team/[slug], where V3Doors own that. */
+  /** Call / Text / Email on the face row, including /team/[slug] portrait. */
   reach?: boolean
 }) {
   const [first, ...rest] = people
   if (!first) return null
   const shown = [first, ...rest]
   const lead = headingLevel === 1 && size === 'roster'
+  const reachLinks = (person: AboutFace) =>
+    reach ? (
+      <div className="about-faces__reach-row" id={size === 'portrait' ? 'contact-broker' : undefined}>
+        {person.tel ? (
+          <a href={`tel:${person.tel}`} className="about-faces__reach" aria-label={`Call ${person.name}`}>
+            Call
+          </a>
+        ) : null}
+        {person.tel ? (
+          <a href={`sms:${person.tel}`} className="about-faces__reach" aria-label={`Text ${person.name}`}>
+            Text
+          </a>
+        ) : null}
+        {person.email ? (
+          <a href={`mailto:${person.email}`} className="about-faces__reach" aria-label={`Email ${person.name}`}>
+            Email
+          </a>
+        ) : null}
+      </div>
+    ) : null
+
+  if (size === 'portrait') {
+    return (
+      <section
+        id="faces"
+        className={cn(V3_ROOT_CLASS, 'about-faces', 'about-faces--portrait')}
+        aria-labelledby="faces-heading"
+      >
+        <Link href={first.href} className="about-faces__photo-link">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="about-faces__photo"
+            src={first.src}
+            alt={first.name}
+            width={800}
+            height={1200}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </Link>
+        <div className="about-faces__row">
+          <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
+            {heading}
+          </V3Heading>
+          {first.title ? <p className="about-faces__title">{first.title}</p> : null}
+          {reachLinks(first)}
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section
@@ -47,8 +98,7 @@ export function AboutFaces({
         V3_ROOT_CLASS,
         'about-faces',
         lead && 'about-faces--lead',
-        shown.length === 1 && size === 'roster' && 'about-faces--solo',
-        size === 'portrait' && 'about-faces--portrait',
+        shown.length === 1 && 'about-faces--solo',
       )}
       aria-labelledby="faces-heading"
     >
@@ -79,24 +129,7 @@ export function AboutFaces({
                 {person.name}
               </Link>
               {person.title ? <p className="about-faces__title">{person.title}</p> : null}
-              {reach && person.tel ? (
-                <div className="about-faces__reach-row">
-                  <a
-                    href={`tel:${person.tel}`}
-                    className="about-faces__reach"
-                    aria-label={`Call ${person.name}`}
-                  >
-                    Call
-                  </a>
-                  <a
-                    href={`sms:${person.tel}`}
-                    className="about-faces__reach"
-                    aria-label={`Text ${person.name}`}
-                  >
-                    Text
-                  </a>
-                </div>
-              ) : null}
+              {reachLinks(person)}
             </div>
           </li>
         ))}

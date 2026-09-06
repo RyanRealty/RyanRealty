@@ -16,6 +16,13 @@ describe('market instruments fold the leftover KPI wall', () => {
     expect(region).toMatch(/foldAfter=\{2\}/)
   })
 
+  it('draws MOS two-bar on the hub opening instrument, not two leftover tiles', () => {
+    expect(hub).toMatch(/buildMosSupplyChart/)
+    expect(hub).toMatch(/chart=\{mosChart \?\? regionChart\}/)
+    expect(hub).toMatch(/label: v3Text\('a month of sales'\)/)
+    expect(hub).toMatch(/foldAfter=\{2\}/)
+  })
+
   it('does not retarget {city} homes for sale in market metadata keywords', () => {
     const start = geoMeta.indexOf('keywords:')
     expect(start).toBeGreaterThan(-1)

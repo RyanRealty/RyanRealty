@@ -113,6 +113,12 @@ export function belongingTrace(name: string): string {
   return `Authored ${name} facts on file: membership, HOA, and the size of the plan. Not live inventory.`
 }
 
+/** One caption on the still. Not a KPI Instrument of the same facts. */
+export function belongingCaption(figures: readonly V3InstrumentFigure[]): string | null {
+  if (figures.length === 0) return null
+  return figures.map((figure) => `${String(figure.value)} ${String(figure.label)}`).join('. ')
+}
+
 /** The counted set as Field rows. Photo is optional. Map and list are this set. */
 export function communityFieldItems(tiles: readonly ListingTile[], cap?: number): V3FieldItem[] {
   const items = [...tiles]

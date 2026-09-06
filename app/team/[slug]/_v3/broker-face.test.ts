@@ -16,7 +16,8 @@ describe('broker fold', () => {
     expect(PAGE).toContain('aboutFaceFromBroker')
     expect(BODY).toContain('<AboutFaces')
     expect(BODY).toContain('size="portrait"')
-    expect(BODY).toContain('reach={false}')
+    expect(BODY).toMatch(/\breach\b/)
+    expect(BODY).not.toContain('reach={false}')
     expect(BODY).not.toContain('Value my home')
     expect(BODY).not.toContain('BrokerValuationSheet')
   })
@@ -24,7 +25,7 @@ describe('broker fold', () => {
 
 describe('broker conversion order (PAGE_INVENTORY §6)', () => {
   it('puts Call/Text/Email on the fold and does not mount a CMA sheet', () => {
-    expect(at('id="contact-broker"')).toBeGreaterThan(-1)
+    expect(BODY).toMatch(/id="contact-broker"/)
     expect(BODY).not.toContain('BrokerValuationSheet')
     expect(PAGE).not.toContain("from './_v3/BrokerValuationSheet.client'")
   })

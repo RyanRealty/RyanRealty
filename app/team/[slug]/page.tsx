@@ -38,7 +38,6 @@ import {
   V3SectionTracker,
   type V3QuietItem,
   V3Atlas,
-  V3Doors,
   V3Instrument,
   V3Proof,
 } from '@/components/site/v3'
@@ -54,7 +53,6 @@ import {
 import { buildBrokerRecord, brokerRecordSource, brokerRecordStamp } from './_v3/broker-record'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
-import { formatDate } from '@/lib/format/date'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -133,7 +131,6 @@ export default async function TeamMemberPage({ params }: Props) {
   const quotes = toReviewQuotes(reviews.reviews).slice(0, 4)
   const reviewCount = reviews.count > 0 ? reviews.count : quotes.length
   const reviewAverage = reviews.count > 0 ? reviews.averageRating : 5
-  const newestReview = quotes.find((q) => q.date)?.date ?? null
 
   const canonicalSlug: BrokerSlug | null =
     normalizeAgentSlug(slug) ??
@@ -147,6 +144,7 @@ export default async function TeamMemberPage({ params }: Props) {
     title: broker.title,
     headshotPng: HEADSHOT[broker.slug] ?? HEADSHOT[canonicalPathSlug] ?? null,
     phoneDirect: broker.phone,
+    email: broker.email,
   })
 
   const identityItems: V3QuietItem[] = [
@@ -237,20 +235,8 @@ export default async function TeamMemberPage({ params }: Props) {
         />
 
         {face ? (
-          <AboutFaces people={[face]} heading={shownName} headingLevel={1} size="portrait" reach={false} />
-        ) : null}
-
-        {telHref && smsHref && mailHref ? (
-          <V3Doors
-            id="contact-broker"
-            name={v3Text(`Reach ${firstName}`)}
-            doors={[
-              { kicker: v3Text('Call'), label: v3Text(broker.phone ?? 'Call'), fact: v3Text(`${firstName} answers, not a desk`), href: telHref },
-              { kicker: v3Text('Text'), label: v3Text(`Text ${firstName}`), fact: v3Text('The fastest reply'), href: smsHref },
-              { kicker: v3Text('Email'), label: v3Text(`Email ${firstName}`), fact: v3Text(broker.email ?? 'Email'), href: mailHref },
-            ]}
-          />
-        ) : telHref || smsHref || mailHref ? (
+          <AboutFaces people={[face]} heading={shownName} headingLevel={1} size="portrait" reach />
+        ) : /* id="contact-broker" */ !telHref && (smsHref || mailHref) ? (
           <V3Quiet
             id="contact-broker"
             eyebrow="Direct line"
@@ -274,13 +260,7 @@ export default async function TeamMemberPage({ params }: Props) {
             headline={`${reviewCount} Google reviews`}
             headingLevel={2}
             claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
-            figures={[
-              { value: String(reviewCount), label: 'Google reviews' },
-              { value: reviewAverage.toFixed(1), label: 'average of 5' },
-              ...(newestReview
-                ? [{ value: formatDate(newestReview, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }]
-                : []),
-            ]}
+            figures={[]}
             quotes={quotes}
             source={{ label: 'Every review', href: '/reviews' }}
             record={false}

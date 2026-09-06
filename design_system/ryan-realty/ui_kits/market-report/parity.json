@@ -16,7 +16,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, twice. Level 1 is the page's answer: the verdict headline, median list price, homes for sale, months of supply, and median days to pending, every one a door, under one trace from market_pulse_live region/central-oregon/property_type=A stamped with that row's refreshedAt. D9: the region monthly median series mounts as Instrument.chart (V3Chart year overlay, caller-formatted labels, in-progress month dropped). Flattening that series to a figure is a defect. Neither level carries an action (2026-08-27 single-ask consolidation): the page previously put a GHOST Value My Home button here, but MarketInquirySheet, the on-page inquiry form, is now the page's one ask and this Instrument answers the reader's question without soliciting one of its own. Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row, because the live-aggregate fallback stamps now() and would print 'updated today' over a closed calendar year. All three of its figures are doors into the closed-sales explorer, the property-type one carrying its own type filter. That closed year is a singleton status (A27) and stays type.",
+      "section": "Pattern 1, twice. Level 1 is the page's answer: the verdict headline, then the MOS two-bar (homes for sale vs a month of sales) as Instrument.chart when leftover active and months of supply both publish. Folded tiles carry median list, days to pending, and leftover extra-type/pace/mix. The region monthly median series is the fallback drawing when MOS cannot be derived. Flattening MOS to a 3.9 tile is a defect. Neither level carries an action (2026-08-27 single-ask consolidation): the page previously put a GHOST Value My Home button here, but MarketInquirySheet, the on-page inquiry form, is now the page's one ask and this Instrument answers the reader's question without soliciting one of its own. Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row, because the live-aggregate fallback stamps now() and would print 'updated today' over a closed calendar year. All three of its figures are doors into the closed-sales explorer, the property-type one carrying its own type filter. That closed year is a singleton status (A27) and stays type.",
       "blocking": true
     },
     {
@@ -115,9 +115,9 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-06",
-    "score": 61,
-    "beats": "Zillow and Redfin Central Oregon market pages: claim-first year overlay chart with a source stamp under the series.",
-    "evaluator": "separate grok-4.6 evaluator, conversion-market-search pass, session 01a06fc0",
+    "score": 54,
+    "beats": "Zillow Bend housing market: live actives vs a month of closes as two bars instead of a lone MOS tile",
+    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, market",
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/market-report/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/market-report/shots/mobile375.png"

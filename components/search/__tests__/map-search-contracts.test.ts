@@ -664,9 +664,12 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     expect(slug).toMatch(/href=\{mapViewHref\}/)
   })
 
-  it('offers a grid-view return link from the map branch (bidirectional toggle)', () => {
-    expect(slug).toMatch(/gridViewHref/)
-    expect(slug).toMatch(/href=\{gridViewHref\}/)
+  it('offers a list-view return from the map branch (bidirectional toggle)', () => {
+    const map = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(map).toMatch(/<SearchFilters/)
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/setFilter\('view', v\)/)
+    expect(filters).toMatch(/'split' \| 'list' \| 'map'/)
   })
 })
 

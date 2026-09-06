@@ -14,6 +14,7 @@ import {
 } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections'
 import { dailyLifeRows } from '@/app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-daily-life'
 import {
+  belongingCaption,
   belongingFigures,
   belongingHeadline,
   communityFieldItems,
@@ -250,16 +251,20 @@ describe('master-plan opening', () => {
       'membership tiers',
       'acres',
     ])
+    expect(belongingCaption(belongingFigures(content))).toBe(
+      '$2,400 master HOA a year. 2 membership tiers. 700 acres',
+    )
   })
 
-  it('mounts belonging facts as an Instrument, then Atlas, then one sold chart', () => {
+  it('puts belonging on the still as a caption, then Atlas, then one sold chart', () => {
     const page = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
-    expect(page).toMatch(/id="facts"/)
-    expect(page).toMatch(/belongingFigures\(richContent, placeCharacter\)/)
+    expect(page).toMatch(/belongingCaption\(/)
+    expect(page).toMatch(/place-opening__caption/)
+    expect(page).not.toMatch(/id="facts"/)
     expect(page).toMatch(/<V3Atlas/)
     expect(page).toMatch(/placeMedianChart\(/)
     expect(page).toMatch(/foldAfter=\{2\}/)
-    expect(page.indexOf('id="facts"')).toBeLessThan(page.indexOf('<V3Atlas'))
+    expect(page.indexOf('place-opening__caption')).toBeLessThan(page.indexOf('<V3Atlas'))
     expect(page.indexOf('<V3Atlas')).toBeLessThan(page.indexOf('id="market"'))
   })
 

@@ -15,8 +15,6 @@
  * V3SectionTracker pageType="about", revalidate 3600.
  *
  * No invented quote. MLS remarks N/A. D11 mission sentence is off this page.
- * Dates render in Pacific through formatDate.
- *
  * Parity: design_system/ryan-realty/ui_kits/about/parity.json
  */
 
@@ -28,7 +26,6 @@ import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath, teamPath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
@@ -91,7 +88,6 @@ export default async function AboutPage() {
   const quotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
-  const newestReview = quotes.find((q) => q.date)?.date ?? null
   const firmRows = publishFirmClosingRows(brokerageTiles)
 
   const orderedBrokers = [...brokers].sort(
@@ -185,13 +181,7 @@ export default async function AboutPage() {
             headline={`${reviewCount} Google reviews`}
             headingLevel={2}
             claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
-            figures={[
-              { value: String(reviewCount), label: 'Google reviews' },
-              { value: reviewAverage.toFixed(1), label: 'average of 5' },
-              ...(newestReview
-                ? [{ value: formatDate(newestReview, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }]
-                : []),
-            ]}
+            figures={[]}
             quotes={quotes}
             source={{ label: 'Every review', href: '/reviews' }}
             record={false}

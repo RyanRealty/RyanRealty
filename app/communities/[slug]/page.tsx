@@ -1,8 +1,8 @@
 /**
  * /communities/[slug] — master-plan grain. First screen is owned still + H1
- * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit in
- * Instrument, not leftover HUD. Atlas is the inventory graphic. MOS / sold /
- * verdict / DTP stay off the face.
+ * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit as a
+ * caption on the still, not a KPI Instrument. Atlas is the inventory graphic.
+ * MOS / sold / verdict / DTP stay off the face.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
  * regions and Split overlayBoundaries.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
@@ -118,6 +118,7 @@ import { buildPlaceKnowledge } from './_v3/place-knowledge'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
+  belongingCaption,
   belongingFigures,
   belongingHeadline,
   belongingTrace,
@@ -321,7 +322,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     cityStagePoster(cityHeroes[citySlug], cityLibraryHeroUrl)
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)
-  const [firstBelonging, ...restBelonging] = belonging
+  const belongingLine = belongingCaption(belonging)
 
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
@@ -685,19 +686,13 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             <V3Heading level={1} size="field" onMedia={Boolean(stagePosterSrc)}>
               {headline}
             </V3Heading>
+            {belongingLine ? (
+              <p className="place-opening__caption" title={belongingTrace(publicName)}>
+                {belongingLine}
+              </p>
+            ) : null}
           </div>
         </div>
-        {firstBelonging ? (
-          <V3Instrument
-            id="facts"
-            level={2}
-            eyebrow={v3Text(publicName)}
-            headline={v3Text(`What ${publicName} is`)}
-            figures={[firstBelonging, ...restBelonging]}
-            foldAfter={2}
-            source={v3Text(belongingTrace(publicName))}
-          />
-        ) : null}
         {(
           <V3Atlas
             id="atlas"

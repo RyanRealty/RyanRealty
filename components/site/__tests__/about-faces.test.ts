@@ -101,6 +101,7 @@ describe('aboutFaceFromBroker', () => {
       name: BROKERS.matt.nameShort,
       title: 'Principal Broker',
       tel: aboutPhoneE164(BROKERS.matt.phone),
+      email: null,
     })
   })
 
@@ -150,6 +151,7 @@ describe('aboutFaceFromBroker', () => {
       name: 'Matt Ryan',
       title: 'Principal Broker',
       tel: null,
+      email: null,
     })
   })
 })

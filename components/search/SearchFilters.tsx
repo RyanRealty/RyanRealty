@@ -577,6 +577,7 @@ export default function SearchFilters({
                 <Input
                   type="number"
                   inputMode="numeric"
+                  name="minPrice"
                   placeholder="No min"
                   min={0}
                   step={25000}
@@ -597,6 +598,7 @@ export default function SearchFilters({
                 <Input
                   type="number"
                   inputMode="numeric"
+                  name="maxPrice"
                   placeholder="No max"
                   min={0}
                   step={25000}

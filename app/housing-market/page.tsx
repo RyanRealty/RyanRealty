@@ -93,7 +93,7 @@ import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -115,6 +115,7 @@ import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
 import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
+import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 
@@ -198,6 +199,21 @@ export default async function HousingMarketHubPage() {
     dropInProgressMonth(priceHistory, todayKey.slice(0, 7)),
   )
   const regionChart = buildRegionMedianChart(chartMonths.months, chartMonths.leftoverUsed)
+  // MOS two-bar is the hub drawing (DATA_GRAPHICS / TASTE). Same rearrangement
+  // as /months-of-supply. Miss omits — never invent a monthly pace.
+  const activeCount = hud.active != null && hud.active > 0 ? hud.active : null
+  const monthOfSales =
+    activeCount != null && mosRaw != null && mosRaw > 0
+      ? Math.round((activeCount / mosRaw) * 10) / 10
+      : null
+  const mosChart =
+    activeCount != null && monthOfSales != null && mosText
+      ? buildMosSupplyChart({
+          homesForSale: activeCount,
+          monthOfSales,
+          mosText,
+        })
+      : undefined
 
   // The long view: the approved chart-room forms wired live. A fourth
   // population set (national FRED series, the mart's SFR cube, the seller-net
@@ -255,10 +271,10 @@ export default async function HousingMarketHubPage() {
   const historyPath = lead.historyPath
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
 
-  // Live single-family figures for the LEVEL-1 hero (the page's answer): median
-  // list price, homes for sale, months of supply, median to pending, then the
-  // extra leftover segments/pace/mix figures. One population, one clock
-  // (refreshedAt), so this section's stamp is never dropped by a clock mismatch.
+  // Live single-family figures for the LEVEL-1 hero. When the MOS two-bar
+  // publishes, the first two tiles are the two bars (homes for sale, a month
+  // of sales). Median list, days to pending, and leftover extra-type/pace/mix
+  // fold behind "All N figures". One population, one clock (refreshedAt).
   const sfrFollow = buildSfrFollowFigures(hud, mosText)
   for (const row of publicSegments) {
     if (row.activeCount == null || row.activeCount <= 0) continue
@@ -290,7 +306,23 @@ export default async function HousingMarketHubPage() {
       label: v3Text(item.label),
     })
   }
-  const [firstSfrFigure, ...restSfrFigures] = sfrFollow
+  const openingFigures =
+    mosChart && monthOfSales != null
+      ? [
+          ...(sfrFollow.filter((figure) => String(figure.label) === 'homes for sale, single-family')),
+          {
+            value: v3Text(monthOfSales.toFixed(1)),
+            label: v3Text('a month of sales'),
+            href: '/months-of-supply',
+          },
+          ...sfrFollow.filter(
+            (figure) =>
+              String(figure.label) !== 'homes for sale, single-family' &&
+              String(figure.label) !== MOS_PLAIN_LABEL,
+          ),
+        ]
+      : sfrFollow
+  const [firstSfrFigure, ...restSfrFigures] = openingFigures
 
   // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
   // array that feeds the FAQPage JSON-LD. Both read the strings computed above.
@@ -470,7 +502,7 @@ export default async function HousingMarketHubPage() {
               }.${mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`,
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-            chart={regionChart}
+            chart={mosChart ?? regionChart}
           />
         ) : (
           <V3Quiet

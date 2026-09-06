@@ -1,11 +1,11 @@
-import { type ReactNode, Suspense } from 'react'
+import { Suspense } from 'react'
 import { getSession } from '../../../actions/auth'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
 import { getCommunityBySlug } from '../../../actions/communities'
 import { getListingsWithAdvanced, type AdvancedSort } from '../../../actions/listings'
-import { getViewportSearch, type SearchFilters } from '@/app/actions/search'
+import { getViewportSearch, type SearchFilters as ViewportSearchFilters } from '@/app/actions/search'
 import { subdivisionEntityKey, getSubdivisionDisplayName } from '../../../../lib/slug'
 import { entityKeyToSlug } from '../../../../lib/community-slug'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
@@ -20,9 +20,9 @@ import { stripGeoScope } from '@/components/search/geo-scope'
 import { ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import MapSearchView from '@/components/search/MapSearchView'
+import SearchFilters from '@/components/search/SearchFilters'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3_LEDGER_CLASS, V3Breadcrumb } from '@/components/site/v3'
-import SearchFilterBar from '../../../../components/SearchFilterBar'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
@@ -83,6 +83,8 @@ export async function renderMapSplitView(props: {
    *  this field — not the subdivision-name string. */
   neighborhood?: string
   displayName: string
+  /** Visible H1. City browse owns `{City} homes for sale`. */
+  headline: string
   searchPagePath: string
   searchBreadcrumbItems: { label: string; href?: string }[]
   savedKeys: string[]
@@ -94,29 +96,19 @@ export async function renderMapSplitView(props: {
   initialPolygon: ReturnType<typeof decodeMapPolygon>
   presetChips: readonly { label: string; param: string }[]
   perPageParam: string
-  /** The "Grid view" return CTA (a shadcn Button) — rendered by page.tsx, which
-   *  already owns the route's @/components/ui imports (G47 shadcn burn-down
-   *  counts importing files; this section must not become a new one). */
-  gridViewCta: ReactNode
 }) {
   const {
     sp,
-    slug,
-    resolved,
     city,
     decodedSubdivision,
     neighborhood: neighborhoodName,
-    displayName,
-    searchPagePath,
+    headline,
     searchBreadcrumbItems,
     savedKeys,
     likedKeys,
     session,
     effectiveStatusFilter,
     initialPolygon,
-    presetChips,
-    perPageParam,
-    gridViewCta,
   } = props
   // priceChangeKeys + prefs: still accepted from page.tsx for call-site stability.
   // MapSearchView does not consume buying prefs or price-change badge keys.
@@ -161,7 +153,7 @@ export async function renderMapSplitView(props: {
   // SearchFilters has no neighborhood key. A boundary neighborhood must not
   // ride `subdivision` (MLS plat name) — that under-counts the area. The grid
   // already uses getListingsWithAdvanced({ neighborhood }). Same field here.
-  const viewportFilters: SearchFilters = {
+  const viewportFilters: ViewportSearchFilters = {
     city: city || undefined,
     subdivision: neighborhoodName ? undefined : decodedSubdivision || undefined,
     minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
@@ -272,7 +264,7 @@ export async function renderMapSplitView(props: {
     // '' is active+pending (statusForMapSearch). Do not coerce to Active.
     status: status,
     sort: sp.sort ?? 'newest',
-    view: sp.view ?? 'map',
+    view: sp.view === 'map' || sp.view === 'split' ? sp.view : 'split',
     minSqFt: sp.minSqFt ?? '',
     maxSqFt: sp.maxSqFt ?? '',
     lotAcresMin: sp.lotAcresMin ?? '',
@@ -308,52 +300,16 @@ export async function renderMapSplitView(props: {
   // (THE LOOK, PUBLIC_UI.md section 6).
   return (
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-2 sm:px-6">
+      <div className="search-filter-dock w-full shrink-0 border-b border-border bg-card shadow-sm">
         {searchBreadcrumbItems.length > 1 ? (
           <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
-        ) : (
-          <span />
-        )}
-        {gridViewCta}
+        ) : null}
+        <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
+          {headline}
+        </h1>
+        <SearchFilters initialFilters={filters} signedIn={!!session?.user} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="shrink-0 border-b border-border bg-card">
-          <SearchFilterBar
-            basePath={searchPagePath}
-            presetChips={presetChips}
-            locationLabel={displayName}
-            locationHref={`${searchPagePath}?${new URLSearchParams({ ...sp, view: 'map' }).toString()}`}
-            signedIn={!!session?.user}
-            pathContext={{ ...resolved, city, citySlug: slug[0] }}
-            minPrice={sp.minPrice}
-            maxPrice={sp.maxPrice}
-            beds={sp.beds}
-            baths={sp.baths}
-            minSqFt={sp.minSqFt}
-            maxSqFt={sp.maxSqFt}
-            maxBeds={sp.maxBeds}
-            maxBaths={sp.maxBaths}
-            yearBuiltMin={sp.yearBuiltMin}
-            yearBuiltMax={sp.yearBuiltMax}
-            lotAcresMin={sp.lotAcresMin}
-            lotAcresMax={sp.lotAcresMax}
-            postalCode={sp.postalCode}
-            propertyType={sp.propertyType}
-            statusFilter={sp.statusFilter}
-            keywords={sp.keywords}
-            hasOpenHouse={sp.hasOpenHouse}
-            garageMin={sp.garageMin}
-            hasPool={sp.hasPool}
-            hasView={sp.hasView}
-            hasWaterfront={sp.hasWaterfront}
-            newListingsDays={sp.newListingsDays}
-            includeClosed={sp.includeClosed}
-            sort={sp.sort}
-            view="map"
-            perPage={perPageParam}
-            poly={sp.poly}
-          />
-        </div>
         {/* underFilterBar slot kept in source for the guest-alert contract.
             Split/map hide the stacked email strip. */}
         <div className="hidden">

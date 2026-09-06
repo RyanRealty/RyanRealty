@@ -1,12 +1,18 @@
-# Current — 2026-09-06 (site pages e2e)
+# Current — 2026-09-06 (remaining taste defects)
 
-Waves 0–8 of `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` are on `main`.
+Four leftover first-viewport defects from the site-pages e2e review:
+
+- `/homes-for-sale/bend` defaults to the same SearchFilters + MapSearchView
+  split as regional `/homes-for-sale` (numeric `view=1..5` still grid).
+- Tetherow belonging is a caption on the still, then Atlas. No `#facts` KPI.
+- `/housing-market` opens on the MOS two-bar (homes for sale vs a month of
+  sales). Median overlay is the fallback drawing.
+- About/team portraits drop `--v3-section-pad` cream lakes. Team fold is
+  photo + Call/Text/Email.
+
 Looked at localhost 1440/375. Separate evaluators wrote `tasteReview` + PNG
-receipts (scores 48–74 — honest, not 86). LOOP_SENTINEL stays off. Do not mix
-untracked `_cma-*` / deep-audit punchlist scripts.
-
-Remaining: city-slug search is still a second map chrome; MOS two-bar on the
-hub vs the MOS page; Tetherow belonging still reads as a KPI row.
+receipts (search 54, community 57, about 51, team 47, market 54). LOOP_SENTINEL
+stays off. Do not mix untracked `_cma-*` / deep-audit punchlist scripts.
 
 ---
 

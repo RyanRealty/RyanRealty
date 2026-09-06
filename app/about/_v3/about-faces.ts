@@ -14,6 +14,7 @@ export type AboutFace = {
   name: string
   title: string
   tel: string | null
+  email: string | null
 }
 
 const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/
@@ -46,6 +47,7 @@ export function aboutFaceFromBroker(b: {
   title?: string | null
   headshotPng?: string | null
   phoneDirect?: string | null
+  email?: string | null
 }): AboutFace | null {
   const name = b.fullName?.trim()
   const slug = b.slug?.trim()
@@ -59,5 +61,6 @@ export function aboutFaceFromBroker(b: {
     name: aboutDisplayName(slug, name),
     title: title || 'Broker',
     tel: aboutPhoneE164(b.phoneDirect),
+    email: b.email?.trim() || null,
   }
 }

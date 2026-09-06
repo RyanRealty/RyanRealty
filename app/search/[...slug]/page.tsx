@@ -155,7 +155,16 @@ export default async function SearchPage({
   if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
   if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
 
-  const isMapSplitView = (sp.view === 'map' || sp.view === 'split') && (city || hasFilterOnly)
+  // Numeric view=1..5 is the leftover grid-column picker. City browse with no
+  // view param opens on the same MapSearchView split as /homes-for-sale.
+  const isGridColumnView = [1, 2, 3, 4, 5].includes(Number(sp.view))
+  const isPlainCityBrowse = Boolean(city && !subdivision && !preset)
+  const isMapSplitView =
+    !isGridColumnView &&
+    (sp.view === 'map' ||
+      sp.view === 'split' ||
+      (isPlainCityBrowse && sp.view !== 'list')) &&
+    Boolean(city || hasFilterOnly)
 
   // Map/split seeds from MapSplitView's own viewport fetch. Do not wait on the
   // 12s grid listings RPC (or grid-only JSON-LD/banner reads) first.
@@ -174,15 +183,6 @@ export default async function SearchPage({
             withTimeout(getBuyingPreferences(), null, 600),
           ])
         : ([[], [] as string[], null] as [string[], string[], Awaited<ReturnType<typeof getBuyingPreferences>>])
-    const gridViewHref = (() => {
-      const params = new URLSearchParams(
-        Object.entries(sp).filter(
-          ([k, v]) => typeof v === 'string' && v !== '' && k !== 'view' && k !== 'poly'
-        ) as [string, string][]
-      )
-      const q = params.toString()
-      return q ? `${searchPagePath}?${q}` : searchPagePath
-    })()
     return renderMapSplitView({
       sp,
       slug,
@@ -191,6 +191,10 @@ export default async function SearchPage({
       decodedSubdivision,
       neighborhood,
       displayName,
+      headline:
+        city && !preset
+          ? `${city} homes for sale`
+          : `${displayName}${/homes for sale/i.test(displayName) ? '' : ' homes for sale'}`,
       searchPagePath,
       searchBreadcrumbItems,
       savedKeys,
@@ -202,20 +206,12 @@ export default async function SearchPage({
       initialPolygon,
       presetChips,
       perPageParam,
-      gridViewCta: (
-        <Button asChild variant="secondary" size="sm" className="shrink-0">
-          <Link href={gridViewHref} aria-label="Switch back to the grid view">
-            Grid view
-          </Link>
-        </Button>
-      ),
     })
   }
 
   // Fetch the independent data the clean results page renders in one parallel batch:
   //   listings (grid + pagination), recent price-change keys, session
   //   (save-search), resort entity keys (JSON-LD + breadcrumb resort flag).
-  const isPlainCityBrowse = !!(city && !subdivision && !preset)
   const [listingsResult, priceChangeKeys, session, resortEntityKeys, citySfrTiles] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,

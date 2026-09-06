@@ -79,7 +79,17 @@ describe('SEO search honesty contracts', () => {
     const gridFetch = page.indexOf('getListingsWithAdvanced({ ...filterOpts, limit: pageSize, offset })')
     expect(mapReturn).toBeGreaterThan(0)
     expect(gridFetch).toBeGreaterThan(mapReturn)
-    expect(page).toMatch(/const isMapSplitView = \(sp\.view === 'map' \|\| sp\.view === 'split'\)/)
+    expect(page).toMatch(/const isMapSplitView =/)
+    expect(page).toMatch(/sp\.view === 'map'/)
+    expect(page).toMatch(/sp\.view === 'split'/)
+    expect(page).toMatch(/isPlainCityBrowse && sp\.view !== 'list'/)
+  })
+
+  it('city-slug split uses the regional SearchFilters + MapSearchView dock', () => {
+    expect(map).toMatch(/<SearchFilters/)
+    expect(map).toMatch(/<MapSearchView/)
+    expect(map).not.toMatch(/SearchFilterBar/)
+    expect(map).toMatch(/font-display text-sm/)
   })
 
   it('prints the all-types caption on the city header intro', () => {
