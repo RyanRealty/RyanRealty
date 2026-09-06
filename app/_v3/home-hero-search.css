@@ -8,6 +8,16 @@
   color: var(--v3-ink);
 }
 
+.v3 .home-hero-search__label {
+  display: block;
+  margin: 0 0 var(--v3-space-2xs);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+}
+
 .v3 .home-hero-search__row {
   display: flex;
   align-items: stretch;

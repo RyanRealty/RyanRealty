@@ -105,17 +105,24 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     }
   })
 
-  it('footer columns are city SEO groups, not Buy / Areas leftovers', () => {
+  it('footer columns group towns under Markets, then Sell and About (H13)', () => {
     expect(KB_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
+      'Markets',
+      'Sell',
+      'About',
+    ])
+    const markets = KB_FOOTER_COLUMNS[0]!
+    expect(markets.groups?.map((g) => g.heading)).toEqual([
       'Bend',
       'Redmond',
       'Sisters',
       'Sunriver',
-      'La Pine · Terrebonne · Prineville · Madras',
-      'Sell',
-      'About',
+      'La Pine',
+      'Terrebonne',
+      'Prineville',
+      'Madras',
     ])
-    const bend = footerColumnLinks(KB_FOOTER_COLUMNS[0]!)
+    const bend = markets.groups?.find((g) => g.heading === 'Bend')?.links ?? []
     expect(bend.map((l) => l.href)).toEqual([
       '/homes-for-sale/bend',
       '/housing-market/bend',
@@ -134,8 +141,9 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       'NorthWest Crossing',
       'Awbrey Glen',
     ])
-    const redmond = footerColumnLinks(KB_FOOTER_COLUMNS.find((c) => c.heading === 'Redmond')!)
-    expect(redmond.map((l) => l.href)).toEqual([
+    const allMarketLinks = footerColumnLinks(markets)
+    const redmondHrefs = allMarketLinks.filter((l) => l.href.includes('redmond') || l.href.includes('eagle-crest') || l.href.includes('pronghorn')).map((l) => l.href)
+    expect(redmondHrefs).toEqual([
       '/homes-for-sale/redmond',
       '/housing-market/redmond',
       '/communities/eagle-crest',

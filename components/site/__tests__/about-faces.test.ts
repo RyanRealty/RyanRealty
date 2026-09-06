@@ -18,6 +18,12 @@ describe('about faces fold', () => {
     expect(css).not.toMatch(/70vh|64vh/)
     expect(css).not.toMatch(/\.about-faces__photo\s*\{[\s\S]*?height:\s*auto/)
   })
+
+  it('crops roster photos head-and-shoulders so faces stay in frame (H12)', () => {
+    const css = readFileSync('app/about/_v3/about-faces.css', 'utf8')
+    expect(css).toMatch(/\.about-faces__photo\s*\{[\s\S]*?object-fit:\s*cover/)
+    expect(css).toMatch(/object-position:\s*center 18%/)
+  })
 })
 
 describe('about page copy', () => {

@@ -57,6 +57,7 @@ export function HomeHeroSearch() {
     go(searchHrefForQuery(text))
   }, [query, highlight, items, go])
 
+  const fieldId = `${listId}-q`
   return (
     <form
       className="home-hero-search"
@@ -66,15 +67,17 @@ export function HomeHeroSearch() {
         onSubmit()
       }}
     >
+      <label className="home-hero-search__label" htmlFor={fieldId}>
+        City, community, or address
+      </label>
       <div className="home-hero-search__row">
         <input
-          id={listId}
+          id={fieldId}
           className="home-hero-search__input"
           type="search"
           name="q"
           autoComplete="off"
-          aria-label="Search city, community, or address"
-          placeholder="City, community, or address"
+          placeholder="Bend, Tetherow, or a street address"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value)

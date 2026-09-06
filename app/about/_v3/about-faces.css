@@ -72,7 +72,9 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* H12: head-and-shoulders crop — faces stay in frame on homepage/about roster. */
+  object-fit: cover;
+  object-position: center 18%;
 }
 
 .about-faces__row {

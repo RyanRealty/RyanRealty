@@ -3,9 +3,7 @@ import type { Metadata } from 'next'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { getListingTiles, getDetachedOverlays, getBrokers, getReviews } from '@/lib/data'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
-import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { getCitiesForIndex } from '@/app/actions/cities'
-import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
@@ -16,22 +14,18 @@ import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-trut
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly, dropCurrentMonth } from '@/lib/data/market-truth/public-monthly'
 import {
   placeFigureRows,
-  communityRows,
   marketAbsenceItems,
   leftoverMarketFigures,
   placeMedianChart,
   placeMedianChartCaption,
   PLACE_COUNT_TRACE,
   type CityPlaceItem,
-  type CityCommunityItem,
 } from '@/app/cities/[slug]/_v3/city-sections'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
   v3Text,
-  V3Atlas,
   V3Stage,
-  type AtlasRegion,
   V3Doors,
   V3Instrument,
   V3Ledger,
@@ -39,11 +33,14 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
-  type V3QuietItem,
   V3Proof,
+  V3Eyebrow,
+  V3Heading,
 } from '@/components/site/v3'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
-import { HomeHomesFieldBound } from './_v3/HomeHomesFieldBound.client'
+import { HomeHomesField } from './_v3/HomeHomesField'
+import { HomeExploreMap } from './_v3/HomeExploreMap.client'
+import './_v3/home-explore-map.css'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
 import { liveStamp } from './_v3/live-format'
@@ -52,7 +49,6 @@ import {
   HERO_POSTER,
   HOME_FIELD_POOL,
   HOME_TILE_FETCH,
-  HOME_COMMUNITY_TRACE,
   HOME_MARKET_TRACE,
   preferPlaceHero,
 } from './_v3/home-constants'
@@ -61,10 +57,6 @@ import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
-import { SellValueForm } from '@/app/sell/_v3/SellValueForm'
-import { SellCapture } from '@/app/sell/_v3/SellCapture'
-import communityVideoManifest from '@/data/city-hero-videos.resolved.json'
-import { regionBasemap } from '@/lib/geo/basemap-source'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -73,11 +65,11 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage. Stage (owned Old Mill / Bend flyover, branded H1, search action)
- * then the living Atlas, then Field of homes on the v3 barrel. Chart Room is mid-page.
- * PAGE_OUTLINE: `/` wins Ryan Realty / Ryan Realty Bend. Search owns the
- * regional homes-for-sale query. absolute title skips the layout suffix so
- * the SERP is brand once.
+ * Homepage. Stage (owned Old Mill / Bend flyover, job H1, search action),
+ * then Buy/Sell/Invest doors, featured homes, a regular Google Map, one town
+ * comparison, market Instrument, reviews, and brokers. Atlas stays on place
+ * pages — not here. absolute title skips the layout suffix so the SERP is
+ * brand once.
  */
 export const revalidate = 300
 
@@ -112,18 +104,11 @@ const TOWN_IMG: Record<string, string> = {
   terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
 }
 
-const COMM_FEATURED = [
-  { match: 'tetherow', town: 'Bend', img: '/images/kb/tetherow-golf-aerial.jpg', videoSlug: 'tetherow' },
-  { match: 'caldera', town: 'Sunriver', img: '/images/kb/caldera-springs.jpg', videoSlug: 'caldera-springs' },
-  { match: 'broken top', town: 'Bend', img: '/images/kb/broken-top.jpg', videoSlug: 'broken-top' },
-  { match: 'northwest crossing', town: 'Bend', img: '/images/kb/northwest-crossing.jpg', videoSlug: 'northwest-crossing' },
-]
 
 export default async function Home() {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
-  const [cities, communities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, regionAtlas, investSegments, atlas] = await Promise.all([
+  const [cities, tiles, priceHist, publicPace, leftoverMonthly, regionOverlays, brokers, regionAtlas, investSegments] = await Promise.all([
     getCitiesForIndex().catch(() => []),
-    getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
@@ -134,13 +119,9 @@ export default async function Home() {
     }).catch(() => []),
     getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
     getBrokers().catch(() => []),
-    // Every town, community, and Bend neighborhood with a recorded boundary,
-    // assembled once for every surface that draws the region whole.
+    // Town boundaries for the region outline on the explore map.
     buildRegionAtlasRegions().catch(() => null),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
-    // The Atlas population, through the shared builder (one source for the
-    // homepage and every place page). Empty cities = the whole feed.
-    buildPlaceAtlas({ cities: [], label: 'Central Oregon' }),
   ])
   // Live Google reviews, the same read /reviews and /about make. The homepage
   // printed eight hardcoded TESTIMONIALS in a Quiet block instead: a section of
@@ -175,6 +156,7 @@ export default async function Home() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
+  // Four quotes: Proof features one in full and lists the other three as picks (H11).
   const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount =
     reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : reviewQuotes.length
@@ -190,32 +172,23 @@ export default async function Home() {
     ({ when: _kind, ...row }) => row,
   )
 
-  const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
-  const titleCaseName = (s: string) => s.replace(/\b[a-z]/g, (ch) => ch.toUpperCase())
-  const communityItems: CityCommunityItem[] = COMM_FEATURED.flatMap((f): CityCommunityItem[] => {
-    const c = communities.find((x) => x.subdivision.toLowerCase().includes(f.match))
-    if (!c) return []
-    const cv = communityVideos[f.videoSlug]
-    return [{
-      name: titleCaseName(c.subdivision),
-      activeCount: c.activeCount,
-      medianPrice: c.medianPrice ?? null,
-      town: f.town,
-      href: `/communities/${c.slug}`,
-      img: preferPlaceHero(c.heroImageUrl, f.img),
-      video: cv?.video ? { url: cv.video, embedType: 'video-tag' as const } : null,
-    }]
-  })
-  const [firstCommunityRow, ...restCommunityRows] = communityRows(communityItems)
-
   const fieldItems = homeFieldPool(tiles, HOME_FIELD_POOL)
 
-  // The Atlas: dots are the active listings with a coordinate; regions are the
-  // six towns, every registry community with a boundary, and every Bend
-  // neighborhood with one. Every figure the Atlas prints is a count or median
-  // over these dots — one population, one source.
-  const atlasDots = atlas.dots
-  const atlasRegions: AtlasRegion[] = regionAtlas?.regions ?? []
+  const townRegionCount =
+    regionAtlas?.regions?.filter((r) => r.kind === 'town').length ?? TOWN_ORDER.length
+  const communityRegionCount =
+    regionAtlas?.regions?.filter((r) => r.kind === 'community').length ?? 0
+
+  const mapPins = fieldItems
+    .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng))
+    .map((item) => ({
+      id: item.id,
+      href: item.href,
+      priceLabel: item.priceLabel,
+      title: item.title,
+      lat: item.lat,
+      lng: item.lng,
+    }))
 
   const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
   const verdict = marketVerdict(mosRaw)
@@ -275,7 +248,9 @@ export default async function Home() {
       // Only what the map actually holds: the communities and neighborhoods
       // with a recorded boundary (pass two, N8).
       fact: v3Text(
-        `${atlasRegions.filter((r) => r.kind === 'town').length} towns, ${atlasRegions.filter((r) => r.kind === 'community').length} communities, and ${atlasRegions.filter((r) => r.kind === 'neighborhood').length} Bend neighborhoods, mapped above`,
+        communityRegionCount > 0
+          ? `${townRegionCount} towns and ${communityRegionCount} communities across Central Oregon`
+          : `${townRegionCount} towns across Central Oregon`,
       ),
     },
     {
@@ -303,36 +278,48 @@ export default async function Home() {
           id="hero"
           headingLevel={1}
           eyebrow="Central Oregon"
-          headline={v3Text('Ryan Realty, Bend')}
+          headline={v3Text('Find homes in Central Oregon')}
           posterSrc={HERO_POSTER}
           videoSrc={HERO_VIDEO}
         >
           <HomeHeroSearch />
         </V3Stage>
 
-        <V3Atlas
-          id="atlas"
-          headingLevel={2}
-          headline={v3Text('Every listing on the map')}
-          dots={atlasDots}
-          regions={atlasRegions}
-          types={atlas.types}
-          events={atlas.events}
-          source={atlas.source}
-          stamp={atlas.stamp}
-          incomplete={!atlas.complete}
-          basemap={regionBasemap()}
-        />
-
         <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 
-        <HomeHomesFieldBound
+        <HomeHomesField
           fieldItems={fieldItems}
-          boundary={regionBoundary ?? undefined}
           listFlow
           seeAll={{ href: publishRegionalSearchHref(), label: seeAllLabel }}
           emptyMessage="No photographed active home with a list price and a street address returned on this refresh."
         />
+
+        <section
+          id="map"
+          className={`${V3_ROOT_CLASS} home-explore-map`}
+          aria-labelledby="home-map-heading"
+        >
+          <div className="home-explore-map__head">
+            <V3Eyebrow className="home-explore-map__eyebrow">Central Oregon</V3Eyebrow>
+            <V3Heading level={2} id="home-map-heading" className="home-explore-map__headline">
+              Homes on the map
+            </V3Heading>
+            <p className="home-explore-map__note">
+              Active listings with list prices. Open the full map to filter by town and type.
+            </p>
+            <ul className="home-explore-map__legend" aria-label="Map legend">
+              <li>
+                <span className="home-explore-map__legend-mark" aria-hidden="true" />
+                <span className="home-explore-map__legend-label">For sale</span>
+                <span>— navy pin with price on hover</span>
+              </li>
+            </ul>
+          </div>
+          <HomeExploreMap pins={mapPins} boundary={regionBoundary ?? undefined} />
+          <a className="home-explore-map__action" href="/homes-for-sale?view=map">
+            Explore the full map
+          </a>
+        </section>
 
         {firstTownRow ? (
           <V3Ledger
@@ -342,11 +329,6 @@ export default async function Home() {
             rows={[firstTownRow, ...restTownRows]}
             source={v3Text(PLACE_COUNT_TRACE)}
             updated={liveStamp(leftoverStamp)}
-            // The six towns ARE a comparison — Bend holds more single-family
-            // homes than the other five together — and the value column is 7%
-            // of the row, so as digits alone that spread is arithmetic the
-            // reader has to do. The bars come off the same counts the figures
-            // print; placeFigureRows computes the share beside the figure.
             encode="bar"
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
           />
@@ -373,10 +355,6 @@ export default async function Home() {
             chart={medianChart}
             updated={liveStamp(leftoverStamp)}
             action={
-              // Verdict-aware exit (funnel audit 2026-09-01): the section just
-              // told a would-be seller it is a seller's market — the one action
-              // answers that reader at that moment. Buyer's/balanced/unknown
-              // keep the market-report door. Same single ghost action either way.
               hasVerdict && verdict.kind === 'sellers'
                 ? { label: v3Text('See what your home is worth'), href: valuationHref('/'), variant: 'ghost' as const }
                 : { label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' as const }
@@ -390,37 +368,13 @@ export default async function Home() {
           />
         )}
 
-        {/* Seller ask sits right after the market verdict spoke to sellers
-            (Matt 2026-09-01: "move it up"). Sheet after Instrument keeps the
-            rhythm rule; reviews and brokers close the page instead. */}
-        <SellCapture
-          id="sell"
-          eyebrow="Selling"
-          heading="A broker's valuation of your home, within 24 hours"
-          headingId="home-sell-heading"
-        >
-          <SellValueForm pagePath="/" formId="home-get-value" />
-        </SellCapture>
-
-        {firstCommunityRow ? (
-          <V3Ledger
-            id="communities"
-            eyebrow={v3Text('Central Oregon · Communities')}
-            heading={v3Text('Resorts and planned communities')}
-            rows={[firstCommunityRow, ...restCommunityRows]}
-            source={v3Text(HOME_COMMUNITY_TRACE)}
-            updated={liveStamp(leftoverStamp)}
-            action={{ label: v3Text('Every community'), href: '/communities' }}
-          />
-        ) : null}
-
         {reviewQuotes.length > 0 ? (
           <V3Proof
             id="reviews"
             eyebrow="Ryan Realty · Google"
             headline={`${reviewCount} Google reviews`}
             headingLevel={2}
-            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. One featured review in full; three more as picks.`}
             figures={[
               { value: String(reviewCount), label: 'Google reviews' },
               { value: reviewAverage.toFixed(1), label: 'average of 5' },

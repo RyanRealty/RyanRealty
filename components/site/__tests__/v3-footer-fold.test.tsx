@@ -108,14 +108,10 @@ describe('the footer fold', () => {
     expect(out).not.toMatch(/v3-btn/)
   })
 
-  it('renders city columns, not Buy / Areas leftovers', () => {
+  it('renders Markets town clusters, not Buy / Areas leftovers (H13)', () => {
     const out = html()
     expect(V3_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
-      'Bend',
-      'Redmond',
-      'Sisters',
-      'Sunriver',
-      'La Pine · Terrebonne · Prineville · Madras',
+      'Markets',
       'Sell',
       'About',
     ])
@@ -128,13 +124,17 @@ describe('the footer fold', () => {
     expect(out).not.toContain('>Areas</')
     expect(out).not.toMatch(/<summary class="v3-footer__column-title">Homes/)
     expect(out).not.toMatch(/<summary class="v3-footer__column-title">Buy/)
-    const more = V3_FOOTER_COLUMNS.find((c) => c.heading.startsWith('La Pine'))
-    expect(more?.groups?.map((g) => g.heading)).toEqual([
+    const markets = V3_FOOTER_COLUMNS.find((c) => c.heading === 'Markets')
+    expect(markets?.groups?.map((g) => g.heading)).toEqual([
+      'Bend',
+      'Redmond',
+      'Sisters',
+      'Sunriver',
       'La Pine',
       'Terrebonne',
       'Prineville',
       'Madras',
     ])
-    expect(more?.links.length).toBe(more?.groups?.flatMap((g) => g.links).length)
+    expect(markets?.links.length).toBe(markets?.groups?.flatMap((g) => g.links).length)
   })
 })

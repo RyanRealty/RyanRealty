@@ -284,7 +284,7 @@
 
 .v3 .v3-chart__line--cat0 { stroke: var(--v3-cat-0); }
 .v3 .v3-chart__line--cat1 { stroke: var(--v3-cat-1); stroke-dasharray: 8 4; }
-.v3 .v3-chart__line--cat2 { stroke: var(--v3-cat-2); }
+.v3 .v3-chart__line--cat2 { stroke: var(--v3-cat-2); stroke-dasharray: 12 3 2 3; }
 .v3 .v3-chart__line--cat3 { stroke: var(--v3-cat-3); stroke-dasharray: 2 4; stroke-linecap: round; }
 .v3 .v3-chart__line--cat4 { stroke: var(--v3-cat-4); stroke-dasharray: 8 4; }
 
@@ -306,7 +306,7 @@
 
 .v3 .v3-chart__key--cat0 .v3-chart__swatch { border-top-color: var(--v3-cat-0); }
 .v3 .v3-chart__key--cat1 .v3-chart__swatch { border-top-color: var(--v3-cat-1); border-top-style: dashed; }
-.v3 .v3-chart__key--cat2 .v3-chart__swatch { border-top-color: var(--v3-cat-2); }
+.v3 .v3-chart__key--cat2 .v3-chart__swatch { border-top-color: var(--v3-cat-2); border-top-style: dashed; }
 .v3 .v3-chart__key--cat3 .v3-chart__swatch { border-top-color: var(--v3-cat-3); border-top-style: dotted; }
 .v3 .v3-chart__key--cat4 .v3-chart__swatch { border-top-color: var(--v3-cat-4); border-top-style: dashed; }
 
@@ -927,4 +927,17 @@
   .v3 .v3-chart__x--ticks.is-wide-ticks:not(.v3-chart__x--all):has(> :nth-child(5)) .v3-chart__xtick:nth-last-child(2):not(:nth-child(2n)) {
     visibility: hidden;
   }
+}
+
+
+/* YoY direct year labels on the line ends — not color-only (H10). */
+.v3 .v3-chart__line-label {
+  fill: var(--v3-ink);
+  font-size: 9px;
+  font-weight: var(--v3-weight-medium);
+  font-family: var(--v3-font-body);
+  paint-order: stroke;
+  stroke: var(--v3-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }

@@ -14,6 +14,9 @@ describe('V3Proof compact band', () => {
   it('lets a compact band pick one review to read', () => {
     expect(SRC).toMatch(/v3-proof__reader/)
     expect(SRC).toMatch(/v3-proof__pick/)
-    expect(SRC).toMatch(/aria-pressed=\{compactReading\?\.id === q\.id\}/)
+  })
+
+  it('keeps the featured pull quote out of the picks list (H11)', () => {
+    expect(SRC).toContain('.filter((q) => q.id !== compactReading?.id)')
   })
 })

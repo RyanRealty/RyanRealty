@@ -492,12 +492,14 @@ export function V3Proof({
             {compactReading ? <QuoteFigure q={compactReading} displayPull showMarks={showMarks} /> : null}
           </div>
           <ul className="v3-proof__picks">
-            {quotes.map((q) => (
+            {quotes
+              .filter((q) => q.id !== compactReading?.id)
+              .map((q) => (
               <li key={q.id}>
                 <button
                   type="button"
-                  className={cn('v3-proof__pick', compactReading?.id === q.id && 'is-on')}
-                  aria-pressed={compactReading?.id === q.id}
+                  className="v3-proof__pick"
+                  aria-pressed={false}
                   onClick={() => setFocus(q.id)}
                 >
                   <Marks rating={q.rating} />

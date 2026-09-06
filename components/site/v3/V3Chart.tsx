@@ -600,6 +600,22 @@ export function V3Chart({
                   d={line.d}
                 />
               ))}
+              {yoy
+                ? plot.lines.map((line, i) => {
+                    const last = [...line.points].reverse().find((p) => p.plot)
+                    if (!last) return null
+                    return (
+                      <text
+                        key={`lbl-${i}-${line.name}`}
+                        className="v3-chart__line-label"
+                        x={Math.min(312, last.x + 3)}
+                        y={Math.max(12, last.y - 3)}
+                      >
+                        {line.name}
+                      </text>
+                    )
+                  })
+                : null}
               {marks || emphasisIndex != null
                 ? plot.lines.map((line, i) =>
                     // The emphasized series wears marks only when they can be

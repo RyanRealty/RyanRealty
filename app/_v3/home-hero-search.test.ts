@@ -11,29 +11,33 @@ const V3_FIELD_CSS = readFileSync(resolve('components/site/v3/V3Field.css'), 'ut
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
-  it('Stage H1 and document title are brand, not the regional search query', () => {
-    expect(PAGE).toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
+  it('Stage H1 states the job; document title stays brand (H5)', () => {
+    expect(PAGE).toMatch(/headline=\{v3Text\('Find homes in Central Oregon'\)\}/)
     expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend'\s*\}/)
     expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
     expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
-    expect(PAGE).not.toMatch(/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/)
-    expect(PAGE).not.toMatch(/title: 'Homes for Sale in Central Oregon/)
+    expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
   })
 
-  it('mounts HomeHeroSearch on the Stage over the owned flyover; Atlas is the map', () => {
+  it('mounts HomeHeroSearch on the Stage; explore Google Map is below doors and homes (H8)', () => {
     expect(PAGE).toMatch(/<V3Stage/)
     expect(PAGE).toMatch(/videoSrc=\{HERO_VIDEO\}/)
     expect(PAGE).toMatch(/posterSrc=\{HERO_POSTER\}/)
     expect(PAGE).toMatch(/<HomeHeroSearch/)
-    expect(PAGE).toMatch(/<V3Atlas/)
+    expect(PAGE).not.toMatch(/<V3Atlas/)
+    expect(PAGE).toMatch(/<HomeExploreMap/)
     expect(PAGE).not.toMatch(/action=\{\{\s*label:\s*['"]See homes['"]/)
     expect(PAGE).not.toMatch(/>See homes</)
     const stageAt = PAGE.indexOf('<V3Stage')
     const searchAt = PAGE.indexOf('<HomeHeroSearch')
-    const atlasAt = PAGE.indexOf('<V3Atlas')
+    const doorsAt = PAGE.indexOf('<V3Doors')
+    const fieldAt = PAGE.indexOf('<HomeHomesField')
+    const mapAt = PAGE.indexOf('<HomeExploreMap')
     expect(stageAt).toBeGreaterThan(-1)
     expect(searchAt).toBeGreaterThan(stageAt)
-    expect(searchAt).toBeLessThan(atlasAt)
+    expect(doorsAt).toBeGreaterThan(searchAt)
+    expect(fieldAt).toBeGreaterThan(doorsAt)
+    expect(mapAt).toBeGreaterThan(fieldAt)
   })
 
   it('reuses SearchSuggest and searchHrefForQuery', () => {
@@ -42,15 +46,19 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain("from '@/lib/parse-search-query'")
     expect(SEARCH).toContain('searchHrefForQuery')
     expect(SEARCH).toContain('City, community, or address')
+    expect(SEARCH).toContain('home-hero-search__label')
+    expect(SEARCH).toContain('htmlFor={fieldId}')
   })
 
   it('empty submit opens the regional list, not a dead form', () => {
     expect(SEARCH).toContain('publishRegionalSearchHref()')
   })
 
-  it('does not print leftover Search homes on the Stage', () => {
+  it('does not print leftover Search homes on the Stage; label is visible (H2)', () => {
     expect(SEARCH).not.toContain('>Search homes<')
-    expect(SEARCH).toContain('aria-label="Search city, community, or address"')
+    expect(SEARCH).toContain('home-hero-search__label')
+    expect(SEARCH).toContain('City, community, or address')
+    expect(SEARCH).not.toContain('aria-label="Search city, community, or address"')
   })
 
   it('paints the search as cream field and navy Search wherever the v3 root hosts it', () => {
@@ -116,8 +124,9 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).not.toContain('100vw')
   })
 
-  it('the living atlas is the map; Field is the photographed list, not a second Google frame', () => {
-    expect(PAGE).toMatch(/<V3Atlas/)
+  it('homepage has no Atlas; Field is the photographed list; explore map is separate (H8)', () => {
+    expect(PAGE).not.toMatch(/<V3Atlas/)
+    expect(PAGE).toMatch(/<HomeExploreMap/)
     expect(FIELD).not.toContain('PlaceFieldMap')
     expect(FIELD).toContain('mapSlot={undefined}')
     expect(ATLAS).toContain('zoomAt')
@@ -127,7 +136,7 @@ describe('homepage Field stays on the barrel', () => {
     expect(ATLAS).toContain('v3-atlas__label--active')
     expect(ATLAS).toContain('pinchRef')
     expect(ATLAS).toContain("from '@/lib/atlas/pack-labels'")
-    expect(ATLAS).toContain('packAtlasLabels')
+    // Atlas remains on place pages; homepage must not mount it.
     expect(ATLAS).toContain('is-here')
     expect(ATLAS).toContain('v3-atlas__card-homes')
     expect(ATLAS).toContain('setHover(s.id)')
@@ -167,21 +176,27 @@ describe('homepage Field stays on the barrel', () => {
     expect(V3_FIELD_CSS).toContain('flex: none')
   })
 
-  it('opens with the Stage then Atlas then Field, Chart Room mid-page', () => {
+  it('opens Stage → Doors → Field → explore map → towns → market (H8/H9)', () => {
     expect(PAGE).toMatch(/<V3Stage/)
-    expect(PAGE).toMatch(/<V3Atlas/)
+    expect(PAGE).not.toMatch(/<V3Atlas/)
+    expect(PAGE).toMatch(/<V3Doors/)
     expect(PAGE).toMatch(/<HomeHomesField/)
+    expect(PAGE).toMatch(/<HomeExploreMap/)
     expect(PAGE).toMatch(/<V3Instrument/)
     expect(PAGE).toMatch(/id="towns"/)
+    expect(PAGE).not.toMatch(/<SellCapture/)
+    expect(PAGE).not.toMatch(/id="communities"/)
     const stageAt = PAGE.indexOf('<V3Stage')
-    const atlasAt = PAGE.indexOf('<V3Atlas')
+    const doorsAt = PAGE.indexOf('<V3Doors')
     const fieldAt = PAGE.indexOf('<HomeHomesField')
+    const mapAt = PAGE.indexOf('<HomeExploreMap')
     const townsAt = PAGE.indexOf('id="towns"')
     const marketAt = PAGE.indexOf('<V3Instrument')
     expect(stageAt).toBeGreaterThan(-1)
-    expect(atlasAt).toBeGreaterThan(stageAt)
-    expect(fieldAt).toBeGreaterThan(atlasAt)
-    expect(townsAt).toBeGreaterThan(fieldAt)
+    expect(doorsAt).toBeGreaterThan(stageAt)
+    expect(fieldAt).toBeGreaterThan(doorsAt)
+    expect(mapAt).toBeGreaterThan(fieldAt)
+    expect(townsAt).toBeGreaterThan(mapAt)
     expect(marketAt).toBeGreaterThan(townsAt)
   })
 

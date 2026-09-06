@@ -9,7 +9,7 @@
  * Projections from this file (do not re-author separate trees):
  *   KB_TOP_NAV     — desktop top bar + caret panels (KbNav)
  *   KB_MENU_GROUPS — Menu+ / mobile overlay
- *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (city SEO, then Sell, then About)
+ *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Markets clusters, then Sell, then About)
  *   PRIMARY_NAV    — alias of KB_TOP_NAV for reachability gate + legacy imports
  *
  * Gate: scripts/check-nav-reachability.mjs
@@ -98,11 +98,12 @@ function cityMarket(label: string): NavLink {
   }
 }
 
-function cityFooterColumn(
+/** One town cluster under the Markets footer column (H13). */
+function cityFooterCluster(
   label: string,
   communityLabels: readonly string[] = [],
   extra: NavLink[] = [],
-): FooterGroup {
+): FooterCluster {
   return {
     heading: label,
     links: [cityHomes(label), cityMarket(label), ...extra, ...communityLabels.map(footerCommunity)],
@@ -358,27 +359,23 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 // ─── Footers (projections) ────────────────────────────────────────────────────
 
 /**
- * Public sitemap: city-named SEO anchors, then Sell, then About.
+ * Public sitemap: Markets (town clusters), then Sell, then About.
  * PAGE_OUTLINE.md Footer. Header stays Buy / Areas / Market / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
 
 export const KB_FOOTER_COLUMNS: FooterGroup[] = [
-  cityFooterColumn(
-    'Bend',
-    ['Tetherow', 'Broken Top', 'NorthWest Crossing', 'Awbrey Glen'],
-    [{ href: '/neighborhoods', label: 'Bend neighborhoods' }],
-  ),
-  cityFooterColumn('Redmond', ['Eagle Crest', 'Pronghorn']),
-  cityFooterColumn('Sisters', ['Black Butte Ranch']),
-  cityFooterColumn('Sunriver', ['Caldera Springs', 'Crosswater']),
-  footerFromGroups(
-    FOOTER_MORE_CITIES.join(' · '),
-    FOOTER_MORE_CITIES.map((label) => ({
-      heading: label,
-      links: [cityHomes(label), cityMarket(label)],
-    })),
-  ),
+  footerFromGroups('Markets', [
+    cityFooterCluster(
+      'Bend',
+      ['Tetherow', 'Broken Top', 'NorthWest Crossing', 'Awbrey Glen'],
+      [{ href: '/neighborhoods', label: 'Bend neighborhoods' }],
+    ),
+    cityFooterCluster('Redmond', ['Eagle Crest', 'Pronghorn']),
+    cityFooterCluster('Sisters', ['Black Butte Ranch']),
+    cityFooterCluster('Sunriver', ['Caldera Springs', 'Crosswater']),
+    ...FOOTER_MORE_CITIES.map((label) => cityFooterCluster(label)),
+  ]),
   {
     heading: 'Sell',
     links: [VALUATION_FORM, { href: '/our-homes', label: 'Our listings' }],

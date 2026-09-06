@@ -142,6 +142,7 @@ export function FindMeVoice({ className }: { className?: string }) {
             d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2Z"
           />
         </svg>
+        <span className="v3-chrome__findme-word">Find</span>
       </button>
       {open ? (
         <div className="v3-findme-stage" id={uid} role="dialog" aria-modal="true" aria-labelledby={`${uid}-h`}>

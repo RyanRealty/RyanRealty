@@ -142,8 +142,8 @@
 }
 
 /* Sitemap -------------------------------------------------------------------
-   One column while it is folded. From 56.25rem, five across so the five city
-   groups sit on the first row and Sell / About wrap beneath. `minmax(0, 1fr)`
+   One column while it is folded. From 56.25rem, three across: Markets, Sell,
+   About. Markets carries town clusters under one heading (H13). `minmax(0, 1fr)`
    rather than `1fr` so a long label wraps instead of forcing the grid wider
    than the page. */
 .v3-footer__columns {
@@ -157,16 +157,16 @@
    beside a short one, and opening the tall one stretched the row hundreds of
    pixels while the short one stayed 45px. A grid row is as tall as its tallest
    cell and nothing in CSS changes that. So the sitemap is ONE column wherever
-   it is folded and five columns wherever it is open, and there is no width at
+   it is folded and three columns wherever it is open, and there is no width at
    which a fold sits in a grid. */
 @media (min-width: 56.25rem) {
   .v3-footer__columns {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--v3-space-xl) var(--v3-space-lg);
   }
 }
 
-/* The fold. A phone gets five group names; a pointer gets the whole sitemap.
+/* The fold. A phone gets Markets / Sell / About; a pointer gets the whole sitemap.
    See the comment in V3Footer.tsx for why this is a native details and not a
    client component. */
 .v3-footer__fold {
@@ -327,7 +327,7 @@
    from the two widths this was built at, which is the whole argument for
    testing the widths between them.
 
-   So the unfold starts at 56.25rem, the width the grid goes five across, and
+   So the unfold starts at 56.25rem, the width the grid goes three across, and
    every column is OPEN from there — set by V3FooterFold, not forced visible
    here. Below it the sitemap is one folded column: at 640 with everything open
    the footer measured thousands of pixels, which is the wall the fold exists to

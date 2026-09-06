@@ -81,14 +81,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--v3-tap);
+  gap: var(--v3-space-3xs);
+  /* Width grows with the visible Find label; height stays the 44px tap floor (H4/H7). */
+  width: auto;
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0;
+  padding: 0 var(--v3-space-2xs);
   border: 0;
+  border-radius: var(--v3-radius-control);
   background: var(--v3-navy);
   color: var(--v3-cream);
   cursor: pointer;
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-chrome__findme-word {
+  display: inline;
 }
 
 .v3-chrome__findme.is-on {
@@ -243,6 +254,11 @@
     gap: var(--v3-space-3xs);
     margin-inline-start: var(--v3-space-sm);
   }
+
+  /* H1: primary nav visible — Menu is redundant beside Homes/Places/Market/Sell/About. */
+  .v3-chrome__menu-btn {
+    display: none;
+  }
 }
 
 .v3-chrome__group {
@@ -386,9 +402,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--v3-space-3xs);
+  box-sizing: border-box;
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-2xs);
+  padding: var(--v3-space-2xs);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);

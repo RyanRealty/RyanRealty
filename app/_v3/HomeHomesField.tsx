@@ -2,8 +2,8 @@
 
 /**
  * Homepage inventory Field. Types that exist in the set are lead chips on
- * V3Field (tokens only). The living atlas above is the map — this is the
- * photographed list, not a second Google frame.
+ * V3Field (tokens only). The explore Google Map sits below — this is the
+ * photographed list, not a second Atlas UI.
  */
 import { useMemo, useState } from 'react'
 import { V3Button, V3Field } from '@/components/site/v3'
