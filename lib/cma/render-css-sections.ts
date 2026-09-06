@@ -261,6 +261,20 @@ export function cmaSectionStyles(): string {
   table.comp-matrix td.is-diff { font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
   .szn svg { width: 100%; height: auto; display: block; margin: 6px 0 2px; }
+  .month-ledger-wrap { display: flex; flex-direction: column; gap: 18px; margin: 10px 0 6px; }
+  table.month-ledger { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; }
+  table.month-ledger th { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 4px 8px; text-align: center; }
+  table.month-ledger th.stub, table.month-ledger tbody th.stub {
+    width: 3.4rem;
+    text-align: left;
+    letter-spacing: 0.1em;
+    padding-left: 0;
+    color: var(--muted);
+  }
+  table.month-ledger td { text-align: center; padding: 0 4px 6px; vertical-align: top; }
+  table.month-ledger .n { font-family: var(--display); font-size: 22px; line-height: 1; color: var(--navy); }
+  table.month-ledger .n.is-zero { color: var(--muted); font-size: 16px; }
+  table.month-ledger .a { font-size: 10px; color: var(--navy); margin-top: 6px; font-variant-numeric: tabular-nums; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .photo-tile { margin: 0; overflow: hidden; }
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }

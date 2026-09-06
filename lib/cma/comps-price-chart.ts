@@ -1,10 +1,9 @@
 /**
- * House-specific price chart: each adjusted sale as a bar, the recommended
- * list highlighted. Same plot + navy/cream SVG as every other CMA chart.
+ * Each adjusted sale is a row. The recommended list is the filled mark.
  * Numbers come from the pricing engine; this file does not invent a price.
  */
 
-import { PRINT_NAVY_CREAM, renderPrintStripSvg } from '@/lib/charts/print-svg'
+import { PRINT_NAVY_CREAM, renderPrintLollipopRowsSvg } from '@/lib/charts/print-svg'
 import { formatPriceExact } from '@/lib/format/money'
 
 function shortUsd(n: number): string {
@@ -15,6 +14,11 @@ function shortUsd(n: number): string {
   return `$${Math.round(n / 1000)}K`
 }
 
+function shortStreet(address: string): string {
+  const parts = address.trim().split(/\s+/).filter(Boolean)
+  return parts.slice(0, 2).join(' ') || address
+}
+
 export function compsPriceChartSvg(input: {
   comps: readonly { address: string; adjustedPrice: number }[]
   recommended: number
@@ -22,17 +26,17 @@ export function compsPriceChartSvg(input: {
   if (!Number.isFinite(input.recommended) || input.recommended <= 0) return ''
   const sales = input.comps.filter((c) => Number.isFinite(c.adjustedPrice) && c.adjustedPrice > 0)
   if (sales.length === 0) return ''
-  return renderPrintStripSvg({
-    marks: [
+  return renderPrintLollipopRowsSvg({
+    rows: [
       ...sales.map((c) => ({
+        tick: shortStreet(c.address),
         value: c.adjustedPrice,
-        tick: '',
         label: shortUsd(c.adjustedPrice),
         filled: false,
       })),
       {
+        tick: 'This list',
         value: input.recommended,
-        tick: 'List',
         label: shortUsd(input.recommended),
         filled: true,
       },

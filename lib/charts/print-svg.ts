@@ -341,6 +341,54 @@ function renderBarPlot(plot: BarPlot, caption: string, colors: PrintChartColors,
   return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${kick}<g transform="translate(${gutterL},${gutterT})">${marks}${months}</g>${yLabels}</svg>`
 }
 
+/**
+ * One row per sale. Address on the left, price on a shared scale.
+ * Domain is the data, never zero. The list row is filled.
+ */
+export function renderPrintLollipopRowsSvg(input: {
+  rows: readonly { tick: string; value: number; label: string; filled: boolean }[]
+  caption: string
+  colors: PrintChartColors
+}): string {
+  const rows = input.rows.filter((r) => Number.isFinite(r.value) && r.value > 0)
+  if (rows.length < 2) return ''
+  const sorted = [...rows].sort((a, b) => a.value - b.value)
+  const min = Math.min(...sorted.map((r) => r.value))
+  const max = Math.max(...sorted.map((r) => r.value))
+  const span = max - min || max * 0.04
+  const lo = min - span * 0.06
+  const hi = max + span * 0.08
+  const gutterL = 92
+  const plotW = 268
+  const rowH = 22
+  const top = 6
+  const vbW = gutterL + plotW + 52
+  const vbH = top + sorted.length * rowH + 4
+  const xOf = (v: number) => gutterL + ((v - lo) / (hi - lo || 1)) * plotW
+  const { colors, caption } = input
+  const aria = esc(caption)
+  const listVal = sorted.find((r) => r.filled)?.value
+  const listX = listVal != null ? xOf(listVal) : null
+  const rule =
+    listX != null
+      ? `<line x1="${listX.toFixed(2)}" y1="${top}" x2="${listX.toFixed(2)}" y2="${(top + sorted.length * rowH - 2).toFixed(2)}" stroke="${colors.edge}" stroke-width="1" ${HAIR}/>`
+      : ''
+  const body = sorted
+    .map((r, i) => {
+      const y = top + i * rowH + 14
+      const x = xOf(r.value)
+      const stem = `<line x1="${gutterL.toFixed(2)}" y1="${y.toFixed(2)}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="${colors.ink}" stroke-width="${r.filled ? '1.6' : '1.1'}" stroke-linecap="round" opacity="${r.filled ? '1' : '0.45'}" ${HAIR}/>`
+      const dot = r.filled
+        ? `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="3.4" fill="${colors.ink}"/>`
+        : `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="3.2" fill="none" stroke="${colors.ink}" stroke-width="1.2" ${HAIR}/>`
+      const name = `<text x="${gutterL - 8}" y="${(y + 3).toFixed(2)}" text-anchor="end" font-size="9" fill="${colors.ink}" ${TEXT}>${esc(r.tick)}</text>`
+      const val = `<text x="${(x + 8).toFixed(2)}" y="${(y + 3).toFixed(2)}" font-size="9" fill="${colors.ink}" ${TEXT}>${esc(r.label)}</text>`
+      return `${stem}${dot}${name}${val}`
+    })
+    .join('')
+  return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${rule}${body}</svg>`
+}
+
 /** Dots on a price axis. Magnitudes like list price must not grow from zero. */
 export function renderPrintStripSvg(input: {
   marks: readonly { value: number; label: string; tick: string; filled: boolean }[]
@@ -386,9 +434,17 @@ export function renderPrintStripSvg(input: {
   return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${axis}${marks}</svg>`
 }
 
+function moneyK(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
+  }
+  return `$${Math.round(n / 1000)}K`
+}
+
 /**
- * Two rails on one price axis: closed sales (close) above, listings that
- * came off without a sale (last ask) below. This list is a vertical rule.
+ * Closed sales, this list, and asks that never sold — one named row each,
+ * same scale. A number line with colliding labels is unreadable at n=6–12.
  */
 export function renderPrintOutcomeStripSvg(input: {
   sold: readonly number[]
@@ -402,53 +458,54 @@ export function renderPrintOutcomeStripSvg(input: {
   caption: string
   colors: PrintChartColors
 }): string {
-  const { colors, caption } = input
-  const nums = [...input.sold, ...input.unsold, input.list, input.lastAsk].filter(
-    (n): n is number => n != null && Number.isFinite(n) && n > 0,
-  )
-  if (input.sold.length < 3 || input.unsold.length < 1 || nums.length < 4) return ''
-  const min = Math.min(...nums)
-  const max = Math.max(...nums)
-  const span = max - min || max * 0.04
-  const lo = min - span * 0.06
-  const hi = max + span * 0.06
-  const gutterL = 72
-  const plotW = 320
-  const vbW = gutterL + plotW + 12
-  const vbH = 108
-  const soldY = 34
-  const unsoldY = 70
-  const xOf = (v: number) => gutterL + ((v - lo) / (hi - lo || 1)) * plotW
-  const aria = esc(caption)
-  const jitter = (i: number) => ((i * 5) % 7) - 3
+  const sold = input.sold.filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
+  const unsold = input.unsold.filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
+  if (sold.length < 3 || unsold.length < 1 || !Number.isFinite(input.list) || input.list <= 0) {
+    return ''
+  }
+  const soldMin = sold[0]!
+  const keptUnsold = unsold.filter((u) => u >= soldMin * 0.97)
+  const plotUnsold = keptUnsold.length > 0 ? keptUnsold : unsold
+  const lastAsk =
+    input.lastAsk != null && Number.isFinite(input.lastAsk) && input.lastAsk > 0 ? input.lastAsk : null
 
-  const soldDots = input.sold
-    .map((v, i) => {
-      const x = xOf(v)
-      const y = soldY + jitter(i)
-      return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="2.6" fill="none" stroke="${colors.ink}" stroke-width="1.15" ${HAIR}/>`
+  const rows: { tick: string; value: number; label: string; filled: boolean }[] = [
+    ...sold.map((v) => ({
+      tick: 'Sold',
+      value: v,
+      label: moneyK(v),
+      filled: false,
+    })),
+    {
+      tick: 'This list',
+      value: input.list,
+      label: moneyK(input.list),
+      filled: true,
+    },
+    ...plotUnsold.map((v) => {
+      const isLast = lastAsk != null && Math.abs(v - lastAsk) < 1500
+      return {
+        tick: isLast ? 'Last ask' : "Didn't sell",
+        value: v,
+        label: moneyK(v),
+        filled: false,
+      }
+    }),
+  ]
+  const lastPlotted = lastAsk != null && rows.some((r) => Math.abs(r.value - lastAsk) < 1500)
+  if (lastAsk != null && !lastPlotted) {
+    rows.push({
+      tick: 'Last ask',
+      value: lastAsk,
+      label: moneyK(lastAsk),
+      filled: false,
     })
-    .join('')
-  const unsoldDots = input.unsold
-    .map((v, i) => {
-      const x = xOf(v)
-      const y = unsoldY + jitter(i + 3)
-      return `<line x1="${x.toFixed(2)}" y1="${(y - 5).toFixed(2)}" x2="${x.toFixed(2)}" y2="${(y + 5).toFixed(2)}" stroke="${colors.muted}" stroke-width="1.35" stroke-linecap="round" ${HAIR}/>`
-    })
-    .join('')
-  const listX = xOf(input.list)
-  const listRule = `<line x1="${listX.toFixed(2)}" y1="18" x2="${listX.toFixed(2)}" y2="86" stroke="${colors.ink}" stroke-width="1.35" ${HAIR}/><text x="${listX.toFixed(2)}" y="14" text-anchor="middle" font-size="8" fill="${colors.ink}" ${TEXT}>${esc(input.listLabel)}</text>`
-  const last =
-    input.lastAsk != null &&
-    input.lastAskLabel &&
-    Math.abs(input.lastAsk - input.list) > 1000
-      ? `<line x1="${xOf(input.lastAsk).toFixed(2)}" y1="18" x2="${xOf(input.lastAsk).toFixed(2)}" y2="86" stroke="${colors.muted}" stroke-width="1.15" stroke-dasharray="3 3" ${HAIR}/><text x="${xOf(input.lastAsk).toFixed(2)}" y="14" text-anchor="middle" font-size="8" fill="${colors.muted}" ${TEXT}>${esc(input.lastAskLabel)}</text>`
-      : ''
-  const soldRail = `<line x1="${gutterL}" y1="${soldY}" x2="${gutterL + plotW}" y2="${soldY}" stroke="${colors.edge}" stroke-width="0.6" ${HAIR}/>`
-  const unsoldRail = `<line x1="${gutterL}" y1="${unsoldY}" x2="${gutterL + plotW}" y2="${unsoldY}" stroke="${colors.edge}" stroke-width="0.6" ${HAIR}/>`
-  const rails = `<text x="4" y="${soldY + 3}" font-size="8" fill="${colors.muted}" ${TEXT}>Sold</text><text x="4" y="${unsoldY + 3}" font-size="8" fill="${colors.muted}" ${TEXT}>${esc("Didn't sell")}</text>`
-  const ends = `<text x="${gutterL}" y="100" font-size="9" fill="${colors.muted}" ${TEXT}>${esc(input.xMinLabel)}</text><text x="${gutterL + plotW}" y="100" text-anchor="end" font-size="9" fill="${colors.muted}" ${TEXT}>${esc(input.xMaxLabel)}</text>`
-  return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${soldRail}${unsoldRail}${soldDots}${unsoldDots}${listRule}${last}${rails}${ends}</svg>`
+  }
+  return renderPrintLollipopRowsSvg({
+    rows,
+    caption: input.caption,
+    colors: input.colors,
+  })
 }
 
 export function renderPrintChartSvg(

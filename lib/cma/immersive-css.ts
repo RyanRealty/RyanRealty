@@ -204,6 +204,15 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 .inv-hero{margin:8px 0 28px}
 .inv-verdict{display:block;margin-top:18px;font-size:15px;font-weight:600;letter-spacing:.04em}
 .szn.is-hero{margin-top:36px}
+.small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
+.month-ledger-wrap{display:flex;flex-direction:column;gap:28px;margin:8px 0 4px}
+table.month-ledger{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}
+table.month-ledger th{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.55;padding:0 6px 12px;text-align:center}
+table.month-ledger th.stub,table.month-ledger tbody th.stub{width:4.2rem;text-align:left;padding-left:0;letter-spacing:.12em}
+table.month-ledger td{text-align:center;padding:0 6px 8px;vertical-align:top}
+table.month-ledger .n{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(26px,3.2vw,40px);line-height:1}
+table.month-ledger .n.is-zero{opacity:.4;font-size:clamp(20px,2.4vw,28px)}
+table.month-ledger .a{font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums}
 .photo-set{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
 .photo-tile{margin:0;overflow:hidden;background:var(--navy)}
 .photo-tile img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:0}

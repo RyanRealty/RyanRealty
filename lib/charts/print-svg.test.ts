@@ -10,7 +10,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import { buildBarPlot, buildLinePlot } from '@/lib/charts/plot'
-import { PRINT_NAVY_CREAM, renderPrintChartSvg, renderPrintOutcomeStripSvg } from '@/lib/charts/print-svg'
+import {
+  PRINT_NAVY_CREAM,
+  renderPrintChartSvg,
+  renderPrintLollipopRowsSvg,
+  renderPrintOutcomeStripSvg,
+} from '@/lib/charts/print-svg'
 
 const points = [
   { value: 50, tick: 'Jan', label: '50' },
@@ -68,8 +73,27 @@ describe('print bar chart scale', () => {
   })
 })
 
+describe('print lollipop rows', () => {
+  it('names each sale and puts this list on the shared scale', () => {
+    const svg = renderPrintLollipopRowsSvg({
+      rows: [
+        { tick: '1345 3rd', value: 372_000, label: '$372K', filled: false },
+        { tick: '2465 7th', value: 399_000, label: '$399K', filled: false },
+        { tick: 'This list', value: 401_000, label: '$401K', filled: true },
+      ],
+      caption: 'Adjusted comparable sales',
+      colors: PRINT_NAVY_CREAM,
+    })
+    expect(svg).toContain('1345 3rd')
+    expect(svg).toContain('This list')
+    expect(svg).toContain('$401K')
+    expect(svg).toContain('$372K')
+    expect(svg.match(/<circle/g)?.length).toBe(3)
+  })
+})
+
 describe('print outcome strip', () => {
-  it('puts closed sales and failed asks on one axis and names both', () => {
+  it('lists closed sales, this list, and failed asks as named rows', () => {
     const svg = renderPrintOutcomeStripSvg({
       sold: [380_000, 390_000, 400_000, 405_000],
       unsold: [430_000, 450_000, 460_000],
@@ -83,13 +107,13 @@ describe('print outcome strip', () => {
       colors: PRINT_NAVY_CREAM,
     })
     expect(svg).toContain('Sold')
-    expect(svg).toContain("Didn't sell")
     expect(svg).toContain('This list')
+    expect(svg).toContain("Didn't sell")
     expect(svg).toContain('Last ask')
-    expect(svg).toContain('$341K')
+    expect(svg).toContain('$401K')
     expect(svg).toContain('$460K')
-    expect(svg.match(/<circle/g)?.length).toBe(4)
-    expect(svg).toContain('stroke-dasharray')
+    expect(svg).not.toContain('$341K')
+    expect(svg.match(/<circle/g)?.length).toBe(8)
   })
 })
 

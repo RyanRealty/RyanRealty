@@ -3,7 +3,7 @@
  * Count and dollars never share an axis.
  */
 
-import { PRINT_NAVY_CREAM, renderPrintPairedSvg } from '@/lib/charts/print-svg'
+import { escapeHtml } from '@/lib/cma/render-blocks'
 
 export type TrendPoint = {
   periodStart: string
@@ -77,38 +77,47 @@ export function medianCloseLineSvg(points: TrendPoint[]): string {
   <p class="small">Range $${Math.round(min).toLocaleString('en-US')} to $${Math.round(max).toLocaleString('en-US')}.</p>`
 }
 
-/** New listings (count) over median ask (dollars). One calendar. Two scales. */
+function ledgerTable(chunk: readonly ListingTrendPoint[]): string {
+  const heads =
+    `<th class="stub" scope="col"></th>` +
+    chunk.map((p) => `<th scope="col">${escapeHtml(monthLabel(p.month))}</th>`).join('')
+  const counts =
+    `<th class="stub" scope="row">Listed</th>` +
+    chunk
+      .map((p) => {
+        const empty = p.newListings <= 0
+        return `<td><div class="n${empty ? ' is-zero' : ''}">${empty ? '—' : p.newListings}</div></td>`
+      })
+      .join('')
+  const asks =
+    `<th class="stub" scope="row">Ask</th>` +
+    chunk
+      .map((p) => {
+        const ask =
+          p.medianAsk != null && p.medianAsk > 0 && p.newListings > 0 ? chartUsd(p.medianAsk) : '—'
+        return `<td><div class="a">${escapeHtml(ask)}</div></td>`
+      })
+      .join('')
+  return `<table class="month-ledger" role="img" aria-label="New listings and asking prices">
+    <thead><tr>${heads}</tr></thead>
+    <tbody>
+      <tr>${counts}</tr>
+      <tr>${asks}</tr>
+    </tbody>
+  </table>`
+}
+
+/** Twelve months as a ledger: how many listed, and at what ask. No dual axis. */
 export function listingTrendSvg(points: ListingTrendPoint[]): string {
   const series = [...points].sort((a, b) => a.month.localeCompare(b.month))
   if (series.length < 4) return ''
   if (!series.some((p) => p.newListings > 0 || (p.medianAsk != null && p.medianAsk > 0))) return ''
 
-  const counts = series.map((p) => p.newListings)
-  const asks = series.map((p) => (p.medianAsk != null && p.medianAsk > 0 ? p.medianAsk : null))
-  const finiteAsks = asks.filter((n): n is number => n != null)
-  const maxCount = Math.max(...counts, 0)
-  const minAsk = finiteAsks.length ? Math.min(...finiteAsks) : 0
-  const maxAsk = finiteAsks.length ? Math.max(...finiteAsks) : 0
+  const chunks: ListingTrendPoint[][] =
+    series.length <= 7
+      ? [series]
+      : [series.slice(0, Math.ceil(series.length / 2)), series.slice(Math.ceil(series.length / 2))]
 
-  return renderPrintPairedSvg({
-    top: {
-      kicker: 'New listings',
-      values: counts,
-      labels: counts.map((n) => (n > 0 ? String(n) : '')),
-      yMinLabel: '0',
-      yMaxLabel: String(maxCount),
-      fromZero: true,
-    },
-    bottom: {
-      kicker: 'Median ask',
-      values: asks,
-      labels: asks.map((n) => (n != null ? chartUsd(n) : '')),
-      yMinLabel: finiteAsks.length ? chartUsd(minAsk) : '0',
-      yMaxLabel: finiteAsks.length ? chartUsd(maxAsk) : '0',
-      fromZero: false,
-    },
-    ticks: series.map((p) => monthLabel(p.month)),
-    caption: 'New listings and asking prices',
-    colors: PRINT_NAVY_CREAM,
-  })
+  return `<div class="month-ledger-wrap">${chunks.map(ledgerTable).join('')}</div>
+  <p class="small">How many listed each month, and the median ask.</p>`
 }

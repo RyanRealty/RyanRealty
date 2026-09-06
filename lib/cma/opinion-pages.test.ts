@@ -208,7 +208,7 @@ describe('assembleOpinionPages format', () => {
     expect(body).toContain('4 closed')
     expect(body).toContain('came off without a sale')
     expect(body).toContain("Didn't sell")
-    expect(body).toContain('Last ask')
+    expect(body).toContain('$460K')
     expect(body).toContain('Closed = sale price')
   })
 })

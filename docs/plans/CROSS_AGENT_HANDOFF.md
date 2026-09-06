@@ -1,4 +1,17 @@
-# Current — 2026-09-05 (CMA mannered prose, second pass)
+# Current — 2026-09-05 (CMA charts a seller can read)
+
+The dual-axis "new listings and asking prices" chart is gone. It is a
+month ledger: Listed / Ask, empty months as —, two half-year blocks.
+Why $X and sold-vs-unsold are named lollipop rows (street or Sold /
+This list / Last ask), not number lines. 2465 7th re-rendered from
+render_args. Rec $401k unchanged. Do not send letters.
+
+Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
+mix. Golf Track C stays on local `wt/golf-maps-20260903`.
+
+---
+
+# Previous — 2026-09-05 (CMA mannered prose, second pass)
 
 Seller CMA copy is facts only. Audit "meaning" lecture is gone at source and
 stripped at render so stored rows clean up without a rebuild. 2465 7th print

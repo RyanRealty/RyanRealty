@@ -12,7 +12,9 @@ describe('compsPriceChartSvg', () => {
     })
     expect(svg).toContain('<svg')
     expect(svg).toContain('$1,050,000')
-    expect(svg).toContain('List')
+    expect(svg).toContain('This list')
+    expect(svg).toContain('19000 Ceiling')
+    expect(svg).toContain('$995K')
   })
 
   it('returns empty when there is nothing to plot', () => {
