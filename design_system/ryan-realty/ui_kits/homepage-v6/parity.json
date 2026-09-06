@@ -1,8 +1,8 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "v3-broadside-2026-08-28",
-  "note": "Homepage on the components/site/v3 barrel, Broadside register. Stage (owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, search is the only Stage action) then the living Atlas then Field of homes (barrel list, type chips one scrolling row, listFlow + See all, no leftover count caption). Towns and communities are barrel Ledgers without leftover CITY or remainder copy. Chart Room is the mid-page Instrument. index.html is the retired KB mockup, kept as history, not the visual target.",
+  "status": "v3-critiquito-h8-2026-09-06",
+  "note": "Homepage on the components/site/v3 barrel. Stage (owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch) then Buy/Sell/Invest doors, then Field of homes (HomeHomesField listFlow + type chips), then a regular Google Map (HomeExploreMap \u2014 not Atlas). Towns Ledger + market Instrument + Google reviews + AboutFaces + V3Footer. Critiquito H8: Atlas removed from homepage. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
@@ -22,7 +22,7 @@
     },
     {
       "name": "KbListingMap",
-      "where": "HomeHomesField mounts PlaceFieldMap in the Field map slot: plots exactly the listed set"
+      "where": "HomeExploreMap: regular Google Map with listing pins after doors + Field. Not Atlas. HomeHomesField owns the photographed list without atlas camera binding."
     },
     {
       "name": "KbTicker",
@@ -30,7 +30,7 @@
     },
     {
       "name": "KbSell",
-      "where": "section #sell: SellValueForm, same destination as /sell"
+      "where": "Seller ask deferred off the shortened homepage stack (Critiquito H9); Value my home lives on /sell and chrome Sell leaves."
     },
     {
       "name": "KbCommunityAlerts",
@@ -67,8 +67,9 @@
       "section": "#hero -- owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch is the only Stage action"
     },
     {
-      "name": "V3Atlas",
-      "section": "#atlas -- the living map: every active home as a point on Central Oregon, every town/community/neighborhood a touchable silhouette. Hover animates the place, opens the info card, and lights the homes inside it."
+      "name": "HomeExploreMap",
+      "section": "#map \u2014 regular Google Map with active listing pins (Critiquito H8). Not V3Atlas: no heatmap, no type sidebar, no region chips.",
+      "blocking": true
     },
     {
       "name": "V3Doors",
@@ -80,12 +81,12 @@
       "section": "city / community / address search on the Stage"
     },
     {
-      "name": "HomeHomesFieldBound",
-      "section": "Client island over HomeHomesField. Zoom/pan of the living atlas filters the photographed list. HomeHomesField still mounts V3Field + PlaceFieldMap; the route binds the Bound wrapper so the list tracks the camera."
+      "name": "HomeHomesField",
+      "section": "Photographed Field after doors (listFlow + See all). No atlas-camera Bound wrapper \u2014 Critiquito H8 dropped Atlas, so the list is not tethered to an atlas camera."
     },
     {
       "name": "V3Ledger",
-      "section": "towns (with remainder note), then communities"
+      "section": "#towns \u2014 per-town active count and median list price (communities ledger deferred off home H9)"
     },
     {
       "name": "V3Instrument",
@@ -97,8 +98,8 @@
     }
   ],
   "purpose": {
-    "_": "Locked v3 homepage. Stage then Atlas then Field. Chart Room mid-page.",
-    "job": "Turn someone who typed a money query into a search they can act on. The visitor arrived wanting to look at houses. Search is the Stage action. Homes are the next screen.",
+    "_": "Locked v3 homepage after Critiquito H8. Stage \u2192 doors \u2192 Field \u2192 Google Map. Chart Room mid-page. No Atlas on home.",
+    "job": "Turn someone who typed a money query into a search they can act on. Search is the Stage action. Homes and Buy/Sell/Invest doors follow; map explores after.",
     "primaryAction": "Search city, community, or address. See homes is the secondary door into regional browse.",
     "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell).",
     "questionsItMustAnswer": [
@@ -127,7 +128,8 @@
     "notThisPagesJob": [
       "Being the full market report. /housing-market owns the full figure set; the homepage owes the answer and a door.",
       "Being the about page. /about and /team own the brokerage story.",
-      "Hosting a second contact form. Alerts is the on-page ask. Value my home lives on /sell."
+      "Hosting Atlas / heatmap chrome. Place pages keep V3Atlas; home uses HomeExploreMap.",
+      "Hosting a second contact form. Value my home lives on /sell."
     ]
   },
   "openDefects": {
@@ -135,28 +137,27 @@
     "items": [
       "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel Field and Ledger again.",
       "RESOLVED: overlapping rail. V3Field listFlow keeps the list in document flow; See all is the Field action.",
-      "RESOLVED: Chart Room is mid-page V3Instrument, not the first fold."
+      "RESOLVED: Chart Room is mid-page V3Instrument, not the first fold.",
+      "RESOLVED 2026-09-06 Critiquito H8: V3Atlas removed from homepage; HomeExploreMap is the Google Map."
     ]
   },
   "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero -- owned flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch",
-    "V3Atlas #atlas -- the living map of every listing",
-    "V3Doors #doors -- Buying / Selling / Investing, one live fact each",
-    "HomeHomesFieldBound -- photographed list bound to the atlas camera; HomeHomesField still owns the Field frame",
-    "V3Ledger #towns -- each town's active count and median list price",
-    "V3Instrument #market -- the buyer-or-seller ANSWER with its trace and stamp, and a door to the full report",
-    "section #sell -- the seller ask, directly after the market verdict speaks to sellers (Matt 2026-09-01: moved up from last)",
-    "V3Ledger #communities -- resorts and master-planned communities",
-    "V3Quiet #reviews -- Google reviews",
-    "AboutFaces -- the three brokers",
+    "V3Stage #hero \u2014 owned flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch",
+    "V3Doors #doors \u2014 Buying / Selling / Investing, one live fact each",
+    "HomeHomesField \u2014 photographed list (listFlow + See all)",
+    "HomeExploreMap #map \u2014 regular Google Map with listing pins (not Atlas)",
+    "V3Ledger #towns \u2014 each town's active count and median list price",
+    "V3Instrument #market \u2014 the buyer-or-seller ANSWER with its trace and stamp",
+    "V3Proof #reviews \u2014 Google reviews",
+    "AboutFaces \u2014 the brokers",
     "V3Footer"
   ],
   "tasteReview": {
     "evaluatedAt": "2026-09-06",
     "score": 74,
-    "beats": "Zillow's Bend, OR homepage on the branded door: H1 Ryan Realty, Bend over owned Old Mill media, then live Central Oregon inventory as Atlas rather than a photo over a search box.",
+    "beats": "Zillow's Bend, OR homepage on the branded door: H1 Ryan Realty, Bend over owned Old Mill media, then live Central Oregon inventory as Field + a regular Google Map rather than Atlas chrome.",
     "evaluator": "separate grok-4.6 evaluator, place-pages pass, session 01a06fc0",
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png",
