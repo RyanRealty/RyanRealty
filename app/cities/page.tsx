@@ -135,7 +135,7 @@ export default async function CitiesPage() {
     }
   })
 
-  const featuredSlugs = new Set(featured.map((f) => f.slug))
+  const featuredSlugs = new Set<string>(featured.map((f) => f.slug))
   const others = visibleCities.filter((c) => featuredSlugs.has(c.slug) === false)
 
   const ledgerSlugs = new Set<string>([...featuredSlugs, ...others.map((c) => c.slug)])

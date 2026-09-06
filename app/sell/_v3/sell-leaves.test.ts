@@ -42,12 +42,11 @@ describe('sell leaves sit on the /sell spine', () => {
     expect(nextConfig).toContain("destination: '/sell'")
   })
 
-  it('[intent] redirects leftover slugs instead of rendering a fourth product', () => {
-    expect(intent).toContain('permanentRedirect')
-    expect(intent).toContain("'inherited-home': ROUTE_PATH")
-    expect(intent).toContain("'for-sale-by-owner': FSBO_ROUTE")
-    expect(intent).toContain("'expired-listings': EXPIRED_ROUTE")
+  it('[intent] 404s leftover slugs instead of rendering a fourth product', () => {
+    expect(intent).not.toContain('permanentRedirect')
     expect(intent).toContain('notFound()')
+    const nextConfig = read('next.config.ts')
+    expect(nextConfig).toContain("source: '/sell/inherited-home'")
   })
 
   it('valuation is the same form with more room, no Stage ghost', () => {
