@@ -244,7 +244,11 @@ export function cmaSectionStyles(): string {
      future overflow is loud instead of silent. */
   .comp-matrix-wrap { overflow-x: visible; margin: 8px 0 14px; }
   @media screen {
-    .comp-matrix-wrap { overflow-x: auto; }
+    .comp-matrix-wrap {
+      overflow-x: auto;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
     table.comp-matrix { min-width: 44rem; }
   }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }

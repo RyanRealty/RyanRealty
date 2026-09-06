@@ -93,7 +93,6 @@ export function cmaStylesheet(siteUrl: string): string {
     .cover-title { font-size: 36px; }
     .cover-mast { top: 0; left: 0; right: 0; padding: 20px 18px 48px; }
     .page-cover .value-block { padding: 20px 18px 24px; }
-    .value-block .vb-price { font-size: 44px; }
     .page-cover .cma-product-bar { display: none; }
     .cover-specs {
       white-space: nowrap;
@@ -336,6 +335,20 @@ export function cmaStylesheet(siteUrl: string): string {
     margin-top: 6px;
     line-height: 1.5;
   }
+  /* Desk 72px must not win on a phone: an earlier max-width:700 rule lost to this
+     block and clipped $389,000 on the cover at 375. Re-state size AFTER the desk
+     rule, cap width, and let the range wrap. */
+  @media screen and (max-width: 700px) {
+    .value-block .vb-price {
+      font-size: 44px;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .value-block .vb-range {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+  }
 
   .stat-strip {
     display: grid;
@@ -574,6 +587,24 @@ export function cmaStylesheet(siteUrl: string): string {
     font-size: 9.5px;
     color: var(--muted);
     letter-spacing: 0.08em;
+  }
+  /* 200px portrait + 36px gap + fixed 260px name plate is 496px — past a 375
+     content box. Collapse to one column and let the name use the row width. */
+  @media screen and (max-width: 700px) {
+    .signature-page {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .signature-page .portrait { max-width: 140px; }
+    .signature-page .sig-name {
+      width: auto;
+      max-width: 100%;
+      font-size: 36px;
+    }
+    .tier-grid { gap: 8px; }
+    .tier { padding: 12px 10px; }
+    .tier .t-val { font-size: 18px; }
   }
 
   .trace {

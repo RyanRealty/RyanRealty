@@ -18,4 +18,21 @@ describe('adjustment grid stays inside the print box', () => {
     expect(css).toMatch(/@media screen[\s\S]*table\.comp-matrix \{[^}]*min-width:\s*44rem/)
     expect(immersive).toMatch(/table\.comp-matrix\{[^}]*min-width:44rem/)
   })
+
+  it('contains the comps matrix scroll so 375 does not grow the document width', () => {
+    const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
+    expect(css).toMatch(
+      /@media screen\s*\{[\s\S]*?\.comp-matrix-wrap\s*\{[^}]*overflow-x:\s*auto[^}]*max-width:\s*100%/,
+    )
+  })
+
+  it('stacks the signature at phone width so the 260px name plate cannot push past 375', () => {
+    const css = readFileSync(join(process.cwd(), 'lib/cma/render-css.ts'), 'utf8')
+    expect(css).toMatch(
+      /@media screen and \(max-width: 700px\)[\s\S]*?\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+    )
+    expect(css).toMatch(
+      /@media screen and \(max-width: 700px\)[\s\S]*?\.signature-page \.sig-name\s*\{[^}]*width:\s*auto/,
+    )
+  })
 })

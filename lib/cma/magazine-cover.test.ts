@@ -174,6 +174,23 @@ describe('print CMA magazine cover', () => {
     expect(css).toMatch(/\.cover-mast\s*\{[^}]*background:\s*linear-gradient/)
     expect(css).toMatch(/\.cover-mast\s*\{[^}]*top:\s*0/)
   })
+
+  it('keeps the cover recommended-list figure inside 375 after the desk-size 72px rule', () => {
+    const css = cmaStylesheet('https://ryan-realty.com')
+    const desk = css.indexOf('.value-block .vb-price')
+    expect(desk).toBeGreaterThan(-1)
+    expect(css.slice(desk, desk + 220)).toMatch(/font-size:\s*72px/)
+    // Phone size must win over the desk 72px — a later max-width:700 rule with
+    // a size that fits Amboqia at 375, plus max-width:100% so a long figure
+    // cannot paint past the cover stage.
+    const afterDesk = css.slice(desk)
+    expect(afterDesk).toMatch(
+      /@media screen and \(max-width: 700px\)[\s\S]*?\.value-block \.vb-price\s*\{[^}]*font-size:\s*(?:clamp\([^)]+|4[0-4]px)/,
+    )
+    expect(afterDesk).toMatch(
+      /@media screen and \(max-width: 700px\)[\s\S]*?\.value-block \.vb-price\s*\{[^}]*max-width:\s*100%/,
+    )
+  })
 })
 
 describe('immersive CMA first screen', () => {

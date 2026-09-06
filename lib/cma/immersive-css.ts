@@ -79,7 +79,7 @@ img{max-width:100%;display:block}
 .comp-nv{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;line-height:1}
 .comp-facts{font-size:14px;opacity:.7;font-variant-numeric:tabular-nums;margin-top:4px}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
-.comp-matrix-wrap{overflow-x:auto;margin:18px 0 8px}
+.comp-matrix-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;margin:18px 0 8px}
 table.comp-matrix{width:100%;min-width:44rem;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
 table.comp-matrix td.n{white-space:nowrap}
