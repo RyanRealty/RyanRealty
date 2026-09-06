@@ -4,6 +4,7 @@
  * they land on /cities, /communities, /subdivisions — not /homes-for-sale.
  */
 import { getPlaceLinks } from '@/lib/place-links'
+import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { cityHref, cityNeighborhoodHref, subdivisionHref } from '@/lib/site/place-href'
 
 export type PlaceCrumb = {
@@ -125,7 +126,11 @@ export function listingPlaceTrail(input: {
   }
 
   if (community && !(city && samePlace(city, community))) {
-    const href = communityHref(community.slug)
+    // Resort registry → /communities. Alias-only parents (Stevens Ranch) have
+    // no community page; use the subdivision door so the crumb does not 404.
+    const href = getResortCommunityBySlug(community.slug)
+      ? communityHref(community.slug)
+      : subdivisionHref(community.slug)
     if (href) pushUnique(trail, community.label, href)
   }
 

@@ -16,6 +16,7 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingPlaceTrail } from '@/lib/site/place-trail'
+import { listingAliasPlatLadder } from '@/lib/listing/listing-alias-plat-trail'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
@@ -386,11 +387,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
     { mlsNumber: listing.listNumber },
   )
 
+  const aliasLadder = listingAliasPlatLadder({
+    mlsSubdivisionName: listing.subdivisionName,
+    boundarySubdivision: listing.boundarySubdivision,
+  })
   const breadcrumbs = listingPlaceTrail({
     city: listing.city && listing.citySlug ? { label: listing.city, slug: listing.citySlug } : null,
     neighborhood: placeContext.neighborhood,
-    community: placeContext.curatedCommunity,
-    subdivision: placeContext.subdivision,
+    community: placeContext.curatedCommunity ?? aliasLadder.parent,
+    subdivision: aliasLadder.plat ?? placeContext.subdivision,
     address: street || `Listing ${listingKey}`,
   })
 

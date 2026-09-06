@@ -108,6 +108,30 @@ describe('listingPlaceTrail', () => {
     ])
   })
 
+
+  it('sends an alias-only parent to the subdivision door, not a missing community page', () => {
+    expect(
+      listingPlaceTrail({
+        city: { label: 'Bend', slug: 'bend' },
+        neighborhood: null,
+        community: { label: 'Stevens Ranch', slug: 'stevens-ranch' },
+        subdivision: {
+          label: 'Stevens Ranch Phase RS-1',
+          slug: 'stevens-ranch-phase-rs-1-plld20211070',
+        },
+        address: '21812 SE Stromboli Court',
+      }),
+    ).toEqual([
+      { label: 'Bend', href: '/cities/bend' },
+      { label: 'Stevens Ranch', href: '/subdivisions/stevens-ranch' },
+      {
+        label: 'Stevens Ranch Phase RS-1',
+        href: '/subdivisions/stevens-ranch-phase-rs-1-plld20211070',
+      },
+      { label: '21812 SE Stromboli Court' },
+    ])
+  })
+
   it('never writes Home, Homes for sale, Cities, or a search door', () => {
     const trails = [
       cityPageTrail('Sunriver'),
