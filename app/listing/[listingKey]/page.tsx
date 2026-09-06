@@ -38,6 +38,11 @@ import { buildListingAtlas } from './_v3/listing-atlas'
 import { listingAtlasHeadline } from '@/lib/listing/listing-place-market'
 import { ListingAroundHere } from '@/components/site/listing-detail/ListingAroundHere'
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
+import { ListingAskInstrument } from '@/components/site/listing-detail/ListingAskInstrument'
+import { buildListingAskClaim } from '@/components/site/listing-detail/listing-ask'
+import { cityDetachedSlug, getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
+import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
+import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { ListingSimilarStrip } from '@/components/site/listing-detail/ListingSimilarStrip'
 import {
   listingSimilarDedupe,
@@ -47,6 +52,7 @@ import {
 import { ListingLotFigure } from '@/components/site/listing-detail/ListingLotFigure'
 import { ListingTaxHistory, listingCountyRecordHref } from '@/components/site/listing-detail/ListingTaxHistory'
 import {
+  leftoverListingGrains,
   listingBoundaryAttempts,
   listingInventoryDoor,
   resolveListingPlaceAndMarket,
@@ -208,7 +214,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
       : { city: listing.city ?? undefined }
 
-  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, openHouses, reviews, calcDefaults] =
+  const leftoverGrains = leftoverListingGrains(listing, marketGeo)
+
+  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, calcDefaults] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -236,10 +244,54 @@ export default async function ListingDetailPage({ params }: PageProps) {
         3000,
         'listing:agent',
       ),
+      leftoverGrains.length > 0
+        ? withTimeoutFallback(
+            getDetachedOverlays(
+              leftoverGrains.map((grain) => ({ geoType: grain.geoType, geoSlug: grain.geoSlug })),
+            ),
+            new Map(),
+            3000,
+            'listing:leftoverOverlay',
+          )
+        : Promise.resolve(new Map()),
+      leftoverGrains.length > 0
+        ? Promise.all(
+            leftoverGrains.map((grain) =>
+              withTimeoutFallback(
+                getPublicDetachedPace({ geoType: grain.geoType, geoSlug: grain.geoSlug }),
+                EMPTY_PUBLIC_PACE,
+                3000,
+                `listing:leftoverPace:${grain.geoType}`,
+              ),
+            ),
+          )
+        : Promise.resolve([]),
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
     ])
+
+  let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
+  let leftoverLayers: ReturnType<typeof leftoverOverlays.get> = undefined
+  let leftoverGrain = leftoverGrains[leftoverGrains.length - 1] ?? null
+  for (let i = 0; i < leftoverGrains.length; i++) {
+    const grain = leftoverGrains[i]!
+    const slug = cityDetachedSlug(grain.geoSlug)
+    const layers = leftoverOverlays.get(`${grain.geoType}:${slug}`)
+    const pace = leftoverPaceRows[i] ?? EMPTY_PUBLIC_PACE
+    const hud = leftoverHudKpis({
+      grain: grain.geoType,
+      headlines: layers?.headlines ?? null,
+      inventory: layers?.inventory ?? null,
+      pace,
+    })
+    if (leftoverHudPublishes(hud) || pace.pendingCount != null) {
+      leftoverHud = hud
+      leftoverLayers = layers
+      leftoverGrain = grain
+      break
+    }
+  }
 
   const listingWithPhotos = { ...listing, photos }
 
@@ -338,6 +390,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
+  const askClaim = buildListingAskClaim({
+    ask: publishedSaleAsk,
+    wholePropertyPrice,
+    hud: leftoverHud,
+    grain: leftoverGrain,
+    updatedAt: leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
+  })
   const ctaTel = brokerTelDigits(ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub)
 
   const hero = (
@@ -449,6 +508,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <SchoolsBlock listing={listingWithPhotos} />
       </div>
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
+      {askClaim ? <ListingAskInstrument claim={askClaim} /> : null}
       <div id="tax">
         <ListingTaxHistory
           taxYear={listing.taxYear}

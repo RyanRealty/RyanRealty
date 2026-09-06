@@ -185,7 +185,8 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<V3SectionTracker[\s/>]/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
     expect(src).not.toMatch(/<ListingLikeThisAlerts\b/)
-    expect(src).not.toMatch(/<ListingAskInstrument\b/)
+    expect(src).toMatch(/<ListingAskInstrument\b/)
+    expect(src).toMatch(/buildListingAskClaim/)
     expect(src).not.toMatch(/<LivePricingRead\b/)
     expect(src).not.toMatch(/<NeighborhoodMarketContext\b/)
     // The header stays layout-owned (app/layout.tsx mounts V3Chrome once).
@@ -640,8 +641,10 @@ describe('design directive contracts', () => {
   it('D112 — listing HouseMe report is stamp-backed and refuses invention', () => {
     const page = readSrc('app/listing/[listingKey]/page.tsx')
     const report = readSrc('components/site/listing-detail/HouseMeReport.tsx')
+    // Ask claim is ListingAskInstrument; HouseMe / LivePricingRead stay off the page.
+    expect(page).toMatch(/buildListingAskClaim/)
+    expect(page).toMatch(/<ListingAskInstrument/)
     expect(page).not.toMatch(/<LivePricingRead/)
-    expect(page).not.toMatch(/buildListingAskClaim/)
     expect(page).not.toMatch(/<HouseMeReport/)
     expect(report).toMatch(/listing_pricing_reads/)
     expect(report).not.toMatch(/0-10|0–10|5-year|5 year/)

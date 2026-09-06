@@ -83,9 +83,12 @@ describe('D25 leftover pending HUD and leftover remaining visitor HUD-family', (
   it('search snapshot and listing KPI print leftover pending', () => {
     expect(files.snapshot).toMatch(/hud\.pending/)
     expect(files.snapshot).toMatch(/Under contract now/)
-    expect(files.listing).not.toMatch(/leftoverHudKpis/)
+    // Listing page leftover HUD feeds ask claim only — not a pending KPI remount.
+    expect(files.listing).toMatch(/leftoverHudKpis/)
+    expect(files.listing).toMatch(/buildListingAskClaim/)
     expect(files.listingAsk).toMatch(/leftoverHudKpis/)
     expect(files.listing).not.toMatch(/leftover\.pendingCount/)
+    expect(files.listing).not.toMatch(/<LivePricingRead/)
   })
 
   it('search city FAQ is leftover HUD, not pulse fill', () => {

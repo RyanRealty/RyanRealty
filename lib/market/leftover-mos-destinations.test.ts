@@ -42,9 +42,12 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
 
   it('listing place market is leftover HUD, not pulse fill', () => {
     const listing = readFileSync(resolve('app/listing/[listingKey]/page.tsx'), 'utf8')
-    expect(listing).not.toMatch(/leftoverHudKpis/)
-    expect(listing).not.toMatch(/leftoverListingGrains/)
+    // Ask claim feeds leftover HUD into ListingAskInstrument; no pulse fill, no KPI remount.
+    expect(listing).toMatch(/leftoverHudKpis/)
+    expect(listing).toMatch(/leftoverListingGrains/)
+    expect(listing).toMatch(/buildListingAskClaim/)
     expect(listing).not.toMatch(/getMarketPulse\(/)
+    expect(listing).not.toMatch(/<LivePricingRead/)
   })
 
   it('the chrome takes MOS from leftoverHudKpis, not a pulse fill', () => {

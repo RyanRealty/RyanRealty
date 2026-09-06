@@ -18,6 +18,7 @@ describe('listing remainder composition', () => {
       '{atlasBlock}',
       '<SchoolsBlock',
       '<ListingAroundHere',
+      '<ListingAskInstrument',
       '<ListingTaxHistory',
       '<GoverningDocumentsBlock',
       '<ListingSimilarStrip',
@@ -35,11 +36,13 @@ describe('listing remainder composition', () => {
     expect(PAGE).not.toMatch(/<LivePricingRead/)
     expect(PAGE).not.toMatch(/<ListingFeaturedHomes/)
     expect(PAGE).not.toMatch(/<ListingTourCard/)
-    expect(PAGE).not.toMatch(/<ListingAskInstrument/)
+    // Ask claim uses ListingAskInstrument + leftoverHudKpis (ci:publish-listing-share).
+    expect(PAGE).toMatch(/<ListingAskInstrument/)
+    expect(PAGE).toMatch(/buildListingAskClaim/)
+    expect(PAGE).toMatch(/leftoverHudKpis/)
     expect(PAGE).not.toMatch(/<PublishedCmaSection/)
     expect(PAGE).not.toMatch(/<RentalAnalysis/)
     expect(PAGE).not.toMatch(/<ListingLikeThisAlerts/)
-    expect(PAGE).not.toMatch(/leftoverHudKpis/)
     expect(PAGE).not.toMatch(/id="lot"/)
   })
 
