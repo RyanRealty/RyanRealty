@@ -449,14 +449,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
         <SchoolsBlock listing={listingWithPhotos} />
       </div>
       <ListingAroundHere lat={listing.lat} lng={listing.lng} />
-      <ListingTaxHistory
-        taxYear={listing.taxYear}
-        taxAssessedValue={listing.taxAssessedValue}
-        taxAnnualAmount={listing.taxAnnualAmount}
-        county={listing.county}
-        parcelNumber={listing.parcelNumber}
-        countyRecordHref={countyRecordHref}
-      />
+      <div id="tax">
+        <ListingTaxHistory
+          taxYear={listing.taxYear}
+          taxAssessedValue={listing.taxAssessedValue}
+          taxAnnualAmount={listing.taxAnnualAmount}
+          county={listing.county}
+          parcelNumber={listing.parcelNumber}
+          countyRecordHref={countyRecordHref}
+        />
+      </div>
       {platDocuments && platDocuments.documents.length > 0 ? (
         <div id="plat">
           <GoverningDocumentsBlock

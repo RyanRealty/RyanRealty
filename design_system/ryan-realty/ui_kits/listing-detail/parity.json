@@ -227,12 +227,11 @@
     "anchor": "#listing-like-alerts"
   },
   "sectionOrder": [
-    "V3Breadcrumb",
     "ListingHero (price, beds, baths, sqft, street on the media)",
+    "V3Atlas #location with lot figure",
     "PriceCtaStrip Tour / Call / Text",
     "PropertySpecs facts",
     "MortgageCalculator #payment",
-    "V3Atlas #location with lot figure",
     "SchoolsBlock #schools nearby",
     "ListingAroundHere parks / trails",
     "ListingTaxHistory #tax",
@@ -243,6 +242,7 @@
     "MetadataBlock",
     "ListingTracker",
     "V3SectionTracker",
+    "V3Breadcrumb",
     "V3Footer (outside main)"
   ],
   "openDefects": {

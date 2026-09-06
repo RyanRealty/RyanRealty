@@ -61,7 +61,7 @@ export function ListingTaxHistory({
   if (assessed == null && annual == null && year == null && !record) return null
 
   return (
-    <section id="tax" className={cn('section', className)}>
+    <section className={cn('section', className)}>
       <div className="sec-head">
         <div>
           <h2 className="sec-title">Tax history</h2>
