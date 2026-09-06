@@ -2,13 +2,15 @@
 /**
  * Registry-resort index publish lock.
  *
- * Homepage tiles, /communities flagship + A-Z, and getCommunityBySlug
- * metadata must print the alias-aware resort set — the same set
- * /communities/{slug} already prints. Literal-name snapshot counts are
- * a different geography.
+ * /communities flagship + A-Z, and getCommunityBySlug metadata must print
+ * the alias-aware resort set — the same set /communities/{slug} already
+ * prints. Literal-name snapshot counts are a different geography.
  *
- * Founding case: homepage Tetherow 12 ACTIVE vs /communities/tetherow
- * 35 homes (fleet a7a6038f1d78857572e7e2199cf399bf).
+ * Homepage: Critiquito H9 may omit the communities ledger; when it renders
+ * community tiles it must still print index activeCount (founding case:
+ * homepage Tetherow 12 ACTIVE vs /communities/tetherow 35 homes,
+ * fleet a7a6038f1d78857572e7e2199cf399bf). Do not resurrect the ledger
+ * only to satisfy this gate.
  *
  *   node scripts/check-publish-resort-index-figures.mjs
  */
@@ -63,11 +65,20 @@ checks.push({
 })
 
 const home = src('app/page.tsx')
+// Critiquito H9: homepage may omit the communities ledger (door is /communities).
+// If community tiles return, they must still print index activeCount — founding
+// Tetherow 12 vs 35 case. Do not resurrect the ledger to satisfy this gate.
+const homeRendersCommunityTiles =
+  /getCommunitiesForIndex/.test(home) ||
+  /COMM_FEATURED/.test(home) ||
+  /id=["']communities["']/.test(home)
 checks.push({
-  label: 'homepage featured communities print the index activeCount',
-  ok:
-    /getCommunitiesForIndex/.test(home) &&
-    /activeCount: c\.activeCount/.test(home),
+  label: homeRendersCommunityTiles
+    ? 'homepage featured communities print the index activeCount'
+    : 'homepage omits communities ledger (Critiquito H9); resort figures stay on /communities',
+  ok: homeRendersCommunityTiles
+    ? /getCommunitiesForIndex/.test(home) && /activeCount: c\.activeCount/.test(home)
+    : !/getCommunitiesForIndex/.test(home),
 })
 
 const place = src('app/communities/page.tsx')
