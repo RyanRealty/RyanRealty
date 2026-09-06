@@ -25,6 +25,7 @@ import {
   HERO_VIDEO,
   HERO_POSTER,
   HOME_TILE_FETCH,
+  preferPlaceHero,
 } from './_v3/home-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
@@ -157,6 +158,9 @@ export default async function Home() {
     { label: 'Resorts and communities', href: '/communities' },
   ]
 
+  // Live Bend place-row hero wins over the static Old Mill poster (G30).
+  const heroPosterSrc = preferPlaceHero(cityBySlug.get('bend')?.heroImageUrl, HERO_POSTER)
+
   const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
   const reviewCount =
     reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : reviewQuotes.length
@@ -174,7 +178,7 @@ export default async function Home() {
           height="tall"
           eyebrow="Central Oregon"
           headline={v3Text('Homes for sale in Central Oregon')}
-          posterSrc={HERO_POSTER}
+          posterSrc={heroPosterSrc}
           videoSrc={HERO_VIDEO}
         >
           <HomeHeroSearch valuationHref={valuationHref('/')} />
