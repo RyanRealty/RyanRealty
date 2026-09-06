@@ -20,6 +20,7 @@ import {
 } from '@/lib/cma/render-blocks'
 import { clientSourceLine, formatClientMlsField } from '@/lib/cma/client-facing'
 import {
+  renderBandOutcomesHtml,
   renderInventoryBoardHtml,
   renderListingTrendHtml,
   renderSold90Html,
@@ -467,6 +468,18 @@ export function marketVolumePage(a: OpinionPageArgs): CmaPageDef | null {
   }
 }
 
+export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
+  const html = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
+  if (!html) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Sold and unsold`,
+    toc: 'Sold and unsold in this band',
+    body: `
+  <h2 class="section">Sold and unsold in this band</h2>
+  ${html}`,
+  }
+}
+
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
   const b = a.extras?.band
   if (!b) return null
@@ -614,6 +627,8 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   )
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
+  const outcomes = outcomesPage(a)
+  if (outcomes) rest.push(outcomes)
   const status = statusGridPage(a)
   if (status) rest.push(status)
   const sold90 = sold90Page(a)

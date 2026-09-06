@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { buildBarPlot, buildLinePlot } from '@/lib/charts/plot'
-import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
+import { PRINT_NAVY_CREAM, renderPrintChartSvg, renderPrintOutcomeStripSvg } from '@/lib/charts/print-svg'
 
 const points = [
   { value: 50, tick: 'Jan', label: '50' },
@@ -65,6 +65,31 @@ describe('print bar chart scale', () => {
     expect(svg).toContain('Median days to pending by close month')
     expect(svg).toContain('<circle')
     expect(svg).not.toContain('rx="2"')
+  })
+})
+
+describe('print outcome strip', () => {
+  it('puts closed sales and failed asks on one axis and names both', () => {
+    const svg = renderPrintOutcomeStripSvg({
+      sold: [380_000, 390_000, 400_000, 405_000],
+      unsold: [430_000, 450_000, 460_000],
+      list: 401_000,
+      lastAsk: 460_000,
+      xMinLabel: '$341K',
+      xMaxLabel: '$460K',
+      listLabel: 'This list',
+      lastAskLabel: 'Last ask',
+      caption: 'Sold and unsold in this band',
+      colors: PRINT_NAVY_CREAM,
+    })
+    expect(svg).toContain('Sold')
+    expect(svg).toContain("Didn't sell")
+    expect(svg).toContain('This list')
+    expect(svg).toContain('Last ask')
+    expect(svg).toContain('$341K')
+    expect(svg).toContain('$460K')
+    expect(svg.match(/<circle/g)?.length).toBe(4)
+    expect(svg).toContain('stroke-dasharray')
   })
 })
 

@@ -10,7 +10,7 @@ import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { clientSourceLine, whyThisListPrice } from '@/lib/cma/client-facing'
-import { immersiveWiderMarketChapters } from '@/lib/cma/market-area-chapters'
+import { immersiveWiderMarketChapters, renderBandOutcomesHtml } from '@/lib/cma/market-area-chapters'
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
@@ -107,6 +107,19 @@ function seasonalityScene(a: OpinionSceneArgs): string {
       }</p>
       <div class="r">${svg}</div>
       <p class="src r">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`))}</p>
+    </div>
+  </section>`
+}
+
+function outcomesScene(a: OpinionSceneArgs): string {
+  const html = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
+  if (!html) return ''
+  return `
+  <section class="sc sc-cream" id="sold-unsold">
+    <div class="in wide">
+      <div class="kick r">This price band</div>
+      <h2 class="h r">Sold and unsold in this band</h2>
+      <div class="r">${html}</div>
     </div>
   </section>`
 }
@@ -261,6 +274,7 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   return [
     whyScene(a),
     competitionScene(a),
+    outcomesScene(a),
     salesScene(a),
     lotLinesScene(a),
     subdivisionScene(a),

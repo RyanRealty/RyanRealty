@@ -34,6 +34,22 @@ export type CmaListingTrendPoint = {
   medianAsk: number | null
 }
 
+/** Closed sale prices vs last asks that never sold, in the subject's list band. */
+export type CmaBandOutcomes = {
+  lo: number
+  hi: number
+  sold: number[]
+  unsold: number[]
+  list: number
+  lastAsk: number | null
+  soldShown: number
+  unsoldShown: number
+  soldTotal: number
+  unsoldTotal: number
+  label: string
+  source: string
+}
+
 export type CmaMarketArea = {
   grain: 'subdivision' | 'city-similar'
   label: string
@@ -47,9 +63,70 @@ export type CmaMarketArea = {
   closed: CmaStatusBucket | null
   sold90: CmaSoldBand | null
   listingTrend: CmaListingTrendPoint[] | null
+  /** Optional on older stored args. */
+  outcomes?: CmaBandOutcomes | null
 }
 
 const TERMINAL_OFF = new Set(['Expired', 'Withdrawn', 'Canceled'])
+
+/** List band around the recommended number. Wider than live competition (±10%) so a failed ask above the rec still sits on the axis. */
+export const BAND_OUTCOME_BELOW = 0.85
+export const BAND_OUTCOME_ABOVE = 1.15
+const OUTCOME_CAP = 80
+
+function spreadCap(values: number[], cap: number): number[] {
+  if (values.length <= cap) return values
+  const s = [...values].sort((a, b) => a - b)
+  return Array.from({ length: cap }, (_, i) => s[Math.round((i * (s.length - 1)) / (cap - 1))]!)
+}
+
+export function computeBandOutcomes(input: {
+  rows: CmaMarketAreaRow[]
+  recommended: number
+  lastAsk: number | null
+  label: string
+}): CmaBandOutcomes | null {
+  const rec = input.recommended
+  if (!(rec > 0)) return null
+  let lo = Math.round((rec * BAND_OUTCOME_BELOW) / 1000) * 1000
+  let hi = Math.round((rec * BAND_OUTCOME_ABOVE) / 1000) * 1000
+  const lastAsk =
+    input.lastAsk != null && Number.isFinite(input.lastAsk) && input.lastAsk > 0 ? input.lastAsk : null
+  if (lastAsk != null && lastAsk > hi) hi = Math.round(lastAsk / 1000) * 1000
+  if (lastAsk != null && lastAsk < lo) lo = Math.round(lastAsk / 1000) * 1000
+
+  const sold = input.rows
+    .filter((r) => r.StandardStatus === 'Closed')
+    .map((r) => num(r.ClosePrice))
+    .filter((n): n is number => n != null && n >= lo && n <= hi)
+  const unsold = input.rows
+    .filter((r) => TERMINAL_OFF.has(r.StandardStatus))
+    .map((r) => num(r.ListPrice))
+    .filter((n): n is number => n != null && n >= lo && n <= hi)
+  if (sold.length < 3 || unsold.length < 1) return null
+
+  const soldShown = spreadCap(sold, OUTCOME_CAP)
+  const unsoldShown = spreadCap(unsold, OUTCOME_CAP)
+  const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
+  return {
+    lo,
+    hi,
+    sold: soldShown,
+    unsold: unsoldShown,
+    list: rec,
+    lastAsk,
+    soldShown: soldShown.length,
+    unsoldShown: unsoldShown.length,
+    soldTotal: sold.length,
+    unsoldTotal: unsold.length,
+    label: input.label,
+    source: `Oregon Data Share MLS. ${input.label}, ${usd(lo)} to ${usd(hi)}, last 12 months. Closed = sale price. Expired, withdrawn, and canceled = last ask.${
+      sold.length > soldShown.length || unsold.length > unsoldShown.length
+        ? ` ${soldShown.length} of ${sold.length} sales and ${unsoldShown.length} of ${unsold.length} unsold listings shown, spaced across the range.`
+        : ''
+    }`,
+  }
+}
 
 export function median(values: number[]): number | null {
   if (values.length === 0) return null
@@ -230,5 +307,11 @@ export function computeMarketArea(input: {
     closed: pack('closed', 'Closed, last 12 months', closed),
     sold90,
     listingTrend: listingTrend(scoped, asOf),
+    outcomes: computeBandOutcomes({
+      rows: scoped,
+      recommended: input.pricing.recommended,
+      lastAsk: input.subject.lastListPrice,
+      label,
+    }),
   }
 }

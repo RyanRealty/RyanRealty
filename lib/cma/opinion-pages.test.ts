@@ -155,4 +155,60 @@ describe('assembleOpinionPages format', () => {
     expect(price).toBeGreaterThanOrEqual(0)
     expect(competition).toBe(price + 1)
   })
+
+  it('draws sold vs unsold in the list band right after competition', () => {
+    const pages = assembleOpinionPages({
+      ...args(),
+      extras: {
+        ...args().extras!,
+        marketArea: {
+          grain: 'subdivision',
+          label: 'Diamond Bar Ranch',
+          source: 'test',
+          priceLo: 365000,
+          priceHi: 494000,
+          selected: {
+            key: 'selected',
+            label: 'These sales',
+            count: 3,
+            low: 390000,
+            median: 410000,
+            high: 420000,
+            medianPpsf: 280,
+            medianDom: 12,
+          },
+          active: null,
+          pending: null,
+          expired: null,
+          closed: null,
+          sold90: null,
+          listingTrend: null,
+          outcomes: {
+            lo: 365000,
+            hi: 460000,
+            sold: [380000, 390000, 400000, 410000],
+            unsold: [430000, 450000, 460000],
+            list: 401000,
+            lastAsk: 460000,
+            soldShown: 4,
+            unsoldShown: 3,
+            soldTotal: 4,
+            unsoldTotal: 3,
+            label: 'Diamond Bar Ranch',
+            source: 'Closed = sale price. Expired, withdrawn, and canceled = last ask.',
+          },
+        },
+      },
+    })
+    const tocs = pages.map((p) => p.toc)
+    const competition = tocs.indexOf('Who you are competing with at this price')
+    const outcomes = tocs.indexOf('Sold and unsold in this band')
+    expect(outcomes).toBe(competition + 1)
+    const body = pages[outcomes]!.body
+    expect(body).toContain('4 closed')
+    expect(body).toContain('came off without a sale')
+    expect(body).toContain("Didn't sell")
+    expect(body).toContain('Last ask')
+    expect(body).toContain('Closed = sale price')
+  })
 })

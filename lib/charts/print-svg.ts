@@ -386,6 +386,71 @@ export function renderPrintStripSvg(input: {
   return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${axis}${marks}</svg>`
 }
 
+/**
+ * Two rails on one price axis: closed sales (close) above, listings that
+ * came off without a sale (last ask) below. This list is a vertical rule.
+ */
+export function renderPrintOutcomeStripSvg(input: {
+  sold: readonly number[]
+  unsold: readonly number[]
+  list: number
+  lastAsk: number | null
+  xMinLabel: string
+  xMaxLabel: string
+  listLabel: string
+  lastAskLabel: string | null
+  caption: string
+  colors: PrintChartColors
+}): string {
+  const { colors, caption } = input
+  const nums = [...input.sold, ...input.unsold, input.list, input.lastAsk].filter(
+    (n): n is number => n != null && Number.isFinite(n) && n > 0,
+  )
+  if (input.sold.length < 3 || input.unsold.length < 1 || nums.length < 4) return ''
+  const min = Math.min(...nums)
+  const max = Math.max(...nums)
+  const span = max - min || max * 0.04
+  const lo = min - span * 0.06
+  const hi = max + span * 0.06
+  const gutterL = 72
+  const plotW = 320
+  const vbW = gutterL + plotW + 12
+  const vbH = 108
+  const soldY = 34
+  const unsoldY = 70
+  const xOf = (v: number) => gutterL + ((v - lo) / (hi - lo || 1)) * plotW
+  const aria = esc(caption)
+  const jitter = (i: number) => ((i * 5) % 7) - 3
+
+  const soldDots = input.sold
+    .map((v, i) => {
+      const x = xOf(v)
+      const y = soldY + jitter(i)
+      return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="2.6" fill="none" stroke="${colors.ink}" stroke-width="1.15" ${HAIR}/>`
+    })
+    .join('')
+  const unsoldDots = input.unsold
+    .map((v, i) => {
+      const x = xOf(v)
+      const y = unsoldY + jitter(i + 3)
+      return `<line x1="${x.toFixed(2)}" y1="${(y - 5).toFixed(2)}" x2="${x.toFixed(2)}" y2="${(y + 5).toFixed(2)}" stroke="${colors.muted}" stroke-width="1.35" stroke-linecap="round" ${HAIR}/>`
+    })
+    .join('')
+  const listX = xOf(input.list)
+  const listRule = `<line x1="${listX.toFixed(2)}" y1="18" x2="${listX.toFixed(2)}" y2="86" stroke="${colors.ink}" stroke-width="1.35" ${HAIR}/><text x="${listX.toFixed(2)}" y="14" text-anchor="middle" font-size="8" fill="${colors.ink}" ${TEXT}>${esc(input.listLabel)}</text>`
+  const last =
+    input.lastAsk != null &&
+    input.lastAskLabel &&
+    Math.abs(input.lastAsk - input.list) > 1000
+      ? `<line x1="${xOf(input.lastAsk).toFixed(2)}" y1="18" x2="${xOf(input.lastAsk).toFixed(2)}" y2="86" stroke="${colors.muted}" stroke-width="1.15" stroke-dasharray="3 3" ${HAIR}/><text x="${xOf(input.lastAsk).toFixed(2)}" y="14" text-anchor="middle" font-size="8" fill="${colors.muted}" ${TEXT}>${esc(input.lastAskLabel)}</text>`
+      : ''
+  const soldRail = `<line x1="${gutterL}" y1="${soldY}" x2="${gutterL + plotW}" y2="${soldY}" stroke="${colors.edge}" stroke-width="0.6" ${HAIR}/>`
+  const unsoldRail = `<line x1="${gutterL}" y1="${unsoldY}" x2="${gutterL + plotW}" y2="${unsoldY}" stroke="${colors.edge}" stroke-width="0.6" ${HAIR}/>`
+  const rails = `<text x="4" y="${soldY + 3}" font-size="8" fill="${colors.muted}" ${TEXT}>Sold</text><text x="4" y="${unsoldY + 3}" font-size="8" fill="${colors.muted}" ${TEXT}>${esc("Didn't sell")}</text>`
+  const ends = `<text x="${gutterL}" y="100" font-size="9" fill="${colors.muted}" ${TEXT}>${esc(input.xMinLabel)}</text><text x="${gutterL + plotW}" y="100" text-anchor="end" font-size="9" fill="${colors.muted}" ${TEXT}>${esc(input.xMaxLabel)}</text>`
+  return `<svg viewBox="0 0 ${vbW} ${vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${soldRail}${unsoldRail}${soldDots}${unsoldDots}${listRule}${last}${rails}${ends}</svg>`
+}
+
 export function renderPrintChartSvg(
   plot: AnyPlot,
   opts: { caption: string; colors: PrintChartColors; kicker?: string },

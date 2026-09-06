@@ -205,6 +205,65 @@ describe('market status grain', () => {
     expect(area!.source).not.toMatch(/Single-family homes in 3 to 5 bedroom homes/)
   })
 
+  it('plots closed sale prices against last asks that never sold, in the list band', () => {
+    const area = computeMarketArea({
+      subject: { ...subject, lastListPrice: 2_400_000 },
+      comps: [comp()],
+      pricing,
+      asOf: new Date('2026-08-17T00:00:00Z'),
+      rows: [
+        row({ ClosePrice: 2_000_000 }),
+        row({ ClosePrice: 2_050_000, CloseDate: '2026-06-01' }),
+        row({ ClosePrice: 2_100_000, CloseDate: '2026-05-01' }),
+        row({ ClosePrice: 2_080_000, CloseDate: '2026-04-01' }),
+        row({
+          StandardStatus: 'Expired',
+          ListPrice: 2_300_000,
+          ClosePrice: 9_999_000,
+          CloseDate: null,
+        }),
+        row({
+          StandardStatus: 'Withdrawn',
+          ListPrice: 2_350_000,
+          ClosePrice: null,
+          CloseDate: null,
+        }),
+        row({
+          StandardStatus: 'Expired',
+          ListPrice: 5_200_000,
+          ClosePrice: null,
+          CloseDate: null,
+        }),
+      ],
+    })
+    const o = area!.outcomes
+    expect(o).not.toBeNull()
+    expect(o!.sold).toEqual(expect.arrayContaining([2_000_000, 2_050_000, 2_100_000, 2_080_000]))
+    expect(o!.unsold).toEqual(expect.arrayContaining([2_300_000, 2_350_000]))
+    expect(o!.unsold).not.toContain(9_999_000)
+    expect(o!.unsold).not.toContain(5_200_000)
+    expect(o!.list).toBe(2_150_000)
+    expect(o!.lastAsk).toBe(2_400_000)
+    expect(o!.hi).toBeGreaterThanOrEqual(2_400_000)
+    expect(o!.source).toMatch(/Closed = sale price/)
+    expect(o!.source).toMatch(/last ask/)
+  })
+
+  it('omits the outcomes strip when nothing in the band failed to sell', () => {
+    const area = computeMarketArea({
+      subject,
+      comps: [comp()],
+      pricing,
+      asOf: new Date('2026-08-17T00:00:00Z'),
+      rows: [
+        row({ ClosePrice: 2_000_000 }),
+        row({ ClosePrice: 2_100_000, CloseDate: '2026-06-01' }),
+        row({ ClosePrice: 2_200_000, CloseDate: '2026-05-01' }),
+      ],
+    })
+    expect(area!.outcomes).toBeNull()
+  })
+
   it('treats a zero days-on-market as missing on market-area rows', () => {
     const area = computeMarketArea({
       subject,

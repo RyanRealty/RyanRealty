@@ -6,7 +6,8 @@ import { dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { listingTrendSvg, medianCloseLineSvg } from '@/lib/cma/market-charts'
-import type { CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
+import { PRINT_NAVY_CREAM, renderPrintOutcomeStripSvg } from '@/lib/charts/print-svg'
+import type { CmaBandOutcomes, CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -104,6 +105,38 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     ${market.medianSalePrice != null ? `<div class="st"><div class="st-n">${usd(market.medianSalePrice)}</div><div class="st-l">median sold</div></div>` : ''}
   </div>
   ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
+}
+
+function shortUsd(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
+  }
+  return `$${Math.round(n / 1000)}K`
+}
+
+export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): string {
+  if (!x || x.sold.length < 3 || x.unsold.length < 1) return ''
+  const svg = renderPrintOutcomeStripSvg({
+    sold: x.sold,
+    unsold: x.unsold,
+    list: x.list,
+    lastAsk: x.lastAsk,
+    xMinLabel: shortUsd(x.lo),
+    xMaxLabel: shortUsd(x.hi),
+    listLabel: 'This list',
+    lastAskLabel: x.lastAsk != null ? 'Last ask' : null,
+    caption: 'Sold and unsold in this band',
+    colors: PRINT_NAVY_CREAM,
+  })
+  if (!svg) return ''
+  const last =
+    x.lastAsk != null && Math.abs(x.lastAsk - x.list) > 1000
+      ? ` The last listing asked ${usd(x.lastAsk)}.`
+      : ''
+  return `<p>${int(x.soldTotal)} closed. ${int(x.unsoldTotal)} listings in this band came off without a sale. This list is ${usd(x.list)}.${last}</p>
+  <div class="szn is-hero" data-anim="chart">${svg}</div>
+  <p class="small">${esc(clientSourceLine(x.source, `Closed sales and unsold listings in ${x.label}.`))}</p>`
 }
 
 export function renderListingTrendHtml(area: CmaMarketArea | null | undefined): string {
