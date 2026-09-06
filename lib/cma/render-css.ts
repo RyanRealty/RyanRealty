@@ -317,10 +317,15 @@ export function cmaStylesheet(siteUrl: string): string {
      largest element on the page. */
   .value-block .vb-price {
     font-family: 'Amboqia Boriango', Georgia, serif;
-    font-size: 72px;
+    /* clamp — not a fixed 72 — so a phone never depends on a later media rule
+       winning a cascade fight against this block (prod 375 still clipped after
+       b9e5b8c9 restated 44px after desk). Cap stays 72 on desk. */
+    font-size: clamp(40px, 11vw, 72px);
     line-height: 0.92;
     color: var(--cream);
     margin: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
   .value-block .vb-range {
     margin-top: 12px;
@@ -335,12 +340,12 @@ export function cmaStylesheet(siteUrl: string): string {
     margin-top: 6px;
     line-height: 1.5;
   }
-  /* Desk 72px must not win on a phone: an earlier max-width:700 rule lost to this
-     block and clipped $389,000 on the cover at 375. Re-state size AFTER the desk
-     rule, cap width, and let the range wrap. */
+  /* Belt: re-state after the desk block. The phone-safety appendix after
+     cmaSectionStyles() is the suspenders — last vb-price rule in the sheet. */
   @media screen and (max-width: 700px) {
+    .page-cover .value-block .vb-price,
     .value-block .vb-price {
-      font-size: 44px;
+      font-size: clamp(36px, 11vw, 44px);
       max-width: 100%;
       overflow-wrap: anywhere;
     }
@@ -523,12 +528,15 @@ export function cmaStylesheet(siteUrl: string): string {
 
   .signature-page {
     display: grid;
-    grid-template-columns: 200px 1fr;
+    /* minmax(0, …) so a fixed name plate cannot inflate the letter past the
+       viewport when the phone stack media query loses (16+200+36+260 = 512). */
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
     gap: 36px;
     align-items: end;
     margin-top: 22px;
     padding-top: 22px;
     border-top: 1px solid var(--navy-line);
+    max-width: 100%;
     /* The sign-off is one object. Split, its rule and padding stay on the
        previous sheet and the 44px signature starts flush against the top of
        the content box, where the ascender crosses into the reserved band —
@@ -537,8 +545,8 @@ export function cmaStylesheet(siteUrl: string): string {
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  .signature-page .portrait { width: 100%; height: auto; display: block; }
-  .signature-page .sig-content { padding-bottom: 6px; }
+  .signature-page .portrait { width: 100%; height: auto; display: block; min-width: 0; }
+  .signature-page .sig-content { padding-bottom: 6px; min-width: 0; }
   .signature-page .sig-name {
     font-family: 'Caveat', cursive;
     font-size: 44px;
@@ -547,7 +555,8 @@ export function cmaStylesheet(siteUrl: string): string {
     border-bottom: 1px solid var(--navy);
     padding-bottom: 4px;
     margin-bottom: 8px;
-    width: 260px;
+    width: min(260px, 100%);
+    max-width: 100%;
   }
   .signature-page .sig-printed {
     font-family: 'Amboqia Boriango', Georgia, serif;
@@ -667,5 +676,32 @@ export function cmaStylesheet(siteUrl: string): string {
        visible; @page gives the spill a properly margined sheet. §0. */
     a { text-decoration: none; color: inherit; }
   }
-`+ cmaSectionStyles()
+`+ cmaSectionStyles() + `
+  /* phone-safety: last wins — after section CSS so a later desk-sized rule
+     cannot resurrect cover clip or the 512px signature letter width. */
+  @media screen and (max-width: 700px) {
+    .page-cover .value-block .vb-price,
+    .value-block .vb-price {
+      font-size: clamp(36px, 11vw, 44px);
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .value-block .vb-range {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .signature-page {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      max-width: 100%;
+    }
+    .signature-page .portrait { max-width: 140px; }
+    .signature-page .sig-name {
+      width: auto;
+      max-width: 100%;
+      font-size: 36px;
+    }
+  }
+`
 }

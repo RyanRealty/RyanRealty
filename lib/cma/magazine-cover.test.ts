@@ -179,17 +179,27 @@ describe('print CMA magazine cover', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
     const desk = css.indexOf('.value-block .vb-price')
     expect(desk).toBeGreaterThan(-1)
-    expect(css.slice(desk, desk + 220)).toMatch(/font-size:\s*72px/)
-    // Phone size must win over the desk 72px — a later max-width:700 rule with
-    // a size that fits Amboqia at 375, plus max-width:100% so a long figure
-    // cannot paint past the cover stage.
-    const afterDesk = css.slice(desk)
-    expect(afterDesk).toMatch(
-      /@media screen and \(max-width: 700px\)[\s\S]*?\.value-block \.vb-price\s*\{[^}]*font-size:\s*(?:clamp\([^)]+|4[0-4]px)/,
+    // Desk size is a clamp capped at 72 — at 375 the vw floor wins without any
+    // media-query cascade fight (b9e5b8c9 restated 44px after desk and prod
+    // still clipped; clamp on the base rule cannot lose).
+    const deskBlock = css.slice(desk, desk + 600)
+    expect(deskBlock).toMatch(/font-size:\s*clamp\([^)]*72px\)/)
+    expect(deskBlock).toMatch(/max-width:\s*100%/)
+    // Final phone safety appendix must be the LAST vb-price rule in the sheet
+    // (after section CSS) so nothing concatenated later can resurrect 72px.
+    const lastPrice = css.lastIndexOf('.value-block .vb-price')
+    expect(lastPrice).toBeGreaterThan(desk)
+    const tail = css.slice(lastPrice - 120, lastPrice + 220)
+    expect(tail).toMatch(/@media screen and \(max-width: 700px\)/)
+    expect(css.slice(lastPrice, lastPrice + 220)).toMatch(
+      /font-size:\s*(?:clamp\([^)]+|4[0-4]px)/,
     )
-    expect(afterDesk).toMatch(
-      /@media screen and \(max-width: 700px\)[\s\S]*?\.value-block \.vb-price\s*\{[^}]*max-width:\s*100%/,
-    )
+    expect(css.slice(lastPrice, lastPrice + 220)).toMatch(/max-width:\s*100%/)
+  })
+
+  it('ships a device-width viewport so 375 media queries actually match on a phone', () => {
+    const { html } = renderCmaHtml(args())
+    expect(html).toMatch(/<meta[^>]+name=["']viewport["'][^>]+width=device-width/)
   })
 })
 

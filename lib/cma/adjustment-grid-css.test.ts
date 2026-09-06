@@ -28,11 +28,30 @@ describe('adjustment grid stays inside the print box', () => {
 
   it('stacks the signature at phone width so the 260px name plate cannot push past 375', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css.ts'), 'utf8')
+    // Base rule must not hard-lock 260px — that alone is 16+200+36+260=512 on a
+    // 360 viewport when the phone stack loses the cascade (prod re-walk).
+    expect(css).toMatch(
+      /\.signature-page \.sig-name\s*\{[^}]*width:\s*min\(260px,\s*100%\)/,
+    )
+    expect(css).toMatch(
+      /\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*200px\)\s+minmax\(0,\s*1fr\)/,
+    )
     expect(css).toMatch(
       /@media screen and \(max-width: 700px\)[\s\S]*?\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
     )
     expect(css).toMatch(
       /@media screen and \(max-width: 700px\)[\s\S]*?\.signature-page \.sig-name\s*\{[^}]*width:\s*auto/,
+    )
+  })
+
+  it('ends the stylesheet with a phone safety appendix that restacks signature and caps price', () => {
+    const src = readFileSync(join(process.cwd(), 'lib/cma/render-css.ts'), 'utf8')
+    expect(src).toContain('phone-safety: last wins')
+    expect(src).toMatch(
+      /cmaSectionStyles\(\)[\s\S]*phone-safety: last wins[\s\S]*\.page-cover \.value-block \.vb-price/,
+    )
+    expect(src).toMatch(
+      /phone-safety: last wins[\s\S]*\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
     )
   })
 })
