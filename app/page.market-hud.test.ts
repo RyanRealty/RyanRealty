@@ -32,8 +32,13 @@ describe('homepage keeps the market essay off home (Redfin lock)', () => {
     expect(SRC).not.toContain('Market Truth leftover')
   })
 
-  it('Sell door is Value my home, never see what your home is worth', () => {
-    expect(SRC).toMatch(/label: v3Text\('Value my home'\)/)
+  it('Sell door is Sell a home to valuation, never see what your home is worth', () => {
+    expect(SRC).toMatch(/label: v3Text\('Sell a home'\)/)
+    expect(SRC).toMatch(/Buy a home/)
+    expect(SRC).toMatch(/Work with us/)
+    expect(SRC).toMatch(/href: '\/join'/)
+    expect(SRC).toMatch(/valuationHref\('\/'\)/)
     expect(SRC).not.toMatch(/See what your home is worth/)
+    expect(SRC).not.toMatch(/kicker: v3Text\('Invest'\)/)
   })
 })

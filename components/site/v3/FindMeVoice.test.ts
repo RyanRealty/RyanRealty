@@ -6,17 +6,15 @@ const SRC = readFileSync(resolve('components/site/v3/FindMeVoice.client.tsx'), '
 const CHROME = readFileSync(resolve('components/site/v3/V3Chrome.tsx'), 'utf8')
 
 describe('FindMeVoice', () => {
-  it('is mounted in the public chrome on every page', () => {
-    expect(CHROME).toContain('<FindMeVoice')
+  it('is not mounted in public chrome (Matt/Cos 2026-09-06)', () => {
+    expect(CHROME).not.toContain('<FindMeVoice')
+    expect(CHROME).not.toContain("from './FindMeVoice.client'")
+    expect(CHROME).toContain('v3-chrome__phone')
   })
 
-  it('sends speech through searchHrefForQuery, not a hardcoded Bend URL', () => {
+  it('module still routes speech through searchHrefForQuery if revived', () => {
     expect(SRC).toContain('searchHrefForQuery')
     expect(SRC).not.toContain('/homes-for-sale/bend?')
-    expect(SRC).toContain('Find me a home')
-    expect(SRC).toContain('v3-findme-stage')
-    expect(SRC).toContain('v3-chrome__findme-word')
-    expect(SRC).toContain('>Find<')
   })
 
   it('chrome hides the Menu button when the primary nav is visible (H1)', () => {

@@ -11,14 +11,14 @@ const RAIL_ITEMS = readFileSync(resolve('app/_v3/home-rail-items.ts'), 'utf8')
 const ATLAS = readFileSync(resolve('components/site/v3/V3Atlas.client.tsx'), 'utf8')
 
 describe('homepage hero search uses the public search stack', () => {
-  it('Stage H1 is brand; job line sits under it (H5 + ci:seo-shell)', () => {
-    expect(PAGE).toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
-    expect(PAGE).toContain('home-hero-search__job')
-    expect(PAGE).toContain('Find homes in Central Oregon')
+  it('Stage H1 is buyer job line; brand stays in metadata (ci:seo-shell)', () => {
+    expect(PAGE).toMatch(/headline=\{v3Text\('Homes for sale in Central Oregon'\)\}/)
+    expect(PAGE).not.toContain('home-hero-search__job')
+    expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
     expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend'\s*\}/)
     expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
     expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
-    expect(PAGE).not.toMatch(/headline=\{v3Text\('Find homes in Central Oregon'\)\}/)
+    expect(PAGE).toMatch(/<HomeHeroSearch[^>]*valuationHref=/)
   })
 
   it('mounts HomeHeroSearch on the Stage; house rails before doors (expanded Home lock)', () => {
@@ -48,7 +48,20 @@ describe('homepage hero search uses the public search stack', () => {
     expect(SEARCH).toContain('searchHrefForQuery')
     expect(SEARCH).toContain('City, community, or address')
     expect(SEARCH).toContain('home-hero-search__label')
-    expect(SEARCH).toContain('htmlFor={fieldId}')
+    expect(SEARCH).toContain('htmlFor={buyFieldId}')
+  })
+
+  it('wires Buy | Sell tabs on the hero (Buy = search, Sell = Value my home)', () => {
+    expect(SEARCH).toContain('role="tablist"')
+    expect(SEARCH).toMatch(/>\s*Buy\s*</)
+    expect(SEARCH).toMatch(/>\s*Sell\s*</)
+    expect(SEARCH).toContain('Value my home')
+    expect(SEARCH).toContain('valuationHref')
+    expect(SEARCH).toContain('Home address')
+    expect(SEARCH).not.toContain('see what your home is worth')
+    const css = readFileSync(resolve('app/_v3/home-hero-search.css'), 'utf8')
+    expect(css).toContain('.v3 .home-hero-search__tabs')
+    expect(css).toContain('.v3 .home-hero-search__tab--on')
   })
 
   it('empty submit opens the regional list, not a dead form', () => {
@@ -74,6 +87,19 @@ describe('homepage hero search uses the public search stack', () => {
   })
 })
 
+describe('homepage plain buyer copy', () => {
+  it('drops mannered door and proof filler', () => {
+    expect(PAGE).not.toContain('Start with what you came to do')
+    expect(PAGE).not.toContain('Find your place')
+    expect(PAGE).not.toContain('Meet our team')
+    expect(PAGE).not.toContain('Income property, with the math')
+    expect(PAGE).not.toContain('in full, as written')
+    expect(PAGE).not.toContain('see what your home is worth')
+    expect(PAGE).toContain('Buy, sell, or work with us')
+    expect(PAGE).toContain('Written valuation in 24 hours')
+  })
+})
+
 describe('preferPlaceHero', () => {
   it('uses the live url when present and the fallback when not', () => {
     expect(preferPlaceHero(' https://cdn.example/hero.jpg ', '/images/kb/bend.jpg')).toBe(
@@ -94,7 +120,9 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(RAIL_CLIENT).toContain('SplitCardMedia')
     expect(RAIL_CLIENT).toContain('HeartIcon')
     expect(RAIL_CLIENT).toContain('publishListingShareKind')
+    expect(RAIL_CLIENT).toContain('tags={card.badges}')
     expect(RAIL_ITEMS).toContain('publishListingCardBadges')
+    expect(RAIL_ITEMS).toContain('openHouseLabel')
     expect(RAIL_ITEMS).toContain('Homes in Bend and nearby')
     expect(RAIL_ITEMS).toContain('Price cuts')
     expect(RAIL_ITEMS).toContain('New this week')
@@ -144,11 +172,24 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).toMatch(/id="places"/)
     expect(PAGE).toMatch(/Browse places/)
     expect(PAGE).toMatch(/Talk to a broker/)
-    expect(PAGE).toMatch(/Value my home/)
+    expect(PAGE).toMatch(/Buy a home/)
+    expect(PAGE).toMatch(/Sell a home/)
+    expect(PAGE).toMatch(/Work with us/)
+    expect(PAGE).toMatch(/href: '\/join'/)
+    expect(PAGE).not.toMatch(/Income property/)
+    expect(PAGE).not.toMatch(/kicker: v3Text\('Invest'\)/)
     expect(PAGE).not.toMatch(/See what your home is worth/)
     expect(PAGE).not.toMatch(/<SellCapture/)
     expect(PAGE).not.toMatch(/id="communities"/)
     expect(PAGE).toMatch(/imageSrc: DOOR_ART\.buy/)
+    expect(PAGE).toMatch(/imageSrc: DOOR_ART\.work/)
+    expect(PAGE).toMatch(/loadOpenHouseBadgeLabels/)
+    expect(PAGE).toMatch(/openHouseLabels/)
+    expect(PAGE).not.toMatch(/getPublicPlaceSegments/)
+    expect(PAGE).not.toMatch(/bend-drake-park-aerial\.jpg/)
+    expect(PAGE).not.toMatch(/tetherow-golf-aerial\.jpg/)
+    expect(PAGE).not.toMatch(/smith-rock-terrebonne\.jpg/)
+    expect(PAGE).toMatch(/\/images\/homepage\/doors\/buy\.png/)
     const stageAt = PAGE.indexOf('<V3Stage')
     const railsAt = PAGE.indexOf('<HomeHomesRails')
     const doorsAt = PAGE.indexOf('<V3Doors')

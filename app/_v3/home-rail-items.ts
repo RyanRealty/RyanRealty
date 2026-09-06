@@ -3,7 +3,8 @@
  *
  * Honesty: a tile earns a card when it has a price, a street, and a live MLS
  * photo. Badges come only from publishListingCardBadges (kinds we already
- * encode). No fake personalization labels on the rails themselves.
+ * encode), including open-house labels from the same Field path. No fake
+ * personalization labels on the rails themselves.
  */
 import type { ListingTile } from '@/lib/data/types/listing'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
@@ -59,7 +60,11 @@ function statusLabel(status: ListingTile['status']): string | null {
   return null
 }
 
-function toCard(tile: ListingTile, nowMs: number): HomeRailCard | null {
+function toCard(
+  tile: ListingTile,
+  nowMs: number,
+  openHouseLabels: Record<string, string>,
+): HomeRailCard | null {
   if (!isPhotographedPriced(tile)) return null
   const street = publishStreetLine({
     streetNumber: tile.streetNumber,
@@ -75,6 +80,7 @@ function toCard(tile: ListingTile, nowMs: number): HomeRailCard | null {
     priceDropCount: tile.priceDropCount,
     hasVirtualTour: tile.hasVirtualTour,
     hasTourUrl: Boolean(tile.tourUrl),
+    openHouseLabel: openHouseLabels[tile.listingKey] ?? null,
   })
 
   const cityLine = [tile.city?.trim(), tile.postalCode?.trim()].filter(Boolean).join(' ')
@@ -114,13 +120,18 @@ function toCard(tile: ListingTile, nowMs: number): HomeRailCard | null {
   }
 }
 
-function takeCards(tiles: readonly ListingTile[], nowMs: number, limit = RAIL_CARD_CAP): HomeRailCard[] {
+function takeCards(
+  tiles: readonly ListingTile[],
+  nowMs: number,
+  openHouseLabels: Record<string, string>,
+  limit = RAIL_CARD_CAP,
+): HomeRailCard[] {
   const out: HomeRailCard[] = []
   const seen = new Set<string>()
   for (const tile of tiles) {
     if (out.length >= limit) break
     if (seen.has(tile.listingKey)) continue
-    const card = toCard(tile, nowMs)
+    const card = toCard(tile, nowMs, openHouseLabels)
     if (!card) continue
     seen.add(tile.listingKey)
     out.push(card)
@@ -147,15 +158,18 @@ export function homeRailRows(
     bendHref: string
     priceCutsHref: string
     newHref: string
+    openHouseLabels?: Record<string, string>
   },
 ): HomeRailRow[] {
+  const openHouseLabels = opts.openHouseLabels ?? {}
   const bendArea = tiles.filter((t) => BEND_AREA.has((t.city ?? '').trim().toLowerCase()))
   const localPool = bendArea.length >= 3 ? bendArea : tiles
-  const local = takeCards(localPool, opts.nowMs)
+  const local = takeCards(localPool, opts.nowMs, openHouseLabels)
 
   const cuts = takeCards(
     tiles.filter((t) => (t.priceDropCount ?? 0) > 0),
     opts.nowMs,
+    openHouseLabels,
   )
 
   const fresh = takeCards(
@@ -165,6 +179,7 @@ export function homeRailRows(
       return Number.isFinite(days) && days >= 0 && days <= NEW_WINDOW_DAYS
     }),
     opts.nowMs,
+    openHouseLabels,
   )
 
   const rows: HomeRailRow[] = []

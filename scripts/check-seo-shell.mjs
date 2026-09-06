@@ -60,15 +60,15 @@ const MONEY_PATHS = [
 const REQUIRED = [
   {
     file: 'app/page.tsx',
-    // PAGE_OUTLINE SEO lock: `/` wins branded queries. Search owns
-    // "Central Oregon homes for sale". KB spelled the H1 as titleTop/titleBottom;
-    // v3 takes `headline`. BOTH ARMS ARE EXACT LITERALS. The v3 arm pins
-    // headline={v3Text('Ryan Realty, Bend')} and the D11 lead sentence must
-    // appear as a literal in this file (the gate does not scan app/_v3/).
+    // Home lock 2026-09-06: visible Stage H1 is the buyer job line. Brand stays
+    // in metadata title/OG only (absolute "Ryan Realty, Bend"). KB spelled the
+    // H1 as titleTop/titleBottom; v3 takes `headline`. BOTH ARMS ARE EXACT
+    // LITERALS. D11 lead sentence must appear as a literal in this file
+    // (the gate does not scan app/_v3/).
     checks: [
       {
-        re: /titleTop\s*=\s*["']Ryan Realty["'][\s\S]{0,800}titleBottom\s*=\s*["']Bend["']|headline=\{v3Text\('Ryan Realty, Bend'\)\}|heading\s*=\s*["']Ryan Realty, Bend["']/,
-        msg: 'H1 must be brand: Ryan Realty, Bend (search owns "Homes for Sale in Central Oregon")',
+        re: /titleTop\s*=\s*["']Central Oregon["'][\s\S]{0,800}titleBottom\s*=\s*["']Homes for Sale["']|headline=\{v3Text\('Homes for sale in Central Oregon'\)\}|heading\s*=\s*["']Homes for sale in Central Oregon["']/,
+        msg: 'H1 must be buyer job line: Homes for sale in Central Oregon (brand stays in metadata title/OG)',
       },
       {
         re: /Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne\. Live list prices and days on market\./,
@@ -449,20 +449,20 @@ if (existsSync(HERO)) {
       msg: 'Homepage Stage has one action (search). Do not also ship See homes.',
     })
   }
-  if (!/headline=\{v3Text\('Ryan Realty, Bend'\)\}/.test(homeSrc)) {
+  if (!/headline=\{v3Text\('Homes for sale in Central Oregon'\)\}/.test(homeSrc)) {
     violations.push({
       file: 'app/page.tsx',
       kind: 'hero-default',
       id: 'v3-hero-lock',
-      msg: 'KbHero is deleted, so the v3 hero must carry headline={v3Text(\'Ryan Realty, Bend\')} in app/page.tsx',
+      msg: 'KbHero is deleted, so the v3 hero must carry buyer H1 headline={v3Text(\'Homes for sale in Central Oregon\')} in app/page.tsx (brand stays in metadata)',
     })
   }
-  if (/headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}/.test(homeSrc)) {
+  if (/headline=\{v3Text\('Ryan Realty, Bend'\)\}/.test(homeSrc)) {
     violations.push({
       file: 'app/page.tsx',
       kind: 'hero-default',
-      id: 'search-query-on-home',
-      msg: 'Homepage H1 must not be "Homes for Sale in Central Oregon" — that query belongs to /homes-for-sale',
+      id: 'brand-h1-on-home',
+      msg: 'Homepage Stage H1 must not be brand "Ryan Realty, Bend" — brand stays in metadata title/OG only',
     })
   }
 }

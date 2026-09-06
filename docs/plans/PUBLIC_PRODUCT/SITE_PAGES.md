@@ -61,7 +61,7 @@ Content is the point. **URLs** are what we cut.
 
 | Family | URLs | Why |
 |---|---|---|
-| Home | `/` | Door. Full-bleed search hero, Zillow-style house carousels, illustrated Buy/Sell/Invest, brokers, places, proof. No Atlas on home. |
+| Home | `/` | Door. Full-bleed search hero with Buy/Sell tabs, buyer H1, Zillow-style house carousels, illustrated Buy/Sell/Work-with-us doors, brokers, places, proof. No Atlas on home. |
 | Search | `/homes-for-sale` and filtered paths | The buy job. One Field. |
 | Listing | house URL | This house. |
 | Place indexes | `/cities`, `/neighborhoods`, `/communities`, `/subdivisions` | Directories. Not a fourth Bend. |
@@ -160,9 +160,9 @@ A number belongs to a section or it does not print. Beat the competitor **and** 
 **Beat:** Zillow-style door after Redfin compare. Full-bleed search, stacked house carousels, illustrated doors, sell/agent.
 **Lock 2026-09-06 (expanded):** No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
-1. Full-bleed hero with search. Brand H1 `Ryan Realty, Bend`  
-2. Stacked house carousels (local Bend-area actives plus honest price-cut / new rows when data exists). Zillow card face via V3ListingRow / SplitCardMedia. No fake personalization.  
-3. Doors: Buy · Sell · Invest with illustrations (Sell = `Value my home`, never “see what your home is worth”)  
+1. Full-bleed hero with Buy \| Sell tabs. Buyer H1 `Homes for sale in Central Oregon` (brand in metadata only). Plain copy.  
+2. Stacked house carousels (local Bend-area actives plus honest price-cut / new rows when data exists). Overlay badges via Field path. Zillow card face via V3ListingRow / SplitCardMedia. No fake personalization.  
+3. Doors: Buy a home · Sell a home · Work with us with illustrations (art, not photos). Sell → valuation. Work with us → `/join`. No Invest door. Never “see what your home is worth.”  
 4. Talk to a broker (three faces → `/team/[slug]`)  
 5. Browse places (city/resort chips as doors, not a KPI grid)  
 6. Proof (V3Proof Google reviews)  

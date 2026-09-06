@@ -130,3 +130,9 @@
   opacity: 0.6;
   cursor: wait;
 }
+
+/* Badge overlay must clear the save control (Field parity). */
+.home-rail__card .v3-lrow__photo-tags {
+  z-index: 3;
+  max-width: calc(100% - 3.25rem);
+}

@@ -28,8 +28,8 @@
  * it warns by name if one is not.
  *
  * LABELS COME FROM THE IA LOCK (docs/plans/PUBLIC_PRODUCT/ia-lock.md).
- * The locked words are Homes, Places, Market, Sell, About, with Saved as an
- * account affordance rather than a nav word. Where a locked word lands on an
+ * The locked words are Homes, Places, Sell, About (Market folded into Places).
+ * Saved / Sign in are account affordances rather than nav words. Where a locked word lands on an
  * existing group the group is RENAMED, never rebuilt: Buy renders as Homes and
  * Areas renders as Places, each keeping its own href and its own children. A
  * group the lock has no word for is CARRIED under its own label and warned
@@ -71,7 +71,6 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
-import { FindMeVoice } from './FindMeVoice.client'
 import './tokens.css'
 import './V3Chrome.css'
 
@@ -96,6 +95,18 @@ const LOCKED_LABEL: Readonly<Record<string, string | undefined>> = {
 
 /** The site-nav group whose destination is the visitor's own saved work. */
 const ACCOUNT_KEY = 'Your account'
+
+/** Primary bar destinations (Redfin-simple). Market stays in SSOT / menu only. */
+const PRIMARY_BAR_KEYS = new Set(['Buy', 'Areas', 'Sell', 'About'])
+
+/** Place marks for community doors in chrome menus (existing stills, not text dumps). */
+const CHROME_MARKS: Readonly<Record<string, string>> = {
+  '/communities/tetherow': '/images/chrome-marks/tetherow.jpg',
+  '/communities/broken-top': '/images/chrome-marks/broken-top.jpg',
+  '/communities/northwest-crossing': '/images/chrome-marks/northwest-crossing.jpg',
+  '/communities/caldera-springs': '/images/chrome-marks/caldera-springs.jpg',
+}
+
 
 /** A destination group as the chrome renders it. */
 export type V3ChromeGroup = {
@@ -191,7 +202,8 @@ const NAV_GROUPS: readonly V3ChromeGroup[] = [
 ]
 
 const TOP_GROUPS: readonly V3ChromeTopGroup[] = NAV_GROUPS.filter(
-  (group): group is V3ChromeTopGroup => typeof group.href === 'string',
+  (group): group is V3ChromeTopGroup =>
+    typeof group.href === 'string' && PRIMARY_BAR_KEYS.has(group.key),
 )
 
 const ACCOUNT_GROUP = NAV_GROUPS.find((group) => group.key === ACCOUNT_KEY)
@@ -208,6 +220,9 @@ const SAVED =
   ACCOUNT_GROUP && ACCOUNT_GROUP.links.length > 0
     ? { href: ACCOUNT_GROUP.links[0].href, label: ACCOUNT_GROUP.label }
     : null
+
+/** Sign in from the account group. Mobile bar: logo | Sign in | hamburger. */
+const SIGN_IN = ACCOUNT_GROUP?.links.find((link) => link.href === '/login') ?? null
 
 /**
  * The filled seller ask. Only the LABEL is fixed at module scope: the href is
@@ -510,6 +525,17 @@ function V3ChromeDestination({
                   className="v3-chrome__panel-link"
                   onClick={() => setOpenPath(null)}
                 >
+                  {CHROME_MARKS[link.href] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={CHROME_MARKS[link.href]}
+                      alt=""
+                      className="v3-chrome__link-mark"
+                      width={28}
+                      height={28}
+                      decoding="async"
+                    />
+                  ) : null}
                   <span>{link.label}</span>
                   {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
                 </Link>
@@ -620,13 +646,19 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </nav>
 
         <div className="v3-chrome__actions">
-          {/* Mic in the bar. The listening stage is the feature. */}
-          <FindMeVoice />
-          {/* The broker's number, always visible (Matt 2026-09-01: a visitor
-              could not find how to contact the brokerage — chrome failure on a
-              lead-gen site). Icon-only at 390, the number itself from 40rem.
-              tel: from lib/brand/contact is one of the two sanctioned literal
-              destinations in this file (see the header comment). */}
+          {/* Mobile bar lock 2026-09-06: logo | Sign in | hamburger only.
+              Phone + Saved + seller ask stay desktop (and in the menu foot).
+              Find/mic removed. */}
+          {SIGN_IN ? (
+            <Link
+              href={SIGN_IN.href}
+              className="v3-chrome__signin"
+              aria-current={isCurrentPath(path, SIGN_IN.href) ? 'page' : undefined}
+            >
+              {SIGN_IN.label}
+            </Link>
+          ) : null}
+
           <a
             href={`tel:${CONTACT.phoneDirectTel}`}
             className="v3-chrome__phone"
@@ -698,7 +730,9 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
         </div>
 
         <nav className="v3-chrome__menu-nav" aria-label={NAME.sections}>
-          {NAV_GROUPS.map((group, index) => {
+          {NAV_GROUPS.filter(
+            (group) => PRIMARY_BAR_KEYS.has(group.key) || group.key === ACCOUNT_KEY,
+          ).map((group, index) => {
             const headingId = `${menuId}-group-${index}`
             const lg = live?.[group.key]
             return (
@@ -727,7 +761,18 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
                     const value = lg?.values?.[link.href]
                     return (
                       <li key={link.href}>
-                        <Link href={link.href} onClick={close}>
+                        <Link href={link.href} onClick={close} className="v3-chrome__menu-link">
+                          {CHROME_MARKS[link.href] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={CHROME_MARKS[link.href]}
+                              alt=""
+                              className="v3-chrome__link-mark"
+                              width={28}
+                              height={28}
+                              decoding="async"
+                            />
+                          ) : null}
                           <span>{link.label}</span>
                           {value ? <span className="v3-chrome__menu-value">{value}</span> : null}
                         </Link>

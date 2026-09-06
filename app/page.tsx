@@ -4,7 +4,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { getListingTiles, getBrokers, getReviews } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import {
   V3_ROOT_CLASS,
@@ -37,11 +37,11 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage. Expanded Home lock 2026-09-06 (Matt, after Zillow+Redfin compare):
- * full-bleed search hero, stacked Zillow-style house carousels, illustrated
- * Buy/Sell/Invest doors, talk to a broker, browse places chips, proof, denser
- * footer. No Atlas, map block, town ledger, or market essay on home. absolute
- * title skips the layout suffix so the SERP is brand once.
+ * Homepage. Expanded Home lock 2026-09-06 (Matt): full-bleed search hero with
+ * Buy/Sell tabs, buyer H1, stacked house carousels with Field badges,
+ * illustrated Buy/Sell/Work-with-us doors, brokers, places, proof. No Atlas, map
+ * block, town ledger, market essay, or Invest door on home. Brand stays in
+ * metadata title/OG only. absolute title skips the layout suffix.
  */
 export const revalidate = 300
 
@@ -85,18 +85,19 @@ const RESORT_DOORS = [
   { label: 'Eagle Crest', href: '/communities/eagle-crest' },
 ] as const
 
+/** Heritage line-art (not photo landscapes). PAGE_INVENTORY Home doors lock. */
 const DOOR_ART = {
-  buy: '/images/homepage/bend-drake-park-aerial.jpg',
-  sell: '/images/homepage/tetherow-golf-aerial.jpg',
-  invest: '/images/homepage/smith-rock-terrebonne.jpg',
+  buy: '/images/homepage/doors/buy.png',
+  sell: '/images/homepage/doors/sell.png',
+  work: '/images/homepage/doors/work.png',
 } as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, investSegments, reviewSummary] = await Promise.all([
+  const [cities, tiles, brokers, openHouseLabels, reviewSummary] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
     getBrokers().catch(() => []),
-    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
+    loadOpenHouseBadgeLabels().catch(() => ({})),
     getReviews(6).catch(() => null),
   ])
 
@@ -112,41 +113,34 @@ export default async function Home() {
     bendHref: '/homes-for-sale/bend',
     priceCutsHref: '/price-drops',
     newHref: '/homes-for-sale?view=list&sort=newest',
+    openHouseLabels,
   })
-
-  const investDoorSegments = new Set(['multifamily_2_4', 'commercial_sale', 'land'])
-  const investCount = investSegments
-    .filter((row) => investDoorSegments.has(row.segment))
-    .reduce((sum, row) => sum + (row.activeCount ?? 0), 0)
 
   const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
 
   const doors = [
     {
       kicker: v3Text('Buy'),
-      label: v3Text('Find your place'),
+      label: v3Text('Buy a home'),
       href: publishRegionalSearchHref(),
       fact: v3Text(`${townCount} towns across Central Oregon`),
       imageSrc: DOOR_ART.buy,
-      imageAlt: 'Bend from above at Drake Park',
+      imageAlt: '',
     },
     {
       kicker: v3Text('Sell'),
-      label: v3Text('Value my home'),
+      label: v3Text('Sell a home'),
       href: valuationHref('/'),
-      fact: v3Text('A written valuation within 24 hours'),
+      fact: v3Text('Written valuation in 24 hours'),
       imageSrc: DOOR_ART.sell,
-      imageAlt: 'Tetherow fairways in Bend',
+      imageAlt: '',
     },
     {
-      kicker: v3Text('Invest'),
-      label: v3Text('Income property, with the math'),
-      href: '/invest',
-      imageSrc: DOOR_ART.invest,
-      imageAlt: 'Smith Rock near Terrebonne',
-      ...(investCount > 0
-        ? { fact: v3Text(`${investCount.toLocaleString('en-US')} income and land listings`) }
-        : {}),
+      kicker: v3Text('Join'),
+      label: v3Text('Work with us'),
+      href: '/join',
+      imageSrc: DOOR_ART.work,
+      imageAlt: '',
     },
   ] as const
 
@@ -179,20 +173,19 @@ export default async function Home() {
           headingLevel={1}
           height="tall"
           eyebrow="Central Oregon"
-          headline={v3Text('Ryan Realty, Bend')}
+          headline={v3Text('Homes for sale in Central Oregon')}
           posterSrc={HERO_POSTER}
           videoSrc={HERO_VIDEO}
         >
-          <p className="home-hero-search__job">Find homes in Central Oregon</p>
-          <HomeHeroSearch />
+          <HomeHeroSearch valuationHref={valuationHref('/')} />
         </V3Stage>
 
         <HomeHomesRails
           rows={railRows}
-          emptyMessage="No photographed active home with a list price and a street address returned on this refresh."
+          emptyMessage="No active homes with a photo and list price right now."
         />
 
-        <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
+        <V3Doors id="doors" name={v3Text('Buy, sell, or work with us')} doors={doors} />
 
         {faces.length > 0 ? (
           <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} />
@@ -212,7 +205,7 @@ export default async function Home() {
             eyebrow="Ryan Realty · Google"
             headline={`${reviewCount} Google reviews`}
             headingLevel={2}
-            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews.`}
             figures={[]}
             quotes={reviewQuotes}
             source={{ label: 'Every review', href: '/reviews' }}

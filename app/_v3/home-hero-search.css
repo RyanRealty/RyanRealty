@@ -1,6 +1,6 @@
 /* Homepage search. Scoped to the v3 root so it paints the same inside the
-   Stage (on-media) and the Atlas head (on cream). Same paint as the Stage on-media primary:
-   cream face, navy ink, 2px navy edge. Tokens only. 44px targets. */
+   Stage (on-media). Cream face, navy ink, 2px navy edge. Tokens only. 44px targets.
+   Buy | Sell tabs match the Redfin/Zillow hero pattern. */
 .v3 .home-hero-search {
   position: relative;
   width: 100%;
@@ -8,14 +8,54 @@
   color: var(--v3-ink);
 }
 
+.v3 .home-hero-search__tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 0 var(--v3-space-sm);
+  width: fit-content;
+  border: 2px solid var(--v3-surface);
+  border-radius: var(--v3-radius-control);
+  background: color-mix(in srgb, var(--v3-ink) 55%, transparent);
+  box-shadow: var(--v3-media-shadow);
+  overflow: hidden;
+}
+
+.v3 .home-hero-search__tab {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: var(--v3-tap);
+  min-width: 5.5rem;
+  margin: 0;
+  padding: 0 var(--v3-space-md);
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+}
+
+.v3 .home-hero-search__tab--on {
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+.v3 .home-hero-search__panel-form {
+  position: relative;
+  width: 100%;
+}
+
 .v3 .home-hero-search__label {
   display: block;
   margin: 0 0 var(--v3-space-2xs);
-  color: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-control);
+  text-shadow: var(--v3-media-shadow);
 }
 
 .v3 .home-hero-search__row {
@@ -77,15 +117,4 @@
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
-}
-
-/* Critiquito H5: job line under brand H1 (ci:seo-shell keeps H1 brand). */
-.v3 .home-hero-search__job {
-  margin: 0 0 var(--v3-space-sm);
-  max-width: var(--v3-measure-text);
-  color: var(--v3-ink-on-navy);
-  font-family: var(--v3-font-body);
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-body);
-  text-shadow: var(--v3-media-shadow);
 }

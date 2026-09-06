@@ -2,7 +2,8 @@
  * lib/site-nav.ts — SINGLE source of truth for public site navigation.
  *
  * Matt lock 2026-08-10 (SEO/IA plan):
- *   Top bar: Buy · Areas · Market · Sell · About
+ *   Top bar (chrome): Homes · Places · Sell · About (Market folded into Places).
+ *   SSOT still carries Market for reachability / menu.
  *   Lifestyle (parks, schools, trails, events, venues, golf) lives under Areas
  *   One chrome (KbNav) for public pages — dual SiteHeader/KbNav trees retired
  *
@@ -190,12 +191,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
-      { href: '/invest', label: 'Investment property' },
-      { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
-      { href: '/compare', label: 'Compare homes' },
-      { href: '/videos', label: 'Video tours' },
-      { href: '/lp/buyer-listing-alerts', label: 'Listing alerts' },
+      { href: '/our-homes', label: 'Our listings' },
     ],
   },
   {
@@ -205,37 +201,24 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/cities', label: 'All cities' },
       ...CITY_LINKS,
       { href: '/communities', label: 'All communities' },
-      { href: '/neighborhoods', label: 'All neighborhoods' },
-      { href: '/subdivisions', label: 'All subdivisions' },
       { href: '/communities/tetherow', label: 'Tetherow' },
       { href: '/communities/broken-top', label: 'Broken Top' },
-      { href: '/communities/northwest-crossing', label: 'NorthWest Crossing' },
-      { href: '/communities/caldera-springs', label: 'Caldera Springs' },
       { href: '/communities/eagle-crest', label: 'Eagle Crest' },
       { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
-      { href: '/schools', label: 'Schools' },
-      { href: '/parks', label: 'Parks' },
-      { href: '/central-oregon/trails', label: 'Trails' },
-      { href: '/central-oregon/events', label: 'Events' },
-      { href: '/central-oregon/venues', label: 'Live music and shows' },
-      { href: '/central-oregon/golf', label: 'Golf' },
+      { href: '/housing-market', label: 'Housing market' },
+      { href: '/neighborhoods', label: 'All neighborhoods' },
+      { href: '/subdivisions', label: 'All subdivisions' },
     ],
   },
   {
+    // Kept in SSOT for reachability / menu. Primary bar drops Market (Redfin-simple).
     label: 'Market',
     href: '/housing-market',
     children: [
       { href: '/housing-market', label: 'Market overview' },
       { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/activity', label: 'Recent activity' },
-      { href: '/months-of-supply', label: 'Months of supply' },
-      { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
       { href: '/blog', label: 'Blog and guides' },
-      NEWSLETTER_SUBSCRIBE,
       { href: '/faq', label: 'FAQ' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-      { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
-      { href: '/tools/appreciation', label: 'Appreciation tool' },
     ],
   },
   {
@@ -256,8 +239,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
-      { href: '/join', label: 'Join the team' },
-      { href: '/refer-a-client', label: 'Refer a client' },
+      { href: '/join', label: 'Work with us' },
     ],
   },
 ]
@@ -288,11 +270,8 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes' },
-      { href: '/compare', label: 'Compare homes' },
-      { href: '/videos', label: 'Video tours' },
-      { href: '/lp/buyer-listing-alerts', label: 'Listing alerts' },
       { href: '/our-homes', label: 'Our listings' },
+      { href: '/videos', label: 'Video tours' },
     ],
   },
   {
@@ -301,15 +280,15 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/cities', label: 'All cities' },
       ...CITY_LINKS,
       { href: '/communities', label: 'All communities' },
+      { href: '/communities/tetherow', label: 'Tetherow' },
+      { href: '/communities/broken-top', label: 'Broken Top' },
+      { href: '/communities/eagle-crest', label: 'Eagle Crest' },
+      { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
       { href: '/neighborhoods', label: 'All neighborhoods' },
       { href: '/subdivisions', label: 'All subdivisions' },
-      ...COMMUNITY_LINKS.slice(0, 8),
+      { href: '/central-oregon/golf', label: 'Golf' },
       { href: '/schools', label: 'Schools' },
       { href: '/parks', label: 'Parks' },
-      { href: '/central-oregon/trails', label: 'Trails' },
-      { href: '/central-oregon/events', label: 'Events' },
-      { href: '/central-oregon/venues', label: 'Live music and shows' },
-      { href: '/central-oregon/golf', label: 'Golf' },
     ],
   },
   {
@@ -317,15 +296,12 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
     links: [
       { href: '/housing-market', label: 'Market overview' },
       { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/activity', label: 'Recent activity' },
-      { href: '/months-of-supply', label: 'Months of supply' },
-      { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
       { href: '/blog', label: 'Blog and guides' },
       NEWSLETTER_SUBSCRIBE,
       { href: '/faq', label: 'FAQ' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-      { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
-      { href: '/tools/appreciation', label: 'Appreciation tool' },
+      { href: '/activity', label: 'Recent activity' },
+      { href: '/months-of-supply', label: 'Months of supply' },
+      { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
     ],
   },
   {
@@ -343,8 +319,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
-      { href: '/join', label: 'Join the team' },
-      { href: '/refer-a-client', label: 'Refer a client' },
+      { href: '/join', label: 'Work with us' },
     ],
   },
   {
@@ -360,7 +335,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 
 /**
  * Public sitemap: denser Markets / Company / Contact (Home lock 2026-09-06).
- * Town clusters stay under Markets for SEO. Header stays Buy / Areas / Market / Sell / About.
+ * Town clusters stay under Markets for SEO. Header chrome: Homes / Places / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
 

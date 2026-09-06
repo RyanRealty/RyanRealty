@@ -39,9 +39,10 @@ Saved = account icon. Value my home fills only on `/sell/*` leaves, not on `/sel
 
 | # | Section | Notes |
 |---|---|---|
-| 1 | Hero | Full-bleed Stage (not trimmed/letterboxed). Search over it. Brand H1 `Ryan Realty, Bend` (seo-shell); job line under OK. |
+| 0 | Chrome | Mobile bar: logo | Sign in | hamburger only. No Find mic. Primary: Homes · Places · Sell · About (Market folded into Places). Community marks in menus. |
+| 1 | Hero | Full-bleed Stage (not trimmed/letterboxed). Buyer H1 `Homes for sale in Central Oregon` (brand only in metadata title/OG). Buy \| Sell tabs on the hero search (Buy = home search, Sell = Value my home / valuation path). Plain buyer copy only. |
 | 2 | House carousels | Stacked “Homes for You”-type rails (not one lonely Field grid). At least recommended / local Bend-area actives. Add 1–2 more honest rows when data exists (price cuts, new). No fake personalization labels. Cards: photo, overlay badges we already encode (price cut, 3D/video, new, open, pending), save/heart, price, beds \| baths \| sqft \| status, street, listing attribution only if Field already has it. Use V3ListingRow / SplitCardMedia. Do not invent badge kinds. |
-| 3 | Doors | Buy · Sell · Invest with **illustrations** (art on each door). Sell = `Value my home`. Never “see what your home is worth.” |
+| 3 | Doors | Exactly three: **Buy a home** · **Sell a home** · **Work with us**, each with **illustrations** (art, not photo landscapes). Sell door → valuation. Work with us → `/join`. No Invest door on home. Plain copy only. Never “see what your home is worth.” |
 | 4 | Talk to a broker | Three faces → `/team/[slug]`. |
 | 5 | Browse places | City/resort chips as doors — not KPI grid. |
 | 6 | Proof | V3Proof Google reviews. |

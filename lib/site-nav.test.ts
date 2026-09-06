@@ -14,7 +14,7 @@ import {
 import { getPlaceLinks, canonicalCommunitySlug } from './place-links'
 
 describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
-  it('top bar is the five intent labels in order', () => {
+  it('SSOT still carries five intent groups (chrome primary drops Market)', () => {
     expect(KB_TOP_LINKS.map((l) => l.label)).toEqual(['Buy', 'Areas', 'Market', 'Sell', 'About'])
     expect(KB_TOP_LINKS.map((l) => l.href)).toEqual([
       '/homes-for-sale?view=list',
@@ -32,39 +32,46 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('puts brokerage pages in the About top-bar group', () => {
     const about = KB_TOP_NAV.find((g) => g.href === '/about')
     const hrefs = about?.children.map((l) => l.href) ?? []
-    for (const h of ['/about', '/team', '/reviews', '/contact', '/refer-a-client']) {
+    for (const h of ['/about', '/team', '/reviews', '/contact', '/join']) {
       expect(hrefs).toContain(h)
     }
+    expect(hrefs).toContain('/join')
+    expect(about?.children.find((l) => l.href === '/join')?.label).toBe('Work with us')
     expect(KB_ABOUT_DROPDOWN.map((l) => l.href).sort()).toEqual(['/contact', '/reviews', '/team'])
   })
 
-  it('puts lifestyle under Areas (not a junk Guides drawer)', () => {
+  it('Areas top panel is places-first (market folded in; lifestyle in Menu+)', () => {
     const areas = KB_TOP_NAV.find((g) => g.label === 'Areas')
     const hrefs = areas?.children.map((l) => l.href) ?? []
     for (const h of [
-      '/schools',
-      '/parks',
-      '/central-oregon/trails',
-      '/central-oregon/events',
-      '/central-oregon/venues',
-      // The golf destination is the INDEXABLE hub, not the noindex,nofollow LP
-      // it used to point at. 26 course pages hung off a page Google is told to
-      // ignore; /central-oregon/golf is their parent.
-      '/central-oregon/golf',
+      '/cities',
+      '/communities',
+      '/communities/tetherow',
+      '/housing-market',
+      '/neighborhoods',
+      '/subdivisions',
     ]) {
       expect(hrefs).toContain(h)
     }
     expect(hrefs).not.toContain('/lp/central-oregon-golf')
+    const menuAreas = KB_MENU_GROUPS.find((g) => g.title === 'Areas')
+    const menuHrefs = menuAreas?.links.map((l) => l.href) ?? []
+    for (const h of ['/schools', '/parks', '/central-oregon/golf']) {
+      expect(menuHrefs).toContain(h)
+    }
   })
 
-  it('puts tools under Market including rental calculator', () => {
+  it('Market SSOT stays short; deeper market links live in Menu+', () => {
     const market = KB_TOP_NAV.find((g) => g.label === 'Market')
     const hrefs = market?.children.map((l) => l.href) ?? []
-    expect(hrefs).toContain('/tools/mortgage-calculator')
-    expect(hrefs).toContain('/tools/rental-property-calculator')
-    expect(hrefs).toContain('/months-of-supply')
-    expect(hrefs).toContain('/how-we-get-our-numbers')
-    expect(hrefs).toContain('/newsletter')
+    expect(hrefs).toContain('/housing-market')
+    expect(hrefs).toContain('/housing-market/reports')
+    expect(hrefs).toContain('/blog')
+    expect(hrefs).toContain('/faq')
+    const menuMarket = KB_MENU_GROUPS.find((g) => g.title === 'Market')
+    const menuHrefs = menuMarket?.links.map((l) => l.href) ?? []
+    expect(menuHrefs).toContain('/months-of-supply')
+    expect(menuHrefs).toContain('/how-we-get-our-numbers')
   })
 
   it('Menu+ mirrors intent groups; About includes Join', () => {

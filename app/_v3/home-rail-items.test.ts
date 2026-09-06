@@ -79,4 +79,24 @@ describe('homeRailRows', () => {
     const keys = rows.flatMap((r) => r.cards.map((c: HomeRailCard) => c.listingKey))
     expect(keys).toEqual(['c'])
   })
+
+  it('passes open-house labels through publishListingCardBadges', () => {
+    const tiles = [
+      tile({ listingKey: 'oh1', city: 'Bend', streetNumber: '200' }),
+      tile({ listingKey: 'oh2', city: 'Bend', streetNumber: '201' }),
+      tile({ listingKey: 'oh3', city: 'Bend', streetNumber: '202', priceDropCount: 1 }),
+    ]
+    const rows = homeRailRows(tiles, {
+      ...hrefs,
+      openHouseLabels: { oh1: 'Open Sat 1pm', oh3: 'Open Sun' },
+    })
+    const byKey = Object.fromEntries(
+      rows.flatMap((r) => r.cards.map((c) => [c.listingKey, c])),
+    )
+    expect(byKey.oh1?.badges.some((b) => b.kind === 'open' && b.label === 'Open Sat 1pm')).toBe(
+      true,
+    )
+    expect(byKey.oh3?.badges.some((b) => b.kind === 'drop')).toBe(true)
+    expect(byKey.oh3?.badges.some((b) => b.kind === 'open' && b.label === 'Open Sun')).toBe(true)
+  })
 })

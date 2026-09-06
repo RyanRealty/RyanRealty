@@ -388,13 +388,40 @@
   background: var(--v3-wash);
 }
 
-/* Phone ---------------------------------------------------------------------
-   Always visible at every width: a brokerage whose number takes three taps to
-   find has failed at its one job. Icon-only at 390 (the number is the link's
-   accessible name either way); the digits join it from 40rem, styled like
-   Saved so the bar stays one register. */
-.v3-chrome__phone {
+/* Sign in -------------------------------------------------------------------
+   Mobile bar lock: logo | Sign in | hamburger. Desktop keeps Saved + phone. */
+.v3-chrome__signin {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-chrome__signin:hover,
+.v3-chrome__signin:focus-visible,
+.v3-chrome__signin[aria-current='page'] {
+  text-decoration-color: currentColor;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-chrome__signin {
+    display: none;
+  }
+}
+
+/* Phone ---------------------------------------------------------------------
+   Desktop only (mobile bar is logo | Sign in | hamburger). Number stays in the
+   menu foot and footer. */
+.v3-chrome__phone {
+  display: none;
   align-items: center;
   justify-content: center;
   gap: var(--v3-space-3xs);
@@ -446,6 +473,26 @@
   }
 }
 
+@media (min-width: 56.25rem) {
+  .v3-chrome__phone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--v3-space-3xs);
+    box-sizing: border-box;
+    flex: none;
+    min-width: var(--v3-tap);
+    min-height: var(--v3-tap);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    font-weight: var(--v3-weight-medium);
+    font-variant-numeric: tabular-nums;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}
+
 /* Saved ---------------------------------------------------------------------
    The account affordance, not a nav word (ia-lock). It joins the bar at the
    same width as the destinations; below that it lives in the overlay, where its
@@ -483,8 +530,15 @@
    is tripled because the button's own rule in tokens.css is `.v3 .v3-btn`, and
    a two-class rule would tie with it and be decided by load order. */
 .v3.v3-chrome .v3-chrome__cta {
+  display: none;
   padding: 0.6rem 0.7rem;
   white-space: nowrap;
+}
+
+@media (min-width: 56.25rem) {
+  .v3.v3-chrome .v3-chrome__cta {
+    display: inline-flex;
+  }
 }
 
 @media (min-width: 26rem) {
@@ -866,4 +920,25 @@
   display: flex;
   justify-content: space-between;
   gap: var(--v3-space-sm);
+}
+
+
+/* Place marks in menus (community stills, not text-only dumps). */
+.v3-chrome__link-mark {
+  display: inline-block;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-right: var(--v3-space-2xs);
+  object-fit: cover;
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-wash);
+  vertical-align: middle;
+}
+
+.v3-chrome__panel-link,
+.v3-chrome__menu-link {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
 }

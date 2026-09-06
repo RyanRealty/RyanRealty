@@ -12,10 +12,10 @@ const FACES_CSS = readFileSync(resolve('app/about/_v3/about-faces.css'), 'utf8')
 const PAGE = readFileSync(resolve('app/page.tsx'), 'utf8')
 
 describe('chrome homepage H-fixes', () => {
-  it('mounts FindMeVoice with a visible Find label (H4)', () => {
-    expect(CHROME).toContain('<FindMeVoice')
-    expect(VOICE).toContain('v3-chrome__findme-word')
-    expect(VOICE).toContain('>Find<')
+  it('does not mount FindMeVoice in chrome (Matt/Cos 2026-09-06)', () => {
+    expect(CHROME).not.toContain('<FindMeVoice')
+    expect(CHROME).toContain('v3-chrome__signin')
+    expect(CHROME).toContain('PRIMARY_BAR_KEYS')
   })
 
   it('hides Menu when primary nav is visible (H1)', () => {
