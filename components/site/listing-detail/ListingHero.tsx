@@ -322,8 +322,7 @@ export function ListingHero({
               allowAutoplay={allowAutoplay}
             />
           </div>
-        ) : (
-        {heroVideo || photos[0] ? (
+        ) : heroVideo || photos[0] ? (
           <button
             type="button"
             className="listing-mosaic__lead"
@@ -365,7 +364,6 @@ export function ListingHero({
           >
             <p className="listing-mosaic__empty-label">Photos not available yet</p>
           </div>
-        )}
         )}
         <div className={cn('listing-mosaic__thumbs', tilesWide && 'is-wide')}>
           {tiles.map((tile) => {
