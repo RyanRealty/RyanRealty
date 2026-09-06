@@ -7,6 +7,7 @@ const renderCmaHtml = vi.fn((_args?: unknown) => ({
   pageCount: 19,
 }))
 const buildCmaMapDataUri = vi.fn(async (_subject?: unknown, _comps?: unknown) => null)
+const buildSubjectLocationMapDataUri = vi.fn(async (_subject?: unknown) => null)
 
 vi.mock('@/lib/data', () => ({
   getCmaRenderSourceBySlug: (...args: unknown[]) => getCmaRenderSourceBySlug(...args),
@@ -32,6 +33,7 @@ vi.mock('@/lib/cma/render', () => ({
 
 vi.mock('@/lib/cma/map', () => ({
   buildCmaMapDataUri: (subject: unknown, comps: unknown) => buildCmaMapDataUri(subject, comps),
+  buildSubjectLocationMapDataUri: (subject: unknown) => buildSubjectLocationMapDataUri(subject),
 }))
 
 import { resolveCmaPrintHtml } from './print-html'
@@ -42,6 +44,7 @@ describe('resolveCmaPrintHtml', () => {
     getCmaStoredHtmlBySlug.mockReset()
     renderCmaHtml.mockClear()
     buildCmaMapDataUri.mockClear()
+    buildSubjectLocationMapDataUri.mockClear()
   })
 
   it('renders from render_args so current CSS ships on Open PDF', async () => {

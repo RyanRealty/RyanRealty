@@ -107,7 +107,7 @@ export function describeCompSearch(opts: {
       ? `There were not enough recent sales inside ${name}, so we ${radiusBit}${similarBit}${monthBit}.`
       : `There were not enough recent sales next to this home, so we ${radiusBit}${similarBit}${monthBit}.`,
     legend: name
-      ? 'The outline is the subdivision. The circle is the search. The pins are the sales we kept.'
-      : 'The circle is the search. The pins are the sales we kept.',
+      ? 'The outline is the subdivision. The pins are the sales we kept.'
+      : 'The pins are the sales we kept.',
   }
 }

@@ -188,11 +188,12 @@ function matrixTable(cols: Col[]): string {
     `</colgroup>`
   const head = `<tr><th>Fact</th>${cols
     .map((c) => {
+      const pin = c.key === 'subject' ? 'subject' : c.key.replace(/^c/, '')
       const src = c.photoUrl ? sparkPhotoAt(c.photoUrl, '320x240') ?? c.photoUrl : null
       const img = src
         ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
         : ''
-      return `<th class="v">${img}<span class="matrix-addr">${esc(c.label)}</span></th>`
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<span class="matrix-addr">${esc(c.label)}</span></th>`
     })
     .join('')}</tr>`
   const body = ROWS.map((row, i) => {
@@ -237,5 +238,5 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
   return `
   <h3 class="subhead">The sales that set the list</h3>
   ${tables}
-  <p class="small">Adjusted close moves the sale for time and size so it can sit next to this house.</p>`
+  <p class="small">Adjusted close moves the sale for time and size.</p>`
 }

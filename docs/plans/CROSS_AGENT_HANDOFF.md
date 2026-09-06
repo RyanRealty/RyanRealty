@@ -1,4 +1,14 @@
-# Current — 2026-09-06 (Wave B: search chrome)
+# Current — 2026-09-06 (CMA home, price, competition)
+
+Seller CMA spine: Home location (subject pin only), How we got the price
+(one matrix with thumbs, then close-to-list math), then who they compete
+with. Photos, Why $X, marker key, and "as your house" are gone. US-97
+frontage sales do not price an inland subject. 2465 rebuilt: rec $389k.
+Do not send.
+
+---
+
+# Previous — 2026-09-06 (Wave B: search chrome)
 
 Homes Field: Google tiles stay, Google Draw/Map-dropdown/zoom are off.
 MapChrome (Map/Satellite + zoom) + one Map/Split/List in the shell. Guest

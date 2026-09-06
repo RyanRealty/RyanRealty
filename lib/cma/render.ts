@@ -67,6 +67,8 @@ export interface RenderCmaArgs {
   broker: CmaBroker
   client: CmaClient
   mapDataUri: string | null
+  /** Subject pin + subdivision outline. Cover aerial and Home location. */
+  subjectMapDataUri?: string | null
   generatedAtIso: string
   subjectTrace: string
   compTrace: string[]
@@ -220,7 +222,7 @@ function coverSpecsLine(subject: CmaSubject): string {
 }
 
 function coverPage(a: RenderCmaArgs): PageDef {
-  const hero = heroForSubject(a.subject, a.mapDataUri)
+  const hero = heroForSubject(a.subject, a.subjectMapDataUri ?? null)
   const specs = coverSpecsLine(a.subject)
   const prepared = [
     a.client.name ? `Prepared for ${a.client.name}` : null,

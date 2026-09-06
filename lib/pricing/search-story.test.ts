@@ -50,6 +50,7 @@ describe('describeCompSearch', () => {
     expect(story.body).toMatch(/opened to 1 mile/)
     expect(story.body).not.toMatch(/The outline is the subdivision/)
     expect(story.legend).toMatch(/The outline is the subdivision/)
-    expect(story.legend).toMatch(/The circle is the search/)
+    expect(story.legend).toMatch(/The pins are the sales we kept/)
+    expect(story.legend).not.toMatch(/circle/)
   })
 })

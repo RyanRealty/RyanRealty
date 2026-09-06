@@ -248,6 +248,32 @@ describe('selectComps — the fallback ladder carries the divide cut (D5)', () =
     expect(sel.comps).toHaveLength(0)
     expect(sel.diagnostics.excluded_totals.crossed_divide).toBeGreaterThan(0)
   })
+
+  it('blocks a Hayden Ranch frontage sale from an interior Diamond Bar subject', async () => {
+    divideSpy.mockReturnValue(false)
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'hayden',
+        StreetNumber: '1345',
+        StreetName: '3rd',
+        City: 'Redmond',
+        SubdivisionName: 'Hayden Ranch Estates',
+        Latitude: 44.289136,
+        Longitude: -121.166287,
+      }),
+    ])
+    const sel = await selectComps(
+      subject({
+        streetAddress: '2465 7th',
+        city: 'Redmond',
+        subdivision: 'Diamond Bar Ranch',
+        latitude: 44.298938,
+        longitude: -121.162046,
+      }),
+    )
+    expect(sel.comps).toHaveLength(0)
+    expect(sel.diagnostics.excluded_totals.crossed_divide).toBeGreaterThan(0)
+  })
 })
 
 describe('selectComps — a condo building is not "self" (the 363 Bluff starvation)', () => {

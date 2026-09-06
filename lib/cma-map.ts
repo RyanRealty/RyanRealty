@@ -105,11 +105,15 @@ export function buildGoogleStaticMapUrl(
   points: CmaMapPoint[],
   apiKey: string,
   paths: string[] = [],
+  opts?: { zoom?: number },
 ): string {
   const params = new URLSearchParams()
   params.set('size', '640x360')
   params.set('scale', '2') // → 1280×720 effective
   params.set('maptype', 'roadmap')
+  if (opts?.zoom != null && Number.isFinite(opts.zoom)) {
+    params.set('zoom', String(opts.zoom))
+  }
   for (const p of points) {
     params.append('markers', `color:${p.color}|label:${p.label}|size:mid|${p.lat},${p.lng}`)
   }

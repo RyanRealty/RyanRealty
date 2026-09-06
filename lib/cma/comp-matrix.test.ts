@@ -45,6 +45,8 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toContain('class="kv is-wide comp-matrix"')
     expect(html).toContain('648 Douglas')
     expect(html).toContain('1. 947 6th')
+    expect(html).toContain('data-comp="1"')
+    expect(html).toContain('data-pin="subject"')
     expect(html).toContain('Property type')
     expect(html).toContain('Single Family Residence')
     expect(html).toContain('Sale price / sqft')

@@ -5,12 +5,11 @@
 
 import { PRICING_TARGET_COMPS, PRICING_MAX_COMPS } from '@/lib/pricing/ladder'
 import { TARGET_COMPS, MAX_COMPS } from '@/lib/cma/comps'
-import { dec, escapeHtml, usd } from '@/lib/cma/render-blocks'
+import { dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import { renderCompMapKeyHtml } from '@/lib/cma/comp-strip'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -55,6 +54,24 @@ function howWePriced(n: number, market: CmaMarketContext | null, searchBody: str
   return `<ul class="note-list">${bits.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`
 }
 
+function howTheListWasSet(input: {
+  subject: CmaSubject
+  market: CmaMarketContext | null
+  pricing: CmaPricing
+}): string {
+  const sqft = input.subject.sqft
+  const close = input.pricing.predictedClose
+  const rec = input.pricing.recommended
+  if (sqft == null || !(sqft > 0) || close == null || !(close > 0) || !(rec > 0)) return ''
+  const ppsf = usd(Math.round(close / sqft))
+  const bits = [
+    `Median time-adjusted dollar per foot of these sales, at ${int(sqft)} sq ft, is ${usd(close)} (${ppsf} per square foot).`,
+  ]
+  const stl = saleToListPct(input.market?.saleToListRatio ?? null)
+  if (stl) bits.push(`At ${stl} percent of list that is ${usd(rec)}.`)
+  return `<p>${bits.map((b) => esc(b)).join(' ')}</p>`
+}
+
 export function pricingPage(input: {
   subject: CmaSubject
   comps: CmaAdjustedComp[]
@@ -84,10 +101,11 @@ export function pricingPage(input: {
     <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(p.recommended)}</div></div>
     <div class="stat"><div class="lbl">List high</div><div class="val">${usd(p.highEnd)}</div></div>
   </div>
-  <h3 class="subhead">How we priced this</h3>
+  <h3 class="subhead">What we searched</h3>
   ${howWePriced(input.comps.length, input.market, search.body)}
   ${renderCompMatrixHtml(s, input.comps)}
-  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${search.legend ? `<p>${esc(search.legend)}</p>` : ''}<h3 class="subhead">Marker key</h3>${renderCompMapKeyHtml(s, input.comps)}` : ''}
+  ${howTheListWasSet({ subject: s, market: input.market, pricing: p })}
+  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${search.legend ? `<p>${esc(search.legend)}</p>` : ''}` : ''}
   ${sellerNetBlock(p)}
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
 `,

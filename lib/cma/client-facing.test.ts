@@ -282,6 +282,8 @@ describe('why this list price', () => {
     expect(why.coverSentence).toBe('List $940,000 to $1,100,000. Recommended list $1,050,000.')
     expect(why.strategy).toContain('The recommended list is $1,050,000')
     expect(why.bullets.map((b) => b.label)).toEqual(['19000 Ceiling Rd', '19100 Best Match Ln', '18900 Floor Ave'])
+    expect(why.bullets.map((b) => b.text).join(' ')).toMatch(/Adjusted close/)
+    expect(why.bullets.map((b) => b.text).join(' ')).not.toMatch(/as your house/i)
     expect(why.market).toMatch(/98\.9% of list/)
   })
 

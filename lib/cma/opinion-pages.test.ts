@@ -146,6 +146,18 @@ describe('assembleOpinionPages format', () => {
     expect(house?.body).toContain('245217')
     expect(house?.body).toContain('Detached house')
     expect(house?.body).not.toContain('Single Family Residence')
+    expect(house?.body).not.toContain('pin-map')
+  })
+
+  it('puts a subject-only map on Home location when one is provided', () => {
+    const house = assembleOpinionPages({
+      ...args(),
+      subjectMapDataUri: 'data:image/png;base64,subjmap',
+    }).find((p) => p.toc === 'Home location')
+    expect(house?.body).toContain('data:image/png;base64,subjmap')
+    expect(house?.body).toContain('pin-map')
+    expect(house?.body).toContain('The pin is this house.')
+    expect(house?.body).not.toContain('Marker key')
   })
 
   it('puts competition next to the price, before the market chapters', () => {

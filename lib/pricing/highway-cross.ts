@@ -90,6 +90,63 @@ export function crossesUs97(a: LatLng | null | undefined, b: LatLng | null | und
   return false
 }
 
+/** A pin this close to the TIGER centerline sits on the highway, not east or west of it. */
+const ON_BANK_MILES = 0.1
+
+export function distanceToUs97(p: LatLng | null | undefined): number | null {
+  if (!finitePoint(p)) return null
+  return closestOnUs97(p)?.miles ?? null
+}
+
+function closestOnUs97(center: LatLng): { point: LatLng; miles: number } | null {
+  const latM = MILES_PER_DEG_LAT
+  const lngM = MILES_PER_DEG_LAT * Math.cos((center.lat * Math.PI) / 180)
+  let best: { point: LatLng; miles: number } | null = null
+  for (const s of segs()) {
+    const vx = (s.b.lng - s.a.lng) * lngM
+    const vy = (s.b.lat - s.a.lat) * latM
+    const wx = (center.lng - s.a.lng) * lngM
+    const wy = (center.lat - s.a.lat) * latM
+    const len2 = vx * vx + vy * vy
+    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, (wx * vx + wy * vy) / len2))
+    const point = {
+      lat: s.a.lat + t * (s.b.lat - s.a.lat),
+      lng: s.a.lng + t * (s.b.lng - s.a.lng),
+    }
+    const dx = t * vx - wx
+    const dy = t * vy - wy
+    const miles = Math.sqrt(dx * dx + dy * dy)
+    if (!best || miles < best.miles) best = { point, miles }
+  }
+  return best
+}
+
+export type Us97Bank = 'east' | 'west' | 'on'
+
+/** Which side of US-97 a pin sits on. Null when the pin has no coordinates. */
+export function us97Bank(p: LatLng | null | undefined): Us97Bank | null {
+  if (!finitePoint(p)) return null
+  const hit = closestOnUs97(p)
+  if (!hit) return null
+  if (hit.miles <= ON_BANK_MILES) return 'on'
+  return p.lng > hit.point.lng ? 'east' : 'west'
+}
+
+/**
+ * True when A and B are different buyer pools across US-97: opposite banks,
+ * or one on the frontage and the other inland. Missing coordinates fail open.
+ */
+export function differentUs97Bank(
+  a: LatLng | null | undefined,
+  b: LatLng | null | undefined,
+): boolean {
+  const sa = us97Bank(a)
+  const sb = us97Bank(b)
+  if (sa == null || sb == null) return false
+  if (sa === 'on' && sb === 'on') return false
+  return sa !== sb
+}
+
 const MILES_PER_DEG_LAT = 69.0
 
 /** True when a search disk around the pin reaches US-97. */

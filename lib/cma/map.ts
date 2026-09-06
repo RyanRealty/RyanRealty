@@ -33,6 +33,13 @@ async function subdivisionRings(subdivision: string | null | undefined) {
   }
 }
 
+/** Subject pin and the subdivision outline. No numbered comps. */
+export async function buildSubjectLocationMapDataUri(
+  subject: CmaSubject,
+): Promise<CmaMapResult | null> {
+  return buildCmaMapDataUri(subject, [])
+}
+
 /** Build the subject + comps map as a base64 PNG data URI. Null when the API
  *  key is missing or no coordinates are available. */
 export async function buildCmaMapDataUri(
@@ -51,7 +58,7 @@ export async function buildCmaMapDataUri(
       points.push({ label: String(i + 1), color: '0x102742', lat: comp.latitude, lng: comp.longitude })
     }
   })
-  if (points.length < 2) return null
+  if (points.length < 1) return null
   const story = describeCompSearch({ subdivision: subject.subdivision, tiersUsed: opts.tiersUsed ?? [] })
   const paths: string[] = []
   for (const ring of await subdivisionRings(subject.subdivision)) {
@@ -75,7 +82,7 @@ export async function buildCmaMapDataUri(
     if (circle) paths.push(circle)
   }
   try {
-    const url = buildGoogleStaticMapUrl(points, apiKey, paths)
+    const url = buildGoogleStaticMapUrl(points, apiKey, paths, points.length === 1 ? { zoom: 15 } : undefined)
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())

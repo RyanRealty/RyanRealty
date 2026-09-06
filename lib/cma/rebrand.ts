@@ -27,7 +27,7 @@
 
 import { getCmaAdminRowBySlug, updateCmaRowFieldsBySlug, getCmaBrokerBySlugOrEmail } from '@/lib/data'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
-import { buildCmaMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri, buildSubjectLocationMapDataUri } from '@/lib/cma/map'
 import type { CmaBroker } from '@/lib/cma/types'
 
 export type RebrandResult =
@@ -109,6 +109,7 @@ export async function rebrandCma(input: { slug: string; brokerSlug: string }): P
   // reuse the one already embedded in the previous render rather than dropping
   // the map because an unrelated API had a bad minute.
   let mapDataUri: string | null = null
+  let subjectMapDataUri: string | null = null
   try {
     const map = await buildCmaMapDataUri(storedArgs.subject, storedArgs.comps, {
       tiersUsed: storedArgs.tiersUsed,
@@ -117,11 +118,17 @@ export async function rebrandCma(input: { slug: string; brokerSlug: string }): P
   } catch {
     mapDataUri = null
   }
+  try {
+    const subjectMap = await buildSubjectLocationMapDataUri(storedArgs.subject)
+    subjectMapDataUri = subjectMap?.dataUri ?? null
+  } catch {
+    subjectMapDataUri = null
+  }
   if (!mapDataUri) mapDataUri = mapFromRenderedHtml(r.html_content as string | null)
 
   let html: string
   try {
-    const rendered = renderCmaHtml({ ...storedArgs, broker, mapDataUri })
+    const rendered = renderCmaHtml({ ...storedArgs, broker, mapDataUri, subjectMapDataUri })
     html = rendered.html
   } catch (err) {
     return {

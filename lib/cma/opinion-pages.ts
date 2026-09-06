@@ -54,6 +54,8 @@ export type OpinionPageArgs = {
   extras?: CmaExtras | null
   subdivisionStory?: SubdivisionStory | null
   mapDataUri: string | null
+  /** Subject pin + subdivision outline. No numbered comps. */
+  subjectMapDataUri?: string | null
   tiersUsed?: string[]
   generatedAtIso: string
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
@@ -180,11 +182,15 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
     ? `<p>${esc(s.listingHistoryLine.trim())}</p>`
     : ''
   const sectionTitle = subjectSectionTitle(s)
+  const locationMap = a.subjectMapDataUri
+    ? `<div class="pin-map-wrap">${renderCompPinMapHtml(s, [], a.subjectMapDataUri, 'Home location')}</div><p>The pin is this house.</p>`
+    : ''
   return {
     meta: `${esc(s.streetAddress)} · ${sectionTitle}`,
     toc: sectionTitle,
     body: `
   <h2 class="section">${sectionTitle}</h2>
+  ${locationMap}
   ${kvTable(rows)}
   ${history}`,
   }

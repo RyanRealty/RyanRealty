@@ -6,7 +6,7 @@
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
-import { crossesUs97 } from '@/lib/pricing/highway-cross'
+import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import {
   classifyAgeBand,
   customBathCompatible,
@@ -206,6 +206,10 @@ function applesOk(
   if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
   if (
     crossesUs97(
+      { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+      { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
+    ) ||
+    differentUs97Bank(
       { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
       { lat: sale.latitude ?? NaN, lng: sale.longitude ?? NaN },
     )

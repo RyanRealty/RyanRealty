@@ -63,7 +63,7 @@ import {
 import { compTierLadder, isRuralAcreage, realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
-import { crossesUs97 } from '@/lib/pricing/highway-cross'
+import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import {
   customBathCompatible,
   customLotCompatible,
@@ -488,6 +488,10 @@ export async function selectComps(
           resolveMarketArea(comp.latitude, comp.longitude),
         ) ||
         crossesUs97(
+          { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
+          { lat: comp.latitude ?? NaN, lng: comp.longitude ?? NaN },
+        ) ||
+        differentUs97Bank(
           { lat: subject.latitude ?? NaN, lng: subject.longitude ?? NaN },
           { lat: comp.latitude ?? NaN, lng: comp.longitude ?? NaN },
         ) ||
