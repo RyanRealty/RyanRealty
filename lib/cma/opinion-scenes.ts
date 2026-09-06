@@ -102,7 +102,7 @@ function seasonalityScene(a: OpinionSceneArgs): string {
     <div class="in wide">
       <div class="kick r">When to list</div>
       <h2 class="h r">When homes in ${esc(city)} sell fastest</h2>
-      <p class="lede r">Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales in ${esc(city)}.${
+      <p class="lede r">Median days from list to under contract, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales in ${esc(city)}.${
         fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
       }</p>
       <div class="r">${svg}</div>

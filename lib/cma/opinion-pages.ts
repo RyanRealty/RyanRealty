@@ -434,7 +434,7 @@ export function seasonalityPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: heading,
     body: `
   <h2 class="section">${esc(heading)}</h2>
-  <p>Median days from list to pending, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales in ${esc(city)}.${
+  <p>Median days from list to under contract, by the month a sale closed, across ${esc(String(x.yearsCovered))} years and ${esc(int(x.totalClosed))} closed sales in ${esc(city)}.${
     fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
   }</p>
   <div class="szn is-hero" data-anim="chart">${svg}</div>

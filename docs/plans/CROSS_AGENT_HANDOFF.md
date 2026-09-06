@@ -1,10 +1,9 @@
 # Current — 2026-09-05 (CMA charts a seller can read)
 
-The dual-axis "new listings and asking prices" chart is gone. It is a
-month ledger: Listed / Ask, empty months as —, two half-year blocks.
-Why $X and sold-vs-unsold are named lollipop rows (street or Sold /
-This list / Last ask), not number lines. 2465 7th re-rendered from
-render_args. Rec $401k unchanged. Do not send letters.
+Listing-trend and Redmond seasonality are month ledgers (Listed/Ask, and
+Days), not dual-axis or lollipops-from-zero. Why $X and sold-vs-unsold
+are named lollipop rows. 2465 7th re-rendered. Rec $401k unchanged.
+Do not send letters.
 
 Studio slate stays off. Uncommitted deep-audit punchlist files remain. Do not
 mix. Golf Track C stays on local `wt/golf-maps-20260903`.

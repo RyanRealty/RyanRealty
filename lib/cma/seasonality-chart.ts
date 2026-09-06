@@ -1,31 +1,47 @@
 /**
- * Seasonality bars for CMA print and immersive. Same plot as every other
- * document chart: lib/charts/plot + print-svg navy/cream.
+ * When homes sell fastest: twelve months of days, as a ledger.
+ * Same form as new listings. Not a lollipop from zero.
  */
-import { buildBarPlot } from '@/lib/charts/plot'
-import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
+import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaSeasonality } from '@/lib/cma/extras'
 
+function shortMonth(name: string): string {
+  return name.slice(0, 3)
+}
+
+function ledgerTable(
+  chunk: CmaSeasonality['byMonth'],
+  fastest: Set<string>,
+): string {
+  const heads =
+    `<th class="stub" scope="col"></th>` +
+    chunk.map((m) => `<th scope="col">${escapeHtml(shortMonth(m.monthName))}</th>`).join('')
+  const days =
+    `<th class="stub" scope="row">Days</th>` +
+    chunk
+      .map((m) => {
+        const v = m.medianDaysToPending
+        if (v == null || !Number.isFinite(v)) {
+          return `<td><div class="n is-zero">—</div></td>`
+        }
+        const fast = fastest.has(m.monthName)
+        return `<td><div class="n${fast ? ' is-fast' : ''}">${Math.round(v)}</div></td>`
+      })
+      .join('')
+  return `<table class="month-ledger" role="img" aria-label="Days from list to under contract">
+    <thead><tr>${heads}</tr></thead>
+    <tbody>
+      <tr>${days}</tr>
+    </tbody>
+  </table>`
+}
+
 export function seasonalityChartSvg(x: CmaSeasonality): string {
-  const fastest = new Set(x.fastestMonths.map((n) => n.slice(0, 3)))
-  const plot = buildBarPlot(
-    [
-      {
-        name: 'Median days to pending',
-        points: x.byMonth.map((m) => ({
-          value: m.medianDaysToPending ?? Number.NaN,
-          tick: m.monthName.slice(0, 3),
-          label:
-            m.medianDaysToPending != null ? String(Math.round(m.medianDaysToPending)) : 'n/a',
-        })),
-      },
-    ],
-    { highlightTicks: [...fastest], baselineLabel: '0' },
-  )
-  if (!plot) return ''
-  return renderPrintChartSvg(plot, {
-    caption: 'Median days to pending by close month',
-    colors: PRINT_NAVY_CREAM,
-    kicker: 'Days to pending',
-  })
+  const months = [...x.byMonth].sort((a, b) => a.month - b.month)
+  if (months.filter((m) => m.medianDaysToPending != null).length < 6) return ''
+  const fastest = new Set(x.fastestMonths)
+  const mid = Math.ceil(months.length / 2)
+  const chunks = months.length <= 7 ? [months] : [months.slice(0, mid), months.slice(mid)]
+  return `<div class="month-ledger-wrap">${chunks.map((c) => ledgerTable(c, fastest)).join('')}</div>
+  <p class="small">Days from list to under contract.</p>`
 }
