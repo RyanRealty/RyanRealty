@@ -3,8 +3,8 @@
 import type { Broker } from '@/lib/data/types/broker'
 
 /**
- * Mobile sticky contact bar — always visible at 390. Tour | Call only.
- * Desktop uses the sticky tour card + broker sidebar.
+ * Mobile sticky contact bar — always visible at 390. Tour | Call | Text.
+ * Cookies must not hide this (PAGE_INVENTORY ask). Desktop uses the sidebar.
  */
 
 export default function ListingMobileContactBar({

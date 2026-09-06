@@ -622,7 +622,7 @@ describe('design directive contracts', () => {
     expect(client).toMatch(/from '@\/components\/search\/MapListingPopup'/)
     expect(client).toMatch(/<MapListingPopup/)
     expect(client).not.toMatch(/<InfoWindow[\s>]/)
-    expect(page).toMatch(/photoUrl=\{photos\[0\]/)
+    expect(page).toMatch(/photoUrl=\{(?:galleryPhotos|photos)\[0\]/)
     expect(page).toMatch(/href=\{listingHref\}/)
     expect(page).not.toMatch(/from ['"]twilio['"]/)
     expect(page).not.toMatch(/lookingAtWake|sendLookingAt/)

@@ -280,7 +280,15 @@ export function ListingHero({
               priority
             />
           </button>
-        ) : null}
+        ) : (
+          <div
+            className="listing-mosaic__slide listing-mosaic__slide--empty"
+            role="img"
+            aria-label="Photos not available yet"
+          >
+            <p className="listing-mosaic__empty-label">Photos not available yet</p>
+          </div>
+        )}
         {carouselStills.map((photo, i) => {
           const photoIndex = heroVideo ? i : i + 1
           return (
@@ -315,39 +323,49 @@ export function ListingHero({
             />
           </div>
         ) : (
-        <button
-          type="button"
-          className="listing-mosaic__lead"
-          onClick={openLead}
-          aria-label={
-            heroVideo
-              ? canUnmute
-                ? isMuted
-                  ? 'Unmute video'
-                  : 'Mute video'
-                : (leadOpenLabel ?? 'Open video')
-              : `Open photo 1 of ${total}`
-          }
-        >
-          {heroVideo ? (
-            <VideoLayer
-              video={heroVideo}
-              posterUrl={photos[0]?.url}
-              altBase={altBase}
-              videoRef={videoRef}
-              onTap={openLead}
-              openLabel={leadOpenLabel ?? 'Open video'}
-              allowAutoplay={allowAutoplay}
-            />
-          ) : photos[0] ? (
-            <MosaicStill
-              src={photos[0].url}
-              alt={photos[0].caption ?? `${altBase} 1 of ${total}`}
-              sizes={LISTING_MOSAIC_LEAD_SIZES}
-              priority
-            />
-          ) : null}
-        </button>
+        {heroVideo || photos[0] ? (
+          <button
+            type="button"
+            className="listing-mosaic__lead"
+            onClick={openLead}
+            aria-label={
+              heroVideo
+                ? canUnmute
+                  ? isMuted
+                    ? 'Unmute video'
+                    : 'Mute video'
+                  : (leadOpenLabel ?? 'Open video')
+                : `Open photo 1 of ${total}`
+            }
+          >
+            {heroVideo ? (
+              <VideoLayer
+                video={heroVideo}
+                posterUrl={photos[0]?.url}
+                altBase={altBase}
+                videoRef={videoRef}
+                onTap={openLead}
+                openLabel={leadOpenLabel ?? 'Open video'}
+                allowAutoplay={allowAutoplay}
+              />
+            ) : (
+              <MosaicStill
+                src={photos[0]!.url}
+                alt={photos[0]!.caption ?? `${altBase} 1 of ${total}`}
+                sizes={LISTING_MOSAIC_LEAD_SIZES}
+                priority
+              />
+            )}
+          </button>
+        ) : (
+          <div
+            className="listing-mosaic__lead listing-mosaic__lead--empty"
+            role="img"
+            aria-label="Photos not available yet"
+          >
+            <p className="listing-mosaic__empty-label">Photos not available yet</p>
+          </div>
+        )}
         )}
         <div className={cn('listing-mosaic__thumbs', tilesWide && 'is-wide')}>
           {tiles.map((tile) => {
@@ -377,7 +395,7 @@ export function ListingHero({
       {openHouseLabel ? (
         <div className="listing-mosaic__open-house">{openHouseLabel}</div>
       ) : null}
-      {price != null || onMediaFacts || addressLine ? (
+      {(heroVideo != null || total > 0) && (price != null || onMediaFacts || addressLine) ? (
         <div className="listing-mosaic__on-media">
           {price != null ? (
             <p className="listing-mosaic__on-ask">{formatPriceExact(price)}</p>

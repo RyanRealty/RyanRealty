@@ -549,6 +549,22 @@
   cursor: zoom-in;
 }
 
+.listing-mosaic__slide--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+
+.listing-mosaic__empty-label {
+  margin: 0;
+  padding: var(--v3-space-sm);
+  color: var(--v3-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  text-align: center;
+}
+
 .listing-mosaic__slide img,
 .listing-mosaic__slide video,
 .listing-mosaic__slide iframe {
@@ -810,6 +826,23 @@
     padding: 0;
     background: var(--v3-cream);
     cursor: zoom-in;
+  }
+
+  .listing-mosaic__lead--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    background: var(--v3-cream);
+  }
+
+  .listing-mosaic__empty-label {
+    margin: 0;
+    padding: var(--v3-space-sm);
+    color: var(--v3-navy);
+    font-family: var(--v3-font-body);
+    font-size: var(--v3-size-body);
+    text-align: center;
   }
 
   .listing-mosaic__thumbs {
@@ -1245,9 +1278,12 @@
   padding: 0 var(--v3-space-sm) env(safe-area-inset-bottom, 0px);
   transform: none;
 }
-body:has([data-cookie-notice='bar']) .listing-detail .listing-mobile-cta,
+/* PAGE_INVENTORY: Tour/Call/Text cannot be covered or removed by cookies. */
+body:has([data-cookie-notice='bar']) .listing-detail .listing-mobile-cta {
+  bottom: var(--v3-cookie-bar-h, 5.5rem);
+}
 body:has([data-cookie-notice='chip']) .listing-detail .listing-mobile-cta {
-  display: none;
+  /* Corner chip — ask bar stays put. */
 }
 @media (min-width: 1024px) {
   .listing-detail .listing-mobile-cta {

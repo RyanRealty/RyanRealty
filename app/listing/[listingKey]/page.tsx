@@ -232,7 +232,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         'listing:related',
       ),
       readListingDetailHistory(listing.listingKey, listingHistorySeedFrom(listing)),
-      withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
+      withTimeoutFallback(getListingPhotos(listingKey), [], 8000, 'listing:photos'),
       withTimeoutFallback(getListingFloorPlans(listingKey), [], 4000, 'listing:floor-plans'),
       withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
       withTimeoutFallback(getBrokers(), [], 3000, 'listing:brokers'),
@@ -294,7 +294,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
     }
   }
 
-  const listingWithPhotos = { ...listing, photos }
+  const galleryPhotos =
+    photos.length > 0
+      ? photos
+      : listing.photoUrl
+        ? [{ url: listing.photoUrl, caption: null, order: 0 }]
+        : []
+  const listingWithPhotos = { ...listing, photos: galleryPhotos }
 
   const similarPool = listingSimilarDedupe(
     listingSimilarInPlace(
@@ -402,7 +408,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const hero = (
     <ListingHero
-      photos={photos}
+      photos={galleryPhotos}
       floorPlans={floorPlans}
       videos={videos}
       addressLine={street}
@@ -462,7 +468,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       lng={listing.lng}
       boundary={placeBoundary}
       addressLine={street}
-      photoUrl={photos[0]?.url ?? listing.photoUrl}
+      photoUrl={galleryPhotos[0]?.url ?? listing.photoUrl}
       price={publishedSaleAsk}
       beds={listing.beds}
       baths={listing.baths}
@@ -584,7 +590,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     wholePropertyPrice,
     trail: breadcrumbs,
     listing,
-    photoUrls: photos.map((p) => p.url),
+    photoUrls: galleryPhotos.map((p) => p.url),
     agent: listingAgent
       ? { fullName: listingAgent.fullName, email: listingAgent.email, phoneDirect: listingAgent.phoneDirect }
       : listing.listAgentName
