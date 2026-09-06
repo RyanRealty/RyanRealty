@@ -52,10 +52,6 @@ const leftoverHudSurfaces = [
     label: 'city page gates HUD + FAQ MOS through leftoverHudKpis',
   },
   {
-    path: 'app/page.tsx',
-    label: 'homepage HUD gates MOS through leftoverHudKpis',
-  },
-  {
     path: 'app/housing-market/[...slug]/page.tsx',
     label: 'housing-market geo gates MOS through leftoverHudKpis',
   },
@@ -163,7 +159,16 @@ checks.push({
         /from ['"]@\/lib\/data\/market-truth\/getSellBendMarket['"]/.test(about))),
 })
 
+{
+  const home = src('app/page.tsx')
+  checks.push({
+    label: 'homepage has no MOS HUD (Redfin lock; market lives on /housing-market)',
+    ok: !/leftoverHudKpis\(/.test(home) && !/id=["']market["']/.test(home) && !/<V3Instrument/.test(home),
+  })
+}
+
 for (const surface of leftoverHudSurfaces) {
+
   const text = src(surface.path)
   checks.push({
     label: surface.label,

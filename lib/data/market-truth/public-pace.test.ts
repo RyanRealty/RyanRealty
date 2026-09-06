@@ -90,10 +90,10 @@ describe('public pace surfaces', () => {
     expect(citiesIndex).toMatch(/leftoverHudKpis/)
     expect(citiesIndex).not.toMatch(/Under contract now/)
     const home = readFileSync(resolve('app/page.tsx'), 'utf8')
-    // The homepage still READS pace -- it feeds leftoverHudKpis for the Field
-    // count -- but it no longer prints pace items. /housing-market owns the run.
-    expect(home).toMatch(/getPublicDetachedPace/)
+    // Redfin lock 2026-09-06: homepage no longer reads pace. /housing-market owns the run.
+    expect(home).not.toMatch(/getPublicDetachedPace/)
     expect(home).not.toMatch(/publicPaceItems/)
+    expect(home).not.toMatch(/leftoverHudKpis/)
     expect(searchTail).toMatch(/publicPaceItems/)
     const community = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     const neighborhood = readFileSync(

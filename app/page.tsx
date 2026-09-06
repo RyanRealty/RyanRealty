@@ -1,51 +1,32 @@
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
-import { getListingTiles, getDetachedOverlays, getBrokers } from '@/lib/data'
-import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
+import { getListingTiles, getBrokers, getReviews } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
-import {
-  placeFigureRows,
-  marketAbsenceItems,
-  leftoverMarketFigures,
-  PLACE_COUNT_TRACE,
-  type CityPlaceItem,
-} from '@/app/cities/[slug]/_v3/city-sections'
+import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Stage,
   V3Doors,
-  V3Instrument,
-  V3Ledger,
   V3Quiet,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
-  V3Eyebrow,
-  V3Heading,
+  V3Proof,
+  type V3QuietItem,
 } from '@/components/site/v3'
-import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
 import { HomeHomesField } from './_v3/HomeHomesField'
-import { HomeExploreMap } from './_v3/HomeExploreMap.client'
-import './_v3/home-explore-map.css'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { homeFieldPool } from './_v3/home-field-items'
-import { liveStamp } from './_v3/live-format'
 import {
   HERO_VIDEO,
   HERO_POSTER,
   HOME_FIELD_POOL,
   HOME_TILE_FETCH,
-  HOME_MARKET_TRACE,
-  preferPlaceHero,
 } from './_v3/home-constants'
-import { unionBoundaryGeometry } from '@/app/central-oregon/_v3/union-boundary'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
@@ -57,11 +38,10 @@ const D11_HOMEPAGE_LEAD =
   'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
- * Homepage. Stage (owned Old Mill / Bend flyover, job H1, search action),
- * then Buy/Sell/Invest doors, featured homes, a regular Google Map, a short
- * town preview, a chart-free market Instrument, a Quiet door to reviews, and
- * brokers (H9). Atlas stays on place pages — not here. absolute title skips
- * the layout suffix so the SERP is brand once.
+ * Homepage. Redfin-shaped lock 2026-09-06 (Matt): Search hero, recommended
+ * homes, Buy/Sell/Invest doors, talk to a broker, browse places chips, proof,
+ * footer. No Atlas, map block, town ledger, or market essay on home. absolute
+ * title skips the layout suffix so the SERP is brand once.
  */
 export const revalidate = 300
 
@@ -86,157 +66,64 @@ export const metadata: Metadata = {
   },
 }
 
-const TOWN_ORDER = ['bend', 'la-pine', 'redmond', 'sunriver', 'sisters', 'terrebonne']
-const TOWN_IMG: Record<string, string> = {
-  bend: '/images/kb/bend-drake-park-aerial.jpg',
-  'la-pine': '/images/kb/vandevert-ranch.jpg',
-  redmond: '/images/kb/redmond-downtown-aerial.jpg',
-  sunriver: '/images/kb/sunriver-deschutes-river.jpg',
-  sisters: '/images/kb/sisters-downtown-three-peaks.jpg',
-  terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
+const TOWN_ORDER = ['bend', 'la-pine', 'redmond', 'sunriver', 'sisters', 'terrebonne'] as const
+
+const TOWN_LABEL: Record<(typeof TOWN_ORDER)[number], string> = {
+  bend: 'Bend',
+  'la-pine': 'La Pine',
+  redmond: 'Redmond',
+  sunriver: 'Sunriver',
+  sisters: 'Sisters',
+  terrebonne: 'Terrebonne',
 }
 
+/** Resort doors on home. Names only. Counts live on /communities. */
+const RESORT_DOORS = [
+  { label: 'Tetherow', href: '/communities/tetherow' },
+  { label: 'Broken Top', href: '/communities/broken-top' },
+  { label: 'Black Butte Ranch', href: '/communities/black-butte-ranch' },
+  { label: 'Eagle Crest', href: '/communities/eagle-crest' },
+] as const
 
 export default async function Home() {
-  const [cities, tiles, publicPace, regionOverlays, brokers, regionAtlas, investSegments] = await Promise.all([
+  const [cities, tiles, brokers, investSegments, reviewSummary] = await Promise.all([
     getCitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
-    getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => EMPTY_PUBLIC_PACE),
-    getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]).catch(() => new Map()),
     getBrokers().catch(() => []),
-    // Town boundaries for the region outline on the explore map.
-    buildRegionAtlasRegions().catch(() => null),
     getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => []),
+    getReviews(6).catch(() => null),
   ])
-  const townBoundaries = regionAtlas?.townBoundaries ?? TOWN_ORDER.map(() => null)
-  const regionBoundary = unionBoundaryGeometry(townBoundaries)
-  const regionMt = regionOverlays.get('region:central-oregon')
-  const hud = leftoverHudKpis({
-    grain: 'region',
-    headlines: regionMt?.headlines ?? null,
-    inventory: regionMt?.inventory ?? null,
-    pace: publicPace,
-  })
-  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
-  const townItems: CityPlaceItem[] = TOWN_ORDER.flatMap((slug): CityPlaceItem[] => {
-    const c = cityBySlug.get(slug)
-    if (!c) return []
-    return [{
-      name: c.name,
-      activeCount: c.activeCount,
-      medianPrice: c.medianPrice,
-      href: `/cities/${slug}`,
-      img: preferPlaceHero(c.heroImageUrl, TOWN_IMG[slug] ?? ''),
-    }]
-  })
   const faces: AboutFace[] = [...brokers]
     .sort((a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9))
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  // H9: three towns on home; the rest live on /cities.
-  const [firstTownRow, ...restTownRows] = placeFigureRows(townItems.slice(0, 3), 'City').map(
-    ({ when: _kind, ...row }) => row,
-  )
-
   const fieldItems = homeFieldPool(tiles, HOME_FIELD_POOL)
 
-  const townRegionCount =
-    regionAtlas?.regions?.filter((r) => r.kind === 'town').length ?? TOWN_ORDER.length
-  const communityRegionCount =
-    regionAtlas?.regions?.filter((r) => r.kind === 'community').length ?? 0
-
-  const mapPins = fieldItems
-    .filter(
-      (item): item is (typeof item) & { lat: number; lng: number } =>
-        typeof item.lat === 'number' &&
-        Number.isFinite(item.lat) &&
-        typeof item.lng === 'number' &&
-        Number.isFinite(item.lng),
-    )
-    .map((item) => ({
-      id: item.id,
-      href: item.href,
-      priceLabel: item.priceLabel,
-      title: item.title,
-      lat: item.lat,
-      lng: item.lng,
-    }))
-
-  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
-  const verdict = marketVerdict(mosRaw)
-  const mosLabel = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
-  const hasVerdict = verdict.kind !== 'unknown' && mosLabel != null
-  const marketHeadline = hasVerdict
-    ? `Is Central Oregon a buyer's or seller's market?`
-    : 'The Central Oregon market'
-  const verdictSentence = hasVerdict
-    ? `Central Oregon has ${mosLabel} months of supply, which is a ${verdict.label}.`
-    : null
-  // The two pace figures read as a sentence, not as a KPI grid (evaluator
-  // 2026-09-01: "a number, a percentage, and jargon"). Same pace row, same trace.
-  const paceSentence =
-    hud.daysToPending != null && hud.saleToList != null
-      ? `Homes go pending in a median of ${Math.round(hud.daysToPending)} days and sell for ${hud.saleToList.toFixed(0)}% of the original asking price.`
-      : hud.daysToPending != null
-        ? `Homes go pending in a median of ${Math.round(hud.daysToPending)} days.`
-        : null
-  const marketNote = [verdictSentence, paceSentence].filter(Boolean).join(' ')
-  const HOME_FIGURE_LABELS = new Set([
-    'median list price',
-    'detached homes for sale',
-    'months of supply',
-  ])
-  const figures = leftoverMarketFigures(hud, {
-    browse: publishRegionalSearchHref(),
-    monthsOfSupply: '/months-of-supply',
-  }).filter((f) => HOME_FIGURE_LABELS.has(String(f.label)))
-  const [firstMarketFigure, ...restMarketFigures] = figures
-  const marketSource = `${HOME_MARKET_TRACE}${mosLabel != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`
-
-  const seeAllLabel =
-    hud.active != null
-      ? `See all ${hud.active.toLocaleString('en-US')} single-family homes`
-      : 'See all homes'
-  // H2 copy for the explore map: job language, not "map" language (Cos/Matt).
-  const mapHeadline =
-    hud.active != null
-      ? `${hud.active.toLocaleString('en-US')} homes for sale`
-      : "What's for sale"
-
-  // The three routes (Matt 2026-09-01). Each fact is the same live figure its
-  // destination page prints, or absent — never an estimate (section 0). The
-  // investing sum names exactly the segments it counts.
   const investDoorSegments = new Set(['multifamily_2_4', 'commercial_sale', 'land'])
   const investCount = investSegments
     .filter((row) => investDoorSegments.has(row.segment))
     .reduce((sum, row) => sum + (row.activeCount ?? 0), 0)
+
+  const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
+
   const doors = [
     {
-      // A buyer does not want every home; a buyer wants THEIR place, price,
-      // and type (Matt 2026-09-01). The door is place-first and lands on the
-      // map, where the search narrows by town, community, and price.
-      kicker: v3Text('Buying'),
+      kicker: v3Text('Buy'),
       label: v3Text('Find your place'),
       href: '/homes-for-sale?view=map',
-      // Only what the map actually holds: the communities and neighborhoods
-      // with a recorded boundary (pass two, N8).
-      fact: v3Text(
-        communityRegionCount > 0
-          ? `${townRegionCount} towns and ${communityRegionCount} communities across Central Oregon`
-          : `${townRegionCount} towns across Central Oregon`,
-      ),
+      fact: v3Text(`${townCount} towns across Central Oregon`),
     },
     {
-      kicker: v3Text('Selling'),
-      label: v3Text('See what your home is worth'),
+      kicker: v3Text('Sell'),
+      label: v3Text('Value my home'),
       href: valuationHref('/'),
       fact: v3Text('A written valuation within 24 hours'),
     },
     {
-      kicker: v3Text('Investing'),
+      kicker: v3Text('Invest'),
       label: v3Text('Income property, with the math'),
       href: '/invest',
       ...(investCount > 0
@@ -244,6 +131,25 @@ export default async function Home() {
         : {}),
     },
   ] as const
+
+  const placeItems: V3QuietItem[] = [
+    ...TOWN_ORDER.map((slug) => {
+      const live = cityBySlug.get(slug)
+      return {
+        label: live?.name ?? TOWN_LABEL[slug],
+        href: `/cities/${slug}`,
+      }
+    }),
+    ...RESORT_DOORS.map((r) => ({ label: r.label, href: r.href })),
+    { label: 'Every city', href: '/cities' },
+    { label: 'Resorts and communities', href: '/communities' },
+  ]
+
+  const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
+  const reviewCount =
+    reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : reviewQuotes.length
+  const reviewAverage =
+    reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
 
   return (
     <>
@@ -262,100 +168,40 @@ export default async function Home() {
           <HomeHeroSearch />
         </V3Stage>
 
-        <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
-
         <HomeHomesField
           fieldItems={fieldItems}
           listFlow
-          seeAll={{ href: publishRegionalSearchHref(), label: seeAllLabel }}
+          seeAll={{ href: publishRegionalSearchHref(), label: 'See all homes' }}
           emptyMessage="No photographed active home with a list price and a street address returned on this refresh."
         />
 
-        <section
-          id="map"
-          className={`${V3_ROOT_CLASS} home-explore-map`}
-          aria-labelledby="home-map-heading"
-        >
-          <div className="home-explore-map__head">
-            <V3Eyebrow className="home-explore-map__eyebrow">Central Oregon</V3Eyebrow>
-            <V3Heading level={2} id="home-map-heading" className="home-explore-map__headline">
-              {mapHeadline}
-            </V3Heading>
-            <p className="home-explore-map__note">
-              List prices on the pins. Tap a pin for the home.
-            </p>
-            <ul className="home-explore-map__legend" aria-label="Map legend">
-              <li>
-                <span className="home-explore-map__legend-mark" aria-hidden="true" />
-                <span className="home-explore-map__legend-label">For sale</span>
-                <span> Navy pin. Price appears when you point at it.</span>
-              </li>
-            </ul>
-          </div>
-          <HomeExploreMap pins={mapPins} boundary={regionBoundary ?? undefined} />
-          <a className="home-explore-map__action" href="/homes-for-sale?view=map">
-            Explore the full map
-          </a>
-        </section>
-
-        {firstTownRow ? (
-          <V3Ledger
-            id="towns"
-            eyebrow={v3Text('Central Oregon · Single-family, by town')}
-            heading={v3Text('Town prices at a glance')}
-            rows={[firstTownRow, ...restTownRows]}
-            source={v3Text(PLACE_COUNT_TRACE)}
-            updated={liveStamp(leftoverStamp)}
-            encode="bar"
-            action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
-          />
-        ) : (
-          <V3Ledger
-            id="towns"
-            eyebrow={v3Text('Central Oregon · Single-family, by town')}
-            heading={v3Text('Town prices at a glance')}
-            rows={[]}
-            emptyMessage={v3Text('No town returned a live market row on this refresh.')}
-            action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
-          />
-        )}
-
-        {firstMarketFigure ? (
-          <V3Instrument
-            id="market"
-            level={2}
-            eyebrow={v3Text('Central Oregon · The market')}
-            headline={v3Text(marketHeadline)}
-            note={marketNote ? v3Text(marketNote) : undefined}
-            figures={[firstMarketFigure, ...restMarketFigures]}
-            foldAfter={1}
-            source={v3Text(marketSource)}
-            updated={liveStamp(leftoverStamp)}
-            action={
-              hasVerdict && verdict.kind === 'sellers'
-                ? { label: v3Text('See what your home is worth'), href: valuationHref('/'), variant: 'ghost' as const }
-                : { label: v3Text('Full market report'), href: '/housing-market', variant: 'ghost' as const }
-            }
-          />
-        ) : (
-          <V3Quiet
-            id="market"
-            heading="The Central Oregon market"
-            items={marketAbsenceItems('Central Oregon', fieldItems.length > 0)}
-          />
-        )}
-
-        <V3Quiet
-          id="reviews"
-          eyebrow="Ryan Realty · Google"
-          heading="Client reviews"
-          items={[{ label: 'Read Google reviews', href: '/reviews' }]}
-        />
+        <V3Doors id="doors" name={v3Text('Start with what you came to do')} doors={doors} />
 
         {faces.length > 0 ? (
-          <AboutFaces people={faces} heading="The brokers" headingLevel={2} />
+          <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} />
         ) : null}
 
+        <V3Quiet
+          id="places"
+          eyebrow="Central Oregon"
+          heading="Browse places"
+          headingLevel={2}
+          items={placeItems}
+        />
+
+        {reviewQuotes.length > 0 ? (
+          <V3Proof
+            id="proof"
+            eyebrow="Ryan Realty · Google"
+            headline={`${reviewCount} Google reviews`}
+            headingLevel={2}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            figures={[]}
+            quotes={reviewQuotes}
+            source={{ label: 'Every review', href: '/reviews' }}
+            record={false}
+          />
+        ) : null}
       </main>
 
       <V3Footer columns={V3_FOOTER_COLUMNS} />

@@ -61,7 +61,7 @@ Content is the point. **URLs** are what we cut.
 
 | Family | URLs | Why |
 |---|---|---|
-| Home | `/` | Door. Houses, then places, then sell. |
+| Home | `/` | Door. Search first. Then houses. Then sell/agent. No Atlas on home. |
 | Search | `/homes-for-sale` and filtered paths | The buy job. One Field. |
 | Listing | house URL | This house. |
 | Place indexes | `/cities`, `/neighborhoods`, `/communities`, `/subdivisions` | Directories. Not a fourth Bend. |
@@ -157,14 +157,16 @@ A number belongs to a section or it does not print. Beat the competitor **and** 
 
 ### Home `/`
 
-**Beat:** the first impression of a serious local brokerage, not a portal.
+**Beat:** Redfin-shaped door. Search first. Then houses. Then sell/agent. Short.
+**Lock 2026-09-06:** No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
-1. Search that goes to Homes  
-2. Houses on the map  
-3. Doors: Places, Sell, Invest (no “see what your home is worth”)  
-4. Resorts / cities as doors  
-5. Proof (reviews)  
-6. Faces  
+1. Search (hero → Homes). Brand H1 `Ryan Realty, Bend`  
+2. Recommended homes (photographed actives, see-all → Field)  
+3. Doors: Buy · Sell · Invest (Sell = `Value my home`, never “see what your home is worth”)  
+4. Talk to a broker (three faces → `/team/[slug]`)  
+5. Browse places (city/resort chips as doors, not a KPI grid)  
+6. Proof (V3Proof Google reviews)  
+7. Footer  
 
 ### Homes `/homes-for-sale`
 

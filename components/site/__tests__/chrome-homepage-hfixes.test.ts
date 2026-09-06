@@ -50,13 +50,10 @@ describe('chrome homepage H-fixes', () => {
     expect(FACES_CSS).toContain('object-position: center 18%')
   })
 
-  it('homepage map legend names for-sale with mark + label (H3)', () => {
-    expect(PAGE).toContain('home-explore-map__legend')
-    expect(PAGE).toContain('For sale')
-    expect(PAGE).toContain('home-explore-map__legend-mark')
-    expect(PAGE).toContain('mapHeadline')
+  it('homepage has no explore map block (Redfin lock)', () => {
+    expect(PAGE).not.toContain('home-explore-map__legend')
+    expect(PAGE).not.toContain('HomeExploreMap')
+    expect(PAGE).not.toContain('mapHeadline')
     expect(PAGE).not.toContain('Homes on the map')
-    expect(PAGE).toContain('List prices on the pins. Tap a pin for the home.')
-    expect(PAGE).toContain('Navy pin. Price appears when you point at it.')
   })
 })

@@ -62,15 +62,11 @@ const surfaces = [
   {
     path: 'app/page.tsx',
     label: 'homepage sell ask publishes no uncaptioned median',
-    // RE-EXPRESSED AGAIN (2026-08-27, second move). The seller ask stopped
-    // being the market Instrument's ghost action when the page was ordered for
-    // conversion: the Instrument's action is now the door to the full market
-    // report, and the seller ask is its own SellValueForm section (pagePath '/'
-    // keeps the ?from= attribution the ghost action carried). The rule is
-    // unchanged: the ask surface publishes no median of its own — the medians
-    // this page prints sit in the Instrument figures and the towns ledger, each
-    // under a section naming its geography and trace. The form file is checked
-    // for a median it might mint, and the page for a median it might feed in.
+    // RE-EXPRESSED (2026-09-06 Redfin lock). Home no longer prints a market
+    // Instrument or town ledger. The seller ask is the Sell door (Value my home)
+    // via valuationHref('/'). SellValueForm still must publish no median of its
+    // own. The form file is checked for a median it might mint, and the page for
+    // a median it might feed in.
     noMedianSurface: 'app/sell/_v3/SellValueForm.tsx',
   },
   {

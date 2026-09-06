@@ -1,28 +1,28 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "v3-critiquito-h8-2026-09-06",
-  "note": "Homepage on the components/site/v3 barrel. Stage (owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch) then Buy/Sell/Invest doors, then Field of homes (HomeHomesField listFlow + type chips), then a regular Google Map (HomeExploreMap \u2014 not Atlas). Towns Ledger + market Instrument + Google reviews + AboutFaces + V3Footer. Critiquito H8: Atlas removed from homepage. index.html is the retired KB mockup, kept as history, not the visual target.",
+  "status": "redfin-shaped-home-2026-09-06",
+  "note": "Homepage on the components/site/v3 barrel. Redfin-shaped lock (Matt 2026-09-06): Search hero, Recommended homes, Buy/Sell/Invest doors, Talk to a broker, Browse places chips, V3Proof, Footer. No Atlas, no HomeExploreMap, no town ledger, no market essay on home. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
-      "where": "V3Stage with the same clip, poster, branded H1 (Ryan Realty, Bend). Search is the only Stage action via HomeHeroSearch (SearchSuggest + searchHrefForQuery)."
+      "where": "V3Stage with branded H1 Ryan Realty, Bend. Search is the only Stage action via HomeHeroSearch."
     },
     {
       "name": "KbExploreTowns",
-      "where": "the towns Ledger (#towns): same six doors, counts, medians, photos preferring hero_image_url"
+      "where": "Browse places Quiet doors (city/resort chips). KPI town ledger left home."
     },
     {
       "name": "KbCommunities",
-      "where": "the communities Ledger (#communities): same four doors, index counts, photos preferring hero_image_url"
+      "where": "Browse places Quiet doors. Resort figures stay on /communities."
     },
     {
       "name": "KbFeatured",
-      "where": "the Field rows: photographed homes from the same curated mix, barrel Field language"
+      "where": "HomeHomesField: photographed homes, barrel Field language, See all to Field."
     },
     {
       "name": "KbListingMap",
-      "where": "HomeExploreMap: regular Google Map with listing pins after doors + Field. Not Atlas. HomeHomesField owns the photographed list without atlas camera binding."
+      "where": "Removed from home. Map lives on /homes-for-sale. No HomeExploreMap, no V3Atlas on home."
     },
     {
       "name": "KbTicker",
@@ -30,23 +30,23 @@
     },
     {
       "name": "KbSell",
-      "where": "Seller ask deferred off the shortened homepage stack (Critiquito H9); Value my home lives on /sell and chrome Sell leaves."
+      "where": "Sell door is Value my home to /sell. Form lives on /sell and chrome Sell leaves."
     },
     {
       "name": "KbCommunityAlerts",
-      "where": "retired with the homepage declutter (Matt 2026-09-01); alert capture lives on the search pages and /invest, the homepage ask is the seller sheet"
+      "where": "retired with the homepage declutter (Matt 2026-09-01)"
     },
     {
       "name": "KbTestimonials",
-      "where": "Quiet #reviews"
+      "where": "V3Proof #proof"
     },
     {
       "name": "KbTeam",
-      "where": "AboutFaces"
+      "where": "AboutFaces Talk to a broker"
     },
     {
       "name": "KbMarketHud",
-      "where": "the market Instrument: leftoverMarketFigures, verdict, placeMedianChart year overlay, door to /housing-market"
+      "where": "Removed from home. Market essay lives on /housing-market."
     },
     {
       "name": "KbFooter",
@@ -55,6 +55,22 @@
     {
       "name": "SmoothScrollProvider",
       "where": "deleted"
+    },
+    {
+      "name": "HomeExploreMap",
+      "where": "Removed from home (Redfin lock 2026-09-06). Map job is /homes-for-sale."
+    },
+    {
+      "name": "V3Atlas",
+      "where": "Not on home. Place pages keep Atlas."
+    },
+    {
+      "name": "V3Ledger #towns",
+      "where": "Removed from home. Town figures live on /cities."
+    },
+    {
+      "name": "V3Instrument #market",
+      "where": "Removed from home. Market lives on /housing-market."
     }
   ],
   "requiredComponents": [
@@ -64,49 +80,55 @@
     },
     {
       "name": "V3Stage",
-      "section": "#hero -- owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch is the only Stage action"
-    },
-    {
-      "name": "HomeExploreMap",
-      "section": "#map \u2014 regular Google Map with active listing pins (Critiquito H8). Not V3Atlas: no heatmap, no type sidebar, no region chips.",
-      "blocking": true
-    },
-    {
-      "name": "V3Doors",
-      "section": "#doors -- the three routes (Buying / Selling / Investing), each with a live fact from the destination page's own source. Matt 2026-09-01: the homepage MUST route the three intents, implemented as a quiet band, not the killed 2026-08-16 button bar.",
+      "section": "#hero -- owned Old Mill / Bend flyover, branded H1 Ryan Realty, Bend, HomeHeroSearch is the only Stage action",
       "blocking": true
     },
     {
       "name": "HomeHeroSearch",
-      "section": "city / community / address search on the Stage"
+      "section": "city / community / address search on the Stage",
+      "blocking": true
     },
     {
       "name": "HomeHomesField",
-      "section": "Photographed Field after doors (listFlow + See all). No atlas-camera Bound wrapper \u2014 Critiquito H8 dropped Atlas, so the list is not tethered to an atlas camera."
+      "section": "Recommended photographed homes (listFlow + See all to Field). One house row.",
+      "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "#towns \u2014 per-town active count and median list price (communities ledger deferred off home H9)"
+      "name": "V3Doors",
+      "section": "#doors -- Buy / Sell / Invest. Sell label is Value my home.",
+      "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "the market question, leftover KPI row, year overlay"
+      "name": "AboutFaces",
+      "section": "Talk to a broker -- three faces to /team/[slug]",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "#places -- Browse places city/resort chips as doors, not a KPI grid",
+      "blocking": true
+    },
+    {
+      "name": "V3Proof",
+      "section": "#proof -- Google reviews",
+      "blocking": true
     },
     {
       "name": "V3Footer",
-      "section": "footer outside main"
+      "section": "footer outside main",
+      "blocking": true
     }
   ],
   "purpose": {
-    "_": "Locked v3 homepage after Critiquito H8. Stage \u2192 doors \u2192 Field \u2192 Google Map. Chart Room mid-page. No Atlas on home.",
-    "job": "Turn someone who typed a money query into a search they can act on. Search is the Stage action. Homes and Buy/Sell/Invest doors follow; map explores after.",
-    "primaryAction": "Search city, community, or address. See homes is the secondary door into regional browse.",
+    "_": "Locked Redfin-shaped homepage 2026-09-06. Search first. Then houses. Then sell/agent. Short. No Atlas, map block, town ledger, or market essay on home.",
+    "job": "Turn someone who typed a money query into a search they can act on. Search is the Stage action. Recommended homes and Buy/Sell/Invest doors follow.",
+    "primaryAction": "Search city, community, or address. See all homes opens the Field.",
     "audience": "A buyer or looker at the top of the funnel who does not yet know the towns. NOT a seller (they arrive on /sell).",
     "questionsItMustAnswer": [
-      "What is for sale here right now, and what does it cost?",
-      "Where is here, and what do the towns cost?",
-      "Is this a good time to buy or sell?",
-      "Who are you?"
+      "What is for sale here right now?",
+      "Can I buy, sell, or invest from here?",
+      "Who are the brokers?",
+      "Where can I browse places?"
     ],
     "searchIntent": {
       "headTerm": "homes for sale central oregon",
@@ -115,50 +137,46 @@
         "central oregon real estate",
         "homes for sale bend redmond sisters sunriver"
       ],
-      "whyThisPageCanWin": "It publishes live inventory, per-town medians and a traced market verdict on one crawlable page, and the first screen is a working search.",
-      "whatItOwesSEO": "One H1 carrying the head term. Town names as real links with real figures. The market answer in text. JSON-LD that matches the visible figures."
+      "whyThisPageCanWin": "It publishes live inventory and a working search on one crawlable branded door. Search owns the inventory SERP; home owns the brand.",
+      "whatItOwesSEO": "One H1 Ryan Realty, Bend. Town and resort names as real doors. JSON-LD that matches the visible figures."
     },
     "dataAvailable": [
-      "live active listings with photo, price, address, beds/baths/sqft, lat/lng",
-      "per-town active count and median list price",
-      "the leftover market row for the regional active count and Chart Room figures",
-      "resort and master-planned community counts",
+      "live active listings with photo, price, address, beds/baths/sqft",
+      "city and resort doors",
       "Google reviews, the three brokers, the approved Bend flyover clip"
     ],
     "notThisPagesJob": [
-      "Being the full market report. /housing-market owns the full figure set; the homepage owes the answer and a door.",
-      "Being the about page. /about and /team own the brokerage story.",
-      "Hosting Atlas / heatmap chrome. Place pages keep V3Atlas; home uses HomeExploreMap.",
+      "Hosting Atlas / heatmap chrome. Place pages keep V3Atlas.",
+      "Hosting a Google Map block. /homes-for-sale owns the map.",
+      "Hosting a town KPI ledger. /cities owns town figures.",
+      "Hosting a market essay. /housing-market owns the market answer.",
       "Hosting a second contact form. Value my home lives on /sell."
     ]
   },
   "openDefects": {
-    "_": "Restored to the locked v3 Stage + Field homepage after the 2026-08-28 phone-first restyle.",
+    "_": "Redfin-shaped home lock 2026-09-06.",
     "items": [
-      "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel Field and Ledger again.",
+      "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel Field again.",
       "RESOLVED: overlapping rail. V3Field listFlow keeps the list in document flow; See all is the Field action.",
-      "RESOLVED: Chart Room is mid-page V3Instrument, not the first fold.",
-      "RESOLVED 2026-09-06 Critiquito H8: V3Atlas removed from homepage; HomeExploreMap is the Google Map."
+      "RESOLVED 2026-09-06: Atlas, HomeExploreMap, town ledger, and market Instrument removed from home per Matt Redfin lock."
     ]
   },
-  "competitiveTarget": "Beat Zillow and Redfin on LOCAL TRUTH: live Central Oregon inventory on a v3 Field, per-town medians, and the buyer-or-seller answer with its trace. Search is the Stage action over owned Old Mill media.",
+  "competitiveTarget": "Beat Redfin and Zillow on a clean local brokerage door: brand H1, working search, photographed homes, Buy/Sell/Invest, brokers, place chips, proof.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
-    "V3Stage #hero \u2014 owned flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch",
-    "V3Doors #doors \u2014 Buying / Selling / Investing, one live fact each",
-    "HomeHomesField \u2014 photographed list (listFlow + See all)",
-    "HomeExploreMap #map \u2014 regular Google Map with listing pins (not Atlas)",
-    "V3Ledger #towns \u2014 each town's active count and median list price",
-    "V3Instrument #market \u2014 the buyer-or-seller ANSWER with its trace and stamp",
-    "V3Proof #reviews \u2014 Google reviews",
-    "AboutFaces \u2014 the brokers",
+    "V3Stage #hero -- owned flyover, branded H1 Ryan Realty, Bend, job line under H1, HomeHeroSearch",
+    "HomeHomesField -- recommended photographed homes (listFlow + See all)",
+    "V3Doors #doors -- Buy / Sell / Invest, Sell = Value my home",
+    "AboutFaces -- Talk to a broker",
+    "V3Quiet #places -- Browse places city/resort chips as doors",
+    "V3Proof #proof -- Google reviews",
     "V3Footer"
   ],
   "tasteReview": {
     "evaluatedAt": "2026-09-06",
-    "score": 74,
-    "beats": "Zillow's Bend, OR homepage on the branded door: H1 Ryan Realty, Bend over owned Old Mill media, then live Central Oregon inventory as Field + a regular Google Map rather than Atlas chrome.",
-    "evaluator": "separate grok-4.6 evaluator, place-pages pass, session 01a06fc0",
+    "score": null,
+    "beats": "Redfin-shaped door: search first, then houses, then sell/agent. No Atlas or market essay competing with the buy job.",
+    "evaluator": "pending eyes-on after reshape",
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png"

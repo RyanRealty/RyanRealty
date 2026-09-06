@@ -5,47 +5,35 @@ import { describe, expect, it } from 'vitest'
 const SRC = readFileSync(resolve('app/page.tsx'), 'utf8')
 
 /**
- * v3 spelling (2026-08-27 Broadside rebuild). The KPI row is built by
- * leftoverMarketFigures(hud, ...): every figure off the ONE leftover pile,
- * a missing cell omitted, pulse never filling a tile.
+ * Redfin-shaped home lock 2026-09-06: market essay is off home.
+ * /housing-market owns the leftover pile and the verdict.
  */
-describe('homepage market figures stay on the leftover pile', () => {
-  it('reads region leftover pace and hands the hud to leftoverMarketFigures', () => {
-    expect(SRC).toMatch(/getPublicDetachedPace\(\{\s*geoType:\s*'region',\s*geoSlug:\s*'central-oregon'\s*\}\)/)
-    expect(SRC).toMatch(/leftoverHudKpis/)
-    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
-  })
-
-  it('does not assign saleToList from cache avg_sale_to_list_ratio', () => {
-    expect(SRC).not.toMatch(/sltRaw\s*=\s*mktStats\?\.avg_sale_to_list_ratio/)
-    expect(SRC).not.toMatch(/saleToList:[\s\S]{0,80}avg_sale_to_list_ratio/)
+describe('homepage keeps the market essay off home (Redfin lock)', () => {
+  it('does not mount a market Instrument or leftover HUD on /', () => {
+    expect(SRC).not.toMatch(/leftoverHudKpis/)
+    expect(SRC).not.toMatch(/leftoverMarketFigures/)
+    expect(SRC).not.toMatch(/<V3Instrument/)
+    expect(SRC).not.toMatch(/id="market"/)
     expect(SRC).not.toMatch(/getMarketStatsCacheRowForGeo/)
+    expect(SRC).not.toMatch(/<KbMarketHud/)
   })
 
-  it('does not print a leftover regional remainder on the town Ledger', () => {
-    expect(SRC).not.toMatch(/regionActive:\s*hud\.active/)
+  it('does not print a town KPI ledger or map block on /', () => {
+    expect(SRC).not.toMatch(/id="towns"/)
+    expect(SRC).not.toMatch(/<HomeExploreMap/)
+    expect(SRC).not.toMatch(/<V3Atlas/)
     expect(SRC).not.toMatch(/townRemainder/)
     expect(SRC).not.toMatch(/namePulseCityRemainder/)
   })
 
-  it('KPI row is leftover only: miss omits, pulse does not fill', () => {
-    expect(SRC).toMatch(/HOME_FIGURE_LABELS/)
-    expect(SRC).toMatch(/leftoverMarketFigures\(hud/)
-    expect(SRC).not.toMatch(/closedCount30d\s*\?\?\s*pulse/)
-    expect(SRC).not.toMatch(/daysToPending90d\s*\?\?\s*pulse/)
-    expect(SRC).not.toMatch(/new30:\s*pulse/)
-    expect(SRC).not.toMatch(/closed30:\s*publicPace\.closedCount\s*\?\?/)
-    expect(SRC).not.toMatch(/daysToPending:\s*publicPace\.daysToContract/)
-  })
-
-  it('the one verdict derivation classifies the raw leftover value', () => {
-    expect(SRC).toMatch(/marketVerdict\(mosRaw\)/)
-    expect(SRC).toMatch(/formatMonthsOfSupply\(mosRaw\)/)
-  })
-
-  it('does not print MARKET TRUTH LEFTOVER; homepage skips the year chart (H9)', () => {
+  it('does not print a leftover median chart on the homepage', () => {
     expect(SRC).not.toContain('placeMedianChartCaption')
     expect(SRC).not.toContain('placeMedianChart')
     expect(SRC).not.toContain('Market Truth leftover')
+  })
+
+  it('Sell door is Value my home, never see what your home is worth', () => {
+    expect(SRC).toMatch(/label: v3Text\('Value my home'\)/)
+    expect(SRC).not.toMatch(/See what your home is worth/)
   })
 })

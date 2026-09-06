@@ -73,8 +73,11 @@ for (const surface of surfaces) {
       !/\bcount=\{/.test(text),
   })
   checks.push({
-    label: 'homepage town Ledger does not print the regional remainder paragraph',
-    ok: !/townRemainder/.test(text) && !/namePulseCityRemainder/.test(text),
+    label: 'homepage has no town Ledger remainder (Redfin lock; towns live on /cities)',
+    ok:
+      !/townRemainder/.test(text) &&
+      !/namePulseCityRemainder/.test(text) &&
+      !/id=["']towns["']/.test(text),
   })
 }
 

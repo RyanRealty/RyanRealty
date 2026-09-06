@@ -34,16 +34,18 @@ Saved = account icon. Value my home fills only on `/sell/*` leaves, not on `/sel
 
 ## 1. Home `/`
 
-**Job.** Door. Buy, look, or sell.
+**Job.** Door. Search first. Then houses. Then sell/agent. Short.
+**Lock 2026-09-06:** Redfin-shaped (Matt). No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
 | # | Section | Notes |
 |---|---|---|
-| 1 | Search | Goes to Homes. Placeholder short enough at 375. |
-| 2 | Houses / Atlas | Atlas as the spectacle (no how-to caption). Houses bound to it. |
-| 3 | Doors | Places · Sell (`Value my home`) · Invest. Never “see what your home is worth.” |
-| 4 | Place doors | Cities / resorts as doors, not a KPI grid. |
-| 5 | Proof | Firm Google reviews (V3Proof). |
-| 6 | Faces | Three brokers as doors to `/team/[slug]`, not a poster that is the whole page. |
+| 1 | Search | Hero → Homes. Buy-first. 375 placeholder short. Brand H1 `Ryan Realty, Bend` (seo-shell); job line under OK. |
+| 2 | Recommended homes | Photographed actives, one house row. See-all → Field. |
+| 3 | Doors | Buy · Sell · Invest. Sell = `Value my home`. Never “see what your home is worth.” |
+| 4 | Talk to a broker | Three faces → `/team/[slug]`. |
+| 5 | Browse places | City/resort chips as doors — not KPI grid. |
+| 6 | Proof | V3Proof Google reviews. |
+| 7 | Footer | Existing footer. |
 
 ---
 

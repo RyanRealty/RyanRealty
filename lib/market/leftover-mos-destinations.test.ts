@@ -9,7 +9,6 @@ const files = {
   annual: readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8'),
   cities: readFileSync(resolve('app/cities/page.tsx'), 'utf8'),
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
-  home: readFileSync(resolve('app/page.tsx'), 'utf8'),
   reports: readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8'),
   searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
   housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
@@ -28,11 +27,13 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
     }
   })
 
-  it('homepage does not print a leftover regional remainder', () => {
-    expect(files.home).toMatch(/leftoverHudKpis/)
-    expect(files.home).not.toMatch(/regionActive:\s*hud\.active/)
-    expect(files.home).not.toMatch(/namePulseCityRemainder/)
-    expect(files.home).not.toMatch(/regionActive:\s*pulse\?\.activeCount/)
+  it('homepage has no MOS HUD (Redfin lock; market lives on /housing-market)', () => {
+    const home = readFileSync(resolve('app/page.tsx'), 'utf8')
+    expect(home).not.toMatch(/leftoverHudKpis/)
+    expect(home).not.toMatch(/leftoverMarketFigures/)
+    expect(home).not.toMatch(/id="market"/)
+    expect(home).not.toMatch(/regionActive:\s*hud\.active/)
+    expect(home).not.toMatch(/namePulseCityRemainder/)
   })
 
   it('MOS page does not fetch pulse for the published MOS figures', () => {

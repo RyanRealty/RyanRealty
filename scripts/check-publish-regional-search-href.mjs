@@ -39,16 +39,14 @@ checks.push({
 // See homes door.
 
 const home = src('app/page.tsx')
-// Regional doors are HomeHeroSearch (empty submit), leftoverMarketFigures'
-// browse link, and the Field See all. All go through publishRegionalSearchHref.
+// Regional doors are HomeHeroSearch (empty submit) and the Field See all.
+// Both go through publishRegionalSearchHref. Market browse left home (Redfin lock).
 checks.push({
   label: 'homepage does not hardcode the Bend-injecting /homes-for-sale door on regional CTAs',
   ok:
     !/cta=\{\{\s*href:\s*['"]\/homes-for-sale['"]/.test(home) &&
     !/href:\s*['"]\/homes-for-sale['"]/.test(home) &&
-    (/viewAllHref=\{publishRegionalSearchHref\(\)\}/.test(home) ||
-      (/href:\s*publishRegionalSearchHref\(\)/.test(home) &&
-        /browse:\s*publishRegionalSearchHref\(\)/.test(home))),
+    /href:\s*publishRegionalSearchHref\(\)/.test(home),
 })
 
 // KbFooter and KbFeatured left with the KB register (2026-08-27). Both arms

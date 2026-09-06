@@ -691,24 +691,28 @@ describe('design directive contracts', () => {
   // D103/D103b (home-d section objects) retired with the home-d revert
   // (Matt, 2026-08-21): / is back on the homepage-v6 template.
 
-  // D99/D101 v3 spelling. The homepage market section reads the live leftover
-  // pile (leftoverHudKpis -> leftoverMarketFigures), never the stats cache;
-  // H9: homepage skips the YoY chart; full series lives on /housing-market.
-  it('D99 — homepage market section is the live leftover pile, not a cache read (§0)', () => {
+  // D99/D101 Redfin-shaped home 2026-09-06: market essay is off home.
+  // /housing-market owns the leftover pile and the YoY chart.
+  it('D99 — homepage has no market leftover pile; market hub keeps the chart atom', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/leftoverMarketFigures\(hud/)
+    expect(page).not.toMatch(/leftoverMarketFigures/)
+    expect(page).not.toMatch(/leftoverHudKpis/)
     expect(page).not.toMatch(/getMarketStatsCacheRowForGeo/)
     expect(page).not.toMatch(/<KbMarketHud/)
+    expect(page).not.toMatch(/<V3Instrument/)
+    expect(page).not.toMatch(/id="market"/)
     const charts = readSrc('app/housing-market/_v3/market-charts.ts')
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage skips the median chart; market hub atom stays off home (H9)', () => {
+  it('D101 — homepage skips the median chart and market Instrument (Redfin lock)', () => {
     const page = readSrc('app/page.tsx')
     expect(page).not.toMatch(/placeMedianChart/)
     expect(page).not.toMatch(/buildRegionMedianChart/)
-    expect(page).toMatch(/<V3Instrument/)
-    expect(page).toMatch(/foldAfter=\{1\}/)
+    expect(page).not.toMatch(/<V3Instrument/)
+    expect(page).not.toMatch(/foldAfter=\{1\}/)
+    expect(page).not.toMatch(/<HomeExploreMap/)
+    expect(page).not.toMatch(/id="towns"/)
   })
 
   it('D102 — KbFeatured has no remaining page mount (E-CUT retired /area-guides)', () => {
