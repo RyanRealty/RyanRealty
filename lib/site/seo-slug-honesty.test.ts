@@ -82,7 +82,8 @@ describe('SEO search honesty contracts', () => {
     expect(page).toMatch(/const isMapSplitView =/)
     expect(page).toMatch(/sp\.view === 'map'/)
     expect(page).toMatch(/sp\.view === 'split'/)
-    expect(page).toMatch(/isPlainCityBrowse && sp\.view !== 'list'/)
+    expect(page).toMatch(/sp\.view === 'list'/)
+    expect(page).not.toMatch(/isPlainCityBrowse && sp\.view !== 'list'/)
   })
 
   it('city-slug split uses the regional SearchFilters + MapSearchView dock', () => {

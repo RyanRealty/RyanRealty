@@ -66,9 +66,9 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-06",
-    "score": 54,
-    "beats": "Windermere Bend search: named-city split Field with in-dock save-search on the same filters as the map",
-    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, search",
+    "score": 57,
+    "beats": "Windermere / local IDX Bend search: named-city split Field with photo rows and navy price pins, not a card grid under an unfiltered embed",
+    "evaluator": "separate grok-4.6 evaluator, wave-b search chrome",
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/search/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/search/shots/mobile375.png"

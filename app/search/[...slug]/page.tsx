@@ -155,15 +155,17 @@ export default async function SearchPage({
   if (preset) searchBreadcrumbItems.push({ label: preset.shortLabel })
   if (!city && presetLabel) searchBreadcrumbItems.push({ label: presetLabel })
 
-  // Numeric view=1..5 is the leftover grid-column picker. City browse with no
-  // view param opens on the same MapSearchView split as /homes-for-sale.
+  // Numeric view=1..5 is the leftover grid-column picker. Map / Split / List
+  // stay on the one Field. City browse with no view param opens split, same
+  // as /homes-for-sale. view=list is the Field's list pane, not a second app.
   const isGridColumnView = [1, 2, 3, 4, 5].includes(Number(sp.view))
   const isPlainCityBrowse = Boolean(city && !subdivision && !preset)
   const isMapSplitView =
     !isGridColumnView &&
     (sp.view === 'map' ||
       sp.view === 'split' ||
-      (isPlainCityBrowse && sp.view !== 'list')) &&
+      sp.view === 'list' ||
+      isPlainCityBrowse) &&
     Boolean(city || hasFilterOnly)
 
   // Map/split seeds from MapSplitView's own viewport fetch. Do not wait on the

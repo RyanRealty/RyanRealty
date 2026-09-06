@@ -211,7 +211,8 @@ export function homeTypeChipLabel(
   if (propertySubTypes.length > 1) {
     return `${propertySubTypes.length} home types`
   }
-  if (!propertyType?.trim() || propertyType === 'all') return 'All types'
+  // Default (empty or all) is not an applied filter. The trigger says Home type.
+  if (!propertyType?.trim() || propertyType === 'all') return null
   // Prefer PROPERTY_TYPES label, then class-prevalence helper (codes / multi-family).
   const fromList = PROPERTY_TYPES.find((t) => t.value === propertyType)?.label
   if (fromList) return fromList

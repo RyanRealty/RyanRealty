@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
+import '@/components/search/search-ledger.css'
 
 type Props = {
   user: boolean
@@ -201,60 +202,86 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
   const triggerLabel = status === 'done' ? 'Search saved' : 'Save this search'
 
   if (!user) {
-    if (status === 'done') {
-      return (
-        <Card role="status" className="w-72 shadow-md">
-          <CardContent className="p-4">
-            <p className="text-sm font-medium text-foreground">You are set. Watch your inbox.</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              We email you when a new match hits the market. Sign in later to manage alerts. Next visit we will remind you you are watching this search.
-            </p>
-          </CardContent>
-        </Card>
-      )
-    }
     return (
-      <form onSubmit={handleGuestSave} className="flex flex-wrap items-end gap-2">
-        <Input
-          type="text"
-          name="company"
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          className="sr-only h-px w-px"
-        />
-        <div className="min-w-44">
-          <Label htmlFor="save-search-email" className="text-sm font-medium text-muted-foreground">
-            Email
-          </Label>
-          {/* min-h-11 is the 44px tap floor. The Input primitive ships h-8, which
-              left the one field in the guest save form 12px under it. */}
-          <Input
-            id="save-search-email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            maxLength={254}
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@email.com"
-            className="mt-1 min-h-11 w-full"
-          />
-        </div>
-        {/* min-h-11 is the same 44px floor the field beside it now carries. A
-            32px submit next to a 44px input is worse than the pair was before. */}
-        <Button type="submit" size="sm" className="min-h-11" disabled={status === 'saving'}>
-          {status === 'saving' ? 'Saving...' : 'Save this search'}
+      <div className="relative shrink-0">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            if (status === 'done' && open === false) {
+              setStatus('idle')
+            }
+            setOpen((o) => o === false)
+          }}
+          className="srch-chip shrink-0"
+          aria-expanded={open}
+          aria-haspopup="dialog"
+        >
+          {triggerLabel}
         </Button>
-        {status === 'error' ? (
-          <p className="w-full text-sm text-destructive" role="alert">
-            {errorMsg || 'Could not save. Try again.'}
-          </p>
+        {open ? (
+          <>
+            <div className="fixed inset-0 z-40" aria-hidden onClick={closePanel} />
+            {status === 'done' ? (
+              <Card role="status" className="absolute right-0 top-full z-50 mt-1 w-72 rounded-none shadow-none">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-foreground">You are set. Watch your inbox.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    We email you when a new match hits the market. Sign in later to manage alerts. Next visit we will remind you you are watching this search.
+                  </p>
+                  <Button type="button" onClick={closePanel} className="mt-3">
+                    Done
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="absolute right-0 top-full z-50 mt-1 w-72 rounded-none shadow-none">
+                <form onSubmit={handleGuestSave} className="p-4">
+                  <Input
+                    type="text"
+                    name="company"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    className="sr-only h-px w-px"
+                  />
+                  <Label htmlFor="save-search-email" className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </Label>
+                  <Input
+                    id="save-search-email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    maxLength={254}
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    className="mt-1 min-h-11 w-full"
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <Button type="submit" size="sm" className="min-h-11" disabled={status === 'saving'}>
+                      {status === 'saving' ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={closePanel} className="min-h-11">
+                      Cancel
+                    </Button>
+                  </div>
+                  {status === 'error' ? (
+                    <p className="mt-2 text-sm text-destructive" role="alert">
+                      {errorMsg || 'Could not save. Try again.'}
+                    </p>
+                  ) : null}
+                </form>
+              </Card>
+            )}
+          </>
         ) : null}
-      </form>
+      </div>
     )
   }
 
@@ -270,7 +297,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
           }
           setOpen((o) => !o)
         }}
-        className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+        className="srch-chip shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
         aria-expanded={open}
         aria-haspopup="dialog"
       >

@@ -1,4 +1,15 @@
-# Current — 2026-09-06 (CMA one comps story)
+# Current — 2026-09-06 (Wave B: search chrome)
+
+Homes Field: Google tiles stay, Google Draw/Map-dropdown/zoom are off.
+MapChrome (Map/Satellite + zoom) + one Map/Split/List in the shell. Guest
+Save this search is a chip that opens email, not an email field in the 375
+dock. `view=list` stays on the Field. LOOP_SENTINEL stays off. Do not mix `_cma-*`.
+
+Next: Wave C hub tiles-before-chart.
+
+---
+
+# Previous — 2026-09-06 (CMA one comps story)
 
 Seller CMA spine is Home location, then How we got the price (one
 matrix with thumbs + map), then who they compete with. Why $X, Photos,

@@ -156,10 +156,14 @@ describe('split loading skeleton matches the live rail', () => {
 })
 
 describe('390 Map uses one camera', () => {
-  it('hides the filter-bar List/Split/Map ToggleGroup below lg', () => {
+  it('hides the filter-bar List/Split/Map ToggleGroup so the map shell is the one view switch', () => {
     const src = readSrc('components/search/SearchFilters.tsx')
-    expect(src).toMatch(/aria-label=\{`\$\{v\} view`\}/)
-    expect(src).toMatch(/hidden h-11 overflow-hidden rounded-none border border-border\/60 bg-muted\/40 lg:flex/)
+    expect(src).toMatch(/hideViewToggle = true/)
+    expect(src).toMatch(/hidden items-center gap-2 sm:contents/)
+    const map = readSrc('components/search/MapSearchView.tsx')
+    expect(map).toMatch(/map-search-views/)
+    expect(map).toMatch(/aria-label="Map view"/)
+    expect(map).toMatch(/aria-label="List view"/)
   })
 
   it('MapSearchView keeps the in-shell Map/List toggle', () => {
@@ -667,9 +671,11 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
   it('offers a list-view return from the map branch (bidirectional toggle)', () => {
     const map = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
     expect(map).toMatch(/<SearchFilters/)
-    const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/setFilter\('view', v\)/)
-    expect(filters).toMatch(/'split' \| 'list' \| 'map'/)
+    expect(map).toMatch(/hideViewToggle/)
+    const view = readSrc('components/search/MapSearchView.tsx')
+    expect(view).toMatch(/applyView/)
+    expect(view).toMatch(/aria-label="List view"/)
+    expect(view).toMatch(/aria-label="Map view"/)
   })
 })
 
@@ -754,6 +760,14 @@ describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHI
     expect(filters).not.toMatch(/>\s*Get alerts\s*</)
     expect(filters).not.toMatch(/focusSearchAlertCapture/)
   })
+
+  it('guest Save this search is a chip that opens email, not an email field in the dock', () => {
+    const save = readSrc('components/SaveSearchButton.tsx')
+    expect(save).toMatch(/id="save-search-email"/)
+    expect(save).toMatch(/aria-haspopup="dialog"/)
+    expect(save).toMatch(/triggerLabel/)
+    expect(save).not.toMatch(/flex flex-wrap items-end gap-2/)
+  })
 })
 
 describe('map craft: selection + zoom storytelling + basemap', () => {
@@ -784,9 +798,33 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(markers).toMatch(/f3f0e8/)
     expect(markers).toMatch(/c5d8e0/)
   })
+
+  it('search map drops Google Draw/Roboto chrome and mounts MapChrome', () => {
+    const markers = readSrc('lib/maps/markers.ts')
+    const clustered = readSrc('components/SearchMapClustered.tsx')
+    const chrome = readSrc('components/search/MapChrome.tsx')
+    const css = readSrc('components/search/search-ledger.css')
+    expect(markers).toMatch(/export function getSearchMapOptions/)
+    expect(markers).toMatch(/mapTypeControl: false/)
+    expect(markers).toMatch(/zoomControl: false/)
+    expect(markers).toMatch(/disableDefaultUI: true/)
+    expect(markers).toMatch(/keyboardShortcuts: false/)
+    expect(clustered).toMatch(/import MapChrome from '@\/components\/search\/MapChrome'/)
+    expect(clustered).toMatch(/<MapChrome map=\{mapInstance\} \/>/)
+    expect(chrome).toMatch(/aria-label="Map type"/)
+    expect(chrome).toMatch(/aria-label="Map zoom"/)
+    expect(chrome).toMatch(/aria-label="Satellite"/)
+    expect(css).toMatch(/\.map-search-zoom/)
+    expect(css).toMatch(/\.map-search-shell \.gm-style-mtc/)
+  })
 })
 
 describe('Home type two-layer filter (class + MLS sub type)', () => {
+  it('All types is the default, not an applied filter chip', () => {
+    const panel = readSrc('components/search/HomeTypeFilterPanel.tsx')
+    expect(panel).toMatch(/propertyType === 'all'\) return null/)
+  })
+
   it('primary chip bar mounts HomeTypeFilterPanel with duplex/manufactured sub-types', () => {
     const panel = readSrc('components/search/HomeTypeFilterPanel.tsx')
     expect(panel).toMatch(/PROPERTY_TYPES/)

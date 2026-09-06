@@ -113,29 +113,31 @@ export function getExploreMapOptions(optsExtra?: {
 }
 
 /**
- * Search-map options — greedy gestures, Map/Satellite only, editorial basemap
- * (or Cloud Map ID). Draw-area button owns top-left; type control is TOP_RIGHT.
+ * Search-map options — greedy gestures, editorial basemap (or Cloud Map ID).
+ * Google tiles stay. Google Draw / Map dropdown / zoom / Roboto chrome is off.
+ * MapChrome (Map/Satellite + zoom) owns top-right; Draw owns top-left.
  */
 export function getSearchMapOptions(): google.maps.MapOptions {
-  const base = getBaseMapOptions()
   const mapId =
     (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
   const opts: google.maps.MapOptions = {
-    ...base,
     gestureHandling: 'greedy',
+    disableDefaultUI: true,
     fullscreenControl: false,
-    // Suppress clutter POI labels (restaurants, shops) so listing markers read.
+    mapTypeControl: false,
+    streetViewControl: false,
+    zoomControl: false,
+    rotateControl: false,
+    scaleControl: false,
+    cameraControl: false,
+    keyboardShortcuts: false,
+    clickableIcons: false,
+    backgroundColor: '#faf8f4',
+    minZoom: 7,
+    maxZoom: 18,
     styles: mapId ? undefined : MAP_SEARCH_STYLES,
   }
   if (mapId) opts.mapId = mapId
-  if (typeof google !== 'undefined' && google.maps?.ControlPosition && google.maps?.MapTypeId) {
-    // Map + Satellite only — Terrain/Hybrid are portal noise on inventory search.
-    opts.mapTypeControlOptions = {
-      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-      position: google.maps.ControlPosition.TOP_RIGHT,
-      mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE],
-    }
-  }
   return opts
 }
 

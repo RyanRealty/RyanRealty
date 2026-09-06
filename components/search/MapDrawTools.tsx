@@ -23,6 +23,7 @@ import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import './search-ledger.css'
 import { haversineMeters, MAX_SHAPES, type DrawnShape, type MapPolygonPoint } from '@/lib/map-polygon'
 import { MAP_EXCLUDE_RED, MAP_NAVY } from '@/lib/maps/markers'
 
@@ -117,11 +118,11 @@ function shapeOverlayOptions(exclude: boolean): google.maps.PolygonOptions {
 }
 
 const TOOL_BUTTON =
-  'rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-primary shadow-md hover:bg-muted'
+  'srch-chip rounded-none border border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-none hover:bg-muted'
 const TOOL_BUTTON_PRIMARY =
-  'rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary/90'
+  'srch-chip rounded-none bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-none hover:bg-primary/90'
 const TOOL_BUTTON_MUTED =
-  'rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-md hover:bg-muted'
+  'srch-chip rounded-none border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted'
 
 type Props = {
   map: google.maps.Map
@@ -409,7 +410,7 @@ export default function MapDrawTools({
             >
               <div
                 className={cn(
-                  'flex items-center gap-0.5 rounded-full border bg-card py-0.5 pl-2.5 pr-0.5 shadow-md',
+                  'flex items-center gap-0.5 rounded-none border bg-card py-0.5 pl-2.5 pr-0.5 shadow-none',
                   shape.exclude ? 'border-destructive/50' : 'border-border'
                 )}
               >
@@ -427,7 +428,7 @@ export default function MapDrawTools({
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-6 rounded-full px-1.5 text-xs',
+                    'h-6 rounded-none px-1.5 text-xs',
                     shape.exclude ? 'text-destructive' : 'text-muted-foreground'
                   )}
                   onClick={() => toggleExclude(i)}
@@ -441,7 +442,7 @@ export default function MapDrawTools({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 rounded-full p-0 text-muted-foreground"
+                  className="h-6 w-6 rounded-none p-0 text-muted-foreground"
                   onClick={() => removeShape(i)}
                   aria-label={`Remove ${label}`}
                 >
@@ -495,7 +496,7 @@ export default function MapDrawTools({
             <Button
               type="button"
               onClick={() => onShapesChange([])}
-              className="rounded-lg border border-destructive bg-card px-3 py-2 text-sm font-medium text-destructive shadow-md hover:bg-destructive/10"
+              className="srch-chip rounded-none border border-destructive bg-card px-3 py-2 text-sm font-medium text-destructive shadow-none hover:bg-destructive/10"
             >
               Clear areas ({shapes.length})
             </Button>

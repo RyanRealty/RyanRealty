@@ -22,7 +22,7 @@ import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import MapSearchView from '@/components/search/MapSearchView'
 import SearchFilters from '@/components/search/SearchFilters'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3_LEDGER_CLASS, V3Breadcrumb } from '@/components/site/v3'
+import { V3_ROOT_CLASS, V3_LEDGER_CLASS } from '@/components/site/v3'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { withTimeout, withTimeoutSettled } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
@@ -103,7 +103,6 @@ export async function renderMapSplitView(props: {
     decodedSubdivision,
     neighborhood: neighborhoodName,
     headline,
-    searchBreadcrumbItems,
     savedKeys,
     likedKeys,
     session,
@@ -301,13 +300,10 @@ export async function renderMapSplitView(props: {
   return (
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'search-app-frame w-full bg-muted')}>
       <div className="search-filter-dock w-full shrink-0 border-b border-border bg-card shadow-sm">
-        {searchBreadcrumbItems.length > 1 ? (
-          <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
-        ) : null}
         <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
           {headline}
         </h1>
-        <SearchFilters initialFilters={filters} signedIn={!!session?.user} />
+        <SearchFilters initialFilters={filters} signedIn={!!session?.user} hideViewToggle />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         {/* underFilterBar slot kept in source for the guest-alert contract.

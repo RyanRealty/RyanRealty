@@ -14,6 +14,7 @@ import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
 import type { DrawnShape, MapPolygonPoint } from '@/lib/map-polygon'
 import MapDrawTools from '@/components/search/MapDrawTools'
+import MapChrome from '@/components/search/MapChrome'
 import MapListingPopup from '@/components/search/MapListingPopup'
 import { Button } from "@/components/ui/button"
 import {
@@ -827,14 +828,8 @@ export default function SearchMapClustered({
       draggable: !drawingMode && !multiDrawActive,
       clickableIcons: !drawingMode && !multiDrawActive,
     }
-    // multiDrawActive mirrors drawingMode for the Phase 2 shape tools.
-    // isLoaded: getSearchMapOptions()'s control-position fields are gated on
-    // `typeof google !== 'undefined'` internally. This memo's first
-    // computation usually runs before the Maps script has loaded, freezing
-    // in the position-less defaults (zoom control landing bottom-right,
-    // map type control stuck top-left under the Draw-area button) since
-    // isLoaded flipping true afterward wasn't a dependency (design-audit
-    // P2, evidence: mapTypeControlOptions.position never took effect).
+    // isLoaded stays a dep so options recompute after the Maps script
+    // arrives. Google UI chrome is off; MapChrome owns zoom and Map/Satellite.
   }, [drawingMode, multiDrawActive, isLoaded])
 
   // ─── Imperative map creation ───────────────────────────────────────────────
@@ -1384,6 +1379,7 @@ export default function SearchMapClustered({
                 drawClickRef={multiDrawClickRef}
               />
             )}
+            <MapChrome map={mapInstance} />
             {/* Completed drawn polygon (legacy single-polygon mode only) */}
             {!multiShape && !drawingMode && activePolygon && activePolygon.length >= 3 && (
               <Polygon

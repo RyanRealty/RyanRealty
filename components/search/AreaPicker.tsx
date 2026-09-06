@@ -17,8 +17,8 @@
  * special case anywhere. Clearing is the same call with an empty set.
  *
  * Placement: bottom-left of the map canvas. Top-left is the draw toolbar,
- * top-center is the search-as-you-move toggle plus the geo-scope chip, and
- * top-right is the Google map-type control plus the boundary controls.
+ * top-center is Search this area plus the geo-scope chip, and
+ * top-right is MapChrome (Map/Satellite + zoom).
  *
  * Style note: JSX conditions read `x === false` rather than `!x` because the
  * brand-voice punctuation gate treats a bare `!` inside a JSX expression as an
@@ -45,6 +45,7 @@ import {
   matchActiveArea,
   type PickerArea,
 } from '@/components/search/area-picker'
+import './search-ledger.css'
 
 type Props = {
   /** The map's live shape set. Drives the active-area readout. */
@@ -184,7 +185,7 @@ export default function AreaPicker({ shapes, onApply, className }: Props) {
       )}
     >
       {open && (
-        <Card id="area-picker-panel" data-testid="area-picker-panel" className="w-72 p-3 shadow-lg">
+        <Card id="area-picker-panel" data-testid="area-picker-panel" className="w-72 rounded-none p-3 shadow-none">
           <p className="text-sm font-semibold text-foreground">Saved areas</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Applying an area replaces the shapes on the map.
@@ -311,7 +312,7 @@ export default function AreaPicker({ shapes, onApply, className }: Props) {
 
       <div
         className={cn(
-          'flex items-center gap-0.5 rounded-lg border bg-card shadow-md',
+          'flex items-center gap-0.5 rounded-none border bg-card shadow-none',
           activeArea ? 'border-primary' : 'border-border',
         )}
       >
@@ -323,7 +324,7 @@ export default function AreaPicker({ shapes, onApply, className }: Props) {
           aria-expanded={open}
           aria-controls="area-picker-panel"
           data-testid="area-picker-trigger"
-          className="h-auto max-w-48 rounded-lg px-3 py-2 text-sm font-medium text-primary hover:bg-muted"
+          className="srch-chip h-auto max-w-48 rounded-none px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
           <span className="truncate">{activeArea ? activeArea.name : 'Saved areas'}</span>
           {activeArea == null && areas != null && areas.length > 0 && (
@@ -340,7 +341,7 @@ export default function AreaPicker({ shapes, onApply, className }: Props) {
             onClick={clearArea}
             data-testid="area-picker-clear"
             aria-label={`Clear ${activeArea.name} from this search`}
-            className="mr-1 h-6 w-6 rounded-full p-0 text-muted-foreground"
+            className="mr-1 h-6 w-6 rounded-none p-0 text-muted-foreground"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </Button>

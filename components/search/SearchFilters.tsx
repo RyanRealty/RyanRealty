@@ -236,7 +236,7 @@ type Props = {
   initialFilters: SearchFiltersInitial
   /** Signed-in state — SaveSearchButton switches between account save and guest email capture. */
   signedIn?: boolean
-  /** Place pages stay Split. Do not offer list/map app-frame hops. */
+  /** Place pages stay Split. The map shell owns Map/List. Default on. */
   hideViewToggle?: boolean
   /** Place pages already name the place. Location search would fight that pin. */
   hideLocation?: boolean
@@ -247,7 +247,7 @@ type OpenPanel = 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 export default function SearchFilters({
   initialFilters,
   signedIn: signedInSeed = false,
-  hideViewToggle = false,
+  hideViewToggle = true,
   hideLocation = false,
 }: Props) {
   const router = useRouter()
@@ -464,10 +464,9 @@ export default function SearchFilters({
 
   return (
     <div className="flex flex-col gap-0">
-      {/* One filter row: For sale · Price · Beds · Baths · Home type ·
-          All filters · Save search, then List | Split | Map. Location stays
-          a compact field in this same row so the page does not stack a
-          second search box. Guest listing-alert capture stays on list/grid. */}
+      {/* One filter row: location · For sale · Price · Beds · Baths · Home type ·
+          All filters · Save this search. Map/List lives in the map shell, not
+          here. At 375 the chip dropdowns fold into All filters (one Sheet). */}
       <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
         <div
           className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar"
@@ -536,6 +535,7 @@ export default function SearchFilters({
           )}
         </div>
         )}
+        <div className="hidden items-center gap-2 sm:contents">
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
@@ -753,6 +753,7 @@ export default function SearchFilters({
             />
           </div>
         </FilterDropdown>
+        </div>
       </div>
 
         {/* All filters — always present. Chip set scrolls on 390. */}

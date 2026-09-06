@@ -424,7 +424,7 @@ export default async function SearchPage({
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>
-        <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
+        <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} hideViewToggle />
       </div>
       {/* Guest listing-alert capture stays on list/grid. Split/map hide the
           stacked email strip so the one filter row is the chrome. JSX stays
