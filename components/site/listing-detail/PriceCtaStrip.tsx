@@ -12,7 +12,7 @@ import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
-import { publishListingDrop, publishListingEstPaymentLabel, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingEstPayment, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingHeroKeyStats } from '@/lib/listing/publish-listing-hero-stats'
 import { publishListingShareKind, publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
@@ -65,7 +65,8 @@ type Props = {
     | 'sqft'
     | 'totalLivingAreaSqFt'
     | 'lotSizeAcres'
-    | 'estimatedMonthlyPiti'
+    | 'taxAnnualAmount'
+    | 'hoaMonthly'
     | 'listAgentName'
     | 'listOfficeName'
     | 'listAgentPhone'
@@ -91,6 +92,11 @@ type Props = {
   scheduleHref?: string
   /** Override the default ask-question href. */
   askHref?: string
+  /**
+   * Seed 30-yr rate in PERCENT, same prop the payment calculator receives.
+   * Omit / null → DEFAULT_PITI_RATE inside computeMonthlyPiti.
+   */
+  ratePct?: number | null
   className?: string
 }
 
@@ -115,6 +121,7 @@ export function PriceCtaStrip({
   onShare,
   scheduleHref,
   askHref,
+  ratePct,
   className,
 }: Props) {
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
@@ -183,7 +190,12 @@ export function PriceCtaStrip({
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
     .join(' ')
-  const estPayment = publishListingEstPaymentLabel(listing.estimatedMonthlyPiti)
+  const estPayment = publishListingEstPayment({
+    listPrice: headlinePrice,
+    taxAnnual: listing.taxAnnualAmount,
+    hoaMonthly: listing.hoaMonthly,
+    mortgageRate: ratePct,
+  })?.label ?? null
   const lastDrop = history ? publishListingLastDrop(history) : null
   const listedBy = publishListingListedBy({
     listAgentName: listing.listAgentName,

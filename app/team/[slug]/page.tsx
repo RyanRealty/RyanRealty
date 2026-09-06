@@ -1,18 +1,18 @@
 /**
  * /team/[slug] - one broker's page, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Faces first (same AboutFaces cutout as /about and /team). Quiet (identity)
- * then Instrument (closed-sale figures) then Atlas (closings as dots) then
- * Ledger (newest closings) then Proof (filtered reviews, record off) then
- * Sheet (valuation, same submitBrokerSellerLead payload) then Doors (call,
- * text, email).
+ * PAGE_INVENTORY §6 / PAGE_OUTLINE /team/[slug]:
+ * 1. Normal headshot, name, title, license, firm review door
+ * 2. Call / Text / Email above any CMA sheet (valuation is /sell)
+ * 3. Firm proof (same reviews + firm sales as About), labeled Ryan Realty
+ * 4. Personal Atlas / Ledger / Instrument only if hasRealPersonalRecord
+ * 5. Bio, facts only
+ * 6. Doors: team · reviews · sell
  *
- * THE PAGE CONTRACT, carried across: generateMetadata with the canonical-slug
- * fix, BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
- * aggregate, not the individual), BreadcrumbList, V3SectionTracker
- * pageType="broker", revalidate 60, reviewBelongsOnPage, 977 zip filter,
- * published closing count equals ledger rows.
+ * THE PAGE CONTRACT: generateMetadata with the canonical-slug fix,
+ * BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
+ * aggregate), BreadcrumbList, V3SectionTracker pageType="broker",
+ * revalidate 60. publishOwnClosingRows is the whole MLS set (C7).
  *
  * D11: no virtue names. No invented quote. MLS remarks N/A.
  *
@@ -36,7 +36,6 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3LedgerFigureRow,
   type V3QuietItem,
   V3Atlas,
   V3Doors,
@@ -44,10 +43,14 @@ import {
   V3Proof,
 } from '@/components/site/v3'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
-import { aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
-import { BrokerValuationSheet } from './_v3/BrokerValuationSheet.client'
-import { namesBroker, reviewBelongsOnPage } from './_v3/review-filter'
-import { brokerageTileToRow, factualFallbackBio, HEADSHOT, publishOwnClosingRows } from './_v3/sale-rows'
+import { aboutDisplayName, aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
+import {
+  factualFallbackBio,
+  HEADSHOT,
+  hasRealPersonalRecord,
+  publishFirmClosingRows,
+  publishOwnClosingRows,
+} from './_v3/sale-rows'
 import { buildBrokerRecord, brokerRecordSource, brokerRecordStamp } from './_v3/broker-record'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
@@ -64,9 +67,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [broker, brokerage] = await Promise.all([getAgentBySlug(slug), getBrokerageSettings()])
   if (!broker) notFound()
   const siteName = brokerage?.name ?? 'Ryan Realty'
-  const title = `${broker.display_name} · ${siteName}`
+  const title = `${broker.display_name}, Bend realtor`
   const description =
-    broker.bio?.slice(0, 155) ??
+    broker.bio?.trim()?.slice(0, 155) ??
     `${broker.display_name}, ${broker.title ?? 'Real Estate Broker'} at ${siteName}. Licensed in Oregon. Contact for Central Oregon real estate.`
   const canonicalSlug = broker.slug || slug
   const canonical = `${siteUrl}/team/${canonicalSlug}`
@@ -99,6 +102,7 @@ export default async function TeamMemberPage({ params }: Props) {
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
   const canonicalPathSlug = broker.slug || slug
   const canonicalUrl = `${siteUrl}/team/${canonicalPathSlug}`
+  const shownName = aboutDisplayName(canonicalPathSlug, broker.display_name)
 
   const [reviews, brokerageTiles, brokerSales, regionAtlas] = await Promise.all([
     getReviews(50),
@@ -106,47 +110,30 @@ export default async function TeamMemberPage({ params }: Props) {
     getBrokerSales({ email: broker.email, mlsId: broker.mls_id }),
     buildRegionAtlasRegions().catch(() => null),
   ])
-  // The broker's record: figures, closings by year, and every closing with a
-  // coordinate as a dot on the living map — all off the same closed rows.
   const record = buildBrokerRecord(brokerSales)
   const recordSource = brokerRecordSource(firstName, record)
   const recordStamp = brokerRecordStamp(record)
 
   const ownRows = publishOwnClosingRows(brokerSales)
-  const closings = ownRows.length
-  const hasOwnSales = closings > 0
-
-  const firmRows = brokerageTiles
-    .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
-    .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
-    .map((t) => brokerageTileToRow(t))
-    .filter((row): row is V3LedgerFigureRow => row !== null)
-    .slice(0, 6)
-
-  const saleRows = hasOwnSales ? ownRows : firmRows
-  const [firstSale, ...restSales] = saleRows
+  const hasOwnSales = hasRealPersonalRecord(ownRows.length)
+  const firmRows = publishFirmClosingRows(brokerageTiles)
+  const [firstOwn, ...restOwn] = ownRows
+  const [firstFirm, ...restFirm] = firmRows
 
   const bioText = broker.bio?.trim()
     ? broker.bio.trim()
-    : factualFallbackBio({ displayName: broker.display_name, firstName, closings, phone: broker.phone })
+    : factualFallbackBio({ displayName: broker.display_name, firstName, closings: ownRows.length, phone: broker.phone })
 
-  // One rendering of the number site-wide: E.164 (pass two, C8).
   const digits = broker.phone ? broker.phone.replace(/[^\d]/g, '') : ''
   const e164 = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith('1') ? `+${digits}` : digits
   const telHref = e164 ? `tel:${e164}` : null
   const smsHref = e164 ? `sms:${e164}` : null
   const mailHref = broker.email ? `mailto:${broker.email}` : null
 
-  // Reviews that name this broker first, then the ones that name no broker;
-  // the four newest of those as a Proof band with the record off.
-  const relevantQuotes = toReviewQuotes(reviews.reviews)
-    .filter((q) => reviewBelongsOnPage(q.quote, firstName))
-    .sort((a, b) => Number(namesBroker(b.quote, firstName)) - Number(namesBroker(a.quote, firstName)))
-    .slice(0, 4)
-  const namingCount = reviews.reviews.filter((r) => namesBroker(r.text, firstName)).length
-  const COUNT_WORD = ['none', 'one', 'two', 'three', 'four'] as const
-  const shownWord = COUNT_WORD[Math.min(relevantQuotes.length, 4)]
-  const newestRelevant = relevantQuotes.find((q) => q.date)?.date ?? null
+  const quotes = toReviewQuotes(reviews.reviews).slice(0, 4)
+  const reviewCount = reviews.count > 0 ? reviews.count : quotes.length
+  const reviewAverage = reviews.count > 0 ? reviews.averageRating : 5
+  const newestReview = quotes.find((q) => q.date)?.date ?? null
 
   const canonicalSlug: BrokerSlug | null =
     normalizeAgentSlug(slug) ??
@@ -163,37 +150,35 @@ export default async function TeamMemberPage({ params }: Props) {
   })
 
   const identityItems: V3QuietItem[] = [
-    { kind: 'prose', body: bioText },
-    ...(broker.title ? [{ kind: 'prose' as const, term: 'Title', body: broker.title }] : []),
     ...(broker.license_number
       ? [{ kind: 'prose' as const, term: 'Oregon license', body: `#${broker.license_number}` }]
       : []),
-    { label: 'All brokers', href: '/team' },
+    ...(reviewCount > 0
+      ? [{ label: `${reviewCount} Google reviews · ${reviewAverage.toFixed(1)} of 5`, href: '/reviews' }]
+      : []),
   ]
 
   const contactItems: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      body: broker.phone
-        ? `${firstName} works the deal from the first call to closing.`
-        : `${firstName} works the deal from the first note to closing.`,
-    },
     ...(broker.phone ? [{ kind: 'prose' as const, term: 'Phone', body: broker.phone }] : []),
     ...(broker.email ? [{ kind: 'prose' as const, term: 'Email', body: broker.email }] : []),
     ...(telHref ? [{ label: `Call ${firstName}`, href: telHref }] : []),
     ...(smsHref ? [{ label: `Text ${firstName}`, href: smsHref }] : []),
     ...(mailHref ? [{ label: `Email ${firstName}`, href: mailHref }] : []),
-    { label: 'All brokers', href: '/team' },
-    { label: 'Client reviews', href: '/reviews' },
   ]
 
-  const saleSource = hasOwnSales
-    ? v3Text(
-        `Closed MLS sales where ${firstName} listed the home or represented the buyer, every one on the regional MLS. Recorded ClosePrice.`,
-      )
-    : v3Text(
-        'Closed MLS sales listed by Ryan Realty. Central Oregon zips starting with 977. Recorded ClosePrice. Shown while this broker builds a personal record.',
-      )
+  const bioItems: V3QuietItem[] = [
+    { kind: 'prose', body: bioText },
+    { label: 'All brokers', href: '/team' },
+    { label: 'Client reviews', href: '/reviews' },
+    { label: 'Sell', href: '/sell' },
+  ]
+
+  const firmSaleSource = v3Text(
+    'Closed MLS sales listed by Ryan Realty. Central Oregon zips starting with 977. Recorded ClosePrice.',
+  )
+  const ownSaleSource = v3Text(
+    `Closed MLS sales where ${firstName} listed the home or represented the buyer, every one on the regional MLS. Recorded ClosePrice.`,
+  )
 
   return (
     <>
@@ -247,95 +232,13 @@ export default async function TeamMemberPage({ params }: Props) {
           trail={[
             { label: 'Home', href: '/' },
             { label: 'Team', href: '/team' },
-            { label: broker.display_name },
+            { label: shownName },
           ]}
         />
 
-        {face ? <AboutFaces people={[face]} heading={broker.display_name} /> : null}
-
-        <V3Quiet
-          id="profile"
-          eyebrow={`${firstName} · ${broker.title ?? 'Real Estate Broker'}`}
-          heading={face ? `${firstName}'s license` : broker.display_name}
-          headingLevel={face ? 2 : 1}
-          items={identityItems}
-        />
-
-        {record.figures.length > 0 ? (
-          <V3Instrument
-            id="record"
-            level={2}
-            eyebrow={v3Text(`${firstName} · Record`)}
-            headline={v3Text(`${record.closings.length.toLocaleString('en-US')} closed ${record.closings.length === 1 ? 'sale' : 'sales'} on the MLS`)}
-            figures={[
-              { value: v3Text(record.figures[0]!.value), label: v3Text(record.figures[0]!.label) },
-              ...record.figures.slice(1).map((f) => ({ value: v3Text(f.value), label: v3Text(f.label) })),
-            ]}
-            chart={record.chart}
-            source={v3Text(recordSource)}
-            updated={recordStamp ? v3Text(recordStamp) : undefined}
-          />
+        {face ? (
+          <AboutFaces people={[face]} heading={shownName} headingLevel={1} size="portrait" reach={false} />
         ) : null}
-        {record.dots.length > 0 ? (
-          <V3Atlas
-            id="closings"
-            headingLevel={2}
-            headline={v3Text(`Where ${firstName} has closed`)}
-            dots={record.dots}
-            regions={regionAtlas?.regions ?? []}
-            basemap={basemapForRegions(regionAtlas?.regions ?? [], { dots: record.dots, fit: 'dots' })}
-            types={record.types}
-            events={[]}
-            source={recordSource}
-            stamp={recordStamp}
-            noun={{ one: 'closing', many: 'closings' }}
-            fit="dots"
-          />
-        ) : null}
-        {firstSale ? (
-          <V3Ledger
-            id="track-record"
-            eyebrow={v3Text(hasOwnSales ? `${firstName} · Newest closings` : 'Ryan Realty · Closings')}
-            heading={v3Text(hasOwnSales ? `${firstName}'s newest closings` : 'Recent brokerage closings')}
-            rows={[firstSale, ...restSales.slice(0, 7)]}
-            source={saleSource}
-          />
-        ) : (
-          <V3Ledger
-            id="track-record"
-            eyebrow={v3Text('Closings')}
-            heading={v3Text('Closed sales')}
-            rows={[]}
-            emptyMessage={v3Text('No Central Oregon closings in this refresh.')}
-          />
-        )}
-
-        {relevantQuotes.length > 0 ? (
-          <V3Proof
-            id="reviews"
-            eyebrow="Ryan Realty · Google"
-            headline={`Reviews that name ${firstName}, or name no broker`}
-            headingLevel={2}
-            claim={
-              namingCount > 0
-                ? `${namingCount} of the brokerage's ${reviews.count} Google reviews name ${firstName}. The newest ${shownWord} here, in full, as written.`
-                : `${reviews.count} Google reviews, ${reviews.averageRating.toFixed(1)} of 5. The newest ${shownWord} that name no other broker, in full, as written.`
-            }
-            figures={[
-              ...(namingCount > 0 ? [{ value: String(namingCount), label: `name ${firstName}` }] : []),
-              { value: String(reviews.count), label: 'Google reviews' },
-              { value: reviews.averageRating.toFixed(1), label: 'average of 5' },
-              ...(newestRelevant
-                ? [{ value: formatDate(newestRelevant, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }]
-                : []),
-            ]}
-            quotes={relevantQuotes}
-            source={{ label: 'Every review', href: '/reviews' }}
-            record={false}
-          />
-        ) : null}
-
-        <BrokerValuationSheet firstName={firstName} />
 
         {telHref && smsHref && mailHref ? (
           <V3Doors
@@ -355,6 +258,100 @@ export default async function TeamMemberPage({ params }: Props) {
             items={contactItems}
           />
         ) : null}
+
+        <V3Quiet
+          id="profile"
+          eyebrow={`${shownName} · ${broker.title ?? 'Real Estate Broker'}`}
+          heading={face ? `${firstName}'s license` : shownName}
+          headingLevel={face ? 2 : 1}
+          items={identityItems}
+        />
+
+        {quotes.length > 0 ? (
+          <V3Proof
+            id="proof"
+            eyebrow="Ryan Realty · Google"
+            headline={`${reviewCount} Google reviews`}
+            headingLevel={2}
+            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
+            figures={[
+              { value: String(reviewCount), label: 'Google reviews' },
+              { value: reviewAverage.toFixed(1), label: 'average of 5' },
+              ...(newestReview
+                ? [{ value: formatDate(newestReview, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }]
+                : []),
+            ]}
+            quotes={quotes}
+            source={{ label: 'Every review', href: '/reviews' }}
+            record={false}
+          />
+        ) : null}
+
+        {firstFirm ? (
+          <V3Ledger
+            id="firm-sales"
+            eyebrow={v3Text('Ryan Realty · Closings')}
+            heading={v3Text('Recent brokerage closings')}
+            rows={[firstFirm, ...restFirm]}
+            source={firmSaleSource}
+          />
+        ) : (
+          <V3Ledger
+            id="firm-sales"
+            eyebrow={v3Text('Ryan Realty · Closings')}
+            heading={v3Text('Recent brokerage closings')}
+            rows={[]}
+            emptyMessage={v3Text('No Central Oregon closings in this refresh.')}
+            source={firmSaleSource}
+          />
+        )}
+
+        {hasOwnSales && record.figures.length > 0 ? (
+          <V3Instrument
+            id="record"
+            level={2}
+            eyebrow={v3Text(`${firstName} · Record`)}
+            headline={v3Text(`${record.closings.length.toLocaleString('en-US')} closed ${record.closings.length === 1 ? 'sale' : 'sales'} on the MLS`)}
+            figures={[
+              { value: v3Text(record.figures[0]!.value), label: v3Text(record.figures[0]!.label) },
+              ...record.figures.slice(1).map((f) => ({ value: v3Text(f.value), label: v3Text(f.label) })),
+            ]}
+            chart={record.chart}
+            source={v3Text(recordSource)}
+            updated={recordStamp ? v3Text(recordStamp) : undefined}
+          />
+        ) : null}
+        {hasOwnSales && record.dots.length > 0 ? (
+          <V3Atlas
+            id="closings"
+            headingLevel={2}
+            headline={v3Text(`Where ${firstName} has closed`)}
+            dots={record.dots}
+            regions={regionAtlas?.regions ?? []}
+            basemap={basemapForRegions(regionAtlas?.regions ?? [], { dots: record.dots, fit: 'dots' })}
+            types={record.types}
+            events={[]}
+            source={recordSource}
+            stamp={recordStamp}
+            noun={{ one: 'closing', many: 'closings' }}
+            fit="dots"
+          />
+        ) : null}
+        {hasOwnSales && firstOwn ? (
+          <V3Ledger
+            id="track-record"
+            eyebrow={v3Text(`${firstName} · Newest closings`)}
+            heading={v3Text(`${firstName}'s newest closings`)}
+            rows={[firstOwn, ...restOwn.slice(0, 7)]}
+            source={ownSaleSource}
+          />
+        ) : null}
+
+        <V3Quiet
+          id="bio"
+          ariaLabel={`${firstName}`}
+          items={bioItems}
+        />
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only

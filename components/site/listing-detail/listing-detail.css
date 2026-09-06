@@ -320,6 +320,10 @@
   background: color-mix(in srgb, var(--v3-navy) 28%, var(--v3-cream));
 }
 
+.listing-pay__bar-seg--hoa {
+  background: color-mix(in srgb, var(--v3-navy) 14%, var(--v3-cream));
+}
+
 .listing-pay__breakdown {
   display: grid;
   grid-template-columns: 1fr;

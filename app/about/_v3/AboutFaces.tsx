@@ -1,8 +1,10 @@
 /**
- * First viewport of /about and /team: the live brokers, cutout PNGs on cream
- * at conversation scale. No card, no wash, no border — the transparent edge
- * is the composition (CLAUDE.md §3). The name is the door. Title, Call, and
- * Text sit under the portrait, not jammed on one line.
+ * Broker cutouts on cream. No card, no wash, no border — the transparent
+ * edge is the composition (CLAUDE.md §3). Name is the door. Title, Call,
+ * and Text sit under the portrait.
+ *
+ * roster: /team (H1) and /about (H2, below Call/Text + firm proof).
+ * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
  */
 
 import Link from 'next/link'
@@ -15,27 +17,28 @@ export function AboutFaces({
   people,
   heading,
   headingLevel = 1,
+  size = 'roster',
+  reach = true,
 }: {
   people: readonly AboutFace[]
   heading: string
   /**
-   * 1 on /about and /team, where the faces ARE the page and the heading is the
-   * H1. 2 on the homepage, whose H1 is the Stage — a second H1 on one document
-   * is an outline defect, not a style choice. Default keeps both existing
-   * callers byte-identical.
+   * 1 on /team, where the faces ARE the page. 2 on /about and the homepage,
+   * whose H1 already exists. Default keeps existing callers byte-identical
+   * except /about, which now passes 2 so the faces are doors, not the fold.
    *
-   * It is also the only thing that distinguishes the two jobs this section
-   * does, so it is where the visual distinction is set (see about-faces.css):
-   * level 1 means the section OPENS the page, so it carries the page's title
-   * at display-1 and pays the chrome's top spacing instead of the section
-   * rhythm; level 2 means it is a section inside a page that already has a
-   * title, so it wears the section heading size and the full rhythm.
+   * --lead (display-1, chrome top pad) is roster + headingLevel 1 only.
+   * portrait never takes --lead or --solo: that pair is the poster.
    */
   headingLevel?: 1 | 2
+  size?: 'roster' | 'portrait'
+  /** Call / Text on the face row. Off on /team/[slug], where V3Doors own that. */
+  reach?: boolean
 }) {
   const [first, ...rest] = people
   if (!first) return null
   const shown = [first, ...rest]
+  const lead = headingLevel === 1 && size === 'roster'
 
   return (
     <section
@@ -43,8 +46,9 @@ export function AboutFaces({
       className={cn(
         V3_ROOT_CLASS,
         'about-faces',
-        headingLevel === 1 && 'about-faces--lead',
-        shown.length === 1 && 'about-faces--solo',
+        lead && 'about-faces--lead',
+        shown.length === 1 && size === 'roster' && 'about-faces--solo',
+        size === 'portrait' && 'about-faces--portrait',
       )}
       aria-labelledby="faces-heading"
     >
@@ -75,7 +79,7 @@ export function AboutFaces({
                 {person.name}
               </Link>
               {person.title ? <p className="about-faces__title">{person.title}</p> : null}
-              {person.tel ? (
+              {reach && person.tel ? (
                 <div className="about-faces__reach-row">
                   <a
                     href={`tel:${person.tel}`}

@@ -2,7 +2,6 @@
   "note": "ci:taste-canon — SHRINK-ONLY. tasteReview JSON exists but has no on-disk desktop + 375 PNGs (or evaluator is still pending). A route leaves by binding shots.desktop and shots.mobile375. No route may be added.",
   "generatedAt": "2026-09-06T00:00:00.000Z",
   "routes": [
-    "design_system/ryan-realty/ui_kits/homepage-v6/parity.json",
     "design_system/ryan-realty/ui_kits/place-type/parity.json",
     "design_system/ryan-realty/ui_kits/place-type-community/parity.json"
   ]

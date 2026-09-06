@@ -5,10 +5,6 @@
       "allowed": 1,
       "reason": "`loan * 0.005` — a 0.5%/yr PMI rate. This file already takes its mortgage rate, tax and insurance from the engine through props (see its page.tsx), which is why it carries only this row; PMI is the one figure it still invents, and no ingested PMI series exists."
     },
-    "components/site/listing-detail/MortgageCalculator.tsx": {
-      "allowed": 2,
-      "reason": "DEFAULT_RATE_PCT = 7.0, TAX_FALLBACK_PCT = 0.85, INSURANCE_PER_300K = 1000. Same client-bundle shape as the row above."
-    },
     "components/tools/AppreciationCalculator.tsx": {
       "allowed": 1,
       "reason": "DEFAULT_APPRECIATION_RATE_PCT = 4.5. No ingested appreciation series exists yet, so the engine has nothing to hand it — this row is the tracking of that gap, and the file's own comment already calls the staleness risk out."

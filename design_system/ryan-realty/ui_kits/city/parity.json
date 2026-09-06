@@ -166,5 +166,15 @@
     "V3Quiet (outbound edges)",
     "V3Ledger (Explore other cities, D84/D86/D87)",
     "V3Footer"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-06",
+    "score": 67,
+    "beats": "Zillow's Bend, OR real estate page on the city Atlas: live pins inside Bend's recorded boundary with type toggles, and no leftover HUD tiles on the hero photograph.",
+    "evaluator": "separate grok-4.6 evaluator, place-pages pass, session 01a06fc0",
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/city/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/city/shots/mobile375.png"
+    }
+  }
 }

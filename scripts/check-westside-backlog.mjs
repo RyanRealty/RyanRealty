@@ -39,10 +39,9 @@ checks.push({
 
 const nav = src('lib/site-nav.ts')
 checks.push({
-  label: 'site-nav footer + buy rail link /luxury-homes-bend',
+  label: 'site-nav buy rail links /luxury-homes-bend',
   ok:
     nav.includes("href: '/luxury-homes-bend'") &&
-    /KB_FOOTER_COLUMNS[\s\S]*luxury-homes-bend/.test(nav) &&
     /KB_TOP_NAV[\s\S]*luxury-homes-bend/.test(nav),
 })
 

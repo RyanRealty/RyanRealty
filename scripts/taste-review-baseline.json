@@ -2,11 +2,8 @@
   "note": "ci:taste-canon \u2014 SHRINK-ONLY. Public routes whose parity.json has no tasteReview block yet. A route leaves by earning an evaluator pass (design_system/public/TASTE.md); no route may be added.",
   "generatedAt": "2026-09-02T03:49:30.976Z",
   "routes": [
-    "design_system/ryan-realty/ui_kits/about/parity.json",
     "design_system/ryan-realty/ui_kits/buy/parity.json",
     "design_system/ryan-realty/ui_kits/cities/parity.json",
-    "design_system/ryan-realty/ui_kits/city/parity.json",
-    "design_system/ryan-realty/ui_kits/community/parity.json",
     "design_system/ryan-realty/ui_kits/compare/parity.json",
     "design_system/ryan-realty/ui_kits/contact/parity.json",
     "design_system/ryan-realty/ui_kits/invest/parity.json",
@@ -14,15 +11,11 @@
     "design_system/ryan-realty/ui_kits/market-report-annual/parity.json",
     "design_system/ryan-realty/ui_kits/market-report-detail/parity.json",
     "design_system/ryan-realty/ui_kits/market-report-region/parity.json",
-    "design_system/ryan-realty/ui_kits/market-report/parity.json",
-    "design_system/ryan-realty/ui_kits/neighborhood/parity.json",
     "design_system/ryan-realty/ui_kits/oregon-city/parity.json",
     "design_system/ryan-realty/ui_kits/price-drops/parity.json",
     "design_system/ryan-realty/ui_kits/reviews/parity.json",
-    "design_system/ryan-realty/ui_kits/search/parity.json",
     "design_system/ryan-realty/ui_kits/sell/parity.json",
     "design_system/ryan-realty/ui_kits/subdivision/parity.json",
-    "design_system/ryan-realty/ui_kits/team/parity.json",
     "design_system/ryan-realty/ui_kits/zip/parity.json"
   ]
 }

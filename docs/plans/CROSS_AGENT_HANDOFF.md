@@ -1,4 +1,16 @@
-# Current — 2026-09-05 (dataviz skill)
+# Current — 2026-09-06 (site pages e2e)
+
+Waves 0–8 of `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` are on `main`.
+Looked at localhost 1440/375. Separate evaluators wrote `tasteReview` + PNG
+receipts (scores 48–74 — honest, not 86). LOOP_SENTINEL stays off. Do not mix
+untracked `_cma-*` / deep-audit punchlist scripts.
+
+Remaining: city-slug search is still a second map chrome; MOS two-bar on the
+hub vs the MOS page; Tetherow belonging still reads as a KPI row.
+
+---
+
+# Previous — 2026-09-05 (dataviz skill)
 
 `.claude/skills/dataviz/` is the chart method TASTE.md named and that
 this session did not load. Form first, navy on cream, thin marks, Geist

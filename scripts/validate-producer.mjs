@@ -322,6 +322,16 @@ const CAPABILITY_AND_BRAIN_PATHS = new Set([
   'video_production_skills/tool-mastery',
   'video_production_skills/viral-playbook',
   'social_media_skills/meme-research',
+  // Place-page LP producers refused 2026-09-06: the public site URL is the
+  // landing page. These SKILL.md files are refuse stubs, not 11-section producers.
+  'marketing_brain_skills/producers/expired-listing-lp',
+  'marketing_brain_skills/producers/site-city-page',
+  'marketing_brain_skills/producers/site-community-page',
+  'marketing_brain_skills/producers/site-listing-page',
+  'marketing_brain_skills/producers/site-neighborhood-page',
+  'marketing_brain_skills/producers/site-page-create',
+  'marketing_brain_skills/producers/site-property-landing',
+  'marketing_brain_skills/producers/site-subdivision-page',
   // Section H brain components
   'marketing_brain_skills/weekly-cycle',
   'marketing_brain_skills/diagnose-performance',

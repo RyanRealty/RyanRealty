@@ -676,6 +676,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         history={history}
         onSave={saveListingFromStrip}
         initialSaved={initialSaved}
+        ratePct={calcDefaults?.mortgageRate ?? null}
       />
       {openHouses.length > 0 ? (
         <OpenHouses
@@ -698,6 +699,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           <MortgageCalculator
             listPrice={wholePropertyPrice}
             taxAnnualAmount={listing.taxAnnualAmount}
+            hoaMonthly={listing.hoaMonthly}
             ratePct={calcDefaults?.mortgageRate ?? null}
           />
         </div>

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { BrokerSaleTile } from '@/lib/data'
-import { publishOwnClosingRows } from './sale-rows'
+import {
+  factualFallbackBio,
+  hasRealPersonalRecord,
+  PERSONAL_RECORD_FLOOR,
+  publishFirmClosingRows,
+  publishOwnClosingRows,
+} from './sale-rows'
 
 function sale(overrides: Partial<BrokerSaleTile> = {}): BrokerSaleTile {
   return {
@@ -85,5 +91,48 @@ describe('publishOwnClosingRows', () => {
       }),
     ])
     expect(row?.what).toBe('Moonshadow Court, Bend')
+  })
+
+  it('puts beds, baths, and sqft on the house row', () => {
+    const [row] = publishOwnClosingRows([
+      sale({
+        ListingKey: 'specs',
+        BedroomsTotal: 3,
+        BathroomsTotal: 2.5,
+        TotalLivingAreaSqFt: 1800,
+        SubdivisionName: 'Northwest Crossing',
+      }),
+    ])
+    expect(row?.detail).toBe('3 bd · 2.5 ba · 1,800 sqft · Northwest Crossing')
+  })
+})
+
+describe('hasRealPersonalRecord', () => {
+  it('treats four closings as thin, not a dashboard', () => {
+    expect(PERSONAL_RECORD_FLOOR).toBeGreaterThan(4)
+    expect(hasRealPersonalRecord(4)).toBe(false)
+    expect(hasRealPersonalRecord(PERSONAL_RECORD_FLOOR)).toBe(true)
+  })
+
+  it('does not write a thin tally into the fallback bio', () => {
+    expect(
+      factualFallbackBio({
+        displayName: 'Rebecca Ryser Peterson',
+        firstName: 'Rebecca',
+        closings: 4,
+        phone: '541.250.3380',
+      }),
+    ).not.toMatch(/closed 4/)
+  })
+})
+
+describe('publishFirmClosingRows', () => {
+  it('keeps closed 977 sales and drops the rest', () => {
+    const rows = publishFirmClosingRows([
+      sale({ ListingKey: 'keep', CloseDate: '2025-06-01', ClosePrice: 500000, PostalCode: '97701' }),
+      sale({ ListingKey: 'ashland', CloseDate: '2025-06-01', ClosePrice: 500000, PostalCode: '97520' }),
+      sale({ ListingKey: 'open', CloseDate: null, ClosePrice: 500000, StandardStatus: 'Active' }),
+    ])
+    expect(rows.map((row) => row.id)).toEqual(['keep'])
   })
 })

@@ -235,7 +235,7 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
     case 'realEstateListing':
       return prune({
         '@context': 'https://schema.org',
-        '@type': 'SingleFamilyResidence',
+        '@type': 'RealEstateListing',
         name: input.name,
         description: input.description,
         url: absoluteUrl(input.url),

@@ -42,9 +42,12 @@ export { toNum, toInt, toTimestamp, toDate, toBool, toText } from '@/lib/listing
 // Tier 1 derived metrics + the PITI rate policy live in lib/listing-tier1.ts
 // (file-size budget split); re-exported so existing importers are unchanged.
 export {
-  computeTier1, computeMonthlyPiti, normalizePitiRate, DEFAULT_PITI_RATE,
+  computeTier1, computeMonthlyPiti, computeMonthlyPitiBreakdown, normalizePitiRate,
+  DEFAULT_PITI_RATE, DEFAULT_PITI_INSURANCE_RATE,
+  DEFAULT_PITI_DOWN_PAYMENT_FRACTION, DEFAULT_PITI_DOWN_PAYMENT_PCT,
+  DEFAULT_PITI_TERM_MONTHS, DEFAULT_PITI_TERM_YEARS,
 } from '@/lib/listing-tier1'
-export type { Tier1Input, MonthlyPitiInput } from '@/lib/listing-tier1'
+export type { Tier1Input, MonthlyPitiInput, MonthlyPitiBreakdown } from '@/lib/listing-tier1'
 
 
 // ---------------------------------------------------------------------------

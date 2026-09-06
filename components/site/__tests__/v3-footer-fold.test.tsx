@@ -32,7 +32,7 @@ describe('the footer fold', () => {
     const out = html()
     const wanted = V3_FOOTER_COLUMNS.flatMap((c) => c.links.map((l) => l.href))
     const got = new Set(hrefs(out))
-    expect(wanted.length).toBeGreaterThan(30)
+    expect(wanted.length).toBeGreaterThan(20)
     for (const href of wanted) expect(got.has(href), href).toBe(true)
   })
 
@@ -77,6 +77,12 @@ describe('the footer fold', () => {
     expect(out).not.toMatch(/onclick=/i)
   })
 
+  it('does not ship a solid primary button', () => {
+    const out = html()
+    expect(out).not.toMatch(/<button/)
+    expect(out).not.toMatch(/v3-btn/)
+  })
+
   it('still carries the Oregon Data Share attribution OUTSIDE any fold', () => {
     // ODS display rules put source identification and the reliability
     // disclaimer on every IDX display. Behind a disclosure is not on display.
@@ -94,21 +100,41 @@ describe('the footer fold', () => {
     expect(out.indexOf('Privacy')).toBeGreaterThan(lastFoldEnd)
   })
 
-  it('renders Places as city > neighborhoods/communities >> subdivisions', () => {
+  it('closes on the Bend cityscape band with the real wordmark', () => {
     const out = html()
-    const cities = out.indexOf('>Cities</p>')
-    const hoods = out.indexOf('>Neighborhoods and communities</p>')
-    const plats = out.indexOf('>Subdivisions</p>')
-    const around = out.indexOf('>Around here</p>')
-    expect(cities).toBeGreaterThan(-1)
-    expect(hoods).toBeGreaterThan(cities)
-    expect(plats).toBeGreaterThan(hoods)
-    expect(around).toBeGreaterThan(plats)
-    expect(out).toMatch(/data-depth="1"/)
-    expect(out).toMatch(/data-depth="2"/)
-    expect(out).toMatch(/data-depth="3"/)
-    const places = V3_FOOTER_COLUMNS.find((c) => c.heading === 'Places')
-    expect(places?.groups?.length).toBe(4)
-    expect(places?.links.length).toBe(places?.groups?.flatMap((g) => g.links).length)
+    expect(out).toContain('/images/footer/bend-cityscape.jpg')
+    expect(out).toContain('/images/brand/logo-horizontal-navy-transparent.png')
+    expect(out).toContain('Central Oregon')
+    expect(out).not.toMatch(/v3-btn/)
+  })
+
+  it('renders city columns, not Buy / Areas leftovers', () => {
+    const out = html()
+    expect(V3_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
+      'Bend',
+      'Redmond',
+      'Sisters',
+      'Sunriver',
+      'La Pine · Terrebonne · Prineville · Madras',
+      'Sell',
+      'About',
+    ])
+    expect(out).toContain('Homes for sale in Bend')
+    expect(out).toContain('Bend housing market')
+    expect(out).toContain('>Tetherow<')
+    expect(out).toContain('>La Pine</p>')
+    expect(out).toContain('>Terrebonne</p>')
+    expect(out).not.toContain('>Places</')
+    expect(out).not.toContain('>Areas</')
+    expect(out).not.toMatch(/<summary class="v3-footer__column-title">Homes/)
+    expect(out).not.toMatch(/<summary class="v3-footer__column-title">Buy/)
+    const more = V3_FOOTER_COLUMNS.find((c) => c.heading.startsWith('La Pine'))
+    expect(more?.groups?.map((g) => g.heading)).toEqual([
+      'La Pine',
+      'Terrebonne',
+      'Prineville',
+      'Madras',
+    ])
+    expect(more?.links.length).toBe(more?.groups?.flatMap((g) => g.links).length)
   })
 })

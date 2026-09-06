@@ -445,6 +445,9 @@ export default async function CentralOregonRegionPage() {
               `Central Oregon market report${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstLiveFigure, ...restLiveFigures]}
+            /* First viewport is the verdict + chart, not the leftover KPI wall.
+               Extra-type, pace, and mix tiles fold the way city pages fold. */
+            foldAfter={2}
             source={v3Text(liveTrace)}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             chart={regionChart}

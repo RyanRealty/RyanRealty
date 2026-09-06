@@ -1,6 +1,6 @@
 'use client'
 /**
- * Makes the footer's five sitemap disclosures tell the truth at every width.
+ * Makes the footer's sitemap disclosures tell the truth at every width.
  *
  * THE DEFECT. The server rendered each column as a `<details>` and CSS forced
  * its list visible from 56.25rem up while leaving the element closed. There, a
@@ -22,8 +22,8 @@
  * screen, and the control still works if someone wants to collapse one.
  *
  * 56.25rem and not 40rem: it is the width the sitemap goes five columns across.
- * At the two- and three-column steps in between, five open groups measured a
- * 1,989px footer, which is the wall the fold exists to prevent.
+ * At the two- and three-column steps in between, open groups measured a
+ * footer taller than the page, which is the wall the fold exists to prevent.
  */
 import { useEffect } from 'react'
 

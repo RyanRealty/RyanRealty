@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { monthsOfSupply, marketVerdict, MOS_METHODOLOGY_CLAUSE } from './classify'
+import { monthsOfSupply, marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL } from './classify'
 
 describe('monthsOfSupply (canonical §0 formula)', () => {
   it('computes active / (closed6mo / 6)', () => {
@@ -36,5 +36,12 @@ describe('MOS_METHODOLOGY_CLAUSE (no false "times 2" / "30 days")', () => {
   it('describes the canonical 6-month formula', () => {
     expect(MOS_METHODOLOGY_CLAUSE).toContain('last 6 months')
     expect(MOS_METHODOLOGY_CLAUSE).not.toMatch(/30 days|times 2/i)
+  })
+})
+
+describe('MOS_PLAIN_LABEL', () => {
+  it('names the comparison, not a MOS tile', () => {
+    expect(MOS_PLAIN_LABEL).toBe('homes for sale vs a month of sales')
+    expect(MOS_PLAIN_LABEL).not.toMatch(/MOS|months of supply/i)
   })
 })

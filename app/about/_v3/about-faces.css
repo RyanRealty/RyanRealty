@@ -189,3 +189,46 @@
     display: none;
   }
 }
+
+/* /team/[slug]: one normal headshot, not the roster poster (--solo + carousel-h).
+   Section pad is 7.5rem on a wide window — that is the cream lake under a
+   7.5rem photo. Portrait uses working pad so Call/Text can sit on the fold. */
+.about-faces--portrait {
+  padding-block: var(--v3-space-xl);
+}
+
+.about-faces--portrait .about-faces__grid {
+  grid-template-columns: 1fr;
+}
+
+.about-faces--portrait .about-faces__item {
+  display: grid;
+  grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--v3-space-sm);
+}
+
+.about-faces--portrait .about-faces__photo-link {
+  width: var(--v3-card-photo-h);
+}
+
+.about-faces--portrait .about-faces__name {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .about-faces--portrait .about-faces__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-faces--portrait .about-faces__item {
+    display: grid;
+    grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--v3-space-sm);
+  }
+
+  .about-faces--portrait .about-faces__photo-link {
+    width: var(--v3-card-photo-h);
+  }
+}

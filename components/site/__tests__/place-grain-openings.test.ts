@@ -75,6 +75,11 @@ describe('city opening', () => {
     expect(page).toMatch(/browsePath: homesForSalePath\(cityName\)/)
     expect(page).toMatch(/layout="pulse"/)
   })
+
+  it('folds leftover market figures and does not title the about as in plain words', () => {
+    expect(page).toMatch(/foldAfter=\{2\}/)
+    expect(page).not.toMatch(/in plain words/)
+  })
 })
 
 describe('neighborhood pace', () => {
@@ -245,6 +250,17 @@ describe('master-plan opening', () => {
       'membership tiers',
       'acres',
     ])
+  })
+
+  it('mounts belonging facts as an Instrument, then Atlas, then one sold chart', () => {
+    const page = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+    expect(page).toMatch(/id="facts"/)
+    expect(page).toMatch(/belongingFigures\(richContent, placeCharacter\)/)
+    expect(page).toMatch(/<V3Atlas/)
+    expect(page).toMatch(/placeMedianChart\(/)
+    expect(page).toMatch(/foldAfter=\{2\}/)
+    expect(page.indexOf('id="facts"')).toBeLessThan(page.indexOf('<V3Atlas'))
+    expect(page.indexOf('<V3Atlas')).toBeLessThan(page.indexOf('id="market"'))
   })
 
   it('keeps the counted set even when a tile has no photograph', () => {

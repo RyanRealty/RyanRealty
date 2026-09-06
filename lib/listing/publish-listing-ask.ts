@@ -11,6 +11,7 @@
  */
 
 import { publishSaleAskAmount } from '@/lib/listing/publish-listing-figure'
+import { computeMonthlyPiti, type MonthlyPitiInput } from '@/lib/listing-tier1'
 
 export type PublishedListingAsk = {
   ask: number
@@ -93,13 +94,28 @@ export function formatListingAsk(ask: number): string {
   return `$${ask.toLocaleString('en-US')}`
 }
 
-/** Face estimate next to the ask. Leftover PITI only — miss omits. */
+/** Face estimate next to the ask. Whole-dollar leftover of monthly PITI — miss omits. */
 export function publishListingEstPaymentLabel(
   piti: number | null | undefined,
 ): string | null {
   const amount = asPositivePrice(piti)
   if (amount == null) return null
   return `Est. $${amount.toLocaleString('en-US')}/mo`
+}
+
+/**
+ * Face Est. $/mo from the one PITI formula. Same inputs the listing
+ * calculator seeds: listPrice, taxAnnual, hoaMonthly, DEFAULT_PITI_RATE
+ * (or the live 30-yr rate both surfaces receive), 0.35%/yr insurance.
+ */
+export function publishListingEstPayment(input: MonthlyPitiInput): {
+  piti: number
+  label: string
+} | null {
+  const piti = computeMonthlyPiti(input)
+  const label = publishListingEstPaymentLabel(piti)
+  if (piti == null || label == null) return null
+  return { piti, label }
 }
 
 /** Place-page listing cards and map pins. Null when there is no ask. */

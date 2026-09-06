@@ -7,11 +7,12 @@
  * DESTINATIONS COME FROM lib/site-nav.ts. Not one href is typed in this file.
  * The column set is a REQUIRED prop, and the value every public page passes is
  * V3_FOOTER_COLUMNS below, which is KB_FOOTER_COLUMNS itself rather than a copy
- * of it. The legal row defaults to LEGAL_LINKS, so a caller cannot drop the
- * privacy, terms, accessibility, fair-housing, DMCA, or site-index links by
- * forgetting a prop. A surface that legitimately needs a different set (a
- * tokenized service node, an off-graph annex) passes one and the difference is
- * visible in its own diff.
+ * of it: city columns (Bend, Redmond, Sisters, Sunriver, then the smaller
+ * cities), then Sell, then About. The legal row defaults to LEGAL_LINKS, so a
+ * caller cannot drop the privacy, terms, accessibility, fair-housing, DMCA, or
+ * site-index links by forgetting a prop. A surface that legitimately needs a
+ * different set (a tokenized service node, an off-graph annex) passes one and
+ * the difference is visible in its own diff.
  *
  * WHY THE COLUMNS ARE A PROP AND NOT AN INTERNAL READ: the heading of each
  * column is the accessible name of the nav landmark it opens, and a landmark's
@@ -76,34 +77,14 @@ export type V3FooterColumn = {
 }
 
 /**
- * The locked destination words (docs/plans/PUBLIC_PRODUCT/ia-lock.md), keyed by
- * the site-nav heading they rename.
- *
- * THIS IS A SECOND COPY OF THE MAP IN V3Chrome.tsx, ON PURPOSE, AND THE TWO
- * MUST AGREE. They cannot share one: V3Chrome carries 'use client', so a server
- * component reading a value out of it gets a client reference rather than the
- * object, and importing this file from there would drag the whole footer into
- * the client bundle. Six string pairs duplicated across a boundary that cannot
- * be crossed is the cheaper defect than a header that says Places over a footer
- * that says Areas, which is what the chrome shipped before this map existed.
- */
-const LOCKED_LABEL: Readonly<Record<string, string | undefined>> = {
-  Buy: 'Homes',
-  Areas: 'Places',
-  Market: 'Market',
-  Sell: 'Sell',
-  About: 'About',
-  'Your account': 'Saved',
-}
-
-/**
- * The canonical sitemap columns: lib/site-nav.ts for every destination, the IA
- * lock for every word. A column the lock has no word for keeps its own heading
- * rather than being dropped, because dropping it would delete destinations.
+ * The canonical sitemap columns: lib/site-nav.ts for every destination and
+ * heading. Header chrome still remaps Buy/Areas to Homes/Places; the footer
+ * does not — PAGE_OUTLINE.md Footer is city-named SEO anchors, not the top-bar
+ * intent labels.
  */
 export const V3_FOOTER_COLUMNS: readonly V3FooterColumn[] = KB_FOOTER_COLUMNS.map(
   (column) => ({
-    heading: LOCKED_LABEL[column.heading] ?? column.heading,
+    heading: column.heading,
     links: column.links,
     groups: column.groups,
   }),
@@ -291,15 +272,18 @@ export function V3Footer({
 
   return (
     <footer id={id} className={cn(V3_ROOT_CLASS, 'v3-footer', className)}>
-      <div className="v3-footer__inner">
-        <div className="v3-footer__brand">
+      <div className="v3-footer__cityscape">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/footer/bend-cityscape.jpg"
+          alt=""
+          width={2100}
+          height={900}
+          decoding="async"
+        />
+        <div className="v3-footer__cityscape-copy">
           <Link href="/" className="v3-footer__mark" aria-label="Ryan Realty home">
-            {/* Plain img, not next/image, for the reason V3Stage states for its
-                poster and V3Chrome states for the same asset: an owned brand
-                file that must render on any path without depending on
-                image-host configuration, and a wordmark that brand law renders
-                pre-rendered rather than re-typeset. Intrinsic dimensions are on
-                the element so the block reserves its space. */}
+            {/* Plain img, not next/image: owned brand file, pre-rendered wordmark. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/images/brand/logo-horizontal-navy-transparent.png"
@@ -309,6 +293,11 @@ export function V3Footer({
               decoding="async"
             />
           </Link>
+          <p className="v3-footer__cityscape-place">Central Oregon</p>
+        </div>
+      </div>
+      <div className="v3-footer__inner">
+        <div className="v3-footer__brand">
           <ul className="v3-footer__contact">
             <li>
               <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
@@ -354,10 +343,9 @@ export function V3Footer({
             <nav className="v3-footer__column" aria-label={column.heading} key={column.heading}>
               {/*
                 A native disclosure, and the only interactive element this footer
-                has ever had. On a phone the five columns stacked to 2,599px — the
-                tallest thing on every page on the site, 52 destinations nobody
-                scrolls to. Folded, the reader sees five group names with their
-                counts and opens the one they want.
+                has ever had. On a phone the city columns stacked past 2,000px —
+                destinations nobody scrolls to. Folded, the reader sees the city
+                names with their counts and opens the one they want.
 
                 It SHIPS OPEN and V3FooterFold closes it on a phone. Inverted,
                 a reader without JavaScript — and a crawler that does not run it

@@ -115,4 +115,9 @@ describe('neighborhood page first screen', () => {
     expect(code).toMatch(/cityFallback/)
     expect(code).not.toMatch(/\bplat\b|\bnest\b|\bsibling\b|\bCDP\b|\bFeeders\b/)
   })
+
+  it('folds leftover market figures and does not title the about as in plain words', () => {
+    expect(code).toMatch(/foldAfter=\{2\}/)
+    expect(code).not.toMatch(/in plain words/)
+  })
 })

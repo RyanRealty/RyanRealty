@@ -1,19 +1,7 @@
 /* Placeholder fill for app/about/loading.tsx, and nothing else.
 
-   GEOMETRY IS NOT DEFINED HERE. The skeleton wears ./about-faces.css and the
-   Quiet measure tokens, so the boxes it reserves ARE the boxes the real page
-   lands in. This file adds one thing: a quiet fill for the rows that will hold
-   TEXT. Tokens come from components/site/v3/tokens.css via V3_ROOT_CLASS.
-
-   WHY THE PORTRAIT SLOTS ARE RESERVED BUT NEVER PAINTED. The first viewport is
-   three alpha-matted broker cutouts on cream, and CLAUDE.md section 3 forbids
-   re-creating a rectangular box behind a portrait with a background fill. A
-   filled 2:3 block would be exactly that box, flashed for as long as the page
-   takes to stream. The slot holds its size and shows nothing.
-
-   No radius is written here either: --v3-radius-card is 0 in both registers.
-   The retired skeleton this replaced drew rounded-lg cards, which is a corner
-   the public site does not have anywhere. */
+   First screen is the opening Quiet (who we are + Call/Text), not the faces
+   poster. Tokens from components/site/v3/tokens.css via V3_ROOT_CLASS. */
 
 .v3 .about-loading__fill {
   background: var(--v3-hairline);
@@ -63,27 +51,7 @@
   height: calc(var(--v3-size-body-sm) * var(--v3-leading-control));
 }
 
-/* The H1 in .about-faces__head. DISPLAY-1, because the skeleton's section
-   carries .about-faces--lead exactly as the page's does, and about-faces.css
-   pins display-2 only on the non-lead variant: the rendered H1 is a 67.2px /
-   73.92px line box at 1280 (measured on the served page, not derived), 565px
-   of glyphs. Reserving display-2 would hand the fold a 35px jump. */
-.v3 .about-loading__heading {
-  width: 35rem;
-  max-width: 80%;
-  height: calc(var(--v3-size-display-1) * var(--v3-leading-heading));
-}
-
-/* One name door per broker, on the row that carries Call and Text. The row
-   already holds its own 44px tap floor, so this bar only stands in for the
-   glyphs (75px for the shortest of the three names, measured). */
-.v3 .about-loading__name {
-  width: 7rem;
-  max-width: 55%;
-  height: calc(var(--v3-size-body) * var(--v3-leading-heading));
-}
-
-/* The Quiet below the faces: V3Quiet's section pad, measure and text measure. */
+/* The Quiet: V3Quiet's section pad, measure and text measure. */
 .v3.about-loading__quiet {
   max-width: var(--v3-measure);
   margin: 0 auto;
@@ -96,6 +64,32 @@
   max-width: 70%;
   height: calc(var(--v3-size-display-2) * var(--v3-leading-heading));
   margin-bottom: var(--v3-space-lg);
+}
+
+/* Opening Quiet H1 (Call / Text first, not the faces poster). */
+.v3.about-loading__quiet--lead {
+  padding-top: var(--v3-space-lg);
+  border-top: none;
+}
+
+.v3.about-loading__quiet--lead .about-loading__subhead {
+  width: 35rem;
+  max-width: 80%;
+  height: calc(var(--v3-size-display-1) * var(--v3-leading-heading));
+}
+
+.v3.about-loading__quiet .about-loading__reach {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--v3-space-md);
+  max-width: var(--v3-measure-text);
+}
+
+.v3.about-loading__quiet .about-loading__reach-row {
+  width: 12rem;
+  max-width: 70%;
+  min-height: var(--v3-tap);
+  border-top: var(--v3-rule-hairline);
 }
 
 .v3.about-loading__quiet .about-loading__lines {

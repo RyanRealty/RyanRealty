@@ -112,5 +112,15 @@
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-06",
+    "score": 61,
+    "beats": "Zillow and Redfin Central Oregon market pages: claim-first year overlay chart with a source stamp under the series.",
+    "evaluator": "separate grok-4.6 evaluator, conversion-market-search pass, session 01a06fc0",
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/market-report/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/market-report/shots/mobile375.png"
+    }
   }
 }

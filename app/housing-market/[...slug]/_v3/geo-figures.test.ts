@@ -79,6 +79,14 @@ describe('buildLiveFigures — list median digits', () => {
     expect(live.trace).toMatch(/leftover membership/)
     expect(live.trace).not.toMatch(/live MLS/)
   })
+
+  it('labels MOS in plain language, not a months-of-supply tile, and does not lead with it', () => {
+    const live = buildLiveFigures(hud(), '4.9', 'Bend')
+    const labels = live.figures.map((f) => String(f.label))
+    expect(labels).toContain('homes for sale vs a month of sales')
+    expect(labels).not.toContain('months of supply')
+    expect(labels[0]).not.toBe('homes for sale vs a month of sales')
+  })
 })
 
 describe('buildCityPeriodFigures — leftover 12-month overlay', () => {

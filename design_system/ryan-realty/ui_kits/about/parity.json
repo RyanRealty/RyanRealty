@@ -1,8 +1,8 @@
 {
   "route": "app/about/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, a concrete origin, live city inventory, and direct-broker doors. Zero marketing-speak except the locked D11 mission sentence.",
-  "note": "Look 2026-08-14: About = faces. Order is Breadcrumb, AboutFaces (live broker cutouts, compact H1, name door, Call and Text on the face row), Quiet (origin facts only), Instrument (founded / firm license / principal broker, no seller ask), Atlas (the service area as the living map, from buildPlaceAtlas), Proof (the newest reviews), Quiet (locked D11 mission below the fold, then FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job (owned media) without V3Stage's full-bleed frame, which would box the transparent PNGs. The family's Sheet lives on /contact and /team/[slug]. A new on-page form here would be a new capture contract. Seller lives on Sell. The next tap is the name or the number. D11: the mission sentence is the one virtue-word exception, exact words, We, and it does not ship on the first screen. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with Call/Text and firm proof, then brokers as doors. Origin is short Quiet below the fold. Licenses are one sourced line, not a KPI hero.",
+  "note": "PAGE_INVENTORY §6 / PAGE_OUTLINE 2026-09-05. Order is Breadcrumb, Quiet #who (H1 About Ryan Realty · Bend, one line, Call/Text), V3Proof (firm Google), FirmClosings (house-row closings), AboutFaces headingLevel 2 (doors, not a fold poster), Atlas, Quiet #about (How it started + firm/PB license line, OREA source), V3Answers, Footer. No V3Instrument. D11 mission is off this page. Dates render in Pacific through formatDate.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,22 +16,22 @@
     },
     {
       "name": "AboutFaces",
-      "section": "First viewport. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts at conversation scale (card-photo token, not a 70vh yearbook). Name is the door to /team/[slug]. Title, Call, and Text sit under the portrait from the live broker phone and title. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no mission graf.",
+      "section": "Brokers as doors after firm proof, headingLevel 2. Canonical /images/brokers/*.png at conversation scale. Name, title, Call, Text. Not the fold poster.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, ONCE (2026-09-02, was twice). After the faces, below the fold: origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. The closing block moved to V3Answers.",
+      "section": "Twice, not adjacent: #who (H1 + Call/Text) then later #about (short origin + firm/PB license as sourced facts, not a KPI Instrument).",
+      "blocking": true
+    },
+    {
+      "name": "FirmClosings",
+      "section": "Recent Ryan Realty closings as the one house row. Child of the page so about/page.tsx never mounts a city-stats Ledger.",
       "blocking": true
     },
     {
       "name": "V3Answers",
       "section": "Pattern 8, closing. The same ABOUT_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with the three edges /about has not offered yet (Value my home, Homes for sale, Central Oregon housing market) in the left rail. Replaces the closing V3Quiet 2026-09-02: as prose it measured 1,491px at 1440 with 8 paragraphs, no figure and no control, which is the wall of text TASTE.md bans by name, and four of those paragraphs restated a section above them. The D11 mission sentence went with them — VOICE.md permits it on About and requires it nowhere, and it opened on smallness positioning. No answer moved behind script: a closed disclosure is still in the served HTML.",
-      "blocking": true
-    },
-    {
-      "name": "V3Instrument",
-      "section": "Pattern 1, once. Founded date, firm license OREA 201253677, principal broker license linking /team/matthew-ryan. Source line names Oregon Real Estate Agency. No seller ask on this Instrument. Seller lives on Sell. The valuation door stays a Quiet link in the closing FAQ.",
       "blocking": true
     },
     {
@@ -69,6 +69,10 @@
     {
       "name": "V3Field",
       "reason": "Pattern 2 is live inventory as a spatial surface. It opens Homes. Using it here would compete with /homes-for-sale."
+    },
+    {
+      "name": "V3Instrument",
+      "reason": "Licenses are one sourced Quiet line (firm + PB), not a KPI hero."
     }
   ],
   "removedComponents": [
@@ -87,16 +91,27 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- the three brokers, transparent PNGs, each a door to /team/[slug]",
-    "V3Quiet #about -- how it started, the concrete origin, zero marketing-speak",
-    "V3Instrument #record -- the verified record, with live city inventory behind it",
-    "V3Atlas #service-area -- where we work, the living map (replaced the city Ledger 2026-09-02)",
-    "V3Proof #proof -- the newest verified Google reviews with their record",
-    "V3Answers #faq -- working with Ryan Realty, four questions and three edges",
+    "V3Quiet #who -- About Ryan Realty · Bend, Call, Text",
+    "V3Proof #proof -- firm Google reviews",
+    "FirmClosings #firm-sales -- recent Ryan Realty closings, house row",
+    "AboutFaces -- the three brokers as doors, headingLevel 2",
+    "V3Atlas #service-area -- where we work",
+    "V3Quiet #about -- how it started plus licenses as one sourced line",
+    "V3Answers #faq -- working with Ryan Realty",
     "V3Footer"
   ],
   "openDefects": {
     "_": "Closed 2026-08-27.",
     "items": []
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-06",
+    "score": 53,
+    "beats": "Windermere Central Oregon About: Call and Text land in the first viewport instead of a mission paragraph.",
+    "evaluator": "separate grok-4.6 evaluator, conversion-market-search pass, session 01a06fc0",
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/about/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/about/shots/mobile375.png"
+    }
   }
 }

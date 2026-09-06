@@ -106,7 +106,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     keywords: [
       `${geoName} housing market`,
       `${geoName} real estate`,
-      `${geoName} homes for sale`,
       `${citySlug} market stats`,
       'Central Oregon',
       'Ryan Realty',

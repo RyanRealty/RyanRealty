@@ -48,11 +48,11 @@ export function brokerageTileToRow(tile: PriceDropTile, opts?: { anyArea?: boole
   if (!opts?.anyArea && !inServiceArea(tile.PostalCode)) return null
   const price = tile.ClosePrice ?? tile.ListPrice
   if (price == null || !(price > 0)) return null
-  // City now lives in `what` (publishCardAddress), so `detail` carries only
-  // the subdivision -- printing it again here would duplicate the city.
+  // City now lives in `what` (publishCardAddress). detail is the house row:
+  // beds · baths · sqft, then subdivision — never the city again.
   const what = addressLine(tile)
   const sub = displaySubdivision(tile.SubdivisionName)
-  const detailParts = [sub].filter((part): part is string => Boolean(part && part.trim()))
+  const detailParts = [houseRowSpecs(tile), sub].filter((part): part is string => Boolean(part && part.trim()))
   const photo = (tile.PhotoURL ?? '').trim()
   return {
     href: listingTileHref({
@@ -64,7 +64,7 @@ export function brokerageTileToRow(tile: PriceDropTile, opts?: { anyArea?: boole
     }),
     when: v3Text(soldWhen(tile.CloseDate)),
     what: v3Text(what),
-    detail: detailParts.length > 0 ? v3Text(detailParts.join(', ')) : undefined,
+    detail: detailParts.length > 0 ? v3Text(detailParts.join(' · ')) : undefined,
     value: v3Text(formatPriceExact(price)),
     id: tile.ListingKey,
     media: photo ? { src: photo } : undefined,
@@ -91,13 +91,52 @@ export function publishOwnClosingRows(brokerSales: BrokerSaleTile[]): V3LedgerFi
     .filter((row): row is V3LedgerFigureRow => row !== null)
 }
 
+/**
+ * PAGE_INVENTORY §6: four closings is thin. Do not print as a dashboard.
+ * Personal Atlas / Ledger / Instrument only at or above this count.
+ */
+export const PERSONAL_RECORD_FLOOR = 5
+
+export function hasRealPersonalRecord(count: number): boolean {
+  return count >= PERSONAL_RECORD_FLOOR
+}
+
+/** Newest firm closings for the shared house-row ledger on /about and /team/[slug]. */
+export function publishFirmClosingRows(
+  tiles: readonly PriceDropTile[],
+  limit = 8,
+): V3LedgerFigureRow[] {
+  return tiles
+    .filter((t) => t.ClosePrice != null && (t.CloseDate != null || /clos|sold/i.test(t.StandardStatus ?? '')))
+    .sort((a, b) => new Date(b.CloseDate ?? 0).getTime() - new Date(a.CloseDate ?? 0).getTime())
+    .map((t) => brokerageTileToRow(t))
+    .filter((row): row is V3LedgerFigureRow => row !== null)
+    .slice(0, limit)
+}
+
+function houseRowSpecs(tile: PriceDropTile): string | null {
+  const parts: string[] = []
+  if (typeof tile.BedroomsTotal === 'number' && Number.isFinite(tile.BedroomsTotal)) {
+    parts.push(`${Math.round(tile.BedroomsTotal)} bd`)
+  }
+  if (typeof tile.BathroomsTotal === 'number' && Number.isFinite(tile.BathroomsTotal)) {
+    const baths = tile.BathroomsTotal
+    const bathsLabel = Number.isInteger(baths) ? String(baths) : String(Math.round(baths * 10) / 10)
+    parts.push(`${bathsLabel} ba`)
+  }
+  if (typeof tile.TotalLivingAreaSqFt === 'number' && tile.TotalLivingAreaSqFt > 0) {
+    parts.push(`${Math.round(tile.TotalLivingAreaSqFt).toLocaleString('en-US')} sqft`)
+  }
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
 export function factualFallbackBio(opts: {
   displayName: string
   firstName: string
   closings: number
   phone: string | null
 }): string {
-  if (opts.closings > 0) {
+  if (hasRealPersonalRecord(opts.closings)) {
     return `${opts.firstName} has closed ${opts.closings} homes across Central Oregon, for both buyers and sellers.`
   }
   if (opts.phone) {

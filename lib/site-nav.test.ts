@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  FOOTER_NAV,
   KB_ABOUT_DROPDOWN,
   KB_FOOTER_COLUMNS,
   KB_MENU_GROUPS,
@@ -63,6 +64,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(hrefs).toContain('/tools/rental-property-calculator')
     expect(hrefs).toContain('/months-of-supply')
     expect(hrefs).toContain('/how-we-get-our-numbers')
+    expect(hrefs).toContain('/newsletter')
   })
 
   it('Menu+ mirrors intent groups; About includes Join', () => {
@@ -98,45 +100,66 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('footer About column carries team trust links', () => {
     const about = KB_FOOTER_COLUMNS.find((c) => c.heading === 'About')
     const hrefs = about?.links.map((l) => l.href) ?? []
-    for (const h of ['/about', '/team', '/reviews', '/contact', '/refer-a-client']) {
+    for (const h of ['/team', '/reviews', '/contact', '/book']) {
       expect(hrefs).toContain(h)
     }
   })
 
-  it('footer Market column opens the monthly briefing door', () => {
-    const market = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Market')
-    const hrefs = market?.links.map((l) => l.href) ?? []
-    expect(hrefs).toContain('/newsletter')
-  })
-
-  it('footer Places column is the place grain, not a flat equal-weight list', () => {
-    const areas = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Areas')
-    expect(areas?.groups?.map((g) => g.heading)).toEqual([
-      'Cities',
-      'Neighborhoods and communities',
-      'Subdivisions',
-      'Around here',
+  it('footer columns are city SEO groups, not Buy / Areas leftovers', () => {
+    expect(KB_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
+      'Bend',
+      'Redmond',
+      'Sisters',
+      'Sunriver',
+      'La Pine · Terrebonne · Prineville · Madras',
+      'Sell',
+      'About',
     ])
-    expect(areas?.groups?.map((g) => g.depth)).toEqual([1, 2, 3, undefined])
-    const hrefs = footerColumnLinks(areas!).map((l) => l.href)
-    expect(areas?.links.map((l) => l.href)).toEqual(hrefs)
-    expect(hrefs).toEqual([
-      '/cities',
-      '/cities/bend',
-      '/cities/redmond',
-      '/cities/sisters',
-      '/cities/sunriver',
-      '/cities/la-pine',
+    const bend = footerColumnLinks(KB_FOOTER_COLUMNS[0]!)
+    expect(bend.map((l) => l.href)).toEqual([
+      '/homes-for-sale/bend',
+      '/housing-market/bend',
       '/neighborhoods',
-      '/communities',
-      '/subdivisions',
-      '/schools',
-      '/parks',
-      '/central-oregon/trails',
-      '/central-oregon/events',
+      '/communities/tetherow',
+      '/communities/broken-top',
+      '/communities/northwest-crossing',
+      '/communities/awbrey-glen',
     ])
-    expect(hrefs.some((h) => /^\/subdivisions\/.+/.test(h))).toBe(false)
-    expect(hrefs.some((h) => /^\/communities\/.+/.test(h))).toBe(false)
+    expect(bend.map((l) => l.label)).toEqual([
+      'Homes for sale in Bend',
+      'Bend housing market',
+      'Bend neighborhoods',
+      'Tetherow',
+      'Broken Top',
+      'NorthWest Crossing',
+      'Awbrey Glen',
+    ])
+    const redmond = footerColumnLinks(KB_FOOTER_COLUMNS.find((c) => c.heading === 'Redmond')!)
+    expect(redmond.map((l) => l.href)).toEqual([
+      '/homes-for-sale/redmond',
+      '/housing-market/redmond',
+      '/communities/eagle-crest',
+      '/communities/pronghorn',
+    ])
+    const sell = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Sell')
+    expect(sell?.links.map((l) => l.href)).toEqual(['/sell#get-value', '/our-homes'])
+    expect(sell?.links.map((l) => l.label)).toEqual(['Value my home', 'Our listings'])
+    expect(FOOTER_NAV).toBe(KB_FOOTER_COLUMNS)
+    const communityHrefs = KB_FOOTER_COLUMNS.flatMap((c) =>
+      footerColumnLinks(c).map((l) => l.href).filter((h) => h.startsWith('/communities/')),
+    )
+    const allowed = new Set([
+      '/communities/tetherow',
+      '/communities/broken-top',
+      '/communities/northwest-crossing',
+      '/communities/awbrey-glen',
+      '/communities/eagle-crest',
+      '/communities/pronghorn',
+      '/communities/black-butte-ranch',
+      '/communities/caldera-springs',
+      '/communities/crosswater',
+    ])
+    for (const href of communityHrefs) expect(allowed.has(href), href).toBe(true)
   })
 
   it('no group lists the same href twice', () => {

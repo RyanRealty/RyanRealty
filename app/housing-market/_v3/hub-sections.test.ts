@@ -16,7 +16,7 @@ describe('buildSfrFollowFigures — list median digits', () => {
     expect(String(list?.value)).not.toContain('$730,000')
   })
 
-  it('orders median list price, homes for sale, months of supply, then days to pending (parity.json market-report requiredComponents)', () => {
+  it('orders median list price, homes for sale, MOS in plain language, then days to pending (parity.json market-report requiredComponents)', () => {
     const figures = buildSfrFollowFigures(
       {
         medianList: 729875,
@@ -28,16 +28,18 @@ describe('buildSfrFollowFigures — list median digits', () => {
     expect(figures.map((f) => String(f.label))).toEqual([
       'median list price, single-family',
       'homes for sale, single-family',
-      'months of supply, single-family',
+      'homes for sale vs a month of sales',
       'days to an offer, last 90 days, single-family',
     ])
+    expect(String(figures[0]?.label)).not.toBe('homes for sale vs a month of sales')
   })
 
-  it('omits months of supply when the raw value is absent, never a fabricated figure', () => {
+  it('omits the MOS figure when the raw value is absent, never a fabricated figure', () => {
     const figures = buildSfrFollowFigures(
       { medianList: 729875, active: 1200, daysToPending: 14 },
       null,
     )
+    expect(figures.some((f) => String(f.label).includes('month of sales'))).toBe(false)
     expect(figures.some((f) => String(f.label).includes('months of supply'))).toBe(false)
   })
 })

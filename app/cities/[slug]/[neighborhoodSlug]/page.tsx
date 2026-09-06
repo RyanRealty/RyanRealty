@@ -575,6 +575,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             eyebrow={v3Text(`${neighborhood.name} · Market`)}
             headline={v3Text(`${neighborhood.name} market`)}
             figures={[firstMarketFigure, ...restMarketFigures]}
+            foldAfter={2}
             source={v3Text(neighborhoodMarketTrace(neighborhood.name, false))}
             chart={medianChart}
             cards={marketCards}
@@ -596,7 +597,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
           <V3Quiet
             id="about"
             eyebrow={`${neighborhood.name} · ${cityName}`}
-            heading={`${neighborhood.name}, in plain words`}
+            heading={neighborhood.name}
             items={aboutItems}
           />
         ) : null}

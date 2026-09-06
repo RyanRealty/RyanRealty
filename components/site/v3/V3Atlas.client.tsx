@@ -675,10 +675,7 @@ export function V3Atlas({
     if (counts.forSale <= 0 && counts.pending <= 0 && counts.sold <= 0) {
       return 'Switch a type back on, or slide the price.'
     }
-    const parts = [`${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)}${every} for sale${ceiling}`]
-    if (counts.pending > 0) parts.push(`${counts.pending.toLocaleString('en-US')} pending`)
-    if (counts.sold > 0) parts.push(`${counts.sold.toLocaleString('en-US')} sold in the last 30 days`)
-    return `${parts.join(', ')}.`
+    return `${counts.forSale.toLocaleString('en-US')} ${filterPhrase}${noun(counts.forSale)}${every} for sale${ceiling}.`
   }, [counts, atCeiling, maxPrice, noun, incomplete, filterPhrase, allTypesOn, closingsMap])
 
   /* The pulses: the newest real events, with slots per kind so closes always

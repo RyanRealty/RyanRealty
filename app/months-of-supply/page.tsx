@@ -159,6 +159,7 @@ import {
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import {
   MOS_METHODOLOGY_CLAUSE,
+  MOS_PLAIN_LABEL,
   MOS_THRESHOLD_CLAUSE,
   marketVerdict,
 } from '@/lib/market/classify'
@@ -202,6 +203,7 @@ import {
   MOS_FAQ_TITLE,
   type MosFaq,
 } from './_v3/mos-constants'
+import { buildMosSupplyChart } from './_v3/mos-chart'
 
 export const revalidate = 300
 
@@ -264,21 +266,64 @@ export default async function MonthsOfSupplyPage() {
   const regionMos = regionHud.monthsSupply
   const regionVerdict = marketVerdict(regionMos)
   const regionStamp = refreshStamp(regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt)
+  const regionMosText = regionMos != null ? formatMonthsOfSupply(regionMos) : null
 
-  // Every region figure is a door into the region report, which is the page that
-  // publishes the row these three numbers come from.
+  // The worked identity: the formula rearranged on the two live region figures
+  // already on screen. An exact identity of those numbers, not a second source. It
+  // needs a months of supply above zero, because inverting a zero divides by it.
+  const worked =
+    regionHud.active != null &&
+    regionHud.active > 0 &&
+    regionMos != null &&
+    regionMos > 0
+      ? {
+          active: regionHud.active,
+          mos: regionMos,
+          avgMonthlyClosings: Math.round((regionHud.active / regionMos) * 10) / 10,
+          impliedSixMonthTotal: Math.round((regionHud.active / regionMos) * 6),
+        }
+      : null
+
+  const mosChart =
+    worked && regionMosText
+      ? buildMosSupplyChart({
+          homesForSale: worked.active,
+          monthOfSales: worked.avgMonthlyClosings,
+          mosText: regionMosText,
+        })
+      : undefined
+
+  // First-screen figures are the two bars (homes for sale, a month of sales),
+  // not a 3.9 MOS tile. Extra-type and pace tiles still publish, folded.
   const regionFigures: V3InstrumentFigure[] = []
-  if (regionMos != null) {
+  if (worked) {
     regionFigures.push({
-      value: v3Text(formatMonthsOfSupply(regionMos)),
-      label: v3Text('months of supply in Central Oregon'),
+      value: v3Text(worked.active.toLocaleString('en-US')),
+      label: v3Text('homes for sale'),
       href: MOS_REGION_REPORT,
     })
-  }
-  if (regionHud.active != null && regionHud.active > 0) {
+    regionFigures.push({
+      value: v3Text(worked.avgMonthlyClosings.toFixed(1)),
+      label: v3Text('a month of sales'),
+      href: MOS_REGION_REPORT,
+    })
+  } else if (regionMosText) {
+    regionFigures.push({
+      value: v3Text(regionMosText),
+      label: v3Text(MOS_PLAIN_LABEL),
+      href: MOS_REGION_REPORT,
+    })
+    if (regionHud.active != null && regionHud.active > 0) {
+      regionFigures.push({
+        value: v3Text(regionHud.active.toLocaleString('en-US')),
+        label: v3Text('homes for sale'),
+        href: MOS_REGION_REPORT,
+      })
+    }
+  } else if (regionHud.active != null && regionHud.active > 0) {
     regionFigures.push({
       value: v3Text(regionHud.active.toLocaleString('en-US')),
-      label: v3Text('active single-family listings'),
+      label: v3Text('homes for sale'),
       href: MOS_REGION_REPORT,
     })
   }
@@ -293,7 +338,7 @@ export default async function MonthsOfSupplyPage() {
     if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
     regionFigures.push({
       value: v3Text(formatMonthsOfSupply(row.monthsOfSupply)),
-      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
+      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · ${MOS_PLAIN_LABEL}`),
       href: publicSegmentBrowseHref(null, row.segment),
     })
   }
@@ -311,22 +356,6 @@ export default async function MonthsOfSupplyPage() {
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
-
-  // The worked identity: the formula rearranged on the two live region figures
-  // already on screen. An exact identity of those numbers, not a second source. It
-  // needs a months of supply above zero, because inverting a zero divides by it.
-  const worked =
-    regionHud.active != null &&
-    regionHud.active > 0 &&
-    regionMos != null &&
-    regionMos > 0
-      ? {
-          active: regionHud.active,
-          mos: regionMos,
-          avgMonthlyClosings: Math.round((regionHud.active / regionMos) * 10) / 10,
-          impliedSixMonthTotal: Math.round((regionHud.active / regionMos) * 6),
-        }
-      : null
 
   // City rows. A city earns a row when the live query returned one AND that row
   // carries a months of supply, because the Ledger's value column is a figure and a
@@ -500,16 +529,19 @@ export default async function MonthsOfSupplyPage() {
         />
 
         {firstRegionFigure ? (
-          // D9 leftover on purpose (A27): the term plus today's region MoS is a
-          // singleton status. getPriceHistory has no months-of-supply series.
+          // First screen: formula + two-bar (homes for sale vs a month of
+          // sales). Extra-type and pace tiles fold; they are not a 16-tile dump.
           <V3Instrument
             id="months-of-supply"
             level={1}
             eyebrow={v3Text('Real estate glossary')}
             headline={v3Text('Months of supply')}
+            note={v3Text(MOS_METHODOLOGY_CLAUSE)}
             figures={[firstRegionFigure, ...restRegionFigures]}
+            foldAfter={2}
             source={v3Text(regionTrace)}
             updated={regionStamp ? v3Text(regionStamp) : undefined}
+            chart={mosChart}
             // PRIMARY, and stated rather than defaulted. This is the page's one
             // visible filled control at every width (see the header): at 390 the
             // chrome's own CTA is inside the collapsed menu and has no box.

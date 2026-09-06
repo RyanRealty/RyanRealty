@@ -1,8 +1,8 @@
 /**
- * /communities/[slug] — master-plan grain. First screen is H1 `{Name} homes
- * for sale` + living atlas, the same composition as city / neighborhood /
- * subdivision. Atlas is the inventory graphic. MOS / sold / verdict / DTP stay
- * off the face. Tetherow leftover is the 16 SFR pile, not alias Field length.
+ * /communities/[slug] — master-plan grain. First screen is owned still + H1
+ * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit in
+ * Instrument, not leftover HUD. Atlas is the inventory graphic. MOS / sold /
+ * verdict / DTP stay off the face.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
  * regions and Split overlayBoundaries.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
@@ -118,7 +118,9 @@ import { buildPlaceKnowledge } from './_v3/place-knowledge'
 import { measuredPlaceHoaInput } from './_v3/place-hoa-measured'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import {
+  belongingFigures,
   belongingHeadline,
+  belongingTrace,
   communityLibraryHero,
   communitySplitListings,
   communityTypeStripItems,
@@ -318,6 +320,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     stagePoster(slug, community.heroImageUrl, libraryHero) ??
     cityStagePoster(cityHeroes[citySlug], cityLibraryHeroUrl)
   const headline = belongingHeadline(publicName, richContent)
+  const belonging = belongingFigures(richContent, placeCharacter)
 
   const amenityBlogSlugs = (richContent?.amenities ?? [])
     .map((a) => a.blog_slug)
@@ -683,6 +686,17 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             </V3Heading>
           </div>
         </div>
+        {belonging.length > 0 ? (
+          <V3Instrument
+            id="facts"
+            level={2}
+            eyebrow={v3Text(publicName)}
+            headline={v3Text(`What ${publicName} is`)}
+            figures={belonging}
+            foldAfter={2}
+            source={v3Text(belongingTrace(publicName))}
+          />
+        ) : null}
         {(
           <V3Atlas
             id="atlas"
@@ -723,7 +737,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             eyebrow={v3Text(`${publicName} · Sold`)}
             headline={v3Text(marketHeadline)}
             figures={[firstMarketFigure, ...restMarketFigures]}
-            foldAfter={5}
+            foldAfter={2}
             source={v3Text(
               `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
                 `detached single-family houses assigned to ${publicName} by boundary membership. ` +

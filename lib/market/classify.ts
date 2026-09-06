@@ -37,6 +37,12 @@ export const MOS_METHODOLOGY_CLAUSE =
   'Months of supply = active listings divided by average monthly closings over the last 6 months (homes closed in the last 6 months divided by 6).'
 
 /**
+ * Plain-language name for the MOS figure (DATA_GRAPHICS / TASTE).
+ * The drawing is homes for sale vs a month of sales, not a "3.9 MOS" tile.
+ */
+export const MOS_PLAIN_LABEL = 'homes for sale vs a month of sales'
+
+/**
  * Threshold sentence, and it must read the way marketVerdict() computes. The old
  * wording said "Under 4 months is a seller's market, 4 to 6 is balanced", which
  * contradicts the function at exactly 4.0: `mos <= MOS_SELLER_MAX` calls 4.0 a

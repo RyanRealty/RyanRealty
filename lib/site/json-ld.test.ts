@@ -10,6 +10,10 @@ describe('buildJsonLd', () => {
   describe('realEstateListing offers (a sold/pending home is not for sale)', () => {
     const base = { type: 'realEstateListing', name: '123 Main St', listPrice: 750000 } as const
 
+    it('publishes RealEstateListing, not a residence type Google will not treat as a listing', () => {
+      expect(buildJsonLd(base)['@type']).toBe('RealEstateListing')
+    })
+
     it('Active -> InStock offer at the list price', () => {
       const offer = rec(buildJsonLd({ ...base, availability: 'Active' }).offers)
       expect(offer).toMatchObject({

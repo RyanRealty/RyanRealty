@@ -1,45 +1,27 @@
 /**
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (2026-08-14): About = faces. The first viewport is the live brokers'
- * canonical transparent PNGs (no card, no wash, no box). Name is the door.
- * Call and text sit on the face row. Quiet (origin) then Instrument (verified
- * licenses) then Atlas (the service area as the living map) then Proof (the
- * newest reviews) then Answers (the questions, as disclosures). PUBLIC_UI.md
- * opens About on Quiet + Sheet. The Sheet stays on /contact and /team/[slug].
- * A new on-page form here would be a new capture contract. Seller lives on
- * Sell. The next tap is the name or the number.
+ * PAGE_INVENTORY §6 / PAGE_OUTLINE /about (locked 2026-09-05):
+ * 1. One line who we are · Call · Text
+ * 2. Firm proof (V3Proof)
+ * 3. Firm sales (same house row)
+ * 4. Brokers as doors, not a poster that eats the fold
+ * 5. Atlas of the service area
+ * 6 and 7. How it started (short Quiet) + licenses as one sourced line, not a KPI
+ * 8. V3Answers
  *
- * THE CLOSING SECTION IS V3Answers, NOT A SECOND V3Quiet (2026-09-02). As a
- * Quiet it measured 1,491px at 1440 and 1,697px at 375 — the tallest section on
- * the page — 8 paragraphs, 229 words, no figure, no media, no control, which is
- * the wall of text TASTE.md bans by name ("FAQ blocks count. If the prose is
- * needed for search, it sits under a disclosure or beside a display, never as
- * the section"). Four of those paragraphs restated a section above them, and
- * three of its six doors repeated the origin section's three. The rebuild is
- * the barrel primitive V3Answers: the questions as native disclosures, the
- * remaining edges beside them. Nothing moved behind script — every answer is
- * still in the served HTML, and the FAQPage JSON-LD names the same four.
+ * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
+ * JSON-LD (AboutPage + aboutOrganization + BreadcrumbList + FAQPage),
+ * V3SectionTracker pageType="about", revalidate 3600.
  *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
- * pageMetadata, MetadataBlock JSON-LD (AboutPage + aboutOrganization +
- * BreadcrumbList + FAQPage), a rendered V3SectionTracker with pageType="about",
- * revalidate 3600, and the route. MetadataBlock stays on the legacy register
- * (JSON-LD). V3SectionTracker is a v3 island, not an eighth pattern.
- *
- * No invented quote. MLS remarks N/A. The D11 mission sentence is off this
- * page — see the reason in ./_v3/about-constants.ts.
- *
- * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
- * The KB articles rail (now deleted) formatted with timeZone UTC. formatDate is
- * pinned to America/Los_Angeles. The city Ledger stamp uses formatDate.
+ * No invented quote. MLS remarks N/A. D11 mission sentence is off this page.
+ * Dates render in Pacific through formatDate.
  *
  * Parity: design_system/ryan-realty/ui_kits/about/parity.json
  */
 
 import type { Metadata } from 'next'
-import { getBrokers, getReviews } from '@/lib/data'
+import { getBrokers, getBrokerageListingTiles, getReviews } from '@/lib/data'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
@@ -49,18 +31,16 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath, teamPath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { BRAND, BROKERS } from '@/lib/brand/contact'
+import { BRAND, BROKERS, CONTACT } from '@/lib/brand/contact'
 import {
   V3_ROOT_CLASS,
   v3Text,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Quiet,
   V3Answers,
   V3SectionTracker,
-  type V3InstrumentFigure,
   type V3QuietItem,
   type V3Answer,
   type V3AnswersDoor,
@@ -71,10 +51,13 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { ABOUT_FAQ_ITEMS, FIRM_LICENSE } from './_v3/about-constants'
 import { AboutFaces } from './_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from './_v3/about-faces'
+import { FirmClosings } from './_v3/FirmClosings'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
+import { publishFirmClosingRows } from '@/app/team/[slug]/_v3/sale-rows'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 
 const ROUTE_PATH = '/about'
+const OFFICE_NAME = 'Ryan Realty'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
@@ -97,12 +80,11 @@ export const revalidate = 3600
 export default async function AboutPage() {
   const brokers = await getBrokers()
 
-  // The service area as the living map, from the same population the
-  // homepage hero reads, plus the newest verified reviews with their record.
-  const [atlasRead, regionAtlas, reviewSummary] = await Promise.all([
+  const [atlasRead, regionAtlas, reviewSummary, brokerageTiles] = await Promise.all([
     withTimeoutFallback(buildPlaceAtlas({ cities: [], label: 'Central Oregon' }).catch(() => null), null, 6000, 'about atlas'),
     buildRegionAtlasRegions().catch(() => null),
     getReviews(6).catch(() => null),
+    getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }).catch(() => []),
   ])
   const atlas = atlasRead ?? EMPTY_PLACE_ATLAS
   const atlasRegions = regionAtlas?.regions ?? []
@@ -110,7 +92,7 @@ export default async function AboutPage() {
   const reviewCount = reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : quotes.length
   const reviewAverage = reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
   const newestReview = quotes.find((q) => q.date)?.date ?? null
-
+  const firmRows = publishFirmClosingRows(brokerageTiles)
 
   const orderedBrokers = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
@@ -120,43 +102,40 @@ export default async function AboutPage() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
+  const whoItems: V3QuietItem[] = [
+    {
+      kind: 'prose',
+      body: `A Bend brokerage, open since ${BRAND.foundedLabel}.`,
+    },
+    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
+    { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
+  ]
+
   const originItems: V3QuietItem[] = [
     {
       kind: 'prose',
-      body: [
-        `Matt Ryan opened Ryan Realty in Bend in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from Hjalmar "Red" Erickson.`,
-        'When the comps do not support the price you want, we say so before you sign anything. Every listing gets a video, a 3D walkthrough, and its own page here.',
-        'The broker you first speak to is the broker who works your purchase or sale through to close. No hand-off.',
-      ],
+      body: `Matt Ryan opened Ryan Realty in Bend in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from Hjalmar "Red" Erickson.`,
     },
-    { label: 'Broker profiles', href: '/team' },
-    { label: 'Client reviews', href: '/reviews' },
-    { label: 'Call, text, or write', href: '/contact' },
   ]
 
-  const licenseFigures: V3InstrumentFigure[] = [
-    { value: v3Text(BRAND.foundedLabel), label: v3Text('founded') },
-    { value: v3Text(FIRM_LICENSE), label: v3Text('firm license') },
+  const licenseFigures: V3QuietItem[] = [
+    { kind: 'fact', term: 'Firm license', value: FIRM_LICENSE },
     {
-      value: v3Text(`OR #${BROKERS.matt.license}`),
-      label: v3Text('principal broker'),
+      label: `Principal broker OR #${BROKERS.matt.license}`,
       href: teamPath(BROKERS.matt.slug),
     },
   ]
-  const [firstLicense, ...restLicense] = licenseFigures
 
-  // The first question opens on arrival, so the control shows its work rather
-  // than leaving the section as four unexplained lines.
   const faqAnswers: V3Answer[] = ABOUT_FAQ_ITEMS.map((item, index) => ({
     question: item.question,
     body: item.answer,
     open: index === 0,
   }))
 
-  // Broker profiles, Client reviews, and Call text or write are NOT repeated
-  // here: the origin section carries those three doors, and this section sits
-  // four sections below it. What is left is what /about has not offered yet.
   const faqDoors: V3AnswersDoor[] = [
+    { label: 'Broker profiles', href: '/team' },
+    { label: 'Client reviews', href: '/reviews' },
+    { label: 'Call, text, or write', href: '/contact' },
     { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
     { label: 'Homes for sale', href: listingsBrowsePath() },
     { label: 'Central Oregon housing market', href: '/housing-market' },
@@ -185,15 +164,6 @@ export default async function AboutPage() {
     },
   ]
 
-  // THE PER-BROKER DOORS ARE GONE FROM THE CLOSING SECTION (2026-09-02). They
-  // labelled themselves "<name>, <title>" and pointed at /team/<slug>, which is
-  // what the three faces at the top of the page already are, and they sat one
-  // row from the roster answer that states the same three names with their
-  // titles and their Oregon license numbers. Three copies of the roster on one
-  // page was the duplication this rebuild cut; the roster answer is the copy
-  // that carries a fact the other two do not. aboutDisplayName still resolves
-  // the faces' names in ./_v3/about-faces.ts, which is the call site that made
-  // the page publish one spelling per broker.
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -201,41 +171,13 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        <AboutFaces people={faces} heading="About Ryan Realty" />
-
         <V3Quiet
-          id="about"
-          heading="How it started"
-          headingLevel={2}
-          items={originItems}
+          id="who"
+          heading="About Ryan Realty · Bend"
+          headingLevel={1}
+          items={whoItems}
         />
 
-        {firstLicense ? (
-          <V3Instrument
-            id="record"
-            level={2}
-            eyebrow={v3Text('Verified record')}
-            headline={v3Text('Open since June 2023')}
-            figures={[firstLicense, ...restLicense]}
-            source={v3Text(
-              'Oregon Real Estate Agency. Ryan Realty LLC firm license and the principal broker license on file.',
-            )}
-          />
-        ) : null}
-
-        <V3Atlas
-          id="service-area"
-          headingLevel={2}
-          headline={v3Text('Where we work')}
-          dots={atlas.dots}
-          regions={atlasRegions}
-          basemap={basemapForRegions(atlasRegions)}
-          types={atlas.types}
-          events={atlas.events}
-          source={atlas.source}
-          stamp={atlas.stamp}
-          incomplete={!atlas.complete}
-        />
         {quotes.length > 0 ? (
           <V3Proof
             id="proof"
@@ -255,6 +197,34 @@ export default async function AboutPage() {
             record={false}
           />
         ) : null}
+
+        {/* id="firm-sales" — FirmClosings mounts the house-row Ledger. */}
+        <FirmClosings rows={firmRows} />
+
+        <AboutFaces people={faces} heading="The brokers" headingLevel={2} />
+
+        <V3Atlas
+          id="service-area"
+          headingLevel={2}
+          headline={v3Text('Where we work')}
+          dots={atlas.dots}
+          regions={atlasRegions}
+          basemap={basemapForRegions(atlasRegions)}
+          types={atlas.types}
+          events={atlas.events}
+          source={atlas.source}
+          stamp={atlas.stamp}
+          incomplete={!atlas.complete}
+        />
+
+        <V3Quiet
+          id="about"
+          heading="How it started"
+          headingLevel={2}
+          items={[...originItems, ...licenseFigures]}
+          note="Oregon Real Estate Agency. Ryan Realty LLC firm license and the principal broker license on file."
+        />
+
         <V3Answers
           id="faq"
           eyebrow="Common questions"

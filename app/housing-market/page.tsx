@@ -458,6 +458,10 @@ export default async function HousingMarketHubPage() {
               `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
+            /* First viewport is the verdict + chart, not the leftover KPI wall.
+               Pace, mix, and extra-type tiles fold behind "All N figures" the
+               way city pages fold the long tail. */
+            foldAfter={2}
             source={v3Text(
               `${
                 publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)

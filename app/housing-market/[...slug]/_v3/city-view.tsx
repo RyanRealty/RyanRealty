@@ -143,6 +143,10 @@ export function CityMarketView({
           eyebrow={v3Text(`${cityName}, Oregon`)}
           headline={v3Text(headline)}
           figures={[firstFigure, ...restFigures] as readonly [V3InstrumentFigure, ...V3InstrumentFigure[]]}
+          /* First viewport is the verdict + chart, not the leftover KPI wall.
+             Pace, mix, extra-type, and closed-period tiles fold the way city
+             place pages fold the long tail. */
+          foldAfter={2}
           source={v3Text(trace)}
           updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           chart={chart}

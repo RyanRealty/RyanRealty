@@ -22,6 +22,38 @@
   border-top: var(--v3-rule-section);
 }
 
+/* PAGE_OUTLINE Footer: navy-on-cream Bend drawing as the closing band.
+   Wordmark overlays the cream sky. Not a second primary. */
+.v3-footer__cityscape {
+  position: relative;
+  overflow: hidden;
+  background: var(--v3-cream);
+}
+
+.v3-footer__cityscape > img {
+  display: block;
+  width: 100%;
+  height: 14rem;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.v3-footer__cityscape-copy {
+  position: absolute;
+  top: var(--v3-space-lg);
+  left: var(--v3-gutter);
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.v3-footer__cityscape-place {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
 .v3-footer__inner {
   display: grid;
   gap: var(--v3-space-xl);
@@ -110,9 +142,10 @@
 }
 
 /* Sitemap -------------------------------------------------------------------
-   One column while it is folded and five across from 56.25rem, which is the
-   count lib/site-nav.ts projects today. `minmax(0, 1fr)` rather than `1fr` so a long
-   label wraps instead of forcing the grid wider than the page. */
+   One column while it is folded. From 56.25rem, five across so the five city
+   groups sit on the first row and Sell / About wrap beneath. `minmax(0, 1fr)`
+   rather than `1fr` so a long label wraps instead of forcing the grid wider
+   than the page. */
 .v3-footer__columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -120,11 +153,12 @@
 }
 
 /* The two- and three-column steps are gone. They were the whole source of the
-   blank-cream defect: five folded groups in a two-column grid put PLACES beside
-   HOMES, and opening PLACES stretched the row to 631px while HOMES stayed 45px.
-   A grid row is as tall as its tallest cell and nothing in CSS changes that.
-   So the sitemap is ONE column wherever it is folded and five columns wherever
-   it is open, and there is no width at which a fold sits in a grid. */
+   blank-cream defect: folded groups in a two-column grid put a tall city
+   beside a short one, and opening the tall one stretched the row hundreds of
+   pixels while the short one stayed 45px. A grid row is as tall as its tallest
+   cell and nothing in CSS changes that. So the sitemap is ONE column wherever
+   it is folded and five columns wherever it is open, and there is no width at
+   which a fold sits in a grid. */
 @media (min-width: 56.25rem) {
   .v3-footer__columns {
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -296,7 +330,8 @@
    So the unfold starts at 56.25rem, the width the grid goes five across, and
    every column is OPEN from there — set by V3FooterFold, not forced visible
    here. Below it the sitemap is one folded column: at 640 with everything open
-   the footer measured 1,989px, which is the wall the fold exists to prevent. The forcing was the first attempt and it lied: the element stayed
+   the footer measured thousands of pixels, which is the wall the fold exists to
+   prevent. The forcing was the first attempt and it lied: the element stayed
    closed, so the control announced itself collapsed over thirteen visible links
    and did nothing when activated. CSS can show a disclosure's content; it
    cannot set `open`, which is what the accessibility tree reads.

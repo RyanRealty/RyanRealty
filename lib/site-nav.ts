@@ -9,7 +9,7 @@
  * Projections from this file (do not re-author separate trees):
  *   KB_TOP_NAV     — desktop top bar + caret panels (KbNav)
  *   KB_MENU_GROUPS — Menu+ / mobile overlay
- *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns
+ *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (city SEO, then Sell, then About)
  *   PRIMARY_NAV    — alias of KB_TOP_NAV for reachability gate + legacy imports
  *
  * Gate: scripts/check-nav-reachability.mjs
@@ -59,9 +59,54 @@ function footerFromGroups(heading: string, groups: FooterCluster[]): FooterGroup
   return { heading, groups, links: groups.flatMap((g) => g.links) }
 }
 
-const NEWSLETTER_SUBSCRIBE: NavLink = {
-  href: publishNewsletterSubscribeHref(),
-  label: 'Monthly briefing',
+/** City slug from a CITY_LINKS href (`/cities/la-pine` → `la-pine`). */
+function citySlugFromHref(href: string): string {
+  return href.replace(/^\/cities\//, '')
+}
+
+function footerCity(label: string): NavLink {
+  const city = CITY_LINKS.find((c) => c.label === label)
+  if (!city) {
+    throw new Error(`site-nav footer: "${label}" is not in CITY_LINKS`)
+  }
+  return city
+}
+
+function footerCommunity(label: string): NavLink {
+  const community = COMMUNITY_LINKS.find((c) => c.label === label)
+  if (!community) {
+    throw new Error(`site-nav footer: "${label}" is not in COMMUNITY_LINKS`)
+  }
+  return community
+}
+
+/** Exact-match SEO door onto city inventory. */
+function cityHomes(label: string): NavLink {
+  const city = footerCity(label)
+  return {
+    href: `/homes-for-sale/${citySlugFromHref(city.href)}`,
+    label: `Homes for sale in ${city.label}`,
+  }
+}
+
+/** Exact-match SEO door onto the city market node. */
+function cityMarket(label: string): NavLink {
+  const city = footerCity(label)
+  return {
+    href: `/housing-market/${citySlugFromHref(city.href)}`,
+    label: `${city.label} housing market`,
+  }
+}
+
+function cityFooterColumn(
+  label: string,
+  communityLabels: readonly string[] = [],
+  extra: NavLink[] = [],
+): FooterGroup {
+  return {
+    heading: label,
+    links: [cityHomes(label), cityMarket(label), ...extra, ...communityLabels.map(footerCommunity)],
+  }
 }
 
 /** A top-bar group. `href` is required — every top-level item is a real destination. */
@@ -124,6 +169,11 @@ export const VALUATION_LP: NavLink = {
   label: "Get your home's value",
 }
 
+const NEWSLETTER_SUBSCRIBE: NavLink = {
+  href: publishNewsletterSubscribeHref(),
+  label: 'Monthly briefing',
+}
+
 // ─── KB_TOP_NAV — the public top bar (SSOT) ───────────────────────────────────
 
 /**
@@ -180,6 +230,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
       { href: '/blog', label: 'Blog and guides' },
+      NEWSLETTER_SUBSCRIBE,
       { href: '/faq', label: 'FAQ' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
@@ -269,6 +320,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
       { href: '/blog', label: 'Blog and guides' },
+      NEWSLETTER_SUBSCRIBE,
       { href: '/faq', label: 'FAQ' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
@@ -305,149 +357,45 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 
 // ─── Footers (projections) ────────────────────────────────────────────────────
 
+/**
+ * Public sitemap: city-named SEO anchors, then Sell, then About.
+ * PAGE_OUTLINE.md Footer. Header stays Buy / Areas / Market / Sell / About.
+ */
+const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
+
 export const KB_FOOTER_COLUMNS: FooterGroup[] = [
-  {
-    heading: 'Buy',
-    links: [
-      { href: REGIONAL_SEARCH.href, label: 'Homes for sale' },
-      MAP_SEARCH,
-      { href: '/open-houses', label: 'Open houses' },
-      { href: '/price-drops', label: 'Price drops' },
-      { href: '/luxury-homes-bend', label: 'Luxury homes' },
-      { href: '/compare', label: 'Compare homes' },
-      { href: '/videos', label: 'Video tours' },
-    ],
-  },
-  footerFromGroups('Areas', [
-    {
-      heading: 'Cities',
-      depth: 1,
-      links: [{ href: '/cities', label: 'All cities' }, ...CITY_LINKS.slice(0, 5)],
-    },
-    {
-      // Indexes only. Dumping every GIS neighborhood or curated community
-      // here would hide the ladder the column exists to show.
-      heading: 'Neighborhoods and communities',
-      depth: 2,
-      links: [
-        { href: '/neighborhoods', label: 'All neighborhoods' },
-        { href: '/communities', label: 'All communities' },
-      ],
-    },
-    {
-      heading: 'Subdivisions',
-      depth: 3,
-      links: [{ href: '/subdivisions', label: 'All subdivisions' }],
-    },
-    {
-      heading: 'Around here',
-      links: [
-        { href: '/schools', label: 'Schools' },
-        { href: '/parks', label: 'Parks' },
-        { href: '/central-oregon/trails', label: 'Trails' },
-        { href: '/central-oregon/events', label: 'Events' },
-      ],
-    },
-  ]),
-  {
-    heading: 'Market',
-    links: [
-      { href: '/housing-market', label: 'Market overview' },
-      { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/activity', label: 'Recent activity' },
-      { href: '/months-of-supply', label: 'Months of supply' },
-      { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
-      { href: '/blog', label: 'Blog' },
-      NEWSLETTER_SUBSCRIBE,
-      { href: '/faq', label: 'FAQ' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-      { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
-    ],
-  },
+  cityFooterColumn(
+    'Bend',
+    ['Tetherow', 'Broken Top', 'NorthWest Crossing', 'Awbrey Glen'],
+    [{ href: '/neighborhoods', label: 'Bend neighborhoods' }],
+  ),
+  cityFooterColumn('Redmond', ['Eagle Crest', 'Pronghorn']),
+  cityFooterColumn('Sisters', ['Black Butte Ranch']),
+  cityFooterColumn('Sunriver', ['Caldera Springs', 'Crosswater']),
+  footerFromGroups(
+    FOOTER_MORE_CITIES.join(' · '),
+    FOOTER_MORE_CITIES.map((label) => ({
+      heading: label,
+      links: [cityHomes(label), cityMarket(label)],
+    })),
+  ),
   {
     heading: 'Sell',
-    links: [
-      { href: '/sell', label: 'Sell your home' },
-      VALUATION_FORM,
-      { href: '/our-homes', label: 'Our listings' },
-    ],
+    links: [VALUATION_FORM, { href: '/our-homes', label: 'Our listings' }],
   },
   {
     heading: 'About',
     links: [
-      { href: '/about', label: 'About Ryan Realty' },
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact' },
-      { href: '/join', label: 'Join the team' },
-      { href: '/refer-a-client', label: 'Refer a client' },
+      { href: '/book', label: 'Book a broker' },
     ],
   },
 ]
 
-/** Portal SiteFooter columns — same IA, slightly different packing for legal routes. */
-export const FOOTER_NAV: FooterGroup[] = [
-  {
-    heading: 'Buy',
-    links: [
-      { href: REGIONAL_SEARCH.href, label: 'Homes for sale' },
-      MAP_SEARCH,
-      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
-      { href: '/open-houses', label: 'Open houses' },
-      { href: '/compare', label: 'Compare homes' },
-      { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
-    ],
-  },
-  {
-    heading: 'Areas',
-    links: [
-      { href: '/cities', label: 'All cities' },
-      { href: '/cities/bend', label: 'Bend' },
-      { href: '/cities/redmond', label: 'Redmond' },
-      { href: '/cities/sisters', label: 'Sisters' },
-      { href: '/cities/sunriver', label: 'Sunriver' },
-      { href: '/cities/la-pine', label: 'La Pine' },
-      { href: '/communities', label: 'All communities' },
-      { href: '/neighborhoods', label: 'All neighborhoods' },
-      { href: '/subdivisions', label: 'All subdivisions' },
-      { href: '/communities/tetherow', label: 'Tetherow' },
-      { href: '/communities/broken-top', label: 'Broken Top' },
-    ],
-  },
-  {
-    heading: 'Market',
-    links: [
-      { href: '/housing-market', label: 'Market overview' },
-      { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/activity', label: 'Recent activity' },
-      { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
-      { href: '/blog', label: 'Blog' },
-      NEWSLETTER_SUBSCRIBE,
-      { href: '/faq', label: 'FAQ' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-    ],
-  },
-  {
-    heading: 'Sell',
-    links: [
-      { href: '/sell', label: 'Sell your home' },
-      VALUATION_FORM,
-      { href: '/our-homes', label: 'Our listings' },
-    ],
-  },
-  {
-    heading: 'About',
-    links: [
-      { href: '/team', label: 'Meet the team' },
-      { href: '/about', label: 'About us' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/book', label: 'Book a broker' },
-      { href: '/reviews', label: 'Client reviews' },
-      { href: '/join', label: 'Join the team' },
-      { href: '/refer-a-client', label: 'Refer a client' },
-    ],
-  },
-]
+/** Portal SiteFooter columns — same city IA as the public footer. */
+export const FOOTER_NAV: FooterGroup[] = KB_FOOTER_COLUMNS
 
 export const LEGAL_LINKS: NavLink[] = [
   { href: '/privacy', label: 'Privacy policy' },

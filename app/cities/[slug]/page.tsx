@@ -708,7 +708,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
                (pace, mix, finance, bed-count shares) folds behind "All N
                figures" (2026-08-27 mobile audit: the open wall ran 31 deep
                at 390px). Nothing is cut — the fold is in-section. */
-            foldAfter={5}
+            foldAfter={2}
             source={v3Text(cityInstrumentSource(cityMarketTrace(cityName, mosLabel != null), mart, cityName))}
             chart={medianChart}
             chartSecondary={placeMartCompositionChart(mart)}
@@ -751,7 +751,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           <V3Quiet
             id="about"
             eyebrow={`${cityName}, Oregon`}
-            heading={`${cityName}, in plain words`}
+            heading={cityName}
             items={aboutItems}
           />
         ) : null}

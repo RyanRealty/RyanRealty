@@ -15,6 +15,7 @@
 import type { MarketPulseSnapshot } from '@/lib/data'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPriceExact } from '@/lib/format/money'
+import { MOS_PLAIN_LABEL } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
@@ -203,7 +204,8 @@ export function buildHubLead(closedYear: CoMarketAnnualRow | null | undefined): 
 
 /**
  * Live SFR figures for the level-1 hero (2026-08-27 hero-reorder fix): median
- * list price, homes for sale, months of supply, median to pending, in that
+ * list price, homes for sale, homes for sale vs a month of sales (MOS in
+ * DATA_GRAPHICS words, not a "3.9 MOS" tile), median to pending, in that
  * order (parity.json market-report requiredComponents, V3Instrument section).
  * ONE POPULATION, ONE CLOCK: every figure here reads off the same leftover HUD
  * row the page stamps with `refreshedAt`, so this Instrument's `updated` prop
@@ -232,7 +234,7 @@ export function buildSfrFollowFigures(hud: {
   if (mosText) {
     figures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply, single-family'),
+      label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
     })
   }

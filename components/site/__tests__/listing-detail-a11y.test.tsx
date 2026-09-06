@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PriceCtaStrip } from '@/components/site/listing-detail/PriceCtaStrip'
+import { publishListingEstPayment } from '@/lib/listing/publish-listing-ask'
 
 /**
  * Accessible-name locks for the listing-detail CTA row.
@@ -135,7 +136,6 @@ describe('listing-detail CTA row accessible names', () => {
         streetName: 'Delaware',
         streetSuffix: 'Avenue',
         postalCode: '97703',
-        estimatedMonthlyPiti: 6030,
         listAgentName: 'Matt Johnson',
         listOfficeName: 'RE/MAX Key Properties',
         listAgentPhone: '541-480-2153',
@@ -147,7 +147,13 @@ describe('listing-detail CTA row accessible names', () => {
     })
     expect(html).toMatch(/<h1[^>]*>909 NW Delaware Avenue<\/h1>/)
     expect(html).toMatch(/\$999,000/)
-    expect(html).toMatch(/Est\. \$6,030\/mo/)
+    expect(html).toContain(
+      publishListingEstPayment({
+        listPrice: 999_000,
+        taxAnnual: null,
+        hoaMonthly: null,
+      })!.label,
+    )
     expect(html).toMatch(/Price drop \$76K/)
     expect(html).toMatch(/Listed by Matt Johnson, RE\/MAX Key Properties · 541-480-2153/)
   })

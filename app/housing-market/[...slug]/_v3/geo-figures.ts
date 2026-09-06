@@ -16,7 +16,7 @@
 import type { BlogPostCard, MarketDetail, MarketPulseSnapshot } from '@/lib/data'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice, formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { moneyTicks, monthTicks, seriesClaim, spacedTicks, yoyClaim } from '@/lib/charts/ticks'
@@ -111,7 +111,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
   if (mosText != null) {
     figures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply'),
+      label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
     })
   }

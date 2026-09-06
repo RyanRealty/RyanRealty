@@ -2,11 +2,11 @@
   "route": "app/team/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic brokerage team pages: real broker names, Oregon licenses, transparent-PNG headshots, verbatim Google reviews, and a door to each /team/[slug] profile.",
-  "note": "Live 2026-09-03. Index order is Breadcrumb, AboutFaces (live broker cutouts reused from about/_v3, compact H1, name door, Call and Text on the face row), V3Proof (newest four, record off — the strip of four must not sit beside a figure that says twenty-five), V3Answers (TEAM_FAQ_ITEMS as native disclosures, remaining edges in the left rail), Footer. The faces ARE the roster. A V3Ledger of the same three people was a second roster and is gone. The FAQ is no longer a Quiet prose wall. PUBLIC_UI.md opens About-family on Quiet + Sheet. The family's Sheet lives on /contact and /team/[slug]. Seller lives on Sell. Reviews: getReviews(24) newest four, TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "note": "PAGE_INVENTORY §6 / PAGE_OUTLINE 2026-09-05. /team is roster only: Breadcrumb, AboutFaces (H1 The brokers, Call/Text, door to each /team/[slug]), Footer. Not a second About. No Proof, no FAQ, no seller ask. Per-broker page: portrait face, license + firm 25/5.0 door, Call/Text/Email, firm proof + firm sales default, personal Atlas/Ledger only when hasRealPersonalRecord. No CMA form; valuation is /sell.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "CollectionPage + aboutOrganization + BreadcrumbList + FAQPage JSON-LD.",
+      "section": "CollectionPage + aboutOrganization + BreadcrumbList JSON-LD. Roster has no FAQPage.",
       "blocking": true
     },
     {
@@ -17,16 +17,6 @@
     {
       "name": "AboutFaces",
       "section": "First viewport. Same AboutFaces row as /about. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts at conversation scale. Name is the door to /team/[slug]. Title, Call, and Text sit under the portrait from the live broker phone and title. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no card graf, no seller ask. This is the only roster on the page.",
-      "blocking": true
-    },
-    {
-      "name": "V3Proof",
-      "section": "The newest four verified Google reviews, headingLevel 2, record={false} so a strip of four never sits beside a figure that says twenty-five. Door to /reviews. Same DAL read (getReviews) and the same quote shaping as /reviews.",
-      "blocking": true
-    },
-    {
-      "name": "V3Answers",
-      "section": "Pattern 8, closing. The same TEAM_FAQ_ITEMS array the FAQPage JSON-LD emits, as native disclosures, with Call / reviews / about / Value my home in the left rail. Replaces the Quiet prose wall 2026-09-03: FAQ blocks as expanded paragraphs are the wall of text TASTE.md bans by name. No answer moved behind script: a closed disclosure is still in the served HTML.",
       "blocking": true
     },
     {
@@ -57,11 +47,19 @@
     },
     {
       "name": "V3Ledger",
-      "reason": "A license ledger under the faces was a second broker roster. Licenses sit on each /team/[slug] Quiet and on /about's Instrument."
+      "reason": "A license ledger under the faces was a second broker roster. Licenses sit on each /team/[slug] Quiet and on /about's origin Quiet."
     },
     {
       "name": "V3Quiet",
-      "reason": "The FAQ was a Quiet prose wall. It is V3Answers now, the same move /about made. Origin prose is /about's job."
+      "reason": "Origin prose is /about's job. Roster is faces only."
+    },
+    {
+      "name": "V3Proof",
+      "reason": "Firm reviews live on /about and /team/[slug], not a second About on /team."
+    },
+    {
+      "name": "V3Answers",
+      "reason": "Roster only. Questions live on /about."
     },
     {
       "name": "V3Field",
@@ -81,7 +79,7 @@
   ],
   "perBrokerPage": {
     "route": "app/team/[slug]/page.tsx",
-    "note": "Live 2026-09-03. Order is Breadcrumb, AboutFaces (canonical PNG cutout, Call and Text on the face row), Quiet (bio + title + Oregon license), Instrument (closed-sale figures and year chart off getBrokerSales), Atlas (every closing with a coordinate as a dot), Ledger (newest closings, photo tiles), Proof (reviews that name this broker or name no broker, record off, door to /reviews), BrokerValuationSheet (same submitBrokerSellerLead payload), Doors (call / text / email from the live phone and email). Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only. (9) First viewport is AboutFaces, same cutout as /about and /team.",
+    "note": "PAGE_INVENTORY §6 2026-09-05. Order is Breadcrumb, AboutFaces portrait (not poster), Quiet license + firm review door, V3Doors Call/Text/Email, V3Proof firm reviews, V3Ledger firm sales, personal Instrument/Atlas/Ledger only if hasRealPersonalRecord, Quiet bio + team/reviews/sell. Valuation is /sell; no CMA sheet on this page. Invariants: (1) firm reviews, not a thin personal wall. (2) getBrokerSales still loads the personal set; display is gated. (3) JSON-LD RealEstateAgent + BreadcrumbList. (4) 977 zip filter on firm closings. (5) Direct call/text/email from live phone/email only.",
     "requiredComponents": [
       {
         "name": "V3SectionTracker",
@@ -100,37 +98,32 @@
       },
       {
         "name": "AboutFaces",
-        "section": "First viewport. Canonical PNG cutout, Call and Text on the face row. Bio Quiet sits below.",
+        "section": "Portrait headshot at card-photo scale, not AboutFaces poster size. Call/Text live on V3Doors below.",
         "blocking": true
       },
       {
         "name": "V3Quiet",
-        "section": "bio + title + Oregon license below the face",
+        "section": "Oregon license + firm Google door below the face. Bio Quiet is later.",
         "blocking": true
       },
       {
         "name": "V3Instrument",
-        "section": "Pattern 1. Closed-sale figures and the year chart, off the same getBrokerSales rows the Atlas plots.",
+        "section": "Personal closed-sale figures. Rendered only when hasRealPersonalRecord.",
         "blocking": true
       },
       {
         "name": "V3Atlas",
-        "section": "Every closing with a coordinate as a dot. Noun is closing/closings. fit=dots.",
+        "section": "Personal closings as dots. Rendered only when hasRealPersonalRecord.",
         "blocking": true
       },
       {
         "name": "V3Ledger",
-        "section": "newest closings with recorded ClosePrice via formatPriceExact",
+        "section": "Firm closings always. Personal newest closings only when hasRealPersonalRecord.",
         "blocking": true
       },
       {
         "name": "V3Proof",
-        "section": "Reviews that name this broker, or name no broker. record={false}. Door to /reviews.",
-        "blocking": true
-      },
-      {
-        "name": "BrokerValuationSheet",
-        "section": "Pattern 5, same capture contract as LeadCaptureBlock seller",
+        "section": "Firm Google reviews, same shaping as /about. record={false}. Door to /reviews.",
         "blocking": true
       },
       {
@@ -148,22 +141,31 @@
   "sectionOrder": [
     "V3SectionTracker + MetadataBlock (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- the brokers, transparent PNGs, the only roster",
-    "V3Proof #proof -- the newest four Google reviews, record off",
-    "V3Answers #faq -- working with a Bend broker, four questions and four edges",
+    "AboutFaces -- the brokers, the only roster",
     "V3Footer"
   ],
   "perBrokerSectionOrder": [
     "V3SectionTracker + JSON-LD (not sections)",
     "V3Breadcrumb",
-    "AboutFaces -- this broker's cutout",
-    "V3Quiet #profile -- bio, title, Oregon license",
-    "V3Instrument #record -- closed-sale figures and year chart",
-    "V3Atlas #closings -- every closing with a coordinate",
-    "V3Ledger #track-record -- newest closings",
-    "V3Proof #reviews -- reviews that name this broker, record off",
-    "BrokerValuationSheet -- seller capture",
+    "AboutFaces -- portrait, not poster",
+    "V3Quiet #profile -- license + firm review door",
     "V3Doors #contact-broker -- call, text, email",
+    "V3Proof #proof -- firm Google reviews",
+    "V3Ledger #firm-sales -- firm closings",
+    "V3Instrument #record -- personal, only if hasRealPersonalRecord",
+    "V3Atlas #closings -- personal, only if hasRealPersonalRecord",
+    "V3Ledger #track-record -- personal, only if hasRealPersonalRecord",
+    "V3Quiet #bio -- facts + team / reviews / sell",
     "V3Footer"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-06",
+    "score": 58,
+    "beats": "Compass and Windermere agent profiles: Call, Text, and Email are first-viewport doors with no CMA form above them.",
+    "evaluator": "separate grok-4.6 evaluator, conversion-market-search pass, session 01a06fc0",
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/team/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/team/shots/mobile375.png"
+    }
+  }
 }

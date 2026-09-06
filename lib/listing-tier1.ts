@@ -26,12 +26,21 @@ import { PROPERTY_TAX_RATE_FRACTION } from '@/lib/property-tax-rate'
  * Rate used when the caller supplies none: 6.5%, the value every row written
  * before 2026-08-17 carries. It is the FALLBACK, not the intended input —
  * keeping it means a caller that passes nothing produces a byte-identical row.
+ * Face Est. $/mo and the listing payment calculator seed this same fallback.
  */
 export const DEFAULT_PITI_RATE = 0.065
 
-const DOWN_PAYMENT_FRACTION = 0.8 // financed share, i.e. 20% down
-const TERM_MONTHS = 360
-const INSURANCE_RATE = 0.0035 // of price, per year
+/** Financed share, i.e. 20% down. Face and the calculator seed share this. */
+export const DEFAULT_PITI_DOWN_PAYMENT_FRACTION = 0.8
+export const DEFAULT_PITI_DOWN_PAYMENT_PCT = 20
+export const DEFAULT_PITI_TERM_MONTHS = 360
+export const DEFAULT_PITI_TERM_YEARS = 30
+/** Hazard insurance as a share of price per year. Face and the calculator seed share this. */
+export const DEFAULT_PITI_INSURANCE_RATE = 0.0035
+
+const DOWN_PAYMENT_FRACTION = DEFAULT_PITI_DOWN_PAYMENT_FRACTION
+const TERM_MONTHS = DEFAULT_PITI_TERM_MONTHS
+const INSURANCE_RATE = DEFAULT_PITI_INSURANCE_RATE
 
 /**
  * Coerce a caller-supplied rate to the decimal fraction the math wants.
@@ -54,21 +63,77 @@ export interface MonthlyPitiInput {
   hoaMonthly: number | null
   /** Fraction (0.0667) or percent (6.67). Null / omitted → DEFAULT_PITI_RATE. */
   mortgageRate?: number | null
+  /**
+   * Financed share of price. Omit / null → 0.8 (20% down). The listing
+   * calculator passes this when the visitor changes the down-payment field;
+   * the face estimate omits it so both seed the same cents.
+   */
+  financedFraction?: number | null
+  /**
+   * Loan term in months. Omit / null → 360. Same seed rule as financedFraction.
+   */
+  termMonths?: number | null
+  /**
+   * Annual insurance dollars. Omit / null → listPrice × 0.35%. 0 is a quote
+   * of zero, not a miss — unlike tax, where 0 means "use the fallback".
+   */
+  insuranceAnnual?: number | null
 }
 
-/** Monthly PITI rounded to cents, or null when there is no price to price. */
-export function computeMonthlyPiti(input: MonthlyPitiInput): number | null {
+export type MonthlyPitiBreakdown = {
+  pi: number
+  taxMonthly: number
+  insuranceMonthly: number
+  hoaMonthly: number
+  total: number
+}
+
+function financedShare(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value)) return DOWN_PAYMENT_FRACTION
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return value
+}
+
+function termLength(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value) || value <= 0) return TERM_MONTHS
+  return value
+}
+
+function monthlyPrincipalAndInterest(principal: number, monthlyRate: number, termMonths: number): number {
+  if (principal <= 0 || termMonths <= 0) return 0
+  if (monthlyRate === 0) return principal / termMonths
+  const growth = Math.pow(1 + monthlyRate, termMonths)
+  return (principal * monthlyRate * growth) / (growth - 1)
+}
+
+/**
+ * The one PITI breakdown. Face Est. $/mo and the listing calculator seed
+ * this with listPrice, taxAnnual, hoaMonthly, and the same rate/insurance
+ * defaults. Interactive calculator fields pass the optional overrides.
+ */
+export function computeMonthlyPitiBreakdown(input: MonthlyPitiInput): MonthlyPitiBreakdown | null {
   const { listPrice, taxAnnual, hoaMonthly } = input
   if (listPrice == null || listPrice <= 0) return null
 
   const monthlyRate = normalizePitiRate(input.mortgageRate) / 12
-  const principal = listPrice * DOWN_PAYMENT_FRACTION
-  const growth = Math.pow(1 + monthlyRate, TERM_MONTHS)
-  const pi = (principal * monthlyRate * growth) / (growth - 1)
+  const principal = listPrice * financedShare(input.financedFraction)
+  const pi = monthlyPrincipalAndInterest(principal, monthlyRate, termLength(input.termMonths))
   // 0 is treated as missing, matching the trigger: COALESCE(NULLIF(tax,0), fallback)
   const taxMonthly = (taxAnnual != null && taxAnnual > 0 ? taxAnnual : listPrice * PROPERTY_TAX_RATE_FRACTION) / 12
-  const insuranceMonthly = (listPrice * INSURANCE_RATE) / 12
-  return Math.round((pi + taxMonthly + insuranceMonthly + (hoaMonthly ?? 0)) * 100) / 100
+  const insuranceAnnual =
+    input.insuranceAnnual != null && Number.isFinite(input.insuranceAnnual)
+      ? Math.max(0, input.insuranceAnnual)
+      : listPrice * INSURANCE_RATE
+  const insuranceMonthly = insuranceAnnual / 12
+  const hoa = hoaMonthly ?? 0
+  const total = Math.round((pi + taxMonthly + insuranceMonthly + hoa) * 100) / 100
+  return { pi, taxMonthly, insuranceMonthly, hoaMonthly: hoa, total }
+}
+
+/** Monthly PITI rounded to cents, or null when there is no price to price. */
+export function computeMonthlyPiti(input: MonthlyPitiInput): number | null {
+  return computeMonthlyPitiBreakdown(input)?.total ?? null
 }
 
 // ---------------------------------------------------------------------------

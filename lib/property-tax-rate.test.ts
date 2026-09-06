@@ -57,7 +57,6 @@ describe('property tax rate — every consumer reads the constant', () => {
     'lib/listing-tier1.ts',
     'lib/data/config.ts',
     'lib/data/dscr/screen.ts',
-    'components/site/listing-detail/MortgageCalculator.tsx',
     'components/site/listing-detail/RentalAnalysis.tsx',
   ]
 

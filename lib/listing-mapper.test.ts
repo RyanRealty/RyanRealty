@@ -55,6 +55,14 @@ describe('computeTier1 (sync derived fields, audit p3.2)', () => {
     expect(t.estimated_monthly_piti as number).toBeGreaterThan(0)
   })
 
+  it('includes HOA in estimated_monthly_piti dollar-for-dollar', () => {
+    const withHoa = computeTier1(FULL).estimated_monthly_piti
+    const withoutHoa = computeTier1({ ...FULL, hoaMonthly: null }).estimated_monthly_piti
+    expect(withHoa).not.toBeNull()
+    expect(withoutHoa).not.toBeNull()
+    expect(withHoa! - withoutHoa!).toBe(100)
+  })
+
   it('all-null input → null derived fields (no NaN/crash)', () => {
     const n = computeTier1(NULLS)
     expect(n.price_per_sqft).toBeNull()

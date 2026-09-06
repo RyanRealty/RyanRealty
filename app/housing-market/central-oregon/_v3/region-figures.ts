@@ -39,7 +39,7 @@
 
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import { MOS_METHODOLOGY_CLAUSE, MOS_PLAIN_LABEL, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPriceExact } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
 import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
@@ -118,7 +118,7 @@ export function buildRegionInstruments(
   if (mosText != null) {
     liveFigures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply, single-family'),
+      label: v3Text(MOS_PLAIN_LABEL),
       href: '/months-of-supply',
     })
   }
