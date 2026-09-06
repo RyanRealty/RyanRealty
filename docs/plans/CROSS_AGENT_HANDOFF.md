@@ -6,27 +6,29 @@ spec") after weekly Grok Build limit. Mini: Matthews-Mini
 `b9f01f4a-2e5a-46bb-abf3-70c65d76b6e4` · `~/RyanRealty` · branch `main`.
 
 **Ship state**
-- Local tip `cf7f714a` (+3 older) **ahead of origin/main by 4 commits** — NOT
-  pushed yet. Commits: `7c40065e` hub MOS first · `c04e8a97` sell redirects /
-  city index types · `9153b113` listing 12-section order · `cf7f714a` stop
-  requiring leftover MOS HUD on listing.
-- Staged (uncommitted): `scripts/check-publish-place-index-truth.mjs` loosen
-  `hud.active` gate. Pre-commit **failed** on `ci:entity-scope`: 
-  `app/admin/(protected)/people/[id]/page.tsx` unscoped dynamic reader;
-  baseline grew 1→2. Do NOT widen blindly — fix scope or documented baseline.
+- Local tip `af0b3611` **ahead of origin/main by 6** — still not pushed.
+  Recent: `af0b3611` Cos takeover handoff + city hud.active gate · `c0dd043f`
+  loosen city leftover hud · `cf7f714a` listing MOS HUD · `9153b113` listing
+  12-section order · `c04e8a97` sell redirects / city index types · plus earlier.
 - Production host https://ryan-realty.com. LOOP_SENTINEL off. Do not mix `_cma-*`.
 
 **Spec locked**
 - `docs/plans/PUBLIC_PRODUCT/` — SITE_PAGES, PAGE_INVENTORY, PLACE_PAGES,
   DATA_GRAPHICS, PAGE_OUTLINE. Looking (1440+375 shots) is the done gate.
+  Navy/cream, one chrome, one stats source, place openings per PLACE_PAGES.
+
+**Bots**
+- **Public Patch** — landed / standby on Mini. Patches existing public pages
+  only when Public Look (or Cos) files friction from the inventory. Mini then
+  `git push` — no Cursor cloud. No new screens/product. No `_cma-*` / admin
+  prospecting desks.
+- **Public Look** — eyes-on 1440/375 against inventory winners (Homes Field,
+  hub MOS, Tetherow, listing remainder, About/team Call/Text).
 
 **Next (resume here)**
-1. Unblock push: entity-scope on people/[id] OR finish/abort the staged gate
-   file, then `git push origin main` from Mini (not Cursor cloud while spend
-   is tight).
-2. Parallel bots: Public Look (eyes-on 1440/375) + Public Patch (existing
-   pages only) against inventory winners — Homes Field, hub MOS, Tetherow,
-   listing remainder, About/team Call/Text.
+1. Push tip to `origin/main` from Mini when Cos clears the gate (or push if
+   already clean).
+2. Public Look files defects → Public Patch lands them on Mini, then push.
 3. Keep drip/first-touch desks separate (Expired/FSBO Desk); Soft Tail +
    Clear Night skipped; Rim HOLD until rebuild stamp lands if still open.
 
@@ -34,7 +36,6 @@ spec") after weekly Grok Build limit. Mini: Matthews-Mini
 - Cursor cloud agents unless Matt opens spend.
 - Relitigate place openings vs leftover HUD.
 - Touch CMA `_cma-*` worktrees in this thread.
-
 
 ---
 
