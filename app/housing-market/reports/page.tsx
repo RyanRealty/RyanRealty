@@ -66,7 +66,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
         <MetadataBlock
           schemas={[
             {
-              type: "breadcrumb",
+              type: 'breadcrumb',
               items: [
                 { name: "Home", url: "/" },
                 { name: "Housing market", url: "/housing-market" },
@@ -74,7 +74,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
               ],
             },
             {
-              type: "webPage",
+              type: 'webPage',
               name: "Central Oregon sales and weekly reports",
               description:
                 "Sales reports and weekly snapshots by city. Live pulse numbers live on the housing market hub.",
