@@ -1,0 +1,202 @@
+/**
+ * Dry-run the CMA engine on a slug and print what it would produce. WRITES NOTHING.
+ *
+ * WHY THIS EXISTS. `scripts/_rebuild-cma.ts --dry-run` prints the row and exits
+ * without calling the engine, and a real `buildCma` clears and rewrites the live
+ * `cmas` row on every failure path (recordBuildFailure). So "would this subject
+ * build now, and at what price" had no answer that did not first destroy the
+ * evidence of why it failed before. This runs the same deterministic path the
+ * build runs — resolve subject, walk the ladder, adjust, price, grade against
+ * the accuracy contract — against production data, and prints the comp list,
+ * the price, and every hard check that failed.
+ *
+ *   npx tsx scripts/cma-build-dryrun.ts cma-16083-dyke-la-pine [more slugs...]
+ *   npx tsx scripts/cma-build-dryrun.ts --json <slug>
+ *
+ * NOT a full build: the LLM comparability judge and the adversarial audit are
+ * skipped on purpose (they cost money and they can only REMOVE comps, so a
+ * contract pass here is the ceiling, not a promise). It is the deterministic
+ * half — selection, pricing, and the hard gates — which is where every one of
+ * the 2026-09-07 build failures died.
+ */
+import { config as loadEnv } from 'dotenv'
+loadEnv({ path: '.env.local' })
+loadEnv()
+import path from 'node:path'
+import Module from 'node:module'
+
+// `server-only` throws outside a Next server component and lib/data imports it.
+// Same resolve-time substitution scripts/_rebuild-cma.ts uses; every import
+// below is dynamic so it cannot hoist above the hook.
+const STUB = path.resolve(__dirname, '../test/server-only-stub.ts')
+const CACHE_STUB = path.resolve(__dirname, '../test/next-cache-cli-stub.ts')
+const resolveFilename = (Module as unknown as { _resolveFilename: (r: string, ...a: unknown[]) => string })._resolveFilename
+;(Module as unknown as { _resolveFilename: unknown })._resolveFilename = function (
+  this: unknown,
+  request: string,
+  ...args: unknown[]
+) {
+  const req =
+    request === 'server-only' || request === 'client-only'
+      ? STUB
+      : request === 'next/cache'
+        ? CACHE_STUB
+        : request
+  return resolveFilename.call(this, req, ...args)
+}
+
+type DryRun = {
+  slug: string
+  ok: boolean
+  stage: 'subject' | 'comps' | 'pricing' | 'contract' | 'complete'
+  address: string | null
+  city: string | null
+  subjectBaths: number | null
+  subjectSqft: number | null
+  customOrNew: boolean | null
+  pricingSource: string | null
+  compCount: number
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number }>
+  recommended: number | null
+  range: [number | null, number | null]
+  confidence: string | null
+  hardFailures: string[]
+  error: string | null
+}
+
+async function dryRun(slug: string): Promise<DryRun> {
+  const { getCmaAdminRowBySlug } = await import('@/lib/data')
+  const { resolveCmaSubject } = await import('@/lib/cma/subject')
+  const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
+  const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
+  const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
+  const { priceCmaSet } = await import('@/lib/pricing/estimate')
+  const { getPricingMarketIndex } = await import('@/lib/data/pricing/facts')
+  const { citySlug } = await import('@/lib/pricing/classes')
+  const { getCmaMarketContext } = await import('@/lib/cma/market')
+  const { evaluateAccuracyContract } = await import('@/lib/cma/contract')
+  const { MIN_COMPS } = await import('@/lib/cma/comps')
+
+  const base: DryRun = {
+    slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null,
+    subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
+    recommended: null, range: [null, null], confidence: null, hardFailures: [], error: null,
+  }
+
+  const row = await getCmaAdminRowBySlug(slug)
+  if (!row) return { ...base, error: 'no cmas row for this slug' }
+
+  const resolved = await resolveCmaSubject({
+    mlsNumber: (row.subject_listing_key as string | null) ?? null,
+    rawAddress: (row.subject_address as string | null) ?? null,
+    city: (row.subject_city as string | null) ?? null,
+  })
+  const subject = resolved.subject
+  if (!subject) return { ...base, error: resolved.trace }
+
+  const asOf = new Date().toISOString().slice(0, 10)
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstructionYn,
+      remarks: subject.publicRemarks,
+      propertySubType: subject.propertySubType,
+    },
+    Number(asOf.slice(0, 4)),
+  )
+  const head = {
+    ...base,
+    address: subject.streetAddress,
+    city: subject.city,
+    subjectBaths: subject.baths,
+    subjectSqft: subject.sqft,
+    customOrNew,
+    stage: 'comps' as const,
+  }
+
+  const [selection, market] = await Promise.all([
+    selectCompsPreferringFacts(subject, {}),
+    getCmaMarketContext(subject).catch(() => null),
+  ])
+  const withSel = { ...head, pricingSource: selection.pricingSource, compCount: selection.comps.length }
+  if (selection.comps.length < MIN_COMPS) {
+    return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
+  }
+
+  const marketIndex = selection.pricingSource === 'facts' ? await getPricingMarketIndex(citySlug(subject.city)) : []
+  const adjusted = adjustComps(subject, selection.comps, market)
+  const pricing = priceCmaSet({
+    subject, adjusted, market, input: {}, site: null,
+    selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
+    marketIndex, asOf, computePricing,
+  })
+  if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
+
+  const contract = evaluateAccuracyContract({
+    comps: adjusted,
+    pricing,
+    judgment: null,
+    audit: null,
+    site: null,
+    minComps: MIN_COMPS,
+    marketContextPresent: market != null,
+    subjectSubType: subject.propertySubType,
+    subjectBaths: subject.baths,
+    subjectIsCustomOrNew: customOrNew,
+    failedAsk: pricing.failedAsk ?? null,
+  })
+  const hardFailures = contract.checks.filter((c) => c.severity === 'hard' && !c.pass).map((c) => `${c.id}: ${c.detail}`)
+
+  return {
+    ...withSel,
+    stage: hardFailures.length ? 'contract' : 'complete',
+    ok: hardFailures.length === 0,
+    comps: adjusted.map((c) => ({
+      key: c.listingKey, address: c.address, baths: c.baths, sqft: c.sqft,
+      closePrice: Math.round(c.closePrice), closeDate: c.closeDate, adjusted: Math.round(c.adjustedPrice),
+    })),
+    recommended: pricing.recommended,
+    range: [pricing.conservative, pricing.highEnd],
+    confidence: pricing.confidence,
+    hardFailures,
+    error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
+  }
+}
+
+async function main() {
+  const argv = process.argv.slice(2)
+  const asJson = argv.includes('--json')
+  const slugs = argv.filter((a) => !a.startsWith('--')).map((s) => s.trim().toLowerCase())
+  if (!slugs.length) {
+    console.error('usage: npx tsx scripts/cma-build-dryrun.ts [--json] <slug> [slug...]')
+    process.exit(1)
+  }
+  const out: DryRun[] = []
+  for (const slug of slugs) {
+    const r = await dryRun(slug).catch((e): DryRun => ({
+      slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
+      customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
+      range: [null, null], confidence: null, hardFailures: [], error: e instanceof Error ? e.message : String(e),
+    }))
+    out.push(r)
+    if (asJson) continue
+    console.log(`\n── ${r.slug} — ${r.address ?? '(unresolved)'}, ${r.city ?? '?'}`)
+    console.log(`   ${r.ok ? 'WOULD BUILD' : `WOULD FAIL at ${r.stage}`} · subject ${r.subjectBaths ?? '?'} bath / ${r.subjectSqft ?? '?'} sqft · custom-or-new ${r.customOrNew} · source ${r.pricingSource ?? 'n/a'}`)
+    if (r.recommended != null) {
+      console.log(`   recommended $${r.recommended.toLocaleString()} (range $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence}`)
+    }
+    if (r.comps.length) {
+      console.log(`   comps (${r.comps.length}):`)
+      for (const c of r.comps) {
+        console.log(`     ${c.address} · ${c.baths ?? '?'}ba · ${c.sqft}sf · closed $${c.closePrice.toLocaleString()} ${c.closeDate} → adj $${c.adjusted.toLocaleString()}`)
+      }
+    }
+    if (r.error) console.log(`   ✖ ${r.error}`)
+  }
+  if (asJson) console.log(JSON.stringify(out, null, 2))
+}
+
+main().catch((e) => {
+  console.error('✖ dry-run threw:', e)
+  process.exit(1)
+})

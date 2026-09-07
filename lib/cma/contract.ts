@@ -18,6 +18,7 @@
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import { bathCountCompatible, productTypeCompatible } from '@/lib/cma/market-area'
+import { customBathCompatible } from '@/lib/pricing/classes'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -56,9 +57,19 @@ export function evaluateAccuracyContract(args: {
   marketContextPresent: boolean
   subjectSubType?: string | null
   subjectBaths?: number | null
+  /**
+   * True when the SELECTOR classified the subject custom/new. The bath cut is
+   * graded with the rule selection actually applied: lib/pricing/match.ts and
+   * the lib/cma/comps.ts fallback open a plus-or-minus-one whole-bath window
+   * for this class (Matt: a 3-bath custom peer prices a 4-bath custom house),
+   * and exact-floor everywhere else. Grading with the resale rule regardless
+   * hard-failed 59 of 136 live builds on comps the engine's own ladder was
+   * told to keep — every one of them off by exactly one bath.
+   */
+  subjectIsCustomOrNew?: boolean
   failedAsk?: number | null
 }): AccuracyContract {
-  const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths } = args
+  const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectIsCustomOrNew } = args
   const checks: ContractCheck[] = []
   const now = Date.now()
   const maxAgeMs = COMP_MAX_AGE_MONTHS * 30.44 * 86_400_000
@@ -139,7 +150,8 @@ export function evaluateAccuracyContract(args: {
           ? `Comp ${crossType.address} is ${crossType.propertySubType ?? 'an unknown type'} and cannot price a ${subjectSubType}.`
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
   })
-  const crossBath = comps.find((c) => !bathCountCompatible(subjectBaths ?? null, c.baths))
+  const bathRuleOk = subjectIsCustomOrNew ? customBathCompatible : bathCountCompatible
+  const crossBath = comps.find((c) => !bathRuleOk(subjectBaths ?? null, c.baths))
   checks.push({
     id: 'bath-count-match',
     severity: 'hard',
@@ -148,8 +160,12 @@ export function evaluateAccuracyContract(args: {
       subjectBaths == null
         ? 'Subject bathroom count was not stored. Bath-count gate skipped.'
         : crossBath
-          ? `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath and cannot price a ${subjectBaths}-bath house.`
-          : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
+          ? subjectIsCustomOrNew
+            ? `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath, more than one whole bathroom away from this ${subjectBaths}-bath custom or new home.`
+            : `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath and cannot price a ${subjectBaths}-bath house.`
+          : subjectIsCustomOrNew
+            ? `Custom or new subject: every priced sale is within one whole bathroom of the subject (${subjectBaths}).`
+            : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
   })
   checks.push({
     id: 'dispersion-computed',

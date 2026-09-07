@@ -370,6 +370,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       ? await getPricingMarketIndex(citySlug(subject.city))
       : []
     const asOf = new Date().toISOString().slice(0, 10)
+    // The SELECTOR's classification, computed once with the same asOf year
+    // lib/pricing/match.ts uses. Everything downstream that has to grade a comp
+    // by the rule selection actually applied (the accuracy contract's bath cut,
+    // the audit self-repair) reads THIS — not its own re-derivation.
+    const subjectIsCustomOrNew = isCustomOrNewSubject(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstructionYn,
+        remarks: subject.publicRemarks,
+        propertySubType: subject.propertySubType,
+      },
+      Number(asOf.slice(0, 4)),
+    )
     const subjectStory = classifyStory(subject.levelsRaw, null)
     const priceSet = (set: typeof selection.comps) => {
       const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
@@ -459,12 +472,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // owns the selection. A non-pass audit still records its findings and forces
     // needs_review through the contract, so the broker reviews it explicitly.
     if (audit && audit.verdict !== 'pass' && !isCurated) {
-      const customSubject = isCustomOrNewSubject({
-        yearBuilt: subject.yearBuilt,
-        newConstructionYn: subject.newConstructionYn,
-        remarks: subject.publicRemarks,
-        propertySubType: subject.propertySubType,
-      })
+      const customSubject = subjectIsCustomOrNew
       const flagged = [
         ...new Set(
           audit.findings
@@ -651,6 +659,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       marketContextPresent: market != null,
       subjectSubType: subject.propertySubType,
       subjectBaths: subject.baths,
+      subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
     })
     if (!contract.pass) {

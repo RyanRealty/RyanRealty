@@ -293,6 +293,83 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
   })
 
+  /**
+   * The contract must grade the bath cut with the SAME rule the selector
+   * applied. lib/pricing/match.ts (and the lib/cma/comps.ts fallback) open a
+   * plus-or-minus-one whole-bath window for a custom/new subject, on Matt's
+   * rule; the contract re-checked every build against the exact-floor resale
+   * rule and hard-failed 59 of the 136 live build failures on comps its own
+   * selector was told to keep. Same rule on both ends, or the engine refuses
+   * work it already decided was sound.
+   */
+  it('accepts a plus-one-bath comp on a custom or new subject (the rule the selector used)', () => {
+    const comps = [
+      ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 2, propertySubType: 'Single Family Residence' })),
+      comp({ closePrice: 700000, sqft: 2000, baths: 3, propertySubType: 'Single Family Residence' }),
+    ]
+    const subj = subject({ baths: 2, propertySubType: 'Single Family Residence' })
+    const adjusted = adjustComps(subj, comps, null)
+    const pricing = computePricing(subj, adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      subjectSubType: 'Single Family Residence',
+      subjectBaths: 2,
+      subjectIsCustomOrNew: true,
+    })
+    const check = contract.checks.find((c) => c.id === 'bath-count-match')!
+    expect(check.pass).toBe(true)
+    expect(check.detail).toContain('within one whole bathroom')
+  })
+
+  it('still hard-fails a two-bath gap on a custom or new subject', () => {
+    const comps = [
+      ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 2, propertySubType: 'Single Family Residence' })),
+      comp({ closePrice: 700000, sqft: 2000, baths: 4, propertySubType: 'Single Family Residence' }),
+    ]
+    const subj = subject({ baths: 2, propertySubType: 'Single Family Residence' })
+    const adjusted = adjustComps(subj, comps, null)
+    const pricing = computePricing(subj, adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      subjectSubType: 'Single Family Residence',
+      subjectBaths: 2,
+      subjectIsCustomOrNew: true,
+    })
+    expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
+  })
+
+  it('keeps the exact whole-bath rule for an ordinary resale subject', () => {
+    const comps = [
+      ...tightSet().slice(0, 5).map((c) => ({ ...c, baths: 2, propertySubType: 'Single Family Residence' })),
+      comp({ closePrice: 700000, sqft: 2000, baths: 3, propertySubType: 'Single Family Residence' }),
+    ]
+    const subj = subject({ baths: 2, propertySubType: 'Single Family Residence' })
+    const adjusted = adjustComps(subj, comps, null)
+    const pricing = computePricing(subj, adjusted, null)!
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      subjectSubType: 'Single Family Residence',
+      subjectBaths: 2,
+      subjectIsCustomOrNew: false,
+    })
+    expect(contract.checks.find((c) => c.id === 'bath-count-match')!.pass).toBe(false)
+  })
+
   it('hard-fails when the recommended list sits above a failed last ask', () => {
     const comps = tightSet()
     const adjusted = adjustComps(subject(), comps, null)
