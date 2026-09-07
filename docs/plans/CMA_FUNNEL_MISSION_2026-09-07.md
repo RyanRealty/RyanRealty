@@ -188,3 +188,42 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
   by eye at 816/375 (letter) and 1280/375 (immersive) on
   `cma-2465-7th-redmond-97756` (expired), `cma-65365-concorde` (6.38-acre land
   subject, P6 the other way), `cma-19968` (FSBO), `cma-1617-nw-8th` (seller LP).
+
+- **A · d57854e1, 74a29de4** (`wt/cma-doc-20260907`) — what the shots caught
+  that the tests did not. Four subjects, every chapter read by eye at 816/375
+  and 1280/375.
+
+  - **A price shipped with no sales.** The comps matrix floored at `MIN_COMPS`
+    (5, the selector's target) while `lib/pricing` publishes a recommend from
+    `PRICING_MIN_COMPS` (3). `cma-19968` and `cma-1617-nw-8th` each printed a
+    recommended list whose price chapter held a map and nothing else. The
+    matrix floor is now the pricing floor.
+  - **A chapter headed "N/A."** `cma-65365-concorde` has no MLS subdivision and
+    the subdivision story rendered anyway, on both documents. `cleanText` gates
+    it now.
+  - **"Days on market 7,969", and a chart captioned "Yours sat 7,969 days and
+    never got one."** `cma-19968` last listed in 2004 and CLOSED; the elapsed
+    days since that list date are the age of a sale, not time on market.
+    `subjectDomDays` takes a stated DOM from the listing history first, and
+    derives elapsed days only for a listing that is on market or came off
+    unsold, under a three-year ceiling. The subject's bar on the days chart
+    renders only when the listing actually failed.
+  - **A chart invisible on its own scene.** `medianCloseLineSvg` drew navy ink
+    on a navy scene and printed its caption over a blank field. Every chart
+    inside `.sc-navy` inverts now, and the line's y-value labels moved into a
+    left gutter (they shared ink with September's mark).
+  - Chart labels: "192 days, no offer" ran off the frame; the days axis end
+    ticks repeated a bar label; the ruler printed an end label that repeated a
+    tick. All three fixed.
+  - The mobile hero was a 250px photo strip over 900px of blur. Below 700px it
+    is a full-width photo band with the title block under it.
+  - A wide chart scaled its own type to six pixels at 375. It pans in its own
+    box on screen at both documents. Never in print — a scroll box on paper is
+    the clipper that once removed comps from a delivered PDF.
+
+  Final contact sheets (regenerate with
+  `npx tsx scripts/cma-lookpass.ts <slug>`):
+  - `out/cma-look/cma-2465-7th-redmond-97756/contact-sheet.html` (expired)
+  - `out/cma-look/cma-65365-concorde/contact-sheet.html` (6.48-acre land)
+  - `out/cma-look/cma-19968/contact-sheet.html` (FSBO)
+  - `out/cma-look/cma-1617-nw-8th/contact-sheet.html` (seller LP)

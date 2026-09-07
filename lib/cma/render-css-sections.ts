@@ -277,6 +277,13 @@ export function cmaSectionStyles(): string {
   }
   /* The one sentence that reads a graphic or a table for the seller. */
   .chart-read { font-size: 12.5px; line-height: 1.5; margin: 8px 0 4px; color: var(--navy); }
+  /* On a phone a 720-unit chart scales its own type to six pixels. It pans in
+     its own box instead. SCREEN ONLY — a scroll box on paper is a clipper, and
+     that is what silently removed comps from a delivered PDF. */
+  @media screen and (max-width: 700px) {
+    .szn.is-hero { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .szn.is-hero svg { min-width: 620px; }
+  }
   @media screen {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   }
