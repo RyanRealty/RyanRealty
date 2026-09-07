@@ -14,7 +14,11 @@
 
 import { cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
-import type { CmaExpiredPeer } from '@/lib/cma/market-status'
+import {
+  collapseExpiredPeerCycles,
+  peerMatchesSubject,
+  type CmaExpiredPeer,
+} from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { MIN_COMPS } from '@/lib/cma/comps'
 
@@ -23,6 +27,21 @@ const esc = escapeHtml
 /** Same floor as selection — do not paint a thin matrix that did not set the recommend. */
 export const MIN_CLOSED_SALES_FOR_MATRIX = MIN_COMPS
 const ACRES_TO_SQFT = 43560
+
+/** Prefer DOM baked into listing history so the DOM row and history agree. */
+function domFromHistoryLine(line: string | null | undefined): number | null {
+  const m = line?.match(/(\d+)\s+days?\s+on\s+market/i)
+  if (!m) return null
+  const n = Number(m[1])
+  return Number.isFinite(n) && n >= 0 ? n : null
+}
+
+function subjectDomDays(subject: CmaSubject): number | null {
+  return (
+    domFromHistoryLine(subject.listingHistoryLine) ??
+    daysOnMarketFrom({ onMarketDate: subject.lastListDate })
+  )
+}
 
 /**
  * Most sales one table may hold. Five plus the subject is seven columns;
@@ -59,7 +78,7 @@ function subjectCol(subject: CmaSubject): Col {
   const living = subject.sqft
   const list = subject.lastListPrice
   const listSf = ppsf(list, living)
-  const subjectDom = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
+  const subjectDom = subjectDomDays(subject)
   const history =
     subject.listingHistoryLine?.trim() ||
     buildListingHistoryLine({
@@ -342,7 +361,7 @@ function unsoldSubjectCol(subject: CmaSubject): Col {
   const living = subject.sqft
   const list = subject.lastListPrice
   const listSf = ppsf(list, living)
-  const subjectDom = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
+  const subjectDom = subjectDomDays(subject)
   const history =
     subject.listingHistoryLine?.trim() ||
     buildListingHistoryLine({
@@ -381,6 +400,7 @@ function unsoldPeerCol(peer: CmaExpiredPeer, index: number): Col {
       listPrice: peer.listPrice,
       originalListPrice: peer.originalListPrice,
       status: peer.status,
+      onMarketDate: peer.onMarketDate,
       daysOnMarket: peer.daysOnMarket,
     }) ||
     '-'
@@ -389,7 +409,7 @@ function unsoldPeerCol(peer: CmaExpiredPeer, index: number): Col {
     label: `${index + 1}. ${peer.address}`,
     photoUrl: peer.photoUrl?.trim() || null,
     cells: [
-      '-',
+      dash(peer.propertySubType),
       usd(peer.listPrice),
       listSf != null ? `${usd(listSf)}/sf` : '-',
       dash(peer.status),
@@ -431,6 +451,7 @@ function unsoldStack(peers: readonly CmaExpiredPeer[]): string {
           listPrice: p.listPrice,
           originalListPrice: p.originalListPrice,
           status: p.status,
+          onMarketDate: p.onMarketDate,
           daysOnMarket: p.daysOnMarket,
         })
       return `<article class="comp-stack-card" data-peer="expired" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(p.address)}</div><div class="comp-stack-sold">Last ask ${usd(p.listPrice)}${askSf ? ` · ${esc(askSf)}` : ''}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${domLabel ? `<div class="comp-stack-facts" data-fact="dom">${esc(domLabel)}</div>` : ''}${history ? `<div class="comp-stack-facts" data-fact="listing-history">${esc(history)}</div>` : ''}</article>`
@@ -449,7 +470,12 @@ export function renderUnsoldContrastMatrixHtml(
   peers: readonly CmaExpiredPeer[] | null | undefined,
 ): string {
   if (!peers || peers.length === 0) return ''
-  const named = peers.filter((p) => p.address.trim() && p.listPrice > 0)
+  // Peers = other listings only; collapse multi-cycle same-address columns.
+  const named = collapseExpiredPeerCycles(
+    peers.filter(
+      (p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, subject),
+    ),
+  )
   if (named.length === 0) return ''
   const subj = unsoldSubjectCol(subject)
   const peerCols = named.map((p, i) => unsoldPeerCol(p, i))
