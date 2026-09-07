@@ -26,6 +26,7 @@ import {
   productCompatible,
   sewerCompatible,
   similarPerformingSubdivision,
+  untieredSalePriceTierOk,
   storyAdjustment,
   waterCompatible,
 } from '@/lib/pricing/classes'
@@ -133,6 +134,29 @@ describe('similar-performing subdivision (the gated / different-tier cut)', () =
   it('fails open on a thin subdivision', () => {
     expect(similarPerformingSubdivision(749, 48, 200, 3)).toBe(true)
     expect(similarPerformingSubdivision(null, 0, 301, 48)).toBe(true)
+  })
+
+  /**
+   * D12 (2026-08-27): 291 Bluff sold at $695/sqft and entered the Plaza's comp
+   * set solely because its SubdivisionName is 'N/A'. No subdivision name means
+   * no cell, and no cell means similarPerformingSubdivision fails open, so the
+   * guard that had already excluded 11 named candidates could not see it. It
+   * lifted the set mean about $72K. The sale's own $/sqft is the evidence the
+   * cell would have carried.
+   */
+  it('D12 — cuts an unnamed-subdivision sale that sits a tier off the subject on its own $/sqft', () => {
+    // The Plaza at roughly $450/sqft over 22 recorded sales; 291 Bluff at $695.
+    expect(untieredSalePriceTierOk(450, 22, 695)).toBe(false)
+    expect(untieredSalePriceTierOk(450, 22, 470)).toBe(true)
+    // Symmetric: a bargain-tier sale is as wrong as a luxury one.
+    expect(untieredSalePriceTierOk(450, 22, 300)).toBe(false)
+  })
+
+  it('D12 — fails open when the subject cell is thin or the sale has no $/sqft', () => {
+    expect(untieredSalePriceTierOk(450, 3, 695)).toBe(true)
+    expect(untieredSalePriceTierOk(null, 22, 695)).toBe(true)
+    expect(untieredSalePriceTierOk(450, 22, null)).toBe(true)
+    expect(untieredSalePriceTierOk(450, 22, 0)).toBe(true)
   })
 
   it('drops Awbrey Woods tract against Awbrey Butte custom inside the same neighborhood', () => {

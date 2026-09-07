@@ -25,6 +25,7 @@ import {
   sewerCompatible,
   SAME_NEIGHBORHOOD_TIER_RATIO,
   similarPerformingSubdivision,
+  untieredSalePriceTierOk,
   waterCompatible,
   yearQualityCompatible,
   type HoaClass,
@@ -338,6 +339,7 @@ function passesTier(
     }
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
+    const tierRatio = subjectArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
     if (
       !customPeer &&
       !similarPerformingSubdivision(
@@ -345,10 +347,19 @@ function passesTier(
         subj?.n ?? 0,
         comp?.medianPpsf ?? null,
         comp?.n ?? 0,
-        subjectArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined,
+        tierRatio,
       )
     ) {
       return { ok: false, miles: null }
+    }
+    // D12: a sale with no SubdivisionName has no cell, so the check above fails
+    // open and the tier cut cannot see it. Grade it on its own $/sqft instead.
+    // Only when the name is genuinely absent — a NAMED subdivision whose cell is
+    // thin keeps its deliberate fail-open (a four-sale sample is not a market).
+    if (!customPeer && !sale.subdivisionNorm && !comp) {
+      if (!untieredSalePriceTierOk(subj?.medianPpsf ?? null, subj?.n ?? 0, sale.closePpsf, tierRatio)) {
+        return { ok: false, miles: null }
+      }
     }
   }
 

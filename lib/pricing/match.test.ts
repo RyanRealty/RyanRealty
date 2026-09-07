@@ -148,6 +148,51 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('TETH')
   })
 
+  /**
+   * D12 — the same cut, on a sale whose SubdivisionName is an MLS placeholder.
+   * 291 Bluff ('N/A', $695/sqft) walked into the Plaza's set because no name
+   * means no cell and the median-vs-median guard fails open.
+   */
+  it('D12 — drops an unnamed-subdivision sale a tier off the subject once the wider rungs run', () => {
+    const cells = new Map([['bend:kenwood', { medianPpsf: 400, n: 20 }]])
+    const pool = [
+      sale({
+        listingKey: 'UNNAMED',
+        subdivision: 'N/A',
+        subdivisionNorm: null,
+        closeDate: '2026-07-01',
+        closePpsf: 695,
+        closePrice: 1_376_100,
+        address: '291 Bluff',
+        // Same neighborhood polygon as the subject, so the mapped-area cut
+        // above is not what removes it. The tier cut is.
+        latitude: 44.06,
+        longitude: -121.32,
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf, cells })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('UNNAMED')
+  })
+
+  it('D12 — keeps an unnamed-subdivision sale that sits in the subject price tier', () => {
+    const cells = new Map([['bend:kenwood', { medianPpsf: 400, n: 20 }]])
+    const pool = [
+      sale({
+        listingKey: 'UNNAMED_OK',
+        subdivision: 'N/A',
+        subdivisionNorm: null,
+        closeDate: '2026-07-01',
+        closePpsf: 410,
+        closePrice: 811_800,
+        address: '12 Riverfront',
+        latitude: 44.06,
+        longitude: -121.32,
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf, cells })
+    expect(out.comps.map((c) => c.listingKey)).toContain('UNNAMED_OK')
+  })
+
   it('does not look ahead of the as-of date', () => {
     const pool = [sale({ listingKey: 'FUTURE', closeDate: '2026-08-15' })]
     const out = walkPricingLadder(subject(), pool, { asOf })
