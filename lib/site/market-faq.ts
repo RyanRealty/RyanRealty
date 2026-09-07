@@ -40,16 +40,6 @@ export type MarketFaqInput = {
   source?: 'pulse' | 'market-truth'
   activeCount?: number | null
   medianListPrice?: number | null
-  /**
-   * Median CLOSED sale price for the most recent complete month the page charts,
-   * with that month's period start (YYYY-MM-DD). When present, the price question
-   * answers with the sale median first, because that is the figure a reader and
-   * an answer engine compare across markets; the list median stays in the same
-   * answer, labeled as the asking price of the active inventory (2026-09-07: an
-   * engine quoted the $950K Bend list median as "the median home price").
-   */
-  medianSalePrice?: number | null
-  medianSalePeriodStart?: string | null
   monthsOfSupply?: number | null
   /** Pulse row active_count when it differs from the page's displayed count. */
   pulseActiveCount?: number | null
@@ -126,15 +116,6 @@ function resolveAsOf(refreshedAt: string | null | undefined): { iso: string | nu
   }
 }
 
-/** "2026-08-01" -> "August 2026"; null when absent or unparseable. Same month table as the as-of label. */
-function resolvePeriodLabel(periodStart: string | null | undefined): string | null {
-  if (!periodStart) return null
-  const m = /^(\d{4})-(\d{2})/.exec(periodStart)
-  if (!m) return null
-  const month = MONTHS[Number(m[2]) - 1]
-  return month ? `${month} ${m[1]}` : null
-}
-
 /** Months-of-supply -> market type, per the canonical CLAUDE.md thresholds. */
 function marketType(mos: number): string {
   // Thresholds via lib/market/classify.ts (audit p0.4b); short form for FAQ prose.
@@ -152,25 +133,12 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   // ── Core market stats (up to 4 questions) ──────────────────────────────────
 
-  const saleMonth = resolvePeriodLabel(pulse.medianSalePeriodStart)
-  const hasSale = pulse.medianSalePrice != null && pulse.medianSalePrice > 0 && saleMonth != null
-  const hasList = pulse.medianListPrice != null && pulse.medianListPrice > 0
-  if (hasSale || hasList) {
-    const listBasis = pulse.source === 'market-truth' ? 'a direct count of the active MLS listings' : 'live MLS data'
-    const saleSentence = hasSale
-      ? `The median sale price for a single-family home in ${geoName} was ${formatPriceExact(pulse.medianSalePrice as number)} in ${saleMonth}, from closed MLS sales.`
-      : null
-    const listSentence = hasList
-      ? hasSale
-        ? `The median list price of the active listings is ${formatPriceExact(pulse.medianListPrice as number)}${asOf}, based on ${listBasis}.`
-        : `The median list price for a single-family home in ${geoName} is ${formatPriceExact(pulse.medianListPrice as number)}${asOf}, based on ${listBasis}.`
-      : null
+  if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
     faqs.push({
       question: `What is the median home price in ${geoName}?`,
-      answer: [saleSentence, listSentence].filter(Boolean).join(' '),
+      answer: `The median list price for a single-family home in ${geoName} is ${formatPriceExact(pulse.medianListPrice)}${asOf}, based on ${pulse.source === 'market-truth' ? 'a direct count of the active MLS listings' : 'live MLS data'}.`,
     })
-    if (hasSale) datasetVariables.push({ name: 'Median Sale Price', value: Math.round(pulse.medianSalePrice as number), unitText: 'USD' })
-    if (hasList) datasetVariables.push({ name: 'Median List Price', value: Math.round(pulse.medianListPrice as number), unitText: 'USD' })
+    datasetVariables.push({ name: 'Median List Price', value: Math.round(pulse.medianListPrice), unitText: 'USD' })
   }
 
   const sfrPublished = publishSearchCount({ value: pulse.activeCount, grain: 'sfr' })

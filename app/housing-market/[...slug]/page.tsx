@@ -178,7 +178,6 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const verdict = marketVerdict(mosRaw)
 
   const refreshedAt = mt?.headlines?.computedAt ?? mt?.inventory?.computedAt ?? null
-  const latestSaleMonth = [...chartMonths.months].reverse().find((row) => row.medianSalePrice != null && row.medianSalePrice > 0) ?? null
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     geoName,
     {
@@ -189,11 +188,6 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       activeCount: hud.active,
       pulseActiveCount: hud.active,
       medianListPrice: hud.medianList,
-      // The last complete month the chart draws: the FAQ's price answer leads
-      // with this closed-sale median so the page, the FAQ, and the JSON-LD say
-      // the same number an answer engine will quote.
-      medianSalePrice: latestSaleMonth?.medianSalePrice ?? null,
-      medianSalePeriodStart: latestSaleMonth?.periodStart ?? null,
       medianDaysToPending: hud.daysToPending,
       refreshedAt,
     },

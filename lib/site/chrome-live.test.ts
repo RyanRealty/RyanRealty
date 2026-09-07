@@ -31,8 +31,6 @@ describe('composeChromeLive', () => {
       '27 median days to pending',
     ])
     expect(live.Sell?.facts[0]).toEqual({ figure: '501', label: 'sold in the last 30 days' })
-    expect(live.Market?.eyebrow).toBe('Central Oregon detached homes right now')
-    expect(live.Sell?.eyebrow).toBe('Central Oregon sellers right now')
     expect(live.Buy?.note).toBe('Read Sep 2, 2026, 12:07 AM')
     expect(live.Market?.note).toBe('Read Sep 2, 2026, 12:01 AM')
   })

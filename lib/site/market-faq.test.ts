@@ -182,44 +182,6 @@ describe('buildMarketFaq', () => {
  * polygon held 42 closes over the same 180 days. Nothing derived from that
  * closed series may publish at this grain, in the visible FAQ or in the markup.
  */
-describe('buildMarketFaq price answer', () => {
-  it('leads with the closed-sale median when the page has one, and keeps the list median labeled', () => {
-    const r = buildMarketFaq('Bend', {
-      grain: 'city',
-      source: 'market-truth',
-      medianListPrice: 950_000,
-      medianSalePrice: 750_000,
-      medianSalePeriodStart: '2026-08-01',
-      refreshedAt: '2026-09-07T18:00:00Z',
-    })
-    const price = r.faqs.find((f) => f.question === 'What is the median home price in Bend?')
-    expect(price?.answer).toBe(
-      'The median sale price for a single-family home in Bend was $750,000 in August 2026, from closed MLS sales. The median list price of the active listings is $950,000 as of September 2026, based on a direct count of the active MLS listings.',
-    )
-    expect(r.datasetVariables).toEqual(
-      expect.arrayContaining([
-        { name: 'Median Sale Price', value: 750_000, unitText: 'USD' },
-        { name: 'Median List Price', value: 950_000, unitText: 'USD' },
-      ]),
-    )
-  })
-
-  it('falls back to the list-only sentence when no sale month is supplied', () => {
-    const r = buildMarketFaq('Bend', { grain: 'city', source: 'market-truth', medianListPrice: 950_000, refreshedAt: '2026-09-07T18:00:00Z' })
-    const price = r.faqs.find((f) => f.question === 'What is the median home price in Bend?')
-    expect(price?.answer).toBe(
-      'The median list price for a single-family home in Bend is $950,000 as of September 2026, based on a direct count of the active MLS listings.',
-    )
-    expect(r.datasetVariables.some((v) => v.name === 'Median Sale Price')).toBe(false)
-  })
-
-  it('ignores a sale price whose period is missing or malformed', () => {
-    const r = buildMarketFaq('Bend', { grain: 'city', source: 'market-truth', medianListPrice: 950_000, medianSalePrice: 750_000, medianSalePeriodStart: 'August' })
-    const price = r.faqs.find((f) => f.question === 'What is the median home price in Bend?')
-    expect(price?.answer.startsWith('The median list price for a single-family home in Bend is $950,000')).toBe(true)
-  })
-})
-
 describe('buildMarketFaq at an untrusted grain', () => {
   const centuryWest = {
     activeCount: 16,

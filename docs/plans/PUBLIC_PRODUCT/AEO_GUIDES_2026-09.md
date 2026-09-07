@@ -158,14 +158,13 @@ non-personalized citation of ryan-realty.com quoted the `/housing-market/bend` F
 "$950,000 median list price", which reads as an outlier beside peers' sale medians. Two fixes
 shipped here:
 
-- `lib/site/market-faq.ts`: the "What is the median home price" answer leads with the closed
-  sale median for the last complete month the page charts (the `[...slug]` page passes it from
-  the same monthly series), then states the list median of the active inventory, labeled as
-  such. Dataset JSON-LD carries both. One function still feeds the visible FAQ and the schema.
-- `lib/site/chrome-live.ts`: the Market and Sell menus print region figures on every page, so
-  their eyebrows now name the scope, "Central Oregon detached homes right now" and "Central
-  Oregon sellers right now". On the Bend page the menu said 5.0 months, balanced, beside a page
-  saying 3.9 months, seller's. Both were true. Neither said which place it meant.
+- The sibling session shipped both fixes on `fix/bend-market-figure-truth` (commit `9cc176cc`),
+  covering `/housing-market/<city>` and `/cities/<slug>`: the price FAQ leads with the median
+  sale price and month from the page's own chart series, then names the list price as a list
+  price, and Dataset JSON-LD gains Median Sale Price. The Market and Sell menus now say
+  "Central Oregon detached homes right now" and "Central Oregon sellers right now". This
+  branch had the same change and dropped it to avoid two versions of one fix. For any guide,
+  a city's "median home price" is the sale price and month, matching the FAQ.
 
 Open, from the same report: no engine cited any F1 battery path for its query (the gate proves
 the paths exist, not that they are used); the ranking mechanism the engines use for "best
