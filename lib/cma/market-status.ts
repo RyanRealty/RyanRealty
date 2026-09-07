@@ -176,7 +176,7 @@ function num(v: unknown): number | null {
 }
 
 
-const EXPIRED_PEER_CAP = 4
+const EXPIRED_PEER_CAP = 5
 
 function peerAddress(row: CmaMarketAreaRow): string {
   return [row.StreetNumber, row.StreetName]

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { renderCompMatrixHtml, renderUnsoldContrastMatrixHtml } from '@/lib/cma/comp-matrix'
+import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -223,5 +224,75 @@ describe('land columns', () => {
   it('still prints living area for an improved comp', () => {
     const html = renderCompMatrixHtml(subject, padSales(comp))
     expect(html).toMatch(/1,036/)
+  })
+})
+
+describe('sold matrix DOM + listing history on screen', () => {
+  it('emits Days on market and Listing history as visible matrix rows (not title/tooltip)', () => {
+    const html = renderCompMatrixHtml(
+      {
+        ...subject,
+        listingHistoryLine: 'Listed Jul 2021 at $445,000 · still listed',
+      },
+      padSales({
+        ...comp,
+        originalListPrice: 510000,
+        onMarketDate: '2026-05-01',
+        listingHistoryLine: 'Listed at $510,000, cut to $499,000, sold at $495,000 · 29 days on market',
+      }),
+    )
+    expect(html).toContain('data-fact="dom"')
+    expect(html).toContain('data-fact="listing-history"')
+    expect(html).toContain('Days on market')
+    expect(html).toContain('Listing history')
+    expect(html).toMatch(/data-fact="dom"[^>]*>[\s\S]*?<td class="v n[^"]*">29</)
+    expect(html).toContain('Listed at $510,000, cut to $499,000, sold at $495,000 · 29 days on market')
+    expect(html).not.toMatch(/title="[^"]*days on market/i)
+    // Letter stack also surfaces DOM + history on screen
+    expect(html).toContain('data-fact="dom">29 days on market')
+    expect(html).toContain('data-fact="listing-history">Listed at $510,000')
+  })
+})
+
+describe('unsold contrast matrix', () => {
+  const peer = {
+    listingKey: 'E1',
+    address: '88 Wren',
+    listPrice: 519000,
+    originalListPrice: 549000,
+    status: 'Expired',
+    daysOnMarket: 97,
+    photoUrl: null,
+    listingHistoryLine: 'Asked $549,000, cut to $519,000, came off expired · 97 days on market',
+    beds: 3,
+    baths: 2,
+    sqft: 1420,
+    yearBuilt: 1997,
+    lotAcres: 0.22,
+    latitude: 43.705,
+    longitude: -121.501,
+  } as CmaExpiredPeer
+
+  it('emits side-by-side matrix with DOM + listing history when peers exist', () => {
+    const html = renderUnsoldContrastMatrixHtml(subject, [peer])
+    expect(html).toContain('Expired peers — what happened')
+    expect(html).toContain('comp-matrix')
+    expect(html).toContain('88 Wren')
+    expect(html).toContain('Last ask')
+    expect(html).toContain('$519,000')
+    expect(html).toContain('Days on market')
+    expect(html).toContain('Listing history')
+    expect(html).toContain('data-fact="dom"')
+    expect(html).toContain('data-fact="listing-history"')
+    expect(html).toContain('Asked $549,000, cut to $519,000, came off expired · 97 days on market')
+    expect(html).toContain('comp-stack-card')
+    expect(html.toLowerCase()).not.toContain('overprice')
+    expect(html.toLowerCase()).not.toContain('taught buyers')
+  })
+
+  it('soft-fails when no peers — omit section, invent nothing', () => {
+    expect(renderUnsoldContrastMatrixHtml(subject, null)).toBe('')
+    expect(renderUnsoldContrastMatrixHtml(subject, [])).toBe('')
+    expect(renderUnsoldContrastMatrixHtml(subject, [{ ...peer, address: '', listPrice: 0 }])).toBe('')
   })
 })

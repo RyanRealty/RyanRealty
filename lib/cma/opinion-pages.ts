@@ -464,7 +464,7 @@ export function marketVolumePage(_a: OpinionPageArgs): CmaPageDef | null {
 
 export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
   const chart = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
-  const peers = renderExpiredPeersHtml(a.extras?.marketArea?.expiredPeers)
+  const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Sold and unsold`,
