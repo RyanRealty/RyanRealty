@@ -356,10 +356,13 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('<h2 class="section">Photos</h2>')
     expect(html).not.toContain('Current listing')
     expect(html).not.toContain('https://cdn.example/now.jpg')
-    // C2/C3: status / sold90 / KPI / unlabeled boards stay off the letter spine.
+    // C2: the raw status grid stays off the letter. P10 (Matt 2026-09-07)
+    // reversed the rest: the letter and the immersive walk ONE chapter order,
+    // so the 90-day band and the inventory board print on both — the band only
+    // when the recommend sits inside it (P3).
     expect(html).not.toContain('Status in this market')
-    expect(html).not.toContain('What 3 bedroom / 2 bath homes sold for')
-    expect(html).not.toContain('How fast this market is moving')
+    expect(html).toContain('What 3 bedroom / 2 bath homes sold for')
+    expect(html).toContain('How fast this market is moving')
     expect(html).toContain('Permits and ownership')
     expect(html).toContain('B-88')
     expect(html).toContain('Seller net at list')

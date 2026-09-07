@@ -275,7 +275,10 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     expect(html).toContain('Who you are competing with at this price')
     expect(html).toContain('44 Hawk')
     expect(html).toContain('Listed at $525,000, now $505,000 · 28 days on market')
-    expect(html).toContain('97 days on market')
+    // P5, Matt 2026-09-07: the subject's own listing history belongs to Home
+    // location and, on an expired document, to Your last listing. Stating it a
+    // third time inside the competition rows is the duplication he called out.
+    expect(html).not.toContain('97 days on market')
   })
 
   it('print spine orders comps → expired peers → competition', () => {

@@ -36,7 +36,9 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
-function subjectDomDays(subject: CmaSubject): number | null {
+/** Days the subject's own listing sat. Exported so the days chart and the
+ *  matrix's Days on market row can never print two different numbers. */
+export function subjectDomDays(subject: CmaSubject): number | null {
   return (
     domFromHistoryLine(subject.listingHistoryLine) ??
     daysOnMarketFrom({ onMarketDate: subject.lastListDate })
@@ -242,7 +244,7 @@ function matrixTable(
       const pin = c.key === 'subject' ? 'subject' : c.key.replace(/^c/, '')
       const src = c.photoUrl ? sparkPhotoAt(c.photoUrl, '320x240') ?? c.photoUrl : null
       const img = src
-        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
+        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
         : ''
       return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<span class="matrix-addr">${esc(c.label)}</span></th>`
     })
@@ -286,7 +288,7 @@ function matrixStack(comps: readonly CmaAdjustedComp[]): string {
       const pin = String(i + 1)
       const src = c.photoUrl ? sparkPhotoAt(c.photoUrl, '320x240') ?? c.photoUrl : null
       const img = src
-        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
+        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
         : ''
       const ppsf =
         c.sqft > 0 && c.closePrice > 0 ? `${usd(Math.round(c.closePrice / c.sqft))}/sf` : null
@@ -318,7 +320,29 @@ function matrixStack(comps: readonly CmaAdjustedComp[]): string {
   return `<div class="comp-stack" aria-label="Comparable sales, stacked for narrow screens">${cards}</div>`
 }
 
-export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdjustedComp[]): string {
+/**
+ * One legend line for the adjustment rows (P8). "Brought to today" and
+ * "Brought to your size" are the two rows a seller stops on, and until now the
+ * only gloss was "Adjusted close moves the sale for time and size", printed
+ * after the table they had already given up on.
+ */
+function adjustmentLegend(comps: readonly CmaAdjustedComp[]): string {
+  const bits = [
+    'Brought to today moves each sale to what it would bring in this market.',
+    'Brought to your size adjusts for the difference in living area.',
+  ]
+  if (comps.some((c) => (c.storyAdjustment ?? 0) !== 0)) {
+    bits.push('Style adjusts a one story against a two story.')
+  }
+  bits.push('Adjusted close is the sale after those moves.')
+  return `<p class="small">${esc(bits.join(' '))}</p>`
+}
+
+export function renderCompMatrixHtml(
+  subject: CmaSubject,
+  comps: readonly CmaAdjustedComp[],
+  lead = '',
+): string {
   // Fail closed: a recommend needs ≥ MIN_CLOSED_SALES_FOR_MATRIX closed sales.
   if (comps.length < MIN_CLOSED_SALES_FOR_MATRIX) return ''
   const subj = subjectCol(subject)
@@ -336,9 +360,10 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
   const stack = matrixStack(comps)
   return `
   <h3 class="subhead">The sales that set this price</h3>
+  ${lead}
   ${tables}
   ${stack}
-  <p class="small">Adjusted close moves the sale for time and size.</p>`
+  ${adjustmentLegend(comps)}`
 }
 
 /** Fact rows shared with the sold matrix where the peer actually carries them. */
@@ -431,7 +456,7 @@ function unsoldStack(peers: readonly CmaExpiredPeer[]): string {
       const pin = String(i + 1)
       const src = p.photoUrl ? sparkPhotoAt(p.photoUrl, '320x240') ?? p.photoUrl : null
       const img = src
-        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
+        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
         : ''
       const askSf =
         p.sqft != null && p.sqft > 0 && p.listPrice > 0

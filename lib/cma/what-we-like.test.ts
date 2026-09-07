@@ -177,7 +177,7 @@ describe('the single-doc fold', () => {
 
   it('renders the last-listing review, never the retired audit pages', () => {
     const { html } = renderCmaHtml(withReview)
-    expect(html).toContain('Your Last Listing')
+    expect(html).toContain('Your last listing')
     expect(html).toContain('Your home came off the market without selling')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toContain('Estimated Seller Net Sheet')

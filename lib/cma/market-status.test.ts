@@ -7,7 +7,7 @@ import {
   similarBedRange,
   type CmaExpiredPeer,
 } from './market-status'
-import { listingTrendSvg, medianCloseLineSvg } from './market-charts'
+import { daysToOfferSvg, medianCloseLineSvg } from './market-charts'
 import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
 import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
@@ -481,50 +481,37 @@ describe('market charts', () => {
     expect(svg).not.toContain('<rect')
   })
 
-  it('draws new-listing motion when four months have activity', () => {
-    const svg = listingTrendSvg([
-      { month: '2025-09', newListings: 2, medianAsk: 2_000_000 },
-      { month: '2025-10', newListings: 4, medianAsk: 2_050_000 },
-      { month: '2025-11', newListings: 3, medianAsk: 2_100_000 },
-      { month: '2025-12', newListings: 5, medianAsk: 2_080_000 },
-    ])
-    expect(svg).toContain('month-ledger')
-    expect(svg).toContain('Listed')
-    expect(svg).toContain('Ask')
-    expect(svg).toContain('Sep')
-    expect(svg).toContain('$2M')
-    expect(svg).not.toContain('<path')
-    expect(svg).not.toContain('NEW LISTINGS')
-    expect(svg).not.toContain('MEDIAN ASK')
+  // The new-listing month ledger was deleted 2026-09-07 (P4, Matt): one to
+  // three listings a month and a row of dashes told a seller nothing. What
+  // replaced it is the days-to-offer strip — every kept sale on one days axis
+  // against the subject's own listing, which never got an offer at all.
+  it('draws every kept sale and the subject on one days axis', () => {
+    const svg = daysToOfferSvg(
+      [
+        { label: '1. 730 Quince', days: 1, subject: false, valueLabel: '1 day' },
+        { label: '2. 840 Quince', days: 4, subject: false, valueLabel: '4 days' },
+        { label: '3. 735 Oak', days: 51, subject: false, valueLabel: '51 days' },
+        { label: '2465 7th', days: 192, subject: true, valueLabel: '192 days, no offer' },
+      ],
+      'How fast homes like yours went',
+    )
+    expect(svg).toContain('730 Quince')
+    expect(svg).toContain('192 days, no offer')
+    expect(svg).toContain('0 days')
+    expect(svg).toContain('192 days')
+    // Counts start at zero, and the axis ends at the data.
+    expect(svg).not.toContain('month-ledger')
   })
 
-  it('keeps empty months and does not plot listing count on the asking-price scale', () => {
-    // Diamond Bar 2465: Oct and Jan had no new lists. Filtering them out, then
-    // independently scaling count (0–5) and ask ($395k–$420k) onto one axis,
-    // is the same lie as plotting sale-count on a median-close chart.
-    const svg = listingTrendSvg([
-      { month: '2025-09', newListings: 2, medianAsk: 400_000 },
-      { month: '2025-10', newListings: 0, medianAsk: null },
-      { month: '2025-11', newListings: 4, medianAsk: 410_000 },
-      { month: '2025-12', newListings: 3, medianAsk: 405_000 },
-      { month: '2026-01', newListings: 0, medianAsk: null },
-      { month: '2026-02', newListings: 1, medianAsk: 395_000 },
-      { month: '2026-03', newListings: 2, medianAsk: 398_000 },
-      { month: '2026-04', newListings: 5, medianAsk: 420_000 },
-    ])
-    expect(svg).toContain('Oct')
-    expect(svg).toContain('Jan')
-    expect(svg).toContain('$395K')
-    expect(svg).toContain('$420K')
-    expect(svg).toContain('month-ledger')
-    expect(svg).toContain('Listed')
-    expect(svg).toContain('Ask')
-    expect(svg).toContain('is-zero')
-    expect(svg).toContain('—')
-    expect(svg.match(/<table/g)?.length).toBe(2)
-    expect(svg).not.toContain('<path')
-    expect(svg).not.toContain('Solid line is new listings')
-    expect(svg).not.toContain('NEW LISTINGS')
+  it('says nothing rather than draw two sales as a chart', () => {
+    const svg = daysToOfferSvg(
+      [
+        { label: '1. 730 Quince', days: 1, subject: false, valueLabel: '1 day' },
+        { label: '2465 7th', days: 192, subject: true, valueLabel: '192 days, no offer' },
+      ],
+      'How fast homes like yours went',
+    )
+    expect(svg).toBe('')
   })
 })
 
@@ -613,16 +600,16 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
 }
 
 describe('chapter order', () => {
-  it('puts why and the three sales before the wider-market charts', () => {
+  it('puts why and the three sales before the wider-market chapter', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     const why = html.indexOf('id="how-we-got-the-price"')
+    const market = html.indexOf('id="this-market"')
     const sold = html.indexOf('id="sold-90"')
-    // C3: prefer listing-trend over inventory when both would chart.
-    const trend = html.indexOf('id="listing-trend"')
     expect(why).toBeGreaterThan(0)
-    expect(sold).toBeGreaterThan(why)
-    expect(trend).toBeGreaterThan(sold)
-    expect(html).not.toContain('id="inventory"')
+    expect(market).toBeGreaterThan(why)
+    expect(sold).toBeGreaterThan(market)
+    // P4: the month ledger is gone; the days-to-offer strip took its place.
+    expect(html).not.toContain('id="listing-trend"')
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
     expect(html).toContain('Adjusted close')
@@ -638,7 +625,7 @@ describe('chapter order', () => {
     expect(html).not.toContain('id="photo-set"')
   })
 
-  it('leads the wider market with a sold hero and listing trend when trend exists (C3)', () => {
+  it('leads the wider market with the sold hero, then the inventory board', () => {
     const html = immersiveWiderMarketChapters(args())
     expect(html).not.toContain('status-hero')
     expect(html).not.toContain('status-tiles')
@@ -646,15 +633,15 @@ describe('chapter order', () => {
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
     expect(html).toContain('sc-navy')
-    expect(html).toContain('id="listing-trend"')
-    expect(html).not.toContain('id="inventory"')
-    expect(html).not.toContain('inv-hero')
+    expect(html).not.toContain('id="listing-trend"')
+    expect(html).toContain('id="inventory"')
+    expect(html).toContain('inv-hero')
     expect(html).not.toContain('photo-lead')
     expect(html).not.toMatch(/>0 days</)
     expect(html).not.toMatch(/bedroom sales in \d+ to \d+ bedroom homes/)
   })
 
-  it('falls back to inventory supply punch when listing trend is absent', () => {
+  it('keeps the inventory supply punch when the listing trend data is absent', () => {
     const base = args()
     const area = base.extras?.marketArea
     const html = immersiveWiderMarketChapters(
@@ -669,6 +656,5 @@ describe('chapter order', () => {
     expect(html).toContain('id="inventory"')
     expect(html).toMatch(/Seller(&#39;|')s market/)
     expect(html).toContain('inv-hero')
-    expect(html).not.toContain('id="listing-trend"')
   })
 })

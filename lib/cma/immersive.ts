@@ -22,7 +22,16 @@ function esc(s: string): string {
 
 export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): string {
   const s = a.subject
-  const heroImg = s.photoUrl ? `<img class="hero-img" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/>` : ''
+  // F3, Matt 2026-09-07: object-fit:cover cropped the MLS photo to the
+  // viewport, and on 2465 7th that photo is an agent-annotated aerial — the
+  // landmark callouts ran off both edges and the "*Location is approximate"
+  // caption was cut in half, at 1280 and at 375. Nothing inside a photo we
+  // publish gets cut, and we cannot know from the URL whether a photo carries
+  // type. So the photo is CONTAINED, and a blurred copy of itself fills the
+  // frame behind it: full-bleed to look at, complete to read.
+  const heroImg = s.photoUrl
+    ? `<img class="hero-bed" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/><img class="hero-img" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/>`
+    : ''
   const view = formatClientMlsField(s.viewDescription)
   const specs = [
     s.beds != null ? `${s.beds} bed` : null,
@@ -79,28 +88,14 @@ ${assembleOpinionScenes(a)}
     window.addEventListener('scroll',onScroll,{passive:true});onScroll()
     if(reduced||!('IntersectionObserver'in window))return
     document.documentElement.classList.add('anim')
+    // Entrance reveal only. The count-up that used to run here animated §0
+    // figures from zero, so a screenshot or a scroll-past caught 184 / 5.1% /
+    // 0.7% where the document says 3,394 / 94.2% / 12.3% (F4, Matt
+    // 2026-09-07). A number a seller can screenshot wrong does not animate.
     var scenes=[].slice.call(document.querySelectorAll('.sc'))
     var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}})},{rootMargin:'0px 0px -12% 0px'})
     scenes.forEach(function(s){io.observe(s)})
     setTimeout(function(){scenes.forEach(function(s){s.classList.add('on')})},4500)
-    var live=[]
-    function snap(){live.forEach(function(a){a.done=true;a.el.textContent=a.f});live=[]}
-    window.addEventListener('beforeprint',snap)
-    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')snap()})
-    var cio=new IntersectionObserver(function(es){es.forEach(function(e){
-      if(!e.isIntersecting)return;cio.unobserve(e.target)
-      var el=e.target,f=el.textContent
-      var m=/^([^0-9]*)([\\d,]+(?:\\.\\d+)?)(.*)$/.exec(f.trim());if(!m)return
-      var t=parseFloat(m[2].replace(/,/g,''));if(!isFinite(t)||t===0)return
-      var dcs=(m[2].split('.')[1]||'').length,a={el:el,f:f,done:false};live.push(a)
-      var t0=null
-      function fr(ts){if(a.done)return;if(t0==null)t0=ts
-        var pp=Math.min(1,(ts-t0)/900),ea=1-Math.pow(1-pp,3),v=t*ea
-        el.textContent=m[1]+(dcs>0?v.toFixed(dcs):Math.round(v).toLocaleString('en-US'))+m[3]
-        if(pp<1)requestAnimationFrame(fr);else{a.done=true;el.textContent=a.f;live=live.filter(function(x){return x!==a})}}
-      requestAnimationFrame(fr)
-    })},{rootMargin:'0px 0px -10% 0px'})
-    ;[].slice.call(document.querySelectorAll('[data-count]')).forEach(function(el){cio.observe(el)})
   }catch(e){}
 })();
 ${renderCompPinMapScript()}

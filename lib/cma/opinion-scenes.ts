@@ -8,7 +8,22 @@ import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
-import { immersiveWiderMarketChapters, renderBandOutcomesHtml, renderExpiredPeersHtml } from '@/lib/cma/market-area-chapters'
+import {
+  renderBandOutcomesHtml,
+  renderDaysToOfferHtml,
+  renderExpiredPeersHtml,
+  widerMarketBodyHtml,
+} from '@/lib/cma/market-area-chapters'
+import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
+import {
+  OPINION_CHAPTER_ORDER,
+  bandChapterShowsRuler,
+  cmaDisclosureProseHtml,
+  permitsPage,
+  sellerNetPage,
+  snapshotPage,
+  type OpinionChapterId,
+} from '@/lib/cma/opinion-pages'
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
@@ -19,26 +34,19 @@ import { FAILED_ASK_BACKTEST, sellerFacingFindingMeaning } from '@/lib/cma/expir
 import { formatDate } from '@/lib/format/date'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/getTaxlots'
-import { renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
+import { lotsDifferMaterially, renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
 
 const esc = escapeHtml
 
-export type OpinionSceneArgs = {
-  subject: CmaSubject
-  comps: CmaAdjustedComp[]
-  market: CmaMarketContext | null
-  pricing: CmaPricing
-  extras?: CmaExtras | null
-  subdivisionStory?: SubdivisionStory | null
-  mapDataUri: string | null
-  equity?: CmaEquityPosition | null
-  expiredAudit?: ExpiredAuditData | null
+/**
+ * The immersive builds from the SAME args object the letter does (P10), plus
+ * the broker and client the closing chapters print. Sharing the type is what
+ * lets a scene reuse a letter chapter body without a cast.
+ */
+export type OpinionSceneArgs = OpinionPageArgs & {
   broker: CmaBroker
-  generatedAtIso: string
   clientName?: string | null
   client?: { name?: string | null }
-  /** Recorded lot polygons for the subject and its comps; drives "The land". */
-  parcels?: CmaParcelSet | null
 }
 
 function priceScene(a: OpinionSceneArgs): string {
@@ -109,7 +117,9 @@ function seasonalityScene(a: OpinionSceneArgs): string {
 }
 
 function outcomesScene(a: OpinionSceneArgs): string {
-  const chart = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
+  const chart = bandChapterShowsRuler(a)
+    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+    : ''
   const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return ''
   return `
@@ -128,6 +138,9 @@ function outcomesScene(a: OpinionSceneArgs): string {
  * print say the same thing about the lot.
  */
 function lotLinesScene(a: OpinionSceneArgs): string {
+  // Same gate as lotLinesPage (P6) — the chapter exists on both paths or on
+  // neither.
+  if (!lotsDifferMaterially(a.parcels ?? null)) return ''
   const strip = renderParcelSilhouettesHtml(a.parcels ?? null)
   if (!strip) return ''
   const taxlot = a.parcels?.subject.taxlot?.trim()
@@ -187,11 +200,19 @@ function subdivisionScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
+/**
+ * Your last listing. For an expired owner this is the WHY, so it sits directly
+ * after the number and carries the price ruler with their own failed ask on it
+ * (P2). The three backtest figures print as themselves — the count-up that used
+ * to animate them shipped 184 / 5.1% / 0.7% into a screenshot of 3,394 / 94.2%
+ * / 12.3% (F4). A §0 figure never passes through a false value.
+ */
 function expiredScene(a: OpinionSceneArgs): string {
   const audit = a.expiredAudit
-  if (!audit) return ''
+  if (!audit || audit.findings.length === 0) return ''
   const s = a.subject
   const orig = s.lastListPrice != null && s.lastListPrice > 0 ? s.lastListPrice : null
+  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
   const findings = audit.findings.slice(0, 3)
   const cards = findings
     .map((f) => {
@@ -205,16 +226,96 @@ function expiredScene(a: OpinionSceneArgs): string {
     .join('')
   const b = FAILED_ASK_BACKTEST
   return `
-  <section class="sc sc-navy" id="last-listing">
-    <div class="in">
+  <section class="sc sc-navy pack" id="your-last-listing">
+    <div class="in wide">
       <div class="kick r">Your last listing</div>
       <h2 class="h r">It asked ${usd(orig)} and did not sell.</h2>
+      ${ruler ? `<div class="r chart-on-navy">${ruler}</div>` : ''}
       <div class="stat3 r">
-        <div class="st"><div class="st-n" data-count>${int(b.pairs)}</div><div class="st-l">Central Oregon homes failed to sell, then sold later, 2023 to 2026</div></div>
-        <div class="st"><div class="st-n" data-count>${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the failed ask is what the median one later sold for</div></div>
-        <div class="st"><div class="st-n" data-count>${b.shareClosedAboveAskPct}%</div><div class="st-l">later sold for more than the ask that failed</div></div>
+        <div class="st"><div class="st-n">${int(b.pairs)}</div><div class="st-l">Central Oregon homes failed to sell, then sold later, 2023 to 2026</div></div>
+        <div class="st"><div class="st-n">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the failed ask is what the median one later sold for</div></div>
+        <div class="st"><div class="st-n">${b.shareClosedAboveAskPct}%</div><div class="st-l">later sold for more than the ask that failed</div></div>
       </div>
       <div class="story-grid">${cards}</div>
+    </div>
+  </section>`
+}
+
+/** How fast homes like yours went (P4). Web twin of daysToOfferPage. */
+function daysToOfferScene(a: OpinionSceneArgs): string {
+  const html = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps })
+  if (!html) return ''
+  return `
+  <section class="sc sc-cream pack" id="how-fast">
+    <div class="in wide">
+      <div class="kick r">Time on market</div>
+      <h2 class="h r">How fast homes like yours went</h2>
+      <div class="r">${html}</div>
+    </div>
+  </section>`
+}
+
+/** This market. Web twin of thisMarketPage, same 90-day band gate (P3). */
+function thisMarketScene(a: OpinionSceneArgs): string {
+  const body = widerMarketBodyHtml(
+    { subject: a.subject, comps: a.comps, market: a.market, extras: a.extras, pricing: a.pricing },
+    'sub',
+  )
+  if (!body) return ''
+  return `
+  <section class="sc sc-navy" id="this-market">
+    <div class="in">
+      <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
+      <h2 class="h r">This market</h2>
+      <div class="r">${body}</div>
+    </div>
+  </section>`
+}
+
+/**
+ * Chapters whose letter body is already the right thing to read on screen:
+ * the facts table, the permit list, the net strip, the disclosure. They are
+ * wrapped rather than rewritten so the two documents cannot drift a fact
+ * apart (P10).
+ */
+function wrapLetterBody(id: string, kick: string, body: string, navy = false): string {
+  if (!body.trim()) return ''
+  // The letter body opens with its own <h2 class="section"> heading; the
+  // immersive prints that heading in its own register instead.
+  const heading = /<h2 class="section">([\s\S]*?)<\/h2>/.exec(body)?.[1] ?? ''
+  const rest = body.replace(/<h2 class="section">[\s\S]*?<\/h2>/, '')
+  return `
+  <section class="sc ${navy ? 'sc-navy' : 'sc-cream'} pack" id="${id}">
+    <div class="in wide">
+      <div class="kick r">${esc(kick)}</div>
+      <h2 class="h r">${heading}</h2>
+      <div class="r letter-body">${rest}</div>
+    </div>
+  </section>`
+}
+
+function homeLocationScene(a: OpinionSceneArgs): string {
+  return wrapLetterBody('home-location', 'The house', snapshotPage(a).body)
+}
+
+function permitsScene(a: OpinionSceneArgs): string {
+  const page = permitsPage(a)
+  return page ? wrapLetterBody('permits', 'Record', page.body) : ''
+}
+
+function sellerNetScene(a: OpinionSceneArgs): string {
+  const page = sellerNetPage(a)
+  return page ? wrapLetterBody('seller-net', 'What you keep', page.body) : ''
+}
+
+function disclosureScene(a: OpinionSceneArgs): string {
+  if (!a.broker) return ''
+  return `
+  <section class="sc sc-cream pack" id="disclosure">
+    <div class="in wide">
+      <div class="kick r">Disclosure</div>
+      <h2 class="h r">Disclosure</h2>
+      <div class="r letter-body">${cmaDisclosureProseHtml(a)}</div>
     </div>
   </section>`
 }
@@ -230,7 +331,7 @@ function nextScene(a: OpinionSceneArgs): string {
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${a.expiredAudit ? 'Sorry this listing did not sell.' : 'Call or text.'}</h2>
-        <p class="lede r">${a.expiredAudit ? 'If you want a second look at the number, I am here.' : 'Happy to walk the comps if useful.'}</p>
+        <p class="lede r">${a.expiredAudit ? 'If you want a second look at the number, call or text.' : 'Call or text if you want to walk the comps.'}</p>
         <div class="cta r">
           ${tel ? `<a class="btn pri" href="tel:${esc(tel)}" data-rr-track="cma-call">Call ${esc(br.phone ?? '')}</a>` : ''}
           ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}" data-rr-track="cma-email">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}
@@ -244,22 +345,25 @@ function nextScene(a: OpinionSceneArgs): string {
 }
 
 export function assembleOpinionScenes(a: OpinionSceneArgs): string {
-  // Mirror print letter spine (C1–C4 + C9): price/comps first, ≤2 charts, next step last.
-  const parts: string[] = [priceScene(a)]
-  // Matt HARD LOCK story: comps → expired peers → live competition.
-  let charts = 0
-  const outcomes = outcomesScene(a)
-  if (outcomes) {
-    parts.push(outcomes)
-    if (a.extras?.marketArea?.outcomes) charts += 1
+  // P10: the SAME order the letter walks (OPINION_CHAPTER_ORDER), built from
+  // the same helpers under the same gates. A chapter that renders here and not
+  // there is a defect the doc-punchlist test fails on.
+  const build: Record<OpinionChapterId, () => string> = {
+    'how-we-got-the-price': () => priceScene(a),
+    'your-last-listing': () => expiredScene(a),
+    'sold-and-unsold': () => outcomesScene(a),
+    competition: () => competitionScene(a),
+    'how-fast': () => daysToOfferScene(a),
+    'this-market': () => thisMarketScene(a),
+    'home-location': () => homeLocationScene(a),
+    'the-land': () => lotLinesScene(a),
+    'your-street': () => subdivisionScene(a),
+    permits: () => permitsScene(a),
+    'seller-net': () => sellerNetScene(a),
+    disclosure: () => disclosureScene(a),
+    'next-step': () => nextScene(a),
   }
-  parts.push(competitionScene(a))
-  const wider = immersiveWiderMarketChapters(a)
-  if (wider && charts < 2) {
-    parts.push(wider)
-    charts += 1
-  }
-  // Drop seasonality sparkline from the letter view (C3).
-  parts.push(lotLinesScene(a), subdivisionScene(a), expiredScene(a), nextScene(a))
-  return parts.join('\n')
+  return OPINION_CHAPTER_ORDER.map((id) => build[id]())
+    .filter((html) => html.trim().length > 0)
+    .join('\n')
 }

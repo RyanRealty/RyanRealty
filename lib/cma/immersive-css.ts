@@ -26,7 +26,8 @@ img{max-width:100%;display:block}
 .src{font-size:12px;opacity:.55;margin-top:30px;max-width:720px;font-variant-numeric:tabular-nums}
 .sc-navy .src{opacity:.5}
 .hero{overflow:hidden;background:var(--navy);color:var(--cream);align-items:flex-end;padding-bottom:88px}
-.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.92;border-radius:0}
+.hero-bed{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;filter:blur(34px) saturate(.75);opacity:.5;transform:scale(1.06)}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center top;opacity:.96;border-radius:0}
 .hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,39,66,.50) 0%,rgba(16,39,66,.16) 34%,rgba(16,39,66,.58) 62%,rgba(16,39,66,.94) 100%)}
 .hero .in{position:relative;z-index:2}
 .hero-kick{font-size:13px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:rgba(250,248,244,.82);margin-bottom:14px}
@@ -80,8 +81,14 @@ img{max-width:100%;display:block}
 .comp-nv{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;line-height:1}
 .comp-facts{font-size:14px;opacity:.7;font-variant-numeric:tabular-nums;margin-top:4px}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
+/* F1, Matt 2026-09-07: at 375px the side-by-side matrix collapsed the row
+   label column to one character per line and ran the grid thousands of pixels
+   down the page. A twenty-one-row, seven-column table is a desktop object.
+   Above 700px the matrix stands (what Matt asked for on screen); below it, the
+   stacked cards — the same data, one sale at a time. Never both. */
 .comp-matrix-wrap{display:block;margin:18px 0 8px;overflow-x:auto;max-width:100%}
 .comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
+@media screen and (max-width:700px){.comp-matrix-wrap{display:none}.comp-stack{display:block}}
 .comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
 .comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
@@ -191,7 +198,7 @@ html.anim .on .r:nth-child(2){transition-delay:.06s}
 html.anim .on .r:nth-child(3){transition-delay:.12s}
 html.anim .on .r:nth-child(4){transition-delay:.18s}
 html.anim .on .r:nth-child(5){transition-delay:.24s}
-@media (prefers-reduced-motion:no-preference){.hero-img{animation:kb 26s ease-in-out infinite alternate}}
+@media (prefers-reduced-motion:no-preference){.hero-bed{animation:kb 26s ease-in-out infinite alternate}}
 @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
 @media (max-width:860px){
   .stat2,.stat3,.stat4{grid-template-columns:1fr 1fr}
@@ -220,15 +227,24 @@ table.comp-matrix thead th.v{vertical-align:bottom;text-align:center}
 table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;margin:0 0 8px}
 table.comp-matrix .matrix-addr{display:block}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
-.month-ledger-wrap{display:flex;flex-direction:column;gap:28px;margin:8px 0 4px}
-table.month-ledger{width:100%;border-collapse:collapse;table-layout:fixed;margin:0}
-table.month-ledger th{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.55;padding:0 6px 12px;text-align:center}
-table.month-ledger th.stub,table.month-ledger tbody th.stub{width:4.2rem;text-align:left;padding-left:0;letter-spacing:.12em}
-table.month-ledger td{text-align:center;padding:0 6px 8px;vertical-align:top}
-table.month-ledger .n{font-family:Geist,system-ui,sans-serif;font-size:clamp(16px,2vw,20px);line-height:1.15;font-variant-numeric:tabular-nums;font-weight:600}
-table.month-ledger .n.is-zero{opacity:.4;font-weight:400}
-table.month-ledger .n.is-fast{box-shadow:inset 0 -1.5px 0 currentColor}
-table.month-ledger .a{font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums}
+.chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
+.chart-on-navy svg text{fill:var(--cream)!important}
+.chart-on-navy svg line{stroke:rgba(250,248,244,.55)!important}
+.chart-on-navy svg circle[fill='#102742']{fill:var(--cream)!important}
+.chart-on-navy svg circle[stroke='#102742']{stroke:var(--cream)!important}
+.letter-body table.kv{width:100%;border-collapse:collapse;font-size:15px}
+.letter-body table.kv th{text-align:left;font-weight:500;opacity:.7;padding:8px 16px 8px 0;border-bottom:1px solid var(--ink12);width:38%}
+.letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
+.letter-body .stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:24px 0}
+.letter-body .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
+.letter-body .stat .val{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(28px,3.6vw,44px);line-height:1;font-variant-numeric:tabular-nums}
+.letter-body p{margin:0 0 14px;max-width:720px}
+.letter-body h3.subhead{font-size:17px;font-weight:600;margin:22px 0 6px}
+.letter-body ul{margin:0 0 16px 18px}
+.letter-body li{margin:6px 0}
+.letter-body .signature-page{display:flex;gap:24px;align-items:flex-start;margin-top:28px}
+.letter-body .portrait{width:120px;height:auto}
+.letter-body .fine,.letter-body .small{font-size:13px;opacity:.65}
 .photo-set{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
 .photo-tile{margin:0;overflow:hidden;background:var(--navy)}
 .photo-tile img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:0}

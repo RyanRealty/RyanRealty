@@ -51,6 +51,7 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
 
 export {
   escapeHtml,
+  propertyDescription,
   sparkPhotoAt,
   propertyIntelligenceBlock,
   developmentItemsBlock,
@@ -166,30 +167,6 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
   return { src: null, caption: 'No MLS photo on file for the subject.' }
 }
 
-/**
- * The ORS 696 / OAR 863-015-0190 disclosure description. Every field is
- * omitted when the record does not carry it: land has no bedrooms, bathrooms
- * or living area, and printing "— bedrooms · — bathrooms · — sqft" on a vacant
- * lot describes nothing. Omitting an absent fact is the accurate form.
- */
-export function propertyDescription(subject: CmaSubject): string {
-  const head = [
-    esc(subject.streetAddress),
-    esc(subject.city),
-    `Oregon ${esc(subject.postalCode ?? '')}`.trim(),
-  ]
-    .filter(Boolean)
-    .join(', ')
-  const facts = [
-    subject.beds != null ? `${int(subject.beds)} bedrooms` : null,
-    subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathrooms` : null,
-    subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
-    subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
-    subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
-  ].filter(Boolean)
-  return `${head}${facts.length > 0 ? ` · ${facts.join(' · ')}` : ''}.`
-}
-
 function coverSpecsLine(subject: CmaSubject): string {
   const baths =
     subject.baths == null
@@ -276,130 +253,11 @@ function coverPage(a: RenderCmaArgs): PageDef {
 
 }
 
-const LENS_LABELS: Record<string, string> = {
-  pricing: 'Price vs the comparable sales',
-  'time-on-market': 'Time on market',
-  'price-cuts': 'The price path',
-  attempts: 'Listing attempts',
-  presentation: 'Presentation',
-}
-
-function expiredAuditPage(a: RenderCmaArgs): PageDef | null {
-  const ea = a.expiredAudit
-  if (!ea || ea.findings.length === 0) return null
-  const blocks = ea.findings
-    .map((f) => {
-      const meaning = sellerFacingFindingMeaning(f.meaning)
-      return `
-  <h3 class="subhead">${esc(LENS_LABELS[f.lens] ?? f.lens)}</h3>
-  <p>${esc(f.fact)}</p>
-  ${meaning ? `<p class="small">${esc(meaning)}</p>` : ''}`
-    })
-    .join('')
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Your Last Listing`,
-    toc: 'Your last listing',
-    body: `
-  <h2 class="section">Your Last Listing</h2>
-  <p>Your home came off the market without selling.</p>
-  ${blocks}`,
-  }
-}
-
-function nextStepPage(a: RenderCmaArgs): PageDef {
-  const b = a.broker
-  const isAudit = Boolean(a.expiredAudit)
-  const tel = phoneHref(b.phone)
-  const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
-  const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
-  // Voice lock: plain broker, no syrup. Expired: acknowledge it did not sell; ask to earn the work.
-  const lead = isAudit
-    ? 'Sorry this listing did not sell. If you want a second look at the number, call or text.'
-    : 'Call or text if you want to walk the comps.'
-  const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}&utm_content=letter-next-step`
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Your Next Step`,
-    toc: 'Your next step',
-    body: `
-  <h2 class="section">Your next step</h2>
-  <p class="cta-lead">${lead}</p>
-  <div class="cta-actions">
-    ${tel && b.phone ? `<a href="tel:${tel}" data-rr-track="cma-call">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
-    ${tel ? `<a href="sms:${tel}" data-rr-track="cma-text">Text ${first}</a>` : ''}
-    ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}" data-rr-track="cma-email">Email ${first}</a>` : ''}
-    ${onMarket ? '' : `<a class="ghost" href="${consultUrl}" data-rr-track="cma-book">Book a conversation</a>`}
-  </div>
-  ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here.</p>` : ''}`,
-  }
-}
-
-function whyListPage(a: RenderCmaArgs): PageDef {
-  const facts = factsFromCmaSurface({
-    subject: a.subject,
-    pricing: a.pricing,
-    clientName: a.client.name,
-    generatedAtIso: a.generatedAtIso,
-    broker: a.broker,
-  })
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Why list with a realtor`,
-    toc: 'How recent sellers sold',
-    body: cmaWhyListPageBody(facts),
-  }
-}
-
-function closingPage(a: RenderCmaArgs): PageDef {
-  const disclosure = disclosurePage(a)
-  const next = nextStepPage(a)
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Disclosure`,
-    toc: 'Disclosure and next step',
-    body: `${disclosure.body}
-  ${next.body}`,
-  }
-}
-
-function disclosurePage(a: RenderCmaArgs): PageDef {
-  const b = a.broker
-  const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${SITE_URL}${b.photoUrl}`) : null
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Disclosure · ${esc(b.displayName)}`,
-    toc: 'Disclosure and signature',
-    body: `
-  <h2 class="section">Disclosure</h2>
-  <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
-  <p><strong>Property description.</strong> ${propertyDescription(a.subject)}</p>
-  <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
-  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
-  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date on this report and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
-  <p><strong>Licensee interest.</strong> Neither ${esc(b.displayName)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
-  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
-  <div class="signature-page">
-    ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
-    <div class="sig-content">
-      <div class="sig-name">${esc(b.displayName)}</div>
-      <div class="sig-printed">${esc(b.displayName)}</div>
-      <div class="sig-title">${esc(b.title)} · Ryan Realty · Prepared ${dateLong(a.generatedAtIso)}</div>
-      <div class="sig-contact">
-        ${b.phone ? `<strong>${phoneHref(b.phone) ? `<a href="tel:${phoneHref(b.phone)}">${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : esc(dottedPhone(b.phone) ?? b.phone)}</strong><br/>` : ''}
-        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
-        ryan-realty.com · Bend · Oregon
-      </div>
-      ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
-    </div>
-  </div>`,
-  }
-}
-
 export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: number } {
-  const rest: PageDef[] = []
-  rest.push(...assembleOpinionPages(a))
-  const lastListing = expiredAuditPage(a)
-  if (lastListing) rest.push(lastListing)
-  rest.push(whyListPage(a))
-  rest.push(closingPage(a))
-
-  const pages: PageDef[] = [coverPage(a), ...rest]
+  // P10: cover, then the ONE chapter order both documents walk
+  // (OPINION_CHAPTER_ORDER). Nothing is appended here — a chapter that exists
+  // only on the letter is exactly the drift the shared order removes.
+  const pages: PageDef[] = [coverPage(a), ...assembleOpinionPages(a)]
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">

@@ -270,22 +270,25 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     expect(html).not.toContain('<h2 class="section">THE HOUSE</h2>')
   })
 
-  it('C3: immersive keeps ≤2 labeled charts when outcomes + wider market exist', () => {
+  // C3 counted charts because the letter had grown a chart dump. P4 (Matt
+  // 2026-09-07) replaced the counting rule with a question rule: every chart
+  // answers one seller question and no two answer the same one. The month
+  // ledger of new listings answered none, so it is gone.
+  it('P4: no month ledger of new listings anywhere', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    const charts = html.match(/data-anim="chart"/g) ?? []
-    expect(charts.length).toBeLessThanOrEqual(2)
-    // Prefer listing trend; do not also emit inventory median-close chart.
-    const hasTrend = html.includes('id="listing-trend"')
-    const hasInventory = html.includes('id="inventory"')
-    expect(hasTrend || hasInventory).toBe(true)
-    expect(hasTrend && hasInventory).toBe(false)
+    expect(html).not.toContain('month-ledger')
+    expect(html).not.toContain('New listings and asking prices')
+    expect(html).not.toContain('id="listing-trend"')
   })
 
   it('C4: screen stylesheet stacks comps without Subject·Sale 3-col dump; print restores matrix', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
-    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    // F2 (Matt 2026-09-07): ONE matrix with thumbnails is the comps view at
+    // reading width on both documents. The stack is the phone fallback only.
+    expect(css).toMatch(/\.comp-stack \{ display: none;/)
+    expect(css).toMatch(/\.comp-matrix-wrap \{ display: block;/)
+    expect(css).toMatch(/@media screen and \(max-width: 700px\) \{[\s\S]{0,200}\.comp-stack \{ display: block;/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
     expect(css).not.toContain('comp-stack-cols')
     expect(css).not.toContain('grid-template-columns: 1.1fr 1fr 1fr')

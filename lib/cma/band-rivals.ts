@@ -4,7 +4,7 @@
  */
 
 import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
-import { daysOnMarketLabel, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
 const esc = escapeHtml
 
@@ -206,15 +206,15 @@ function subjectRow(subject: CmaBandSubject | null | undefined): string {
     subject.recommendedList != null && subject.recommendedList > 0
       ? `<div class="rival-ask">${usd(subject.recommendedList)}</div>`
       : `<div class="rival-ask"></div>`
-  const history =
-    subject.listingHistoryLine?.trim() ||
-    daysOnMarketLabel(subject.daysOnMarket ?? null)
+  // P5: the subject's listing history belongs to Home location and, on an
+  // expired document, to Your last listing. Repeating it here as a third
+  // statement of the same fact is the duplication Matt called out 2026-09-07.
   return `<article class="rival-row is-subject">
     ${img}
     <div class="rival-body">
       <div class="rival-addr">This home</div>
       ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
-      <div class="rival-meta">Recommended list${history ? ` · ${esc(history)}` : ''}</div>
+      <div class="rival-meta">Recommended list</div>
     </div>
     ${ask}
   </article>`

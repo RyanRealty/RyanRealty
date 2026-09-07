@@ -84,10 +84,29 @@ function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-/** Waits for every <img> to settle (loaded or errored) — same pattern as lib/cma-pdf.ts. */
+/**
+ * Waits for every <img> to settle (loaded or errored) — same pattern as
+ * lib/cma-pdf.ts.
+ *
+ * Every image is forced to `loading="eager"` first. A look-pass never scrolls,
+ * so a lazy image below the 1400px viewport never starts loading and
+ * screenshots as a blank photo box — which is exactly what made comps 4 and 5
+ * look broken on 2026-09-07 when the real page was fine (F2). The renderer no
+ * longer marks comp thumbnails lazy either, but the tool must not be able to
+ * invent that defect for anything else on the page.
+ */
 async function waitForImages(page: import('puppeteer-core').Page): Promise<void> {
   await page.evaluate(async () => {
     const imgs = Array.from(document.images)
+    for (const img of imgs) {
+      if (img.loading === 'lazy') {
+        img.loading = 'eager'
+        // Chrome only re-evaluates the load on a src assignment.
+        const src = img.src
+        img.src = ''
+        img.src = src
+      }
+    }
     await Promise.all(
       imgs.map((img) =>
         img.complete && img.naturalWidth > 0
@@ -121,16 +140,22 @@ async function screenshotDocument(opts: {
   await fs.mkdir(outDir, { recursive: true })
   const page = await browser.newPage()
   try {
+    // Reduced motion is the settled state of this document by design: the
+    // immersive's own script returns before it installs any observer when the
+    // viewer asks for it, so emulating it here screenshots the page as it
+    // finally rests rather than mid-transition. A CSS override alone was not
+    // enough — the count-up that shipped 184 / 5.1% / 0.7% into a screenshot
+    // of 3,394 / 94.2% / 12.3% was requestAnimationFrame, which no stylesheet
+    // can stop (F4).
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
     await page.setViewport({ width, height: 1400, deviceScaleFactor: 1 })
     await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     await waitForImages(page)
 
     if (doc === 'immersive') {
-      // The immersive page reveals each `.sc` via IntersectionObserver as it
-      // scrolls into view, and animates data-count numbers up from 0. A
-      // look-pass never scrolls, so force the settled/revealed state instead
-      // of shipping screenshots of a half-faded page — that's not what a
-      // reviewer (or a client who actually scrolls) ends up seeing.
+      // With reduced motion the reveal observer never runs, so the scenes keep
+      // their pre-reveal class. Force the revealed state: that is what a
+      // reader who scrolls actually sees.
       await page.evaluate(() => {
         document.querySelectorAll('.sc').forEach((el) => el.classList.add('on'))
         const style = document.createElement('style')
@@ -138,6 +163,9 @@ async function screenshotDocument(opts: {
         document.head.appendChild(style)
       })
     }
+    // Fonts settle after the reveal class lands, so a heading measured for the
+    // screenshot is measured in Amboqia, not in the fallback serif.
+    await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve()))
 
     const settledHtml = await page.content()
     const chapters = extractChapters(settledHtml)
