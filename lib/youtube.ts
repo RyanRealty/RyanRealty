@@ -327,7 +327,10 @@ export function getYouTubeAuthorizationUrl(state: string): string {
     response_type: 'code',
     scope: YOUTUBE_OAUTH_SCOPES,
     access_type: 'offline',
-    prompt: 'consent',
+    // select_account: Matt's browser holds three Google sessions and the
+    // channel lives on the Gmail one. Without it Google reused the default
+    // session silently and two grants on 2026-09-07 landed on the wrong channel.
+    prompt: 'consent select_account',
     state,
   })
 
