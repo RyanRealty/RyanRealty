@@ -303,6 +303,7 @@ async function loadExpired(
     ;({ data: r, error } = await sb
       .from('expired_listings')
       .select(prospectSelectLegacy('expired'))
+      // @canonical-key — same self-lookup as the optimistic path above.
       .eq('listing_key', id.trim())
       .maybeSingle())
   }
