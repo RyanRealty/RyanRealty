@@ -8,7 +8,9 @@
 
 import { describe, it, expect } from 'vitest'
 import { reconcileAdjustedSales, grossAdjustmentPct, type ReconcilableSale } from './reconciliation'
-import { checkBrandVoice } from '@/lib/voice/check'
+// The mechanical voice gate was retired 2026-09-07 (352d4351); the seller-prose
+// rules that still bind this module are punctuation and the banned jargon list.
+const SELLER_PROSE_VIOLATION = /[—–;!]|\b(band|comps?|subject|adjusted close|tier|ladder|dispersion|supportable)\b/i
 
 function sale(over: Partial<ReconcilableSale> = {}): ReconcilableSale {
   return {
@@ -127,6 +129,6 @@ describe('reconcileAdjustedSales', () => {
       subjectSqft: 1_700,
     })
     const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
-    expect(checkBrandVoice(prose).ok).toBe(true)
+    expect(prose).not.toMatch(SELLER_PROSE_VIOLATION)
   })
 })

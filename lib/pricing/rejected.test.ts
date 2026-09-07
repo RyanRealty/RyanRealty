@@ -6,7 +6,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { buildRejectedSales, rejectionReason, type RejectedCandidate } from './rejected'
-import { checkBrandVoice } from '@/lib/voice/check'
+// The mechanical voice gate was retired 2026-09-07 (352d4351); the seller-prose
+// rules that still bind this module are punctuation and the banned jargon list.
+const SELLER_PROSE_VIOLATION = /[—–;!]|\b(band|comps?|subject|adjusted close|tier|ladder|dispersion|supportable)\b/i
 
 const ASOF = new Date('2026-09-07T00:00:00Z').getTime()
 
@@ -75,7 +77,7 @@ describe('rejectionReason', () => {
       rejectionReason(candidate({ closeDate: '2024-01-15' }), SUBJECT, ASOF),
       rejectionReason(candidate({ proximity: null }), SUBJECT, ASOF),
     ].join('\n')
-    expect(checkBrandVoice(lines).ok).toBe(true)
+    expect(lines).not.toMatch(SELLER_PROSE_VIOLATION)
   })
 })
 
