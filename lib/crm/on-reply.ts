@@ -159,5 +159,19 @@ export async function handleInboundReply(input: InboundReplyInput): Promise<Inbo
     out.errors.push(`nudge: ${e instanceof Error ? e.message : String(e)}`)
   }
 
+  // 5. IF THEY ARE SITTING ON A CMA WE SENT, SAY WHICH ONE. The nudge above
+  //    tells the broker a person answered; this tells them which address the
+  //    conversation is about, and stamps the reply onto the document's own
+  //    record so the queue row can show it. Deliberately outside the
+  //    idempotency bucket: its dedupe is per-DOCUMENT (one reply alert per CMA,
+  //    ever), not per four-hour window, and the two must not share a key.
+  //    Non-blocking like every other step here.
+  try {
+    const { routeCmaReplyToBroker } = await import('@/lib/crm/cma-engagement')
+    await routeCmaReplyToBroker({ personId: input.personId, channel: input.channel, broker: slug })
+  } catch (e) {
+    out.errors.push(`cma: ${e instanceof Error ? e.message : String(e)}`)
+  }
+
   return out
 }

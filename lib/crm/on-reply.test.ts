@@ -8,6 +8,7 @@ const state = {
   tasks: [] as Array<Record<string, unknown>>,
   alerts: [] as Array<Record<string, unknown>>,
   idemSeen: new Set<string>(),
+  cmaRouted: [] as Array<Record<string, unknown>>,
 }
 
 vi.mock('server-only', () => ({}))
@@ -53,6 +54,12 @@ vi.mock('@/lib/crm/broker-alerts', () => ({
   queueBrokerAlert: async (a: Record<string, unknown>) => { state.alerts.push(a); return true },
 }))
 
+// The CMA half of the reply routing (2026-09-07) has its own rail and its own
+// tests; here it is stubbed so this suite stays about stage/pause/task/alert.
+vi.mock('@/lib/crm/cma-engagement', () => ({
+  routeCmaReplyToBroker: async (a: Record<string, unknown>) => { state.cmaRouted.push(a); return true },
+}))
+
 const { handleInboundReply } = await import('./on-reply')
 
 beforeEach(() => {
@@ -63,6 +70,7 @@ beforeEach(() => {
   state.tasks = []
   state.alerts = []
   state.idemSeen = new Set()
+  state.cmaRouted = []
 })
 
 describe('handleInboundReply — a two-way conversation is engagement', () => {
@@ -127,5 +135,13 @@ describe('handleInboundReply — a two-way conversation is engagement', () => {
     const r = await handleInboundReply({ personId: 0, channel: 'sms' })
     expect(r.advanced).toBe(false)
     expect(state.tasks).toHaveLength(0)
+  })
+})
+
+describe('handleInboundReply — the CMA half of the signal', () => {
+  it('routes the reply to the CMA rail with the resolved desk', async () => {
+    await handleInboundReply({ personId: 1, broker: 'rebecca', channel: 'email', preview: 'what would you list it at?' })
+    expect(state.cmaRouted).toHaveLength(1)
+    expect(state.cmaRouted[0]).toMatchObject({ personId: 1, channel: 'email', broker: 'rebecca' })
   })
 })

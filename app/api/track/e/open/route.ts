@@ -75,6 +75,18 @@ export async function GET(req: NextRequest) {
       })
       if (!res.ok) console.warn('[track/open] email_events error:', res.error)
 
+      // A CMA open is a lead signal (2026-09-07). Same broker rail as the
+      // document visit, same per-(document, contact) dedupe — whichever of the
+      // two fires first is the one alert the broker gets. Non-blocking: the
+      // pixel always returns.
+      try {
+        const { cmaSlugFromEmailKey, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
+        const slug = cmaSlugFromEmailKey(ctx.emailKey)
+        if (slug) await queueCmaOpenedAlert({ slug, crmPersonId: ctx.personId, trigger: 'email' })
+      } catch (err) {
+        console.warn('[track/open] cma-opened alert error:', err)
+      }
+
       // Newsletter ledger (spec §3.1/H1): a `newsletter:<id>` open ALSO lands on
       // newsletter_recipient_events, the deduped source every per-issue stat
       // derives from. Recipient-scoped dedupe collapses pixel refires + webhook

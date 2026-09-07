@@ -88,8 +88,14 @@ describe('lib/crm/gmail.ts wires the email reply-intent pass into the sync', () 
     expect(src).toContain("import { classifyInboundReply } from '@/lib/crm/reply-intent'")
     expect(src).toContain("import { prospectOutreachContext } from '@/lib/crm/prospect-context'")
     expect(src).toContain("import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'")
-    // dir==='in' rows are collected for the pass
-    expect(src).toMatch(/inboundForIntent\.push\(\{ personId, messageKey, body, subject \}\)/)
+    // dir==='in' rows are collected for the pass. Matched per FIELD, not as one
+    // frozen literal: the collection grew a `ts` (2026-09-07, so the CMA reply
+    // alert can ignore a backfill's old mail) and a byte-exact regex failed a
+    // purely additive change while the contract it guards still held.
+    expect(src).toMatch(/inboundForIntent\.push\(\{[\s\S]{0,200}?\}\)/)
+    for (const field of ['personId', 'messageKey', 'body', 'subject']) {
+      expect(src.match(/inboundForIntent\.push\(\{[\s\S]{0,200}?\}\)/)?.[0]).toContain(field)
+    }
     // and the pass runs on the success path
     expect(src).toMatch(/await classifyInboundEmailReplies\(sb, inboundForIntent\)/)
     // only prospects get classified (mirrors the SMS scope)
