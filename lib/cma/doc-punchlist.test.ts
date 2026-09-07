@@ -551,3 +551,42 @@ describe('F4 — a data figure never animates through a false value', () => {
     expect(html).toContain('3,394')
   })
 })
+
+describe('no chapter is headed with an MLS placeholder', () => {
+  it('drops the subdivision chapter when the MLS carries no subdivision', () => {
+    // 65365 Concorde shipped a chapter headed "N/A" on both documents.
+    const story = {
+      facts: {
+        name: 'N/A',
+        totalSales: 12,
+        years: [{ year: 2025, count: 4, medianClose: 1_400_000, medianPpsf: 520 }],
+        recordHigh: null,
+        recordLow: null,
+        medianDomRecent: 40,
+        saleToListRecentPct: 97.5,
+        subjectSqftPercentile: 60,
+        vintageSpan: null,
+        source: 'fixture',
+      },
+      sections: [{ heading: 'A street', body: 'Sales cluster here.' }],
+      notableSales: [],
+      model: 'x',
+      costUsd: 0,
+      photoSalesReviewed: 0,
+    } as unknown as RenderCmaArgs['subdivisionStory']
+    expect(letter({ subdivisionStory: story })).not.toContain('>N/A<')
+    expect(immersive({ subdivisionStory: story })).not.toContain('>N/A<')
+  })
+})
+
+describe('a price never ships without the sales that set it', () => {
+  it('draws the matrix on the three-sale set the pricing unit priced from', () => {
+    const three = comps.slice(0, 3)
+    const html = letter({ comps: three })
+    expect(html).toContain('comp-matrix-wrap')
+    expect(html).toContain('The sales that set this price')
+    for (const address of ['730 Quince', '840 Quince', '1737 7th']) {
+      expect(html).toContain(address)
+    }
+  })
+})

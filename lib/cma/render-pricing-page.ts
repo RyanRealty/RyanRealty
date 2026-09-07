@@ -63,6 +63,16 @@ function matrixLead(input: {
   )}</p>`
 }
 
+/**
+ * How the number was reached, as facts the seller can check against the table
+ * above it.
+ *
+ * The predicted close used to print here as a dollar figure. The Sunstone
+ * contract keeps expected sale / predicted close off the seller document — the
+ * recommended list is the one price a seller reads — so the sentence carries
+ * the rate and the market's sale-to-list instead, both of which the matrix and
+ * the market chapter already stand behind.
+ */
 function howTheListWasSet(input: {
   subject: CmaSubject
   market: CmaMarketContext | null
@@ -70,15 +80,16 @@ function howTheListWasSet(input: {
 }): string {
   const sqft = input.subject.sqft
   const close = input.pricing.predictedClose
-  const rec = input.pricing.recommended
-  if (sqft == null || !(sqft > 0) || close == null || !(close > 0) || !(rec > 0)) return ''
+  if (sqft == null || !(sqft > 0) || close == null || !(close > 0)) return ''
   const ppsf = usd(Math.round(close / sqft))
   const bits = [
-    `Median time-adjusted dollar per foot of these sales, at ${int(sqft)} sq ft, is ${usd(close)} (${ppsf} per square foot).`,
+    `Brought to today, these sales carry a median of ${ppsf} per square foot at ${int(sqft)} sq ft.`,
   ]
   const stl = saleToListPct(input.market?.saleToListRatio ?? null)
-  if (stl) bits.push(`At ${stl} percent of list that is ${usd(rec)}.`)
-  return `<p>${bits.map((b) => esc(b)).join(' ')}</p>`
+  if (stl && input.market) {
+    bits.push(`Recent ${input.market.geoLabel} sales have been closing at ${stl} percent of list.`)
+  }
+  return `<p class="small">${bits.map((b) => esc(b)).join(' ')}</p>`
 }
 
 export function pricingPage(input: {

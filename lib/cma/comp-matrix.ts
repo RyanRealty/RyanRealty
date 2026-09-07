@@ -20,12 +20,24 @@ import {
   type CmaExpiredPeer,
 } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
-import { MIN_COMPS } from '@/lib/cma/comps'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 const esc = escapeHtml
 
-/** Same floor as selection — do not paint a thin matrix that did not set the recommend. */
-export const MIN_CLOSED_SALES_FOR_MATRIX = MIN_COMPS
+/**
+ * The floor is the PRICING unit's floor, not the selector's target.
+ *
+ * It used to be MIN_COMPS (5), the selector's target set size, while
+ * lib/pricing publishes a recommend from PRICING_MIN_COMPS (3). Every CMA
+ * built on three or four sales therefore shipped a recommended list with no
+ * comparable sales visible anywhere in the document — caught on
+ * cma-19968 and cma-1617-nw-8th, 2026-09-07, both of which printed a price
+ * chapter containing a map and nothing else.
+ *
+ * If the pricing unit trusted the set enough to publish a number, the seller
+ * sees that set. A thin matrix is honest; an invisible one is not.
+ */
+export const MIN_CLOSED_SALES_FOR_MATRIX = PRICING_MIN_COMPS
 const ACRES_TO_SQFT = 43560
 
 /** Prefer DOM baked into listing history so the DOM row and history agree. */

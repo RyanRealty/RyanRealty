@@ -24,7 +24,7 @@ import {
   snapshotPage,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
-import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { cleanText, dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaAdjustedComp, CmaBroker, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -159,6 +159,9 @@ function subdivisionScene(a: OpinionSceneArgs): string {
   const st = a.subdivisionStory
   if (!st) return ''
   const f = st.facts
+  // Same gate as subdivisionChapterPage: never a chapter headed "N/A".
+  const name = cleanText(f.name)
+  if (!name) return ''
   const sections = st.sections
     .map((sec) => `<div class="sty r"><h3 class="sty-h">${esc(sec.heading)}</h3><p class="sty-b">${esc(sec.body)}</p></div>`)
     .join('')
@@ -191,8 +194,8 @@ function subdivisionScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream" id="your-street">
     <div class="in wide">
       <div class="kick r">This subdivision</div>
-      <h2 class="h r">${esc(f.name)}</h2>
-      <p class="lede r">${int(f.totalSales)} homes have sold in ${esc(f.name)}.</p>
+      <h2 class="h r">${esc(name)}</h2>
+      <p class="lede r">${int(f.totalSales)} homes have sold in ${esc(name)}.</p>
       ${sections ? `<div class="sty-grid">${sections}</div>` : ''}
       ${notable ? `<h3 class="sub r">The most recent sales</h3><div class="nb-grid">${notable}</div>` : ''}
       ${position ? `<p class="body r pos">${position}</p>` : ''}

@@ -117,6 +117,12 @@ export function renderSold90Html(area: CmaMarketArea | null | undefined): string
   <p class="small">${esc(clientSourceLine(s.source, 'Closed sales in this market area over the last 90 days.'))}</p>`
 }
 
+/**
+ * The market board. Every figure here is CITY grain, not this house's peers,
+ * so the median-sold label says so — a seller reading "$532,311 median sold"
+ * two scrolls under a $389,000 recommend has to be told which is which
+ * (dataviz: name the grain the numbers actually are).
+ */
 export function renderInventoryBoardHtml(market: CmaMarketContext | null | undefined): string {
   if (!market) return ''
   const mos = market.monthsOfSupply
@@ -138,7 +144,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
   <div class="stat3">
     ${saleToList != null ? `<div class="st"><div class="st-n">${saleToList}%</div><div class="st-l">sold to list</div></div>` : ''}
     ${market.medianDom != null ? `<div class="st"><div class="st-n">${int(market.medianDom)}</div><div class="st-l">median days on market</div></div>` : ''}
-    ${market.medianSalePrice != null ? `<div class="st"><div class="st-n">${usd(market.medianSalePrice)}</div><div class="st-l">median sold</div></div>` : ''}
+    ${market.medianSalePrice != null ? `<div class="st"><div class="st-n">${usd(market.medianSalePrice)}</div><div class="st-l">median sold, every ${esc(market.geoLabel)} home</div></div>` : ''}
   </div>
   ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
 }

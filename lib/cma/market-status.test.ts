@@ -497,9 +497,8 @@ describe('market charts', () => {
     )
     expect(svg).toContain('730 Quince')
     expect(svg).toContain('192 days, no offer')
-    expect(svg).toContain('0 days')
-    expect(svg).toContain('192 days')
-    // Counts start at zero, and the axis ends at the data.
+    // Every bar is directly labelled, so an axis tick would only repeat one.
+    expect(svg.match(/192 days/g)).toHaveLength(1)
     expect(svg).not.toContain('month-ledger')
   })
 

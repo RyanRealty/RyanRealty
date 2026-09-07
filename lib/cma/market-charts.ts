@@ -186,6 +186,14 @@ export function priceRulerSvg(input: PriceRulerInput): string {
   const listX = x(input.list)
   const askX = lastAsk != null ? x(lastAsk) : null
 
+  // An end label that repeats a tick is the duplicate labelling P1 removed.
+  const ticked = (v: number) =>
+    Math.abs(v - input.list) < 500 || (lastAsk != null && Math.abs(v - lastAsk) < 500)
+  const endLabel = (v: number, atX: number, anchor: 'start' | 'end') =>
+    ticked(v)
+      ? ''
+      : `<text x="${atX}" y="${axisY + 20}" text-anchor="${anchor}" font-size="11.5" fill="${RULER_MUTED}">${esc(rulerLabel(v))}</text>`
+
   const listTick = `<line x1="${listX.toFixed(1)}" y1="30" x2="${listX.toFixed(1)}" y2="172" stroke="${RULER_INK}" stroke-width="1.75"/>
     <text x="${clamp(listX).toFixed(1)}" y="22" text-anchor="${anchorFor(listX)}" font-size="12.5" font-weight="600" fill="${RULER_INK}">${esc(input.listLabel)}</text>`
   const askTick =
@@ -198,8 +206,8 @@ export function priceRulerSvg(input: PriceRulerInput): string {
     ${askTick}
     ${listTick}
     <line x1="${plotL}" y1="${axisY}" x2="${plotR}" y2="${axisY}" stroke="${RULER_EDGE}" stroke-width="0.75"/>
-    <text x="${plotL}" y="${axisY + 20}" font-size="11.5" fill="${RULER_MUTED}">${esc(rulerLabel(dataMin))}</text>
-    <text x="${plotR}" y="${axisY + 20}" text-anchor="end" font-size="11.5" fill="${RULER_MUTED}">${esc(rulerLabel(dataMax))}</text>
+    ${endLabel(dataMin, plotL, 'start')}
+    ${endLabel(dataMax, plotR, 'end')}
     <text x="${gutter - 16}" y="${soldY + 4}" text-anchor="end" font-size="12" font-weight="600" fill="${RULER_INK}">Sold</text>
     <text x="${gutter - 16}" y="${unsoldY + 4}" text-anchor="end" font-size="12" font-weight="600" fill="${RULER_MUTED}">Did not sell</text>
     ${soldDots}
@@ -231,10 +239,13 @@ export function daysToOfferSvg(rows: readonly DaysRow[], caption: string): strin
   const W = 720
   const rowH = 30
   const top = 16
-  const H = top + kept.length * rowH + 24
+  const H = top + kept.length * rowH + 14
   const gutter = 150
   const plotL = gutter
-  const plotR = W - 74
+  // Reserve the right margin for the longest value label. The subject's reads
+  // "192 days, no offer" and used to run off the frame.
+  const longest = Math.max(...kept.map((r) => r.valueLabel.length))
+  const plotR = W - Math.min(Math.max(longest * 6.7 + 16, 70), 190)
   const x = (v: number) => plotL + ((plotR - plotL) * v) / max
 
   const bars = kept
@@ -250,12 +261,12 @@ export function daysToOfferSvg(rows: readonly DaysRow[], caption: string): strin
     })
     .join('\n    ')
 
+  // Every bar carries its own value, so an axis tick would only repeat one.
+  // The zero baseline is the whole axis: days are a count and start at zero.
   const baseY = top + kept.length * rowH - 6
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(caption)}" class="trend-svg">
     <line x1="${plotL}" y1="6" x2="${plotL}" y2="${baseY.toFixed(1)}" stroke="${RULER_EDGE}" stroke-width="0.75"/>
     ${bars}
-    <text x="${plotL}" y="${(baseY + 18).toFixed(1)}" font-size="11.5" fill="${RULER_MUTED}">0 days</text>
-    <text x="${plotR}" y="${(baseY + 18).toFixed(1)}" text-anchor="end" font-size="11.5" fill="${RULER_MUTED}">${esc(String(max))} days</text>
   </svg>`
 }
 

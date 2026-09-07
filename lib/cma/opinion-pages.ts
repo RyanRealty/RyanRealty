@@ -11,6 +11,7 @@ import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import {
+  cleanText,
   dateLong,
   dec,
   escapeHtml,
@@ -707,6 +708,11 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
   const st = a.subdivisionStory
   if (!st) return null
   const f = st.facts
+  // A chapter headed "N/A" shipped on 65365 Concorde: the MLS row carries no
+  // subdivision and the story was built anyway. cleanText knows the whole
+  // family of MLS placeholders (N/A, None, Unknown, "Not in a subdivision").
+  const name = cleanText(f.name)
+  if (!name) return null
   const yearRows = f.years
     .map(
       (y) =>
@@ -737,11 +743,11 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
     .filter(Boolean)
     .join(' ')
   return {
-    meta: `${esc(a.subject.streetAddress)} · ${esc(f.name)}`,
-    toc: `This subdivision, ${f.name}`,
+    meta: `${esc(a.subject.streetAddress)} · ${esc(name)}`,
+    toc: `This subdivision, ${name}`,
     body: `
-  <h2 class="section">${esc(f.name)}</h2>
-  <p>${int(f.totalSales)} closed single-family sales in ${esc(f.name)}.</p>
+  <h2 class="section">${esc(name)}</h2>
+  <p>${int(f.totalSales)} closed single-family sales in ${esc(name)}.</p>
   ${sections}
   <table class="comp-table">
     <thead><tr><th>Year</th><th>Sales</th><th>Median close</th><th>Median $/sqft</th></tr></thead>

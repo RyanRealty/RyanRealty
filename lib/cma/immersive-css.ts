@@ -200,6 +200,19 @@ html.anim .on .r:nth-child(4){transition-delay:.18s}
 html.anim .on .r:nth-child(5){transition-delay:.24s}
 @media (prefers-reduced-motion:no-preference){.hero-bed{animation:kb 26s ease-in-out infinite alternate}}
 @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+@media screen and (max-width:700px){
+  /* Contain leaves a 375-wide hero as a 250px photo strip over 900px of blur.
+     On a phone the photo is a band and the title block sits under it, which
+     is the same promise (nothing in the photo is cut) in a form that fills
+     the screen. */
+  /* .sc.hero, not .hero: the 860px rule below resets .sc padding and would
+     otherwise put an 18px gutter around a full-bleed photo. */
+  .sc.hero{display:block;min-height:0;padding:0;overflow:visible}
+  .hero-bed,.hero-scrim,.hero .cue{display:none}
+  .hero-img{position:static;width:100%;height:auto;object-fit:contain}
+  .hero .in{position:static;padding:32px 18px 44px;background:var(--navy)}
+  .hero-h{font-size:clamp(34px,11vw,54px)}
+}
 @media (max-width:860px){
   .stat2,.stat3,.stat4{grid-template-columns:1fr 1fr}
   .comp-row,.story-grid,.like-grid,.cando-grid,.sty-grid,.plan-grid{grid-template-columns:1fr}
@@ -228,10 +241,19 @@ table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;dis
 table.comp-matrix .matrix-addr{display:block}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
-.chart-on-navy svg text{fill:var(--cream)!important}
-.chart-on-navy svg line{stroke:rgba(250,248,244,.55)!important}
-.chart-on-navy svg circle[fill='#102742']{fill:var(--cream)!important}
-.chart-on-navy svg circle[stroke='#102742']{stroke:var(--cream)!important}
+@media screen and (max-width:700px){
+  .szn.is-hero{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .szn.is-hero svg{min-width:660px}
+}
+/* A chart drawn in navy ink is invisible on a navy scene. The median-close
+   line printed a caption over a blank field until this landed. Scoped to the
+   scene, not to one wrapper class, so a chart moved to a navy chapter cannot
+   disappear again. */
+.sc-navy svg text{fill:var(--cream)}
+.sc-navy svg line{stroke:rgba(250,248,244,.5)}
+.sc-navy svg [fill='#102742']{fill:var(--cream)}
+.sc-navy svg [stroke='#102742']{stroke:var(--cream)}
+.sc-navy svg path[fill='#102742']{fill:var(--cream);fill-opacity:.14}
 .letter-body table.kv{width:100%;border-collapse:collapse;font-size:15px}
 .letter-body table.kv th{text-align:left;font-weight:500;opacity:.7;padding:8px 16px 8px 0;border-bottom:1px solid var(--ink12);width:38%}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}

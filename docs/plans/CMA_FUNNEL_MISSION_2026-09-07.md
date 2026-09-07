@@ -99,3 +99,92 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
   - Letter comp card #5 (735 Oak, `cma-2465-7th-redmond-97756`) renders a
     blank white photo box while comps 1–4 have photos — may be a legitimate
     no-photo state or a broken image; not confirmed either way.
+
+- **A · 411eba70** (`wt/cma-doc-20260907`) — the punch list, P1–P10 + F1–F5.
+  TDD: `lib/cma/doc-punchlist.test.ts` states each item against the RENDERED
+  HTML (chapter order, the exact caption sentence, no duplicate labels in the
+  band SVG, the CSS breakpoints), written failing, then fixed.
+
+  **P1** — new `priceRulerSvg` in `lib/cma/market-charts.ts`: one price axis,
+  closed sales as filled navy dots, unsold hollow, coincident dots dodged away
+  from the axis, domain cropped to the plotted data, and exactly two labelled
+  ticks (`Recommended $389K`, `Your last ask $460K`). An axis end label that
+  would repeat a tick is dropped. `bandOutcomeReading` states the fact under it.
+  The old `renderPrintOutcomeStripSvg` lollipop is no longer called from the CMA.
+  **P2** — `your-last-listing` is now chapter 2 on both documents, carrying the
+  ruler and the failed-then-sold backtest; `sold-and-unsold` keeps the unsold
+  peers matrix only when the subject is expired.
+  **P3** — `soldBandFitsRecommend` gates the 90-day band on both paths: it
+  renders only when the recommend sits inside [low, high] and the band median is
+  within 20%. `CmaSoldBand` carries no square footage, so there is no honest
+  reconciling sentence to write from render_args — the block comes out instead.
+  **P4** — `daysToOfferSvg` + `renderDaysToOfferHtml`: every kept sale at its
+  days to offer against the subject's own days with no offer. The twelve-month
+  new-listing ledger (`listingTrendSvg`, `renderListingTrendHtml`,
+  `trendChartsPage`, both stylesheets' `.month-ledger` rules) is deleted.
+  **P5** — the subject's listing history states once (dropped from the
+  competition subject row); "What we searched" is one sentence, not a heading
+  plus three bullets two of which restated the table under them.
+  **P6** — `lotsDifferMaterially` / `uniformLotLine`: the drawn-lot chapter
+  renders only when the spread is over 25% or a lot reaches half an acre.
+  Otherwise Home location carries one sentence.
+  **P7** — "I am here" is gone; We throughout.
+  **P8** — a reading above the matrix (`The 5 closed sales below set this
+  number. Brought to your size and date, they land at $372,324 to $398,788.
+  Recommended list $389,000.`) and one legend line for the adjustment rows.
+  **P9** — `?print=1` renders from `render_args` through `resolveCmaPrintHtml`,
+  the same function the PDF calls, instead of the frozen build blob.
+  **P10** — `OPINION_CHAPTER_ORDER` in `lib/cma/opinion-pages.ts` is the ONE
+  order; `assembleOpinionPages` and `assembleOpinionScenes` both walk it under
+  the same gates. Disclosure, Home location, Seller net and Permits gained
+  immersive scenes; `render.ts` appends nothing after the cover. The FSBO
+  services page ("MLS and portal distribution", "Showing and offer management")
+  was dropped from the seller document — the Sunstone contract refuses "how we
+  would market" there, and it had been printing on every CMA including expireds.
+  **F1** — the immersive matrix falls back to the stacked cards below 700px.
+  **F2** — the letter shows the matrix on screen at reading width, cards below
+  700px; comp thumbnails load eagerly (the blank photo boxes were the look-pass
+  never scrolling past a lazy image, not a broken src).
+  **F3** — the hero photo is `object-fit: contain` over a blurred copy of
+  itself, so an agent-annotated aerial keeps every landmark label and its
+  disclaimer. On a phone it is a full-width band with the title block under it.
+  **F4** — no `data-count` anywhere; the count-up IIFE is deleted from
+  `immersive.ts`. `scripts/cma-lookpass.ts` emulates
+  `prefers-reduced-motion: reduce`, forces every image eager, and waits on
+  `document.fonts.ready`.
+  **F5** — fixed by P3.
+
+  Also: charts inside a navy scene invert (`.sc-navy svg`) — the median-close
+  line had been drawing navy ink on navy and printing its caption over a blank
+  field. The market's median sold is labelled with its grain
+  ("median sold, every Redmond home"). The predicted close no longer prints on
+  the seller page (Sunstone: expected sale / predicted close stay off it).
+
+  **Numbers skipped rather than derived in the renderer (§0):**
+  - P8 asked for the *median* of the adjusted closes. `render_args` carries no
+    such figure — `pricing` exposes `method1Low/Mid/High` ($/sqft percentiles ×
+    sqft) and `method3` (a weighted reconciliation), neither of which is the
+    median of the printed Adjusted close row. The lead states the RANGE
+    instead: both ends already print in the matrix, so no new number ships.
+  - P4 asked for the Redmond 21-day median as a tick. `market.medianDom` is a
+    list-to-close figure (CLAUDE.md §7); days to offer is a different measure
+    and two measures do not share an axis. It stays off the chart. The expired
+    audit still states it in prose beside the subject's own DOM, where the
+    comparison is like for like.
+
+  **Handed to other streams (not this stream's files):**
+  - The subject's days on market disagrees between paths on
+    `cma-2465-7th-redmond-97756`: the comp matrix prints 192 (derived from
+    `lastListDate`) and the expired audit prints 186 (derived from the listing
+    cycle). One document, two numbers for one fact — Stream D.
+  - Seller net prints "4 of 8 sales that set this price reported a concession"
+    on a document whose comp set is 5 sales. `pricing.sellerNet.knownCount`
+    counts a different set than the kept comps — Stream D.
+
+  Verified: `npx vitest run lib/cma` 860 passing; `npx tsc --noEmit` clean;
+  `ci:brand-voice`, `ci:voice-constructions`, `ci:cma-opinion-spine`,
+  `ci:cma-exemplar`, `ci:market-chart-honesty`, `ci:design-tokens`,
+  `ci:pdf-page-safety` all green. Look-pass re-run and every chapter shot read
+  by eye at 816/375 (letter) and 1280/375 (immersive) on
+  `cma-2465-7th-redmond-97756` (expired), `cma-65365-concorde` (6.38-acre land
+  subject, P6 the other way), `cma-19968` (FSBO), `cma-1617-nw-8th` (seller LP).

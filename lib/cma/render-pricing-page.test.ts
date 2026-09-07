@@ -76,9 +76,11 @@ describe('pricingPage', () => {
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
     expect(html).toContain('1,631 sq ft')
-    expect(html).toContain('$640,000')
+    // The Sunstone contract keeps predicted close off the seller document.
+    // The rate and the market's sale-to-list carry the method instead.
+    expect(html).not.toContain('$640,000')
     expect(html).toContain('$392 per square foot')
-    expect(html).toContain('At 98.9 percent of list that is $655,000')
+    expect(html).toContain('closing at 98.9 percent of list')
     expect(html).not.toContain('Marker key')
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')

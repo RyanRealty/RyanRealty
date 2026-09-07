@@ -84,10 +84,15 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toContain('<h4 class="subhead">')
   })
 
-  it('fails closed below five closed sales — no thin matrix paint', () => {
+  // The floor is the pricing unit's floor (PRICING_MIN_COMPS = 3), not the
+  // selector's target of five. At five, cma-19968 and cma-1617-nw-8th shipped
+  // a recommended list with no comparable sales anywhere in the document
+  // (2026-09-07). A thin matrix is honest; an invisible one is not.
+  it('shows the set the pricing unit priced from, and nothing thinner', () => {
     expect(renderCompMatrixHtml(subject, [])).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 1))).toBe('')
-    expect(renderCompMatrixHtml(subject, padSales(comp, 4))).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 2))).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 3))).toContain('The sales that set this price')
     expect(renderCompMatrixHtml(subject, padSales(comp, 5))).toContain('The sales that set this price')
   })
 
