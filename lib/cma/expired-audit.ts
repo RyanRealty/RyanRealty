@@ -24,7 +24,8 @@
 
 import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaMarketContext } from '@/lib/cma/types'
-import type { BpoListingHistory } from '@/lib/bpo/types'
+import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
 // ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
 /** Listing fee for every expired-listing engagement. */
@@ -93,6 +94,88 @@ export interface ExpiredAuditData {
 }
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
+
+/** UTC midnight of the YYYY-MM-DD a date or timestamp falls on, else null. */
+function utcDay(value: string | null | undefined): number | null {
+  const day = String(value ?? '').trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const t = Date.parse(`${day}T00:00:00.000Z`)
+  return Number.isNaN(t) ? null : t
+}
+
+/**
+ * THE subject's days on market, one definition for the whole document.
+ *
+ * For a home that came off the market unsold, the defensible measure is the
+ * FINAL listing period's own exposure: list date to off-market date. That is
+ * the number the market median compares against (a single-cycle measure), and
+ * it is the only span the seller lived through on the listing being reviewed.
+ *
+ * NOT `CumulativeDaysOnMarket` (list-to-close across relists — CLAUDE.md §7
+ * forbids publishing it as DOM), and NOT list-date-to-today (a home off the
+ * market is not accruing market time). The cycle's own reported DOM is used
+ * only when the cycle is missing one of the two dates, which is the best the
+ * record supports; when neither is available the number is omitted (§0: cut,
+ * never estimate).
+ *
+ * Exported because both consumers must read the same value:
+ *  - the comps matrix, via the DOM baked into `subject.listingHistoryLine`
+ *    (see stampFinalCycleDom);
+ *  - the "your last listing" review's time-on-market finding, below.
+ */
+export function finalCycleDaysOnMarket(
+  cycle: Pick<BpoListingCycle, 'listDate' | 'offMarketDate' | 'daysOnMarket'> | null | undefined,
+): number | null {
+  if (!cycle) return null
+  // Difference the CALENDAR DATES, not the raw values. The MLS stores one side
+  // as a timestamp ("2026-02-26T23:27:57+00:00") and the other as a bare date
+  // ("2026-09-01"); subtracting those directly makes the answer depend on the
+  // time of day the listing was keyed in, which moved this subject's DOM by a
+  // day. Whole days between the two dates is the number a broker can check.
+  const start = utcDay(cycle.listDate)
+  const end = utcDay(cycle.offMarketDate)
+  if (start != null && end != null) {
+    const d = Math.round((end - start) / 86_400_000)
+    if (Number.isFinite(d) && d >= 0) return d
+  }
+  const reported = cycle.daysOnMarket
+  return reported != null && Number.isFinite(reported) && reported >= 0 ? Math.round(reported) : null
+}
+
+/**
+ * Stamp the final cycle's days on market onto the subject so every consumer
+ * reads one number.
+ *
+ * The comps matrix (lib/cma/comp-matrix.ts subjectDomDays) takes the subject's
+ * DOM from the "N days on market" token inside `subject.listingHistoryLine`,
+ * which lib/cma/subject.ts builds from the MLS row's CumulativeDaysOnMarket.
+ * On a relisted or off-market subject that count is a different measurement
+ * from the review's, and the document then printed two numbers for one fact
+ * (look pass 2026-09-07, cma-2465-7th-redmond-97756: 192 vs 186).
+ *
+ * This rewrites the line from the FINAL CYCLE's own facts — its asks, its list
+ * date, and finalCycleDaysOnMarket — so the matrix, the history sentence, and
+ * the review all carry the same span. No-op when the cycle proves no span.
+ *
+ * Returns the stamped DOM, or null when nothing was changed.
+ */
+export function stampFinalCycleDom(
+  subject: CmaSubject,
+  cycle: BpoListingCycle | null | undefined,
+): number | null {
+  const dom = finalCycleDaysOnMarket(cycle)
+  if (dom == null || !cycle) return null
+  const line = buildListingHistoryLine({
+    listPrice: cycle.finalListPrice ?? subject.lastListPrice,
+    originalListPrice: cycle.originalListPrice,
+    status: subject.standardStatus ?? cycle.status,
+    onMarketDate: cycle.listDate ?? subject.lastListDate,
+    daysOnMarket: dom,
+  })
+  if (!line) return null
+  subject.listingHistoryLine = line.endsWith('.') ? line : `${line}.`
+  return dom
+}
 
 /**
  * Ownership-tenure line for the pricing/context section — 'Owned since YYYY
@@ -206,13 +289,7 @@ export function buildFailureFindings(args: {
   // and a relisted property's cumulative count would compare mismatched units
   // (adversarial-audit correctness finding 2026-07-14).
   const cycle = history.currentCycle
-  const cycleDom = (() => {
-    if (cycle?.listDate && cycle?.offMarketDate) {
-      const d = Math.round((new Date(cycle.offMarketDate).getTime() - new Date(cycle.listDate).getTime()) / 86_400_000)
-      if (Number.isFinite(d) && d >= 0) return d
-    }
-    return cycle?.daysOnMarket ?? null
-  })()
+  const cycleDom = finalCycleDaysOnMarket(cycle)
   const medianDom = market?.medianDom ?? null
   if (cycleDom != null && medianDom != null && medianDom > 0) {
     findings.push({
