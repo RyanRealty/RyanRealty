@@ -17,12 +17,6 @@ set -eo pipefail
 # Runs against staged files only; no-op when no producer is staged.
 node scripts/check-producer-guard.mjs
 
-# Brand voice (VOICE.md — D11). Fails fast on punctuation, invented quotes,
-# and Value my home CTAs. Same gate runs in CI; here it forces EVERY session
-# through the voice before a commit can land. Ratcheted —
-# violations may only decrease (scripts/brand-voice-baseline.json).
-npm run ci:brand-voice
-
 # UNIT tests only. The *.int.test.ts project hits live Supabase; under the old
 # `npm test` this hook ran the whole suite on every commit — 5-10 minutes, and
 # it flaked whenever a concurrent Vercel build saturated the connection pool

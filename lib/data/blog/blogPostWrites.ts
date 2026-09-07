@@ -5,13 +5,10 @@
  * cannot satisfy; this path is for callers that already passed
  * requireCronAuth.
  *
- * Every publish runs checkBrandVoice on title, excerpt, meta, and body and
- * refuses on a violation, the same gate the editor path applies
- * (ci:voice-send-paths). Upserts on slug, so a rerun for the same month is a
- * no-op on identity and a refresh on content.
+ * Upserts on slug, so a rerun for the same month is a no-op on identity and a
+ * refresh on content. (The mechanical voice gate was retired 2026-09-07.)
  */
 import { createServiceClient } from '@/lib/supabase/service'
-import { checkBrandVoice } from '@/lib/voice/check'
 
 export const MATT_BROKER_ID = '2fda6811-2edf-49e3-b3ca-33e1052f82e6'
 
@@ -33,21 +30,6 @@ export type PublishBlogPostResult =
   | { ok: false; reason: string }
 
 export async function publishBlogPost(input: PublishBlogPostInput): Promise<PublishBlogPostResult> {
-  // Same field shape as saveBlogPost: the metadata joins into `subject`, the
-  // body scans as HTML.
-  const voice = checkBrandVoice(
-    {
-      subject: [input.title, input.excerpt, input.seoTitle, input.seoDescription].filter(Boolean).join(' '),
-      bodyHtml: input.content,
-    },
-    { stripHtml: true },
-  )
-  if (!voice.ok) {
-    return {
-      ok: false,
-      reason: `voice: ${voice.violations.map((v) => `${v.kind}:${v.term}${v.field ? `@${v.field}` : ''}`).join(', ')}`,
-    }
-  }
   const supabase = createServiceClient()
   const { data: existing, error: readErr } = await supabase
     .from('blog_posts')

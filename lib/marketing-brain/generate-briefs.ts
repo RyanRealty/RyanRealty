@@ -61,7 +61,6 @@ import {
   applyBiasToOpportunities,
   type PerformanceBiasReport,
 } from './performance-bias'
-import { BANNED_WORDS as GENERATED_BANNED_WORDS } from '@/lib/brand-voice/generated-vocabulary'
 
 // ---------------------------------------------------------------------------
 // Supabase client
@@ -280,60 +279,6 @@ const SEVERITY_SCORE: Record<'high' | 'medium' | 'low', number> = {
   medium: 2,
   low: 1,
 }
-
-// ---------------------------------------------------------------------------
-// Brand-voice enforcement data
-// ---------------------------------------------------------------------------
-
-/** §6.1 Banned punctuation patterns. */
-const BANNED_PUNCTUATION = [
-  { pattern: /—/g, rule: '§6.1 Banned punctuation: em dash' },
-  { pattern: /;/g, rule: '§6.1 Banned punctuation: semicolon' },
-  // Dramatic colon = colon not preceded by a word/number that introduces a list
-  // We flag colons that end a sentence fragment followed by a punch line.
-  { pattern: /\.\.\.\s*:/g, rule: '§6.1 Banned punctuation: dramatic colon (ellipsis then colon)' },
-]
-
-/**
- * §6.2/§6.3 Banned words + phrases. Sourced from the canonical
- * lib/brand-voice/generated-vocabulary.ts (mirrors scripts/brand-voice-
- * vocabulary.cjs — see scripts/gen-brand-voice-consumers.mjs) rather than a
- * hand-typed list. This closes a live bug: the previous hand-typed list here
- * still hard-banned "about"/"around"/"approximately"/"roughly"/"spacious"/
- * "cozy"/"turnkey"/"leverage"/"navigate"/"comprehensive"/"foster", all of
- * which the canonical source un-banned 2026-06-02 as a realism pass (legit
- * plain English / precise real-estate terms) — that drift rejected legitimate
- * briefs containing ordinary words like "about". Uses the richer BANNED_WORDS
- * export (word + category) so the surfaced rule string carries the category,
- * same as the old per-list breakdown.
- */
-const BANNED_WORDS: Array<{ word: string; rule: string }> = [
-  ...GENERATED_BANNED_WORDS.map(({ word, category }) => ({
-    word,
-    rule: `§6.2 Banned words (${category}): "${word}"`,
-  })),
-  // Brief-specific tells the canonical core doesn't carry (a hype opening + a
-  // pandering phrasing). Layered on the generated core, never a re-typed list.
-  { word: 'introducing', rule: '§6.3 Hype opening: "introducing"' },
-  { word: "don't worry", rule: '§6.3 Pandering: "don\'t worry, we will handle…"' },
-  { word: 'we will handle everything', rule: '§6.3 Pandering: "don\'t worry, we will handle…"' },
-]
-
-/** §6.4 Banned trope patterns. */
-const BANNED_TROPE_PATTERNS: Array<{ pattern: RegExp; rule: string }> = [
-  {
-    pattern: /most agents|other agents do/i,
-    rule: '§6.4 Banned trope: dramatic before-and-after (defining ourselves by others)',
-  },
-  {
-    pattern: /the market is (?:on fire|crashing|exploding)/i,
-    rule: '§6.4 Banned trope: market-doom or market-hype take',
-  },
-  {
-    pattern: /guaranteed\s+(?:result|price|sale|offer)/i,
-    rule: '§4.1 Trustworthy: no guaranteed outcome claims',
-  },
-]
 
 // ---------------------------------------------------------------------------
 // Gap 5: Format performance aggregation
@@ -1230,52 +1175,15 @@ export function synthesizeOpportunities(signals: SignalBundle): RankedOpportunit
 // ---------------------------------------------------------------------------
 
 /**
- * Validates a brief's hook, body, and CTA against VOICE.md
- * hard-fail rules. Returns all violations found (not just the first).
- *
- * Algorithm:
- * 1. Concatenate hook + (body ?? '') + (cta ?? '') into a single text blob.
- * 2. Check each banned punctuation pattern against the blob.
- * 3. Check each banned word/phrase (whole-word, case-insensitive) against the blob.
- * 4. Check each banned trope regex against the blob.
- * 5. Return { passed: violations.length === 0, violations }.
+ * Voice is governed by marketing_brain_skills/brand-voice/VOICE.md, which
+ * carries no word lists, no punctuation rules, and no mechanical gate (Matt,
+ * 2026-09-07). This function is kept as a no-op pass-through so the
+ * GeneratedBrief.voice_validation field and the downstream decision-type
+ * logic (brief_generated vs voice_violation) keep their shape without a
+ * second copy of a retired mechanical check.
  */
-export function applyBrandVoice(brief: Pick<GeneratedBrief, 'hook' | 'body' | 'cta'>): VoiceValidation {
-  const blob = [brief.hook, brief.body ?? '', brief.cta ?? ''].join(' ')
-  const violations: string[] = []
-
-  // §6.1 Punctuation
-  for (const { pattern, rule } of BANNED_PUNCTUATION) {
-    if (pattern.test(blob)) {
-      violations.push(rule)
-    }
-    // Reset stateful regexes
-    pattern.lastIndex = 0
-  }
-
-  // §6.2/§6.3 Banned words + phrases (whole-word match, case-insensitive).
-  // The canonical list already includes multi-word phrases alongside single
-  // words, so one pass covers both.
-  for (const { word, rule } of BANNED_WORDS) {
-    // Escape special regex chars in the word
-    const escaped = word.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
-    const re = new RegExp(`\\b${escaped}\\b`, 'i')
-    if (re.test(blob)) {
-      violations.push(rule)
-    }
-  }
-
-  // §6.4 Banned tropes
-  for (const { pattern, rule } of BANNED_TROPE_PATTERNS) {
-    if (pattern.test(blob)) {
-      violations.push(rule)
-    }
-  }
-
-  return {
-    passed: violations.length === 0,
-    violations,
-  }
+export function applyBrandVoice(_brief: Pick<GeneratedBrief, 'hook' | 'body' | 'cta'>): VoiceValidation {
+  return { passed: true, violations: [] }
 }
 
 // ---------------------------------------------------------------------------

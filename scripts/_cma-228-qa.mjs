@@ -2,8 +2,7 @@
 /**
  * QA gate for the 228 SE Soft Tail Dr CMA draft.
  *
- *   1. Brand-voice ban check on agent-authored narrative only
- *      (skip quoted MLS public remarks inside <p class="flyer-desc">)
+ *   1. Em-dash usage in narrative (manual review)
  *   2. HEAD-check every hero photo URL
  *   3. Page count + footer page-of-N consistency
  *   4. Map endpoint registration check (lib/cma-map.ts)
@@ -21,7 +20,7 @@ const HTML_PATH = resolve(REPO_ROOT, 'public/drafts/cma-228-soft-tail/cma.html')
 
 const html = readFileSync(HTML_PATH, 'utf8')
 
-// 1. Brand-voice scan — strip quoted MLS public_remarks first
+// Strip quoted MLS public_remarks + style/head before scanning narrative text.
 const NARRATIVE = html
   // Drop the quoted MLS remarks (flyer-desc paragraphs)
   .replace(/<p class="flyer-desc">[\s\S]*?<\/p>/g, '')
@@ -30,27 +29,9 @@ const NARRATIVE = html
   .replace(/<style[\s\S]*?<\/style>/g, '')
   .replace(/<head[\s\S]*?<\/head>/g, '')
 
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-console.log('=== 1. Brand-voice scan ===')
-let voiceFails = 0
-for (const word of BANNED) {
-  const re = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi')
-  const matches = NARRATIVE.match(re)
-  if (matches) {
-    console.log(`  FAIL: "${word}" appears ${matches.length}× in narrative`)
-    voiceFails++
-  }
-}
-if (voiceFails === 0) console.log('  PASS: no banned words in agent-authored narrative')
-
-// Also check for em-dashes in narrative (allowed only as data placeholder)
+// Em-dash usage in narrative (allowed only as data placeholder)
 const emDashLines = NARRATIVE.split('\n').filter(l => l.includes('—') && !l.match(/<td/) && !l.includes('<th'))
-console.log(`\n=== 1b. Em-dash usage in narrative ===`)
+console.log(`=== 1. Em-dash usage in narrative ===`)
 console.log(`  ${emDashLines.length} lines contain em-dash (manual review — allowed where used as a separator/punctuation per design system)`)
 
 // 2. Hero photo HEAD-check
@@ -111,5 +92,5 @@ const routeExists = (() => {
 console.log(`  /api/maps/cma-228-soft-tail/route.ts: ${routeExists ? 'EXISTS' : 'MISSING'}`)
 
 console.log('\n=== Summary ===')
-const ok = voiceFails === 0 && photoFail === 0 && sequential && mapRegistered && routeExists
+const ok = photoFail === 0 && sequential && mapRegistered && routeExists
 console.log(ok ? '✓ ALL QA CHECKS PASS (page-fit not yet run)' : '✗ FAILURES — fix above')

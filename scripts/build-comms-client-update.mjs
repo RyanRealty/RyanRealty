@@ -16,49 +16,10 @@ import { mkdir, writeFile, stat } from 'node:fs/promises'
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 const PRODUCER = 'comms-client-update'
-const require = createRequire(import.meta.url)
-const VOCAB = require('./brand-voice-vocabulary.cjs')
-
-// Core list is the canonical BANNED_WORD_STRINGS from
-// scripts/brand-voice-vocabulary.cjs (never hand-typed here), layered with
-// "passionate" — a comms-specific extra not in the canonical phrase-only
-// "we are passionate about" entry.
-const COMMS_LOCAL_EXTRAS = ['passionate']
-const BANNED_WORDS = [...VOCAB.BANNED_WORD_STRINGS, ...COMMS_LOCAL_EXTRAS]
-
-// Strip non-visible content before brand-voice checking.
-// Removes CSS/JS blocks, HTML comments, and code scaffolding to prevent
-// false positives from CSS semicolons, import statements, etc.
-function stripNonVisible(text) {
-  return text
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<!DOCTYPE[^>]*>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/^import .+$/gm, '')
-    .replace(/^export (const|default|type|async).+$/gm, '')
-}
-
-function checkBanned(text, label) {
-  const stripped = stripNonVisible(text)
-  const lower = stripped.toLowerCase()
-  const wordHits = BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-  const punctHits = []
-  if (/—|–/.test(stripped)) punctHits.push('em/en-dash')
-  if (/;/.test(stripped)) punctHits.push('semicolon')
-  if (/!/.test(stripped)) punctHits.push('exclamation')
-  const all = [...wordHits, ...punctHits]
-  if (all.length > 0) {
-    console.warn(`BRAND VOICE NOTE in ${label}: ${all.join(', ')} (continuing — flagged in scorecard)`)
-  }
-}
 
 function parseArgs(argv) {
   const out = { _: [] }
@@ -229,11 +190,6 @@ Source: ORMLS via Ryan Realty. ${market.trace}.
 - Specific: address, date, or action in subject
 - "Your" as subject (you-first framing)
 `
-
-  checkBanned(weeklySellerStatus, 'weekly-seller-status.md')
-  checkBanned(milestoneOfferAccepted, 'milestone-offer-accepted.md')
-  checkBanned(pastClientTouch, 'past-client-touch.md')
-  checkBanned(subjects, 'subjects.md')
 
   await write(outDir, 'weekly-seller-status.md', weeklySellerStatus)
   await write(outDir, 'milestone-offer-accepted.md', milestoneOfferAccepted)

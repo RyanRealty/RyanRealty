@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
 import {
   composeInboundCoverLine,
@@ -28,8 +27,6 @@ function assertCBar(body: string, address: string | null) {
   expect(body).not.toMatch(/full market analysis/i)
   expect(body).not.toMatch(/\bI (saw|put)\b/)
   if (address) expect(body).toContain(address)
-  const voice = checkBrandVoice(body)
-  expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
 }
 
 describe('inbound valuation first packet', () => {

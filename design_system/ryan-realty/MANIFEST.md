@@ -101,14 +101,12 @@ Source-of-truth headshots in `assets/team/`. Each broker has `.png` (transparent
 - **No emoji.** Anywhere. Ever.
 - **No exclamation marks** in body. **No pressure / scarcity framing.**
 
-Full banned vocabulary — clichés, AI filler, meta-tone words, vague qualifiers, banned phrases, banned tropes — lives in the `voice-banned.html` preview card and in `marketing_brain_skills/brand-voice/VOICE.md`.
-
 ## Content engine integration
 
 This kit is the **mandate-load** for every producer in `marketing_brain_skills/producers/`. When a producer picks up an action row from `marketing_brain_actions`, it loads:
 
 1. **`SKILL.md`** (this kit) — visual brand spec
-2. **`marketing_brain_skills/brand-voice/VOICE.md`** — voice + banned vocabulary
+2. **`marketing_brain_skills/brand-voice/VOICE.md`** — the one voice document
 3. **`social_media_skills/platform-best-practices/SKILL.md`** — 2026 platform rule layer
 
 Edit a swatch or banned word here and every listing reel + flyer + IG carousel + GBP reply + email blast picks it up on the next run. See the *Content engine map* preview card for the per-action-type pull list.
@@ -143,9 +141,7 @@ Three transparent PNGs + JPG fallbacks. See "Brokers" section above for the reso
 | `brand-logo.html` · `brand-logo-reversed.html` · `brand-wordmarks.html` · `brand-lockup.html` · `brand-mascot.html` · `brand-scenes.html` · `brand-iconography.html` · `brand-collateral.html` · `brand-hero.html` | Heritage kit gallery |
 | **`team-brokers.html`** | **3 broker cards with headshots + contact + listing-agent rule** |
 | **`brand-facts.html`** | **Phones · handles · #RyanRealtyBend · glyphs** |
-| **`voice-rules.html`** | **4 rules · 5 attributes · show vs tell · grammar** |
 | **`voice-banned.html`** | **Hard-fail words · phrases · punctuation · tropes** |
-| **`voice-canonical.html`** | **Lift-verbatim templates from Matt's GBP corpus** |
 | **`content-engine.html`** | **Producer ↔ design-system map (which action_type pulls what)** |
 
 ## Editing / updating (flipped 2026-05-14)

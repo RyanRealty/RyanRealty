@@ -4,17 +4,13 @@
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
  * here fetches or formats.
  *
- * THE D11 MISSION SENTENCE IS OFF THIS PAGE (2026-09-02). VOICE.md grants it
- * and grants nothing else — "This sentence MAY appear on About" — so no gate
- * required it; check-brand-voice.mjs only carves it out of the self-praise
- * scan, and the carve-out survives whether or not the page uses it. What it
- * opened the closing section with was "We are a boutique real estate brokerage
- * in Bend, Oregon", which is the positioning Matt killed on 2026-06-10 ("is
- * that going to position us, our intent is to grow"), and which
- * scripts/brand-voice-vocabulary.cjs bans by pattern (boutique|small + org)
- * everywhere the About carve-out does not reach. The record below it states
- * the firm without the gloss: founded, firm license, principal broker license,
- * each traceable to the Oregon Real Estate Agency.
+ * THE D11 MISSION SENTENCE IS OFF THIS PAGE (2026-09-02). What it opened the
+ * closing section with was "We are a boutique real estate brokerage in Bend,
+ * Oregon", which is the positioning Matt killed on 2026-06-10 ("is that going
+ * to position us, our intent is to grow") and which VOICE.md's no-smallness
+ * framing still rules out everywhere. The record below it states the firm
+ * without the gloss: founded, firm license, principal broker license, each
+ * traceable to the Oregon Real Estate Agency.
  *
  * THE FAQ IS FOUR QUESTIONS, NOT SIX (2026-09-02). The set is what /about can
  * answer that /about has not already said. "When did Ryan Realty start?" went:

@@ -21,41 +21,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '../..')
 const PRODUCER = 'site-performance'
 
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED_WORDS = _req('../brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-// Strip non-visible content before brand-voice checking.
-// Removes CSS/JS blocks, HTML comments, and code scaffolding to prevent
-// false positives from CSS semicolons, import statements, etc.
-function stripNonVisible(text) {
-  return text
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<!DOCTYPE[^>]*>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/^import .+$/gm, '')
-    .replace(/^export (const|default|type|async).+$/gm, '')
-}
-
-function checkBanned(text, label) {
-  const stripped = stripNonVisible(text)
-  const lower = stripped.toLowerCase()
-  const wordHits = BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-  const punctHits = []
-  if (/—|–/.test(stripped)) punctHits.push('em/en-dash')
-  if (/;/.test(stripped)) punctHits.push('semicolon')
-  if (/!/.test(stripped)) punctHits.push('exclamation')
-  const all = [...wordHits, ...punctHits]
-  if (all.length > 0) {
-    console.warn(`BRAND VOICE NOTE in ${label}: ${all.join(', ')} (continuing — flagged in scorecard)`)
-  }
-}
-
 function parseArgs(argv) {
   const out = { _: [] }
   for (let i = 0; i < argv.length; i++) {
@@ -386,8 +351,6 @@ Adds structured data block with:
 </html>
 `
 
-  checkBanned(diffSummary, 'diff-summary.md')
-  checkBanned(preview, 'preview.html')
 
   await write(outDir, 'after-lazy-images.tsx', afterLazyImages)
   await write(outDir, 'after-redirects.tsx', afterRedirects)

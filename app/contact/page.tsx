@@ -133,7 +133,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const introItems: V3QuietItem[] = [
     // The H1 lives on this Quiet; with no rows it would not render at all
     // (V3Quiet returns null on empty items — evaluator B2). One true line.
-    { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. A broker answers, not a desk.' },
+    { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts, and a broker who stays with you from the first call through closing.' },
     {
       kind: 'prose' as const,
       term: 'Office',
@@ -191,7 +191,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
             {
               kicker: v3Text('Call'),
               label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text('A broker answers, not a desk'),
+              fact: v3Text('Local experts. Exceptional customer service.'),
               href: `tel:${CONTACT.phoneDirectTel}`,
             },
             {

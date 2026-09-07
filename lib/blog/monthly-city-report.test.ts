@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { extractBlogFaq } from './publish-blog-faq'
 import {
   MONTHLY_REPORT_CITIES,
@@ -39,16 +38,6 @@ describe('buildMonthlyCityReport', () => {
     expect(extractBlogFaq(r.post.content)).toHaveLength(5)
     expect(r.post.seoTitle.length).toBeLessThanOrEqual(60)
     expect(r.post.seoDescription.length).toBeLessThanOrEqual(160)
-  })
-
-  it('passes the brand voice check', () => {
-    const r = buildMonthlyCityReport(base)
-    if (!r.ok) throw new Error(r.reason)
-    const v = checkBrandVoice(
-      { subject: [r.post.title, r.post.excerpt, r.post.seoTitle, r.post.seoDescription].join(' '), bodyHtml: r.post.content },
-      { stripHtml: true },
-    )
-    expect(v.violations).toEqual([])
   })
 
   it('prints balanced and buyer verdicts from the same rule, never a rounded value across the line', () => {

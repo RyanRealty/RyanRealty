@@ -13,7 +13,6 @@ describe('inlineViolations', () => {
 
   it('ALLOWS the same call inside the shared voice library', () => {
     const src = `await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + id)`
-    expect(inlineViolations('lib/voice/alignment.ts', src)).toHaveLength(0)
     expect(inlineViolations('scripts/_voice_lib.py', src)).toHaveLength(0)
   })
 
@@ -28,14 +27,14 @@ describe('inlineViolations', () => {
   })
 
   it('returns nothing for source with no inline AI-tool call', () => {
-    expect(inlineViolations('lib/foo.ts', `import { synth } from '@/lib/voice'`)).toHaveLength(0)
+    expect(inlineViolations('lib/foo.ts', `import { cn } from '@/lib/utils'`)).toHaveLength(0)
   })
 })
 
 describe('isAllowed', () => {
   it('matches an exact path and a directory prefix', () => {
-    expect(isAllowed('lib/voice/x.ts', ['lib/voice/'])).toBe(true)
+    expect(isAllowed('lib/replicate-video.ts', ['lib/replicate-video.ts'])).toBe(true)
     expect(isAllowed('scripts/_voice_lib.py', ['scripts/_voice_lib.py'])).toBe(true)
-    expect(isAllowed('video/other.mjs', ['lib/voice/'])).toBe(false)
+    expect(isAllowed('video/other.mjs', ['lib/replicate-video.ts'])).toBe(false)
   })
 })

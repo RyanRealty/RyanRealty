@@ -7,11 +7,10 @@
  * imports validateTemplateInput + slugifyTemplateKey and does the DB I/O.
  *
  * Enforces: channel valid (email|sms), name present, email has a subject, SMS
- * has none, body present, and the brand-voice hard-fail gate on subject + body.
+ * has none, body present.
  */
 
 import { validateChannel } from '@/lib/crm/templateReferences'
-import { checkTemplateVoice } from '@/lib/crm/templateVoiceCheck'
 
 /** Result of a template mutation action. */
 export type CrmTemplateResult =
@@ -68,8 +67,7 @@ export function slugifyTemplateKey(channel: string, name: string): string {
 
 /**
  * Validate + normalize a template input. Pure (no DB) so the rules are unit
- * tested. The brand-voice gate runs last so a structurally-valid template with
- * banned copy still fails.
+ * tested.
  */
 export function validateTemplateInput(input: CrmTemplateInput): TemplateValidationResult {
   const channelCheck = validateChannel(input.channel)
@@ -93,14 +91,6 @@ export function validateTemplateInput(input: CrmTemplateInput): TemplateValidati
     subject = null
     previewText = null
   }
-
-  // Preview text is recipient-visible copy — it runs the voice gate with the
-  // subject so a banned word can never persist in any rendered surface.
-  const voice = checkTemplateVoice({
-    subject: [subject, previewText].filter(Boolean).join(' ') || subject,
-    body,
-  })
-  if (!voice.ok) return { ok: false, error: voice.error }
 
   const category = (input.category ?? '').trim() || null
   const isShared = input.isShared === true

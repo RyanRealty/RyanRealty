@@ -40,29 +40,6 @@ function parseArgs(argv) {
   return out
 }
 
-// ---------------------------------------------------------------------------
-// Brand-voice banned-word check
-// ---------------------------------------------------------------------------
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED_WORDS = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-function checkBannedWords(text) {
-  const lower = text.toLowerCase()
-  const hits = BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-  return hits
-}
-
-function assertClean(text, label) {
-  const hits = checkBannedWords(text)
-  if (hits.length > 0) {
-    console.error(`BANNED WORDS in ${label}: ${hits.join(', ')}`)
-    process.exit(1)
-  }
-}
-
 function hasBadPunct(text) {
   // em-dash, en-dash, semicolons, exclamation in body
   return /[—–;!]/.test(text)
@@ -121,16 +98,13 @@ async function main() {
 
   const para3 = `If you are thinking about a move in the next 60 to 90 days, the data supports taking a deliberate, well-priced approach rather than a reactive one. Our team is happy to walk through what the numbers mean for your specific situation.`
 
-  // Voice check all paragraphs
+  // Punctuation check all paragraphs
   ;[para1, para2, para3].forEach((p, i) => {
-    assertClean(p, `para${i+1}`)
     if (hasBadPunct(p)) { console.error(`Bad punct in para${i+1}: ${p}`); process.exit(1) }
   })
 
   const listingBlurb = `${listing.bedrooms} bed · ${listing.bathrooms} bath · ${listing.sqft_display} · ${listing.subdivision}`
   const listingTagline = `${listing.street_number} ${listing.street_name}, ${listing.city} ${listing.state} ${listing.zip}`
-
-  assertClean(listing.remarks_short, 'remarks_short')
 
   // --- HTML
   const html = `<!DOCTYPE html>
@@ -234,10 +208,6 @@ async function main() {
 </body>
 </html>`
 
-  // Final voice check on full HTML text content (strip tags first)
-  const textContent = html.replace(/<[^>]+>/g, ' ')
-  assertClean(textContent, 'newsletter.html full text')
-
   await write(outDir, 'newsletter.html', html)
   await write(outDir, 'newsletter-subject.txt', subject)
 
@@ -262,9 +232,7 @@ async function main() {
   }
   await write(outDir, 'provenance.json', JSON.stringify(provenance, null, 2))
 
-  const bannedHits = checkBannedWords(textContent)
   const checks = [
-    { name: 'banned_words', pass: bannedHits.length === 0, notes: bannedHits.length ? bannedHits.join(', ') : 'clean' },
     { name: 'no_em_dash', pass: !html.includes('—') && !html.includes('–'), notes: 'em/en-dash absent' },
     { name: 'no_semicolon_body', pass: !/;\s/.test(html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')), notes: 'no semicolons in body text' },
     { name: 'subject_length', pass: subject.length <= 60, notes: `${subject.length} chars` },

@@ -145,8 +145,4 @@ export interface BpoBuildResult {
   offer?: BpoOfferStrategy
   html?: string
   citations?: Record<string, unknown>
-  /** Advisory Orwell-rules voice review (W11.3) — never gates the build. Null
-   *  when the reviewer call itself failed unexpectedly (belt-and-suspenders;
-   *  reviewProse itself never throws). */
-  voiceReview?: import('@/lib/voice/reviewer').VoiceReview | null
 }

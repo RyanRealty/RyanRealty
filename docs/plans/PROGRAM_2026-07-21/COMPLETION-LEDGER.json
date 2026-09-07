@@ -969,7 +969,7 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "One generated banned-list source; consumers generated; parity test fails CI on any consumer drift",
-      "status": "done",
+      "status": "partial",
       "requiredMechanism": {
         "gates": [
           "scripts/check-voice-vocab-parity.mjs"
@@ -985,14 +985,14 @@
       },
       "proofPath": "scripts/brand-voice-vocabulary.cjs stays canonical; scripts/gen-brand-voice-consumers.mjs (--write/--check) generates lib/brand-voice/generated-vocabulary.ts (app-bundle) + scripts/_brand_voice_vocab_generated.py (build_*.py). All ~10 hand-typed consumers (voice-precheck, templateVoiceCheck, generate-briefs, gbp-health-check, preflight, build-blog-post/comms/eflyer, _producer_lib.py, generate_content_calendar.py) now import the generated/canonical source with only explicit LOCAL_EXTRAS. Live drift bugs fixed (generate-briefs no longer rejects \"about\"; _producer_lib no longer hard-bans spacious/turnkey/etc). Gate: scripts/check-voice-vocab-parity.mjs (ci:voice-vocab-parity, in ci:gates) — freshness (gen --check) + per-consumer discipline (TS-compiler AST + Python scan) over all 10 consumers (was 2 of ~12, content-blind). Decision: 04-DECISIONS §21.",
       "verifiedBy": "Independent adversarial verifier (different agent, assume-broken, behavior-preservation focus): PASS — no regression on any blocking send gate (newsletter/template/producer keep exact return shapes, tsc 0 errors, Python imports resolve); about/spacious/turnkey over-ban drift confirmed fixed, cliches still caught. It found 2 low-severity coverage losses in ADVISORY consumers (gbp 'beautiful', generate-briefs 'introducing' + pandering phrase) + a <=4-word/unused-import gate evasion — ALL fixed here (LOCAL_EXTRAS restored; overlap threshold 5->3; import-usage assertion added) and re-proven to bite. 2026-07-23.",
-      "remaining": "DONE. One generated banned-list source; every consumer imports it (no hand-typed core list); ci:voice-vocab-parity fails CI on any consumer drift (a re-typed core list, a dropped import, or a stale generated artifact) — proven to bite on all three. tsc 0 errors; the June-2026 relaxed-word drift is removed from every consumer."
+      "remaining": "RETIRED 2026-09-07 (Matt): the entire mechanical brand-voice canon — banned-word lists, punctuation gates, the runtime voice-check chokepoint, the Orwell reviewer, and the batched rewrite pass — was ordered removed. marketing_brain_skills/brand-voice/VOICE.md is now a one-page prose voice doc with no mechanical gate; every gate and file this row named (scripts/check-voice-*.mjs, lib/voice/, lib/brand-voice/, scripts/_brand_voice_vocab_generated.py, scripts/gen-brand-voice-consumers.mjs, scripts/voice-rewrite-batch.ts) was deleted. This row's original mechanism is gone by design, not by regression."
     },
     {
       "id": "W11.2",
       "workstream": "W11",
       "mission": "M4",
       "title": "One shared voice-check function on every send path (blog, CMA/BPO prose, social captions, sequence templates) + ratchet gate on unchecked send paths",
-      "status": "done",
+      "status": "partial",
       "requiredMechanism": {
         "gates": [
           "scripts/check-voice-send-paths.mjs"
@@ -1008,14 +1008,14 @@
       },
       "proofPath": "lib/voice/check.ts (checkBrandVoice — the ONE shared voice-check, consuming W11.1 generated-vocabulary). voice-precheck.ts + templateVoiceCheck.ts refactored into thin adapters over it (return shapes preserved). Blocking checks wired on every send path: blog saveBlogPost (returns {ok:false} on published), lib/cma/build.ts + lib/bpo/build.ts (throw before render, caught by the outer try/catch), social publish resolveCaption (throw, allowExclamation), and the CRM sequence-template path via templateValidation.ts -> checkTemplateVoice. Gate: scripts/check-voice-send-paths.mjs (ci:voice-send-paths, in ci:gates) — AST-asserts each of the 5 paths binds checkBrandVoice/checkTemplateVoice and gates the send on !ok (return|throw). Decision: 04-DECISIONS §22.",
       "verifiedBy": "Independent adversarial verifier (different agent, false-positive-risk + behavior-preservation focus): initially FAIL — the adapters + wiring gate were sound, but it PROVED 3 false-positives that would break publishing: a deterministic semicolon literal (cma/build.ts) throwing on the self-repair path, the unsanitized LLM judgment.narrative ('robust'/'truly') throwing on the main CMA/BPO path, and a social caption throw rejecting the whole multi-platform batch. ALL 3 fixed (semicolon->period; LLM narrative excluded from the hard gate so only OUR authored prose is gated; caption fails per-platform gracefully) and re-verified: narrative-exclusion tested (full-prose fails, authored-only passes, our own violations still caught), 78 vitest pass, ci:voice-send-paths 5/5, tsc 0 errors. 2026-07-23.",
-      "remaining": "DONE. One shared checkBrandVoice on every send path (blog, CMA, BPO, social captions, sequence templates); ci:voice-send-paths fails CI when a send path drops the check or stops gating on it — proven to bite. tsc 0 errors; checkBrandVoice unit test (20 cases) + the two adapters keep the existing suites green (78 tests)."
+      "remaining": "RETIRED 2026-09-07 (Matt): the entire mechanical brand-voice canon — banned-word lists, punctuation gates, the runtime voice-check chokepoint, the Orwell reviewer, and the batched rewrite pass — was ordered removed. marketing_brain_skills/brand-voice/VOICE.md is now a one-page prose voice doc with no mechanical gate; every gate and file this row named (scripts/check-voice-*.mjs, lib/voice/, lib/brand-voice/, scripts/_brand_voice_vocab_generated.py, scripts/gen-brand-voice-consumers.mjs, scripts/voice-rewrite-batch.ts) was deleted. This row's original mechanism is gone by design, not by regression."
     },
     {
       "id": "W11.3",
       "workstream": "W11",
       "mission": "M4",
       "title": "Orwell reviewer — advisory LLM pass on long-form (violations list + rewrite, facts unchanged), non-blocking",
-      "status": "done",
+      "status": "partial",
       "requiredMechanism": {
         "gates": [
           "scripts/check-voice-reviewer.mjs"
@@ -1031,7 +1031,7 @@
       },
       "proofPath": "lib/voice/reviewer.ts reviewProse — advisory, non-blocking LLM pass listing voice violations + a rewrite, with the exported factsPreserved(original, rewrite) §0 guard that NULLS any rewrite dropping a currency/number/percent/year. Degrades to {ran:false} on no-key/empty/error, never throws. Wired advisory (attached to result) at lib/cma/build.ts + lib/bpo/build.ts + app/actions/blog.ts (published), logged at newsletter draft. Gate: scripts/check-voice-reviewer.mjs (ci:voice-reviewer, in ci:gates) — AST-asserts reviewProse CALLS factsPreserved + cma/bpo call reviewProse; proven to bite. LIVE run confirmed: flagged clichés, rewrote them out, kept $725,000 + 38 days. Decision: 04-DECISIONS §24.",
       "verifiedBy": "Independent adversarial verifier (non-blocking + §0 fact-guard focus): PASS — confirmed reviewProse never throws + every call site is guarded (CMA/BPO build + blog publish never break) + tsc clean + live run preserves facts. Its §0 guard gaps (dropped percent unit, magnitude inflation via substring, and the gate green-passing a present-but-defeated guard) were ALL fixed + re-verified: extractFacts captures the % unit, factsPreserved uses set-membership (catches $1,200->$1,200,000 and 38->380), the gate asserts the rewrite is conditionally gated on the guard result + bites on the defeat, docstring honest that proper-nouns are prompt-only. reviewer.test.ts 11/11. 2026-07-23.",
-      "remaining": "DONE. The advisory Orwell reviewer runs alongside the deterministic floor over CMA/BPO/blog long-form prose, surfaces violations + a fact-safe rewrite (a rewrite that drops a number is auto-discarded, §0), and never blocks a build or publish. ci:voice-reviewer keeps the fact-guard applied + the surfaces wired. W11.5 (batched rewrite of stored copy) can now build on it."
+      "remaining": "RETIRED 2026-09-07 (Matt): the entire mechanical brand-voice canon — banned-word lists, punctuation gates, the runtime voice-check chokepoint, the Orwell reviewer, and the batched rewrite pass — was ordered removed. marketing_brain_skills/brand-voice/VOICE.md is now a one-page prose voice doc with no mechanical gate; every gate and file this row named (scripts/check-voice-*.mjs, lib/voice/, lib/brand-voice/, scripts/_brand_voice_vocab_generated.py, scripts/gen-brand-voice-consumers.mjs, scripts/voice-rewrite-batch.ts) was deleted. This row's original mechanism is gone by design, not by regression."
     },
     {
       "id": "W11.4",
@@ -1059,7 +1059,7 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "Rewrite pass over stored copy (published blog posts, templates) with the reviewer, batched, reviewed before republish",
-      "status": "done",
+      "status": "partial",
       "requiredMechanism": {
         "gates": [
           "scripts/check-voice-rewrite-batch.mjs"
@@ -1073,7 +1073,7 @@
       },
       "proofPath": "scripts/voice-rewrite-batch.ts runs the W11.3 reviewer (reviewProse) over published blog_posts + crm_templates and writes a review artifact (out/voice-rewrite-batch/report.{json,md}) of violations + fact-safe rewrites for Matt to approve before republish. READ-ONLY on content — never writes to blog_posts/crm_templates; the §0 fact-guard nulls any fact-mangled rewrite. Gate: scripts/check-voice-rewrite-batch.mjs (ci:voice-rewrite-batch, in ci:gates) — AST-asserts the batch calls reviewProse, writes an artifact, and has ZERO Supabase mutations; proven to bite. LIVE run over 2 published posts produced the artifact (21 violations flagged on one). Decision: 04-DECISIONS §25.",
       "verifiedBy": "Independent adversarial verifier: initially FAIL — confirmed the batch is provably read-only (every Supabase call SELECT-only, results only ever written to out/, and the reviewed blog_posts row's updated_at unchanged after a live run) and correctness/wiring correct, but PROVED 3 gate-evasion paths (.rpc('write_fn'), computed ['update'](), and an aliased .update.bind()) that would let a write-back slip past. ALL THREE fixed + re-proven to bite: the gate now flags ANY reference to a mutator — property access, computed/bracket access, or aliased — plus .rpc. Live run wrote the artifact (21 violations on a real published post) with the DB untouched. 2026-07-23.",
-      "remaining": "DONE. The batched rewrite pass runs the reviewer over stored copy and produces a review artifact for approval before republish, and is provably read-only on the content (ci:voice-rewrite-batch bites on any write-back). Running the full pass + Matt approving the rewrites is the operating step (content, per-action approval)."
+      "remaining": "RETIRED 2026-09-07 (Matt): the entire mechanical brand-voice canon — banned-word lists, punctuation gates, the runtime voice-check chokepoint, the Orwell reviewer, and the batched rewrite pass — was ordered removed. marketing_brain_skills/brand-voice/VOICE.md is now a one-page prose voice doc with no mechanical gate; every gate and file this row named (scripts/check-voice-*.mjs, lib/voice/, lib/brand-voice/, scripts/_brand_voice_vocab_generated.py, scripts/gen-brand-voice-consumers.mjs, scripts/voice-rewrite-batch.ts) was deleted. This row's original mechanism is gone by design, not by regression."
     },
     {
       "id": "W12.3",

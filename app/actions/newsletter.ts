@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { resolveLeadAssignedBroker, getGuestAlertLead } from '@/lib/data/crm/leadAssignedBroker'
-import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 import { enqueueNewsletter, enqueueNewsletterToEmails, NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import { parseEmailList } from '@/lib/newsletter/parse-emails'
 import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeople'
@@ -286,11 +285,6 @@ export async function adminSendNewsletterAction(
   if (letter.status === 'sent' || letter.status === 'sending') return { ok: false, error: 'already_sent' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
 
-  // Brand-voice hard-fail gate (R-1 / G-NL-4). A newsletter is public copy but the
-  // CI voice gate skips app/admin/, so enforce it here before anything enqueues.
-  const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
-  if (!voice.ok) return { ok: false, error: `Brand-voice check failed. Fix before sending: ${voice.violations.join('; ')}` }
-
   // Approve = ENQUEUE (spec §6, gate G-NL-9). The old path sent up to 5,000 emails
   // in this request — a Vercel timeout stranded status='sending' forever. Now this
   // records the approver, then enqueueNewsletter() wins a CAS lock, freezes each
@@ -309,8 +303,7 @@ export async function adminSendNewsletterAction(
  * BULK ONE-OFF SEND: deliver THIS draft issue to an explicit list (this issue
  * only — recipients are NOT enrolled in the recurring audience beyond the row the
  * one-off path creates for the unsubscribe token). Resolve the list from a pasted
- * email list ∪ a CRM tag's people, run the SAME brand-voice gate as the normal
- * send FIRST (abort on fail), record the approver, then enqueueNewsletterToEmails
+ * email list ∪ a CRM tag's people, record the approver, then enqueueNewsletterToEmails
  * — which creates a subscriber row per recipient and routes through the existing
  * drain (per-row suppression + active re-check, no bypass).
  */
@@ -330,10 +323,6 @@ export async function adminBulkOneOffSendAction(
   const tagged = input.crmTag ? await emailsForCrmTag(input.crmTag) : []
   const emails = [...new Set([...pasted, ...tagged])]
   if (emails.length === 0) return { ok: false, error: 'no_recipients' }
-
-  // Same voice hard-fail gate as the audience send (CI skips app/admin/).
-  const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
-  if (!voice.ok) return { ok: false, error: `Brand-voice check failed. Fix before sending: ${voice.violations.join('; ')}` }
 
   await updateNewsletter(newsletterId, { sent_by: gate.email })
   const result = await enqueueNewsletterToEmails(newsletterId, emails)

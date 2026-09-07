@@ -7,10 +7,6 @@ import {
   type ListingAlertListing,
 } from './listing-alert-email'
 
-const BANNED_VOCAB = require('../../scripts/brand-voice-vocabulary.cjs') as {
-  BANNED_WORD_STRINGS: string[]
-}
-
 function listing(overrides: Partial<ListingAlertListing> = {}): ListingAlertListing {
   return {
     address: '61542 Hosmer Lake Dr',
@@ -148,15 +144,6 @@ describe('buildListingAlertEmail', () => {
     expect(out.text).not.toContain('!')
   })
 
-  it('contains no banned vocabulary', () => {
-    const out = buildListingAlertEmail(input())
-    const haystack = `${out.subject}\n${out.text}`.toLowerCase()
-    const hits = BANNED_VOCAB.BANNED_WORD_STRINGS.filter((w) => {
-      if (/\s/.test(w)) return haystack.includes(w)
-      return new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(haystack)
-    })
-    expect(hits).toEqual([])
-  })
 })
 
 describe('buildListingAlertEmail — typed-event sections (Phase 3)', () => {
@@ -242,17 +229,11 @@ describe('buildListingAlertEmail — typed-event sections (Phase 3)', () => {
     expect(out.html).not.toContain('Just sold')
   })
 
-  it('section emails stay brand-voice clean (no em-dash, semicolon, banned words)', () => {
+  it('section emails stay brand-voice clean (no em-dash, semicolon)', () => {
     const out = buildListingAlertEmail({ ...base(), sections: sections(), totalNewCount: 7 })
     expect(out.subject).not.toMatch(/[–—;!]/)
     expect(out.text).not.toMatch(/[–—]/)
     expect(out.text).not.toContain(';')
     expect(out.text).not.toContain('!')
-    const haystack = `${out.subject}\n${out.text}`.toLowerCase()
-    const hits = BANNED_VOCAB.BANNED_WORD_STRINGS.filter((w) => {
-      if (/\s/.test(w)) return haystack.includes(w)
-      return new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(haystack)
-    })
-    expect(hits).toEqual([])
   })
 })

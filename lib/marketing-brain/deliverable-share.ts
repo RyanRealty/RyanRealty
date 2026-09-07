@@ -88,10 +88,10 @@ export function isShareableToSocial(actionTypeOrFilename: string): boolean {
  * Deliberately QUALITATIVE — no numbers. The caption is composed from the
  * deliverable TYPE, not its contents, so it can never carry an unverified figure
  * (CLAUDE.md section 0): a broker adds the specifics. Every template is written
- * to the brand voice (no em-dashes, no banned words, sentence case, "you/your"),
- * and the test asserts each one passes checkBrandVoice. Never returns a caption
- * for a non-shareable type — callers must gate on isShareableToSocial first, but
- * this returns '' for a private type as a second line of defense.
+ * to marketing_brain_skills/brand-voice/VOICE.md (sentence case, "you/your").
+ * Never returns a caption for a non-shareable type — callers must gate on
+ * isShareableToSocial first, but this returns '' for a private type as a
+ * second line of defense.
  */
 export function captionFor(actionTypeOrFilename: string): string {
   if (!isShareableToSocial(actionTypeOrFilename)) return ''

@@ -1,4 +1,47 @@
-# Current — 2026-09-07 (Social channel tune-up)
+# Current — 2026-09-07 (voice canon retired, one voice doc)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
+`chore/retire-voice-canon`, landing on `origin/main` with this block.
+
+**Matt's directive:** "get rid of our voice canon, nuke it", "too many stupid rules
+affecting how we create copy", "one unified voice that everything uses".
+
+**Shipped**
+- `marketing_brain_skills/brand-voice/VOICE.md` rewritten as the ONE voice doc (path kept
+  so ~230 SKILL.md citations stay valid): local experts, exceptional customer service,
+  warm and direct, normal punctuation, no word lists. Compliance lines only: real numbers
+  (§0), real quotes, fair housing, MLS remarks as written. Exemplars inside.
+- CLAUDE.md §2 replaced. Removed: ci:brand-voice, ci:voice-constructions(+parity),
+  ci:voice-send-paths, ci:voice-vocab-parity, ci:voice-reviewer, ci:voice-rewrite-batch,
+  ci:voice-db-copy, ci:newsletter-voice-paths; lib/voice/**, lib/brand-voice/**,
+  lib/crm/templateVoiceCheck.ts, lib/email/voice-precheck.ts; the ESLint rule; the
+  pre-commit block; the pre-tool-use Refusal 6; the /voice-canon skill; voice_grader.md;
+  the two design-system voice preview cards. Thirteen send paths (CMA, BPO, blog, social,
+  Studio caption, newsletter x4, CRM templates + compose) no longer hard-fail on voice.
+- Contact + reviews pages: "A broker answers, not a desk" replaced (Matt rejected it).
+- app/_v3/home-featured-communities.ts: pulse lookup uses geo_type 'neighborhood'
+  (resort rows live there); ci:studio-geo-contract was red on main.
+
+**Next (approved by Matt)**
+1. Marketing brain dead layer: delete lib/marketing-brain/{generate-briefs,diagnose,
+   platform-trends,performance-bias}.ts, the audit-* routes + libs, /dashboard/marketing
+   pages, producer skills marked UNUSED in producers/REGISTRY.md, automation_skills
+   triggers/automation, producer scripts + gates (ci:producer-skills,
+   ci:producer-registry-resolves). KEEP intake (inbox-*), snapshot.ts (tracerfy-history
+   imports isAuthorizedCron from it), measurement-loop, competitor-recon,
+   deliverable-{path,share,library}, platform-fetch-code, and the marketing_brain_actions
+   table (CMA/Studio/agent job queue).
+2. Google review email template in crm_templates in the new voice; update
+   lib/crm/review-ask.ts body to match.
+3. Rewrite Home, About, Contact, Team, Sell, Buy copy in the new voice. Founding facts:
+   LLC since 2014, Bend office opened June 2023.
+
+**Do not**
+- Reintroduce word lists, punctuation regexes, or a voice gate. Judgment, not regex.
+
+---
+
+# Previous — 2026-09-07 (Social channel tune-up)
 
 Owner: Claude session, worktree `wt/social-x-lock-20260907`. Brief with every figure and
 its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832

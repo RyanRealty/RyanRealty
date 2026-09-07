@@ -41,25 +41,6 @@ function parseArgs(argv) {
   return out
 }
 
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED_WORDS = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-function checkBannedWords(text) {
-  const lower = text.toLowerCase()
-  return BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-}
-
-function assertClean(text, label) {
-  const hits = checkBannedWords(text)
-  if (hits.length > 0) {
-    console.error(`BANNED WORDS in ${label}: ${hits.join(', ')}`)
-    process.exit(1)
-  }
-}
-
 async function write(dir, filename, content) {
   const p = join(dir, filename)
   await writeFile(p, content, 'utf8')
@@ -161,10 +142,6 @@ async function main() {
   const slTexts = sitelinks.map(s => s.text)
   checkLen(slTexts, 25, 'Sitelink text')
 
-  // Voice check
-  const allText = [...finalHeadlines, ...descriptions, ...sitelinks.map(s => s.description)].join('\n')
-  assertClean(allText, 'all ad copy')
-
   // ---------------------------------------------------------------------------
   // Compose Markdown output
   // ---------------------------------------------------------------------------
@@ -218,8 +195,6 @@ All data from Supabase market_stats_cache, methodology ${market.methodology_vers
 **Web:** ryan-realty.com
 **OR License:** #${payload.brokers.matt_ryan.license}
 `
-
-  assertClean(md, 'google-ads-copy.md final')
 
   await write(outDir, 'google-ads-copy.md', md)
 
@@ -351,11 +326,9 @@ All data from Supabase market_stats_cache, methodology ${market.methodology_vers
   }
   await write(outDir, 'provenance.json', JSON.stringify(provenance, null, 2))
 
-  const bannedHits = checkBannedWords(md)
   const overHeadlines = finalHeadlines.filter(h => h.length > 30)
   const overDesc = descriptions.filter(d => d.length > 90)
   const checks = [
-    { name: 'banned_words', pass: bannedHits.length === 0, notes: bannedHits.length ? bannedHits.join(', ') : 'clean' },
     { name: 'headline_count', pass: finalHeadlines.length === 15, notes: `${finalHeadlines.length} headlines` },
     { name: 'headline_max_30', pass: overHeadlines.length === 0, notes: overHeadlines.length ? overHeadlines.join(', ') : 'all within limit' },
     { name: 'description_count', pass: descriptions.length === 4, notes: `${descriptions.length} descriptions` },

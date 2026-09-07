@@ -2,7 +2,7 @@
 
 /**
  * Approve & Schedule + Unschedule + Pause/Resume controls, with the pre-send
- * gate panel (R-1 voice · R-2 citations · R-3 links). Scheduling is BLOCKED
+ * gate panel (R-2 citations · R-3 links). Scheduling is BLOCKED
  * until the checks pass; failures render as a clear list. After approval the
  * send cron picks the issue up at scheduled_at and the engagement-tiered
  * tranche machinery delivers it gradually to protect sender reputation.
@@ -31,7 +31,6 @@ import {
 
 function GateChecklist({ result }: { result: GateRunResult }) {
   const rows: Array<{ label: string; ok: boolean; failures: string[] }> = [
-    { label: 'Brand voice (R-1)', ok: (result.voiceFailures ?? []).length === 0, failures: result.voiceFailures ?? [] },
     { label: 'Every stat cited (R-2)', ok: result.report?.r2.ok ?? false, failures: result.report?.r2.failures ?? [] },
     { label: 'Every internal link resolves (R-3)', ok: result.report?.r3.ok ?? false, failures: result.report?.r3.failures ?? [] },
   ]
@@ -122,7 +121,7 @@ export default function NewsletterScheduleControls({ id, status, scheduledAt, se
         setMessage({ type: 'ok', text: 'Approved and scheduled. Delivery starts at the scheduled time and paces out over the following days.' })
         router.refresh()
       } else if (r.error === 'gates_failed') {
-        setGates({ ok: false, report: r.report, voiceFailures: r.voiceFailures })
+        setGates({ ok: false, report: r.report })
         setDialogOpen(false)
         setMessage({ type: 'err', text: 'Pre-send checks failed. Fix the items below, then schedule again.' })
       } else {

@@ -17,7 +17,6 @@ import {
   sellerFacingFindingMeaning,
 } from './expired-audit'
 import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
-import { checkBrandVoice } from '@/lib/voice/check'
 import type { BpoListingHistory } from '@/lib/bpo/types'
 import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -230,8 +229,6 @@ describe('buildServicesList — this-home plan, not a brochure', () => {
     for (const line of list) {
       expect(isWorthQuestionCopy(line)).toBe(false)
       expect(blamesPriorAgent(line)).toBe(false)
-      const voice = checkBrandVoice(line)
-      expect(voice.ok, `${line} -> ${JSON.stringify(voice.violations)}`).toBe(true)
     }
   })
 

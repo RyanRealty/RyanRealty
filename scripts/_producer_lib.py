@@ -34,15 +34,6 @@ import datetime
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-# Ensure scripts/ is on sys.path so the canonical-vocabulary import below
-# works regardless of how this module was imported (build_*.py already does
-# this before importing _producer_lib, but this module is self-contained too).
-_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
-if _SCRIPTS_DIR not in sys.path:
-    sys.path.insert(0, _SCRIPTS_DIR)
-
-from _brand_voice_vocab_generated import BANNED_WORD_STRINGS as _CANONICAL_BANNED_WORDS
-
 
 # ── Rogue-producer guard (deep-audit 2026-05-21 D19) ─────────────────────────
 # Every producer invocation MUST flow through marketing_brain_actions: the
@@ -337,103 +328,33 @@ def write_card_json(out_dir: Path, producer: str, primary_artifact: str, notes: 
     return p
 
 
-# ── Banned-word grep ─────────────────────────────────────────────────────────
+# ── Banned-word grep (retired) ────────────────────────────────────────────────
 #
-# Canonical source: scripts/brand-voice-vocabulary.cjs, mirrored into this
-# fleet via scripts/_brand_voice_vocab_generated.py (see
-# scripts/gen-brand-voice-consumers.mjs). When this list and the canonical
-# .cjs disagree, the .cjs is the source of truth — update it, then regenerate.
-#
-# Two-tier classification (revised 2026-05-20 per Matt directive):
-#
-#   HARD_BANNED   — substring match, always a ship-blocker. The canonical
-#                   BANNED_WORD_STRINGS (real-estate clichés, AI filler,
-#                   marketing slop, hype openings, pandering, fake urgency)
-#                   layered with producer-specific extras below (salesy script
-#                   language + anti-pattern phrases the canonical general-prose
-#                   list doesn't carry).
-#   SOFT_FLAGGED  — substring match, flag for human review. Vague qualifiers
-#                   ("about", "around", "approximately") that have legitimate
-#                   non-hedge uses; the producer or reviewer decides per-case.
-#                   Kept as a separate, softer tier — the canonical source
-#                   removed these from its own banned list entirely (2026-06-02
-#                   realism pass) precisely because a blunt ban over-blocks;
-#                   this tier is this fleet's own human-review compromise, not
-#                   drift from canon.
-#
-# Producers default to checking BOTH tiers (BANNED_WORDS = HARD_BANNED |
-# SOFT_FLAGGED). Call grep_banned_categorized() when you want the split.
+# Voice is governed by marketing_brain_skills/brand-voice/VOICE.md, which
+# carries no word lists, no punctuation rules, and no mechanical gate (Matt,
+# 2026-09-07). HARD_BANNED / SOFT_FLAGGED and the canonical vocabulary they
+# were built from are gone. The three functions below are kept as no-op
+# pass-throughs so the many build_*.py producers that still call them do not
+# need editing one by one — they always report clean.
 
-HARD_BANNED = set(_CANONICAL_BANNED_WORDS) | {
-    # §6.3 Hype openings — not in the canonical (general-prose) list
-    "introducing",
-    # §6.3 Pandering phrases — producer-specific, not in canonical
-    "i can tell you really care about this",
-    # §6.3 Marketing slop — producer-specific ("exclusive" as a brokerage
-    # descriptor, per CLAUDE.md, not in the canonical word list)
-    "exclusive brokerage",
-    # §4.7 Salesy / pandering script language — producer-specific
-    "hope this finds you well", "we'd love to learn more",
-    "don't hesitate to reach out", "let's hop on a quick call",
-    "let's schedule a quick call", "just touching base",
-    "we've got some exciting options",
-    "the market is moving fast, time to act",
-    # §11.0 Anti-patterns (May 2025 pseudo-Matt phrases — banned regressions)
-    "a happy yes for these buyers", "stepping into this next chapter",
-    "a good outcome for the sellers", "one we got to help write",
-    "honored to have been in the room for this one",
-    "walking with these buyers",
-}
-
-SOFT_FLAGGED = {
-    # §6.2 Vague qualifiers — substitute for the real number. Flag for human
-    # review since these have legitimate uses ("about the property," "around
-    # the corner") that are not hedge violations.
-    "approximately", "roughly", "fairly", "somewhat",
-    "about", "around",
-}
-
-# Back-compat: full union. Existing callers continue to work unchanged.
-BANNED_WORDS = HARD_BANNED | SOFT_FLAGGED
+HARD_BANNED: set[str] = set()
+SOFT_FLAGGED: set[str] = set()
+BANNED_WORDS: set[str] = set()
 
 
 def grep_banned(text: str, *, include_soft: bool = True) -> list[str]:
-    """Return banned words found in text (lowercased substring match).
-
-    Args:
-        text: The text to scan.
-        include_soft: If False, only HARD_BANNED words are returned. Use
-            include_soft=False when you want a strict ship-blocker check
-            without false positives from "about" / "around" etc.
-
-    Returns:
-        Sorted list of banned words/phrases found.
-    """
-    t = text.lower()
-    pool = BANNED_WORDS if include_soft else HARD_BANNED
-    return sorted(b for b in pool if b in t)
+    """Retired — always returns an empty list. See module note above."""
+    return []
 
 
 def grep_banned_categorized(text: str) -> dict[str, list[str]]:
-    """Return banned words found in text, split by severity tier.
-
-    Returns:
-        {
-            "hard": [...],  # ship-blockers — must be removed before publish
-            "soft": [...],  # flag for human review — may be legitimate
-        }
-    """
-    t = text.lower()
-    return {
-        "hard": sorted(b for b in HARD_BANNED if b in t),
-        "soft": sorted(b for b in SOFT_FLAGGED if b in t),
-    }
+    """Retired — always returns empty tiers. See module note above."""
+    return {"hard": [], "soft": []}
 
 
 def has_hard_fail(text: str) -> bool:
-    """Quick check: does the text contain ANY hard-banned word/phrase?"""
-    t = text.lower()
-    return any(b in t for b in HARD_BANNED)
+    """Retired — always False. See module note above."""
+    return False
 
 
 # ── Geometry helpers ────────────────────────────────────────────────────────

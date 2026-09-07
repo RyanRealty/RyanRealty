@@ -11,7 +11,6 @@ import {
   captionFor,
   SHAREABLE_TYPE_KEYS,
 } from './deliverable-share'
-import { checkBrandVoice } from '@/lib/voice/check'
 
 const PRIVATE = [
   'content:cma',
@@ -70,10 +69,4 @@ describe('deliverable share-to-social safety (W10.6)', () => {
     }
   })
 
-  it('every caption passes the brand-voice check', () => {
-    for (const key of SHAREABLE_TYPE_KEYS) {
-      const result = checkBrandVoice(captionFor(key))
-      expect(result.ok, `${key} caption fails brand voice: ${JSON.stringify(result)}`).toBe(true)
-    }
-  })
 })

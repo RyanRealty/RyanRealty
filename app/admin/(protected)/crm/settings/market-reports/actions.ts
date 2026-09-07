@@ -59,7 +59,6 @@ const MESSAGES: Record<string, string> = {
   no_market_data: 'None of the selected areas have verified market data right now, so there is nothing to send.',
   too_many_recipients: 'That audience is over the 5,000-recipient cap for one send. Split it.',
   count_changed: 'The audience changed size since you previewed it. Preview again before queueing.',
-  voice_failed: 'The rendered issue failed the brand-voice check.',
   approval_required: 'Only a signed-in superuser can queue a send.',
   outside_send_window: 'Bulk sends start between 8am and 8pm market time. Queue it when the window opens.',
   draft_failed: 'Could not write the draft.',

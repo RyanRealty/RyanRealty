@@ -67,9 +67,7 @@ import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
-import { reviewProse } from '@/lib/voice/reviewer'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -786,77 +784,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // C9: build the comps map only. Subject-only map is not stamped into the letter.
     const map = await buildCmaMapDataUri(subject, adjusted, { tiersUsed: selection.tiersUsed })
 
-    // 5.5. Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice") over
-    // every composed PROSE string in the report: the pricing rationale/
-    // narrative notes, the development-opportunities section, and (for the
+    // 5.5. Punctuation sanitization over every composed PROSE string in the
+    // report: the pricing rationale/narrative notes, and (for the
     // expired-audit variant) the failure findings, services list, and net-
-    // sheet lines. Every other field in the report is a verified number or a
-    // structured fact, not authored prose, so it is out of scope here.
-    //
-    // PUNCTUATION IS SANITIZED, NOT GATED. Everything in `proseParts` is either
-    // written by us or derived from an LLM summary, and both routinely carry an
-    // em-dash or a semicolon. Failing the build on one is the wrong trade twice
-    // over: the reader gets no document at all, and the defect is a character
-    // we can simply fix. sanitizeClientProse rewrites it in place, so the
-    // rendered report is clean AND the gate below can only ever fire on a
-    // banned word, which is a real content problem.
+    // sheet lines. Everything here is either written by us or derived from
+    // an LLM summary, and both routinely carry an em-dash or a semicolon.
+    // sanitizeClientProse rewrites it in place so the rendered report is clean.
     pricing.notes = pricing.notes.map(sanitizeClientProse)
     pricing.confidenceReason = sanitizeClientProse(pricing.confidenceReason)
     // reviewReason is folded from the accuracy-contract check details, which
     // quote the adversarial audit's own summary — LLM punctuation, shown to the
     // broker in the admin queue.
     if (pricing.reviewReason) pricing.reviewReason = sanitizeClientProse(pricing.reviewReason)
-
-    const proseParts: string[] = [
-      ...pricing.notes,
-      pricing.confidenceReason,
-      ...(development ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail]), ...development.buyerOptions.flatMap((o) => [o.headline, o.detail]), ...development.marketingHighlights.map((h) => h.headline)] : []),
-      ...(rental ? [rental.disclaimer, rental.economicsNote, ...rental.tenures.flatMap((t) => [t.headline, t.detail]), ...rental.marketingHighlights.map((h) => h.headline)] : []),
-      ...thisHomePlan,
-      ...(listingPlan ? listingPlan.items.flatMap((i) => [i.trigger, i.action, i.basis]) : []),
-      ...(subdivisionStory
-        ? [
-            ...subdivisionStory.sections.flatMap((sec) => [sec.heading, sec.body]),
-            ...subdivisionStory.notableSales.map((n) => n.line),
-          ]
-        : []),
-      ...(expiredAudit
-        ? [
-            expiredAudit.feeLine,
-            ...expiredAudit.services,
-            ...expiredAudit.findings.flatMap((f) => [f.fact, f.meaning]),
-            ...expiredAudit.netSheet.lines.flatMap((l) => [l.label, l.note ?? '']),
-          ]
-        : []),
-    ].filter(Boolean)
-    // Gate the prose WE author. The LLM comparability narrative (judgment.narrative)
-    // is interpolated into pricing.notes but is excluded from the hard gate — it is
-    // punctuation-sanitized at its source (judge.ts) but not word-sanitized, so
-    // throwing on an LLM word choice would false-positive-break a legitimate build.
-    // (Follow-up: word-sanitize the narrative in judge.ts so it can be gated too.)
-    const authoredProse = judgment?.narrative
-      ? proseParts.join('\n').split(judgment.narrative).join(' ')
-      : proseParts.join('\n')
-    const voice = checkBrandVoice(authoredProse)
-    if (!voice.ok) {
-      // Reaching here means a banned WORD, not punctuation: every prose string
-      // above was punctuation-sanitized at source a few lines up, so a dash or
-      // semicolon can no longer get this far. That distinction is the whole
-      // point. Punctuation used to fail the build CLOSED, and the string that
-      // did it was one we wrote ourselves on the audit-unavailable branch, so
-      // the moment the Anthropic account hit its usage cap on 2026-07-30 every
-      // build in the corpus died on "CMA prose fails brand voice: —" and an
-      // API outage became a total CMA outage. Sanitizing at source makes that
-      // class structurally impossible; a banned word is a real content defect
-      // in our own copy and §2 is right that it should stop the document.
-      const err = 'CMA prose fails brand voice: ' + voice.violations.map((v) => `${v.term} (${v.kind})`).join(', ')
-      await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
-      return { ok: false, error: err, slug }
-    }
-
-    // 5.6. Advisory Orwell-rules review (W11.3). Anthropic is dark; reviewProse
-    // degrades when the key is missing. Judge + audit use the local xAI key.
-    const voiceReview = await reviewProse(authoredProse, { context: 'cma' }).catch(() => null)
 
     // 6. Render.
     //
@@ -1175,7 +1114,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       html,
       citations,
       pageCount,
-      voiceReview,
     }
   } catch (e) {
     const err = e instanceof Error ? e.message : String(e)

@@ -3,7 +3,7 @@
 //
 // G-runtime — Claude Code PreToolUse hook. The runtime layer of the
 // unified enforcement architecture. Returns `permissionDecision:
-// "deny"` to refuse tool calls that violate the six rule classes
+// "deny"` to refuse tool calls that violate the five rule classes
 // inventoried at out/guardrail-inventory-2026-05-28.md. The agent
 // sees the refusal reason and must comply.
 //
@@ -26,9 +26,6 @@
 //   5. Write|Edit — refuse edits to `app/<route>/page.tsx` when the
 //      matching `design_system/ryan-realty/ui_kits/<route>/parity.json`
 //      mockup contract does not exist on disk.
-//   6. Write|Edit — refuse edits whose content contains banned-voice
-//      tokens (em-dash, en-dash, semicolon, exclamation, §6.2 banned
-//      words) inside user-facing paths.
 //
 // The decisions are structured as `{hookSpecificOutput: {hookEventName,
 // permissionDecision, permissionDecisionReason}}` per the Claude Code
@@ -42,10 +39,6 @@
 //     SQL to allow a raw ROW read past the DAL boundary. It does NOT
 //     license an aggregate over a stat-bearing table — that has no
 //     bypass, because a stat has exactly one legitimate source.
-//   - Write|Edit voice refusals: include `// brand-voice:exempt`
-//     ONE LINE ABOVE the banned token (escape hatch for code
-//     references like `import dynamic from 'next/dynamic'` — but
-//     check-brand-voice.mjs already skips import lines).
 //
 // To disable the entire hook (e.g., emergency unblock):
 //   ALLOW_ALL_HOOKS=1
@@ -101,23 +94,9 @@ function approve() {
   process.exit(0)
 }
 
-// ─── Lazy-load the banned-vocabulary list ────────────────────────────
-
-let VOCAB = null
-function getVocab() {
-  if (VOCAB) return VOCAB
-  try {
-    VOCAB = require(join(projectRoot, 'scripts/brand-voice-vocabulary.cjs'))
-  } catch {
-    VOCAB = { PUNCTUATION: [], BANNED_WORD_STRINGS: [] }
-  }
-  return VOCAB
-}
-
 // ─── The ONE definition of a statistic ───────────────────────────────
 //
-// scripts/stat-tables.cjs, required the same way the brand-voice vocabulary
-// already is. A stat is an aggregate over a table the DAL covers, and the
+// scripts/stat-tables.cjs is required lazily below. A stat is an aggregate over a table the DAL covers, and the
 // covered set is parsed from docs/DAL_INDEX.md, which G16 regenerates from
 // the code. No list is kept here, because keeping one here is how the hook
 // and the CI gate drift apart.
@@ -267,7 +246,7 @@ if (/__execute_sql$/.test(tool_name) || /__apply_migration$/.test(tool_name)) {
   }
 }
 
-// ─── Refusal 5+6: Write|Edit — parity contract + brand voice ─────────
+// ─── Refusal 5: Write|Edit — parity contract ─────────────────────────
 
 if (tool_name === 'Write' || tool_name === 'Edit' || tool_name === 'MultiEdit') {
   const filePath = String(tool_input.file_path || tool_input.path || '')
@@ -299,183 +278,7 @@ if (tool_name === 'Write' || tool_name === 'Edit' || tool_name === 'MultiEdit') 
         )
       }
     }
-
-    // Refusal 6: brand-voice in user-facing surfaces.
-    //
-    // Apply only to user-facing JSX-bearing files. The CI script
-    // scripts/check-brand-voice.mjs is the authoritative gate; this
-    // hook fires earlier (at edit time) on obvious banned tokens so
-    // the agent doesn't write the banned word in the first place.
-    const isUserFacingPath =
-      /^app\//.test(stripRoot(filePath, projectRoot)) ||
-      /^components\/(site|listing|search|reports|listing-detail)/.test(
-        stripRoot(filePath, projectRoot),
-      )
-    const isCodeOnly =
-      /\/(api|admin|cron)\//.test(filePath) ||
-      filePath.endsWith('.test.ts') ||
-      filePath.endsWith('.test.tsx') ||
-      filePath.endsWith('.spec.ts')
-
-    if (isUserFacingPath && !isCodeOnly && newContent) {
-      // Only scan content that's actually user-facing: string literals
-      // and JSX text between tags. Code identifiers (`dynamic(...)`,
-      // function names, type names) and comments are NOT user-facing
-      // and trigger false positives if we scan raw source.
-      const scannable = extractContent(newContent)
-      const vocab = getVocab()
-
-      // Punctuation — em-dash etc.
-      for (const p of vocab.PUNCTUATION || []) {
-        for (const chunk of scannable) {
-          if (!chunk.text.includes(p.char)) continue
-          // Exclamation false-positive: the `!=` / `!==` comparison operators
-          // are JS code, not prose punctuation. A JSX expression container
-          // (`{a != null ? ... : ...}`) is sometimes extracted as a chunk, so
-          // skip when every `!` in the chunk is part of `!=` (no prose `!`).
-          if (p.char === '!' && !/!(?!=)/.test(chunk.text)) continue
-          // Standalone data-placeholder em-dash is allowed (e.g.
-          // `<dd>{"—"}</dd>` or a JSX text node whose trimmed value
-          // is just `"—"`).
-          if (chunk.text.trim() === p.char) continue
-          deny(
-            'WRITE-BRAND-VOICE',
-            `Banned punctuation ${p.label} in user-facing file ${filePath}\n   In: "${chunk.text.slice(0, 80)}"`,
-            `${p.advice} The ESLint rule rr-brand-voice/no-violations + CI gate G3 catch this at build time — fix it here in the editor.`,
-          )
-        }
-      }
-      // Banned words — word-boundary match against the scannable content.
-      for (const word of vocab.BANNED_WORD_STRINGS || []) {
-        const re = new RegExp(`\\b${escapeRegex(word)}\\b`, 'i')
-        for (const chunk of scannable) {
-          if (!re.test(chunk.text)) continue
-          deny(
-            'WRITE-BRAND-VOICE',
-            `Banned word "${word}" in user-facing file ${filePath}\n   In: "${chunk.text.slice(0, 80)}"`,
-            'See CLAUDE.md §3 + marketing_brain_skills/brand-voice/voice_guidelines.md §6. Rewrite without the banned token. Use the real number / concrete fact instead of the vague qualifier.',
-          )
-        }
-      }
-    }
   }
 }
 
 approve()
-
-// ─── Helpers ─────────────────────────────────────────────────────────
-
-function stripRoot(path, root) {
-  return path.startsWith(root + '/') ? path.slice(root.length + 1) : path
-}
-
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-// Heuristic — does this chunk look like JavaScript / TypeScript code
-// rather than user-facing JSX text? The `>` / `<` extractor frequently
-// catches JS expressions between a TS generic (`React.TouchEvent>`) and
-// a less-than operator (`if (a < b)`) and treats the JS code in between
-// as JSX text. Those chunks contain unmistakable code markers:
-//   - arrow function `=>`
-//   - statement terminator `;`
-//   - `const`/`let`/`var`/`function`/`return` keywords
-//   - `useState/useEffect/useCallback/useMemo/useRef` React hooks
-//   - object property `: ` followed by capitalised type name
-// A chunk that contains any of these is JS, not JSX text — skip it so
-// `!==`, `&&`, etc. don't fire the punctuation rule.
-function looksLikeJsCode(text) {
-  if (/=>/.test(text)) return true
-  if (/;\s*$/.test(text)) return true
-  if (/\b(const|let|var|function|return|if|else|for|while|switch|case|break|continue|throw|try|catch|finally|new|typeof|instanceof|in|of)\b/.test(text)) return true
-  if (/\buse(State|Effect|Callback|Memo|Ref|Context|Reducer|Layout(?:Effect)?)\b/.test(text)) return true
-  if (/[a-z]\([^)]*\)\s*[{=]/.test(text)) return true
-  return false
-}
-
-// Pull "content" chunks from source: string literals (single, double,
-// backtick) and JSX text between tags. Skip line + block comments and
-// import lines so code identifiers like `dynamic(...)` don't false-
-// positive against the brand-voice vocabulary. Returns an array of
-// `{ type, text }` chunks.
-function extractContent(src) {
-  const chunks = []
-  let i = 0
-  while (i < src.length) {
-    const ch = src[i]
-    // Skip line comment.
-    if (ch === '/' && src[i + 1] === '/') {
-      const eol = src.indexOf('\n', i)
-      i = eol === -1 ? src.length : eol
-      continue
-    }
-    // Skip block comment.
-    if (ch === '/' && src[i + 1] === '*') {
-      const end = src.indexOf('*/', i + 2)
-      i = end === -1 ? src.length : end + 2
-      continue
-    }
-    // Skip whole import line.
-    if (i === 0 || src[i - 1] === '\n') {
-      const restOfLine = src.slice(i, src.indexOf('\n', i) === -1 ? src.length : src.indexOf('\n', i))
-      if (/^\s*import\s/.test(restOfLine) || /^\s*export\s+.*\bfrom\s/.test(restOfLine)) {
-        const eol = src.indexOf('\n', i)
-        i = eol === -1 ? src.length : eol
-        continue
-      }
-    }
-    // String literal.
-    if (ch === '"' || ch === "'" || ch === '`') {
-      const quote = ch
-      const start = ++i
-      let val = ''
-      while (i < src.length) {
-        const c = src[i]
-        if (c === '\\') {
-          val += c + (src[i + 1] || '')
-          i += 2
-          continue
-        }
-        if (c === quote) {
-          chunks.push({ type: 'string', text: val })
-          i++
-          break
-        }
-        // Skip template literal interpolations.
-        if (quote === '`' && c === '$' && src[i + 1] === '{') {
-          let depth = 1
-          i += 2
-          while (i < src.length && depth > 0) {
-            if (src[i] === '{') depth++
-            else if (src[i] === '}') depth--
-            i++
-          }
-          continue
-        }
-        val += c
-        i++
-      }
-      continue
-    }
-    // JSX text — between `>` and `<`. Strip JSX expression containers
-    // (`{...}`) because those are JS code (data placeholders,
-    // computed values, etc.), not literal user-facing text. The
-    // string literals inside the expression containers are already
-    // captured by the string-literal branch above.
-    if (ch === '>') {
-      const nextLt = src.indexOf('<', i + 1)
-      if (nextLt > i + 1) {
-        const raw = src.slice(i + 1, nextLt)
-        const text = raw.replace(/\{[^{}]*\}/g, '').trim()
-        if (text.length > 0 && !looksLikeJsCode(text)) {
-          chunks.push({ type: 'jsx-text', text })
-        }
-        i = nextLt
-        continue
-      }
-    }
-    i++
-  }
-  return chunks
-}
