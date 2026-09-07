@@ -1,7 +1,7 @@
 // @no-parity — internal admin tool, no public mockup contract.
 //
 // /admin/cmas/[slug] — per-CMA review page. Numbers, editable outbound email,
-// then Approve & send / Approve & queue. Extra form work sits under details.
+// then Schedule / Send now on shared EmailBodyEditor. Extra form work under details.
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
@@ -28,6 +28,8 @@ import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabe
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow } from '@/lib/cma/first-contact'
 import { readFirstContactOverride } from '@/lib/cma/first-contact-override'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
+import { dripEtaFor, DRIP_CADENCE_LINE } from '@/lib/cma/drip-eta'
+import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import '../_components/cma-review.css'
 
 export const dynamic = 'force-dynamic'
@@ -90,18 +92,44 @@ export default async function AdminCmaReviewPage({
   const lastListLabel = theirPriceLabelFor(origin) ?? 'Last list'
   const auditVerdict = String((summary?.audit as { verdict?: string } | null)?.verdict ?? '').toLowerCase()
   const sendMode = sendModeForOrigin(origin)
-  const sendLabel =
-    status === 'draft' &&
+  const contactEmail = (linkedPerson?.primaryEmail || (row.client_email as string | null) || '').trim()
+  const canDeliver =
     hasDocument &&
-    Boolean(linkedPerson?.primaryEmail || row.client_email) &&
-    auditVerdict !== 'fail'
-      ? sendMode === 'now'
-        ? 'Approve & send'
-        : sendMode === 'drip'
-          ? 'Approve & queue'
-          : 'Approve'
-      : null
+    Boolean(contactEmail) &&
+    auditVerdict !== 'fail' &&
+    (status === 'draft' || status === 'finalized')
   const signingBroker = brokers.find((b) => b.slug === String(row.broker_slug ?? ''))
+  const brokerRow = brokerRows.find((b) => String(b.slug) === String(row.broker_slug ?? ''))
+  const fromMailbox =
+    (typeof brokerRow?.email === 'string' && /@ryan-realty\.com$/i.test(brokerRow.email)
+      ? brokerRow.email
+      : null) || 'matt@ryan-realty.com'
+  const signatureHtml = (await getSignatureForMailbox(fromMailbox))?.html ?? null
+
+  // Drip ETA when this CMA's prospect is currently queued.
+  let inDrip = false
+  let dripEtaLabel: string | null = null
+  let dripCadence: string | null = null
+  if (sendMode === 'drip') {
+    const { listQueuedFirstTouch, getLastDripSentAt, findProspectForCmaSlug } = await import(
+      '@/lib/data/prospecting/drip-queue'
+    )
+    const prospect = await findProspectForCmaSlug(safeSlug)
+    if (prospect) {
+      const [queued, last] = await Promise.all([listQueuedFirstTouch(500), getLastDripSentAt()])
+      const eta = dripEtaFor({
+        queued,
+        lastDripSentAt: last,
+        now: new Date(),
+        target: prospect,
+      })
+      if (eta) {
+        inDrip = true
+        dripEtaLabel = eta.label
+        dripCadence = eta.cadence
+      }
+    }
+  }
   const composed = composeCmaFirstContact(origin, {
     ...cmaFirstContactFactsFromRow(row, {
       brokerName: signingBroker?.displayName ?? 'Matt Ryan',
@@ -250,9 +278,15 @@ export default async function AdminCmaReviewPage({
         brokerSlug={(row.broker_slug as string | null) ?? null}
         brokers={brokers}
         hasDocument={hasDocument}
-        sendLabel={sendLabel}
+        sendMode={sendMode}
+        inDrip={inDrip}
+        dripEtaLabel={dripEtaLabel}
+        dripCadence={dripCadence ?? (inDrip ? DRIP_CADENCE_LINE : null)}
+        fromMailbox={fromMailbox}
+        signatureHtml={signatureHtml}
         emailSubject={firstContact.subject}
         emailBody={firstContact.bodyText}
+        canDeliver={canDeliver}
       />
 
       <details style={{ marginTop: 24 }}>

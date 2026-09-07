@@ -9,7 +9,9 @@
  * ask because they already came to us.
  *
  * Voice: marketing_brain_skills/brand-voice/VOICE.md. Write to one person,
- * say the fact, stop. No em dash, no semicolon, no exclamation. We after
+ * say the fact, stop. Zero mannered prose / corporate syrup. For expired we
+ * are sorry it did not sell and we hope to earn the business — plain words,
+ * not empathy theater. No em dash, no semicolon, no exclamation. We after
  * the signed intro. No prior-agent blame. Never print CMA.
  */
 
@@ -64,7 +66,8 @@ function introFor(brokerName: string | null): string {
 
 function planFor(origin: CmaOrigin, named: string): string {
   if (origin === 'expired') {
-    return `Your listing on ${named} came off the market without a sale.`
+    // Matt HARD LOCK: sorry it did not sell + empathize, no syrup.
+    return `Your listing on ${named} came off the market without a sale. Sorry it did not sell.`
   }
   if (origin === 'fsbo') {
     return `You are selling ${named} yourself.`
@@ -76,7 +79,11 @@ function closeFor(): string {
   return CLOSE
 }
 
-function offerFor(): string {
+function offerFor(origin: CmaOrigin): string {
+  // Matt HARD LOCK: hope to earn the business — plain, not corporate flourish.
+  if (origin === 'expired' || origin === 'fsbo') {
+    return 'We hope to earn your business. Reply or call to walk through the numbers.'
+  }
   return 'Reply or call to walk through the numbers.'
 }
 
@@ -130,7 +137,7 @@ export function composeCmaFirstContact(
   const plan = planFor(origin, named)
   const numbers = composeInboundNumbersClause(facts)
   const close = closeFor()
-  const offer = offerFor()
+  const offer = offerFor(origin)
   const bodyText = [
     greeting,
     intro,

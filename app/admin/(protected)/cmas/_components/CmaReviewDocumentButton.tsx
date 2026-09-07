@@ -13,9 +13,9 @@ export function CmaReviewDocumentButton({ slug }: { slug: string }) {
       rel="noopener noreferrer"
       className="av2-btn av2-btn--quiet av2-btn--touch"
       style={{ textDecoration: 'none' }}
-      data-cma-first-action="review-cma"
+      data-cma-first-action="open-report"
     >
-      Review CMA
+      Open report
     </a>
   )
 }

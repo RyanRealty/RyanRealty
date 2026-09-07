@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Review-page action rail. Outbound email is editable here (subject + body),
- * then Approve & send / Approve & queue. Client edits, rebuild, and archive
- * sit under details so the page stays a read-then-send instrument.
+ * Review-page action rail. Shared compose = EmailBodyEditor (G50).
+ * R1 drip card when queued. R2 To/From/Subject + CMA PDF chip + preview.
+ * R3 stay on Review (no People compose hop). R4 one primary send verb.
  */
 
 import { useState, useTransition } from 'react'
@@ -13,7 +13,6 @@ import { toast } from 'sonner'
 import { Button, ConfirmDialog, SelectField, TextField } from '@/components/admin/v2'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
-import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { formatPriceExact } from '@/lib/format/money'
 import {
   rebuildCmaAction,
@@ -24,9 +23,16 @@ import {
   deleteCmaAction,
   searchCmaPersonAction,
   attachCmaPersonAction,
+  saveCmaFirstContactOverrideAction,
+  updateCmaOutboundToAction,
 } from '@/app/actions/cma-admin'
-import { approveAndDeliverCma } from '@/app/actions/cma-queue'
+import {
+  approveAndDeliverCma,
+  holdCmaInDripAction,
+  removeCmaFromDripAction,
+} from '@/app/actions/cma-queue'
 import { cmaClientIntentLabel, isCmaClientIntent, type CmaClientIntent } from '@/lib/cma/client-intent'
+import type { CmaSendMode } from '@/lib/cma/origin'
 import './cma-review.css'
 
 export interface CmaReviewActionsProps {
@@ -47,11 +53,23 @@ export interface CmaReviewActionsProps {
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
-  sendLabel: string | null
+  /** Origin send lane. */
+  sendMode: CmaSendMode
+  /** True when this CMA is currently in the weekday drip queue. */
+  inDrip: boolean
+  /** ETA card lines when inDrip (position + datetime + cadence). */
+  dripEtaLabel: string | null
+  dripCadence: string | null
+  /** Signing broker mailbox shown as From (read-only). */
+  fromMailbox: string
+  /** Signature HTML (Oregon disclosure included) for EmailBodyEditor preview. */
+  signatureHtml: string | null
   /** Default outbound subject (first-contact compose). */
   emailSubject: string
   /** Default outbound body (first-contact compose). */
   emailBody: string
+  /** Ready to approve+deliver (audit ok, contact, document). */
+  canDeliver: boolean
 }
 
 const usd = formatPriceExact
@@ -62,6 +80,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   const [clientName, setClientName] = useState(props.clientName ?? '')
   const [clientEmail, setClientEmail] = useState(props.clientEmail ?? '')
   const [clientPhone, setClientPhone] = useState(props.clientPhone ?? '')
+  const [toEmail, setToEmail] = useState(props.clientEmail ?? '')
   const [priceOverride, setPriceOverride] = useState(
     props.priceOverride != null ? String(props.priceOverride) : '',
   )
@@ -80,10 +99,16 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
 
   const isDraft = props.status === 'draft'
   const isArchived = props.status === 'archived'
-  const composeHref =
-    personId && props.hasDocument
-      ? cmaCrmComposeHref({ personId, slug: props.slug, channel: 'email' })
-      : null
+  const isDripLane = props.sendMode === 'drip'
+  const isNowLane = props.sendMode === 'now'
+
+  function overrideIfEdited() {
+    const subject = emailSubject.trim()
+    const bodyText = emailBody.trim()
+    const edited =
+      subject !== props.emailSubject.trim() || bodyText !== props.emailBody.trim()
+    return edited ? { subject, bodyText } : { subject, bodyText }
+  }
 
   function rebuild() {
     const override = priceOverride.trim() ? Number(priceOverride.replace(/[^0-9.]/g, '')) : null
@@ -95,7 +120,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       const { error } = await rebuildCmaAction({
         slug: props.slug,
         clientName: clientName.trim() || null,
-        clientEmail: clientEmail.trim() || null,
+        clientEmail: (toEmail.trim() || clientEmail.trim()) || null,
         clientPhone: clientPhone.trim() || null,
         personId,
         beds: beds.trim() || null,
@@ -106,7 +131,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       })
       if (error) toast.error(error)
       else {
-        toast.success('Rebuilt. Open Review CMA to read the new document.')
+        toast.success('Rebuilt. Open report to read the new document.')
         router.refresh()
       }
     })
@@ -134,7 +159,24 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
     })
   }
 
-  function approveAndSend() {
+  function saveEmail() {
+    startTransition(async () => {
+      const subject = emailSubject.trim()
+      const bodyText = emailBody.trim()
+      if (!subject || !bodyText) {
+        toast.error('Subject and email body are required.')
+        return
+      }
+      const { error } = await saveCmaFirstContactOverrideAction(props.slug, { subject, bodyText })
+      if (error) toast.error(error)
+      else {
+        toast.success('Email saved for drip / next send.')
+        router.refresh()
+      }
+    })
+  }
+
+  function deliver(delivery: 'now' | 'drip') {
     startTransition(async () => {
       const subject = emailSubject.trim()
       const bodyText = emailBody.trim()
@@ -142,20 +184,45 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         toast.error('Subject and email body are required before send.')
         return
       }
-      const edited =
-        subject !== props.emailSubject.trim() || bodyText !== props.emailBody.trim()
-      const res = await approveAndDeliverCma(
-        props.slug,
-        edited ? { subject, bodyText } : undefined,
-      )
+      if (toEmail.trim() && toEmail.trim().toLowerCase() !== (props.clientEmail ?? '').toLowerCase()) {
+        const { error: toErr } = await updateCmaOutboundToAction(props.slug, toEmail.trim())
+        if (toErr) {
+          toast.error(`Could not update To: ${toErr}`)
+          return
+        }
+      }
+      const ov = overrideIfEdited()
+      const res = await approveAndDeliverCma(props.slug, ov, { delivery })
       if (!res.ok) {
         toast.error(res.error)
         return
       }
       if (res.outcome === 'sent') toast.success('Sent.')
-      else if (res.outcome === 'queued') toast.success(`Queued. ${res.position} waiting in the drip.`)
+      else if (res.outcome === 'queued') toast.success(`Scheduled. ${res.position} waiting in the drip.`)
       else toast.success(res.reason)
       router.refresh()
+    })
+  }
+
+  function holdDrip() {
+    startTransition(async () => {
+      const res = await holdCmaInDripAction(props.slug)
+      if (!res.ok) toast.error(res.error)
+      else {
+        toast.success('Held — moved to the back of the drip.')
+        router.refresh()
+      }
+    })
+  }
+
+  function removeDrip() {
+    startTransition(async () => {
+      const res = await removeCmaFromDripAction(props.slug)
+      if (!res.ok) toast.error(res.error)
+      else {
+        toast.success('Removed from drip.')
+        router.refresh()
+      }
     })
   }
 
@@ -182,42 +249,137 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
     })
   }
 
+  // R4: one primary send verb.
+  // Warm → Send now. Cold ready → Schedule primary, Send now quiet. Queued → drip card.
+  const showSchedule = props.canDeliver && isDripLane && !props.inDrip
+  const showSendNow =
+    (props.canDeliver && (isNowLane || isDripLane)) || (props.inDrip && Boolean(toEmail.trim()))
+  const primaryIsSchedule = showSchedule
+  const primaryIsSendNow = showSendNow && !showSchedule
+
   return (
     <div className="space-y-5">
+      {props.inDrip ? (
+        <div
+          className="cma-drip-card space-y-2"
+          style={{
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-lg)',
+            padding: 12,
+            background: 'var(--a-surface-2, var(--a-surface))',
+          }}
+        >
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+            In drip
+          </p>
+          {props.dripEtaLabel ? (
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>
+              {props.dripEtaLabel}
+            </p>
+          ) : null}
+          {props.dripCadence ? (
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              {props.dripCadence}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2" style={{ marginTop: 8 }}>
+            <Button onClick={() => deliver('now')} disabled={isPending || !props.hasDocument} touch>
+              {isPending ? 'Working…' : 'Send now'}
+            </Button>
+            <Button onClick={holdDrip} disabled={isPending} variant="quiet" touch>
+              Hold
+            </Button>
+            <Button onClick={removeDrip} disabled={isPending} variant="quiet" touch>
+              Remove from drip
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="cma-send-dock space-y-3">
         <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
           Outbound email
         </p>
         <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-          Tweaks here go with Approve & send / Approve & queue. Plain voice. No syrup.
+          Edit on Review. PDF attaches automatically on send. Signature and Oregon disclosure show in preview.
         </p>
+
+        <TextField
+          label="To"
+          type="email"
+          value={toEmail}
+          onChange={(e) => {
+            setToEmail(e.target.value)
+            setClientEmail(e.target.value)
+          }}
+          hint="Recipient. Saved when you Schedule or Send now."
+        />
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          From · {props.fromMailbox}
+        </p>
+
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 999,
+            border: '1px solid var(--a-border)',
+            fontSize: 'var(--a-text-xs)',
+            color: 'var(--a-text)',
+          }}
+          data-cma-attach="pdf"
+        >
+          CMA PDF
+          <span style={{ color: 'var(--a-text-2)' }}>attaches on send</span>
+        </div>
+
         <EmailBodyEditor
           subject={emailSubject}
           onSubjectChange={setEmailSubject}
           body={emailBody}
           onBodyChange={setEmailBody}
-          signatureHtml={null}
+          signatureHtml={props.signatureHtml}
           hideMergeFields
         />
-        {props.sendLabel ? (
-          <Button onClick={approveAndSend} disabled={isPending || !props.hasDocument} touch className="w-full">
-            {isPending ? 'Working…' : props.sendLabel}
+
+        {showSchedule ? (
+          <Button
+            onClick={() => deliver('drip')}
+            disabled={isPending || !props.hasDocument}
+            touch
+            className="w-full"
+          >
+            {isPending ? 'Working…' : 'Schedule'}
           </Button>
-        ) : isDraft ? (
+        ) : null}
+
+        {showSendNow ? (
+          <Button
+            onClick={() => deliver('now')}
+            disabled={isPending || !props.hasDocument}
+            variant={primaryIsSendNow ? undefined : 'quiet'}
+            touch
+            className="w-full"
+          >
+            {isPending ? 'Working…' : 'Send now'}
+          </Button>
+        ) : null}
+
+        {!showSchedule && !showSendNow && isDraft ? (
           <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
             Approve (draft to final)
           </Button>
-        ) : (
-          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-            Link a client email and finish the audit before this CMA can send.
-          </p>
-        )}
-        {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
-        {composeHref ? (
-          <a href={composeHref} className="av2-btn av2-btn--quiet av2-btn--touch w-full" style={{ textDecoration: 'none' }}>
-            Open in CRM compose
-          </a>
         ) : null}
+
+        {(props.inDrip || isDripLane) && props.hasDocument ? (
+          <Button onClick={saveEmail} disabled={isPending} variant="quiet" touch className="w-full">
+            {isPending ? 'Working…' : 'Save email for drip'}
+          </Button>
+        ) : null}
+
+        {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
       </div>
 
       <details>
@@ -278,7 +440,10 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
                           setPersonId(data.personId)
                           setPersonName(data.clientName ?? hit.name ?? '')
                           if (data.clientName) setClientName(data.clientName)
-                          if (data.clientEmail) setClientEmail(data.clientEmail)
+                          if (data.clientEmail) {
+                            setClientEmail(data.clientEmail)
+                            setToEmail(data.clientEmail)
+                          }
                           if (data.clientPhone) setClientPhone(data.clientPhone)
                           setPersonHits([])
                           setPersonQuery('')
@@ -297,7 +462,6 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           </div>
 
           <TextField label="Client name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
-          <TextField label="Client email" type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
           <TextField label="Client phone" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -348,7 +512,6 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           </Button>
         </div>
       </details>
-
 
       <details>
         <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>

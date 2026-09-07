@@ -61,7 +61,7 @@ export function adminCmaEntityActions(opts: {
   if (opts.canOpenDocument) {
     actions.push({
       id: 'review-cma',
-      label: 'Review CMA',
+      label: 'Open report',
       href: brokerCmaViewHref(slug),
       primary: false,
     })

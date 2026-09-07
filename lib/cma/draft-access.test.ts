@@ -58,7 +58,7 @@ describe('CMA draft review access', () => {
     ).toBe(true)
   })
 
-  it('keeps Review CMA and Open PDF as quiet document links, never the page primary', () => {
+  it('keeps Open report and Open PDF as quiet document links, never the page primary', () => {
     const actions = adminCmaEntityActions({
       slug: 'cma-850-quince-redmond-97756',
       canOpenDocument: true,
@@ -66,7 +66,7 @@ describe('CMA draft review access', () => {
     })
     expect(actions[0]).toEqual({
       id: 'review-cma',
-      label: 'Review CMA',
+      label: 'Open report',
       href: '/admin/cmas/cma-850-quince-redmond-97756/view',
       primary: false,
     })

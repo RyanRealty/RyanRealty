@@ -286,3 +286,44 @@ export async function listQueuedFirstTouch(limit = 500): Promise<QueuedDripItem[
   items.sort((a, b) => a.queuedAt.localeCompare(b.queuedAt))
   return items.slice(0, limit)
 }
+
+
+/**
+ * Hold = defer to the back of the FIFO queue (bump queued_at to now).
+ * No new column — later drain order is enough for "not yet".
+ */
+export async function holdQueuedFirstTouch(
+  kind: ProspectKind,
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sb = createServiceClient()
+  const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
+  const keyCol = kind === 'expired' ? 'listing_key' : 'fsbo_url'
+  const { error } = await sb
+    .from(table)
+    .update({ outreach_email_queued_at: new Date().toISOString() })
+    .eq(keyCol, id)
+    .eq('outreach_email_status', 'queued')
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+/** Remove from drip = clear queue stamp (same write as hard-skip, broker-initiated). */
+export async function removeQueuedFirstTouch(
+  kind: ProspectKind,
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const sb = createServiceClient()
+  const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
+  const keyCol = kind === 'expired' ? 'listing_key' : 'fsbo_url'
+  const { error } = await sb
+    .from(table)
+    .update({
+      outreach_email_status: null,
+      outreach_email_queued_at: null,
+    })
+    .eq(keyCol, id)
+    .eq('outreach_email_status', 'queued')
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}

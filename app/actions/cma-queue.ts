@@ -44,6 +44,7 @@ async function findQueueRow(slug: string): Promise<CmaQueueRow | null> {
 export async function approveAndDeliverCma(
   slug: string,
   override?: CmaSendOverride,
+  opts?: { delivery?: 'now' | 'drip' },
 ): Promise<ApproveAndDeliverResult> {
   try {
     const auth = await checkAdminAction('prospecting.view')
@@ -61,7 +62,12 @@ export async function approveAndDeliverCma(
         error: `This CMA failed its adversarial audit.${detail} Rebuild it before sending — a failed audit means the numbers or the narrative do not hold up.`,
       }
     }
-    if (!isSendableQueueState(row.state)) {
+    // Send-now from an already-queued drip row is allowed (pulls it out of the
+    // weekday queue and delivers via sendCmaToLead). Everything else still
+    // requires a sendable Ready state.
+    const forceNow = opts?.delivery === 'now'
+    const alreadyQueued = row.state === 'queued'
+    if (!(forceNow && alreadyQueued) && !isSendableQueueState(row.state)) {
       const why: Record<string, string> = {
         failed: 'The build failed. Rebuild it first.',
         building: 'It has no document yet. Wait for the build to finish.',
@@ -76,11 +82,16 @@ export async function approveAndDeliverCma(
 
     // 2. Finalize — the document link must be client-ready before any email
     // points at it, otherwise the recipient gets a 404 on a draft.
-    const approved = await approveCmaAction(slug)
-    if (approved.error) return { ok: false, error: approved.error }
+    if (!alreadyQueued) {
+      const approved = await approveCmaAction(slug)
+      if (approved.error) return { ok: false, error: approved.error }
+    }
 
-    // 3. Deliver on the lane the origin dictates.
-    if (row.sendMode === 'manual') {
+    // 3. Deliver on the lane the origin dictates (Review may force now/drip).
+    const delivery: 'now' | 'drip' | 'manual' =
+      opts?.delivery ?? (row.sendMode === 'manual' ? 'manual' : row.sendMode)
+
+    if (delivery === 'manual') {
       return {
         ok: true,
         outcome: 'approved-only',
@@ -95,9 +106,19 @@ export async function approveAndDeliverCma(
       return { ok: false, blocked: 'contact', error: 'Approved, but there is no email on file for this owner. Nothing was sent.' }
     }
 
-    if (row.sendMode === 'now') {
+    if (delivery === 'now') {
       const sent = await sendCmaToLeadAction(slug, override)
-      if (sent.error) return { ok: false, error: `Approved, but the send failed: ${sent.error}` }
+      if (sent.error) {
+        return {
+          ok: false,
+          error: alreadyQueued ? `Send failed: ${sent.error}` : `Approved, but the send failed: ${sent.error}`,
+        }
+      }
+      // Pull out of the drip so the weekday drain cannot double-send.
+      if (row.prospectKind && row.prospectId) {
+        const { hardSkipQueuedFirstTouch } = await import('@/lib/data/prospecting/drip-queue')
+        await hardSkipQueuedFirstTouch(row.prospectKind, row.prospectId, 'manual-send-now')
+      }
       revalidatePath('/admin/cmas')
       return { ok: true, outcome: 'sent', transport: sent.data?.transport ?? null }
     }
@@ -128,5 +149,49 @@ export async function approveAndDeliverCma(
   } catch (e) {
     console.error('[approveAndDeliverCma]', e)
     return { ok: false, error: e instanceof Error ? e.message : 'Approve failed unexpectedly.' }
+  }
+}
+
+
+async function prospectForSlug(slug: string): Promise<{ kind: 'expired' | 'fsbo'; id: string } | null> {
+  const row = await findQueueRow(slug)
+  if (row?.prospectKind && row.prospectId) return { kind: row.prospectKind, id: row.prospectId }
+  const { findProspectForCmaSlug } = await import('@/lib/data/prospecting/drip-queue')
+  return findProspectForCmaSlug(slug)
+}
+
+/** Broker Hold on an In-drip card — defer to the back of the FIFO queue. */
+export async function holdCmaInDripAction(slug: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const auth = await checkAdminAction('prospecting.view')
+    if (!auth.ok) return { ok: false, error: auth.error }
+    const prospect = await prospectForSlug(slug)
+    if (!prospect) return { ok: false, error: 'Not linked to a prospecting row.' }
+    const { holdQueuedFirstTouch } = await import('@/lib/data/prospecting/drip-queue')
+    const res = await holdQueuedFirstTouch(prospect.kind, prospect.id)
+    if (!res.ok) return res
+    revalidatePath('/admin/cmas')
+    revalidatePath(`/admin/cmas/${slug.trim().toLowerCase()}`)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Hold failed.' }
+  }
+}
+
+/** Broker Remove from drip — leave the queue without sending. */
+export async function removeCmaFromDripAction(slug: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const auth = await checkAdminAction('prospecting.view')
+    if (!auth.ok) return { ok: false, error: auth.error }
+    const prospect = await prospectForSlug(slug)
+    if (!prospect) return { ok: false, error: 'Not linked to a prospecting row.' }
+    const { removeQueuedFirstTouch } = await import('@/lib/data/prospecting/drip-queue')
+    const res = await removeQueuedFirstTouch(prospect.kind, prospect.id)
+    if (!res.ok) return res
+    revalidatePath('/admin/cmas')
+    revalidatePath(`/admin/cmas/${slug.trim().toLowerCase()}`)
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Remove failed.' }
   }
 }

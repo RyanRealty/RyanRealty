@@ -14,11 +14,13 @@ const header = readFileSync(resolve('app/admin/(protected)/people/[id]/PersonIde
 const personPage = readFileSync(resolve('app/admin/(protected)/people/[id]/page.tsx'), 'utf8')
 
 describe('CMA send surfaces route through CRM compose', () => {
-  it('review primary send is approve-and-deliver; custom email still opens compose', () => {
+  it('review stays on shared EmailBodyEditor — Schedule/Send now, no People compose hop', () => {
     expect(review).toMatch(/approveAndDeliverCma/)
-    expect(review).toMatch(/cmaCrmComposeHref/)
-    expect(review).toMatch(/Write a custom email/)
-    expect(review).not.toMatch(/sendCmaToLeadAction/)
+    expect(review).toMatch(/EmailBodyEditor/)
+    expect(review).toMatch(/Schedule|Send now/)
+    expect(review).not.toMatch(/cmaCrmComposeHref/)
+    expect(review).not.toMatch(/Write a custom email/)
+    expect(review).not.toMatch(/composeCma=/)
     expect(review).not.toMatch(/mailto:/)
   })
 
