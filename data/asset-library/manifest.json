@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-08-22T13:56:50.857Z",
+  "updated_at": "2026-09-07T20:51:04.906Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -5515,7 +5515,7 @@
       "height": 2160,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:05:56.349+00:00",
-      "last_used_at": "2026-06-11T00:37:59Z",
+      "last_used_at": "2026-09-07T20:39:11.550Z",
       "used_in": [
         {
           "render": "out/seller-ad-concepts/v10/seller-v10-v11-weekly-updates.jpg",
@@ -5523,7 +5523,13 @@
           "used_at": "2026-06-09",
           "action_id": "e5b9668c-33d3-42b3-9e5d-ad4d4b04d1ab"
         },
-        "blog-hero-living-in-nw-crossing-bend"
+        "blog-hero-living-in-nw-crossing-bend",
+        {
+          "render_path": "public/images/blog/westside-vs-eastside-bend.jpg",
+          "scene_id": "westside-vs-eastside-bend",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:11.545Z"
+        }
       ],
       "approval": "approved",
       "notes": "[rescreen 2026-06-03] identifiable/bend: No watermarks in any corner or crop — pixels fully clean. Aerial drone shot showing the iconic wooden pedestrian footbridge crossing the Deschutes River at Mirror Pond / Drake Park in Bend, with Cascade mountain peaks visible in background. Definitively identifiable as Bend's Mirror Pond landmark. Wide scenic composition suits hero; thumbnail crops well for card. | family4 tag audit 2026-06-10: visual review of pre-existing per-city tags",
@@ -6052,8 +6058,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:06:48.917+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T20:39:11.510Z",
+      "used_in": [
+        {
+          "render_path": "public/images/blog/best-neighborhoods-bend-buyers.jpg",
+          "scene_id": "best-neighborhoods-bend-buyers",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:11.504Z"
+        }
+      ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Larkspur - 04.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
       "file_path": "public/asset-library/photos/curated/d22cff05-24dc-4652-9c21-a51d888e8860.JPG",
@@ -7713,7 +7726,7 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:09:53.375+00:00",
-      "last_used_at": "2026-06-11T00:37:59Z",
+      "last_used_at": "2026-09-07T20:39:37.723Z",
       "used_in": [
         {
           "render": "out/seller-ad-concepts/v10/seller-v10-v11-low-pressure.jpg",
@@ -7721,7 +7734,13 @@
           "used_at": "2026-06-09",
           "action_id": "e5b9668c-33d3-42b3-9e5d-ad4d4b04d1ab"
         },
-        "blog-hero-how-to-sell-your-home-bend"
+        "blog-hero-how-to-sell-your-home-bend",
+        {
+          "render_path": "public/images/blog/cost-to-sell-house-bend-oregon.jpg",
+          "scene_id": "cost-to-sell-house-bend-oregon",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:37.696Z"
+        }
       ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Northwest Crossing - 04.JPG)",
@@ -14081,9 +14100,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:20:42.574+00:00",
-      "last_used_at": "2026-06-11T00:37:59Z",
+      "last_used_at": "2026-09-07T20:51:04.906Z",
       "used_in": [
-        "blog-hero-caldera-springs-buyers-guide"
+        "blog-hero-caldera-springs-buyers-guide",
+        {
+          "render_path": "public/images/blog/buyers-agent-bend-buyer-broker-agreement.jpg",
+          "scene_id": "buyers-agent-bend-buyer-broker-agreement",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:51:04.896Z"
+        }
       ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Caldera Springs - 05.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
@@ -17068,9 +17093,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:25:29.372+00:00",
-      "last_used_at": "2026-06-11T00:37:59Z",
+      "last_used_at": "2026-09-07T20:39:11.632Z",
       "used_in": [
-        "blog-hero-best-time-to-sell-home-central-oregon"
+        "blog-hero-best-time-to-sell-home-central-oregon",
+        {
+          "render_path": "public/images/blog/moving-to-bend-from-california.jpg",
+          "scene_id": "moving-to-bend-from-california",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:11.626Z"
+        }
       ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - River Meadows - 01.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
@@ -18120,9 +18151,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:26:57.847+00:00",
-      "last_used_at": "2026-06-11T00:37:59Z",
+      "last_used_at": "2026-09-07T20:39:11.671Z",
       "used_in": [
-        "blog-hero-schools-central-oregon-guide-families"
+        "blog-hero-schools-central-oregon-guide-families",
+        {
+          "render_path": "public/images/blog/is-now-a-good-time-to-buy-in-bend.jpg",
+          "scene_id": "is-now-a-good-time-to-buy-in-bend",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:11.666Z"
+        }
       ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Pine Meadow Village - 03.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
@@ -18171,8 +18208,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:27:00.636+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T20:39:11.710Z",
+      "used_in": [
+        {
+          "render_path": "public/images/blog/how-to-price-your-bend-home.jpg",
+          "scene_id": "how-to-price-your-bend-home",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:11.705Z"
+        }
+      ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Pine Meadow Village - 02.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
       "file_path": "public/asset-library/photos/curated/50af4e2d-e59f-4d4e-94a8-229e3d1e46d4.JPG",
@@ -18219,8 +18263,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:27:03.073+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T20:46:06.251Z",
+      "used_in": [
+        {
+          "render_path": "public/images/blog/selling-your-bend-home-from-out-of-state.jpg",
+          "scene_id": "selling-your-bend-home-from-out-of-state",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:46:06.242Z"
+        }
+      ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Pine Meadow Village - 01.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
       "file_path": "public/asset-library/photos/curated/61bde975-4886-4c80-8d92-b9be4e78acc9.JPG",
@@ -19872,8 +19923,15 @@
       "height": 3150,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:29:57.722+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T20:39:11.591Z",
+      "used_in": [
+        {
+          "render_path": "public/images/blog/bend-vs-redmond-vs-sisters.jpg",
+          "scene_id": "bend-vs-redmond-vs-sisters",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T20:39:11.586Z"
+        }
+      ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Sisters - 09.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
       "file_path": "public/asset-library/photos/curated/70073a44-9745-48e8-8f56-42afdd20080a.JPG",

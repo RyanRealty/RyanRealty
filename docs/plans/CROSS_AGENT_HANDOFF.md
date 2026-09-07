@@ -114,10 +114,10 @@ audit), `0301398e` (handoff).
 - Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
 
 **Open**
-- Hero stills for the nine new guides: Matt chose Studio stills. Sixteen
-  candidates across two subjects scored 71 to 78 against the 85 vision bar (all
-  `warped_architecture`), run stopped at $7.80. Contact sheet sent to Matt. Guides
-  keep library photos until he picks frames or the subject list goes landscape-only.
+- Hero images for the nine new guides: resolved with real asset-library photos
+  (grade A, owned, eyes-on, ids in the ledger). Generation went 0 for 22 across two
+  rounds and two models, $13.70 total; the edit endpoint re-renders real geometry
+  and fails the same way. Next time a subject needs a building, shoot it.
 - From the answer-share baseline: a dated monthly Bend and Redmond report page
   with median sale price and months of supply stated once, and third-party
   profiles for all three brokers, are the next AEO moves. Any "median home price"

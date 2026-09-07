@@ -219,3 +219,35 @@ lives at ORS 476.392); the OSFM model code is a local-option template after SB 8
 the NAR 2025 report has no cost-recovery figure for roofing, flooring, or outdoor projects; the
 Oregon FAIR Plan is at orfairplan.com; Fannie Mae dropped its 620 floor for DU loans on
 2025-11-16.
+
+## Hero photos for the nine new guides (2026-09-07, Matt: library first, Grok for gaps, edits allowed, gate at 85, $10 cap)
+
+Seven guides carry real photos from the asset library (source `curated`, license `owned`,
+`vision_quality` A, eyes-on from a contact sheet, resized to 1600x1200 at
+`public/images/blog/<slug>.jpg`, marked used in the library with render-type `blog-hero`):
+
+| Guide | Asset | What it shows |
+|---|---|---|
+| best-neighborhoods-bend-buyers | d22cff05 | homes in pines with Pilot Butte |
+| westside-vs-eastside-bend | ba294855 | footbridge over the Deschutes, homes in the trees, Cascades |
+| bend-vs-redmond-vs-sisters | 70073a44 | Sisters downtown with the Three Sisters |
+| moving-to-bend-from-california | 8e26bddb | river through a neighborhood in fall color |
+| is-now-a-good-time-to-buy-in-bend | 7ddafca3 | subdivision aerial with the athletic field |
+| cost-to-sell-house-bend-oregon | 45ee98f1 | river with lawns and pines beside a neighborhood |
+| how-to-price-your-bend-home | 50af4e2d | lodge-style homes, pond, Three Sisters |
+
+Library trap found on the way: `13e87524` and `d22cff05` are the same file under two ids
+(identical md5). Two gap subjects went to generation (see the stills note below).
+
+Generation round two (same day, $10 cap): a brass-key still on `grok-imagine-image-quality`
+scored 78, 86, and 71, and the 86 failed on `rendered_text` (stamped marks on the key bow), so
+any defect still fails at the bar. A snow edit of the real aerial `61bde975` through the edit
+endpoint re-rendered the houses and scored 71 twice on `warped_architecture`: the edit path does
+not keep real geometry well enough for the judge, so it is not the answer for building
+subjects. `selling-your-bend-home-from-out-of-state` takes `61bde975` unedited (pond, park,
+homes, Three Sisters). One more key attempt with lettering negatives decides the buyer's-agent
+hero; fallback is library `53a6958e`. Spend: $3.80 before the retry.
+The key retry scored 78, 74, 71 (inconsistent lighting, impossible geometry), so generation
+closed at $5.90 of the $10 cap with 0 passes in 22 candidates across two rounds. The
+buyer's-agent guide takes library `53a6958e` (lakeside community center with a footbridge).
+All nine new guides now carry real, owned, grade-A library photos, nine distinct files.
