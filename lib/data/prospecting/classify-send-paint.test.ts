@@ -27,7 +27,8 @@ function compliance(over: Partial<ProspectComplianceState> = {}): ProspectCompli
   }
 }
 
-const ready: ProspectDocState = { state: 'ready', slug: 'cma-x', docType: 'expired-audit', status: 'draft', recommendedList: 500000 }
+const ready: ProspectDocState = { state: 'ready', slug: 'cma-x', docType: 'expired-audit', status: 'finalized', recommendedList: 500000 }
+const draftReady: ProspectDocState = { state: 'ready', slug: 'cma-x', docType: 'expired-audit', status: 'draft', recommendedList: 500000 }
 const failed: ProspectDocState = { state: 'failed', reason: 'Property re-listed (Active/Pending)' }
 
 describe('classifyProspect SEND paint', () => {
@@ -47,6 +48,10 @@ describe('classifyProspect SEND paint', () => {
 
   it('paints sendable when email open, market clear, and person linked', () => {
     expect(classifyProspect(ready, compliance(), true, 18198)).toBe('sendable')
+  })
+
+  it('never paints sendable for DRAFT built docs (audit-ready gate)', () => {
+    expect(classifyProspect(draftReady, compliance(), true, 18198)).toBe('needs-audit')
   })
 
   it('keeps allChannelsBlocked as excluded ahead of doc state', () => {

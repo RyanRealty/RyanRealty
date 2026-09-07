@@ -37,9 +37,25 @@ import {
 
 const CHANNEL_LABEL: Record<ProspectChannel, string> = { sms: 'Text', email: 'Email', call: 'Call' }
 
-export function ProspectComplianceRibbon({ compliance }: { compliance: ProspectComplianceState }) {
+export function ProspectComplianceRibbon({
+  compliance,
+  contactEmail = null,
+  contactPhone = null,
+}: {
+  compliance: ProspectComplianceState
+  /** Visible contact on the page — never paint Email OK without a shown address. */
+  contactEmail?: string | null
+  contactPhone?: string | null
+}) {
   const blocked = PROSPECT_CHANNELS.filter((c) => compliance.channels[c].blocked)
-  const open = openChannels(compliance)
+  // Match truth: channel OK only when the contact value is actually on screen.
+  const emailVisible = Boolean(contactEmail?.trim())
+  const phoneVisible = Boolean(contactPhone?.trim())
+  const open = openChannels(compliance).filter((c) => {
+    if (c === 'email') return emailVisible
+    if (c === 'sms' || c === 'call') return phoneVisible
+    return true
+  })
 
   // Nothing to say: every channel open and no market-status caveat.
   if (blocked.length === 0 && !compliance.relisted && !compliance.offMarket) return null

@@ -14,6 +14,7 @@
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { prospectDetailHref } from '@/lib/data/prospecting/detail-href'
 
 export type ContactProspectStory = {
   kind: 'expired' | 'fsbo'
@@ -102,7 +103,7 @@ export async function getContactProspectStory(params: {
       priorOfficeName: (r.list_office_name as string | null) ?? null,
       streetAddress: (r.street_address as string | null) ?? null,
       city: (r.city as string | null) ?? null,
-      detailHref: `/admin/prospecting/expired/${encodeURIComponent(id)}`,
+      detailHref: prospectDetailHref('expired', id),
     })
   }
   for (const r of ((fsbo.data ?? []) as unknown as RawRow[])) {
@@ -120,7 +121,7 @@ export async function getContactProspectStory(params: {
       priorOfficeName: null,
       streetAddress: (r.street_address as string | null) ?? null,
       city: (r.city as string | null) ?? null,
-      detailHref: `/admin/prospecting/fsbo/${encodeURIComponent(id)}`,
+      detailHref: prospectDetailHref('fsbo', id),
     })
   }
 
