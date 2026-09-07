@@ -3,7 +3,7 @@
  * Count and dollars never share an axis.
  */
 
-import { escapeHtml } from '@/lib/cma/render-blocks'
+import { escapeHtml, int } from '@/lib/cma/render-blocks'
 
 const esc = escapeHtml
 
@@ -544,5 +544,221 @@ export function daysToOfferPhoneSvg(
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(caption)}" class="trend-svg">
     ${medianMark}
     ${bars}
+  </svg>`
+}
+
+// ── Their listing, as a timeline ────────────────────────────────────────────
+// Chapter 1 of docs/plans/CMA_REIMAGINED_2026-09-07.md. Matt 2026-09-07: "the
+// chart means nothing, we need to illustrate that if homes are priced too high
+// they sit and expire, period."
+//
+// One horizontal time axis from list date to off-market date. A shaded zone
+// across the whole width at the value range, labelled with what it is. Their
+// asking price drawn as a stepped line that starts at the original ask, drops
+// at each cut, and stops at the day it came off. The line never enters the
+// zone, and that gap IS the chapter.
+//
+// It replaces a price ruler whose whole reading was "here are some dots".
+
+const TL_INK = RULER_INK
+const TL_MUTED = RULER_MUTED
+const TL_EDGE = RULER_EDGE
+
+export type ListingTimelineStep = { date: string; ask: number }
+
+export type ListingTimelineInput = {
+  /** The day the final listing period opened. */
+  listDate: string
+  /** The day it came off. Null while it is still live. */
+  offMarketDate: string | null
+  /** Every ask on that period, in order. The first is the original. */
+  steps: readonly ListingTimelineStep[]
+  /** The value range homes like this one sold in. */
+  rangeLow: number
+  rangeHigh: number
+  /** What the shaded zone is, in the seller's words. */
+  rangeLabel: string
+  /** "withdrawn" / "expired" / "canceled". Printed at the end of the line. */
+  status: string | null
+  /** Days the period ran. Printed beside the end. */
+  days: number | null
+  caption: string
+}
+
+type TimelineGeometry = {
+  steps: Array<{ t: number; ask: number }>
+  t0: number
+  t1: number
+  lo: number
+  hi: number
+  low: number
+  high: number
+}
+
+function timelineDay(value: string | null | undefined): number | null {
+  const raw = String(value ?? '').trim()
+  if (!raw) return null
+  const day = raw.slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const t = Date.parse(`${day}T00:00:00.000Z`)
+  return Number.isNaN(t) ? null : t
+}
+
+/**
+ * The plotted domain, shared by both layouts so the wide drawing and the
+ * phone drawing can never disagree about where the line sits inside the zone.
+ */
+function timelineGeometry(input: ListingTimelineInput): TimelineGeometry | null {
+  const t0 = timelineDay(input.listDate)
+  if (t0 == null) return null
+  const steps = input.steps
+    .map((s) => ({ t: timelineDay(s.date) ?? t0, ask: s.ask }))
+    .filter((s) => Number.isFinite(s.ask) && s.ask > 0)
+    .sort((a, b) => a.t - b.t)
+  if (steps.length === 0) return null
+  const low = Math.min(input.rangeLow, input.rangeHigh)
+  const high = Math.max(input.rangeLow, input.rangeHigh)
+  if (!(low > 0) || !(high > 0)) return null
+  // A listing still on the market runs to today; one that came off stops the
+  // day it came off. Never past it — the line would claim exposure it never had.
+  const end = timelineDay(input.offMarketDate) ?? Date.now()
+  const t1 = Math.max(end, steps[steps.length - 1]!.t + 86_400_000)
+  const asks = steps.map((s) => s.ask)
+  const dataMin = Math.min(low, ...asks)
+  const dataMax = Math.max(high, ...asks)
+  const pad = Math.max((dataMax - dataMin) * 0.14, 1)
+  return { steps, t0, t1, lo: dataMin - pad, hi: dataMax + pad, low, high }
+}
+
+function timelineStepPath(
+  g: TimelineGeometry,
+  x: (t: number) => number,
+  y: (v: number) => number,
+): string {
+  const parts: string[] = []
+  for (let i = 0; i < g.steps.length; i++) {
+    const s = g.steps[i]!
+    const nextT = i + 1 < g.steps.length ? g.steps[i + 1]!.t : g.t1
+    if (i === 0) parts.push(`M${x(s.t).toFixed(1)},${y(s.ask).toFixed(1)}`)
+    else parts.push(`L${x(s.t).toFixed(1)},${y(s.ask).toFixed(1)}`)
+    parts.push(`L${x(nextT).toFixed(1)},${y(s.ask).toFixed(1)}`)
+  }
+  return parts.join(' ')
+}
+
+function monthDay(iso: string): string {
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00.000Z`)
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+/** The end of the line: "came off withdrawn · 187 days". */
+export function timelineEndLabel(input: ListingTimelineInput): string {
+  const status = (input.status ?? '').trim().toLowerCase()
+  const days = input.days != null && input.days > 0 ? `${int(input.days)} days` : null
+  const off = status ? `came off ${status}` : input.offMarketDate ? 'came off' : 'still listed'
+  return days ? `${off} · ${days}` : off
+}
+
+export function listingTimelineSvg(input: ListingTimelineInput): string {
+  const g = timelineGeometry(input)
+  if (!g) return ''
+  const W = 720
+  const H = 250
+  const plotL = 78
+  const plotR = W - 14
+  const top = 40
+  const bottom = H - 40
+  const x = (t: number) => plotL + ((plotR - plotL) * (t - g.t0)) / Math.max(g.t1 - g.t0, 1)
+  const y = (v: number) => bottom - ((bottom - top) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
+  return timelineBody({ input, g, W, H, plotL, plotR, top, bottom, x, y, fs: 12, endFs: 12.5 })
+}
+
+/**
+ * The same timeline, drawn to fit a phone.
+ *
+ * Not the wide one in a pan box: this chart's whole reading is the gap between
+ * a line and a zone, and a cropped right edge deletes the day it came off —
+ * the punchline. 360 units, scaled to the screen, nothing outside the viewBox.
+ */
+export function listingTimelinePhoneSvg(input: ListingTimelineInput): string {
+  const g = timelineGeometry(input)
+  if (!g) return ''
+  const W = 360
+  const H = 210
+  const plotL = 58
+  const plotR = W - 8
+  const top = 34
+  const bottom = H - 34
+  const x = (t: number) => plotL + ((plotR - plotL) * (t - g.t0)) / Math.max(g.t1 - g.t0, 1)
+  const y = (v: number) => bottom - ((bottom - top) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
+  return timelineBody({ input, g, W, H, plotL, plotR, top, bottom, x, y, fs: 10.5, endFs: 11 })
+}
+
+function timelineBody(o: {
+  input: ListingTimelineInput
+  g: TimelineGeometry
+  W: number
+  H: number
+  plotL: number
+  plotR: number
+  top: number
+  bottom: number
+  x: (t: number) => number
+  y: (v: number) => number
+  fs: number
+  endFs: number
+}): string {
+  const { input, g, W, H, plotL, plotR, top, bottom, x, y, fs, endFs } = o
+  const zoneTop = y(g.high)
+  const zoneBottom = y(g.low)
+  const path = timelineStepPath(g, x, y)
+
+  // Only the asks carry a number. A price on every point is unread chaos
+  // (dataviz skill, step 4) — the zone is named, not numbered on both edges.
+  const last = g.steps[g.steps.length - 1]!
+  const marks = g.steps
+    .map((s, i) => {
+      const cx = x(s.t)
+      const cy = y(s.ask)
+      const label = chartUsd(s.ask)
+      const fit = fitText(cx, label, fs, W)
+      // The first ask labels above its own step; a cut labels above too, but
+      // nudged right so it cannot collide with the ask it replaced.
+      const lx = i === 0 ? Math.max(cx, plotL + label.length * fs * 0.3) : fit.x
+      const anchor = i === 0 ? 'start' : fit.anchor
+      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${TL_INK}"/>
+    <text x="${typeof lx === 'string' ? lx : lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>`
+    })
+    .join('\n    ')
+
+  const endX = x(g.t1)
+  const endY = y(last.ask)
+  const endText = timelineEndLabel(input)
+  const endFit = fitText(endX, endText, endFs, W)
+  // The label belongs to the mark it names, so it sits with the end of the
+  // line, not parked at the foot of the frame where the eye has to hunt for
+  // what it refers to. Above the line when the line runs near the floor.
+  const endBelow = endY < bottom - 34
+  const endLabelY = endBelow ? endY + 20 : endY - 12
+  const startDay = monthDay(input.listDate)
+  const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
+  const zoneLabelY = Math.max(zoneTop - 6, top - 12)
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg">
+    <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.11"/>
+    <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
+    <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
+    <text x="${plotL}" y="${zoneLabelY.toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(input.rangeLabel)}</text>
+    <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
+    <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
+    <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
+    <path d="${path}" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="miter" stroke-linecap="butt"/>
+    ${marks}
+    <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="3.5" fill="none" stroke="${TL_INK}" stroke-width="1.6"/>
+    <text x="${endFit.x}" y="${endLabelY.toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${endFs}" font-weight="600" fill="${TL_INK}">${esc(endText)}</text>
+    <text x="${plotL}" y="${(bottom + 16).toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(startDay)}</text>
+    ${endDay ? `<text x="${plotR}" y="${(bottom + 16).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(endDay)}</text>` : ''}
   </svg>`
 }

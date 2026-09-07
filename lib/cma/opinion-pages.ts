@@ -17,7 +17,13 @@ import {
   renderExpiredPeersHtml,
   widerMarketBodyHtml,
 } from '@/lib/cma/market-area-chapters'
-import { FAILED_ASK_BACKTEST, sellerFacingFindingMeaning } from '@/lib/cma/expired-audit'
+import {
+  FAILED_ASK_BACKTEST,
+  listingTimelineReading,
+  resolveListingTimeline,
+} from '@/lib/cma/expired-audit'
+import { listingTimelinePhoneSvg, listingTimelineSvg } from '@/lib/cma/market-charts'
+import { subjectDomDays } from '@/lib/cma/comp-matrix'
 import { sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
@@ -72,11 +78,6 @@ export type OpinionPageArgs = {
 
 
 
-
-
-
-
-
 export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
   const n = a.pricing.sellerNet
   if (!n || n.expectedConcessions == null) return null
@@ -109,53 +110,76 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
 
 
 
-
-const LENS_LABELS: Record<string, string> = {
-  pricing: 'Price vs the comparable sales',
-  'time-on-market': 'Time on market',
-  'price-cuts': 'The price path',
-  attempts: 'Listing attempts',
-  presentation: 'Presentation',
-}
-
 /**
  * Chapter 1. What happened.
  *
- * Blueprint: "It asked $460,000 and did not sell." One picture of THEIR
- * listing, one sentence of fact under it, then the relist figures. It is the
- * first thing a homeowner whose listing failed wants answered, so it sits
- * first, before the number.
+ * Blueprint: "It asked $460,000 and did not sell." THEIR listing as a timeline
+ * — a shaded zone at the value range, their ask stepping down across it and
+ * never entering it — then one sentence of fact, then the relist figures.
  *
- * Returns null on an asked origin — there is no failed listing to draw.
+ * It is the first thing a homeowner whose listing failed wants answered, so it
+ * sits before the number. Returns null on an asked origin: there is no failed
+ * listing to draw.
  */
 export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
   const ea = a.expiredAudit
   if (!ea || ea.findings.length === 0) return null
-  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
   const b = FAILED_ASK_BACKTEST
-  const blocks = ea.findings
-    .map((f) => {
-      const meaning = sellerFacingFindingMeaning(f.meaning)
-      return `
-  <h3 class="subhead">${esc(LENS_LABELS[f.lens] ?? f.lens)}</h3>
-  <p>${esc(f.fact)}</p>
-  ${meaning ? `<p class="small">${esc(meaning)}</p>` : ''}`
-    })
-    .join('')
   const heading = whatHappenedHeading(a.subject)
   return {
     meta: `${esc(a.subject.streetAddress)} · What happened`,
     toc: heading,
     body: `
   <h2 class="section">${esc(heading)}</h2>
-  ${ruler}
+  ${whatHappenedGraphicHtml(a)}
   <div class="stat-strip is-3">
     <div class="stat"><div class="val">${int(b.pairs)}</div><div class="lbl">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
     <div class="stat"><div class="val">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="lbl">of the ask that failed is what the median one sold for</div></div>
     <div class="stat"><div class="val">${b.shareClosedAboveAskPct}%</div><div class="lbl">sold for more than that ask</div></div>
-  </div>
-  ${blocks}`,
+  </div>`,
   }
+}
+
+/**
+ * The timeline and its sentence, or the fallback sentence.
+ *
+ * Shared by the letter and the immersive so the two cannot draw a different
+ * listing. Two layouts of one graphic ship and exactly one is ever visible:
+ * the wide one on paper and at reading width, the drawn-to-fit one below
+ * 700px. This chart's reading is the gap between a line and a zone, and a
+ * cropped right edge deletes the day it came off, which is the point.
+ */
+export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
+  const timeline = resolveListingTimeline({
+    subject: a.subject,
+    expiredAudit: a.expiredAudit,
+    rangeLow: a.pricing.valueLow,
+    rangeHigh: a.pricing.valueHigh,
+    rangeLabel: 'where homes like yours sold',
+    domDays: subjectDomDays(a.subject),
+  })
+  if (!timeline) {
+    // The row carries no list date and no ask, so there is no period to draw.
+    // State what IS known and stop (CLAUDE.md §0).
+    return `<p class="chart-read">${esc(
+      `Your home came off the market without selling. Homes like yours sold for ${usd(a.pricing.valueLow)} to ${usd(a.pricing.valueHigh)}.`,
+    )}</p>`
+  }
+  const wide = listingTimelineSvg(timeline)
+  const phone = listingTimelinePhoneSvg(timeline)
+  if (!wide) {
+    return `<p class="chart-read">${esc(
+      `Your home came off the market without selling. Homes like yours sold for ${usd(a.pricing.valueLow)} to ${usd(a.pricing.valueHigh)}.`,
+    )}</p>`
+  }
+  const reading = listingTimelineReading({
+    timeline,
+    city: a.subject.city,
+    marketMedianDom: a.market?.medianDom ?? null,
+  })
+  return `<div class="szn timeline-wide">${wide}</div>
+  ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
+  ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}`
 }
 
 /** "It asked $460,000 and did not sell." Shared by both documents. */
@@ -192,7 +216,6 @@ export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 export const PRICED_RIGHT_HEADING = 'Priced right sells. Priced high sits.'
-
 
 /** This market. The 90-day band renders only when it is this house's product. */
 export function thisMarketPage(a: OpinionPageArgs): CmaPageDef | null {
@@ -315,7 +338,6 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
 
 
 
-
 /**
  * ONE chapter order, walked by both documents.
  *
@@ -357,9 +379,12 @@ export const OPINION_CHAPTER_ORDER = [
 
 export type OpinionChapterId = (typeof OPINION_CHAPTER_ORDER)[number]
 
-/** The expired chapter owns the ruler, so chapter 2 does not repeat it. */
-export function bandChapterShowsRuler(a: Pick<OpinionPageArgs, 'expiredAudit'>): boolean {
-  return !a.expiredAudit
+/**
+ * Chapter 1 now draws the seller's OWN listing as a timeline, so it no longer
+ * owns the sold/unsold ruler and chapter 2 shows it on every document.
+ */
+export function bandChapterShowsRuler(_a: Pick<OpinionPageArgs, 'expiredAudit'>): boolean {
+  return true
 }
 
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {

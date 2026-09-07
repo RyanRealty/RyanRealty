@@ -180,7 +180,6 @@ describe('the single-doc fold', () => {
     // Heading depends on whether the row carries the failed ask, so assert
     // the chapter's own content instead.
     expect(html).toMatch(/did not sell|without selling/)
-    expect(html).toContain('Listed at $800,000 against a supported $715,000.')
     expect(html).toContain('3,394')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toContain('Estimated Seller Net Sheet')

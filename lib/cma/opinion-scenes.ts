@@ -19,12 +19,13 @@ import {
   bandChapterShowsRuler,
   cmaDisclosureProseHtml,
   sellerNetPage,
+  whatHappenedGraphicHtml,
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
-import { FAILED_ASK_BACKTEST, sellerFacingFindingMeaning } from '@/lib/cma/expired-audit'
+import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
 import { formatDate } from '@/lib/format/date'
 
 const esc = escapeHtml
@@ -103,31 +104,18 @@ function competitionScene(a: OpinionSceneArgs): string {
 function whatHappenedScene(a: OpinionSceneArgs): string {
   const audit = a.expiredAudit
   if (!audit || audit.findings.length === 0) return ''
-  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
-  const findings = audit.findings.slice(0, 3)
-  const cards = findings
-    .map((f) => {
-      const meaning = sellerFacingFindingMeaning(f.meaning)
-      return `<div class="story-card r">
-        <div class="story-lens">${esc(f.lens)}</div>
-        <div class="story-fact">${esc(f.fact)}</div>
-        ${meaning ? `<div class="story-mean">${esc(meaning)}</div>` : ''}
-      </div>`
-    })
-    .join('')
   const b = FAILED_ASK_BACKTEST
   return `
   <section class="sc sc-cream pack" id="what-happened">
     <div class="in wide">
       <div class="kick r">What happened</div>
       <h2 class="h r">${esc(whatHappenedHeading(a.subject))}</h2>
-      ${ruler ? `<div class="r">${ruler}</div>` : ''}
+      <div class="r">${whatHappenedGraphicHtml(a)}</div>
       <div class="stat3 r">
         <div class="st"><div class="st-n">${int(b.pairs)}</div><div class="st-l">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
         <div class="st"><div class="st-n">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the ask that failed is what the median one sold for</div></div>
         <div class="st"><div class="st-n">${b.shareClosedAboveAskPct}%</div><div class="st-l">sold for more than that ask</div></div>
       </div>
-      <div class="story-grid">${cards}</div>
     </div>
   </section>`
 }

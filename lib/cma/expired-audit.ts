@@ -26,6 +26,7 @@ import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 
 // ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
 /** Listing fee for every expired-listing engagement. */
@@ -86,11 +87,40 @@ export interface ExpiredNetSheet {
   assumptions: string[]
 }
 
+/**
+ * The final listing period, as a shape a renderer can draw.
+ *
+ * Contract from docs/plans/CMA_REIMAGINED_2026-09-07.md chapter 1, written at
+ * BUILD onto `render_args.expiredAudit.finalCycle`. Nothing derives it in a
+ * renderer: `lib/pricing` and the build own every figure on it.
+ */
+export interface ExpiredFinalCycle {
+  /** The day the final listing period opened. */
+  listDate: string | null
+  /** The ask it opened at. */
+  initialAsk: number | null
+  /** Every price change on that period, in order. Empty when it never cut. */
+  cuts: Array<{ date: string | null; ask: number }>
+  /** The day it came off. Null while it is still live. */
+  offMarketDate: string | null
+  /** Expired / Withdrawn / Canceled. */
+  status: string | null
+  /** List date to off-market date, whole days. */
+  days: number | null
+}
+
 export interface ExpiredAuditData {
   findings: ExpiredFailureFinding[]
   services: string[]
   netSheet: ExpiredNetSheet
   feeLine: string
+  /**
+   * Chapter 1's timeline. Optional because rows built before this contract
+   * landed do not carry it — `resolveListingTimeline` degrades to the subject's
+   * own list date, final ask and days on market when it is absent, and the
+   * chapter falls back to a sentence when even that is missing.
+   */
+  finalCycle?: ExpiredFinalCycle | null
 }
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
@@ -577,4 +607,110 @@ export function applyFailedAskCap(
     .join(' ')
   pricing.notes.push(`Your last listing asked ${usd(ask)} and did not sell.`)
   return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
+}
+
+/**
+ * Chapter 1's timeline, resolved from the row.
+ *
+ * PREFERRED: `expiredAudit.finalCycle`, written at build from the MLS listing
+ * cycles, which carries every price change on the final period.
+ *
+ * DEGRADED: the subject's own fields. A row built before that contract landed
+ * carries `lastListDate`, `lastListPrice`, `standardStatus` and a days-on-market
+ * figure, which is a real one-segment listing period — a flat line at the ask
+ * it finished on, ending the day it came off. The blueprint already specifies a
+ * flat line for a period with no cut, so the degraded drawing is honest: it
+ * states less, never something false. It never invents a cut, and it never
+ * reads a price out of the prose history line.
+ *
+ * Returns null when there is no failed period to draw at all.
+ */
+export function resolveListingTimeline(input: {
+  subject: CmaSubject
+  expiredAudit?: ExpiredAuditData | null
+  rangeLow: number
+  rangeHigh: number
+  rangeLabel: string
+  /** The final cycle's days on market, resolved once for the whole document. */
+  domDays: number | null
+}): ListingTimelineInput | null {
+  const cycle = input.expiredAudit?.finalCycle ?? null
+  const s = input.subject
+  const listDate = (cycle?.listDate ?? s.lastListDate ?? '').trim()
+  if (!listDate) return null
+
+  const steps: ListingTimelineStep[] = []
+  if (cycle) {
+    if (cycle.initialAsk != null && cycle.initialAsk > 0) {
+      steps.push({ date: listDate, ask: cycle.initialAsk })
+    }
+    for (const cut of cycle.cuts ?? []) {
+      if (cut.ask > 0 && cut.date) steps.push({ date: cut.date, ask: cut.ask })
+    }
+  }
+  if (steps.length === 0 && s.lastListPrice != null && s.lastListPrice > 0) {
+    steps.push({ date: listDate, ask: s.lastListPrice })
+  }
+  if (steps.length === 0) return null
+
+  const offMarket = cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays)
+  const status = (cycle?.status ?? s.standardStatus ?? '').trim().toLowerCase() || null
+  return {
+    listDate,
+    offMarketDate: offMarket,
+    steps,
+    rangeLow: input.rangeLow,
+    rangeHigh: input.rangeHigh,
+    rangeLabel: input.rangeLabel,
+    status,
+    days: cycle?.days ?? input.domDays,
+    caption: 'Your asking price against what homes like yours sold for',
+  }
+}
+
+/** List date plus the days it ran. Null when either side is unknown. */
+function offMarketFromDays(listDate: string, days: number | null): string | null {
+  if (days == null || !Number.isFinite(days) || days < 0) return null
+  const start = utcDay(listDate)
+  if (start == null) return null
+  return new Date(start + days * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * The one sentence under the timeline. Every figure on it is already drawn
+ * above it, so the reader can check the sentence against the picture.
+ */
+export function listingTimelineReading(input: {
+  timeline: ListingTimelineInput
+  city: string
+  marketMedianDom: number | null
+}): string {
+  const t = input.timeline
+  const finalAsk = t.steps[t.steps.length - 1]?.ask ?? null
+  const low = Math.min(t.rangeLow, t.rangeHigh)
+  const high = Math.max(t.rangeLow, t.rangeHigh)
+  const bits: string[] = []
+  if (finalAsk != null && finalAsk > 0) {
+    if (finalAsk > high) {
+      bits.push(
+        `The asking price was ${pct1((finalAsk - high) / high)} percent above the top of the range homes like yours sold in.`,
+      )
+    } else if (finalAsk < low) {
+      bits.push(
+        `The asking price was ${pct1((low - finalAsk) / low)} percent below the bottom of the range homes like yours sold in.`,
+      )
+    } else {
+      bits.push('The asking price sat inside the range homes like yours sold in.')
+    }
+  }
+  if (t.days != null && t.days > 0) bits.push(`It sat ${Math.round(t.days).toLocaleString('en-US')} days.`)
+  const place = input.city.trim()
+  if (input.marketMedianDom != null && input.marketMedianDom > 0 && place) {
+    bits.push(`The ${place} median is ${Math.round(input.marketMedianDom)}.`)
+  }
+  return bits.join(' ')
+}
+
+function pct1(ratio: number): string {
+  return (Math.abs(ratio) * 100).toFixed(1)
 }
