@@ -31,7 +31,6 @@ import {
  */
 export const dynamic = 'force-dynamic'
 
-const METHODOLOGY = 'v3-2026-05-07'
 
 export async function GET(request: Request) {
   const denied = requireCronAuth(request)
@@ -64,7 +63,7 @@ export async function GET(request: Request) {
             }
           : null,
         builtAt,
-        methodology: METHODOLOGY,
+        sourceLabel: `the same monthly series the ${city.label} market page charts`,
       })
       if (!built.ok) {
         results.push({ city: city.slug, month, ok: false, reason: built.reason })

@@ -18,7 +18,7 @@ const base = {
   priorYear: { periodStart: '2025-08-01', medianSalePrice: 795000, soldCount: 165, medianDom: 19, endOfPeriodInventory: 492 },
   live: { activeCount: 673, monthsOfSupply: 3.9, medianDaysToPending: 23, refreshedAt: '2026-09-07T18:00:00Z' },
   builtAt: '2026-09-07T19:00:00Z',
-  methodology: 'v3-2026-05-07',
+  sourceLabel: 'the same monthly series the Bend market page charts',
 }
 
 describe('buildMonthlyCityReport', () => {
@@ -33,7 +33,7 @@ describe('buildMonthlyCityReport', () => {
     expect(r.post.content).toContain('<strong>180</strong>, up 9.1% from 165 a year earlier')
     expect(r.post.content).toContain('Months of supply sits at 3.9, which is a seller\'s market')
     expect(r.post.content).toContain('verified September 7, 2026')
-    expect(r.post.content).toContain('methodology v3-2026-05-07')
+    expect(r.post.content).toContain('from the same monthly series the Bend market page charts, verified September 7, 2026')
     // the median sale price figure appears in the numbers list, the bottom line, and one answer, never as a second value
     expect(r.post.content.match(/\$750,000/g)?.length).toBe(3)
     expect(extractBlogFaq(r.post.content)).toHaveLength(5)
