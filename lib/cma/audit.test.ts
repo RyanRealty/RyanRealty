@@ -21,7 +21,7 @@ const f = (
   compListingKey?: string,
 ): AuditFinding => ({ severity, category, claim: 'x', evidence: 'y', compListingKey: compListingKey ?? null })
 
-describe('computeAuditVerdict (discriminating verdict, v2 2026-07-12)', () => {
+describe('computeAuditVerdict (discriminating verdict, v4 2026-09-07)', () => {
   it('passes with no findings', () => {
     expect(computeAuditVerdict([])).toBe('pass')
   })
@@ -31,9 +31,32 @@ describe('computeAuditVerdict (discriminating verdict, v2 2026-07-12)', () => {
   })
 
   // ── ADVISORY: does not raise the flag ─────────────────────────────────────
-  it('a price-level disagreement is advisory — pass, even at critical', () => {
-    expect(computeAuditVerdict([f('critical', 'price-opinion')])).toBe('pass')
+  it('a price-level MAJOR disagreement is advisory — pass (unchanged by v4)', () => {
     expect(computeAuditVerdict([f('major', 'price-opinion')])).toBe('pass')
+    expect(computeAuditVerdict([f('major', 'price-opinion'), f('major', 'price-opinion')])).toBe('pass')
+  })
+
+  // ── v4 (2026-09-07): a CRITICAL in ANY category is at minimum review ──────
+  it('a price-opinion CRITICAL forces review — never pass, never fail', () => {
+    expect(computeAuditVerdict([f('critical', 'price-opinion')])).toBe('review')
+  })
+
+  it("an 'other' critical forces review", () => {
+    expect(computeAuditVerdict([f('critical', 'other')])).toBe('review')
+  })
+
+  it('a critical price-opinion added to the advisory reflex set forces review', () => {
+    expect(
+      computeAuditVerdict([
+        f('major', 'comp-selection', 'K1'),
+        f('major', 'narrative'),
+        f('critical', 'price-opinion'),
+      ]),
+    ).toBe('review')
+  })
+
+  it('a critical price-opinion never overrides a blocking fail', () => {
+    expect(computeAuditVerdict([f('critical', 'price-opinion'), f('critical', 'data-integrity')])).toBe('fail')
   })
 
   it('a lone comp-selection nitpick with no comp key is advisory — pass', () => {
@@ -78,7 +101,7 @@ describe('computeAuditVerdict (discriminating verdict, v2 2026-07-12)', () => {
       computeAuditVerdict([
         f('major', 'comp-selection', 'K1'),
         f('major', 'narrative'),
-        f('critical', 'price-opinion'),
+        f('major', 'price-opinion'),
         f('minor', 'market-verdict'),
       ]),
     ).toBe('pass')
