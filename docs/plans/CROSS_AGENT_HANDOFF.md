@@ -19,8 +19,8 @@ its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832
 - GBP: replied to MJB's 5-star review from 10 Jul (approved wording). 0 unanswered.
 
 **Matt's calls (2026-09-07):** keep @Ryan-Realty on YouTube and move the handle · keep
-TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealtybend, close
-/ryanrealty · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
+TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealty (revised later that
+day from /ryanrealtybend), close /ryanrealtybend · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
 reconnect X · fix LinkedIn page facts · review reply as written.
 
 **Waiting on Matt (manual, not API-reachable):** YouTube handle swap then re-grant at
