@@ -189,6 +189,11 @@ const SCAN_DIRS = [
   'app/admin/(protected)/cmas/page.tsx',
   'app/admin/(protected)/cmas/new/page.tsx',
   'app/admin/(protected)/cmas/[slug]/page.tsx',
+  // 2026-09-07 — the CMA outcome surface. The review page (scanned above)
+  // imports CmaOutcomeCell, so rule 3 requires the target be scanned too.
+  // CmaLaneFunnel ships beside it for the queue head.
+  'components/admin/cma/CmaOutcomeCell.tsx',
+  'components/admin/cma/CmaLaneFunnel.tsx',
   // 11F (2026-08-08) — crm/sequences + crm/tasks. FILE-FORM: MobileTasksScreen
   // mounts CrmAvatar and MobileTaskCreateSheet from components/admin/shared/mobile,
   // which are genuinely cross-cutting — CrmMobileKit has EIGHT importers

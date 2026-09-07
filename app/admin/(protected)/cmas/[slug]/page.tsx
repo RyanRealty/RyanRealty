@@ -24,6 +24,8 @@ import { formatDate } from '@/lib/format/date'
 import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
+import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
+import { getCmaOutcomes } from '@/lib/data/cma/outcomes'
 import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow } from '@/lib/cma/first-contact'
 import { readFirstContactOverride } from '@/lib/cma/first-contact-override'
@@ -130,6 +132,11 @@ export default async function AdminCmaReviewPage({
       }
     }
   }
+  // What happened after we sent it. Only read for a document that actually
+  // went out — an unsent row has no outcome to show, and the reader would
+  // spend three queries proving it.
+  const outcome = row.delivered_at ? (await getCmaOutcomes([String(row.id)]))[String(row.id)] ?? null : null
+
   const composed = composeCmaFirstContact(origin, {
     ...cmaFirstContactFactsFromRow(row, {
       brokerName: signingBroker?.displayName ?? 'Matt Ryan',
@@ -254,6 +261,17 @@ export default async function AdminCmaReviewPage({
           The last build did not finish: {buildError}. Fix the input (address or MLS) and rebuild
           from the review panel.
         </p>
+      ) : null}
+
+      {outcome ? (
+        <>
+          <SectionHead>What happened</SectionHead>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+            Every stage this document reached after it left the building.
+          </p>
+          <CmaOutcomeCell outcome={outcome} variant="panel" />
+          <div style={{ marginTop: 18 }} />
+        </>
       ) : null}
 
       <SectionHead>Review and send</SectionHead>

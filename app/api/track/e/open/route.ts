@@ -64,12 +64,28 @@ export async function GET(req: NextRequest) {
       // a reporting-side failure must never break the pixel response.
       const res = await recordEmailEvent({
         personId: ctx.personId,
+        // The token carries the sending broker (`b`) and the crm_timeline row
+        // above has always used it; email_events did not, so every open on this
+        // rail landed unattributed and per-broker engagement could not see it.
+        broker: ctx.broker ?? null,
         sendType: sendTypeFromEmailKey(ctx.emailKey),
         event: 'open',
         emailKey: ctx.emailKey || null,
         subject: ctx.label || null,
       })
       if (!res.ok) console.warn('[track/open] email_events error:', res.error)
+
+      // A CMA open is a lead signal (2026-09-07). Same broker rail as the
+      // document visit, same per-(document, contact) dedupe — whichever of the
+      // two fires first is the one alert the broker gets. Non-blocking: the
+      // pixel always returns.
+      try {
+        const { cmaSlugFromEmailKey, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
+        const slug = cmaSlugFromEmailKey(ctx.emailKey)
+        if (slug) await queueCmaOpenedAlert({ slug, crmPersonId: ctx.personId, trigger: 'email' })
+      } catch (err) {
+        console.warn('[track/open] cma-opened alert error:', err)
+      }
 
       // Newsletter ledger (spec §3.1/H1): a `newsletter:<id>` open ALSO lands on
       // newsletter_recipient_events, the deduped source every per-issue stat

@@ -175,6 +175,12 @@ export type MailboxSyncResult = {
 // away. Cross-invocation idempotency comes from the gmail-intent dedupe_key.
 const MAX_EMAIL_INTENT_CLASSIFY = 12
 
+// How far back an inbound email may be and still count as a live reply for the
+// CMA alert rail. A backfill walks years of a mailbox; a text about a message
+// from two years ago is noise. The alert's own per-(document, contact) dedupe
+// bounds the volume; this bounds the RELEVANCE.
+const CMA_REPLY_ALERT_WINDOW_DAYS = 30
+
 /**
  * Reply-intent enrichment for freshly-synced INBOUND emails — the email-channel
  * twin of the Twilio inbound-SMS classifier (W5.3). Only prospecting-pipeline
@@ -278,7 +284,14 @@ export async function syncMailboxWindow(params: {
   // after the sync (same enrichment the Twilio inbound-SMS webhook does). We
   // collect (personId, messageKey, body, subject) here and classify once at the
   // end so a page's Gmail I/O and the LLM calls don't interleave.
-  const inboundForIntent: Array<{ personId: number; messageKey: string; body: string | null; subject: string | null }> = []
+  const inboundForIntent: Array<{
+    personId: number
+    messageKey: string
+    body: string | null
+    subject: string | null
+    /** Gmail internalDate as ISO — a backfill walk must not alert on old mail. */
+    ts: string
+  }> = []
   // carry walk-wide max across resumed invocations (a long mailbox walk spans
   // many invocations; the page token below persists mid-walk progress)
   let maxInternal = Math.max(afterSec * 1000, Number(cursor.max_internal_ms ?? 0))
@@ -378,7 +391,13 @@ export async function syncMailboxWindow(params: {
             dedupe_key: `gmail:${messageKey}:p${personId}`,
           })
           if (dir === 'in' && messageKey) {
-            inboundForIntent.push({ personId, messageKey, body, subject })
+            inboundForIntent.push({
+              personId,
+              messageKey,
+              body,
+              subject,
+              ts: new Date(internal || Date.now()).toISOString(),
+            })
           }
         }
         try {
@@ -446,6 +465,26 @@ export async function syncMailboxWindow(params: {
     await classifyInboundEmailReplies(sb, inboundForIntent)
   } catch (err) {
     console.warn('[gmail-sync] reply-intent classification failed (fail-open)', err)
+  }
+
+  // A CMA recipient who writes back is a lead signal, and until 2026-09-07 an
+  // inbound EMAIL produced none: handleInboundReply is wired to the two Twilio
+  // webhooks only, so a reply to a document we emailed advanced nothing and
+  // texted nobody. This routes just the CMA half — stamp the document, tell the
+  // broker which address it is about. Deduped per (document, contact) inside
+  // the rail, so a thread produces one alert. Fail-open: the sync's timeline
+  // rows are already committed above and must never be lost to an alert error.
+  try {
+    const { routeCmaReplyToBroker } = await import('@/lib/crm/cma-engagement')
+    // Recent mail only. A backfill walks years of history; an alert about a
+    // message from 2024 is noise, not a lead.
+    const freshAfter = new Date(Date.now() - CMA_REPLY_ALERT_WINDOW_DAYS * 86_400_000).toISOString()
+    const fresh = inboundForIntent.filter((r) => r.ts >= freshAfter)
+    for (const personId of new Set(fresh.map((r) => r.personId))) {
+      await routeCmaReplyToBroker({ personId, channel: 'email', broker: brokerSlug })
+    }
+  } catch (err) {
+    console.warn('[gmail-sync] CMA reply routing failed (fail-open)', err)
   }
 
   // Persist progress EVERY invocation: mid-walk runs save the Gmail page

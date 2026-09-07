@@ -580,6 +580,38 @@ export async function POST(request: NextRequest) {
       console.warn('[visitors/track] return-visit alert failed:', err)
     }
   }
+
+  // ─── They opened the report (2026-09-07) ─────────────────────────────────
+  // A client document view is the strongest signal a sent CMA produces, and it
+  // reached nobody. Same rail, same switches (the alert kind carries the
+  // `return-visit:` prefix so the broker's Return-visit switch governs it), one
+  // alert per document per contact, ever.
+  //
+  // Deliberately NOT gated on `minimalOnly`. Client documents post at
+  // 'essential' consent — there is no banner on a document — so the looking-at
+  // branch above can never fire here. The person id is not collected from this
+  // visitor: it comes from OUR OWN server-side identify backfill on a link WE
+  // emailed them, and telling the broker that the recipient opened the document
+  // we sent them is the purpose of the send. The real consent gate is GPC,
+  // which dropped this request fail-closed long before this line.
+  if (eventType === 'page_view' && body.pageCategory === 'client-document') {
+    try {
+      const { cmaSlugFromDocumentUrl, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
+      const slug = cmaSlugFromDocumentUrl(pageUrl)
+      const viewerId =
+        session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
+      if (slug) {
+        await withTimeoutFallback(
+          queueCmaOpenedAlert({ slug, crmPersonId: viewerId, trigger: 'document' }),
+          false,
+          2000,
+          'crm:cma-opened-alert',
+        )
+      }
+    } catch (err) {
+      console.warn('[visitors/track] cma-opened alert failed:', err)
+    }
+  }
   return NextResponse.json(
     {
       ok: true,
