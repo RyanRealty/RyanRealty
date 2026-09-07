@@ -312,13 +312,21 @@ export default async function ProspectingPage({
       ) : null}
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-        Valuation documents live in{' '}
+        CMA send queue:{' '}
+        <Link href="/admin/cmas?state=queued" style={{ color: 'var(--a-accent)' }}>
+          In drip
+        </Link>
+        {' · '}
+        <Link href="/admin/cmas?state=ready" style={{ color: 'var(--a-accent)' }}>
+          Ready
+        </Link>
+        {' · '}
         <Link href="/admin/cmas" style={{ color: 'var(--a-accent)' }}>
-          CMAs
-        </Link>{' '}
-        and{' '}
+          All CMAs
+        </Link>
+        . Price opinions live in{' '}
         <Link href="/admin/bpo" style={{ color: 'var(--a-accent)' }}>
-          price opinions
+          BPO
         </Link>
         .
       </p>

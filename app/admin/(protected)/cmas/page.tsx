@@ -168,24 +168,24 @@ export default async function CmaQueuePage({
   return (
     <div style={{ paddingBottom: 88 }}>
       <VerdictLine tone={counts.auditFailed > counts.ready ? 'attention' : 'ok'}>
-        {door(cmaQueueHref({ state: 'ready' }), String(counts.ready))} ready to send,{' '}
-        {door(cmaQueueHref({ state: 'sent' }), String(counts.sent))} sent,{' '}
-        {door(cmaQueueHref({ state: 'audit-failed' }), String(counts.auditFailed))} failed audit,{' '}
-        {door(cmaQueueHref({ state: 'unvetted' }), String(counts.unvetted))} unvetted
-        {counts.queued > 0 ? (
-          <>
-            , {door(cmaQueueHref({ state: 'queued' }), String(counts.queued))} in the drip
-          </>
-        ) : null}
-        . {door(cmaQueueHref({ state: 'all' }), String(total))} CMAs.
+        {door(cmaQueueHref({ state: 'ready' }), String(counts.ready))} Ready ·{' '}
+        {door(cmaQueueHref({ state: 'queued' }), String(counts.queued))} In drip ·{' '}
+        {door(cmaQueueHref({ state: 'sent' }), String(counts.sent))} sent ·{' '}
+        {door(cmaQueueHref({ state: 'audit-failed' }), String(counts.auditFailed))} failed audit ·{' '}
+        {door(cmaQueueHref({ state: 'unvetted' }), String(counts.unvetted))} unvetted ·{' '}
+        {door(cmaQueueHref({ state: 'all' }), String(total))} CMAs.
+        {' · '}
+        <Link href="/admin/prospecting" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Prospecting
+        </Link>
       </VerdictLine>
 
       <QueueFilters
         filters={filters}
         cities={cities}
         stateOptions={(Object.keys(STATE_LABEL) as CmaQueueState[])
-          .filter((s) => (stateCounts.get(s) ?? 0) > 0)
-          .map((s) => ({ value: s, label: STATE_LABEL[s], count: stateCounts.get(s) }))}
+          .filter((s) => s === 'ready' || s === 'queued' || (stateCounts.get(s) ?? 0) > 0)
+          .map((s) => ({ value: s, label: STATE_LABEL[s], count: stateCounts.get(s) ?? 0 }))}
         originOptions={ORIGIN_ORDER.filter((o) => (originCounts.get(o) ?? 0) > 0).map((o) => ({
           value: o,
           label: CMA_ORIGIN_LABEL[o],
@@ -195,6 +195,14 @@ export default async function CmaQueuePage({
 
       <SectionHead>
         {visible.length} shown
+        {' · '}
+        {door(cmaQueueHref({ state: 'ready' }), 'Ready')}
+        {' · '}
+        {door(cmaQueueHref({ state: 'queued' }), 'In drip')}
+        {' · '}
+        <Link className="av2-btn av2-btn--quiet av2-btn--touch" href="/admin/prospecting">
+          Prospecting
+        </Link>
         {' · '}
         <Link className="av2-btn av2-btn--quiet av2-btn--touch" href="/admin/cmas/new">
           Build CMA
