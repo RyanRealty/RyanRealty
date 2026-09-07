@@ -79,6 +79,29 @@ function communityTarget(name) {
 // Every destination is a guaranteed-200 route on the new site (verified against
 // the app/ route inventory). Paths are stored WITHOUT trailing slash.
 const CURATED = {
+  // Retired blog posts (2026-09-07 backlog triage, docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md).
+  // The rows stay in blog_posts at status 'retired' and no longer render, so both the
+  // legacy WordPress path and the new-site /blog path land on the page that replaced them.
+  ...Object.fromEntries(
+    Object.entries({
+      'treasury-yields-central-oregon-buyers': '/blog/fed-rate-decisions-mortgage-rates',
+      'mortgage-rates-2026-outlook': '/blog/fed-rate-decisions-mortgage-rates',
+      'case-for-buying-now-vs-waiting': '/blog/is-now-a-good-time-to-buy-in-bend',
+      'inventory-trends-rising-supply-central-oregon': '/blog/is-now-a-good-time-to-buy-in-bend',
+      'central-oregon-housing-market-2025-review': '/housing-market',
+      'central-oregon-housing-market-spring-2026': '/housing-market',
+      'deschutes-county-market-report-q1-2026': '/housing-market',
+      'bend-20-year-growth-plan-34000-homes': '/blog/bend-new-growth-plan-housing-20-years',
+      'caldera-ranch-ugb-expansion-716-homes': '/blog/bend-new-growth-plan-housing-20-years',
+      'caldera-ranch-update-bend-newest-development': '/blog/bend-new-growth-plan-housing-20-years',
+      'bend-affordable-housing-goal-1000-units': '/blog',
+      'caraway-development-510-homes-northwest-bend': '/blog',
+      'habitat-pahlisch-affordable-townhomes-bend': '/blog',
+      'homelessness-central-oregon-2025-count': '/blog',
+      'bend-sdc-overhaul-housing-costs': '/blog/new-construction-guide-central-oregon',
+      'construction-costs-central-oregon-300-sqft': '/blog/new-construction-guide-central-oregon',
+    }).flatMap(([slug, dest]) => [[`/${slug}`, dest], [`/blog/${slug}`, dest]]),
+  ),
   // system / legal
   '/about-us': '/about',
   '/accessibility': '/accessibility',
@@ -93,7 +116,7 @@ const CURATED = {
   '/join-us': '/join',
   '/giving-back': '/about',
   // team
-  '/matt-ryan': '/team/matt-ryan',
+  '/matt-ryan': '/team/matthew-ryan',
   '/paul-stevenson': '/team/paul-stevenson',
   '/rebecca-ryser-peterson': '/team/rebecca-peterson',
   '/rebecca-active': '/team/rebecca-peterson',
@@ -181,8 +204,8 @@ const CURATED = {
   '/buy-bend-real-estate': '/buy',
   '/buy-bend-real-estate/comprehensive-bend-oregon-home-buying-guide': '/buy',
   '/featured-properties': '/our-homes',
-  '/fsbo': '/lp/fsbo',
-  '/matthew-ryan': '/team/matt-ryan',
+  '/fsbo': '/sell/for-sale-by-owner',
+  '/matthew-ryan': '/team/matthew-ryan',
   '/rebecca-peterson': '/team/rebecca-peterson',
   '/trust': '/about',
 }
@@ -310,7 +333,7 @@ async function main() {
     // /luxury-homes-bend exists and is indexed, but the legacy luxury URL was
     // dumping its equity on generic /homes-for-sale while Google ranked our
     // sitemap page for "luxury homes bend" (144 imp, 0 clicks).
-    '/luxury-homes-bend-oregon': '/luxury-homes-bend',
+    '/luxury-homes-bend-oregon': '/homes-for-sale/bend?minPrice=1500000',
     // Tetherow: one URL. LP chrome, the Heath LP (not its own MLS plat),
     // the city/community search surface, and the blog slug that cannibalized
     // the community page all 301 to /communities/tetherow.

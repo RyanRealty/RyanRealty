@@ -126,8 +126,9 @@ no named basis).
 **Merged (4).** `case-for-buying-now-vs-waiting` and `inventory-trends-rising-supply-central-oregon`
 fold into `is-now-a-good-time-to-buy-in-bend` (refinance argument and its limits, rising
 inventory as leverage). `bend-sdc-overhaul-housing-costs` and
-`construction-costs-central-oregon-300-sqft` fold into `new-construction-guide-central-oregon`
-once the City of Bend SDC schedule is verified. Sources retire after the merge.
+`construction-costs-central-oregon-300-sqft` folded into `new-construction-guide-central-oregon`
+(SDC section from the city's adopted schedule via Wayback: water $7,181, sewer $5,890,
+transportation $9,426, $22,497 average single-unit, parks set separately). Sources retired.
 
 **Restore on fresh sources (15).** `bend-new-growth-plan-housing-20-years`,
 `caldera-ranch-update-bend-newest-development`, `deschutes-county-wildfire-building-codes`,
@@ -180,7 +181,42 @@ reruns the battery monthly.
 Matt chose Studio stills for the nine new guides. Through `buildStillPrompt` and the
 `inspectFrame` gate at the 85 bar, 16 candidates across two subjects (a Deschutes riverbank
 with houses, an aerial of a west-side neighborhood) scored 71 to 78, every one failed on
-`warped_architecture`, and the run was stopped at about $10 of stills. Landscape-only frames
+`warped_architecture`, and the run was stopped at $7.80 of stills. Landscape-only frames
 were not tried for every guide. The guides keep the existing library photos until a
 subject without buildings is tried or the bar is revisited. Contact sheet in the session
 scratchpad (`thumbs/stills-all.png`).
+
+## Restores published 2026-09-07
+
+Thirteen of the fifteen RESTORE verdicts shipped the same day. `caldera-ranch-update-bend-newest-development`
+folded into the growth-plan guide (its unit counts never appeared on the city's own page) and
+`treasury-yields-central-oregon-buyers` folded into the rate explainer. Both retired with redirects.
+Seed mirror: `scripts/blog-content/restored-guides-2026-09.ts`.
+
+| Slug | Sources (all fetched 2026-09-07) |
+|---|---|
+| `interest-rate-changes-home-affordability` | Bend and Redmond 90-day medians (stats cache), Freddie Mac PMMS 2026-09-03, DOR FY 2025-26 effective rate, ACS 2020-2024 income, amortization formula |
+| `building-equity-shifting-market` | Yearly median-of-monthly medians 2017 to 2025 for four cities (stats cache), PMMS, amortization |
+| `buying-vs-renting-bend-analysis` | HUD FY2026 FMR, Bend-Redmond metro (FY26_FMRs.xlsx: 1BR $1,371, 2BR $1,784, 3BR $2,481), stats cache median, PMMS, DOR rate |
+| `fed-rate-decisions-mortgage-rates` | FOMC 2026-07-29 statement and openmarket.htm (3.50 to 3.75%, six cuts, 175 bps), FRED DGS10 (4.77% on 9/3, 90-day 4.60%, 2023 peak 4.98%), PMMS history CSV (2023 6.81%, 2024 6.72%, 2025 6.60%, 2023 peak 7.79%, 2019 4.51% to 3.74%, 2007-08 6.46% to 5.53%), computed spread 194 bps now, 189 bps average since 2000 |
+| `rate-lock-effect-housing-supply` | FHFA NMDB 2026 Q1 national (19.5% under 3%, 49.9% under 4%, 66.7% under 5%, 77.9% under 6%), Bend average end-of-month active inventory by year (stats cache), PMMS |
+| `deschutes-county-wildfire-building-codes` | deschutes.org R327 page (effective 2026-04-01), bendoregon.gov ordinance article via Wayback (adopted 2026-04-15, effective 2026-05-15), ORS 476.392, OSFM defensible space page and 2025 model code, dfr.oregon.gov wildfire page (SB 82, SB 83, claims tracker 2026-09-01), orfairplan.com ($600,000), OSFM Flat Fire update 2025-08-31 (23,346 acres) |
+| `insurance-guide-central-oregon-homeowners` | Same DFR, FAIR Plan, and R327 sources; Deschutes FIS 2007-09-28 via Sisters development code |
+| `home-renovations-add-value-central-oregon` | NAR 2025 Remodeling Impact Report PDF (cost recovery, twelve projects), NOAA NCEI 1991-2020 normals, station USC00350699 (9.11 in, July 82.1/49.2, January 41.6/24.4) |
+| `bend-new-growth-plan-housing-20-years` | OEA OHNA 2026 results report (34,116 twenty-year, 2,010 one-year), bendoregon.gov growth page via Wayback (17,234 by 2028), Census BPS 2025 (Bend 646, Deschutes 1,166 single-family units), PSU certified 2025 population 107,079, bendoregon.gov Caldera Ranch page via Wayback 2026-04-18 |
+| `how-to-choose-the-right-mortgage` | FHFA 2026 county file ($832,750), HUD CHUMS 2026 limits ($718,750), HUD 4000.1 (3.5% at 580, 10% at 500 to 579), HUD ML 2023-05 MIP, VA funding fee, VA appraisal fee table 2026-05-01, USDA eligibility tool 2026-09-07 ($138,200 / $182,450), USDA FY2026 fee bulletin (1.00% / 0.35%), CFPB PMI page (80% / 78%), Fannie Mae SEL-2025-09 (no DU minimum score from 2025-11-16), PMMS history |
+| `second-home-vs-investment-property` | 26 USC 280A, 469, 168, 1031, Rev. Proc. 2008-16, IRS 2026 SALT correction notice ($40,400, phase-down above $505,000), IRS 2026 inflation release ($32,200 / $16,100), Pub 936 and H.R.1 sec. 70108 ($750,000 permanent), ORS 90.323 and OEA 2026 cap (9.5%) |
+| `central-oregon-real-estate-investment` | Stats cache yearly medians, PSU population, Census BPS, OHNA target, HUD FMR, PMMS, DOR rate, ORS 90.323, FAIR Plan |
+| `national-economic-policy-central-oregon` | FOMC, PMMS, FRED, IRS 2026 figures, H.R.1, DOR 2026 brackets, FHFA and HUD 2026 limits, USDA cap, Census BPS |
+
+Cut from every restore because no primary source carried them: Fannie Mae's exact 5% standard
+down-payment cell (matrix not readable by automation), lender rate spreads for second homes and
+rentals, insurance premium ranges and Firewise discount percentages, contractor cost ranges,
+short-term rental revenue, the Flat Fire structure count, Caldera Ranch unit counts, Bend
+housing-unit count, and NFIP average premium (FEMA and Census pages are WAF-blocked).
+
+Premise corrections found on the way: ORS 477.060 was repealed in 2021 (defensible space now
+lives at ORS 476.392); the OSFM model code is a local-option template after SB 83, not an OAR;
+the NAR 2025 report has no cost-recovery figure for roofing, flooring, or outdoor projects; the
+Oregon FAIR Plan is at orfairplan.com; Fannie Mae dropped its 620 floor for DU loans on
+2025-11-16.

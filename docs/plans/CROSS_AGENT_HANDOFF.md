@@ -1,4 +1,61 @@
-# Current — 2026-09-07 (AEO guide pack + site audit)
+# Current — 2026-09-07 (AEO guide pack, backlog grind, market page fix)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
+`wt/aeo-briefs-audit-20260907`. Earlier commits on `origin/main`: `5f9987ab`
+(fifteen guides + site audit), `0301398e` (handoff). This push adds the title
+change, the backlog grind, the market page fix, and the redirects.
+
+**Shipped**
+- Fifteen buyer + seller guides from the Cos AEO brief pack are live (six rewrites,
+  three drafts rebuilt, six new). Matt then asked for the cut figures back, dated;
+  they are in with their as-of dates. Ledger and brief-to-slug map:
+  `docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md`.
+- Backlog grind (Matt: "yes, both"): 29 archived posts triaged. 13 restored on
+  primary sources (rates, equity, rent vs buy on HUD FY2026 FMR, mortgage programs
+  with 2026 limits, second home vs investment with 2026 IRS thresholds, wildfire
+  code, insurance, renovations on NAR 2025, Bend housing target on OHNA), 16
+  retired with redirects to the page that replaced each, 18 semicolon fixes on
+  10 published posts. `blog_posts` now: 80 published, 16 retired, 0 archived, 0
+  voice violations. Seeds: `aeo-guides-2026-09.ts`, `restored-guides-2026-09.ts`,
+  one slug per file.
+- Homepage title is `Homes for Sale in Central Oregon | Ryan Realty, Bend`
+  (Matt 2026-09-07); VOICE.md, `ci:seo-shell`, and the hero test moved with it.
+- Market page: the price FAQ leads with the closed-sale median for the last
+  complete charted month, then the list median, labeled (an engine had quoted the
+  $950K Bend list median as "the median home price"). Chrome Market and Sell
+  menus name their scope, "Central Oregon detached homes right now", because they
+  printed region figures beside a Bend page saying something else.
+- Guides end in `<h2>Questions</h2>` + five h3/p pairs; `lib/blog/publish-blog-faq.ts`
+  ships that as FAQPage JSON-LD. Site audit fixes: listing photo alt
+  (`ci:listing-photo-alt`), search robots + og + ItemList, menu labels not h2,
+  `/buy` FAQ corrected.
+- Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
+
+**Open**
+- Hero stills for the nine new guides: Matt chose Studio stills. Sixteen
+  candidates across two subjects scored 71 to 78 against the 85 vision bar (all
+  `warped_architecture`), run stopped at $7.80. Contact sheet sent to Matt. Guides
+  keep library photos until he picks frames or the subject list goes landscape-only.
+- From the AI answer-share baseline (sibling session, monthly rerun): no F1
+  battery path was cited for its query; engines rank brokers by review count; the
+  page pattern that got Ryan Realty recommended was a dated local report plus
+  seller guidance naming the broker. Suggested: a dated monthly Bend and Redmond
+  report page with median sale price and months of supply stated once, and
+  third-party profiles completed for all three brokers.
+- `scripts/build-legacy-redirects.mjs` regenerates from the committed JSON plus
+  its CURATED map; three stale CURATED targets were corrected so a regen no longer
+  reverts hand fixes. Regenerate only with the live-sitemap warnings expected.
+- `npm run push` from a worktree branch stamps then runs a plain `git push` that
+  fails with no upstream. Follow with `git push origin HEAD:main` inside the marker
+  window.
+
+**Do not**
+- Reseed blog posts without diffing against the live rows first.
+- Print a figure in a guide without its as-of date and source in the ledger.
+
+---
+
+# Previous — 2026-09-07 (AEO guide pack + site audit)
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
 `wt/aeo-briefs-audit-20260907`, landed on `origin/main` at `5f9987ab`.
