@@ -243,6 +243,13 @@ export interface CmaPricing {
    * showed it before (research brief 2026-09-07, item 5).
    */
   timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
+  /**
+   * Sales considered and not used, capped at eight, each with a reason
+   * composed from the sale's own recorded facts. An appraisal shows what it
+   * set aside; ours asserted a radius and showed nothing (research brief
+   * 2026-09-07, item 10).
+   */
+  rejected?: import('@/lib/pricing/rejected').RejectedSale[] | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

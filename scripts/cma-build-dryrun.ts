@@ -99,6 +99,8 @@ type DryRun = {
   renderArgsPricingRangeRule: unknown
   /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
   renderArgsPricingTimeAdjustment: unknown
+  /** render_args.pricing.rejected — considered and not used. */
+  renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
@@ -149,7 +151,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
-    renderArgsExpiredAuditFinalCycle: null, error: null,
+    renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -224,6 +226,16 @@ async function dryRun(slug: string): Promise<DryRun> {
     marketIndex, asOf, computePricing,
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
+
+  // The judge is skipped in a dry run, so the only rejections it can show are
+  // the price-per-square-foot outlier trims the deterministic ladder made.
+  const { buildRejectedSales } = await import('@/lib/pricing/rejected')
+  const rejected = buildRejectedSales({
+    candidates: selection.comps,
+    excludedKeys: [],
+    outliers: selection.excludedOutliers,
+    subject: { sqft: subject.sqft, yearBuilt: subject.yearBuilt, propertySubType: subject.propertySubType },
+  })
 
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps, pricing.predictedClose ?? pricing.recommended ?? null)
@@ -308,6 +320,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
+    renderArgsPricingRejected: rejected,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
@@ -333,7 +346,8 @@ async function main() {
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
-      renderArgsPricingTimeAdjustment: null, renderArgsExpiredAuditFinalCycle: null,
+      renderArgsPricingTimeAdjustment: null, renderArgsPricingRejected: null,
+      renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -366,6 +380,8 @@ async function main() {
     console.log(indent(r.renderArgsMarketOfferTiming))
     console.log('   render_args.market.askOutcome =')
     console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.pricing.rejected =')
+    console.log(indent(r.renderArgsPricingRejected))
     console.log('   render_args.pricing.timeAdjustment =')
     console.log(indent(r.renderArgsPricingTimeAdjustment))
     console.log('   render_args.pricing.rangeRule =')

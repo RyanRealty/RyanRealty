@@ -26,6 +26,7 @@ import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
+import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -444,6 +445,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
       // The comparability narrative renders with the pricing rationale — the
       // seller sees WHY comps were kept, down-weighted, or excluded.
+      // Considered and not used: the sales the comparability review set aside
+      // and the price-per-square-foot outliers, each with a reason composed
+      // from the sale's own facts (never the review's own words, which are not
+      // word-sanitized).
+      if (p) {
+        p.rejected = buildRejectedSales({
+          candidates: selection.comps,
+          excludedKeys: excludedForAudit().map((e) => e.listingKey),
+          outliers: selection.excludedOutliers,
+          subject: {
+            sqft: subject.sqft,
+            yearBuilt: subject.yearBuilt,
+            propertySubType: subject.propertySubType,
+          },
+        })
+      }
       if (p && judgment) {
         const excludedCount = selection.comps.length - set.length
         const weakCount = adj.filter((c) => tierByKey.get(c.listingKey) === 'weak').length
