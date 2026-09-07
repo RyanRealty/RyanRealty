@@ -175,6 +175,13 @@ export interface CmaMarketContext {
   offerTiming?: import('@/lib/pricing/local-outcomes').CmaOfferTiming | null
   askOutcome?: import('@/lib/pricing/local-outcomes').CmaAskOutcome | null
   /**
+   * Chapter 2b's centrepiece: the median share of the ORIGINAL asking price
+   * that sales realized, by how many weeks they took to find a buyer. Ours,
+   * over the city's own closed rows — it replaces the unsourceable industry
+   * table (research brief 2026-09-07 §4).
+   */
+  originalAskRealization?: import('@/lib/pricing/local-outcomes').CmaOriginalAskRealization | null
+  /**
    * The city's own failed-then-sold pairs over 24 months. When `n` is under
    * the minimum the block still ships with its reason, and the chapter falls
    * back to the regional FAILED_ASK_BACKTEST figure, named as regional.

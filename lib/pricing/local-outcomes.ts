@@ -50,6 +50,12 @@ export const MIN_LOCAL_OUTCOME_N = 30
 export const LOCAL_OUTCOME_WINDOW_MONTHS = 12
 
 /**
+ * A realization bucket is a thinner slice than a whole group, so it gets its
+ * own floor. Below this the bucket prints no figure and says why.
+ */
+export const MIN_REALIZATION_BUCKET_N = 15
+
+/**
  * Redfin's published definition of every share-of-list metric excludes sales
  * that closed 50 percent above or below the ask (fetched 2026-09-07,
  * docs/research/cma-professional-practice-2026-09-07.md §4). A close at 3x its
@@ -460,3 +466,121 @@ export function localOutcomeWindowStart(asOf: Date, months = LOCAL_OUTCOME_WINDO
   return d.toISOString().slice(0, 10)
 }
 
+// ── what the original ask actually realized, by weeks on the market ─────────
+
+/**
+ * The single best overpricing exhibit we can build honestly
+ * (docs/research/cma-professional-practice-2026-09-07.md §4, item 4): the
+ * median share of the ORIGINAL asking price that sales realized, split by how
+ * long they took to find a buyer. It replaces the "% of list by weeks" table
+ * every brokerage site attributes to NAR and nobody can source — that primary
+ * source was fetched for and not reached, so the figure is computed on our own
+ * closed rows instead of cited.
+ *
+ * Buckets are inclusive at the label: weeks = days_to_pending / 7, so a sale
+ * that went pending on day 14 is 2.0 weeks and sits in '0-2', and day 15 is
+ * 2.14 weeks and sits in '3-4'.
+ */
+export const REALIZATION_BUCKETS = [
+  { weeks: '0-2', maxWeeks: 2 },
+  { weeks: '3-4', maxWeeks: 4 },
+  { weeks: '5-8', maxWeeks: 8 },
+  { weeks: '9-16', maxWeeks: 16 },
+  { weeks: '17+', maxWeeks: Infinity },
+] as const
+
+export type CmaRealizationBucketLabel = (typeof REALIZATION_BUCKETS)[number]['weeks']
+
+export interface CmaRealizationBucket {
+  weeks: CmaRealizationBucketLabel
+  /** Sales in the bucket carrying BOTH a days figure and a usable price pair. */
+  n: number
+  /** Median ClosePrice ÷ OriginalListPrice, percent, one decimal. */
+  medianPctOfOriginalAsk: number | null
+  /** Null when the figure is publishable; a sentence when it is withheld. */
+  reason: string | null
+}
+
+export interface CmaOriginalAskRealization {
+  city: string
+  windowMonths: number
+  /** Sales that landed in some bucket — the sum of the buckets' own counts. */
+  n: number
+  buckets: CmaRealizationBucket[]
+  source: CmaStatSource
+}
+
+/** Which bucket a days-to-pending value falls in. */
+export function realizationBucketFor(days: number): CmaRealizationBucketLabel {
+  const weeks = days / 7
+  for (const b of REALIZATION_BUCKETS) if (weeks <= b.maxWeeks) return b.weeks
+  return '17+'
+}
+
+/**
+ * The table, over the SAME closed rows chapter 2's other two figures are
+ * computed from. A row counts only when it carries both a days-to-pending
+ * value and a close-to-original-ask ratio inside ±50 percent; a bucket under
+ * MIN_REALIZATION_BUCKET_N prints no figure and says how many it had.
+ */
+export function computeOriginalAskRealization(args: {
+  rows: readonly LocalClosedRow[]
+  city: string
+  sinceIso: string
+  fetchedAt: string
+  windowMonths?: number
+}): CmaOriginalAskRealization {
+  const windowMonths = args.windowMonths ?? LOCAL_OUTCOME_WINDOW_MONTHS
+  const byBucket = new Map<CmaRealizationBucketLabel, number[]>(
+    REALIZATION_BUCKETS.map((b) => [b.weeks, [] as number[]]),
+  )
+  let withDays = 0
+  for (const row of args.rows) {
+    const days = row.days_to_pending == null ? null : Number(row.days_to_pending)
+    if (days == null || !Number.isFinite(days) || days < 0) continue
+    withDays++
+    const pct = soldToOriginalAskPct(row)
+    if (pct == null) continue
+    byBucket.get(realizationBucketFor(Math.round(days)))!.push(pct)
+  }
+  const buckets = REALIZATION_BUCKETS.map(({ weeks }) => {
+    const pcts = byBucket.get(weeks)!
+    const n = pcts.length
+    if (n < MIN_REALIZATION_BUCKET_N) {
+      return {
+        weeks,
+        n,
+        medianPctOfOriginalAsk: null,
+        reason: `${n} ${n === 1 ? 'sale' : 'sales'} took ${weeks === '17+' ? '17 weeks or more' : `${weeks} weeks`} to find a buyer in this window, under the ${MIN_REALIZATION_BUCKET_N} needed to publish a figure.`,
+      }
+    }
+    const median = medianVerified(pcts)
+    if (median == null) {
+      return {
+        weeks,
+        n,
+        medianPctOfOriginalAsk: null,
+        reason: 'The median could not be confirmed by a second computation, so no figure is published.',
+      }
+    }
+    return { weeks, n, medianPctOfOriginalAsk: round1(median), reason: null }
+  })
+  const n = buckets.reduce((sum, b) => sum + b.n, 0)
+  return {
+    city: args.city,
+    windowMonths,
+    n,
+    buckets,
+    source: {
+      table: 'listings',
+      filter:
+        `City='${args.city}', PropertyType='A', property_sub_type='Single Family Residence', ` +
+        `StandardStatus='Closed', CloseDate >= ${args.sinceIso}. Weeks = days_to_pending / 7, bucket edges ` +
+        `inclusive at the label. Figure = median ClosePrice / OriginalListPrice, excluding closes more than ` +
+        `50% above or below that ask. ${withDays} of ${args.rows.length} closed row(s) carried a days figure; ` +
+        `${n} of those also carried a usable price pair and were measured.`,
+      fetchedAt: args.fetchedAt,
+      query: `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ClosePrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"`,
+    },
+  }
+}

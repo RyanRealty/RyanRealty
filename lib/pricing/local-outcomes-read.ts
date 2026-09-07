@@ -19,10 +19,12 @@ import {
 import {
   computeAskOutcome,
   computeOfferTiming,
+  computeOriginalAskRealization,
   localOutcomeWindowStart,
   LOCAL_OUTCOME_WINDOW_MONTHS,
   type CmaAskOutcome,
   type CmaOfferTiming,
+  type CmaOriginalAskRealization,
 } from '@/lib/pricing/local-outcomes'
 import {
   computeLocalFailedThenSold,
@@ -35,6 +37,8 @@ export interface CmaLocalOutcomes {
   offerTiming: CmaOfferTiming | null
   /** Sold without a cut / sold after a cut / did not sell, same city + window. */
   askOutcome: CmaAskOutcome | null
+  /** Median share of the ORIGINAL ask realized, by weeks to an accepted offer. */
+  originalAskRealization: CmaOriginalAskRealization | null
   /** The city's own failed-then-sold pairs over 24 months. */
   localFailedThenSold: CmaLocalFailedThenSold | null
 }
@@ -42,6 +46,7 @@ export interface CmaLocalOutcomes {
 export const EMPTY_LOCAL_OUTCOMES: CmaLocalOutcomes = {
   offerTiming: null,
   askOutcome: null,
+  originalAskRealization: null,
   localFailedThenSold: null,
 }
 
@@ -79,6 +84,13 @@ export async function buildCmaLocalOutcomes(args: {
   if (closedRows.length === 0 && failedRows.length === 0) return EMPTY_LOCAL_OUTCOMES
 
   return {
+    originalAskRealization: computeOriginalAskRealization({
+      rows: closedRows,
+      city,
+      sinceIso,
+      fetchedAt,
+      windowMonths: LOCAL_OUTCOME_WINDOW_MONTHS,
+    }),
     // Both pair sides missing is a read miss, not a city where nothing ever
     // came off the market: no block rather than "0 homes" (§0).
     localFailedThenSold:

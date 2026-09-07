@@ -763,6 +763,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     if (market) {
       market.offerTiming = localOutcomes.offerTiming
       market.askOutcome = localOutcomes.askOutcome
+      market.originalAskRealization = localOutcomes.originalAskRealization
       market.localFailedThenSold = localOutcomes.localFailedThenSold
     }
 
@@ -1030,6 +1031,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
           }
         : { source: 'none', note: 'No closed or off-market rows returned for the subject city.' },
+      market_original_ask_realization: localOutcomes.originalAskRealization
+        ? {
+            ...localOutcomes.originalAskRealization.source,
+            city: localOutcomes.originalAskRealization.city,
+            window_months: localOutcomes.originalAskRealization.windowMonths,
+            n: localOutcomes.originalAskRealization.n,
+            buckets: localOutcomes.originalAskRealization.buckets,
+            ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
+          }
+        : { source: 'none', note: 'No closed rows returned for the subject city.' },
       market_local_failed_then_sold: localOutcomes.localFailedThenSold
         ? {
             ...localOutcomes.localFailedThenSold.source,
