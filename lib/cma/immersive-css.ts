@@ -251,6 +251,11 @@ table.comp-matrix .matrix-addr{display:block}
 .ruler-phone{display:none}
 @media screen and (max-width:700px){.ruler-wide{display:none}.ruler-phone{display:block}}
 @media print{.ruler-wide{display:block!important}.ruler-phone{display:none!important}}
+/* Same mechanism for the days-to-offer strip (F8): panning put the subject's
+   own bar label, the punchline, outside the visible width on a phone. */
+.days-phone{display:none}
+@media screen and (max-width:700px){.days-wide{display:none}.days-phone{display:block}}
+@media print{.days-wide{display:block!important}.days-phone{display:none!important}}
 /* The market stat row (F7). Same figures, same order, same labels as the
    letter; the immersive's own register for the numerals. The declarations
    match .letter-body .stat exactly, so a strip inside a wrapped letter body

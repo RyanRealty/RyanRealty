@@ -354,3 +354,43 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
   the chart and a seller on a phone does not scroll a chart box. Whether the
   strip gets a drawn-to-fit phone layout the way the price ruler did is a
   document decision.
+
+- **A · step 5** (`wt/cma-doc-20260907`) — **F8. The days chart fits the phone.**
+  The strip was the last wide chart still held at `min-width` in a pan box below
+  700px, and the label it cropped was the one the chart exists to deliver: the
+  subject's own bar ("192 days, no offer") and the market median's label both
+  sat outside the visible width on letter-375 and immersive-375. A caption
+  restating the number is not the chart. `daysToOfferPhoneSvg` draws the same
+  rows and the same median into a 360-unit frame that scales with no crop: the
+  address moves out of the left gutter to sit ABOVE its bar, which frees the
+  whole frame for the bar and puts the value right-aligned at the frame edge
+  where the eye already is; the subject's row is bold with a heavier navy bar.
+  Two things the wide layout does could not come across — a continuous median
+  hairline strikes through six addresses once the labels leave the gutter, so
+  the median is a comb of one segment inside each bar's own band, and a zero
+  axis would run under the first character of every address, so it is gone (six
+  bars flush on one edge already state where zero is). The median label flips
+  to the left of the comb rather than off the frame, and each address truncates
+  by its own measured width against the value beside it, not a fixed count.
+  Both documents emit both layouts and exactly one is ever visible —
+  `.days-wide` on paper and above 700px, `.days-phone` below, the same
+  mechanism and the same three rules as `.ruler-wide`/`.ruler-phone` (F6).
+  Nothing recomputed: the phone layout takes the same `DaysRow[]` and
+  `DaysMedianTick` the wide one does.
+
+  TDD: the failing test measures the rendered phone SVG on both documents —
+  every kept sale's address present, the subject's `days, no offer` label
+  present, `Redmond median 21 days` present, six bars, and every line and every
+  text box inside the viewBox — plus the two stylesheets' breakpoints and the
+  wide strip still at 720 units for print.
+
+  Verified: `npx vitest run lib/cma` 1,791 passing; `npx tsc --noEmit` clean;
+  `ci:market-chart-honesty`, `ci:design-tokens`, `ci:pdf-page-safety` green.
+  Look-pass re-run on `cma-2465-7th-redmond-97756` and `cma-65365-concorde`,
+  shots read by eye at all four widths:
+  - `out/cma-look/cma-2465-7th-redmond-97756/letter-375/05-how-fast-homes-like-yours-went.png`
+  - `out/cma-look/cma-2465-7th-redmond-97756/immersive-375/05-how-fast.png`
+  - `out/cma-look/cma-2465-7th-redmond-97756/letter-816/05-how-fast-homes-like-yours-went.png`
+  - `out/cma-look/cma-65365-concorde/letter-375/05-how-fast-homes-like-yours-went.png`
+  - `out/cma-look/cma-65365-concorde/immersive-375/05-how-fast.png`
+  - `out/cma-look/cma-65365-concorde/immersive-1280/05-how-fast.png`
