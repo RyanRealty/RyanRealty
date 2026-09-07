@@ -29,7 +29,7 @@ import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
-import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
+import { composeBuildSummary, composeFailureSummary, statusAfterBuildFailure } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
@@ -170,7 +170,19 @@ async function recordBuildFailure(
   // html_path is NOT NULL on public.cmas — nulling it aborts the whole update
   // (live Rim View kept $1.645M Summit/Falcon after a8ab9ded for this reason).
   // Empty string is not a stored document (cmaHasStoredHtml / canOpenCmaDocument).
+  // The row's own status, read before anything is written: a failed rebuild
+  // clears the document, and a row with no document may not keep wearing
+  // `finalized` or `delivered` (three live rows did on 2026-09-07). Archived
+  // stays archived; an unreadable status is left alone rather than guessed.
+  const existing = await getCmaAdminReviewRowBySlug(slug).catch((err) => {
+    console.error('[recordBuildFailure] status read failed', slug, err)
+    return null
+  })
+  const nextStatus = statusAfterBuildFailure(
+    existing && typeof existing.status === 'string' ? existing.status : null,
+  )
   const clearFields = {
+    ...(nextStatus ? { status: nextStatus } : {}),
     build_error: error.slice(0, 2000),
     built_at: new Date().toISOString(),
     ...(failureSummary ? { build_summary: failureSummary } : {}),
@@ -194,7 +206,7 @@ async function recordBuildFailure(
   // Update can succeed while .select('id') returns empty (RLS). Still wipe comps
   // and retry the clear once so the admin rebuild path cannot keep $1.645M live.
   if (!cmaId || !cleared.ok) {
-    const row = await getCmaAdminReviewRowBySlug(slug).catch(() => null)
+    const row = existing ?? (await getCmaAdminReviewRowBySlug(slug).catch(() => null))
     if (row && typeof row.id === 'string') cmaId = row.id
     if (!cleared.ok) {
       await updateCmaRowFieldsBySlug(slug, clearFields).catch((err) => {
