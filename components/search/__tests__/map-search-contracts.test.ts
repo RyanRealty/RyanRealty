@@ -94,7 +94,11 @@ describe('MapSearchView orchestrator', () => {
   })
 
   it('separates filter-match and viewport phrases so they do not concatenate', () => {
-    expect(src).toMatch(/ · \{publishedCounts\.viewport\.phrase\}/)
+    // Cos/Matt: kill total-inventory noise — list row prefers viewport phrase
+    // only; sheet chrome keeps "N homes for sale". No match+viewport concat.
+    expect(src).toMatch(/publishedCounts\.viewport\?\.phrase/)
+    expect(src).toMatch(/sheetHomesLabel/)
+    expect(src).not.toMatch(/\{listCountPhrase\}[\s\S]{0,200}\{publishedCounts\.viewport\.phrase\}/)
   })
 
   it('split cards overlay tour badges and open the on-site 3D viewer', () => {
@@ -183,10 +187,10 @@ describe('Zillow map-first mobile bottom sheet', () => {
 
   it('keeps place SELECTS as real pickers in SearchFilters chrome', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
-    expect(filters).toMatch(/openPanel === 'city'/)
-    expect(filters).toMatch(/openPanel === 'neighborhood'/)
-    expect(filters).toMatch(/openPanel === 'community'/)
-    expect(filters).toMatch(/openPanel === 'subdivision'/)
+    expect(filters).toMatch(/openPanel === 'places'/)
+    expect(filters).toMatch(/toggleCsv/)
+    expect(filters).toMatch(/REPORT_CITY_LABELS/)
+    expect(filters).toMatch(/BEND_NEIGHBORHOOD_DISTRICTS/)
     expect(filters).toMatch(/SaveSearchButton/)
     expect(filters).toMatch(/Open all filters/)
   })
@@ -463,11 +467,12 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
   const src = readSrc('components/search/MapSearchView.tsx')
   const geo = readSrc('components/search/geo-scope.ts')
 
-  it('geo-scope helper strips exactly city/subdivision/postalCode', () => {
-    expect(geo).toMatch(/export const GEO_SCOPE_KEYS = \['city', 'subdivision', 'postalCode'\] as const/)
+  it('geo-scope helper strips city/subdivision/neighborhood/postalCode', () => {
+    expect(geo).toMatch(/export const GEO_SCOPE_KEYS = \['city', 'subdivision', 'neighborhood', 'postalCode'\] as const/)
     expect(geo).toMatch(/export function stripGeoScope/)
     expect(geo).toMatch(/city: undefined/)
     expect(geo).toMatch(/subdivision: undefined/)
+    expect(geo).toMatch(/neighborhood: undefined/)
     expect(geo).toMatch(/postalCode: undefined/)
   })
 
@@ -755,18 +760,17 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
   })
 })
 
-describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () => {
+describe('search index filter dock (E-SEARCH-REFINE)', () => {
   const page = readSrc('app/search/page.tsx')
 
-  it('keeps one composed h1 that is not sr-only', () => {
-    expect(page).toMatch(/const h1Place =/)
-    expect(page).toMatch(/\|\| 'Central Oregon'/)
-    expect(page).toMatch(/const h1Text = `\$\{h1Place\} homes for sale`/)
-    expect(page).not.toMatch(/<h1 className="sr-only">/)
+  it('keeps a visually-hidden h1 without the noisy title above filters', () => {
+    expect(page).toMatch(/<h1 className="sr-only">Homes for sale<\/h1>/)
+    expect(page).not.toMatch(/const h1Place =/)
+    expect(page).not.toMatch(/const h1Text =/)
     expect(page.match(/<h1\b/g)?.length).toBe(1)
   })
 
-  it('empty filters title the regional query, not a geography-less Homes for Sale', () => {
+  it('empty filters still title the regional query in metadata', () => {
     expect(page).toMatch(/if \(parts\.length === 0\) return 'Central Oregon homes for sale'/)
     expect(page).not.toMatch(/return 'Homes for Sale'/)
   })
@@ -777,11 +781,11 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
     expect(page).not.toMatch(/canonical\.searchParams\.set\(k, String\(v\)\)/)
   })
 
-  it('puts that h1 in the filter dock as one compact line', () => {
+  it('filter dock keeps SearchFilters without a visible title line', () => {
     const dock = page.slice(page.indexOf('search-filter-dock'))
     const dockBlock = dock.slice(0, dock.indexOf('<SearchAlertCapture'))
-    expect(dockBlock).toMatch(/<h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">/)
-    expect(dockBlock).toMatch(/\{h1Text\}/)
+    expect(dockBlock).toMatch(/<h1 className="sr-only">/)
+    expect(dockBlock).not.toMatch(/truncate px-4 pt-2 font-display/)
     expect(dockBlock).toMatch(/<SearchFilters /)
   })
 
@@ -791,19 +795,39 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
   })
 })
 
-describe('SearchFilters place selects (Matt fire)', () => {
-  it('exposes City Neighborhood Community Subdivision pickers from registries', () => {
+describe('SearchFilters Places multi-select (Matt/Cos fire)', () => {
+  it('exposes one Places control with grouped City/Neighborhood/Community/Subdivision', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     expect(filters).toMatch(/REPORT_CITY_LABELS/)
     expect(filters).toMatch(/BEND_NEIGHBORHOOD_DISTRICTS/)
     expect(filters).toMatch(/PLACE_COMMUNITY_OPTIONS/)
     expect(filters).toMatch(/PLACE_SUBDIVISION_OPTIONS/)
-    expect(filters).toMatch(/openPanel === 'city'/)
-    expect(filters).toMatch(/openPanel === 'neighborhood'/)
-    expect(filters).toMatch(/openPanel === 'community'/)
-    expect(filters).toMatch(/openPanel === 'subdivision'/)
+    expect(filters).toMatch(/openPanel === 'places'/)
+    expect(filters).toMatch(/toggleCsv/)
+    expect(filters).toMatch(/params\.delete\('bbox'\)/)
+    expect(filters).not.toMatch(/openPanel === 'city'/)
+    expect(filters).not.toMatch(/openPanel === 'neighborhood'/)
+    expect(filters).not.toMatch(/openPanel === 'community'/)
+    expect(filters).not.toMatch(/openPanel === 'subdivision'/)
     expect(filters).toMatch(/flex shrink-0 items-center gap-2/)
-    expect(filters).not.toMatch(/hidden items-center gap-2 sm:contents">\s*\{\/\* City/)
+  })
+})
+
+describe('SearchMapClustered place SELECT re-fits bounds', () => {
+  it('re-fits when placeQuery or boundaryPaths change after load', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    expect(map).toMatch(/placeFitKeyRef/)
+    expect(map).toMatch(/Place SELECT \/ search→city/)
+  })
+})
+
+describe('search chrome sharp chips (not chubby ovals)', () => {
+  it('uses 6px radius on srch-chip and map-search-views', () => {
+    const css = readSrc('components/search/search-ledger.css')
+    expect(css).toMatch(/\.srch-chip \{\s*border-radius: 6px;/)
+    expect(css).toMatch(/\.map-search-views \{\s*border-radius: 6px;/)
+    expect(css).not.toMatch(/\.srch-chip \{\s*border-radius: 999px;/)
+    expect(css).not.toMatch(/\.map-search-views \{\s*border-radius: 999px;/)
   })
 })
 

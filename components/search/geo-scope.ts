@@ -15,7 +15,7 @@ import { displaySubdivision } from '@/lib/slug'
  */
 
 /** The filter keys that pin a search to a place. */
-export const GEO_SCOPE_KEYS = ['city', 'subdivision', 'postalCode'] as const
+export const GEO_SCOPE_KEYS = ['city', 'subdivision', 'neighborhood', 'postalCode'] as const
 
 export type GeoScopeKey = (typeof GEO_SCOPE_KEYS)[number]
 
@@ -31,6 +31,7 @@ export function stripGeoScope<T extends GeoScoped>(filters: T): T {
     ...filters,
     city: undefined,
     subdivision: undefined,
+    neighborhood: undefined,
     postalCode: undefined,
   }
 }
@@ -43,14 +44,18 @@ export function stripGeoScope<T extends GeoScoped>(filters: T): T {
 export function geoScopeLabel(filters: {
   city?: string | null
   subdivision?: string | null
+  neighborhood?: string | null
   postalCode?: string | null
 }): string | null {
-  const subdivision = filters.subdivision?.trim()
-    ? displaySubdivision(filters.subdivision)
-    : null
-  const parts = [subdivision, filters.city?.trim() || null, filters.postalCode?.trim() || null].filter(
-    (p): p is string => Boolean(p)
-  )
+  const first = (raw: string | null | undefined) => raw?.split(',')[0]?.trim() || null
+  const subdivisionRaw = first(filters.subdivision)
+  const subdivision = subdivisionRaw ? displaySubdivision(subdivisionRaw) : null
+  const parts = [
+    subdivision,
+    first(filters.neighborhood),
+    first(filters.city),
+    first(filters.postalCode),
+  ].filter((p): p is string => Boolean(p))
   if (parts.length === 0) return null
   return parts.join(' · ')
 }

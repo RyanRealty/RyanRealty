@@ -388,8 +388,14 @@ export default function MapSearchView({
   // returned zero rows with a misleading empty state. Until the first move,
   // the scope is visible as a chip on the map canvas with clear-on-tap.
   const scopeLabel = useMemo(
-    () => geoScopeLabel({ city: filters.city, subdivision: filters.subdivision, postalCode: filters.postalCode }),
-    [filters.city, filters.subdivision, filters.postalCode]
+    () =>
+      geoScopeLabel({
+        city: filters.city,
+        subdivision: filters.subdivision,
+        neighborhood: filters.neighborhood,
+        postalCode: filters.postalCode,
+      }),
+    [filters.city, filters.subdivision, filters.neighborhood, filters.postalCode]
   )
   // A URL that arrives with ?poly= encodes a search whose place pin was
   // ALREADY superseded by the drawn shape (drawing calls dropGeoScope, and the
@@ -611,6 +617,21 @@ export default function MapSearchView({
     void runViewportSearch(lastBoundsRef.current, drawnShapes)
   }, [drawnShapes, runViewportSearch])
 
+  // Place SELECT changed (URL city/neighborhood/subdivision) — restore the
+  // geo pin and let SearchMapClustered fit the new boundary. Without this,
+  // a prior pan left scopeDropped=true and the map never re-scoped.
+  const placeScopeKey = `${filters.city ?? ''}|${filters.neighborhood ?? ''}|${filters.subdivision ?? ''}|${filters.postalCode ?? ''}`
+  const placeScopeKeyRef = useRef(placeScopeKey)
+  useEffect(() => {
+    if (placeScopeKeyRef.current === placeScopeKey) return
+    placeScopeKeyRef.current = placeScopeKey
+    if (!placeScopeKey.replace(/\|/g, '')) return
+    scopeDroppedRef.current = false
+    setScopeDropped(false)
+    firstBoundsReportRef.current = true
+    initialSettleUntilRef.current = Date.now() + INITIAL_SETTLE_GRACE_MS
+  }, [placeScopeKey])
+
   /** Drop the place pin (chip tap or first user map move) — see geo-scope.ts. */
   const dropGeoScope = useCallback(() => {
     if (scopeDroppedRef.current) return
@@ -782,15 +803,18 @@ export default function MapSearchView({
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
   // Filter-match is the coherent number for the URL filters. Viewport prints
   // only when it differs, labeled "in this map view".
+  // Cos/Matt 2026-09-06: kill total-inventory count noise ("1,272 homes") above
+  // the list. Prefer map-viewport when it differs; otherwise keep the row quiet
+  // (filters summary + sort stay). Sheet chrome still shows "N homes for sale".
   const listCountPhrase =
     !matchCountReady && totalCount === 0
       ? 'Updating…'
-      : (publishedCounts.match?.phrase ?? publishedCounts.viewport?.phrase ?? 'Homes')
-  // Zillow map-first sheet title — always "N homes for sale" (not viewport caption).
+      : (publishedCounts.viewport?.phrase ?? (loading ? 'Updating…' : 'Homes'))
+  // Zillow map-first sheet title — viewport-aware "N homes for sale".
   const sheetHomesLabel = (() => {
     if (resultsDegraded) return 'Search delayed'
     if (!matchCountReady && totalCount === 0) return 'Updating…'
-    const pub = publishedCounts.match ?? publishedCounts.viewport
+    const pub = publishedCounts.viewport ?? publishedCounts.match
     const value = pub?.value ?? totalCount
     const plus = pub?.phrase.includes('+') ? '+' : ''
     if (value === 1 && !plus) return '1 home for sale'
@@ -811,16 +835,15 @@ export default function MapSearchView({
             <span className="font-semibold text-foreground">Search delayed</span>
           ) : (
             <>
-              <span className="srch-figure font-semibold text-foreground">{listCountPhrase}</span>
-              {/* The viewport phrase prints ONLY when it differs (2026-08-27
-                  audit: with no filter match the list phrase falls back to the
-                  viewport phrase and this line printed the same string twice —
-                  "1,094+ homes in this map view 1,094+ homes in this map view"). */}
-              {publishedCounts.viewport && publishedCounts.viewport.phrase !== listCountPhrase ? (
-                <span className="ml-2"> · {publishedCounts.viewport.phrase}</span>
+              {/* Map-view count only — no big filter-match total inventory. */}
+              {listCountPhrase !== 'Homes' ? (
+                <span className="srch-figure text-foreground">{listCountPhrase}</span>
               ) : null}
               {filtersSummary ? (
-                <span className="hidden sm:inline"> · {filtersSummary}</span>
+                <span className={listCountPhrase !== 'Homes' ? 'hidden sm:inline' : 'hidden sm:inline'}>
+                  {listCountPhrase !== 'Homes' ? ' · ' : ''}
+                  {filtersSummary}
+                </span>
               ) : null}
             </>
           )}
@@ -1128,8 +1151,8 @@ export default function MapSearchView({
           </button>
         </div>
         )}
-        <p className="srch-figure hidden min-w-0 flex-1 truncate text-xs font-semibold text-foreground lg:block" aria-live="polite">
-          {resultsDegraded ? 'Search delayed' : listCountPhrase}
+        <p className="srch-figure hidden min-w-0 flex-1 truncate text-xs text-muted-foreground lg:block" aria-live="polite">
+          {resultsDegraded ? 'Search delayed' : listCountPhrase !== 'Homes' ? listCountPhrase : filtersSummary || ''}
         </p>
       </div>
 

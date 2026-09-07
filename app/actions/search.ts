@@ -188,21 +188,46 @@ function toSearchAllFilter(f: SearchFilters): Omit<SearchListingsAllFilter, 'sta
   // this path matched the literal name ("3 homes") — one map, two counts
   // (Black Butte Ranch, 2026-09-01). A single-name subdivision expands to
   // itself, so nothing changes for non-community subdivisions.
-  const subdivisionRaw = f.subdivision?.trim() || undefined
-  const subdivisionNames = subdivisionRaw ? getSubdivisionMatchNames(subdivisionRaw) : []
+  // Places multi-select: city / subdivision may be CSV. Expand to cities /
+  // subdivisions arrays the DAL already understands.
+  const cityParts = (f.city ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const subdivisionParts = (f.subdivision ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const subdivisionNames = [
+    ...new Set(subdivisionParts.flatMap((name) => getSubdivisionMatchNames(name))),
+  ]
   // Registry communities can file under their OWN MLS City (Black Butte Ranch
   // homes carry City 'Black Butte Ranch'; the page's city is Sisters), so the
   // single city pin widens to the registry's mls_cities — never dropped
   // (member names like "South Meadow" are not unique statewide). Same rule as
   // countSearchListings, so every count on a page describes one population.
-  const cityRaw = f.city?.trim() || undefined
-  const mlsCities = subdivisionRaw ? (getResortCommunityBySubdivisionName(subdivisionRaw)?.mls_cities ?? []) : []
+  const mlsCities = subdivisionParts.flatMap(
+    (name) => getResortCommunityBySubdivisionName(name)?.mls_cities ?? [],
+  )
+  const cities = [...new Set([...cityParts, ...mlsCities])]
+  const neighborhoodParts = (f.neighborhood ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
   return {
-    ...(cityRaw && mlsCities.length > 0
-      ? { cities: [...new Set([cityRaw, ...mlsCities])] }
-      : { city: cityRaw }),
-    ...(subdivisionNames.length > 1 ? { subdivisions: subdivisionNames } : { subdivision: subdivisionRaw }),
-    neighborhood: f.neighborhood?.trim() || undefined,
+    ...(cities.length > 1
+      ? { cities }
+      : cities.length === 1
+        ? { city: cities[0] }
+        : {}),
+    ...(subdivisionNames.length > 1
+      ? { subdivisions: subdivisionNames }
+      : subdivisionNames.length === 1
+        ? { subdivision: subdivisionNames[0] }
+        : {}),
+    // Multi neighborhoods: first label pins the MV eq filter today (DAL is
+    // single-valued). Full OR support is a follow-up; UI still allows multi.
+    neighborhood: neighborhoodParts[0] || undefined,
     postalCode:
       f.postalCode?.trim() && /^\d{5}$/.test(f.postalCode.trim()) ? f.postalCode.trim() : undefined,
     sort: toDalSort(f.sort),
@@ -426,28 +451,54 @@ export async function countSearchListings(params: Record<string, string>): Promi
       : 'active',
   }
 
-  for (const key of ['city', 'postalCode', 'propertyType'] as const) {
+  for (const key of ['postalCode', 'propertyType'] as const) {
     const v = params[key]?.trim()
     if (v) filter[key] = v
   }
+  // Places multi-select: city may be CSV.
+  const cityParts = (params.city ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (cityParts.length > 1) filter.cities = cityParts
+  else if (cityParts.length === 1) filter.city = cityParts[0]
+
   // Same alias expansion the list path uses — a bare subdivision_lower match
   // undercounts communities with several MLS spellings (Pronghorn vs
   // Pronghorn Resort vs Pronghorn Golf Club) — review finding 2026-07-11.
-  const subdivision = params.subdivision?.trim()
-  if (subdivision) {
-    filter.subdivisions = getSubdivisionMatchNames(subdivision)
+  // Subdivision may also be CSV from the Places multi-select.
+  const subdivisionParts = (params.subdivision ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (subdivisionParts.length > 0) {
+    filter.subdivisions = [
+      ...new Set(subdivisionParts.flatMap((name) => getSubdivisionMatchNames(name))),
+    ]
     // A registry community can file under its OWN MLS City ("Black Butte
     // Ranch" homes carry City 'Black Butte Ranch' while the page's city is
     // Sisters), so AND-ing the single page city drops real members. Widen the
     // city pin to the registry's mls_cities — never drop it entirely (member
     // names like "South Meadow" are not unique statewide).
-    const registryEntry = getResortCommunityBySubdivisionName(subdivision)
-    const mlsCities = registryEntry?.mls_cities ?? []
-    if (mlsCities.length > 0 && typeof filter.city === 'string') {
-      filter.cities = [...new Set([filter.city, ...mlsCities])]
+    const mlsCities = subdivisionParts.flatMap(
+      (name) => getResortCommunityBySubdivisionName(name)?.mls_cities ?? [],
+    )
+    if (mlsCities.length > 0) {
+      const baseCities =
+        Array.isArray(filter.cities)
+          ? (filter.cities as string[])
+          : typeof filter.city === 'string'
+            ? [filter.city]
+            : []
+      filter.cities = [...new Set([...baseCities, ...mlsCities])]
       delete filter.city
     }
   }
+  const neighborhoodParts = (params.neighborhood ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (neighborhoodParts[0]) filter.neighborhood = neighborhoodParts[0]
 
   for (const def of SEARCH_FIELDS) {
     if (def.kind === 'boolean') {

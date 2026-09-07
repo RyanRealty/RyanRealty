@@ -43,10 +43,10 @@
   box-shadow: none;
 }
 
-/* Filter chip / trigger / control shape+type: Redfin-clean pills,
-   tracked small caps, tabular figures. Color stays with shadcn variants. */
+/* Filter chip / trigger / control shape+type: Redfin/Zillow-clean sharp
+   chips (not chubby ovals), tracked small caps, tabular figures. */
 .srch-chip {
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: var(--v3-size-label, 0.65625rem);
   font-weight: var(--v3-weight-medium, 500);
   letter-spacing: var(--v3-track-label, 0.12em);
@@ -65,10 +65,10 @@
   min-height: var(--v3-tap, 44px);
 }
 
-/* Pill remaining control corners (inputs, selects, toggles) without
+/* Sharp remaining control corners (inputs, selects, toggles) without
    touching its color, border, or focus treatment. */
 .srch-square {
-  border-radius: 999px;
+  border-radius: 6px;
   box-shadow: none;
   min-height: var(--v3-tap, 44px);
 }
@@ -141,6 +141,8 @@
   flex-shrink: 0;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
   background: var(--v3-cream);
+  border-radius: 6px;
+  overflow: hidden;
 }
 @layer base {
   .map-search-views button {
@@ -498,7 +500,7 @@
 }
 
 .map-search-views {
-  border-radius: 999px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -511,7 +513,7 @@
   min-height: var(--v3-tap, 44px);
   padding: 0 0.75rem;
   border: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--v3-cream);
   color: var(--v3-navy);
   font-family: inherit;

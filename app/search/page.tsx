@@ -137,6 +137,7 @@ function parseFilters(sp: SearchParams): SearchFiltersState {
   const filters: SearchFiltersState = {
     city: sp.city?.trim() || undefined,
     subdivision: sp.subdivision?.trim() || undefined,
+    neighborhood: sp.neighborhood?.trim() || undefined,
     status: sp.status?.trim() || 'Active',
     sort: sp.sort?.trim() || 'newest',
     propertyType: sp.propertyType?.trim() || undefined,
@@ -244,13 +245,14 @@ export default async function SearchPage({
   // Perf (SEARCH_UX_WAVE3 P1): session and city boundary do not depend on each
   // other — run them in parallel so anonymous TTFB is not auth+boundary serial.
   // Saved/liked still wait on session (signed-in only).
-  const citySlug = effectiveFilters.city ? slugify(effectiveFilters.city) : null
+  const boundaryCityName = effectiveFilters.city?.split(',')[0]?.trim() || undefined
+  const citySlug = boundaryCityName ? slugify(boundaryCityName) : null
   const [session, cityBoundaryGeo, openHouseLabels] = await Promise.all([
     getSession(),
     view !== 'list' && citySlug
       ? withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
       : Promise.resolve(null),
-    loadOpenHouseBadgeLabels(effectiveFilters.city),
+    loadOpenHouseBadgeLabels(boundaryCityName),
   ])
   const [savedKeys, likedKeys] =
     session?.user
@@ -324,8 +326,8 @@ export default async function SearchPage({
   const boundaryGeojson =
     view !== 'list'
       ? (cityBoundaryGeo ??
-          (effectiveFilters.city
-            ? await withTimeout(getCityBoundary(effectiveFilters.city), null, 2000)
+          (boundaryCityName
+            ? await withTimeout(getCityBoundary(boundaryCityName), null, 2000)
             : null))
       : null
 
@@ -342,11 +344,15 @@ export default async function SearchPage({
           ? undefined
           : totalCount
 
+  // Multi Places: CSV in city/subdivision — primary (first) drives placeQuery /
+  // boundary fit; listing query expands to the full set in toSearchAllFilter.
+  const primaryCity = filters.city?.split(',')[0]?.trim() || undefined
+  const primarySubdivision = filters.subdivision?.split(',')[0]?.trim() || undefined
   const placeQuery =
-    filters.city && filters.subdivision
-      ? `${filters.subdivision} ${filters.city} Oregon`
-      : filters.city
-        ? `${filters.city} Oregon`
+    primaryCity && primarySubdivision
+      ? `${primarySubdivision} ${primaryCity} Oregon`
+      : primaryCity
+        ? `${primaryCity} Oregon`
         : `${defaultCity} Oregon`
 
   // Registry passthrough: every field-registry URL param present rides along
@@ -362,6 +368,7 @@ export default async function SearchPage({
     ...registryParamsFromUrl,
     city: sp.city ?? '',
     subdivision: sp.subdivision ?? '',
+    neighborhood: sp.neighborhood ?? '',
     minPrice: sp.minPrice ?? '',
     maxPrice: sp.maxPrice ?? '',
     beds: sp.beds ?? '',
@@ -389,9 +396,9 @@ export default async function SearchPage({
     postalCode: sp.postalCode ?? '',
   }
 
-  const h1Place =
-    [filters.subdivision, filters.city].filter(Boolean).join(' ') || 'Central Oregon'
-  const h1Text = `${h1Place} homes for sale`
+  // H1 "{City} homes for sale" removed from the filter dock (Cos/Matt 2026-09-06):
+  // filters + useful counts stay; the title above the chip row was noise.
+  // Document title still comes from generateMetadata / buildSearchTitle.
 
   // split/map are the viewport-fit "app frame" views — no document scroll,
   // the shell fills whatever room is left below the chrome. list keeps
@@ -418,9 +425,9 @@ export default async function SearchPage({
         resultsCount={resultsCount}
       />
       <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
-        <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
-          {h1Text}
-        </h1>
+        {/* Visually hidden H1 keeps a document outline without the noisy
+            "{City} homes for sale" title above the filter chips. */}
+        <h1 className="sr-only">Homes for sale</h1>
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>

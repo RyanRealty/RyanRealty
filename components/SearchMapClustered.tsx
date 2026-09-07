@@ -1001,6 +1001,57 @@ export default function SearchMapClustered({
     [validListings.length, bounds, placeQuery, onBoundsChanged, reportBounds, boundaryPaths, lockBounds, initialBounds]
   )
 
+  // Place SELECT / search→city: re-fit when placeQuery or boundary changes.
+  // onLoad only runs once; without this, City=Redmond keeps a Bend camera and
+  // the viewport empty ("0 homes in this map view" with "Showing Redmond only").
+  const placeFitKeyRef = useRef<string | null>(null)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !window.google?.maps) return
+    const padding = { top: 48, right: 48, bottom: 48, left: 48 }
+    const key = `${placeQuery ?? ''}|${boundaryPaths.flat().length}`
+    if (placeFitKeyRef.current === null) {
+      // First paint: onLoad already fitted (bbox / boundary / places). Seed key.
+      placeFitKeyRef.current = key
+      return
+    }
+    if (placeFitKeyRef.current === key) return
+    placeFitKeyRef.current = key
+    // Place SELECT changed — always fly to the new boundary, even when the
+    // shell passes lockBounds for camera restore on cold load.
+
+    if (boundaryPaths.flat().length >= 2) {
+      const bb = new google.maps.LatLngBounds()
+      for (const ring of boundaryPaths) for (const p of ring) bb.extend(p)
+      if (!bb.isEmpty()) {
+        map.fitBounds(bb, padding)
+        const z = map.getZoom()
+        if (typeof z === 'number') {
+          if (z > 15) map.setZoom(15)
+          else if (z < 9) map.setZoom(9)
+        }
+        return
+      }
+    }
+
+    if (placeQuery?.trim() && window.google.maps.places) {
+      const service = new window.google.maps.places.PlacesService(map)
+      service.findPlaceFromQuery(
+        { query: placeQuery.trim(), fields: ['geometry'] },
+        (results, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results?.[0]?.geometry?.viewport) {
+            const viewport = results[0].geometry!.viewport!
+            placeViewportRef.current = viewport
+            setPlaceViewport(viewport)
+            map.fitBounds(viewport, padding)
+            const zoom = map.getZoom()
+            if (typeof zoom === 'number' && zoom < 12) map.setZoom(12)
+          }
+        },
+      )
+    }
+  }, [placeQuery, boundaryPaths])
+
   // NOTE: The idle listener for bounds reporting is attached directly in onLoad
   // above. This effect is intentionally removed to avoid the race condition where
   // the effect ran before onLoad set mapRef.current (causing no listener to be

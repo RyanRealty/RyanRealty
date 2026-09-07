@@ -255,7 +255,7 @@ type Props = {
   hideLocation?: boolean
 }
 
-type OpenPanel = 'city' | 'neighborhood' | 'community' | 'subdivision' | 'status' | 'price' | 'beds' | 'baths' | 'type' | null
+type OpenPanel = 'places' | 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
 export default function SearchFilters({
   initialFilters,
@@ -309,6 +309,16 @@ export default function SearchFilters({
         else params.set(k, v)
       }
       params.delete('page')
+      // Place SELECT must re-fit the map to the new boundary — drop a stale
+      // camera bbox from a prior city (Redmond filter + Bend bbox = empty view).
+      if (
+        'city' in updates ||
+        'neighborhood' in updates ||
+        'subdivision' in updates ||
+        'postalCode' in updates
+      ) {
+        params.delete('bbox')
+      }
       router.push(`${pathname ?? '/homes-for-sale'}?${params.toString()}`, { scroll: false })
       // Instrumentation (Phase 0.5): EVERY filter mutation routes through this
       // one function — chip-bar dropdowns, the All-filters sheet apply, the
@@ -327,6 +337,28 @@ export default function SearchFilters({
     },
     [updateUrl]
   )
+
+
+  /** CSV place multi-select helpers (city / neighborhood / subdivision). */
+  const splitCsv = useCallback((raw: string | undefined | null) => {
+    if (!raw?.trim()) return [] as string[]
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  }, [])
+
+  const csvHas = useCallback((raw: string | undefined | null, value: string) => {
+    const needle = value.trim().toLowerCase()
+    return splitCsv(raw).some((s) => s.toLowerCase() === needle)
+  }, [splitCsv])
+
+  const toggleCsv = useCallback((raw: string | undefined | null, value: string) => {
+    const needle = value.trim()
+    const cur = splitCsv(raw)
+    const exists = cur.some((s) => s.toLowerCase() === needle.toLowerCase())
+    const next = exists
+      ? cur.filter((s) => s.toLowerCase() !== needle.toLowerCase())
+      : [...cur, needle]
+    return next.length ? next.join(',') : undefined
+  }, [splitCsv])
 
   // Map a single panel's Popover open/close into the shared openPanel state so
   // only one dropdown is open at a time.
@@ -549,24 +581,40 @@ export default function SearchFilters({
         </div>
         )}
         <div className="flex shrink-0 items-center gap-2">
-        {/* City — explicit filter control (not only free-text in the search box). */}
+        {/* Places — one structured multi-select for City / Neighborhood / Community / Subdivision. */}
         <FilterDropdown
-          label={initialFilters.city?.trim() ? `City: ${initialFilters.city.trim()}` : 'City'}
-          active={Boolean(initialFilters.city?.trim())}
-          open={openPanel === 'city'}
-          onOpenChange={panelOpenHandler('city')}
+          label={(() => {
+            const cities = splitCsv(initialFilters.city)
+            const hoods = splitCsv(initialFilters.neighborhood)
+            const subs = splitCsv(initialFilters.subdivision)
+            const n = cities.length + hoods.length + subs.length
+            if (n === 0) return 'Places'
+            if (n === 1) return `Places: ${cities[0] ?? hoods[0] ?? subs[0]}`
+            return `Places: ${n}`
+          })()}
+          active={Boolean(
+            initialFilters.city?.trim() ||
+              initialFilters.neighborhood?.trim() ||
+              initialFilters.subdivision?.trim(),
+          )}
+          open={openPanel === 'places'}
+          onOpenChange={panelOpenHandler('places')}
         >
-          <div className="p-3">
-            <p className="srch-label mb-2.5">City</p>
-            <div className="flex flex-col gap-1 max-h-72 overflow-auto">
+          <div className="max-h-[28rem] overflow-auto p-3">
+            <p className="srch-label mb-2.5">Places</p>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Select one or more. Map fits the selected place boundary.
+            </p>
+
+            <p className="srch-label mb-1.5">City</p>
+            <div className="mb-3 flex flex-col gap-1">
               <Button
                 type="button"
                 variant={initialFilters.city?.trim() ? 'ghost' : 'default'}
                 size="sm"
                 onClick={() => {
-                  setFilter('city', undefined)
+                  updateUrl({ city: undefined, postalCode: undefined })
                   setLocationQuery('')
-                  setOpenPanel(null)
                 }}
                 className="justify-start"
               >
@@ -576,11 +624,24 @@ export default function SearchFilters({
                 <Button
                   key={city}
                   type="button"
-                  variant={(initialFilters.city ?? '').trim().toLowerCase() === city.toLowerCase() ? 'default' : 'ghost'}
+                  variant={csvHas(initialFilters.city, city) ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => {
-                    handleLocationSelect('city', city)
-                    setOpenPanel(null)
+                    const next = toggleCsv(initialFilters.city, city)
+                    updateUrl({
+                      city: next,
+                      postalCode: undefined,
+                    })
+                    setLocationQuery(next?.split(',')[0]?.trim() || '')
+                    trackEvent('search', { city: next, search_term: locationQuery })
+                    fireFirstPartyEvent('search', {
+                      metadata: {
+                        query: next ?? city,
+                        term: locationQuery || undefined,
+                        city: next,
+                        source: 'places_multi',
+                      },
+                    })
                   }}
                   className="justify-start"
                 >
@@ -588,56 +649,123 @@ export default function SearchFilters({
                 </Button>
               ))}
             </div>
-          </div>
-        </FilterDropdown>
 
-
-        <FilterDropdown
-          label={initialFilters.neighborhood?.trim() ? `Area: ${initialFilters.neighborhood.trim()}` : 'Neighborhood'}
-          active={Boolean(initialFilters.neighborhood?.trim())}
-          open={openPanel === 'neighborhood'}
-          onOpenChange={panelOpenHandler('neighborhood')}
-        >
-          <div className="p-3">
-            <p className="srch-label mb-2.5">Neighborhood</p>
-            <div className="flex max-h-72 flex-col gap-1 overflow-auto">
-              <Button type="button" variant={initialFilters.neighborhood?.trim() ? 'ghost' : 'default'} size="sm" onClick={() => { setFilter('neighborhood', undefined); setOpenPanel(null) }} className="justify-start">Any neighborhood</Button>
+            <p className="srch-label mb-1.5">Neighborhood</p>
+            <div className="mb-3 flex max-h-40 flex-col gap-1 overflow-auto">
+              <Button
+                type="button"
+                variant={initialFilters.neighborhood?.trim() ? 'ghost' : 'default'}
+                size="sm"
+                onClick={() => setFilter('neighborhood', undefined)}
+                className="justify-start"
+              >
+                Any neighborhood
+              </Button>
               {BEND_NEIGHBORHOOD_DISTRICTS.map((d) => (
-                <Button key={d.slug} type="button" variant={(initialFilters.neighborhood ?? '').trim().toLowerCase() === d.label.toLowerCase() ? 'default' : 'ghost'} size="sm" onClick={() => { updateUrl({ neighborhood: d.label, city: initialFilters.city?.trim() || 'Bend', subdivision: undefined, postalCode: undefined }); setLocationQuery(d.label); setOpenPanel(null) }} className="justify-start">{d.label}</Button>
+                <Button
+                  key={d.slug}
+                  type="button"
+                  variant={csvHas(initialFilters.neighborhood, d.label) ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    const next = toggleCsv(initialFilters.neighborhood, d.label)
+                    const cityCsv = initialFilters.city?.trim() || 'Bend'
+                    updateUrl({
+                      neighborhood: next,
+                      city: cityCsv,
+                      postalCode: undefined,
+                    })
+                    setLocationQuery(d.label)
+                  }}
+                  className="justify-start"
+                >
+                  {d.label}
+                </Button>
               ))}
             </div>
-          </div>
-        </FilterDropdown>
 
-        <FilterDropdown
-          label={initialFilters.subdivision?.trim() && PLACE_COMMUNITY_OPTIONS.some((c) => c.label.toLowerCase() === (initialFilters.subdivision ?? '').trim().toLowerCase()) ? `Community: ${initialFilters.subdivision.trim()}` : 'Community'}
-          active={Boolean(initialFilters.subdivision?.trim() && PLACE_COMMUNITY_OPTIONS.some((c) => c.label.toLowerCase() === (initialFilters.subdivision ?? '').trim().toLowerCase()))}
-          open={openPanel === 'community'}
-          onOpenChange={panelOpenHandler('community')}
-        >
-          <div className="p-3">
-            <p className="srch-label mb-2.5">Community</p>
-            <div className="flex max-h-72 flex-col gap-1 overflow-auto">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setFilter('subdivision', undefined); setOpenPanel(null) }} className="justify-start">Any community</Button>
+            <p className="srch-label mb-1.5">Community</p>
+            <div className="mb-3 flex max-h-40 flex-col gap-1 overflow-auto">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  // Clear only community labels that match the resort registry.
+                  const keep = splitCsv(initialFilters.subdivision).filter(
+                    (name) =>
+                      !PLACE_COMMUNITY_OPTIONS.some(
+                        (c) => c.label.toLowerCase() === name.toLowerCase(),
+                      ),
+                  )
+                  updateUrl({ subdivision: keep.length ? keep.join(',') : undefined })
+                }}
+                className="justify-start"
+              >
+                Any community
+              </Button>
               {PLACE_COMMUNITY_OPTIONS.map((c) => (
-                <Button key={c.slug} type="button" variant={(initialFilters.subdivision ?? '').trim().toLowerCase() === c.label.toLowerCase() ? 'default' : 'ghost'} size="sm" onClick={() => { handleLocationSelect('subdivision', c.city, c.label); setOpenPanel(null) }} className="justify-start">{c.label}</Button>
+                <Button
+                  key={c.slug}
+                  type="button"
+                  variant={csvHas(initialFilters.subdivision, c.label) ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    const next = toggleCsv(initialFilters.subdivision, c.label)
+                    const cities = new Set(splitCsv(initialFilters.city))
+                    if (next && csvHas(next, c.label)) cities.add(c.city)
+                    updateUrl({
+                      subdivision: next,
+                      city: cities.size ? [...cities].join(',') : c.city,
+                      postalCode: undefined,
+                    })
+                    setLocationQuery(c.label)
+                  }}
+                  className="justify-start"
+                >
+                  {c.label}
+                </Button>
               ))}
             </div>
-          </div>
-        </FilterDropdown>
 
-        <FilterDropdown
-          label={initialFilters.subdivision?.trim() ? `Subdivision: ${initialFilters.subdivision.trim()}` : 'Subdivision'}
-          active={Boolean(initialFilters.subdivision?.trim())}
-          open={openPanel === 'subdivision'}
-          onOpenChange={panelOpenHandler('subdivision')}
-        >
-          <div className="p-3">
-            <p className="srch-label mb-2.5">Subdivision</p>
-            <div className="flex max-h-72 flex-col gap-1 overflow-auto">
-              <Button type="button" variant={initialFilters.subdivision?.trim() ? 'ghost' : 'default'} size="sm" onClick={() => { setFilter('subdivision', undefined); setOpenPanel(null) }} className="justify-start">Any subdivision</Button>
+            <p className="srch-label mb-1.5">Subdivision</p>
+            <div className="flex max-h-40 flex-col gap-1 overflow-auto">
+              <Button
+                type="button"
+                variant={initialFilters.subdivision?.trim() ? 'ghost' : 'default'}
+                size="sm"
+                onClick={() => setFilter('subdivision', undefined)}
+                className="justify-start"
+              >
+                Any subdivision
+              </Button>
               {PLACE_SUBDIVISION_OPTIONS.map((name) => (
-                <Button key={name} type="button" variant={(initialFilters.subdivision ?? '').trim().toLowerCase() === name.toLowerCase() ? 'default' : 'ghost'} size="sm" onClick={() => { const cityGuess = PLACE_COMMUNITY_OPTIONS.find((c) => c.label.toLowerCase() === name.toLowerCase())?.city ?? initialFilters.city ?? 'Bend'; handleLocationSelect('subdivision', cityGuess, name); setOpenPanel(null) }} className="justify-start">{name}</Button>
+                <Button
+                  key={name}
+                  type="button"
+                  variant={csvHas(initialFilters.subdivision, name) ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    const next = toggleCsv(initialFilters.subdivision, name)
+                    const cityGuess =
+                      PLACE_COMMUNITY_OPTIONS.find(
+                        (c) => c.label.toLowerCase() === name.toLowerCase(),
+                      )?.city ??
+                      splitCsv(initialFilters.city)[0] ??
+                      'Bend'
+                    const cities = new Set(splitCsv(initialFilters.city))
+                    if (next && csvHas(next, name)) cities.add(cityGuess)
+                    updateUrl({
+                      subdivision: next,
+                      city: cities.size ? [...cities].join(',') : cityGuess,
+                      postalCode: undefined,
+                    })
+                    setLocationQuery(name)
+                  }}
+                  className="justify-start"
+                >
+                  {name}
+                </Button>
               ))}
             </div>
           </div>
@@ -744,7 +872,7 @@ export default function SearchFilters({
                       })
                       setOpenPanel(null)
                     }}
-                    className="rounded-full px-2.5 py-1 h-auto text-xs"
+                    className="rounded-md px-2.5 py-1 h-auto text-xs"
                   >
                     {label}
                   </Button>
@@ -898,13 +1026,13 @@ export default function SearchFilters({
           }}
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-11 overflow-hidden rounded-full border border-border/60 bg-muted/40 lg:flex"
+          className="ml-auto hidden h-11 overflow-hidden rounded-md border border-border/60 bg-muted/40 lg:flex"
         >
           {(['list', 'split', 'map'] as const).map((v) => (
             <ToggleGroupItem
               key={v}
               value={v}
-              className="srch-chip h-11 rounded-full border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
+              className="srch-chip h-11 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
               aria-label={`${v} view`}
             >
               {v === 'list' ? 'List' : v === 'split' ? 'Split' : 'Map'}
