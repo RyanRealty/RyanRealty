@@ -1,19 +1,17 @@
 # Open fixes — CMA letter 15991 Falcon, La Pine
-Updated: 2026-09-06
-Path: existing admin CMA letter /view only (no new product)
-Handoff: Cos → Admin Engineer
-Tip Ready: `fix/cma-letter-one-map` (C1–C4 + C9 + voice scrub + tracked place/CTA links + Matt HARD LOCK comps story beats). Do not merge until Cos/Desk rebuild Falcon.
+Updated: 2026-09-06 (residuals branch fix/cma-letter-c1-c9-residuals)
 
 | id | severity | finding | status | opened |
 |----|----------|---------|--------|--------|
-| C1 | blocker | Letter repeats the same story 3–4 ways (photo twice; comps as grid + table + map + full cards) — cut to one path | tip/cma-letter-one-map | 2026-09-06 |
-| C2 | blocker | Flat card hierarchy — only the price has weight; rest reads as dump | tip/cma-letter-one-map | 2026-09-06 |
-| C3 | blocker | Too many tiny charts / unlabeled sparklines — keep ≤2 labeled charts | tip/cma-letter-one-map | 2026-09-06 |
-| C4 | blocker | Wide comps comparison table breaks at 375 — stack on mobile | tip/cma-letter-one-map | 2026-09-06 |
-| C5 | worth fixing | Hero green overlay muddies value band — solid band or price below photo | open | 2026-09-06 |
-| C6 | worth fixing | Monotone type — add display hierarchy; match client-facing brand type if public-facing letter | open | 2026-09-06 |
-| C7 | worth fixing | Opening dumps MLS fields (heat/cool/floor/roof) — move under Details | open | 2026-09-06 |
-| C8 | worth fixing | Three essay closers (What’s Next / Process / Marketing) — one next step + Call/Email | open | 2026-09-06 |
-| C9 | worth fixing | Dual maps — keep comps map with subject highlighted only | tip/cma-letter-one-map | 2026-09-06 |
-| C10 | minor | Collapse Status/MLS# block by default | open | 2026-09-06 |
-| H1 | blocker | Matt HARD LOCK comps story: (1) sales that set the list once (2) expired peers what-happened (3) active competition (4) DOM + listing history on every home | tip/cma-letter-one-map | 2026-09-06 |
+| C1 | blocker | Letter still repeats comps (table + cards + full detail pages) — collapse details | fixed on residuals — screen stack once; print matrix; no strip/flyers | 2026-09-06 |
+| C2 | blocker | Flat card hierarchy | cleared d2e9a363 | 2026-09-06 |
+| C3 | blocker | Too many charts | fixed on residuals — ≤2 labeled charts; wider market one chart | 2026-09-06 |
+| C4 | blocker | Wide comps table at 375 | fixed on residuals — screen stack only | 2026-09-06 |
+| C5 | worth fixing | Hero green overlay muddy | not re-checked / likely superseded by new cover | 2026-09-06 |
+| C6 | worth fixing | Monotone type | improved on new letter — treat cleared | 2026-09-06 |
+| C7 | worth fixing | MLS fields in opening | improved — treat cleared | 2026-09-06 |
+| C8 | worth fixing | Essay closers | not in this capture | 2026-09-06 |
+| C9 | worth fixing | Dual maps | fixed on residuals — comps map only; cover photo never map | 2026-09-06 |
+| C10 | minor | Collapse Status/MLS# | n/a this pass | 2026-09-06 |
+| C11 | worth fixing | Expired peers section not verified in letter | fixed on residuals — “Expired peers — what happened” | 2026-09-06 |
+| C12 | worth fixing | Full listing/price history timeline per home not shown | fixed on residuals — thicker dated timeline | 2026-09-06 |

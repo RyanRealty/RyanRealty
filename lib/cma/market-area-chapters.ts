@@ -131,21 +131,31 @@ export function renderExpiredPeersHtml(peers: readonly CmaExpiredPeer[] | null |
         .filter(Boolean)
         .join(' · ')
       const history = p.listingHistoryLine?.trim()
-      return `<article class="rival-row">
+      const askBits = [
+        p.originalListPrice != null &&
+        p.originalListPrice > 0 &&
+        Math.abs(p.originalListPrice - p.listPrice) >= 1000
+          ? `Asked ${usd(p.originalListPrice)}, last ${usd(p.listPrice)}`
+          : `Last ask ${usd(p.listPrice)}`,
+        p.daysOnMarket != null ? `${int(p.daysOnMarket)} days on market` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      return `<article class="rival-row rival-row-peer" data-peer="expired">
     ${img}
     <div class="rival-body">
       <div class="rival-addr">${esc(p.address)}</div>
       ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
-      ${history ? `<div class="rival-meta">${esc(history)}</div>` : ''}
+      <div class="rival-meta">${esc(history || askBits)}</div>
     </div>
     <div class="rival-ask">${usd(p.listPrice)}</div>
   </article>`
     })
     .join('')
   return `
-  <h3 class="subhead">Homes like this that came off without a sale</h3>
-  <p>Same band. What happened on the ones that did not sell.</p>
-  <div class="rival-list">${cards}</div>`
+  <h3 class="subhead">Expired peers — what happened</h3>
+  <p>Same band. These listings came off without a sale. Read the list history, not a verdict.</p>
+  <div class="rival-list rival-list-peers">${cards}</div>`
 }
 
 export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): string {
@@ -298,12 +308,14 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   return pages
 }
 
-/** Wider market only: 90-day sold, months of supply, new-list trend. One scene. */
+/** Wider market only: 90-day sold + at most ONE labeled chart (C3). */
 export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
   const area = a.extras?.marketArea
   const sold90 = renderSold90Html(area)
-  const inventory = renderInventoryBoardHtml(a.market)
+  // Prefer listing-trend chart; else inventory board (which may embed a median-close line).
+  // Never both — letter keeps ≤2 charts total with the band-outcomes strip.
   const trend = renderListingTrendHtml(area)
+  const inventory = trend ? '' : renderInventoryBoardHtml(a.market)
   if (!sold90 && !inventory && !trend) return ''
   return `<section class="sc sc-navy" id="wider-market">
       <div class="in">
@@ -340,8 +352,8 @@ export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
 export function printWiderMarketPages(a: MarketChapterArgs): CmaPageDef[] {
   const area = a.extras?.marketArea
   const sold90 = renderSold90Html(area)
-  const inventory = renderInventoryBoardHtml(a.market)
   const trend = renderListingTrendHtml(area)
+  const inventory = trend ? '' : renderInventoryBoardHtml(a.market)
   const chunks: string[] = []
   if (sold90 && area?.sold90) {
     chunks.push(`<h2 class="section">This market</h2>

@@ -9,7 +9,6 @@ import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
-import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import {
   dateLong,
@@ -40,7 +39,7 @@ import { pricingPage } from '@/lib/cma/render-pricing-page'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaMarketArea, CmaSoldBand } from '@/lib/cma/market-status'
-import { subjectPossessive, subjectSectionTitle } from '@/lib/cma/land-pricing'
+import { subjectSectionTitle } from '@/lib/cma/land-pricing'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/getTaxlots'
 import { renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
@@ -472,8 +471,8 @@ export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: 'Sold and unsold in this band',
     body: `
   <h2 class="section">Sold and unsold in this band</h2>
-  ${chart || '<p>Homes like this in the same price band that came off without a sale.</p>'}
-  ${peers}`,
+  ${chart || ''}
+  ${peers || '<p>Homes like this in the same price band that came off without a sale.</p>'}`,
   }
 }
 
@@ -508,10 +507,10 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
   }
 }
 
+/** @deprecated C1 — letter comps live once on pricingPage. Kept for tests that import the name. */
 export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
   const pinMap = renderCompPinMapHtml(a.subject, a.comps, a.mapDataUri)
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
-  const strip = renderCompStripHtml(a.comps, subjectPossessive(a.subject))
   return {
     meta: `${esc(a.subject.streetAddress)} · The sales that set the number`,
     toc: 'The sales that set the number',
@@ -519,9 +518,7 @@ export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
   <h2 class="section">The sales that set the number</h2>
   <p>${esc(story.body)}</p>
   ${renderCompMatrixHtml(a.subject, a.comps)}
-  ${pinMap ? `<h3 class="subhead">Comp map</h3><div class="pin-map-wrap">${pinMap}</div>${story.legend ? `<p>${esc(story.legend)}</p>` : ''}` : ''}
-  ${pinMap ? `<h3 class="subhead">Marker key</h3>${renderCompMapKeyHtml(a.subject, a.comps)}` : ''}
-  ${strip}`,
+  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${story.legend ? `<p>${esc(story.legend)}</p>` : ''}` : ''}`,
   }
 }
 
@@ -602,7 +599,7 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
  * 1) Number + why (cover + pricing)
  * 2) Comps that prove it (matrix + one comps map; no flyer dump)
  * 3) Next step lives in render closing — details/charts stay below the fold.
- * Charts: at most two labeled chart pages (outcomes + one market trend).
+ * Charts: at most two labeled chart pages (band outcomes + one market trend).
  */
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const rest: CmaPageDef[] = []

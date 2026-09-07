@@ -73,7 +73,8 @@ function isActiveLike(status: string | null | undefined): boolean {
 }
 
 /**
- * Broker-facing one-liner. Returns null when there is nothing truthful to say.
+ * Broker-facing timeline line. Returns null when there is nothing truthful to say.
+ * Prefer a dated list → cut → close arc when the MLS carries those facts.
  * Callers that must always print DOM can append days separately.
  */
 export function listingHistoryLine(facts: ListingHistoryFacts): string | null {
@@ -93,18 +94,43 @@ export function listingHistoryLine(facts: ListingHistoryFacts): string | null {
   const bits: string[] = []
 
   if (isClosed(facts.status) && close != null) {
-    if (cut) bits.push(`Listed at ${usd(cut.from)}, sold at ${usd(close)}`)
-    else if (list != null && Math.abs(list - close) >= 1000) bits.push(`Listed at ${usd(list)}, sold at ${usd(close)}`)
-    else bits.push(`Sold at ${usd(close)}${closedWhen ? ` (${closedWhen})` : ''}`)
+    if (cut && when && closedWhen) {
+      bits.push(
+        `Listed ${when} at ${usd(cut.from)}, cut to ${usd(cut.to)}, sold ${closedWhen} at ${usd(close)}`,
+      )
+    } else if (cut) {
+      bits.push(
+        `Listed at ${usd(cut.from)}, cut to ${usd(cut.to)}, sold at ${usd(close)}${closedWhen ? ` (${closedWhen})` : ''}`,
+      )
+    } else if (list != null && Math.abs(list - close) >= 1000) {
+      bits.push(
+        `Listed${when ? ` ${when}` : ''} at ${usd(list)}, sold${closedWhen ? ` ${closedWhen}` : ''} at ${usd(close)}`,
+      )
+    } else if (when && closedWhen) {
+      bits.push(`Listed ${when}, sold ${closedWhen} at ${usd(close)}`)
+    } else {
+      bits.push(`Sold at ${usd(close)}${closedWhen ? ` (${closedWhen})` : ''}`)
+    }
   } else if (isTerminalOff(facts.status) && list != null) {
     const label = statusKey(facts.status) || 'off market'
-    if (cut) bits.push(`Asked ${usd(cut.from)}, cut to ${usd(cut.to)}, came off ${label}`)
-    else bits.push(`Asked ${usd(list)}, came off ${label}`)
+    if (cut && when) {
+      bits.push(
+        `Listed ${when} at ${usd(cut.from)}, cut to ${usd(cut.to)}, came off ${label}`,
+      )
+    } else if (cut) {
+      bits.push(`Asked ${usd(cut.from)}, cut to ${usd(cut.to)}, came off ${label}`)
+    } else if (when) {
+      bits.push(`Listed ${when} at ${usd(list)}, came off ${label}`)
+    } else {
+      bits.push(`Asked ${usd(list)}, came off ${label}`)
+    }
   } else if (isActiveLike(facts.status) && list != null) {
-    if (cut) bits.push(`Listed at ${usd(cut.from)}, now ${usd(cut.to)}`)
+    if (cut && when) bits.push(`Listed ${when} at ${usd(cut.from)}, now ${usd(cut.to)}`)
+    else if (cut) bits.push(`Listed at ${usd(cut.from)}, now ${usd(cut.to)}`)
     else bits.push(`Listed at ${usd(list)}${when ? ` since ${when}` : ''}`)
   } else if (list != null) {
-    if (cut) bits.push(`Listed at ${usd(cut.from)}, later ${usd(cut.to)}`)
+    if (cut && when) bits.push(`Listed ${when} at ${usd(cut.from)}, later ${usd(cut.to)}`)
+    else if (cut) bits.push(`Listed at ${usd(cut.from)}, later ${usd(cut.to)}`)
     else bits.push(`Last ask ${usd(list)}${when ? ` (${when})` : ''}`)
   } else {
     return null
