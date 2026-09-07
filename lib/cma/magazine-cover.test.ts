@@ -224,7 +224,7 @@ describe('immersive CMA first screen', () => {
     expect(hero).not.toContain('Expected close')
     expect(hero).toContain('hero-payoff')
     expect(html).toContain('id="what-its-worth"')
-    expect(html).toContain('Our Recommended List Price for your home.')
+    expect(html).toContain('$472,000.')
     expect(html).toContain('Recommended list')
   })
 

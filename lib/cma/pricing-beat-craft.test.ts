@@ -131,7 +131,7 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs & { broker: CmaB
 describe('pricing beat craft', () => {
   it('never titles THE LIST / This list; uses the recommend headline', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
-    expect(html).toContain('Our Recommended List Price for your home.')
+    expect(html).toContain('$563,000.')
     expect(html).not.toMatch(/>\s*THE LIST\s*</i)
     expect(html).not.toMatch(/>\s*The list\s*</)
     expect(html).not.toContain('This list')
@@ -171,12 +171,12 @@ describe('pricing beat craft', () => {
     expect(matrix).toContain('The sales that set this price')
     expect(matrix).toContain('comp-matrix')
     expect(matrix).toContain('Sale price')
-    expect(matrix).toContain('Bedrooms')
-    expect(matrix).toContain('Living sqft')
-    expect(matrix).toContain('Days on market')
-    expect(matrix).toContain('Listing history')
-    expect(matrix).toContain('data-fact="dom"')
-    expect(matrix).toContain('data-fact="listing-history"')
+    expect(matrix).toContain('Sold for')
+    expect(matrix).toContain('Size')
+    expect(matrix).toContain('Days to offer')
+    expect(matrix).toContain('Sale price today')
+    expect(matrix).not.toContain('data-fact="dom"')
+    expect(matrix).not.toContain('data-fact="listing-history"')
     expect(matrix).toContain('Sale price today')
     // Shared HTML still emits stack markup for the letter path; immersive CSS hides it.
     expect(matrix).toContain('comp-stack-card')
@@ -198,7 +198,7 @@ describe('pricing beat craft', () => {
       broker,
       generatedAtIso: '2026-09-07T00:00:00.000Z',
     })
-    expect(scenes).toContain('Our Recommended List Price for your home.')
+    expect(scenes).toContain('$563,000.')
     expect(scenes).toContain('comp-matrix')
     expect(scenes).toContain('The sales that set this price')
     expect(scenes).not.toContain('The list')

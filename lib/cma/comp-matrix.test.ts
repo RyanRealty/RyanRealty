@@ -50,31 +50,33 @@ function padSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
 }
 
 describe('renderCompMatrixHtml', () => {
-  it('prints a subject column and one column per sale with the RPR facts', () => {
+  it('prints your home first, then one column per sale, with the blueprint rows', () => {
     const html = renderCompMatrixHtml(subject, padSales(comp))
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('class="kv is-wide comp-matrix"')
-    expect(html).toContain('648 Douglas')
+    // The seller's column is headed "Your home", with their ask and size under
+    // it — never a price in a "Sold for" cell on a home that has not sold.
+    expect(html).toContain('Your home')
+    expect(html).toContain('listed $445,000 · 1,056 sqft')
     expect(html).toContain('1. 947 6th')
     expect(html).toContain('data-comp="1"')
     expect(html).toContain('data-pin="subject"')
-    expect(html).toContain('Property type')
-    expect(html).toContain('Single Family Residence')
-    expect(html).toContain('Sale price / sqft')
-    expect(html).toContain('$478/sf')
-    expect(html).toContain('List price / sqft')
-    expect(html).toContain('Bedrooms')
-    expect(html).toContain('Living sqft')
-    expect(html).toContain('Lot sqft')
-    expect(html).toContain('6,098')
-    expect(html).toContain('Garage')
+    // Seven rows, and only these. The identity rows (property type, beds and
+    // baths, year built) fold into one sentence when the whole table shares a
+    // value, which on this fixture they do.
+    for (const row of ['Sold for', 'Sold', 'Size', 'Days to offer', 'Sale price today']) {
+      expect(html, row).toContain(row)
+    }
+    expect(html).toContain('Every home here is a single family residence.')
+    expect(html).toContain('Every home here is 3 bd / 1 ba.')
+    expect(html).toContain('Every home here was built in 1978.')
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
-    expect(html).toContain('Sale price today')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
     expect(html).not.toContain('matrix-thumb')
-    expect(html).not.toMatch(/[—;]/)
+    // Punctuation law over the visible text; `&amp;` in a tracked URL is markup.
+    expect(html.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
   })
 
   it('keeps the CMA a seller actually gets to one undivided table', () => {
@@ -124,8 +126,8 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve).toContain('<h4 class="subhead">Sales 9 through 12</h4>')
     // The defect this whole shape exists to prevent: sales falling off the page.
     expect(twelve).toContain('12. 947 6th')
-    expect(twelve.match(/648 Douglas/g)).toHaveLength(3)
-    expect(twelve).not.toMatch(/[—;]/)
+    expect(twelve.match(/Your home/g)).toHaveLength(3)
+    expect(twelve.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
 
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
     expect(thirteen).toContain('<h4 class="subhead">Sales 1 through 5</h4>')
@@ -143,7 +145,9 @@ describe('renderCompMatrixHtml', () => {
     expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100)
     // Figures never wrap; free text does. Both classes must actually be emitted.
     expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
-    expect(html).toMatch(/<td class="v(?: is-diff)?">Single Family Residence<\/td>/)
+    // Property type is identical across the table, so it folds into a
+    // sentence above it rather than repeating one value six times.
+    expect(html).toContain('Every home here is a single family residence.')
   })
 
   it('does not print MLS N/A into the grid', () => {
@@ -198,9 +202,13 @@ describe('land columns', () => {
     expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
   })
 
-  it('prints sale price per square foot on an improved report', () => {
-    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Sale price / sqft')
-    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('$478/sf')
+  it('cuts the per-square-foot rows the blueprint does not name', () => {
+    // CMA_REIMAGINED_2026-09-07.md chapter 3: seven rows, and only these. Sale
+    // price / sqft is the sale price stated a second way.
+    const html = renderCompMatrixHtml(subject, padSales(comp))
+    expect(html).not.toContain('Sale price / sqft')
+    expect(html).not.toContain('$478/sf')
+    expect(html).not.toContain('List price')
   })
 
   it('does not lecture the per-square-foot formula', () => {
@@ -233,13 +241,13 @@ describe('land columns', () => {
   })
 })
 
-describe('sold matrix DOM + listing history on screen', () => {
-  it('emits Days on market and Listing history as visible matrix rows (not title/tooltip)', () => {
+describe('the rows the blueprint cuts', () => {
+  it('drops days on market and the listing-history paragraph', () => {
+    // CMA_REIMAGINED_2026-09-07.md chapter 3. Days to offer is the days figure
+    // a seller reads; days on market beside it is the same question twice, and
+    // a listing-history sentence inside a table cell is a paragraph in a grid.
     const html = renderCompMatrixHtml(
-      {
-        ...subject,
-        listingHistoryLine: 'Listed Jul 2021 at $445,000 · still listed',
-      },
+      { ...subject, listingHistoryLine: 'Listed Jul 2021 at $445,000 · still listed' },
       padSales({
         ...comp,
         originalListPrice: 510000,
@@ -247,16 +255,13 @@ describe('sold matrix DOM + listing history on screen', () => {
         listingHistoryLine: 'Listed at $510,000, cut to $499,000, sold at $495,000 · 29 days on market',
       }),
     )
-    expect(html).toContain('data-fact="dom"')
-    expect(html).toContain('data-fact="listing-history"')
-    expect(html).toContain('Days on market')
-    expect(html).toContain('Listing history')
-    expect(html).toMatch(/data-fact="dom"[^>]*>[\s\S]*?<td class="v n[^"]*">29</)
-    expect(html).toContain('Listed at $510,000, cut to $499,000, sold at $495,000 · 29 days on market')
-    expect(html).not.toMatch(/title="[^"]*days on market/i)
-    // Letter stack also surfaces DOM + history on screen
-    expect(html).toContain('data-fact="dom">29 days on market')
-    expect(html).toContain('data-fact="listing-history">Listed at $510,000')
+    expect(html).not.toContain('data-fact="dom"')
+    expect(html).not.toContain('data-fact="listing-history"')
+    expect(html).not.toContain('Days on market')
+    expect(html).not.toContain('Listing history')
+    expect(html).not.toContain('Listed at $510,000, cut to $499,000')
+    // Days to offer stays, because that is the days figure chapter 2 argues on.
+    expect(html).toContain('Days to offer')
   })
 })
 
@@ -344,19 +349,10 @@ describe('the unsold listings near you', () => {
     expect(renderUnsoldPeerRowsHtml(subject, [{ ...peer, address: '', listPrice: 0 }])).toBe('')
   })
 
-  it('aligns sold subject DOM row with history day count', () => {
-    const html = renderCompMatrixHtml(
-      {
-        ...subject,
-        listingHistoryLine: 'Listed Jul 2021 at $445,000, came off canceled · 133 days on market',
-        lastListDate: '2026-04-01',
-      },
-      padSales(comp),
-    )
-    expect(html).toContain('133 days on market')
-    // DOM row uses the history line's day count, not a fresh as-of-now derive.
-    expect(html).toContain('>133<')
-    expect(html).not.toContain('>137<')
+  it('soft-fails when no peers — omit section, invent nothing', () => {
+    expect(renderUnsoldPeerRowsHtml(subject, null)).toBe('')
+    expect(renderUnsoldPeerRowsHtml(subject, [])).toBe('')
+    expect(renderUnsoldPeerRowsHtml(subject, [{ ...peer, address: '', listPrice: 0 }])).toBe('')
   })
 
 })

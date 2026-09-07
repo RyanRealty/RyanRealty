@@ -5,7 +5,7 @@
 
 import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
-import { pricingPage } from '@/lib/cma/render-pricing-page'
+import { pricingPage, whatItsWorthHeading } from '@/lib/cma/render-pricing-page'
 import { widerMarketBodyHtml } from '@/lib/cma/market-area-chapters'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
@@ -42,14 +42,18 @@ function priceScene(a: OpinionSceneArgs): string {
     comps: a.comps,
     market: a.market,
     pricing: a.pricing,
+    tiersUsed: a.tiersUsed,
     mapDataUri: a.mapDataUri,
-    // Immersive hero already carries recommend + range once on the photo.
+    docLinks: a.docLinks,
+    // The immersive prints the number as the chapter title, so the letter's
+    // own heading block is suppressed and the lead line reprinted below it.
     omitLeadPrices: true,
   })
   return `
   <section class="sc sc-cream pack" id="what-its-worth">
     <div class="in wide">
-      <h2 class="h r">Our Recommended List Price for your home.</h2>
+      <div class="kick r">The number</div>
+      <h2 class="h r">${esc(whatItsWorthHeading(a.pricing))}</h2>
       <div class="r">${page.body}</div>
     </div>
   </section>`
@@ -155,8 +159,8 @@ function wrapLetterBody(id: string, kick: string, body: string): string {
   if (!body.trim()) return ''
   // The letter body opens with its own <h2 class="section"> heading; the
   // immersive prints that heading in its own register instead.
-  const heading = /<h2 class="section">([\s\S]*?)<\/h2>/.exec(body)?.[1] ?? ''
-  const rest = body.replace(/<h2 class="section">[\s\S]*?<\/h2>/, '')
+  const heading = /<h2 class="section[^"]*">([\s\S]*?)<\/h2>/.exec(body)?.[1] ?? ''
+  const rest = body.replace(/<h2 class="section[^"]*">[\s\S]*?<\/h2>/, '')
   return `
   <section class="sc sc-cream pack" id="${id}">
     <div class="in wide">

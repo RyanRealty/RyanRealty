@@ -245,6 +245,11 @@ table.comp-matrix .matrix-addr{display:block}
   .szn.is-hero{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .szn.is-hero svg{min-width:660px}
 }
+.pin-map{max-height:60vh;object-fit:cover}
+/* Chapter 3's lead line, under the number that is the chapter title. */
+.worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
+table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65}
+table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* Chapter 2's unsold listings: short linked rows, never a matrix. */
 ul.unsold-list{list-style:none;margin:10px 0 14px;padding:0;border-top:1px solid var(--ink12)}
 li.unsold-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:11px 0;border-bottom:1px solid var(--ink12)}

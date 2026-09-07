@@ -240,9 +240,9 @@ describe('render helpers', () => {
     expect(chunk([], 3)).toEqual([])
   })
 
-  it('prints the comp proximity, which is the answer to "why these comps"', () => {
+  it('cuts the distance row — the map answers where the sales are', () => {
     const { html } = renderCmaHtml(bareArgs)
-    expect(html).toContain('1.75 miles NW')
+    expect(html).not.toContain('1.75 miles NW')
   })
 })
 
@@ -283,7 +283,7 @@ describe('use-of-property and pricing pages in the assembled document', () => {
     })
     expect(html).not.toContain('What this property can do')
     expect(html).not.toContain('class="zm-code">R-2')
-    expect(html).toContain('How we got the price')
+    expect(html).toContain('$715,000.')
     // P5: the search story is prose now, not a "What we searched" bullet list.
     expect(html).toContain('The sales that set this price')
     expect(html).not.toContain('What You Can Do With This Property')

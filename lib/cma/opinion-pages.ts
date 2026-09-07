@@ -437,6 +437,7 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
         pricing: a.pricing,
         tiersUsed: a.tiersUsed,
         mapDataUri: a.mapDataUri,
+        docLinks: a.docLinks,
       }),
     competition: () => competitionPage(a),
     'this-market': () => thisMarketPage(a),

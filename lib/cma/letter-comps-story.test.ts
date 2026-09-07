@@ -229,14 +229,18 @@ function fiveSales(seed: CmaAdjustedComp): CmaAdjustedComp[] {
 }
 
 describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
-  it('matrix carries sales that set the list with DOM + listing history on subject and comps', () => {
+  it('the table carries the sales that set the list, with the blueprint rows', () => {
     const html = renderCompMatrixHtml(subject, fiveSales(sold))
     expect(html).toContain('The sales that set this price')
-    expect(html).toContain('Days on market')
-    expect(html).toContain('Listing history')
-    expect(html).toContain('42')
-    expect(html).toContain('Listed at $529,000, sold at $497,800 · 42 days on market')
-    expect(html).toContain('Asked $549,000, cut to $525,000, came off expired · 97 days on market')
+    expect(html).toContain('Sold for')
+    expect(html).toContain('Days to offer')
+    expect(html).toContain('Sale price today')
+    expect(html).toContain('20 days')
+    // Days on market and the listing-history paragraph are cut
+    // (CMA_REIMAGINED_2026-09-07.md chapter 3).
+    expect(html).not.toContain('Days on market')
+    expect(html).not.toContain('Listing history')
+    expect(html).not.toContain('Listed at $529,000, sold at $497,800')
   })
 
   it('the unsold listings name homes and show what happened without saying overpriced', () => {

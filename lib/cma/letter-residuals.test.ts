@@ -252,7 +252,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       expect(doc).not.toContain('Marker key')
     }
     expect(html).toContain('comp-matrix')
-    const salesHits = (html.match(/The sales that set this price/g) ?? []).length
+    const salesHits = (html.match(/<h3 class="subhead">The sales that set this price<\/h3>/g) ?? []).length
     expect(salesHits).toBe(1)
   })
 
@@ -264,7 +264,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       expect(pins.length).toBe(1)
       expect(doc).toContain('COMPSMAP')
       expect(doc).not.toContain('SUBJECTMAP')
-      expect(doc).toContain('Where those sales are')
+      expect(doc).toContain('pin-map-wrap')
     }
     expect(html).toContain('cdn.example/falcon.jpg')
     expect(html).not.toContain('<h2 class="section">THE HOUSE</h2>')

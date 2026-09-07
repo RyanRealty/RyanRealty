@@ -195,7 +195,7 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
-    const priceAt = html.indexOf('How we got the price')
+    const priceAt = html.indexOf('$715,000.')
     expect(coverAt).toBeGreaterThan(0)
     expect(priceAt).toBeGreaterThan(coverAt)
   })

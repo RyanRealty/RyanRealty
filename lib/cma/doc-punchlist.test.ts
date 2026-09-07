@@ -316,7 +316,7 @@ function immersive(over: Partial<RenderCmaArgs> = {}): string {
 
 /** Order-preserving list of the `<section class="page">` chapter headings. */
 function letterChapters(html: string): string[] {
-  return [...html.matchAll(/<h2 class="section">([\s\S]*?)<\/h2>/g)].map((m) =>
+  return [...html.matchAll(/<h2 class="section[^"]*">([\s\S]*?)<\/h2>/g)].map((m) =>
     m[1]!.replace(/<[^>]+>/g, '').trim(),
   )
 }
@@ -356,7 +356,7 @@ describe('chapter 1 — what happened comes FIRST, before the number', () => {
   it('opens the document on what happened to their listing', () => {
     const chapters = letterChapters(letter())
     const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
-    const price = chapters.indexOf('How we got the price')
+    const price = chapters.indexOf('$389,000.')
     const competition = chapters.findIndex((c) => /competing with/i.test(c))
     expect(happened).toBe(0)
     expect(price).toBeGreaterThan(happened)
@@ -490,7 +490,9 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     const matrix = html.indexOf('comp-matrix-wrap', lead)
     expect(lead).toBeGreaterThan(0)
     expect(matrix).toBeGreaterThan(lead)
-    expect(html).toMatch(/land at \$372,324 to \$398,788[\s\S]{0,120}\$389,000/)
+    // The recommend is the chapter TITLE now, so the lead stops at the range.
+    expect(html).toMatch(/land at \$372,324 to \$398,788/)
+    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('land at $372,324'))
   })
 
   it('explains the adjustment rows once', () => {

@@ -155,7 +155,7 @@ describe('assembleOpinionPages format', () => {
       subjectMapDataUri: 'data:image/png;base64,subjmap',
       mapDataUri: 'data:image/png;base64,compsmap',
     })
-    const price = pages.find((p) => p.toc === 'How we got the price')
+    const price = pages.find((p) => p.toc === '$429,000.')
     expect(price?.body).toContain('data:image/png;base64,compsmap')
     expect(price?.body).toContain('pin-map')
     expect(pages.map((p) => p.body).join('')).not.toContain('data:image/png;base64,subjmap')
@@ -163,7 +163,7 @@ describe('assembleOpinionPages format', () => {
 
   it('puts competition next to the price, before the market chapter', () => {
     const tocs = assembleOpinionPages(args()).map((p) => p.toc)
-    const price = tocs.indexOf('How we got the price')
+    const price = tocs.indexOf('$429,000.')
     const competition = tocs.indexOf('Who you are competing with at this price')
     expect(price).toBeGreaterThanOrEqual(0)
     expect(competition).toBe(price + 1)

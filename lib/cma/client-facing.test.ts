@@ -458,7 +458,7 @@ describe('engine output no longer contains the Tumalo leaks', () => {
   it('print HTML omits N/A, raw JSON, audit, model, and ListingKey traces', () => {
     const { html } = renderCmaHtml(args())
     expect(html).not.toMatch(LEAK)
-    expect(html).toContain('How we got the price')
+    expect(html).toContain('$1,050,000.')
     expect(html).toContain('Recommended list $1,050,000')
     expect(html).toContain('Mountain(s)')
     expect(html).toContain('Pricing report')
@@ -471,7 +471,7 @@ describe('engine output no longer contains the Tumalo leaks', () => {
   it('immersive HTML shares the same hygiene', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     expect(html).not.toMatch(LEAK)
-    expect(html).toContain('Our Recommended List Price for your home.')
+    expect(html).toContain('$1,050,000.')
     expect(html).toContain('pricing report')
     expect(html).not.toContain('broker price opinion')
     expect(html).not.toContain('claude-sonnet-4-5')
@@ -504,7 +504,7 @@ describe('client document look', () => {
   it('print CSS keeps safe @page margins', () => {
     const { html } = renderCmaHtml(args())
     expect(html).toMatch(/@page\s*\{[^}]*margin:\s*0\.4in/)
-    expect(html).toContain('How we got the price')
+    expect(html).toContain('$1,050,000.')
     expect(html).toContain('<svg')
   })
 })

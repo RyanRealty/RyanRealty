@@ -275,6 +275,41 @@ export function cmaSectionStyles(): string {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }
   }
+  /* Chapter 3's title IS the number, so it is set as the answer rather than as
+     a section label. Every other chapter title is a sentence and keeps the
+     tracked-caps register. */
+  h2.section.is-answer {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+    padding-bottom: 10px;
+  }
+  /* The map is an exhibit, not a page. Without a basemap the fallback SVG is a
+     tall empty field, and even with one a half-page map pushes the sales table
+     off the sheet a seller is reading. */
+  .pin-map { max-height: 3.4in; object-fit: cover; }
+  /* Chapter 3's lead line, under the number that is the chapter title. */
+  .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
+  /* The seller's own listed price and size, under "Your home" in the head. */
+  table.comp-matrix .matrix-sub {
+    display: block;
+    margin-top: 3px;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  table.comp-matrix a.matrix-addr,
+  .comp-stack-card a.comp-stack-addr {
+    display: block;
+    color: var(--navy);
+    text-decoration: none;
+    border-bottom: 1px solid var(--navy-line);
+  }
+
   /* Chapter 2's unsold listings: short linked rows, never a matrix.
      Address, ask, days, how it came off. */
   ul.unsold-list { list-style: none; margin: 6px 0 10px; padding: 0; border-top: 1px solid var(--navy-line); }

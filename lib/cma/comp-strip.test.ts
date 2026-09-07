@@ -190,6 +190,8 @@ describe('comparison strip + map key', () => {
     expect(html).toContain('3 bd')
     expect(html).toContain('1,800 sqft')
     expect(html).toContain('1996')
+    // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
+    // answers where the sales are.
     expect(html).toContain('0.4 miles NW')
     expect(html).toContain('9 days to offer')
     expect(html).toContain('16 DOM')
@@ -211,6 +213,8 @@ describe('comparison strip + map key', () => {
     expect(html).toContain('$505,000')
     expect(html).toContain('$281/sf')
     expect(html).toContain('adjusted close $511,000')
+    // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
+    // answers where the sales are.
     expect(html).toContain('0.4 miles NW')
     expect(html).toContain('9 days to offer')
     expect(html).toContain('Weak. Older than the subject by two years.')
@@ -271,7 +275,9 @@ describe('web and print tell the same comps story', () => {
     const matrixAt = html.indexOf('comp-matrix')
     expect(matrixAt).toBeGreaterThan(0)
     expect(html).toContain('412 Cascade')
-    expect(html).toContain('0.4 miles NW')
+    // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
+    // answers where the sales are.
+    expect(html).not.toContain('0.4 miles NW')
     expect(html).toContain('Days to offer')
     expect(html).toContain('Sale price today')
     expect(html).toContain('$511,000')

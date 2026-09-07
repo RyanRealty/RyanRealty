@@ -131,8 +131,8 @@ describe('print CMA layout', () => {
     expect(page.body).not.toContain('<svg')
     expect(page.body).toContain('comp-matrix')
     expect(page.body).toContain('The sales that set this price')
-    expect(page.body).toContain('Sale price / sqft')
-    expect(page.body).toContain('Lot sqft')
+    expect(page.body).not.toContain('Sale price / sqft')
+    expect(page.body).toContain('Size')
   })
 
   it('does not insert a contents sheet', () => {
