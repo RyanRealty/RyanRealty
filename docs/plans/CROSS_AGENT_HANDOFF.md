@@ -125,6 +125,14 @@ audit), `0301398e` (handoff).
   sibling's `90cffee8`; this branch dropped its duplicate.
 - Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
 
+**Round three (same day)**
+- Sign-in prompt no longer auto-opens on `/blog/*` (`signin-prompt-policy.ts`, reason
+  `guide`).
+- Monthly Bend + Redmond market report cron: `/api/cron/blog-monthly-city-report`, 3rd of
+  the month. Backfill with `?month=2026-08` after deploy. Builder and write path tested.
+- 52 older published posts in figure triage; verdicts land next.
+- Photographer shot list: `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
+
 **Open**
 - Hero images for the nine new guides: resolved with real asset-library photos
   (grade A, owned, eyes-on, ids in the ledger). Generation went 0 for 22 across two

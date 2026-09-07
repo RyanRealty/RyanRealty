@@ -251,3 +251,21 @@ The key retry scored 78, 74, 71 (inconsistent lighting, impossible geometry), so
 closed at $5.90 of the $10 cap with 0 passes in 22 candidates across two rounds. The
 buyer's-agent guide takes library `53a6958e` (lakeside community center with a footbridge).
 All nine new guides now carry real, owned, grade-A library photos, nine distinct files.
+
+## Round three (2026-09-07, Matt's four answers)
+
+- **Sign-in prompt off on guides.** `lib/auth/signin-prompt-policy.ts` returns `guide` for
+  `/blog` and `/blog/*`, so the alerts wall never auto-opens on a post. A reader from a search
+  result or an answer engine was getting it on the first scroll. Tested.
+- **Monthly city report, Bend and Redmond.** `lib/blog/monthly-city-report.ts` (pure builder,
+  tested) + `lib/data/blog/blogPostWrites.ts` (voice-gated cron write path, registered in
+  `ci:voice-send-paths`) + `app/api/cron/blog-monthly-city-report` (3rd of the month, 15:00
+  UTC; `?month=YYYY-MM` backfills, `?dry=1` validates). Figures come from `getMarketTrend`
+  monthly rows and `getCityReportSnapshot` live block, the same reads the market pages use,
+  each stated once with its month. Refuses on fewer than 15 closings, a missing median, or a
+  cache whose last completed month is not the target. Slug pattern matches the hand-made July
+  reports (`bend-oregon-market-report-august-2026`).
+- **Backlog, second half.** 52 published posts untouched today are in figure-by-figure triage
+  (three read-only passes). Verdicts and fixes follow in the next commit.
+- **Shot list** for the subjects neither the library nor the generator can cover:
+  `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  isGuidePath,
   isListingResultsPath,
   shouldAutoOpenSignInPrompt,
   signInPromptSkipReason,
@@ -24,6 +25,24 @@ describe('isListingResultsPath', () => {
     expect(isListingResultsPath('/search/bend/under-300k')).toBe(true)
     expect(isListingResultsPath('/cities/bend')).toBe(false)
     expect(isListingResultsPath('/')).toBe(false)
+  })
+})
+
+describe('isGuidePath', () => {
+  it('treats the blog index and every post as a guide the reader must be able to read', () => {
+    expect(isGuidePath('/blog')).toBe(true)
+    expect(isGuidePath('/blog/westside-vs-eastside-bend')).toBe(true)
+    expect(isGuidePath('/blog/westside-vs-eastside-bend?utm_source=x')).toBe(true)
+    expect(isGuidePath('/blogs')).toBe(false)
+    expect(isGuidePath('/cities/bend')).toBe(false)
+  })
+})
+
+describe('signInPromptSkipReason on guides', () => {
+  it('never auto-opens on a blog post, even on the second pageview', () => {
+    expect(signInPromptSkipReason({ pathname: '/blog/westside-vs-eastside-bend' })).toBe('guide')
+    expect(shouldAutoOpenSignInPrompt({ ...openBase, pathname: '/blog/westside-vs-eastside-bend' })).toBe(false)
+    expect(shouldAutoOpenSignInPrompt({ ...openBase, pathname: '/blog' })).toBe(false)
   })
 })
 

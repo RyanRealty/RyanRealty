@@ -16,6 +16,18 @@ export type SignInPromptSkipReason =
   | 'lead'
   | 'not-found'
   | 'browse'
+  | 'guide'
+
+/**
+ * Blog guides read clean (Matt 2026-09-07). A reader arriving from a search
+ * result or an answer engine was getting the alerts wall on the first scroll;
+ * the listing-alert ask belongs on search and place pages, where the reader
+ * is shopping.
+ */
+export function isGuidePath(pathname: string): boolean {
+  const p = (pathname || '/').split(/[?#]/, 1)[0]
+  return p === '/blog' || p.startsWith('/blog/')
+}
 
 export function isListingResultsPath(pathname: string): boolean {
   const p = (pathname || '/').split(/[?#]/, 1)[0]
@@ -41,6 +53,7 @@ export function signInPromptSkipReason(input: {
   if (LEAD_PATHS.has(pathname)) return 'lead'
   if (input.isNotFound) return 'not-found'
   if (isListingResultsPath(pathname)) return 'browse'
+  if (isGuidePath(pathname)) return 'guide'
   return null
 }
 

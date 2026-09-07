@@ -106,6 +106,10 @@
       "schedule": "0 14 * * 0"
     },
     {
+      "path": "/api/cron/blog-monthly-city-report",
+      "schedule": "0 15 3 * *"
+    },
+    {
       "path": "/api/cron/market-stat-consistency",
       "schedule": "40 14 * * *"
     },

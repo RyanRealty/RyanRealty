@@ -46,6 +46,7 @@ const ROOT = process.cwd()
 
 const SEND_PATHS = [
   { label: 'blog publish', file: 'app/actions/blog.ts', fn: 'checkBrandVoice' },
+  { label: 'blog cron publish', file: 'lib/data/blog/blogPostWrites.ts', fn: 'checkBrandVoice' },
   { label: 'CMA prose', file: 'lib/cma/build.ts', fn: 'checkBrandVoice' },
   { label: 'BPO prose', file: 'lib/bpo/build.ts', fn: 'checkBrandVoice' },
   { label: 'social caption', file: 'app/api/social/publish/route.ts', fn: 'checkBrandVoice' },
