@@ -52,7 +52,13 @@ export type CmaServeResult =
  * different numbers than they were sent. If you are about to pass true here,
  * that is the decision you are making.
  */
-async function immersiveFromRow(
+/**
+ * Exported so `scripts/cma-lookpass.ts` (read-only visual review tool) can
+ * render the exact same immersive HTML this route serves, instead of forking
+ * the render_args -> render-input glue. Production behavior is unchanged —
+ * this is still only called from `serveCmaDocument` on the request path.
+ */
+export async function immersiveFromRow(
   row: CmaRenderSource,
   origin: string,
   hydrateArea: boolean,
