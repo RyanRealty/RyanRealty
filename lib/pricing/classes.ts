@@ -285,6 +285,34 @@ export function similarPerformingSubdivision(
   return gap >= 1 / ratio && gap <= ratio
 }
 
+/**
+ * D12 — the price-tier check for a sale that has no subdivision cell.
+ *
+ * `similarPerformingSubdivision` compares two subdivision medians. A sale whose
+ * SubdivisionName is null or an MLS placeholder ('N/A') normalizes to no
+ * subdivision, so it has no cell, so that guard fails open and the sale walks
+ * past a cut that had already excluded named candidates on the same rung.
+ * Measured 2026-08-27: 291 Bluff at $695/sqft entered the Plaza's set that way
+ * and lifted the set mean about $72,000.
+ *
+ * With no cell to compare, the sale's OWN $/sqft is the evidence, graded
+ * against the subject's subdivision median on the same ratio. Fails open when
+ * the subject's cell is too thin to be a market (excluding on a four-sale
+ * sample invents one) or the sale carries no usable $/sqft.
+ */
+export function untieredSalePriceTierOk(
+  subjectMedianPpsf: number | null,
+  subjectN: number,
+  saleClosePpsf: number | null | undefined,
+  ratio: number = SUBDIVISION_TIER_RATIO,
+): boolean {
+  if (subjectMedianPpsf == null || subjectMedianPpsf <= 0) return true
+  if (subjectN < SUBDIVISION_TIER_MIN_N) return true
+  if (saleClosePpsf == null || !Number.isFinite(saleClosePpsf) || saleClosePpsf <= 0) return true
+  const gap = saleClosePpsf / subjectMedianPpsf
+  return gap >= 1 / ratio && gap <= ratio
+}
+
 export type RemarkFlags = {
   newRoof: boolean
   newRoofPhrase: string | null

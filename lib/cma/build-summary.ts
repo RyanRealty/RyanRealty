@@ -52,6 +52,46 @@ function compSelectionSummary(d: CompSelectionDiagnostics, priced: CmaComp[]): C
   return { ...d, final_count: priced.length, final_tier_counts: countByTier(priced) }
 }
 
+/**
+ * The `build_summary.audit` block, as ONE definition.
+ *
+ * `scripts/cma-reaudit.ts` re-runs the adversarial audit on a row whose audit
+ * never ran and writes the verdict back. It has to land in exactly the shape
+ * the build writes, or the queue's `readAudit` reads a verdict the build path
+ * would never have produced. Both callers go through here.
+ */
+export function auditSummaryBlock(
+  audit: CmaAudit | null,
+  firstRoundAudit: CmaAudit | null = null,
+  repairedKeys: string[] = [],
+): Record<string, unknown> {
+  if (!audit) {
+    return {
+      used_llm: false as const,
+      note: `Adversarial audit unavailable${auditUnavailableReason() ? ` — ${auditUnavailableReason()}` : ' (no key or call failed)'}; needs_review forced via the contract.`,
+    }
+  }
+  return {
+    used_llm: true as const,
+    model: audit.model,
+    cost_usd: audit.costUsd,
+    verdict: audit.verdict,
+    summary: audit.summary,
+    findings: audit.findings,
+    // Self-repair provenance: what the first audit flagged and what was
+    // removed before the re-priced, re-audited result above.
+    repaired_comp_keys: repairedKeys.length ? repairedKeys : undefined,
+    first_round: firstRoundAudit
+      ? {
+          verdict: firstRoundAudit.verdict,
+          summary: firstRoundAudit.summary,
+          findings: firstRoundAudit.findings,
+          cost_usd: firstRoundAudit.costUsd,
+        }
+      : undefined,
+  }
+}
+
 export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknown> {
   return {
     builder: i.builder,
@@ -106,30 +146,7 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
     needs_review: i.pricing.needsReview,
     review_reason: i.pricing.reviewReason,
     // The adversarial audit (or a note that it was unavailable).
-    audit: i.audit
-      ? {
-          used_llm: true as const,
-          model: i.audit.model,
-          cost_usd: i.audit.costUsd,
-          verdict: i.audit.verdict,
-          summary: i.audit.summary,
-          findings: i.audit.findings,
-          // Self-repair provenance: what the first audit flagged and what was
-          // removed before the re-priced, re-audited result above.
-          repaired_comp_keys: i.repairedKeys.length ? i.repairedKeys : undefined,
-          first_round: i.firstRoundAudit
-            ? {
-                verdict: i.firstRoundAudit.verdict,
-                summary: i.firstRoundAudit.summary,
-                findings: i.firstRoundAudit.findings,
-                cost_usd: i.firstRoundAudit.costUsd,
-              }
-            : undefined,
-        }
-      : {
-          used_llm: false as const,
-          note: `Adversarial audit unavailable${auditUnavailableReason() ? ` — ${auditUnavailableReason()}` : ' (no key or call failed)'}; needs_review forced via the contract.`,
-        },
+    audit: auditSummaryBlock(i.audit, i.firstRoundAudit, i.repairedKeys),
     // The full accuracy-contract evaluation — every check, pass or fail.
     accuracy_contract: i.contract,
     pricing: {

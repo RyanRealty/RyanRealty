@@ -23,7 +23,7 @@ import {
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
-import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
@@ -298,17 +298,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
 
     if (selection.comps.length < MIN_COMPS) {
-      // Lead with the CONSTRAINT that starved it, not the bare count. A broker
-      // reading "only 2 qualifying closed comps found" cannot tell whether the
-      // subject is genuinely unpriceable or the search was too narrow; the
-      // diagnosis names the binding band, radius, or exclusion.
-      const why = selection.diagnostics.starved_reason
-      // The trace already ends with `why` whenever the diagnosis was produced,
-      // so appending it wholesale printed the same paragraph twice.
-      const rest = selection.trace.filter((t) => t !== why)
-      const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${why ?? ''}${
-        rest.length ? ` Full search trace: ${rest.join(' ')}` : ''
-      }`
+      // ONE broker-readable sentence on the row. Until 2026-09-07 this stored
+      // the diagnosis plus the entire tier-by-tier search trace — up to 2,000
+      // characters of SQL that the queue then printed at a broker, on 74 live
+      // rows. Every bit of that detail is still persisted structurally under
+      // build_summary.comp_selection (the ladder, the per-tier row counts, the
+      // exclusion totals, starved_reason), so nothing is lost; the prose on the
+      // row now says only what the reader can act on.
+      const err = brokerCompRefusal({
+        diagnostics: selection.diagnostics,
+        found: selection.comps.length,
+        minComps: MIN_COMPS,
+        subjectBaths: subject.baths,
+        subjectCity: subject.city,
+      })
         .replace(/\s+/g, ' ')
         .trim()
       await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics })
@@ -370,6 +373,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       ? await getPricingMarketIndex(citySlug(subject.city))
       : []
     const asOf = new Date().toISOString().slice(0, 10)
+    // The SELECTOR's classification, computed once with the same asOf year
+    // lib/pricing/match.ts uses. Everything downstream that has to grade a comp
+    // by the rule selection actually applied (the accuracy contract's bath cut,
+    // the audit self-repair) reads THIS — not its own re-derivation.
+    const subjectIsCustomOrNew = isCustomOrNewSubject(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstructionYn,
+        remarks: subject.publicRemarks,
+        propertySubType: subject.propertySubType,
+      },
+      Number(asOf.slice(0, 4)),
+    )
     const subjectStory = classifyStory(subject.levelsRaw, null)
     const priceSet = (set: typeof selection.comps) => {
       const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
@@ -459,12 +475,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // owns the selection. A non-pass audit still records its findings and forces
     // needs_review through the contract, so the broker reviews it explicitly.
     if (audit && audit.verdict !== 'pass' && !isCurated) {
-      const customSubject = isCustomOrNewSubject({
-        yearBuilt: subject.yearBuilt,
-        newConstructionYn: subject.newConstructionYn,
-        remarks: subject.publicRemarks,
-        propertySubType: subject.propertySubType,
-      })
+      const customSubject = subjectIsCustomOrNew
       const flagged = [
         ...new Set(
           audit.findings
@@ -651,6 +662,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       marketContextPresent: market != null,
       subjectSubType: subject.propertySubType,
       subjectBaths: subject.baths,
+      subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
     })
     if (!contract.pass) {

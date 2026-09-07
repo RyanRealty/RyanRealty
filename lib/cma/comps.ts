@@ -58,6 +58,7 @@ import {
   countByTier,
   diagnoseStarvation,
   emptyExclusions,
+  type CompExclusionCounts,
   type CompSelectionDiagnostics,
   type CompTierTrace,
 } from '@/lib/cma/comp-trace'
@@ -767,4 +768,72 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     final_tier_counts: countByTier(comps),
   }
   return { comps, excludedOutliers: [], tiersUsed: ['broker-selected'], trace: [note], diagnostics }
+}
+
+/**
+ * The refusal a broker reads on a failed row, in one sentence.
+ *
+ * WHY. A comp-starved build stored `build_error` as the diagnosis plus the
+ * whole search trace: on 2026-09-07 that was up to 2,000 characters of tier
+ * SQL on 74 live rows, and the queue printed it. The engineering detail is
+ * already persisted structurally in `build_summary.comp_selection`, so the
+ * prose on the row can say the one thing a broker acts on — what the market
+ * did not have — and nothing else. Matt's shape: "No sold 2-bath homes within
+ * 2 miles in 12 months; nearest match was 3-bath."
+ *
+ * A refusal is a §0 outcome, not a bug. This does not soften it; it makes it
+ * legible so the row can be worked by hand instead of skipped.
+ */
+const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
+  product_type: 'a different property type',
+  bath_count: 'a different bathroom count',
+  lot_character: 'a different lot class',
+  resort_premium: 'a resort community this home is not in',
+  market_area: 'a different neighborhood',
+  crossed_divide: 'the far side of US-97, the Parkway, or the Deschutes',
+  distance: 'too far from this home',
+  unusable_row: 'no recorded price, close date, or living area',
+  year_quality: 'a different construction generation',
+  acreage_infrastructure: 'different acreage infrastructure',
+}
+
+export function brokerCompRefusal(args: {
+  diagnostics: CompSelectionDiagnostics
+  found: number
+  minComps: number
+  subjectBaths?: number | null
+  subjectCity?: string | null
+}): string {
+  const { diagnostics: d, found, minComps } = args
+  const need = `Found ${found} of the ${minComps} closed sales this home needs to be priced.`
+  const ran = d.ladder.filter((t) => t.ran)
+  const widest = ran[ran.length - 1]
+  const where = widest
+    ? `${widest.geography}, sold within ${widest.months_back} months`
+    : `${args.subjectCity ?? 'this market'}`
+
+  if (ran.length === 0) {
+    const why = d.ladder.map((t) => t.skipped_reason).find(Boolean)
+    return `No comparable search could run for this home${why ? `, because ${why}` : ''}. ${need}`
+  }
+
+  const searched = ran.reduce((a, t) => a + t.rows_returned, 0)
+  if (searched === 0) {
+    return `No closed sale in ${where} matched this home's size and property type. Nothing on record prices it. ${need}`
+  }
+
+  const ranked = (Object.keys(d.excluded_totals) as Array<keyof CompExclusionCounts>)
+    .map((k) => ({ k, n: d.excluded_totals[k] }))
+    .filter((e) => e.n > 0 && e.k !== 'duplicate' && e.k !== 'self' && REFUSAL_CUT_LABELS[e.k])
+    .sort((a, b) => b.n - a.n)
+  const top = ranked[0]
+  if (!top) {
+    return `Only ${found} of the ${searched} sales in ${where} were close enough on size and type to price this home. ${need}`
+  }
+
+  const bathLead =
+    top.k === 'bath_count' && args.subjectBaths != null
+      ? `No sold ${args.subjectBaths}-bath home in ${where} could price this one: `
+      : `Not enough comparable sales in ${where}: `
+  return `${bathLead}of the ${searched} sales searched, ${top.n} were cut for ${REFUSAL_CUT_LABELS[top.k]}. ${need}`
 }
