@@ -64,7 +64,7 @@ import {
 } from '@/lib/cma/expired-audit'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
-import { buildCmaMapDataUri, buildSubjectLocationMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { checkBrandVoice } from '@/lib/voice/check'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
@@ -758,10 +758,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       : null
 
     // 5. Map (best effort — the report ships without it if the key is absent).
-    const [map, subjectMap] = await Promise.all([
-      buildCmaMapDataUri(subject, adjusted, { tiersUsed: selection.tiersUsed }),
-      buildSubjectLocationMapDataUri(subject),
-    ])
+    // C9: build the comps map only. Subject-only map is not stamped into the letter.
+    const map = await buildCmaMapDataUri(subject, adjusted, { tiersUsed: selection.tiersUsed })
 
     // 5.5. Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice") over
     // every composed PROSE string in the report: the pricing rationale/
@@ -883,7 +881,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       ...renderArgs,
       broker,
       mapDataUri: map?.dataUri ?? null,
-      subjectMapDataUri: subjectMap?.dataUri ?? null,
+      subjectMapDataUri: null,
     })
 
     // 7. Citations — one entry per figure class (CLAUDE.md §0).

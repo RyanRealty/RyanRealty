@@ -7,7 +7,7 @@ import { getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } from '@/lib/data'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
-import { buildCmaMapDataUri, buildSubjectLocationMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri } from '@/lib/cma/map'
 import type { CmaBroker } from '@/lib/cma/types'
 
 export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string; status: string } | null> {
@@ -29,7 +29,6 @@ export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string;
     const stored = source.render_args as unknown as RenderCmaArgs
     const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(source.build_summary))
     let mapDataUri: string | null = stored.mapDataUri ?? null
-    let subjectMapDataUri: string | null = stored.subjectMapDataUri ?? null
     if (!mapDataUri) {
       try {
         const map = await buildCmaMapDataUri(stored.subject, comps)
@@ -38,15 +37,8 @@ export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string;
         mapDataUri = null
       }
     }
-    if (!subjectMapDataUri) {
-      try {
-        const subjectMap = await buildSubjectLocationMapDataUri(stored.subject)
-        subjectMapDataUri = subjectMap?.dataUri ?? null
-      } catch {
-        subjectMapDataUri = null
-      }
-    }
-    const { html } = renderCmaHtml({ ...stored, comps, broker, mapDataUri, subjectMapDataUri })
+    // C9: never rebuild/pass subject-only map — comps map is the single letter map.
+    const { html } = renderCmaHtml({ ...stored, comps, broker, mapDataUri, subjectMapDataUri: null })
     return { html, status: source.status }
   }
 

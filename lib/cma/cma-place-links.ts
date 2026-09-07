@@ -46,10 +46,20 @@ function clean(s: string | null | undefined): string | null {
   return t
 }
 
+/** Letter / doc attribution — every public place CTA carries UTM for the analytics pipe. */
+const DOC_UTM = 'utm_source=crm&utm_medium=doc&utm_campaign=cma-letter'
+
+function withDocUtm(url: string): string {
+  if (!url) return url
+  if (/[?&]utm_source=/.test(url)) return url
+  return url.includes('?') ? `${url}&${DOC_UTM}` : `${url}?${DOC_UTM}`
+}
+
 function abs(path: string | null): string | null {
   if (!path) return null
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
+  if (path.startsWith('http://') || path.startsWith('https://')) return withDocUtm(path)
+  const full = `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`
+  return withDocUtm(full)
 }
 
 function pushUnique(out: CmaPlaceLink[], link: CmaPlaceLink | null): void {

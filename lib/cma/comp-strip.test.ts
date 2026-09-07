@@ -251,22 +251,20 @@ describe('web and print tell the same comps story', () => {
     expect(html).not.toContain('claude-sonnet-4-5')
   })
 
-  it('print strip matches the web facts; flyers stay as drill-in', () => {
+  it('print letter keeps comps once via matrix; no flyer dump (C1)', () => {
     const { html } = renderCmaHtml(
       args({
         comps: [comp({ keepTier: 'strong', keepReason: 'Same subdivision and size band' })],
       }),
     )
     const matrixAt = html.indexOf('comp-matrix')
-    const flyerAt = html.indexOf('class="flyer-title"')
     expect(matrixAt).toBeGreaterThan(0)
-    expect(flyerAt).toBeGreaterThan(matrixAt)
     expect(html).toContain('412 Cascade')
     expect(html).toContain('0.4 miles NW')
     expect(html).toContain('Days to offer')
     expect(html).toContain('Adjusted close')
     expect(html).toContain('$511,000')
-    expect(html).toContain('class="flyer-title"')
+    expect(html).not.toContain('class="flyer-title"')
     expect(html).not.toContain('Marker key')
     expect(html).not.toContain('DTO (DOM)')
     expect(html).not.toMatch(/\bN\/A\b/)

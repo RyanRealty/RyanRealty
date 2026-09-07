@@ -62,5 +62,8 @@ describe('resolveCmaPrintHtml', () => {
     expect(out).toEqual({ html: '<html><body>fresh print</body></html>', status: 'draft' })
     expect(renderCmaHtml).toHaveBeenCalled()
     expect(getCmaStoredHtmlBySlug).not.toHaveBeenCalled()
+    expect(buildSubjectLocationMapDataUri).not.toHaveBeenCalled()
+    const renderArg = renderCmaHtml.mock.calls[0]?.[0] as { subjectMapDataUri?: unknown }
+    expect(renderArg.subjectMapDataUri).toBeNull()
   })
 })

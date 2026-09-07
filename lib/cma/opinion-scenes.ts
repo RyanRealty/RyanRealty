@@ -140,17 +140,6 @@ function subdivisionScene(a: OpinionSceneArgs): string {
   const st = a.subdivisionStory
   if (!st) return ''
   const f = st.facts
-  const maxMed = Math.max(...f.years.map((y) => y.medianClose), 1)
-  const yearBars = f.years
-    .map(
-      (y) => `<div class="yr-col">
-      <div class="yr-v">${usd(y.medianClose)}</div>
-      <div class="yr-bar-wrap"><div class="yr-bar" style="--h:${Math.max(8, (y.medianClose / maxMed) * 100).toFixed(1)}%"></div></div>
-      <div class="yr-m">${y.year}</div>
-      <div class="yr-c">${y.count} sale${y.count === 1 ? '' : 's'}</div>
-    </div>`,
-    )
-    .join('')
   const sections = st.sections
     .map((sec) => `<div class="sty r"><h3 class="sty-h">${esc(sec.heading)}</h3><p class="sty-b">${esc(sec.body)}</p></div>`)
     .join('')
@@ -186,7 +175,6 @@ function subdivisionScene(a: OpinionSceneArgs): string {
       <h2 class="h r">${esc(f.name)}</h2>
       <p class="lede r">${int(f.totalSales)} homes have sold in ${esc(f.name)}.</p>
       ${sections ? `<div class="sty-grid">${sections}</div>` : ''}
-      <div class="yr r" role="img" aria-label="Median close price by year in ${esc(f.name)}">${yearBars}</div>
       ${notable ? `<h3 class="sub r">The most recent sales</h3><div class="nb-grid">${notable}</div>` : ''}
       ${position ? `<p class="body r pos">${position}</p>` : ''}
     </div>
@@ -235,11 +223,12 @@ function nextScene(a: OpinionSceneArgs): string {
       ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
-        <h2 class="h r">Call or text.</h2>
+        <h2 class="h r">${a.expiredAudit ? 'Sorry this listing did not sell.' : 'Call or text.'}</h2>
+        <p class="lede r">${a.expiredAudit ? 'If you want a second look at the number, I am here.' : 'Happy to walk the comps if useful.'}</p>
         <div class="cta r">
-          ${tel ? `<a class="btn pri" href="tel:${esc(tel)}">Call ${esc(br.phone ?? '')}</a>` : ''}
-          ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}
-          <a class="btn ter" href="?print=1">Read the full report</a>
+          ${tel ? `<a class="btn pri" href="tel:${esc(tel)}" data-rr-track="cma-call">Call ${esc(br.phone ?? '')}</a>` : ''}
+          ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}" data-rr-track="cma-email">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}
+          <a class="btn ter" href="?print=1" data-rr-track="cma-print">Read the full report</a>
         </div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Licensed in Oregon, ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${esc(a.clientName ?? a.client?.name ?? 'the owner')}. This is a pricing report. It is not an appraisal.</div>
@@ -249,15 +238,20 @@ function nextScene(a: OpinionSceneArgs): string {
 }
 
 export function assembleOpinionScenes(a: OpinionSceneArgs): string {
-  return [
-    priceScene(a),
-    competitionScene(a),
-    outcomesScene(a),
-    lotLinesScene(a),
-    subdivisionScene(a),
-    seasonalityScene(a),
-    immersiveWiderMarketChapters(a),
-    expiredScene(a),
-    nextScene(a),
-  ].join('\n')
+  // Mirror print letter spine (C1–C4 + C9): price/comps first, ≤2 charts, next step last.
+  const parts: string[] = [priceScene(a), competitionScene(a)]
+  let charts = 0
+  const outcomes = outcomesScene(a)
+  if (outcomes && charts < 2) {
+    parts.push(outcomes)
+    charts += 1
+  }
+  const wider = immersiveWiderMarketChapters(a)
+  if (wider && charts < 2) {
+    parts.push(wider)
+    charts += 1
+  }
+  // Drop seasonality sparkline from the letter view (C3).
+  parts.push(lotLinesScene(a), subdivisionScene(a), expiredScene(a), nextScene(a))
+  return parts.join('\n')
 }

@@ -325,7 +325,7 @@ export function composeCmaBottomWhyList(facts: FsboCmaMergeFacts): {
  <li>Contract, disclosure, and closing coordination</li>
  </ul>
  <p class="cta-lead">Walk these comps on a call.</p>
- ${ctaBits ? `<p>${esc(ctaBits)}</p>` : ''}
+ ${calendar ? `<p><a href="${esc(calendar.includes('utm_') ? calendar : (calendar.includes('?') ? calendar + '&utm_source=crm&utm_medium=doc&utm_campaign=cma-letter&utm_content=why-list' : calendar + '?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter&utm_content=why-list'))}" data-rr-track="cma-why-list-book">Book a time</a>${phone || email ? ` · ${esc([phone, email].filter(Boolean).join(' · '))}` : ''}</p>` : (ctaBits ? `<p>${esc(ctaBits)}</p>` : '')}
  <p>${esc(agent ? `${agent}, Ryan Realty` : 'Ryan Realty')}</p>
  <div class="trace"><div class="t-hd">Sources</div>${esc(footnotes).replace(/\n/g, '<br/>')}</div>
  </section>`.trim()

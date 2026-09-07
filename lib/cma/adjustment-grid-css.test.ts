@@ -12,17 +12,24 @@ describe('adjustment grid stays inside the print box', () => {
     expect(pricingPage).not.toContain('Market conditions (time)')
   })
 
-  it('gives the comps matrix a screen min-width so 375 scrolls instead of concatenating figures', () => {
+  it('keeps desktop/print matrix wide; stacks comps on narrow screens (C4)', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    expect(css).toMatch(/@media screen[\s\S]*table\.comp-matrix \{[^}]*min-width:\s*44rem/)
-    expect(immersive).toMatch(/table\.comp-matrix\{[^}]*min-width:44rem/)
+    // Desktop/print: table keeps a real column floor.
+    expect(css).toMatch(/@media screen and \(min-width: 701px\)[\s\S]*table\.comp-matrix \{[^}]*min-width:\s*44rem/)
+    expect(immersive).toMatch(/@media \(min-width:701px\)\{table\.comp-matrix\{min-width:44rem\}\}/)
+    // Phone: hide the wide table, show stacked subject+sale cards — no horizontal grow.
+    expect(css).toMatch(/@media screen and \(max-width: 700px\)[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    expect(css).toMatch(/@media screen and \(max-width: 700px\)[\s\S]*\.comp-stack \{[^}]*display:\s*block/)
+    expect(immersive).toMatch(/@media \(max-width:700px\)\{\.comp-matrix-wrap\{display:none!important\}/)
   })
 
-  it('contains the comps matrix scroll so 375 does not grow the document width', () => {
+  it('contains comps on 375 via stack, not a document-widening scroll (C4)', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
+    expect(css).toContain('.comp-stack')
+    expect(css).toMatch(/\.comp-stack-card/)
     expect(css).toMatch(
-      /@media screen\s*\{[\s\S]*?\.comp-matrix-wrap\s*\{[^}]*overflow-x:\s*auto[^}]*max-width:\s*100%/,
+      /@media screen and \(max-width: 700px\)[\s\S]*?\.comp-matrix-wrap\s*\{[^}]*display:\s*none/,
     )
   })
 
