@@ -80,10 +80,6 @@ const leftoverHudSurfaces = [
     label: 'MarketSnapshot gates MOS through leftoverHudKpis',
   },
   {
-    path: 'app/housing-market/reports/page.tsx',
-    label: 'housing-market reports hub gates MOS through leftoverHudKpis',
-  },
-  {
     path: 'app/listing/[listingKey]/page.tsx',
     label: 'listing page gates MOS through leftoverHudKpis',
   },
@@ -158,6 +154,16 @@ checks.push({
       (/getDetachedOverlays\(/.test(about) &&
         /from ['"]@\/lib\/data\/market-truth\/getSellBendMarket['"]/.test(about))),
 })
+
+{
+  // Cos IA 2026-09-06: /housing-market/reports is sales + weekly only.
+  // Live MOS / pulse lives on /housing-market. Do not re-host leftoverHudKpis here.
+  const reports = src('app/housing-market/reports/page.tsx')
+  checks.push({
+    label: 'housing-market reports hub does not print pulse MOS (chooser only)',
+    ok: !/leftoverHudKpis\(/.test(reports),
+  })
+}
 
 {
   const home = src('app/page.tsx')
