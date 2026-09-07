@@ -111,14 +111,16 @@ function seasonalityScene(a: OpinionSceneArgs): string {
         fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
       }</p>
       <div class="r">${svg}</div>
-      <p class="src r">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`))}</p>
+      <p class="src r">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`, {
+      city: a.subject.city,
+    }))}</p>
     </div>
   </section>`
 }
 
 function outcomesScene(a: OpinionSceneArgs): string {
   const chart = bandChapterShowsRuler(a)
-    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
     : ''
   const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return ''
@@ -215,7 +217,7 @@ function expiredScene(a: OpinionSceneArgs): string {
   if (!audit || audit.findings.length === 0) return ''
   const s = a.subject
   const orig = s.lastListPrice != null && s.lastListPrice > 0 ? s.lastListPrice : null
-  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
   const findings = audit.findings.slice(0, 3)
   const cards = findings
     .map((f) => {
@@ -246,7 +248,7 @@ function expiredScene(a: OpinionSceneArgs): string {
 
 /** How fast homes like yours went (P4). Web twin of daysToOfferPage. */
 function daysToOfferScene(a: OpinionSceneArgs): string {
-  const html = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps })
+  const html = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
   if (!html) return ''
   return `
   <section class="sc sc-cream pack" id="how-fast">

@@ -18,6 +18,7 @@ import {
 import { pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
+import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows, type CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { computeMarketArea, type CmaMarketArea, type CmaSoldBand } from '@/lib/cma/market-status'
@@ -370,7 +371,9 @@ export function computeSold90SameBedsBaths(input: {
     if (!keepSameProductType(input.subject.propertySubType, r.property_sub_type ?? null)) return false
     return true
   })
-  const subdivision = input.subject.subdivision?.trim() ?? ''
+  // An MLS placeholder is not a place: it must never become the grain or the
+  // place named in the source line the seller reads.
+  const subdivision = realSubdivision(input.subject.subdivision) ?? ''
   const sub = subdivision ? same.filter((r) => (r.SubdivisionName ?? '').trim() === subdivision) : []
   const used = sub.length >= 3 ? sub : same
   const prices = used.map((r) => Number(r.ClosePrice)).filter((n) => Number.isFinite(n) && n > 0)

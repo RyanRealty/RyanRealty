@@ -90,11 +90,79 @@ export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing)
     })
 }
 
-/** Replace a leaked source string with a seller-safe line. */
-export function clientSourceLine(raw: string | null | undefined, fallback: string): string {
+/**
+ * MLS placeholder place names inside an ASSEMBLED source line.
+ *
+ * `cleanText` keeps 'N/A', 'None', 'Unknown', 'Not in a subdivision' out of a
+ * heading, and `realSubdivision` keeps them out of the comp ladder. A source
+ * line is prose built around the same value, so the placeholder arrives inside
+ * a sentence instead and no per-field guard sees it: `cma-65365-concorde`
+ * shipped "Closed 4 to 6 bedroom sales in N/A in the last 90 days" to a
+ * seller (2026-09-07).
+ *
+ * The filter those rows came from is real and stays on the page — a §0 source
+ * trace is the point of the line. Only the place it claims is unresolved, so
+ * the clause takes the city that actually scoped the read
+ * (`getCmaMarketAreaRows(city, …)`); with no city to fall back to the whole
+ * line is dropped for the caller's own sentence.
+ *
+ * 'other' and 'no' are in cleanText's family and deliberately not here: as
+ * bare words they appear in ordinary prose, and this rule runs over prose.
+ */
+const PLACE_SENTINEL = String.raw`n\.?\/?a\.?|none|null|unknown|tbd|not\s+applicable|not\s+(?:in\s+)?(?:a\s+)?(?:sub)?division`
+/** "… sales in N/A in the last 90 days" — the place as a prepositional clause. */
+const IN_PLACEHOLDER = new RegExp(String.raw`\bin\s+(?:${PLACE_SENTINEL})(?=[\s,.;:]|$)`, 'gi')
+/** "Oregon Data Share MLS. N/A, priced $x to $y" — the place as a lead label. */
+const LEAD_PLACEHOLDER = new RegExp(
+  String.raw`(^|(?<=[.:]\s))(?:${PLACE_SENTINEL})(?=\s*,)`,
+  'gi',
+)
+
+function hasPlacePlaceholder(line: string): boolean {
+  IN_PLACEHOLDER.lastIndex = 0
+  LEAD_PLACEHOLDER.lastIndex = 0
+  return IN_PLACEHOLDER.test(line) || LEAD_PLACEHOLDER.test(line)
+}
+
+/**
+ * The source line with every unresolved place re-pointed at `city`, or null
+ * when a placeholder is present and there is no city to point at.
+ */
+export function resolveSourcePlace(line: string, city?: string | null): string | null {
+  if (!hasPlacePlaceholder(line)) return line
+  const place = cleanText(city)
+  if (!place) return null
+  return line
+    .replace(IN_PLACEHOLDER, `in ${place}`)
+    .replace(LEAD_PLACEHOLDER, `Homes in ${place}`)
+}
+
+/**
+ * Replace a leaked source string with a seller-safe line, and never let an
+ * MLS place placeholder through as the place the numbers came from.
+ */
+export function clientSourceLine(
+  raw: string | null | undefined,
+  fallback: string,
+  opts?: { city?: string | null },
+): string {
   const t = (raw ?? '').trim()
   if (!t || isClientInternalLeak(t)) return fallback
-  return t
+  return resolveSourcePlace(t, opts?.city) ?? fallback
+}
+
+/**
+ * A market-area label fit to print as a heading or inside a sentence. An MLS
+ * placeholder is not a place, so it takes the city the read was scoped to.
+ */
+export function clientAreaLabel(
+  label: string | null | undefined,
+  city?: string | null,
+): string | null {
+  const clean = cleanText(label)
+  if (clean) return clean
+  const place = cleanText(city)
+  return place ? `Homes in ${place}` : null
 }
 
 export type WhyBullet = { label: string; text: string }

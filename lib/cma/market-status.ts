@@ -6,6 +6,7 @@
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { keepSameProductType } from '@/lib/cma/market-area'
+import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
@@ -494,7 +495,11 @@ export function computeMarketArea(input: {
   const band = marketAreaPriceBand(anchor ?? 0)
   if (!band) return null
   const beds = similarBedRange(input.subject.beds)
-  const subdivision = input.subject.subdivision?.trim() ?? ''
+  // An MLS placeholder ('N/A', 'None', …) names no subdivision, so it can never
+  // be the grain OR the place in a source line. 62,974 `listings` rows carry
+  // the literal 'N/A' (see realSubdivision); scoping on it returns citywide
+  // strangers and then labels them a subdivision.
+  const subdivision = realSubdivision(input.subject.subdivision) ?? ''
   const since90 = new Date(asOf.getTime() - 90 * 24 * 3600e3).toISOString().slice(0, 10)
 
   const inPriceAndBeds = (row: CmaMarketAreaRow) =>

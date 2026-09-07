@@ -19,7 +19,7 @@ import {
   sparkPhotoAt,
   usd,
 } from '@/lib/cma/render-blocks'
-import { clientSourceLine, formatClientMlsField } from '@/lib/cma/client-facing'
+import { clientAreaLabel, clientSourceLine, formatClientMlsField } from '@/lib/cma/client-facing'
 import {
   renderBandOutcomesHtml,
   renderDaysToOfferHtml,
@@ -295,14 +295,15 @@ export function photosPage(a: OpinionPageArgs): CmaPageDef | null {
 
 export function statusGridPage(a: OpinionPageArgs): CmaPageDef | null {
   const area = a.extras?.marketArea
-  const html = renderStatusGridHtml(area)
-  if (!html || !area) return null
+  const html = renderStatusGridHtml(area, a.subject.city)
+  const label = clientAreaLabel(area?.label, a.subject.city)
+  if (!html || !area || !label) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Status in this market`,
     toc: 'Status in this market',
     body: `
   <h2 class="section">Status in this market</h2>
-  <p>${esc(area.label)}.</p>
+  <p>${esc(label)}.</p>
   ${html}`,
   }
 }
@@ -315,7 +316,7 @@ export function sold90Page(a: OpinionPageArgs): CmaPageDef | null {
     const ratio = band.median / rec
     if (ratio > 1.2 || ratio < 1 / 1.2) return null
   }
-  const html = renderSold90Html({ sold90: band } as CmaMarketArea)
+  const html = renderSold90Html({ sold90: band } as CmaMarketArea, a.subject.city)
   if (!html) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · 90-day solds`,
@@ -450,7 +451,9 @@ export function seasonalityPage(a: OpinionPageArgs): CmaPageDef | null {
     fastest ? ` The shortest waits land in ${esc(fastest)}.` : ''
   }</p>
   <div class="szn is-hero" data-anim="chart">${svg}</div>
-  <p class="small">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`))}</p>`,
+  <p class="small">${esc(clientSourceLine(x.source, `Closed single-family sales in ${a.subject.city}, grouped by close month.`, {
+      city: a.subject.city,
+    }))}</p>`,
   }
 }
 
@@ -475,7 +478,7 @@ export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
   // instead (P2) — the seller's own failed ask is the reading, so the chart
   // belongs beside it, not two chapters later.
   const chart = bandChapterShowsRuler(a)
-    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
     : ''
   const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return null
@@ -505,7 +508,7 @@ const LENS_LABELS: Record<string, string> = {
 export function lastListingPage(a: OpinionPageArgs): CmaPageDef | null {
   const ea = a.expiredAudit
   if (!ea || ea.findings.length === 0) return null
-  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
   const b = FAILED_ASK_BACKTEST
   const blocks = ea.findings
     .map((f) => {
@@ -534,7 +537,7 @@ export function lastListingPage(a: OpinionPageArgs): CmaPageDef | null {
 
 /** How fast homes like yours went (P4). Replaces the month ledger. */
 export function daysToOfferPage(a: OpinionPageArgs): CmaPageDef | null {
-  const html = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps })
+  const html = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
   if (!html) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · How fast homes like yours went`,
