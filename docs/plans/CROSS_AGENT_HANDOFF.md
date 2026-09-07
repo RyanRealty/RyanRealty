@@ -184,7 +184,8 @@ audit), `0301398e` (handoff).
   published (the two August reports included), 20 retired, 0 voice violations.
 - Photographer shot list: `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
 - The two takedowns are rewritten and back at their slugs (program, size, lookup, and offering
-  facts, sourced, zero steering words). Redirects removed.
+  facts, sourced, zero steering words). Redirects removed. Verified live after 00440ca9
+  (200, FAQPage, heroes, legacy paths 301 to the blog URLs). `blog_posts`: 80 published, 18 retired.
 - Next: the 37 FIX posts (mostly unsourced price tiers, HOA dues, rental income in the resort
   guides) and 9 RESTORE posts, exact sentences in the triage files.
 
