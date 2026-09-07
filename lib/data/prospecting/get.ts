@@ -15,6 +15,7 @@ import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
 import { isProspectDocClientReady } from './doc-ready'
+import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { blockAllChannels, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
@@ -470,6 +471,10 @@ export async function getExpiredOwnershipSince(mlsNumber: string | null): Promis
   return fetchCustomOwnershipSince(sb, personId)
 }
 
+
+/** Desk detail must paint — never hang forever on price-history / drip / ownership. */
+const DETAIL_ENRICH_TIMEOUT_MS = 6_000
+
 /** Row + property card + full price history for the review drawer (spec §7). */
 export async function getProspectDetail(kind: ProspectKind, id: string): Promise<ProspectDetail | null> {
   const sb = createServiceClient()
@@ -479,9 +484,14 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
     if (!loaded) return null
     const { row, raw, listing } = loaded
     const [priceHistory, drip, customOwnershipSince] = await Promise.all([
-      fetchPriceHistory(row),
-      getProspectDripState(kind, row.personId),
-      fetchCustomOwnershipSince(sb, row.personId),
+      withTimeoutFallback(fetchPriceHistory(row), [], DETAIL_ENRICH_TIMEOUT_MS, 'prospectDetail.priceHistory'),
+      withTimeoutFallback(
+        getProspectDripState(kind, row.personId),
+        { sequenceId: null, sequenceName: null, enrolled: false },
+        DETAIL_ENRICH_TIMEOUT_MS,
+        'prospectDetail.drip',
+      ),
+      withTimeoutFallback(fetchCustomOwnershipSince(sb, row.personId), null, DETAIL_ENRICH_TIMEOUT_MS, 'prospectDetail.ownership'),
     ])
     return {
       ...row,
@@ -520,9 +530,14 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
   if (!loaded) return null
   const { row, raw } = loaded
   const [priceHistory, drip, customOwnershipSince] = await Promise.all([
-    fetchPriceHistory(row),
-    getProspectDripState(kind, row.personId),
-    fetchCustomOwnershipSince(sb, row.personId),
+    withTimeoutFallback(fetchPriceHistory(row), [], DETAIL_ENRICH_TIMEOUT_MS, 'prospectDetail.priceHistory'),
+    withTimeoutFallback(
+      getProspectDripState(kind, row.personId),
+      { sequenceId: null, sequenceName: null, enrolled: false },
+      DETAIL_ENRICH_TIMEOUT_MS,
+      'prospectDetail.drip',
+    ),
+    withTimeoutFallback(fetchCustomOwnershipSince(sb, row.personId), null, DETAIL_ENRICH_TIMEOUT_MS, 'prospectDetail.ownership'),
   ])
   return {
     ...row,
