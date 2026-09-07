@@ -217,8 +217,10 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
           className="srch-chip shrink-0"
           aria-expanded={open}
           aria-haspopup="dialog"
+          aria-label={triggerLabel}
         >
-          {triggerLabel}
+          <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save Search'}</span>
+          <span className="hidden sm:inline">{triggerLabel}</span>
         </Button>
         {open ? (
           <>
@@ -300,8 +302,10 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
         className="srch-chip shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
         aria-expanded={open}
         aria-haspopup="dialog"
+        aria-label={triggerLabel}
       >
-        {triggerLabel}
+        <span className="sm:hidden">{status === 'done' ? 'Saved' : 'Save Search'}</span>
+        <span className="hidden sm:inline">{triggerLabel}</span>
       </Button>
       {open && (
         <>

@@ -155,6 +155,43 @@ describe('split loading skeleton matches the live rail', () => {
   })
 })
 
+describe('Zillow map-first mobile bottom sheet', () => {
+  it('ships peek/expand sheet chrome with N homes for sale and no List FAB', () => {
+    const view = readSrc('components/search/MapSearchView.tsx')
+    const css = readSrc('components/search/search-ledger.css')
+    expect(view).toMatch(/map-search-sheet/)
+    expect(view).toMatch(/sheetHomesLabel/)
+    expect(view).toMatch(/homes for sale/)
+    expect(view).toMatch(/map-search-sheet__handle/)
+    expect(view).toMatch(/is-expanded/)
+    expect(view).toMatch(/is-peek/)
+    expect(view).not.toMatch(/map-search-list-fab/)
+    expect(css).toMatch(/\.map-search-sheet/)
+    expect(css).toMatch(/\.map-search-sheet__chrome/)
+    expect(css).toMatch(/box-shadow: none/)
+    expect(css).not.toMatch(/map-search-list-fab/)
+  })
+
+  it('keeps floating layers, draw, and locate on the map', () => {
+    const chrome = readSrc('components/search/MapChrome.tsx')
+    const draw = readSrc('components/search/MapDrawTools.tsx')
+    expect(chrome).toMatch(/aria-label="Map layers"/)
+    expect(chrome).toMatch(/aria-label="Locate me"/)
+    expect(chrome).toMatch(/map-search-locate/)
+    expect(draw).toMatch(/aria-label="Draw tools"/)
+  })
+
+  it('keeps place SELECTS as real pickers in SearchFilters chrome', () => {
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/openPanel === 'city'/)
+    expect(filters).toMatch(/openPanel === 'neighborhood'/)
+    expect(filters).toMatch(/openPanel === 'community'/)
+    expect(filters).toMatch(/openPanel === 'subdivision'/)
+    expect(filters).toMatch(/SaveSearchButton/)
+    expect(filters).toMatch(/Open all filters/)
+  })
+})
+
 describe('390 Map uses one camera', () => {
   it('hides the filter-bar List/Split/Map ToggleGroup so the map shell is the one view switch', () => {
     const src = readSrc('components/search/SearchFilters.tsx')
@@ -472,11 +509,11 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
   })
 
   it('mobile map view shows the result count from the SAME query that renders the pins (§0)', () => {
-    // Viewport pins stay on getViewportSearch totalCount. The list phrase is
-    // the filter-match number; a different viewport count prints labeled.
-    // The pill is Ledger-register chrome now (`srch-count` carries the
-    // tabular numerals via components/search/search-ledger.css).
-    expect(src).toMatch(/srch-count[^'"]*lg:hidden/)
+    // Viewport pins stay on getViewportSearch totalCount. Mobile count lives
+    // on the Zillow bottom-sheet chrome ("N homes for sale"), not a map pill.
+    expect(src).toMatch(/sheetHomesLabel/)
+    expect(src).toMatch(/map-search-sheet__title/)
+    expect(src).toMatch(/homes for sale/)
     expect(src).toMatch(/publishSearchCountPair\(/)
     expect(src).toMatch(/countSearchListings\(/)
   })
@@ -828,7 +865,7 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(markers).toMatch(/keyboardShortcuts: false/)
     expect(clustered).toMatch(/import MapChrome from '@\/components\/search\/MapChrome'/)
     expect(clustered).toMatch(/<MapChrome map=\{mapInstance\} \/>/)
-    expect(chrome).toMatch(/aria-label="Map type"/)
+    expect(chrome).toMatch(/aria-label="Map layers"/)
     expect(chrome).toMatch(/aria-label="Map zoom"/)
     expect(chrome).toMatch(/aria-label="Satellite"/)
     expect(css).toMatch(/\.map-search-zoom/)

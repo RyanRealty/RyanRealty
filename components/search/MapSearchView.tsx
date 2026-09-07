@@ -359,6 +359,7 @@ export default function MapSearchView({
   const [visibleCount, setVisibleCount] = useState(CARD_PAGE)
 
   const listContainerRef = useRef<HTMLDivElement>(null)
+  const sheetDragRef = useRef<{ startY: number; expanded: boolean } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastBoundsRef = useRef<MapBounds>(initialBounds)
   const reqIdRef = useRef(0)
@@ -785,19 +786,26 @@ export default function MapSearchView({
     !matchCountReady && totalCount === 0
       ? 'Updating…'
       : (publishedCounts.match?.phrase ?? publishedCounts.viewport?.phrase ?? 'Homes')
-  const mapCountPhrase =
-    publishedCounts.viewport?.phrase ??
-    publishedCounts.match?.phrase ??
-    (totalCount === 0 ? 'No homes in this map view' : `${totalCount.toLocaleString('en-US')} homes in this map view`)
+  // Zillow map-first sheet title — always "N homes for sale" (not viewport caption).
+  const sheetHomesLabel = (() => {
+    if (resultsDegraded) return 'Search delayed'
+    if (!matchCountReady && totalCount === 0) return 'Updating…'
+    const pub = publishedCounts.match ?? publishedCounts.viewport
+    const value = pub?.value ?? totalCount
+    const plus = pub?.phrase.includes('+') ? '+' : ''
+    if (value === 1 && !plus) return '1 home for sale'
+    return `${value.toLocaleString('en-US')}${plus} homes for sale`
+  })()
+  const sheetExpanded = mobileView === 'list'
 
   // listPanel is mounted once (desktop rail + mobile bottom sheet share the
-  // node via CSS). Mobile List expands the sheet; Map hides it (count pill).
+  // node via CSS). Mobile: peek sheet always; List expands it; Map collapses to peek.
   // totalCount is sticky across pan refetches — loading never clears it, so
-  // the row / pill show previous N + "Updating…" (SEARCH_UX_WAVE3 pan sticky count).
+  // the row / sheet show previous N + "Updating…" (SEARCH_UX_WAVE3 pan sticky count).
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
       {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
-      <div className="sticky top-0 z-10 hidden flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3 lg:flex">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3">
         <p className="srch-count min-w-0 flex-1 text-muted-foreground" aria-live="polite">
           {resultsDegraded ? (
             <span className="font-semibold text-foreground">Search delayed</span>
@@ -1069,7 +1077,7 @@ export default function MapSearchView({
         aria-live="polite"
         className={cn(
           // Sit above the mobile count pill / sheet so the spinner stays readable.
-          'pointer-events-none absolute bottom-24 left-1/2 z-[100] -translate-x-1/2 transition-opacity lg:bottom-16',
+          'pointer-events-none absolute bottom-[4.75rem] left-1/2 z-[100] -translate-x-1/2 transition-opacity lg:bottom-16',
           loading ? 'opacity-100' : 'opacity-0'
         )}
       >
@@ -1081,25 +1089,7 @@ export default function MapSearchView({
           {loading ? 'Updating results…' : 'Results updated'}
         </span>
       </div>
-      {/* Mobile map canvas: result count rides the canvas from the SAME totalCount
-          as the pins (§0). Hidden when the list sheet is expanded (no double count).
-          Never claim "0 homes" when the fetch was degraded (P9). */}
-      <p
-        className={cn(
-          'srch-count pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-none border border-border bg-card px-4 py-2 font-medium text-foreground shadow-none lg:hidden',
-          mobileView === 'list' ? 'invisible' : 'visible'
-        )}
-        aria-live="polite"
-      >
-        {resultsDegraded ? (
-          'Search delayed'
-        ) : (
-          <>
-            <span className="srch-figure font-semibold">{mapCountPhrase}</span>
-            {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
-          </>
-        )}
-      </p>
+      {/* Mobile count lives on the bottom sheet chrome ("N homes for sale"). */}
     </div>
   )
 
@@ -1138,14 +1128,13 @@ export default function MapSearchView({
           </button>
         </div>
         )}
-        <p className="srch-figure min-w-0 flex-1 truncate text-xs font-semibold text-foreground" aria-live="polite">
+        <p className="srch-figure hidden min-w-0 flex-1 truncate text-xs font-semibold text-foreground lg:block" aria-live="polite">
           {resultsDegraded ? 'Search delayed' : listCountPhrase}
         </p>
       </div>
 
-      {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: list-first
-          fills the shell so a house is in the first 390 viewport; Map hides the
-          list and shows the canvas. Never double-render panels. */}
+      {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: full-bleed
+          map under a Zillow-style bottom sheet (peek → expand). Never double-render. */}
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Map — full-bleed under the list on mobile; flex-1 rail partner on desktop. */}
         {listOnly ? null : (
@@ -1159,31 +1148,71 @@ export default function MapSearchView({
         </div>
         )}
 
-        {/* List rail / mobile list pane.
-            List mode: covers the map so overlays cannot sit on the photo.
-            Map mode: pane hidden (count pill on canvas). Desktop split: left rail. */}
+        {/* List rail / mobile bottom sheet.
+            Mobile: peek "N homes for sale" always; List expands; Map collapses.
+            Desktop: left rail (hidden in pure map). */}
         <div
           className={cn(
             'z-10 min-h-0 flex-col bg-card',
-            'absolute inset-0',
-            mobileView === 'list' ? 'flex' : 'hidden',
-            'map-search-list lg:static lg:order-1 lg:z-auto lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto',
-            layoutView === 'map' ? 'lg:hidden' : 'lg:flex',
-            layoutView === 'list' ? 'lg:w-full lg:flex-1' : null,
+            listOnly
+              ? cn(
+                  'absolute inset-0 flex',
+                  'map-search-list lg:static lg:order-1 lg:z-auto lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto',
+                  layoutView === 'list' ? 'lg:w-full lg:flex-1' : null,
+                )
+              : cn(
+                  'map-search-list map-search-sheet',
+                  sheetExpanded ? 'is-expanded' : 'is-peek',
+                  'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto',
+                  layoutView === 'map' ? 'lg:hidden' : 'lg:flex',
+                  layoutView === 'list' ? 'lg:w-full lg:flex-1' : null,
+                ),
           )}
         >
-          {listPanel}
+          {listOnly ? null : (
+            <button
+              type="button"
+              className="map-search-sheet__chrome"
+              aria-expanded={sheetExpanded}
+              aria-controls="map-search-sheet-panel"
+              aria-label={sheetExpanded ? 'Collapse home list' : 'Expand home list'}
+              onPointerDown={(e) => {
+                sheetDragRef.current = { startY: e.clientY, expanded: sheetExpanded }
+                e.currentTarget.setPointerCapture?.(e.pointerId)
+              }}
+              onPointerUp={(e) => {
+                const drag = sheetDragRef.current
+                sheetDragRef.current = null
+                if (!drag) return
+                const dy = drag.startY - e.clientY
+                if (dy > 40 && !drag.expanded) {
+                  applyView('list')
+                  return
+                }
+                if (dy < -40 && drag.expanded) {
+                  applyView('map')
+                  return
+                }
+                if (Math.abs(dy) < 10) {
+                  applyView(drag.expanded ? 'map' : 'list')
+                }
+              }}
+            >
+              <span className="map-search-sheet__handle" aria-hidden />
+              <span className="srch-count map-search-sheet__title" aria-live="polite">
+                <span className="srch-figure font-semibold">{sheetHomesLabel}</span>
+                {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
+              </span>
+            </button>
+          )}
+          <div
+            id="map-search-sheet-panel"
+            className="map-search-sheet__body flex min-h-0 flex-1 flex-col"
+          >
+            {listPanel}
+          </div>
         </div>
       </div>
-              {listOnly || layoutView === 'list' ? null : (
-          <button
-            type="button"
-            className="map-search-list-fab lg:hidden"
-            onClick={() => applyView('list')}
-          >
-            List
-          </button>
-        )}
 
       <ListingTourOverlay
         open={tour != null}

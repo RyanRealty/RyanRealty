@@ -180,7 +180,7 @@ export default function AreaPicker({ shapes, onApply, className }: Props) {
     <div
       ref={rootRef}
       className={cn(
-        'absolute bottom-16 left-3 z-[100] flex flex-col items-start gap-2 lg:bottom-4',
+        'absolute bottom-[4.75rem] left-3 z-[100] flex flex-col items-start gap-2 lg:bottom-4',
         className,
       )}
     >

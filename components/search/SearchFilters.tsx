@@ -876,10 +876,13 @@ export default function SearchFilters({
             setMoreSheetOpen(true)
           }}
           className="srch-chip shrink-0 gap-1 px-3"
-          aria-label="Open all filters"
+          aria-label={moreFilterCount > 0 ? `Open all filters, ${moreFilterCount} active` : 'Open all filters'}
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
-          {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
+          <span className="sm:hidden">{moreFilterCount > 0 ? moreFilterCount : 'Filters'}</span>
+          <span className="hidden sm:inline">
+            {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
+          </span>
         </Button>
         <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
         <SaveSearchButton user={viewerState.signedIn} />
@@ -943,14 +946,24 @@ export default function SearchFilters({
           </Button>
         </div>
       )}
-      {/* Mobile chips: ONLY sheet-applied registry filters — the quick four
-          (status/price/beds/type) stay on their Row 2 triggers, so the P3
-          duplication rationale holds, but a fireplace or flooring filter
-          applied in the sheet was previously invisible and individually
-          un-removable below 640px, and Clear all was unreachable (W-UI audit
-          T2, 2026-07-30). One scrollable row restores both affordances. */}
-      {registryActive.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 sm:hidden">
+      {/* Mobile active filter chips (Zillow map-search pattern). Place SELECTS
+          stay as real pickers in the top row; this strip shows removable
+          applied filters + Clear all. */}
+      {hasAnyFilter && (
+        <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 no-scrollbar sm:hidden">
+          {activeStatusLabel && (
+            <span className="shrink-0">
+              <RegistryFilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />
+            </span>
+          )}
+          {activeTypeLabel && (
+            <span className="shrink-0">
+              <RegistryFilterChip
+                label={activeTypeLabel}
+                onRemove={() => updateUrl({ propertyType: undefined, propertySubTypes: undefined })}
+              />
+            </span>
+          )}
           {registryActive.map(({ key, label, params }) => (
             <span key={key} className="shrink-0">
               <RegistryFilterChip label={label} onRemove={() => removeChip(params)} />
