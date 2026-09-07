@@ -245,6 +245,24 @@ table.comp-matrix .matrix-addr{display:block}
   .szn.is-hero{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .szn.is-hero svg{min-width:660px}
 }
+/* The price ruler is the one graphic panning destroys: its whole reading is
+   where two ticks sit inside a band, and a cropped end deletes half of it. It
+   ships in two layouts and exactly one is ever visible (F6). */
+.ruler-phone{display:none}
+@media screen and (max-width:700px){.ruler-wide{display:none}.ruler-phone{display:block}}
+@media print{.ruler-wide{display:block!important}.ruler-phone{display:none!important}}
+/* The market stat row (F7). Same figures, same order, same labels as the
+   letter; the immersive's own register for the numerals. The declarations
+   match .letter-body .stat exactly, so a strip inside a wrapped letter body
+   keeps the size it already had. */
+.stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:36px 0}
+.stat-strip.is-1{grid-template-columns:1fr}
+.stat-strip.is-2{grid-template-columns:repeat(2,1fr)}
+.stat-strip.is-4{grid-template-columns:repeat(4,1fr)}
+.stat-strip .stat .val{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(28px,3.6vw,44px);line-height:1;font-variant-numeric:tabular-nums}
+.stat-strip .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
+.stat-strip .stat .lbl.vd{font-weight:600;opacity:.95;margin-top:6px}
+@media (max-width:700px){.stat-strip,.stat-strip.is-3,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}}
 /* A chart drawn in navy ink is invisible on a navy scene. The median-close
    line printed a caption over a blank field until this landed. Scoped to the
    scene, not to one wrapper class, so a chart moved to a navy chapter cannot

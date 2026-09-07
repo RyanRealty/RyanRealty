@@ -363,8 +363,19 @@ export function cmaStylesheet(siteUrl: string): string {
     border-top: 1px solid var(--navy-line);
     border-bottom: 1px solid var(--navy-line);
   }
+  .stat-strip.is-1 { grid-template-columns: 1fr; }
+  .stat-strip.is-2 { grid-template-columns: repeat(2, 1fr); }
   .stat-strip.is-3 { grid-template-columns: repeat(3, 1fr); }
   .stat-strip.is-4 { grid-template-columns: repeat(4, 1fr); }
+  /* Four columns hold on paper and at reading width. On a phone they fold to
+     two — a 78px column turns "median sold, every Redmond home" into a
+     one-word-per-line column (F7). Screen only: the sheet is 816 wide. */
+  @media screen and (max-width: 700px) {
+    .stat-strip, .stat-strip.is-3, .stat-strip.is-4 { grid-template-columns: repeat(2, 1fr); }
+    .stat-strip .stat:nth-child(2n) { border-right: 0; }
+  }
+  /* The verdict word, under the number it classifies. */
+  .stat-strip .stat .lbl.vd { color: var(--navy); font-weight: 600; margin: 4px 0 0; }
   .stat-strip .stat {
     padding: 12px 8px;
     text-align: center;

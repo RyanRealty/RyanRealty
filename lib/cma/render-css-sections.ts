@@ -284,6 +284,18 @@ export function cmaSectionStyles(): string {
     .szn.is-hero { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .szn.is-hero svg { min-width: 620px; }
   }
+  /* The price ruler is the one graphic panning destroys: its whole reading is
+     where two ticks sit inside a band, and a cropped end deletes half of it.
+     It ships in two layouts and exactly one is ever visible (F6). */
+  .ruler-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .ruler-wide { display: none; }
+    .ruler-phone { display: block; }
+  }
+  @media print {
+    .ruler-wide { display: block !important; }
+    .ruler-phone { display: none !important; }
+  }
   @media screen {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   }
@@ -322,6 +334,11 @@ export function cmaSectionStyles(): string {
   .status-tile-l { font-size: 9px; color: var(--muted); margin-top: 4px; }
   .inv-verdict { display: block; margin-top: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
   .stat2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+  /* The 90-day band's figures. The letter carried no rule for this pair at
+     all, so "8" and "closed in 90 days" printed at body size on one line each
+     — the same missing-register defect F7 fixed on the market board. */
+  .stat2 .st-n { font-size: 16px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .stat2 .st-l { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 

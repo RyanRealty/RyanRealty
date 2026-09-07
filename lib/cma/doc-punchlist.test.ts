@@ -616,3 +616,159 @@ describe('the subject only has days-without-an-offer when it actually sat', () =
     expect(letter()).toMatch(/\d+ days, no offer/)
   })
 })
+
+// ── F6 · F7 (orchestrator look-pass, 2026-09-07) ────────────────────────────
+
+/** Every circle and every text box in an SVG, in that SVG's own viewBox units. */
+function svgBoxes(svg: string): {
+  W: number
+  H: number
+  circles: Array<{ cx: number; cy: number; r: number }>
+  texts: Array<{ x: number; y: number; size: number; anchor: string; text: string }>
+} {
+  const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg)
+  if (!vb) throw new Error('the ruler must carry a viewBox')
+  const circles = [...svg.matchAll(/<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/g)].map(
+    (m) => ({ cx: +m[1]!, cy: +m[2]!, r: +m[3]! }),
+  )
+  const texts = [...svg.matchAll(/<text ([^>]*)>([\s\S]*?)<\/text>/g)].map((m) => {
+    const attrs = m[1]!
+    const at = (k: string) => /* istanbul ignore next */ new RegExp(`${k}="([^"]*)"`).exec(attrs)?.[1]
+    return {
+      x: Number(at('x') ?? 0),
+      y: Number(at('y') ?? 0),
+      size: Number(at('font-size') ?? 12),
+      anchor: at('text-anchor') ?? 'start',
+      text: m[2]!.replace(/<[^>]+>/g, ' ').trim(),
+    }
+  })
+  return { W: +vb[1]!, H: +vb[2]!, circles, texts }
+}
+
+describe('F6 — the price ruler fits a phone', () => {
+  const phoneRuler = (html: string): string => {
+    const wrap = /<div class="szn ruler-phone">([\s\S]*?)<\/div>/.exec(html)
+    expect(wrap, 'both documents must carry a phone layout of the ruler').toBeTruthy()
+    return wrap![1]!
+  }
+
+  for (const [name, render] of [
+    ['letter', letter],
+    ['immersive', immersive],
+  ] as const) {
+    it(`draws every sold dot and both ticks inside the viewBox on the ${name}`, () => {
+      const svg = phoneRuler(render())
+      const { W, H, circles, texts } = svgBoxes(svg)
+      expect(W).toBeLessThanOrEqual(400)
+
+      // Nine closed sales and two unsold listings. None may be cropped.
+      expect(circles).toHaveLength(11)
+      for (const c of circles) {
+        expect(c.cx - c.r, `a dot at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
+        expect(c.cx + c.r, `a dot at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
+        expect(c.cy - c.r).toBeGreaterThanOrEqual(0)
+        expect(c.cy + c.r).toBeLessThanOrEqual(H)
+      }
+
+      // Both ticks carry their label, and the label sits inside the frame.
+      const labels = texts.map((t) => t.text)
+      expect(labels).toContain('Recommended $389K')
+      expect(labels).toContain('Your last ask $460K')
+      for (const t of texts) {
+        const w = t.text.length * t.size * 0.58
+        const left = t.anchor === 'end' ? t.x - w : t.anchor === 'middle' ? t.x - w / 2 : t.x
+        expect(left, `"${t.text}" runs off the left edge`).toBeGreaterThanOrEqual(-0.5)
+        expect(left + w, `"${t.text}" runs off the right edge`).toBeLessThanOrEqual(W + 0.5)
+        expect(t.y).toBeLessThanOrEqual(H)
+      }
+
+      // Two tick lines, both inside the plot.
+      const lines = [...svg.matchAll(/<line x1="([\d.]+)"[^>]*x2="([\d.]+)"/g)]
+      for (const l of lines) {
+        expect(+l[1]!).toBeGreaterThanOrEqual(0)
+        expect(+l[2]!).toBeLessThanOrEqual(W)
+      }
+    })
+  }
+
+  it('shows the phone layout only below 700px, and never on paper', () => {
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      const flat = css.replace(/\s+/g, ' ')
+      expect(flat).toMatch(/\.ruler-phone\s*\{\s*display:\s*none/)
+      expect(flat).toMatch(/@media screen and \(max-width:\s*700px\)[^}]*\{[^@]*\.ruler-wide\s*\{\s*display:\s*none/)
+      expect(flat).toMatch(/@media print[^@]*\.ruler-phone\s*\{\s*display:\s*none\s*!important/)
+    }
+  })
+
+  it('keeps the wide ruler for the printed page', () => {
+    expect(letter()).toContain('<div class="szn is-hero ruler-wide">')
+  })
+})
+
+describe('F7 — this market is a stat row, not a stacked list', () => {
+  const marketBlock = (html: string): string => {
+    const start = html.indexOf('How fast this market is moving')
+    expect(start, 'the market board must render').toBeGreaterThan(-1)
+    const rest = html.slice(start)
+    const end = rest.indexOf('</section>')
+    return end > 0 ? rest.slice(0, end) : rest
+  }
+
+  it('lays the four figures out as the stat row the document already uses', () => {
+    const block = marketBlock(letter())
+    expect(block).toMatch(/<div class="stat-strip is-4">/)
+    expect(block).not.toContain('class="stat3"')
+    const vals = [...block.matchAll(/<div class="val">([^<]*)<\/div>/g)].map((m) => m[1]!)
+    // Months of supply first, with its verdict word under it.
+    expect(vals).toEqual(['3.2', '97.8%', '21', '$475,000'])
+    expect(block).toMatch(/Seller(&#39;|')s market/)
+  })
+
+  it('names what each number actually is', () => {
+    const block = marketBlock(letter())
+    expect(block).toContain('months of supply')
+    // market_stats_cache.median_dom medians listings.days_to_pending — the days
+    // from going on market to going pending, not list-to-close.
+    expect(block).toContain('median days to an accepted offer')
+    expect(block).not.toContain('median days on market')
+    // saleToListRatio carries median_sale_to_original_list, not final list.
+    expect(block).toContain('sold price to original ask')
+    expect(block).not.toContain('>sold to list<')
+    expect(block).toContain('median sold, every Redmond home')
+  })
+
+  it('is the same row on the immersive', () => {
+    const block = marketBlock(immersive())
+    expect(block).toMatch(/<div class="stat-strip is-4">/)
+    expect(block).toContain('median days to an accepted offer')
+  })
+
+  it('has a row to lay out in, on both stylesheets, and folds on a phone', () => {
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      const flat = css.replace(/\s+/g, ' ')
+      expect(flat).toMatch(/\.stat-strip\.is-4\s*\{\s*grid-template-columns:\s*repeat\(4,\s*1fr\)/)
+      expect(flat).toMatch(/max-width:\s*(700|560)px\)[^@]*\.stat-strip/)
+    }
+  })
+
+  it('gives the 90-day band figures a register on the letter too', () => {
+    const flat = cmaStylesheet('https://ryan-realty.com').replace(/\s+/g, ' ')
+    expect(flat).toMatch(/\.stat2 \.st-n \{[^}]*font-weight: 600/)
+    expect(flat).toMatch(/\.stat2 \.st-l \{[^}]*text-transform: uppercase/)
+  })
+
+  it('keeps the median-close line under the row', () => {
+    const trend = Array.from({ length: 12 }, (_, i) => ({
+      periodStart: `2025-${String(i + 1).padStart(2, '0')}-01`,
+      medianSalePrice: 461000 + i * 6000,
+      soldCount: 20,
+    }))
+    const html = letter({
+      market: { ...(args().market as object), trend } as RenderCmaArgs['market'],
+    })
+    const block = marketBlock(html)
+    expect(block).toContain('Median close by month.')
+    // The row reads first, the line under it.
+    expect(block.indexOf('stat-strip')).toBeLessThan(block.indexOf('Median close by month.'))
+  })
+})

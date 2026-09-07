@@ -5,7 +5,13 @@
 import { dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
-import { daysToOfferSvg, medianCloseLineSvg, priceRulerSvg, type DaysRow } from '@/lib/cma/market-charts'
+import {
+  daysToOfferSvg,
+  medianCloseLineSvg,
+  priceRulerPhoneSvg,
+  priceRulerSvg,
+  type DaysRow,
+} from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -122,6 +128,23 @@ export function renderSold90Html(area: CmaMarketArea | null | undefined): string
  * so the median-sold label says so — a seller reading "$532,311 median sold"
  * two scrolls under a $389,000 recommend has to be told which is which
  * (dataviz: name the grain the numbers actually are).
+ *
+ * F7, 2026-09-07: one stat row, the same one the failed-then-sold statistics
+ * use, months of supply first with its verdict word under it. The letter had
+ * no rule for the immersive's `.stat3` grid at all, so on paper and at
+ * reading width the four figures printed as a stacked list — number, label,
+ * number, label — under a 42px months-of-supply hero.
+ *
+ * Every label says what its number is, and two of them used to lie about it:
+ *
+ * - `medianDom` is `market_stats_cache.median_dom`, the median of
+ *   `listings.days_to_pending` (on-market date to pending). It is the days a
+ *   seller waited for an accepted offer, not "days on market", and CLAUDE.md
+ *   §7 bans publishing a list-to-close figure under that name — so the label
+ *   names the offer, which is what the column actually measures.
+ * - `saleToListRatio` carries `median_sale_to_original_list` from the pace
+ *   read, not sale to the final ask. A seller who cut twice reads "sold to
+ *   list" as the last ask, which is a different and better-looking number.
  */
 export function renderInventoryBoardHtml(market: CmaMarketContext | null | undefined): string {
   if (!market) return ''
@@ -132,20 +155,35 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
       ? dec(market.saleToListRatio <= 2 ? market.saleToListRatio * 100 : market.saleToListRatio, 1)
       : null
   const chart = medianCloseLineSvg(market.trend ?? [])
-  return `${
-    mos != null
-      ? `<div class="inv-hero">
-    <div class="inv-hero-n">${esc(formatMonthsOfSupply(mos))}</div>
-    <div class="inv-hero-l">months of supply</div>
-    ${verdict ? `<div class="inv-verdict">${esc(verdict.label)}</div>` : ''}
-  </div>`
-      : ''
+  const stats: Array<{ val: string; lbl: string; verdict?: string }> = []
+  if (mos != null) {
+    stats.push({
+      val: formatMonthsOfSupply(mos),
+      lbl: 'months of supply',
+      verdict: verdict?.label,
+    })
   }
-  <div class="stat3">
-    ${saleToList != null ? `<div class="st"><div class="st-n">${saleToList}%</div><div class="st-l">sold to list</div></div>` : ''}
-    ${market.medianDom != null ? `<div class="st"><div class="st-n">${int(market.medianDom)}</div><div class="st-l">median days on market</div></div>` : ''}
-    ${market.medianSalePrice != null ? `<div class="st"><div class="st-n">${usd(market.medianSalePrice)}</div><div class="st-l">median sold, every ${esc(market.geoLabel)} home</div></div>` : ''}
-  </div>
+  if (saleToList != null) stats.push({ val: `${saleToList}%`, lbl: 'sold price to original ask' })
+  if (market.medianDom != null) {
+    stats.push({ val: int(market.medianDom), lbl: 'median days to an accepted offer' })
+  }
+  if (market.medianSalePrice != null) {
+    stats.push({
+      val: usd(market.medianSalePrice),
+      lbl: `median sold, every ${market.geoLabel} home`,
+    })
+  }
+  if (stats.length === 0) return chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''
+  const cells = stats
+    .map(
+      (s) => `<div class="stat">
+      <div class="val">${esc(s.val)}</div>
+      <div class="lbl">${esc(s.lbl)}</div>
+      ${s.verdict ? `<div class="lbl vd">${esc(s.verdict)}</div>` : ''}
+    </div>`,
+    )
+    .join('')
+  return `<div class="stat-strip is-${Math.min(stats.length, 4)}">${cells}</div>
   ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
 }
 
@@ -227,7 +265,7 @@ export function renderBandOutcomesHtml(
   comps?: readonly CmaAdjustedComp[] | null,
 ): string {
   if (!x || x.sold.length < 3 || x.unsold.length < 1) return ''
-  const svg = priceRulerSvg({
+  const ruler = {
     sold: x.sold,
     unsold: x.unsold,
     list: x.list,
@@ -235,9 +273,16 @@ export function renderBandOutcomesHtml(
     lastAsk: x.lastAsk,
     lastAskLabel: x.lastAsk != null ? `Your last ask ${shortUsd(x.lastAsk)}` : null,
     caption: 'Sold and unsold in this band',
-  })
+  }
+  const svg = priceRulerSvg(ruler)
   if (!svg) return ''
-  return `<div class="szn is-hero">${svg}</div>
+  // Two layouts of one graphic, and exactly one of them is ever visible: the
+  // wide ruler on paper and at reading width, the drawn-to-fit one below
+  // 700px. F6 — the wide ruler in a pan box cropped nine sold dots and the
+  // seller's own ask off the right edge of a phone.
+  const phone = priceRulerPhoneSvg(ruler)
+  return `<div class="szn is-hero ruler-wide">${svg}</div>
+  ${phone ? `<div class="szn ruler-phone">${phone}</div>` : ''}
   <p class="chart-read">${esc(bandOutcomeReading(x, comps))}</p>
   <p class="small">${esc(clientSourceLine(x.source, `Closed sales and unsold listings in ${x.label}.`))}</p>`
 }

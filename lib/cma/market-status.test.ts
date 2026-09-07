@@ -634,7 +634,10 @@ describe('chapter order', () => {
     expect(html).toContain('sc-navy')
     expect(html).not.toContain('id="listing-trend"')
     expect(html).toContain('id="inventory"')
-    expect(html).toContain('inv-hero')
+    // F7: the board is one stat row, months of supply first with its verdict
+    // under it. The 42px hero over a stacked list is gone.
+    expect(html).toContain('<div class="stat-strip is-4">')
+    expect(html).not.toContain('inv-hero')
     expect(html).not.toContain('photo-lead')
     expect(html).not.toMatch(/>0 days</)
     expect(html).not.toMatch(/bedroom sales in \d+ to \d+ bedroom homes/)
@@ -654,6 +657,7 @@ describe('chapter order', () => {
     expect(html).toContain('id="sold-90"')
     expect(html).toContain('id="inventory"')
     expect(html).toMatch(/Seller(&#39;|')s market/)
-    expect(html).toContain('inv-hero')
+    expect(html).toContain('<div class="stat-strip is-4">')
+    expect(html).toContain('months of supply')
   })
 })
