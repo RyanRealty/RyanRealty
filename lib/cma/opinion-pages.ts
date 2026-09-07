@@ -10,7 +10,7 @@
 import { competitionHeading, renderBandRivalsHtml, type BandRivalsInput } from '@/lib/cma/band-rivals'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
-import { cleanText, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, cleanText, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
   renderAskOutcomeHtml,
@@ -322,7 +322,7 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
           city: a.subject.city,
           subdivisionName: name,
         },
-        a.docLinks ?? {},
+        a.docLinks ?? UNADDRESSED_DOC_LINKS,
       )
       return `<a href="${esc(href)}" data-rr-track="cma-street-sale">${esc(n.address)}</a> ${usd(n.closePrice)}`
     })
@@ -390,8 +390,8 @@ export function nextStepHeading(a: Pick<OpinionPageArgs, 'expiredAudit'>): strin
  */
 export function nextStepButtonsHtml(a: OpinionPageArgs): string {
   const first = a.broker?.displayName.split(/\s+/)[0] ?? 'us'
-  const book = trackedDocLink('book', '', a.docLinks ?? {})
-  const search = trackedDocLink('search', a.subject.city, a.docLinks ?? {})
+  const book = trackedDocLink('book', '', a.docLinks ?? UNADDRESSED_DOC_LINKS)
+  const search = trackedDocLink('search', a.subject.city, a.docLinks ?? UNADDRESSED_DOC_LINKS)
   return `<a href="${esc(book)}" data-rr-track="cma-book">Talk with ${esc(first)}</a>
     <a class="ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
 }

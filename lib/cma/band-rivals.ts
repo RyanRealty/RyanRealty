@@ -3,7 +3,7 @@
  * CmaBandPosition. This module names the houses and draws the list.
  */
 
-import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 
 const esc = escapeHtml
@@ -205,7 +205,7 @@ function rivalCard(
       streetName: r.address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null,
       city,
     },
-    ctx ?? {},
+    ctx ?? UNADDRESSED_DOC_LINKS,
   )
   const facts = joinFacts([
     r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,

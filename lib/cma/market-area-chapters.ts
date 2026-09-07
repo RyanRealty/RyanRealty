@@ -2,7 +2,7 @@
  * Web + print chapters for market-area density. Our look. Our number.
  */
 
-import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
@@ -646,7 +646,7 @@ export function renderUnsoldPeerRowsHtml(
           city: subject.city,
           subdivisionName: subject.subdivision,
         },
-        ctx ?? {},
+        ctx ?? UNADDRESSED_DOC_LINKS,
       )
       const status = cleanText(p.status)?.toLowerCase() ?? null
       const facts = [

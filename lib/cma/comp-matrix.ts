@@ -16,7 +16,7 @@
  * rather than a function of how long an address happens to be.
  */
 
-import { cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -214,13 +214,13 @@ function compHref(comp: CmaAdjustedComp, ctx?: TrackedDocLinkCtx | null): string
     'listing',
     {
       listingKey: comp.listingKey,
-      listNumber: comp.mlsNumber,
+      mlsNumber: comp.mlsNumber,
       streetNumber: /^\s*(\d+[A-Za-z]?)\s/.exec(comp.address)?.[1] ?? null,
       streetName: comp.address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null,
       city: comp.city,
       subdivisionName: comp.subdivision,
     },
-    ctx ?? {},
+    ctx ?? UNADDRESSED_DOC_LINKS,
   )
 }
 

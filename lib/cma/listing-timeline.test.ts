@@ -12,6 +12,7 @@ import {
   listingTimelineReading,
   resolveListingTimeline,
   type ExpiredAuditData,
+  type ExpiredFinalCycle,
 } from '@/lib/cma/expired-audit'
 import type { CmaSubject } from '@/lib/cma/types'
 
@@ -24,6 +25,29 @@ const subject = {
   listingHistoryLine:
     'Listed Feb 26, 2026 at $475,000, cut to $460,000, came off withdrawn · 187 days on market.',
 } as unknown as CmaSubject
+
+/**
+ * A final cycle as the build writes it. The fixture fills the trace fields the
+ * contract requires so the test exercises the real shape, and takes the
+ * drawing facts per case.
+ */
+const cycle = (
+  c: Partial<ExpiredFinalCycle> & Pick<ExpiredFinalCycle, 'listDate' | 'initialAsk'>,
+): ExpiredFinalCycle => ({
+  cuts: [],
+  cutsDated: (c.cuts ?? []).some((cut) => Boolean(cut.date)),
+  finalAsk: (c.cuts ?? []).at(-1)?.ask ?? c.initialAsk,
+  offMarketDate: null,
+  status: null,
+  days: null,
+  source: {
+    table: 'listings + price_history + listing_history',
+    filter: "ListingKey='TEST'",
+    fetchedAt: '2026-09-07T00:00:00.000Z',
+    query: 'select 1',
+  },
+  ...c,
+})
 
 const audit = (finalCycle: ExpiredAuditData['finalCycle']): ExpiredAuditData =>
   ({ findings: [], services: [], netSheet: {}, feeLine: '', finalCycle }) as unknown as ExpiredAuditData
@@ -52,14 +76,16 @@ describe('resolveListingTimeline', () => {
   it('prefers the build contract and steps down at every cut', () => {
     const t = resolveListingTimeline({
       subject,
-      expiredAudit: audit({
-        listDate: '2026-02-26',
-        initialAsk: 475000,
-        cuts: [{ date: '2026-05-14', ask: 460000 }],
-        offMarketDate: '2026-09-01',
-        status: 'Withdrawn',
-        days: 187,
-      }),
+      expiredAudit: audit(
+        cycle({
+          listDate: '2026-02-26',
+          initialAsk: 475000,
+          cuts: [{ date: '2026-05-14', ask: 460000 }],
+          offMarketDate: '2026-09-01',
+          status: 'Withdrawn',
+          days: 187,
+        }),
+      ),
       ...RANGE,
       domDays: 187,
     })
@@ -83,6 +109,30 @@ describe('resolveListingTimeline', () => {
     expect(t!.steps[0]!.ask).toBe(460000)
     expect(t!.offMarketDate).toBe('2026-09-01')
     expect(t!.days).toBe(187)
+  })
+
+  it('draws one flat line at the opening ask when no cut carries a date', () => {
+    // `cutsDated: false` means the record holds two different asks and no dated
+    // event between them. §0: a date from convention is a fabrication, so the
+    // step is not drawn — the line stays flat at the ask it opened on.
+    const t = resolveListingTimeline({
+      subject,
+      expiredAudit: audit(
+        cycle({
+          listDate: '2026-02-26',
+          initialAsk: 475000,
+          cuts: [{ date: null, ask: 460000 }],
+          cutsDated: false,
+          finalAsk: 460000,
+          offMarketDate: '2026-09-01',
+          status: 'Withdrawn',
+          days: 187,
+        }),
+      ),
+      ...RANGE,
+      domDays: 187,
+    })
+    expect(t!.steps).toEqual([{ date: '2026-02-26', ask: 475000 }])
   })
 
   it('returns null when the row carries neither a list date nor an ask', () => {
