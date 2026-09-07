@@ -11,6 +11,8 @@ import 'server-only'
  *   email_events   `email_key = 'cma:<slug>'`   sent / delivered / open /
  *                                               click / bounce / unsubscribe
  *   visitor_events `page_category='client-document'`, page_url `/cma/<slug>`
+ *   visitor_events page_url carrying `utm_campaign=<slug>` — a tap on a comp,
+ *                                               place or CTA inside the document
  *   crm_timeline   `email_in` / `sms_in` on the linked person — the reply
  *
  * This reader turns those three into ONE row-level answer per document, and one
@@ -54,10 +56,23 @@ export type CmaOutcome = {
   opens: number
   firstClickAt: string | null
   clicks: number
-  /** First `/cma/<slug>` page view — they actually opened the document. */
+  /**
+   * They actually opened it. Counts BOTH `/cma/<slug>` document views and
+   * views of ryan-realty.com pages this document sent them to — every address,
+   * place and CTA a CMA prints carries `utm_campaign=<slug>` through
+   * `trackedDocLink`, so a tap on a comp is a visit to this document's set.
+   * Before 2026-09-07 only the document view counted, and a seller who read the
+   * report and opened three comps looked identical to one who read nothing.
+   */
   firstVisitAt: string | null
   visits: number
   lastVisitAt: string | null
+  /**
+   * The site pages this document sent them to: how many views, and the three
+   * most recent distinct paths — WHICH comps and places they opened. Empty when
+   * they only opened the document itself.
+   */
+  visitedPages: { count: number; recent: string[] }
   /** First inbound email/SMS from the linked person AFTER the send. */
   repliedAt: string | null
   /** Hard bounce or spam complaint on this send. */
@@ -83,6 +98,7 @@ export function emptyCmaOutcome(cmaId: string, slug: string): CmaOutcome {
     firstVisitAt: null,
     visits: 0,
     lastVisitAt: null,
+    visitedPages: { count: 0, recent: [] },
     repliedAt: null,
     bounced: false,
     unsubscribed: false,
@@ -95,6 +111,19 @@ type Row = Record<string, unknown>
 function str(v: unknown): string | null {
   const s = typeof v === 'string' ? v.trim() : v == null ? '' : String(v)
   return s === '' ? null : s
+}
+
+/** ISO timestamps sort lexically, so min/max need no Date parsing. */
+function earlier(a: string | null, b: string | null): string | null {
+  if (!a) return b
+  if (!b) return a
+  return a < b ? a : b
+}
+
+function later(a: string | null, b: string | null): string | null {
+  if (!a) return b
+  if (!b) return a
+  return a > b ? a : b
 }
 
 /** Chunk an array into fixed-size slices — every read here is `.in()`-bounded. */
@@ -207,9 +236,10 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
       opens: eng.emailOpens,
       firstClickAt: eng.firstClickAt,
       clicks: eng.emailClicks,
-      firstVisitAt: eng.firstViewAt,
-      visits: eng.reportViews,
-      lastVisitAt: eng.lastViewAt,
+      firstVisitAt: earlier(eng.firstViewAt, eng.firstSiteViewAt),
+      visits: eng.reportViews + eng.siteViews,
+      lastVisitAt: later(eng.lastViewAt, eng.lastSiteViewAt),
+      visitedPages: { count: eng.siteViews, recent: eng.recentSitePaths },
       repliedAt,
       bounced: eng.bouncedAt != null,
       unsubscribed: eng.unsubscribedAt != null,

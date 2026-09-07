@@ -23,6 +23,20 @@ function view(slug: string, at: string): ViewRow {
   }
 }
 
+/**
+ * A tap on a link INSIDE the document, as it lands: on a listing/place page,
+ * with the document's slug carried in `utm_campaign` by `trackedDocLink`, and
+ * with no `_pid` (the track route strips identity before storing the URL).
+ */
+function tap(slug: string, path: string, at: string): ViewRow {
+  return {
+    page_url: `https://ryan-realty.com${path}?agent=matt&utm_source=cma&utm_medium=document&utm_campaign=${slug}`,
+    event_at: at,
+    page_category: 'listing',
+    event_type: 'page_view',
+  }
+}
+
 const state = {
   cmas: [] as Array<Record<string, unknown>>,
   timeline: [] as Array<{ person_id: number; kind: string; ts: string }>,
@@ -194,6 +208,85 @@ describe('getCmaOutcomes — one row-level answer per document', () => {
 
   it('returns an empty map for an empty id list without touching the database', async () => {
     expect(await getCmaOutcomes([])).toEqual({})
+  })
+})
+
+describe('getCmaOutcomes — a tap on a comp is a visit to THAT document', () => {
+  it('counts a campaign-tagged site arrival as a visit and names the pages', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: 7, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [
+      view('cma-101-main', '2026-09-01T12:00:00Z'),
+      tap('cma-101-main', '/homes-for-sale/bend/newport-gardens/1299-ogden-220225388', '2026-09-01T12:05:00Z'),
+      tap('cma-101-main', '/subdivisions/newport-gardens', '2026-09-01T12:07:00Z'),
+    ]
+
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(3)
+    expect(o.firstVisitAt).toBe('2026-09-01T12:00:00Z')
+    expect(o.lastVisitAt).toBe('2026-09-01T12:07:00Z')
+    expect(o.visitedPages.count).toBe(2)
+    expect(o.visitedPages.recent).toEqual([
+      '/subdivisions/newport-gardens',
+      '/homes-for-sale/bend/newport-gardens/1299-ogden-220225388',
+    ])
+  })
+
+  it('marks a document VISITED even when only a comp was opened', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: null, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [tap('cma-101-main', '/homes-for-sale/bend/x-220000001', '2026-09-02T09:00:00Z')]
+
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(1)
+    expect(o.firstVisitAt).toBe('2026-09-02T09:00:00Z')
+    expect(o.visitedPages.recent).toEqual(['/homes-for-sale/bend/x-220000001'])
+  })
+
+  it('keeps only the three most recent DISTINCT paths', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: null, client_email: null, delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [
+      tap('cma-101-main', '/a', '2026-09-01T10:01:00Z'),
+      tap('cma-101-main', '/b', '2026-09-01T10:02:00Z'),
+      tap('cma-101-main', '/c', '2026-09-01T10:03:00Z'),
+      tap('cma-101-main', '/d', '2026-09-01T10:04:00Z'),
+      tap('cma-101-main', '/d', '2026-09-01T10:05:00Z'),
+    ]
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(5)
+    expect(o.visitedPages.recent).toEqual(['/d', '/c', '/b'])
+  })
+
+  it('never lets one document borrow another document’s taps', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101', person_id: null, client_email: null, delivered_at: '2026-09-01T10:00:00Z' },
+      { id: 'c2', slug: 'cma-101-main', person_id: null, client_email: null, delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [tap('cma-101-main', '/homes-for-sale/bend/x-220000001', '2026-09-02T09:00:00Z')]
+    const map = await getCmaOutcomes(['c1', 'c2'])
+    expect(map.c1.visits).toBe(0)
+    expect(map.c1.visitedPages).toEqual({ count: 0, recent: [] })
+    expect(map.c2.visits).toBe(1)
+  })
+
+  it('ignores a campaign that is not one of ours', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: null, client_email: null, delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [
+      {
+        page_url: 'https://ryan-realty.com/homes-for-sale/bend?utm_campaign=spring-sale',
+        event_at: '2026-09-02T09:00:00Z',
+        page_category: 'search',
+        event_type: 'page_view',
+      },
+    ]
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(0)
   })
 })
 
