@@ -90,6 +90,8 @@ type DryRun = {
   renderArgsMarketOfferTiming: unknown
   renderArgsMarketAskOutcome: unknown
   renderArgsMarketOriginalAskRealization: unknown
+  /** render_args.pricing.reconciliation — which sale carried the price. */
+  renderArgsPricingReconciliation: unknown
   renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
@@ -138,7 +140,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
-    renderArgsMarketLocalFailedThenSold: null, renderArgsExpiredAuditFinalCycle: null, error: null,
+    renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
+    renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -293,6 +296,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketOfferTiming: localOutcomes.offerTiming,
     renderArgsMarketAskOutcome: localOutcomes.askOutcome,
     renderArgsMarketOriginalAskRealization: localOutcomes.originalAskRealization,
+    renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
@@ -317,7 +321,7 @@ async function main() {
       concessionSentence: null, concessionSentenceTrimmed: null,
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
-      renderArgsExpiredAuditFinalCycle: null,
+      renderArgsPricingReconciliation: null, renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -349,6 +353,8 @@ async function main() {
     console.log(indent(r.renderArgsMarketOfferTiming))
     console.log('   render_args.market.askOutcome =')
     console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.pricing.reconciliation =')
+    console.log(indent(r.renderArgsPricingReconciliation))
     console.log('   render_args.market.originalAskRealization =')
     console.log(indent(r.renderArgsMarketOriginalAskRealization))
     console.log('   render_args.market.localFailedThenSold =')

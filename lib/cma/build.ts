@@ -842,6 +842,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const proseParts: string[] = [
       ...pricing.notes,
       pricing.confidenceReason,
+      // The reconciliation sentence and its per-sale reasons are OUR prose and
+      // they print in the document, so they answer to §2 like every other line.
+      ...(pricing.reconciliation
+        ? [
+            pricing.reconciliation.sentence ?? '',
+            ...pricing.reconciliation.weights.map((w) => w.reason),
+          ]
+        : []),
       ...(development ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail]), ...development.buyerOptions.flatMap((o) => [o.headline, o.detail]), ...development.marketingHighlights.map((h) => h.headline)] : []),
       ...(rental ? [rental.disclaimer, rental.economicsNote, ...rental.tenures.flatMap((t) => [t.headline, t.detail]), ...rental.marketingHighlights.map((h) => h.headline)] : []),
       ...thisHomePlan,

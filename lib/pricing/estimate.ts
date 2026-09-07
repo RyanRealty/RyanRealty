@@ -26,6 +26,7 @@ import {
   type MarketPath,
 } from '@/lib/pricing/market-path'
 import { failedListAsk } from '@/lib/pricing/expired-list-cap'
+import { reconcileAdjustedSales, type ReconcilableSale } from '@/lib/pricing/reconciliation'
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 
 const SIZE_ADJ_FACTOR = 0.5
@@ -448,6 +449,12 @@ export function priceCmaSet(args: {
     site: args.site ?? null,
   })
   if (!pricing) return null
+  // Which sale carried the price. Attached BEFORE the engine cover so the
+  // weights the document prints are the weights the value was built from.
+  pricing.reconciliation = reconcileAdjustedSales({
+    sales: args.adjusted as unknown as ReconcilableSale[],
+    subjectSqft: args.subject.sqft ?? 0,
+  })
   return applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,
     lastAsk: currentListAsk(args.subject),

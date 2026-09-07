@@ -222,6 +222,13 @@ export interface CmaPricing {
   failedAsk?: number | null
   /** True when the printed list band was clipped to failedAsk. */
   failedAskCapped?: boolean
+  /**
+   * Which sale carried the price, and why — the appraisal reconciliation the
+   * document owed the reader (research brief 2026-09-07, item 2). Computed in
+   * lib/pricing/reconciliation.ts from the SAME weights the point value is
+   * built from, so the sentence and the number cannot disagree.
+   */
+  reconciliation?: import('@/lib/pricing/reconciliation').CmaReconciliation | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */
