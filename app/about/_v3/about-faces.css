@@ -35,7 +35,7 @@
 
 /* 390: one broker per row, cutout beside the caption so the name stays
    one line. 48rem: three columns, each a modest portrait plus stacked
-   name / title / Call Text. */
+   name / title / Call Text Email Schedule. */
 .about-faces__grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -134,29 +134,34 @@
   margin-top: var(--v3-space-3xs);
 }
 
+/* Labeled CTA chips: Call / Text / Email / Schedule readable at a glance. */
 .about-faces__reach {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--v3-tap);
-  height: var(--v3-tap);
-  min-width: var(--v3-tap);
+  gap: 0.35rem;
   min-height: var(--v3-tap);
-  padding: 0;
+  min-width: var(--v3-tap);
+  padding: 0 0.65rem;
   color: var(--v3-ink);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
   line-height: 1;
   text-decoration: none;
+  text-transform: uppercase;
   border: var(--v3-rule-hairline);
   background: var(--v3-surface);
   transition: background var(--v3-dur-state) var(--v3-ease-out),
-    border-color var(--v3-dur-state) var(--v3-ease-out);
+    border-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .about-faces__reach:hover,
 .about-faces__reach:focus-visible {
-  color: var(--v3-ink);
-  background: var(--v3-wash);
-  border-color: color-mix(in srgb, var(--v3-navy) 22%, transparent);
+  color: var(--v3-cream);
+  background: var(--v3-navy);
+  border-color: var(--v3-navy);
 }
 
 .about-faces__reach:focus-visible {
@@ -164,17 +169,8 @@
   outline-offset: var(--v3-focus-offset);
 }
 
-/* Icon buttons: aria-label carries Call/Text/Email; keep text for a11y tree only. */
 .about-faces__reach-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
-  border: 0;
 }
 
 @media (min-width: 48rem) {
@@ -196,7 +192,7 @@
     white-space: normal;
   }
 
-  /* House-of-faces density: card-photo scale so /team 1440 Call/Text stay in fold. */
+  /* House-of-faces density: card-photo scale so /team 1440 CTAs stay in fold. */
   .about-faces__photo-link {
     width: min(100%, var(--v3-card-photo-w));
   }
@@ -221,7 +217,7 @@
   }
 }
 
-/* /team/[slug]: photo + name + Call/Text/Email as one fold, not a cream lake. */
+/* /team/[slug]: photo + name + Call/Text/Email/Schedule as one fold, not a cream lake. */
 .about-faces--portrait {
   display: grid;
   grid-template-columns: var(--v3-card-photo-h) minmax(0, 1fr);

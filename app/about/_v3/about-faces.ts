@@ -15,6 +15,8 @@ export type AboutFace = {
   title: string
   tel: string | null
   email: string | null
+  /** /book?agent=<key> when the roster knows this broker. */
+  bookHref: string | null
 }
 
 const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/
@@ -22,6 +24,16 @@ const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/
 const BROKER_BY_SLUG = new Map<string, (typeof BROKERS)[BrokerKey]>(
   (Object.keys(BROKERS) as BrokerKey[]).map((key) => [BROKERS[key].slug, BROKERS[key]]),
 )
+
+const BOOK_KEY_BY_SLUG = new Map<string, BrokerKey>(
+  (Object.keys(BROKERS) as BrokerKey[]).map((key) => [BROKERS[key].slug, key]),
+)
+
+/** Public booking surface for a known broker. Null when the slug is not on the roster. */
+export function aboutBookHref(slug: string): string | null {
+  const key = BOOK_KEY_BY_SLUG.get(slug)
+  return key ? `/book?agent=${key}` : null
+}
 
 /** E.164 for tel: / sms:. Null when the number cannot parse. */
 export function aboutPhoneE164(phone: string | null | undefined): string | null {
@@ -62,5 +74,6 @@ export function aboutFaceFromBroker(b: {
     title: title || 'Broker',
     tel: aboutPhoneE164(b.phoneDirect),
     email: b.email?.trim() || null,
+    bookHref: aboutBookHref(slug),
   }
 }

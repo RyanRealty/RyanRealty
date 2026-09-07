@@ -2,7 +2,7 @@
  * /team - broker roster, on the components/site/v3 barrel.
  *
  * PAGE_INVENTORY §6 / PAGE_OUTLINE /team: roster only. Same house of faces
- * as About's broker row — not a second About. Call/Text. Door to each
+ * as About's broker row — not a second About. Call/Text/Email/Schedule. Door to each
  * /team/[slug].
  *
  * THE PAGE CONTRACT: export const metadata through pageMetadata,

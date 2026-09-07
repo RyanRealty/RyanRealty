@@ -14,18 +14,21 @@ describe('broker fold', () => {
   it('opens on a portrait face, not the AboutFaces poster', () => {
     expect(PAGE).toContain("from '@/app/about/_v3/AboutFaces'")
     expect(PAGE).toContain('aboutFaceFromBroker')
+    expect(PAGE).toContain('aboutBookHref')
     expect(BODY).toContain('<AboutFaces')
     expect(BODY).toContain('size="portrait"')
     expect(BODY).toMatch(/\breach\b/)
     expect(BODY).not.toContain('reach={false}')
-    expect(BODY).not.toContain('Value my home')
     expect(BODY).not.toContain('BrokerValuationSheet')
   })
 })
 
 describe('broker conversion order (PAGE_INVENTORY §6)', () => {
-  it('puts Call/Text/Email on the fold and does not mount a CMA sheet', () => {
+  it('puts Call/Text/Email/Schedule on the fold and does not mount a CMA sheet', () => {
     expect(BODY).toMatch(/id="contact-broker"/)
+    expect(BODY).toContain('id="asks"')
+    expect(BODY).toContain('Schedule')
+    expect(BODY).toContain('Value my home')
     expect(BODY).not.toContain('BrokerValuationSheet')
     expect(PAGE).not.toContain("from './_v3/BrokerValuationSheet.client'")
   })

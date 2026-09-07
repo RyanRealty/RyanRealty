@@ -7,7 +7,7 @@ const PAGE = readFileSync('app/team/page.tsx', 'utf8')
 const FOLD = PAGE.slice(PAGE.indexOf('return ('))
 
 describe('team fold', () => {
-  it('is the roster only: faces with Call/Text, not a second About', () => {
+  it('is the roster only: faces with Call/Text/Email/Schedule, not a second About', () => {
     expect(PAGE).toContain("from '@/app/about/_v3/AboutFaces'")
     expect(PAGE).toContain('aboutFaceFromBroker')
     expect(FOLD).toContain('<AboutFaces')
@@ -41,6 +41,7 @@ describe('team face phones', () => {
     })
     expect(matt?.tel).toBe(aboutPhoneE164(BROKERS.matt.phone))
     expect(matt?.href).toBe('/team/matthew-ryan')
+    expect(matt?.bookHref).toBe('/book?agent=matt')
   })
 })
 

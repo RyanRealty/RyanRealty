@@ -21,8 +21,8 @@
 import type { Metadata } from 'next'
 import { getReviews } from '@/lib/data'
 import { GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
-import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { CONTACT } from '@/lib/brand/contact'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -128,22 +128,22 @@ export default async function ReviewsPage() {
           name={v3Text('Talk to a broker')}
           doors={[
             {
-              kicker: v3Text('Write'),
-              label: v3Text('Call, text, or write'),
-              fact: v3Text('A broker replies within one business day'),
-              href: '/contact',
+              kicker: v3Text('Call'),
+              label: v3Text(CONTACT.phoneDirect),
+              fact: v3Text('A broker answers, not a desk'),
+              href: `tel:${CONTACT.phoneDirectTel}`,
+            },
+            {
+              kicker: v3Text('Schedule'),
+              label: v3Text('Book a broker'),
+              fact: v3Text('Pick a time on the calendar'),
+              href: '/book',
             },
             {
               kicker: v3Text('People'),
               label: v3Text('Broker profiles'),
-              fact: v3Text('The licensed Oregon brokers'),
+              fact: v3Text('Licensed Oregon brokers'),
               href: '/team',
-            },
-            {
-              kicker: v3Text('Homes'),
-              label: v3Text('Homes for sale'),
-              fact: v3Text('Central Oregon listings'),
-              href: listingsBrowsePath(),
             },
             {
               kicker: v3Text('Sell'),

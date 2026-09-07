@@ -103,8 +103,16 @@ export default async function AboutPage() {
       kind: 'prose',
       body: `A Bend brokerage, open since ${BRAND.foundedLabel}.`,
     },
+    {
+      kind: 'prose',
+      term: 'Office',
+      body: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+    },
     { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
     { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
+    { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
+    { label: 'Schedule with a broker', href: '/book' },
+    { label: 'Contact', href: '/contact' },
   ]
 
   const originItems: V3QuietItem[] = [

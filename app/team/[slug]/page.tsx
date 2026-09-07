@@ -40,9 +40,10 @@ import {
   V3Atlas,
   V3Instrument,
   V3Proof,
+  V3Doors,
 } from '@/components/site/v3'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
-import { aboutDisplayName, aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
+import { aboutBookHref, aboutDisplayName, aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
 import {
   factualFallbackBio,
   HEADSHOT,
@@ -54,6 +55,7 @@ import { buildBrokerRecord, brokerRecordSource, brokerRecordStamp } from './_v3/
 import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
+import { valuationHref } from '@/lib/site/valuation-href'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const OFFICE_NAME = 'Ryan Realty'
@@ -147,10 +149,14 @@ export default async function TeamMemberPage({ params }: Props) {
     email: broker.email,
   })
 
+  const bookHref = aboutBookHref(canonicalPathSlug)
+
   const identityItems: V3QuietItem[] = [
     ...(broker.license_number
-      ? [{ kind: 'prose' as const, term: 'Oregon license', body: `#${broker.license_number}` }]
+      ? [{ kind: 'prose' as const, term: 'Oregon license', body: `OR #${broker.license_number}` }]
       : []),
+    ...(broker.phone ? [{ kind: 'prose' as const, term: 'Phone', body: broker.phone }] : []),
+    ...(broker.email ? [{ kind: 'prose' as const, term: 'Email', body: broker.email }] : []),
     ...(reviewCount > 0
       ? [{ label: `${reviewCount} Google reviews · ${reviewAverage.toFixed(1)} of 5`, href: '/reviews' }]
       : []),
@@ -159,16 +165,22 @@ export default async function TeamMemberPage({ params }: Props) {
   const contactItems: V3QuietItem[] = [
     ...(broker.phone ? [{ kind: 'prose' as const, term: 'Phone', body: broker.phone }] : []),
     ...(broker.email ? [{ kind: 'prose' as const, term: 'Email', body: broker.email }] : []),
+    ...(broker.license_number
+      ? [{ kind: 'prose' as const, term: 'Oregon license', body: `OR #${broker.license_number}` }]
+      : []),
     ...(telHref ? [{ label: `Call ${firstName}`, href: telHref }] : []),
     ...(smsHref ? [{ label: `Text ${firstName}`, href: smsHref }] : []),
     ...(mailHref ? [{ label: `Email ${firstName}`, href: mailHref }] : []),
+    ...(bookHref ? [{ label: `Schedule with ${firstName}`, href: bookHref }] : []),
   ]
 
   const bioItems: V3QuietItem[] = [
     { kind: 'prose', body: bioText },
     { label: 'All brokers', href: '/team' },
     { label: 'Client reviews', href: '/reviews' },
-    { label: 'Sell', href: '/sell' },
+    { label: 'Contact', href: '/contact' },
+    { label: 'Value my home', href: valuationHref(`/team/${canonicalPathSlug}`) },
+    ...(bookHref ? [{ label: `Schedule with ${firstName}`, href: bookHref }] : []),
   ]
 
   const firmSaleSource = v3Text(
@@ -248,9 +260,47 @@ export default async function TeamMemberPage({ params }: Props) {
         <V3Quiet
           id="profile"
           eyebrow={`${shownName} · ${broker.title ?? 'Real Estate Broker'}`}
-          heading={face ? `${firstName}'s license` : shownName}
+          heading={face ? `${firstName}'s license and contact` : shownName}
           headingLevel={face ? 2 : 1}
           items={identityItems}
+        />
+
+        <V3Doors
+          id="asks"
+          name={v3Text(`Work with ${firstName}`)}
+          doors={[
+            bookHref
+              ? {
+                  kicker: v3Text('Schedule'),
+                  label: v3Text(`Book time with ${firstName}`),
+                  fact: v3Text('Pick a time on the calendar'),
+                  href: bookHref,
+                }
+              : {
+                  kicker: v3Text('Contact'),
+                  label: v3Text('Call, text, or write'),
+                  fact: v3Text('A broker replies within one business day'),
+                  href: '/contact',
+                },
+            {
+              kicker: v3Text('Sell'),
+              label: v3Text('Value my home'),
+              fact: v3Text('From recent comparable sales'),
+              href: valuationHref(`/team/${canonicalPathSlug}`),
+            },
+            {
+              kicker: v3Text('Write'),
+              label: v3Text('Contact the office'),
+              fact: v3Text('115 NW Oregon Ave #2, Bend'),
+              href: '/contact',
+            },
+            {
+              kicker: v3Text('Team'),
+              label: v3Text('All brokers'),
+              fact: v3Text('Licensed Oregon brokers'),
+              href: '/team',
+            },
+          ]}
         />
 
         {quotes.length > 0 ? (

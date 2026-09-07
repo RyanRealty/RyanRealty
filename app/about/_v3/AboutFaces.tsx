@@ -1,7 +1,7 @@
 /**
- * Broker faces on cream. Roster cards carry light chrome + icon reach
- * (call / text / email) for Home density; name remains the door. Title
- * stays a role chip under the name.
+ * Broker faces on cream. Roster cards carry labeled reach
+ * (Call / Text / Email / Schedule) for luxury density. Name remains the door.
+ * Title stays a role chip under the name.
  *
  * roster: /team (H1), /about and homepage (H2).
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
@@ -15,7 +15,7 @@ import "./about-faces.css"
 
 function IconPhone() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
       <path
         d="M2.5 5.5c0-.8.7-1.5 1.5-1.5h2.2c.7 0 1.3.5 1.4 1.2l.5 2.6c.1.5-.1 1-.5 1.3L6.2 10.4a12.2 12.2 0 0 0 7.4 7.4l1.3-1.4c.3-.4.8-.6 1.3-.5l2.6.5c.7.1 1.2.7 1.2 1.4V21c0 .8-.7 1.5-1.5 1.5C9.7 22.5 1.5 14.3 1.5 5.5Z"
         fill="none"
@@ -30,7 +30,7 @@ function IconPhone() {
 
 function IconMessage() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
       <path
         d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H10l-4.2 3.2V16.5H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5Z"
         fill="none"
@@ -45,7 +45,7 @@ function IconMessage() {
 
 function IconEnvelope() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
       <path
         d="M4.5 7A1.5 1.5 0 0 1 6 5.5h12A1.5 1.5 0 0 1 19.5 7v10a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 17V7Z"
         fill="none"
@@ -55,6 +55,21 @@ function IconEnvelope() {
       />
       <path
         d="m5.2 7.2 6.8 5.2 6.8-5.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconCalendar() {
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M7 3.5v3M17 3.5v3M4.5 9h15M6 5.5h12A1.5 1.5 0 0 1 19.5 7v12a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19V7A1.5 1.5 0 0 1 6 5.5Z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"
@@ -84,7 +99,7 @@ export function AboutFaces({
    */
   headingLevel?: 1 | 2
   size?: "roster" | "portrait"
-  /** Call / Text / Email icon buttons on the face row, including portrait. */
+  /** Call / Text / Email / Schedule buttons on the face row, including portrait. */
   reach?: boolean
 }) {
   const [first, ...rest] = people
@@ -111,6 +126,12 @@ export function AboutFaces({
             <IconEnvelope />
             <span className="about-faces__reach-label">Email</span>
           </a>
+        ) : null}
+        {person.bookHref ? (
+          <Link href={person.bookHref} className="about-faces__reach" aria-label={`Schedule with ${person.name}`}>
+            <IconCalendar />
+            <span className="about-faces__reach-label">Schedule</span>
+          </Link>
         ) : null}
       </div>
     ) : null

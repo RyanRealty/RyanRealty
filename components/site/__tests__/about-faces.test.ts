@@ -108,6 +108,7 @@ describe('aboutFaceFromBroker', () => {
       title: 'Principal Broker',
       tel: aboutPhoneE164(BROKERS.matt.phone),
       email: null,
+      bookHref: '/book?agent=matt',
     })
   })
 
@@ -158,6 +159,7 @@ describe('aboutFaceFromBroker', () => {
       title: 'Principal Broker',
       tel: null,
       email: null,
+      bookHref: '/book?agent=matt',
     })
   })
 })

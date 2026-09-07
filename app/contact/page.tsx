@@ -23,7 +23,7 @@ import { getBrokers, getListingTiles } from '@/lib/data'
 import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
 import { listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
-import { CONTACT } from '@/lib/brand/contact'
+import { BRAND, CONTACT } from '@/lib/brand/contact'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -134,6 +134,15 @@ export default async function ContactPage({ searchParams }: PageProps) {
     // The H1 lives on this Quiet; with no rows it would not render at all
     // (V3Quiet returns null on empty items — evaluator B2). One true line.
     { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. A broker answers, not a desk.' },
+    {
+      kind: 'prose' as const,
+      term: 'Office',
+      body: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
+    },
+    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
+    { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
+    { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
+    { label: 'Schedule with a broker', href: '/book' },
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
       : []),
@@ -180,19 +189,25 @@ export default async function ContactPage({ searchParams }: PageProps) {
           name={v3Text('Reach a broker')}
           doors={[
             {
-              kicker: v3Text('Call or text'),
+              kicker: v3Text('Call'),
               label: v3Text(CONTACT.phoneDirect),
               fact: v3Text('A broker answers, not a desk'),
               href: `tel:${CONTACT.phoneDirectTel}`,
             },
             {
-              kicker: v3Text('Write'),
-              label: v3Text('Email a broker'),
-              fact: v3Text(`${CONTACT.email.primary}, a reply within one business day`),
+              kicker: v3Text('Text'),
+              label: v3Text(CONTACT.phoneDirect),
+              fact: v3Text('Same line as call'),
+              href: `sms:${CONTACT.phoneDirectTel}`,
+            },
+            {
+              kicker: v3Text('Email'),
+              label: v3Text(CONTACT.email.primary),
+              fact: v3Text('A reply within one business day'),
               href: `mailto:${CONTACT.email.primary}`,
             },
             {
-              kicker: v3Text('Book'),
+              kicker: v3Text('Schedule'),
               label: v3Text('Book a broker'),
               fact: v3Text('Pick a time on the calendar'),
               href: '/book',
