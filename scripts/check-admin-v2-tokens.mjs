@@ -558,6 +558,9 @@ const SCAN_DIRS = [
   'components/admin/crm/subscriptions/subscriptions-shared.tsx',
   'components/admin/crm/viewed-home-bpo.ts',
   'components/admin/prospecting/ProspectComplianceRibbon.client.tsx',
+  // Expired-queue Open/Review hard-nav (eaa8b70c residual): list page imports
+  // this client island; Rule 3 requires the target itself be SCAN_DIRS-scanned.
+  'components/admin/prospecting/ProspectDetailHardLink.client.tsx',
   'components/admin/prospecting/ProspectDetailPanel.client.tsx',
   'components/admin/prospecting/ProspectDocPill.client.tsx',
   'components/admin/prospecting/ProspectMap.client.tsx',
