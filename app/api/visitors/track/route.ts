@@ -38,6 +38,10 @@ import { createClient } from '@supabase/supabase-js'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { isGpcOptOut } from '@/lib/crm/gpc'
 import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
+// Identity params (?_pid / ?_fuid) are stripped from every URL this route
+// stores or forwards. See strip-identity.ts for why the server, not the client
+// bridge, has to be the mechanism.
+import { stripIdentityParams } from './strip-identity'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -311,6 +315,10 @@ export async function POST(request: NextRequest) {
   }
 
   const sourceDomain = resolveSourceDomain(pageUrl, body.sourceDomain)
+  // Everything stored from here on uses the identity-stripped URL. `pageUrl`
+  // itself stays intact for the reads that legitimately need the whole thing
+  // (slug parsing, GA4's page_location) — nothing there persists an id.
+  const storedPageUrl = stripIdentityParams(pageUrl) ?? pageUrl
   // Geo + UA describe the PERSON, and stay gated on analytics consent.
   const geo = minimalOnly ? {} as ReturnType<typeof readIpGeo> : readIpGeo(request)
   const userAgent = minimalOnly ? undefined : (request.headers.get('user-agent')?.slice(0, 512) || undefined)
@@ -368,8 +376,8 @@ export async function POST(request: NextRequest) {
     utm_term:     campaign?.term ?? undefined,
     fbclid,
     gclid,
-    referrer:     body.referrer?.slice(0, 1024) ?? undefined,
-    landing_page: body.landingPage?.slice(0, 1024) ?? undefined,
+    referrer:     stripIdentityParams(body.referrer)?.slice(0, 1024),
+    landing_page: stripIdentityParams(body.landingPage)?.slice(0, 1024),
     user_agent:   userAgent,
     ip_country:   geo.country,
     ip_region:    geo.region,
@@ -437,7 +445,7 @@ export async function POST(request: NextRequest) {
     session_id:    sessionId,
     source_domain: sourceDomain,
     event_type:    eventType,
-    page_url:      pageUrl.slice(0, 2048),
+    page_url:      storedPageUrl.slice(0, 2048),
     page_title:    body.pageTitle?.slice(0, 512) ?? undefined,
     page_category: body.pageCategory?.slice(0, 64) ?? undefined,
     listing_mls:       listing?.mlsNumber?.slice(0, 64) ?? undefined,
@@ -513,9 +521,11 @@ export async function POST(request: NextRequest) {
           clientId: fromCookie || clientIdFromSessionId(sessionId),
           userProperties: intent ? { intent } : undefined,
           eventParams: {
-            page_location: pageUrl,
+            // Identity-stripped: GA4 is a third party and a contact id must not
+            // leave the building inside a URL (same rule as the stored row).
+            page_location: storedPageUrl,
             page_title: body.pageTitle ?? undefined,
-            page_referrer: body.referrer ?? undefined,
+            page_referrer: stripIdentityParams(body.referrer),
             page_path: pagePath,
             page_type: pageType,
             // First-party session stitch (optional custom dim later)
@@ -594,10 +604,23 @@ export async function POST(request: NextRequest) {
   // emailed them, and telling the broker that the recipient opened the document
   // we sent them is the purpose of the send. The real consent gate is GPC,
   // which dropped this request fail-closed long before this line.
-  if (eventType === 'page_view' && body.pageCategory === 'client-document') {
+  //
+  // A TAP ON A COMP COUNTS TOO (2026-09-07). Every address, place and CTA the
+  // document prints goes through `trackedDocLink`, which stamps
+  // `utm_campaign=<cmaSlug>` — so a seller who skimmed the report and then
+  // opened three comps on the site is the strongest signal the send produced,
+  // and it arrives on a listing page, not on `/cma/<slug>`. The campaign tag is
+  // what makes that arrival attributable to the document. Same rail, same
+  // `return-visit:cma:<slug>` kind, so the queueBrokerAlert dedupe still means
+  // ONE alert per document per contact, ever — a reader who opens five comps
+  // does not text the broker five times.
+  if (eventType === 'page_view') {
     try {
       const { cmaSlugFromDocumentUrl, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
-      const slug = cmaSlugFromDocumentUrl(pageUrl)
+      const { cmaCampaignFromUrl } = await import('@/lib/cma/doc-links')
+      const slug =
+        (body.pageCategory === 'client-document' ? cmaSlugFromDocumentUrl(pageUrl) : null) ??
+        cmaCampaignFromUrl(pageUrl)
       const viewerId =
         session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
       if (slug) {
