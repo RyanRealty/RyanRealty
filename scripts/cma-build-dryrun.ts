@@ -64,7 +64,31 @@ type DryRun = {
   needsReview: boolean
   reviewReason: string | null
   hardFailures: string[]
+  /**
+   * §0 rule 5 cross-checks the look pass caught on 2026-09-07. Both are the
+   * numbers the DOCUMENT prints, read the way the renderers read them.
+   *  - matrixSubjectDom: the DOM lib/cma/comp-matrix.ts pulls out of
+   *    `render_args.subject.listingHistoryLine`;
+   *  - reviewSubjectDom: the DOM the "your last listing" time-on-market
+   *    finding prints. These two must be equal.
+   *  - concessionSentence: the line lib/cma/render-pricing-page.ts prints
+   *    under the matrix; its denominator must equal keptCompCount.
+   */
+  matrixSubjectDom: number | null
+  reviewSubjectDom: number | null
+  keptCompCount: number
+  concessionSentence: string | null
+  /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
+  concessionSentenceTrimmed: string | null
   error: string | null
+}
+
+/** Exactly what lib/cma/comp-matrix.ts subjectDomDays reads off the subject. */
+function domFromHistoryLine(line: string | null | undefined): number | null {
+  const m = line?.match(/(\d+)\s+days?\s+on\s+market/i)
+  if (!m) return null
+  const n = Number(m[1])
+  return Number.isFinite(n) && n >= 0 ? n : null
 }
 
 async function dryRun(slug: string): Promise<DryRun> {
@@ -79,12 +103,18 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { getCmaMarketContext } = await import('@/lib/cma/market')
   const { evaluateAccuracyContract } = await import('@/lib/cma/contract')
   const { MIN_COMPS } = await import('@/lib/cma/comps')
+  const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
+  const { analyzeListingHistory } = await import('@/lib/bpo/history')
+  const { buildFailureFindings, stampFinalCycleDom } = await import('@/lib/cma/expired-audit')
+  const { attachSellerNet } = await import('@/lib/pricing/seller-net')
 
   const base: DryRun = {
     slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null,
     subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
     recommended: null, range: [null, null], confidence: null, compPpsfCv: null,
-    needsReview: false, reviewReason: null, hardFailures: [], error: null,
+    needsReview: false, reviewReason: null, hardFailures: [],
+    matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
+    concessionSentenceTrimmed: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -97,6 +127,30 @@ async function dryRun(slug: string): Promise<DryRun> {
   })
   const subject = resolved.subject
   if (!subject) return { ...base, error: resolved.trace }
+
+  // Same stamp the build applies before anything reads the subject: the failed
+  // final cycle's ask, status, and its own days on market (lib/cma/build.ts).
+  const streetTokens = subject.streetAddress.trim().split(/\s+/)
+  const streetNumber = streetTokens[0] && /^\d+$/.test(streetTokens[0]) ? streetTokens[0] : null
+  const namePrefix = streetNumber ? streetTokens.slice(1).join(' ') : null
+  const cycleRows =
+    streetNumber && namePrefix
+      ? await getBpoListingCyclesByAddress({
+          streetNumber,
+          streetNameIlike: `${namePrefix}%`,
+          cityIlike: subject.city || null,
+          postalCode: subject.postalCode,
+        }).catch(() => [])
+      : []
+  const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
+  const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
+  if (lastCycleFailed) {
+    const row0 = cycleRows[0] ?? {}
+    const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
+    if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
+    subject.standardStatus = cycleStatus
+    stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
+  }
 
   const asOf = new Date().toISOString().slice(0, 10)
   const customOrNew = isCustomOrNewSubject(
@@ -136,6 +190,31 @@ async function dryRun(slug: string): Promise<DryRun> {
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
 
+  // §0 rule 5 cross-checks, computed off the same objects render_args carries.
+  attachSellerNet(pricing, selection.comps, pricing.predictedClose ?? pricing.recommended ?? null)
+  const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
+    if (!n || n.knownCount === 0) return null
+    const whenGiven =
+      n.medianWhenGiven != null ? `, median $${Math.round(n.medianWhenGiven).toLocaleString('en-US')} when given` : ''
+    return `${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${whenGiven}.`
+  }
+  const concessionSentence = concessionLine(pricing.sellerNet)
+  // The judge is skipped here, so the kept set is the full ladder result. Price
+  // a MIN_COMPS-sized slice too, to show the denominator follows whatever set
+  // the document ends up printing rather than the wider band set.
+  const trimmed = { recommended: pricing.recommended, notes: [] as string[] } as Parameters<typeof attachSellerNet>[0]
+  attachSellerNet(trimmed, selection.comps.slice(0, MIN_COMPS), pricing.predictedClose ?? pricing.recommended ?? null)
+  const concessionSentenceTrimmed = concessionLine(trimmed?.sellerNet)
+  const reviewSubjectDom = (() => {
+    if (!lastCycleFailed) return null
+    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+    const findings = buildFailureFindings({
+      subject, pricing, market, history, photosCount: null, ownershipSince: null,
+    })
+    const f = findings.find((x) => x.lens === 'time-on-market')
+    return domFromHistoryLine(f?.fact ?? null)
+  })()
+
   const contract = evaluateAccuracyContract({
     comps: adjusted,
     pricing,
@@ -166,6 +245,11 @@ async function dryRun(slug: string): Promise<DryRun> {
     needsReview: pricing.needsReview === true,
     reviewReason: pricing.reviewReason ?? null,
     hardFailures,
+    matrixSubjectDom: domFromHistoryLine(subject.listingHistoryLine),
+    reviewSubjectDom,
+    keptCompCount: adjusted.length,
+    concessionSentence,
+    concessionSentenceTrimmed,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
   }
 }
@@ -184,7 +268,9 @@ async function main() {
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
       range: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
-      hardFailures: [], error: e instanceof Error ? e.message : String(e),
+      hardFailures: [], matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0,
+      concessionSentence: null, concessionSentenceTrimmed: null,
+      error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
     if (asJson) continue
@@ -198,6 +284,18 @@ async function main() {
       for (const c of r.comps) {
         console.log(`     ${c.address} · ${c.baths ?? '?'}ba · ${c.sqft}sf · closed $${c.closePrice.toLocaleString()} ${c.closeDate} → adj $${c.adjusted.toLocaleString()}`)
       }
+    }
+    if (r.matrixSubjectDom != null || r.reviewSubjectDom != null) {
+      const agree = r.matrixSubjectDom === r.reviewSubjectDom
+      console.log(
+        `   subject DOM · matrix ${r.matrixSubjectDom ?? 'n/a'} · last-listing review ${r.reviewSubjectDom ?? 'n/a'} · ${agree ? 'AGREE' : 'MISMATCH'}`,
+      )
+    }
+    if (r.concessionSentence) {
+      const m = r.concessionSentence.match(/\bof (\d+) sales\b/)
+      const denom = m ? Number(m[1]) : null
+      console.log(`   concessions · kept comps ${r.keptCompCount} · "${r.concessionSentence}" · ${denom === r.keptCompCount ? 'SAME SET' : 'DIFFERENT SET'}`)
+      if (r.concessionSentenceTrimmed) console.log(`   concessions · 5-comp kept set · "${r.concessionSentenceTrimmed}"`)
     }
     if (r.error) console.log(`   ✖ ${r.error}`)
   }

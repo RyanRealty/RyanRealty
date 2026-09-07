@@ -56,6 +56,7 @@ import {
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
+  stampFinalCycleDom,
   feeLine,
   EXPIRED_LISTING_FEE_PCT,
   STANDARD_LISTING_FEE_PCT,
@@ -261,6 +262,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
       if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
       subject.standardStatus = cycleStatus
+      // ONE days on market for the subject (§0 rule 5). rowToSubject baked
+      // CumulativeDaysOnMarket into listingHistoryLine — a list-to-close count
+      // across relists — while the "your last listing" review measures the
+      // final cycle's own list-to-off-market span. The document printed both
+      // (2026-09-07 look pass: 192 in the matrix, 186 in the review). Stamp the
+      // final cycle's span here, before anything reads the subject, so the
+      // matrix (which reads the line) and the review carry one number.
+      stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
     }
 
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
@@ -408,7 +417,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
       const p = priceCmaSet({ subject, adjusted: adj, market, input, site, selection, marketIndex, asOf, computePricing })
-      attachSellerNet(p, selection.pricingSales ?? set, p?.predictedClose ?? p?.recommended ?? null)
+      // The concession sentence prints under the matrix and names "the sales
+      // that set this price", so it counts THAT set — the kept comps the reader
+      // can count — not the wider band set the price path is fitted on
+      // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
+      attachSellerNet(p, set, p?.predictedClose ?? p?.recommended ?? null)
       if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
