@@ -599,22 +599,21 @@ export default function SearchFilters({
           open={openPanel === 'places'}
           onOpenChange={panelOpenHandler('places')}
         >
-          <div className="srch-places-body flex max-h-[min(28rem,70dvh)] flex-col p-0">
+          <div className="srch-places-body flex max-h-96 flex-col p-0">
             <div className="shrink-0 border-b border-border p-3">
               <p className="srch-label mb-2">Places</p>
               <p className="mb-2 text-xs text-muted-foreground">
                 Select one or more. Map draws the place boundary and zooms to it.
               </p>
-              <label className="sr-only" htmlFor="srch-places-typeahead">
+              <Label className="sr-only" htmlFor="srch-places-typeahead">
                 Search places
-              </label>
-              <input
+              </Label>
+              <Input
                 id="srch-places-typeahead"
                 type="search"
                 value={placesQuery}
                 onChange={(e) => setPlacesQuery(e.target.value)}
                 placeholder="Search cities, neighborhoods, communities…"
-                className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 autoComplete="off"
               />
             </div>
