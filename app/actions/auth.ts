@@ -6,7 +6,6 @@ import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser } from '@/lib/crm/send-event'
 import type { AuthUser } from '@/lib/auth/types'
-export type { AuthUser }
 
 const AUTH_NEXT_COOKIE = 'auth_next'
 
