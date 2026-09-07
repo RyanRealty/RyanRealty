@@ -183,8 +183,10 @@ audit), `0301398e` (handoff).
   eight math corrections, legal sentences attributed to OREF and TRID. `blog_posts`: 78
   published (the two August reports included), 20 retired, 0 voice violations.
 - Photographer shot list: `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
-- Next: rewrite the two takedowns on program and offering facts; then the 37 FIX posts (mostly
-  unsourced price tiers, HOA dues, rental income in the resort guides) and 9 RESTORE posts.
+- The two takedowns are rewritten and back at their slugs (program, size, lookup, and offering
+  facts, sourced, zero steering words). Redirects removed.
+- Next: the 37 FIX posts (mostly unsourced price tiers, HOA dues, rental income in the resort
+  guides) and 9 RESTORE posts, exact sentences in the triage files.
 
 **Open**
 - Hero images for the nine new guides: resolved with real asset-library photos
