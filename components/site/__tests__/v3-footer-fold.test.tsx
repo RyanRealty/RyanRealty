@@ -124,14 +124,23 @@ describe('the footer fold', () => {
       'TikTok',
       'X',
       'LinkedIn',
-      'Pinterest',
-      'Threads',
     ]) {
       expect(out).toContain(`aria-label="${label}"`)
       expect(out).not.toMatch(new RegExp(`>${label}<`))
     }
-    expect(out.match(/v3-footer__social-btn/g) ?? []).toHaveLength(8)
+    expect(out.match(/v3-footer__social-btn/g) ?? []).toHaveLength(6)
+    expect(out).not.toContain('Pinterest')
+    expect(out).not.toContain('Threads')
     expect(out).not.toMatch(/aria-label="Google/)
+  })
+
+  it('keeps brokerage Contact without a personal principal-broker credit', () => {
+    const out = html()
+    expect(out).toContain('Ryan Realty')
+    expect(out).toContain('115 NW Oregon Ave #2, Bend, OR 97703')
+    expect(out).toContain('v3-footer__firm')
+    expect(out).not.toContain('Principal Broker')
+    expect(out).not.toContain('Matt Ryan')
   })
 
   it('shows the full office mailing address linked to GBP maps', () => {

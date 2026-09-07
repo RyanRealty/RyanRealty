@@ -90,6 +90,12 @@
 }
 
 .v3-footer__contact,
+
+.v3-footer__firm {
+  font-weight: 600;
+  color: var(--v3-navy, #102742);
+}
+
 .v3-footer__social {
   display: flex;
   flex-wrap: wrap;
