@@ -207,7 +207,7 @@ export default async function Home() {
           <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} />
         ) : null}
 
-        <HomeBrowsePlaces doors={placeDoors} />
+        <HomeBrowsePlaces id="places" doors={placeDoors} />
 
         {reviewQuotes.length > 0 ? (
           <V3Proof
