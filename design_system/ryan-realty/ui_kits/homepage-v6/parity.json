@@ -10,11 +10,11 @@
     },
     {
       "name": "KbExploreTowns",
-      "where": "Browse places Quiet doors (city/resort chips). KPI town ledger left home."
+      "where": "HomeBrowsePlaces chip doors (city/resort). KPI town ledger left home."
     },
     {
       "name": "KbCommunities",
-      "where": "Browse places Quiet doors. Resort figures stay on /communities."
+      "where": "HomeBrowsePlaces chip doors. Resort figures stay on /communities."
     },
     {
       "name": "KbFeatured",
@@ -69,6 +69,10 @@
       "where": "Removed from home. Town figures live on /cities."
     },
     {
+      "name": "V3Quiet",
+      "where": "Replaced on home #places by HomeBrowsePlaces city/resort chip doors (af0b2594)."
+    },
+    {
       "name": "V3Instrument #market",
       "where": "Removed from home. Market lives on /housing-market."
     }
@@ -104,8 +108,8 @@
       "blocking": true
     },
     {
-      "name": "V3Quiet",
-      "section": "#places -- Browse places city/resort chips as doors, not a KPI grid",
+      "name": "HomeBrowsePlaces",
+      "section": "#places -- Browse places city/resort chip doors (not V3Quiet rows, not a KPI grid)",
       "blocking": true
     },
     {
@@ -170,7 +174,7 @@
     "HomeHomesRails -- stacked house carousels (local actives + honest price-cut / new rows when data exists)",
     "V3Doors #doors -- illustrated Buy / Sell / Invest, Sell = Value my home",
     "AboutFaces -- Talk to a broker",
-    "V3Quiet #places -- Browse places city/resort chips as doors",
+    "HomeBrowsePlaces #places -- Browse places city/resort chip doors",
     "V3Proof #proof -- Google reviews",
     "V3Footer -- Markets / Company / Contact"
   ],
