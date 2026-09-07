@@ -1,0 +1,319 @@
+/**
+ * Critiquito re-check tip d2e9a363 residuals (C1/C3/C4/C9 + peers/history).
+ * Letter path: one comps path on screen, ≤2 charts, one comps map, no flyers.
+ */
+import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { renderCmaHtml, type RenderCmaArgs } from './render'
+import { renderImmersiveCmaHtml } from './immersive'
+import { assembleOpinionPages } from './opinion-pages'
+import { assembleOpinionScenes } from './opinion-scenes'
+import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
+import type { CmaExtras } from './extras'
+import type { CmaMarketArea } from './market-status'
+import { listingHistoryLine } from './listing-history-line'
+
+const subject: CmaSubject = {
+  listingKey: 'S1',
+  mlsNumber: '220159911',
+  streetAddress: '15991 Falcon',
+  city: 'La Pine',
+  state: 'OR',
+  postalCode: '97739',
+  subdivision: 'Tall Pines',
+  latitude: 43.7,
+  longitude: -121.5,
+  beds: 3,
+  baths: 2,
+  sqft: 1600,
+  lotAcres: 0.25,
+  propertySubType: 'Single Family Residence',
+  yearBuilt: 1998,
+  garageSpaces: 2,
+  photoUrl: 'https://cdn.example/falcon.jpg',
+  publicRemarks: null,
+  viewDescription: null,
+  taxAnnual: null,
+  standardStatus: 'Expired',
+  lastListPrice: 525000,
+  lastListDate: '2026-03-01',
+  listingHistoryLine: 'Listed Mar 1, 2026 at $549,000, cut to $525,000, came off expired · 97 days on market',
+}
+
+const comp: CmaAdjustedComp = {
+  listingKey: 'C1',
+  mlsNumber: '1',
+  address: '12 Pine',
+  city: 'La Pine',
+  subdivision: 'Tall Pines',
+  latitude: 43.71,
+  longitude: -121.51,
+  beds: 3,
+  baths: 2,
+  sqft: 1580,
+  lotAcres: 0.22,
+  propertySubType: null,
+  yearBuilt: 1999,
+  photoUrl: null,
+  publicRemarks: null,
+  viewDescription: null,
+  taxAnnual: null,
+  listPrice: 510000,
+  originalListPrice: 529000,
+  closePrice: 500000,
+  closeDate: '2026-06-01',
+  daysToOffer: 10,
+  domTotal: 20,
+  onMarketDate: '2026-05-01',
+  listingHistoryLine:
+    'Listed May 1, 2026 at $529,000, cut to $510,000, sold Jun 1, 2026 at $500,000 · 20 days on market',
+  selectionTier: 'subdivision',
+  monthsSinceClose: 2,
+  timeAdjustment: 0,
+  timeAdjustedPrice: 500000,
+  ppsfTimeAdjusted: 316,
+  sizeAdjustment: 0,
+  adjustedPrice: 500000,
+  weight: 1,
+}
+
+const broker: CmaBroker = {
+  id: 'id-matt',
+  slug: 'matthew-ryan',
+  displayName: 'Matt Ryan',
+  title: 'Owner & Principal Broker',
+  licenseNumber: '201206613',
+  email: 'matt@ryan-realty.com',
+  phone: '541.703.3095',
+  photoUrl: '/images/brokers/ryan-matt.png',
+}
+
+const pricing = {
+  method1Low: 480000,
+  method1Mid: 497000,
+  method1High: 510000,
+  method2: 495000,
+  method3: 500000,
+  conservative: 485000,
+  recommended: 497800,
+  highEnd: 510000,
+  valueLow: 485000,
+  valueHigh: 510000,
+  confidence: 'High',
+  confidenceReason: 'Tight set.',
+  needsReview: false,
+  reviewReason: null,
+  notes: [],
+  priceOverride: null,
+  predictedClose: 490000,
+} as unknown as CmaPricing
+
+const marketArea: CmaMarketArea = {
+  grain: 'city-similar',
+  label: '3 bedroom homes in La Pine',
+  source: 'test',
+  priceLo: 300000,
+  priceHi: 700000,
+  selected: {
+    key: 'selected',
+    label: 'Selected',
+    count: 3,
+    low: 480000,
+    median: 500000,
+    high: 520000,
+    medianPpsf: 310,
+    medianDom: 20,
+  },
+  active: null,
+  pending: null,
+  expired: null,
+  closed: null,
+  sold90: {
+    count: 12,
+    median: 495000,
+    low: 400000,
+    high: 600000,
+    bedsLabel: '3 bedroom / 2 bath',
+    source: 'test',
+  },
+  listingTrend: [
+    { month: '2026-01', newListings: 10, medianAsk: 520000 },
+    { month: '2026-02', newListings: 8, medianAsk: 515000 },
+    { month: '2026-03', newListings: 12, medianAsk: 510000 },
+    { month: '2026-04', newListings: 9, medianAsk: 505000 },
+    { month: '2026-05', newListings: 11, medianAsk: 500000 },
+    { month: '2026-06', newListings: 7, medianAsk: 498000 },
+  ],
+  outcomes: {
+    lo: 420000,
+    hi: 570000,
+    sold: [480000, 497800, 510000],
+    unsold: [519000, 540000],
+    list: 497800,
+    lastAsk: 525000,
+    soldShown: 3,
+    unsoldShown: 2,
+    soldTotal: 3,
+    unsoldTotal: 2,
+    label: '3 bedroom homes in La Pine',
+    source: 'test',
+  },
+  expiredPeers: [
+    {
+      listingKey: 'E1',
+      address: '88 Wren',
+      listPrice: 519000,
+      originalListPrice: 549000,
+      status: 'Expired',
+      daysOnMarket: 97,
+      photoUrl: null,
+      listingHistoryLine: 'Asked $549,000, cut to $519,000, came off expired · 97 days on market',
+      beds: 3,
+      baths: 2,
+      sqft: 1420,
+      yearBuilt: 1997,
+      lotAcres: 0.22,
+      latitude: 43.705,
+      longitude: -121.501,
+    },
+  ],
+}
+
+const extras = {
+  seasonality: null,
+  band: { lo: 450000, hi: 550000, activeCount: 2, pendingCount: 1, rivals: [] },
+  subdivisionPulse: null,
+  financing: null,
+  photoBench: null,
+  marketArea,
+  sold90: null,
+  photos: null,
+  legal: null,
+  permits: null,
+  ownershipHistory: null,
+  propertyFacts: null,
+} as unknown as CmaExtras
+
+function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
+  return {
+    subject,
+    comps: [comp],
+    market: {
+      geoLabel: 'La Pine',
+      medianSalePrice: 450000,
+      medianDom: 40,
+      saleToListRatio: 0.98,
+      monthsOfSupply: 4.2,
+      trend: [
+        { month: '2026-01', medianClose: 440000 },
+        { month: '2026-02', medianClose: 450000 },
+        { month: '2026-03', medianClose: 455000 },
+      ],
+    } as RenderCmaArgs['market'],
+    pricing,
+    broker,
+    client: { name: 'Owner', email: null, phone: null, notes: null },
+    mapDataUri: 'data:image/png;base64,COMPSMAP',
+    subjectMapDataUri: 'data:image/png;base64,SUBJECTMAP',
+    generatedAtIso: '2026-09-06T00:00:00.000Z',
+    subjectTrace: 't',
+    compTrace: [],
+    excludedOutliers: [],
+    extras,
+    tiersUsed: ['subdivision'],
+    ...over,
+  }
+}
+
+describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
+  it('C1: one sales path — matrix/stack only, no flyer dump or strip cards', () => {
+    const { html } = renderCmaHtml(args())
+    expect(html).toContain('The sales that set the list')
+    expect(html).toContain('comp-stack')
+    expect(html).toContain('comp-matrix')
+    expect(html).not.toContain('class="flyer-title"')
+    expect(html).not.toContain('class="comp-strip"')
+    expect(html).not.toContain('Marker key')
+    const salesHits = (html.match(/The sales that set the list/g) ?? []).length
+    expect(salesHits).toBe(1)
+  })
+
+  it('C9: at most one pin-map; never subject-only map; cover keeps photo', () => {
+    const { html } = renderCmaHtml(args())
+    const pins = html.match(/class="pin-map"/g) ?? []
+    expect(pins.length).toBeLessThanOrEqual(1)
+    expect(html).toContain('COMPSMAP')
+    expect(html).not.toContain('SUBJECTMAP')
+    expect(html).toContain('cdn.example/falcon.jpg')
+    expect(html).not.toContain('<h2 class="section">THE HOUSE</h2>')
+  })
+
+  it('C3: immersive keeps ≤2 labeled charts when outcomes + wider market exist', () => {
+    const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
+    const charts = html.match(/data-anim="chart"/g) ?? []
+    expect(charts.length).toBeLessThanOrEqual(2)
+    // Prefer listing trend; do not also emit inventory median-close chart.
+    const hasTrend = html.includes('id="listing-trend"')
+    const hasInventory = html.includes('id="inventory"')
+    expect(hasTrend || hasInventory).toBe(true)
+    expect(hasTrend && hasInventory).toBe(false)
+  })
+
+  it('C4: screen stylesheet stacks comps; print restores matrix', () => {
+    const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
+    expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
+    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
+  })
+
+  it('expired peers beat is visible in Matt voice', () => {
+    const pages = assembleOpinionPages({
+      subject,
+      comps: [comp],
+      market: null,
+      pricing,
+      extras,
+      mapDataUri: 'data:image/png;base64,COMPSMAP',
+    })
+    const body = pages.map((p) => p.body).join('\n')
+    expect(body).toContain('Expired peers — what happened')
+    expect(body).toContain('88 Wren')
+    expect(body.toLowerCase()).not.toContain('overprice')
+  })
+
+  it('thickens sold listing/price history when dates exist', () => {
+    const line = listingHistoryLine({
+      listPrice: 510000,
+      originalListPrice: 529000,
+      closePrice: 500000,
+      status: 'Closed',
+      onMarketDate: '2026-05-01',
+      closeDate: '2026-06-01',
+      daysOnMarket: 20,
+    })
+    expect(line).toMatch(/Listed .+ at \$529,000/)
+    expect(line).toContain('cut to $510,000')
+    expect(line).toMatch(/sold .+ at \$500,000/)
+    expect(line).toContain('20 days on market')
+  })
+
+  it('immersive story order: comps → expired peers → competition', () => {
+    const html = assembleOpinionScenes({
+      subject,
+      comps: [comp],
+      market: null,
+      pricing,
+      extras,
+      mapDataUri: 'data:image/png;base64,COMPSMAP',
+      broker,
+      generatedAtIso: '2026-09-06T00:00:00.000Z',
+    })
+    const salesAt = html.indexOf('The sales that set the list')
+    const peersAt = html.indexOf('Expired peers — what happened')
+    const competitionAt = html.indexOf('id="competition"')
+    expect(salesAt).toBeGreaterThan(0)
+    expect(peersAt).toBeGreaterThan(salesAt)
+    expect(competitionAt).toBeGreaterThan(peersAt)
+  })
+})

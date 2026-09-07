@@ -140,12 +140,10 @@ function monthsSince(iso: string | null): number | null {
  * with a January 2023 photo on a 2026 pricing document (found 2026-08-25).
  *
  * Order: a current photo, else the stale photo captioned honestly, else nothing.
- * Letter path never falls back to a map here (C9 — comps map is the single map).
+ * Never a map (C9 — comps map is the single map; cover uses photo or empty).
  */
-function heroForSubject(
-  subject: CmaSubject,
-  mapDataUri: string | null,
-): { src: string | null; caption: string } {
+function heroForSubject(subject: CmaSubject): { src: string | null; caption: string } {
+  // C9: cover may use a photo, never a map — comps pin map is the single letter map.
   const src = sparkPhotoAt(subject.photoUrl, '1024x768')
   const when = monthYear(subject.lastListDate)
   const ageMonths = monthsSince(subject.lastListDate)
@@ -155,15 +153,6 @@ function heroForSubject(
     return {
       src,
       caption: `Most recent MLS listing photo${when !== '—' ? ` (${when})` : ''} · MLS ${subject.mlsNumber ?? '—'}`,
-    }
-  }
-
-  if (mapDataUri) {
-    return {
-      src: mapDataUri,
-      caption: stale
-        ? `Aerial view · subject parcel. The most recent MLS photo is from ${when} and may not show the home today.`
-        : 'Aerial view · subject parcel. No MLS photo on file.',
     }
   }
 
@@ -223,7 +212,7 @@ function coverSpecsLine(subject: CmaSubject): string {
 
 function coverPage(a: RenderCmaArgs): PageDef {
   // Cover prefers MLS photo; never a second map (C9). Non-map fallback when no photo.
-  const hero = heroForSubject(a.subject, null)
+  const hero = heroForSubject(a.subject)
   const specs = coverSpecsLine(a.subject)
   const prepared = [
     a.client.name ? `Prepared for ${a.client.name}` : null,

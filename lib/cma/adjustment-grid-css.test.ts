@@ -12,25 +12,26 @@ describe('adjustment grid stays inside the print box', () => {
     expect(pricingPage).not.toContain('Market conditions (time)')
   })
 
-  it('keeps desktop/print matrix wide; stacks comps on narrow screens (C4)', () => {
+  it('uses stack on screen and matrix on print — one comps path, safe at 375 (C1/C4)', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
-    // Desktop/print: table keeps a real column floor.
-    expect(css).toMatch(/@media screen and \(min-width: 701px\)[\s\S]*table\.comp-matrix \{[^}]*min-width:\s*44rem/)
-    expect(immersive).toMatch(/@media \(min-width:701px\)\{table\.comp-matrix\{min-width:44rem\}\}/)
-    // Phone: hide the wide table, show stacked subject+sale cards — no horizontal grow.
-    expect(css).toMatch(/@media screen and \(max-width: 700px\)[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*none/)
-    expect(css).toMatch(/@media screen and \(max-width: 700px\)[\s\S]*\.comp-stack \{[^}]*display:\s*block/)
-    expect(immersive).toMatch(/@media \(max-width:700px\)\{\.comp-matrix-wrap\{display:none!important\}/)
+    // Screen Open report: stack only — no wide multi-column table at 375.
+    expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
+    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    expect(immersive).toMatch(/\.comp-stack\{display:block/)
+    expect(immersive).toMatch(/\.comp-matrix-wrap\{display:none/)
+    // Print PDF keeps the side-by-side matrix.
+    expect(css).toMatch(/@media print \{[\s\S]*\.comp-stack \{[^}]*display:\s*none/)
+    expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
+    expect(immersive).toMatch(/@media print\{\.comp-stack\{display:none!important\}/)
   })
 
   it('contains comps on 375 via stack, not a document-widening scroll (C4)', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     expect(css).toContain('.comp-stack')
     expect(css).toMatch(/\.comp-stack-card/)
-    expect(css).toMatch(
-      /@media screen and \(max-width: 700px\)[\s\S]*?\.comp-matrix-wrap\s*\{[^}]*display:\s*none/,
-    )
+    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    expect(css).not.toMatch(/@media screen and \(min-width: 701px\)[\s\S]*min-width:\s*44rem/)
   })
 
   it('stacks the signature at phone width so the 260px name plate cannot push past 375', () => {

@@ -79,15 +79,14 @@ img{max-width:100%;display:block}
 .comp-nv{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;line-height:1}
 .comp-facts{font-size:14px;opacity:.7;font-variant-numeric:tabular-nums;margin-top:4px}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
-.comp-matrix-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;margin:18px 0 8px}
-.comp-stack{display:none;margin:18px 0 8px}
-.comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff}
+.comp-matrix-wrap{display:none;margin:18px 0 8px;overflow-x:visible;max-width:100%}
+.comp-stack{display:block;margin:18px 0 8px}
+.comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%}
 .comp-stack-addr{font-weight:600;margin:0 0 8px}
 .comp-stack-cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.7;margin-bottom:6px}
 .comp-stack-row{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;padding:6px 0;border-top:1px solid var(--ink12);font-size:13px}
 .comp-stack-card .matrix-thumb{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:0 0 8px}
-@media (max-width:700px){.comp-matrix-wrap{display:none!important}.comp-stack{display:block}table.comp-matrix{min-width:0}}
-@media (min-width:701px){table.comp-matrix{min-width:44rem}}
+@media print{.comp-stack{display:none!important}.comp-matrix-wrap{display:block!important;overflow-x:visible}}
 table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
 table.comp-matrix td.n{white-space:nowrap}

@@ -242,13 +242,16 @@ export function cmaSectionStyles(): string {
      clipper: it is what removed sales 4 through 12 from a twelve-comp CMA with
      no error and no visible truncation. In print the box stays visible, so any
      future overflow is loud instead of silent. */
-    /* C4: stacked comps on narrow screens; table stays for print/desktop. */
-  .comp-stack { display: none; margin: 8px 0 14px; }
+    /* C1 + C4: ONE comps path on screen = stacked sales (works at 375).
+       Print keeps the side-by-side matrix. Never both visible at once. */
+  .comp-stack { display: block; margin: 8px 0 14px; }
+  .comp-matrix-wrap { display: none; margin: 8px 0 14px; overflow-x: visible; }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
     padding: 12px;
     margin: 0 0 12px;
     background: #fff;
+    max-width: 100%;
   }
   .comp-stack-addr { font-weight: 600; margin: 0 0 8px; color: var(--navy); }
   .comp-stack-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; margin-bottom: 6px; }
@@ -256,22 +259,12 @@ export function cmaSectionStyles(): string {
   .comp-stack-row .k { color: rgba(16,39,66,.72); }
   .comp-stack-row .n { font-variant-numeric: tabular-nums; }
   .comp-stack-card .matrix-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; margin: 0 0 8px; }
-  @media screen and (max-width: 700px) {
-    .comp-matrix-wrap { display: none !important; }
-    .comp-stack { display: block; }
-  }
   @media print {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }
   }
-.comp-matrix-wrap { overflow-x: visible; margin: 8px 0 14px; }
-  @media screen and (min-width: 701px) {
-    .comp-matrix-wrap {
-      overflow-x: auto;
-      max-width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-    table.comp-matrix { min-width: 44rem; }
+  @media screen {
+    table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }

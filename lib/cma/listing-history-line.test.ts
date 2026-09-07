@@ -15,7 +15,7 @@ describe('listingHistoryLine', () => {
         onMarketDate: '2026-05-01',
         daysOnMarket: 64,
       }),
-    ).toBe('Listed at $525,000, now $497,800 · 64 days on market')
+    ).toBe('Listed May 1, 2026 at $525,000, now $497,800 · 64 days on market')
   })
 
   it('does not invent a cut when original equals list', () => {
@@ -39,17 +39,23 @@ describe('listingHistoryLine', () => {
     ).toContain('20 days on market')
   })
 
-  it('shows sold list-to-close without blaming anyone', () => {
-    expect(
-      listingHistoryLine({
-        listPrice: 510000,
-        originalListPrice: 529000,
-        closePrice: 497800,
-        status: 'Closed',
-        closeDate: '2026-04-10',
-        daysOnMarket: 42,
-      }),
-    ).toBe('Listed at $529,000, sold at $497,800 · 42 days on market')
+  it('shows sold list-to-close timeline without blaming anyone', () => {
+    const line = listingHistoryLine({
+      listPrice: 510000,
+      originalListPrice: 529000,
+      closePrice: 497800,
+      status: 'Closed',
+      onMarketDate: '2026-02-01',
+      closeDate: '2026-04-10',
+      daysOnMarket: 42,
+    })
+    expect(line).toContain('Listed')
+    expect(line).toContain('$529,000')
+    expect(line).toContain('cut to $510,000')
+    expect(line).toContain('sold')
+    expect(line).toContain('$497,800')
+    expect(line).toContain('42 days on market')
+    expect(line?.toLowerCase()).not.toContain('overprice')
   })
 
   it('shows expired peers came off without saying overpriced', () => {
