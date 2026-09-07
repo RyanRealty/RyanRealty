@@ -11,15 +11,14 @@ import {
   v3Text,
   V3Stage,
   V3Doors,
-  V3Quiet,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
   V3Proof,
-  type V3QuietItem,
 } from '@/components/site/v3'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
+import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { homeRailRows } from './_v3/home-rail-items'
 import {
   HERO_VIDEO,
@@ -78,10 +77,19 @@ const TOWN_LABEL: Record<(typeof TOWN_ORDER)[number], string> = {
   terrebonne: 'Terrebonne',
 }
 
-/** Resort doors on home. Names only. Counts live on /communities. */
+/** Resort doors on home. Names only. Counts live on /communities.
+ *  Marks reuse chrome community stills when already wired. */
 const RESORT_DOORS = [
-  { label: 'Tetherow', href: '/communities/tetherow' },
-  { label: 'Broken Top', href: '/communities/broken-top' },
+  {
+    label: 'Tetherow',
+    href: '/communities/tetherow',
+    markSrc: '/images/chrome-marks/tetherow.jpg',
+  },
+  {
+    label: 'Broken Top',
+    href: '/communities/broken-top',
+    markSrc: '/images/chrome-marks/broken-top.jpg',
+  },
   { label: 'Black Butte Ranch', href: '/communities/black-butte-ranch' },
   { label: 'Eagle Crest', href: '/communities/eagle-crest' },
 ] as const
@@ -145,7 +153,7 @@ export default async function Home() {
     },
   ] as const
 
-  const placeItems: V3QuietItem[] = [
+  const placeDoors = [
     ...TOWN_ORDER.map((slug) => {
       const live = cityBySlug.get(slug)
       return {
@@ -153,7 +161,11 @@ export default async function Home() {
         href: `/cities/${slug}`,
       }
     }),
-    ...RESORT_DOORS.map((r) => ({ label: r.label, href: r.href })),
+    ...RESORT_DOORS.map((r) => ({
+      label: r.label,
+      href: r.href,
+      markSrc: 'markSrc' in r ? r.markSrc : undefined,
+    })),
     { label: 'Every city', href: '/cities' },
     { label: 'Resorts and communities', href: '/communities' },
   ]
@@ -195,13 +207,7 @@ export default async function Home() {
           <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} />
         ) : null}
 
-        <V3Quiet
-          id="places"
-          eyebrow="Central Oregon"
-          heading="Browse places"
-          headingLevel={2}
-          items={placeItems}
-        />
+        <HomeBrowsePlaces doors={placeDoors} />
 
         {reviewQuotes.length > 0 ? (
           <V3Proof

@@ -44,7 +44,7 @@ Saved = account icon. Value my home fills only on `/sell/*` leaves, not on `/sel
 | 2 | House carousels | Stacked “Homes for You”-type rails (not one lonely Field grid). At least recommended / local Bend-area actives. Add 1–2 more honest rows when data exists (price cuts, new). No fake personalization labels. Cards: photo, overlay badges we already encode (price cut, 3D/video, new, open, pending), save/heart, price, beds \| baths \| sqft \| status, street, listing attribution only if Field already has it. Use V3ListingRow / SplitCardMedia. Do not invent badge kinds. |
 | 3 | Doors | Exactly three: **Buy a home** · **Sell a home** · **Work with us**, each with **illustrations** (art, not photo landscapes). Sell door → valuation. Work with us → `/join`. No Invest door on home. Plain copy only. Never “see what your home is worth.” |
 | 4 | Talk to a broker | Three faces → `/team/[slug]`. |
-| 5 | Browse places | City/resort chips as doors — not KPI grid. |
+| 5 | Browse places | City and resort chip/pill doors (wrapped pills, optional community marks). Not a KPI grid. Not a hairline Quiet list. |
 | 6 | Proof | V3Proof Google reviews. |
 | 7 | Footer | V3Footer denser Markets / Company / Contact (navy/cream). Not a sparse SEO dump. |
 
