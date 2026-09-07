@@ -614,7 +614,9 @@ export async function POST(request: NextRequest) {
   // `return-visit:cma:<slug>` kind, so the queueBrokerAlert dedupe still means
   // ONE alert per document per contact, ever — a reader who opens five comps
   // does not text the broker five times.
-  if (eventType === 'page_view') {
+  // Both view kinds: a comp is a LISTING page, which fires `listing_view`, and
+  // a page_view-only test would never alert on the tap that matters most.
+  if (eventType === 'page_view' || eventType === 'listing_view') {
     try {
       const { cmaSlugFromDocumentUrl, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
       const { cmaCampaignFromUrl } = await import('@/lib/cma/doc-links')

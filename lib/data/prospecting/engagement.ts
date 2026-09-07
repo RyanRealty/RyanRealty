@@ -132,6 +132,12 @@ function later(a: string | null, b: string | null): string | null {
   return a > b ? a : b
 }
 
+/**
+ * The event types that mean "they looked at a page". A listing detail page
+ * fires `listing_view`; everything else fires `page_view`. Both are arrivals.
+ */
+const CAMPAIGN_VIEW_EVENT_TYPES = ['page_view', 'listing_view'] as const
+
 /** Path only — a stored arrival URL carries the campaign query we do not display. */
 function pathOf(pageUrl: string): string {
   try {
@@ -323,6 +329,13 @@ async function computeEngagementDetail(
   // so every row is re-parsed and exact-matched against the chunk before it
   // counts — the same guard the `/cma/<slug>` pass above uses, and the reason a
   // slug that is a prefix of another cannot borrow its taps.
+  //
+  // BOTH view kinds. The single most important destination in a CMA is a comp,
+  // and a listing page fires `listing_view`, not `page_view` (VisitTracker
+  // branches on the path). Verified live 2026-09-07: the tap on
+  // /homes-for-sale/bend/newport-gardens/1299-ogden-220225388 wrote
+  // event_type='listing_view', which a page_view-only filter drops on the
+  // floor — the comp taps would have been the ones this whole read exists for.
   const siteBySlug = new Map<
     string,
     { count: number; first: string | null; last: string | null; hits: Array<{ path: string; at: string | null }> }
@@ -333,7 +346,7 @@ async function computeEngagementDetail(
     const { data, error } = await sb
       .from('visitor_events')
       .select('page_url, event_at')
-      .eq('event_type', 'page_view')
+      .in('event_type', CAMPAIGN_VIEW_EVENT_TYPES)
       .or(orExpr)
     if (error) {
       console.error('[prospecting] engagement campaign visits read failed:', error.message)

@@ -28,12 +28,12 @@ function view(slug: string, at: string): ViewRow {
  * with the document's slug carried in `utm_campaign` by `trackedDocLink`, and
  * with no `_pid` (the track route strips identity before storing the URL).
  */
-function tap(slug: string, path: string, at: string): ViewRow {
+function tap(slug: string, path: string, at: string, eventType = 'page_view'): ViewRow {
   return {
     page_url: `https://ryan-realty.com${path}?agent=matt&utm_source=cma&utm_medium=document&utm_campaign=${slug}`,
     event_at: at,
-    page_category: 'listing',
-    event_type: 'page_view',
+    page_category: eventType === 'listing_view' ? 'listing_detail' : 'area_guide',
+    event_type: eventType,
   }
 }
 
@@ -271,6 +271,32 @@ describe('getCmaOutcomes — a tap on a comp is a visit to THAT document', () =>
     expect(map.c1.visits).toBe(0)
     expect(map.c1.visitedPages).toEqual({ count: 0, recent: [] })
     expect(map.c2.visits).toBe(1)
+  })
+
+  it('counts a comp tap, which arrives as listing_view and not page_view', async () => {
+    // Verified live 2026-09-07: the tap on a canonical listing URL wrote
+    // event_type='listing_view'. A page_view-only filter dropped exactly the
+    // event this read exists for — the comp.
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: null, client_email: null, delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [
+      tap('cma-101-main', '/homes-for-sale/bend/newport-gardens/1299-ogden-220225388', '2026-09-02T09:00:00Z', 'listing_view'),
+    ]
+    const o = (await getCmaOutcomes(['c1'])).c1
+    expect(o.visits).toBe(1)
+    expect(o.visitedPages.recent).toEqual(['/homes-for-sale/bend/newport-gardens/1299-ogden-220225388'])
+  })
+
+  it('does not count a scroll or a click as a page arrival', async () => {
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: null, client_email: null, delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    state.views = [
+      tap('cma-101-main', '/homes-for-sale/bend/x-220000001', '2026-09-02T09:00:00Z', 'scroll_depth'),
+      tap('cma-101-main', '/homes-for-sale/bend/x-220000001', '2026-09-02T09:01:00Z', 'cta_click'),
+    ]
+    expect((await getCmaOutcomes(['c1'])).c1.visits).toBe(0)
   })
 
   it('ignores a campaign that is not one of ours', async () => {
