@@ -73,7 +73,7 @@ function HomeRailCardFace({
     event.preventDefault()
     event.stopPropagation()
     if (!signedIn) {
-      redirectToLoginForSave(card.listingKey)
+      redirectToLoginForSave(card.listingKey) // hydration-safe: click handler, never runs during render
       return
     }
     if (busy) return
