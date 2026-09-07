@@ -210,3 +210,28 @@ export function composeFailureSummary(opts: {
     comp_selection: opts.compSelection ?? null,
   }
 }
+
+/**
+ * What `status` a row should carry after a build FAILED on it.
+ *
+ * A failed rebuild clears the document — html, comps, and every list figure —
+ * so the row that remains has no document behind it. Its status did not move,
+ * which is how three live rows came to read `finalized` (and one `delivered`)
+ * while `canOpenCmaDocument` had nothing to open: the queue offered a Send on a
+ * document that does not exist. The label has to fall back with the content.
+ *
+ *  · `archived` is terminal and stays put — a failed rebuild must never pull an
+ *    archived row back into the working queues.
+ *  · `draft` is already correct and is left alone rather than rewritten.
+ *  · anything else — finalized, delivered, needs_review, sent — goes back to
+ *    `draft`, which is what a row with no document is.
+ *  · an UNKNOWN status (the read failed) changes nothing: without knowing
+ *    whether the row is archived, the safe move is to leave the label and let
+ *    build_error carry the failure.
+ */
+export function statusAfterBuildFailure(current: string | null | undefined): 'draft' | null {
+  const status = String(current ?? '').trim().toLowerCase()
+  if (!status) return null
+  if (status === 'archived' || status === 'draft') return null
+  return 'draft'
+}

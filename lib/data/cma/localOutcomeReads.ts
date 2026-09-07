@@ -67,6 +67,8 @@ export type CmaCityClosedOutcomeRow = {
   days_to_pending: number | null
   OriginalListPrice: number | null
   ListPrice: number | null
+  /** The contract price. Every share-of-ask figure divides this by an ask. */
+  ClosePrice: number | null
 }
 
 export type CmaCityFailedOutcomeRow = {
@@ -91,7 +93,7 @@ export type CmaListingPriceEvent = {
   source: 'price_history' | 'listing_history'
 }
 
-const CLOSED_COLUMNS = 'ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice'
+const CLOSED_COLUMNS = 'ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice, ClosePrice'
 const FAILED_COLUMNS =
   'ListingKey, StandardStatus, ListDate, OnMarketDate, off_market_date, status_change_timestamp, DaysOnMarket, OriginalListPrice, ListPrice'
 
@@ -285,10 +287,115 @@ export const getCmaListingPriceEvents = makeResilientCached(
   [] as CmaListingPriceEvent[],
 )
 
+/**
+ * ── the failed-then-sold pair reads ────────────────────────────────────────
+ *
+ * Two more narrow reads over the same table, on a LONGER window (24 months of
+ * failures) and carrying the street fields, because the pairing is done on the
+ * address: a cycle that ended unsold, then a closed sale at the same house.
+ * `lib/pricing/failed-then-sold.ts` holds the pairing rules — the same rules
+ * `scripts/cma-backtest.mjs` calibrated the regional figure with.
+ *
+ * The closed side cannot reuse `getCmaCityClosedOutcomes`: that read is the
+ * 12-month outcome population and carries no address, and a failure 23 months
+ * old can be answered by a sale 5 months old, so both sides run over the same
+ * 24-month window.
+ */
+export type CmaCityFailedCycleRow = {
+  ListingKey: string
+  StreetNumber: string | null
+  StreetName: string | null
+  City: string | null
+  StandardStatus: string | null
+  ListPrice: number | null
+  OriginalListPrice: number | null
+  off_market_date: string | null
+  status_change_timestamp: string | null
+}
+
+export type CmaCityClosedSaleRow = {
+  ListingKey: string
+  StreetNumber: string | null
+  StreetName: string | null
+  City: string | null
+  ClosePrice: number | null
+  CloseDate: string | null
+  ListDate: string | null
+}
+
+const FAILED_CYCLE_COLUMNS =
+  'ListingKey, StreetNumber, StreetName, City, StandardStatus, ListPrice, OriginalListPrice, off_market_date, status_change_timestamp'
+const CLOSED_SALE_COLUMNS = 'ListingKey, StreetNumber, StreetName, City, ClosePrice, CloseDate, ListDate'
+
+async function fetchCmaCityFailedCycles(
+  city: string,
+  sinceIso: string,
+): Promise<CmaCityFailedCycleRow[]> {
+  const sb = client()
+  if (!sb || !city.trim()) return []
+  const out: CmaCityFailedCycleRow[] = []
+  for (let from = 0; from < CEILING; from += PAGE_SIZE) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(FAILED_CYCLE_COLUMNS)
+      .eq('City', city)
+      .eq('PropertyType', 'A')
+      .eq('property_sub_type', 'Single Family Residence')
+      .in('StandardStatus', CMA_FAILED_STATUSES as unknown as string[])
+      .gte('off_market_date', sinceIso)
+      .order('off_market_date', { ascending: true })
+      .order('ListingKey', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) throw new Error(`getCmaCityFailedCycles(${city}): ${error.message}`)
+    out.push(...((data ?? []) as unknown as CmaCityFailedCycleRow[]))
+    if (!data || data.length < PAGE_SIZE) break
+  }
+  return out
+}
+
+export const getCmaCityFailedCycles = makeResilientCached(
+  fetchCmaCityFailedCycles,
+  ['cma-city-failed-cycles-v1'],
+  { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.listings, cacheTag.market] },
+  [] as CmaCityFailedCycleRow[],
+)
+
+async function fetchCmaCityClosedSales(city: string, sinceIso: string): Promise<CmaCityClosedSaleRow[]> {
+  const sb = client()
+  if (!sb || !city.trim()) return []
+  const out: CmaCityClosedSaleRow[] = []
+  for (let from = 0; from < CEILING; from += PAGE_SIZE) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(CLOSED_SALE_COLUMNS)
+      .eq('City', city)
+      .eq('PropertyType', 'A')
+      .eq('property_sub_type', 'Single Family Residence')
+      .eq('StandardStatus', 'Closed')
+      .gte('CloseDate', sinceIso)
+      .order('CloseDate', { ascending: true })
+      .order('ListingKey', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) throw new Error(`getCmaCityClosedSales(${city}): ${error.message}`)
+    out.push(...((data ?? []) as unknown as CmaCityClosedSaleRow[]))
+    if (!data || data.length < PAGE_SIZE) break
+  }
+  return out
+}
+
+export const getCmaCityClosedSales = makeResilientCached(
+  fetchCmaCityClosedSales,
+  ['cma-city-closed-sales-v1'],
+  { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.listings, cacheTag.market] },
+  [] as CmaCityClosedSaleRow[],
+)
+
 /** Exported for the compute layer's test fixtures and for the source blocks. */
 export const CMA_LOCAL_OUTCOME_READS = {
   closedColumns: CLOSED_COLUMNS,
   failedColumns: FAILED_COLUMNS,
+  failedCycleColumns: FAILED_CYCLE_COLUMNS,
+  closedSaleColumns: CLOSED_SALE_COLUMNS,
   pageSize: PAGE_SIZE,
   ceiling: CEILING,
 } as const

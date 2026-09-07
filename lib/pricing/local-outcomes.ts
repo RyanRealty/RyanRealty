@@ -49,6 +49,23 @@ export const MIN_LOCAL_OUTCOME_N = 30
 /** Rolling window every figure in this module is measured over. */
 export const LOCAL_OUTCOME_WINDOW_MONTHS = 12
 
+/**
+ * A realization bucket is a thinner slice than a whole group, so it gets its
+ * own floor. Below this the bucket prints no figure and says why.
+ */
+export const MIN_REALIZATION_BUCKET_N = 15
+
+/**
+ * Redfin's published definition of every share-of-list metric excludes sales
+ * that closed 50 percent above or below the ask (fetched 2026-09-07,
+ * docs/research/cma-professional-practice-2026-09-07.md §4). A close at 3x its
+ * own asking price is a data defect or a related-party transfer, and one of
+ * them drags a median. The SAME rule applies everywhere a close-to-ask ratio
+ * is measured in this repo, so it is stated once, here.
+ */
+export const ASK_RATIO_MIN = 0.5
+export const ASK_RATIO_MAX = 1.5
+
 /** The §0 trace that ships beside a figure and in `citations`. */
 export interface CmaStatSource {
   table: string
@@ -94,6 +111,18 @@ export interface CmaAskOutcomeGroup {
   medianDays: number | null
   /** `sold-after-cut` only: median of (original ask − final ask) / original ask, in percent. */
   medianCutPct?: number | null
+  /**
+   * Median close ÷ ORIGINAL ask, in percent — what the group actually realized
+   * against the price it opened at. Null on `did-not-sell` (nothing closed) and
+   * null when the count is under the minimum.
+   */
+  medianSoldToOriginalAskPct: number | null
+  /**
+   * How many sales that median was computed over — smaller than `n` whenever a
+   * row carries days but no usable pair of prices. Printing `n` beside a figure
+   * computed on fewer rows is the §0 defect this field exists to avoid.
+   */
+  soldToOriginalAskN: number
   reason: string | null
 }
 
@@ -110,6 +139,7 @@ export interface LocalClosedRow {
   days_to_pending?: number | null
   OriginalListPrice?: number | null
   ListPrice?: number | null
+  ClosePrice?: number | null
 }
 
 /** The rows `getCmaCityFailedOutcomes` returns, narrowed to what is measured. */
@@ -220,7 +250,7 @@ export function computeOfferTiming(args: {
     table: 'listings',
     filter: `City='${args.city}', PropertyType='A', property_sub_type='Single Family Residence', StandardStatus='Closed', CloseDate >= ${args.sinceIso}; days measured as days_to_pending (on-market date to accepted offer), rows with no days_to_pending excluded`,
     fetchedAt: args.fetchedAt,
-    query: `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"`,
+    query: `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice, ClosePrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"`,
   }
   if (n < MIN_LOCAL_OUTCOME_N) {
     return {
@@ -262,6 +292,21 @@ function askPair(row: LocalClosedRow): { original: number; final: number } | nul
   return { original, final }
 }
 
+/**
+ * Close ÷ ORIGINAL ask as a percent, or null when the row cannot support one:
+ * a missing price, a non-positive price, or a ratio outside the ±50 percent
+ * bounds above.
+ */
+export function soldToOriginalAskPct(row: LocalClosedRow): number | null {
+  const original = Number(row.OriginalListPrice)
+  const close = Number(row.ClosePrice)
+  if (!Number.isFinite(original) || original <= 0) return null
+  if (!Number.isFinite(close) || close <= 0) return null
+  const ratio = close / original
+  if (ratio < ASK_RATIO_MIN || ratio > ASK_RATIO_MAX) return null
+  return ratio * 100
+}
+
 /** True when the ask that closed the sale is below the ask that opened it. */
 export function soldAfterCut(row: LocalClosedRow): boolean {
   const asks = askPair(row)
@@ -290,32 +335,45 @@ function group(
   key: CmaAskOutcomeKey,
   days: number[],
   label: string,
-  cutPcts?: number[],
+  opts: { cutPcts?: number[]; realizationPcts?: number[] } = {},
 ): CmaAskOutcomeGroup {
   const n = days.length
+  const cutPcts = opts.cutPcts
+  // The realization median stands on its own count and its own minimum: a
+  // group can carry enough sales to publish days and not enough usable price
+  // pairs to publish a share, and the reverse.
+  const realizationPcts = opts.realizationPcts ?? []
+  const soldToOriginalAskN = realizationPcts.length
+  const realizationMedian =
+    key === 'did-not-sell' || soldToOriginalAskN < MIN_LOCAL_OUTCOME_N
+      ? null
+      : medianVerified(realizationPcts)
+  const medianSoldToOriginalAskPct = realizationMedian == null ? null : round1(realizationMedian)
+  const base = {
+    key,
+    n,
+    ...(cutPcts ? { medianCutPct: null as number | null } : {}),
+    medianSoldToOriginalAskPct,
+    soldToOriginalAskN,
+  }
   if (n < MIN_LOCAL_OUTCOME_N) {
     return {
-      key,
-      n,
+      ...base,
       medianDays: null,
-      ...(cutPcts ? { medianCutPct: null } : {}),
       reason: `${n} ${label} in this window, under the ${MIN_LOCAL_OUTCOME_N} needed to publish a median.`,
     }
   }
   const medianDays = medianVerified(days)
   if (medianDays == null) {
     return {
-      key,
-      n,
+      ...base,
       medianDays: null,
-      ...(cutPcts ? { medianCutPct: null } : {}),
       reason: 'The median could not be confirmed by a second computation, so no figure is published.',
     }
   }
   const medianCutPct = cutPcts ? medianVerified(cutPcts) : undefined
   return {
-    key,
-    n,
+    ...base,
     medianDays,
     ...(cutPcts ? { medianCutPct: medianCutPct == null ? null : round1(medianCutPct) } : {}),
     reason: null,
@@ -350,6 +408,13 @@ export function computeAskOutcome(args: {
   const cutPcts = cutRows
     .map((r) => askPair(r)!)
     .map(({ original, final }) => ((original - final) / original) * 100)
+  // What each sold group realized against the ask it OPENED at. Same rows, one
+  // more measurement; rows with no close price or a ratio outside ±50 percent
+  // are not datapoints and are counted out in the source line.
+  const realizationOf = (rows: readonly LocalClosedRow[]): number[] =>
+    rows.map(soldToOriginalAskPct).filter((n): n is number => n != null)
+  const noCutRealization = realizationOf(noCutRows)
+  const cutRealization = realizationOf(cutRows)
   const failedDays = args.failedRows
     .map(failedRowDays)
     .filter((d): d is number => d != null && d >= 0)
@@ -366,10 +431,13 @@ export function computeAskOutcome(args: {
       `Did not sell: StandardStatus in (Expired, Canceled, Withdrawn), off_market_date >= ${args.sinceIso}, ` +
       `days = list date to off-market date (finalCycleDaysOnMarket, the same span measured for the subject). ` +
       `Each group's n is the count the median was computed over: ${soldWithoutDays} sold row(s) and ` +
-      `${failedWithoutDays} off-market row(s) carried no usable days figure and were set aside.`,
+      `${failedWithoutDays} off-market row(s) carried no usable days figure and were set aside. ` +
+      `Share of the original ask = ClosePrice / OriginalListPrice on the same closed rows, ` +
+      `excluding closes more than 50% above or below that ask (${noCutRealization.length} of ${noCutRows.length} ` +
+      `no-cut and ${cutRealization.length} of ${cutRows.length} cut sale(s) carried a usable pair).`,
     fetchedAt: args.fetchedAt,
     query:
-      `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"` +
+      `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice, ClosePrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"` +
       ` ;; ` +
       `select ListingKey, "StandardStatus", "ListDate", "OnMarketDate", off_market_date, status_change_timestamp, "DaysOnMarket" from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" in ('Expired','Canceled','Withdrawn') and off_market_date >= '${args.sinceIso}' order by off_market_date, "ListingKey"`,
   }
@@ -378,8 +446,13 @@ export function computeAskOutcome(args: {
     city: args.city,
     windowMonths,
     groups: [
-      group('sold-no-cut', noCutDays, `sales in ${args.city} closed without the ask coming down`),
-      group('sold-after-cut', cutDays, `sales in ${args.city} closed after the ask came down`, cutPcts),
+      group('sold-no-cut', noCutDays, `sales in ${args.city} closed without the ask coming down`, {
+        realizationPcts: noCutRealization,
+      }),
+      group('sold-after-cut', cutDays, `sales in ${args.city} closed after the ask came down`, {
+        cutPcts,
+        realizationPcts: cutRealization,
+      }),
       group('did-not-sell', failedDays, `listings in ${args.city} came off the market unsold`),
     ],
     source,
@@ -391,4 +464,123 @@ export function localOutcomeWindowStart(asOf: Date, months = LOCAL_OUTCOME_WINDO
   const d = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate()))
   d.setUTCMonth(d.getUTCMonth() - months)
   return d.toISOString().slice(0, 10)
+}
+
+// ── what the original ask actually realized, by weeks on the market ─────────
+
+/**
+ * The single best overpricing exhibit we can build honestly
+ * (docs/research/cma-professional-practice-2026-09-07.md §4, item 4): the
+ * median share of the ORIGINAL asking price that sales realized, split by how
+ * long they took to find a buyer. It replaces the "% of list by weeks" table
+ * every brokerage site attributes to NAR and nobody can source — that primary
+ * source was fetched for and not reached, so the figure is computed on our own
+ * closed rows instead of cited.
+ *
+ * Buckets are inclusive at the label: weeks = days_to_pending / 7, so a sale
+ * that went pending on day 14 is 2.0 weeks and sits in '0-2', and day 15 is
+ * 2.14 weeks and sits in '3-4'.
+ */
+export const REALIZATION_BUCKETS = [
+  { weeks: '0-2', maxWeeks: 2 },
+  { weeks: '3-4', maxWeeks: 4 },
+  { weeks: '5-8', maxWeeks: 8 },
+  { weeks: '9-16', maxWeeks: 16 },
+  { weeks: '17+', maxWeeks: Infinity },
+] as const
+
+export type CmaRealizationBucketLabel = (typeof REALIZATION_BUCKETS)[number]['weeks']
+
+export interface CmaRealizationBucket {
+  weeks: CmaRealizationBucketLabel
+  /** Sales in the bucket carrying BOTH a days figure and a usable price pair. */
+  n: number
+  /** Median ClosePrice ÷ OriginalListPrice, percent, one decimal. */
+  medianPctOfOriginalAsk: number | null
+  /** Null when the figure is publishable; a sentence when it is withheld. */
+  reason: string | null
+}
+
+export interface CmaOriginalAskRealization {
+  city: string
+  windowMonths: number
+  /** Sales that landed in some bucket — the sum of the buckets' own counts. */
+  n: number
+  buckets: CmaRealizationBucket[]
+  source: CmaStatSource
+}
+
+/** Which bucket a days-to-pending value falls in. */
+export function realizationBucketFor(days: number): CmaRealizationBucketLabel {
+  const weeks = days / 7
+  for (const b of REALIZATION_BUCKETS) if (weeks <= b.maxWeeks) return b.weeks
+  return '17+'
+}
+
+/**
+ * The table, over the SAME closed rows chapter 2's other two figures are
+ * computed from. A row counts only when it carries both a days-to-pending
+ * value and a close-to-original-ask ratio inside ±50 percent; a bucket under
+ * MIN_REALIZATION_BUCKET_N prints no figure and says how many it had.
+ */
+export function computeOriginalAskRealization(args: {
+  rows: readonly LocalClosedRow[]
+  city: string
+  sinceIso: string
+  fetchedAt: string
+  windowMonths?: number
+}): CmaOriginalAskRealization {
+  const windowMonths = args.windowMonths ?? LOCAL_OUTCOME_WINDOW_MONTHS
+  const byBucket = new Map<CmaRealizationBucketLabel, number[]>(
+    REALIZATION_BUCKETS.map((b) => [b.weeks, [] as number[]]),
+  )
+  let withDays = 0
+  for (const row of args.rows) {
+    const days = row.days_to_pending == null ? null : Number(row.days_to_pending)
+    if (days == null || !Number.isFinite(days) || days < 0) continue
+    withDays++
+    const pct = soldToOriginalAskPct(row)
+    if (pct == null) continue
+    byBucket.get(realizationBucketFor(Math.round(days)))!.push(pct)
+  }
+  const buckets = REALIZATION_BUCKETS.map(({ weeks }) => {
+    const pcts = byBucket.get(weeks)!
+    const n = pcts.length
+    if (n < MIN_REALIZATION_BUCKET_N) {
+      return {
+        weeks,
+        n,
+        medianPctOfOriginalAsk: null,
+        reason: `${n} ${n === 1 ? 'sale' : 'sales'} took ${weeks === '17+' ? '17 weeks or more' : `${weeks} weeks`} to find a buyer in this window, under the ${MIN_REALIZATION_BUCKET_N} needed to publish a figure.`,
+      }
+    }
+    const median = medianVerified(pcts)
+    if (median == null) {
+      return {
+        weeks,
+        n,
+        medianPctOfOriginalAsk: null,
+        reason: 'The median could not be confirmed by a second computation, so no figure is published.',
+      }
+    }
+    return { weeks, n, medianPctOfOriginalAsk: round1(median), reason: null }
+  })
+  const n = buckets.reduce((sum, b) => sum + b.n, 0)
+  return {
+    city: args.city,
+    windowMonths,
+    n,
+    buckets,
+    source: {
+      table: 'listings',
+      filter:
+        `City='${args.city}', PropertyType='A', property_sub_type='Single Family Residence', ` +
+        `StandardStatus='Closed', CloseDate >= ${args.sinceIso}. Weeks = days_to_pending / 7, bucket edges ` +
+        `inclusive at the label. Figure = median ClosePrice / OriginalListPrice, excluding closes more than ` +
+        `50% above or below that ask. ${withDays} of ${args.rows.length} closed row(s) carried a days figure; ` +
+        `${n} of those also carried a usable price pair and were measured.`,
+      fetchedAt: args.fetchedAt,
+      query: `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ClosePrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"`,
+    },
+  }
 }

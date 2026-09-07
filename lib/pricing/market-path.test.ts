@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { marketPath, ppsfAt, timeAdjustAlongPath } from '@/lib/pricing/market-path'
+import { marketIndexTrend, marketPath, ppsfAt, timeAdjustAlongPath } from '@/lib/pricing/market-path'
 
 function pts(
   rows: Array<{ month: string; ppsf: number; n?: number }>,
@@ -76,5 +76,28 @@ describe('marketPath — the actual month-to-month move, not a smeared YoY', () 
     const path = marketPath({ points, fromDate: '2021-01-01', toDate: '2021-07-01' })
     expect(path.factor).toBe(1.25)
     expect(path.capped).toBe(true)
+  })
+})
+
+describe('marketIndexTrend — the basis a document prints', () => {
+  it('reads the compound monthly rate over the window and counts the sales behind it', () => {
+    // 12 months, 1% a month compounding: 300 -> 300 * 1.01^12.
+    const points = Array.from({ length: 13 }, (_, i) => ({
+      month: `2026-${String(i + 1).padStart(2, '0')}-01`.replace('2026-13', '2027-01'),
+      ppsf: +(300 * 1.01 ** i).toFixed(2),
+      n: 30,
+    }))
+    const out = marketIndexTrend({ points, asOf: '2027-01-01', windowMonths: 12 })
+    expect(out.pctPerMonth).toBe(1)
+    expect(out.months).toBe(13)
+    expect(out.n).toBe(390)
+    expect(out.capped).toBe(false)
+  })
+
+  it('says nothing rather than guessing when no month carries enough sales', () => {
+    const thin = [{ month: '2026-01-01', ppsf: 300, n: 2 }]
+    const out = marketIndexTrend({ points: thin, asOf: '2026-09-01', windowMonths: 12 })
+    expect(out.pctPerMonth).toBeNull()
+    expect(out.n).toBe(0)
   })
 })

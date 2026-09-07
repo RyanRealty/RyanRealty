@@ -26,10 +26,11 @@ import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
-import { attachSellerNet } from '@/lib/pricing/seller-net'
+import { buildRejectedSales } from '@/lib/pricing/rejected'
+import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
-import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
+import { composeBuildSummary, composeFailureSummary, statusAfterBuildFailure } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
@@ -168,7 +169,19 @@ async function recordBuildFailure(
   // html_path is NOT NULL on public.cmas — nulling it aborts the whole update
   // (live Rim View kept $1.645M Summit/Falcon after a8ab9ded for this reason).
   // Empty string is not a stored document (cmaHasStoredHtml / canOpenCmaDocument).
+  // The row's own status, read before anything is written: a failed rebuild
+  // clears the document, and a row with no document may not keep wearing
+  // `finalized` or `delivered` (three live rows did on 2026-09-07). Archived
+  // stays archived; an unreadable status is left alone rather than guessed.
+  const existing = await getCmaAdminReviewRowBySlug(slug).catch((err) => {
+    console.error('[recordBuildFailure] status read failed', slug, err)
+    return null
+  })
+  const nextStatus = statusAfterBuildFailure(
+    existing && typeof existing.status === 'string' ? existing.status : null,
+  )
   const clearFields = {
+    ...(nextStatus ? { status: nextStatus } : {}),
     build_error: error.slice(0, 2000),
     built_at: new Date().toISOString(),
     ...(failureSummary ? { build_summary: failureSummary } : {}),
@@ -192,7 +205,7 @@ async function recordBuildFailure(
   // Update can succeed while .select('id') returns empty (RLS). Still wipe comps
   // and retry the clear once so the admin rebuild path cannot keep $1.645M live.
   if (!cmaId || !cleared.ok) {
-    const row = await getCmaAdminReviewRowBySlug(slug).catch(() => null)
+    const row = existing ?? (await getCmaAdminReviewRowBySlug(slug).catch(() => null))
     if (row && typeof row.id === 'string') cmaId = row.id
     if (!cleared.ok) {
       await updateCmaRowFieldsBySlug(slug, clearFields).catch((err) => {
@@ -430,6 +443,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
       // The comparability narrative renders with the pricing rationale — the
       // seller sees WHY comps were kept, down-weighted, or excluded.
+      // Considered and not used: the sales the comparability review set aside
+      // and the price-per-square-foot outliers, each with a reason composed
+      // from the sale's own facts (never the review's own words, which are not
+      // word-sanitized).
+      if (p) {
+        p.rejected = buildRejectedSales({
+          candidates: selection.comps,
+          excludedKeys: excludedForAudit().map((e) => e.listingKey),
+          outliers: selection.excludedOutliers,
+          subject: {
+            sqft: subject.sqft,
+            yearBuilt: subject.yearBuilt,
+            propertySubType: subject.propertySubType,
+          },
+        })
+      }
       if (p && judgment) {
         const excludedCount = selection.comps.length - set.length
         const weakCount = adj.filter((c) => tierByKey.get(c.listingKey) === 'weak').length
@@ -761,6 +790,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     if (market) {
       market.offerTiming = localOutcomes.offerTiming
       market.askOutcome = localOutcomes.askOutcome
+      market.originalAskRealization = localOutcomes.originalAskRealization
+      market.localFailedThenSold = localOutcomes.localFailedThenSold
     }
 
     // 4.76. What they own: the prior purchase at this address, and what the
@@ -827,6 +858,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // broker in the admin queue.
     if (pricing.reviewReason) pricing.reviewReason = sanitizeClientProse(pricing.reviewReason)
 
+    // The reconciliation sentence and its per-sale reasons are OUR prose and
+    // they print in the document, so they get the same punctuation pass.
+    if (pricing.reconciliation) {
+      pricing.reconciliation.sentence = sanitizeClientProse(pricing.reconciliation.sentence ?? '')
+      pricing.reconciliation.weights = pricing.reconciliation.weights.map((w) => ({ ...w, reason: sanitizeClientProse(w.reason) }))
+    }
+
     // 6. Render.
     //
     // renderArgs is EXACTLY what renderCmaHtml receives, minus the two things a
@@ -837,7 +875,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // instead of calling buildCma again — which re-selects comps and re-runs
     // judgeComps + auditCma, and can therefore change the recommended list
     // price when only the signer changed (CLAUDE.md section 0).
-    const renderComps = applyCompVerdicts(adjusted, judgment?.verdicts ?? [])
+    // Every printed sale carries its seller concession — the 1004's first value
+    // adjustment — resolved by the SAME function the seller-net caption under
+    // the grid reads, so the line and the caption cannot disagree. Null only
+    // when the sale recorded nothing at all.
+    const renderComps = attachCompConcessions(applyCompVerdicts(adjusted, judgment?.verdicts ?? []))
 
     // The recorded lot under the subject and under each kept sale. Resolved
     // from the SAME array the document renders, so a tile numbered 3 is the
@@ -968,6 +1010,27 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
           }
         : { source: 'none', note: 'No closed or off-market rows returned for the subject city.' },
+      market_original_ask_realization: localOutcomes.originalAskRealization
+        ? {
+            ...localOutcomes.originalAskRealization.source,
+            city: localOutcomes.originalAskRealization.city,
+            window_months: localOutcomes.originalAskRealization.windowMonths,
+            n: localOutcomes.originalAskRealization.n,
+            buckets: localOutcomes.originalAskRealization.buckets,
+            ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
+          }
+        : { source: 'none', note: 'No closed rows returned for the subject city.' },
+      market_local_failed_then_sold: localOutcomes.localFailedThenSold
+        ? {
+            ...localOutcomes.localFailedThenSold.source,
+            city: localOutcomes.localFailedThenSold.city,
+            window_months: localOutcomes.localFailedThenSold.windowMonths,
+            n: localOutcomes.localFailedThenSold.n,
+            median_share_of_failed_ask: localOutcomes.localFailedThenSold.medianShareOfFailedAsk,
+            withheld_reason: localOutcomes.localFailedThenSold.reason,
+            ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
+          }
+        : { source: 'none', note: 'No failed cycles or closed sales returned for the subject city.' },
       market_ask_outcome: localOutcomes.askOutcome
         ? {
             ...localOutcomes.askOutcome.source,

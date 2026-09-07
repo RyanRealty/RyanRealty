@@ -11,15 +11,19 @@
 import { describe, it, expect } from 'vitest'
 import {
   MIN_LOCAL_OUTCOME_N,
+  MIN_REALIZATION_BUCKET_N,
   OFFER_TIMING_DAYS,
   computeAskOutcome,
   computeOfferTiming,
+  computeOriginalAskRealization,
   failedRowDays,
   localOutcomeWindowStart,
   medianCounted,
   medianSorted,
   medianVerified,
+  realizationBucketFor,
   soldAfterCut,
+  soldToOriginalAskPct,
   soldWithoutCut,
   usableDaysToPending,
   type LocalClosedRow,
@@ -258,5 +262,113 @@ describe('localOutcomeWindowStart', () => {
   it('walks back twelve calendar months, not 365 fixed days', () => {
     expect(localOutcomeWindowStart(new Date('2026-09-07T00:00:00Z'))).toBe('2025-09-07')
     expect(localOutcomeWindowStart(new Date('2026-03-31T00:00:00Z'), 1)).toBe('2026-03-03')
+  })
+})
+
+describe('share of the original ask', () => {
+  it('is a percent of the ORIGINAL ask, not the final one', () => {
+    expect(
+      soldToOriginalAskPct({ OriginalListPrice: 500_000, ListPrice: 460_000, ClosePrice: 450_000 }),
+    ).toBe(90)
+  })
+
+  it('refuses a close more than 50 percent from the ask (Redfin exclusion)', () => {
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 160_000 })).toBeNull()
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 40_000 })).toBeNull()
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 150_000 })).toBe(150)
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 50_000 })).toBe(50)
+  })
+
+  it('is null when either price is missing', () => {
+    expect(soldToOriginalAskPct({ OriginalListPrice: 500_000 })).toBeNull()
+    expect(soldToOriginalAskPct({ ClosePrice: 500_000 })).toBeNull()
+  })
+
+  it('rides the sold groups and is never published for did-not-sell', () => {
+    const noCut = closedRun(MIN_LOCAL_OUTCOME_N, () => ({ ClosePrice: 495_000 }))
+    const cut = closedRun(MIN_LOCAL_OUTCOME_N, () => ({ ListPrice: 480_000, ClosePrice: 470_000 }))
+    const out = computeAskOutcome({
+      closedRows: [...noCut, ...cut],
+      failedRows: Array.from({ length: MIN_LOCAL_OUTCOME_N }, () => failed()),
+      city: 'Redmond',
+      sinceIso: SINCE,
+      fetchedAt: FETCHED,
+    })
+    const byKey = Object.fromEntries(out.groups.map((g) => [g.key, g]))
+    expect(byKey['sold-no-cut'].medianSoldToOriginalAskPct).toBe(99)
+    expect(byKey['sold-no-cut'].soldToOriginalAskN).toBe(MIN_LOCAL_OUTCOME_N)
+    expect(byKey['sold-after-cut'].medianSoldToOriginalAskPct).toBe(94)
+    expect(byKey['did-not-sell'].medianSoldToOriginalAskPct).toBeNull()
+    expect(byKey['did-not-sell'].soldToOriginalAskN).toBe(0)
+  })
+
+  it('withholds the share when the price pairs are thinner than the days', () => {
+    const rows = closedRun(MIN_LOCAL_OUTCOME_N).map((r, i) =>
+      i < 5 ? { ...r, ClosePrice: 495_000 } : r,
+    )
+    const out = computeAskOutcome({
+      closedRows: rows,
+      failedRows: [],
+      city: 'Redmond',
+      sinceIso: SINCE,
+      fetchedAt: FETCHED,
+    })
+    const noCut = out.groups.find((g) => g.key === 'sold-no-cut')!
+    expect(noCut.n).toBe(MIN_LOCAL_OUTCOME_N)
+    expect(noCut.medianDays).not.toBeNull()
+    expect(noCut.soldToOriginalAskN).toBe(5)
+    expect(noCut.medianSoldToOriginalAskPct).toBeNull()
+  })
+})
+
+describe('original-ask realization by weeks', () => {
+  it('buckets on weeks = days / 7, inclusive at the label', () => {
+    expect(realizationBucketFor(0)).toBe('0-2')
+    expect(realizationBucketFor(14)).toBe('0-2')
+    expect(realizationBucketFor(15)).toBe('3-4')
+    expect(realizationBucketFor(28)).toBe('3-4')
+    expect(realizationBucketFor(29)).toBe('5-8')
+    expect(realizationBucketFor(56)).toBe('5-8')
+    expect(realizationBucketFor(57)).toBe('9-16')
+    expect(realizationBucketFor(112)).toBe('9-16')
+    expect(realizationBucketFor(113)).toBe('17+')
+    expect(realizationBucketFor(900)).toBe('17+')
+  })
+
+  it('publishes a bucket at the minimum and withholds the one below it', () => {
+    const fast = Array.from({ length: MIN_REALIZATION_BUCKET_N }, () =>
+      closed({ days_to_pending: 7, ClosePrice: 500_000 }),
+    )
+    const slow = Array.from({ length: MIN_REALIZATION_BUCKET_N - 1 }, () =>
+      closed({ days_to_pending: 200, ClosePrice: 450_000 }),
+    )
+    const out = computeOriginalAskRealization({
+      rows: [...fast, ...slow],
+      city: 'Redmond',
+      sinceIso: SINCE,
+      fetchedAt: FETCHED,
+    })
+    const byWeeks = Object.fromEntries(out.buckets.map((b) => [b.weeks, b]))
+    expect(byWeeks['0-2'].n).toBe(MIN_REALIZATION_BUCKET_N)
+    expect(byWeeks['0-2'].medianPctOfOriginalAsk).toBe(100)
+    expect(byWeeks['0-2'].reason).toBeNull()
+    expect(byWeeks['17+'].n).toBe(MIN_REALIZATION_BUCKET_N - 1)
+    expect(byWeeks['17+'].medianPctOfOriginalAsk).toBeNull()
+    expect(byWeeks['17+'].reason).toContain(String(MIN_REALIZATION_BUCKET_N))
+    expect(out.n).toBe(MIN_REALIZATION_BUCKET_N * 2 - 1)
+  })
+
+  it('counts only rows carrying BOTH a days figure and a usable price pair', () => {
+    const rows = [
+      ...Array.from({ length: MIN_REALIZATION_BUCKET_N }, () =>
+        closed({ days_to_pending: 7, ClosePrice: 490_000 }),
+      ),
+      closed({ days_to_pending: null, ClosePrice: 490_000 }),
+      closed({ days_to_pending: 7, ClosePrice: null }),
+      closed({ days_to_pending: 7, ClosePrice: 900_000 }),
+    ]
+    const out = computeOriginalAskRealization({ rows, city: 'Redmond', sinceIso: SINCE, fetchedAt: FETCHED })
+    expect(out.buckets.find((b) => b.weeks === '0-2')!.n).toBe(MIN_REALIZATION_BUCKET_N)
+    expect(out.buckets.find((b) => b.weeks === '0-2')!.medianPctOfOriginalAsk).toBe(98)
   })
 })
