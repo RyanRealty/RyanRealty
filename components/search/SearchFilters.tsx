@@ -44,7 +44,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
-import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/neighborhood-public-inventory'
+import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 

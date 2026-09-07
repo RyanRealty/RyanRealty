@@ -28,23 +28,10 @@ import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 
-/** Bend NA districts. Label = display name; slug = URL + `bend-{slug}` geo_slug. */
-export const BEND_NEIGHBORHOOD_DISTRICTS: ReadonlyArray<{ label: string; slug: string }> = [
-  { label: 'Awbrey Butte', slug: 'awbrey-butte' },
-  { label: 'Boyd Acres', slug: 'boyd-acres' },
-  { label: 'Century West', slug: 'century-west' },
-  { label: 'Larkspur', slug: 'larkspur' },
-  { label: 'Mountain View', slug: 'mountain-view' },
-  { label: 'Old Bend', slug: 'old-bend' },
-  { label: 'Old Farm District', slug: 'old-farm-district' },
-  { label: 'Orchard District', slug: 'orchard-district' },
-  { label: 'River West', slug: 'river-west' },
-  { label: 'Southeast Bend', slug: 'southeast-bend' },
-  { label: 'Southern Crossing', slug: 'southern-crossing' },
-  { label: 'Southwest Bend', slug: 'southwest-bend' },
-  { label: 'Summit West', slug: 'summit-west' },
-]
+/** Re-export for server callers — single source lives in bend-neighborhood-districts. */
+export { BEND_NEIGHBORHOOD_DISTRICTS }
 
 /** Canonical Bend-district report. `/neighborhoods/{slug}` 301s here. */
 export function bendNeighborhoodCanonicalHref(slug: string): string | null {

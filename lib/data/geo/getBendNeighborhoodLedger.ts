@@ -15,10 +15,8 @@ import {
   type NeighborhoodPublicInventory,
 } from '@/lib/data/geo/neighborhood-public-inventory'
 
-export {
-  BEND_NEIGHBORHOOD_DISTRICTS,
-  bendNeighborhoodCanonicalHref,
-} from '@/lib/data/geo/neighborhood-public-inventory'
+export { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
+export { bendNeighborhoodCanonicalHref } from '@/lib/data/geo/neighborhood-public-inventory'
 
 export type NeighborhoodLedgerRow = {
   label: string
