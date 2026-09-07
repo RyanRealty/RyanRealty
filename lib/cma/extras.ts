@@ -16,6 +16,7 @@ import {
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import { pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows, type CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
@@ -232,12 +233,16 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
   const address = rivalAddress(row)
   const listPrice = Number(row.ListPrice)
   if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
+  const originalListPrice = finiteOrNull(row.OriginalListPrice)
+  const daysOnMarket =
+    daysOnMarketOf(row.OnMarketDate) ??
+    (Number.isFinite(Number(row.DaysOnMarket)) ? Number(row.DaysOnMarket) : null)
   return {
     listingKey: row.ListingKey,
     address,
     listPrice,
     status,
-    daysOnMarket: daysOnMarketOf(row.OnMarketDate) ?? (Number.isFinite(Number(row.DaysOnMarket)) ? Number(row.DaysOnMarket) : null),
+    daysOnMarket,
     photoUrl: row.PhotoURL,
     latitude: row.Latitude,
     longitude: row.Longitude,
@@ -247,6 +252,15 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
     yearBuilt: finiteOrNull(row.year_built),
     lotAcres: finiteOrNull(row.lot_size_acres),
     propertySubType: row.property_sub_type ?? null,
+    originalListPrice,
+    onMarketDate: row.OnMarketDate,
+    listingHistoryLine: buildListingHistoryLine({
+      listPrice,
+      originalListPrice,
+      status,
+      onMarketDate: row.OnMarketDate,
+      daysOnMarket,
+    }),
   }
 }
 

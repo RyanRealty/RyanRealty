@@ -13,6 +13,7 @@
  */
 
 import { cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd, usdSigned } from '@/lib/cma/render-blocks'
+import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 
 const esc = escapeHtml
@@ -53,6 +54,16 @@ function subjectCol(subject: CmaSubject): Col {
   const living = subject.sqft
   const list = subject.lastListPrice
   const listSf = ppsf(list, living)
+  const subjectDom = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
+  const history =
+    subject.listingHistoryLine?.trim() ||
+    buildListingHistoryLine({
+      listPrice: list,
+      status: subject.standardStatus,
+      onMarketDate: subject.lastListDate,
+      daysOnMarket: subjectDom,
+    }) ||
+    '-'
   return {
     key: 'subject',
     label: subject.streetAddress,
@@ -74,7 +85,7 @@ function subjectCol(subject: CmaSubject): Col {
       lotSqft(subject.lotAcres) != null ? int(lotSqft(subject.lotAcres)!) : '-',
       subject.yearBuilt != null ? String(subject.yearBuilt) : '-',
       subject.garageSpaces != null ? int(subject.garageSpaces) : '-',
-      '-',
+      subjectDom != null ? int(subjectDom) : '-',
       '-',
       'Subject',
       dash(subject.subdivision),
@@ -82,6 +93,7 @@ function subjectCol(subject: CmaSubject): Col {
       '-',
       '-',
       '-',
+      history,
     ],
   }
 }
@@ -119,6 +131,17 @@ function compCol(comp: CmaAdjustedComp, index: number): Col {
       (comp.storyAdjustment ?? 0) !== 0 ? usdSigned(comp.storyAdjustment as number) : '-',
       usdSigned(comp.sizeAdjustment),
       usd(comp.adjustedPrice),
+      comp.listingHistoryLine?.trim() ||
+        buildListingHistoryLine({
+          listPrice: comp.listPrice,
+          originalListPrice: comp.originalListPrice,
+          closePrice: comp.closePrice,
+          status: 'Closed',
+          onMarketDate: comp.onMarketDate,
+          closeDate: comp.closeDate,
+          daysOnMarket: comp.domTotal,
+        }) ||
+        '-',
     ],
   }
 }
@@ -149,6 +172,7 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'Style (one story vs two)', figure: true },
   { label: 'Brought to your size', figure: true },
   { label: 'Adjusted close', figure: true },
+  { label: 'Listing history', figure: false },
 ]
 
 /**

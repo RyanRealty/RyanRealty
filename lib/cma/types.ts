@@ -88,6 +88,12 @@ export interface CmaComp {
   closeDate: string
   daysToOffer: number | null
   domTotal: number | null
+  /** MLS OriginalListPrice when present — feeds listing history, never invents cuts. */
+  originalListPrice?: number | null
+  /** Broker one-liner: list/price changes + DOM. */
+  listingHistoryLine?: string | null
+  /** On-market date when known (comp list cycle). */
+  onMarketDate?: string | null
   selectionTier: string
   /** "1.75 miles NW" — Fannie Mae B4-1.3-08 requires distance + direction be reported. */
   proximity?: string | null

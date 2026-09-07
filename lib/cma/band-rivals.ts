@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { daysOnMarketLabel, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
 const esc = escapeHtml
 
@@ -24,6 +25,9 @@ export type CmaBandRival = {
   yearBuilt?: number | null
   lotAcres?: number | null
   propertySubType?: string | null
+  originalListPrice?: number | null
+  onMarketDate?: string | null
+  listingHistoryLine?: string | null
 }
 
 export type CmaBandSubject = {
@@ -36,6 +40,8 @@ export type CmaBandSubject = {
   latitude: number | null
   longitude: number | null
   photoUrl?: string | null
+  daysOnMarket?: number | null
+  listingHistoryLine?: string | null
 }
 
 export type BandStreetRow = {
@@ -200,12 +206,15 @@ function subjectRow(subject: CmaBandSubject | null | undefined): string {
     subject.recommendedList != null && subject.recommendedList > 0
       ? `<div class="rival-ask">${usd(subject.recommendedList)}</div>`
       : `<div class="rival-ask"></div>`
+  const history =
+    subject.listingHistoryLine?.trim() ||
+    daysOnMarketLabel(subject.daysOnMarket ?? null)
   return `<article class="rival-row is-subject">
     ${img}
     <div class="rival-body">
       <div class="rival-addr">This home</div>
       ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
-      <div class="rival-meta">Recommended list</div>
+      <div class="rival-meta">Recommended list${history ? ` · ${esc(history)}` : ''}</div>
     </div>
     ${ask}
   </article>`
@@ -218,8 +227,16 @@ function rivalRow(r: CmaBandRival, subject: CmaBandSubject | null | undefined): 
     : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
   const facts = rivalFactsLine(r)
   const vs = rivalVsSubjectLine(r, subject)
-  const days = r.daysOnMarket != null && r.daysOnMarket >= 0 ? `${int(r.daysOnMarket)} days` : null
-  const meta = joinFacts([days, vs])
+  const history =
+    (r.listingHistoryLine && r.listingHistoryLine.trim()) ||
+    buildListingHistoryLine({
+      listPrice: r.listPrice,
+      originalListPrice: r.originalListPrice,
+      status: r.status,
+      onMarketDate: r.onMarketDate,
+      daysOnMarket: r.daysOnMarket,
+    })
+  const meta = joinFacts([history, vs])
   return `<article class="rival-row">
     ${img}
     <div class="rival-body">

@@ -14,6 +14,7 @@ import type { CmaListingRow } from '@/lib/data'
 import type { CmaSubject } from '@/lib/cma/types'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
+import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
 const STREET_SUFFIXES = new Set([
   'rd', 'road', 'st', 'street', 'ave', 'avenue', 'dr', 'drive', 'ln', 'lane',
@@ -181,10 +182,23 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
   const streetAddress = `${str(row['StreetNumber']) ?? ''} ${str(row['StreetName']) ?? ''}`.trim()
   const status = str(row['StandardStatus'])
   const listPrice = num(row['ListPrice'])
-  const listDate = str(row['ListDate']) ?? str(row['OnMarketDate'])
+  const originalListPrice = num(row['OriginalListPrice'])
+  const listDate = str(row['OnMarketDate']) ?? str(row['ListDate'])
   const listedWhen = fmtDate(listDate)
-  let historyLine: string | null = null
-  if (status && listPrice) {
+  const dom = daysOnMarketFrom({
+    daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+    onMarketDate: listDate,
+  })
+  let historyLine: string | null = buildListingHistoryLine({
+    listPrice,
+    originalListPrice,
+    status,
+    onMarketDate: listDate,
+    daysOnMarket: dom,
+  })
+  // Keep a trailing period on the subject opener when we have a line.
+  if (historyLine && !historyLine.endsWith('.')) historyLine = `${historyLine}.`
+  if (!historyLine && status && listPrice) {
     historyLine =
       status.toLowerCase() === 'active'
         ? `Currently listed at ${fmtUsd(listPrice)}${listedWhen ? ` since ${listedWhen}` : ''}.`

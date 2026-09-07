@@ -172,7 +172,7 @@ describe('assembleOpinionPages format', () => {
     expect(competition).toBe(price + 1)
   })
 
-  it('draws sold vs unsold in the list band right after competition', () => {
+  it('draws sold vs unsold (expired peers) before live competition', () => {
     const pages = assembleOpinionPages({
       ...args(),
       extras: {
@@ -219,8 +219,8 @@ describe('assembleOpinionPages format', () => {
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.indexOf('Who you are competing with at this price')
     const outcomes = tocs.indexOf('Sold and unsold in this band')
-    expect(competition).toBeGreaterThanOrEqual(0)
-    expect(outcomes).toBeGreaterThan(competition)
+    expect(outcomes).toBeGreaterThanOrEqual(0)
+    expect(competition).toBeGreaterThan(outcomes)
     const body = pages[outcomes]!.body
     expect(body).toContain('4 closed')
     expect(body).toContain('came off without a sale')

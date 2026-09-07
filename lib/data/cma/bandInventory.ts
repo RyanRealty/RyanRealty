@@ -9,7 +9,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres'
+  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres'
 
 // The band is one city, one property type, one status, inside a +/- price
 // window, so it is bounded in practice. Page it rather than truncating: the
@@ -24,6 +24,7 @@ export type CmaBandListingRow = {
   StreetNumber: string | null
   StreetName: string | null
   ListPrice: number | null
+  OriginalListPrice?: number | null
   StandardStatus: string | null
   DaysOnMarket: number | null
   OnMarketDate: string | null

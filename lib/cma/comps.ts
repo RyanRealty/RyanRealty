@@ -33,6 +33,7 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
@@ -156,12 +157,23 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     viewDescription: mlsText(row['view_description']),
     taxAnnual: num(row['tax_annual_amount']),
     listPrice: num(row['ListPrice']),
+    originalListPrice: num(row['OriginalListPrice']),
     closePrice,
     concessionsAmount: concessions,
     sellerNet: sellerNetFromPrice(closePrice, concessions),
     closeDate: closeDate.slice(0, 10),
+    onMarketDate: (str(row['OnMarketDate']) ?? str(row['ListDate']))?.slice(0, 10) ?? null,
     daysToOffer,
     domTotal: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+    listingHistoryLine: buildListingHistoryLine({
+      listPrice: num(row['ListPrice']),
+      originalListPrice: num(row['OriginalListPrice']),
+      closePrice,
+      status: 'Closed',
+      onMarketDate: str(row['OnMarketDate']) ?? str(row['ListDate']),
+      closeDate: closeDate.slice(0, 10),
+      daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+    }),
     selectionTier: tier,
     photosCount: num(row['photos_count']),
   }

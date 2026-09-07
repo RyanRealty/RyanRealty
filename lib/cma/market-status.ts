@@ -7,6 +7,7 @@
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { keepSameProductType } from '@/lib/cma/market-area'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -50,6 +51,25 @@ export type CmaBandOutcomes = {
   source: string
 }
 
+/** Named homes like the subject that came off without a sale. */
+export type CmaExpiredPeer = {
+  listingKey: string
+  address: string
+  listPrice: number
+  originalListPrice: number | null
+  status: string
+  daysOnMarket: number | null
+  photoUrl: string | null
+  listingHistoryLine: string | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  yearBuilt: number | null
+  lotAcres: number | null
+  latitude: number | null
+  longitude: number | null
+}
+
 export type CmaMarketArea = {
   grain: 'subdivision' | 'city-similar'
   label: string
@@ -65,6 +85,8 @@ export type CmaMarketArea = {
   listingTrend: CmaListingTrendPoint[] | null
   /** Optional on older stored args. */
   outcomes?: CmaBandOutcomes | null
+  /** Named expired/withdrawn peers in the same band — letter story beat 2. */
+  expiredPeers?: CmaExpiredPeer[]
 }
 
 const TERMINAL_OFF = new Set(['Expired', 'Withdrawn', 'Canceled'])
@@ -151,6 +173,105 @@ export function similarBedRange(beds: number | null): { lo: number; hi: number }
 function num(v: unknown): number | null {
   const n = Number(v)
   return Number.isFinite(n) ? n : null
+}
+
+
+const EXPIRED_PEER_CAP = 4
+
+function peerAddress(row: CmaMarketAreaRow): string {
+  return [row.StreetNumber, row.StreetName]
+    .map((p) => (p ?? '').trim())
+    .filter(Boolean)
+    .join(' ')
+}
+
+function peerFitsSubject(
+  row: CmaMarketAreaRow,
+  subject: Pick<CmaSubject, 'beds' | 'sqft'>,
+): boolean {
+  if (subject.beds != null && row.BedroomsTotal != null && Number(row.BedroomsTotal) !== subject.beds) {
+    return false
+  }
+  if (subject.sqft != null && subject.sqft > 0 && row.TotalLivingAreaSqFt != null && row.TotalLivingAreaSqFt > 0) {
+    if (Math.abs(row.TotalLivingAreaSqFt - subject.sqft) / subject.sqft > 0.25) return false
+  }
+  return true
+}
+
+function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
+  if (row.Latitude == null || row.Longitude == null) return Number.POSITIVE_INFINITY
+  const dLat = row.Latitude - lat
+  const dLng = row.Longitude - lng
+  return dLat * dLat + dLng * dLng
+}
+
+function peerDom(row: CmaMarketAreaRow): number | null {
+  const d = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
+  return d != null && d > 0 ? d : null
+}
+
+export function pickExpiredPeers(
+  rows: readonly CmaMarketAreaRow[],
+  subject: Pick<CmaSubject, 'beds' | 'sqft' | 'latitude' | 'longitude'>,
+  cap = EXPIRED_PEER_CAP,
+): CmaExpiredPeer[] {
+  const named = rows
+    .map((row) => {
+      const address = peerAddress(row)
+      const listPrice = Number(row.ListPrice)
+      if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
+      const key = String(row.ListingKey ?? address).trim()
+      if (!key) return null
+      const originalListPrice =
+        row.OriginalListPrice != null && Number.isFinite(Number(row.OriginalListPrice))
+          ? Number(row.OriginalListPrice)
+          : null
+      const daysOnMarket = peerDom(row)
+      const status = row.StandardStatus
+      const peer: CmaExpiredPeer = {
+        listingKey: key,
+        address,
+        listPrice,
+        originalListPrice,
+        status,
+        daysOnMarket,
+        photoUrl: row.PhotoURL ?? null,
+        listingHistoryLine: buildListingHistoryLine({
+          listPrice,
+          originalListPrice,
+          status,
+          onMarketDate: row.OnMarketDate ?? row.ListDate,
+          daysOnMarket,
+        }),
+        beds: row.BedroomsTotal,
+        baths: row.BathroomsTotal,
+        sqft: row.TotalLivingAreaSqFt,
+        yearBuilt: row.year_built ?? null,
+        lotAcres: row.lot_size_acres ?? null,
+        latitude: row.Latitude ?? null,
+        longitude: row.Longitude ?? null,
+      }
+      return { row, peer }
+    })
+    .filter((x): x is { row: CmaMarketAreaRow; peer: CmaExpiredPeer } => x != null)
+
+  const similar = named.filter((x) => peerFitsSubject(x.row, subject))
+  const pool = similar.length > 0 ? similar : named
+  const slat = subject.latitude
+  const slng = subject.longitude
+  const ranked =
+    slat != null && slng != null && Number.isFinite(slat) && Number.isFinite(slng)
+      ? [...pool].sort((a, b) => peerDist2(a.row, slat, slng) - peerDist2(b.row, slat, slng))
+      : [...pool]
+  const seen = new Set<string>()
+  const out: CmaExpiredPeer[] = []
+  for (const item of ranked) {
+    if (seen.has(item.peer.listingKey)) continue
+    seen.add(item.peer.listingKey)
+    out.push(item.peer)
+    if (out.length >= cap) break
+  }
+  return out
 }
 
 function inBand(price: number | null, lo: number, hi: number): boolean {
@@ -294,6 +415,13 @@ export function computeMarketArea(input: {
         }
       : null
 
+  const expiredPeers = pickExpiredPeers(expired, {
+    beds: input.subject.beds,
+    sqft: input.subject.sqft,
+    latitude: input.subject.latitude,
+    longitude: input.subject.longitude,
+  })
+
   return {
     grain,
     label,
@@ -313,5 +441,6 @@ export function computeMarketArea(input: {
       lastAsk: input.subject.lastListPrice,
       label,
     }),
+    expiredPeers,
   }
 }
