@@ -6,6 +6,8 @@
  * Stats: Oregon Data Share via MarketPulse only. Never invent.
  */
 
+// @data-free — sales/weekly chooser; figures load in ReportsIslands, not this page.
+
 import type { Metadata } from "next"
 import { MetadataBlock } from "@/components/site/MetadataBlock"
 import {
