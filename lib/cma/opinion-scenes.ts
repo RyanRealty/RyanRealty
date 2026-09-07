@@ -6,18 +6,13 @@
 import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
-import {
-  renderBandOutcomesHtml,
-  renderDaysToOfferHtml,
-  renderExpiredPeersHtml,
-  widerMarketBodyHtml,
-} from '@/lib/cma/market-area-chapters'
+import { widerMarketBodyHtml } from '@/lib/cma/market-area-chapters'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
   OPINION_CHAPTER_ORDER,
   PRICED_RIGHT_HEADING,
-  bandChapterShowsRuler,
   cmaDisclosureProseHtml,
+  pricedRightBodyHtml,
   sellerNetPage,
   whatHappenedGraphicHtml,
   whatHappenedHeading,
@@ -122,22 +117,17 @@ function whatHappenedScene(a: OpinionSceneArgs): string {
 
 /** Chapter 2. Priced right sells. Priced high sits. Web twin of pricedRightPage. */
 function pricedRightScene(a: OpinionSceneArgs): string {
-  const days = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
-  const ruler = bandChapterShowsRuler(a)
-    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
-    : ''
-  const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
-  if (!days && !ruler && !peers) return ''
+  const body = pricedRightBodyHtml(a)
+  if (!body.trim()) return ''
   return `
   <section class="sc sc-cream pack" id="priced-right">
     <div class="in wide">
       <div class="kick r">Time on market</div>
       <h2 class="h r">${esc(PRICED_RIGHT_HEADING)}</h2>
-      <div class="r">${days}${ruler}${peers}</div>
+      <div class="r">${body}</div>
     </div>
   </section>`
 }
-
 
 /** This market. Web twin of thisMarketPage, same 90-day band gate (P3). */
 function thisMarketScene(a: OpinionSceneArgs): string {

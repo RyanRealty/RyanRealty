@@ -245,12 +245,16 @@ table.comp-matrix .matrix-addr{display:block}
   .szn.is-hero{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .szn.is-hero svg{min-width:660px}
 }
-/* The price ruler is the one graphic panning destroys: its whole reading is
-   where two ticks sit inside a band, and a cropped end deletes half of it. It
-   ships in two layouts and exactly one is ever visible (F6). */
-.ruler-phone{display:none}
-@media screen and (max-width:700px){.ruler-wide{display:none}.ruler-phone{display:block}}
-@media print{.ruler-wide{display:block!important}.ruler-phone{display:none!important}}
+/* Chapter 2's unsold listings: short linked rows, never a matrix. */
+ul.unsold-list{list-style:none;margin:10px 0 14px;padding:0;border-top:1px solid var(--ink12)}
+li.unsold-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:11px 0;border-bottom:1px solid var(--ink12)}
+li.unsold-row a{font-size:16px;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--ink12)}
+li.unsold-row .unsold-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+li.unsold-row .unsold-meta{grid-column:1 / -1;font-size:13px;opacity:.65}
+/* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
+.timing-phone,.outcome-phone{display:none}
+@media screen and (max-width:700px){.timing-wide,.outcome-wide{display:none}.timing-phone,.outcome-phone{display:block}}
+@media print{.timing-wide,.outcome-wide{display:block!important}.timing-phone,.outcome-phone{display:none!important}}
 /* Chapter 1's timeline. Same two-layout mechanism (see render-css-sections). */
 .timeline-phone{display:none}
 @media screen and (max-width:700px){.timeline-wide{display:none}.timeline-phone{display:block}}

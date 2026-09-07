@@ -12,9 +12,10 @@ import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
-  renderBandOutcomesHtml,
+  renderAskOutcomeHtml,
   renderDaysToOfferHtml,
-  renderExpiredPeersHtml,
+  renderOfferTimingHtml,
+  renderUnsoldPeerRowsHtml,
   widerMarketBodyHtml,
 } from '@/lib/cma/market-area-chapters'
 import {
@@ -36,6 +37,7 @@ import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
+import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 
 const esc = escapeHtml
 
@@ -66,6 +68,13 @@ export type OpinionPageArgs = {
   broker?: CmaBroker | null
   client?: CmaClient | null
   development?: DevelopmentOpportunities | null
+  /**
+   * Who this document went to. Every address and CTA links back into the site
+   * carrying it, so a tap shows on the person's timeline. Resolved at SERVE
+   * (lib/cma/print-html.ts, lib/cma/serve-document.ts), not at build: identity
+   * belongs to the delivery, not to the stored figures.
+   */
+  docLinks?: TrackedDocLinkCtx | null
 }
 
 
@@ -193,26 +202,62 @@ export function whatHappenedHeading(subject: CmaSubject): string {
 /**
  * Chapter 2. Priced right sells. Priced high sits.
  *
- * The one thing the document has to land, and the blueprint's own words for
- * it: "we need to illustrate that if homes are priced too high they sit and
- * expire, period." Local numbers, never a slogan.
+ * The one thing this document has to land, in the blueprint's own words: "we
+ * need to illustrate that if homes are priced too high they sit and expire,
+ * period." Local numbers, never a slogan.
+ *
+ * 2a is the cumulative offer-timing curve with the seller's own days marked
+ * far past the shoulder; 2b is the three-bar first-price outcome with their
+ * group marked; then the listings near them that asked and did not sell, as
+ * short linked rows.
  */
 export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
-  const days = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
-  const ruler = bandChapterShowsRuler(a)
-    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps, a.subject.city)
-    : ''
-  const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
-  if (!days && !ruler && !peers) return null
+  const body = pricedRightBodyHtml(a)
+  if (!body.trim()) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Priced right sells`,
     toc: PRICED_RIGHT_HEADING,
     body: `
   <h2 class="section">${esc(PRICED_RIGHT_HEADING)}</h2>
-  ${days}
-  ${ruler}
-  ${peers}`,
+  ${body}`,
   }
+}
+
+/**
+ * Chapter 2's body, shared by both documents.
+ *
+ * WHEN THE BUILD CONTRACT IS ABSENT. `market.offerTiming` and
+ * `market.askOutcome` are written at build by lib/pricing through the DAL; a
+ * row built before that landed carries neither. The chapter does not narrate
+ * the absence — a §0 deliverable states fewer figures, it never says which
+ * query missed. Instead it argues the same claim from what the row DOES carry:
+ * the days each printed sale waited for an offer, the city's own median on the
+ * same axis, and the seller's own listing beside them. That is one exhibit
+ * instead of two, sourced the same way, and it makes the same point.
+ */
+export function pricedRightBodyHtml(a: OpinionPageArgs): string {
+  const timing = renderOfferTimingHtml({ market: a.market, subject: a.subject })
+  const outcome = renderAskOutcomeHtml({ market: a.market, subject: a.subject })
+  // The days strip stands in for 2a when the 12-month curve is not on the row.
+  const daysStrip = timing
+    ? ''
+    : renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
+  const peers = renderUnsoldPeerRowsHtml(
+    a.subject,
+    a.extras?.marketArea?.expiredPeers,
+    a.docLinks ?? null,
+  )
+  // With no curve, no bars and no named unsold listing there is nothing local
+  // to argue from, so the chapter omits rather than printing a slogan.
+  if (!timing && !outcome && !daysStrip && !peers) return ''
+  return [
+    timing,
+    daysStrip ? `<h3 class="subhead">How fast homes like yours went</h3>${daysStrip}` : '',
+    outcome,
+    peers,
+  ]
+    .filter(Boolean)
+    .join('\n  ')
 }
 
 export const PRICED_RIGHT_HEADING = 'Priced right sells. Priced high sits.'
@@ -379,13 +424,6 @@ export const OPINION_CHAPTER_ORDER = [
 
 export type OpinionChapterId = (typeof OPINION_CHAPTER_ORDER)[number]
 
-/**
- * Chapter 1 now draws the seller's OWN listing as a timeline, so it no longer
- * owns the sold/unsold ruler and chapter 2 shows it on every document.
- */
-export function bandChapterShowsRuler(_a: Pick<OpinionPageArgs, 'expiredAudit'>): boolean {
-  return true
-}
 
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const build: Record<OpinionChapterId, () => CmaPageDef | null> = {

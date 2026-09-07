@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import { renderExpiredPeersHtml } from '@/lib/cma/market-area-chapters'
+import { renderUnsoldPeerRowsHtml } from '@/lib/cma/market-area-chapters'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -239,15 +239,14 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     expect(html).toContain('Asked $549,000, cut to $525,000, came off expired · 97 days on market')
   })
 
-  it('expired peers name homes and show what happened without saying overpriced', () => {
-    const html = renderExpiredPeersHtml(subject, [peer])
+  it('the unsold listings name homes and show what happened without saying overpriced', () => {
+    const html = renderUnsoldPeerRowsHtml(subject, [peer])
     expect(html).toContain('Near you, these asked and did not sell')
     expect(html).toContain('88 Wren')
-    expect(html).toContain('comp-matrix')
-    expect(html).toContain('Last ask')
-    expect(html).toContain('Days on market')
-    expect(html).toContain('Listing history')
-    expect(html).toContain('Asked $549,000, cut to $519,000, came off expired · 97 days on market')
+    // Short linked rows, never a matrix (CMA_REIMAGINED_2026-09-07.md ch.2).
+    expect(html).not.toContain('comp-matrix')
+    expect(html).toContain('$519,000')
+    expect(html).toContain('97 days · came off expired')
     expect(html.toLowerCase()).not.toContain('overprice')
   })
 

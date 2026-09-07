@@ -325,33 +325,27 @@ function immersiveScenes(html: string): string[] {
   return [...html.matchAll(/<section class="sc[^"]*" id="([a-z0-9-]+)"/g)].map((m) => m[1]!)
 }
 
-describe('P1 — one price ruler for sold and unsold', () => {
-  it('labels each plotted value once, not on both sides of the row', () => {
+describe('chapter 2 — priced right sells, priced high sits', () => {
+  // P1 built a price ruler of sold and unsold dots. Matt 2026-09-07: "the chart
+  // means nothing." CMA_REIMAGINED_2026-09-07.md chapter 2 replaces it with two
+  // graphics from local data plus the unsold listings as short linked rows.
+  it('argues the claim from local numbers, not a slogan', () => {
     const html = letter()
-    // The old lollipop printed the same figure as a row tick AND as an end
-    // label. $410K appearing twice inside the outcome graphic is that bug.
-    const svg = html.match(/<svg[^>]*aria-label="[^"]*sold and unsold[^"]*"[\s\S]*?<\/svg>/i)?.[0]
-    expect(svg, 'the sold/unsold graphic must render').toBeTruthy()
-    const labels = [...svg!.matchAll(/>\s*(\$[\d,.]+K?)\s*</g)].map((m) => m[1]!)
-    const dupes = labels.filter((v, i) => labels.indexOf(v) !== i)
-    expect(dupes, `duplicated labels in the band graphic: ${dupes.join(', ')}`).toEqual([])
-  })
-
-  it("labels the recommend and the seller's own last ask, and nothing else", () => {
-    const html = letter()
-    expect(html).toContain('Recommended $389K')
-    expect(html).toContain('Your last ask $460K')
+    expect(html).toContain('Priced right sells. Priced high sits.')
+    expect(html).toContain('How fast homes like yours went')
+    expect(html).toContain('Near you, these asked and did not sell')
+    // The ruler is gone from both documents.
+    expect(html).not.toContain('ruler-wide')
+    expect(html).not.toContain('Recommended $389K')
     expect(html).not.toContain("Didn't sell")
+    expect(immersive()).not.toContain('ruler-wide')
   })
 
-  it('states the reading under the graphic', () => {
-    const html = letter()
-    expect(html).toContain('9 closed in your price range, $410K to $460K.')
-    expect(html).toContain('2 asked and did not sell.')
-    expect(html).toContain('Your ask sat at the top of that range.')
-    // The kept sales, once brought to this house. Both ends already print in
-    // the matrix's Sale price today row, so the sentence adds no new figure.
-    expect(html).toContain('Adjusted for size and date, homes like yours land at $372K to $399K.')
+  it('lists the unsold listings as linked rows, never a matrix', () => {
+    const chapter = letter().split('Near you, these asked and did not sell')[1]!.split('</section>')[0]!
+    expect(chapter).toContain('unsold-list')
+    expect(chapter).not.toContain('comp-matrix')
+    expect(chapter).toMatch(/<a href="https:\/\/ryan-realty\.com\/homes-for-sale\/[^"]*utm_source=cma/)
   })
 })
 
@@ -635,7 +629,7 @@ function svgBoxes(svg: string): {
   texts: Array<{ x: number; y: number; size: number; anchor: string; text: string }>
 } {
   const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg)
-  if (!vb) throw new Error('the ruler must carry a viewBox')
+  if (!vb) throw new Error('the graphic must carry a viewBox')
   const circles = [...svg.matchAll(/<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/g)].map(
     (m) => ({ cx: +m[1]!, cy: +m[2]!, r: +m[3]! }),
   )
@@ -653,10 +647,13 @@ function svgBoxes(svg: string): {
   return { W: +vb[1]!, H: +vb[2]!, circles, texts }
 }
 
-describe('F6 — the price ruler fits a phone', () => {
-  const phoneRuler = (html: string): string => {
-    const wrap = /<div class="szn ruler-phone">([\s\S]*?)<\/div>/.exec(html)
-    expect(wrap, 'both documents must carry a phone layout of the ruler').toBeTruthy()
+describe('the phone layouts keep every mark inside the frame', () => {
+  // F6's mechanism, re-pointed at the graphics that replaced the ruler: a wide
+  // chart in a pan box crops the punchline, so each one ships a drawn-to-fit
+  // layout and exactly one is ever visible.
+  const phoneSvg = (html: string, cls: string): string => {
+    const wrap = new RegExp(`<div class="szn ${cls}">([\\s\\S]*?)</div>`).exec(html)
+    expect(wrap, `both documents must carry the ${cls} layout`).toBeTruthy()
     return wrap![1]!
   }
 
@@ -664,52 +661,41 @@ describe('F6 — the price ruler fits a phone', () => {
     ['letter', letter],
     ['immersive', immersive],
   ] as const) {
-    it(`draws every sold dot and both ticks inside the viewBox on the ${name}`, () => {
-      const svg = phoneRuler(render())
+    it(`draws chapter 1's timeline inside the viewBox on the ${name}`, () => {
+      const svg = phoneSvg(render(), 'timeline-phone')
       const { W, H, circles, texts } = svgBoxes(svg)
       expect(W).toBeLessThanOrEqual(400)
-
-      // Nine closed sales and two unsold listings. None may be cropped.
-      expect(circles).toHaveLength(11)
       for (const c of circles) {
-        expect(c.cx - c.r, `a dot at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
-        expect(c.cx + c.r, `a dot at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
+        expect(c.cx - c.r, `a mark at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
+        expect(c.cx + c.r, `a mark at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
         expect(c.cy - c.r).toBeGreaterThanOrEqual(0)
         expect(c.cy + c.r).toBeLessThanOrEqual(H)
       }
-
-      // Both ticks carry their label, and the label sits inside the frame.
-      const labels = texts.map((t) => t.text)
-      expect(labels).toContain('Recommended $389K')
-      expect(labels).toContain('Your last ask $460K')
       for (const t of texts) {
         const w = t.text.length * t.size * 0.58
         const left = t.anchor === 'end' ? t.x - w : t.anchor === 'middle' ? t.x - w / 2 : t.x
         expect(left, `"${t.text}" runs off the left edge`).toBeGreaterThanOrEqual(-0.5)
         expect(left + w, `"${t.text}" runs off the right edge`).toBeLessThanOrEqual(W + 0.5)
-        expect(t.y).toBeLessThanOrEqual(H)
-      }
-
-      // Two tick lines, both inside the plot.
-      const lines = [...svg.matchAll(/<line x1="([\d.]+)"[^>]*x2="([\d.]+)"/g)]
-      for (const l of lines) {
-        expect(+l[1]!).toBeGreaterThanOrEqual(0)
-        expect(+l[2]!).toBeLessThanOrEqual(W)
+        expect(t.y, `"${t.text}" runs off the bottom`).toBeLessThanOrEqual(H)
       }
     })
   }
 
-  it('shows the phone layout only below 700px, and never on paper', () => {
+  it('shows a phone layout only below 700px, and never on paper', () => {
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
       const flat = css.replace(/\s+/g, ' ')
-      expect(flat).toMatch(/\.ruler-phone\s*\{\s*display:\s*none/)
-      expect(flat).toMatch(/@media screen and \(max-width:\s*700px\)[^}]*\{[^@]*\.ruler-wide\s*\{\s*display:\s*none/)
-      expect(flat).toMatch(/@media print[^@]*\.ruler-phone\s*\{\s*display:\s*none\s*!important/)
+      for (const cls of ['timeline', 'days']) {
+        expect(flat).toMatch(new RegExp(`\\.${cls}-phone\\s*\\{\\s*display:\\s*none`))
+        expect(flat).toMatch(
+          new RegExp(`@media screen and \\(max-width:\\s*700px\\)[^}]*\\{[^@]*\\.${cls}-wide\\s*\\{\\s*display:\\s*none`),
+        )
+        expect(flat).toMatch(new RegExp(`@media print[^@]*\\.${cls}-phone\\s*\\{\\s*display:\\s*none\\s*!important`))
+      }
     }
   })
 
-  it('keeps the wide ruler for the printed page', () => {
-    expect(letter()).toContain('<div class="szn is-hero ruler-wide">')
+  it('keeps the wide layout for the printed page', () => {
+    expect(letter()).toContain('<div class="szn timeline-wide">')
   })
 })
 

@@ -275,6 +275,32 @@ export function cmaSectionStyles(): string {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }
   }
+  /* Chapter 2's unsold listings: short linked rows, never a matrix.
+     Address, ask, days, how it came off. */
+  ul.unsold-list { list-style: none; margin: 6px 0 10px; padding: 0; border-top: 1px solid var(--navy-line); }
+  li.unsold-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--navy-line);
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  li.unsold-row a { font-size: 11.5px; font-weight: 600; color: var(--navy); text-decoration: none; border-bottom: 1px solid var(--navy-line); }
+  li.unsold-row .unsold-ask { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+  li.unsold-row .unsold-meta { grid-column: 1 / -1; font-size: 10px; color: var(--muted); }
+
+  /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
+  .timing-phone, .outcome-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .timing-wide, .outcome-wide { display: none; }
+    .timing-phone, .outcome-phone { display: block; }
+  }
+  @media print {
+    .timing-wide, .outcome-wide { display: block !important; }
+    .timing-phone, .outcome-phone { display: none !important; }
+  }
   /* The one sentence that reads a graphic or a table for the seller. */
   .chart-read { font-size: 12.5px; line-height: 1.5; margin: 8px 0 4px; color: var(--navy); }
   /* On a phone a 720-unit chart scales its own type to six pixels. It pans in
@@ -283,18 +309,6 @@ export function cmaSectionStyles(): string {
   @media screen and (max-width: 700px) {
     .szn.is-hero { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .szn.is-hero svg { min-width: 620px; }
-  }
-  /* The price ruler is the one graphic panning destroys: its whole reading is
-     where two ticks sit inside a band, and a cropped end deletes half of it.
-     It ships in two layouts and exactly one is ever visible (F6). */
-  .ruler-phone { display: none; }
-  @media screen and (max-width: 700px) {
-    .ruler-wide { display: none; }
-    .ruler-phone { display: block; }
-  }
-  @media print {
-    .ruler-wide { display: block !important; }
-    .ruler-phone { display: none !important; }
   }
   /* Chapter 1's timeline. Same two-layout mechanism: the reading is the gap
      between a line and a zone, and a cropped right edge deletes the day it

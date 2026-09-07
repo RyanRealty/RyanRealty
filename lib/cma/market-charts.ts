@@ -100,49 +100,8 @@ const RULER_INK = '#102742'
 const RULER_MUTED = 'rgba(16,39,66,0.55)'
 const RULER_EDGE = 'rgba(16,39,66,0.22)'
 
-export type PriceRulerInput = {
-  /** Close prices. Filled dots. */
-  sold: readonly number[]
-  /** Last asks of listings that came off without a sale. Hollow dots. */
-  unsold: readonly number[]
-  /** The recommended list. The one emphasized tick. */
-  list: number
-  listLabel: string
-  /** The seller's own failed ask, when there is one. */
-  lastAsk: number | null
-  lastAskLabel: string | null
-  caption: string
-}
 
-function rulerLabel(n: number): string {
-  return chartUsd(n)
-}
 
-/**
- * The plotted domain, shared by both layouts so the two can never disagree
- * about where a dot sits relative to a tick.
- */
-function rulerDomain(input: PriceRulerInput): {
-  sold: number[]
-  unsold: number[]
-  lastAsk: number | null
-  lo: number
-  hi: number
-  dataMin: number
-  dataMax: number
-} | null {
-  const sold = input.sold.filter((n) => Number.isFinite(n) && n > 0)
-  const unsold = input.unsold.filter((n) => Number.isFinite(n) && n > 0)
-  if (sold.length === 0 || !Number.isFinite(input.list) || input.list <= 0) return null
-  const lastAsk =
-    input.lastAsk != null && Number.isFinite(input.lastAsk) && input.lastAsk > 0 ? input.lastAsk : null
-  const all = [...sold, ...unsold, input.list, ...(lastAsk != null ? [lastAsk] : [])]
-  const dataMin = Math.min(...all)
-  const dataMax = Math.max(...all)
-  // Domain is the plotted data, never a theoretical band floor.
-  const pad = Math.max((dataMax - dataMin) * 0.06, 1)
-  return { sold, unsold, lastAsk, lo: dataMin - pad, hi: dataMax + pad, dataMin, dataMax }
-}
 
 /**
  * Keep a label's own box inside the frame. Geist runs about 0.58em per
@@ -162,183 +121,8 @@ function fitText(
   return { x: cx.toFixed(1), anchor: 'middle' }
 }
 
-/**
- * Spread coincident dots away from the lane line so a cluster reads as a
- * cluster instead of one dot. Direction is away from the axis, never across
- * it — a sold dot never drifts into the unsold lane.
- */
-function dodgeLane(
-  values: readonly number[],
-  x: (v: number) => number,
-  r: number,
-  dir: -1 | 1,
-): Array<{ cx: number; cy: number }> {
-  const sorted = [...values].sort((a, b) => a - b)
-  const out: Array<{ cx: number; cy: number }> = []
-  let clusterX = Number.NEGATIVE_INFINITY
-  let depth = 0
-  for (const v of sorted) {
-    const cx = x(v)
-    if (cx - clusterX < r * 2) {
-      depth += 1
-    } else {
-      clusterX = cx
-      depth = 0
-    }
-    out.push({ cx, cy: depth * (r * 2 + 2) * dir })
-  }
-  return out
-}
 
-export function priceRulerSvg(input: PriceRulerInput): string {
-  const domain = rulerDomain(input)
-  if (!domain) return ''
-  const { sold, unsold, lastAsk, lo, hi, dataMin, dataMax } = domain
 
-  const W = 720
-  const H = 200
-  const gutter = 104
-  const plotL = gutter
-  const plotR = W - 30
-  const axisY = 104
-  const soldY = 66
-  const unsoldY = 148
-  const r = 4.5
-  const x = (v: number) => plotL + ((plotR - plotL) * (v - lo)) / (hi - lo)
-
-  const soldDots = dodgeLane(sold, x, r, -1)
-    .map((d) => `<circle cx="${d.cx.toFixed(1)}" cy="${(soldY + d.cy).toFixed(1)}" r="${r}" fill="${RULER_INK}"/>`)
-    .join('')
-  const unsoldDots = dodgeLane(unsold, x, r, 1)
-    .map(
-      (d) =>
-        `<circle cx="${d.cx.toFixed(1)}" cy="${(unsoldY + d.cy).toFixed(1)}" r="${r}" fill="none" stroke="${RULER_INK}" stroke-width="1.4"/>`,
-    )
-    .join('')
-
-  // Keep a direct label inside the frame at either end of the axis.
-  const clamp = (v: number) => Math.min(Math.max(v, plotL + 4), plotR - 4)
-  const anchorFor = (cx: number) => (cx < plotL + 70 ? 'start' : cx > plotR - 70 ? 'end' : 'middle')
-  const listX = x(input.list)
-  const askX = lastAsk != null ? x(lastAsk) : null
-
-  // An end label that repeats a tick is the duplicate labelling P1 removed.
-  const ticked = (v: number) =>
-    Math.abs(v - input.list) < 500 || (lastAsk != null && Math.abs(v - lastAsk) < 500)
-  const endLabel = (v: number, atX: number, anchor: 'start' | 'end') =>
-    ticked(v)
-      ? ''
-      : `<text x="${atX}" y="${axisY + 20}" text-anchor="${anchor}" font-size="11.5" fill="${RULER_MUTED}">${esc(rulerLabel(v))}</text>`
-
-  const listTick = `<line x1="${listX.toFixed(1)}" y1="30" x2="${listX.toFixed(1)}" y2="172" stroke="${RULER_INK}" stroke-width="1.75"/>
-    <text x="${clamp(listX).toFixed(1)}" y="22" text-anchor="${anchorFor(listX)}" font-size="12.5" font-weight="600" fill="${RULER_INK}">${esc(input.listLabel)}</text>`
-  const askTick =
-    askX != null && input.lastAskLabel
-      ? `<line x1="${askX.toFixed(1)}" y1="30" x2="${askX.toFixed(1)}" y2="172" stroke="${RULER_MUTED}" stroke-width="1.2"/>
-    <text x="${clamp(askX).toFixed(1)}" y="188" text-anchor="${anchorFor(askX)}" font-size="12.5" font-weight="600" fill="${RULER_INK}">${esc(input.lastAskLabel)}</text>`
-      : ''
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg">
-    ${askTick}
-    ${listTick}
-    <line x1="${plotL}" y1="${axisY}" x2="${plotR}" y2="${axisY}" stroke="${RULER_EDGE}" stroke-width="0.75"/>
-    ${endLabel(dataMin, plotL, 'start')}
-    ${endLabel(dataMax, plotR, 'end')}
-    <text x="${gutter - 16}" y="${soldY + 4}" text-anchor="end" font-size="12" font-weight="600" fill="${RULER_INK}">Sold</text>
-    <text x="${gutter - 16}" y="${unsoldY + 4}" text-anchor="end" font-size="12" font-weight="600" fill="${RULER_MUTED}">Did not sell</text>
-    ${soldDots}
-    ${unsoldDots}
-  </svg>`
-}
-
-/**
- * The same ruler, laid out for a phone.
- *
- * F6, 2026-09-07: the 720-unit ruler was held at `min-width` inside a pan box
- * below 700px, so a seller opening the document on a phone saw the "$360K"
- * unsold dot and the recommend tick and nothing else — the nine closed sales
- * and their own failed ask were off the right edge of a box nobody scrolls.
- * A wide chart panning is right for a twelve-row days strip; it is wrong for
- * the one graphic whose whole reading is where two marks sit relative to a
- * band, because the reading is destroyed by cropping either end.
- *
- * So this layout is drawn to fit: a 360-unit frame that scales to the phone
- * with no cropping, lane names in a left gutter, and the two ticks labelled
- * above and below the plot where a long label has the full frame to sit in
- * rather than a half-width of it.
- */
-export function priceRulerPhoneSvg(input: PriceRulerInput): string {
-  const domain = rulerDomain(input)
-  if (!domain) return ''
-  const { sold, unsold, lastAsk, lo, hi, dataMin, dataMax } = domain
-
-  const W = 360
-  const r = 4
-  const gutter = 58
-  const plotL = gutter
-  const plotR = W - 10
-  const x = (v: number) => plotL + ((plotR - plotL) * (v - lo)) / (hi - lo)
-
-  const soldPts = dodgeLane(sold, x, r, -1)
-  const unsoldPts = dodgeLane(unsold, x, r, 1)
-  const soldSpan = Math.max(0, ...soldPts.map((p) => -p.cy))
-  const unsoldSpan = Math.max(0, ...unsoldPts.map((p) => p.cy))
-
-  // Every band below is measured off the one above it, so a deep cluster grows
-  // the frame instead of colliding with the label over it.
-  const tickTop = 22
-  const soldY = tickTop + 12 + r + soldSpan
-  const axisY = soldY + 22
-  const unsoldY = axisY + 30
-  const tickBottom = unsoldY + unsoldSpan + r + 10
-  const askLabelY = lastAsk != null && input.lastAskLabel ? tickBottom + 16 : null
-  const H = Math.ceil((askLabelY ?? tickBottom) + 8)
-
-  const soldDots = soldPts
-    .map(
-      (d) =>
-        `<circle cx="${d.cx.toFixed(1)}" cy="${(soldY + d.cy).toFixed(1)}" r="${r}" fill="${RULER_INK}"/>`,
-    )
-    .join('')
-  const unsoldDots = unsoldPts
-    .map(
-      (d) =>
-        `<circle cx="${d.cx.toFixed(1)}" cy="${(unsoldY + d.cy).toFixed(1)}" r="${r}" fill="none" stroke="${RULER_INK}" stroke-width="1.3"/>`,
-    )
-    .join('')
-
-  // An end label that repeats a tick is the duplicate labelling P1 removed.
-  const ticked = (v: number) =>
-    Math.abs(v - input.list) < 500 || (lastAsk != null && Math.abs(v - lastAsk) < 500)
-  const endLabel = (v: number, atX: number, anchor: 'start' | 'end') =>
-    ticked(v)
-      ? ''
-      : `<text x="${atX}" y="${(axisY + 15).toFixed(1)}" text-anchor="${anchor}" font-size="11" fill="${RULER_MUTED}">${esc(rulerLabel(v))}</text>`
-
-  const listFit = fitText(x(input.list), input.listLabel, 12.5, W)
-  const listTick = `<line x1="${x(input.list).toFixed(1)}" y1="${tickTop}" x2="${x(input.list).toFixed(1)}" y2="${tickBottom.toFixed(1)}" stroke="${RULER_INK}" stroke-width="1.6"/>
-    <text x="${listFit.x}" y="14" text-anchor="${listFit.anchor}" font-size="12.5" font-weight="600" fill="${RULER_INK}">${esc(input.listLabel)}</text>`
-
-  let askTick = ''
-  if (lastAsk != null && input.lastAskLabel && askLabelY != null) {
-    const askFit = fitText(x(lastAsk), input.lastAskLabel, 12.5, W)
-    askTick = `<line x1="${x(lastAsk).toFixed(1)}" y1="${tickTop}" x2="${x(lastAsk).toFixed(1)}" y2="${tickBottom.toFixed(1)}" stroke="${RULER_MUTED}" stroke-width="1.1"/>
-    <text x="${askFit.x}" y="${askLabelY.toFixed(1)}" text-anchor="${askFit.anchor}" font-size="12.5" font-weight="600" fill="${RULER_INK}">${esc(input.lastAskLabel)}</text>`
-  }
-
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg">
-    ${askTick}
-    ${listTick}
-    <line x1="${plotL}" y1="${axisY.toFixed(1)}" x2="${plotR}" y2="${axisY.toFixed(1)}" stroke="${RULER_EDGE}" stroke-width="0.75"/>
-    ${endLabel(dataMin, plotL, 'start')}
-    ${endLabel(dataMax, plotR, 'end')}
-    <text x="${gutter - 10}" y="${(soldY + 4).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="${RULER_INK}">Sold</text>
-    <text x="${gutter - 10}" y="${(unsoldY - 1).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="${RULER_MUTED}">Did not</text>
-    <text x="${gutter - 10}" y="${(unsoldY + 11).toFixed(1)}" text-anchor="end" font-size="11" font-weight="600" fill="${RULER_MUTED}">sell</text>
-    ${soldDots}
-    ${unsoldDots}
-  </svg>`
-}
 
 // ── How fast homes like yours went ──────────────────────────────────────────
 // Named rows on one days axis. Each kept sale is the days it waited for an
@@ -723,13 +507,16 @@ function timelineBody(o: {
       const cx = x(s.t)
       const cy = y(s.ask)
       const label = chartUsd(s.ask)
-      const fit = fitText(cx, label, fs, W)
-      // The first ask labels above its own step; a cut labels above too, but
-      // nudged right so it cannot collide with the ask it replaced.
-      const lx = i === 0 ? Math.max(cx, plotL + label.length * fs * 0.3) : fit.x
-      const anchor = i === 0 ? 'start' : fit.anchor
+      const w = label.length * fs * 0.58
+      // The first ask labels above its own run, from the left. A cut labels to
+      // the RIGHT of its drop: centred, the label would sit inside the vertical
+      // segment it belongs to and read as struck through. It flips back to the
+      // left when the drop lands too near the right edge.
+      const flip = i > 0 && cx + 8 + w > W - 2
+      const lx = i === 0 ? cx : flip ? cx - 8 : cx + 8
+      const anchor: 'start' | 'end' = i === 0 || !flip ? 'start' : 'end'
       return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${TL_INK}"/>
-    <text x="${typeof lx === 'string' ? lx : lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>`
+    <text x="${lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>`
     })
     .join('\n    ')
 
@@ -761,4 +548,202 @@ function timelineBody(o: {
     <text x="${plotL}" y="${(bottom + 16).toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(startDay)}</text>
     ${endDay ? `<text x="${plotR}" y="${(bottom + 16).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(endDay)}</text>` : ''}
   </svg>`
+}
+
+// ── Chapter 2: priced right sells, priced high sits ─────────────────────────
+// docs/plans/CMA_REIMAGINED_2026-09-07.md chapter 2. Two graphics from local
+// data, each with one sentence. Both read their figures off `render_args.market`
+// exactly as stored; nothing here computes a statistic.
+
+/** `render_args.market.offerTiming`. Computed at BUILD through the DAL. */
+export type OfferTiming = {
+  city: string
+  windowMonths: number
+  n: number
+  points: Array<{ days: number; pct: number }>
+  medianDays: number | null
+}
+
+/** `render_args.market.askOutcome`. Computed at BUILD through the DAL. */
+export type AskOutcomeGroup = {
+  key: 'sold-no-cut' | 'sold-after-cut' | 'did-not-sell'
+  n: number
+  medianDays: number
+  medianCutPct?: number | null
+}
+export type AskOutcome = {
+  city: string
+  windowMonths: number
+  groups: AskOutcomeGroup[]
+}
+
+/**
+ * When homes like yours get their offer.
+ *
+ * A cumulative curve: the share of closed sales in this city that had an
+ * accepted offer by day 7, 14, 30, 60, 90, 180. The seller's own days are a
+ * full-navy rule on the same axis, far past the curve's shoulder, which is the
+ * whole reading.
+ *
+ * Direct labels only where the story is (the median, the endpoint, their own
+ * mark). A percent on every point is unread chaos.
+ */
+export function offerTimingCurveSvg(
+  timing: OfferTiming,
+  subjectDays: number | null,
+  opts?: { width?: number; height?: number },
+): string {
+  const points = [...timing.points]
+    .filter((p) => Number.isFinite(p.days) && p.days > 0 && Number.isFinite(p.pct) && p.pct >= 0)
+    .sort((a, b) => a.days - b.days)
+  if (points.length < 3) return ''
+  const W = opts?.width ?? 720
+  const H = opts?.height ?? 240
+  const phone = W <= 400
+  const fs = phone ? 10.5 : 12
+  const plotL = phone ? 34 : 46
+  const plotR = W - (phone ? 8 : 14)
+  const top = 30
+  const bottom = H - 34
+  const maxDay = Math.max(points[points.length - 1]!.days, subjectDays ?? 0)
+  const x = (d: number) => plotL + ((plotR - plotL) * d) / Math.max(maxDay, 1)
+  const y = (p: number) => bottom - ((bottom - top) * Math.min(p, 100)) / 100
+
+  const path = [{ days: 0, pct: 0 }, ...points]
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.days).toFixed(1)},${y(p.pct).toFixed(1)}`)
+    .join(' ')
+  const dots = points
+    .map((p) => `<circle cx="${x(p.days).toFixed(1)}" cy="${y(p.pct).toFixed(1)}" r="3" fill="${TL_INK}"/>`)
+    .join('')
+  // Thin the day axis so two ticks never overlap. Day 7 and day 14 sit ~11
+  // units apart on a phone, which prints "714".
+  let lastTickX = Number.NEGATIVE_INFINITY
+  const ticks = points
+    .map((p) => {
+      const tx = x(p.days)
+      const halfW = String(p.days).length * fs * 0.58
+      if (tx - lastTickX < halfW * 2 + 4) return ''
+      lastTickX = tx
+      return `<text x="${tx.toFixed(1)}" y="${(bottom + 15).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="${TL_MUTED}">${p.days}</text>`
+    })
+    .join('')
+
+  // The endpoint label sits to the LEFT of its dot, under the flat tail of the
+  // curve. Anywhere above or right of it collides with the seller's own mark,
+  // which lands beside the last point whenever they sat past six months.
+  const last = points[points.length - 1]!
+  const endLabel = `${Math.round(last.pct)}% by day ${last.days}`
+  const endFit = { x: (x(last.days) - 8).toFixed(1), anchor: 'end' as const }
+
+  const median = timing.medianDays
+  const medianMark =
+    median != null && median > 0 && median <= maxDay
+      ? `<line x1="${x(median).toFixed(1)}" y1="${y(50).toFixed(1)}" x2="${x(median).toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="${TL_MUTED}" stroke-width="1" stroke-dasharray="3 3"/>
+    <line x1="${plotL}" y1="${y(50).toFixed(1)}" x2="${x(median).toFixed(1)}" y2="${y(50).toFixed(1)}" stroke="${TL_MUTED}" stroke-width="1" stroke-dasharray="3 3"/>`
+      : ''
+
+  const yours =
+    subjectDays != null && subjectDays > 0
+      ? (() => {
+          const label = `yours, ${int(subjectDays)} days`
+          const fit = fitText(x(subjectDays), label, fs, W)
+          return `<line x1="${x(subjectDays).toFixed(1)}" y1="${top - 12}" x2="${x(subjectDays).toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="${TL_INK}" stroke-width="1.75"/>
+    <text x="${fit.x}" y="${top - 17}" text-anchor="${fit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>`
+        })()
+      : ''
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Share of sales with an accepted offer, by day" class="trend-svg">
+    <text x="${plotL - 6}" y="${(y(100) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">100%</text>
+    <text x="${plotL - 6}" y="${(y(50) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">50%</text>
+    <line x1="${plotL}" y1="${y(100).toFixed(1)}" x2="${plotR}" y2="${y(100).toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
+    ${medianMark}
+    ${yours}
+    <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
+    <path d="${path}" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    <text x="${endFit.x}" y="${(y(last.pct) + 18).toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(endLabel)}</text>
+    ${ticks}
+    <text x="${plotR}" y="${(H - 6).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">days to an accepted offer</text>
+  </svg>`
+}
+
+export function offerTimingCurvePhoneSvg(timing: OfferTiming, subjectDays: number | null): string {
+  return offerTimingCurveSvg(timing, subjectDays, { width: 360, height: 214 })
+}
+
+const ASK_OUTCOME_LABEL: Record<AskOutcomeGroup['key'], string> = {
+  'sold-no-cut': 'Sold without a price cut',
+  'sold-after-cut': 'Sold after a price cut',
+  'did-not-sell': 'Came off unsold',
+}
+
+/**
+ * The first price decides the days.
+ *
+ * Three named rows on one days axis, the seller's own group in full navy and
+ * marked. The count rides under the name rather than on the bar, so no bar
+ * carries two numbers.
+ */
+export function askOutcomeBarsSvg(
+  outcome: AskOutcome,
+  subjectGroup: AskOutcomeGroup['key'] | null,
+  opts?: { width?: number },
+): string {
+  const groups = outcome.groups.filter((g) => Number.isFinite(g.medianDays) && g.medianDays > 0)
+  if (groups.length < 2) return ''
+  const W = opts?.width ?? 720
+  const phone = W <= 400
+  const fs = phone ? 11 : 12.5
+  const subFs = phone ? 10 : 11
+  const rowH = phone ? 56 : 52
+  const top = 8
+  const H = top + groups.length * rowH + 10
+  const gutter = phone ? 8 : 190
+  const plotL = phone ? 8 : gutter
+  const longest = Math.max(...groups.map((g) => `${int(g.medianDays)} days`.length))
+  const plotR = W - Math.min(Math.max(longest * fs * 0.62 + 14, 60), 150)
+  const max = Math.max(...groups.map((g) => g.medianDays))
+  const x = (v: number) => plotL + ((plotR - plotL) * v) / Math.max(max, 1)
+
+  const rows = groups
+    .map((g, i) => {
+      const mine = g.key === subjectGroup
+      const name = `${ASK_OUTCOME_LABEL[g.key]}${mine ? ' · your home' : ''}`
+      const count = [
+        `${int(g.n)} ${g.n === 1 ? 'listing' : 'listings'}`,
+        g.medianCutPct != null && g.medianCutPct > 0 ? `median cut ${g.medianCutPct.toFixed(1)}%` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      const stroke = mine ? TL_INK : TL_MUTED
+      const weight = mine ? 9 : 6
+      const bold = mine ? ' font-weight="600"' : ''
+      if (phone) {
+        const nameY = top + i * rowH + 12
+        const countY = nameY + 14
+        const barY = countY + 13
+        return `<text x="${plotL}" y="${nameY}"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
+    <text x="${plotL}" y="${countY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
+    <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
+    <text x="${W - 6}" y="${barY + 4}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text>`
+      }
+      const mid = top + i * rowH + rowH / 2
+      return `<text x="${gutter - 14}" y="${(mid - 3).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
+    <text x="${gutter - 14}" y="${(mid + 13).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
+    <line x1="${plotL}" y1="${mid.toFixed(1)}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${mid.toFixed(1)}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
+    <text x="${(Math.max(x(g.medianDays), plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text>`
+    })
+    .join('\n    ')
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median days to an accepted offer, by what the first price did" class="trend-svg">
+    ${phone ? '' : `<line x1="${plotL}" y1="${top}" x2="${plotL}" y2="${(H - 10).toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>`}
+    ${rows}
+  </svg>`
+}
+
+export function askOutcomeBarsPhoneSvg(
+  outcome: AskOutcome,
+  subjectGroup: AskOutcomeGroup['key'] | null,
+): string {
+  return askOutcomeBarsSvg(outcome, subjectGroup, { width: 360 })
 }

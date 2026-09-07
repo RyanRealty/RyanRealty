@@ -196,20 +196,27 @@ describe('assembleOpinionPages format', () => {
           closed: null,
           sold90: null,
           listingTrend: null,
-          outcomes: {
-            lo: 365000,
-            hi: 460000,
-            sold: [380000, 390000, 400000, 410000],
-            unsold: [430000, 450000, 460000],
-            list: 401000,
-            lastAsk: 460000,
-            soldShown: 4,
-            unsoldShown: 3,
-            soldTotal: 4,
-            unsoldTotal: 3,
-            label: 'Diamond Bar Ranch',
-            source: 'Closed = sale price. Expired, withdrawn, and canceled = last ask.',
-          },
+          expiredPeers: [
+            {
+              listingKey: 'U1',
+              address: '2527 5th',
+              listPrice: 430000,
+              status: 'Canceled',
+              daysOnMarket: 36,
+              onMarketDate: '2025-12-15',
+              photoUrl: null,
+              latitude: 44.29,
+              longitude: -121.16,
+              beds: 2,
+              baths: 1,
+              sqft: 789,
+              lotAcres: 0.14,
+              yearBuilt: 2008,
+              propertySubType: 'Single Family Residence',
+              originalListPrice: 430000,
+              listingHistoryLine: null,
+            },
+          ],
         },
       },
     })
@@ -220,13 +227,12 @@ describe('assembleOpinionPages format', () => {
     expect(outcomes).toBeGreaterThanOrEqual(0)
     expect(competition).toBeGreaterThan(outcomes)
     const body = pages[outcomes]!.body
-    // P1: one price ruler. Sold are filled dots, unsold hollow, and only the
-    // recommend and the seller's own last ask carry a label.
-    expect(body).toContain('4 closed in your price range')
-    expect(body).toContain('asked and did not sell')
+    // Chapter 2 argues the claim from local numbers, not from a ruler of dots.
+    expect(body).toContain('Near you, these asked and did not sell')
+    expect(body).toContain('2527 5th')
     expect(body).not.toContain("Didn't sell")
-    expect(body).toContain('Recommended $')
-    expect(body).toContain('Closed = sale price')
+    expect(body).not.toContain('Recommended $')
+    expect(body).not.toContain('ruler-wide')
   })
 
   it('omits a citywide 90-day median that does not describe this house', () => {
