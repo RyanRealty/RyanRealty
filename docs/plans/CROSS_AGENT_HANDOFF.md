@@ -1,4 +1,36 @@
-# Current — 2026-09-06 (Cos takeover: public punch list)
+# Current — 2026-09-07 (AEO guide pack + site audit)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
+`wt/aeo-briefs-audit-20260907`, landed on `origin/main` at `5f9987ab`.
+
+**Shipped**
+- Fifteen buyer + seller guides from the Cos AEO brief pack are live in
+  `blog_posts` (six rewrites in place, three drafts rebuilt, six new). Seed
+  mirror `scripts/blog-content/aeo-guides-2026-09.ts`. Figure ledger and the
+  brief-to-slug map: `docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md`.
+- Guides end in `<h2>Questions</h2>` + five h3/p pairs. `lib/blog/publish-blog-faq.ts`
+  turns that into FAQPage JSON-LD on `/blog/[slug]`.
+- Site audit fixes: listing photo alt (`ci:listing-photo-alt`), `/homes-for-sale`
+  robots + og + WebPage/ItemList JSON-LD, mobile menu labels not h2, `/buy` FAQ
+  compensation answer corrected.
+- Review sheet for Matt: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
+
+**Open**
+- Homepage `<title>` stays `Ryan Realty, Bend` (VOICE.md + `ci:seo-shell`). The audit
+  wants a keyword title. Matt's call.
+- Old cost-of-living / closing-cost / property-tax figures were cut, not replaced.
+  Re-adding any needs a fresh primary-source pull (ledger lists what came out).
+- `npm run push` from a worktree branch now stamps and then runs a plain `git push`,
+  which fails with no upstream. Follow it with `git push origin HEAD:main` inside
+  the marker window.
+
+**Do not**
+- Reseed blog posts with `scripts/seed-blog-posts.ts` without diffing against the
+  live rows first (voice-canon rewrites live only in the DB for the other posts).
+
+---
+
+# Previous — 2026-09-06 (Cos takeover: public punch list)
 
 Owner: Chief of Staff (Grok Bot). Took over Grok Build session
 `01a06fc0-b2f2-7eb2-9e66-a7d1b8f12d07` ("Public UI punch list and place-page
