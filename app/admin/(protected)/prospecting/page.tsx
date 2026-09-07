@@ -21,8 +21,9 @@ import {
   resolveProspectListCity,
   resolveProspectListOrder,
 } from '@/lib/data/prospecting/types'
-import { prospectDetailHref } from '@/lib/data/prospecting/detail-href'
+import { prospectDetailHref, prospectQueueReviewLabel } from '@/lib/data/prospecting/detail-href'
 import { isProspectDocClientReady } from '@/lib/data/prospecting/doc-ready'
+import { ProspectDetailHardLink } from '@/components/admin/prospecting/ProspectDetailHardLink.client'
 import { formatDate } from '@/lib/format/date'
 import { Button, HiddenField, QueueRow, SearchField, VerdictLine } from '@/components/admin/v2'
 import type { AdminState } from '@/components/admin/v2'
@@ -286,7 +287,8 @@ export default async function ProspectingPage({
         {result.rows.map((row) => {
           const bucket = classifyProspect(row.doc, row.compliance, row.sendable, row.personId)
           const state = rowState(row, bucket)
-          // Hard <a> (not soft Link): desk Open was flaky under RSC soft-nav; deep links work.
+          // Hard document nav (location.assign) — plain <a> still soft-navs under
+          // Next 16 and can stick on (protected)/loading.tsx skeleton forever.
           const openHref = prospectDetailHref(row.kind, row.id)
           const draftBuilt =
             row.doc.state === 'ready' && !isProspectDocClientReady(row.doc.status)
@@ -295,26 +297,26 @@ export default async function ProspectingPage({
             bucket === 'needs-audit' &&
             !draftBuilt &&
             (row.doc.state === 'none' || row.doc.state === 'failed')
-          const reviewLabel = kind === 'fsbo' ? 'Review CMA' : 'Review'
+          const reviewLabel = prospectQueueReviewLabel(kind)
           return (
             <QueueRow
               key={`${row.kind}:${row.id}`}
               kind={state.word}
               kindTone={state.tone}
               title={
-                <a href={openHref} style={{ color: 'inherit', textDecoration: 'none' }}>
+                <ProspectDetailHardLink href={openHref} style={{ color: 'inherit', textDecoration: 'none' }}>
                   {/* `||` not `??` — FSBO scrapes can leave '' addresses */}
                   {row.streetAddress?.trim() || row.fullAddress?.trim() || 'Address pending'}
                   {row.city ? `, ${row.city}` : ''}
-                </a>
+                </ProspectDetailHardLink>
               }
               context={rowContext(row, bucket)}
               age={daysAgo(kind === 'expired' ? row.expiredAt : row.detectedAt)}
               action={
                 bucket === 'sendable' ? (
-                  <a href={openHref} className="av2-btn" style={{ textDecoration: 'none' }}>
+                  <ProspectDetailHardLink href={openHref} className="av2-btn" style={{ textDecoration: 'none' }}>
                     {reviewLabel}
-                  </a>
+                  </ProspectDetailHardLink>
                 ) : draftBuilt && row.doc.state === 'ready' ? (
                   <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
                     <a
@@ -324,9 +326,9 @@ export default async function ProspectingPage({
                     >
                       {row.doc.status === 'draft' ? 'Review CMA' : 'Open CMA'}
                     </a>
-                    <a href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                    <ProspectDetailHardLink href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
                       Open
-                    </a>
+                    </ProspectDetailHardLink>
                   </span>
                 ) : needsBuild ? (
                   <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
@@ -337,14 +339,14 @@ export default async function ProspectingPage({
                         {row.doc.state === 'failed' ? 'Retry build' : 'Build audit'}
                       </Button>
                     </form>
-                    <a href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                    <ProspectDetailHardLink href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
                       Open
-                    </a>
+                    </ProspectDetailHardLink>
                   </span>
                 ) : (
-                  <a href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                  <ProspectDetailHardLink href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
                     Open
-                  </a>
+                  </ProspectDetailHardLink>
                 )
               }
             />
