@@ -205,7 +205,7 @@ describe('390 Map uses one camera', () => {
   it('hides the filter-bar List/Split/Map ToggleGroup so the map shell is the one view switch', () => {
     const src = readSrc('components/search/SearchFilters.tsx')
     expect(src).toMatch(/hideViewToggle = true/)
-    expect(src).toMatch(/hidden items-center gap-2 sm:contents/)
+    expect(src).toMatch(/srch-chip-rail hidden min-w-0 flex-1[\s\S]*sm:flex/)
     const map = readSrc('components/search/MapSearchView.tsx')
     expect(map).toMatch(/map-search-views/)
     expect(map).toMatch(/aria-label="Map view"/)
@@ -244,6 +244,11 @@ describe('390 Map uses one camera', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')
     expect(filters).toMatch(/srch-mic-inbar/)
     expect(filters).toMatch(/VoiceSearchButton/)
+    // 375 residual: full-width search row keeps mic in-bar; Places chip on row 2.
+    expect(filters).toMatch(/Row 1 @375/)
+    expect(filters).toMatch(/w-full min-w-0 sm:w-64/)
+    expect(filters).toMatch(/Row 2 @375/)
+    expect(filters).toMatch(/return 'Places'/)
     expect(filters).toMatch(/PLACE_SCHOOL_DISTRICT_OPTIONS/)
     expect(filters).toMatch(/School district/)
     expect(filters).toMatch(/schoolDistrict/)
@@ -253,6 +258,9 @@ describe('390 Map uses one camera', () => {
     expect(map).toMatch(/aria-label="Map and sort"/)
     const css = readSrc('components/search/search-ledger.css')
     expect(css).toMatch(/map-search-mapsort__pill/)
+    // Chip-rail fade only from sm up (mobile row has no trailing mask).
+    expect(css).toMatch(/\.srch-chip-rail \{[\s\S]*?-webkit-mask-image: none/)
+    expect(css).toMatch(/@media \(min-width: 40rem\)[\s\S]*\.srch-chip-rail/)
     const chromeLive = readSrc('lib/site/chrome-live.ts')
     expect(chromeLive).not.toMatch(/Detached homes for sale/)
     const chrome = readSrc('components/site/v3/V3Chrome.tsx')

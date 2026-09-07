@@ -59,18 +59,26 @@
   min-height: var(--v3-tap, 44px);
 }
 
-/* Horizontal chip rail: trailing fade via navy mask (G27 — keep gradients out of TSX). */
+/* Horizontal chip rail: trailing fade via navy mask (G27 — keep gradients out of TSX).
+   At 375 the rail only holds search+Places — a trailing fade clipped the Places
+   chip and the in-bar mic. Fade only from sm up where the chip set scrolls. */
 .srch-chip-rail {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    var(--v3-navy) calc(100% - 1.75rem),
-    transparent
-  );
-  mask-image: linear-gradient(
-    to right,
-    var(--v3-navy) calc(100% - 1.75rem),
-    transparent
-  );
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+@media (min-width: 40rem) {
+  .srch-chip-rail {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      var(--v3-navy) calc(100% - 1.75rem),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      var(--v3-navy) calc(100% - 1.75rem),
+      transparent
+    );
+  }
 }
 
 /* Places multi-select: one scroll region (inner list). Header + typeahead stay fixed. */

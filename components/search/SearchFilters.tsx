@@ -519,13 +519,14 @@ export default function SearchFilters({
 
   return (
     <div className="flex flex-col gap-0">
-      {/* One filter row: location · For sale · Price · Beds · Baths · Home type ·
-          All filters · Save this search. Map/List lives in the map shell, not
-          here. At 375 the chip dropdowns fold into All filters (one Sheet). */}
-      <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
-        <div className="srch-chip-rail flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
+      {/* One filter row: location(+mic) · Places · For sale · Price · Beds · Baths ·
+          Home type · All filters · Save. Map/List lives in the map shell.
+          At 375: search flexes (mic stays in-bar), Places stays visible, other
+          chips fold into All filters (one Sheet). Map|List|Sort is OK on phone. */}
+      <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:px-4">
+        {/* Row 1 @375: full-width search so mic stays inside the bar. */}
         {hideLocation ? null : (
-        <div className="relative w-48 shrink-0 sm:w-64">
+        <div className="relative w-full min-w-0 sm:w-64 sm:shrink-0">
           <div className="srch-panel srch-tap relative min-h-11 flex min-w-0 items-center gap-1.5 px-2 transition focus-within:ring-2 focus-within:ring-primary/30 sm:px-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
@@ -589,6 +590,8 @@ export default function SearchFilters({
           )}
         </div>
         )}
+        {/* Row 2 @375: Places chip + Filters + Save. Desktop: same row as search. */}
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
         <div className="flex shrink-0 items-center gap-2">
         {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
         <FilterDropdown
@@ -909,7 +912,7 @@ export default function SearchFilters({
         </FilterDropdown>
         </div>
 
-        <div className="hidden items-center gap-2 sm:contents">
+        <div className="srch-chip-rail hidden min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar sm:flex">
 
         {/* For Sale / Status */}
         <FilterDropdown
@@ -1129,7 +1132,6 @@ export default function SearchFilters({
           </div>
         </FilterDropdown>
         </div>
-      </div>
 
         {/* All filters — always present. Chip set scrolls on 390. */}
         <Button
@@ -1188,6 +1190,7 @@ export default function SearchFilters({
           </button>
         </div>
         )}
+        </div>
       </div>
 
       {/* Row 3: active filter chips. Row 2's trigger buttons already show the
