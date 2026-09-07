@@ -801,19 +801,26 @@ export default function MapSearchView({
     viewportCapped: capped,
   })
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
-  // Filter-match is the coherent number for the URL filters. Viewport prints
-  // only when it differs, labeled "in this map view".
-  // Cos/Matt 2026-09-06: kill total-inventory count noise ("1,272 homes") above
-  // the list. Prefer map-viewport when it differs; otherwise keep the row quiet
-  // (filters summary + sort stay). Sheet chrome still shows "N homes for sale".
+  // Cos/Matt 2026-09-06 residual: kill UNSCOPED total-inventory chrome
+  // (sheet peek "3,231+ homes for sale"; list "3,341 homes found"). Place-
+  // scoped sheet counts stay ("26 homes for sale"). Map-viewport phrases
+  // ("N homes in this map view") stay when place-scoped or after the user
+  // moves the map (areaDirty).
+  const placeScoped = Boolean(scopeLabel)
+  const showViewportCount = placeScoped || areaDirty
   const listCountPhrase =
     !matchCountReady && totalCount === 0
       ? 'Updating…'
-      : (publishedCounts.viewport?.phrase ?? (loading ? 'Updating…' : 'Homes'))
-  // Zillow map-first sheet title — viewport-aware "N homes for sale".
+      : showViewportCount && publishedCounts.viewport?.phrase
+        ? publishedCounts.viewport.phrase
+        : loading
+          ? 'Updating…'
+          : 'Homes'
+  // Zillow sheet title: numeric "N homes for sale" only when Places is on.
   const sheetHomesLabel = (() => {
     if (resultsDegraded) return 'Search delayed'
     if (!matchCountReady && totalCount === 0) return 'Updating…'
+    if (!placeScoped) return 'Homes for sale'
     const pub = publishedCounts.viewport ?? publishedCounts.match
     const value = pub?.value ?? totalCount
     const plus = pub?.phrase.includes('+') ? '+' : ''

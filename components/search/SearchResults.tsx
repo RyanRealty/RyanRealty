@@ -187,6 +187,14 @@ export default function SearchResults({
     () => excludeHiddenListings(listings, hiddenKeys),
     [listings, hiddenKeys],
   )
+  // Cos/Matt 2026-09-06 residual: no unscoped "N homes found" total-inventory
+  // chrome. Place-scoped counts (Places filter on) stay intentional.
+  const placeScoped = Boolean(
+    filters.city?.trim() ||
+      filters.subdivision?.trim() ||
+      filters.neighborhood?.trim() ||
+      filters.postalCode?.trim(),
+  )
 
   return (
     <div className="w-full p-4 space-y-4">
@@ -225,10 +233,12 @@ export default function SearchResults({
         </div>
       ) : (
         <>
-          <p className="srch-count text-muted-foreground">
-            <span className="srch-figure">{total.toLocaleString()}</span> home
-            {total !== 1 ? 's' : ''} found
-          </p>
+          {placeScoped ? (
+            <p className="srch-count text-muted-foreground">
+              <span className="srch-figure">{total.toLocaleString()}</span> home
+              {total !== 1 ? 's' : ''} found
+            </p>
+          ) : null}
           <div className="v3-lrow-list">
         {visibleListings.map((listing, cardIndex) => {
           const key = String(listingKey(listing)).trim()

@@ -94,9 +94,13 @@ describe('MapSearchView orchestrator', () => {
   })
 
   it('separates filter-match and viewport phrases so they do not concatenate', () => {
-    // Cos/Matt: kill total-inventory noise — list row prefers viewport phrase
-    // only; sheet chrome keeps "N homes for sale". No match+viewport concat.
+    // Cos/Matt residual: kill UNSCOPED total-inventory chrome. List row shows
+    // viewport only when place-scoped or areaDirty; sheet numeric "N homes for
+    // sale" only when Places is on. No match+viewport concat.
     expect(src).toMatch(/publishedCounts\.viewport\?\.phrase/)
+    expect(src).toMatch(/placeScoped/)
+    expect(src).toMatch(/showViewportCount/)
+    expect(src).toMatch(/if \(!placeScoped\) return 'Homes for sale'/)
     expect(src).toMatch(/sheetHomesLabel/)
     expect(src).not.toMatch(/\{listCountPhrase\}[\s\S]{0,200}\{publishedCounts\.viewport\.phrase\}/)
   })
@@ -166,6 +170,7 @@ describe('Zillow map-first mobile bottom sheet', () => {
     expect(view).toMatch(/map-search-sheet/)
     expect(view).toMatch(/sheetHomesLabel/)
     expect(view).toMatch(/homes for sale/)
+    expect(view).toMatch(/if \(!placeScoped\) return 'Homes for sale'/)
     expect(view).toMatch(/map-search-sheet__handle/)
     expect(view).toMatch(/is-expanded/)
     expect(view).toMatch(/is-peek/)
@@ -515,10 +520,11 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
 
   it('mobile map view shows the result count from the SAME query that renders the pins (§0)', () => {
     // Viewport pins stay on getViewportSearch totalCount. Mobile count lives
-    // on the Zillow bottom-sheet chrome ("N homes for sale"), not a map pill.
+    // on the Zillow bottom-sheet chrome (numeric only when Places is on).
     expect(src).toMatch(/sheetHomesLabel/)
     expect(src).toMatch(/map-search-sheet__title/)
     expect(src).toMatch(/homes for sale/)
+    expect(src).toMatch(/if \(!placeScoped\) return 'Homes for sale'/)
     expect(src).toMatch(/publishSearchCountPair\(/)
     expect(src).toMatch(/countSearchListings\(/)
   })
@@ -984,6 +990,15 @@ describe('flagship map timeout + city honesty (runtime crosswalk 2026-08-18)', (
   it('keeps empty status as active+pending (does not coerce \'\' to Active)', () => {
     expect(view).toMatch(/status: f\.status \?\? 'Active'/)
     expect(view).not.toMatch(/status: f\.status \|\| 'Active'/)
+  })
+})
+
+describe('unscoped list inventory chrome', () => {
+  it('SearchResults gates homes found behind placeScoped', () => {
+    const results = readSrc('components/search/SearchResults.tsx')
+    expect(results).toMatch(/placeScoped/)
+    expect(results).toMatch(/placeScoped \? \(/)
+    expect(results).toMatch(/} found/)
   })
 })
 
