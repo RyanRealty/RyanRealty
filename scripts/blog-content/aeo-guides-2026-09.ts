@@ -1,11 +1,7 @@
 import type { BlogPostSeed } from '../seed-blog-posts'
 
 /**
- * Buyer + seller AEO guide pack, 2026-09-07. Fifteen guides from the
- * keyword brief (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md). Six of
- * these slugs replaced older seed entries in the sibling files, so each slug
- * lives in exactly one seed file. Every number in these bodies traces to the
- * source named in that doc; dated figures carry their as-of date in the text.
+ * Buyer + seller AEO guide pack, 2026-09-07. Fifteen guides from the keyword brief (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md). Six of these slugs replaced older seed entries in the sibling files, so each slug lives in exactly one seed file. Every number in these bodies traces to the source named in that doc; dated figures carry their as-of date in the text.
  */
 export const posts: BlogPostSeed[] = [
   {
@@ -474,6 +470,10 @@ export const posts: BlogPostSeed[] = [
 
 <h2>When waiting makes sense</h2>
 <p>Waiting makes sense when your own numbers say so: when the payment on the homes you like does not fit, when your down payment is still growing, or when your job or your move is not settled. Waiting to time the market does not work here, because the thing that moves Bend prices most is mortgage rates, and nobody prices those well. A buyer who waits for a lower price often meets a higher rate, and the payment ends up the same. If the payment fits and you plan to stay for years, the market conditions are a negotiating question, not a go or no-go question.</p>
+
+<h2>The refinance argument, and its limits</h2>
+<p>The case for buying now in a soft market is that you negotiate the price and the credits today, and you can refinance the rate later if rates fall. The price is permanent. The rate is not. That argument holds when two things are true: the payment at today's rate fits without strain, and you plan to hold the home long enough that a refinance, which has its own closing costs, pays for itself. It fails when the payment only works if a refinance shows up on schedule. Nobody can promise that schedule, so we do not price a purchase on it.</p>
+<p>The case for waiting is that inventory has been growing, and a buyer who waits may have more to choose from. That is true in the upper bands and less true at the entry level, where the choice is already thin. Rising inventory is a reason to negotiate harder now, not by itself a reason to sit out.</p>
 
 <h2>What to check before you decide</h2>
 <p>Get a real pre-approval, not a prequalification. Run the payment with taxes and insurance for the specific house, because insurance varies by address here. Look at the closed sales for the district, not the list prices. Then decide how much leverage the market gives you and use it in the offer.</p>

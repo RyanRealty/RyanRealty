@@ -108,3 +108,79 @@ $/sqft, lot price, SDC, and build-cost range in the old new-construction post.
 - `/buy` FAQ no longer says the seller offers buyer-agent compensation in the MLS.
 - Not changed: the homepage `<title>` stays `Ryan Realty, Bend` (VOICE.md SEO split, pinned by
   `ci:seo-shell`). The audit suggested a keyword title. That is Matt's call.
+
+## Backlog triage, 2026-09-07 (Matt: grind both)
+
+Twenty-nine posts sat at `archived_stats_unverified` (28) or `pending_pilot_review` (1).
+Five triage passes read every figure in each. Verdicts:
+
+**Retired (status `retired`, 10).** Dated news or superseded snapshots, no evergreen home:
+`bend-20-year-growth-plan-34000-homes`, `bend-affordable-housing-goal-1000-units`,
+`caldera-ranch-ugb-expansion-716-homes`, `caraway-development-510-homes-northwest-bend`,
+`habitat-pahlisch-affordable-townhomes-bend`, `homelessness-central-oregon-2025-count`,
+`central-oregon-housing-market-2025-review`, `central-oregon-housing-market-spring-2026`,
+`deschutes-county-market-report-q1-2026` (its narrative called 4.65 and 4.69 months a seller's
+band against its own 4-to-6 balanced definition), `mortgage-rates-2026-outlook` (forecast with
+no named basis).
+
+**Merged (4).** `case-for-buying-now-vs-waiting` and `inventory-trends-rising-supply-central-oregon`
+fold into `is-now-a-good-time-to-buy-in-bend` (refinance argument and its limits, rising
+inventory as leverage). `bend-sdc-overhaul-housing-costs` and
+`construction-costs-central-oregon-300-sqft` fold into `new-construction-guide-central-oregon`
+once the City of Bend SDC schedule is verified. Sources retire after the merge.
+
+**Restore on fresh sources (15).** `bend-new-growth-plan-housing-20-years`,
+`caldera-ranch-update-bend-newest-development`, `deschutes-county-wildfire-building-codes`,
+`home-renovations-add-value-central-oregon`, `building-equity-shifting-market`,
+`buying-vs-renting-bend-analysis`, `central-oregon-real-estate-investment`,
+`fed-rate-decisions-mortgage-rates`, `how-to-choose-the-right-mortgage`,
+`insurance-guide-central-oregon-homeowners`, `interest-rate-changes-home-affordability`,
+`national-economic-policy-central-oregon`, `rate-lock-effect-housing-supply`,
+`second-home-vs-investment-property`, `treasury-yields-central-oregon-buyers`. The three
+rate-mechanism posts overlap (same spread claim, conflicting 80% vs 82% figure) and consolidate
+into one explainer plus one payment-math guide.
+
+Published-post voice fixes: 18 semicolon sentences across 10 posts, applied to the live rows
+and mirrored to the seeds where the seed still matched (`dining-craft-beer-bend` seed had
+already diverged).
+
+Annual price history used in the restores: median of the twelve monthly `market_stats_cache`
+medians per city, `period_type = monthly`, methodology v3-2026-05-07, read 2026-09-07. Bend
+2017 $397,800 to 2025 $747,500. Redmond $279,200 to $525,000. Sisters $380,755 to $705,000.
+Prineville $199,900 to $415,000. La Pine has no city cache rows.
+
+## Market page price answer and chrome scope (2026-09-07, from the AI answer-share baseline)
+
+A sibling session measured which Bend real estate pages answer engines cite (report:
+https://claude.ai/code/artifact/8080b7fa-4cda-4bd8-9768-ad46f45b38c2). The one
+non-personalized citation of ryan-realty.com quoted the `/housing-market/bend` FAQ JSON-LD,
+"$950,000 median list price", which reads as an outlier beside peers' sale medians. Two fixes
+shipped here:
+
+- `lib/site/market-faq.ts`: the "What is the median home price" answer leads with the closed
+  sale median for the last complete month the page charts (the `[...slug]` page passes it from
+  the same monthly series), then states the list median of the active inventory, labeled as
+  such. Dataset JSON-LD carries both. One function still feeds the visible FAQ and the schema.
+- `lib/site/chrome-live.ts`: the Market and Sell menus print region figures on every page, so
+  their eyebrows now name the scope, "Central Oregon detached homes right now" and "Central
+  Oregon sellers right now". On the Bend page the menu said 5.0 months, balanced, beside a page
+  saying 3.9 months, seller's. Both were true. Neither said which place it meant.
+
+Open, from the same report: no engine cited any F1 battery path for its query (the gate proves
+the paths exist, not that they are used); the ranking mechanism the engines use for "best
+broker" is review count (Ryan Realty 25 Google, 6 Zillow, against 100 to 483 for the
+brokerages that win); and the page pattern that did get Ryan Realty recommended on
+Perplexity was a dated local report plus seller guidance naming the broker. Suggested next
+pages: a dated monthly Bend and Redmond report with median sale price and months of supply
+stated once, and third-party profiles completed for all three brokers. The sibling session
+reruns the battery monthly.
+
+## Hero stills attempt (2026-09-07)
+
+Matt chose Studio stills for the nine new guides. Through `buildStillPrompt` and the
+`inspectFrame` gate at the 85 bar, 16 candidates across two subjects (a Deschutes riverbank
+with houses, an aerial of a west-side neighborhood) scored 71 to 78, every one failed on
+`warped_architecture`, and the run was stopped at about $10 of stills. Landscape-only frames
+were not tried for every guide. The guides keep the existing library photos until a
+subject without buildings is tried or the bar is revisited. Contact sheet in the session
+scratchpad (`thumbs/stills-all.png`).

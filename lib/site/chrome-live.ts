@@ -140,7 +140,10 @@ export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
     }
     if (facts.length > 0) {
       out.Market = {
-        eyebrow: 'Detached homes right now',
+        // Names the scope. This menu prints on every page, including a city market
+        // page whose own figures differ (Bend 3.9 months against the region's 5.0 on
+        // 2026-09-07), so the region has to say it is the region.
+        eyebrow: 'Central Oregon detached homes right now',
         facts,
         note: input.region.stamp ? `Read ${input.region.stamp}` : undefined,
       }
@@ -154,7 +157,7 @@ export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
   }
   if (sellFacts.length > 0) {
     out.Sell = {
-      eyebrow: 'Sellers right now',
+      eyebrow: 'Central Oregon sellers right now',
       facts: sellFacts,
       note: input.atlas ? `Read ${input.atlas.stamp}` : undefined,
     }
