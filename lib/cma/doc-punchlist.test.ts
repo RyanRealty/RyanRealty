@@ -590,3 +590,29 @@ describe('a price never ships without the sales that set it', () => {
     }
   })
 })
+
+describe('the subject only has days-without-an-offer when it actually sat', () => {
+  const soldLongAgo: CmaSubject = {
+    ...subject,
+    standardStatus: 'Closed',
+    lastListDate: '2004-11-01',
+    lastListPrice: 140000,
+    listingHistoryLine: 'Last on market Nov 2004 at $140,000 (closed).',
+  }
+
+  it('never claims a house that sold in 2004 sat 7,969 days', () => {
+    const html = letter({ subject: soldLongAgo, expiredAudit: undefined })
+    expect(html).not.toContain('7,969')
+    expect(html).not.toMatch(/Yours sat [\d,]+ days/)
+  })
+
+  it('still draws the kept sales for that subject', () => {
+    const html = letter({ subject: soldLongAgo, expiredAudit: undefined })
+    expect(html).toContain('How fast homes like yours went')
+    expect(html).toContain('51 days')
+  })
+
+  it('keeps the subject row when the listing actually failed', () => {
+    expect(letter()).toMatch(/\d+ days, no offer/)
+  })
+})

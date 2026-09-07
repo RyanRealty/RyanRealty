@@ -6,7 +6,7 @@ import { dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } fr
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { daysToOfferSvg, medianCloseLineSvg, priceRulerSvg, type DaysRow } from '@/lib/cma/market-charts'
-import { subjectDomDays } from '@/lib/cma/comp-matrix'
+import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { renderUnsoldContrastMatrixHtml } from '@/lib/cma/comp-matrix'
@@ -269,18 +269,27 @@ export function renderDaysToOfferHtml(a: Pick<MarketChapterArgs, 'subject' | 'co
     )
     .filter((r): r is DaysRow => r != null)
   if (rows.length < 3) return ''
-  const subjectDays = subjectDomDays(a.subject)
-  if (subjectDays == null || subjectDays <= 0) return ''
-  rows.push({
-    label: a.subject.streetAddress,
-    days: subjectDays,
-    subject: true,
-    valueLabel: `${int(subjectDays)} days, no offer`,
-  })
+  const slowest = Math.max(...rows.map((r) => r.days))
+  // The subject's bar is "days it waited and never got an offer". That figure
+  // exists only for a listing that actually failed — on a house that sold, the
+  // same arithmetic is the age of the sale, not time on market.
+  const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
+  if (subjectDays != null && subjectDays > 0) {
+    rows.push({
+      label: a.subject.streetAddress,
+      days: subjectDays,
+      subject: true,
+      valueLabel: `${int(subjectDays)} days, no offer`,
+    })
+  }
   const svg = daysToOfferSvg(rows, 'How fast homes like yours went')
   if (!svg) return ''
+  const reading =
+    subjectDays != null && subjectDays > 0
+      ? `Each kept sale had an offer inside ${int(slowest)} days. Yours sat ${int(subjectDays)} days and never got one.`
+      : `Each kept sale had an offer inside ${int(slowest)} days.`
   return `<div class="szn is-hero">${svg}</div>
-  <p class="chart-read">Each kept sale had an offer inside ${int(Math.max(...rows.filter((r) => !r.subject).map((r) => r.days)))} days. Yours sat ${int(subjectDays)} days and never got one.</p>`
+  <p class="chart-read">${esc(reading)}</p>`
 }
 
 export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {

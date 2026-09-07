@@ -48,13 +48,35 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
-/** Days the subject's own listing sat. Exported so the days chart and the
- *  matrix's Days on market row can never print two different numbers. */
+/**
+ * Days the subject's own listing sat. Exported so the days chart and the
+ * matrix's Days on market row can never print two different numbers.
+ *
+ * Elapsed time since the last list date is only "days on market" while the
+ * listing is live or has just come off. On a CLOSED listing it is the age of a
+ * sale: 19968 Terrace last listed in November 2004 and sold, and the document
+ * printed 7,969 days on market, then a chart captioned "Yours sat 7,969 days
+ * and never got one" (2026-09-07). Both were false. When the history line
+ * carries a real DOM it wins; otherwise the elapsed figure is derived only for
+ * a listing that is on market or recently off it.
+ */
+const DOM_ELAPSED_CEILING_DAYS = 1095
+const ON_MARKET = /^(active|pending|coming)/i
+const CAME_OFF_UNSOLD = /^(expired|withdrawn|cancell?ed)/i
+
 export function subjectDomDays(subject: CmaSubject): number | null {
-  return (
-    domFromHistoryLine(subject.listingHistoryLine) ??
-    daysOnMarketFrom({ onMarketDate: subject.lastListDate })
-  )
+  const stated = domFromHistoryLine(subject.listingHistoryLine)
+  if (stated != null) return stated
+  const status = subject.standardStatus?.trim() ?? ''
+  if (!ON_MARKET.test(status) && !CAME_OFF_UNSOLD.test(status)) return null
+  const elapsed = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
+  if (elapsed == null || elapsed > DOM_ELAPSED_CEILING_DAYS) return null
+  return elapsed
+}
+
+/** True when the subject's own listing came off without selling. */
+export function subjectListingFailed(subject: CmaSubject): boolean {
+  return CAME_OFF_UNSOLD.test(subject.standardStatus?.trim() ?? '')
 }
 
 /**
