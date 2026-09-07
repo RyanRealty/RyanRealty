@@ -355,3 +355,9 @@ COCC enrollment (only a news quote), Waldorf's year label (the page is mislabele
 
 Steering-word scan on both bodies: zero hits for family-friendly, good or best schools, safe,
 crime, diverse, affluent, income, test scores, rated, ranking, or "for families".
+
+Live check after the deploy of 00440ca9 (2026-09-07 16:37, browser UA): both slugs return 200
+with a FAQPage block and their new heroes (`schools` ← library 87010cd4, `raising-kids` ←
+826bb0a8), `/blog/raising-kids-bend-parents-guide` no longer 301s to `/blog`, and the legacy
+paths `/raising-kids-bend-parents-guide` and `/schools-central-oregon-guide-families` 301 to
+the blog URLs. Contact sheet sent to Matt. `blog_posts`: 80 published, 18 retired.
