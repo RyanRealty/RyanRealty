@@ -428,10 +428,12 @@ describe('chapter order', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     const why = html.indexOf('id="how-we-got-the-price"')
     const sold = html.indexOf('id="sold-90"')
-    const inv = html.indexOf('id="inventory"')
+    // C3: prefer listing-trend over inventory when both would chart.
+    const trend = html.indexOf('id="listing-trend"')
     expect(why).toBeGreaterThan(0)
     expect(sold).toBeGreaterThan(why)
-    expect(inv).toBeGreaterThan(sold)
+    expect(trend).toBeGreaterThan(sold)
+    expect(html).not.toContain('id="inventory"')
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
     expect(html).toContain('Adjusted close')
@@ -447,7 +449,7 @@ describe('chapter order', () => {
     expect(html).not.toContain('id="photo-set"')
   })
 
-  it('leads the wider market with a sold hero and a supply punch, not a status dump', () => {
+  it('leads the wider market with a sold hero and listing trend when trend exists (C3)', () => {
     const html = immersiveWiderMarketChapters(args())
     expect(html).not.toContain('status-hero')
     expect(html).not.toContain('status-tiles')
@@ -455,10 +457,29 @@ describe('chapter order', () => {
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
     expect(html).toContain('sc-navy')
-    expect(html).toMatch(/Seller(&#39;|')s market/)
-    expect(html).toContain('inv-hero')
+    expect(html).toContain('id="listing-trend"')
+    expect(html).not.toContain('id="inventory"')
+    expect(html).not.toContain('inv-hero')
     expect(html).not.toContain('photo-lead')
     expect(html).not.toMatch(/>0 days</)
     expect(html).not.toMatch(/bedroom sales in \d+ to \d+ bedroom homes/)
+  })
+
+  it('falls back to inventory supply punch when listing trend is absent', () => {
+    const base = args()
+    const area = base.extras?.marketArea
+    const html = immersiveWiderMarketChapters(
+      args({
+        extras: base.extras && area
+          ? { ...base.extras, marketArea: { ...area, listingTrend: null } }
+          : null,
+      }),
+    )
+    expect(html).toContain('sold-hero')
+    expect(html).toContain('id="sold-90"')
+    expect(html).toContain('id="inventory"')
+    expect(html).toMatch(/Seller(&#39;|')s market/)
+    expect(html).toContain('inv-hero')
+    expect(html).not.toContain('id="listing-trend"')
   })
 })

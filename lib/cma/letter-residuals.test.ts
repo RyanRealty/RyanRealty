@@ -210,7 +210,7 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
         { month: '2026-02', medianClose: 450000 },
         { month: '2026-03', medianClose: 455000 },
       ],
-    } as RenderCmaArgs['market'],
+    } as unknown as RenderCmaArgs['market'],
     pricing,
     broker,
     client: { name: 'Owner', email: null, phone: null, notes: null },
@@ -275,6 +275,8 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       pricing,
       extras,
       mapDataUri: 'data:image/png;base64,COMPSMAP',
+      generatedAtIso: '2026-09-06T00:00:00.000Z',
+      excludedOutliers: [],
     })
     const body = pages.map((p) => p.body).join('\n')
     expect(body).toContain('Expired peers — what happened')
