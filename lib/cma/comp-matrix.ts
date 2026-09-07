@@ -14,6 +14,7 @@
 
 import { cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { MIN_COMPS } from '@/lib/cma/comps'
 
@@ -155,7 +156,7 @@ function compCol(comp: CmaAdjustedComp, index: number): Col {
  * else (property type, distance, subdivision) is free text of unbounded length
  * and wraps instead of widening its column.
  */
-const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
+const ROWS: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'listing-history' }> = [
   { label: 'Property type', figure: false },
   { label: 'Sale price', figure: true },
   { label: 'Sale price / sqft', figure: true },
@@ -168,7 +169,7 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'Lot sqft', figure: true },
   { label: 'Year built', figure: true },
   { label: 'Garage', figure: true },
-  { label: 'Days on market', figure: true },
+  { label: 'Days on market', figure: true, fact: 'dom' },
   { label: 'Days to offer', figure: true },
   { label: 'Distance', figure: false },
   { label: 'Subdivision', figure: false },
@@ -176,7 +177,7 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean }> = [
   { label: 'Style (one story vs two)', figure: true },
   { label: 'Brought to your size', figure: true },
   { label: 'Adjusted close', figure: true },
-  { label: 'Listing history', figure: false },
+  { label: 'Listing history', figure: false, fact: 'listing-history' },
 ]
 
 /**
@@ -206,7 +207,10 @@ function groupHeading(startIndex: number, size: number): string {
   return size === 1 ? `Sale ${first}` : `Sales ${first} through ${last}`
 }
 
-function matrixTable(cols: Col[]): string {
+function matrixTable(
+  cols: Col[],
+  rows: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'listing-history' }> = ROWS,
+): string {
   // Fixed layout reads its widths from the colgroup, so the table is exactly
   // 100% of the content box no matter what any cell holds.
   const valueWidth = Math.floor(((100 - LABEL_COL_PCT) / cols.length) * 100) / 100
@@ -224,7 +228,7 @@ function matrixTable(cols: Col[]): string {
       return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<span class="matrix-addr">${esc(c.label)}</span></th>`
     })
     .join('')}</tr>`
-  const body = ROWS.map((row, i) => {
+  const body = rows.map((row, i) => {
     // A row every column left blank carries nothing. On a land matrix that is
     // Bedrooms, Bathrooms, Living sqft, Year built and Garage — five empty
     // rows the reader has to scan past to reach the lot size that matters.
@@ -237,7 +241,8 @@ function matrixTable(cols: Col[]): string {
         return `<td class="v${row.figure ? ' n' : ''}${diff ? ' is-diff' : ''}">${esc(val)}</td>`
       })
       .join('')
-    return `<tr><th>${esc(row.label)}</th>${tds}</tr>`
+    const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
+    return `<tr${factAttr}><th>${esc(row.label)}</th>${tds}</tr>`
   }).join('')
   return `
   <div class="comp-matrix-wrap">
@@ -272,13 +277,23 @@ function matrixStack(comps: readonly CmaAdjustedComp[]): string {
         c.sqft > 0 ? `${int(c.sqft)} sqft` : null,
         c.yearBuilt != null ? String(c.yearBuilt) : null,
       ])
+      const domLabel = c.domTotal != null ? `${int(c.domTotal)} days on market` : null
       const time = joinFacts([
         c.daysToOffer != null ? `${int(c.daysToOffer)}d to offer` : null,
-        c.domTotal != null ? `${int(c.domTotal)} DOM` : null,
         c.proximity ? c.proximity : null,
       ])
-      const history = c.listingHistoryLine?.trim() || null
-      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(c.address)}</div><div class="comp-stack-sold">Sold ${esc(dateLong(c.closeDate))} · ${usd(c.closePrice)}${ppsf ? ` · ${esc(ppsf)}` : ''}</div><div class="comp-stack-nums"><span class="comp-stack-n"><span class="k">Adjusted close</span><span class="v n">${usd(c.adjustedPrice)}</span></span></div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${time ? `<div class="comp-stack-facts">${esc(time)}</div>` : ''}${history ? `<div class="comp-stack-facts">${esc(history)}</div>` : ''}</article>`
+      const history =
+        c.listingHistoryLine?.trim() ||
+        buildListingHistoryLine({
+          listPrice: c.listPrice,
+          originalListPrice: c.originalListPrice,
+          closePrice: c.closePrice,
+          status: 'Closed',
+          onMarketDate: c.onMarketDate,
+          closeDate: c.closeDate,
+          daysOnMarket: c.domTotal,
+        })
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(c.address)}</div><div class="comp-stack-sold">Sold ${esc(dateLong(c.closeDate))} · ${usd(c.closePrice)}${ppsf ? ` · ${esc(ppsf)}` : ''}</div><div class="comp-stack-nums"><span class="comp-stack-n"><span class="k">Adjusted close</span><span class="v n">${usd(c.adjustedPrice)}</span></span></div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${domLabel ? `<div class="comp-stack-facts" data-fact="dom">${esc(domLabel)}</div>` : ''}${time ? `<div class="comp-stack-facts">${esc(time)}</div>` : ''}${history ? `<div class="comp-stack-facts" data-fact="listing-history">${esc(history)}</div>` : ''}</article>`
     })
     .join('')
   return `<div class="comp-stack" aria-label="Comparable sales, stacked for narrow screens">${cards}</div>`
@@ -305,4 +320,158 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
   ${tables}
   ${stack}
   <p class="small">Adjusted close moves the sale for time and size.</p>`
+}
+
+/** Fact rows shared with the sold matrix where the peer actually carries them. */
+const UNSOLD_ROWS: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'listing-history' }> = [
+  { label: 'Property type', figure: false },
+  { label: 'Last ask', figure: true },
+  { label: 'Last ask / sqft', figure: true },
+  { label: 'Status', figure: false },
+  { label: 'Bedrooms', figure: true },
+  { label: 'Bathrooms', figure: true },
+  { label: 'Living sqft', figure: true },
+  { label: 'Lot sqft', figure: true },
+  { label: 'Year built', figure: true },
+  { label: 'Garage', figure: true },
+  { label: 'Days on market', figure: true, fact: 'dom' },
+  { label: 'Listing history', figure: false, fact: 'listing-history' },
+]
+
+function unsoldSubjectCol(subject: CmaSubject): Col {
+  const living = subject.sqft
+  const list = subject.lastListPrice
+  const listSf = ppsf(list, living)
+  const subjectDom = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
+  const history =
+    subject.listingHistoryLine?.trim() ||
+    buildListingHistoryLine({
+      listPrice: list,
+      status: subject.standardStatus,
+      onMarketDate: subject.lastListDate,
+      daysOnMarket: subjectDom,
+    }) ||
+    '-'
+  return {
+    key: 'subject',
+    label: subject.streetAddress,
+    photoUrl: subject.photoUrl?.trim() || null,
+    cells: [
+      dash(subject.propertySubType),
+      list != null ? usd(list) : '-',
+      listSf != null ? `${usd(listSf)}/sf` : '-',
+      dash(subject.standardStatus) || 'Subject',
+      subject.beds != null ? int(subject.beds) : '-',
+      subject.baths != null ? dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0) : '-',
+      living != null && living > 0 ? int(living) : '-',
+      lotSqft(subject.lotAcres) != null ? int(lotSqft(subject.lotAcres)!) : '-',
+      subject.yearBuilt != null ? String(subject.yearBuilt) : '-',
+      subject.garageSpaces != null ? int(subject.garageSpaces) : '-',
+      subjectDom != null ? int(subjectDom) : '-',
+      history,
+    ],
+  }
+}
+
+function unsoldPeerCol(peer: CmaExpiredPeer, index: number): Col {
+  const listSf = ppsf(peer.listPrice, peer.sqft)
+  const history =
+    peer.listingHistoryLine?.trim() ||
+    buildListingHistoryLine({
+      listPrice: peer.listPrice,
+      originalListPrice: peer.originalListPrice,
+      status: peer.status,
+      daysOnMarket: peer.daysOnMarket,
+    }) ||
+    '-'
+  return {
+    key: `u${index + 1}`,
+    label: `${index + 1}. ${peer.address}`,
+    photoUrl: peer.photoUrl?.trim() || null,
+    cells: [
+      '-',
+      usd(peer.listPrice),
+      listSf != null ? `${usd(listSf)}/sf` : '-',
+      dash(peer.status),
+      peer.beds != null ? int(peer.beds) : '-',
+      peer.baths != null ? dec(peer.baths, peer.baths % 1 !== 0 ? 1 : 0) : '-',
+      peer.sqft != null && peer.sqft > 0 ? int(peer.sqft) : '-',
+      lotSqft(peer.lotAcres) != null ? int(lotSqft(peer.lotAcres)!) : '-',
+      peer.yearBuilt != null ? String(peer.yearBuilt) : '-',
+      '-',
+      peer.daysOnMarket != null ? int(peer.daysOnMarket) : '-',
+      history,
+    ],
+  }
+}
+
+function unsoldStack(peers: readonly CmaExpiredPeer[]): string {
+  const cards = peers
+    .map((p, i) => {
+      const pin = String(i + 1)
+      const src = p.photoUrl ? sparkPhotoAt(p.photoUrl, '320x240') ?? p.photoUrl : null
+      const img = src
+        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
+        : ''
+      const askSf =
+        p.sqft != null && p.sqft > 0 && p.listPrice > 0
+          ? `${usd(Math.round(p.listPrice / p.sqft))}/sf`
+          : null
+      const facts = joinFacts([
+        p.beds != null ? `${int(p.beds)} bd` : null,
+        p.baths != null ? `${dec(p.baths, p.baths % 1 !== 0 ? 1 : 0)} ba` : null,
+        p.sqft != null && p.sqft > 0 ? `${int(p.sqft)} sqft` : null,
+        p.yearBuilt != null ? String(p.yearBuilt) : null,
+        p.status ? p.status : null,
+      ])
+      const domLabel = p.daysOnMarket != null ? `${int(p.daysOnMarket)} days on market` : null
+      const history =
+        p.listingHistoryLine?.trim() ||
+        buildListingHistoryLine({
+          listPrice: p.listPrice,
+          originalListPrice: p.originalListPrice,
+          status: p.status,
+          daysOnMarket: p.daysOnMarket,
+        })
+      return `<article class="comp-stack-card" data-peer="expired" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(p.address)}</div><div class="comp-stack-sold">Last ask ${usd(p.listPrice)}${askSf ? ` · ${esc(askSf)}` : ''}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${domLabel ? `<div class="comp-stack-facts" data-fact="dom">${esc(domLabel)}</div>` : ''}${history ? `<div class="comp-stack-facts" data-fact="listing-history">${esc(history)}</div>` : ''}</article>`
+    })
+    .join('')
+  return `<div class="comp-stack" aria-label="Listings in this band that did not sell">${cards}</div>`
+}
+
+/**
+ * Side-by-side matrix of expired / withdrawn / canceled peers in the same band.
+ * Soft-fails empty — never invents homes. Same on-screen matrix + letter stack
+ * pattern as the sold comps matrix.
+ */
+export function renderUnsoldContrastMatrixHtml(
+  subject: CmaSubject,
+  peers: readonly CmaExpiredPeer[] | null | undefined,
+): string {
+  if (!peers || peers.length === 0) return ''
+  const named = peers.filter((p) => p.address.trim() && p.listPrice > 0)
+  if (named.length === 0) return ''
+  const subj = unsoldSubjectCol(subject)
+  const peerCols = named.map((p, i) => unsoldPeerCol(p, i))
+  const groups = splitEvenly(peerCols)
+  let seen = 0
+  const tables = groups
+    .map((group) => {
+      const heading =
+        groups.length > 1
+          ? `<h4 class="subhead">${esc(
+              group.length === 1
+                ? `Listing ${seen + 1}`
+                : `Listings ${seen + 1} through ${seen + group.length}`,
+            )}</h4>`
+          : ''
+      seen += group.length
+      return `${heading}${matrixTable([subj, ...group], UNSOLD_ROWS)}`
+    })
+    .join('')
+  return `
+  <h3 class="subhead">Expired peers — what happened</h3>
+  <p>Same band. These listings came off without a sale.</p>
+  ${tables}
+  ${unsoldStack(named)}`
 }

@@ -9,6 +9,7 @@ import { listingTrendSvg, medianCloseLineSvg } from '@/lib/cma/market-charts'
 import { PRINT_NAVY_CREAM, renderPrintOutcomeStripSvg } from '@/lib/charts/print-svg'
 import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
+import { renderUnsoldContrastMatrixHtml } from '@/lib/cma/comp-matrix'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 
@@ -114,48 +115,13 @@ function shortUsd(n: number): string {
 }
 
 
-export function renderExpiredPeersHtml(peers: readonly CmaExpiredPeer[] | null | undefined): string {
-  if (!peers || peers.length === 0) return ''
-  const cards = peers
-    .map((p) => {
-      const photo = sparkPhotoAt(p.photoUrl, '320x320')
-      const img = photo
-        ? `<img class="rival-ph" src="${esc(photo)}" alt="${esc(p.address)}" loading="lazy" referrerpolicy="no-referrer"/>`
-        : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
-      const facts = [
-        p.beds != null ? `${int(p.beds)} bd` : null,
-        p.baths != null ? `${p.baths % 1 === 0 ? int(p.baths) : p.baths.toFixed(1)} ba` : null,
-        p.sqft != null && p.sqft > 0 ? `${int(p.sqft)} sqft` : null,
-        p.status ? p.status : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-      const history = p.listingHistoryLine?.trim()
-      const askBits = [
-        p.originalListPrice != null &&
-        p.originalListPrice > 0 &&
-        Math.abs(p.originalListPrice - p.listPrice) >= 1000
-          ? `Asked ${usd(p.originalListPrice)}, last ${usd(p.listPrice)}`
-          : `Last ask ${usd(p.listPrice)}`,
-        p.daysOnMarket != null ? `${int(p.daysOnMarket)} days on market` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-      return `<article class="rival-row rival-row-peer" data-peer="expired">
-    ${img}
-    <div class="rival-body">
-      <div class="rival-addr">${esc(p.address)}</div>
-      ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
-      <div class="rival-meta">${esc(history || askBits)}</div>
-    </div>
-    <div class="rival-ask">${usd(p.listPrice)}</div>
-  </article>`
-    })
-    .join('')
-  return `
-  <h3 class="subhead">Expired peers — what happened</h3>
-  <p>Same band. These listings came off without a sale. Read the list history, not a verdict.</p>
-  <div class="rival-list rival-list-peers">${cards}</div>`
+/** Side-by-side didn’t-sell matrix (expired/withdrawn peers). Soft-omits when empty. */
+export function renderExpiredPeersHtml(
+  subject: CmaSubject | null | undefined,
+  peers: readonly CmaExpiredPeer[] | null | undefined,
+): string {
+  if (!subject) return ''
+  return renderUnsoldContrastMatrixHtml(subject, peers)
 }
 
 export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): string {

@@ -110,7 +110,7 @@ function seasonalityScene(a: OpinionSceneArgs): string {
 
 function outcomesScene(a: OpinionSceneArgs): string {
   const chart = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
-  const peers = renderExpiredPeersHtml(a.extras?.marketArea?.expiredPeers)
+  const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return ''
   return `
   <section class="sc sc-cream pack" id="sold-unsold">

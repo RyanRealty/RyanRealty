@@ -238,9 +238,13 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
   })
 
   it('expired peers name homes and show what happened without saying overpriced', () => {
-    const html = renderExpiredPeersHtml([peer])
+    const html = renderExpiredPeersHtml(subject, [peer])
     expect(html).toContain('Expired peers — what happened')
     expect(html).toContain('88 Wren')
+    expect(html).toContain('comp-matrix')
+    expect(html).toContain('Last ask')
+    expect(html).toContain('Days on market')
+    expect(html).toContain('Listing history')
     expect(html).toContain('Asked $549,000, cut to $519,000, came off expired · 97 days on market')
     expect(html.toLowerCase()).not.toContain('overprice')
   })
