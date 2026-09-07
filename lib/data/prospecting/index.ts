@@ -38,6 +38,8 @@ export {
 
 export { listProspects } from './list'
 export { classifyProspect, type ProspectBucket } from './classify'
+export { isProspectDocClientReady, isProspectDocReady } from './doc-ready'
+export { prospectDetailHref } from './detail-href'
 export {
   canOpenProspectSend,
   prospectDripBlockedReason,

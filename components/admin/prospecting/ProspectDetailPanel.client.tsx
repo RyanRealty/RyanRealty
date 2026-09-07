@@ -212,6 +212,16 @@ export function ProspectDetailPanel({
           {detail.listPrice != null ? `Was ${formatPrice(detail.listPrice)}` : null}
           {dateValue ? ` · ${dateLabel} ${formatDate(dateValue)}` : ''}
         </p>
+        {(detail.contactEmail?.trim() || detail.contactPhone?.trim()) ? (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', marginTop: 4 }}>
+            {[
+              detail.contactPhone?.trim() ? detail.contactPhone.trim() : null,
+              detail.contactEmail?.trim() ? detail.contactEmail.trim() : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        ) : null}
         {detail.personId == null ? (
           <div className="space-y-2" style={{ paddingTop: 8 }}>
             <p style={quietTextStyle}>
@@ -276,7 +286,13 @@ export function ProspectDetailPanel({
         ) : null}
       </div>
 
-      {showRibbon ? <ProspectComplianceRibbon compliance={detail.compliance} /> : null}
+      {showRibbon ? (
+        <ProspectComplianceRibbon
+          compliance={detail.compliance}
+          contactEmail={detail.contactEmail}
+          contactPhone={detail.contactPhone}
+        />
+      ) : null}
 
       <div className="flex items-center gap-2">
         <ProspectDocPill doc={detail.doc} />

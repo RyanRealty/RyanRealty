@@ -7,6 +7,7 @@
  */
 
 import type { ProspectComplianceState, ProspectDocState } from './types'
+import { isProspectDocClientReady } from './doc-ready'
 
 export type ProspectBucket = 'sendable' | 'needs-audit' | 'sent' | 'excluded' | 'no-phone'
 
@@ -25,6 +26,9 @@ export function classifyProspect(
   // even when EMAIL is otherwise open or the audit was killed by the re-list guard.
   if (compliance.relisted || compliance.offMarket || compliance.allChannelsBlocked) return 'excluded'
   if (doc.state !== 'ready') return 'needs-audit'
+  // Draft / non-client-ready built docs are not ready-to-send — keep them in
+  // needs-audit so the queue never paints Send / "Audit ready" for DRAFT.
+  if (!isProspectDocClientReady(doc.status)) return 'needs-audit'
   // Doc ready, not yet sent. CHANNEL-AWARE (Matt 2026-08-05): a DNC contact with
   // an open email channel is emailable, not a red "Blocked" wall. Person link
   // required (Pine Vista / Nugget class) — same gate as canOpenProspectSend.

@@ -17,6 +17,7 @@
 import { Loader2 } from 'lucide-react'
 import { StateWord } from '@/components/admin/v2'
 import type { ProspectDocState } from '@/lib/data/prospecting/types'
+import { isProspectDocClientReady } from '@/lib/data/prospecting/doc-ready'
 import { formatPrice, formatShortDate } from './format'
 
 export function ProspectDocPill({ doc }: { doc: ProspectDocState }) {
@@ -37,6 +38,18 @@ export function ProspectDocPill({ doc }: { doc: ProspectDocState }) {
         </span>
       )
     case 'ready':
+      // Never paint "Audit ready" for DRAFT — only finalized/delivered (doc-ready gate).
+      if (!isProspectDocClientReady(doc.status)) {
+        return (
+          <span
+            className="av2-chip inline-flex items-center gap-1 tabular-nums"
+            style={{ background: 'var(--a-inset)', color: 'var(--a-text-2)' }}
+          >
+            {doc.status === 'draft' ? 'Draft' : 'Not send-ready'}
+            {doc.recommendedList != null ? <span>· {formatPrice(doc.recommendedList)}</span> : null}
+          </span>
+        )
+      }
       return (
         <span
           className="av2-chip inline-flex items-center gap-1 tabular-nums"

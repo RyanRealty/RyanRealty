@@ -21,6 +21,8 @@ import {
   resolveProspectListCity,
   resolveProspectListOrder,
 } from '@/lib/data/prospecting/types'
+import { prospectDetailHref } from '@/lib/data/prospecting/detail-href'
+import { isProspectDocClientReady } from '@/lib/data/prospecting/doc-ready'
 import { formatDate } from '@/lib/format/date'
 import { Button, HiddenField, QueueRow, SearchField, VerdictLine } from '@/components/admin/v2'
 import type { AdminState } from '@/components/admin/v2'
@@ -80,7 +82,8 @@ function hrefFor(
 /** The row's state word + tone, from the same rule the summary counts use. */
 function rowState(row: ProspectRow, bucket: ProspectBucket): { word: string; tone: AdminState } {
   if (bucket === 'sent') return { word: 'Sent', tone: 'ok' }
-  if (bucket === 'sendable') return { word: 'Send', tone: 'ok' }
+  // Desk walks: demote send-forward tone — detail still owns Send.
+  if (bucket === 'sendable') return { word: 'Review', tone: 'ok' }
   if (bucket === 'no-phone') {
     // Pine Vista / Nugget: ready audit + contact points but no CRM person — not Send.
     if (row.personId == null) return { word: 'Link contact', tone: 'waiting' }
@@ -89,6 +92,10 @@ function rowState(row: ProspectRow, bucket: ProspectBucket): { word: string; ton
   if (bucket === 'excluded') return { word: 'Blocked', tone: 'down' }
   if (row.doc.state === 'building') return { word: 'Building', tone: 'waiting' }
   if (row.doc.state === 'failed') return { word: 'Failed', tone: 'down' }
+  // Built draft (not client-ready) — never Build / Send paint.
+  if (row.doc.state === 'ready' && !isProspectDocClientReady(row.doc.status)) {
+    return { word: row.doc.status === 'draft' ? 'Draft' : 'Fix CMA', tone: 'waiting' }
+  }
   return { word: 'Build', tone: 'waiting' }
 }
 
@@ -112,12 +119,26 @@ function rowContext(row: ProspectRow, bucket: ProspectBucket): string {
   } else if (bucket === 'needs-audit') {
     if (row.doc.state === 'building') bits.push('audit building now')
     else if (row.doc.state === 'failed') bits.push(`build failed: ${row.doc.reason ?? 'unknown error'}`)
-    else bits.push('no audit yet, build it first')
+    else if (row.doc.state === 'ready' && !isProspectDocClientReady(row.doc.status)) {
+      bits.push(
+        row.doc.status === 'draft'
+          ? 'draft built — approve before ready-to-send'
+          : 'CMA not client-ready yet',
+      )
+    } else bits.push('no audit yet, build it first')
   } else if (bucket === 'no-phone') {
     if (row.personId == null) {
-      bits.push('audit ready, link a CRM contact before send')
+      bits.push(
+        row.doc.state === 'ready' && isProspectDocClientReady(row.doc.status)
+          ? 'audit ready, link a CRM contact before send'
+          : 'link a CRM contact before send',
+      )
     } else {
-      bits.push('audit ready, no phone on file')
+      bits.push(
+        row.doc.state === 'ready' && isProspectDocClientReady(row.doc.status)
+          ? 'audit ready, no phone on file'
+          : 'no phone on file',
+      )
       // Never paint email-open when market hard-skip would also hide Send.
       if (
         !row.compliance.relisted &&
@@ -217,6 +238,32 @@ export default async function ProspectingPage({
         </Link>
       </div>
 
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+        {sort === PROSPECT_LIST_DEFAULT_SORT && dir === PROSPECT_LIST_DEFAULT_DIR ? (
+          <>
+            Oldest first
+            {' · '}
+            <Link
+              href={hrefFor(kind, status, q, 1, 'date', 'desc', city, cityExplicitAll)}
+              style={{ color: 'var(--a-accent)', textDecoration: 'none' }}
+            >
+              Newest first
+            </Link>
+          </>
+        ) : (
+          <>
+            Newest first
+            {' · '}
+            <Link
+              href={hrefFor(kind, status, q, 1, PROSPECT_LIST_DEFAULT_SORT, PROSPECT_LIST_DEFAULT_DIR, city, cityExplicitAll)}
+              style={{ color: 'var(--a-accent)', textDecoration: 'none' }}
+            >
+              Oldest first
+            </Link>
+          </>
+        )}
+      </p>
+
       <form method="GET" style={{ margin: '4px 0 16px' }}>
         {kind !== 'expired' ? <HiddenField name="kind" value={kind} /> : null}
         {status !== 'all' ? <HiddenField name="status" value={status} /> : null}
@@ -224,6 +271,8 @@ export default async function ProspectingPage({
         {!cityExplicitAll && city && !(kind === 'expired' && city === PROSPECT_EXPIRED_DEFAULT_CITY) ? (
           <HiddenField name="city" value={city} />
         ) : null}
+        {sort !== PROSPECT_LIST_DEFAULT_SORT ? <HiddenField name="sort" value={sort} /> : null}
+        {dir !== PROSPECT_LIST_DEFAULT_DIR ? <HiddenField name="dir" value={dir} /> : null}
         <SearchField
           style={{ width: '100%' }}
           name="q"
@@ -237,29 +286,50 @@ export default async function ProspectingPage({
         {result.rows.map((row) => {
           const bucket = classifyProspect(row.doc, row.compliance, row.sendable, row.personId)
           const state = rowState(row, bucket)
-          const openHref = `/admin/prospecting/${row.kind}/${encodeURIComponent(row.id)}`
-          const needsBuild = bucket === 'needs-audit' && row.doc.state !== 'building'
+          // Hard <a> (not soft Link): desk Open was flaky under RSC soft-nav; deep links work.
+          const openHref = prospectDetailHref(row.kind, row.id)
+          const draftBuilt =
+            row.doc.state === 'ready' && !isProspectDocClientReady(row.doc.status)
+          // Build only when there is truly no usable audit yet (Nugget: Build OK; no fake Review).
+          const needsBuild =
+            bucket === 'needs-audit' &&
+            !draftBuilt &&
+            (row.doc.state === 'none' || row.doc.state === 'failed')
+          const reviewLabel = kind === 'fsbo' ? 'Review CMA' : 'Review'
           return (
             <QueueRow
               key={`${row.kind}:${row.id}`}
               kind={state.word}
               kindTone={state.tone}
               title={
-                <Link href={openHref} style={{ color: 'inherit', textDecoration: 'none' }}>
+                <a href={openHref} style={{ color: 'inherit', textDecoration: 'none' }}>
                   {/* `||` not `??` — FSBO scrapes can leave '' addresses */}
                   {row.streetAddress?.trim() || row.fullAddress?.trim() || 'Address pending'}
                   {row.city ? `, ${row.city}` : ''}
-                </Link>
+                </a>
               }
               context={rowContext(row, bucket)}
               age={daysAgo(kind === 'expired' ? row.expiredAt : row.detectedAt)}
               action={
                 bucket === 'sendable' ? (
-                  <Link href={openHref} className="av2-btn" style={{ textDecoration: 'none' }}>
-                    Review &amp; send
-                  </Link>
+                  <a href={openHref} className="av2-btn" style={{ textDecoration: 'none' }}>
+                    {reviewLabel}
+                  </a>
+                ) : draftBuilt && row.doc.state === 'ready' ? (
+                  <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
+                    <a
+                      href={`/admin/cmas/${row.doc.slug}`}
+                      className="av2-btn av2-btn--quiet"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      {row.doc.status === 'draft' ? 'Review CMA' : 'Open CMA'}
+                    </a>
+                    <a href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                      Open
+                    </a>
+                  </span>
                 ) : needsBuild ? (
-                  <span style={{ display: 'inline-flex', gap: 8 }}>
+                  <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
                     <form action={buildProspectDocFromWorklist}>
                       <HiddenField name="kind" value={row.kind} />
                       <HiddenField name="id" value={row.id} />
@@ -267,14 +337,14 @@ export default async function ProspectingPage({
                         {row.doc.state === 'failed' ? 'Retry build' : 'Build audit'}
                       </Button>
                     </form>
-                    <Link href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                    <a href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
                       Open
-                    </Link>
+                    </a>
                   </span>
                 ) : (
-                  <Link href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                  <a href={openHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
                     Open
-                  </Link>
+                  </a>
                 )
               }
             />

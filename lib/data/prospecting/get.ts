@@ -14,6 +14,7 @@ import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
+import { isProspectDocClientReady } from './doc-ready'
 import { blockAllChannels, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
@@ -171,6 +172,7 @@ export function resolvePersonId(row: RawRow): number | null {
 export function computeSendable(doc: ProspectDocState, compliance: { hardStop: boolean; relisted: boolean; offMarket: boolean; suppressedSms: boolean; noPhone: boolean }): boolean {
   return (
     doc.state === 'ready' &&
+    isProspectDocClientReady(doc.status) &&
     !compliance.hardStop &&
     !compliance.relisted &&
     !compliance.offMarket &&
