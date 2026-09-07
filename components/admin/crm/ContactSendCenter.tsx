@@ -53,7 +53,7 @@ import type { ContactBpo } from '@/lib/data/crm/getContactBpos'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
 import { sendDeliverable } from '@/app/actions/send-deliverable'
 import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
-import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
+import { cmaReviewSendHref } from '@/lib/cma/crm-compose-href'
 
 type Area = { slug: string; label: string }
 
@@ -178,6 +178,7 @@ export function ContactSendCenter(props: {
   const [bpoFull, setBpoFull] = useState(false)
   // CMA state
   const [cmaSlug, setCmaSlug] = useState(attachableCmas[0]?.slug ?? '')
+  const cmaReviewHref = cmaReviewSendHref(cmaSlug)
   // Market report state
   const [areas, setAreas] = useState<string[]>(props.subscribedAreas)
   const [subscribe, setSubscribe] = useState(false)
@@ -532,13 +533,19 @@ export function ContactSendCenter(props: {
                     </option>
                   ))}
                 </SelectField>
-                <a
-                  href={cmaCrmComposeHref({ personId: props.personId, slug: cmaSlug, channel: 'email' })}
-                  className="av2-btn av2-btn--touch w-full"
-                  style={{ textDecoration: 'none' }}
-                >
-                  Open in Messages
-                </a>
+                {cmaReviewHref ? (
+                  <a
+                    href={cmaReviewHref}
+                    className="av2-btn av2-btn--touch w-full"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Review & send
+                  </a>
+                ) : (
+                  <span className="av2-btn av2-btn--quiet av2-btn--touch w-full" style={{ opacity: 0.6 }}>
+                    Pick a CMA
+                  </span>
+                )}
                 <a
                   href={props.cmaBuildHref}
                   className="block text-center text-xs font-medium hover:underline"

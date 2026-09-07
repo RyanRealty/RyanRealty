@@ -1,8 +1,9 @@
 /**
  * OwnedHomeCard — the compact "home they own" card for the contact landing.
  * A single thumbnail + address + a comp action: "Build CMA" when none exists
- * (opens the ASYNC kick-off sheet — the litmus surface), or "Review" +
- * "Send from CRM" once a CMA document is ready. Send opens compose.
+ * (opens the ASYNC kick-off sheet — the litmus surface), or "Review & send"
+ * once a CMA document is ready. Primary path is CMA Review EmailBodyEditor —
+ * never People Blank compose.
  *
  * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
  * Card -> av2-pane (padding trimmed back to the original p-3), and the two
@@ -24,12 +25,10 @@ export function OwnedHomeCard(props: {
   placeLabel: string | null
   boundary: { type: string; coordinates: unknown } | null
   onMarket: string | null
-  /** Set when a CMA draft is built + awaiting review/send. */
-  reviewDeliveryId: string | null
+  /** CMA review slug (not a delivery UUID). */
+  reviewSlug: string | null
   /** Opens the async CMA kick-off sheet pre-filled for this home ("?intent=cma"). */
   buildHref: string
-  /** CRM compose for this CMA — attach PDF / text-me / email draft. */
-  composeHref: string | null
 }) {
   return (
     <div id="home" className="av2-pane" style={{ padding: 'var(--a-s3)' }}>
@@ -83,21 +82,14 @@ export function OwnedHomeCard(props: {
           ) : null}
 
           <div className="mt-auto flex flex-wrap gap-2 pt-2">
-            {props.reviewDeliveryId ? (
-              <>
-                <a
-                  href={`/admin/cmas/${props.reviewDeliveryId}`}
-                  className="av2-btn av2-btn--quiet h-9"
-                  style={{ textDecoration: 'none' }}
-                >
-                  Review comp
-                </a>
-                {props.composeHref ? (
-                  <a href={props.composeHref} className="av2-btn h-9" style={{ textDecoration: 'none' }}>
-                    Send from CRM
-                  </a>
-                ) : null}
-              </>
+            {props.reviewSlug ? (
+              <a
+                href={`/admin/cmas/${props.reviewSlug}`}
+                className="av2-btn h-9"
+                style={{ textDecoration: 'none' }}
+              >
+                Review & send
+              </a>
             ) : (
               <a href={props.buildHref} className="av2-btn h-9" style={{ textDecoration: 'none' }}>
                 Build CMA

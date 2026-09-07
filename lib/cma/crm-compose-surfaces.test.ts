@@ -12,8 +12,9 @@ const contactCmas = readFileSync(resolve('lib/data/crm/getContactCmas.ts'), 'utf
 const comms = readFileSync(resolve('app/admin/(protected)/people/[id]/CommsSection.tsx'), 'utf8')
 const header = readFileSync(resolve('app/admin/(protected)/people/[id]/PersonIdentityHeader.tsx'), 'utf8')
 const personPage = readFileSync(resolve('app/admin/(protected)/people/[id]/page.tsx'), 'utf8')
+const hrefMod = readFileSync(resolve('lib/cma/crm-compose-href.ts'), 'utf8')
 
-describe('CMA send surfaces route through CRM compose', () => {
+describe('CMA send surfaces route through Review EmailBodyEditor', () => {
   it('review stays on shared EmailBodyEditor — Schedule/Send now, no People compose hop', () => {
     expect(review).toMatch(/approveAndDeliverCma/)
     expect(review).toMatch(/EmailBodyEditor/)
@@ -24,10 +25,12 @@ describe('CMA send surfaces route through CRM compose', () => {
     expect(review).not.toMatch(/mailto:/)
   })
 
-  it('Send Center CMA tab opens Messages instead of one-click sendDeliverable', () => {
-    expect(sendCenter).toMatch(/cmaCrmComposeHref/)
-    expect(sendCenter).toMatch(/Open in Messages/)
+  it('Send Center CMA tab opens Review & send, never Blank People compose', () => {
+    expect(sendCenter).toMatch(/cmaReviewSendHref/)
+    expect(sendCenter).toMatch(/Review & send/)
     expect(sendCenter).toMatch(/hasDocument/)
+    expect(sendCenter).not.toMatch(/cmaCrmComposeHref/)
+    expect(sendCenter).not.toMatch(/Open in Messages/)
     expect(sendCenter).not.toMatch(/kind:\s*'cma'/)
     expect(sendCenter).not.toMatch(/label="Send CMA"/)
     expect(sendCenter).not.toMatch(/mailto:/)
@@ -43,13 +46,23 @@ describe('CMA send surfaces route through CRM compose', () => {
     expect(comms).toMatch(/textMePhone/)
   })
 
-  it('contact CMA card and owned-home card open compose, not a send form', () => {
-    expect(card).toMatch(/cmaCrmComposeHref/)
-    expect(card).toMatch(/Send from CRM/)
+  it('contact CMA card and owned-home card open Review, not People Blank compose', () => {
+    expect(card).toMatch(/Review & send/)
+    expect(card).toMatch(/reviewUrl/)
+    expect(card).not.toMatch(/cmaCrmComposeHref/)
+    expect(card).not.toMatch(/Send from CRM/)
     expect(card).not.toMatch(/sendAction/)
-    expect(home).toMatch(/composeHref/)
+    expect(home).toMatch(/reviewSlug/)
+    expect(home).toMatch(/Review & send/)
+    expect(home).not.toMatch(/composeHref/)
+    expect(home).not.toMatch(/Send from CRM/)
     expect(home).not.toMatch(/sendAction/)
-    expect(home).not.toMatch(/Send to lead/)
+  })
+
+  it('href helper never returns People List Blank fallback', () => {
+    expect(hrefMod).toMatch(/cmaReviewSendHref/)
+    expect(hrefMod).toMatch(/return null/)
+    expect(hrefMod).not.toMatch(/return '\/admin\/people'/)
   })
 
   it('stage action renders a PDF and uploads it — it does not send', () => {

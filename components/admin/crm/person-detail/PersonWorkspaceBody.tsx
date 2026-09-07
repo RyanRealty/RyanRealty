@@ -252,11 +252,6 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
     })
   }
 
-  const readyCma = (full.cmaDeliveries ?? []).find(
-    (d) => String((d as { status?: string }).status ?? '') === 'ready',
-  ) as { id?: string } | undefined
-  const reviewableCmaId = readyCma?.id ? String(readyCma.id) : null
-
   const _pid = person.id
   async function addCollaboratorForm(formData: FormData): Promise<void> {
     'use server'
@@ -572,7 +567,6 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
                 subdivision={subdivision}
                 contactCmas={contactCmas}
                 contactBpos={contactBpos}
-                reviewableCmaId={reviewableCmaId}
               />
             </Suspense>
           }

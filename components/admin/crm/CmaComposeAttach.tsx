@@ -55,7 +55,7 @@ export function CmaComposeAttach(props: {
     if (autoSlug.current === props.composeSlug) return
     autoSlug.current = props.composeSlug
     stage('email', props.composeSlug)
-    // Auto-attach once when arriving from the CMA review "Send from CRM" link.
+    // Auto-attach once when arriving via ?composeCma= (in-person deep link only).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.composeSlug])
 
