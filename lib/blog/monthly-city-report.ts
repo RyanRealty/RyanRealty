@@ -9,7 +9,8 @@
  * hand-made; this makes them a cron.
  *
  * §0 discipline: every figure here arrives from a DAL read the caller names
- * (getMarketTrend monthly rows, getCityReportSnapshot live block). Nothing is
+ * (the Market Truth detached monthly series the market page charts, and the
+ * getCityReportSnapshot live block the page's hero reads). Nothing is
  * estimated. A month with too few closings, a missing median, or a trend
  * whose last completed month is not the requested one REFUSES to build. The
  * months-of-supply sentence uses marketVerdict, the one bucket rule
@@ -27,7 +28,7 @@ export const MONTHLY_REPORT_CITIES: readonly MonthlyReportCity[] = [
   { slug: 'redmond', label: 'Redmond', marketHref: '/housing-market/redmond', searchHref: '/homes-for-sale?city=redmond' },
 ]
 
-/** One completed month from the stats cache (getMarketTrend point shape). */
+/** One completed month, in the trend-point shape (Market Truth series carries price and count only). */
 export type MonthlyReportMonth = {
   periodStart: string
   medianSalePrice: number | null

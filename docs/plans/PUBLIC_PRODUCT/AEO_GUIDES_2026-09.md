@@ -260,9 +260,11 @@ All nine new guides now carry real, owned, grade-A library photos, nine distinct
 - **Monthly city report, Bend and Redmond.** `lib/blog/monthly-city-report.ts` (pure builder,
   tested) + `lib/data/blog/blogPostWrites.ts` (voice-gated cron write path, registered in
   `ci:voice-send-paths`) + `app/api/cron/blog-monthly-city-report` (3rd of the month, 15:00
-  UTC; `?month=YYYY-MM` backfills, `?dry=1` validates). Figures come from `getMarketTrend`
-  monthly rows and `getCityReportSnapshot` live block, the same reads the market pages use,
-  each stated once with its month. Refuses on fewer than 15 closings, a missing median, or a
+  UTC; `?month=YYYY-MM` backfills, `?dry=1` validates). Figures come from the Market Truth
+  detached monthly series the market page charts (`getPublicDetachedMonthly`) and the
+  `getCityReportSnapshot` live block, each stated once with its month. The stats cache was
+  the first draft's source and disagreed with the page on Bend's August median ($705,000
+  against $749,500), so the cron reads what the page reads. Refuses on fewer than 15 closings, a missing median, or a
   cache whose last completed month is not the target. Slug pattern matches the hand-made July
   reports (`bend-oregon-market-report-august-2026`).
 - **Backlog, second half.** 52 published posts untouched today are in figure-by-figure triage
