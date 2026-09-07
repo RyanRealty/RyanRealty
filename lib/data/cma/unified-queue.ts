@@ -69,9 +69,19 @@ export function isSendableQueueState(state: CmaQueueState): boolean {
   return SENDABLE_STATES.has(state)
 }
 
+/**
+ * Which table the row came from. Load-bearing, not cosmetic: a `bpo` row lives
+ * in `broker_price_opinions`, its detail page is /admin/bpo, and the CMA
+ * approve/send actions cannot operate on it.
+ */
+export type CmaDocKind = 'cma' | 'bpo'
+
 export type CmaQueueRow = {
   id: string
   slug: string
+  docKind: CmaDocKind
+  /** Where to open this document. Resolved here so no surface guesses. */
+  detailHref: string
   docType: string | null
   /** Raw `cmas.status` (draft | finalized | delivered | archived). */
   status: string
@@ -156,7 +166,7 @@ function hasRealDocument(htmlPath: unknown): boolean {
   return !!p && !p.startsWith('pending:')
 }
 
-function resolveState(args: {
+export function resolveCmaQueueState(args: {
   status: string
   archivedAt: string | null
   buildError: string | null
@@ -180,7 +190,7 @@ function resolveState(args: {
   return 'ready'
 }
 
-type BuildSummary = {
+export type CmaBuildSummary = {
   needs_review?: boolean
   review_reason?: string | null
   audit?: {
@@ -191,7 +201,7 @@ type BuildSummary = {
   } | null
 }
 
-function readAudit(summary: BuildSummary | null): {
+export function readCmaAuditVerdict(summary: CmaBuildSummary | null): {
   verdict: CmaAuditVerdict
   auditSummary: string | null
   criticalCount: number
@@ -308,11 +318,126 @@ async function fetchProspectContext(
   return out
 }
 
+
+/**
+ * Columns the queue needs off `broker_price_opinions`.
+ *
+ * This read lives here rather than in lib/data/bpo/reads.ts on purpose: that
+ * file is the door for the BPO ENGINE (lib/bpo/**) and its worklist projection
+ * carries neither `build_summary` nor `html_path`, which are exactly what the
+ * queue state depends on. Both files sit inside lib/data/, so the DAL boundary
+ * (G1) holds either way. Nothing here writes.
+ */
+const BPO_COLUMNS =
+  'id, slug, subject_address, subject_subdivision, subject_city, opinion_value, value_low, ' +
+  'value_high, comps_count, broker_slug, purpose, status, requested_by, person_id, ' +
+  'last_sent_at, sent_count, created_at, finalized_at, archived_at, build_error, ' +
+  'html_path, build_summary'
+
+/**
+ * One `broker_price_opinions` row as a queue line — PURE, so the shape is
+ * testable without a database.
+ *
+ * Two deliberate nulls. `contactEmail` is null because the table has no client
+ * email column at all: the only humans on a BPO are the broker who asked
+ * (`requested_by`) and an optional CRM person link, and `sendBpoToLead` refuses
+ * to run without that link. Leaving it null keeps every send guard in this
+ * queue closed on a BPO — a BPO is sent from its own page, by a broker, after
+ * they have read it. `theirPrice` is null because a broker price opinion has no
+ * counter-price to argue with; inventing one from the subject's list price
+ * would put a number on the row nobody quoted.
+ */
+export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
+  const slug = String(r.slug)
+  const summary = (r.build_summary ?? null) as CmaBuildSummary | null
+  const audit = readCmaAuditVerdict(summary)
+  const hasDocument = hasRealDocument(r.html_path)
+  const status = String(r.status ?? 'draft')
+  const sentAt = str(r.last_sent_at) ?? ((num(r.sent_count) ?? 0) > 0 ? str(r.created_at) : null)
+
+  return {
+    id: String(r.id),
+    slug,
+    docKind: 'bpo',
+    detailHref: `/admin/bpo/${slug}`,
+    docType: 'bpo',
+    status,
+    state: resolveCmaQueueState({
+      status,
+      archivedAt: str(r.archived_at),
+      buildError: str(r.build_error),
+      hasDocument,
+      needsReview: summary?.needs_review === true,
+      auditVerdict: audit.verdict,
+      deliveredAt: null,
+      emailSentAt: sentAt,
+      // A BPO has no cold drip to wait in.
+      queuedAt: null,
+    }),
+    origin: 'bpo',
+    sendMode: sendModeForOrigin('bpo'),
+
+    address: String(r.subject_address ?? ''),
+    city: str(r.subject_city),
+    subdivision: str(r.subject_subdivision),
+
+    contactName: str(r.requested_by),
+    contactEmail: null,
+    brokerSlug: str(r.broker_slug),
+
+    recommendedList: num(r.opinion_value),
+    valueLow: num(r.value_low),
+    valueHigh: num(r.value_high),
+    compsCount: num(r.comps_count),
+
+    theirPrice: null,
+    theirPriceLabel: null,
+    theirPriceDelta: null,
+    offMarketAt: null,
+
+    hasDocument,
+    buildError: str(r.build_error),
+    needsReview: summary?.needs_review === true,
+    auditVerdict: audit.verdict,
+    reviewReason: str(summary?.review_reason ?? null),
+    auditSummary: audit.auditSummary,
+    auditCriticalCount: audit.criticalCount,
+
+    createdAt: str(r.created_at),
+    deliveredAt: null,
+    queuedAt: null,
+    emailSentAt: sentAt,
+
+    prospectKind: null,
+    prospectId: null,
+  }
+}
+
+/** Every BPO as a queue row. Throws rather than returning [] — an empty read
+ *  would silently drop a whole lane out of the list (no-poison-null). */
+async function fetchBpoQueueRows(
+  sb: ReturnType<typeof createServiceClient>,
+  includeArchived: boolean,
+): Promise<CmaQueueRow[]> {
+  let q = sb.from('broker_price_opinions').select(BPO_COLUMNS)
+  if (!includeArchived) q = q.is('archived_at', null)
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(1000)
+  if (error) throw new Error(`cma queue: bpo read failed: ${error.message}`)
+  return ((data ?? []) as unknown as Row[]).map(mapBpoQueueRow)
+}
+
 /**
  * Every CMA in one list, newest first, with its origin context resolved.
  *
  * `includeArchived` is off by default — an archived row is a decision already
  * made and does not belong in a work queue.
+ *
+ * BPOs are unioned in (Matt 2026-09-07: "expireds/fsbo/seller valuation/and
+ * BPOs all using the same engine but with their own nuances"). They are the one
+ * lane that does not live in `cmas`, so their rows are read from
+ * `broker_price_opinions` and mapped to the same shape. No data moves, and each
+ * row carries `docKind` + `detailHref` so a caller can never send a BPO down a
+ * CMA path.
  */
 export async function listCmaQueue(options: {
   limit?: number
@@ -334,15 +459,18 @@ export async function listCmaQueue(options: {
   if (error) throw new Error(`cma queue read failed: ${error.message}`)
 
   const cmaRows = (data ?? []) as unknown as Row[]
-  const context = await fetchProspectContext(sb)
+  const [context, bpoRows] = await Promise.all([
+    fetchProspectContext(sb),
+    fetchBpoQueueRows(sb, options.includeArchived === true),
+  ])
 
   const rows: CmaQueueRow[] = cmaRows.map((r) => {
     const id = String(r.id)
     const docType = str(r.doc_type)
     const origin = classifyCmaOrigin(str(r.request_source), docType)
     const ctx = context.get(id) ?? null
-    const summary = (r.build_summary ?? null) as BuildSummary | null
-    const audit = readAudit(summary)
+    const summary = (r.build_summary ?? null) as CmaBuildSummary | null
+    const audit = readCmaAuditVerdict(summary)
     const hasDocument = hasRealDocument(r.html_path)
     const status = String(r.status ?? 'draft')
     const recommendedList = num(r.recommended_list)
@@ -354,9 +482,11 @@ export async function listCmaQueue(options: {
     return {
       id,
       slug: String(r.slug),
+      docKind: 'cma',
+      detailHref: `/admin/cmas/${String(r.slug)}`,
       docType,
       status,
-      state: resolveState({
+      state: resolveCmaQueueState({
         status,
         archivedAt: str(r.archived_at),
         buildError: str(r.build_error),
@@ -411,5 +541,9 @@ export async function listCmaQueue(options: {
     }
   })
 
-  return { rows, total: count ?? rows.length }
+  // Newest first across both tables, so the union reads as one list.
+  const all = [...rows, ...bpoRows].sort((a, b) =>
+    (b.createdAt ?? '').localeCompare(a.createdAt ?? ''),
+  )
+  return { rows: all, total: (count ?? rows.length) + bpoRows.length }
 }

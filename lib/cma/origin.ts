@@ -16,6 +16,7 @@ export type CmaOrigin =
   | 'fsbo'
   | 'seller-valuation'
   | 'lead-form'
+  | 'bpo'
   | 'broker'
   | 'internal'
   | 'unknown'
@@ -26,6 +27,7 @@ export const CMA_ORIGIN_LABEL: Record<CmaOrigin, string> = {
   fsbo: 'FSBO',
   'seller-valuation': 'Seller form',
   'lead-form': 'Lead form',
+  bpo: 'BPO',
   broker: 'Broker',
   internal: 'Internal',
   unknown: 'Unknown',
@@ -40,13 +42,35 @@ export const CMA_ORIGIN_INTENT: Record<CmaOrigin, string> = {
   fsbo: 'Selling it themselves. Show the competition at their price and why FSBOs stall.',
   'seller-valuation': 'A seller weighing a move asked what it is worth.',
   'lead-form': 'Asked for a value through a lead form.',
+  // Verified against lib/bpo/build.ts + app/actions/bpo-admin.ts: every BPO is
+  // started by a signed-in broker, from the admin form or a CRM contact card,
+  // and the broker picks the purpose (pre-listing, listing appointment,
+  // internal review, lender / relocation, seller check-in). There is no
+  // inbound lender or asset-manager request path in this system.
+  bpo: 'A broker asked for the brokerage opinion of value. The purpose on the row says why.',
   broker: 'A broker requested this for their client.',
   internal: 'Internal build — not client outreach.',
   unknown: 'Origin not recorded on the row.',
 }
 
-const EXPIRED_SOURCES = new Set(['expired-listing-cron', 'expired-dashboard', 'expired-outreach-queue'])
-const FSBO_SOURCES = new Set(['fsbo-cron', 'fsbo-dashboard', 'fsbo-lp', 'fsbo-outreach'])
+/**
+ * `*-backfill` are the lane-recovery tokens written by
+ * supabase/migrations/20260907130000_cmas_request_source_lane_backfill.sql.
+ *
+ * `request_source` only became a column on 2026-08-27, so every row built
+ * before that carries NULL no matter which path built it. The prospect link
+ * tables (`expired_listings.cma_id`, `fsbo_listings.cma_id`) prove the LANE
+ * for those rows, but both the cron and the dashboard write that link, so the
+ * trigger is not recoverable. These tokens record what is true — the lane —
+ * rather than asserting a cron that may not have built it (§0).
+ */
+const EXPIRED_SOURCES = new Set([
+  'expired-listing-cron',
+  'expired-dashboard',
+  'expired-outreach-queue',
+  'expired-backfill',
+])
+const FSBO_SOURCES = new Set(['fsbo-cron', 'fsbo-dashboard', 'fsbo-lp', 'fsbo-outreach', 'fsbo-backfill'])
 const SELLER_SOURCES = new Set(['seller-lp', 'seller-home-value'])
 const LEAD_FORM_SOURCES = new Set(['lead-form', 'contact-form'])
 const BROKER_SOURCES = new Set(['admin-manual', 'admin-rebuild', 'crm-contact-card', 'crm-kickoff'])
@@ -80,7 +104,12 @@ export function classifyCmaOrigin(
  * now, cold goes through the drip) and which email opening is honest.
  */
 export function isAskedOrigin(origin: CmaOrigin): boolean {
-  return origin === 'seller-valuation' || origin === 'lead-form' || origin === 'broker'
+  return (
+    origin === 'seller-valuation' ||
+    origin === 'lead-form' ||
+    origin === 'broker' ||
+    origin === 'bpo'
+  )
 }
 
 /** Cold outreach — nobody requested it, so it is spaced by the weekday drip. */

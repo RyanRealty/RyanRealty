@@ -296,6 +296,7 @@ export default async function AdminCmaReviewPage({
         brokerSlug={(row.broker_slug as string | null) ?? null}
         brokers={brokers}
         hasDocument={hasDocument}
+        origin={origin}
         sendMode={sendMode}
         inDrip={inDrip}
         dripEtaLabel={dripEtaLabel}

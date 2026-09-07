@@ -7,7 +7,11 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listCmaQueue, type CmaQueueRow, type CmaQueueState } from '@/lib/data'
 import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
-import { approveAndDeliverCma } from '@/app/actions/cma-queue'
+import { approveAndDeliverCma, setCmaLaneAutoSendAction } from '@/app/actions/cma-queue'
+import { getLaneSettings, AUTO_SEND_LANES } from '@/lib/data/cma/lane-settings'
+import { isColdOrigin } from '@/lib/cma/origin'
+import { hasCapability } from '@/lib/admin/capabilities'
+import { LaneAutoSendSwitch } from '@/app/admin/(protected)/cmas/_components/queue/LaneAutoSendSwitch.client'
 import { QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { QueueAction } from '@/app/admin/(protected)/cmas/_components/queue/QueueAction.client'
 import { DripQueueActions } from '@/app/admin/(protected)/cmas/_components/queue/DripQueueActions.client'
@@ -62,6 +66,7 @@ const ORIGIN_ORDER: CmaOrigin[] = [
   'fsbo',
   'seller-valuation',
   'lead-form',
+  'bpo',
   'broker',
   'internal',
   'unknown',
@@ -96,6 +101,10 @@ function whyLine(r: CmaQueueRow): string | null {
 }
 
 function actionLabelFor(r: CmaQueueRow): string | null {
+  // A BPO is finalized and sent from /admin/bpo/[slug], which is the only path
+  // that can resolve its recipient (a linked CRM person). Offering an approve
+  // button here would be a button that cannot do its job.
+  if (r.docKind !== 'cma') return null
   if (r.state !== 'ready') return null
   if (!r.contactEmail) return null
   if (r.sendMode === 'now') return 'Send now'
@@ -122,12 +131,102 @@ function asView(r: CmaQueueRow): CmaQueueViewRow {
   }
 }
 
+/**
+ * The lane strip: one card per lane, its work in numbers, and the Auto-send
+ * switch that decides whether that lane still needs a per-document tap.
+ *
+ * Every lane renders whether or not it has documents today — the control has to
+ * be findable before the first one arrives. `internal` and `unknown` have no
+ * card: both classify to sendMode 'manual', so a switch there would be a
+ * control with nothing behind it.
+ */
+function LaneStrip({
+  rows,
+  settings,
+  canFlip,
+}: {
+  rows: CmaQueueRow[]
+  settings: Awaited<ReturnType<typeof getLaneSettings>>
+  canFlip: boolean
+}) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(228px, 1fr))',
+        gap: 8,
+        margin: '0 0 12px',
+      }}
+    >
+      {AUTO_SEND_LANES.map((lane) => {
+        const mine = rows.filter((r) => r.origin === lane)
+        const n = (s: CmaQueueState) => mine.filter((r) => r.state === s).length
+        const setting = settings[lane]
+        const cold = isColdOrigin(lane)
+        // A BPO is the brokerage's own opinion of value, read by a broker, and
+        // its send path needs a linked CRM person. The switch exists in the
+        // vocabulary and has nothing behind it — say so rather than arm it.
+        const disabledReason = lane === 'bpo' ? 'Sent from the BPO page' : null
+        return (
+          <div
+            key={lane}
+            style={{
+              border: '1px solid var(--a-border)',
+              borderRadius: 'var(--a-r-md)',
+              background: 'var(--a-surface)',
+              padding: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              minWidth: 0,
+            }}
+          >
+            <Link
+              href={cmaQueueHref({ origin: lane, state: 'all' })}
+              style={{ color: 'var(--a-text)', textDecoration: 'none', fontWeight: 600 }}
+            >
+              {CMA_ORIGIN_LABEL[lane]}{' '}
+              <span style={{ color: 'var(--a-text-2)', fontWeight: 400, fontVariantNumeric: 'tabular-nums' }}>
+                {mine.length}
+              </span>
+            </Link>
+            <span
+              style={{
+                color: 'var(--a-text-2)',
+                fontSize: 'var(--a-text-xs)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {n('ready')} ready · {n('flagged')} flagged · {n('failed')} failed · {n('queued')} in drip ·{' '}
+              {n('sent')} sent
+            </span>
+            {canFlip ? (
+              <LaneAutoSendSwitch
+                lane={lane}
+                laneLabel={CMA_ORIGIN_LABEL[lane]}
+                on={setting.autoSend}
+                cold={cold}
+                disabledReason={disabledReason}
+                setAutoSend={setCmaLaneAutoSendAction}
+              />
+            ) : (
+              <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-xs)' }}>
+                Auto-send {setting.autoSend ? 'on' : 'off'}
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default async function CmaQueuePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireAdminPage('prospecting.view')
+  const admin = await requireAdminPage('prospecting.view')
   const sp = await searchParams
   const filters: CmaQueueViewFilters = {
     q: str(sp.q),
@@ -139,7 +238,10 @@ export default async function CmaQueuePage({
     sort: str(sp.sort) as CmaQueueSort | undefined,
   }
 
-  const { rows, total } = await listCmaQueue({ limit: WINDOW })
+  const [{ rows, total }, laneSettings] = await Promise.all([
+    listCmaQueue({ limit: WINDOW }),
+    getLaneSettings(),
+  ])
 
   const { listQueuedFirstTouch, getLastDripSentAt } = await import('@/lib/data/prospecting/drip-queue')
   const [dripQueued, lastDripSentAt] = await Promise.all([
@@ -199,6 +301,12 @@ export default async function CmaQueuePage({
         </Link>
       </VerdictLine>
 
+      <LaneStrip
+        rows={rows}
+        settings={laneSettings}
+        canFlip={hasCapability(admin, 'settings.compliance')}
+      />
+
       <QueueFilters
         filters={filters}
         cities={cities}
@@ -249,7 +357,7 @@ export default async function CmaQueuePage({
               kind={r.state === 'queued' ? STATE_LABEL.queued : CMA_ORIGIN_LABEL[r.origin]}
               kindTone={STATE_TONE[r.state]}
               title={
-                <Link href={`/admin/cmas/${r.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                <Link href={r.detailHref} style={{ color: 'inherit', textDecoration: 'none' }}>
                   {r.address || r.slug}
                 </Link>
               }
@@ -280,7 +388,7 @@ export default async function CmaQueuePage({
                 ) : label ? (
                   <QueueAction slug={r.slug} label={label} approve={approveAndDeliverCma} />
                 ) : (
-                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={`/admin/cmas/${r.slug}`}>
+                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={r.detailHref}>
                     Review
                   </Link>
                 )
