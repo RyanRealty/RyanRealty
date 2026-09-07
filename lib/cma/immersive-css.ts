@@ -253,10 +253,10 @@ table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;dis
 table.comp-matrix .matrix-addr{display:block}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
-@media screen and (max-width:700px){
-  .szn.is-hero{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .szn.is-hero svg{min-width:660px}
-}
+/* NO PAN BOX: every chart ships a 360-unit phone layout. */
+.median-phone{display:none}
+@media screen and (max-width:700px){.median-wide{display:none}.median-phone{display:block}}
+@media print{.median-wide{display:block!important}.median-phone{display:none!important}}
 .pin-map{max-height:60vh;object-fit:cover}
 /* Chapter 3's lead line, under the number that is the chapter title. */
 .worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}

@@ -10,6 +10,7 @@ import {
   askOutcomeBarsSvg,
   daysToOfferPhoneSvg,
   daysToOfferSvg,
+  medianCloseLinePhoneSvg,
   medianCloseLineSvg,
   offerTimingCurvePhoneSvg,
   offerTimingCurveSvg,
@@ -179,7 +180,14 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     market.saleToListRatio != null
       ? dec(market.saleToListRatio <= 2 ? market.saleToListRatio * 100 : market.saleToListRatio, 1)
       : null
-  const chart = medianCloseLineSvg(market.trend ?? [])
+  const trend = market.trend ?? []
+  const chart = medianCloseLineSvg(trend)
+  const chartPhone = medianCloseLinePhoneSvg(trend)
+  const chartHtml = chart
+    ? `<div class="szn median-wide" data-anim="chart">${chart}</div>${
+        chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''
+      }`
+    : ''
   const stats: Array<{ val: string; lbl: string; verdict?: string }> = []
   if (mos != null) {
     stats.push({
@@ -198,7 +206,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
       lbl: `median sold, every ${market.geoLabel} home`,
     })
   }
-  if (stats.length === 0) return chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''
+  if (stats.length === 0) return chartHtml
   const cells = stats
     .map(
       (s) => `<div class="stat">
@@ -209,7 +217,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     )
     .join('')
   return `<div class="stat-strip is-${Math.min(stats.length, 4)}">${cells}</div>
-  ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
+  ${chartHtml}`
 }
 
 export function adjustedCloseRange(
@@ -303,7 +311,7 @@ export function renderDaysToOfferHtml(
   // wide strip in a pan box put the subject's own bar label, the punchline of
   // the chart, outside the visible width of a box nobody scrolls.
   const phone = daysToOfferPhoneSvg(rows, 'How fast homes like yours went', tick)
-  return `<div class="szn is-hero days-wide">${svg}</div>
+  return `<div class="szn days-wide">${svg}</div>
   ${phone ? `<div class="szn days-phone">${phone}</div>` : ''}
   <p class="chart-read">${esc(reading)}</p>`
 }

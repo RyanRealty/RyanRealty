@@ -680,6 +680,18 @@ describe('the phone layouts keep every mark inside the frame', () => {
     }
   })
 
+  it('puts no chart in a pan box on a phone', () => {
+    // CMA_REIMAGINED_2026-09-07.md § The register: "Nothing on a phone ever
+    // sits inside a scroll box: every graphic has a phone drawing." The
+    // median-close line was the last one held at min-width in an overflow box,
+    // and it cropped six of its twelve months at 375.
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      const flat = css.replace(/\s+/g, ' ')
+      expect(flat).not.toMatch(/\.szn\.is-hero\s*\{\s*overflow-x:\s*auto/)
+      expect(flat).not.toMatch(/\.szn[^{]*svg\s*\{\s*min-width/)
+    }
+  })
+
   it('keeps the wide layout for the printed page', () => {
     expect(letter()).toContain('<div class="szn timeline-wide">')
   })
@@ -933,8 +945,8 @@ describe('F8 — the days-to-offer strip fits a phone', () => {
 
   it('leaves the wide strip exactly as it was for the printed page', () => {
     const html = letter()
-    expect(html).toContain('<div class="szn is-hero days-wide">')
-    const wide = /<div class="szn is-hero days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
+    expect(html).toContain('<div class="szn days-wide">')
+    const wide = /<div class="szn days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
     expect(wide).toContain('viewBox="0 0 720')
   })
 })

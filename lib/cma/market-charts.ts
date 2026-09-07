@@ -44,44 +44,65 @@ function scaleY(vals: number[], top: number, bottom: number): (v: number) => num
   return (v: number) => bottom - ((bottom - top) * (v - min)) / span
 }
 
-/** Median close over completed months. Needs six priced months. */
-export function medianCloseLineSvg(points: TrendPoint[]): string {
+/**
+ * Median close over completed months. Needs six priced months.
+ *
+ * Two layouts, exactly one visible: 720 units on paper and at reading width,
+ * 360 drawn to fit below 700px. It was the last chart on the document still
+ * held in a pan box on a phone, which cropped six of its twelve months —
+ * nothing a seller reads sits in a scroll box (blueprint § The register).
+ */
+export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number }): string {
   const priced = [...points]
     .filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
     .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
   if (priced.length < 6) return ''
-  const W = 720
-  const H = 220
+  const W = opts?.width ?? 720
+  const phone = W <= 400
+  const H = phone ? 190 : 220
+  const fs = phone ? 10 : 11
   // The y-value labels sit in a gutter to the LEFT of the plot. Drawn at the
   // plot's own left edge they shared ink with September's mark.
-  const left = 68
-  const right = W - 24
+  const left = phone ? 44 : 68
+  const right = W - (phone ? 8 : 24)
   const top = 28
-  const bottom = 168
+  const bottom = H - 52
   const vals = priced.map((p) => p.medianSalePrice!)
   const y = scaleY(vals, top, bottom)
   const xs = priced.map((_, i) => left + ((right - left) * i) / Math.max(priced.length - 1, 1))
   const ys = vals.map(y)
   const path = linePath(xs, ys)
   const area = `${path} L${xs[xs.length - 1]!.toFixed(1)},${bottom} L${xs[0]!.toFixed(1)},${bottom} Z`
+  // Thin the month axis so two labels never overlap on a phone.
+  let lastTickX = Number.NEGATIVE_INFINITY
   const dots = xs
-    .map(
-      (x, i) =>
-        `<circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="4" fill="#102742"/><text x="${x.toFixed(1)}" y="${bottom + 22}" text-anchor="middle" font-size="11" fill="#102742" opacity="0.75">${monthLabel(priced[i]!.periodStart)}</text>`,
-    )
+    .map((x, i) => {
+      const label = monthLabel(priced[i]!.periodStart)
+      const halfW = label.length * fs * 0.58
+      let tick = ''
+      if (x - lastTickX >= halfW * 2 + 3) {
+        lastTickX = x
+        tick = `<text x="${x.toFixed(1)}" y="${bottom + 22}" text-anchor="middle" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
+      }
+      return `<circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>${tick}`
+    })
     .join('')
   const min = Math.min(...vals)
   const max = Math.max(...vals)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg">
-    <text x="0" y="14" font-size="11" fill="#102742" opacity="0.7">Median close</text>
-    <text x="${left - 10}" y="${(y(max) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="#102742" opacity="0.7">${chartUsd(max)}</text>
-    <text x="${left - 10}" y="${(y(min) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="#102742" opacity="0.7">${chartUsd(min)}</text>
+    <text x="0" y="14" font-size="${fs}" fill="#102742" opacity="0.7">Median close</text>
+    <text x="${left - 10}" y="${(y(max) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(max)}</text>
+    <text x="${left - 10}" y="${(y(min) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(min)}</text>
     <path d="${area}" fill="#102742" fill-opacity="0.08"/>
     <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
     ${dots}
   </svg>
   <p class="small">Median close by month. Range ${chartUsd(min)} to ${chartUsd(max)}.</p>`
+}
+
+export function medianCloseLinePhoneSvg(points: TrendPoint[]): string {
+  return medianCloseLineSvg(points, { width: 360 })
 }
 
 // ── The price ruler ─────────────────────────────────────────────────────────
