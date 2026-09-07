@@ -214,7 +214,7 @@ export const posts: BlogPostSeed[] = [
 <p>CC&Rs (Covenants, Conditions, and Restrictions) are the governing documents that define what you can and cannot do with your property within an HOA. In Central Oregon, common CC&R provisions include:</p>
 
 <ul>
-<li><strong>Exterior modifications:</strong> Most HOAs require architectural review before exterior changes (paint, siding, roofing, additions, fencing, decks, patios). Some are strict about materials and colors; others are more permissive.</li>
+<li><strong>Exterior modifications:</strong> Most HOAs require architectural review before exterior changes (paint, siding, roofing, additions, fencing, decks, patios). Some are strict about materials and colors. Others are more permissive.</li>
 <li><strong>Landscaping:</strong> Requirements may specify native plants, xeriscape standards, fire-resistant materials, or maintenance of lawns. Many Central Oregon HOAs have moved toward drought-resistant landscaping requirements given water conservation concerns.</li>
 <li><strong>Vehicles and parking:</strong> Rules about RVs, boats, trailers, and commercial vehicles parked on driveways or in view. Some HOAs prohibit visible storage of recreational vehicles entirely.</li>
 <li><strong>Rental restrictions:</strong> Minimum lease terms, short-term rental prohibitions or requirements, tenant screening obligations. This is a critical consideration for investors.</li>

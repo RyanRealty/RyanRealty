@@ -34,9 +34,10 @@ slug lives in one seed file. Author byline: Matt (`2fda6811-2edf-49e3-b3ca-33e10
 - Every guide ends with `<h2>Questions</h2>` and five `<h3>question</h3><p>answer</p>` pairs.
   `lib/blog/publish-blog-faq.ts` reads exactly that markup into FAQPage JSON-LD on
   `app/blog/[slug]`, so the schema cannot say what the page does not.
-- Market figures (median, $/sqft, days on market, months of supply, concession share) are never
-  frozen in a guide. They link to `/housing-market/<city>`, `/months-of-supply`, or the July
-  2026 buyers-market report, which carries its own method note.
+- Market figures carry their as-of date and source in the sentence (Matt 2026-09-07: restore
+  the numbers, dated) and link to `/housing-market/<city>`, `/months-of-supply`, or the July
+  2026 buyers-market report for the live version. A refresh means re-pulling the row and
+  changing the date, never editing the number alone.
 - Voice: `lib/voice/check.ts` ran on every row before upsert (title, excerpt, meta, body).
   No dashes, semicolons, exclamation marks, virtue words, or invented quotes.
 - Hero images reuse existing `/images/blog/*.jpg` files (local paths pass through
@@ -79,12 +80,23 @@ saved in the session scratchpad (`verify/`, `verify2/`).
 | Seller credits common in Bend; concentrated at the entry level; Redmond share above Bend, H1 2026 | 9, 10 | `bend-buyers-market-shift-2026` (Ryan Realty MLS analysis, July 2026) |
 | Months of supply thresholds 4 / 6 | 9 | CLAUDE.md §0, `/months-of-supply` |
 | Sisters rodeo (June), quilt show (July), folk festival | 3 | sistersrodeo.com, soqs.org, sistersfolkfestival.org |
+| Bend 90-day median sale $733,000 (475 closings), Redmond $499,000 (143), June 9 to Sept 7, 2026 | 1, 11 | `market_stats_cache` city rows, period_type rolling_90d, methodology v3-2026-05-07, read 2026-09-07 |
+| 30-year fixed 6.71%, week of Sept 3, 2026 | 1 | freddiemac.com/pmms |
+| Payment math: 20% down, 6.71%, 360 months: Bend P&I $3,788 + tax $426 = $4,214; Redmond $2,579 + $290 = $2,869 | 1 | computed from the two rows above, shown in the ledger script output 2026-09-07 |
+| City of Bend water $29.79 + $2.48 per 100 cu ft; sewer $42.71 + $4.48, effective 2025-07-01 | 1 | bendoregon.gov water services rates page |
+| AAA gas OR $5.02, US $4.15 on 2026-09-07 | 1 | gasprices.aaa.com/?state=OR |
+| 2026 marketplace silver premiums, 40-year-old, $518 to $620; 9.7% average increase; 5 of 6 carriers in Deschutes | 1 | dfr.oregon.gov 2026 rate decision + county coverage PDF |
+| Bend median household income $96,394, ACS 2020-2024 | 1 | census.gov QuickFacts, Bend city |
+| Mt. Bachelor 2026-27 adult full season pass $1,399 on 2026-09-07, increase scheduled 9/30 | 1 | mtbachelor.com full season pass page |
+| Deschutes FY 2025-26 average consolidated rate $16.80 per $1,000 AV; effective $6.98 per $1,000 M5 value (about 0.698% of RMV) | 1, 11 | oregon.gov/dor Oregon Property Tax Statistics FY 2025-26, exhibit 6b |
+| Active-duty exemption $60,000 in 2005-06 growing 3% a year, ORS 307.286 | 11 | oregon.gov/dor form 150-303-084; OAR 150-307-0400 |
+| VA appraisal fee, Oregon single-family, $850 effective 2026-05-01 | 7 | benefits.va.gov appraisal fee and timeliness table |
 
-Cut from the old drafts because no primary source was re-fetched this session: Freddie Mac rate,
-AAA gas price, City of Bend utility rates, marketplace health premiums, ACS median income, Mt.
-Bachelor pass prices, county average consolidated tax rate and effective rate, Crook and
-Jefferson figures, active-duty exemption formula, VA appraisal fee, sample title premiums, and
-every $/sqft, lot price, SDC, and build-cost range in the old new-construction post.
+Restored 2026-09-07 on Matt's call, each with its as-of date in the text: the rate, gas, City of
+Bend utility rates, marketplace premiums, ACS income, the Bachelor pass, the county rates, the
+active-duty formula, and the VA appraisal fee. Still cut, no primary source found: the Bachelor
+peak day-ticket price, Crook and Jefferson rates and assessors, sample title premiums, and every
+$/sqft, lot price, SDC, and build-cost range in the old new-construction post.
 
 ## Site audit fixes shipped with this pack
 

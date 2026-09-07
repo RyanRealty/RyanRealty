@@ -430,7 +430,7 @@ export const posts: BlogPostSeed[] = [
 <p>How does Caldera Springs stack up against other options in Central Oregon?</p>
 
 <ul>
-<li><strong>vs Sunriver:</strong> Caldera Springs is newer, more modern, and more compact. Sunriver offers more community infrastructure (Village, SHARC, two golf courses, Nature Center) and a broader range of price points. Sunriver has more of a year-round community feel; Caldera Springs is more resort-oriented.</li>
+<li><strong>vs Sunriver:</strong> Caldera Springs is newer, more modern, and more compact. Sunriver offers more community infrastructure (Village, SHARC, two golf courses, Nature Center) and a broader range of price points. Sunriver has more of a year-round community feel. Caldera Springs is more resort-oriented.</li>
 <li><strong>vs Brasada Ranch:</strong> Both offer modern architecture and resort amenities, but Brasada has its own golf course and is located in the high desert near Powell Butte, a very different landscape. Brasada skews higher in price.</li>
 <li><strong>vs Eagle Crest:</strong> Eagle Crest is significantly more affordable and located in Redmond. It lacks Caldera Springs' modern aesthetic and amenity level but offers much lower entry costs and HOA fees.</li>
 </ul>
@@ -1216,7 +1216,7 @@ export const posts: BlogPostSeed[] = [
 <p>$700,000 to $3,000,000+. This is the premium option for retirees who have the budget and want a resort-level daily life.</p>
 
 <h3>Considerations</h3>
-<p>Remote from Bend. St. Charles Redmond is about 15 minutes; St. Charles Bend is about 25 minutes. High ongoing fees (HOA plus membership) add to monthly costs. The high desert climate means hot summers and cold winters without the moderating effect of forest cover.</p>
+<p>Remote from Bend. St. Charles Redmond is about 15 minutes. St. Charles Bend is about 25 minutes. High ongoing fees (HOA plus membership) add to monthly costs. The high desert climate means hot summers and cold winters without the moderating effect of forest cover.</p>
 
 <h2>Healthcare in Central Oregon</h2>
 
@@ -1226,7 +1226,7 @@ export const posts: BlogPostSeed[] = [
 <li><strong>St. Charles Bend:</strong> The regional medical center with emergency services, surgical specialties, cancer center, heart center, and most specialty care. This is the primary hospital for serious medical needs.</li>
 <li><strong>St. Charles Redmond:</strong> A smaller facility with emergency services and some specialty clinics. Adequate for routine care and emergencies but may refer to Bend for complex procedures.</li>
 <li><strong>Specialty care:</strong> Most specialties are available locally (cardiology, orthopedics, oncology, etc.), though some rare specialties may require travel to Portland (3 hours) or other metropolitan areas.</li>
-<li><strong>Provider availability:</strong> Bend has experienced provider shortages in some specialties, which can mean longer wait times for appointments. Establishing relationships with primary care providers early is advisable. Do not wait until you move to start the process; some practices have wait lists of several months for new patients.</li>
+<li><strong>Provider availability:</strong> Bend has experienced provider shortages in some specialties, which can mean longer wait times for appointments. Establishing relationships with primary care providers early is advisable. Do not wait until you move to start the process. Some practices have wait lists of several months for new patients.</li>
 </ul>
 
 <h2>Practical Tips for Retiring to Bend</h2>

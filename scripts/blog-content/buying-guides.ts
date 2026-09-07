@@ -47,7 +47,7 @@ export const posts: BlogPostSeed[] = [
 <h3>Electrical System</h3>
 
 <ul>
-<li>Panel capacity and condition (100-amp service is minimum for modern homes; 200-amp is preferred)</li>
+<li>Panel capacity and condition (100-amp service is the minimum for modern homes and 200-amp is preferred)</li>
 <li>Wiring type (aluminum wiring from the 1960s-70s requires special connectors and careful monitoring)</li>
 <li>GFCI protection in bathrooms, kitchens, garages, and exterior outlets</li>
 <li>Smoke detectors and carbon monoxide detectors (Oregon requires CO detectors in all homes)</li>
@@ -755,7 +755,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>Earnest money is a good-faith deposit that accompanies your purchase offer. It tells the seller: I'm serious about this transaction and I'm putting real money behind my commitment. Without it, a buyer could tie up a property with an offer, preventing the seller from accepting other offers, with zero financial risk. That wouldn't be fair to the seller, so earnest money creates skin in the game.</p>
 
-<p>When the transaction closes successfully, your earnest money is applied toward your down payment and closing costs. It's not an additional cost; it's money you were going to spend anyway, just paid earlier in the process.</p>
+<p>When the transaction closes successfully, your earnest money is applied toward your down payment and closing costs. It's not an additional cost. It's money you were going to spend anyway, just paid earlier in the process.</p>
 
 <h2>Typical Amounts in Central Oregon</h2>
 
@@ -849,7 +849,7 @@ export const posts: BlogPostSeed[] = [
 
 <h2>Tax Implications</h2>
 
-<p>Earnest money that becomes part of your down payment at closing has no separate tax implications; it's simply part of your home purchase. However, if you forfeit earnest money because a deal falls through, you may be able to deduct the loss in some circumstances. Consult a tax professional for advice specific to your situation.</p>
+<p>Earnest money that becomes part of your down payment at closing has no separate tax implications. It's simply part of your home purchase. However, if you forfeit earnest money because a deal falls through, you may be able to deduct the loss in some circumstances. Consult a tax professional for advice specific to your situation.</p>
 
 <h2>Putting It All Together</h2>
 
@@ -858,7 +858,7 @@ export const posts: BlogPostSeed[] = [
 <ul>
 <li>In Central Oregon, $2,000 to $10,000 is typical depending on price range</li>
 <li>It's held by the escrow company, not the seller</li>
-<li>Contingencies protect your deposit; understand when they expire</li>
+<li>Contingencies protect your deposit. Understand when they expire</li>
 <li>Deliver on time, every time</li>
 <li>Don't waive contingencies unless you fully understand the financial risk</li>
 <li>At closing, it applies toward your purchase costs</li>
@@ -898,7 +898,7 @@ export const posts: BlogPostSeed[] = [
 
 <ul>
 <li>New listings increase 40% to 60% compared to winter months</li>
-<li>Buyer activity spikes; homes receive the most showings and offers during this period</li>
+<li>Buyer activity spikes. Homes receive the most showings and offers during this period</li>
 <li>Median days on market drops to its lowest point (often 15 to 30 days for well-priced homes)</li>
 <li>Multiple offer situations are most common in April and May</li>
 <li>Prices tend to be at or near seasonal highs</li>
@@ -946,7 +946,7 @@ export const posts: BlogPostSeed[] = [
 
 <ul>
 <li>Inventory is at its annual low, sometimes 40% to 50% below summer levels</li>
-<li>Buyer competition is minimal; you may be the only offer on a property</li>
+<li>Buyer competition is minimal. You may be the only offer on a property</li>
 <li>Sellers are often motivated by job relocation, financial pressures, or life changes that don't wait for spring</li>
 <li>Price negotiations favor buyers more than any other season</li>
 <li>Homes are harder to evaluate (landscaping under snow, can't see roof easily, etc.)</li>

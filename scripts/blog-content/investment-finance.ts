@@ -269,7 +269,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>Key coverage to ensure you have:</p>
 <ul>
-<li>Liability coverage (at least $1 million; $2 million is better)</li>
+<li>Liability coverage (at least $1 million, and $2 million is better)</li>
 <li>Property damage by guests</li>
 <li>Loss of rental income if the property becomes uninhabitable</li>
 <li>Content coverage for furnished units</li>
