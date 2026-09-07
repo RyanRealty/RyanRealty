@@ -28,7 +28,9 @@ describe('first-contact copy', () => {
     // reply to a request they did not make.
     const expired = composeCmaFirstContact('expired', FACTS)
     expect(expired.plan).toContain('came off the market without a sale')
+    expect(expired.plan).toContain('Sorry it did not sell')
     expect(expired.plan).not.toContain('The number for')
+    expect(expired.bodyText).toContain('We hope to earn your business')
 
     const fsbo = composeCmaFirstContact('fsbo', FACTS)
     expect(fsbo.plan).toContain('selling 1005 Butler Market yourself')
@@ -185,5 +187,18 @@ describe('first-contact copy', () => {
     // No numbers clause rather than an invented one.
     expect(c.numbers).toBeNull()
     expect(c.bodyText).not.toContain('null')
+  })
+})
+
+describe('Matt voice lock — Review/drip first-touch', () => {
+  it('empathizes without mannered syrup on expired and FSBO', () => {
+    const expired = composeCmaFirstContact('expired', FACTS)
+    expect(expired.bodyText).toMatch(/Sorry it did not sell/)
+    expect(expired.bodyText).toMatch(/We hope to earn your business/)
+    expect(expired.bodyText).not.toMatch(/no pressure|wish you the best|excited|delighted|reaching out|touching base/i)
+
+    const fsbo = composeCmaFirstContact('fsbo', FACTS)
+    expect(fsbo.bodyText).toMatch(/We hope to earn your business/)
+    expect(fsbo.bodyText).not.toMatch(/no pressure|wish you the best|excited|delighted|reaching out|touching base/i)
   })
 })

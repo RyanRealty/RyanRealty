@@ -10,6 +10,8 @@ import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
 import { approveAndDeliverCma } from '@/app/actions/cma-queue'
 import { QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { QueueAction } from '@/app/admin/(protected)/cmas/_components/queue/QueueAction.client'
+import { DripQueueActions } from '@/app/admin/(protected)/cmas/_components/queue/DripQueueActions.client'
+import { dripEtaFor, DRIP_CADENCE_LINE } from '@/lib/cma/drip-eta'
 import { QueueFilters } from '@/app/admin/(protected)/cmas/_components/queue/QueueFilters.client'
 import type { AdminState } from '@/components/admin/v2'
 import {
@@ -89,15 +91,15 @@ function whyLine(r: CmaQueueRow): string | null {
   if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
   if (r.state === 'failed') return r.buildError ? `Build failed: ${r.buildError.slice(0, 140)}` : 'Build failed.'
   if (r.state === 'flagged') return r.reviewReason ? r.reviewReason.slice(0, 140) : 'Flagged for review.'
-  if (r.state === 'queued') return 'Approved. Waiting its turn in the weekday drip.'
+  if (r.state === 'queued') return null // filled with ETA at render
   return null
 }
 
 function actionLabelFor(r: CmaQueueRow): string | null {
   if (r.state !== 'ready') return null
   if (!r.contactEmail) return null
-  if (r.sendMode === 'now') return 'Approve & send'
-  if (r.sendMode === 'drip') return 'Approve & queue'
+  if (r.sendMode === 'now') return 'Send now'
+  if (r.sendMode === 'drip') return 'Schedule'
   return 'Approve'
 }
 
@@ -138,6 +140,23 @@ export default async function CmaQueuePage({
   }
 
   const { rows, total } = await listCmaQueue({ limit: WINDOW })
+
+  const { listQueuedFirstTouch, getLastDripSentAt } = await import('@/lib/data/prospecting/drip-queue')
+  const [dripQueued, lastDripSentAt] = await Promise.all([
+    listQueuedFirstTouch(500),
+    getLastDripSentAt(),
+  ])
+  const now = new Date()
+  const dripEtaByKey = new Map<string, string>()
+  for (const item of dripQueued) {
+    const eta = dripEtaFor({
+      queued: dripQueued,
+      lastDripSentAt,
+      now,
+      target: { kind: item.kind, id: item.id },
+    })
+    if (eta) dripEtaByKey.set(`${item.kind}:${item.id}`, eta.label)
+  }
 
   const counts = {
     ready: rows.filter((r) => r.state === 'ready').length,
@@ -212,7 +231,15 @@ export default async function CmaQueuePage({
       <ul className="av2-queue">
         {visible.map((r) => {
           const label = actionLabelFor(r)
-          const why = whyLine(r)
+          let why = whyLine(r)
+          if (r.state === 'queued' && r.prospectKind && r.prospectId) {
+            const etaLabel = dripEtaByKey.get(`${r.prospectKind}:${r.prospectId}`)
+            why = etaLabel
+              ? `${etaLabel} · ${DRIP_CADENCE_LINE}`
+              : `In drip · ${DRIP_CADENCE_LINE}`
+          } else if (r.state === 'queued') {
+            why = `In drip · ${DRIP_CADENCE_LINE}`
+          }
           const money = cmaQueueMoneyLine(r)
           const recBit = money.split(' · ')[0]
           const restBit = money.split(' · ').slice(1).join(' · ')
@@ -248,7 +275,9 @@ export default async function CmaQueuePage({
               age={age(r.createdAt)}
               hot={r.state === 'audit-failed' || r.state === 'failed'}
               action={
-                label ? (
+                r.state === 'queued' ? (
+                  <DripQueueActions slug={r.slug} />
+                ) : label ? (
                   <QueueAction slug={r.slug} label={label} approve={approveAndDeliverCma} />
                 ) : (
                   <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={`/admin/cmas/${r.slug}`}>

@@ -15,6 +15,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead, prepareCmaSendPreview, type CmaSendOverride } from '@/lib/cma/send'
+import { saveCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { slugifyAddress } from '@/lib/cma-request'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
@@ -380,6 +381,46 @@ export async function sendCmaToLeadAction(
  * send if the broker doesn't edit anything) plus the already-sent state, so
  * the dialog can show "Already sent <date>" without a second round trip.
  */
+
+/** Update only the outbound To address without rebuilding the document. */
+export async function updateCmaOutboundToAction(
+  slug: string,
+  toEmail: string,
+): Promise<{ error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { error: 'Unauthorized' }
+    const email = (toEmail ?? '').trim().toLowerCase()
+    if (!email || !email.includes('@')) return { error: 'A valid To email is required.' }
+    const res = await updateCmaRowFieldsBySlug(slug.trim().toLowerCase(), { client_email: email })
+    if (!res.ok) return { error: res.error ?? 'Could not update To.' }
+    refresh(slug.trim().toLowerCase())
+    return { error: null }
+  } catch (e) {
+    console.error('[updateCmaOutboundToAction]', e)
+    return { error: e instanceof Error ? e.message : 'Could not update To.' }
+  }
+}
+
+/** Persist Review-page email edits for drip (or later send) without delivering now. */
+export async function saveCmaFirstContactOverrideAction(
+  slug: string,
+  override: { subject: string; bodyText: string },
+): Promise<{ error: string | null }> {
+  try {
+    if (!(await requireAdmin())) return { error: 'Unauthorized' }
+    const subject = (override.subject ?? '').trim()
+    const bodyText = (override.bodyText ?? '').trim()
+    if (!subject || !bodyText) return { error: 'Subject and email body are required.' }
+    const saved = await saveCmaFirstContactOverride(slug, { subject, bodyText })
+    if (!saved.ok) return { error: saved.error }
+    refresh(slug.trim().toLowerCase())
+    return { error: null }
+  } catch (e) {
+    console.error('[saveCmaFirstContactOverrideAction]', e)
+    return { error: e instanceof Error ? e.message : 'Could not save email.' }
+  }
+}
+
 export async function prepareCmaSendAction(slug: string): Promise<{
   data: {
     slug: string
