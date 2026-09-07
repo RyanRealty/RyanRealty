@@ -19,6 +19,8 @@ import {
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
+import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
+import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import {
   HERO_VIDEO,
@@ -39,8 +41,9 @@ const D11_HOMEPAGE_LEAD =
 /**
  * Homepage. Expanded Home lock 2026-09-06 (Matt): full-bleed search hero with
  * Buy/Sell tabs, buyer H1, stacked house carousels with Field badges,
- * Buy/Sell/Work-with-us doors with line pictograms, brokers, places, proof. No Atlas, map
- * block, town ledger, market essay, or Invest door on home. Brand stays in
+ * featured community carousel (photo, sales, blurb, prev/next), Buy/Sell/Work-with-us
+ * doors with line pictograms, brokers, places, proof. No Atlas, map block, town ledger,
+ * market essay, or Invest door on home. Brand stays in
  * metadata title/OG only. absolute title skips the layout suffix.
  */
 export const revalidate = 300
@@ -86,13 +89,15 @@ const RESORT_DOORS = [
 ] as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, reviewSummary] = await Promise.all([
-    getCitiesForIndex().catch(() => []),
-    getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
-    getBrokers().catch(() => []),
-    loadOpenHouseBadgeLabels().catch(() => ({})),
-    getReviews(6).catch(() => null),
-  ])
+  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides] =
+    await Promise.all([
+      getCitiesForIndex().catch(() => []),
+      getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
+      getBrokers().catch(() => []),
+      loadOpenHouseBadgeLabels().catch(() => ({})),
+      getReviews(6).catch(() => null),
+      loadHomeFeaturedCommunitySlides().catch(() => []),
+    ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
   const faces: AboutFace[] = [...brokers]
@@ -185,6 +190,10 @@ export default async function Home() {
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
         />
+
+        {featuredCommunitySlides.length > 0 ? (
+          <HomeFeaturedCommunity id="featured-community" slides={featuredCommunitySlides} />
+        ) : null}
 
         <V3Doors id="doors" name={v3Text('Buy, sell, or work with us')} doors={doors} />
 

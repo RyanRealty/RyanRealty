@@ -65,19 +65,25 @@ checks.push({
 })
 
 const home = src('app/page.tsx')
-// Critiquito H9: homepage may omit the communities ledger (door is /communities).
-// If community tiles return, they must still print index activeCount — founding
-// Tetherow 12 vs 35 case. Do not resurrect the ledger to satisfy this gate.
-const homeRendersCommunityTiles =
+const featured = src('app/_v3/home-featured-communities.ts')
+// Critiquito H9 dropped the old communities ledger (id=communities). Home may
+// still feature communities via the photo/info carousel — those figures must
+// be alias-aware (getRegistryResortPublicFigures), never literal index counts.
+const homeRendersFeaturedCommunities =
+  /loadHomeFeaturedCommunitySlides/.test(home) ||
+  /HomeFeaturedCommunity/.test(home) ||
   /getCommunitiesForIndex/.test(home) ||
   /COMM_FEATURED/.test(home) ||
   /id=["']communities["']/.test(home)
 checks.push({
-  label: homeRendersCommunityTiles
-    ? 'homepage featured communities print the index activeCount'
+  label: homeRendersFeaturedCommunities
+    ? 'homepage featured communities use alias-aware resort figures'
     : 'homepage omits communities ledger (Critiquito H9); resort figures stay on /communities',
-  ok: homeRendersCommunityTiles
-    ? /getCommunitiesForIndex/.test(home) && /activeCount: c\.activeCount/.test(home)
+  ok: homeRendersFeaturedCommunities
+    ? /getRegistryResortPublicFigures/.test(featured) &&
+      /activeCount/.test(featured) &&
+      !/getCommunitiesForIndex/.test(home) &&
+      !/id=["']communities["']/.test(home)
     : !/getCommunitiesForIndex/.test(home),
 })
 
