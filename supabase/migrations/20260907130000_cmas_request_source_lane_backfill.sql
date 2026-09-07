@@ -93,7 +93,7 @@ update public.cmas
 -- e. The lane census moves as expected — run the read-only script, which goes through the same
 --    DAL read /admin/cmas renders, so the screen and the census cannot disagree:
 --
---      npx tsx -r ./scripts/lib/server-only-shim.cjs scripts/cma-lanes-check.ts
+--      npx tsx scripts/cma-lanes-check.ts
 --
 --    BEFORE (verified live 2026-09-07T18:40Z, 442 rows):
 --      expired 378 · fsbo 2 · seller-valuation 18 · lead-form 8 · unknown 36

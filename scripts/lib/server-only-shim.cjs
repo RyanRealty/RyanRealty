@@ -1,16 +1,44 @@
 /**
- * `server-only` resolver shim for CLI scripts (npx tsx -r).
+ * Lets a plain `npx tsx scripts/<foo>.ts` process import CMA/DAL modules that
+ * carry Next.js-only markers, without a Next server behind them:
  *
- * `server-only` throws by design outside a Next server component, and every
- * DAL module imports it. vitest aliases it to test/server-only-stub.ts; a CLI
- * has no bundler to alias with, so this preloads a resolve hook that returns
- * an empty module for that request and leaves everything else alone.
+ *   - `server-only` / `client-only` throw unconditionally when required
+ *     outside webpack's client/server graph split (that's their whole job).
+ *   - `next/cache` (`unstable_cache`, `revalidateTag`, ...) needs Next's
+ *     incremental cache, which does not exist in a bare Node/tsx process.
  *
- *   npx tsx -r ./scripts/lib/server-only-shim.cjs scripts/<script>.ts
+ * Both get redirected to the no-op stubs vitest already uses for the same
+ * reason (see `vitest.config.ts` + `test/server-only-stub.ts`,
+ * `test/next-cache-cli-stub.ts`), and that several existing CMA CLI scripts
+ * (`scripts/_rerender-cma.ts`, `scripts/_rebuild-cma.ts`,
+ * `scripts/_rebuild-failing-cmas.ts`) already wire the same way. This module
+ * is that pattern factored out so a new script does not re-derive it.
+ *
+ * Call `installServerOnlyShim()` once, BEFORE any `import()`/`require()` of
+ * `lib/**` — module resolution is patched globally for the process, so later
+ * imports (including ones nested deep in `@/lib/data`) resolve through it.
  */
-const Module = require('module')
-const orig = Module._load
-Module._load = function (request, ...rest) {
-  if (request === 'server-only') return {}
-  return orig.call(this, request, ...rest)
+const path = require('node:path')
+const Module = require('node:module')
+
+let installed = false
+
+function installServerOnlyShim(repoRoot) {
+  if (installed) return
+  installed = true
+  const root = repoRoot || path.resolve(__dirname, '..', '..')
+  const SERVER_ONLY_STUB = path.join(root, 'test', 'server-only-stub.ts')
+  const NEXT_CACHE_STUB = path.join(root, 'test', 'next-cache-cli-stub.ts')
+  const origResolveFilename = Module._resolveFilename
+  Module._resolveFilename = function (request, ...args) {
+    const req =
+      request === 'server-only' || request === 'client-only'
+        ? SERVER_ONLY_STUB
+        : request === 'next/cache'
+          ? NEXT_CACHE_STUB
+          : request
+    return origResolveFilename.call(this, req, ...args)
+  }
 }
+
+module.exports = { installServerOnlyShim }

@@ -5,8 +5,8 @@
  * of the `request_source` backfill migration is a measured before/after rather
  * than a claim. Writes nothing, sends nothing.
  *
- *   npx tsx -r ./scripts/lib/server-only-shim.cjs scripts/cma-lanes-check.ts
- *   npx tsx -r ./scripts/lib/server-only-shim.cjs scripts/cma-lanes-check.ts --json
+ *   npx tsx scripts/cma-lanes-check.ts
+ *   npx tsx scripts/cma-lanes-check.ts --json
  *
  * Everything comes through `listCmaQueue` — the same DAL read the queue page
  * renders — so this census and the screen can never disagree (§7 DAL-first).
@@ -14,6 +14,15 @@
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
 loadEnv()
+
+// `server-only` / `next/cache` throw in a bare tsx process, and every DAL
+// module carries them. Install the resolve hook BEFORE anything under lib/** is
+// imported — which is why every lib import below is dynamic, inside main().
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { installServerOnlyShim } = require('./lib/server-only-shim.cjs') as {
+  installServerOnlyShim: (repoRoot?: string) => void
+}
+installServerOnlyShim()
 
 import type { CmaOrigin } from '@/lib/cma/origin'
 import type { CmaQueueState } from '@/lib/data/cma/unified-queue'
