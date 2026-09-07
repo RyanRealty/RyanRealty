@@ -224,3 +224,59 @@ the Anthropic account is Matt's action.** The stored note now carries the real r
   with no confidence language on the document.
 - **D20 — "Who you are competing with" exhibits may cross the divide** (unverified geometry:
   3rd St corridor addresses); same fix as D11 covers it.
+
+## Found by the funnel mission (2026-09-07), OPEN
+
+- **D21 — the 30% subdivision price-tier guard has no reference when the SUBJECT has no
+  usable cell, so it fails open on every candidate. OPEN, not fixed.** D12 closed the
+  comp side of this hole (a sale with no `SubdivisionName` is now graded on its own
+  $/sqft). The subject side is still open, and it is the wider one: `passesTier`
+  (`lib/pricing/match.ts:341-363`) takes its reference from
+  `cellFor(cells, subject.citySlug, subject.subdivisionNorm)`, and BOTH guards return
+  `true` unconditionally when that reference is missing —
+  `similarPerformingSubdivision` on `subjectMedianPpsf == null || subjectN < 5`
+  (`lib/pricing/classes.ts:275-282`) and `untieredSalePriceTierOk` on the same two
+  conditions (`classes.ts:308-310`). A subject whose `SubdivisionName` is null or the MLS
+  placeholder `'N/A'` normalizes to no subdivision, gets no cell, and therefore gets no
+  price-tier cut at any $/sqft. A subject in a THIN named cell (n < 5) fails open the same
+  way, by the deliberate "a four-sale sample is not a market" rule — which is right for the
+  ratio test and wrong as a licence to keep anything.
+
+  Verified live 2026-09-07, read-only, from stored `render_args`:
+  - **20420 Swalley, $2,750,000 / 3,175 sqft = $866/sqft, kept in three separate comp sets**
+    — `cma-61900-anker`, `cma-62262-chickadee`, `cma-65365-concorde`. All three subjects
+    carry `SubdivisionName 'N/A'`, so none of them has a cell. In `cma-61900-anker` the other
+    four kept comps run $341–$462/sqft; Swalley is 1.9× the next highest and the set still
+    priced the subject at $1,469,000. `cma-62262-chickadee` keeps 20440 Swalley at $801/sqft
+    beside it.
+  - **Blast radius: 29 of 290 built CMAs** have a subject with no usable `SubdivisionName`,
+    so the tier cut is inert on 10% of the book.
+  - Cell probes (`pricing_subdivision_cells`, read 2026-09-07) — all five named cells EXIST,
+    which corrects the "no cell returned" framing this was first reported under:
+    `bend:ponderosa cascade` $409.23/sf n=7, `sisters:indian ford meadows` $427.50/sf n=10
+    (both above `SUBDIVISION_TIER_MIN_N`, both a working reference); `bend:demaris acres`
+    $517.11/sf n=1, `la-pine:whispering meadows` $466.91/sf n=1,
+    `redmond:north mountain view` $218.11/sf n=1 (all three below n=5, all three fail open
+    on thinness).
+  - **`cma-66511-ponderosa` is NOT evidence of this defect and should not be cited as such.**
+    Its 16472 Jordan at $1,282,000 / 1,277 sqft = $1,004/sqft against a `bend:ponderosa
+    cascade` median of $409.23/sf (n=7) is caught by the CURRENT code:
+    `untieredSalePriceTierOk(409.23, 7, 1004)` returns `false`. That row was built by
+    `deterministic-v1 (2026-07-07)`, before D12 landed; it needs a rebuild, not a code fix.
+
+  **Two candidate fallback references, for Matt to pick — no fix is being made until he does,
+  because the ratio changes meaning with the scale of the reference.**
+  1. **GIS market-area median $/sqft.** `passesTier` already resolves
+     `resolveMarketArea(subject.latitude, subject.longitude)` two lines above the cut, and
+     `SAME_NEIGHBORHOOD_TIER_RATIO` (1.15) already exists for mapped ground. A
+     market-area-level cell table, sibling to `pricing_subdivision_cells`, would give every
+     mapped subject a reference whether or not its subdivision is named. It reaches nothing
+     outside the Bend mesh, which is where the rural sets in the evidence above sit.
+  2. **The subject's city median $/sqft from the served market cache** (`market_stats_cache`,
+     stamp `v3-2026-05-07`, SFR). It covers every subject including rural, at the cost of a
+     much coarser reference — a 1.3 ratio on a city median is a different, looser cut than
+     1.3 on a subdivision median, so the ratio has to be re-measured rather than reused.
+
+  A third option Matt may prefer to either: grade a candidate against the running median of
+  the comps that already passed on the same rung, so the set polices its own dispersion with
+  no new reference data at all.

@@ -161,17 +161,22 @@ describe('publish eligibility is keyed to finding SEVERITY, not to the needs_rev
     expect(publishConcerns(row).map((c) => c.reason)).toContain('No market cache row.')
   })
 
-  it('blocks a critical price-opinion finding even though the queue verdict stays pass', () => {
+  it('blocks a critical price-opinion finding, which the queue only sends to review', () => {
     // The exact divergence, asserted in both directions so neither side can
-    // drift into the other. computeAuditVerdict treats a price-level
-    // disagreement between two models as broker judgment, which is right for
-    // "must Matt look at this". Publishing is the stricter question: the
-    // recommendation IS what goes public, so an auditor calling it
-    // indefensible stops it.
+    // drift into the other. Since calibration v4 (2026-09-07) a critical in any
+    // category sends the queue row to `review` — a broker must read it.
+    // Publishing is the stricter question: the recommendation IS what goes
+    // public, so an auditor calling it indefensible stops it outright.
     const findings = [finding('critical', 'price-opinion', 'The $640,000 recommendation is not supported by the adjusted comps.')]
-    expect(computeAuditVerdict(findings as never)).toBe('pass')
+    expect(computeAuditVerdict(findings as never)).toBe('review')
     const row = publishableRow({ build_summary: audited(findings) })
     expect(isPublishable(row)).toBe(false)
+  })
+
+  it('a price-opinion MAJOR is broker judgment on both sides — queue passes, publish allows', () => {
+    const findings = [finding('major', 'price-opinion', 'I would sit nearer the low end of the range.')]
+    expect(computeAuditVerdict(findings as never)).toBe('pass')
+    expect(isPublishable(publishableRow({ build_summary: audited(findings) }))).toBe(true)
   })
 
   it('states the critical finding verbatim, because a broker reads the refusal', () => {

@@ -219,12 +219,13 @@ export function publishBlockers(row: CmaRow | null | undefined): CmaPublishBlock
   // different questions and stay separable.
   //
   // Deliberately NOT the same reduction as computeAuditVerdict (lib/cma/audit.ts).
-  // That function decides the queue signal, and it treats a price-opinion
-  // disagreement between two models as broker judgment rather than a gate,
-  // which is right for a document a broker is about to read. Here the
-  // recommendation IS the thing being published, so a critical price-opinion
-  // finding blocks even where the verdict stays 'pass'. Publishing is the
-  // stricter question, never the looser one.
+  // That function decides the queue signal, and since its v4 calibration
+  // (2026-09-07) a critical in any category sends the row to `review` — a
+  // broker must read it. Here the recommendation IS the thing being published,
+  // so the same critical BLOCKS outright rather than queueing a read.
+  // Publishing is the stricter question, never the looser one: a price-opinion
+  // MAJOR is broker judgment on both sides, a critical is a review there and a
+  // refusal here.
   //
   // The build contract is not re-checked here: lib/cma/build.ts refuses to
   // persist a row whose hard checks failed, so no such row exists to guard.

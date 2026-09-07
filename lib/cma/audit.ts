@@ -69,6 +69,14 @@ export interface AuditFinding {
  *    `fail` means a hard factual error or a clearly non-comparable comp that
  *    survived. Everything advisory is still RECORDED in findings and shown to
  *    the broker — it just does not raise the flag.
+ *  - v4 (2026-09-07): a `critical` in ANY category now forces `review`,
+ *    because v2's price-opinion exemption argued about MAJORS and swallowed
+ *    criticals with it — 66 of 271 audit-passed rows sat in the sendable
+ *    `ready` lane carrying a critical such as "every priced sale was excluded
+ *    and none were kept, yet a Supportable $961k opinion is still issued"
+ *    (cma-1235-hartford), which §0 forbids shipping unread. Majors are
+ *    untouched: a price-level disagreement between two models is still broker
+ *    judgment, so the gate is a human read, never `fail`.
  */
 export function computeAuditVerdict(findings: AuditFinding[]): AuditVerdict {
   const has = (cat: AuditCategory, sevs: AuditSeverity[]) =>
@@ -81,8 +89,11 @@ export function computeAuditVerdict(findings: AuditFinding[]): AuditVerdict {
   }
 
   // REVIEW: signals strong enough that a single one is meaningful.
+  // v4 (2026-09-07): `critical` means the auditor says the recommendation is
+  // wrong or indefensible. That is a broker read in every category — including
+  // price-opinion and other, whose MAJORS stay advisory below.
+  if (findings.some((f) => f.severity === 'critical')) return 'review'
   if (has('data-integrity', ['major'])) return 'review' // a wrong FACT, not prose
-  if (has('market-verdict', ['critical'])) return 'review'
   // A CLUSTER of comp doubt (2+ comp-selection majors) — one is the auditor's
   // reflex (it always names a comp it would tweak; self-repair already dropped
   // the worst); two independent ones means the set is genuinely mixed.
@@ -90,7 +101,7 @@ export function computeAuditVerdict(findings: AuditFinding[]): AuditVerdict {
   if (compMajors >= 2) return 'review'
 
   // ADVISORY → pass (recorded + shown, not gated): a lone comp-selection major
-  // (reflex), a lone narrative-major rewording, every price-opinion
+  // (reflex), a lone narrative-major rewording, every price-opinion MAJOR
   // disagreement, market/other majors, and all minors. Calibration v3
   // (2026-07-12): v2 still gated on the single comp-major + single
   // narrative-major the auditor emits on ~100% of CMAs. Only criticals, a wrong
