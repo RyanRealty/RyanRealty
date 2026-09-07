@@ -27,7 +27,7 @@ import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
-import { attachSellerNet } from '@/lib/pricing/seller-net'
+import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary, statusAfterBuildFailure } from '@/lib/cma/build-summary'
@@ -937,7 +937,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // instead of calling buildCma again — which re-selects comps and re-runs
     // judgeComps + auditCma, and can therefore change the recommended list
     // price when only the signer changed (CLAUDE.md section 0).
-    const renderComps = applyCompVerdicts(adjusted, judgment?.verdicts ?? [])
+    // Every printed sale carries its seller concession — the 1004's first value
+    // adjustment — resolved by the SAME function the seller-net caption under
+    // the grid reads, so the line and the caption cannot disagree. Null only
+    // when the sale recorded nothing at all.
+    const renderComps = attachCompConcessions(applyCompVerdicts(adjusted, judgment?.verdicts ?? []))
 
     // The recorded lot under the subject and under each kept sale. Resolved
     // from the SAME array the document renders, so a tile numbered 3 is the

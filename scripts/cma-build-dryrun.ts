@@ -56,7 +56,7 @@ type DryRun = {
   customOrNew: boolean | null
   pricingSource: string | null
   compCount: number
-  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number }>
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null }>
   recommended: number | null
   /** The list tiers: conservative and high end. */
   range: [number | null, number | null]
@@ -137,7 +137,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
   const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle } = await import('@/lib/cma/expired-audit')
-  const { attachSellerNet } = await import('@/lib/pricing/seller-net')
+  const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
   const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
   const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
 
@@ -297,9 +297,11 @@ async function dryRun(slug: string): Promise<DryRun> {
     ...withSel,
     stage: hardFailures.length ? 'contract' : 'complete',
     ok: hardFailures.length === 0,
-    comps: adjusted.map((c) => ({
+    // Concessions resolved exactly as buildCma stamps them on render_args.
+    comps: attachCompConcessions(adjusted).map((c) => ({
       key: c.listingKey, address: c.address, baths: c.baths, sqft: c.sqft,
       closePrice: Math.round(c.closePrice), closeDate: c.closeDate, adjusted: Math.round(c.adjustedPrice),
+      concessions: c.concessions,
     })),
     recommended: pricing.recommended,
     range: [pricing.conservative, pricing.highEnd],
@@ -361,7 +363,8 @@ async function main() {
     if (r.comps.length) {
       console.log(`   comps (${r.comps.length}):`)
       for (const c of r.comps) {
-        console.log(`     ${c.address} · ${c.baths ?? '?'}ba · ${c.sqft}sf · closed $${c.closePrice.toLocaleString()} ${c.closeDate} → adj $${c.adjusted.toLocaleString()}`)
+        const conc = c.concessions == null ? 'concessions not reported' : c.concessions > 0 ? `concessions $${c.concessions.toLocaleString()}` : 'no concession'
+        console.log(`     ${c.address} · ${c.baths ?? '?'}ba · ${c.sqft}sf · closed $${c.closePrice.toLocaleString()} ${c.closeDate} · ${conc} → adj $${c.adjusted.toLocaleString()}`)
       }
     }
     if (r.matrixSubjectDom != null || r.reviewSubjectDom != null) {
