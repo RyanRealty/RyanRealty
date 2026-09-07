@@ -36,10 +36,12 @@ export function whatItsWorthHeading(pricing: CmaPricing): string {
  */
 export function whatItsWorthLead(subject: CmaSubject, pricing: CmaPricing): string {
   const range = `List between ${usd(pricing.conservative)} and ${usd(pricing.highEnd)}.`
+  // A home that is on the market already has an ask. The blueprint gives that
+  // case ONE line: what it is listed at, and what the sales support. The list
+  // range is not repeated after it — on most live subjects it is the same two
+  // numbers a second time.
   if (ON_MARKET.test(subject.standardStatus ?? '') && subject.lastListPrice != null && subject.lastListPrice > 0) {
-    return `Listed at ${usd(subject.lastListPrice)}. The sales support ${usd(pricing.valueLow)} to ${usd(
-      pricing.valueHigh,
-    )}. ${range}`
+    return `Listed at ${usd(subject.lastListPrice)}. The sales support ${usd(pricing.valueLow)} to ${usd(pricing.valueHigh)}.`
   }
   const display = pricingRangeDisplay(pricing)
   return display.outOfRange

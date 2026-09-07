@@ -60,7 +60,7 @@ export function coverValueBlockHtml(a: CoverArgs): string {
       </div>
     </div>
     <div class="vb-range">${esc(listPriceLead(p, { includeExpectedClose: false }))}${
-      range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
+      range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
     }</div>
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
@@ -86,7 +86,7 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
   const bits = [
     currentAskLine(p),
-    range.outOfRange ? `The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
+    range.outOfRange ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
     range.note,
     story.body,
   ].filter((b): b is string => Boolean(b && String(b).trim()))
