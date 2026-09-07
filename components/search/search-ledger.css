@@ -63,12 +63,12 @@
 .srch-chip-rail {
   -webkit-mask-image: linear-gradient(
     to right,
-    rgba(16, 39, 66, 1) calc(100% - 1.75rem),
+    var(--v3-navy) calc(100% - 1.75rem),
     transparent
   );
   mask-image: linear-gradient(
     to right,
-    rgba(16, 39, 66, 1) calc(100% - 1.75rem),
+    var(--v3-navy) calc(100% - 1.75rem),
     transparent
   );
 }
