@@ -1,4 +1,52 @@
-# Current — 2026-09-07 (AEO guide pack + site audit)
+# Current — 2026-09-07 (AI answer share: who the engines name for Bend)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
+`fix/bend-market-figure-truth`, landing on `origin/main` with this block.
+
+**Measured** (report: https://claude.ai/code/artifact/8080b7fa-4cda-4bd8-9768-ad46f45b38c2,
+baseline + browser recipes in memory `project_ai_visibility_2026-09`)
+- Ryan Realty named in 0 of 16 non-personalized runs (ChatGPT anon 4, Google
+  AI Mode anon 9, Gemini 3) across best-agent, sell-my-house, F1 battery,
+  market, Sunriver, expired, Tetherow. Perplexity on Matt's account 3 of 7
+  (unverifiable for personalization; logged-out Perplexity now forces signup).
+- Shortlists are ordered by Google Business Profile review count (High Desert
+  483, Ladd 270, Varsity 129, McGlone 100, Bend Premier 78; RR 25 site-reported)
+  and Zillow review count (Schaake 239, Frazier 194, Keyte 191; Matt 6).
+- The one non-personalized citation: Google AI Mode quoted the Bend FAQ JSON-LD
+  "median list price $950,000" as Bend's median home price beside peers' sale
+  medians ($733K to $780K). The page chart said "Median sale price $750K in Aug
+  2026". Every F1 path in `lib/seo/ai-query-map.json` was cited by nobody.
+
+**Shipped (this commit)**
+- `lib/site/market-faq.ts` price answer leads with the median SALE price and
+  month from the page chart series (`lib/market/latest-sale-median.ts`), then
+  the list price of homes for sale, named as such. Dataset adds Median Sale
+  Price. Wired on `/housing-market/[...slug]` and `/cities/[slug]`.
+- `lib/site/chrome-live.ts` Market/Sell eyebrows say "Central Oregon": the
+  region row rendered unlabeled on every page and read as that page's place.
+- Admin analytics overview renders `aiReferrers` (was fetched and discarded).
+- Scheduled task `ai-answer-share-bend-monthly` (desktop app, 1st of month
+  09:00) reruns the battery and republishes the report.
+
+**Found, not fixed**
+- `review-ask-on-close` cron works but has only ever staged drafts for TEST
+  people (crm_people 57840 "Marketing Test Lead", 63415 "Vault Test Buyer",
+  61945 "G4 Accept"); zero review asks sent (no timeline row carries the GBP
+  write-review URL). `tc_deals` holds ONE closed deal in the last 90 days and it
+  is a Vault test (60935 Apollo Place). Real closings are not reaching
+  `tc_deals` + `tc_deal_people`, so no real client is ever asked. Review count
+  is the ranking; this rail is the fix and it is dry. Owner: TC/CRM.
+- No Zillow review URL exists in the repo; a Zillow ask needs Matt's profile link.
+- Third-party proof (Zillow, Realtor.com, FastExpert, U.S. News profiles) and any
+  press release are publishing actions: Matt approves each.
+
+**Do not**
+- Compute a YoY percent in the FAQ from exact values: the chart writes its
+  claim from compacted labels and the two can differ in the last digit.
+
+---
+
+# Previous — 2026-09-07 (AEO guide pack + site audit)
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
 `wt/aeo-briefs-audit-20260907`, landed on `origin/main` at `5f9987ab`.

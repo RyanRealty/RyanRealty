@@ -77,6 +77,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { latestSaleMedian } from '@/lib/market/latest-sale-median'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -406,12 +407,20 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage
   // JSON-LD, and the Dataset variableMeasured. Called unconditionally with an
   // all-nullable leftover input: a miss omits one figure, never the markup.
+  // Median-close year overlay - leftover months first, cache months otherwise,
+  // in-progress month dropped so a partial month never plots as a decline.
+  // Computed here because the FAQ's sale price is this series' latest
+  // complete month, so the FAQ and the chart cannot disagree.
+  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
+  const saleMedian = latestSaleMedian(chartMonths.months, currentMonthKey)
   const marketFaqInput: MarketFaqInput = {
     grain: 'city',
     source: 'market-truth',
     activeCount: hud.active,
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
+    medianSalePrice: saleMedian?.value ?? null,
+    medianSaleMonthLabel: saleMedian?.monthLabel ?? null,
     monthsOfSupply: mosRaw,
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: hud.sold12mo,
@@ -458,9 +467,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   const marketHeadline = `Typical price in ${cityName}`
   const verdictCaption = cityVerdictCaption({ mos: mosRaw, verdict: face.verdict })
 
-  // Median-close year overlay - leftover months first, cache months otherwise,
-  // in-progress month dropped so a partial month never plots as a decline.
-  const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
   const closedN = leftoverClosedCount(hud, chartMonths.months)
   const medianChart = placeMedianChart(
     buildYearSeries(chartMonths.months, 5),

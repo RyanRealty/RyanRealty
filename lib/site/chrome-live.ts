@@ -139,8 +139,13 @@ export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
       facts.push({ figure: n(input.region.medianDaysToPending), label: 'median days to pending' })
     }
     if (facts.length > 0) {
+      // The region's figures render on every page, including /housing-market/bend,
+      // whose own body publishes Bend's figures. Without the geography in the
+      // eyebrow the two read as one place (2026-09-07: an AI answer-share check
+      // read the region's $750K / 5.0 months beside Bend's $950K / 3.9 as a
+      // contradiction). The eyebrow names the population; the test pins it.
       out.Market = {
-        eyebrow: 'Detached homes right now',
+        eyebrow: 'Central Oregon detached homes right now',
         facts,
         note: input.region.stamp ? `Read ${input.region.stamp}` : undefined,
       }
@@ -154,7 +159,7 @@ export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
   }
   if (sellFacts.length > 0) {
     out.Sell = {
-      eyebrow: 'Sellers right now',
+      eyebrow: 'Central Oregon sellers right now',
       facts: sellFacts,
       note: input.atlas ? `Read ${input.atlas.stamp}` : undefined,
     }

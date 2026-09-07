@@ -40,6 +40,18 @@ export type MarketFaqInput = {
   source?: 'pulse' | 'market-truth'
   activeCount?: number | null
   medianListPrice?: number | null
+  /**
+   * Median SALE price of closed single-family homes in the latest complete
+   * month, from the same monthly series the page's chart plots
+   * (lib/market/latest-sale-median.ts). When present the price answer leads
+   * with it: "median home price" to a reader, and in every peer report an
+   * answer engine cites beside ours, is a sale price. The list price of the
+   * actives follows, labeled as a list price. Both or neither: the month
+   * label names the population the figure came from (§0).
+   */
+  medianSalePrice?: number | null
+  /** "August 2026". Required with medianSalePrice. */
+  medianSaleMonthLabel?: string | null
   monthsOfSupply?: number | null
   /** Pulse row active_count when it differs from the page's displayed count. */
   pulseActiveCount?: number | null
@@ -133,12 +145,33 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
 
   // ── Core market stats (up to 4 questions) ──────────────────────────────────
 
-  if (pulse.medianListPrice != null && pulse.medianListPrice > 0) {
-    faqs.push({
-      question: `What is the median home price in ${geoName}?`,
-      answer: `The median list price for a single-family home in ${geoName} is ${formatPriceExact(pulse.medianListPrice)}${asOf}, based on ${pulse.source === 'market-truth' ? 'a direct count of the active MLS listings' : 'live MLS data'}.`,
-    })
-    datasetVariables.push({ name: 'Median List Price', value: Math.round(pulse.medianListPrice), unitText: 'USD' })
+  const salePrice =
+    pulse.medianSalePrice != null && pulse.medianSalePrice > 0 && pulse.medianSaleMonthLabel
+      ? pulse.medianSalePrice
+      : null
+  const listPrice = pulse.medianListPrice != null && pulse.medianListPrice > 0 ? pulse.medianListPrice : null
+  if (salePrice != null || listPrice != null) {
+    // The sale price answers the question; the list price is a different
+    // population (homes for sale, not homes sold) and says so. An answer
+    // engine quoted the list-only form of this sentence as Bend's "median
+    // home price" beside four peers' sale medians (2026-09-07).
+    const sentences: string[] = []
+    if (salePrice != null) {
+      sentences.push(
+        `The median sale price for a single-family home in ${geoName} was ${formatPriceExact(salePrice)} in ${pulse.medianSaleMonthLabel}.`,
+      )
+      datasetVariables.push({ name: 'Median Sale Price', value: Math.round(salePrice), unitText: 'USD' })
+    }
+    if (listPrice != null) {
+      const basis = pulse.source === 'market-truth' ? 'a direct count of the active MLS listings' : 'live MLS data'
+      sentences.push(
+        salePrice != null
+          ? `The median list price of the single-family homes for sale is ${formatPriceExact(listPrice)}${asOf}, based on ${basis}.`
+          : `The median list price for a single-family home in ${geoName} is ${formatPriceExact(listPrice)}${asOf}, based on ${basis}.`,
+      )
+      datasetVariables.push({ name: 'Median List Price', value: Math.round(listPrice), unitText: 'USD' })
+    }
+    faqs.push({ question: `What is the median home price in ${geoName}?`, answer: sentences.join(' ') })
   }
 
   const sfrPublished = publishSearchCount({ value: pulse.activeCount, grain: 'sfr' })

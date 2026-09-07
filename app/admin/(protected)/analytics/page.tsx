@@ -202,6 +202,22 @@ async function OverviewTab({ range }: { range: { startDate: string; endDate: str
           empty={<>No page data in this range. Widen the date range above.</>}
         />
       </section>
+
+      <section aria-label="AI assistant referrals">
+        <SectionHead>AI assistant referrals</SectionHead>
+        <DataList
+          label="AI assistant referrals"
+          rows={d.aiReferrers}
+          cap={d.aiReferrers.length}
+          rowKey={(r) => r.engine}
+          columns={[
+            { key: 'engine', header: 'Assistant', lead: true, cell: (r) => r.engine },
+            { key: 'sessions', header: 'Sessions', num: true, cell: (r) => formatInt(r.sessions) },
+            { key: 'users', header: 'Users', num: true, cell: (r) => formatInt(r.users) },
+          ]}
+          empty={<>No sessions arrived from ChatGPT, Perplexity, Gemini, Copilot or Claude in this range.</>}
+        />
+      </section>
     </>
   )
 }
