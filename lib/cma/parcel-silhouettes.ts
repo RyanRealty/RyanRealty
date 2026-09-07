@@ -215,3 +215,46 @@ export function renderParcelSilhouettesHtml(set: CmaParcelSet | null): string {
   <div class="lot-strip">${tiles}</div>
   ${barSvg}`
 }
+
+/**
+ * Is there anything to look at?
+ *
+ * P6, Matt 2026-09-07: on a tract subdivision this section drew six identical
+ * 0.14-acre rectangles and asked the seller to compare them. Drawing is only
+ * worth the page when the lots actually differ — a spread over a quarter, or
+ * any lot at half an acre or more, where shape and frontage start to carry
+ * value. Otherwise the fact fits in one sentence.
+ */
+const LOT_SPREAD_FLOOR = 0.25
+const BIG_LOT_ACRES = 0.5
+
+function acreageSet(set: CmaParcelSet): number[] {
+  return [set.subject, ...set.comps]
+    .map((p) => p.acres)
+    .filter((a): a is number => a != null && Number.isFinite(a) && a > 0)
+}
+
+export function lotsDifferMaterially(set: CmaParcelSet | null): boolean {
+  if (!set) return false
+  const acres = acreageSet(set)
+  // Without recorded acreage there is nothing to judge on, so the drawing
+  // stands: shape is the only thing left to compare.
+  if (acres.length < 2) return true
+  const lo = Math.min(...acres)
+  const hi = Math.max(...acres)
+  if (hi >= BIG_LOT_ACRES) return true
+  return (hi - lo) / lo > LOT_SPREAD_FLOOR
+}
+
+/** The one line that replaces the drawing when every lot is the same lot. */
+export function uniformLotLine(set: CmaParcelSet | null): string {
+  if (!set) return ''
+  const acres = acreageSet(set)
+  if (acres.length < 2) return ''
+  const lo = Math.min(...acres)
+  const hi = Math.max(...acres)
+  const fmt = (n: number) => n.toFixed(2)
+  return lo === hi
+    ? `Every kept sale sits on a ${fmt(lo)} acre lot like this one.`
+    : `Every kept sale sits on a ${fmt(lo)} to ${fmt(hi)} acre lot like this one.`
+}

@@ -11,6 +11,7 @@ import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import {
+  cleanText,
   dateLong,
   dec,
   escapeHtml,
@@ -21,12 +22,17 @@ import {
 import { clientSourceLine, formatClientMlsField } from '@/lib/cma/client-facing'
 import {
   renderBandOutcomesHtml,
+  renderDaysToOfferHtml,
   renderExpiredPeersHtml,
   renderInventoryBoardHtml,
-  renderListingTrendHtml,
   renderSold90Html,
   renderStatusGridHtml,
+  widerMarketBodyHtml,
 } from '@/lib/cma/market-area-chapters'
+import { FAILED_ASK_BACKTEST, sellerFacingFindingMeaning } from '@/lib/cma/expired-audit'
+import { dottedPhone, phoneHref, propertyDescription } from '@/lib/cma/render-blocks'
+import type { CmaBroker, CmaClient } from '@/lib/cma/types'
+import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import { productClass } from '@/lib/cma/market-area'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { sellerNetFromPrice } from '@/lib/pricing/seller-net'
@@ -42,7 +48,7 @@ import type { CmaMarketArea, CmaSoldBand } from '@/lib/cma/market-status'
 import { subjectSectionTitle } from '@/lib/cma/land-pricing'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import { TAXLOT_DISCLAIMER } from '@/lib/data/geo/getTaxlots'
-import { renderParcelSilhouettesHtml } from '@/lib/cma/parcel-silhouettes'
+import { lotsDifferMaterially, renderParcelSilhouettesHtml, uniformLotLine } from '@/lib/cma/parcel-silhouettes'
 
 const esc = escapeHtml
 
@@ -58,12 +64,21 @@ export type OpinionPageArgs = {
   subjectMapDataUri?: string | null
   tiersUsed?: string[]
   generatedAtIso: string
-  excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
+  /** Carried on render_args; nothing on the seller document prints it. */
+  excludedOutliers?: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   equity?: CmaEquityPosition | null
   expiredAudit?: ExpiredAuditData | null
   site?: CmaSiteData | null
   /** Recorded lot polygons for the subject and its comps. Null when unavailable. */
   parcels?: CmaParcelSet | null
+  /**
+   * Closing chapters moved onto the shared spine (P10), so the assembler needs
+   * what they print. Optional so existing callers that only build the middle
+   * chapters keep compiling.
+   */
+  broker?: CmaBroker | null
+  client?: CmaClient | null
+  development?: DevelopmentOpportunities | null
 }
 
 function kvTable(rows: Array<[string, string]>): string {
@@ -181,6 +196,10 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
   const history = s.listingHistoryLine?.trim()
     ? `<p>${esc(s.listingHistoryLine.trim())}</p>`
     : ''
+  // P6: when the drawn-lot chapter is dropped because every lot is the same
+  // lot, the fact it would have shown lands here as one sentence.
+  const uniformLots =
+    a.parcels && !lotsDifferMaterially(a.parcels) ? uniformLotLine(a.parcels) : ''
   const sectionTitle = subjectSectionTitle(s)
   // C9: letter keeps at most one map — the comps pin map on the pricing page.
   // Subject-only maps do not render here even when subjectMapDataUri is still stamped.
@@ -190,7 +209,8 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
     body: `
   <h2 class="section">${sectionTitle}</h2>
   ${kvTable(rows)}
-  ${history}`,
+  ${history}
+  ${uniformLots ? `<p>${esc(uniformLots)}</p>` : ''}`,
   }
 }
 
@@ -314,18 +334,6 @@ export function marketKpiPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: 'How fast this market is moving',
     body: `
   <h2 class="section">How fast this market is moving</h2>
-  ${html}`,
-  }
-}
-
-export function trendChartsPage(a: OpinionPageArgs): CmaPageDef | null {
-  const html = renderListingTrendHtml(a.extras?.marketArea)
-  if (!html) return null
-  return {
-    meta: `${esc(a.subject.streetAddress)} · New listings over time`,
-    toc: 'New listings over time',
-    body: `
-  <h2 class="section">New listings and asking prices</h2>
   ${html}`,
   }
 }
@@ -463,7 +471,12 @@ export function marketVolumePage(_a: OpinionPageArgs): CmaPageDef | null {
 }
 
 export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
-  const chart = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
+  // On an expired document the ruler leads the "Your last listing" chapter
+  // instead (P2) — the seller's own failed ask is the reading, so the chart
+  // belongs beside it, not two chapters later.
+  const chart = bandChapterShowsRuler(a)
+    ? renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+    : ''
   const peers = renderExpiredPeersHtml(a.subject, a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return null
   return {
@@ -473,6 +486,149 @@ export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
   <h2 class="section">Sold and unsold in this band</h2>
   ${chart || ''}
   ${peers || '<p>Homes like this in the same price band that came off without a sale.</p>'}`,
+  }
+}
+
+const LENS_LABELS: Record<string, string> = {
+  pricing: 'Price vs the comparable sales',
+  'time-on-market': 'Time on market',
+  'price-cuts': 'The price path',
+  attempts: 'Listing attempts',
+  presentation: 'Presentation',
+}
+
+/**
+ * Your last listing. For an expired owner this is the WHY, so it sits directly
+ * after the number and carries the price ruler with the seller's own failed ask
+ * marked on it, plus the failed-then-sold backtest (P2).
+ */
+export function lastListingPage(a: OpinionPageArgs): CmaPageDef | null {
+  const ea = a.expiredAudit
+  if (!ea || ea.findings.length === 0) return null
+  const ruler = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes, a.comps)
+  const b = FAILED_ASK_BACKTEST
+  const blocks = ea.findings
+    .map((f) => {
+      const meaning = sellerFacingFindingMeaning(f.meaning)
+      return `
+  <h3 class="subhead">${esc(LENS_LABELS[f.lens] ?? f.lens)}</h3>
+  <p>${esc(f.fact)}</p>
+  ${meaning ? `<p class="small">${esc(meaning)}</p>` : ''}`
+    })
+    .join('')
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Your last listing`,
+    toc: 'Your last listing',
+    body: `
+  <h2 class="section">Your last listing</h2>
+  <p>Your home came off the market without selling.</p>
+  ${ruler}
+  <div class="stat-strip is-3">
+    <div class="stat"><div class="val">${int(b.pairs)}</div><div class="lbl">Central Oregon homes failed to sell, then sold later, 2023 to 2026</div></div>
+    <div class="stat"><div class="val">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="lbl">of the failed ask is what the median one later sold for</div></div>
+    <div class="stat"><div class="val">${b.shareClosedAboveAskPct}%</div><div class="lbl">later sold for more than the ask that failed</div></div>
+  </div>
+  ${blocks}`,
+  }
+}
+
+/** How fast homes like yours went (P4). Replaces the month ledger. */
+export function daysToOfferPage(a: OpinionPageArgs): CmaPageDef | null {
+  const html = renderDaysToOfferHtml({ subject: a.subject, comps: a.comps })
+  if (!html) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · How fast homes like yours went`,
+    toc: 'How fast homes like yours went',
+    body: `
+  <h2 class="section">How fast homes like yours went</h2>
+  ${html}`,
+  }
+}
+
+/** This market. The 90-day band renders only when it is this house's product. */
+export function thisMarketPage(a: OpinionPageArgs): CmaPageDef | null {
+  const body = widerMarketBodyHtml(
+    { subject: a.subject, comps: a.comps, market: a.market, extras: a.extras, pricing: a.pricing },
+    'h3',
+  )
+  if (!body) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · This market`,
+    toc: 'This market',
+    body: `
+  <h2 class="section">This market</h2>
+  ${body}`,
+  }
+}
+
+/** ORS 696 / OAR 863-015-0190 disclosure and signature. Both documents (P10). */
+export function disclosurePage(a: OpinionPageArgs): CmaPageDef | null {
+  const b = a.broker
+  if (!b) return null
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${site}${b.photoUrl}`) : null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Disclosure · ${esc(b.displayName)}`,
+    toc: 'Disclosure and signature',
+    body: `
+  <h2 class="section">Disclosure</h2>
+  ${cmaDisclosureProseHtml(a)}
+  <div class="signature-page">
+    ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
+    <div class="sig-content">
+      <div class="sig-name">${esc(b.displayName)}</div>
+      <div class="sig-printed">${esc(b.displayName)}</div>
+      <div class="sig-title">${esc(b.title)} · Ryan Realty · Prepared ${dateLong(a.generatedAtIso)}</div>
+      <div class="sig-contact">
+        ${b.phone ? `<strong>${phoneHref(b.phone) ? `<a href="tel:${phoneHref(b.phone)}">${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : esc(dottedPhone(b.phone) ?? b.phone)}</strong><br/>` : ''}
+        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
+        ryan-realty.com · Bend · Oregon
+      </div>
+      ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
+    </div>
+  </div>`,
+  }
+}
+
+/** The disclosure paragraphs alone, so the immersive scene prints the same words. */
+export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
+  const b = a.broker
+  const name = b?.displayName ?? 'the preparing broker'
+  return `
+  <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
+  <p><strong>Property description.</strong> ${propertyDescription(a.subject)}</p>
+  <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
+  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
+  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date on this report and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
+  <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
+  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>`
+}
+
+/** What we would like them to do next. We, never I (VOICE.md). */
+export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
+  const b = a.broker
+  if (!b) return null
+  const isAudit = Boolean(a.expiredAudit)
+  const tel = phoneHref(b.phone)
+  const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
+  const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
+  const lead = isAudit
+    ? 'Sorry this listing did not sell. If you want a second look at the number, call or text.'
+    : 'Call or text if you want to walk the comps.'
+  const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}&utm_content=letter-next-step`
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Your next step`,
+    toc: 'Your next step',
+    body: `
+  <h2 class="section">Your next step</h2>
+  <p class="cta-lead">${lead}</p>
+  <div class="cta-actions">
+    ${tel && b.phone ? `<a href="tel:${tel}" data-rr-track="cma-call">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
+    ${tel ? `<a href="sms:${tel}" data-rr-track="cma-text">Text ${first}</a>` : ''}
+    ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}" data-rr-track="cma-email">Email ${first}</a>` : ''}
+    ${onMarket ? '' : `<a class="ghost" href="${consultUrl}" data-rr-track="cma-book">Book a conversation</a>`}
+  </div>
+  ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here.</p>` : ''}`,
   }
 }
 
@@ -531,6 +687,9 @@ export function salesAndMapPage(a: OpinionPageArgs): CmaPageDef {
  * an empty frame.
  */
 export function lotLinesPage(a: OpinionPageArgs): CmaPageDef | null {
+  // P6: six identical rectangles is not a chapter. When the lots do not
+  // differ the fact prints as one sentence in Home location instead.
+  if (!lotsDifferMaterially(a.parcels ?? null)) return null
   const strip = renderParcelSilhouettesHtml(a.parcels ?? null)
   if (!strip) return null
   const taxlot = a.parcels?.subject.taxlot?.trim()
@@ -549,6 +708,11 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
   const st = a.subdivisionStory
   if (!st) return null
   const f = st.facts
+  // A chapter headed "N/A" shipped on 65365 Concorde: the MLS row carries no
+  // subdivision and the story was built anyway. cleanText knows the whole
+  // family of MLS placeholders (N/A, None, Unknown, "Not in a subdivision").
+  const name = cleanText(f.name)
+  if (!name) return null
   const yearRows = f.years
     .map(
       (y) =>
@@ -579,11 +743,11 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
     .filter(Boolean)
     .join(' ')
   return {
-    meta: `${esc(a.subject.streetAddress)} · ${esc(f.name)}`,
-    toc: `This subdivision, ${f.name}`,
+    meta: `${esc(a.subject.streetAddress)} · ${esc(name)}`,
+    toc: `This subdivision, ${name}`,
     body: `
-  <h2 class="section">${esc(f.name)}</h2>
-  <p>${int(f.totalSales)} closed single-family sales in ${esc(f.name)}.</p>
+  <h2 class="section">${esc(name)}</h2>
+  <p>${int(f.totalSales)} closed single-family sales in ${esc(name)}.</p>
   ${sections}
   <table class="comp-table">
     <thead><tr><th>Year</th><th>Sales</th><th>Median close</th><th>Median $/sqft</th></tr></thead>
@@ -595,56 +759,70 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * Letter spine (Cos C1–C4 + C9): three acts, then a short details appendix.
- * 1) Number + why (cover + pricing)
- * 2) Comps that prove it (matrix + one comps map; no flyer dump)
- * 3) Next step lives in render closing — details/charts stay below the fold.
- * Charts: at most two labeled chart pages (band outcomes + one market trend).
+ * ONE chapter order, walked by both documents (P10, Matt 2026-09-07).
+ *
+ * The letter builds a `CmaPageDef` per id and the immersive builds a scene per
+ * the same id, from the same helpers and the same gates, so a chapter cannot
+ * exist on one path and not the other, and cannot appear in a different place.
+ * Anything that renders on only one path is a bug, not a variant.
+ *
+ * The order answers the seller's questions in the order they ask them:
+ * what is it worth and why -> for an expired, why did mine not sell -> what
+ * does it compete with at that price -> how fast will it go -> what next.
  */
+export const OPINION_CHAPTER_ORDER = [
+  'how-we-got-the-price',
+  'your-last-listing',
+  'sold-and-unsold',
+  'competition',
+  'how-fast',
+  'this-market',
+  'home-location',
+  'the-land',
+  'your-street',
+  'permits',
+  'seller-net',
+  'disclosure',
+  'next-step',
+] as const
+
+export type OpinionChapterId = (typeof OPINION_CHAPTER_ORDER)[number]
+
+/** The expired chapter owns the ruler, so the band chapter does not repeat it. */
+export function bandChapterShowsRuler(a: Pick<OpinionPageArgs, 'expiredAudit'>): boolean {
+  return !a.expiredAudit
+}
+
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
-  const rest: CmaPageDef[] = []
-  // Act 2 first after cover: comps proof before the MLS dump.
-  rest.push(
-    pricingPage({
-      subject: a.subject,
-      comps: a.comps,
-      market: a.market,
-      pricing: a.pricing,
-      tiersUsed: a.tiersUsed,
-      mapDataUri: a.mapDataUri,
-    }),
-  )
-  // Matt HARD LOCK story: comps (above) → expired peers → live competition.
-  let charts = 0
-  const outcomes = outcomesPage(a)
-  if (outcomes) {
-    rest.push(outcomes)
-    if (a.extras?.marketArea?.outcomes) charts += 1
+  const build: Record<OpinionChapterId, () => CmaPageDef | null> = {
+    'how-we-got-the-price': () =>
+      pricingPage({
+        subject: a.subject,
+        comps: a.comps,
+        market: a.market,
+        pricing: a.pricing,
+        tiersUsed: a.tiersUsed,
+        mapDataUri: a.mapDataUri,
+      }),
+    'your-last-listing': () => lastListingPage(a),
+    'sold-and-unsold': () => outcomesPage(a),
+    competition: () => competitionPage(a),
+    'how-fast': () => daysToOfferPage(a),
+    'this-market': () => thisMarketPage(a),
+    'home-location': () => snapshotPage(a),
+    'the-land': () => lotLinesPage(a),
+    'your-street': () => subdivisionChapterPage(a),
+    permits: () => permitsPage(a),
+    'seller-net': () => sellerNetPage(a),
+    disclosure: () => disclosurePage(a),
+    'next-step': () => nextStepPage(a),
   }
-  const competition = competitionPage(a)
-  if (competition) rest.push(competition)
-
-  // Details appendix (demoted hierarchy): house facts, land, ≤1 more chart.
-  rest.push(snapshotPage(a))
-  const lotLines = lotLinesPage(a)
-  if (lotLines) rest.push(lotLines)
-
-  const trends = trendChartsPage(a)
-  if (trends && charts < 2) {
-    rest.push(trends)
-    charts += 1
+  const pages: CmaPageDef[] = []
+  for (const id of OPINION_CHAPTER_ORDER) {
+    const page = build[id]()
+    if (page) pages.push(page)
   }
-  // Drop unlabeled sparklines / extra market boards from the letter (C3):
-  // status grid, sold90, KPI strip, seasonality sparkline, volume.
-
-  const subdivision = subdivisionChapterPage(a)
-  if (subdivision) rest.push(subdivision)
-  const permits = permitsPage(a)
-  if (permits) rest.push(permits)
-  const net = sellerNetPage(a)
-  if (net) rest.push(net)
-  // C1: comps once via matrix + map — no per-sale flyer pages inline.
-  return rest
+  return pages
 }
 
 export { clientSourceLine }

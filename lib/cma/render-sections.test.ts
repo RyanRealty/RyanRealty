@@ -285,7 +285,8 @@ describe('use-of-property and pricing pages in the assembled document', () => {
     expect(html).not.toContain('What this property can do')
     expect(html).not.toContain('class="zm-code">R-2')
     expect(html).toContain('How we got the price')
-    expect(html).toContain('What we searched')
+    // P5: the search story is prose now, not a "What we searched" bullet list.
+    expect(html).toContain('The sales that set this price')
     expect(html).not.toContain('What You Can Do With This Property')
   })
 })

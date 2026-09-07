@@ -242,10 +242,17 @@ export function cmaSectionStyles(): string {
      clipper: it is what removed sales 4 through 12 from a twelve-comp CMA with
      no error and no visible truncation. In print the box stays visible, so any
      future overflow is loud instead of silent. */
-    /* C1 + C4: ONE comps path on screen = stacked sales (works at 375).
-       Print keeps the side-by-side matrix. Never both visible at once. */
-  .comp-stack { display: block; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
-  .comp-matrix-wrap { display: none; margin: 8px 0 14px; overflow-x: visible; }
+    /* F2, Matt 2026-09-07: ONE matrix with thumbnails is the comps view. At
+       reading width the letter shows the same side-by-side table the PDF
+       prints — a reviewer opening ?print=1 sees what the client gets. Only
+       below 700px, where a seven-column table cannot hold, does it fall back
+       to the stacked cards. Never both visible at once. */
+  .comp-stack { display: none; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
+  .comp-matrix-wrap { display: block; margin: 8px 0 14px; overflow-x: auto; }
+  @media screen and (max-width: 700px) {
+    .comp-stack { display: block; }
+    .comp-matrix-wrap { display: none; }
+  }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
     padding: 12px;
@@ -267,6 +274,27 @@ export function cmaSectionStyles(): string {
   @media print {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }
+  }
+  /* The one sentence that reads a graphic or a table for the seller. */
+  .chart-read { font-size: 12.5px; line-height: 1.5; margin: 8px 0 4px; color: var(--navy); }
+  /* On a phone a 720-unit chart scales its own type to six pixels. It pans in
+     its own box instead. SCREEN ONLY — a scroll box on paper is a clipper, and
+     that is what silently removed comps from a delivered PDF. */
+  @media screen and (max-width: 700px) {
+    .szn.is-hero { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .szn.is-hero svg { min-width: 620px; }
+  }
+  /* The price ruler is the one graphic panning destroys: its whole reading is
+     where two ticks sit inside a band, and a cropped end deletes half of it.
+     It ships in two layouts and exactly one is ever visible (F6). */
+  .ruler-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .ruler-wide { display: none; }
+    .ruler-phone { display: block; }
+  }
+  @media print {
+    .ruler-wide { display: block !important; }
+    .ruler-phone { display: none !important; }
   }
   @media screen {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -291,21 +319,6 @@ export function cmaSectionStyles(): string {
   table.comp-matrix td.is-diff { font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
   .szn svg { width: 100%; height: auto; display: block; margin: 6px 0 2px; }
-  .month-ledger-wrap { display: flex; flex-direction: column; gap: 18px; margin: 10px 0 6px; }
-  table.month-ledger { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; }
-  table.month-ledger th { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 4px 8px; text-align: center; }
-  table.month-ledger th.stub, table.month-ledger tbody th.stub {
-    width: 3.4rem;
-    text-align: left;
-    letter-spacing: 0.1em;
-    padding-left: 0;
-    color: var(--muted);
-  }
-  table.month-ledger td { text-align: center; padding: 0 4px 6px; vertical-align: top; }
-  table.month-ledger .n { font-family: Geist, system-ui, sans-serif; font-size: 14px; line-height: 1.2; color: var(--navy); font-variant-numeric: tabular-nums; font-weight: 600; }
-  table.month-ledger .n.is-zero { color: var(--muted); font-weight: 400; }
-  table.month-ledger .n.is-fast { box-shadow: inset 0 -1.5px 0 var(--navy); }
-  table.month-ledger .a { font-size: 10px; color: var(--navy); margin-top: 6px; font-variant-numeric: tabular-nums; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .photo-tile { margin: 0; overflow: hidden; }
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }
@@ -321,6 +334,11 @@ export function cmaSectionStyles(): string {
   .status-tile-l { font-size: 9px; color: var(--muted); margin-top: 4px; }
   .inv-verdict { display: block; margin-top: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
   .stat2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
+  /* The 90-day band's figures. The letter carried no rule for this pair at
+     all, so "8" and "closed in 90 days" printed at body size on one line each
+     — the same missing-register defect F7 fixed on the market board. */
+  .stat2 .st-n { font-size: 16px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .stat2 .st-l { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 

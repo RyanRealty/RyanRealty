@@ -8,6 +8,7 @@ import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -30,18 +31,48 @@ function sellerNetBlock(p: CmaPricing): string {
   <p class="small">${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
 
-function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null): string {
-  const bits = [
-    ...(searchBody ? [searchBody] : []),
-    `${n} closed ${n === 1 ? 'sale' : 'sales'}.`,
-  ]
-  const stl = saleToListPct(market?.saleToListRatio ?? null)
-  if (stl && market) {
-    bits.push(`Recent ${market.geoLabel} sales have been closing at ${stl} percent of list.`)
-  }
-  return `<ul class="note-list">${bits.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`
+/**
+ * The search story, as one sentence.
+ *
+ * P5, Matt 2026-09-07: this was a bulleted list whose other two items were
+ * filler — "5 closed sales." restates a table the reader is about to look at,
+ * and the sale-to-list percent is printed again two paragraphs down. One
+ * statement each, once.
+ */
+function searchStory(searchBody: string | null): string {
+  return searchBody ? `<p>${esc(searchBody)}</p>` : ''
 }
 
+/**
+ * The reading, above the table (P8). A twenty-row matrix needs a sentence
+ * before the reader enters it.
+ *
+ * Both ends of the range print in the matrix's own Adjusted close row, so this
+ * introduces no figure the seller cannot check, and no figure is computed here
+ * — the adjusted closes and the recommend both arrive from lib/pricing.
+ */
+function matrixLead(input: {
+  comps: CmaAdjustedComp[]
+  pricing: CmaPricing
+}): string {
+  const adj = adjustedCloseRange(input.comps)
+  if (!adj || !adj.adjustments || !(input.pricing.recommended > 0)) return ''
+  const n = input.comps.length
+  return `<p class="chart-read">${esc(
+    `The ${n} closed ${n === 1 ? 'sale' : 'sales'} below set this number. Brought to your ${adj.adjustments}, they land at ${usd(adj.low)} to ${usd(adj.high)}. Recommended list ${usd(input.pricing.recommended)}.`,
+  )}</p>`
+}
+
+/**
+ * How the number was reached, as facts the seller can check against the table
+ * above it.
+ *
+ * The predicted close used to print here as a dollar figure. The Sunstone
+ * contract keeps expected sale / predicted close off the seller document — the
+ * recommended list is the one price a seller reads — so the sentence carries
+ * the rate and the market's sale-to-list instead, both of which the matrix and
+ * the market chapter already stand behind.
+ */
 function howTheListWasSet(input: {
   subject: CmaSubject
   market: CmaMarketContext | null
@@ -49,15 +80,16 @@ function howTheListWasSet(input: {
 }): string {
   const sqft = input.subject.sqft
   const close = input.pricing.predictedClose
-  const rec = input.pricing.recommended
-  if (sqft == null || !(sqft > 0) || close == null || !(close > 0) || !(rec > 0)) return ''
+  if (sqft == null || !(sqft > 0) || close == null || !(close > 0)) return ''
   const ppsf = usd(Math.round(close / sqft))
   const bits = [
-    `Median time-adjusted dollar per foot of these sales, at ${int(sqft)} sq ft, is ${usd(close)} (${ppsf} per square foot).`,
+    `Brought to today, these sales carry a median of ${ppsf} per square foot at ${int(sqft)} sq ft.`,
   ]
   const stl = saleToListPct(input.market?.saleToListRatio ?? null)
-  if (stl) bits.push(`At ${stl} percent of list that is ${usd(rec)}.`)
-  return `<p>${bits.map((b) => esc(b)).join(' ')}</p>`
+  if (stl && input.market) {
+    bits.push(`Recent ${input.market.geoLabel} sales have been closing at ${stl} percent of list.`)
+  }
+  return `<p class="small">${bits.map((b) => esc(b)).join(' ')}</p>`
 }
 
 export function pricingPage(input: {
@@ -102,9 +134,8 @@ export function pricingPage(input: {
     body: `
   ${lead}
   ${outOfRangeNote}
-  <h3 class="subhead">What we searched</h3>
-  ${howWePriced(input.comps.length, input.market, search.body)}
-  ${renderCompMatrixHtml(s, input.comps)}
+  ${searchStory(search.body)}
+  ${renderCompMatrixHtml(s, input.comps, matrixLead({ comps: input.comps, pricing: p }))}
   ${howTheListWasSet({ subject: s, market: input.market, pricing: p })}
   ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${search.legend ? `<p>${esc(search.legend)}</p>` : ''}` : ''}
   ${sellerNetBlock(p)}

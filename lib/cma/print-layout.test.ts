@@ -213,6 +213,8 @@ describe('print CMA layout', () => {
     const pages = printWiderMarketPages({
       subject,
       comps: fiveSales(comp),
+      // P3: the 90-day band prints only when the recommend sits inside it.
+      pricing: { recommended: 650_000 },
       market: {
         geoSlug: 'bend',
         geoLabel: 'Bend',

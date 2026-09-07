@@ -222,10 +222,12 @@ describe('assembleOpinionPages format', () => {
     expect(outcomes).toBeGreaterThanOrEqual(0)
     expect(competition).toBeGreaterThan(outcomes)
     const body = pages[outcomes]!.body
-    expect(body).toContain('4 closed')
-    expect(body).toContain('came off without a sale')
-    expect(body).toContain("Didn't sell")
-    expect(body).toContain('$460K')
+    // P1: one price ruler. Sold are filled dots, unsold hollow, and only the
+    // recommend and the seller's own last ask carry a label.
+    expect(body).toContain('4 closed in this band')
+    expect(body).toContain('asked and did not sell')
+    expect(body).not.toContain("Didn't sell")
+    expect(body).toContain('Recommended $')
     expect(body).toContain('Closed = sale price')
   })
 

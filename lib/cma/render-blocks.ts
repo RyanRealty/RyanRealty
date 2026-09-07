@@ -431,3 +431,39 @@ export function propertyIntelligenceBlock(site: CmaSiteData | null | undefined):
   }
   return html
 }
+
+/**
+ * The ORS 696 / OAR 863-015-0190 property description. Every field is omitted
+ * when the record does not carry it: land has no bedrooms, bathrooms or living
+ * area, and printing "— bedrooms · — bathrooms · — sqft" on a vacant lot
+ * describes nothing. Omitting an absent fact is the accurate form.
+ *
+ * Lives here rather than in render.ts because the disclosure is now a chapter
+ * of the shared spine (P10) and both the letter and the immersive print it.
+ */
+export function propertyDescription(subject: {
+  streetAddress: string
+  city: string
+  postalCode: string | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  lotAcres: number | null
+  yearBuilt: number | null
+}): string {
+  const head = [
+    escapeHtml(subject.streetAddress),
+    escapeHtml(subject.city),
+    `Oregon ${escapeHtml(subject.postalCode ?? '')}`.trim(),
+  ]
+    .filter(Boolean)
+    .join(', ')
+  const facts = [
+    subject.beds != null ? `${int(subject.beds)} bedrooms` : null,
+    subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathrooms` : null,
+    subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
+    subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
+    subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
+  ].filter(Boolean)
+  return `${head}${facts.length > 0 ? ` · ${facts.join(' · ')}` : ''}.`
+}

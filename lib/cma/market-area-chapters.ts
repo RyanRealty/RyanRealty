@@ -5,10 +5,16 @@
 import { dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
-import { listingTrendSvg, medianCloseLineSvg } from '@/lib/cma/market-charts'
-import { PRINT_NAVY_CREAM, renderPrintOutcomeStripSvg } from '@/lib/charts/print-svg'
-import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
-import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
+import {
+  daysToOfferSvg,
+  medianCloseLineSvg,
+  priceRulerPhoneSvg,
+  priceRulerSvg,
+  type DaysRow,
+} from '@/lib/cma/market-charts'
+import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
+import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { renderUnsoldContrastMatrixHtml } from '@/lib/cma/comp-matrix'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -19,6 +25,12 @@ export type MarketChapterArgs = {
   market: CmaMarketContext | null
   extras?: { marketArea?: CmaMarketArea | null } | null
   site?: CmaSiteData | null
+  /**
+   * The recommend. Required to decide whether the 90-day band is this
+   * subject's product at all (P3) — without it the band prints beside a
+   * number it contradicts.
+   */
+  pricing?: Pick<CmaPricing, 'recommended'> | null
 }
 
 const esc = escapeHtml
@@ -66,6 +78,37 @@ export function renderStatusGridHtml(area: CmaMarketArea | null | undefined): st
   return `${boards}<p class="small">${esc(clientSourceLine(area.source, `Similar homes in ${area.label}.`))}</p>`
 }
 
+/**
+ * Is the 90-day band this subject's product?
+ *
+ * P3, Matt 2026-09-07: the immersive printed "$458,500 median sold, 4 closed
+ * in 90 days, $455,000 to $515,000" one scroll away from a $389,000
+ * recommend, with no sentence reconciling them. The band is built on beds, not
+ * on living area, so on a small house in a subdivision of larger ones it
+ * describes a different product. CmaSoldBand carries no square footage, so
+ * there is no honest reconciling sentence to write from what is stored — under
+ * CLAUDE.md §0 the block comes out instead of shipping the contradiction.
+ *
+ * Kept when the recommend falls inside the band the seller is being shown, and
+ * the band's median is within 20% of it. Both figures are stored, neither is
+ * recomputed here.
+ */
+export function soldBandFitsRecommend(
+  band: CmaSoldBand | null | undefined,
+  recommended: number | null | undefined,
+): boolean {
+  if (!band || band.count < 3) return false
+  if (recommended == null || !(recommended > 0)) return false
+  if (band.low != null && band.high != null && (recommended < band.low || recommended > band.high)) {
+    return false
+  }
+  if (band.median != null && band.median > 0) {
+    const ratio = band.median / recommended
+    if (ratio > 1.2 || ratio < 1 / 1.2) return false
+  }
+  return true
+}
+
 export function renderSold90Html(area: CmaMarketArea | null | undefined): string {
   const s = area?.sold90
   if (!s || s.count < 3) return ''
@@ -80,6 +123,29 @@ export function renderSold90Html(area: CmaMarketArea | null | undefined): string
   <p class="small">${esc(clientSourceLine(s.source, 'Closed sales in this market area over the last 90 days.'))}</p>`
 }
 
+/**
+ * The market board. Every figure here is CITY grain, not this house's peers,
+ * so the median-sold label says so — a seller reading "$532,311 median sold"
+ * two scrolls under a $389,000 recommend has to be told which is which
+ * (dataviz: name the grain the numbers actually are).
+ *
+ * F7, 2026-09-07: one stat row, the same one the failed-then-sold statistics
+ * use, months of supply first with its verdict word under it. The letter had
+ * no rule for the immersive's `.stat3` grid at all, so on paper and at
+ * reading width the four figures printed as a stacked list — number, label,
+ * number, label — under a 42px months-of-supply hero.
+ *
+ * Every label says what its number is, and two of them used to lie about it:
+ *
+ * - `medianDom` is `market_stats_cache.median_dom`, the median of
+ *   `listings.days_to_pending` (on-market date to pending). It is the days a
+ *   seller waited for an accepted offer, not "days on market", and CLAUDE.md
+ *   §7 bans publishing a list-to-close figure under that name — so the label
+ *   names the offer, which is what the column actually measures.
+ * - `saleToListRatio` carries `median_sale_to_original_list` from the pace
+ *   read, not sale to the final ask. A seller who cut twice reads "sold to
+ *   list" as the last ask, which is a different and better-looking number.
+ */
 export function renderInventoryBoardHtml(market: CmaMarketContext | null | undefined): string {
   if (!market) return ''
   const mos = market.monthsOfSupply
@@ -89,20 +155,35 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
       ? dec(market.saleToListRatio <= 2 ? market.saleToListRatio * 100 : market.saleToListRatio, 1)
       : null
   const chart = medianCloseLineSvg(market.trend ?? [])
-  return `${
-    mos != null
-      ? `<div class="inv-hero">
-    <div class="inv-hero-n">${esc(formatMonthsOfSupply(mos))}</div>
-    <div class="inv-hero-l">months of supply</div>
-    ${verdict ? `<div class="inv-verdict">${esc(verdict.label)}</div>` : ''}
-  </div>`
-      : ''
+  const stats: Array<{ val: string; lbl: string; verdict?: string }> = []
+  if (mos != null) {
+    stats.push({
+      val: formatMonthsOfSupply(mos),
+      lbl: 'months of supply',
+      verdict: verdict?.label,
+    })
   }
-  <div class="stat3">
-    ${saleToList != null ? `<div class="st"><div class="st-n">${saleToList}%</div><div class="st-l">sold to list</div></div>` : ''}
-    ${market.medianDom != null ? `<div class="st"><div class="st-n">${int(market.medianDom)}</div><div class="st-l">median days on market</div></div>` : ''}
-    ${market.medianSalePrice != null ? `<div class="st"><div class="st-n">${usd(market.medianSalePrice)}</div><div class="st-l">median sold</div></div>` : ''}
-  </div>
+  if (saleToList != null) stats.push({ val: `${saleToList}%`, lbl: 'sold price to original ask' })
+  if (market.medianDom != null) {
+    stats.push({ val: int(market.medianDom), lbl: 'median days to an accepted offer' })
+  }
+  if (market.medianSalePrice != null) {
+    stats.push({
+      val: usd(market.medianSalePrice),
+      lbl: `median sold, every ${market.geoLabel} home`,
+    })
+  }
+  if (stats.length === 0) return chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''
+  const cells = stats
+    .map(
+      (s) => `<div class="stat">
+      <div class="val">${esc(s.val)}</div>
+      <div class="lbl">${esc(s.lbl)}</div>
+      ${s.verdict ? `<div class="lbl vd">${esc(s.verdict)}</div>` : ''}
+    </div>`,
+    )
+    .join('')
+  return `<div class="stat-strip is-${Math.min(stats.length, 4)}">${cells}</div>
   ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
 }
 
@@ -124,34 +205,136 @@ export function renderExpiredPeersHtml(
   return renderUnsoldContrastMatrixHtml(subject, peers)
 }
 
-export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): string {
+/**
+ * Both ends of what the kept sales come to once they are brought to this
+ * house. Both figures already print in the Adjusted close row of the matrix,
+ * so the sentence introduces no number the reader cannot check — nothing is
+ * recomputed here (CLAUDE.md §0, numbers come from lib/pricing on render_args).
+ */
+export function adjustedCloseRange(
+  comps: readonly CmaAdjustedComp[] | null | undefined,
+): { low: number; high: number; adjustments: string } | null {
+  const priced = (comps ?? []).map((c) => c.adjustedPrice).filter((n) => Number.isFinite(n) && n > 0)
+  if (priced.length < 2) return null
+  const kinds: string[] = []
+  if ((comps ?? []).some((c) => (c.sizeAdjustment ?? 0) !== 0)) kinds.push('size')
+  if ((comps ?? []).some((c) => (c.timeAdjustment ?? 0) !== 0)) kinds.push('date')
+  if ((comps ?? []).some((c) => (c.storyAdjustment ?? 0) !== 0)) kinds.push('style')
+  const adjustments =
+    kinds.length === 0
+      ? ''
+      : kinds.length === 1
+        ? kinds[0]!
+        : `${kinds.slice(0, -1).join(', ')} and ${kinds[kinds.length - 1]}`
+  return { low: Math.min(...priced), high: Math.max(...priced), adjustments }
+}
+
+/** The one sentence that reads the ruler for the seller. Facts, then stop. */
+export function bandOutcomeReading(
+  x: CmaBandOutcomes,
+  comps: readonly CmaAdjustedComp[] | null | undefined,
+): string {
+  const soldLo = Math.min(...x.sold)
+  const soldHi = Math.max(...x.sold)
+  const bits = [
+    `${int(x.soldTotal)} closed in this band, ${shortUsd(soldLo)} to ${shortUsd(soldHi)}.`,
+    `${int(x.unsoldTotal)} asked and did not sell.`,
+  ]
+  if (x.lastAsk != null && x.lastAsk > 0) {
+    bits.push(
+      x.lastAsk >= soldHi
+        ? 'Your ask sat at the top of the band.'
+        : x.lastAsk <= soldLo
+          ? 'Your ask sat at the bottom of the band.'
+          : 'Your ask sat inside the band.',
+    )
+  }
+  const adj = adjustedCloseRange(comps)
+  if (adj && adj.adjustments) {
+    // Short form here, exact dollars above the matrix (P8). Same two verified
+    // figures, read at the precision each surface needs.
+    bits.push(
+      `Adjusted for ${adj.adjustments}, homes like yours land at ${shortUsd(adj.low)} to ${shortUsd(adj.high)}.`,
+    )
+  }
+  return bits.join(' ')
+}
+
+export function renderBandOutcomesHtml(
+  x: CmaBandOutcomes | null | undefined,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
   if (!x || x.sold.length < 3 || x.unsold.length < 1) return ''
-  const svg = renderPrintOutcomeStripSvg({
+  const ruler = {
     sold: x.sold,
     unsold: x.unsold,
     list: x.list,
+    listLabel: `Recommended ${shortUsd(x.list)}`,
     lastAsk: x.lastAsk,
-    xMinLabel: shortUsd(x.lo),
-    xMaxLabel: shortUsd(x.hi),
-    listLabel: 'Recommend',
-    lastAskLabel: x.lastAsk != null ? 'Last ask' : null,
+    lastAskLabel: x.lastAsk != null ? `Your last ask ${shortUsd(x.lastAsk)}` : null,
     caption: 'Sold and unsold in this band',
-    colors: PRINT_NAVY_CREAM,
-  })
+  }
+  const svg = priceRulerSvg(ruler)
   if (!svg) return ''
-  const last =
-    x.lastAsk != null && Math.abs(x.lastAsk - x.list) > 1000
-      ? ` The last listing asked ${usd(x.lastAsk)}.`
-      : ''
-  return `<p>${int(x.soldTotal)} closed. ${int(x.unsoldTotal)} listings in this band came off without a sale. Recommend is ${usd(x.list)}.${last}</p>
-  <div class="szn is-hero" data-anim="chart">${svg}</div>
+  // Two layouts of one graphic, and exactly one of them is ever visible: the
+  // wide ruler on paper and at reading width, the drawn-to-fit one below
+  // 700px. F6 — the wide ruler in a pan box cropped nine sold dots and the
+  // seller's own ask off the right edge of a phone.
+  const phone = priceRulerPhoneSvg(ruler)
+  return `<div class="szn is-hero ruler-wide">${svg}</div>
+  ${phone ? `<div class="szn ruler-phone">${phone}</div>` : ''}
+  <p class="chart-read">${esc(bandOutcomeReading(x, comps))}</p>
   <p class="small">${esc(clientSourceLine(x.source, `Closed sales and unsold listings in ${x.label}.`))}</p>`
 }
 
-export function renderListingTrendHtml(area: CmaMarketArea | null | undefined): string {
-  const svg = area?.listingTrend ? listingTrendSvg(area.listingTrend) : ''
-  if (!svg || !area) return ''
-  return `<div class="szn is-hero" data-anim="chart">${svg}</div><p class="small">${esc(area.label)}.</p>`
+/**
+ * How fast homes like yours went. One days axis, one named row per kept sale
+ * at the days it waited for an offer, and the subject's own listing at the
+ * days it waited and never got one.
+ *
+ * P4, Matt 2026-09-07: this is the "what happens when it is overpriced" chart.
+ * It replaces a twelve-month ledger of one-to-three new listings and a row of
+ * dashes, which answered nothing a seller asks.
+ *
+ * The market's median days on market is deliberately NOT a tick here: that
+ * figure is list-to-close (CLAUDE.md §7), a different measure from days to
+ * offer, and two measures never share an axis.
+ */
+export function renderDaysToOfferHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {
+  const rows: DaysRow[] = a.comps
+    .map((c, i) =>
+      c.daysToOffer != null && c.daysToOffer >= 0
+        ? {
+            label: `${i + 1}. ${c.address}`,
+            days: c.daysToOffer,
+            subject: false,
+            valueLabel: `${int(c.daysToOffer)} ${c.daysToOffer === 1 ? 'day' : 'days'}`,
+          }
+        : null,
+    )
+    .filter((r): r is DaysRow => r != null)
+  if (rows.length < 3) return ''
+  const slowest = Math.max(...rows.map((r) => r.days))
+  // The subject's bar is "days it waited and never got an offer". That figure
+  // exists only for a listing that actually failed — on a house that sold, the
+  // same arithmetic is the age of the sale, not time on market.
+  const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
+  if (subjectDays != null && subjectDays > 0) {
+    rows.push({
+      label: a.subject.streetAddress,
+      days: subjectDays,
+      subject: true,
+      valueLabel: `${int(subjectDays)} days, no offer`,
+    })
+  }
+  const svg = daysToOfferSvg(rows, 'How fast homes like yours went')
+  if (!svg) return ''
+  const reading =
+    subjectDays != null && subjectDays > 0
+      ? `Each kept sale had an offer inside ${int(slowest)} days. Yours sat ${int(subjectDays)} days and never got one.`
+      : `Each kept sale had an offer inside ${int(slowest)} days.`
+  return `<div class="szn is-hero">${svg}</div>
+  <p class="chart-read">${esc(reading)}</p>`
 }
 
 export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {
@@ -176,7 +359,6 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
   const status = renderStatusGridHtml(area)
   const sold90 = renderSold90Html(area)
   const inventory = renderInventoryBoardHtml(a.market)
-  const trend = renderListingTrendHtml(area)
   const facts = propertyIntelligenceBlock(a.site)
   const parts: string[] = []
   if (status) {
@@ -203,15 +385,6 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
         <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
         <h2 class="h r">How fast this market is moving</h2>
         <div class="r">${inventory}</div>
-      </div>
-    </section>`)
-  }
-  if (trend) {
-    parts.push(`<section class="sc sc-cream tight" id="listing-trend">
-      <div class="in">
-        <div class="kick r">Listings over time</div>
-        <h2 class="h r">New listings and asking prices</h2>
-        <div class="r">${trend}</div>
       </div>
     </section>`)
   }
@@ -255,14 +428,6 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
       body: `<h2 class="section">How fast this market is moving</h2>${inventory}`,
     })
   }
-  const trend = renderListingTrendHtml(area)
-  if (trend) {
-    pages.push({
-      meta: `${esc(a.subject.streetAddress)} · Listing trend`,
-      toc: 'New listings over time',
-      body: `<h2 class="section">New listings and asking prices</h2>${trend}`,
-    })
-  }
   const photos = renderPhotoSetHtml(a)
   if (photos) {
     pages.push({
@@ -274,73 +439,60 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   return pages
 }
 
-/** Wider market only: 90-day sold + at most ONE labeled chart (C3). */
-export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
+/**
+ * The wider market body, shared by the letter chapter and the immersive scene
+ * so the two documents can never disagree about what this market is.
+ *
+ * The 90-day band renders only when it is this subject's product
+ * (soldBandFitsRecommend). The month ledger of new listings is gone: P4
+ * replaced it with the days-to-offer chart, which answers a question a seller
+ * actually has.
+ */
+export function widerMarketBodyHtml(
+  a: MarketChapterArgs,
+  headingTag: 'h3' | 'sub',
+): string {
   const area = a.extras?.marketArea
-  const sold90 = renderSold90Html(area)
-  // Prefer listing-trend chart; else inventory board (which may embed a median-close line).
-  // Never both — letter keeps ≤2 charts total with the band-outcomes strip.
-  const trend = renderListingTrendHtml(area)
-  const inventory = trend ? '' : renderInventoryBoardHtml(a.market)
-  if (!sold90 && !inventory && !trend) return ''
-  return `<section class="sc sc-navy" id="wider-market">
+  const sub = (text: string) =>
+    headingTag === 'h3'
+      ? `<h3 class="subhead">${esc(text)}</h3>`
+      : `<h3 class="sub r">${esc(text)}</h3>`
+  const fits = soldBandFitsRecommend(area?.sold90, a.pricing?.recommended ?? null)
+  const sold90 = fits ? renderSold90Html(area) : ''
+  const inventory = renderInventoryBoardHtml(a.market)
+  const chunks: string[] = []
+  if (sold90 && area?.sold90) {
+    chunks.push(
+      `<div id="sold-90">${sub(`What ${area.sold90.bedsLabel} homes sold for`)}${sold90}</div>`,
+    )
+  }
+  if (inventory) {
+    chunks.push(`<div id="inventory">${sub('How fast this market is moving')}${inventory}</div>`)
+  }
+  return chunks.join('\n')
+}
+
+/** Wider market scene: 90-day sold when it is this product, then the board. */
+export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
+  const body = widerMarketBodyHtml(a, 'sub')
+  if (!body) return ''
+  return `<section class="sc sc-navy" id="this-market">
       <div class="in">
         <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
         <h2 class="h r">This market</h2>
-        ${
-          sold90 && area?.sold90
-            ? `<div id="sold-90" class="r">
-          <h3 class="sub r">What ${esc(area.sold90.bedsLabel)} homes sold for</h3>
-          ${sold90}
-        </div>`
-            : ''
-        }
-        ${
-          inventory
-            ? `<div id="inventory" class="r">
-          <h3 class="sub r">How fast this market is moving</h3>
-          ${inventory}
-        </div>`
-            : ''
-        }
-        ${
-          trend
-            ? `<div id="listing-trend" class="r">
-          <h3 class="sub r">New listings and asking prices</h3>
-          ${trend}
-        </div>`
-            : ''
-        }
+        <div class="r">${body}</div>
       </div>
     </section>`
 }
 
 export function printWiderMarketPages(a: MarketChapterArgs): CmaPageDef[] {
-  const area = a.extras?.marketArea
-  const sold90 = renderSold90Html(area)
-  const trend = renderListingTrendHtml(area)
-  const inventory = trend ? '' : renderInventoryBoardHtml(a.market)
-  const chunks: string[] = []
-  if (sold90 && area?.sold90) {
-    chunks.push(`<h2 class="section">This market</h2>
-  <h3 class="subhead">What ${esc(area.sold90.bedsLabel)} homes sold for</h3>${sold90}`)
-  }
-  if (inventory) {
-    chunks.push(
-      `${chunks.length ? '<h3 class="subhead">How fast this market is moving</h3>' : '<h2 class="section">How fast this market is moving</h2>'}${inventory}`,
-    )
-  }
-  if (trend) {
-    chunks.push(
-      `${chunks.length ? '<h3 class="subhead">New listings and asking prices</h3>' : '<h2 class="section">New listings and asking prices</h2>'}${trend}`,
-    )
-  }
-  if (!chunks.length) return []
+  const body = widerMarketBodyHtml(a, 'h3')
+  if (!body) return []
   return [
     {
       meta: `${esc(a.subject.streetAddress)} · This market`,
       toc: 'This market',
-      body: chunks.join('\n'),
+      body: `<h2 class="section">This market</h2>\n${body}`,
     },
   ]
 }

@@ -165,8 +165,8 @@ describe('pricing beat craft', () => {
     expect(html).toMatch(/opened to 5 mile|5 miles|nearby/i)
   })
 
-  it('immersive /view shows closed-sales matrix on screen (≥5); no Subject/Sale flyer dump', () => {
-    expect(renderCompMatrixHtml(subject, five.slice(0, 4))).toBe('')
+  it('immersive /view shows the closed-sales matrix on screen; no Subject/Sale flyer dump', () => {
+    expect(renderCompMatrixHtml(subject, five.slice(0, 2))).toBe('')
     const matrix = renderCompMatrixHtml(subject, five)
     expect(matrix).toContain('The sales that set this price')
     expect(matrix).toContain('comp-matrix')
@@ -185,6 +185,9 @@ describe('pricing beat craft', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
     expect(css).toMatch(/\.comp-matrix-wrap\{display:block/)
     expect(css).toMatch(/\.comp-stack\{display:none/)
+    // F1: below 700px the matrix gives way to the cards. It collapsed the row
+    // label column to one character per line at 375 until this landed.
+    expect(css).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap\{display:none\}\.comp-stack\{display:block\}\}/)
 
     const scenes = assembleOpinionScenes({
       subject,

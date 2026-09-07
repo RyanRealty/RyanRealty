@@ -12,6 +12,7 @@ import {
 } from '@/lib/data'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
+import { resolveCmaPrintHtml } from '@/lib/cma/print-html'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
@@ -52,7 +53,13 @@ export type CmaServeResult =
  * different numbers than they were sent. If you are about to pass true here,
  * that is the decision you are making.
  */
-async function immersiveFromRow(
+/**
+ * Exported so `scripts/cma-lookpass.ts` (read-only visual review tool) can
+ * render the exact same immersive HTML this route serves, instead of forking
+ * the render_args -> render-input glue. Production behavior is unchanged —
+ * this is still only called from `serveCmaDocument` on the request path.
+ */
+export async function immersiveFromRow(
   row: CmaRenderSource,
   origin: string,
   hydrateArea: boolean,
@@ -173,6 +180,23 @@ export async function serveCmaDocument(opts: {
         kind: 'html',
         status: 403,
         html: renderWrongPersonShell({ viewerEmail: opts.viewerEmail ?? '' }),
+      }
+    }
+  }
+
+  // P9, Matt 2026-09-07: ?print=1 used to serve the frozen build-time blob
+  // while the PDF re-rendered from render_args, so a reviewer opening the
+  // print link saw a document the client would never receive, and every
+  // renderer fix looked like it had not shipped. Both now render from
+  // render_args through the same function lib/cma-pdf.ts calls.
+  if (wantsPrint) {
+    const letter = await resolveCmaPrintHtml(safeSlug)
+    if (letter?.html) {
+      return {
+        kind: 'html',
+        status: 200,
+        html: withTracker(letter.html, '<script src="/rr-cma-doc.js" defer></script>'),
+        headers: CMA_DOC_HEADERS,
       }
     }
   }

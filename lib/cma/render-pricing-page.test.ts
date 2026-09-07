@@ -61,7 +61,9 @@ describe('pricingPage', () => {
     expect(page.toc).toBe('How we got the price')
     const html = page.body
     expect(html).toContain('How we got the price')
-    expect(html).toContain('What we searched')
+    // P5, Matt 2026-09-07: the search story is one sentence, not a bulleted
+    // heading whose other items restate the table below it.
+    expect(html).not.toContain('What we searched')
     expect(html).not.toContain('How we priced this')
     expect(html).not.toContain('Expected close')
     expect(html).toContain('$655,000')
@@ -74,9 +76,11 @@ describe('pricingPage', () => {
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
     expect(html).toContain('1,631 sq ft')
-    expect(html).toContain('$640,000')
+    // The Sunstone contract keeps predicted close off the seller document.
+    // The rate and the market's sale-to-list carry the method instead.
+    expect(html).not.toContain('$640,000')
     expect(html).toContain('$392 per square foot')
-    expect(html).toContain('At 98.9 percent of list that is $655,000')
+    expect(html).toContain('closing at 98.9 percent of list')
     expect(html).not.toContain('Marker key')
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')

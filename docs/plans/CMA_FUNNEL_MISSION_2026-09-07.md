@@ -67,3 +67,294 @@ Matt's control and ships OFF; nothing in this mission flips it.
 ## Ledger
 
 Appended by each stream as it lands: commit, what changed, how it was verified.
+
+- **A · 96ea9616** (`wt/cma-doc-20260907`) — `scripts/cma-lookpass.ts`: read-only
+  visual look-pass tool. Given `cmas.slug` values, renders the current letter
+  (`resolveCmaPrintHtml` → `renderCmaHtml`) and immersive (`immersiveFromRow`
+  → `renderImmersiveCmaHtml`) output from `render_args` — same functions the
+  live PDF/`?print=1`/`/view` routes call — and screenshots every top-level
+  chapter section at 816/375 (letter) and 1280/375 (immersive), plus a
+  `contact-sheet.html` per slug. `lib/cma/lookpass-chapters.ts` (pure
+  HTML→chapter mapper, unit-tested) backs the stdout summary.
+  `immersiveFromRow` exported from `lib/cma/serve-document.ts` (no behavior
+  change) so the tool reuses it instead of forking the render_args glue.
+  `scripts/lib/server-only-shim.cjs` factors out the tsx module-resolution
+  patch already duplicated in three other CMA CLI scripts.
+  Ran on `cma-2465-7th-redmond-97756` (expired), `cma-19968` (FSBO),
+  `cma-1617-nw-8th` (seller-lp) — all three produced full contact sheets;
+  findings below. `npx tsc --noEmit` clean; `lib/cma/` vitest green except
+  one pre-existing unrelated real-DB test.
+
+  **What the renders showed (not fixed — Stream A step 1 is the tool):**
+  - Immersive "How we got the price" comps table breaks on mobile (375px):
+    the leftmost label column collapses to one character per line, running
+    the whole comp-grid vertically unreadable, on all three slugs. The
+    LETTER path handles the identical data as responsive cards at 375px with
+    no breakage — this is isolated to the immersive table markup/CSS.
+  - Immersive hero scene (`cma-2465-7th-redmond-97756`): the annotated aerial
+    photo's landmark distance callouts ("Duffy's .5 miles", "Walmart 1.2
+    miles") run past both the left and right frame edges at 1280px AND
+    375px, and a "*Location is approximate…" disclaimer caption is clipped
+    at the right edge at both widths.
+  - Letter comp card #5 (735 Oak, `cma-2465-7th-redmond-97756`) renders a
+    blank white photo box while comps 1–4 have photos — may be a legitimate
+    no-photo state or a broken image; not confirmed either way.
+
+- **A · 411eba70** (`wt/cma-doc-20260907`) — the punch list, P1–P10 + F1–F5.
+  TDD: `lib/cma/doc-punchlist.test.ts` states each item against the RENDERED
+  HTML (chapter order, the exact caption sentence, no duplicate labels in the
+  band SVG, the CSS breakpoints), written failing, then fixed.
+
+  **P1** — new `priceRulerSvg` in `lib/cma/market-charts.ts`: one price axis,
+  closed sales as filled navy dots, unsold hollow, coincident dots dodged away
+  from the axis, domain cropped to the plotted data, and exactly two labelled
+  ticks (`Recommended $389K`, `Your last ask $460K`). An axis end label that
+  would repeat a tick is dropped. `bandOutcomeReading` states the fact under it.
+  The old `renderPrintOutcomeStripSvg` lollipop is no longer called from the CMA.
+  **P2** — `your-last-listing` is now chapter 2 on both documents, carrying the
+  ruler and the failed-then-sold backtest; `sold-and-unsold` keeps the unsold
+  peers matrix only when the subject is expired.
+  **P3** — `soldBandFitsRecommend` gates the 90-day band on both paths: it
+  renders only when the recommend sits inside [low, high] and the band median is
+  within 20%. `CmaSoldBand` carries no square footage, so there is no honest
+  reconciling sentence to write from render_args — the block comes out instead.
+  **P4** — `daysToOfferSvg` + `renderDaysToOfferHtml`: every kept sale at its
+  days to offer against the subject's own days with no offer. The twelve-month
+  new-listing ledger (`listingTrendSvg`, `renderListingTrendHtml`,
+  `trendChartsPage`, both stylesheets' `.month-ledger` rules) is deleted.
+  **P5** — the subject's listing history states once (dropped from the
+  competition subject row); "What we searched" is one sentence, not a heading
+  plus three bullets two of which restated the table under them.
+  **P6** — `lotsDifferMaterially` / `uniformLotLine`: the drawn-lot chapter
+  renders only when the spread is over 25% or a lot reaches half an acre.
+  Otherwise Home location carries one sentence.
+  **P7** — "I am here" is gone; We throughout.
+  **P8** — a reading above the matrix (`The 5 closed sales below set this
+  number. Brought to your size and date, they land at $372,324 to $398,788.
+  Recommended list $389,000.`) and one legend line for the adjustment rows.
+  **P9** — `?print=1` renders from `render_args` through `resolveCmaPrintHtml`,
+  the same function the PDF calls, instead of the frozen build blob.
+  **P10** — `OPINION_CHAPTER_ORDER` in `lib/cma/opinion-pages.ts` is the ONE
+  order; `assembleOpinionPages` and `assembleOpinionScenes` both walk it under
+  the same gates. Disclosure, Home location, Seller net and Permits gained
+  immersive scenes; `render.ts` appends nothing after the cover. The FSBO
+  services page ("MLS and portal distribution", "Showing and offer management")
+  was dropped from the seller document — the Sunstone contract refuses "how we
+  would market" there, and it had been printing on every CMA including expireds.
+  **F1** — the immersive matrix falls back to the stacked cards below 700px.
+  **F2** — the letter shows the matrix on screen at reading width, cards below
+  700px; comp thumbnails load eagerly (the blank photo boxes were the look-pass
+  never scrolling past a lazy image, not a broken src).
+  **F3** — the hero photo is `object-fit: contain` over a blurred copy of
+  itself, so an agent-annotated aerial keeps every landmark label and its
+  disclaimer. On a phone it is a full-width band with the title block under it.
+  **F4** — no `data-count` anywhere; the count-up IIFE is deleted from
+  `immersive.ts`. `scripts/cma-lookpass.ts` emulates
+  `prefers-reduced-motion: reduce`, forces every image eager, and waits on
+  `document.fonts.ready`.
+  **F5** — fixed by P3.
+
+  Also: charts inside a navy scene invert (`.sc-navy svg`) — the median-close
+  line had been drawing navy ink on navy and printing its caption over a blank
+  field. The market's median sold is labelled with its grain
+  ("median sold, every Redmond home"). The predicted close no longer prints on
+  the seller page (Sunstone: expected sale / predicted close stay off it).
+
+  **Numbers skipped rather than derived in the renderer (§0):**
+  - P8 asked for the *median* of the adjusted closes. `render_args` carries no
+    such figure — `pricing` exposes `method1Low/Mid/High` ($/sqft percentiles ×
+    sqft) and `method3` (a weighted reconciliation), neither of which is the
+    median of the printed Adjusted close row. The lead states the RANGE
+    instead: both ends already print in the matrix, so no new number ships.
+  - P4 asked for the Redmond 21-day median as a tick. `market.medianDom` is a
+    list-to-close figure (CLAUDE.md §7); days to offer is a different measure
+    and two measures do not share an axis. It stays off the chart. The expired
+    audit still states it in prose beside the subject's own DOM, where the
+    comparison is like for like.
+
+  **Handed to other streams (not this stream's files):**
+  - The subject's days on market disagrees between paths on
+    `cma-2465-7th-redmond-97756`: the comp matrix prints 192 (derived from
+    `lastListDate`) and the expired audit prints 186 (derived from the listing
+    cycle). One document, two numbers for one fact — Stream D.
+  - Seller net prints "4 of 8 sales that set this price reported a concession"
+    on a document whose comp set is 5 sales. `pricing.sellerNet.knownCount`
+    counts a different set than the kept comps — Stream D.
+
+  Verified: `npx vitest run lib/cma` 860 passing; `npx tsc --noEmit` clean;
+  `ci:brand-voice`, `ci:voice-constructions`, `ci:cma-opinion-spine`,
+  `ci:cma-exemplar`, `ci:market-chart-honesty`, `ci:design-tokens`,
+  `ci:pdf-page-safety` all green. Look-pass re-run and every chapter shot read
+  by eye at 816/375 (letter) and 1280/375 (immersive) on
+  `cma-2465-7th-redmond-97756` (expired), `cma-65365-concorde` (6.38-acre land
+  subject, P6 the other way), `cma-19968` (FSBO), `cma-1617-nw-8th` (seller LP).
+
+- **A · d57854e1, 74a29de4** (`wt/cma-doc-20260907`) — what the shots caught
+  that the tests did not. Four subjects, every chapter read by eye at 816/375
+  and 1280/375.
+
+  - **A price shipped with no sales.** The comps matrix floored at `MIN_COMPS`
+    (5, the selector's target) while `lib/pricing` publishes a recommend from
+    `PRICING_MIN_COMPS` (3). `cma-19968` and `cma-1617-nw-8th` each printed a
+    recommended list whose price chapter held a map and nothing else. The
+    matrix floor is now the pricing floor.
+  - **A chapter headed "N/A."** `cma-65365-concorde` has no MLS subdivision and
+    the subdivision story rendered anyway, on both documents. `cleanText` gates
+    it now.
+  - **"Days on market 7,969", and a chart captioned "Yours sat 7,969 days and
+    never got one."** `cma-19968` last listed in 2004 and CLOSED; the elapsed
+    days since that list date are the age of a sale, not time on market.
+    `subjectDomDays` takes a stated DOM from the listing history first, and
+    derives elapsed days only for a listing that is on market or came off
+    unsold, under a three-year ceiling. The subject's bar on the days chart
+    renders only when the listing actually failed.
+  - **A chart invisible on its own scene.** `medianCloseLineSvg` drew navy ink
+    on a navy scene and printed its caption over a blank field. Every chart
+    inside `.sc-navy` inverts now, and the line's y-value labels moved into a
+    left gutter (they shared ink with September's mark).
+  - Chart labels: "192 days, no offer" ran off the frame; the days axis end
+    ticks repeated a bar label; the ruler printed an end label that repeated a
+    tick. All three fixed.
+  - The mobile hero was a 250px photo strip over 900px of blur. Below 700px it
+    is a full-width photo band with the title block under it.
+  - A wide chart scaled its own type to six pixels at 375. It pans in its own
+    box on screen at both documents. Never in print — a scroll box on paper is
+    the clipper that once removed comps from a delivered PDF.
+
+  Final contact sheets (regenerate with
+  `npx tsx scripts/cma-lookpass.ts <slug>`):
+  - `out/cma-look/cma-2465-7th-redmond-97756/contact-sheet.html` (expired)
+  - `out/cma-look/cma-65365-concorde/contact-sheet.html` (6.48-acre land)
+  - `out/cma-look/cma-19968/contact-sheet.html` (FSBO)
+  - `out/cma-look/cma-1617-nw-8th/contact-sheet.html` (seller LP)
+
+- **A · a8914ed5** (`wt/cma-doc-20260907`) — F6 and F7 off the orchestrator's read
+  of the regenerated shots.
+
+  - **F6. The ruler was cropped on a phone.** The 720-unit ruler was held at
+    `min-width` inside a pan box below 700px, the fix a previous round applied
+    to every wide chart. It is right for a twelve-row days strip and wrong for
+    this one: the ruler's whole reading is where two ticks sit inside a band,
+    so a cropped end deletes half of it. At 375 the seller saw the "$360K"
+    unsold dot and the recommend tick — nine closed sales and their own failed
+    ask were off the right edge of a box nobody scrolls. `priceRulerPhoneSvg`
+    draws the same domain (`rulerDomain` is shared, so the two layouts cannot
+    disagree about where a dot sits) into a 360-unit frame that scales with no
+    crop: lane names in a left gutter, the recommend labelled above the plot
+    and the last ask below, each label clamped to the frame by its own
+    estimated width. Both documents emit both layouts and exactly one is ever
+    visible — `.ruler-wide` on paper and above 700px, `.ruler-phone` below.
+    The failing test measures the rendered SVG: every one of the eleven dots
+    and every text box inside the viewBox, both tick labels present.
+  - **F7. "This market" printed its KPIs as a stacked list.** The letter
+    carried no rule for the immersive's `.stat3` grid, so four figures printed
+    number-then-label down the page under a 42px months-of-supply hero. It is
+    now the stat row the document already uses for the failed-then-sold
+    statistics, `stat-strip is-4`, months of supply first with its verdict word
+    under it, then the other three; two columns below 700px. The median-close
+    line stays under it. Nothing recomputed, no figure changed.
+  - **Two of those labels were not what the numbers are** (CLAUDE.md §0, §7).
+    `medianDom` is `market_stats_cache.median_dom`, which medians
+    `listings.days_to_pending` — on-market date to pending. It was labelled
+    "median days on market". It now reads **median days to an accepted offer**,
+    which is what the column measures. `saleToListRatio` carries
+    `median_sale_to_original_list` from the pace read, not sale to the final
+    ask; "sold to list" reads to a seller who cut twice as the last ask, a
+    different and better-looking number. It now reads **sold price to original
+    ask**.
+  - **The 90-day band had no register on the letter either.** `.st-n` / `.st-l`
+    existed only in the immersive stylesheet, so "8" and "closed in 90 days"
+    printed at body size on one line each. Same missing-register defect, two
+    rules.
+
+  **For the orchestrator, not acted on:** the stated reason the Redmond median
+  stays off the days-to-offer chart — "it is a list-to-close figure, and two
+  measures do not share an axis" — does not hold. `market_stats_cache.median_dom`
+  and the comps' `daysToOffer` (`lib/cma/comps.ts:131`) read the same column,
+  `listings.days_to_pending`. They ARE the same measure, so the 21-day tick is
+  commensurate with the bars. Whether to put it back is a document decision,
+  not a data one. Separately, `cma-65365-concorde` prints "Closed 4 to 6
+  bedroom sales in N/A in the last 90 days" — an MLS placeholder in a
+  client-facing source line, the same class the subdivision chapter fixed.
+
+  Verified: `npx vitest run lib/cma` 1,763 passing; `npx tsc --noEmit` clean;
+  `ci:brand-voice`, `ci:voice-constructions`, `ci:cma-opinion-spine`,
+  `ci:cma-exemplar`, `ci:market-chart-honesty`, `ci:design-tokens`,
+  `ci:pdf-page-safety` green. Look-pass re-run and the affected shots read by
+  eye on `cma-2465-7th-redmond-97756`, `cma-19968`, `cma-65365-concorde`:
+  - F6 `out/cma-look/cma-2465-7th-redmond-97756/immersive-375/03-your-last-listing.png`
+    and `letter-375/03-your-last-listing.png` — every sold dot, the unsold dot,
+    and both ticks inside the frame; `letter-816` and `immersive-1280`
+    unchanged.
+  - F7 `out/cma-look/cma-2465-7th-redmond-97756/letter-816/06-this-market.png`
+    and `letter-375/06-this-market.png`;
+    `out/cma-look/cma-19968/letter-816/05-this-market.png` and
+    `immersive-375/05-this-market.png`;
+    `out/cma-look/cma-65365-concorde/letter-816/06-this-market.png` and
+    `letter-375/06-this-market.png`.
+
+### Stream B — lanes and Auto-send (`8e8838d9` `2893e6a9` `d403f3ef` `7c8e7f26` `eb1a695a` `ba97c14c`)
+
+- Backfill migration `20260907130000_cmas_request_source_lane_backfill.sql` applied 2026-09-07 19:20Z via the Supabase MCP. Census through `listCmaQueue` before → after: fsbo 2 → 15, unknown 36 → 19, expired 378 → 382, total 442 → 445 (3 BPO rows now in the queue). Tokens are `expired-backfill` / `fsbo-backfill`: the link proves the lane, not the trigger. 15 FSBO-linked rows that carry `seller-lp` / `lead-form` were deliberately left as asked lanes.
+- BPO: rows live in `public.broker_price_opinions`, no client email column, no inbound request path. In the vocabulary as `bpo` (asked, send now), in the queue with a disabled switch reading "Sent from the BPO page".
+- `cma_lane_settings` migration `20260907140000_cma_lane_settings.sql` applied; six rows, every `auto_send=false`, verified by row read. `lib/cma/auto-send.ts` decides after a build through `isSendableQueueState`; only `ready` sends; cold lanes to the drip, asked lanes now. Switch action is superuser-only and writes `admin_actions`.
+- `/admin/cmas` lane strip with counts and the Auto-send switch (confirmation states what ON does), lane filter, Approve-and-next on the review page. Browser-verified at 375 and 1280.
+
+### Stream C — tracking to leads (`7bf6794e` `9f9bb435` `f42beb61` `5c70feef`)
+
+- Three broken hops closed: no `sent` row in `email_events` (so bounces were untraceable to the document), broker never reached `email_events`, and `linkifyHttp` swallowed sentence-final punctuation so every cold CMA email carried two 404 links (`/reviews.` and `/about.`). Proven with one send to matt@ryan-realty.com: sent, open, click, page view and identity all landed (`email_events` 8111/8112/8114, `visitor_events` 181835, session identified to person 13168).
+- `lib/data/cma/outcomes.ts`: `getCmaOutcomes` and `getCmaLaneFunnel`, batched, cached. `CmaOutcomeCell` on the review page ("What happened"), `CmaLaneFunnel` exported for the list.
+- A reply or a first open on a sent CMA reaches the broker through `queueBrokerAlert` (`reply:cma:<slug>`, `return-visit:cma:<slug>`), gated by the existing alert category switches. Wired at the SMS inbound handler, the Gmail sync, the document page view and the open pixel.
+- Open, not in scope: inbound EMAIL replies still do not advance the CRM stage or pause sequences (only the CMA half is wired); `queueBrokerAlert` dedupe has no time bucket, so a second reply from the same person never alerts; `NEXT_PUBLIC_SITE_URL` in `.env.local` points at the vercel.app host so local sends carry no identity.
+
+### Stream D — engine health (`7fe3fa59` `33ce058e` `76bb3e09` `7099f64c`)
+
+- The 138 "audit did not run" rows were all build failures; the audit never had a document. xAI key present in production, live audit calls succeed. No billing blocker.
+- 59 of 136 build failures were the accuracy contract grading a custom/new subject with the resale exact-bath rule while the selector used ±1 bath (Matt rule). Fixed; dry run: 49 of the 59 now build, 7 are genuine comp starvation, 3 comp-data-sanity. `scripts/cma-build-dryrun.ts` writes nothing.
+- Failed rows now carry one broker-readable sentence in `build_error`; the tier trace stays in `build_summary`.
+- D12 fixed (unnamed subdivision no longer bypasses the price-tier guard). D21 recorded OPEN in `CMA_STATE_OF_THE_WORLD.md`: the guard has no reference when the SUBJECT has a thin or missing subdivision cell (29 of 290 built CMAs).
+- Audit calibration v4: a `critical` finding in any category forces `review`. Dry run: 45 rows leave the ready lane (162 → 117), 20 already-flagged rows get the corrected verdict. `scripts/cma-reverdict.ts --write` re-stamps the stored verdict; to be run after this ships.
+
+### Stream D — step 3 (§0 rule 5 mismatches in the rendered document)
+
+**M1. One days on market for the subject.** The comps matrix printed 192 and the
+"your last listing" review printed 186 for `cma-2465-7th-redmond-97756`. Two
+definitions: `lib/cma/subject.ts` baked `CumulativeDaysOnMarket` (list-to-close
+across relists — §7 forbids publishing it as DOM) into
+`subject.listingHistoryLine`, which `lib/cma/comp-matrix.ts` (`subjectDomDays`)
+reads back out; `lib/cma/expired-audit.ts` computed the final cycle's own
+list-to-off-market span.
+
+Single definition, stated: **days from the final listing period's list date to
+its off-market date**, differenced as calendar dates (the MLS stores one side as
+a timestamp and the other as a bare date; subtracting them raw made the answer
+depend on the time of day the listing was keyed in, which is what produced the
+186). `finalCycleDaysOnMarket()` in `lib/cma/expired-audit.ts` is the one
+computation; `stampFinalCycleDom()` writes it onto the subject in
+`lib/cma/build.ts`, in the existing failed-last-cycle stamp block, before
+anything reads the subject.
+
+**Renderer field that carries it (for Stream A):**
+`render_args.subject.listingHistoryLine` — the `"N days on market"` token inside
+that string. `comp-matrix.ts` `subjectDomDays()` parses it with
+`/(\d+)\s+days?\s+on\s+market/i` and falls back to
+`daysOnMarketFrom({ onMarketDate: subject.lastListDate })` only when the line has
+no token. Both the sold matrix (`subjectCol`) and the unsold-contrast matrix
+(`unsoldSubjectCol`) read it, so both move together. No renderer change needed.
+Verified value for this slug: **187 in both places** (2026-02-26 → 2026-09-01).
+
+**M2. The concession sentence counts the printed set.** `lib/cma/build.ts` called
+`attachSellerNet(p, selection.pricingSales ?? set, …)` — the wider band set the
+price path is fitted on — so the line under the matrix read "4 of 8 sales that
+set this price" beside a 5-row matrix. Now `attachSellerNet(p, set, …)`, where
+`set` is the comps `priceSet()` prices and the matrix renders.
+`pricing.sellerNet.{knownCount,givenCount,medianWhenGiven}` therefore describe
+the kept comps. Renderers unchanged (`lib/cma/render-pricing-page.ts`,
+`lib/cma/opinion-pages.ts`).
+
+Verified: `npx tsx scripts/cma-build-dryrun.ts cma-2465-7th-redmond-97756` now
+prints `subject DOM · matrix 187 · last-listing review 187 · AGREE` and the
+concession denominator equal to the kept-comp count (the dry run skips the
+judge, so its kept set is the full 8; the 5-comp trim simulation prints
+"1 of 5"). Tests: `lib/cma/subject-dom-one-number.test.ts`,
+`lib/cma/build.concession-set.test.ts`.
