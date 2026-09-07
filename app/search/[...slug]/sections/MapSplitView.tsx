@@ -3,6 +3,8 @@ import { getSession } from '../../../actions/auth'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
 import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
+import { getBoundaryGeoJSON } from '@/lib/data'
+import { resolveSearchPlaceBoundaryTarget } from '@/lib/search/resolve-search-place-boundary'
 import { getCommunityBySlug } from '../../../actions/communities'
 import { getListingsWithAdvanced, type AdvancedSort } from '../../../actions/listings'
 import { getViewportSearch, type SearchFilters as ViewportSearchFilters } from '@/app/actions/search'
@@ -112,24 +114,50 @@ export async function renderMapSplitView(props: {
   // priceChangeKeys + prefs: still accepted from page.tsx for call-site stability.
   // MapSearchView does not consume buying prefs or price-change badge keys.
 
-  const placeQuery = city
-    ? decodedSubdivision
-      ? `${getSubdivisionDisplayName(decodedSubdivision)} ${city} Oregon`
-      : `${city} Oregon`
-    : 'Bend Oregon'
-
-  const [mapBoundaryGeojson, openHouseLabels] = await Promise.all([
-    city
+  // Finest place ring: neighborhood district → community/subdivision → city.
+  // Path-resolved Southern Crossing / Bend districts must draw the district
+  // polygon, not the city outline.
+  const placeBoundaryTarget = resolveSearchPlaceBoundaryTarget({
+    city,
+    neighborhood: neighborhoodName,
+    subdivision: neighborhoodName ? undefined : decodedSubdivision,
+  })
+  const placeQuery =
+    placeBoundaryTarget?.placeQuery ??
+    (city
       ? decodedSubdivision
-        ? (
-            await withTimeout(
-              getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))),
-              null,
-              1000
-            )
-          )?.boundaryGeojson ?? null
-        : withTimeout(getCityBoundary(city), null, 1000)
-      : Promise.resolve(null),
+        ? `${getSubdivisionDisplayName(decodedSubdivision)} ${city} Oregon`
+        : `${city} Oregon`
+      : 'Bend Oregon')
+  const [mapBoundaryGeojson, openHouseLabels] = await Promise.all([
+    (async () => {
+      if (placeBoundaryTarget) {
+        const fromRpc = await withTimeout(
+          getBoundaryGeoJSON({
+            geoType: placeBoundaryTarget.geoType,
+            geoSlug: placeBoundaryTarget.geoSlug,
+          }),
+          null,
+          1000,
+        )
+        if (fromRpc) return fromRpc
+      }
+      if (city && decodedSubdivision && !neighborhoodName) {
+        const community = await withTimeout(
+          getCommunityBySlug(entityKeyToSlug(subdivisionEntityKey(city, decodedSubdivision))),
+          null,
+          1000,
+        )
+        if (community?.boundaryGeojson) return community.boundaryGeojson
+      }
+      if (city && placeBoundaryTarget?.kind === 'city') {
+        return withTimeout(getCityBoundary(city), null, 1000)
+      }
+      if (city && !placeBoundaryTarget) {
+        return withTimeout(getCityBoundary(city), null, 1000)
+      }
+      return null
+    })(),
     loadOpenHouseBadgeLabels(city),
   ])
 

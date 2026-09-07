@@ -47,6 +47,7 @@ import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
+import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
 
 export type SearchFiltersInitial = {
   city?: string
@@ -272,6 +273,7 @@ export default function SearchFilters({
 
   // Dropdown panel state
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
+  const [placesQuery, setPlacesQuery] = useState('')
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
   /** Keep the lazy sheet mounted after first open so close animation still works. */
   const [moreSheetMounted, setMoreSheetMounted] = useState(false)
@@ -363,7 +365,10 @@ export default function SearchFilters({
   // Map a single panel's Popover open/close into the shared openPanel state so
   // only one dropdown is open at a time.
   function panelOpenHandler(panel: Exclude<OpenPanel, null>) {
-    return (next: boolean) => setOpenPanel(next ? panel : null)
+    return (next: boolean) => {
+      setOpenPanel(next ? panel : null)
+      if (panel === 'places' && !next) setPlacesQuery('')
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -594,173 +599,235 @@ export default function SearchFilters({
           open={openPanel === 'places'}
           onOpenChange={panelOpenHandler('places')}
         >
-          <div className="srch-places-body overflow-auto p-3">
-            <p className="srch-label mb-2.5">Places</p>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Select one or more. Map fits the selected place boundary.
-            </p>
-
-            <p className="srch-label mb-1.5">City</p>
-            <div className="mb-3 flex flex-col gap-1">
-              <Button
-                type="button"
-                variant={initialFilters.city?.trim() ? 'ghost' : 'default'}
-                size="sm"
-                onClick={() => {
-                  updateUrl({ city: undefined, postalCode: undefined })
-                  setLocationQuery('')
-                }}
-                className="justify-start"
-              >
-                Any city
-              </Button>
-              {REPORT_CITY_LABELS.map((city) => (
-                <Button
-                  key={city}
-                  type="button"
-                  variant={csvHas(initialFilters.city, city) ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    const next = toggleCsv(initialFilters.city, city)
-                    updateUrl({
-                      city: next,
-                      postalCode: undefined,
-                    })
-                    setLocationQuery(next?.split(',')[0]?.trim() || '')
-                    trackEvent('search', { city: next, search_term: locationQuery })
-                    fireFirstPartyEvent('search', {
-                      metadata: {
-                        query: next ?? city,
-                        term: locationQuery || undefined,
-                        city: next,
-                        source: 'places_multi',
-                      },
-                    })
-                  }}
-                  className="justify-start"
-                >
-                  {city}
-                </Button>
-              ))}
+          <div className="srch-places-body flex max-h-[min(28rem,70dvh)] flex-col p-0">
+            <div className="shrink-0 border-b border-border p-3">
+              <p className="srch-label mb-2">Places</p>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Select one or more. Map draws the place boundary and zooms to it.
+              </p>
+              <label className="sr-only" htmlFor="srch-places-typeahead">
+                Search places
+              </label>
+              <input
+                id="srch-places-typeahead"
+                type="search"
+                value={placesQuery}
+                onChange={(e) => setPlacesQuery(e.target.value)}
+                placeholder="Search cities, neighborhoods, communities…"
+                className="flex h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoComplete="off"
+              />
             </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              {(() => {
+                const q = normalizeSearchKey(placesQuery)
+                const cityOpts = REPORT_CITY_LABELS.filter(
+                  (city) => !q || normalizeSearchKey(city).includes(q),
+                )
+                const hoodOpts = BEND_NEIGHBORHOOD_DISTRICTS.filter(
+                  (d) => !q || normalizeSearchKey(d.label).includes(q) || normalizeSearchKey(d.slug).includes(q),
+                )
+                const communityOpts = PLACE_COMMUNITY_OPTIONS.filter(
+                  (c) => !q || normalizeSearchKey(c.label).includes(q) || normalizeSearchKey(c.slug).includes(q),
+                )
+                const subOpts = PLACE_SUBDIVISION_OPTIONS.filter(
+                  (name) => !q || normalizeSearchKey(name).includes(q),
+                )
+                const empty = cityOpts.length + hoodOpts.length + communityOpts.length + subOpts.length === 0
+                return (
+                  <>
+                    {empty ? (
+                      <p className="py-6 text-center text-sm text-muted-foreground">No places match that search.</p>
+                    ) : null}
 
-            <p className="srch-label mb-1.5">Neighborhood</p>
-            <div className="mb-3 flex max-h-40 flex-col gap-1 overflow-auto">
-              <Button
-                type="button"
-                variant={initialFilters.neighborhood?.trim() ? 'ghost' : 'default'}
-                size="sm"
-                onClick={() => setFilter('neighborhood', undefined)}
-                className="justify-start"
-              >
-                Any neighborhood
-              </Button>
-              {BEND_NEIGHBORHOOD_DISTRICTS.map((d) => (
-                <Button
-                  key={d.slug}
-                  type="button"
-                  variant={csvHas(initialFilters.neighborhood, d.label) ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    const next = toggleCsv(initialFilters.neighborhood, d.label)
-                    const cityCsv = initialFilters.city?.trim() || 'Bend'
-                    updateUrl({
-                      neighborhood: next,
-                      city: cityCsv,
-                      postalCode: undefined,
-                    })
-                    setLocationQuery(d.label)
-                  }}
-                  className="justify-start"
-                >
-                  {d.label}
-                </Button>
-              ))}
-            </div>
+                    {cityOpts.length > 0 || !q ? (
+                      <>
+                        <p className="srch-label mb-1.5">City</p>
+                        <div className="mb-3 flex flex-col gap-1">
+                          {!q ? (
+                            <Button
+                              type="button"
+                              variant={initialFilters.city?.trim() ? 'ghost' : 'default'}
+                              size="sm"
+                              onClick={() => {
+                                updateUrl({ city: undefined, postalCode: undefined })
+                                setLocationQuery('')
+                              }}
+                              className="justify-start"
+                            >
+                              Any city
+                            </Button>
+                          ) : null}
+                          {cityOpts.map((city) => (
+                            <Button
+                              key={city}
+                              type="button"
+                              variant={csvHas(initialFilters.city, city) ? 'default' : 'ghost'}
+                              size="sm"
+                              onClick={() => {
+                                const next = toggleCsv(initialFilters.city, city)
+                                updateUrl({
+                                  city: next,
+                                  postalCode: undefined,
+                                })
+                                setLocationQuery(next?.split(',')[0]?.trim() || '')
+                                trackEvent('search', { city: next, search_term: locationQuery })
+                                fireFirstPartyEvent('search', {
+                                  metadata: {
+                                    query: next ?? city,
+                                    term: locationQuery || undefined,
+                                    city: next,
+                                    source: 'places_multi',
+                                  },
+                                })
+                              }}
+                              className="justify-start"
+                            >
+                              {city}
+                            </Button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
 
-            <p className="srch-label mb-1.5">Community</p>
-            <div className="mb-3 flex max-h-40 flex-col gap-1 overflow-auto">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  // Clear only community labels that match the resort registry.
-                  const keep = splitCsv(initialFilters.subdivision).filter(
-                    (name) =>
-                      !PLACE_COMMUNITY_OPTIONS.some(
-                        (c) => c.label.toLowerCase() === name.toLowerCase(),
-                      ),
-                  )
-                  updateUrl({ subdivision: keep.length ? keep.join(',') : undefined })
-                }}
-                className="justify-start"
-              >
-                Any community
-              </Button>
-              {PLACE_COMMUNITY_OPTIONS.map((c) => (
-                <Button
-                  key={c.slug}
-                  type="button"
-                  variant={csvHas(initialFilters.subdivision, c.label) ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    const next = toggleCsv(initialFilters.subdivision, c.label)
-                    const cities = new Set(splitCsv(initialFilters.city))
-                    if (next && csvHas(next, c.label)) cities.add(c.city)
-                    updateUrl({
-                      subdivision: next,
-                      city: cities.size ? [...cities].join(',') : c.city,
-                      postalCode: undefined,
-                    })
-                    setLocationQuery(c.label)
-                  }}
-                  className="justify-start"
-                >
-                  {c.label}
-                </Button>
-              ))}
-            </div>
+                    {hoodOpts.length > 0 || !q ? (
+                      <>
+                        <p className="srch-label mb-1.5">Neighborhood</p>
+                        <div className="mb-3 flex flex-col gap-1">
+                          {!q ? (
+                            <Button
+                              type="button"
+                              variant={initialFilters.neighborhood?.trim() ? 'ghost' : 'default'}
+                              size="sm"
+                              onClick={() => setFilter('neighborhood', undefined)}
+                              className="justify-start"
+                            >
+                              Any neighborhood
+                            </Button>
+                          ) : null}
+                          {hoodOpts.map((d) => (
+                            <Button
+                              key={d.slug}
+                              type="button"
+                              variant={csvHas(initialFilters.neighborhood, d.label) ? 'default' : 'ghost'}
+                              size="sm"
+                              onClick={() => {
+                                const next = toggleCsv(initialFilters.neighborhood, d.label)
+                                const cityCsv = initialFilters.city?.trim() || 'Bend'
+                                updateUrl({
+                                  neighborhood: next,
+                                  city: cityCsv,
+                                  postalCode: undefined,
+                                })
+                                setLocationQuery(d.label)
+                              }}
+                              className="justify-start"
+                            >
+                              {d.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
 
-            <p className="srch-label mb-1.5">Subdivision</p>
-            <div className="flex max-h-40 flex-col gap-1 overflow-auto">
-              <Button
-                type="button"
-                variant={initialFilters.subdivision?.trim() ? 'ghost' : 'default'}
-                size="sm"
-                onClick={() => setFilter('subdivision', undefined)}
-                className="justify-start"
-              >
-                Any subdivision
-              </Button>
-              {PLACE_SUBDIVISION_OPTIONS.map((name) => (
-                <Button
-                  key={name}
-                  type="button"
-                  variant={csvHas(initialFilters.subdivision, name) ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    const next = toggleCsv(initialFilters.subdivision, name)
-                    const cityGuess =
-                      PLACE_COMMUNITY_OPTIONS.find(
-                        (c) => c.label.toLowerCase() === name.toLowerCase(),
-                      )?.city ??
-                      splitCsv(initialFilters.city)[0] ??
-                      'Bend'
-                    const cities = new Set(splitCsv(initialFilters.city))
-                    if (next && csvHas(next, name)) cities.add(cityGuess)
-                    updateUrl({
-                      subdivision: next,
-                      city: cities.size ? [...cities].join(',') : cityGuess,
-                      postalCode: undefined,
-                    })
-                    setLocationQuery(name)
-                  }}
-                  className="justify-start"
-                >
-                  {name}
-                </Button>
-              ))}
+                    {communityOpts.length > 0 || !q ? (
+                      <>
+                        <p className="srch-label mb-1.5">Community</p>
+                        <div className="mb-3 flex flex-col gap-1">
+                          {!q ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const keep = splitCsv(initialFilters.subdivision).filter(
+                                  (name) =>
+                                    !PLACE_COMMUNITY_OPTIONS.some(
+                                      (c) => c.label.toLowerCase() === name.toLowerCase(),
+                                    ),
+                                )
+                                updateUrl({ subdivision: keep.length ? keep.join(',') : undefined })
+                              }}
+                              className="justify-start"
+                            >
+                              Any community
+                            </Button>
+                          ) : null}
+                          {communityOpts.map((c) => (
+                            <Button
+                              key={c.slug}
+                              type="button"
+                              variant={csvHas(initialFilters.subdivision, c.label) ? 'default' : 'ghost'}
+                              size="sm"
+                              onClick={() => {
+                                const next = toggleCsv(initialFilters.subdivision, c.label)
+                                const cities = new Set(splitCsv(initialFilters.city))
+                                if (next && csvHas(next, c.label)) cities.add(c.city)
+                                updateUrl({
+                                  subdivision: next,
+                                  city: cities.size ? [...cities].join(',') : c.city,
+                                  postalCode: undefined,
+                                })
+                                setLocationQuery(c.label)
+                              }}
+                              className="justify-start"
+                            >
+                              {c.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+
+                    {subOpts.length > 0 || !q ? (
+                      <>
+                        <p className="srch-label mb-1.5">Subdivision</p>
+                        <div className="flex flex-col gap-1">
+                          {!q ? (
+                            <Button
+                              type="button"
+                              variant={initialFilters.subdivision?.trim() ? 'ghost' : 'default'}
+                              size="sm"
+                              onClick={() => setFilter('subdivision', undefined)}
+                              className="justify-start"
+                            >
+                              Any subdivision
+                            </Button>
+                          ) : null}
+                          {subOpts.map((name) => (
+                            <Button
+                              key={name}
+                              type="button"
+                              variant={csvHas(initialFilters.subdivision, name) ? 'default' : 'ghost'}
+                              size="sm"
+                              onClick={() => {
+                                const next = toggleCsv(initialFilters.subdivision, name)
+                                const cityGuess =
+                                  PLACE_COMMUNITY_OPTIONS.find(
+                                    (c) => c.label.toLowerCase() === name.toLowerCase(),
+                                  )?.city ??
+                                  splitCsv(initialFilters.city)[0] ??
+                                  'Bend'
+                                const cities = new Set(splitCsv(initialFilters.city))
+                                if (next && csvHas(next, name)) cities.add(cityGuess)
+                                updateUrl({
+                                  subdivision: next,
+                                  city: cities.size ? [...cities].join(',') : cityGuess,
+                                  postalCode: undefined,
+                                })
+                                setLocationQuery(name)
+                              }}
+                              className="justify-start"
+                            >
+                              {name}
+                            </Button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+                  </>
+                )
+              })()}
             </div>
           </div>
         </FilterDropdown>
@@ -1020,7 +1087,8 @@ export default function SearchFilters({
           }}
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-11 overflow-hidden rounded-md border border-border/60 bg-muted/40 lg:flex"
+          className="ml-auto flex h-11 overflow-hidden rounded-md border border-border/60 bg-muted/40"
+          aria-label="View"
         >
           {(['list', 'split', 'map'] as const).map((v) => (
             <ToggleGroupItem

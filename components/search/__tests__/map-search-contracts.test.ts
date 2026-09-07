@@ -212,6 +212,34 @@ describe('390 Map uses one camera', () => {
     expect(map).toMatch(/aria-label="List view"/)
   })
 
+  it('list and map-only expose Map/Split escape in the filter bar (not stuck in List)', () => {
+    const page = readSrc('app/search/page.tsx')
+    expect(page).toMatch(/hideViewToggle=\{view === 'split'\}/)
+    const src = readSrc('components/search/SearchFilters.tsx')
+    expect(src).toMatch(/aria-label="View"/)
+    expect(src).toMatch(/aria-label=\{\`\$\{v\} view\`\}/)
+  })
+
+  it('Places menu has one scroll region and an in-menu typeahead', () => {
+    const src = readSrc('components/search/SearchFilters.tsx')
+    expect(src).toMatch(/srch-places-typeahead/)
+    expect(src).toMatch(/Search cities, neighborhoods, communities/)
+    expect(src).toMatch(/placesQuery/)
+    // Nested dual scrollbars FAIL — no max-h-40 overflow-auto section lists.
+    expect(src).not.toMatch(/max-h-40[^\n]*overflow-auto/)
+    expect(src).toMatch(/srch-places-body[\s\S]*overflow-y-auto/)
+  })
+
+  it('homes-for-sale resolves place boundary for neighborhood/community/subdivision', () => {
+    const page = readSrc('app/search/page.tsx')
+    expect(page).toMatch(/resolveSearchPlaceBoundaryTarget/)
+    expect(page).toMatch(/placeBoundaryTarget\.geoType/)
+    expect(page).toMatch(/placeBoundaryTarget\.geoSlug/)
+    const resolver = readSrc('lib/search/resolve-search-place-boundary.ts')
+    expect(resolver).toMatch(/bend-\$\{district\.slug\}/)
+    expect(resolver).toMatch(/geoType: 'subdivision'/)
+  })
+
   it('MapSearchView keeps the in-shell Map/List toggle', () => {
     const src = readSrc('components/search/MapSearchView.tsx')
     expect(src).toMatch(/mobileView/)
@@ -792,7 +820,7 @@ describe('search index filter dock (E-SEARCH-REFINE)', () => {
     const dockBlock = dock.slice(0, dock.indexOf('<SearchAlertCapture'))
     expect(dockBlock).toMatch(/<h1 className="sr-only">/)
     expect(dockBlock).not.toMatch(/truncate px-4 pt-2 font-display/)
-    expect(dockBlock).toMatch(/<SearchFilters /)
+    expect(dockBlock).toMatch(/<SearchFilters[\s\S]*?hideViewToggle=\{view === 'split'\}/)
   })
 
   it('keeps V3Footer reachable under map/split (scroll unlock)', () => {

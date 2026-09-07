@@ -27,6 +27,7 @@ export default function HideAwareSearchMap({
   savedListingKeys,
   likedListingKeys,
   placeQuery,
+  boundaryGeojson,
   className,
   degraded = false,
   initialBounds,
@@ -36,6 +37,8 @@ export default function HideAwareSearchMap({
   savedListingKeys: string[]
   likedListingKeys: string[]
   placeQuery: string
+  /** Place boundary ring — same contract as MapSearchView / SearchMapClustered. */
+  boundaryGeojson?: unknown
   className?: string
   /** Timeout/error on the map-only fetch. Empty pins are not "0 homes". */
   degraded?: boolean
@@ -100,6 +103,7 @@ export default function HideAwareSearchMap({
       savedListingKeys={savedListingKeys}
       likedListingKeys={likedListingKeys}
       placeQuery={placeQuery}
+      boundaryGeojson={boundaryGeojson}
       className={className}
       initialBounds={initialBounds}
       lockBounds={lockBounds}

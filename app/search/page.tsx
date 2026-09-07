@@ -21,8 +21,8 @@ import { getBoundaryGeoJSON } from '@/lib/data'
 import { BEND_DEFAULT_BOUNDS } from '@/lib/map-constants'
 import { bboxFromSearchParam } from '@/lib/search/publish-map-bbox'
 import { buildShapeSetForSearch, decodeMapPolygon, decodeMapShapes, type DrawnShape } from '@/lib/map-polygon'
+import { resolveSearchPlaceBoundaryTarget } from '@/lib/search/resolve-search-place-boundary'
 import { stripGeoScope } from '@/components/search/geo-scope'
-import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
@@ -242,15 +242,31 @@ export default async function SearchPage({
   // Initial bounds come from the city's authoritative boundary bbox (DAL); the
   // map refines to the real viewport on first idle.
   //
-  // Perf (SEARCH_UX_WAVE3 P1): session and city boundary do not depend on each
+  // Perf (SEARCH_UX_WAVE3 P1): session and place boundary do not depend on each
   // other — run them in parallel so anonymous TTFB is not auth+boundary serial.
   // Saved/liked still wait on session (signed-in only).
-  const boundaryCityName = effectiveFilters.city?.split(',')[0]?.trim() || undefined
-  const citySlug = boundaryCityName ? slugify(boundaryCityName) : null
-  const [session, cityBoundaryGeo, openHouseLabels] = await Promise.all([
+  // Places multi-select: finest grain (neighborhood → community/subdivision →
+  // city) drives the ring + camera. City-only was FAIL for Southern Crossing
+  // (pins without the district polygon).
+  const placeBoundaryTarget = resolveSearchPlaceBoundaryTarget({
+    city: effectiveFilters.city,
+    neighborhood: effectiveFilters.neighborhood,
+    subdivision: effectiveFilters.subdivision,
+  })
+  const boundaryCityName =
+    effectiveFilters.city?.split(',')[0]?.trim() ||
+    (placeBoundaryTarget?.kind === 'neighborhood' ? 'Bend' : undefined)
+  const [session, placeBoundaryGeo, openHouseLabels] = await Promise.all([
     getSession(),
-    view !== 'list' && citySlug
-      ? withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
+    view !== 'list' && placeBoundaryTarget
+      ? withTimeout(
+          getBoundaryGeoJSON({
+            geoType: placeBoundaryTarget.geoType,
+            geoSlug: placeBoundaryTarget.geoSlug,
+          }),
+          null,
+          2000,
+        )
       : Promise.resolve(null),
     loadOpenHouseBadgeLabels(boundaryCityName),
   ])
@@ -263,7 +279,7 @@ export default async function SearchPage({
       : [[], [] as string[]]
 
   const initialBounds =
-    bboxFromSearchParam(sp.bbox) ?? bboxFromGeometry(cityBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
+    bboxFromSearchParam(sp.bbox) ?? bboxFromGeometry(placeBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
   // ?shapes= — the user's drawn multi-shape set (polygons + radius circles,
   // include/exclude), with legacy ?poly= as the read-forever fallback. Either
   // spelling supersedes the URL's place pin exactly as a live draw does
@@ -321,12 +337,13 @@ export default async function SearchPage({
       : mapListings
 
   // Boundary polygon for the map, shared by split + map views. Prefer the
-  // authoritative boundaries-table geojson; fall back to the cities action
-  // only when the user actually scoped a city (never invent Bend).
+  // resolved place polygon (neighborhood / community / subdivision / city).
+  // City action is a last-resort fallback only for city-kind targets when the
+  // boundaries RPC missed — never invent a city ring for a district/plat miss.
   const boundaryGeojson =
     view !== 'list'
-      ? (cityBoundaryGeo ??
-          (boundaryCityName
+      ? (placeBoundaryGeo ??
+          (placeBoundaryTarget?.kind === 'city' && boundaryCityName
             ? await withTimeout(getCityBoundary(boundaryCityName), null, 2000)
             : null))
       : null
@@ -344,16 +361,10 @@ export default async function SearchPage({
           ? undefined
           : totalCount
 
-  // Multi Places: CSV in city/subdivision — primary (first) drives placeQuery /
-  // boundary fit; listing query expands to the full set in toSearchAllFilter.
-  const primaryCity = filters.city?.split(',')[0]?.trim() || undefined
-  const primarySubdivision = filters.subdivision?.split(',')[0]?.trim() || undefined
-  const placeQuery =
-    primaryCity && primarySubdivision
-      ? `${primarySubdivision} ${primaryCity} Oregon`
-      : primaryCity
-        ? `${primaryCity} Oregon`
-        : `${defaultCity} Oregon`
+  // Multi Places: CSV in city/neighborhood/subdivision — primary (first) of the
+  // finest grain drives placeQuery / boundary fit; listing query expands the
+  // full set in toSearchAllFilter.
+  const placeQuery = placeBoundaryTarget?.placeQuery ?? `${defaultCity} Oregon`
 
   // Registry passthrough: every field-registry URL param present rides along
   // to the client filter bar / All-filters sheet as its raw string, so a new
@@ -431,7 +442,13 @@ export default async function SearchPage({
         <div className={isAppFrame ? 'hidden' : undefined}>
           <SentenceSearch />
         </div>
-        <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} hideViewToggle />
+        {/* Split: MapSearchView owns Map/List/Split. List + map-only: expose the
+            same escape here so buyers are never stuck without a Map door. */}
+        <SearchFilters
+          initialFilters={initialFiltersFromUrl}
+          signedIn={!!session?.user}
+          hideViewToggle={view === 'split'}
+        />
       </div>
       {/* Guest listing-alert capture stays on list/grid. Split/map hide the
           stacked email strip so the one filter row is the chrome. JSX stays
@@ -455,6 +472,7 @@ export default async function SearchPage({
               savedListingKeys={savedKeys}
               likedListingKeys={likedKeys}
               placeQuery={placeQuery}
+              boundaryGeojson={boundaryGeojson ?? undefined}
               className="h-full w-full"
               degraded={mapDegraded}
               initialBounds={initialBounds}

@@ -73,9 +73,13 @@
   );
 }
 
-/* Places multi-select body: locked height via CSS var (not arbitrary max-h-[…]). */
+/* Places multi-select: one scroll region (inner list). Header + typeahead stay fixed. */
 .srch-places-body {
   max-height: var(--srch-places-body-max, 28rem);
+}
+.srch-places-body > .overflow-y-auto {
+  /* Single scrollbar — section lists must not nest overflow-auto. */
+  overscroll-behavior: contain;
 }
 
 /* Removable-chip X. size-6 (24px) was the painted glyph; the control is the button. */
