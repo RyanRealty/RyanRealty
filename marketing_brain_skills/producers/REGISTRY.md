@@ -2,11 +2,11 @@
 
 The brain reads this file at decision-time to know which producer handles which `action_type`. New producer? Add a row here and the brain immediately knows.
 
-**Last audited:** 2026-08-18.
+**Last audited:** 2026-09-07.
 **Canonical source for each producer:** the `SKILL.md` at the listed path.
 **Template for new producers:** `marketing_brain_skills/producers/TEMPLATE.md`.
 
-> **UNUSED / DO NOT DISPATCH (2026-08-18 runtime crosswalk).** A REGISTRY row marked `UNUSED / DO NOT DISPATCH` has no writer: inbox-producer-registry, weekly `FORMAT_ROUTE_MAP`, and producer-runtime do not assign it. `resolveProducerFromRegistry` skips those rows. Do not invent a cron or dispatcher. Keep the SKILL.md (G35). Do not delete shipped TypeScript (newsletter send, saved-search-alerts, city/community/listing pages, expired-listing LP). Still live: CMA, content_engine, inbox-mapped producers, weekly-assigned producers.
+> **UNUSED / DO NOT DISPATCH (2026-08-18 runtime crosswalk; updated 2026-09-07).** A REGISTRY row marked `UNUSED / DO NOT DISPATCH` has no writer: `lib/marketing-brain/inbox-dispatcher.ts`'s comms-only resolver (the standalone `inbox-producer-registry.ts` it used to import was folded in 2026-09-07), weekly `FORMAT_ROUTE_MAP`, and producer-runtime do not assign it. Do not invent a cron or dispatcher. Keep the SKILL.md as a reference doc — the mechanical structure validator (G35) was retired 2026-09-07 with the rest of the producer-brief synthesis layer. Do not delete shipped TypeScript (newsletter send, saved-search-alerts, city/community/listing pages, expired-listing LP). Still live: CMA, content_engine, inbox-mapped producers.
 
 > **VIDEO PRODUCERS DECOMMISSIONED — 2026-06-14 (Matt directive).** Every producer whose deliverable is a video has been removed from this registry. Because the brain resolves producers ONLY through this file, video `content:*` action_types no longer resolve to any producer and can never be dispatched or attempted. Removed: listing-tour-video, listing_reveal, market-data-video, youtube-long-form-market-report, news-video, neighborhood_tour, area_guides, data_viz_video, avatar_market_update, meme_content (video), earth_zoom, google_maps_flyover, market_report_video, news_video (avatar), coming-soon-teaser, tiktok-listing-tour, youtube-long-form-walkthrough, map_route_video, school_district_overlay, walkability_overlay, market_pulse_short, clip_compilation, monthly-market-report-orchestrator, listing_launch. The Remotion code (`video/`, `listing_video_v4/`, `video_production_skills/`, `scripts/build_*_video*.py`) remains on disk but is no longer brain-callable. To re-enable, re-add the rows.
 
@@ -113,8 +113,6 @@ These producers run analysis and surface findings; they do not publish.
 
 | producer_name | path | action_types | approval | notes |
 |---|---|---|---|---|
-| analyze-anomaly | `marketing_brain_skills/analyze-anomaly/` | `analyze:drop_investigation`, `analyze:spike_investigation`, `analyze:metric_decomposition` | none (findings written to marketing_decisions; generate-briefs reads them) | Drills into flagged channel anomaly: inflection date, dimension decomposition, correlated events, hypothesis, recommended actions. ⚠️ NO_SCRIPT — skill-only, must be hand-built before brain dispatch can produce |
-| analyze-experiment | `marketing_brain_skills/analyze-experiment/` | `analyze:ab_test_design`, `analyze:ab_test_readout` | none (rollout actions it enqueues go to site-edit which has matt-review-PR) | Designs A/B tests with power calculation; reads out completed tests with chi-square / t-test significance; declares winner or extends. Script: `scripts/build-analyze-experiment.mjs` |
 | analyze-competitor | `marketing_brain_skills/analyze-competitor/` | `analyze:competitor_scan`, `analyze:competitor_report` | none (findings written to marketing_decisions) | UNUSED / DO NOT DISPATCH. Live scrape is `competitor-recon` + `/api/cron/marketing-competitor-recon`. This producer is not assigned. |
 
 ---
@@ -137,12 +135,6 @@ These producers run analysis and surface findings; they do not publish.
 
 | skill | path | role |
 |---|---|---|
-| weekly-cycle | `marketing_brain_skills/weekly-cycle/` | Top-level brain orchestrator; runs all audits + diagnose + generate-briefs |
-| diagnose-performance | `marketing_brain_skills/diagnose-performance/` | WoW/MoM deltas, z-score anomalies, channel rankings from marketing_channel_daily |
-| generate-briefs | `marketing_brain_skills/generate-briefs/` | Synthesis layer: gathers signals, maps to ranked action rows with voice validation |
-| audit-ads | `marketing_brain_skills/audit-ads/` | Audits paid Meta Ads; surfaces creative fatigue, budget drift, CPL anomalies |
-| audit-crm | `marketing_brain_skills/audit-crm/` | Audits in-house CRM: lead quality, SLA, pipeline health, qualified-seller-leads north star |
-| audit-website | `marketing_brain_skills/audit-website/` | Audits GA4 + GSC + CRM: traffic sources, SEO, conversion funnel |
 | brand-voice | `marketing_brain_skills/brand-voice/` | Enforces Ryan Realty voice on every action row before dispatch |
 | competitor-recon | `marketing_brain_skills/competitor-recon/` | Weekly Apify scrape of 8 Bend competitors + 2 national disruptors |
 | platform-trends | `marketing_brain_skills/platform-trends/` | Algorithm changes, trending formats, trending audio; feeds generate-briefs |
@@ -156,17 +148,13 @@ Cron-driven infrastructure that is brain-adjacent but not directly brain-callabl
 
 | skill | path | role | brain-callable? |
 |---|---|---|---|
-| listing_trigger | `automation_skills/triggers/listing_trigger/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/listing-watch` does not exist. | No — STOP |
-| market_trigger | `automation_skills/triggers/market_trigger/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/market-trigger` does not exist. | No — STOP |
-| trend_trigger | `automation_skills/triggers/trend_trigger/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/trend-trigger` does not exist. | No — STOP |
 | publish | `automation_skills/automation/publish/` | Live path: `/api/social/publish` + `/api/cron/publisher-sweep` | Capability |
-| post_scheduler | `automation_skills/automation/post_scheduler/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/post-scheduler` does not exist. | No — STOP |
-| buffer_poster | `automation_skills/automation/buffer_poster/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/buffer-poster` does not exist. | No — STOP |
-| engagement_bot | `automation_skills/automation/engagement_bot/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/engagement-pull` does not exist. | No — STOP |
-| performance_loop | `automation_skills/automation/performance_loop/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/performance-loop` does not exist. | No — STOP |
-| ab_testing | `automation_skills/automation/ab_testing/` | UNUSED / DO NOT DISPATCH. Claimed `/api/cron/ab-test-check` does not exist. | No — STOP |
 | qa_pass | `automation_skills/automation/qa_pass/` | Pre-review gate; auto-iterates up to 2 cycles on fixable failures | Capability |
 | feedback_loop | `automation_skills/automation/feedback_loop/` | Captures Matt's rejections as permanent rules in originating skill's SKILL.md | Capability |
+
+> `automation_skills/triggers/{listing_trigger,market_trigger,trend_trigger}` and
+> `automation_skills/automation/{post_scheduler,buffer_poster,engagement_bot,performance_loop,ab_testing}`
+> were **deleted 2026-09-07** — each claimed a `/api/cron/*` route that never existed.
 
 ---
 

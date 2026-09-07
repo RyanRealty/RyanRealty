@@ -119,8 +119,6 @@
     "/admin/transactions",
     "/admin/users",
     "/admin/visitors",
-    "/dashboard/marketing",
-    "/dashboard/marketing/inbox",
     "/team/[slug]/edit"
   ]
 }

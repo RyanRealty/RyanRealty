@@ -970,17 +970,6 @@
       "marketing_brain_skills/producers/TEMPLATE.md",
       "lib/marketing-brain/producer-output-class.ts"
     ],
-    "ci:producer-registry-resolves": [
-      "marketing_brain_skills/**",
-      "social_media_skills/**",
-      "automation_skills/**",
-      "lib/marketing-brain/**"
-    ],
-    "ci:producer-skills": [
-      "marketing_brain_skills/**",
-      "social_media_skills/**",
-      "automation_skills/**"
-    ],
     "ci:program-complete": [
       "docs/plans/PROGRAM_2026-07-21/**",
       "docs/MECHANICAL_GATES.md",

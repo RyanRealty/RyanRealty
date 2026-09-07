@@ -322,11 +322,19 @@ Non-negotiable: vision-inspect a hero still BEFORE paying for motion; 6s, one
 camera axis; `generate_audio` off; no rendered text or logos in frame. Prompts
 come from [`lib/studio/craft.ts`](lib/studio/craft.ts), never hand-written.
 
-# §5. Marketing brain — producer runtime retired (2026-08-18)
+# §5. Marketing brain — producers and the brief/diagnosis layer deleted (2026-09-07)
 
-Hourly SKILL.md producers are off. Inbox + `/marketing/request` file a row but
-run no producer. CMA, newsletter, CRM, and the Facebook seller report stay as
-TypeScript products. Social/media production is the Studio (§4).
+The producer dispatch runtime (SKILL.md producers, retired 2026-08-18) and the
+brief/diagnosis synthesis layer that fed it (audits, diagnose, generate-briefs,
+weekly-cycle, platform-trends, performance-bias) are deleted, not just off.
+What remains: the inbox (`marketing@ryan-realty.com`) and `/marketing/request`
+still file a `marketing_brain_actions` row and route it to Matt via
+`comms-matt-alert` (no producer runs); the daily channel snapshots
+(`marketing_brain_skills/snapshot-channels`); the measurement loop
+(`lib/marketing-brain/measurement-loop.ts`); competitor recon
+(`lib/marketing-brain/competitor-recon.ts`); the content library
+(`app/admin/(protected)/content-library/**`); and the Studio (§4). CMA,
+newsletter, and CRM stay as TypeScript products.
 Voice: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).
 
 # §6. Mechanical guardrails
@@ -540,12 +548,12 @@ task. Everything else fires on trigger match.
 
 - **`social_media_skills/`** — per-deliverable producer skills. Index at its README. Resolve
   through REGISTRY, never by guessing a path.
-- **`automation_skills/`** — three triggers (`listing_trigger`, `market_trigger`,
-  `trend_trigger`) plus the surviving pipelines under `automation_skills/automation/`
-  (`post_scheduler`, `performance_loop`, `engagement_bot`, `ab_testing`, `publish`, `qa_pass`,
-  `feedback_loop`, `buffer_poster`, `api_knowledge`) and `automation_skills/content_engine/`.
-  `repurpose_engine` and `thumbnail_generator` were deleted 2026-06-15. Inbound DM/comment lead
-  capture writes to `public.crm_people`.
+- **`automation_skills/`** — the surviving pipelines under `automation_skills/automation/`
+  (`publish`, `qa_pass`, `feedback_loop`, `api_knowledge`) and `automation_skills/content_engine/`.
+  `automation_skills/triggers/` (`listing_trigger`, `market_trigger`, `trend_trigger`) and
+  `post_scheduler` / `performance_loop` / `engagement_bot` / `ab_testing` / `buffer_poster` were
+  deleted 2026-09-07 — none had a live cron. `repurpose_engine` and `thumbnail_generator` were
+  deleted 2026-06-15. Inbound DM/comment lead capture writes to `public.crm_people`.
 
 ## Content routing — which file to load per deliverable
 

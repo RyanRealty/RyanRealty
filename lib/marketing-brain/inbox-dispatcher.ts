@@ -18,7 +18,22 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { INBOX_PARSE_CONFIDENCE_THRESHOLD, type InboxParseResult } from './inbox-parser'
-import producerRegistry from './inbox-producer-registry'
+
+/**
+ * comms:* action types are the only ones that still resolve to a real
+ * SKILL.md producer (comms-matt-alert). Every other action_type — the
+ * producer runtime that used to handle content:*, site:*, ops:* was
+ * retired 2026-08-18 — falls through to the matt_alert triage path below.
+ * This replaces the standalone inbox-producer-registry.ts (deleted
+ * 2026-09-07), which mapped only these same four types.
+ */
+const COMMS_MATT_ALERT_TYPES = new Set([
+  'comms:matt_alert',
+  'comms:matt_summary',
+  'comms:team_update',
+  'comms:stakeholder_summary',
+])
+const COMMS_MATT_ALERT_PRODUCER = 'marketing_brain_skills/producers/comms-matt-alert'
 
 let _supabase: SupabaseClient | null = null
 
@@ -50,16 +65,12 @@ export interface DispatchResult {
 }
 
 /**
- * Resolve action_type → assigned_producer using the (small) static
- * registry table imported from inbox-producer-registry. The registry is
- * synced manually with producers/REGISTRY.md the same way action_types
- * are in inbox-parser.ts. If a future producer is added and the parser
- * emits its action_type before this registry is updated, dispatch falls
- * through to comms:matt_alert with an explanatory note.
+ * Resolve action_type → assigned_producer. Only the comms:* family
+ * resolves to a producer post-retirement; everything else returns null
+ * and dispatch falls through to comms:matt_alert triage below.
  */
 function resolveProducer(actionType: string): string | null {
-  const entry = producerRegistry[actionType]
-  return entry ?? null
+  return COMMS_MATT_ALERT_TYPES.has(actionType) ? COMMS_MATT_ALERT_PRODUCER : null
 }
 
 export async function dispatchParsedEmail(

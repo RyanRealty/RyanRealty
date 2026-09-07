@@ -923,7 +923,7 @@
       "workstream": "W10",
       "mission": "M3",
       "title": "Purge catalog drift: request catalog and dispatch registry offering producers deleted in June",
-      "status": "done",
+      "status": "partial",
       "requiredMechanism": {
         "gates": [
           "scripts/check-producer-registry-resolves.mjs"
@@ -937,7 +937,7 @@
       },
       "proofPath": "lib/marketing-brain/inbox-producer-registry.ts (reconciled to 57 resolving entries) + scripts/check-producer-registry-resolves.mjs (ci:producer-registry-resolves, in ci:gates) — AST gate that fails on any shim path lacking an in-repo SKILL.md. Decision: 04-DECISIONS-RECORDED.md §16.",
       "verifiedBy": "Independent adversarial verifier agent (assume-broken brief, different agent than the builder): confirmed no live producer was wrongly removed (every removed path lacks an in-repo SKILL.md), every kept entry resolves, a shim miss routes to comms:matt_alert (not a throw/drop), the gate bites + no false positive, tsc 0 errors, and parser/deliverables were intentionally unchanged. 2026-07-23.",
-      "remaining": "DONE. The in-process producer shim no longer routes any action_type to a producer with no in-repo SKILL.md — the ~29 decommissioned-video / ops-fub-crm / coming-soon entries were removed, so those requests fall through to comms:matt_alert (local fulfillment) instead of dying in producer-runtime with \"SKILL.md not found\". ci:producer-registry-resolves (AST-based) keeps the shim honest. inbox-parser VALID_ACTION_TYPES + the broker deliverables catalog were deliberately kept (they feed the matt_alert funnel with context and preserve the broker video-request path) — see §16."
+      "remaining": "RETIRED 2026-09-07: lib/marketing-brain/inbox-producer-registry.ts and scripts/check-producer-registry-resolves.mjs were deleted with the rest of the producer-brief synthesis layer. The registry's function survives inline as a 4-entry Set in lib/marketing-brain/inbox-dispatcher.ts's resolveProducer() (comms:* -> comms-matt-alert, everything else -> null -> matt_alert triage) — the same outcome the old 57-entry shim converged to, without a standalone file or AST gate to keep honest. This row's original mechanism is gone by design, not by regression."
     },
     {
       "id": "W10.6",
@@ -1038,7 +1038,7 @@
       "workstream": "W11",
       "mission": "M4",
       "title": "Canon cleanup — VOICE.md Orwell + never-pander section; delete stale five-attribute SKILL.md model and contradictory cursor blog rules; repoint producer-gate references",
-      "status": "done",
+      "status": "partial",
       "requiredMechanism": {
         "gates": [
           "scripts/check-producer-skills.mjs"
@@ -1052,7 +1052,7 @@
       },
       "proofPath": "VOICE.md gained \"The Orwell rules\" + \"Never pander\" sections (Five Laws stay canonical). brand-voice/SKILL.md retired the five-attribute model -> Five Laws pointer (+ frontmatter). blog-voice.mdc was already reconciled by W13.3. Mechanism: scripts/validate-producer.mjs G35 MANDATORY_REFS_BASE repointed voice_guidelines.md -> VOICE.md, enforced by ci:producer-skills (in ci:gates); all 51 producer SKILL.md + TEMPLATE.md now cite marketing_brain_skills/brand-voice/VOICE.md (zero did before). Decision: 04-DECISIONS §23.",
       "verifiedBy": "Independent adversarial verifier (different agent, producer-integrity + doc-soundness focus): initially FAIL — the first-pass line-insertion split 21 markdown tables/lists + VOICE.md carried 25 of its own banned punctuation marks. Both fixed + deterministically re-verified: producers now use a structure-safe INLINE replacement (numstat confirms ZERO line-count changes across all 52 files, backticks balanced, previously-broken table/list/sentence diffs render clean), VOICE.md converted to zero banned punctuation (grep-clean, reads well), ci:producer-skills 51/51, gate proven to bite. 2026-07-23.",
-      "remaining": "DONE. VOICE.md is the single voice source the canon + every producer point to. ci:producer-skills fails CI when a producer drops the VOICE.md reference (proven to bite). The stale five-attribute model is retired; the Orwell + never-pander rules are canon."
+      "remaining": "RETIRED 2026-09-07: scripts/check-producer-skills.mjs and scripts/validate-producer.mjs (G35, the structure/reference validator this row's mechanism named) were deleted with the rest of the producer-brief synthesis layer. marketing_brain_skills/brand-voice/VOICE.md itself is untouched and still the single voice source every producer SKILL.md references in prose; there is no longer a mechanical gate enforcing that reference. This row's original mechanism is gone by design, not by regression."
     },
     {
       "id": "W11.5",
