@@ -17,6 +17,8 @@ import {
 } from '@/lib/data/prospecting/drip-queue'
 import { canSendDripNow, DRIP_SPACING_MINUTES } from '@/lib/data/prospecting/drip-schedule'
 import { sendProspectingEmailIntro } from '@/app/actions/prospecting'
+import { getProspect } from '@/lib/data'
+import { loadCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
 
 export type DripDrainResult =
   | { ok: true; action: 'idle'; reason: 'weekend' | 'before-window' | 'spacing' | 'empty' }
@@ -75,9 +77,26 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
     }
 
     const idempotencyKey = `drip:${next.kind}:${next.id}:${next.queuedAt}`
+    // Review-page email edits (if any) live on the linked CMA build_summary.
+    let subjectOverride: string | null = null
+    let bodyOverride: string | null = null
+    const prospect = await getProspect(next.kind, next.id)
+    const cmaSlug =
+      prospect && (prospect.doc.state === 'ready' || prospect.doc.state === 'sent')
+        ? prospect.doc.slug
+        : null
+    if (cmaSlug) {
+      const ov = await loadCmaFirstContactOverride(cmaSlug)
+      if (ov) {
+        subjectOverride = ov.subject || null
+        bodyOverride = ov.bodyText || null
+      }
+    }
     const sent = await sendProspectingEmailIntro(next.kind, next.id, {
       idempotencyKey,
       actor: 'drip-cron',
+      subjectOverride,
+      bodyOverride,
     })
     if (!sent.ok) {
       // Permanent hard-stops / already-sent: dequeue so the drip does not stall.

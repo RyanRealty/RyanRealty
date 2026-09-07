@@ -20,6 +20,8 @@ import { checkAdminAction } from '@/lib/admin/require-admin'
 import { revalidatePath } from 'next/cache'
 import { listCmaQueue, isSendableQueueState, type CmaQueueRow } from '@/lib/data'
 import { approveCmaAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
+import type { CmaSendOverride } from '@/lib/cma/send'
+import { saveCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
 
 export type ApproveAndDeliverResult =
   | { ok: true; outcome: 'sent'; transport: 'gmail' | 'resend' | null }
@@ -39,7 +41,10 @@ async function findQueueRow(slug: string): Promise<CmaQueueRow | null> {
  * Returns which lane it took so the caller can say so plainly — "sent" and
  * "queued behind 11 others" are different things to a broker working a list.
  */
-export async function approveAndDeliverCma(slug: string): Promise<ApproveAndDeliverResult> {
+export async function approveAndDeliverCma(
+  slug: string,
+  override?: CmaSendOverride,
+): Promise<ApproveAndDeliverResult> {
   try {
     const auth = await checkAdminAction('prospecting.view')
     if (!auth.ok) return { ok: false, error: auth.error }
@@ -91,7 +96,7 @@ export async function approveAndDeliverCma(slug: string): Promise<ApproveAndDeli
     }
 
     if (row.sendMode === 'now') {
-      const sent = await sendCmaToLeadAction(slug)
+      const sent = await sendCmaToLeadAction(slug, override)
       if (sent.error) return { ok: false, error: `Approved, but the send failed: ${sent.error}` }
       revalidatePath('/admin/cmas')
       return { ok: true, outcome: 'sent', transport: sent.data?.transport ?? null }
@@ -105,6 +110,14 @@ export async function approveAndDeliverCma(slug: string): Promise<ApproveAndDeli
     )
     if (!row.prospectKind || !row.prospectId) {
       return { ok: false, error: 'Approved, but this CMA is not linked to a prospect row, so it cannot enter the drip.' }
+    }
+    // Carry Review email edits into the drip drain via build_summary.
+    if (override?.subject?.trim() || override?.bodyText?.trim()) {
+      const saved = await saveCmaFirstContactOverride(slug, {
+        subject: override.subject?.trim() ?? '',
+        bodyText: override.bodyText?.trim() ?? '',
+      })
+      if (!saved.ok) return { ok: false, error: `Approved, but email edits could not be saved: ${saved.error}` }
     }
     const queued = await enqueueProspectFirstTouchEmail(row.prospectKind, row.prospectId)
     if (!queued.ok) return { ok: false, error: `Approved, but the drip queue refused it: ${queued.error}` }
