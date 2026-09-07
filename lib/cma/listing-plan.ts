@@ -15,8 +15,7 @@
  * Voice: marketing_brain_skills/brand-voice/VOICE.md. State the fact, then
  * stop. No sentence explains another sentence, no coined maxim, no promise of
  * an outcome ("will sell", "guaranteed"). Actions describe what we DO, not
- * what will happen. Every emitted string is scanned by lib/voice/check.ts's
- * checkBrandVoice before it can be said to pass (see listing-plan.test.ts).
+ * what will happen.
  */
 
 import type { CmaExtras } from '@/lib/cma/extras'

@@ -6,7 +6,6 @@
  * our storage before the row flips to ready. humanApprovedAt stays null.
  * This module writes a draft. It does not post.
  */
-import { checkBrandVoice } from '@/lib/voice/check'
 import type { ImageToVideoOptions } from '@/lib/grok-video'
 import type { GrokImageOptions } from '@/lib/grok-image'
 import type { MarketPulse } from '@/lib/data/types/market'
@@ -113,13 +112,6 @@ export type ImagineProduceAdapters = {
   killDraft: (id: string, reason: string) => Promise<unknown>
 }
 
-function voiceOrError(caption: string): string | null {
-  const voice = checkBrandVoice(caption)
-  if (voice.ok) return null
-  const terms = voice.violations.map((v) => v.term).join(', ')
-  return `Caption failed voice: ${terms}`
-}
-
 function publishPayload(opts: {
   platforms: string[]
   mediaType: 'reel' | 'image'
@@ -193,8 +185,6 @@ async function produceListing(
   if (!listing) return { ok: false, error: 'No live listing with a photo matched that name.' }
 
   const caption = listingDraftCaption(listing)
-  const voiceErr = voiceOrError(caption)
-  if (voiceErr) return { ok: false, error: voiceErr }
 
   const target = listing.listNumber ? `mls:${listing.listNumber}` : `key:${listing.listingKey}`
   const inserted = await adapters.insertPending({
@@ -256,8 +246,6 @@ async function produceGbp(
   if (!pulse) return { ok: false, error: 'No live market pulse for Central Oregon.' }
 
   const caption = gbpDraftCaption(pulse)
-  const voiceErr = voiceOrError(caption)
-  if (voiceErr) return { ok: false, error: voiceErr }
 
   const inserted = await adapters.insertPending({
     actionType: 'content:imagine_gbp',

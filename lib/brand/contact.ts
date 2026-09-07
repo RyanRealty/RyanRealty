@@ -28,6 +28,8 @@ export const BRAND = {
   url: 'https://ryan-realty.com',
   /** ISO date used by JSON-LD foundingDate. */
   founded: '2023-06-21',
+  /** Ryan Realty LLC itself dates from 2014; the Bend office opened June 2023 (Matt 2026-09-07). */
+  llcSince: '2014',
   /** Prose form for body copy ("opened in June 2023"). */
   foundedLabel: 'June 2023',
   /** NAP. The live Organization JSON-LD carries locality + region only (no
@@ -58,7 +60,9 @@ export const BRAND = {
     x: 'https://x.com/ryanrealtybend',
     /** Real claimed slug (verified live 2026-06-10) — /company/ryanrealtybend 404s. */
     linkedin: 'https://www.linkedin.com/company/ryan-realty-llc-bend-oregon',
-    pinterest: 'https://www.pinterest.com/ryanrealtybend',
+    /** Matt's pick 2026-09-07: /ryanrealty is the account he uses (the
+     *  /ryanrealtybend duplicate is being closed). GBP url_pinterest matches. */
+    pinterest: 'https://www.pinterest.com/ryanrealty',
     threads: 'https://www.threads.net/@ryanrealtybend',
     /** Google Business Profile — canonical Maps URL (cid form, stable).
      *  Resolved via Places API 2026-07-29: placeId ChIJfVsN4o3IuFQR7KJXpmn9L5k.

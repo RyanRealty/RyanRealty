@@ -700,4 +700,120 @@ export const posts: BlogPostSeed[] = [
 <p><a href="/homes-for-sale">Get listing alerts</a> for the price band today's rate supports, or <a href="/book">book a call</a> and we will read the local numbers with you.</p>
 `,
   },
+  {
+    title: "Schools in Central Oregon: What Is Here and How Enrollment Works",
+    slug: "schools-central-oregon-guide-families",
+    category: "Lifestyle & Living",
+    tags: ["schools","bend-la pine","redmond","sisters","crook county","charter schools","private schools"],
+    hero_image_url: "/images/blog/schools-central-oregon-guide-families.jpg",
+    author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
+    published_at: '2026-09-07T16:00:00Z',
+    status: 'published',
+    seo_title: "Schools in Central Oregon: Districts, Charters, Private (2026)",
+    seo_description: "The four public districts with their fall 2025 enrollment, how to find the school assigned to an address, transfer rules, charter and private tuition for 2026-27, and colleges.",
+    excerpt: "Four districts, their sizes, how to find the school assigned to an address, how transfers work, charter and private tuition for 2026-27, and the two colleges. No ratings.",
+    content: `
+<p>Central Oregon has four public school districts a home buyer is likely to land in, a set of charter and private schools, and two colleges. This guide is what each one offers, how large it is, how to find the school assigned to a specific address, and how transfers work. It does not rate schools or neighborhoods. Every figure names its source, and enrollment counts are the Oregon Department of Education's fall 2025 membership report.</p>
+
+<h2>Find the school for an address first</h2>
+<p>Attendance areas are drawn by the district and change as schools open, so look up the specific address before you decide anything. Bend-La Pine assigns schools through the county's DIAL lookup at dial.deschutes.org, where an address returns its elementary, middle, and high school. Redmond publishes a bus route locator that returns the neighborhood school. Sisters has a boundary map tool on its district site. Crook County publishes an interactive elementary boundary map. Our <a href="/schools">schools index</a> lists every school in the region by district with a page for each.</p>
+
+<h2>Bend-La Pine Schools</h2>
+<p>The largest district in the region covers Bend, La Pine, Sunriver, and the country between. Its site lists 17 elementary schools, two K-8 magnet schools, seven middle schools, six high schools, an online school, and a transition program, and the Department of Education counted 16,530 students in fall 2025. Two public charter schools also sit inside the district: Bend International School, a free K-8 charter, and Desert Sky Montessori. The 2026-27 year starts on a staggered schedule, September 9 for grades 1 to 6 and 9, September 10 for grades 7, 8, and 10 to 12, and September 11 for everyone. A student who lives in another district needs approval from both the home district and Bend-La Pine to transfer in, and the district says those decisions are usually made in spring.</p>
+
+<h2>Redmond School District</h2>
+<p>Redmond lists eight elementary schools, two middle schools, two high schools, Redmond High and Ridgeview High, and three specialty options: Redmond Proficiency Academy, a free public charter for grades 6 to 12, RSDFlex online, and StepUP. The fall 2025 count was 7,281 students. Households can ask for a school other than the assigned one within the district, subject to space and staffing, with a May 31 deadline and a waitlist after capacity.</p>
+
+<h2>Sisters School District</h2>
+<p>Sisters runs one elementary, one middle, and one high school, plus Sisters Educational Options, for 1,171 students in fall 2025. The district's board has set no limit on students transferring in from other districts as long as there is space, and a transfer is renewed at each change of school level.</p>
+
+<h2>Crook County School District</h2>
+<p>Prineville and the surrounding county are served by eleven schools, among them two elementary schools in town, two K-8 schools in the outlying communities, a middle school, Crook County High, an alternative high school, Powell Butte Community School, a home-link program, and an online option. The fall 2025 count was 3,291 students. Transfers out of or into the district are handled case by case, and both districts must approve.</p>
+
+<h2>Private schools in Bend</h2>
+<p>Each school publishes its own tuition, and the figures below are the 2026-27 rates posted on their sites as of September 7, 2026. Activity and materials fees are extra where noted.</p>
+<ul>
+<li>Cascades Academy, preschool through grade 12. Kindergarten through grade 5 $25,332 plus fees, grades 9 to 12 $26,010 plus fees.</li>
+<li>Seven Peaks School, preschool through grade 8. $19,859 for all grades plus activity fees.</li>
+<li>Trinity Lutheran School, preschool through grade 12. Kindergarten through grade 5 $11,235, grades 6 to 8 $12,175, grades 9 to 12 $13,065.</li>
+<li>St. Francis of Assisi Catholic School, preschool through grade 8. Kindergarten through grade 5 $9,275, grades 6 to 8 $9,950.</li>
+<li>Morning Star Christian School, nursery through grade 8. Kindergarten through grade 5 $7,350, grades 6 to 8 $7,950.</li>
+<li>Waldorf School of Bend, toddler through grade 8. Posted tuition $16,180 plus a $500 materials fee.</li>
+</ul>
+<p>The two public charters, Bend International School and Redmond Proficiency Academy, charge no tuition and enroll by application.</p>
+
+<h2>After high school</h2>
+<p>Oregon State University-Cascades in southwest Bend enrolled 1,401 undergraduate and graduate students in fall 2025, with 24 undergraduate majors and graduate programs that include counseling, a writing MFA, teaching, and a doctorate in physical therapy. Central Oregon Community College, the oldest two-year college in Oregon, has campuses in Bend, Redmond, Madras, and Prineville.</p>
+
+<h2>What this means when you buy</h2>
+<p>The school assigned to a house is a fact about the address, not a rating, and it is the only fact in this guide that a purchase changes. Look it up on the district tool before you write an offer, ask the district about transfer rules if the assignment matters to you, and treat a listing's school claim as something to verify rather than something to rely on. Boundaries move. We check the assignment on every home we show to a buyer who asks.</p>
+
+<h2>Questions</h2>
+<h3>How do I find out which school a Bend address is assigned to?</h3>
+<p>Enter the address in the county's DIAL lookup at dial.deschutes.org, which Bend-La Pine Schools uses for attendance areas. It returns the assigned elementary, middle, and high school.</p>
+<h3>How big are the school districts in Central Oregon?</h3>
+<p>Per the Oregon Department of Education's fall 2025 membership report: Bend-La Pine 16,530 students, Redmond 7,281, Crook County 3,291, and Sisters 1,171.</p>
+<h3>Can my child attend a school outside our attendance area?</h3>
+<p>Within a district, yes where space and staffing allow, on the district's transfer process. Between districts, both the home district and the receiving district must approve. Sisters accepts incoming transfers without a cap when space exists. Each district publishes its deadlines.</p>
+<h3>Are there tuition-free charter schools?</h3>
+<p>Yes. Bend International School is a free public K-8 charter in Bend, and Redmond Proficiency Academy is a free public charter for grades 6 to 12 in Redmond. Both enroll by application.</p>
+<h3>When does the 2026-27 school year start in Bend?</h3>
+<p>Bend-La Pine Schools starts on a staggered schedule: September 9 for grades 1 to 6 and 9, September 10 for grades 7, 8, and 10 to 12, and September 11 for all grades, per the district calendar.</p>
+
+<h2>Next step</h2>
+<p><a href="/homes-for-sale">Get listing alerts</a> and we will check the school assignment on any home before you tour, or <a href="/book">book a call</a>.</p>
+`,
+  },
+  {
+    title: "Kids in Bend: Parks, Schools, Child Care, and the Seasons",
+    slug: "raising-kids-bend-parents-guide",
+    category: "Lifestyle & Living",
+    tags: ["bend","kids","parks","schools","child care","winter"],
+    hero_image_url: "/images/blog/raising-kids-bend-parents-guide.jpg",
+    author_broker_id: "2fda6811-2edf-49e3-b3ca-33e1052f82e6",
+    published_at: '2026-09-07T16:00:00Z',
+    status: 'published',
+    seo_title: "Kids in Bend: Parks, Schools, Child Care, and Seasons",
+    seo_description: "The practical side of Bend with children: the park district's parks, trails, and pools, how schools are assigned, child care referral, winter and summer, from the sources.",
+    excerpt: "What the park district runs, how schools are assigned, where child care referral starts, and what winter and summer do to the calendar. Sourced. No neighborhood ratings.",
+    content: `
+<p>Bend is a small city with a large park system, a ski hill on the edge of town, and four seasons that each ask something different of a household with children. This guide is the practical side: what the parks district runs, how schools are assigned, what winter does to the calendar, and where to look for child care. Every figure names its source. It does not recommend neighborhoods, and it does not rate anything.</p>
+
+<h2>Parks, trails, and the pool</h2>
+<p>The Bend Park and Recreation District, a separate taxing district from the city, maintains 86 parks and open spaces, more than 90 miles of trail, and more than 3,600 acres, per its own site. It runs youth sports leagues in baseball, soccer, basketball, and volleyball, and swim lessons and recreation swims at Juniper Swim and Fitness Center, two facilities with five pools. The Deschutes River Trail runs through the middle of town, and Drake Park and Shevlin Park are the two most used by people with kids in tow. Registration for district programs runs through its site, and popular sessions fill.</p>
+
+<h2>Schools</h2>
+<p>Bend is served by Bend-La Pine Schools, which lists 17 elementary schools, two K-8 magnets, seven middle schools, six high schools, an online school, and a transition program, with 16,530 students in the Oregon Department of Education's fall 2025 count. The school assigned to a home is a fact about its address, found on the county's DIAL lookup at dial.deschutes.org, and boundaries change as schools open. Charter and private options, with their posted tuition, and the districts around Bend are in <a href="/blog/schools-central-oregon-guide-families">Schools in Central Oregon</a>. The 2026-27 year starts September 9 to 11 on a staggered schedule.</p>
+
+<h2>Child care</h2>
+<p>Oregon's child care referral agency for Deschutes, Crook, and Jefferson counties is NeighborImpact Child Care Resources, which keeps the list of licensed providers and helps with the search. Waitlists are common for infant and toddler care. Start the search when you start the home search, not when you arrive. We do not publish a slot count because the state's licensing dashboard is the only current source and it is a live tool, not a number we can stamp with a date.</p>
+
+<h2>Winter</h2>
+<p>January's average low in Bend is 24 degrees and the annual precipitation normal is 9.11 inches, per NOAA's 1991 to 2020 station normals, so winter is cold, dry, and sunny more often than people expect. Snow closes schools a few days most years and makes side streets a drive. Mt. Bachelor is about 21 miles from downtown by road. Its Mighty Mites program takes skiers at ages 4 and 5 and snowboarders at 5 and 6 in a multi-week format, and its kids group lessons run for ages 7 to 12, per the resort's site. Sledding hills, the Nordic center, and the tubing park are the other winter routine.</p>
+
+<h2>Summer</h2>
+<p>July's average high is 82 degrees by the same NOAA normals, and the river is the town pool. Floating the Deschutes through the Old Mill District, the parks district's summer camps, youth sports, and the trailheads on the west side fill the calendar. Wildfire smoke can arrive in August and change plans for a week at a time. Our <a href="/blog/four-seasons-central-oregon-living">four seasons guide</a> covers the year.</p>
+
+<h2>Libraries and the rest</h2>
+<p>Deschutes Public Library runs six branches: Central in Bend, Downtown Bend, which is closed for a remodel until summer 2027, La Pine, Redmond, Sisters, and Sunriver. The High Desert Museum south of town and the Bend Science Station are the two indoor standbys. Cascades East Transit runs fixed bus routes in the city, and most of the town is a short drive.</p>
+
+<h2>Choosing a home</h2>
+<p>The questions that matter are the same for any buyer, and they are about the house and the address, not the neighbors: how far to the school assigned to the address, to the parks and trails you will use most, and to work. Bedroom count, a yard, a garage that holds the gear, and the drive to the mountain are the practical filters. Our <a href="/blog/best-neighborhoods-bend-buyers">buyer's guide to Bend neighborhoods</a> describes what each district is physically like, and <a href="/blog/westside-vs-eastside-bend">westside vs eastside</a> covers the trade. We show the same homes to every buyer and we check the school assignment on request.</p>
+
+<h2>Questions</h2>
+<h3>What does Bend offer kids year-round?</h3>
+<p>A park district with 86 parks, more than 90 miles of trail, youth sports leagues, and five pools at Juniper Swim and Fitness Center, plus the river in summer and Mt. Bachelor about 21 miles from downtown in winter, per the district's and the resort's own sites.</p>
+<h3>How do school assignments work in Bend?</h3>
+<p>Bend-La Pine Schools assigns schools by address, looked up on the county's DIAL tool at dial.deschutes.org. Boundaries change as schools open, so check the specific address before you offer.</p>
+<h3>How old do kids have to be to learn to ski at Mt. Bachelor?</h3>
+<p>The resort's Mighty Mites program takes skiers at ages 4 and 5 and snowboarders at ages 5 and 6, and its kids group lessons run for ages 7 to 12, per mtbachelor.com.</p>
+<h3>Where do I find child care in Bend?</h3>
+<p>NeighborImpact Child Care Resources is the state's referral agency for Deschutes, Crook, and Jefferson counties and keeps the list of licensed providers. Start early. Waitlists for infant and toddler care are common.</p>
+<h3>How cold does winter get?</h3>
+<p>January's average low is 24 degrees and the average high is 42, per NOAA's 1991 to 2020 normals for Bend. The annual precipitation normal is 9.11 inches, so most winter days are dry.</p>
+
+<h2>Next step</h2>
+<p><a href="/homes-for-sale">Get listing alerts</a> for the districts and the price band that fit, or <a href="/book">book a call</a> and we will plan a visit around the school calendar.</p>
+`,
+  },
 ]

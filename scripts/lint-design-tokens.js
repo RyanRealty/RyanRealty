@@ -470,8 +470,7 @@ function lintFile(filePath) {
 }
 
 // Per-file count = number of distinct issue categories flagged in that
-// file. Total = sum across files. Mirrors scripts/check-brand-voice.mjs
-// so the two gates ratchet the same way.
+// file. Total = sum across files.
 function summarize(results) {
   const byFile = {};
   let total = 0;
@@ -499,8 +498,8 @@ function run() {
   const ignoredFiles = loadIgnoredFiles();
 
   // Ratchet + baseline modes scan the WHOLE tree (a stable repo-wide debt
-  // count), mirroring scripts/check-brand-voice.mjs. Default / --base-diff
-  // / --all keep the original changed-file behaviour for local dev.
+  // count). Default / --base-diff / --all keep the original changed-file
+  // behaviour for local dev.
   const scanWholeTree = writeBaseline || ratchet || runAll;
   const candidateFiles = scanWholeTree
     ? SOURCE_DIRS.flatMap((dir) => walkDirectory(path.join(ROOT, dir)))

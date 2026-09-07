@@ -2,7 +2,7 @@
 
 /**
  * Newsletter review-surface server actions (W2, Matt directives 2026-07-06):
- * Approve & Schedule (gated by R-1 voice + R-2 citations + R-3 links),
+ * Approve & Schedule (gated by R-2 citations + R-3 links),
  * Unschedule, Pause/Resume (the circuit-breaker control), the on-demand
  * pre-send gate runner, and subscriber management (edit / reassign broker /
  * delete). Split out of app/actions/newsletter.ts to hold the 600-LOC budget.
@@ -10,7 +10,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCrmAccess } from '@/app/actions/crm'
-import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 import { runPreSendGates, type PreSendGateReport } from '@/lib/newsletter/pre-send-gates'
 import { getNewsletter, setSubscriberStatus, type NewsletterSegment, type SubscriberStatus } from '@/lib/data'
 import { scheduleNewsletter, unscheduleNewsletter } from '@/lib/data/newsletter/scheduled'
@@ -36,10 +35,10 @@ async function requireAdmin(): Promise<{ ok: true; email: string } | { ok: false
 
 // ── Pre-send gates (R-2 citations + R-3 links) ────────────────────────────────
 
-export type GateRunResult = { ok: boolean; report?: PreSendGateReport; voiceFailures?: string[]; error?: string }
+export type GateRunResult = { ok: boolean; report?: PreSendGateReport; error?: string }
 
 /**
- * Run the pre-send checks on demand for the review page: R-1 brand voice,
+ * Run the pre-send checks on demand for the review page:
  * R-2 every stat sentence cited, R-3 every internal link returns 200.
  */
 export async function adminRunPreSendGatesAction(id: string): Promise<GateRunResult> {
@@ -49,21 +48,20 @@ export async function adminRunPreSendGatesAction(id: string): Promise<GateRunRes
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html) return { ok: false, error: 'empty_body' }
 
-  const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
   const report = await runPreSendGates(letter)
-  return { ok: voice.ok && report.ok, report, voiceFailures: voice.ok ? [] : voice.violations }
+  return { ok: report.ok, report }
 }
 
 // ── Approve & Schedule / Unschedule ───────────────────────────────────────────
 
-export type ScheduleResult = { ok: boolean; error?: string; report?: PreSendGateReport; voiceFailures?: string[] }
+export type ScheduleResult = { ok: boolean; error?: string; report?: PreSendGateReport }
 
 /**
  * Approve & Schedule: promotes draft → scheduled with a delivery start time.
  * The send cron enqueues it when scheduled_at arrives and the engagement-tiered
- * tranche machinery delivers it gradually over days. BLOCKED unless R-1 voice,
- * R-2 citations, and R-3 link checks all pass — the failure list comes back so
- * the review page can show exactly what to fix.
+ * tranche machinery delivers it gradually over days. BLOCKED unless R-2
+ * citations and R-3 link checks pass — the failure list comes back so the
+ * review page can show exactly what to fix.
  */
 export async function adminScheduleNewsletterAction(id: string, scheduledAtIso: string): Promise<ScheduleResult> {
   const gate = await requireSuperuser()
@@ -78,12 +76,10 @@ export async function adminScheduleNewsletterAction(id: string, scheduledAtIso: 
   if (!Number.isFinite(when.getTime())) return { ok: false, error: 'invalid_date' }
   if (when.getTime() < Date.now() - 5 * 60 * 1000) return { ok: false, error: 'date_in_past' }
 
-  // R-1 voice — same hard-fail bar as the immediate send.
-  const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
   // R-2 + R-3 — citations + internal links.
   const report = await runPreSendGates(letter)
-  if (!voice.ok || !report.ok) {
-    return { ok: false, error: 'gates_failed', report, voiceFailures: voice.ok ? [] : voice.violations }
+  if (!report.ok) {
+    return { ok: false, error: 'gates_failed', report }
   }
 
   const moved = await scheduleNewsletter(id, when.toISOString())

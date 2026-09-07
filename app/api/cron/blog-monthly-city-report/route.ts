@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { getMarketTrend } from '@/lib/data/market/getMarketTrend'
+import { getPublicDetachedMonthly, leftoverMonthlyToCacheShape } from '@/lib/data/market-truth/public-monthly'
 import { getCityReportSnapshot } from '@/lib/data/market/getCityReportSnapshot'
 import { publishBlogPost } from '@/lib/data/blog/blogPostWrites'
 import {
@@ -13,7 +13,15 @@ import {
 
 /**
  * Cron: one blog post per city for the previous calendar month, from the same
- * cache rows the market pages read. Bend and Redmond (Matt 2026-09-07).
+ * Market Truth detached series the market page charts (getPublicDetachedMonthly,
+ * the series behind "Median sale price by month" on /housing-market/<city>) and
+ * the same live block the page's hero reads. Bend and Redmond (Matt 2026-09-07).
+ *
+ * Not the stats cache: on 2026-09-07 the cache's Bend August median ($705,000)
+ * and the page's charted August median ($749,500) disagreed, and a report that
+ * prints a number its own market page contradicts is a §0 failure. One metric,
+ * one number, so the report reads what the page reads and refuses when that
+ * series has no row for the month.
  * Schedule in vercel.json: the 3rd of the month, 15:00 UTC, so the month's
  * closings have settled and the cache has refreshed.
  *
@@ -23,7 +31,6 @@ import {
  */
 export const dynamic = 'force-dynamic'
 
-const METHODOLOGY = 'v3-2026-05-07'
 
 export async function GET(request: Request) {
   const denied = requireCronAuth(request)
@@ -36,10 +43,12 @@ export async function GET(request: Request) {
 
   for (const city of MONTHLY_REPORT_CITIES) {
     try {
-      const [trend, snapshot] = await Promise.all([
-        getMarketTrend('city', city.slug, 24),
+      const currentMonthKey = builtAt.slice(0, 7)
+      const [series, snapshot] = await Promise.all([
+        getPublicDetachedMonthly({ geoType: 'city', geoSlug: city.slug, currentMonthKey }),
         getCityReportSnapshot(city.label).catch(() => null),
       ])
+      const trend = leftoverMonthlyToCacheShape(series).map((row) => ({ ...row, medianDom: null, endOfPeriodInventory: null }))
       const built = buildMonthlyCityReport({
         city,
         month,
@@ -54,7 +63,7 @@ export async function GET(request: Request) {
             }
           : null,
         builtAt,
-        methodology: METHODOLOGY,
+        sourceLabel: `the same monthly series the ${city.label} market page charts`,
       })
       if (!built.ok) {
         results.push({ city: city.slug, month, ok: false, reason: built.reason })

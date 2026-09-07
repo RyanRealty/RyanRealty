@@ -1,7 +1,6 @@
 /**
  * Listing Plan — pure computation rules. Every rule must refuse to fire on
- * thin data (§0: cut, don't guess), and every emitted string must clear the
- * brand-voice gate.
+ * thin data (§0: cut, don't guess).
  */
 import { describe, expect, it } from 'vitest'
 import {
@@ -25,7 +24,6 @@ import type {
 } from './extras'
 import type { CmaPricing, CmaSubject } from './types'
 import type { ExpiredAuditData } from './expired-audit'
-import { checkBrandVoice } from '@/lib/voice/check'
 
 const EMPTY_EXTRAS: CmaExtras = {
   seasonality: null,
@@ -354,18 +352,6 @@ describe('buildListingPlan', () => {
       expect(plan!.items[5]!.trigger).toContain('reach pending')
       expect(plan!.items[6]!.trigger).toContain('photos')
       expect(plan!.source.length).toBeGreaterThan(0)
-    })
-
-    it('every trigger, action, and basis clears the brand-voice gate', () => {
-      expect(plan).not.toBeNull()
-      for (const item of plan!.items) {
-        for (const [field, text] of Object.entries(item)) {
-          const r = checkBrandVoice(text as string)
-          expect(r.ok, `${field} failed voice check: "${text}" -> ${JSON.stringify(r.violations)}`).toBe(true)
-        }
-      }
-      const r = checkBrandVoice(plan!.source)
-      expect(r.ok, `source failed voice check: "${plan!.source}" -> ${JSON.stringify(r.violations)}`).toBe(true)
     })
 
     // Regression for the cma-20513-byron adversarial audit finding: `basis`

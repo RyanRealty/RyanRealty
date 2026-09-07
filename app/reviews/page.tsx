@@ -141,7 +141,7 @@ export default async function ReviewsPage() {
             {
               kicker: v3Text('Call'),
               label: v3Text(CONTACT.phoneDirect),
-              fact: v3Text('A broker answers, not a desk'),
+              fact: v3Text('Local experts. Exceptional customer service.'),
               href: `tel:${CONTACT.phoneDirectTel}`,
             },
             {

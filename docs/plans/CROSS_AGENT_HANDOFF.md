@@ -1,4 +1,47 @@
-# Current — 2026-09-07 (Social channel tune-up)
+# Current — 2026-09-07 (voice canon retired, one voice doc)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
+`chore/retire-voice-canon`, landing on `origin/main` with this block.
+
+**Matt's directive:** "get rid of our voice canon, nuke it", "too many stupid rules
+affecting how we create copy", "one unified voice that everything uses".
+
+**Shipped**
+- `marketing_brain_skills/brand-voice/VOICE.md` rewritten as the ONE voice doc (path kept
+  so ~230 SKILL.md citations stay valid): local experts, exceptional customer service,
+  warm and direct, normal punctuation, no word lists. Compliance lines only: real numbers
+  (§0), real quotes, fair housing, MLS remarks as written. Exemplars inside.
+- CLAUDE.md §2 replaced. Removed: ci:brand-voice, ci:voice-constructions(+parity),
+  ci:voice-send-paths, ci:voice-vocab-parity, ci:voice-reviewer, ci:voice-rewrite-batch,
+  ci:voice-db-copy, ci:newsletter-voice-paths; lib/voice/**, lib/brand-voice/**,
+  lib/crm/templateVoiceCheck.ts, lib/email/voice-precheck.ts; the ESLint rule; the
+  pre-commit block; the pre-tool-use Refusal 6; the /voice-canon skill; voice_grader.md;
+  the two design-system voice preview cards. Thirteen send paths (CMA, BPO, blog, social,
+  Studio caption, newsletter x4, CRM templates + compose) no longer hard-fail on voice.
+- Contact + reviews pages: "A broker answers, not a desk" replaced (Matt rejected it).
+- app/_v3/home-featured-communities.ts: pulse lookup uses geo_type 'neighborhood'
+  (resort rows live there); ci:studio-geo-contract was red on main.
+
+**Next (approved by Matt)**
+1. Marketing brain dead layer: delete lib/marketing-brain/{generate-briefs,diagnose,
+   platform-trends,performance-bias}.ts, the audit-* routes + libs, /dashboard/marketing
+   pages, producer skills marked UNUSED in producers/REGISTRY.md, automation_skills
+   triggers/automation, producer scripts + gates (ci:producer-skills,
+   ci:producer-registry-resolves). KEEP intake (inbox-*), snapshot.ts (tracerfy-history
+   imports isAuthorizedCron from it), measurement-loop, competitor-recon,
+   deliverable-{path,share,library}, platform-fetch-code, and the marketing_brain_actions
+   table (CMA/Studio/agent job queue).
+2. Google review email template in crm_templates in the new voice; update
+   lib/crm/review-ask.ts body to match.
+3. Rewrite Home, About, Contact, Team, Sell, Buy copy in the new voice. Founding facts:
+   LLC since 2014, Bend office opened June 2023.
+
+**Do not**
+- Reintroduce word lists, punctuation regexes, or a voice gate. Judgment, not regex.
+
+---
+
+# Previous — 2026-09-07 (Social channel tune-up)
 
 Owner: Claude session, worktree `wt/social-x-lock-20260907`. Brief with every figure and
 its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832
@@ -19,8 +62,8 @@ its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832
 - GBP: replied to MJB's 5-star review from 10 Jul (approved wording). 0 unanswered.
 
 **Matt's calls (2026-09-07):** keep @Ryan-Realty on YouTube and move the handle · keep
-TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealtybend, close
-/ryanrealty · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
+TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealty (revised later that
+day from /ryanrealtybend), close /ryanrealtybend · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
 reconnect X · fix LinkedIn page facts · review reply as written.
 
 **Waiting on Matt (manual, not API-reachable):** YouTube handle swap then re-grant at
@@ -125,13 +168,25 @@ audit), `0301398e` (handoff).
   sibling's `90cffee8`; this branch dropped its duplicate.
 - Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
 
-**Round three (same day)**
+**Round three (same day), all landed through `10a9bcb2`**
 - Sign-in prompt no longer auto-opens on `/blog/*` (`signin-prompt-policy.ts`, reason
-  `guide`).
-- Monthly Bend + Redmond market report cron: `/api/cron/blog-monthly-city-report`, 3rd of
-  the month. Backfill with `?month=2026-08` after deploy. Builder and write path tested.
-- 52 older published posts in figure triage; verdicts land next.
+  `guide`). Verified in a fresh browser.
+- Monthly Bend + Redmond market report cron live: `/api/cron/blog-monthly-city-report`, 3rd
+  of the month 15:00 UTC, reads the Market Truth series the market page charts (NOT the stats
+  cache, which disagreed on Bend's August median). August 2026 posts published and match the
+  pages. `?month=YYYY-MM&dry=1` is the check before any backfill.
+- 52 older published posts triaged figure by figure (KEEP 5, FIX 37, RESTORE 9, RETIRE 1;
+  files `triage2-g1/2/3.md` in the session scratchpad, summary in the ledger). Same-day fix
+  pass: two fair-housing takedowns (`raising-kids-bend-parents-guide`,
+  `schools-central-oregon-guide-families`, redirected), two retirements (wildfire standards,
+  ADU proposal, redirected), seven steering sentences rewritten, five invented quotes removed,
+  eight math corrections, legal sentences attributed to OREF and TRID. `blog_posts`: 78
+  published (the two August reports included), 20 retired, 0 voice violations.
 - Photographer shot list: `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
+- The two takedowns are rewritten and back at their slugs (program, size, lookup, and offering
+  facts, sourced, zero steering words). Redirects removed.
+- Next: the 37 FIX posts (mostly unsourced price tiers, HOA dues, rental income in the resort
+  guides) and 9 RESTORE posts, exact sentences in the triage files.
 
 **Open**
 - Hero images for the nine new guides: resolved with real asset-library photos

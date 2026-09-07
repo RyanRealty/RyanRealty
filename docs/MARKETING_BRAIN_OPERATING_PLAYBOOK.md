@@ -3,7 +3,7 @@
 **Audience:** Matt (and any future operator).
 **Status:** Locked 2026-05-17.
 **Source of truth for build:** `marketing_brain_skills/research/AUTONOMOUS_PIPELINE_BRIEF.md`.
-**Companion doc:** `docs/MARKETING_BRAIN_USER_GUIDE.md` (concept reference).
+**Companion doc:** `docs/MARKETING_BRAIN_USER_GUIDE.md` was deleted 2026-09-07 with the producer-brief synthesis layer it described.
 
 This playbook is the operating manual. It tells you what to do day 1, day 7, day 30, day 90.
 
@@ -192,7 +192,6 @@ Non-critical (single brief is wrong, one producer broken, one cron flapping):
 ## What you can hand to a new operator
 
 1. This playbook.
-2. `docs/MARKETING_BRAIN_USER_GUIDE.md` (concept reference).
 3. `out/proof/2026-05-17/pipeline-build-summary.html` (single review surface).
 4. `out/proof/2026-05-17/producer-output-catalog.html` (every producer at a glance).
 5. `marketing_brain_skills/research/AUTONOMOUS_PIPELINE_BRIEF.md` (the contract the brain was built against).

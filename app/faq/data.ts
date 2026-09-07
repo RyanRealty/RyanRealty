@@ -6,13 +6,9 @@
  *   - app/faq/[slug]/page.tsx (one standalone, indexable page per question)
  *   - the GBP Q&A seed when posted via the UI runbook
  *
- * Kept inside app/ (not lib/) on purpose: this is user-facing prose, and the
- * brand-voice gate (scripts/check-brand-voice.mjs) only scans app/ and
- * components/. Moving it to lib/ would silently drop it out of that gate's
- * coverage. See CLAUDE.md §2 (gated, not advisory) and §6 (a rule that lives
- * only in a directory the gate doesn't scan is not enforced).
+ * Kept inside app/ (not lib/) on purpose: this is user-facing prose.
  *
- * Brand voice: CLAUDE.md §2 (no em-dashes, no semicolons, no banned words).
+ * Brand voice: marketing_brain_skills/brand-voice/VOICE.md.
  */
 
 export interface FAQItem {

@@ -15,10 +15,10 @@
  *      are global brokerage config (not per-contact), so any admin may edit copy;
  *      DESTRUCTIVE config (delete) requires a superuser, matching the field-
  *      definition CRUD precedent.
- *   2. Every save runs subject + body through the brand-voice hard-fail gate
- *      (lib/crm/templateVoiceCheck) so a template can never persist with an
- *      em-dash, en-dash, semicolon, or banned word. The commit-time gate only
- *      scans source files; a DB-stored template would otherwise bypass it.
+ *   2. Every save runs subject + body through structural validation
+ *      (lib/crm/templateValidation) — channel valid, name present, body
+ *      present, email has a subject. Voice is governed by
+ *      marketing_brain_skills/brand-voice/VOICE.md; no mechanical gate.
  *   3. Channel is validated (email|sms). Email requires a subject; SMS carries
  *      no subject.
  *   4. Delete REFUSES when any sequence references the template key

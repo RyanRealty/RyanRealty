@@ -166,9 +166,4 @@ describe('validateComposeContent', () => {
     })
   })
 
-  it('rejects inline content with banned punctuation', () => {
-    const r = validateComposeContent({ subject: 'Update', body: 'Great news; you saved.' })
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/brand voice/i)
-  })
 })

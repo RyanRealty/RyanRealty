@@ -73,7 +73,6 @@ import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeo
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
 import { createNewsletterDraft, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
 import { htmlToPlainText } from '@/lib/email/prepare'
-import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 
 // ── audience resolution ───────────────────────────────────────────────────────
 
@@ -199,7 +198,6 @@ export type BulkError =
   | 'no_market_data'
   | 'too_many_recipients'
   | 'count_changed'
-  | 'voice_failed'
   | 'approval_required'
   | 'outside_send_window'
   | 'draft_failed'
@@ -359,11 +357,6 @@ export async function runMarketReportBulkSend(input: BulkSendInput): Promise<Bul
   const bodyHtml = marketSection(cities, marketIntroLine(cities, 'areas'))
   const bodyText = decodeEntitiesForText(htmlToPlainText(bodyHtml))
   const subject = buildSubject(cities.map((c) => c.areaLabel))
-
-  // Same brand-voice hard-fail bar the newsletter one-off send applies. Routing
-  // through the ledger must not weaken any gate the ledger's own callers clear.
-  const voice = checkNewsletterVoice({ subject, bodyHtml, bodyText })
-  if (!voice.ok) return { ok: false, error: 'voice_failed', detail: voice.violations.join('; ') }
 
   const windowShut = outsideEmailSendWindow(now)
 

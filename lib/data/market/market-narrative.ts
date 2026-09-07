@@ -15,7 +15,7 @@
  *
  * Voice: sentence case, "you/your", no em-dashes or semicolons, currency
  * rounded to the nearest thousand, days as an integer, percents with one
- * decimal and a signed arrow. checkBrandVoice runs over the output in the gate.
+ * decimal and a signed arrow. Governed by marketing_brain_skills/brand-voice/VOICE.md.
  */
 
 // The ONE source of the months-of-supply thresholds (ci:market-formula) — never

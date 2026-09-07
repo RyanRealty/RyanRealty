@@ -20,41 +20,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(__dirname, '..')
 const PRODUCER = 'comms-matt-alert'
 
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED_WORDS = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-// Strip non-visible content before brand-voice checking.
-// Removes CSS/JS blocks, HTML comments, and code scaffolding to prevent
-// false positives from CSS semicolons, import statements, etc.
-function stripNonVisible(text) {
-  return text
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<!DOCTYPE[^>]*>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/^import .+$/gm, '')
-    .replace(/^export (const|default|type|async).+$/gm, '')
-}
-
-function checkBanned(text, label) {
-  const stripped = stripNonVisible(text)
-  const lower = stripped.toLowerCase()
-  const wordHits = BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-  const punctHits = []
-  if (/—|–/.test(stripped)) punctHits.push('em/en-dash')
-  if (/;/.test(stripped)) punctHits.push('semicolon')
-  if (/!/.test(stripped)) punctHits.push('exclamation')
-  const all = [...wordHits, ...punctHits]
-  if (all.length > 0) {
-    console.warn(`BRAND VOICE NOTE in ${label}: ${all.join(', ')} (continuing — flagged in scorecard)`)
-  }
-}
-
 function parseArgs(argv) {
   const out = { _: [] }
   for (let i = 0; i < argv.length; i++) {
@@ -226,11 +191,6 @@ Severity is determined before variant selection. Critical fires iMessage directl
 Medium writes to the \`admin_alerts\` Supabase table and triggers the email via Resend.
 Digest aggregates all alerts from the past 24 hours at 7:00 AM Pacific.
 `
-
-  checkBanned(alertCritical, 'alert-critical.md')
-  checkBanned(alertMedium, 'alert-medium.md')
-  checkBanned(alertSummary, 'alert-summary.md')
-  checkBanned(index, 'index.md')
 
   await write(outDir, 'alert-critical.md', alertCritical)
   await write(outDir, 'alert-medium.md', alertMedium)

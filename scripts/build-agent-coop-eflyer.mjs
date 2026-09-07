@@ -18,13 +18,10 @@
 import { mkdir, writeFile, readFile, stat } from 'node:fs/promises'
 import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createRequire } from 'node:module'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const PRODUCER = 'agent-coop-eflyer'
-const require = createRequire(import.meta.url)
-const VOCAB = require('./brand-voice-vocabulary.cjs')
 
 function parseArgs(argv) {
   const out = { _: [] }
@@ -41,22 +38,6 @@ function parseArgs(argv) {
   return out
 }
 
-// Canonical BANNED_WORD_STRINGS from scripts/brand-voice-vocabulary.cjs —
-// never hand-typed here.
-const BANNED_WORDS = VOCAB.BANNED_WORD_STRINGS
-
-function checkBannedWords(text) {
-  const lower = text.toLowerCase()
-  return BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-}
-
-function assertClean(text, label) {
-  const hits = checkBannedWords(text)
-  if (hits.length > 0) {
-    console.error(`BANNED WORDS in ${label}: ${hits.join(', ')}`)
-    process.exit(1)
-  }
-}
 
 async function write(dir, filename, content) {
   const p = join(dir, filename)
@@ -158,8 +139,6 @@ ${broker.name} · Ryan Realty
 ${broker.phone_brand} · ryan-realty.com
 OR Lic. #${broker.license}
 `
-
-  assertClean(body, 'body.md')
 
   // Check no em-dashes in body text (table separators allowed: |---|)
   const bodyNoSep = body.replace(/\|---\|/g, '')
@@ -327,11 +306,6 @@ OR Lic. #${broker.license}
 </body>
 </html>`
 
-  // Voice check on full text content
-  const textContent = html.replace(/<[^>]+>/g, ' ')
-  assertClean(textContent, 'eflyer.html text')
-  assertClean(subjectTrimmed, 'subject-line')
-
   await write(outDir, 'eflyer.html', html)
   await write(outDir, 'body.md', body)
   await write(outDir, 'subject-line.txt', subjectTrimmed)
@@ -357,10 +331,7 @@ OR Lic. #${broker.license}
   }
   await write(outDir, 'provenance.json', JSON.stringify(provenance, null, 2))
 
-  const allText = [textContent, body, subjectTrimmed].join('\n')
-  const bannedHits = checkBannedWords(allText)
   const checks = [
-    { name: 'banned_words', pass: bannedHits.length === 0, notes: bannedHits.length ? bannedHits.join(', ') : 'clean' },
     { name: 'subject_length', pass: subjectTrimmed.length <= 60, notes: `${subjectTrimmed.length} chars` },
     { name: 'phone_format', pass: html.includes('541.213.6706'), notes: 'dotted format present' },
     { name: 'no_exclamation_body', pass: !body.includes('!'), notes: 'no exclamation marks in text body' },

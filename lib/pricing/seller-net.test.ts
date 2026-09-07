@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import {
   attachSellerNet,
   concessionNote,
@@ -81,7 +80,6 @@ describe('concessionNote', () => {
     expect(note).toMatch(/\$10,000/)
     expect(note).toMatch(/\$700,000/)
     expect(note).not.toMatch(/[—;]/)
-    expect(checkBrandVoice(note).ok).toBe(true)
   })
 })
 

@@ -260,9 +260,11 @@ All nine new guides now carry real, owned, grade-A library photos, nine distinct
 - **Monthly city report, Bend and Redmond.** `lib/blog/monthly-city-report.ts` (pure builder,
   tested) + `lib/data/blog/blogPostWrites.ts` (voice-gated cron write path, registered in
   `ci:voice-send-paths`) + `app/api/cron/blog-monthly-city-report` (3rd of the month, 15:00
-  UTC; `?month=YYYY-MM` backfills, `?dry=1` validates). Figures come from `getMarketTrend`
-  monthly rows and `getCityReportSnapshot` live block, the same reads the market pages use,
-  each stated once with its month. Refuses on fewer than 15 closings, a missing median, or a
+  UTC; `?month=YYYY-MM` backfills, `?dry=1` validates). Figures come from the Market Truth
+  detached monthly series the market page charts (`getPublicDetachedMonthly`) and the
+  `getCityReportSnapshot` live block, each stated once with its month. The stats cache was
+  the first draft's source and disagreed with the page on Bend's August median ($705,000
+  against $749,500), so the cron reads what the page reads. Refuses on fewer than 15 closings, a missing median, or a
   cache whose last completed month is not the target. Slug pattern matches the hand-made July
   reports (`bend-oregon-market-report-august-2026`).
 - **Backlog, second half.** 52 published posts untouched today are in figure-by-figure triage
@@ -273,8 +275,8 @@ All nine new guides now carry real, owned, grade-A library photos, nine distinct
 ## Second-half triage and first fix pass (2026-09-07, later)
 
 Three read-only passes over the 52 published posts untouched earlier in the day
-(`scratchpad/triage2-g1.md`, `g2.md`, `g3.md` in the session). Verdicts: KEEP 6, FIX 36, RESTORE
-8, RETIRE 2 (counts by the compiled summaries). Acted on the same day, live rows only, seeds
+(`scratchpad/triage2-g1.md`, `g2.md`, `g3.md` in the session). Verdicts: KEEP 5, FIX 37, RESTORE
+9, RETIRE 1. Acted on the same day, live rows only, seeds
 diverge as before:
 
 **Taken down (status `retired`, redirected).** `raising-kids-bend-parents-guide` (neighborhoods
@@ -318,3 +320,38 @@ neighborhoods, Sunriver at two prices), SB 1537 (two years stale), plus the two 
 takedowns. Cross-post conflicts to reconcile to one figure: Bend to Redmond mileage, Bend
 population, Mt. Bachelor distance, studded-tire dates, Black Butte and Brasada both "about
 1,800 acres".
+
+## Backfill and close (2026-09-07, end of day)
+
+- The cron published `bend-oregon-market-report-august-2026` and
+  `redmond-oregon-market-report-august-2026` through `?month=2026-08` after the dry run matched
+  the pages: Bend $749,500, down 5.7% from $795,000; Redmond $527,500, down 7.8% from $572,000.
+  Both carry FAQPage schema and name the market page's series as the source. September publishes
+  on October 3 without a hand.
+- Retired-slug redirects live for the wildfire-standards and ADU posts. The two fair-housing
+  takedowns redirect to `/blog` and `/schools`.
+- Guides no longer open the sign-in prompt (checked in a fresh browser on two posts).
+- Backlog queue for the next sessions: 37 FIX and 9 RESTORE posts, verdicts and exact sentences
+  in the three triage files, cross-post conflicts listed above. Rewrite the two takedowns first.
+
+## The two takedowns, rewritten (2026-09-07, end of day)
+
+Both are back at their slugs, redirects removed, on program, size, lookup, and offering facts
+only. No ratings, no demographics, no crime, no neighborhood recommendations. Sources fetched
+2026-09-07: Oregon Department of Education Fall Membership Report 2025-26 (Bend-La Pine
+16,530; Redmond 7,281; Crook County 3,291; Sisters 1,171), blschools.org (school list, DIAL
+attendance lookup, inter-district transfer rule, 2026-27 calendar), redmondschools.org (school
+list, bus route locator, May 31 transfer deadline), district.ssd6.org (schools, boundary tool,
+no-cap transfers), crookcountyschools.org (eleven schools, boundary map, case-by-case
+transfers), each private school's own 2026-27 tuition page (Cascades Academy, Seven Peaks,
+Trinity Lutheran, St. Francis, Morning Star, Waldorf posted rate), bendinternationalschool.org
+and rpacademy.org (free charters), osucascades.edu (1,401 students fall 2025, 24 majors),
+cocc.edu (four campuses), bendparksandrec.org (86 parks, 90+ miles of trail, 3,600+ acres,
+Juniper's two facilities and five pools), mtbachelor.com (Mighty Mites ages 4 to 5 ski, 5 to 6
+snowboard; kids group 7 to 12), deschuteslibrary.org (six branches, Downtown Bend closed to
+summer 2027), oregon.gov/delc (NeighborImpact is the Central region referral agency), NOAA
+1991 to 2020 normals for Bend. Cut: any child care slot count (only a live dashboard exists),
+COCC enrollment (only a news quote), Waldorf's year label (the page is mislabeled).
+
+Steering-word scan on both bodies: zero hits for family-friendly, good or best schools, safe,
+crime, diverse, affluent, income, test scores, rated, ranking, or "for families".

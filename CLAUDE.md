@@ -3,7 +3,7 @@
 This file is loaded into every session. It holds the rules that outrank convenience, and
 nothing else. Anything longer than a rule lives in the doc it points at.
 
-**Read order:** §0 data accuracy → §1 approval → §2 brand voice → then whichever of §3–§9
+**Read order:** §0 data accuracy → §1 approval → §2 voice → then whichever of §3–§9
 your task touches.
 
 **Fleet start (mandatory before subject tunnels):** read
@@ -146,37 +146,17 @@ shown to Matt before they enter a distribution path.
 
 ---
 
-# §2. Brand Voice — applies to EVERY piece of public-facing text
+# §2. Voice — one voice, one document, no gates (Matt 2026-09-07)
 
-**Canonical source, and the ONLY one: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).**
-Read it before writing any text a member of the public will see. Locked D11
-(2026-08-12). This section is a pointer, not a second copy.
+**The only voice document: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).**
+Everything we publish uses it: site, bios, emails, texts, social, reports, packets. Read it
+before writing anything a client or the public reads.
 
-**Triggers.** Any text a lead, client, or visitor reads, whatever produces it: email
-bodies and subjects, SMS bodies, saved-search and listing alerts, CMA/BPO/report
-prose, every site page and component, landing pages, social captions, video
-on-screen text we author, and any document a client opens. Not governed: code,
-comments, commit messages, admin screens, internal docs. Never rewritten: customer
-reviews, another broker's remarks, quoted third parties, MLS remarks.
-
-**Enforced, not advisory.** [`scripts/check-brand-voice.mjs`](scripts/check-brand-voice.mjs)
-(`ci:brand-voice`, in `ci:gates` and the pre-commit hook) fails the commit, reading a
-machine-readable projection of the canon in
-[`scripts/brand-voice-vocabulary.cjs`](scripts/brand-voice-vocabulary.cjs). Runtime
-send paths hard-fail through `lib/voice/check.ts` (`ci:voice-send-paths`).
-
-**The rule broken most often:** state the fact, then stop. Never write a sentence
-whose job is to explain the sentence before it.
-
-**Standing rule:** any copy created for the public runs through this canon. It is
-mechanical at both ends, so nobody has to remember: `ci:voice-constructions` fails
-the commit, and the same patterns run inside `lib/voice/check.ts`, the chokepoint
-every content path already blocks on. The repo-wide rewrite is a grinder, `/voice-canon`
-([`.claude/skills/voice-canon/SKILL.md`](.claude/skills/voice-canon/SKILL.md));
-where it left off is machine-written to
-[`scripts/voice-canon-state.json`](scripts/voice-canon-state.json) on every scan,
-never hand-maintained.
-
+Matt retired the old canon and every mechanical voice rule on 2026-09-07: the banned-word
+lists, the punctuation rules, the "say the fact then stop" cadence, the commit gate, and
+the runtime checker that blocked sends. Copy is judged by one question: does it sound like
+a person who knows Central Oregon and wants to help. What still binds is not style: real
+numbers (§0), real quotes, fair housing, and MLS remarks shown as written.
 
 ---
 
@@ -342,12 +322,20 @@ Non-negotiable: vision-inspect a hero still BEFORE paying for motion; 6s, one
 camera axis; `generate_audio` off; no rendered text or logos in frame. Prompts
 come from [`lib/studio/craft.ts`](lib/studio/craft.ts), never hand-written.
 
-# §5. Marketing brain — producer runtime retired (2026-08-18)
+# §5. Marketing brain — producers and the brief/diagnosis layer deleted (2026-09-07)
 
-Hourly SKILL.md producers are off. Inbox + `/marketing/request` file a row but
-run no producer. CMA, newsletter, CRM, and the Facebook seller report stay as
-TypeScript products. Social/media production is the Studio (§4).
-Voice canon: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).
+The producer dispatch runtime (SKILL.md producers, retired 2026-08-18) and the
+brief/diagnosis synthesis layer that fed it (audits, diagnose, generate-briefs,
+weekly-cycle, platform-trends, performance-bias) are deleted, not just off.
+What remains: the inbox (`marketing@ryan-realty.com`) and `/marketing/request`
+still file a `marketing_brain_actions` row and route it to Matt via
+`comms-matt-alert` (no producer runs); the daily channel snapshots
+(`marketing_brain_skills/snapshot-channels`); the measurement loop
+(`lib/marketing-brain/measurement-loop.ts`); competitor recon
+(`lib/marketing-brain/competitor-recon.ts`); the content library
+(`app/admin/(protected)/content-library/**`); and the Studio (§4). CMA,
+newsletter, and CRM stay as TypeScript products.
+Voice: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).
 
 # §6. Mechanical guardrails
 
@@ -362,7 +350,7 @@ npm run ci:gates
 ```
 
 **[`package.json`](package.json) → `ci:gates` is the authoritative chain — do not re-enumerate
-it in prose, it drifts.** It runs design-tokens, seo-routes, DAL boundary, brand-voice, mockup
+it in prose, it drifts.** It runs design-tokens, seo-routes, DAL boundary, mockup
 parity, page DAL, static params, cron-registered, and the meta-gate `ci:gates-wired`, among
 many others.
 
@@ -391,7 +379,6 @@ next.
 
 | Rule | Mechanism | Gate script |
 |---|---|---|
-| Brand voice — punctuation, invented quotes, Value my home | gated | `check-brand-voice.mjs` (vocabulary in `brand-voice-vocabulary.cjs`) |
 | Design tokens — no off-brand hex, no raw controls | gated | `lint-design-tokens.js` |
 | Mockup parity per surface | gated | `check-mockup-parity.mjs` |
 | DAL boundary — no raw `.from()` outside `lib/data/` | gated | `check-dal-boundary.mjs` |
@@ -561,12 +548,12 @@ task. Everything else fires on trigger match.
 
 - **`social_media_skills/`** — per-deliverable producer skills. Index at its README. Resolve
   through REGISTRY, never by guessing a path.
-- **`automation_skills/`** — three triggers (`listing_trigger`, `market_trigger`,
-  `trend_trigger`) plus the surviving pipelines under `automation_skills/automation/`
-  (`post_scheduler`, `performance_loop`, `engagement_bot`, `ab_testing`, `publish`, `qa_pass`,
-  `feedback_loop`, `buffer_poster`, `api_knowledge`) and `automation_skills/content_engine/`.
-  `repurpose_engine` and `thumbnail_generator` were deleted 2026-06-15. Inbound DM/comment lead
-  capture writes to `public.crm_people`.
+- **`automation_skills/`** — the surviving pipelines under `automation_skills/automation/`
+  (`publish`, `qa_pass`, `feedback_loop`, `api_knowledge`) and `automation_skills/content_engine/`.
+  `automation_skills/triggers/` (`listing_trigger`, `market_trigger`, `trend_trigger`) and
+  `post_scheduler` / `performance_loop` / `engagement_bot` / `ab_testing` / `buffer_poster` were
+  deleted 2026-09-07 — none had a live cron. `repurpose_engine` and `thumbnail_generator` were
+  deleted 2026-06-15. Inbound DM/comment lead capture writes to `public.crm_people`.
 
 ## Content routing — which file to load per deliverable
 

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { extractBlogFaq } from './publish-blog-faq'
 import {
   MONTHLY_REPORT_CITIES,
@@ -18,7 +17,7 @@ const base = {
   priorYear: { periodStart: '2025-08-01', medianSalePrice: 795000, soldCount: 165, medianDom: 19, endOfPeriodInventory: 492 },
   live: { activeCount: 673, monthsOfSupply: 3.9, medianDaysToPending: 23, refreshedAt: '2026-09-07T18:00:00Z' },
   builtAt: '2026-09-07T19:00:00Z',
-  methodology: 'v3-2026-05-07',
+  sourceLabel: 'the same monthly series the Bend market page charts',
 }
 
 describe('buildMonthlyCityReport', () => {
@@ -33,22 +32,12 @@ describe('buildMonthlyCityReport', () => {
     expect(r.post.content).toContain('<strong>180</strong>, up 9.1% from 165 a year earlier')
     expect(r.post.content).toContain('Months of supply sits at 3.9, which is a seller\'s market')
     expect(r.post.content).toContain('verified September 7, 2026')
-    expect(r.post.content).toContain('methodology v3-2026-05-07')
+    expect(r.post.content).toContain('from the same monthly series the Bend market page charts, verified September 7, 2026')
     // the median sale price figure appears in the numbers list, the bottom line, and one answer, never as a second value
     expect(r.post.content.match(/\$750,000/g)?.length).toBe(3)
     expect(extractBlogFaq(r.post.content)).toHaveLength(5)
     expect(r.post.seoTitle.length).toBeLessThanOrEqual(60)
     expect(r.post.seoDescription.length).toBeLessThanOrEqual(160)
-  })
-
-  it('passes the brand voice check', () => {
-    const r = buildMonthlyCityReport(base)
-    if (!r.ok) throw new Error(r.reason)
-    const v = checkBrandVoice(
-      { subject: [r.post.title, r.post.excerpt, r.post.seoTitle, r.post.seoDescription].join(' '), bodyHtml: r.post.content },
-      { stripHtml: true },
-    )
-    expect(v.violations).toEqual([])
   })
 
   it('prints balanced and buyer verdicts from the same rule, never a rounded value across the line', () => {

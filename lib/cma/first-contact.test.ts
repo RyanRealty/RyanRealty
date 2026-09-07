@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { blamesPriorAgent } from '@/lib/crm/first-touch-copy'
 import {
   cmaFirstContactFactsFromRow,
@@ -99,8 +98,6 @@ describe('first-contact copy', () => {
     expect(c.bodyText).toContain('https://ryan-realty.com/about')
     expect(c.bodyText).not.toContain('Call anytime')
     expect(c.bodyText).not.toMatch(/\bCMA\b/)
-    const voice = checkBrandVoice(c.bodyText)
-    expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
   })
 
   it('names the neighborhood page when one is on the subject', () => {

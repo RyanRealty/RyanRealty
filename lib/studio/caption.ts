@@ -1,21 +1,17 @@
 /**
  * lib/studio/caption.ts — the words on the post.
  *
- * Two hard constraints, both mechanical:
- *
- *   Voice. Ryan Realty's canon is state the fact, then stop. The single most
- *   broken rule is a sentence whose job is to explain the sentence before it,
- *   so the system prompt bans that shape outright and checkBrandVoice() gets
- *   the last word. A caption that fails voice is regenerated once, then the
- *   draft dies. We do not ship a caption the gate rejected.
+ * One hard constraint, mechanical:
  *
  *   Figures. Every number in a caption is passed in from a verified source,
  *   never invented by the model. The model is told the numbers as literal
  *   strings and told it may not compute, round, or add any others. That is
  *   CLAUDE.md §0 expressed as a prompt constraint, backed by a check.
+ *
+ * Voice is governed by marketing_brain_skills/brand-voice/VOICE.md through
+ * the system prompt below. No mechanical gate.
  */
 import { generateGrokStructured } from '@/lib/grok/text'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { stripDashes, hasDashes } from '@/lib/punctuation-guard'
 
 export type CaptionRequest = {
@@ -183,12 +179,6 @@ export async function writeCaption(
     // them here rather than letting one caption abort every platform.
     const caption = hasDashes(value.caption) ? stripDashes(value.caption) : value.caption
     const altText = hasDashes(value.altText) ? stripDashes(value.altText) : value.altText
-
-    const voice = checkBrandVoice(caption)
-    if (!voice.ok) {
-      feedback = `it used banned language: ${voice.violations.map((v) => v.term).join(', ')}`
-      continue
-    }
 
     const opener = weakOpener(caption)
     if (opener) {

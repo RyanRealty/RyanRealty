@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import {
   gbpDraftCaption,
   isTempImagineUrl,
@@ -60,7 +59,6 @@ describe('Imagine produce captions (D11)', () => {
   it('listing caption is the address and price, then stop', () => {
     const caption = listingDraftCaption(LISTING)
     expect(caption).toBe('1844 NW Awbrey Rd, Bend. Listed at $895,000.')
-    expect(checkBrandVoice(caption).ok).toBe(true)
     expect(caption).not.toMatch(/[—–;!]/)
   })
 
@@ -71,7 +69,6 @@ describe('Imagine produce captions (D11)', () => {
     expect(caption).toContain('88 closed in 30 days')
     expect(caption).toContain('4.2 months of supply')
     expect(caption.endsWith('Value my home.')).toBe(true)
-    expect(checkBrandVoice(caption).ok).toBe(true)
     expect(caption).not.toMatch(/[—–;!]/)
   })
 })

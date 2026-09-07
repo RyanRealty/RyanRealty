@@ -9,7 +9,8 @@
  * hand-made; this makes them a cron.
  *
  * §0 discipline: every figure here arrives from a DAL read the caller names
- * (getMarketTrend monthly rows, getCityReportSnapshot live block). Nothing is
+ * (the Market Truth detached monthly series the market page charts, and the
+ * getCityReportSnapshot live block the page's hero reads). Nothing is
  * estimated. A month with too few closings, a missing median, or a trend
  * whose last completed month is not the requested one REFUSES to build. The
  * months-of-supply sentence uses marketVerdict, the one bucket rule
@@ -27,7 +28,7 @@ export const MONTHLY_REPORT_CITIES: readonly MonthlyReportCity[] = [
   { slug: 'redmond', label: 'Redmond', marketHref: '/housing-market/redmond', searchHref: '/homes-for-sale?city=redmond' },
 ]
 
-/** One completed month from the stats cache (getMarketTrend point shape). */
+/** One completed month, in the trend-point shape (Market Truth series carries price and count only). */
 export type MonthlyReportMonth = {
   periodStart: string
   medianSalePrice: number | null
@@ -55,8 +56,8 @@ export type MonthlyReportInput = {
   live: MonthlyReportLive | null
   /** ISO timestamp of the build, printed as the verification date. */
   builtAt: string
-  /** Methodology stamp carried by the cache rows. */
-  methodology: string
+  /** Where the month's figures come from, named the way the market page names it. */
+  sourceLabel: string
 }
 
 export type MonthlyReportPost = {
@@ -184,7 +185,7 @@ export function buildMonthlyCityReport(input: MonthlyReportInput): MonthlyReport
 <ul>
 ${lines.join('\n')}
 </ul>
-<p>Single-family homes in ${city.label}, from our market statistics cache (methodology ${input.methodology}), verified ${verified}. The live version of every figure is on the <a href="${city.marketHref}">${city.label} market page</a>.</p>
+<p>Single-family homes in ${city.label}, from ${input.sourceLabel}, verified ${verified}. The live version of every figure is on the <a href="${city.marketHref}">${city.label} market page</a>.</p>
 
 <h2>If you are selling</h2>
 <p>The ${monthName} median is the number buyers will hold your list price against, and the closings behind it are the comps. Price to them and the showings come in the first two weeks. Price above them and the listing joins the homes that sit and then cut. Our guide to <a href="/blog/how-to-price-your-bend-home">pricing a home in this market</a> covers how we set the number, and <a href="/sell">Value my home</a> starts a written valuation with the comps behind it.</p>
@@ -205,7 +206,7 @@ ${lines.join('\n')}
 <h3>How long do homes take to sell in ${city.label}?</h3>
 <p>${current.medianDom != null ? `The homes that closed in ${monthName} ${year} had a median of ${Math.round(current.medianDom)} days on market.` : `The current median days on market is on the ${city.label} market page.`}${live?.medianDaysToPending != null ? ` The homes going pending as of ${liveDate} are doing it in a median ${Math.round(live.medianDaysToPending)} days.` : ''}</p>
 <h3>Where do these numbers come from?</h3>
-<p>Our own MLS database, single-family homes in ${city.label}, through the same market statistics cache the site's market pages read, methodology ${input.methodology}. The month's figures are closed sales. The supply figures are live counts as of ${liveDate}.</p>`
+<p>Our own MLS database, single-family homes in ${city.label}, from ${input.sourceLabel}. The month's figures are closed sales. The supply figures are the live counts the market page shows as of ${liveDate}.</p>`
 
   const title = `${city.label} Oregon Market Report: ${label}`
   const seoTitle = `${city.label} Oregon Housing Market Report, ${label}`

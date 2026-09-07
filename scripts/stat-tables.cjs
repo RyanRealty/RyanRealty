@@ -25,8 +25,8 @@
  * through the DAL or it does not happen. `-- audit:` still licenses a targeted
  * ROW read, which is what it was always for.
  *
- * Same shape as scripts/brand-voice-vocabulary.cjs: one .cjs that both the
- * runtime hook and the CI gate require(), so they cannot disagree.
+ * One .cjs that both the runtime hook and the CI gate require(), so they
+ * cannot disagree.
  */
 
 const { readFileSync } = require('node:fs')

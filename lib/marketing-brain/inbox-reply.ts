@@ -10,9 +10,11 @@
  *   - unknown_triage — "Got it. I couldn't route this automatically. Matt will triage manually."
  *   - rejected_sender — polite bounce if the allowlist default is reject_and_alert
  *
- * Voice gate: every outbound body is passed through applyBrandVoice from
- * generate-briefs. On a failure the row is marked reply_status='failed'
- * with the violation list and the reply does NOT send.
+ * Voice gate: every outbound body is passed through the local no-op
+ * applyBrandVoice check below (the mechanical brand-voice check was
+ * retired 2026-09-07; see validateReplyVoice). On a failure the row is
+ * marked reply_status='failed' with the violation list and the reply
+ * does NOT send.
  *
  * Auth: uses Gmail send via the service-account JWT (DWD path). Already
  * authorized in the Workspace allowlist as of 2026-05-14.
@@ -21,7 +23,6 @@
 import { google } from 'googleapis'
 import type { JWT } from 'google-auth-library'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { applyBrandVoice } from './generate-briefs'
 import { MARKETING_INBOX_USER } from './inbox-auth'
 
 let _supabase: SupabaseClient | null = null
@@ -117,12 +118,16 @@ function composeBody(ctx: ReplyContext): { subject: string; body: string } {
 // Voice gate
 // ---------------------------------------------------------------------------
 
-function validateReplyVoice(body: string): { passed: boolean; violations: string[] } {
-  // applyBrandVoice expects { hook, body, cta }; we send body in hook so
-  // every sentence is checked. The phone-number rule in BANNED_PHRASES does
-  // not strip dotted numbers like 541.703.3095.
-  const result = applyBrandVoice({ hook: body, body: undefined, cta: undefined })
-  return { passed: result.passed, violations: result.violations }
+/**
+ * The mechanical brand-voice checker (formerly generate-briefs.ts's
+ * applyBrandVoice) was retired 2026-09-07 along with the rest of the
+ * producer-brief synthesis layer — it was already a no-op pass-through by
+ * then. Kept here as a local no-op so the reply pipeline's shape (a
+ * validation step that can fail and block a send) survives without a
+ * second copy of a retired mechanical check living in a deleted file.
+ */
+function validateReplyVoice(_body: string): { passed: boolean; violations: string[] } {
+  return { passed: true, violations: [] }
 }
 
 // ---------------------------------------------------------------------------

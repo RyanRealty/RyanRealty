@@ -199,12 +199,12 @@ export function factualFallbackBio(opts: {
   phone: string | null
 }): string {
   if (hasRealPersonalRecord(opts.closings)) {
-    return `${opts.firstName} has closed ${opts.closings} homes across Central Oregon, for both buyers and sellers.`
+    return `${opts.firstName} has closed ${opts.closings} homes across Central Oregon for buyers and sellers, and takes care of every client from the first conversation through closing.`
   }
   if (opts.phone) {
-    return `${opts.displayName} works with buyers and sellers across Bend, Redmond, Sisters, and Sunriver. Call or text ${opts.phone}.`
+    return `${opts.displayName} is a local expert who helps buyers and sellers across Bend, Redmond, Sisters, and Sunriver. Call or text ${opts.phone}.`
   }
-  return `${opts.displayName} works with buyers and sellers across Bend, Redmond, Sisters, and Sunriver.`
+  return `${opts.displayName} is a local expert who helps buyers and sellers across Bend, Redmond, Sisters, and Sunriver.`
 }
 
 export const HEADSHOT: Record<string, string> = {

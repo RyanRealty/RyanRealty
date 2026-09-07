@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
 import { decideCmaAccess, renderConsentShell, renderRegisterShell } from './register-gate'
 
@@ -19,16 +18,6 @@ describe('CMA register shell — inbound packet', () => {
     expect(html).not.toMatch(/What every listing gets/i)
     expect(isWorthQuestionCopy(html)).toBe(false)
     expect(blamesPriorAgent(html)).toBe(false)
-    const visible = [
-      'Your report on 1842 NW Foo St is ready',
-      'The recommended list for 1842 NW Foo St',
-      'Who you are competing with at that price',
-      'How we got the price',
-    ]
-    for (const line of visible) {
-      const voice = checkBrandVoice(line)
-      expect(voice.ok, `${line} -> ${JSON.stringify(voice.violations)}`).toBe(true)
-    }
   })
 })
 

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import {
   EXPIRED_FIRST_TOUCH_SEED_V1,
   EXPIRED_FIRST_TOUCH_TEMPLATE_V2,
@@ -36,8 +35,6 @@ function assertCBar(body: string, address: string | null) {
   expect(body).not.toMatch(/want me to send it over/i)
   expect(body).not.toMatch(/\bI (saw|put)\b/)
   if (address) expect(body).toContain(address)
-  const voice = checkBrandVoice(body)
-  expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
 }
 
 describe('first-touch SMS — expired', () => {

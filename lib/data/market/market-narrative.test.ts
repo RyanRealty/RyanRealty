@@ -1,13 +1,12 @@
 /**
  * Unit test for the deterministic market narrative generator (W8.7).
  *
- * Proves the two properties the row rests on: every number in the prose traces
- * to the input stats (§0), and the prose passes the real checkBrandVoice. Also
- * pins the Mohtashami verdict logic (months-of-supply thresholds).
+ * Proves the load-bearing property: every number in the prose traces to the
+ * input stats (§0). Also pins the Mohtashami verdict logic (months-of-supply
+ * thresholds).
  */
 import { describe, expect, it } from 'vitest'
 import { buildMarketNarrative, type NarrativeStats } from './market-narrative'
-import { checkBrandVoice } from '@/lib/voice/check'
 
 const base: NarrativeStats = {
   geoLabel: 'Bend',
@@ -40,14 +39,6 @@ describe('market narrative generator (W8.7)', () => {
         if (num === '4' || num === '6') continue // MoS threshold words in the FAQ explainer
         expect(allowed.has(num), `"${num}" does not trace to a stat`).toBe(true)
       }
-    }
-  })
-
-  it('every section passes checkBrandVoice', () => {
-    const n = buildMarketNarrative(base)
-    for (const section of allSections(n)) {
-      const r = checkBrandVoice(section)
-      expect(r.ok, `voice fail: ${JSON.stringify(r)} in: ${section}`).toBe(true)
     }
   })
 
