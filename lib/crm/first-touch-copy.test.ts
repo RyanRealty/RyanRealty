@@ -41,29 +41,20 @@ function assertCBar(body: string, address: string | null) {
 }
 
 describe('first-touch SMS — expired', () => {
-  it('names THIS address, ask, DOM, and cuts when those facts exist', () => {
+  it('never recites the owner\'s own list price, DOM, or price cuts — Matt 2026-09-07 (said twice)', () => {
+    // Matt: "no one says the ask, fucking no one" + "i did just tell you not
+    // to tell them about their listing." The message states only that it did
+    // not sell — never their price, their days on market, or their cuts —
+    // regardless of what facts are on hand.
     const body = buildExpiredFirstTouchSms(FULL)
     assertCBar(body, '1842 NW Foo St')
-    expect(body).toContain('$895,000')
-    expect(body).toContain('87 days')
-    expect(body).toContain('$925,000')
-    expect(body).toContain('2 cuts')
-    expect(body).toContain('listing video')
-    expect(body).toContain('1842 NW Foo St')
-    expect(body).toContain(FULL.cmaLink!)
-  })
-
-  it('omits ask, DOM, and cuts when missing — and invents no digits', () => {
-    const body = buildExpiredFirstTouchSms({
-      ...emptyFirstTouchFacts(),
-      address: '1842 NW Foo St',
-      senderFirstName: 'Matt',
-    })
-    assertCBar(body, '1842 NW Foo St')
-    expect(body).toContain('1842 NW Foo St came off the market without a sale')
+    expect(body).toBe(
+      'Hi, Matt with Ryan Realty. 1842 NW Foo St came off the market without a sale. We built a market analysis for 1842 NW Foo St and the plan we would run on that address: listing video, flyers, and a photo set made for this house. https://ryan-realty.com/cma/1842-nw-foo-st',
+    )
     expect(body).not.toMatch(/\$\d/)
     expect(body).not.toMatch(/\d+ days/)
-    expect(body).not.toMatch(/\d+ cuts/)
+    expect(body).not.toMatch(/\bcuts?\b/i)
+    expect(body).not.toMatch(/\bthe ask\b/i)
   })
 
   it('does not invent an address', () => {
@@ -75,7 +66,7 @@ describe('first-touch SMS — expired', () => {
 })
 
 describe('first-touch SMS — FSBO', () => {
-  it('names THIS address and the ask, and markets this home, not /sell', () => {
+  it('names THIS address and markets this home, not /sell — never recites price or DOM', () => {
     const body = buildFsboFirstTouchSms({
       ...FULL,
       originalListPrice: null,
@@ -85,13 +76,13 @@ describe('first-touch SMS — FSBO', () => {
     })
     assertCBar(body, '1842 NW Foo St')
     expect(body).toContain('listed by owner')
-    expect(body).toContain('$895,000')
-    expect(body).toContain('14 days')
     expect(body).toContain('listing video')
     expect(body).not.toContain('good luck')
+    expect(body).not.toMatch(/\$\d/)
+    expect(body).not.toMatch(/\d+ days/)
   })
 
-  it('omits price and days when missing', () => {
+  it('is the same message whether or not price/DOM facts exist', () => {
     const body = buildFsboFirstTouchSms({
       ...emptyFirstTouchFacts(),
       address: '9 Pine Rd',
@@ -105,7 +96,7 @@ describe('first-touch SMS — FSBO', () => {
 
 describe('buildFirstTouchSms', () => {
   it('routes both kinds', () => {
-    expect(buildFirstTouchSms('expired', FULL)).toContain('came off without a sale')
+    expect(buildFirstTouchSms('expired', FULL)).toContain('came off the market without a sale')
     expect(buildFirstTouchSms('fsbo', FULL)).toContain('listed by owner')
   })
 })

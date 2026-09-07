@@ -96,40 +96,23 @@ export function composeThisHomeMarketClause(address: string | null): string {
   return 'We built a market analysis for this home and the plan we would run on it: listing video, flyers, and a photo set made for this house.'
 }
 
-function composeCutsClause(facts: FirstTouchFacts): string | null {
-  const original = finiteMoney(facts.originalListPrice)
-  const final = finiteMoney(facts.finalListPrice) ?? finiteMoney(facts.listPrice)
-  if (original == null || final == null || original <= final) return null
-  const cuts = facts.priceCutCount
-  if (cuts != null && Number.isFinite(cuts) && cuts >= 2) {
-    return `The ask moved from ${formatFirstTouchUsd(original)} to ${formatFirstTouchUsd(final)} over ${Math.round(cuts)} cuts.`
-  }
-  return `The ask moved from ${formatFirstTouchUsd(original)} to ${formatFirstTouchUsd(final)}.`
-}
+// Matt 2026-09-07 (hard lock, said twice): the owner lived their own listing.
+// Never state their list price, days on market, or price cuts back at them —
+// not "the ask," not a dollar figure, not a day count. State only that it
+// did not sell / that they are listing it themselves. Personalization comes
+// from the address and from what is actually NEW to them (our numbers, the
+// plan), never from reciting their own history.
 
 export function composeExpiredKnowClause(facts: FirstTouchFacts): string {
   const address = trim(facts.address)
-  const ask = finiteMoney(facts.listPrice)
-  const dom = finiteDays(facts.daysOnMarket)
   const head = address ?? 'This home'
-  const listed = ask ? ` listed at ${formatFirstTouchUsd(ask)}` : ''
-  const days = dom != null ? ` for ${dom} days` : ''
-  const core =
-    listed || days
-      ? `${head}${listed}${days}, then came off without a sale.`
-      : `${head} came off the market without a sale.`
-  const cuts = composeCutsClause(facts)
-  return cuts ? `${core} ${cuts}` : core
+  return `${head} came off the market without a sale.`
 }
 
 export function composeFsboKnowClause(facts: FirstTouchFacts): string {
   const address = trim(facts.address)
-  const ask = finiteMoney(facts.listPrice)
-  const dom = finiteDays(facts.daysOnMarket)
   const head = address ?? 'This home'
-  const listed = ask ? ` at ${formatFirstTouchUsd(ask)}` : ''
-  const days = dom != null ? ` and has been listed ${dom} days` : ''
-  return `${head} is listed by owner${listed}${days}.`
+  return `${head} is listed by owner.`
 }
 
 function joinSms(parts: Array<string | null>): string {
