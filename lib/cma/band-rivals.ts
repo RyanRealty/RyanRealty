@@ -306,7 +306,7 @@ export function renderBandRivalsSceneHtml(input: {
       ? `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}`
       : `Who you are competing with at this price`
   return `
-  <section class="sc sc-navy" id="competition">
+  <section class="sc sc-cream" id="competition">
     <div class="in wide">
       <div class="kick r">At this price</div>
       <h2 class="h r">${esc(headline)}</h2>

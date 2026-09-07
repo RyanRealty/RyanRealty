@@ -355,33 +355,35 @@ describe('P1 — one price ruler for sold and unsold', () => {
   })
 })
 
-describe('P2 — the expired chapter is the why, so it comes first', () => {
-  it('puts Your last listing directly after How we got the price', () => {
+describe('chapter 1 — what happened comes FIRST, before the number', () => {
+  // CMA_REIMAGINED_2026-09-07.md moved it ahead of the price. P2 put it second,
+  // after How we got the price; the blueprint's reader gives the document
+  // ninety seconds and wants their own listing explained before anything else.
+  it('opens the document on what happened to their listing', () => {
     const chapters = letterChapters(letter())
+    const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
     const price = chapters.indexOf('How we got the price')
-    const last = chapters.findIndex((c) => /Your last listing/i.test(c))
     const competition = chapters.findIndex((c) => /competing with/i.test(c))
-    expect(price).toBeGreaterThanOrEqual(0)
-    expect(last).toBe(price + 1)
-    expect(competition).toBeGreaterThan(last)
+    expect(happened).toBe(0)
+    expect(price).toBeGreaterThan(happened)
+    expect(competition).toBeGreaterThan(price)
   })
 
-  it('carries the price ruler and the failed-then-sold statistics', () => {
+  it('carries the failed-then-sold statistics', () => {
     const html = letter()
-    const start = html.indexOf('Your last listing')
+    const start = html.indexOf('and did not sell.')
     const end = html.indexOf('<section class="page"', start)
     const chapter = html.slice(start, end > 0 ? end : undefined)
-    expect(chapter).toContain('Your last ask $460K')
     expect(chapter).toContain('3,394')
     expect(chapter).toContain('94.2%')
     expect(chapter).toContain('12.3%')
   })
 
   it('does the same in the immersive, in the same place', () => {
-    const scenes = immersiveScenes(immersive())
-    const price = scenes.indexOf('how-we-got-the-price')
-    expect(scenes[price + 1]).toBe('your-last-listing')
-    expect(scenes.indexOf('competition')).toBeGreaterThan(price + 1)
+    const scenes = immersiveScenes(immersive()).filter((x) => x !== 'top')
+    expect(scenes[0]).toBe('what-happened')
+    expect(scenes.indexOf('what-its-worth')).toBeGreaterThan(0)
+    expect(scenes.indexOf('competition')).toBeGreaterThan(scenes.indexOf('what-its-worth'))
   })
 })
 
@@ -436,7 +438,8 @@ describe('P4 — how fast homes like yours went, not a month ledger', () => {
   })
 
   it('is in the immersive too', () => {
-    expect(immersiveScenes(immersive())).toContain('how-fast')
+    // Folded into chapter 2 — the days chart IS "priced high sits".
+    expect(immersiveScenes(immersive())).toContain('priced-right')
   })
 })
 
@@ -455,20 +458,25 @@ describe('P5 — one statement each, once', () => {
   })
 })
 
-describe('P6 — the land only when the lots differ', () => {
-  it('omits six identical rectangles and says the one fact instead', () => {
+describe('the land is cut, drawn or not', () => {
+  // P6 kept the chapter when the lots differed. CMA_REIMAGINED_2026-09-07.md
+  // cuts it outright: recorded lot outlines answer none of the three questions
+  // this document exists to answer.
+  it('draws no lot outlines even when the parcels differ', () => {
     const html = letter({
       parcels: {
         subject: { acres: 0.14, taxlot: '151303BD02800', rings: [[[0, 0], [1, 0], [1, 1], [0, 1]]] },
-        comps: comps.map((c) => ({
+        comps: comps.map((c, i) => ({
           listingKey: c.listingKey,
-          acres: c.lotAcres,
-          rings: [[[0, 0], [1, 0], [1, 1], [0, 1]]],
+          acres: (c.lotAcres ?? 0.14) * (1 + i),
+          rings: [[[0, 0], [1 + i, 0], [1 + i, 1], [0, 1]]],
         })),
       } as unknown as RenderCmaArgs['parcels'],
     })
-    expect(html).not.toContain('<h2 class="section">The land</h2>')
-    expect(html).toContain('Every kept sale sits on a 0.14 to 0.16 acre lot like this one.')
+    // Measure the document, not the stylesheet that still names the classes.
+    const body = html.split('</style>')[1]!
+    expect(body).not.toContain('<h2 class="section">The land</h2>')
+    expect(body).not.toContain('lot-strip')
   })
 })
 
@@ -485,7 +493,7 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // Measure the document, not the stylesheet that names the same classes.
     const html = letter().split('</style>')[1]!
     const lead = html.indexOf('The sales that set this price')
-    const matrix = html.indexOf('comp-matrix-wrap')
+    const matrix = html.indexOf('comp-matrix-wrap', lead)
     expect(lead).toBeGreaterThan(0)
     expect(matrix).toBeGreaterThan(lead)
     expect(html).toMatch(/land at \$372,324 to \$398,788[\s\S]{0,120}\$389,000/)

@@ -3,7 +3,6 @@
  */
 import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
-import { subdivisionChapterPage } from './opinion-pages'
 import { pricingPage } from './render-pricing-page'
 import { printWiderMarketPages } from './market-area-chapters'
 import { cmaStylesheet } from './render-css'
@@ -134,67 +133,6 @@ describe('print CMA layout', () => {
     expect(page.body).toContain('The sales that set this price')
     expect(page.body).toContain('Sale price / sqft')
     expect(page.body).toContain('Lot sqft')
-  })
-
-  it('does not reprint the same static map on the subdivision chapter', () => {
-    const page = subdivisionChapterPage({
-      subject,
-      comps: fiveSales(comp),
-      market: null,
-      pricing,
-      mapDataUri: 'data:image/png;base64,aaa',
-      generatedAtIso: '2026-08-18T00:00:00.000Z',
-      excludedOutliers: [],
-      subdivisionStory: story,
-    })
-    expect(page).not.toBeNull()
-    expect(page!.body).not.toContain('class="map-img"')
-  })
-
-  it('plots median close, not sale count, so a price rise cannot look like a crash', () => {
-    // Diamond Bar Ranch as printed on 2465 7th: prices roughly doubled,
-    // volume fell. Plotting count above the median-close table drew a crash.
-    const years = [
-      { year: 2016, count: 16, medianClose: 239449, medianPpsf: 153 },
-      { year: 2017, count: 20, medianClose: 260549, medianPpsf: 160 },
-      { year: 2018, count: 20, medianClose: 273000, medianPpsf: 169 },
-      { year: 2019, count: 21, medianClose: 299900, medianPpsf: 189 },
-      { year: 2020, count: 19, medianClose: 333000, medianPpsf: 212 },
-      { year: 2021, count: 11, medianClose: 433000, medianPpsf: 271 },
-      { year: 2022, count: 8, medianClose: 459500, medianPpsf: 299 },
-      { year: 2023, count: 7, medianClose: 480000, medianPpsf: 286 },
-      { year: 2024, count: 5, medianClose: 492000, medianPpsf: 281 },
-      { year: 2025, count: 6, medianClose: 484500, medianPpsf: 291 },
-      { year: 2026, count: 12, medianClose: 456000, medianPpsf: 280 },
-    ]
-    const page = subdivisionChapterPage({
-      subject,
-      comps: fiveSales(comp),
-      market: null,
-      pricing,
-      mapDataUri: null,
-      generatedAtIso: '2026-09-05T00:00:00.000Z',
-      excludedOutliers: [],
-      subdivisionStory: {
-        ...story,
-        facts: {
-          ...story.facts,
-          name: 'Diamond Bar Ranch',
-          totalSales: 145,
-          years,
-        },
-      },
-    })
-    expect(page).not.toBeNull()
-    const html = page!.body
-    // C3: subdivision keeps the year table; no sparkline chart on the letter.
-    expect(html).toContain('Median close')
-    expect(html).toContain('2016')
-    expect(html).toContain('$239,449')
-    expect(html).toContain('2024')
-    expect(html).toContain('$492,000')
-    expect(html).not.toMatch(/<path d="/)
-    expect(html).not.toMatch(/Closed sales by year/i)
   })
 
   it('does not insert a contents sheet', () => {

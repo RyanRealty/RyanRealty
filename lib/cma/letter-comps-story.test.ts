@@ -281,7 +281,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     expect(html).not.toContain('97 days on market')
   })
 
-  it('print spine orders comps → expired peers → competition', () => {
+  it('print spine orders unsold peers → the sales that set the price → competition', () => {
     const pages = assembleOpinionPages({
       subject,
       comps: fiveSales(sold),
@@ -293,12 +293,15 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       excludedOutliers: [],
     })
     const bodies = pages.map((p) => p.body).join('\n')
+    // CMA_REIMAGINED_2026-09-07.md reordered this: the unsold listings are
+    // chapter 2's evidence that priced high sits, so they come BEFORE the
+    // number they explain, and competition follows the number.
     const salesIdx = bodies.indexOf('The sales that set this price')
     const expiredIdx = bodies.indexOf('Near you, these asked and did not sell')
     const compIdx = bodies.indexOf('Who you are competing with at this price')
-    expect(salesIdx).toBeGreaterThan(-1)
-    expect(expiredIdx).toBeGreaterThan(salesIdx)
-    expect(compIdx).toBeGreaterThan(expiredIdx)
+    expect(expiredIdx).toBeGreaterThan(-1)
+    expect(salesIdx).toBeGreaterThan(expiredIdx)
+    expect(compIdx).toBeGreaterThan(salesIdx)
   })
 
   it('immersive spine carries the same four beats', () => {

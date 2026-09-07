@@ -268,6 +268,11 @@ table.comp-matrix .matrix-addr{display:block}
 .stat-strip .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
 .stat-strip .stat .lbl.vd{font-weight:600;opacity:.95;margin-top:6px}
 @media (max-width:700px){.stat-strip,.stat-strip.is-3,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}}
+/* The closing scene is the only navy one, so its buttons invert there rather
+   than carrying their own modifier class. */
+.sc-navy .btn.pri{background:var(--cream);color:var(--navy);box-shadow:0 12px 28px rgb(0 0 0 / .28)}
+.sc-navy .btn.sec{border-color:var(--cream);color:var(--cream)}
+.sc-navy .btn.ter{color:rgba(250,248,244,.75)}
 /* A chart drawn in navy ink is invisible on a navy scene. The median-close
    line printed a caption over a blank field until this landed. Scoped to the
    scene, not to one wrapper class, so a chart moved to a navy chapter cannot

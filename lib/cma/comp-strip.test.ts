@@ -248,10 +248,11 @@ describe('web and print tell the same comps story', () => {
       },
       'https://ryan-realty.com',
     )
-    const priceAt = html.indexOf('id="how-we-got-the-price"')
-    const streetAt = html.indexOf('id="your-street"')
+    const priceAt = html.indexOf('id="what-its-worth"')
     expect(priceAt).toBeGreaterThan(0)
-    expect(streetAt).toBeGreaterThan(priceAt)
+    // The subdivision year bars have no chapter of their own any more
+    // (CMA_REIMAGINED_2026-09-07.md).
+    expect(html).not.toContain('id="your-street"')
     expect(html).toContain('412 Cascade')
     expect(html).toContain('$505,000')
     expect(html).toContain('$511,000')

@@ -66,7 +66,7 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).not.toContain('listing video')
     expect(html).not.toMatch(/what your home is worth/i)
     expect(html).not.toMatch(/What every listing gets/i)
-    const whyAt = html.indexOf('id="how-we-got-the-price"')
+    const whyAt = html.indexOf('id="what-its-worth"')
     expect(whyAt).toBeGreaterThan(0)
     expect(html).toContain('How we got the price')
   })
@@ -76,12 +76,15 @@ describe('renderImmersiveCmaHtml', () => {
       args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [], netSheet: { lines: [], netLow: 0, netHigh: 0 }, feeLine: '' } as never }),
       'https://ryan-realty.com',
     )
-    expect(html).toContain('Your last listing')
+    expect(html).toContain('and did not sell.')
     expect(html).toContain('3,394')
     expect(html).toContain('94.2%')
   })
 
-  it('the subdivision story scene renders facts, prose, and the photo cards', () => {
+  it('gives the subdivision no scene of its own', () => {
+    // CUT by CMA_REIMAGINED_2026-09-07.md. A year table and four prose cards
+    // about the street is not one of the three things a seller reads this for.
+    // The subdivision survives as ONE line inside chapter 5.
     const html = renderImmersiveCmaHtml(
       args({
         subdivisionStory: {
@@ -101,21 +104,15 @@ describe('renderImmersiveCmaHtml', () => {
       }),
       'https://ryan-realty.com',
     )
-    expect(html).toContain('This subdivision')
-    expect(html).toContain('Stone Creek')
-    expect(html).toContain('41')
-    expect(html).toContain('$705,000')
-    expect(html).toContain('A tight band')
-    expect(html).toContain('kira.jpg')
-    expect(html).toContain('as large or larger than 72%')
-    expect(html).toContain('homes have sold in Stone Creek')
+    expect(html).not.toContain('id="your-street"')
+    expect(html).not.toContain('A tight band')
+    expect(html).not.toContain('as large or larger than 72%')
     expect(html).not.toContain('claude-sonnet-4-5')
-    expect(html).not.toContain('story fixture source')
   })
 
   it('no story, no scene; no audit, no failed-listing scene', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
     expect(html).not.toContain('The story of')
-    expect(html).not.toContain('Your last listing')
+    expect(html).not.toContain('and did not sell.')
   })
 })

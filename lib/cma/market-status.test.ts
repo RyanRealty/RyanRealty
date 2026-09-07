@@ -601,7 +601,7 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
 describe('chapter order', () => {
   it('puts why and the three sales before the wider-market chapter', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    const why = html.indexOf('id="how-we-got-the-price"')
+    const why = html.indexOf('id="what-its-worth"')
     const market = html.indexOf('id="this-market"')
     const sold = html.indexOf('id="sold-90"')
     expect(why).toBeGreaterThan(0)
@@ -631,7 +631,8 @@ describe('chapter order', () => {
     expect(html).not.toContain('compare-board')
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
-    expect(html).toContain('sc-navy')
+    // ONE register: cream throughout, navy on the cover and the closing only.
+    expect(html).not.toContain('sc-navy')
     expect(html).not.toContain('id="listing-trend"')
     expect(html).toContain('id="inventory"')
     // F7: the board is one stat row, months of supply first with its verdict

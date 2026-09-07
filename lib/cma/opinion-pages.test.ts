@@ -133,38 +133,35 @@ function args(): OpinionPageArgs {
 }
 
 describe('assembleOpinionPages format', () => {
-  it('puts house facts and legal on the subject page instead of empty follow-on sheets', () => {
-    const pages = assembleOpinionPages(args())
-    const tocs = pages.map((p) => p.toc)
-    expect(tocs).toContain('Home location')
-    expect(tocs).not.toContain('Property facts')
-    expect(tocs).not.toContain('Legal, owner, and flood')
-    const house = pages.find((p) => p.toc === 'Home location')
-    expect(house?.body).toContain('Garage')
-    expect(house?.body).toContain('2 spaces')
-    expect(house?.body).toContain('Parcel')
-    expect(house?.body).toContain('245217')
-    expect(house?.body).toContain('Detached house')
-    expect(house?.body).not.toContain('Single Family Residence')
-    expect(house?.body).not.toContain('pin-map')
+  it('carries only the blueprint chapters — no facts table, no lots, no permits', () => {
+    const tocs = assembleOpinionPages(args()).map((p) => p.toc)
+    // CUT by CMA_REIMAGINED_2026-09-07.md: they answer none of the three
+    // questions a seller opens a failed listing's report to answer.
+    for (const cut of [
+      'Home location',
+      'Property facts',
+      'Legal, owner, and flood',
+      'The land',
+      'Permits and ownership',
+      'Photos',
+    ]) {
+      expect(tocs, `${cut} is cut`).not.toContain(cut)
+    }
   })
 
-  it('does not put a subject-only map on Home location even when one is provided (C9)', () => {
+  it('keeps the ONE map on the price chapter (C9)', () => {
     const pages = assembleOpinionPages({
       ...args(),
       subjectMapDataUri: 'data:image/png;base64,subjmap',
       mapDataUri: 'data:image/png;base64,compsmap',
     })
-    const house = pages.find((p) => p.toc === 'Home location')
-    expect(house?.body).not.toContain('data:image/png;base64,subjmap')
-    expect(house?.body).not.toContain('pin-map')
-    expect(house?.body).not.toContain('The pin is this house.')
     const price = pages.find((p) => p.toc === 'How we got the price')
     expect(price?.body).toContain('data:image/png;base64,compsmap')
     expect(price?.body).toContain('pin-map')
+    expect(pages.map((p) => p.body).join('')).not.toContain('data:image/png;base64,subjmap')
   })
 
-  it('puts competition next to the price, before the market chapters', () => {
+  it('puts competition next to the price, before the market chapter', () => {
     const tocs = assembleOpinionPages(args()).map((p) => p.toc)
     const price = tocs.indexOf('How we got the price')
     const competition = tocs.indexOf('Who you are competing with at this price')
@@ -172,7 +169,7 @@ describe('assembleOpinionPages format', () => {
     expect(competition).toBe(price + 1)
   })
 
-  it('draws sold vs unsold (expired peers) before live competition', () => {
+  it('draws sold vs unsold before the number and before live competition', () => {
     const pages = assembleOpinionPages({
       ...args(),
       extras: {
@@ -218,7 +215,8 @@ describe('assembleOpinionPages format', () => {
     })
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.indexOf('Who you are competing with at this price')
-    const outcomes = tocs.indexOf('Sold and unsold in your price range')
+    // Chapter 2 now carries the unsold story, and it sits BEFORE the number.
+    const outcomes = tocs.indexOf('Priced right sells. Priced high sits.')
     expect(outcomes).toBeGreaterThanOrEqual(0)
     expect(competition).toBeGreaterThan(outcomes)
     const body = pages[outcomes]!.body

@@ -329,7 +329,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     expect(line).toContain('20 days on market')
   })
 
-  it('immersive story order: comps → expired peers → competition', () => {
+  it('immersive story order: unsold peers → the sales that set the price → competition', () => {
     const html = assembleOpinionScenes({
       subject,
       comps: fiveSales(comp),
@@ -340,11 +340,14 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       broker,
       generatedAtIso: '2026-09-06T00:00:00.000Z',
     })
+    // CMA_REIMAGINED_2026-09-07.md reordered this: the unsold listings are
+    // chapter 2's evidence that priced high sits, so they come BEFORE the
+    // number they explain, and competition follows the number.
     const salesAt = html.indexOf('The sales that set this price')
     const peersAt = html.indexOf('Near you, these asked and did not sell')
     const competitionAt = html.indexOf('id="competition"')
-    expect(salesAt).toBeGreaterThan(0)
-    expect(peersAt).toBeGreaterThan(salesAt)
-    expect(competitionAt).toBeGreaterThan(peersAt)
+    expect(peersAt).toBeGreaterThan(0)
+    expect(salesAt).toBeGreaterThan(peersAt)
+    expect(competitionAt).toBeGreaterThan(salesAt)
   })
 })

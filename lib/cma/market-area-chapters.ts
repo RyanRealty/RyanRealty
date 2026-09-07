@@ -425,7 +425,7 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
     </section>`)
   }
   if (sold90) {
-    parts.push(`<section class="sc sc-navy" id="sold-90">
+    parts.push(`<section class="sc sc-cream" id="sold-90">
       <div class="in">
         <div class="kick r">Last 90 days</div>
         <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes sold for</h2>
@@ -531,7 +531,7 @@ export function widerMarketBodyHtml(
 export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
   const body = widerMarketBodyHtml(a, 'sub')
   if (!body) return ''
-  return `<section class="sc sc-navy" id="this-market">
+  return `<section class="sc sc-cream" id="this-market">
       <div class="in">
         <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
         <h2 class="h r">This market</h2>

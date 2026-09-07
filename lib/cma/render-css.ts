@@ -687,6 +687,48 @@ export function cmaStylesheet(siteUrl: string): string {
        visible; @page gives the spill a properly margined sheet. §0. */
     a { text-decoration: none; color: inherit; }
   }
+
+  /* ── The closing sheet ────────────────────────────────────────────────────
+     ONE register (CMA_REIMAGINED_2026-09-07.md § The register): cream
+     throughout, navy on the cover and this sheet only. Everything inside
+     inverts off the section, not off a per-element override, so a block moved
+     into the closing cannot arrive as navy-on-navy. */
+  .page-closing {
+    background: var(--navy);
+    color: var(--cream);
+  }
+  .page-closing h2.section { color: var(--cream); border-bottom-color: var(--cream); }
+  .page-closing h3.subhead,
+  .page-closing p,
+  .page-closing .cta-lead { color: var(--cream); }
+  .page-closing .small,
+  .page-closing .cta-reply-note,
+  .page-closing .fine { color: rgba(250, 248, 244, 0.72); }
+  .page-closing .pg-header { border-bottom-color: rgba(250, 248, 244, 0.28); }
+  .page-closing .pg-meta { color: rgba(250, 248, 244, 0.62); }
+  .page-closing .cta-actions a {
+    background: var(--cream);
+    color: var(--navy);
+    border-color: var(--cream);
+  }
+  .page-closing .cta-actions a.ghost {
+    background: transparent;
+    color: var(--cream);
+    border-color: rgba(250, 248, 244, 0.55);
+  }
+  .page-closing .signature-page { border-top-color: rgba(250, 248, 244, 0.28); }
+  .page-closing .signature-page .sig-name {
+    color: var(--cream);
+    border-bottom-color: rgba(250, 248, 244, 0.55);
+  }
+  .page-closing .signature-page .sig-printed,
+  .page-closing .signature-page .sig-title,
+  .page-closing .signature-page .sig-contact { color: var(--cream); }
+  .page-closing .signature-page .sig-license {
+    color: rgba(250, 248, 244, 0.62);
+    border-top-color: rgba(250, 248, 244, 0.28);
+  }
+
 `+ cmaSectionStyles() + `
   /* phone-safety: last wins — after section CSS so a later desk-sized rule
      cannot resurrect cover clip or the 512px signature letter width. */

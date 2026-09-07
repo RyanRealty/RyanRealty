@@ -177,8 +177,11 @@ describe('the single-doc fold', () => {
 
   it('renders the last-listing review, never the retired audit pages', () => {
     const { html } = renderCmaHtml(withReview)
-    expect(html).toContain('Your last listing')
-    expect(html).toContain('Your home came off the market without selling')
+    // Heading depends on whether the row carries the failed ask, so assert
+    // the chapter's own content instead.
+    expect(html).toMatch(/did not sell|without selling/)
+    expect(html).toContain('Listed at $800,000 against a supported $715,000.')
+    expect(html).toContain('3,394')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toContain('Estimated Seller Net Sheet')
     expect(html).not.toContain('SERVICES_SENTINEL')
@@ -389,14 +392,15 @@ describe('the subdivision story (print page + immersive scene)', () => {
     photoSalesReviewed: 1,
   }
 
-  it('renders the story page with the year table, prose, and source', () => {
+  it('gives the subdivision no chapter of its own', () => {
+    // CUT by CMA_REIMAGINED_2026-09-07.md. A ten-year table and four prose
+    // cards about the street is not one of the three things this document
+    // exists to answer. It survives as ONE line inside chapter 5.
     const { html } = renderCmaHtml(args({}, { subdivisionStory: story }))
-    expect(html).toContain('<h2 class="section">Stone Creek')
-    expect(html).toContain('<td>2024</td><td>15</td><td>$590,000</td>')
-    expect(html).toContain('A street that sells on consistency')
-    expect(html).toContain('as large or larger than 72%')
-    expect(html).toContain('$705,000')
-    expect(html).not.toContain('story fixture')
+    expect(html).not.toContain('<h2 class="section">Stone Creek')
+    expect(html).not.toContain('<td>2024</td><td>15</td><td>$590,000</td>')
+    expect(html).not.toContain('A street that sells on consistency')
+    expect(html).not.toContain('as large or larger than 72%')
     expect(html).not.toContain('claude-sonnet-4-5')
   })
 

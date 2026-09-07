@@ -95,6 +95,8 @@ interface PageDef {
   toc?: string
   cover?: boolean
   flyer?: boolean
+  /** The closing sheet. Navy is the cover and this page only. */
+  closing?: boolean
 }
 
 function wrapPage(page: PageDef): string {
@@ -104,10 +106,14 @@ function wrapPage(page: PageDef): string {
   ${page.body}
 </section>`
   }
+  // ONE register (CMA_REIMAGINED_2026-09-07.md § The register): cream
+  // throughout, navy on the cover and the closing sheet only. The closing
+  // takes the cream wordmark, because the navy one disappears into the field.
+  const logo = page.closing ? 'logo-white.png' : 'logo-blue.png'
   return `
-<section class="page${page.flyer ? ' page-flyer' : ''}">
+<section class="page${page.flyer ? ' page-flyer' : ''}${page.closing ? ' page-closing' : ''}">
   <header class="pg-header">
-    <img src="${SITE_URL}/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <img src="${SITE_URL}/images/brand/${logo}" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">${page.meta}</div>
   </header>
   ${page.body}
