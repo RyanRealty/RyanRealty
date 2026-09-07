@@ -209,7 +209,10 @@ async function loadOptionalEnrichment(): Promise<{
   try {
     const { getMarketPulse } = await import('@/lib/data')
     getPulse = async (slug) =>
-      getMarketPulse({ geoType: 'community', geoSlug: slug }).catch(() => null)
+      // Resort communities live in market_pulse_live at geo_type 'neighborhood'
+      // (ci:studio-geo-contract, verified live 2026-08-26); 'community' has no
+      // rows and returned null on every home render.
+      getMarketPulse({ geoType: 'neighborhood', geoSlug: slug }).catch(() => null)
   } catch {
     getPulse = async () => null
   }
