@@ -24,6 +24,17 @@ describe('classifyCmaOrigin', () => {
     expect(classifyCmaOrigin('brain-queue')).toBe('internal')
   })
 
+  it('reads the lane-recovery sources the 2026-09-07 backfill writes', () => {
+    // The backfill can prove the LANE (the prospect link table reaches the row)
+    // but not the trigger — request_source did not exist as a column until
+    // 2026-08-27, so a pre-cutover expired row could equally have come from the
+    // cron or from the expired dashboard. These tokens say the lane and admit
+    // the trigger was never recorded, instead of asserting a cron that may not
+    // have built it.
+    expect(classifyCmaOrigin('expired-backfill')).toBe('expired')
+    expect(classifyCmaOrigin('fsbo-backfill')).toBe('fsbo')
+  })
+
   it('is case- and whitespace-insensitive', () => {
     expect(classifyCmaOrigin('  Seller-LP ')).toBe('seller-valuation')
   })

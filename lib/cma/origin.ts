@@ -45,8 +45,24 @@ export const CMA_ORIGIN_INTENT: Record<CmaOrigin, string> = {
   unknown: 'Origin not recorded on the row.',
 }
 
-const EXPIRED_SOURCES = new Set(['expired-listing-cron', 'expired-dashboard', 'expired-outreach-queue'])
-const FSBO_SOURCES = new Set(['fsbo-cron', 'fsbo-dashboard', 'fsbo-lp', 'fsbo-outreach'])
+/**
+ * `*-backfill` are the lane-recovery tokens written by
+ * supabase/migrations/20260907130000_cmas_request_source_lane_backfill.sql.
+ *
+ * `request_source` only became a column on 2026-08-27, so every row built
+ * before that carries NULL no matter which path built it. The prospect link
+ * tables (`expired_listings.cma_id`, `fsbo_listings.cma_id`) prove the LANE
+ * for those rows, but both the cron and the dashboard write that link, so the
+ * trigger is not recoverable. These tokens record what is true — the lane —
+ * rather than asserting a cron that may not have built it (§0).
+ */
+const EXPIRED_SOURCES = new Set([
+  'expired-listing-cron',
+  'expired-dashboard',
+  'expired-outreach-queue',
+  'expired-backfill',
+])
+const FSBO_SOURCES = new Set(['fsbo-cron', 'fsbo-dashboard', 'fsbo-lp', 'fsbo-outreach', 'fsbo-backfill'])
 const SELLER_SOURCES = new Set(['seller-lp', 'seller-home-value'])
 const LEAD_FORM_SOURCES = new Set(['lead-form', 'contact-form'])
 const BROKER_SOURCES = new Set(['admin-manual', 'admin-rebuild', 'crm-contact-card', 'crm-kickoff'])
