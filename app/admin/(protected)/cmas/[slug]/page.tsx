@@ -1,7 +1,7 @@
 // @no-parity — internal admin tool, no public mockup contract.
 //
-// /admin/cmas/[slug] — per-CMA review page. Numbers, origin, the email that
-// will go out, then Approve & send. Extra form work sits under details.
+// /admin/cmas/[slug] — per-CMA review page. Numbers, editable outbound email,
+// then Approve & send / Approve & queue. Extra form work sits under details.
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
@@ -26,6 +26,7 @@ import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
 import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
 import { composeCmaFirstContact, cmaFirstContactFactsFromRow } from '@/lib/cma/first-contact'
+import { readFirstContactOverride } from '@/lib/cma/first-contact-override'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import '../_components/cma-review.css'
 
@@ -101,7 +102,7 @@ export default async function AdminCmaReviewPage({
           : 'Approve'
       : null
   const signingBroker = brokers.find((b) => b.slug === String(row.broker_slug ?? ''))
-  const firstContact = composeCmaFirstContact(origin, {
+  const composed = composeCmaFirstContact(origin, {
     ...cmaFirstContactFactsFromRow(row, {
       brokerName: signingBroker?.displayName ?? 'Matt Ryan',
       firstName: (clientLabel ?? '').trim().split(/\s+/)[0] || null,
@@ -109,6 +110,11 @@ export default async function AdminCmaReviewPage({
     }),
     address: subjectAddress || null,
   })
+  const savedOverride = readFirstContactOverride(summary)
+  const firstContact = {
+    subject: savedOverride?.subject || composed.subject,
+    bodyText: savedOverride?.bodyText || composed.bodyText,
+  }
 
   const previewSrc = canOpenDocument
     ? brokerCmaViewHref(safeSlug)
@@ -126,9 +132,18 @@ export default async function AdminCmaReviewPage({
         paddingBottom: 'calc(var(--a-tabbar-h, 56px) + 80px)',
       }}
     >
-      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
+      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <Link href="/admin/cmas" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
           CMAs
+        </Link>
+        <Link href="/admin/cmas?state=ready" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Ready
+        </Link>
+        <Link href="/admin/cmas?state=queued" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          In drip
+        </Link>
+        <Link href="/admin/prospecting" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Prospecting
         </Link>
       </nav>
 
@@ -214,11 +229,8 @@ export default async function AdminCmaReviewPage({
       ) : null}
 
       <SectionHead>Review and send</SectionHead>
-      <p
-        className="cma-review-copy"
-        style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', whiteSpace: 'pre-wrap' }}
-      >
-        {firstContact.bodyText}
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+        Read the numbers, tweak the outbound email, then approve. The email below is what goes out.
       </p>
       <CmaReviewActions
         cmaId={String(row.id)}
@@ -239,6 +251,8 @@ export default async function AdminCmaReviewPage({
         brokers={brokers}
         hasDocument={hasDocument}
         sendLabel={sendLabel}
+        emailSubject={firstContact.subject}
+        emailBody={firstContact.bodyText}
       />
 
       <details style={{ marginTop: 24 }}>

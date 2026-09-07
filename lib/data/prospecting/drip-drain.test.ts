@@ -9,6 +9,8 @@ const hardSkipQueuedFirstTouch = vi.fn()
 const verifyNotRelisted = vi.fn()
 const verifyFsboStillActive = vi.fn()
 const sendProspectingEmailIntro = vi.fn()
+const getProspect = vi.fn()
+const loadCmaFirstContactOverride = vi.fn()
 
 vi.mock('@/lib/data/prospecting/drip-queue', () => ({
   getLastDripSentAt: (...a: unknown[]) => getLastDripSentAt(...a),
@@ -25,6 +27,14 @@ vi.mock('@/app/actions/prospecting', () => ({
   sendProspectingEmailIntro: (...a: unknown[]) => sendProspectingEmailIntro(...a),
 }))
 
+vi.mock('@/lib/data', () => ({
+  getProspect: (...a: unknown[]) => getProspect(...a),
+}))
+
+vi.mock('@/lib/cma/first-contact-override', () => ({
+  loadCmaFirstContactOverride: (...a: unknown[]) => loadCmaFirstContactOverride(...a),
+}))
+
 import { drainProspectingFirstTouchDrip } from './drip-drain'
 
 const THU_8AM_PT = new Date('2026-09-03T15:00:00.000Z')
@@ -37,6 +47,10 @@ beforeEach(() => {
   verifyNotRelisted.mockReset()
   verifyFsboStillActive.mockReset()
   sendProspectingEmailIntro.mockReset()
+  getProspect.mockReset()
+  loadCmaFirstContactOverride.mockReset()
+  getProspect.mockResolvedValue(null)
+  loadCmaFirstContactOverride.mockResolvedValue(null)
 })
 
 describe('drainProspectingFirstTouchDrip — one-at-a-time', () => {
@@ -72,7 +86,11 @@ describe('drainProspectingFirstTouchDrip — one-at-a-time', () => {
     expect(sendProspectingEmailIntro).toHaveBeenCalledWith(
       'expired',
       'LK1',
-      expect.objectContaining({ actor: 'drip-cron' }),
+      expect.objectContaining({
+        actor: 'drip-cron',
+        subjectOverride: null,
+        bodyOverride: null,
+      }),
     )
   })
 

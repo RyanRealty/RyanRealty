@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * Review-page action rail. Primary action is origin-aware Approve & send
- * (or Approve & queue). Client edits, rebuild, custom email, and archive
+ * Review-page action rail. Outbound email is editable here (subject + body),
+ * then Approve & send / Approve & queue. Client edits, rebuild, and archive
  * sit under details so the page stays a read-then-send instrument.
  */
 
@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button, ConfirmDialog, SelectField, TextField } from '@/components/admin/v2'
+import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import { CmaTextMeButton } from '@/components/admin/crm/CmaTextMeButton'
 import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { formatPriceExact } from '@/lib/format/money'
@@ -47,6 +48,10 @@ export interface CmaReviewActionsProps {
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
   sendLabel: string | null
+  /** Default outbound subject (first-contact compose). */
+  emailSubject: string
+  /** Default outbound body (first-contact compose). */
+  emailBody: string
 }
 
 const usd = formatPriceExact
@@ -70,6 +75,8 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   const [sqft, setSqft] = useState(props.subjectSqft != null ? String(props.subjectSqft) : '')
   const [intent, setIntent] = useState<CmaClientIntent | ''>(props.clientIntent ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [emailSubject, setEmailSubject] = useState(props.emailSubject)
+  const [emailBody, setEmailBody] = useState(props.emailBody)
 
   const isDraft = props.status === 'draft'
   const isArchived = props.status === 'archived'
@@ -129,7 +136,18 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
 
   function approveAndSend() {
     startTransition(async () => {
-      const res = await approveAndDeliverCma(props.slug)
+      const subject = emailSubject.trim()
+      const bodyText = emailBody.trim()
+      if (!subject || !bodyText) {
+        toast.error('Subject and email body are required before send.')
+        return
+      }
+      const edited =
+        subject !== props.emailSubject.trim() || bodyText !== props.emailBody.trim()
+      const res = await approveAndDeliverCma(
+        props.slug,
+        edited ? { subject, bodyText } : undefined,
+      )
       if (!res.ok) {
         toast.error(res.error)
         return
@@ -166,17 +184,41 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
 
   return (
     <div className="space-y-5">
-      {props.sendLabel ? (
-        <div className="cma-send-dock">
+      <div className="cma-send-dock space-y-3">
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+          Outbound email
+        </p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Tweaks here go with Approve & send / Approve & queue. Plain voice. No syrup.
+        </p>
+        <EmailBodyEditor
+          subject={emailSubject}
+          onSubjectChange={setEmailSubject}
+          body={emailBody}
+          onBodyChange={setEmailBody}
+          signatureHtml={null}
+          hideMergeFields
+        />
+        {props.sendLabel ? (
           <Button onClick={approveAndSend} disabled={isPending || !props.hasDocument} touch className="w-full">
             {isPending ? 'Working…' : props.sendLabel}
           </Button>
-        </div>
-      ) : isDraft ? (
-        <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
-          Approve (draft to final)
-        </Button>
-      ) : null}
+        ) : isDraft ? (
+          <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
+            Approve (draft to final)
+          </Button>
+        ) : (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Link a client email and finish the audit before this CMA can send.
+          </p>
+        )}
+        {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
+        {composeHref ? (
+          <a href={composeHref} className="av2-btn av2-btn--quiet av2-btn--touch w-full" style={{ textDecoration: 'none' }}>
+            Open in CRM compose
+          </a>
+        ) : null}
+      </div>
 
       <details>
         <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
@@ -307,28 +349,6 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         </div>
       </details>
 
-      <details>
-        <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-          Custom email, text me
-        </summary>
-        <div className="space-y-2" style={{ marginTop: 12 }}>
-          {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
-          {composeHref ? (
-            <a href={composeHref} className="av2-btn av2-btn--quiet av2-btn--touch w-full" style={{ textDecoration: 'none' }}>
-              Write a custom email
-            </a>
-          ) : (
-            <Button touch className="w-full" disabled variant="quiet">
-              Write a custom email
-            </Button>
-          )}
-          {!personId ? (
-            <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-warn, var(--a-text-2))' }}>
-              Link a CRM person under Client, price, rebuild to open compose.
-            </p>
-          ) : null}
-        </div>
-      </details>
 
       <details>
         <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
