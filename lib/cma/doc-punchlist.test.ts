@@ -772,3 +772,116 @@ describe('F7 — this market is a stat row, not a stacked list', () => {
     expect(block.indexOf('stat-strip')).toBeLessThan(block.indexOf('Median close by month.'))
   })
 })
+
+// ── Stream A step 4 (orchestrator look-pass, 2026-09-07) ────────────────────
+
+describe('the market median is a tick on the days chart', () => {
+  const daysSvg = (html: string): string => {
+    const svg = /<svg[^>]*aria-label="[^"]*how fast[^"]*"[\s\S]*?<\/svg>/i.exec(html)?.[0]
+    expect(svg, 'the days-to-offer chart must render').toBeTruthy()
+    return svg!
+  }
+
+  for (const [name, render] of [
+    ['letter', letter],
+    ['immersive', immersive],
+  ] as const) {
+    it(`draws the ${name} tick at the city median, labelled with the city and the value`, () => {
+      const svg = daysSvg(render())
+      const { W, texts } = svgBoxes(svg)
+      const label = texts.find((t) => t.text === 'Redmond median 21 days')
+      expect(label, 'the tick carries the city name and the value from render_args').toBeTruthy()
+      const w = label!.text.length * label!.size * 0.58
+      const left = label!.anchor === 'end' ? label!.x - w : label!.x
+      expect(left).toBeGreaterThanOrEqual(-0.5)
+      expect(left + w).toBeLessThanOrEqual(W + 0.5)
+      // A hairline the height of the bar rows, not another bar.
+      const tick = /<line[^>]*class="days-median"[^>]*>/.exec(svg)
+      expect(tick, 'the median is drawn as its own vertical hairline').toBeTruthy()
+      const at = (k: string) => Number(new RegExp(`${k}="([\\d.]+)"`).exec(tick![0])?.[1] ?? NaN)
+      expect(at('x1')).toBe(at('x2'))
+      expect(at('y2')).toBeGreaterThan(at('y1'))
+      expect(at('stroke-width')).toBeLessThanOrEqual(1.5)
+    })
+  }
+
+  it('reads the tick in the caption, between the kept sales and the subject', () => {
+    const html = letter()
+    expect(html).toMatch(
+      /Each kept sale had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
+    )
+  })
+
+  it('leaves the chart alone when render_args carries no median', () => {
+    const html = letter({
+      market: { ...(args().market as object), medianDom: null } as RenderCmaArgs['market'],
+    })
+    const svg = daysSvg(html)
+    expect(svg).not.toContain('days-median')
+    expect(svg).not.toContain('median 21 days')
+    expect(html).not.toContain('median is 21')
+    expect(html).toContain('Each kept sale had an offer inside 51 days.')
+  })
+})
+
+describe('no MLS placeholder reaches a seller-facing source line', () => {
+  /** A 90-day band this subject's recommend actually sits inside. */
+  const inBand = (source: string) => ({
+    count: 4,
+    low: 370000,
+    median: 392000,
+    high: 405000,
+    bedsLabel: '4 to 6 bedroom',
+    source,
+  })
+
+  const placeholderArgs = (subdivision: string | null): Partial<RenderCmaArgs> => {
+    const name = subdivision ?? 'N/A'
+    const band = inBand(`Oregon Data Share MLS. Closed 4 to 6 bedroom sales in ${name} in the last 90 days.`)
+    return {
+      subject: { ...subject, subdivision },
+      extras: {
+        ...(args().extras as object),
+        marketArea: {
+          ...marketArea,
+          label: name,
+          source: `Oregon Data Share MLS. ${name}, priced $331,000 to $460,000, last 12 months.`,
+          sold90: band,
+          outcomes: {
+            ...(marketArea.outcomes as object),
+            label: name,
+            source: `Oregon Data Share MLS. ${name}, $331,000 to $460,000, last 12 months.`,
+          },
+        },
+        sold90: band,
+      },
+    } as unknown as Partial<RenderCmaArgs>
+  }
+
+  for (const [name, subdivision] of [
+    ['an MLS placeholder subdivision', 'N/A'],
+    ['no subdivision at all', null],
+  ] as const) {
+    for (const [doc, render] of [
+      ['letter', letter],
+      ['immersive', immersive],
+    ] as const) {
+      it(`prints no N/A on the ${doc} with ${name}`, () => {
+        const html = render(placeholderArgs(subdivision)).replace(
+          /data:image\/[a-z+]+;base64,[A-Za-z0-9+/=]+/g,
+          '',
+        )
+        expect(html).not.toContain('N/A')
+      })
+    }
+  }
+
+  it('falls the place clause back to the city that scoped the query', () => {
+    const html = letter(placeholderArgs('N/A'))
+    expect(html).toContain('Closed 4 to 6 bedroom sales in Redmond in the last 90 days.')
+  })
+
+  it('keeps a real subdivision exactly as the MLS states it', () => {
+    expect(letter()).toContain('Diamond Bar Ranch')
+  })
+})

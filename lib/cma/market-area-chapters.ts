@@ -2,8 +2,8 @@
  * Web + print chapters for market-area density. Our look. Our number.
  */
 
-import { dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
-import { clientSourceLine } from '@/lib/cma/client-facing'
+import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
   daysToOfferSvg,
@@ -34,6 +34,11 @@ export type MarketChapterArgs = {
 }
 
 const esc = escapeHtml
+
+/** "Redmond" → "Redmond's"; "Three Rivers" → "Three Rivers'". */
+function possessive(name: string): string {
+  return /s$/i.test(name) ? `${name}'` : `${name}'s`
+}
 
 function money(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
@@ -71,11 +76,19 @@ function statusBoards(area: CmaMarketArea): string {
     ${tiles ? `<div class="status-tiles">${tiles}</div>` : ''}`
 }
 
-export function renderStatusGridHtml(area: CmaMarketArea | null | undefined): string {
+export function renderStatusGridHtml(
+  area: CmaMarketArea | null | undefined,
+  city?: string | null,
+): string {
   if (!area) return ''
   const boards = statusBoards(area)
   if (!boards) return ''
-  return `${boards}<p class="small">${esc(clientSourceLine(area.source, `Similar homes in ${area.label}.`))}</p>`
+  const label = clientAreaLabel(area.label, city)
+  return `${boards}<p class="small">${esc(
+    clientSourceLine(area.source, label ? `Similar homes in ${label}.` : 'Similar homes in this market area.', {
+      city,
+    }),
+  )}</p>`
 }
 
 /**
@@ -109,7 +122,10 @@ export function soldBandFitsRecommend(
   return true
 }
 
-export function renderSold90Html(area: CmaMarketArea | null | undefined): string {
+export function renderSold90Html(
+  area: CmaMarketArea | null | undefined,
+  city?: string | null,
+): string {
   const s = area?.sold90
   if (!s || s.count < 3) return ''
   return `<div class="sold-hero">
@@ -120,7 +136,9 @@ export function renderSold90Html(area: CmaMarketArea | null | undefined): string
     <div class="st"><div class="st-n">${int(s.count)}</div><div class="st-l">closed in 90 days</div></div>
     <div class="st"><div class="st-n">${money(s.low) ?? ''} to ${money(s.high) ?? ''}</div><div class="st-l">${esc(s.bedsLabel)} band</div></div>
   </div>
-  <p class="small">${esc(clientSourceLine(s.source, 'Closed sales in this market area over the last 90 days.'))}</p>`
+  <p class="small">${esc(
+    clientSourceLine(s.source, 'Closed sales in this market area over the last 90 days.', { city }),
+  )}</p>`
 }
 
 /**
@@ -263,6 +281,7 @@ export function bandOutcomeReading(
 export function renderBandOutcomesHtml(
   x: CmaBandOutcomes | null | undefined,
   comps?: readonly CmaAdjustedComp[] | null,
+  city?: string | null,
 ): string {
   if (!x || x.sold.length < 3 || x.unsold.length < 1) return ''
   const ruler = {
@@ -281,10 +300,17 @@ export function renderBandOutcomesHtml(
   // 700px. F6 — the wide ruler in a pan box cropped nine sold dots and the
   // seller's own ask off the right edge of a phone.
   const phone = priceRulerPhoneSvg(ruler)
+  const bandLabel = clientAreaLabel(x.label, city)
   return `<div class="szn is-hero ruler-wide">${svg}</div>
   ${phone ? `<div class="szn ruler-phone">${phone}</div>` : ''}
   <p class="chart-read">${esc(bandOutcomeReading(x, comps))}</p>
-  <p class="small">${esc(clientSourceLine(x.source, `Closed sales and unsold listings in ${x.label}.`))}</p>`
+  <p class="small">${esc(
+    clientSourceLine(
+      x.source,
+      bandLabel ? `Closed sales and unsold listings in ${bandLabel}.` : 'Closed sales and unsold listings in this band.',
+      { city },
+    ),
+  )}</p>`
 }
 
 /**
@@ -296,11 +322,17 @@ export function renderBandOutcomesHtml(
  * It replaces a twelve-month ledger of one-to-three new listings and a row of
  * dashes, which answered nothing a seller asks.
  *
- * The market's median days on market is deliberately NOT a tick here: that
- * figure is list-to-close (CLAUDE.md §7), a different measure from days to
- * offer, and two measures never share an axis.
+ * The city's median rides the same axis as a hairline tick. It was left off
+ * on the stated ground that the market figure is list-to-close (CLAUDE.md §7)
+ * and two measures never share an axis. That reason was wrong:
+ * `market.medianDom` is `market_stats_cache.median_dom`, the median of
+ * `listings.days_to_pending`, and a comp's `daysToOffer` reads the same column
+ * (lib/cma/comps.ts:131). One measure, one axis. The tick renders only when
+ * the figure is on `render_args`; nothing here is recomputed or filled.
  */
-export function renderDaysToOfferHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {
+export function renderDaysToOfferHtml(
+  a: Pick<MarketChapterArgs, 'subject' | 'comps' | 'market'>,
+): string {
   const rows: DaysRow[] = a.comps
     .map((c, i) =>
       c.daysToOffer != null && c.daysToOffer >= 0
@@ -327,12 +359,26 @@ export function renderDaysToOfferHtml(a: Pick<MarketChapterArgs, 'subject' | 'co
       valueLabel: `${int(subjectDays)} days, no offer`,
     })
   }
-  const svg = daysToOfferSvg(rows, 'How fast homes like yours went')
+  const marketMedian =
+    a.market?.medianDom != null && Number.isFinite(a.market.medianDom) && a.market.medianDom > 0
+      ? Math.round(a.market.medianDom)
+      : null
+  const marketPlace = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city)
+  const tick =
+    marketMedian != null && marketPlace
+      ? { days: marketMedian, label: `${marketPlace} median ${int(marketMedian)} days` }
+      : null
+  const svg = daysToOfferSvg(rows, 'How fast homes like yours went', tick)
   if (!svg) return ''
-  const reading =
+  const reading = [
+    `Each kept sale had an offer inside ${int(slowest)} days.`,
+    tick ? `${possessive(marketPlace!)} median is ${int(marketMedian!)}.` : null,
     subjectDays != null && subjectDays > 0
-      ? `Each kept sale had an offer inside ${int(slowest)} days. Yours sat ${int(subjectDays)} days and never got one.`
-      : `Each kept sale had an offer inside ${int(slowest)} days.`
+      ? `Yours sat ${int(subjectDays)} days and never got one.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
   return `<div class="szn is-hero">${svg}</div>
   <p class="chart-read">${esc(reading)}</p>`
 }
@@ -356,16 +402,17 @@ export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps
 
 export function immersiveMarketChapters(a: MarketChapterArgs): string {
   const area = a.extras?.marketArea
-  const status = renderStatusGridHtml(area)
-  const sold90 = renderSold90Html(area)
+  const status = renderStatusGridHtml(area, a.subject.city)
+  const sold90 = renderSold90Html(area, a.subject.city)
+  const areaLabel = clientAreaLabel(area?.label, a.subject.city)
   const inventory = renderInventoryBoardHtml(a.market)
   const facts = propertyIntelligenceBlock(a.site)
   const parts: string[] = []
-  if (status) {
+  if (status && areaLabel) {
     parts.push(`<section class="sc sc-cream" id="status-grid">
       <div class="in wide">
         <div class="kick r">This market</div>
-        <h2 class="h r">${esc(area!.label)}</h2>
+        <h2 class="h r">${esc(areaLabel!)}</h2>
         <div class="r">${status}</div>
       </div>
     </section>`)
@@ -403,16 +450,17 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
 export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   const area = a.extras?.marketArea
   const pages: CmaPageDef[] = []
-  const status = renderStatusGridHtml(area)
-  if (status && area) {
+  const status = renderStatusGridHtml(area, a.subject.city)
+  const areaLabel = clientAreaLabel(area?.label, a.subject.city)
+  if (status && area && areaLabel) {
     pages.push({
       meta: `${esc(a.subject.streetAddress)} · Market area`,
       toc: 'This market',
-      body: `<h2 class="section">${esc(area.label)}</h2>
+      body: `<h2 class="section">${esc(areaLabel)}</h2>
       ${status}`,
     })
   }
-  const sold90 = renderSold90Html(area)
+  const sold90 = renderSold90Html(area, a.subject.city)
   if (sold90 && area?.sold90) {
     pages.push({
       meta: `${esc(a.subject.streetAddress)} · 90-day solds`,
@@ -458,7 +506,7 @@ export function widerMarketBodyHtml(
       ? `<h3 class="subhead">${esc(text)}</h3>`
       : `<h3 class="sub r">${esc(text)}</h3>`
   const fits = soldBandFitsRecommend(area?.sold90, a.pricing?.recommended ?? null)
-  const sold90 = fits ? renderSold90Html(area) : ''
+  const sold90 = fits ? renderSold90Html(area, a.subject.city) : ''
   const inventory = renderInventoryBoardHtml(a.market)
   const chunks: string[] = []
   if (sold90 && area?.sold90) {

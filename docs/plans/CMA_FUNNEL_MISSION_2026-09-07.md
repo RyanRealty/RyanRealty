@@ -166,11 +166,15 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
     sqft) and `method3` (a weighted reconciliation), neither of which is the
     median of the printed Adjusted close row. The lead states the RANGE
     instead: both ends already print in the matrix, so no new number ships.
-  - P4 asked for the Redmond 21-day median as a tick. `market.medianDom` is a
+  - ~~P4 asked for the Redmond 21-day median as a tick. `market.medianDom` is a
     list-to-close figure (CLAUDE.md §7); days to offer is a different measure
-    and two measures do not share an axis. It stays off the chart. The expired
-    audit still states it in prose beside the subject's own DOM, where the
-    comparison is like for like.
+    and two measures do not share an axis. It stays off the chart.~~
+    **Wrong, corrected in step 4 (below).** `market.medianDom` is
+    `market_stats_cache.median_dom`, which medians `listings.days_to_pending`,
+    and a comp's `daysToOffer` reads that same column
+    (`lib/cma/comps.ts:131`). They are ONE measure, so the tick was always
+    commensurate with the bars. The tick is on the chart. The expired audit
+    still states the figure in prose beside the subject's own DOM as well.
 
   **Handed to other streams (not this stream's files):**
   - The subject's days on market disagrees between paths on
@@ -292,3 +296,61 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
     `immersive-375/05-this-market.png`;
     `out/cma-look/cma-65365-concorde/letter-816/06-this-market.png` and
     `letter-375/06-this-market.png`.
+
+- **A · step 4** (`wt/cma-doc-20260907`) — the two items the orchestrator handed
+  back off the F6/F7 shots.
+
+  - **The market median is a tick on the days chart again.** It was left off on
+    a reason that does not survive reading the columns: `market.medianDom` is
+    `market_stats_cache.median_dom`, the median of `listings.days_to_pending`,
+    and a comp's `daysToOffer` reads the same column
+    (`lib/cma/comps.ts:131`). One measure, one axis. `daysToOfferSvg` takes an
+    optional `DaysMedianTick` and draws a 1px vertical hairline across the bar
+    rows, labelled above the plot ("Redmond median 21 days", "Bend median 25
+    days") with the city and the value taken from `render_args`
+    (`market.geoLabel` falling back to the subject city, `market.medianDom`) —
+    never a literal. The tick shares the bars' domain, so a median slower than
+    every kept sale still lands inside the frame, and the label flips to the
+    left of the tick rather than off the right edge. The caption reads it in
+    the middle: "Each kept sale had an offer inside 51 days. Redmond's median
+    is 21. Yours sat 192 days and never got one." No median on `render_args`,
+    no tick and no sentence — the chart renders exactly as before. Tested
+    against the rendered SVG on both documents, present and absent.
+  - **An MLS placeholder in a client-facing source line.**
+    `cma-65365-concorde` printed "Closed 4 to 6 bedroom sales in N/A in the
+    last 90 days" to a seller. `cleanText` guards a heading and
+    `realSubdivision` guards the comp ladder, but a source line is prose
+    ASSEMBLED around the same value, so no per-field guard ever saw it. The
+    rule now lives at the one chokepoint every source line already goes
+    through, `clientSourceLine`: an unresolved place inside the line takes the
+    city that actually scoped the read (`getCmaMarketAreaRows(city, …)`), and
+    with no city to fall back to the whole line is dropped for the caller's
+    own sentence. `clientAreaLabel` does the same for the label that heads the
+    status chapter and reads inside the band fallback. The filter itself always
+    stays on the page — a §0 source trace is the point of the line; only the
+    place it wrongly claimed changes. Compute side, so no new row bakes it in:
+    `computeMarketArea` and `computeSold90SameBedsBaths` now read the
+    subdivision through `realSubdivision`, which is what kept the same string
+    out of the comp ladder. Concorde's line now reads "Closed 4 to 6 bedroom
+    sales in Bend in the last 90 days."
+
+  Verified: `npx vitest run lib/cma` 1,783 passing; `npx tsc --noEmit` clean;
+  `ci:brand-voice`, `ci:market-chart-honesty`, `ci:design-tokens` green.
+  Look-pass re-run on `cma-2465-7th-redmond-97756` and `cma-65365-concorde`;
+  all four rendered documents grep **zero** `N/A` in seller-facing text
+  (`out/cma-look/*/letter.html`, `out/cma-look/*/immersive.html`). Shots read
+  by eye:
+  - `out/cma-look/cma-2465-7th-redmond-97756/letter-816/05-how-fast-homes-like-yours-went.png`
+  - `out/cma-look/cma-2465-7th-redmond-97756/letter-375/05-how-fast-homes-like-yours-went.png`
+  - `out/cma-look/cma-2465-7th-redmond-97756/immersive-375/05-how-fast.png`
+  - `out/cma-look/cma-65365-concorde/letter-816/05-how-fast-homes-like-yours-went.png`
+  - `out/cma-look/cma-65365-concorde/letter-816/06-this-market.png`
+
+  **For the orchestrator, not acted on:** on the days chart at 375 the
+  subject's own value label ("192 days, no offer") sits outside the pan box's
+  visible width on both documents. That is the panning behaviour F6
+  deliberately kept for this twelve-row strip, and the caption under it states
+  the same number in words, so nothing is lost — but it is the punchline of
+  the chart and a seller on a phone does not scroll a chart box. Whether the
+  strip gets a drawn-to-fit phone layout the way the price ruler did is a
+  document decision.

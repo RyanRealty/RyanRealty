@@ -369,15 +369,41 @@ function fitLabel(text: string): string {
   return `${t.slice(0, DAYS_LABEL_MAX - 1).trimEnd()}…`
 }
 
-export function daysToOfferSvg(rows: readonly DaysRow[], caption: string): string {
+/**
+ * The market's own median, drawn across the bars as one hairline.
+ *
+ * It sat off this chart until 2026-09-07 on a stated reason that was false:
+ * that the market figure is list-to-close and two measures never share an
+ * axis. `market_stats_cache.median_dom` medians `listings.days_to_pending`,
+ * and a comp's `daysToOffer` reads that same column (lib/cma/comps.ts:131).
+ * They are one measure, so the tick is commensurate with every bar beside it.
+ */
+export type DaysMedianTick = {
+  days: number
+  /** Printed above the tick, e.g. "Redmond median 21 days". */
+  label: string
+}
+
+export function daysToOfferSvg(
+  rows: readonly DaysRow[],
+  caption: string,
+  median?: DaysMedianTick | null,
+): string {
   const kept = rows.filter((r) => Number.isFinite(r.days) && r.days >= 0)
   if (kept.length < 3) return ''
-  const max = Math.max(...kept.map((r) => r.days))
+  const tick =
+    median != null && Number.isFinite(median.days) && median.days > 0 && median.label.trim()
+      ? median
+      : null
+  // The tick shares the bars' domain, so a median slower than every kept sale
+  // still lands inside the frame rather than off the right edge.
+  const max = Math.max(...kept.map((r) => r.days), tick?.days ?? 0)
   if (!(max > 0)) return ''
 
   const W = 720
   const rowH = 30
-  const top = 16
+  // The tick's label lives above the plot; without one the bars start higher.
+  const top = tick ? 34 : 16
   const H = top + kept.length * rowH + 14
   const gutter = 150
   const plotL = gutter
@@ -403,8 +429,20 @@ export function daysToOfferSvg(rows: readonly DaysRow[], caption: string): strin
   // Every bar carries its own value, so an axis tick would only repeat one.
   // The zero baseline is the whole axis: days are a count and start at zero.
   const baseY = top + kept.length * rowH - 6
+  const medianMark = (() => {
+    if (!tick) return ''
+    const tx = x(tick.days)
+    const text = tick.label.trim()
+    // 11px Geist runs ~0.56em per character. The label flips to the left of
+    // the tick rather than off the frame.
+    const w = text.length * 6.2
+    const flip = tx + 6 + w > W
+    return `<line class="days-median" x1="${tx.toFixed(1)}" y1="${(top - 14).toFixed(1)}" x2="${tx.toFixed(1)}" y2="${baseY.toFixed(1)}" stroke="${RULER_MUTED}" stroke-width="1"/>
+    <text x="${(flip ? tx - 6 : tx + 6).toFixed(1)}" y="${(top - 18).toFixed(1)}"${flip ? ' text-anchor="end"' : ''} font-size="11" font-weight="600" fill="${RULER_MUTED}">${esc(text)}</text>`
+  })()
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(caption)}" class="trend-svg">
-    <line x1="${plotL}" y1="6" x2="${plotL}" y2="${baseY.toFixed(1)}" stroke="${RULER_EDGE}" stroke-width="0.75"/>
+    <line x1="${plotL}" y1="${tick ? (top - 14).toFixed(1) : '6'}" x2="${plotL}" y2="${baseY.toFixed(1)}" stroke="${RULER_EDGE}" stroke-width="0.75"/>
+    ${medianMark}
     ${bars}
   </svg>`
 }
