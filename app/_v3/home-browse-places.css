@@ -1,5 +1,5 @@
-/* Homepage Browse places: chip/pill doors (PAGE_INVENTORY §5).
-   Atlas chip language on cream. Not Quiet hairline rows. Not a KPI grid. */
+/* Homepage Browse places: equal text chips in a width-filling grid.
+   Redfin/Zillow places-browse density. Not Quiet hairline rows. Not a KPI grid. */
 
 .v3.home-browse-places {
   max-width: var(--v3-measure);
@@ -23,26 +23,39 @@
 }
 
 .home-browse-places__chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--v3-space-2xs);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+@media (min-width: 40rem) {
+  .home-browse-places__chips {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .home-browse-places__chips {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .home-browse-places__item {
   margin: 0;
   padding: 0;
   border: 0;
+  min-width: 0;
 }
 
 .home-browse-places__chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--v3-space-2xs);
+  justify-content: center;
+  width: 100%;
   min-height: var(--v3-tap);
-  max-width: 100%;
   padding: 0 var(--v3-space-sm);
   border: 1px solid var(--v3-edge);
   border-radius: var(--v3-radius-pill);
@@ -51,6 +64,7 @@
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-control);
+  text-align: center;
   text-decoration: none;
   transition:
     background var(--v3-dur-state) var(--v3-ease-out),
@@ -68,15 +82,6 @@
 .home-browse-places__chip:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
-}
-
-.home-browse-places__mark {
-  flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
-  object-fit: cover;
-  border-radius: var(--v3-radius-sm);
-  background: var(--v3-wash);
 }
 
 .home-browse-places__label {

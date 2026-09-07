@@ -389,7 +389,7 @@
 }
 
 /* Sign in -------------------------------------------------------------------
-   Mobile bar lock: logo | Sign in | hamburger. Desktop keeps Saved + phone. */
+   Sign in on every width (mobile and desktop). Desktop also keeps phone. */
 .v3-chrome__signin {
   display: inline-flex;
   align-items: center;
@@ -411,11 +411,6 @@
   text-decoration-color: currentColor;
 }
 
-@media (min-width: 56.25rem) {
-  .v3-chrome__signin {
-    display: none;
-  }
-}
 
 /* Phone ---------------------------------------------------------------------
    Desktop only (mobile bar is logo | Sign in | hamburger). Number stays in the
@@ -501,28 +496,6 @@
   display: none;
 }
 
-@media (min-width: 56.25rem) {
-  .v3-chrome__saved {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--v3-space-3xs);
-    min-height: var(--v3-tap);
-    padding: 0 var(--v3-space-xs);
-    color: var(--v3-ink);
-    font-size: var(--v3-size-body-sm);
-    font-weight: var(--v3-weight-medium);
-    text-decoration: underline;
-    text-decoration-color: transparent;
-    text-underline-offset: var(--v3-underline-offset);
-    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
-  }
-
-  .v3-chrome__saved:hover,
-  .v3-chrome__saved:focus-visible,
-  .v3-chrome__saved[aria-current='page'] {
-    text-decoration-color: currentColor;
-  }
-}
 
 /* The one ask ---------------------------------------------------------------
    V3Button owns the look. Only the horizontal padding changes here, and only so
@@ -941,4 +914,61 @@
   display: flex;
   align-items: center;
   gap: var(--v3-space-2xs);
+}
+
+
+.v3-chrome__account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: none;
+}
+
+.v3-chrome__account:hover,
+.v3-chrome__account:focus-visible,
+.v3-chrome__account[aria-current='page'] {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3-chrome__avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--v3-wash);
+  flex: none;
+}
+
+.v3-chrome__avatar--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-size: 0.75rem;
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-chrome__account-name {
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 39.99rem) {
+  .v3-chrome__account-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }

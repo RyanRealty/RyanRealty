@@ -748,8 +748,25 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
     expect(dockBlock).toMatch(/<SearchFilters /)
   })
 
-  it('does not force V3Footer onto map/split', () => {
-    expect(page).toMatch(/\{isAppFrame \? null : <V3Footer columns=\{V3_FOOTER_COLUMNS\} \/>\}/)
+  it('keeps V3Footer reachable under map/split (scroll unlock)', () => {
+    expect(page).toMatch(/<V3Footer columns=\{V3_FOOTER_COLUMNS\} \/>/)
+    expect(page).not.toMatch(/\{isAppFrame \? null : <V3Footer/)
+  })
+})
+
+describe('SearchFilters place selects (Matt fire)', () => {
+  it('exposes City Neighborhood Community Subdivision pickers from registries', () => {
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/REPORT_CITY_LABELS/)
+    expect(filters).toMatch(/BEND_NEIGHBORHOOD_DISTRICTS/)
+    expect(filters).toMatch(/PLACE_COMMUNITY_OPTIONS/)
+    expect(filters).toMatch(/PLACE_SUBDIVISION_OPTIONS/)
+    expect(filters).toMatch(/openPanel === 'city'/)
+    expect(filters).toMatch(/openPanel === 'neighborhood'/)
+    expect(filters).toMatch(/openPanel === 'community'/)
+    expect(filters).toMatch(/openPanel === 'subdivision'/)
+    expect(filters).toMatch(/flex shrink-0 items-center gap-2/)
+    expect(filters).not.toMatch(/hidden items-center gap-2 sm:contents">\s*\{\/\* City/)
   })
 })
 

@@ -502,9 +502,9 @@ export default async function SearchPage({
     </main>
     {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
         when it is NOT nested in sectioning content. Map/split is viewport-fit
-        and shows none. The V3Footer token stays in source for
+        so Map/split can scroll to it. The V3Footer token stays in source for
         ci:default-chrome-footer / ci:kb-shared-shell. */}
-    {isAppFrame ? null : <V3Footer columns={V3_FOOTER_COLUMNS} />}
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

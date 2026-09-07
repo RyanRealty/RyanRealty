@@ -17,10 +17,10 @@ function IconPhone() {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
       <path
-        d="M7.2 3.8h2.4l1.2 4.2-1.6 1.1a12.6 12.6 0 0 0 5.7 5.7l1.1-1.6 4.2 1.2v2.4c0 .9-.7 1.7-1.6 1.7A14.8 14.8 0 0 1 3.8 5.4c0-.9.8-1.6 1.7-1.6Z"
+        d="M2.5 5.5c0-.8.7-1.5 1.5-1.5h2.2c.7 0 1.3.5 1.4 1.2l.5 2.6c.1.5-.1 1-.5 1.3L6.2 10.4a12.2 12.2 0 0 0 7.4 7.4l1.3-1.4c.3-.4.8-.6 1.3-.5l2.6.5c.7.1 1.2.7 1.2 1.4V21c0 .8-.7 1.5-1.5 1.5C9.7 22.5 1.5 14.3 1.5 5.5Z"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

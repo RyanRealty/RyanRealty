@@ -4,7 +4,7 @@ import { getResortCommunityBySubdivisionName } from '@/lib/data/communities/regi
  * MLS SubdivisionName can differ from our canonical community name (e.g. "Pronghorn Resort" vs "Pronghorn").
  * This map lists alternate names so counts and filters match. Key = canonical (display) name; value = names to match in DB.
  */
-const SUBDIVISION_ALIASES: Record<string, string[]> = {
+export const SUBDIVISION_ALIASES: Record<string, string[]> = {
   Pronghorn: ['Pronghorn', 'Pronghorn Resort', 'Pronghorn Golf Club'],
   Sunriver: ['Sunriver', 'Sunriver Resort'],
   'Black Butte Ranch': ['Black Butte Ranch', 'Black Butte'],

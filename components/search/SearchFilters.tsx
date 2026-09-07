@@ -43,6 +43,10 @@ import {
   Search01Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
+import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
+import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/neighborhood-public-inventory'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 
 export type SearchFiltersInitial = {
   city?: string
@@ -79,6 +83,15 @@ export type SearchFiltersInitial = {
 // ---------------------------------------------------------------------------
 // Static option lists
 // ---------------------------------------------------------------------------
+
+
+const PLACE_COMMUNITY_OPTIONS = getAllResortCommunities()
+  .filter((c) => c.is_resort === true)
+  .map((c) => ({ label: c.label, city: c.city, slug: c.slug }))
+
+const PLACE_SUBDIVISION_OPTIONS = Object.keys(SUBDIVISION_ALIASES).sort((a, b) =>
+  a.localeCompare(b),
+)
 
 const STATUS_OPTIONS = [
   { value: 'Active', label: 'For sale' },
@@ -242,7 +255,7 @@ type Props = {
   hideLocation?: boolean
 }
 
-type OpenPanel = 'status' | 'price' | 'beds' | 'baths' | 'type' | null
+type OpenPanel = 'city' | 'neighborhood' | 'community' | 'subdivision' | 'status' | 'price' | 'beds' | 'baths' | 'type' | null
 
 export default function SearchFilters({
   initialFilters,
@@ -535,7 +548,104 @@ export default function SearchFilters({
           )}
         </div>
         )}
+        <div className="flex shrink-0 items-center gap-2">
+        {/* City — explicit filter control (not only free-text in the search box). */}
+        <FilterDropdown
+          label={initialFilters.city?.trim() ? `City: ${initialFilters.city.trim()}` : 'City'}
+          active={Boolean(initialFilters.city?.trim())}
+          open={openPanel === 'city'}
+          onOpenChange={panelOpenHandler('city')}
+        >
+          <div className="p-3">
+            <p className="srch-label mb-2.5">City</p>
+            <div className="flex flex-col gap-1 max-h-72 overflow-auto">
+              <Button
+                type="button"
+                variant={initialFilters.city?.trim() ? 'ghost' : 'default'}
+                size="sm"
+                onClick={() => {
+                  setFilter('city', undefined)
+                  setLocationQuery('')
+                  setOpenPanel(null)
+                }}
+                className="justify-start"
+              >
+                Any city
+              </Button>
+              {REPORT_CITY_LABELS.map((city) => (
+                <Button
+                  key={city}
+                  type="button"
+                  variant={(initialFilters.city ?? '').trim().toLowerCase() === city.toLowerCase() ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    handleLocationSelect('city', city)
+                    setOpenPanel(null)
+                  }}
+                  className="justify-start"
+                >
+                  {city}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </FilterDropdown>
+
+
+        <FilterDropdown
+          label={initialFilters.neighborhood?.trim() ? `Area: ${initialFilters.neighborhood.trim()}` : 'Neighborhood'}
+          active={Boolean(initialFilters.neighborhood?.trim())}
+          open={openPanel === 'neighborhood'}
+          onOpenChange={panelOpenHandler('neighborhood')}
+        >
+          <div className="p-3">
+            <p className="srch-label mb-2.5">Neighborhood</p>
+            <div className="flex max-h-72 flex-col gap-1 overflow-auto">
+              <Button type="button" variant={initialFilters.neighborhood?.trim() ? 'ghost' : 'default'} size="sm" onClick={() => { setFilter('neighborhood', undefined); setOpenPanel(null) }} className="justify-start">Any neighborhood</Button>
+              {BEND_NEIGHBORHOOD_DISTRICTS.map((d) => (
+                <Button key={d.slug} type="button" variant={(initialFilters.neighborhood ?? '').trim().toLowerCase() === d.label.toLowerCase() ? 'default' : 'ghost'} size="sm" onClick={() => { updateUrl({ neighborhood: d.label, city: initialFilters.city?.trim() || 'Bend', subdivision: undefined, postalCode: undefined }); setLocationQuery(d.label); setOpenPanel(null) }} className="justify-start">{d.label}</Button>
+              ))}
+            </div>
+          </div>
+        </FilterDropdown>
+
+        <FilterDropdown
+          label={initialFilters.subdivision?.trim() && PLACE_COMMUNITY_OPTIONS.some((c) => c.label.toLowerCase() === (initialFilters.subdivision ?? '').trim().toLowerCase()) ? `Community: ${initialFilters.subdivision.trim()}` : 'Community'}
+          active={Boolean(initialFilters.subdivision?.trim() && PLACE_COMMUNITY_OPTIONS.some((c) => c.label.toLowerCase() === (initialFilters.subdivision ?? '').trim().toLowerCase()))}
+          open={openPanel === 'community'}
+          onOpenChange={panelOpenHandler('community')}
+        >
+          <div className="p-3">
+            <p className="srch-label mb-2.5">Community</p>
+            <div className="flex max-h-72 flex-col gap-1 overflow-auto">
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setFilter('subdivision', undefined); setOpenPanel(null) }} className="justify-start">Any community</Button>
+              {PLACE_COMMUNITY_OPTIONS.map((c) => (
+                <Button key={c.slug} type="button" variant={(initialFilters.subdivision ?? '').trim().toLowerCase() === c.label.toLowerCase() ? 'default' : 'ghost'} size="sm" onClick={() => { handleLocationSelect('subdivision', c.city, c.label); setOpenPanel(null) }} className="justify-start">{c.label}</Button>
+              ))}
+            </div>
+          </div>
+        </FilterDropdown>
+
+        <FilterDropdown
+          label={initialFilters.subdivision?.trim() ? `Subdivision: ${initialFilters.subdivision.trim()}` : 'Subdivision'}
+          active={Boolean(initialFilters.subdivision?.trim())}
+          open={openPanel === 'subdivision'}
+          onOpenChange={panelOpenHandler('subdivision')}
+        >
+          <div className="p-3">
+            <p className="srch-label mb-2.5">Subdivision</p>
+            <div className="flex max-h-72 flex-col gap-1 overflow-auto">
+              <Button type="button" variant={initialFilters.subdivision?.trim() ? 'ghost' : 'default'} size="sm" onClick={() => { setFilter('subdivision', undefined); setOpenPanel(null) }} className="justify-start">Any subdivision</Button>
+              {PLACE_SUBDIVISION_OPTIONS.map((name) => (
+                <Button key={name} type="button" variant={(initialFilters.subdivision ?? '').trim().toLowerCase() === name.toLowerCase() ? 'default' : 'ghost'} size="sm" onClick={() => { const cityGuess = PLACE_COMMUNITY_OPTIONS.find((c) => c.label.toLowerCase() === name.toLowerCase())?.city ?? initialFilters.city ?? 'Bend'; handleLocationSelect('subdivision', cityGuess, name); setOpenPanel(null) }} className="justify-start">{name}</Button>
+              ))}
+            </div>
+          </div>
+        </FilterDropdown>
+        </div>
+
         <div className="hidden items-center gap-2 sm:contents">
+
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
@@ -634,7 +744,7 @@ export default function SearchFilters({
                       })
                       setOpenPanel(null)
                     }}
-                    className="rounded-none px-2.5 py-1 h-auto text-xs"
+                    className="rounded-full px-2.5 py-1 h-auto text-xs"
                   >
                     {label}
                   </Button>
@@ -785,13 +895,13 @@ export default function SearchFilters({
           }}
           variant="outline"
           size="sm"
-          className="ml-auto hidden h-11 overflow-hidden rounded-none border border-border/60 bg-muted/40 lg:flex"
+          className="ml-auto hidden h-11 overflow-hidden rounded-full border border-border/60 bg-muted/40 lg:flex"
         >
           {(['list', 'split', 'map'] as const).map((v) => (
             <ToggleGroupItem
               key={v}
               value={v}
-              className="srch-chip h-11 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
+              className="srch-chip h-11 rounded-full border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
               aria-label={`${v} view`}
             >
               {v === 'list' ? 'List' : v === 'split' ? 'Split' : 'Map'}

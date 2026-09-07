@@ -1175,6 +1175,16 @@ export default function MapSearchView({
           {listPanel}
         </div>
       </div>
+              {listOnly || layoutView === 'list' ? null : (
+          <button
+            type="button"
+            className="map-search-list-fab lg:hidden"
+            onClick={() => applyView('list')}
+          >
+            List
+          </button>
+        )}
+
       <ListingTourOverlay
         open={tour != null}
         video={tour}

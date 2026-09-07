@@ -18,13 +18,14 @@ type DetailsPhotoJson = {
   Uri300?: string
 }
 
+/** Prefer large publish URLs so rail/split cards stay crisp at 1440. */
 function bestUri(p: DetailsPhotoJson): string | null {
   return (
+    p.Uri1600 ??
+    p.UriLarge ??
+    p.Uri1280 ??
     p.Uri1024 ??
     p.Uri800 ??
-    p.Uri1280 ??
-    p.UriLarge ??
-    p.Uri1600 ??
     p.Uri640 ??
     p.Uri300 ??
     null
@@ -68,11 +69,12 @@ export async function attachListingCardExtras(
       seen.add(next)
       photos.push(next)
     }
-    push(raw.PhotoURL)
+    // Prefer sized detail photos (large) over a possibly tiny PhotoURL lead.
     for (const photo of raw.details?.Photos ?? []) {
       if (photos.length >= PHOTO_CAP) break
       push(bestUri(photo))
     }
+    if (photos.length === 0) push(raw.PhotoURL)
     const original =
       raw.original_list_price != null && Number.isFinite(Number(raw.original_list_price))
         ? Number(raw.original_list_price)

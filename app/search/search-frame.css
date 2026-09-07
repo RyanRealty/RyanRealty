@@ -8,8 +8,10 @@
  * search layout import. Do not remount chrome here. Search is the Homes Field.
  */
 @layer base {
+  /* min-height so map fills the fold then page can scroll to footer. */
   .search-app-frame {
-    height: calc(100dvh - 3.5rem);
+    min-height: calc(100dvh - 3.5rem);
+    height: auto;
     margin-top: 0;
   }
 

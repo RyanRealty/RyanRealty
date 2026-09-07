@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import type { V3ListingRowBadge } from './V3ListingRow'
@@ -15,6 +15,11 @@ const SOLID: Record<V3ListingRowBadge, boolean> = {
   video: false,
 }
 
+/** Default sizes for card media. Split thumbs stay smaller, rail cards need crisp srcset. */
+export const SPLIT_CARD_MEDIA_SIZES_DEFAULT = '(max-width: 640px) 50vw, 320px'
+export const SPLIT_CARD_MEDIA_SIZES_RAIL = '(max-width: 640px) 78vw, 320px'
+export const SPLIT_CARD_MEDIA_SIZES_SPLIT = '(max-width: 640px) 42vw, 240px'
+
 /** Search-card media: photo stack, overlay badges, 3D/Video control. */
 export function SplitCardMedia({
   urls,
@@ -24,6 +29,7 @@ export function SplitCardMedia({
   addressLine,
   priority,
   tourLabel = '3D Walkthrough',
+  sizes = SPLIT_CARD_MEDIA_SIZES_DEFAULT,
 }: {
   urls: string[]
   tags: Array<{ kind: V3ListingRowBadge; label: string }>
@@ -32,29 +38,45 @@ export function SplitCardMedia({
   addressLine: string
   priority?: boolean
   tourLabel?: string
+  sizes?: string
 }) {
   const [index, setIndex] = useState(0)
+  const touchX = useRef<number | null>(null)
   const photos = urls.filter(Boolean)
   const src = photos[index] ?? photos[0] ?? null
-  const last = photos.length - 1
   const photoTags = tags.filter((tag) => tag.kind !== 'video')
 
-  function step(delta: number, event: React.MouseEvent) {
-    event.preventDefault()
-    event.stopPropagation()
+  function step(delta: number, event?: React.MouseEvent | React.TouchEvent) {
+    event?.preventDefault()
+    event?.stopPropagation()
     if (photos.length < 2) return
     setIndex((current) => (current + delta + photos.length) % photos.length)
   }
 
   return (
-    <div className="v3-lrow__media">
+    <div
+      className="v3-lrow__media"
+      onTouchStart={(event) => {
+        touchX.current = event.changedTouches[0]?.clientX ?? null
+      }}
+      onTouchEnd={(event) => {
+        const start = touchX.current
+        touchX.current = null
+        if (start == null || photos.length < 2) return
+        const end = event.changedTouches[0]?.clientX
+        if (end == null) return
+        const delta = end - start
+        if (Math.abs(delta) < 36) return
+        step(delta < 0 ? 1 : -1, event)
+      }}
+    >
       {src ? (
         <Image
           src={src}
           alt=""
           fill
           priority={priority}
-          sizes="200px"
+          sizes={sizes}
         />
       ) : null}
       {photos.length > 1 ? (
@@ -108,7 +130,12 @@ export function SplitCardMedia({
       ) : null}
       {photos.length > 1 ? (
         <span className="v3-lrow__dots" aria-hidden>
-          {index + 1}/{photos.length}
+          {photos.map((_, i) => (
+            <span
+              key={i}
+              className={cn('v3-lrow__dot', i === index && 'v3-lrow__dot--on')}
+            />
+          ))}
         </span>
       ) : null}
       <span className="v3-lrow__addr-tip">{addressLine}</span>

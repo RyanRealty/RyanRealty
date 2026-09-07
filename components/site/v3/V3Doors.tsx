@@ -3,29 +3,16 @@
  * side, each one door with a kicker, a display-face line, and one live fact.
  *
  * Visual language: design_system/public/PUBLIC_UI.md, built on ./tokens.css.
- * Born for the homepage's three routes (Buying / Selling / Investing — Matt
- * 2026-09-01), replacing the 2026-08-16 ArrivalIntent bar that was killed for
- * how it looked, not for what it did. The difference is register: no buttons,
- * no cards, no fills. Hairline dividers, Amboqia for the intent line, one
- * muted fact under it, and a chevron that concedes it is a door. Optional
- * illustration art sits above the kicker when the caller has an owned still
- * (Home lock 2026-09-06 expanded). The whole band weighs less than a Stage
- * and routes harder than a nav.
- *
- * Barrel law honored here:
- *  - Server component, real anchors, works before hydration.
- *  - Names are V3Text: an empty kicker or line is a compile error.
- *  - This primitive never fetches and never formats. A `fact` that carries a
- *    figure arrives already published by the caller with its own section 0
- *    trace upstream; a door with no verifiable fact omits `fact` rather than
- *    estimating one.
- *  - No raw color; everything resolves through ./tokens.css in ./V3Doors.css.
+ * Optional line pictogram (Buy / Sell / Work) sits above the kicker when set.
+ * No heritage downtown art. No clip-art.
  */
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Doors.css'
+
+export type V3DoorPictogram = 'buy' | 'sell' | 'work'
 
 export type V3Door = {
   /** The intent word: "Buying". Uppercase tracked, muted. */
@@ -39,6 +26,8 @@ export type V3Door = {
   imageSrc?: string
   /** Accessible name for the still. Defaults to empty decorative. */
   imageAlt?: string
+  /** Clean line pictogram. Preferred over heritage image art on Home. */
+  pictogram?: V3DoorPictogram
 }
 
 export type V3DoorsProps = {
@@ -65,6 +54,96 @@ function IconArrow() {
   )
 }
 
+function DoorPictogram({ kind }: { kind: V3DoorPictogram }) {
+  const common = {
+    viewBox: '0 0 48 48',
+    width: 40,
+    height: 40,
+    'aria-hidden': true as const,
+    focusable: false as const,
+  }
+  if (kind === 'buy') {
+    return (
+      <svg {...common}>
+        <path
+          d="M8 22.5 24 9l16 13.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12 21.5V38h24V21.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M20 38V27h8v11"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+  if (kind === 'sell') {
+    return (
+      <svg {...common}>
+        <path
+          d="M14 34V14h14l6 6v14H14Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M28 14v6h6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M19 24h10M19 29h10"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+        />
+      </svg>
+    )
+  }
+  return (
+    <svg {...common}>
+      <path
+        d="M16 36V18.5L24 12l8 6.5V36"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M21 36v-8h6v8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="24" cy="22" r="1.4" fill="currentColor" />
+    </svg>
+  )
+}
+
 export function V3Doors({ id, name, doors, className }: V3DoorsProps) {
   return (
     <section id={id} aria-label={name} className={cn(V3_ROOT_CLASS, 'v3-doors', className)}>
@@ -72,7 +151,11 @@ export function V3Doors({ id, name, doors, className }: V3DoorsProps) {
         {doors.slice(0, 4).map((door) => (
           <li key={door.href} className="v3-doors__item">
             <Link href={door.href} className="v3-doors__door">
-              {door.imageSrc ? (
+              {door.pictogram ? (
+                <span className="v3-doors__pictogram" aria-hidden="true">
+                  <DoorPictogram kind={door.pictogram} />
+                </span>
+              ) : door.imageSrc ? (
                 <span className="v3-doors__art" aria-hidden={door.imageAlt ? undefined : true}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={door.imageSrc} alt={door.imageAlt ?? ''} width={640} height={400} decoding="async" />

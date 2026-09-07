@@ -2,7 +2,7 @@
 
 /**
  * One horizontal house rail for the homepage. Cards reuse SplitCardMedia
- * (badges, photo, 3D) and the same ask/meta publishers as Field Split cards.
+ * (badges, photo carousel, 3D/video) and the same ask/meta publishers as Field Split cards.
  * Save/heart rides the existing saved-listings action.
  */
 import { useEffect, useState } from 'react'
@@ -13,8 +13,14 @@ import {
   publishListingShareKind,
   publishListingSharePricePerSqft,
 } from '@/lib/listing/publish-listing-share'
+import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
+import type { VideoEmbed } from '@/lib/data/types/video'
 import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
-import { SplitCardMedia } from '@/components/site/v3/SplitCardMedia'
+import {
+  SplitCardMedia,
+  SPLIT_CARD_MEDIA_SIZES_RAIL,
+} from '@/components/site/v3/SplitCardMedia'
+import { ListingTourOverlay } from '@/components/site/listing-detail/ListingTourOverlay'
 import { HeartIcon } from '@/components/icons/ActionIcons'
 import { toggleSavedListing } from '@/app/actions/saved-listings'
 import { getViewerListingState } from '@/app/actions/viewer-listing-state'
@@ -28,12 +34,14 @@ function HomeRailCardFace({
   saved,
   signedIn,
   onSavedChange,
+  onOpenTour,
   priority,
 }: {
   card: HomeRailCard
   saved: boolean
   signedIn: boolean
   onSavedChange: (key: string, next: boolean) => void
+  onOpenTour?: () => void
   priority?: boolean
 }) {
   const [busy, setBusy] = useState(false)
@@ -65,7 +73,7 @@ function HomeRailCardFace({
     event.preventDefault()
     event.stopPropagation()
     if (!signedIn) {
-      redirectToLoginForSave(card.listingKey) // hydration-safe: click handler, never runs during render
+      redirectToLoginForSave(card.listingKey)
       return
     }
     if (busy) return
@@ -85,9 +93,11 @@ function HomeRailCardFace({
           urls={card.photoUrls}
           tags={card.badges}
           hasTour={card.hasTour}
+          onOpenTour={card.hasTour ? onOpenTour : undefined}
           addressLine={card.addressLine}
           priority={priority}
           tourLabel={card.tourLabel}
+          sizes={SPLIT_CARD_MEDIA_SIZES_RAIL}
         />
         <V3Button
           type="button"
@@ -115,6 +125,7 @@ function HomeRailCardFace({
 export function HomeListingRail({ row }: { row: HomeRailRow }) {
   const [signedIn, setSignedIn] = useState(false)
   const [saved, setSaved] = useState(() => new Set<string>())
+  const [tour, setTour] = useState<VideoEmbed | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -150,6 +161,18 @@ export function HomeListingRail({ row }: { row: HomeRailRow }) {
               saved={saved.has(card.listingKey)}
               signedIn={signedIn}
               priority={index < 2}
+              onOpenTour={
+                card.tourUrl || card.hasTour
+                  ? () => {
+                      const embed = publishTourEmbedFromUrl(
+                        card.tourUrl,
+                        card.photoUrls[0] ?? null,
+                      )
+                      if (embed) setTour(embed)
+                      else if (card.href) window.location.assign(`${card.href}#tour`)
+                    }
+                  : undefined
+              }
               onSavedChange={(key, next) => {
                 setSaved((prev) => {
                   const copy = new Set(prev)
@@ -162,6 +185,12 @@ export function HomeListingRail({ row }: { row: HomeRailRow }) {
           </div>
         ))}
       </div>
+      <ListingTourOverlay
+        open={tour != null}
+        video={tour}
+        title="Listing tour"
+        onClose={() => setTour(null)}
+      />
     </section>
   )
 }

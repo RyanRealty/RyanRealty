@@ -264,13 +264,27 @@
 .v3-lrow__nav--next { right: var(--v3-space-2xs); }
 .v3-lrow__dots {
   position: absolute;
-  right: var(--v3-space-2xs);
+  left: 50%;
+  right: auto;
   bottom: var(--v3-space-2xs);
   z-index: 2;
-  padding: 0 var(--v3-space-2xs);
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--v3-navy) 70%, transparent);
   color: var(--v3-cream);
   font-size: var(--v3-size-eyebrow);
+  transform: translateX(-50%);
+}
+.v3-lrow__dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v3-cream) 45%, transparent);
+}
+.v3-lrow__dot--on {
+  background: var(--v3-cream);
 }
 .v3-lrow__office {
   font-size: var(--v3-size-label);

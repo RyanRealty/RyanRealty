@@ -12,6 +12,7 @@ import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-bad
 import { publishCardAddress, publishStreetLine } from '@/lib/listing/publish-street-line'
 import { listingDetailPath } from '@/lib/slug'
 import type { V3ListingRowBadge } from '@/components/site/v3'
+import type { ListingCardExtras } from '@/lib/data/listings/attachListingCardExtras'
 
 export type HomeRailCard = {
   listingKey: string
@@ -31,6 +32,7 @@ export type HomeRailCard = {
   listNumber: string | null
   badges: Array<{ kind: V3ListingRowBadge; label: string }>
   hasTour: boolean
+  tourUrl: string | null
   tourLabel: string
   statusLabel: string | null
 }
@@ -115,6 +117,7 @@ function toCard(
     listNumber: tile.listNumber,
     badges,
     hasTour: tile.hasVirtualTour === true || Boolean(tile.tourUrl),
+    tourUrl: tile.tourUrl?.trim() || null,
     tourLabel: '3D Walkthrough',
     statusLabel: statusLabel(tile.status),
   }
@@ -229,4 +232,31 @@ export function homeRailRows(
   }
 
   return rows
+}
+
+/** Merge Field/search card extras onto rail cards (full photo stack + tour URL). */
+export function enrichHomeRailRows(
+  rows: HomeRailRow[],
+  extras: Map<string, ListingCardExtras>,
+): HomeRailRow[] {
+  if (extras.size === 0) return rows
+  return rows.map((row) => ({
+    ...row,
+    cards: row.cards.map((card) => {
+      const extra = extras.get(card.listingKey)
+      if (!extra) return card
+      const photoUrls = extra.photoUrls.length > 0 ? extra.photoUrls : card.photoUrls
+      const tourUrl = (extra.tourUrl?.trim() || card.tourUrl) ?? null
+      const hasTour = card.hasTour || Boolean(tourUrl)
+      let tourLabel = card.tourLabel
+      if (tourUrl) {
+        const lower = tourUrl.toLowerCase()
+        const mp4 = /\.mp4(\?|$)/.test(lower)
+        if (mp4 && !lower.includes('matterport') && !lower.includes('view-imx')) {
+          tourLabel = 'Video tour'
+        }
+      }
+      return { ...card, photoUrls, tourUrl, hasTour, tourLabel }
+    }),
+  }))
 }

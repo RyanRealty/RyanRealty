@@ -4,7 +4,7 @@
  * MapDrawTools — multi-shape draw layer for SearchMapClustered (Phase 2,
  * SEARCH_OPTIMIZATION_PLAN_2026-07-29 items 1+3).
  *
- * Three tools: freeform polygon (click vertices), rectangle (drag corner to
+ * Three tools: freeform polygon (drag a smooth path), rectangle (drag corner to
  * corner), circle (drag center → edge with a LIVE radius readout in miles —
  * Flexmls parity). Shapes coexist; each renders a floating pill carrying its
  * name (the rename hook for Phase 2.4 named areas), an include/exclude toggle
@@ -34,6 +34,32 @@ import { MAP_EXCLUDE_RED, MAP_NAVY } from '@/lib/maps/markers'
 const MIN_CIRCLE_RADIUS_M = 10
 /** A rectangle drag under this diagonal is a mis-click, not an area. */
 const MIN_RECT_DIAGONAL_M = 10
+
+/** Drop near-duplicate freehand samples (pixel distance). */
+const FREEHAND_MIN_PX = 4
+/** Chaikin-ish corner cut for smoother freehand paths. */
+function smoothPolygonPoints(points: MapPolygonPoint[], passes = 2): MapPolygonPoint[] {
+  if (points.length < 3) return points
+  let out = points
+  for (let p = 0; p < passes; p++) {
+    const next: MapPolygonPoint[] = []
+    const n = out.length
+    for (let i = 0; i < n; i++) {
+      const a = out[i]
+      const b = out[(i + 1) % n]
+      next.push(
+        { lat: 0.75 * a.lat + 0.25 * b.lat, lng: 0.75 * a.lng + 0.25 * b.lng },
+        { lat: 0.25 * a.lat + 0.75 * b.lat, lng: 0.25 * a.lng + 0.75 * b.lng },
+      )
+    }
+    out = next
+  }
+  // Cap vertex count so PostGIS stays light.
+  if (out.length <= 64) return out
+  const step = Math.ceil(out.length / 48)
+  return out.filter((_, i) => i % step === 0)
+}
+
 
 export type DrawMode = 'polygon' | 'rectangle' | 'circle'
 
@@ -118,11 +144,11 @@ function shapeOverlayOptions(exclude: boolean): google.maps.PolygonOptions {
 }
 
 const TOOL_BUTTON =
-  'srch-chip rounded-none border border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-none hover:bg-muted'
+  'srch-chip rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-none hover:bg-muted'
 const TOOL_BUTTON_PRIMARY =
-  'srch-chip rounded-none bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-none hover:bg-primary/90'
+  'srch-chip rounded-full bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-none hover:bg-primary/90'
 const TOOL_BUTTON_MUTED =
-  'srch-chip rounded-none border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted'
+  'srch-chip rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted'
 
 type Props = {
   map: google.maps.Map
@@ -180,12 +206,7 @@ export default function MapDrawTools({
 
   // Price-pill taps: vertex in polygon mode, swallowed in drag modes.
   useEffect(() => {
-    if (mode === 'polygon') {
-      drawClickRef.current = (p) => {
-        setDraftPoints((prev) => [...prev, p])
-        return true
-      }
-    } else if (mode != null) {
+    if (mode != null) {
       drawClickRef.current = () => true
     } else {
       drawClickRef.current = null
@@ -210,19 +231,6 @@ export default function MapDrawTools({
     }
   }, [map, containerRef])
 
-  // Freeform polygon: each map click is a vertex.
-  useEffect(() => {
-    const container = containerRef.current
-    if (mode !== 'polygon' || container == null) return
-    const onClick = (e: MouseEvent) => {
-      const rect = container.getBoundingClientRect()
-      const point = pixelToLatLng(map, rect, e.clientX - rect.left, e.clientY - rect.top)
-      if (point) setDraftPoints((prev) => [...prev, point])
-    }
-    container.addEventListener('click', onClick)
-    return () => container.removeEventListener('click', onClick)
-  }, [mode, map, containerRef])
-
   const commitShape = useCallback(
     (shape: DrawnShape) => {
       if (shapes.length >= MAX_SHAPES) {
@@ -236,6 +244,84 @@ export default function MapDrawTools({
     },
     [shapes, onShapesChange, flashHint]
   )
+
+  // Freeform polygon: press-drag freehand path, then smooth on release.
+  useEffect(() => {
+    const container = containerRef.current
+    if (mode !== 'polygon' || container == null) return
+    let drawing = false
+    let lastPx: { x: number; y: number } | null = null
+    const samples: MapPolygonPoint[] = []
+
+    const down = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      const rect = container.getBoundingClientRect()
+      const point = pixelToLatLng(map, rect, e.clientX - rect.left, e.clientY - rect.top)
+      if (point == null) return
+      e.preventDefault()
+      drawing = true
+      samples.length = 0
+      samples.push(point)
+      lastPx = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      setDraftPoints([point])
+      try {
+        container.setPointerCapture(e.pointerId)
+      } catch {
+        /* older browsers */
+      }
+    }
+    const move = (e: PointerEvent) => {
+      if (!drawing) return
+      e.preventDefault()
+      const rect = container.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      if (lastPx) {
+        const dx = x - lastPx.x
+        const dy = y - lastPx.y
+        if (dx * dx + dy * dy < FREEHAND_MIN_PX * FREEHAND_MIN_PX) return
+      }
+      const point = pixelToLatLng(map, rect, x, y)
+      if (point == null) return
+      lastPx = { x, y }
+      samples.push(point)
+      setDraftPoints([...samples])
+    }
+    const up = (e: PointerEvent) => {
+      if (!drawing) return
+      drawing = false
+      try {
+        container.releasePointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+      if (samples.length < 3) {
+        setDraftPoints([])
+        flashHint('Draw a closed area by dragging. A short stroke has no size.')
+        return
+      }
+      const closed = [...samples]
+      const first = closed[0]
+      const last = closed[closed.length - 1]
+      if (haversineMeters(first, last) > 8) closed.push(first)
+      const smoothed = smoothPolygonPoints(closed)
+      if (smoothed.length < 3) {
+        setDraftPoints([])
+        return
+      }
+      commitShape({ type: 'polygon', points: smoothed, exclude: false })
+    }
+
+    container.addEventListener('pointerdown', down)
+    window.addEventListener('pointermove', move, { passive: false })
+    window.addEventListener('pointerup', up)
+    return () => {
+      container.removeEventListener('pointerdown', down)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+  }, [mode, map, containerRef, commitShape, flashHint])
+
 
   // Rectangle + circle: press, drag, release.
   useEffect(() => {
@@ -410,7 +496,7 @@ export default function MapDrawTools({
             >
               <div
                 className={cn(
-                  'flex items-center gap-0.5 rounded-none border bg-card py-0.5 pl-2.5 pr-0.5 shadow-none',
+                  'flex items-center gap-0.5 rounded-full border bg-card py-0.5 pl-2.5 pr-0.5 shadow-none',
                   shape.exclude ? 'border-destructive/50' : 'border-border'
                 )}
               >
@@ -428,7 +514,7 @@ export default function MapDrawTools({
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-6 rounded-none px-1.5 text-xs',
+                    'h-6 rounded-full px-1.5 text-xs',
                     shape.exclude ? 'text-destructive' : 'text-muted-foreground'
                   )}
                   onClick={() => toggleExclude(i)}
@@ -442,7 +528,7 @@ export default function MapDrawTools({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 rounded-none p-0 text-muted-foreground"
+                  className="h-6 w-6 rounded-full p-0 text-muted-foreground"
                   onClick={() => removeShape(i)}
                   aria-label={`Remove ${label}`}
                 >
@@ -496,7 +582,7 @@ export default function MapDrawTools({
             <Button
               type="button"
               onClick={() => onShapesChange([])}
-              className="srch-chip rounded-none border border-destructive bg-card px-3 py-2 text-sm font-medium text-destructive shadow-none hover:bg-destructive/10"
+              className="srch-chip rounded-full border border-destructive bg-card px-3 py-2 text-sm font-medium text-destructive shadow-none hover:bg-destructive/10"
             >
               Clear areas ({shapes.length})
             </Button>

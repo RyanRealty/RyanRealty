@@ -138,3 +138,16 @@
   object-fit: contain;
   object-position: center;
 }
+
+/* Clean line pictograms (Home Buy/Sell/Work). Not heritage stills. */
+.v3-doors__pictogram {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-navy);
+}
+
+.v3-doors__pictogram svg {
+  display: block;
+}

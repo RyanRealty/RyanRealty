@@ -8,7 +8,7 @@ import {
   publishListingSharePricePerSqft,
 } from '@/lib/listing/publish-listing-share'
 import { V3_ROOT_CLASS } from '@/components/site/v3/atoms'
-import { SplitCardMedia } from '@/components/site/v3/SplitCardMedia'
+import { SplitCardMedia, SPLIT_CARD_MEDIA_SIZES_SPLIT } from '@/components/site/v3/SplitCardMedia'
 import type { V3ListingRowBadge } from '@/components/site/v3/V3ListingRow'
 import '@/components/site/v3/V3ListingRow.css'
 
@@ -90,6 +90,7 @@ export function SplitListingCard({
         addressLine={addressLine}
         priority={priority}
         tourLabel={tourLabel}
+        sizes={SPLIT_CARD_MEDIA_SIZES_SPLIT}
       />
       <Link href={href} className="v3-lrow__copy">
         <span className="v3-lrow__price">{ask ?? '—'}</span>

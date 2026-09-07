@@ -57,6 +57,7 @@
  * its own space in flow and a page needs no spacer under it.
  */
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import type { AuthUser } from '@/app/actions/auth'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -208,21 +209,13 @@ const TOP_GROUPS: readonly V3ChromeTopGroup[] = NAV_GROUPS.filter(
 
 const ACCOUNT_GROUP = NAV_GROUPS.find((group) => group.key === ACCOUNT_KEY)
 
-/**
- * The account affordance. The lock puts Saved in the chrome and out of the nav
- * row, so it renders as its own control beside the ask, and its destination is
- * the account group's first link rather than a path typed here. No fallback: if
- * site-nav ever drops the group, the affordance disappears and the development
- * audit says so, which is honest. Inventing `/account` here would be the drift
- * this file exists to prevent.
- */
-const SAVED =
-  ACCOUNT_GROUP && ACCOUNT_GROUP.links.length > 0
-    ? { href: ACCOUNT_GROUP.links[0].href, label: ACCOUNT_GROUP.label }
-    : null
 
 /** Sign in from the account group. Mobile bar: logo | Sign in | hamburger. */
 const SIGN_IN = ACCOUNT_GROUP?.links.find((link) => link.href === '/login') ?? null
+
+const ACCOUNT_HOME =
+  ACCOUNT_GROUP?.links.find((link) => link.href === '/account') ??
+  (ACCOUNT_GROUP && ACCOUNT_GROUP.links.length > 0 ? ACCOUNT_GROUP.links[0] : null)
 
 /**
  * The filled seller ask. Only the LABEL is fixed at module scope: the href is
@@ -318,19 +311,6 @@ function IconChevron() {
   )
 }
 
-function IconBookmark() {
-  return (
-    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-      <path
-        d="M4 2.75h8v10.5L8 10.4l-4 2.85z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 function IconPhone() {
   return (
@@ -567,6 +547,26 @@ export type V3ChromeProps = {
 }
 
 export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
+  const [viewer, setViewer] = useState<AuthUser | null>(null)
+  const [viewerReady, setViewerReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { user: AuthUser | null } | null) => {
+        if (!alive) return
+        setViewer(data?.user ?? null)
+        setViewerReady(true)
+      })
+      .catch(() => {
+        if (!alive) return
+        setViewer(null)
+        setViewerReady(true)
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
   const pathname = usePathname()
   const path = currentPath ?? pathname ?? ''
   // The menu remembers the path it was opened ON, so a route change closes it
@@ -647,9 +647,50 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
 
         <div className="v3-chrome__actions">
           {/* Mobile bar lock 2026-09-06: logo | Sign in | hamburger only.
-              Phone + Saved + seller ask stay desktop (and in the menu foot).
+              Phone + seller ask stay desktop (and in the menu foot). Sign in shows on every width.
               Find/mic removed. */}
-          {SIGN_IN ? (
+          {viewerReady && viewer ? (
+            <Link
+              href={ACCOUNT_HOME?.href ?? '/account'}
+              className="v3-chrome__account"
+              aria-current={isCurrentPath(path, ACCOUNT_HOME?.href ?? '/account') ? 'page' : undefined}
+              aria-label="Account"
+            >
+              {viewer.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={viewer.avatar_url}
+                  alt=""
+                  className="v3-chrome__avatar"
+                  width={28}
+                  height={28}
+                  decoding="async"
+                />
+              ) : (
+                <span className="v3-chrome__avatar v3-chrome__avatar--initial" aria-hidden="true">
+                  {(
+                    viewer.user_metadata?.full_name ||
+                    viewer.user_metadata?.name ||
+                    viewer.email ||
+                    'A'
+                  )
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
+              )}
+              <span className="v3-chrome__account-name">
+                {(
+                  viewer.user_metadata?.full_name ||
+                  viewer.user_metadata?.name ||
+                  viewer.email ||
+                  'Account'
+                )
+                  .trim()
+                  .split(/\s+/)[0]}
+              </span>
+            </Link>
+          ) : SIGN_IN ? (
             <Link
               href={SIGN_IN.href}
               className="v3-chrome__signin"
@@ -668,16 +709,6 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
             <span className="v3-chrome__phone-num">{CONTACT.phoneDirect}</span>
           </a>
 
-          {SAVED ? (
-            <Link
-              href={SAVED.href}
-              className="v3-chrome__saved"
-              aria-current={isCurrentPath(path, SAVED.href) ? 'page' : undefined}
-            >
-              <IconBookmark />
-              <span>{SAVED.label}</span>
-            </Link>
-          ) : null}
 
           {chromeShowsSellerAsk(path) ? (
             <V3Button href={valuationHref(path)} className="v3-chrome__cta">

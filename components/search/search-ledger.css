@@ -43,12 +43,10 @@
   box-shadow: none;
 }
 
-/* Filter chip / trigger / control shape+type: square, tracked small caps,
-   tabular figures. Color and spacing stay with the shadcn Button variants the
-   design system requires — this class only imposes the register's shape and
-   type so active/inactive variants keep their contrast pairs. */
+/* Filter chip / trigger / control shape+type: Redfin-clean pills,
+   tracked small caps, tabular figures. Color stays with shadcn variants. */
 .srch-chip {
-  border-radius: 0;
+  border-radius: 999px;
   font-size: var(--v3-size-label, 0.65625rem);
   font-weight: var(--v3-weight-medium, 500);
   letter-spacing: var(--v3-track-label, 0.12em);
@@ -67,10 +65,10 @@
   min-height: var(--v3-tap, 44px);
 }
 
-/* Square any remaining control corner (inputs, selects, toggles) without
+/* Pill remaining control corners (inputs, selects, toggles) without
    touching its color, border, or focus treatment. */
 .srch-square {
-  border-radius: 0;
+  border-radius: 999px;
   box-shadow: none;
   min-height: var(--v3-tap, 44px);
 }
@@ -421,4 +419,30 @@
   max-width: var(--v3-measure, 72rem);
   margin: 0 auto;
   padding: 0 var(--v3-gutter, 1.25rem) var(--v3-section-pad, 1.5rem);
+}
+
+
+.map-search-list-fab {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 120;
+  transform: translateX(-50%);
+  min-height: var(--v3-tap, 44px);
+  min-width: 5.5rem;
+  padding: 0 1.25rem;
+  border: 1px solid var(--v3-navy, #1a2a4a);
+  border-radius: 999px;
+  background: var(--v3-cream, #f7f3ea);
+  color: var(--v3-navy, #1a2a4a);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--v3-navy, #1a2a4a) 22%, transparent);
+}
+
+.map-search-views {
+  border-radius: 999px;
+  overflow: hidden;
 }

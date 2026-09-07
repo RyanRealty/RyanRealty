@@ -26,7 +26,11 @@ describe('FindMeVoice', () => {
   it('mobile bar is logo | Sign in | hamburger (no phone clutter)', () => {
     expect(CHROME).toContain('v3-chrome__signin')
     expect(CHROME).toContain('SIGN_IN')
+    expect(CHROME).toContain('v3-chrome__account')
+    expect(CHROME).toContain("/api/auth/me")
+    expect(CHROME).not.toContain('v3-chrome__saved')
     expect(CHROME_CSS).toContain('.v3-chrome__signin')
+    expect(CHROME_CSS).toContain('.v3-chrome__account')
     expect(CHROME_CSS).toMatch(/\.v3-chrome__phone \{[\s\S]*?display: none/)
   })
 })

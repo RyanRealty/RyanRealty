@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
-import { getListingTiles, getBrokers, getReviews } from '@/lib/data'
+import { getListingTiles, getBrokers, getReviews, attachListingCardExtras } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
@@ -19,7 +19,7 @@ import {
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
-import { homeRailRows } from './_v3/home-rail-items'
+import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import {
   HERO_VIDEO,
   HERO_POSTER,
@@ -39,7 +39,7 @@ const D11_HOMEPAGE_LEAD =
 /**
  * Homepage. Expanded Home lock 2026-09-06 (Matt): full-bleed search hero with
  * Buy/Sell tabs, buyer H1, stacked house carousels with Field badges,
- * illustrated Buy/Sell/Work-with-us doors, brokers, places, proof. No Atlas, map
+ * Buy/Sell/Work-with-us doors with line pictograms, brokers, places, proof. No Atlas, map
  * block, town ledger, market essay, or Invest door on home. Brand stays in
  * metadata title/OG only. absolute title skips the layout suffix.
  */
@@ -77,29 +77,13 @@ const TOWN_LABEL: Record<(typeof TOWN_ORDER)[number], string> = {
   terrebonne: 'Terrebonne',
 }
 
-/** Resort doors on home. Names only. Counts live on /communities.
- *  Marks reuse chrome community stills when already wired. */
+/** Resort doors on home. Names only. Counts live on /communities. */
 const RESORT_DOORS = [
-  {
-    label: 'Tetherow',
-    href: '/communities/tetherow',
-    markSrc: '/images/chrome-marks/tetherow.jpg',
-  },
-  {
-    label: 'Broken Top',
-    href: '/communities/broken-top',
-    markSrc: '/images/chrome-marks/broken-top.jpg',
-  },
+  { label: 'Tetherow', href: '/communities/tetherow' },
+  { label: 'Broken Top', href: '/communities/broken-top' },
   { label: 'Black Butte Ranch', href: '/communities/black-butte-ranch' },
   { label: 'Eagle Crest', href: '/communities/eagle-crest' },
 ] as const
-
-/** Heritage line-art (not photo landscapes). PAGE_INVENTORY Home doors lock. */
-const DOOR_ART = {
-  buy: '/images/homepage/doors/buy.png',
-  sell: '/images/homepage/doors/sell.png',
-  work: '/images/homepage/doors/work.png',
-} as const
 
 export default async function Home() {
   const [cities, tiles, brokers, openHouseLabels, reviewSummary] = await Promise.all([
@@ -116,7 +100,7 @@ export default async function Home() {
     .map((b) => aboutFaceFromBroker(b))
     .filter((face): face is AboutFace => face !== null)
 
-  const railRows = homeRailRows(tiles, {
+  const railRowsRaw = homeRailRows(tiles, {
     nowMs: Date.now(),
     regionalHref: publishRegionalSearchHref(),
     bendHref: '/homes-for-sale/bend',
@@ -124,6 +108,11 @@ export default async function Home() {
     newHref: '/homes-for-sale?view=list&sort=newest',
     openHouseLabels,
   })
+  const railKeys = railRowsRaw.flatMap((row) => row.cards.map((card) => card.listingKey))
+  const railExtras = await attachListingCardExtras(railKeys).catch(
+    () => new Map(),
+  )
+  const railRows = enrichHomeRailRows(railRowsRaw, railExtras)
 
   const townCount = TOWN_ORDER.filter((slug) => cityBySlug.has(slug)).length || TOWN_ORDER.length
 
@@ -133,23 +122,20 @@ export default async function Home() {
       label: v3Text('Buy a home'),
       href: publishRegionalSearchHref(),
       fact: v3Text(`${townCount} towns across Central Oregon`),
-      imageSrc: DOOR_ART.buy,
-      imageAlt: '',
+      pictogram: 'buy',
     },
     {
       kicker: v3Text('Sell'),
       label: v3Text('Sell a home'),
       href: valuationHref('/'),
       fact: v3Text('Written valuation in 24 hours'),
-      imageSrc: DOOR_ART.sell,
-      imageAlt: '',
+      pictogram: 'sell',
     },
     {
       kicker: v3Text('Join'),
       label: v3Text('Work with us'),
       href: '/join',
-      imageSrc: DOOR_ART.work,
-      imageAlt: '',
+      pictogram: 'work',
     },
   ] as const
 
@@ -164,7 +150,6 @@ export default async function Home() {
     ...RESORT_DOORS.map((r) => ({
       label: r.label,
       href: r.href,
-      markSrc: 'markSrc' in r ? r.markSrc : undefined,
     })),
     { label: 'Every city', href: '/cities' },
     { label: 'Resorts and communities', href: '/communities' },
