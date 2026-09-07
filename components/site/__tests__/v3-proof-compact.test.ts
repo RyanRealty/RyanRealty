@@ -20,3 +20,17 @@ describe('V3Proof compact band', () => {
     expect(SRC).toContain('.filter((q) => q.id !== compactReading?.id)')
   })
 })
+
+  it('compact band can mount a Google score face from figures', () => {
+    expect(SRC).toContain('v3-proof__face')
+    expect(SRC).toContain('function ScoreFace')
+    expect(SRC).toContain('function GoogleMark')
+    expect(CSS).toContain('.v3-proof__face')
+    expect(CSS).toContain('.v3-proof__card')
+  })
+
+  it('compact picks and reading sit in card chrome', () => {
+    expect(SRC).toContain("v3-proof__reading v3-proof__card")
+    expect(SRC).toMatch(/v3-proof__pick.*v3-proof__card/)
+  })
+

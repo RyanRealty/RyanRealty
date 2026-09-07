@@ -100,18 +100,36 @@ describe('the footer fold', () => {
     expect(out.indexOf('Privacy')).toBeGreaterThan(lastFoldEnd)
   })
 
-  it('closes on the Bend cityscape band with the real wordmark', () => {
+  it('closes on the Bend cityscape band under columns and legal', () => {
     const out = html()
     expect(out).toContain('/images/footer/bend-cityscape.png')
     expect(out).toContain('/images/brand/logo-horizontal-navy-transparent.png')
     expect(out).toContain('Central Oregon')
     expect(out).not.toMatch(/v3-btn/)
+    const cityscape = out.indexOf('v3-footer__cityscape')
+    const legal = out.indexOf('Equal Housing Opportunity')
+    const columns = out.indexOf('v3-footer__columns')
+    expect(cityscape).toBeGreaterThan(legal)
+    expect(cityscape).toBeGreaterThan(columns)
+    expect(out.indexOf('logo-horizontal-navy-transparent.png')).toBeLessThan(columns)
   })
 
-  it('renders Markets town clusters, not Buy / Areas leftovers (H13)', () => {
+  it('renders navy social icon buttons, not plain text social links', () => {
+    const out = html()
+    expect(out).toContain('v3-footer__social-btn')
+    expect(out).toContain('aria-label="Instagram"')
+    expect(out).toContain('aria-label="Facebook"')
+    expect(out).toContain('aria-label="YouTube"')
+    expect(out).not.toMatch(/>Instagram</)
+    expect(out).not.toMatch(/>Facebook</)
+    expect(out).not.toMatch(/>YouTube</)
+  })
+
+  it('renders Markets town clusters plus Buy · Sell · Join, Company, Contact', () => {
     const out = html()
     expect(V3_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
       'Markets',
+      'Buy · Sell · Join',
       'Company',
       'Contact',
     ])
@@ -120,10 +138,15 @@ describe('the footer fold', () => {
     expect(out).toContain('>Tetherow<')
     expect(out).toContain('>La Pine</p>')
     expect(out).toContain('>Terrebonne</p>')
+    expect(out).toContain('>Buy</p>')
+    expect(out).toContain('>Sell</p>')
+    expect(out).toContain('>Join</p>')
+    expect(out).toContain('Work with us')
+    expect(out).toContain('Value my home')
     expect(out).not.toContain('>Places</')
     expect(out).not.toContain('>Areas</')
     expect(out).not.toMatch(/<summary class="v3-footer__column-title">Homes/)
-    expect(out).not.toMatch(/<summary class="v3-footer__column-title">Buy/)
+    expect(out).not.toMatch(/<summary class="v3-footer__column-title">Buy</)
     const markets = V3_FOOTER_COLUMNS.find((c) => c.heading === 'Markets')
     expect(markets?.groups?.map((g) => g.heading)).toEqual([
       'Bend',

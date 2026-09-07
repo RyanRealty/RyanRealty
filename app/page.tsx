@@ -212,11 +212,14 @@ export default async function Home() {
         {reviewQuotes.length > 0 ? (
           <V3Proof
             id="proof"
-            eyebrow="Ryan Realty · Google"
-            headline={`${reviewCount} Google reviews`}
+            eyebrow="Google reviews"
+            headline="What clients say"
             headingLevel={2}
-            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews.`}
-            figures={[]}
+            claim="Verified Google reviews from closings we handled."
+            figures={[
+              { value: reviewAverage.toFixed(1), label: 'Average rating' },
+              { value: String(reviewCount), label: 'Google reviews' },
+            ]}
             quotes={reviewQuotes}
             source={{ label: 'Every review', href: '/reviews' }}
             record={false}

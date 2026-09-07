@@ -107,19 +107,25 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('footer Company and Contact columns carry team trust and ask links', () => {
     const company = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Company')
     const contact = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Contact')
+    const actions = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Buy · Sell · Join')
     const companyHrefs = company?.links.map((l) => l.href) ?? []
     const contactHrefs = contact?.links.map((l) => l.href) ?? []
-    for (const h of ['/about', '/team', '/reviews', '/our-homes']) {
+    const actionHrefs = actions ? footerColumnLinks(actions).map((l) => l.href) : []
+    for (const h of ['/about', '/team', '/reviews', '/invest', '/blog']) {
       expect(companyHrefs).toContain(h)
     }
-    for (const h of ['/contact', '/book', '/sell#get-value']) {
+    for (const h of ['/contact', '/book']) {
       expect(contactHrefs).toContain(h)
+    }
+    for (const h of ['/sell#get-value', '/sell', '/join', '/our-homes']) {
+      expect(actionHrefs).toContain(h)
     }
   })
 
-  it('footer columns group towns under Markets, then Company and Contact (H13)', () => {
+  it('footer columns group towns under Markets, then Buy · Sell · Join, Company, Contact', () => {
     expect(KB_FOOTER_COLUMNS.map((c) => c.heading)).toEqual([
       'Markets',
+      'Buy · Sell · Join',
       'Company',
       'Contact',
     ])
@@ -161,18 +167,31 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/eagle-crest',
       '/communities/pronghorn',
     ])
+    const actions = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Buy · Sell · Join')
+    expect(actions?.groups?.map((g) => g.heading)).toEqual(['Buy', 'Sell', 'Join'])
+    expect(footerColumnLinks(actions!).map((l) => l.href)).toEqual([
+      '/homes-for-sale?view=list',
+      '/homes-for-sale?view=map',
+      '/open-houses',
+      '/price-drops',
+      '/luxury-homes-bend',
+      '/our-homes',
+      '/sell',
+      '/sell#get-value',
+      '/join',
+    ])
     const company = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Company')
     expect(company?.links.map((l) => l.href)).toEqual([
       '/about',
       '/team',
       '/reviews',
-      '/our-homes',
       '/invest',
       '/housing-market',
+      '/blog',
     ])
     const contact = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Contact')
-    expect(contact?.links.map((l) => l.href)).toEqual(['/contact', '/book', '/sell#get-value'])
-    expect(contact?.links.map((l) => l.label)).toEqual(['Contact us', 'Book a broker', 'Value my home'])
+    expect(contact?.links.map((l) => l.href)).toEqual(['/contact', '/book'])
+    expect(contact?.links.map((l) => l.label)).toEqual(['Contact us', 'Book a broker'])
     expect(FOOTER_NAV).toBe(KB_FOOTER_COLUMNS)
     const communityHrefs = KB_FOOTER_COLUMNS.flatMap((c) =>
       footerColumnLinks(c).map((l) => l.href).filter((h) => h.startsWith('/communities/')),

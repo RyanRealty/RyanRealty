@@ -21,13 +21,13 @@
  * it did. From there up every column is open, the state matches what is on
  * screen, and the control still works if someone wants to collapse one.
  *
- * 56.25rem and not 40rem: it is the width the sitemap goes five columns across.
- * At the two- and three-column steps in between, open groups measured a
+ * 56.25rem and not 40rem: it is the width the sitemap goes four columns across.
+ * At the mid-width multi-column steps in between, open groups measured a
  * footer taller than the page, which is the wall the fold exists to prevent.
  */
 import { useEffect } from 'react'
 
-/** The width the sitemap grid goes five across. Mirrors V3Footer.css. */
+/** The width the sitemap grid goes four across. Mirrors V3Footer.css. */
 const WIDE = '(min-width: 56.25rem)'
 
 export function V3FooterFold() {

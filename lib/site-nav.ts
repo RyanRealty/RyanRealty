@@ -10,7 +10,7 @@
  * Projections from this file (do not re-author separate trees):
  *   KB_TOP_NAV     — desktop top bar + caret panels (KbNav)
  *   KB_MENU_GROUPS — Menu+ / mobile overlay
- *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Markets clusters, then Company, then Contact)
+ *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns (Markets, Buy · Sell · Join, Company, Contact)
  *   PRIMARY_NAV    — alias of KB_TOP_NAV for reachability gate + legacy imports
  *
  * Gate: scripts/check-nav-reachability.mjs
@@ -336,8 +336,9 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 // ─── Footers (projections) ────────────────────────────────────────────────────
 
 /**
- * Public sitemap: denser Markets / Company / Contact (Home lock 2026-09-06).
- * Town clusters stay under Markets for SEO. Header chrome: Homes / Places / Sell / About.
+ * Public sitemap: Markets / Buy · Sell · Join / Company / Contact (footer rebuild 2026-09-06).
+ * Town clusters stay under Markets for SEO. Buy · Sell · Join densifies the action doors.
+ * Header chrome: Homes / Places / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
 
@@ -353,15 +354,39 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
     cityFooterCluster('Sunriver', ['Caldera Springs', 'Crosswater']),
     ...FOOTER_MORE_CITIES.map((label) => cityFooterCluster(label)),
   ]),
+  footerFromGroups('Buy · Sell · Join', [
+    {
+      heading: 'Buy',
+      links: [
+        { href: REGIONAL_SEARCH.href, label: 'Search homes' },
+        MAP_SEARCH,
+        { href: '/open-houses', label: 'Open houses' },
+        { href: '/price-drops', label: 'Price drops' },
+        { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+        { href: '/our-homes', label: 'Our listings' },
+      ],
+    },
+    {
+      heading: 'Sell',
+      links: [
+        { href: '/sell', label: 'Sell your home' },
+        VALUATION_FORM,
+      ],
+    },
+    {
+      heading: 'Join',
+      links: [{ href: '/join', label: 'Work with us' }],
+    },
+  ]),
   {
     heading: 'Company',
     links: [
       { href: '/about', label: 'About Ryan Realty' },
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
-      { href: '/our-homes', label: 'Our listings' },
       { href: '/invest', label: 'Invest' },
       { href: '/housing-market', label: 'Housing market' },
+      { href: '/blog', label: 'Blog and guides' },
     ],
   },
   {
@@ -369,7 +394,6 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
     links: [
       { href: '/contact', label: 'Contact us' },
       { href: '/book', label: 'Book a broker' },
-      VALUATION_FORM,
     ],
   },
 ]

@@ -91,6 +91,47 @@ function Marks({ rating }: { rating: number }) {
   )
 }
 
+/** Single-color Google G for the compact score face. currentColor = navy. */
+function GoogleMark() {
+  return (
+    <svg
+      className="v3-proof__google"
+      viewBox="0 0 24 24"
+      width="28"
+      height="28"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09zM12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23zM5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62zM12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      />
+    </svg>
+  )
+}
+
+/**
+ * Compact band face: Google mark, aggregate score, stars, and review count.
+ * Built from the caller figures so the page never invents a rating here.
+ */
+function ScoreFace({ average, count }: { average: string; count: string }) {
+  const n = Number(average)
+  return (
+    <div className="v3-proof__face">
+      <div className="v3-proof__face-mark" aria-hidden="true">
+        <GoogleMark />
+      </div>
+      <div className="v3-proof__face-score">
+        <p className="v3-proof__face-value">{average}</p>
+        {Number.isFinite(n) ? <Marks rating={n} /> : null}
+        <p className="v3-proof__face-count">
+          {count} Google review{count === '1' ? '' : 's'}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function QuoteFigure({
   q,
   displayPull,
@@ -268,6 +309,12 @@ export function V3Proof({
     [quotes, year, uid, asArchive],
   )
 
+  const averageFigure = figures.find((f) => /average/i.test(f.label))
+  const countFigure =
+    figures.find((f) => /review/i.test(f.label)) ??
+    figures.find((f) => f !== averageFigure)
+  const showFace = !record && averageFigure != null && countFigure != null
+
   return (
     <section
       id={id}
@@ -287,7 +334,9 @@ export function V3Proof({
         <p className="v3-proof__claim">{claim}</p>
       </div>
 
-      {figures.length > 0 ? (
+      {showFace ? (
+        <ScoreFace average={averageFigure!.value} count={countFigure!.value} />
+      ) : figures.length > 0 ? (
         <dl className="v3-proof__figures">
           {figures.map((f) => {
             const n = Number(f.value)
@@ -488,7 +537,7 @@ export function V3Proof({
         </ul>
       ) : (
         <div className="v3-proof__reader">
-          <div id={`${uid}-read`} className="v3-proof__reading">
+          <div id={`${uid}-read`} className="v3-proof__reading v3-proof__card">
             {compactReading ? <QuoteFigure q={compactReading} displayPull showMarks={showMarks} /> : null}
           </div>
           <ul className="v3-proof__picks">
@@ -498,8 +547,8 @@ export function V3Proof({
               <li key={q.id}>
                 <button
                   type="button"
-                  className="v3-proof__pick"
-                  aria-pressed={false}
+                  className={cn('v3-proof__pick', 'v3-proof__card', focus === q.id && 'is-on')}
+                  aria-pressed={focus === q.id}
                   onClick={() => setFocus(q.id)}
                 >
                   <Marks rating={q.rating} />
