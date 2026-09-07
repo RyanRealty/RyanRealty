@@ -424,7 +424,7 @@ export const posts: BlogPostSeed[] = [
 </ul>
 
 <h2>Accessory dwelling units</h2>
-<p>Bend allows accessory dwelling units on most residential lots, and the city has been widening those rules. Our post on <a href="/blog/adu-rules-changing-bend-two-units">Bend's ADU changes</a> covers the current proposal. An ADU adds rentable space and appraises on comparable sales with ADUs, which are still thin in many districts, so build it for use first and value second.</p>
+<p>Bend allows accessory dwelling units on most residential lots, and the state's middle housing rules widened what a lot can hold. <a href="/blog/oregons-hb-2001-middle-housing-bend">Oregon's House Bill 2001 and middle housing in Bend</a> covers the rules. An ADU adds rentable space and appraises on comparable sales with ADUs, which are still thin in many districts, so build it for use first and value second.</p>
 
 <h2>Questions</h2>
 <h3>Which renovations add the most value at resale?</h3>

@@ -269,3 +269,52 @@ All nine new guides now carry real, owned, grade-A library photos, nine distinct
   (three read-only passes). Verdicts and fixes follow in the next commit.
 - **Shot list** for the subjects neither the library nor the generator can cover:
   `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
+
+## Second-half triage and first fix pass (2026-09-07, later)
+
+Three read-only passes over the 52 published posts untouched earlier in the day
+(`scratchpad/triage2-g1.md`, `g2.md`, `g3.md` in the session). Verdicts: KEEP 6, FIX 36, RESTORE
+8, RETIRE 2 (counts by the compiled summaries). Acted on the same day, live rows only, seeds
+diverge as before:
+
+**Taken down (status `retired`, redirected).** `raising-kids-bend-parents-guide` (neighborhoods
+by racial composition, "families of color" steering toward Redmond and Madras, "family-oriented"
+neighborhoods) and `schools-central-oregon-guide-families` (school choice tied to neighborhood
+income and free-lunch share). Both redirect, to `/blog` and `/schools`, until rewritten on
+program, size, and offering facts. `bend-wildfire-resistant-building-standards` (an invented,
+unclosed quotation, and a council vote narrated as "today" five months on) retired in favor of
+`deschutes-county-wildfire-building-codes`. `adu-rules-changing-bend-two-units` (a 2023 proposal
+with no outcome and a midpoint math error) retired; the renovation guide now points at the HB
+2001 post.
+
+**Steering lines rewritten in place.** Sunriver ("works best for retirees, remote workers, and
+families"), NW Crossing ("natural fit for families with kids"), Sisters ("Families who value
+small schools, low crime"), Redmond ("Families who prioritize", two school-score sentences cut),
+Moving to Bend (west-side schools "rate higher", "where most young families land").
+
+**Invented quotes removed.** Moving to Bend: five quoted "answers" from unnamed transplants are
+now plain prose.
+
+**Math corrected.** June 2026 Bend report 3.6% to 3.5%; best-time-to-buy $510,000 to $530,000
+and the $25,000 to $40,000 seasonal gap to $17,500 at the post's own 3.5%; permit timeline
+total 14 to 24 months; Broken Top combined dues $800 to $1,300; Sunriver July report 20.6% to
+20.5%; the three July city reports date-label their second active-listing count; "six other
+homes to walk to" cut from the months-of-supply explainer.
+
+**Sentences softened to their real basis.** Earnest money and inspection windows attributed to
+the OREF purchase agreement as common terms, the Closing Disclosure rule to TRID, appraisal
+ordering to the federal appraiser independence rules, and the unsourced appraisal fee and
+west-Bend price band cut. Pre-listing checklist lost its ROI, paint-uplift, and "50% bigger"
+claims.
+
+**Still open (next sessions).** The 36 FIX posts carry roughly 150 unsourced dollar, percent,
+and count figures, concentrated in the eleven resort and neighborhood guides (price tiers, HOA
+dues, rental income) and the relocation guides (drive times, ISP speeds, cost of living). Each
+needs the figure sourced from the stats cache or the resort's own page, or cut. Eight RESTORE
+posts: earnest money (OREF form citations), vacation rental rules (ordinance citations, 10
+months stale), working remote (25 uncited figures), retirement (sales-tax math wrong, a dozen
+uncited tax figures), price-per-sqft trends (four non-Bend communities listed as Bend
+neighborhoods, Sunriver at two prices), SB 1537 (two years stale), plus the two fair-housing
+takedowns. Cross-post conflicts to reconcile to one figure: Bend to Redmond mileage, Bend
+population, Mt. Bachelor distance, studded-tire dates, Black Butte and Brasada both "about
+1,800 acres".

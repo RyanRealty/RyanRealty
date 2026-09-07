@@ -33,12 +33,11 @@ export type PublishBlogPostResult =
   | { ok: false; reason: string }
 
 export async function publishBlogPost(input: PublishBlogPostInput): Promise<PublishBlogPostResult> {
+  // Same field shape as saveBlogPost: the metadata joins into `subject`, the
+  // body scans as HTML.
   const voice = checkBrandVoice(
     {
-      title: input.title,
-      excerpt: input.excerpt,
-      seo_title: input.seoTitle,
-      seo_description: input.seoDescription,
+      subject: [input.title, input.excerpt, input.seoTitle, input.seoDescription].filter(Boolean).join(' '),
       bodyHtml: input.content,
     },
     { stripHtml: true },

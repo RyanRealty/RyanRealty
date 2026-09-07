@@ -45,7 +45,7 @@ describe('buildMonthlyCityReport', () => {
     const r = buildMonthlyCityReport(base)
     if (!r.ok) throw new Error(r.reason)
     const v = checkBrandVoice(
-      { title: r.post.title, excerpt: r.post.excerpt, seo_title: r.post.seoTitle, seo_description: r.post.seoDescription, bodyHtml: r.post.content },
+      { subject: [r.post.title, r.post.excerpt, r.post.seoTitle, r.post.seoDescription].join(' '), bodyHtml: r.post.content },
       { stripHtml: true },
     )
     expect(v.violations).toEqual([])
