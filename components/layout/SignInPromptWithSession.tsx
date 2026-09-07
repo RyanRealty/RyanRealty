@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import type { AuthUser } from '@/app/actions/auth'
+import type { AuthUser } from '@/lib/auth/types'
 import SignInPrompt from '../SignInPrompt'
 
 export default function SignInPromptWithSession({

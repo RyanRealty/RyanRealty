@@ -57,7 +57,7 @@
  * its own space in flow and a page needs no spacer under it.
  */
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import type { AuthUser } from '@/app/actions/auth'
+import type { AuthUser } from '@/lib/auth/types'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'

@@ -5,6 +5,8 @@ import { cookies, headers } from 'next/headers'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
 import { trackSignedInUser } from '@/lib/crm/send-event'
+import type { AuthUser } from '@/lib/auth/types'
+export type { AuthUser }
 
 const AUTH_NEXT_COOKIE = 'auth_next'
 
@@ -25,14 +27,6 @@ async function getRequestBaseUrl(): Promise<string> {
     return `${proto}://${host}`.replace(/\/$/, '')
   }
   return (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
-}
-
-export type AuthUser = {
-  id: string
-  email?: string | null
-  /** Normalized from user_metadata and identities so Google/profile picture always works. */
-  avatar_url?: string | null
-  user_metadata?: { full_name?: string; name?: string; avatar_url?: string; picture?: string }
 }
 
 function normalizeAvatarUrl(user: { user_metadata?: Record<string, unknown>; identities?: Array<{ identity_data?: Record<string, unknown> }> }): string | null {
