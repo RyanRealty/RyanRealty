@@ -154,7 +154,7 @@ function strategyLine(input: {
 }): string | null {
   const p = input.pricing
   if (input.failedAsk != null && p.recommended < input.failedAsk) {
-    return `Your last listing asked ${usd(input.failedAsk)} and did not sell. This list stays under that ask.`
+    return `Your last listing asked ${usd(input.failedAsk)} and did not sell. The recommend stays under that ask.`
   }
   if (p.priceOverride != null && p.priceOverride > 0 && p.recommended > p.method3) {
     return `The adjusted sales land at ${usd(p.method3)}. The recommended list is ${usd(p.recommended)}.`

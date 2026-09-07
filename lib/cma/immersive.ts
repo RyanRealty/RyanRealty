@@ -6,7 +6,7 @@
 
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
-import { immersiveAnswerHtml, immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
+import { immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from '@/lib/cma/inbound-packet'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { cleanText } from '@/lib/cma/render-blocks'
@@ -61,13 +61,6 @@ ${immersiveStylesheet()}
     ${immersiveHeroNumberHtml(a)}
   </div>
   <div class="cue" aria-hidden="true"></div>
-</section>
-
-<section class="sc sc-cream" id="answer">
-  <div class="in">
-    <div class="kick r">The list</div>
-    ${immersiveAnswerHtml(a)}
-  </div>
 </section>
 
 ${assembleOpinionScenes(a)}

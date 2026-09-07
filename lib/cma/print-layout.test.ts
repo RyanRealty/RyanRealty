@@ -90,10 +90,20 @@ const story: SubdivisionStory = {
   photoSalesReviewed: 0,
 }
 
+
+function fiveSales(seed: CmaAdjustedComp): CmaAdjustedComp[] {
+  return Array.from({ length: 5 }, (_, i) => ({
+    ...seed,
+    listingKey: `C${i + 1}`,
+    address: i === 0 ? seed.address : `${30 + i} Peer`,
+    adjustedPrice: (seed.adjustedPrice ?? 500000) + i * 1000,
+  }))
+}
+
 function args(): RenderCmaArgs {
   return {
     subject,
-    comps: [comp],
+    comps: fiveSales(comp),
     market: null,
     pricing,
     broker,
@@ -111,7 +121,7 @@ describe('print CMA layout', () => {
   it('keeps one map on the price chapter, not a pin map plus a second static map', () => {
     const page = pricingPage({
       subject,
-      comps: [comp],
+      comps: fiveSales(comp),
       market: null,
       pricing,
       mapDataUri: 'data:image/png;base64,aaa',
@@ -121,7 +131,7 @@ describe('print CMA layout', () => {
     expect(page.body).not.toContain('class="map-img"')
     expect(page.body).not.toContain('<svg')
     expect(page.body).toContain('comp-matrix')
-    expect(page.body).toContain('The sales that set the list')
+    expect(page.body).toContain('The sales that set this price')
     expect(page.body).toContain('Sale price / sqft')
     expect(page.body).toContain('Lot sqft')
   })
@@ -129,7 +139,7 @@ describe('print CMA layout', () => {
   it('does not reprint the same static map on the subdivision chapter', () => {
     const page = subdivisionChapterPage({
       subject,
-      comps: [comp],
+      comps: fiveSales(comp),
       market: null,
       pricing,
       mapDataUri: 'data:image/png;base64,aaa',
@@ -159,7 +169,7 @@ describe('print CMA layout', () => {
     ]
     const page = subdivisionChapterPage({
       subject,
-      comps: [comp],
+      comps: fiveSales(comp),
       market: null,
       pricing,
       mapDataUri: null,
@@ -202,7 +212,7 @@ describe('print CMA layout', () => {
   it('keeps the wider market on one sheet', () => {
     const pages = printWiderMarketPages({
       subject,
-      comps: [comp],
+      comps: fiveSales(comp),
       market: {
         geoSlug: 'bend',
         geoLabel: 'Bend',

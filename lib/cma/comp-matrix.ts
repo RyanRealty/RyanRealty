@@ -15,8 +15,12 @@
 import { cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+import { MIN_COMPS } from '@/lib/cma/comps'
 
 const esc = escapeHtml
+
+/** Same floor as selection — do not paint a thin matrix that did not set the recommend. */
+export const MIN_CLOSED_SALES_FOR_MATRIX = MIN_COMPS
 const ACRES_TO_SQFT = 43560
 
 /**
@@ -281,7 +285,8 @@ function matrixStack(comps: readonly CmaAdjustedComp[]): string {
 }
 
 export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdjustedComp[]): string {
-  if (comps.length === 0) return ''
+  // Fail closed: a recommend needs ≥ MIN_CLOSED_SALES_FOR_MATRIX closed sales.
+  if (comps.length < MIN_CLOSED_SALES_FOR_MATRIX) return ''
   const subj = subjectCol(subject)
   const compCols = comps.map((c, i) => compCol(c, i))
   const groups = splitEvenly(compCols)
@@ -296,7 +301,7 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
     .join('')
   const stack = matrixStack(comps)
   return `
-  <h3 class="subhead">The sales that set the list</h3>
+  <h3 class="subhead">The sales that set this price</h3>
   ${tables}
   ${stack}
   <p class="small">Adjusted close moves the sale for time and size.</p>`

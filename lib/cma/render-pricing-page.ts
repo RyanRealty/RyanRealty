@@ -27,7 +27,7 @@ function sellerNetBlock(p: CmaPricing): string {
   if (!n || n.knownCount === 0) return ''
   return `
   <h3 class="subhead">Close price and seller net</h3>
-  <p class="small">${n.givenCount} of ${n.knownCount} sales that set this list reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
+  <p class="small">${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
 
 function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null): string {
@@ -67,6 +67,8 @@ export function pricingPage(input: {
   pricing: CmaPricing
   tiersUsed?: string[]
   mapDataUri?: string | null
+  /** Immersive hero already printed recommend + range — skip the lead + 3-stat strip. */
+  omitLeadPrices?: boolean
 }): CmaPageDef {
   const p = input.pricing
   const s = input.subject
@@ -76,10 +78,9 @@ export function pricingPage(input: {
   const notes = clientFacingNotes(p.notes, p)
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
   const pinMap = renderCompPinMapHtml(s, input.comps, input.mapDataUri ?? null)
-  return {
-    meta: `${esc(s.streetAddress)} · How we got the price`,
-    toc: 'How we got the price',
-    body: `
+  const lead = input.omitLeadPrices
+    ? ''
+    : `
   <h2 class="section">How we got the price</h2>
   <p>${esc(listPriceLead(p, { perSqft: recPpsf }))}${
     range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
@@ -88,7 +89,19 @@ export function pricingPage(input: {
     <div class="stat"><div class="lbl">List low</div><div class="val">${usd(p.conservative)}</div></div>
     <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(p.recommended)}</div></div>
     <div class="stat"><div class="lbl">List high</div><div class="val">${usd(p.highEnd)}</div></div>
-  </div>
+  </div>`
+  const outOfRangeNote =
+    input.omitLeadPrices && range.outOfRange
+      ? `<p>The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.${range.note ? ` ${esc(range.note)}` : ''}</p>`
+      : input.omitLeadPrices && range.note
+        ? `<p>${esc(range.note)}</p>`
+        : ''
+  return {
+    meta: `${esc(s.streetAddress)} · How we got the price`,
+    toc: 'How we got the price',
+    body: `
+  ${lead}
+  ${outOfRangeNote}
   <h3 class="subhead">What we searched</h3>
   ${howWePriced(input.comps.length, input.market, search.body)}
   ${renderCompMatrixHtml(s, input.comps)}

@@ -84,6 +84,16 @@ function comp(over: Partial<CmaAdjustedComp> = {}): CmaAdjustedComp {
   }
 }
 
+
+function fiveSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
+  return Array.from({ length: n }, (_, i) => ({
+    ...seed,
+    listingKey: seed.listingKey ? `${seed.listingKey}-${i}` : `C${i + 1}`,
+    address: i === 0 ? seed.address : `${100 + i} Peer St`,
+    adjustedPrice: (seed.adjustedPrice ?? seed.closePrice ?? 500000) + i * 1000,
+  }))
+}
+
 function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
   return {
     subject,
@@ -213,7 +223,7 @@ describe('web and print tell the same comps story', () => {
     const html = renderImmersiveCmaHtml(
       {
         ...args({
-          comps: [comp({ keepTier: 'strong', keepReason: 'Same subdivision and size band' })],
+          comps: fiveSales(comp({ keepTier: 'strong', keepReason: 'Same subdivision and size band' })),
           subdivisionStory: {
             facts: {
               name: 'Dry Canyon',
@@ -254,7 +264,7 @@ describe('web and print tell the same comps story', () => {
   it('print letter keeps comps once via matrix; no flyer dump (C1)', () => {
     const { html } = renderCmaHtml(
       args({
-        comps: [comp({ keepTier: 'strong', keepReason: 'Same subdivision and size band' })],
+        comps: fiveSales(comp({ keepTier: 'strong', keepReason: 'Same subdivision and size band' })),
       }),
     )
     const matrixAt = html.indexOf('comp-matrix')

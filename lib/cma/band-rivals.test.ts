@@ -159,7 +159,7 @@ describe('renderBandRivalsHtml', () => {
     expect(html).toContain('825 Poplar')
     expect(html).toContain('3 bd')
     expect(html).toContain('1,280 sqft')
-    expect(html).toContain('$25,250 above this list')
+    expect(html).toContain('$25,250 above this recommend')
     expect(html).toContain('160 sqft smaller')
     expect(html).toContain('0 days')
     expect(html).toContain('This home')

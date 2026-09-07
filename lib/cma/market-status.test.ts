@@ -179,7 +179,7 @@ describe('market status grain', () => {
     expect(area!.expired).toBeNull()
     const html = renderStatusGridHtml(area)
     expect(html).not.toMatch(/\bN\/A\b/)
-    expect(html).toContain('Used in the list')
+    expect(html).toContain('Used for the recommend')
     expect(html).not.toContain('Expired or withdrawn')
   })
 
@@ -375,7 +375,15 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
   })
   return {
     subject,
-    comps: [comp({ keepTier: 'strong', keepReason: 'Same community and living area' })],
+    comps: Array.from({ length: 5 }, (_, i) =>
+      comp({
+        keepTier: 'strong',
+        keepReason: 'Same community and living area',
+        address: `${i + 1} Peer Ave`,
+        listingKey: `C${i + 1}`,
+        adjustedPrice: 2_000_000 + i * 10_000,
+      }),
+    ),
     market: {
       geoSlug: 'bend',
       geoLabel: 'Bend',

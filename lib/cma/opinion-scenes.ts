@@ -48,11 +48,13 @@ function priceScene(a: OpinionSceneArgs): string {
     market: a.market,
     pricing: a.pricing,
     mapDataUri: a.mapDataUri,
+    // Immersive hero already carries recommend + range once on the photo.
+    omitLeadPrices: true,
   })
   return `
-  <section class="sc sc-cream" id="how-we-got-the-price">
+  <section class="sc sc-cream pack" id="how-we-got-the-price">
     <div class="in wide">
-      <div class="kick r">The list</div>
+      <h2 class="h r">Our Recommended List Price for your home.</h2>
       <div class="r">${page.body}</div>
     </div>
   </section>`
@@ -111,7 +113,7 @@ function outcomesScene(a: OpinionSceneArgs): string {
   const peers = renderExpiredPeersHtml(a.extras?.marketArea?.expiredPeers)
   if (!chart && !peers) return ''
   return `
-  <section class="sc sc-cream" id="sold-unsold">
+  <section class="sc sc-cream pack" id="sold-unsold">
     <div class="in wide">
       <div class="kick r">This price band</div>
       <h2 class="h r">Sold and unsold in this band</h2>

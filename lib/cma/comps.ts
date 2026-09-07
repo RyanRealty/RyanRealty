@@ -74,7 +74,8 @@ import {
 
 export { realSubdivision }
 
-export const MIN_COMPS = 3
+/** Floor for a priced set. Thin sets must widen before the letter paints. */
+export const MIN_COMPS = 5
 /**
  * Stop climbing the ladder at 5 (Matt 2026-07-30). The target is not "as many
  * comps as possible" — every extra comp is bought by widening geography or
