@@ -158,9 +158,11 @@
   min-height: var(--v3-tap);
   padding: 0 var(--v3-space-sm);
   border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-control);
   background: var(--v3-cream);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
   cursor: pointer;
 }
 
@@ -189,9 +191,13 @@
   justify-content: center;
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
+  margin: 0;
   padding: 0;
   border: 0;
+  border-radius: 999px;
   background: transparent;
+  color: inherit;
+  font-weight: inherit;
   cursor: pointer;
 }
 
@@ -203,7 +209,7 @@
   background: var(--v3-edge);
 }
 
-.home-featured-community__dot[aria-current="true"] .home-featured-community__dot-mark {
+.home-featured-community__dot[aria-pressed="true"] .home-featured-community__dot-mark {
   background: var(--v3-navy);
 }
 

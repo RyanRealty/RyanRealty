@@ -101,22 +101,24 @@ export function HomeFeaturedCommunity({
       <div className="home-featured-community__nav">
         {multi ? (
           <div className="home-featured-community__controls">
-            <button
+            <V3Button
               type="button"
+              variant="ghost"
               className="home-featured-community__control"
-              aria-label="Previous featured community"
+              ariaLabel="Previous featured community"
               onClick={() => go(-1)}
             >
               Previous
-            </button>
-            <button
+            </V3Button>
+            <V3Button
               type="button"
+              variant="ghost"
               className="home-featured-community__control"
-              aria-label="Next featured community"
+              ariaLabel="Next featured community"
               onClick={() => go(1)}
             >
               Next
-            </button>
+            </V3Button>
           </div>
         ) : null}
 
@@ -124,15 +126,16 @@ export function HomeFeaturedCommunity({
           <ul className="home-featured-community__dots" aria-label="Featured community slides">
             {slides.map((item, i) => (
               <li key={item.slug}>
-                <button
+                <V3Button
                   type="button"
+                  variant="ghost"
                   className="home-featured-community__dot"
-                  aria-label={`${item.name}, slide ${i + 1} of ${slides.length}`}
-                  aria-current={i === safeIndex ? 'true' : undefined}
+                  ariaLabel={`${item.name}, slide ${i + 1} of ${slides.length}`}
+                  ariaPressed={i === safeIndex}
                   onClick={() => setIndex(i)}
                 >
                   <span className="home-featured-community__dot-mark" aria-hidden="true" />
-                </button>
+                </V3Button>
               </li>
             ))}
           </ul>
