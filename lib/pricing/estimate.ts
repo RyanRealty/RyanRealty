@@ -26,7 +26,11 @@ import {
   type MarketPath,
 } from '@/lib/pricing/market-path'
 import { failedListAsk } from '@/lib/pricing/expired-list-cap'
-import { reconcileAdjustedSales, type ReconcilableSale } from '@/lib/pricing/reconciliation'
+import {
+  reconcileAdjustedSales,
+  weightedAdjustedPrice,
+  type ReconcilableSale,
+} from '@/lib/pricing/reconciliation'
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 
 const SIZE_ADJ_FACTOR = 0.5
@@ -53,8 +57,7 @@ function percentile(sorted: number[], p: number): number {
 }
 
 function asSaleToList(n: number | null | undefined): number | null {
-  if (n == null || !Number.isFinite(n) || n <= 0) return null
-  return n > 2 ? n / 100 : n
+  return usableSaleToAskRatio(n)
 }
 
 function listFromClose(close: number, ratio: number | null): number {
@@ -83,6 +86,69 @@ export function saleBandFromAdjusted(
 
 function round1000(n: number): number {
   return Math.round(n / 1000) * 1000
+}
+
+/** At or above this many sales the range drops one at each end. */
+export const RANGE_TRIM_MIN_N = 6
+
+/**
+ * Redfin's ±50% exclusion, applied to every sale-to-ask ratio that reaches the
+ * list-price step. Its definitions for share-sold-above-list and sale-to-list
+ * both drop closes 50 percent above or below the ask (fetched 2026-09-07); ours
+ * had no outlier rule at all, so one related-party transfer at 0.4x could bend
+ * the ratio the whole recommendation is divided by.
+ */
+export const SALE_TO_ASK_MIN = 0.5
+export const SALE_TO_ASK_MAX = 1.5
+
+export type PricingRangeRuleName = 'trimmed-one-each-end' | 'min-max'
+
+export interface PricingRangeRule {
+  /** Which rule produced the low and high below. */
+  rule: PricingRangeRuleName
+  /** Sales the rule ran over. */
+  n: number
+  /** Sales left after the rule (n, or n − 2). */
+  kept: number
+  /** The low and high of the PRINTED adjusted sale prices, before any ask step. */
+  adjustedLow: number
+  adjustedHigh: number
+  /** The share of the original ask sales are closing at, used to carry the value to an ask. */
+  saleToAskRatio: number | null
+  /** Where that share came from. */
+  saleToAskSource: 'city-index' | 'market-context' | 'these-sales' | 'none'
+  /** Sale-to-ask ratios dropped by the ±50% rule. */
+  ratiosExcluded: number
+  /** The rule in one sentence, in the document's own words. */
+  sentence: string
+}
+
+/**
+ * D10, closed by construction: the range the seller reads is the spread of the
+ * SAME adjusted sale prices the grid prints — six or more sales drop the
+ * highest and the lowest, fewer keep every one — instead of p25/p75 of
+ * time-adjusted $/sqft, which ignored the size and story adjustments the
+ * document itemizes and on heterogeneous sets diverged from its own evidence
+ * (Tumalo: band $1,241,000-$1,297,000 against ten printed values with median
+ * $1,099,810).
+ */
+export function adjustedPriceRange(
+  prices: readonly number[],
+): { low: number; high: number; rule: PricingRangeRuleName; n: number; kept: number } | null {
+  const vals = prices.filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
+  if (vals.length < PRICING_MIN_COMPS) return null
+  if (vals.length >= RANGE_TRIM_MIN_N) {
+    const kept = vals.slice(1, -1)
+    return { low: kept[0]!, high: kept[kept.length - 1]!, rule: 'trimmed-one-each-end', n: vals.length, kept: kept.length }
+  }
+  return { low: vals[0]!, high: vals[vals.length - 1]!, rule: 'min-max', n: vals.length, kept: vals.length }
+}
+
+/** A sale-to-ask ratio a list price may be divided by. */
+export function usableSaleToAskRatio(n: number | null | undefined): number | null {
+  if (n == null || !Number.isFinite(n) || n <= 0) return null
+  const ratio = n > 2 ? n / 100 : n
+  return ratio >= SALE_TO_ASK_MIN && ratio <= SALE_TO_ASK_MAX ? ratio : null
 }
 
 /** Keep comps whose time-adjusted $/sqft sits inside the set. */
@@ -237,16 +303,36 @@ export type EngineListResult = {
   highEndList: number | null
   source: 'ask' | 'comps' | 'none'
   offMarketAsk?: boolean
+  /** How the low and high were produced, and the ask step applied to them. */
+  rangeRule?: PricingRangeRule | null
+  /** The value the printed sales support, before the ask step. */
+  reconciledValue?: number | null
+}
+
+/** One sale as the list step sees it: a $/sqft, and where the adjustments landed. */
+export type EngineAdjustedSale = {
+  ppsfTimeAdjusted: number
+  adjustedPrice?: number
+  weight?: number
 }
 
 /**
  * The only list/close formula. Listing stamps and the CMA cover both call
  * this. Method 1/2/3 stay on the evidence board; they do not pick the list.
+ *
+ * THE RANGE AND THE POINT BOTH COME OFF THE PRINTED SALES (D10). The low and
+ * high are the spread of the per-sale adjusted prices, trimmed one at each end
+ * once there are six of them; the point is those same prices reconciled by the
+ * weights the document prints (lib/pricing/reconciliation.ts). Both are then
+ * carried to an ASK by the share of the original ask sales are closing at.
+ * A caller that has no adjusted prices — or a land subject with no living
+ * area — still gets the older $/sqft percentile band, which is what it always
+ * had.
  */
 export function listPriceFromEngine(opts: {
   subjectSqft: number
   lastAsk: number | null | undefined
-  adjusted: Array<{ ppsfTimeAdjusted: number }>
+  adjusted: EngineAdjustedSale[]
   saleToAskRatios: number[]
   asOfSaleToOriginal?: number | null
   marketSaleToList?: number | null
@@ -254,7 +340,25 @@ export function listPriceFromEngine(opts: {
   methodFallback?: number | null
 }): EngineListResult {
   const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
-  const compsImpliedClose = band?.mid ?? predictedCloseFromAdjusted(opts.subjectSqft, opts.adjusted)
+  // The sales that carry a printed adjusted price. Land has no living area and
+  // prices per acre, so it stays on the $/sqft path it already used.
+  const pricedSales = opts.subjectSqft > 0
+    ? opts.adjusted.filter(
+        (a): a is EngineAdjustedSale & { adjustedPrice: number } =>
+          a.adjustedPrice != null && Number.isFinite(a.adjustedPrice) && a.adjustedPrice > 0,
+      )
+    : []
+  const range =
+    pricedSales.length >= PRICING_MIN_COMPS
+      ? adjustedPriceRange(pricedSales.map((a) => a.adjustedPrice))
+      : null
+  const reconciledValue =
+    range != null
+      ? weightedAdjustedPrice(pricedSales.map((a) => ({ adjustedPrice: a.adjustedPrice, weight: a.weight ?? 0 })))
+      : null
+
+  const compsImpliedClose =
+    reconciledValue ?? band?.mid ?? predictedCloseFromAdjusted(opts.subjectSqft, opts.adjusted)
   const reconciled = reconcileAskAndComps({
     compClose: compsImpliedClose,
     lastAsk: opts.lastAsk,
@@ -262,22 +366,51 @@ export function listPriceFromEngine(opts: {
   })
   const predictedClose = reconciled.close
   const mid = predictedClose ?? opts.methodFallback ?? null
-  const ratio =
-    asSaleToList(opts.asOfSaleToOriginal) ??
-    asSaleToList(opts.marketSaleToList) ??
-    (() => {
-      const ratios = opts.saleToAskRatios.filter((n) => Number.isFinite(n) && n > 0)
-      return ratios.length >= 3
-        ? [...ratios].sort((a, b) => a - b)[Math.floor(ratios.length / 2)]!
-        : null
-    })()
+
+  const kept = opts.saleToAskRatios
+    .map(usableSaleToAskRatio)
+    .filter((n): n is number => n != null)
+  const ratiosExcluded = opts.saleToAskRatios.filter((n) => Number.isFinite(n) && n > 0).length - kept.length
+  const fromIndex = asSaleToList(opts.asOfSaleToOriginal)
+  const fromMarket = fromIndex == null ? asSaleToList(opts.marketSaleToList) : null
+  const fromSales =
+    fromIndex == null && fromMarket == null && kept.length >= 3
+      ? [...kept].sort((a, b) => a - b)[Math.floor(kept.length / 2)]!
+      : null
+  const ratio = fromIndex ?? fromMarket ?? fromSales
+  const saleToAskSource: PricingRangeRule['saleToAskSource'] =
+    fromIndex != null ? 'city-index' : fromMarket != null ? 'market-context' : fromSales != null ? 'these-sales' : 'none'
+
   const recommendedList = mid != null ? listFromClose(mid, ratio) : null
-  let conservativeList = band != null ? listFromClose(band.low, ratio) : null
-  let highEndList = band != null ? listFromClose(band.high, ratio) : null
+  let conservativeList = range != null ? listFromClose(range.low, ratio) : band != null ? listFromClose(band.low, ratio) : null
+  let highEndList = range != null ? listFromClose(range.high, ratio) : band != null ? listFromClose(band.high, ratio) : null
   if (reconciled.source === 'comps' && recommendedList != null) {
     if (conservativeList != null && conservativeList > recommendedList) conservativeList = recommendedList
     if (highEndList != null && highEndList < recommendedList) highEndList = recommendedList
   }
+
+  const askStep =
+    ratio != null
+      ? ` Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked, so each figure is carried to an asking price at that share.`
+      : ' No local share of the original ask was available, so the asking prices are the adjusted sale prices themselves.'
+  const rangeRule: PricingRangeRule | null =
+    range != null
+      ? {
+          rule: range.rule,
+          n: range.n,
+          kept: range.kept,
+          adjustedLow: range.low,
+          adjustedHigh: range.high,
+          saleToAskRatio: ratio,
+          saleToAskSource,
+          ratiosExcluded,
+          sentence:
+            range.rule === 'trimmed-one-each-end'
+              ? `The range is the spread of the ${range.n} sale prices adjusted for date and size, with the highest and the lowest set aside: $${range.low.toLocaleString('en-US')} to $${range.high.toLocaleString('en-US')}.${askStep}`
+              : `The range is the spread of all ${range.n} sale prices adjusted for date and size: $${range.low.toLocaleString('en-US')} to $${range.high.toLocaleString('en-US')}.${askStep}`,
+        }
+      : null
+
   return {
     predictedClose,
     compsImpliedClose,
@@ -286,6 +419,8 @@ export function listPriceFromEngine(opts: {
     highEndList,
     source: reconciled.source,
     offMarketAsk: reconciled.offMarketAsk,
+    rangeRule,
+    reconciledValue,
   }
 }
 
@@ -307,11 +442,15 @@ export function applyEngineRecommendedList(
   engine: Pick<
     EngineListResult,
     'recommendedList' | 'predictedClose' | 'conservativeList' | 'highEndList' | 'source'
-  >,
+  > & { rangeRule?: PricingRangeRule | null },
   opts: { priceOverride?: number | null; lastAsk?: number | null; failedAsk?: number | null } = {},
 ): CmaPricing {
   const close =
     engine.predictedClose != null && engine.predictedClose > 0 ? engine.predictedClose : (pricing.predictedClose ?? null)
+  // How the printed low and high were produced rides along on every path,
+  // including a broker override — the rule describes the evidence, not the
+  // number someone typed over it.
+  if (engine.rangeRule !== undefined) pricing.rangeRule = engine.rangeRule
   if (opts.priceOverride != null && Number.isFinite(opts.priceOverride) && opts.priceOverride > 0) {
     return clipCoverToFailedAsk({ ...pricing, predictedClose: close }, opts.failedAsk)
   }
@@ -359,14 +498,22 @@ export function applyEngineRecommendedList(
     )
   }
 
+  // D10: what the home is WORTH is the spread of the sale prices the document
+  // prints, adjusted for date and size — not those figures carried to an ask,
+  // and not a $/sqft percentile computed on a different basis. The three list
+  // tiers below are that same evidence carried to an asking price, which is a
+  // separate statement and is labelled as one. Where a caller has no adjusted
+  // prices (a land subject prices per acre) the tiers stand in, as before.
+  const valueLow = engine.rangeRule?.adjustedLow ?? conservative
+  const valueHigh = engine.rangeRule?.adjustedHigh ?? highEnd
   return clipCoverToFailedAsk(
     {
       ...pricing,
       recommended: list,
       conservative,
       highEnd,
-      valueLow: conservative,
-      valueHigh: highEnd,
+      valueLow: Math.min(valueLow, valueHigh),
+      valueHigh: Math.max(valueLow, valueHigh),
       predictedClose: close,
       notes: pricing.notes,
     },

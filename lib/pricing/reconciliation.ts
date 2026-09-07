@@ -23,6 +23,30 @@
  * A superlative is written only when it is true of the printed sales.
  */
 
+/** The two fields the weighted value itself needs. Every adjusted sale has them. */
+export interface WeightedSale {
+  adjustedPrice: number
+  weight: number
+}
+
+/**
+ * The value the printed sales support: each sale's adjusted price times its
+ * share of the total weight. Sales with no usable weight are weighted equally
+ * rather than dropped. Null when nothing is priceable.
+ *
+ * This is the ONE definition of the point value. `reconcileAdjustedSales`
+ * calls it for the printed sentence and `lib/pricing/estimate.ts` calls it for
+ * the recommendation, so the two cannot diverge (D10).
+ */
+export function weightedAdjustedPrice(sales: readonly WeightedSale[]): number | null {
+  const usable = sales.filter((s) => Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0)
+  if (usable.length === 0) return null
+  const raw = (s: WeightedSale) => (Number.isFinite(s.weight) && s.weight > 0 ? s.weight : 0)
+  const total = usable.reduce((sum, s) => sum + raw(s), 0)
+  const share = (s: WeightedSale) => (total <= 0 ? 1 / usable.length : raw(s) / total)
+  return Math.round(usable.reduce((sum, s) => sum + s.adjustedPrice * share(s), 0))
+}
+
 /** What the reconciliation needs off an adjusted sale. */
 export interface ReconcilableSale {
   listingKey: string
@@ -122,9 +146,7 @@ export function reconcileAdjustedSales(args: {
   const equalWeighted = total <= 0
   const share = (s: ReconcilableSale) => (equalWeighted ? 1 / usable.length : rawOf(s) / total)
 
-  const weightedPrice = Math.round(
-    usable.reduce((sum, s) => sum + s.adjustedPrice * share(s), 0),
-  )
+  const weightedPrice = weightedAdjustedPrice(usable)
 
   const smallestGross = Math.min(...usable.map(grossAdjustmentPct))
   const closestSize =

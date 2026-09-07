@@ -229,6 +229,13 @@ export interface CmaPricing {
    * built from, so the sentence and the number cannot disagree.
    */
   reconciliation?: import('@/lib/pricing/reconciliation').CmaReconciliation | null
+  /**
+   * How `valueLow`/`valueHigh` were produced — the rule over the printed
+   * adjusted sale prices, and the share of the original ask they were carried
+   * to an asking price by. D10: the range a seller reads must be derivable
+   * from the evidence beside it.
+   */
+  rangeRule?: import('@/lib/pricing/estimate').PricingRangeRule | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

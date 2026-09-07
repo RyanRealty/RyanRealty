@@ -58,7 +58,10 @@ type DryRun = {
   compCount: number
   comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number }>
   recommended: number | null
+  /** The list tiers: conservative and high end. */
   range: [number | null, number | null]
+  /** What the home is worth: the spread of the printed adjusted sale prices. */
+  valueRange: [number | null, number | null]
   confidence: string | null
   compPpsfCv: number | null
   needsReview: boolean
@@ -92,6 +95,8 @@ type DryRun = {
   renderArgsMarketOriginalAskRealization: unknown
   /** render_args.pricing.reconciliation — which sale carried the price. */
   renderArgsPricingReconciliation: unknown
+  /** render_args.pricing.rangeRule — how the low and high were produced. */
+  renderArgsPricingRangeRule: unknown
   renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
@@ -135,13 +140,13 @@ async function dryRun(slug: string): Promise<DryRun> {
   const base: DryRun = {
     slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null,
     subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
-    recommended: null, range: [null, null], confidence: null, compPpsfCv: null,
+    recommended: null, range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null,
     needsReview: false, reviewReason: null, hardFailures: [],
     matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
-    renderArgsExpiredAuditFinalCycle: null, error: null,
+    renderArgsPricingRangeRule: null, renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -283,6 +288,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     })),
     recommended: pricing.recommended,
     range: [pricing.conservative, pricing.highEnd],
+    valueRange: [pricing.valueLow, pricing.valueHigh],
     confidence: pricing.confidence,
     compPpsfCv: pricing.compPpsfCv ?? null,
     needsReview: pricing.needsReview === true,
@@ -297,6 +303,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: localOutcomes.askOutcome,
     renderArgsMarketOriginalAskRealization: localOutcomes.originalAskRealization,
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
+    renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
@@ -316,12 +323,13 @@ async function main() {
     const r = await dryRun(slug).catch((e): DryRun => ({
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
-      range: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
+      range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
       hardFailures: [], matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0,
       concessionSentence: null, concessionSentenceTrimmed: null,
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
-      renderArgsPricingReconciliation: null, renderArgsExpiredAuditFinalCycle: null,
+      renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
+      renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -329,7 +337,8 @@ async function main() {
     console.log(`\n── ${r.slug} — ${r.address ?? '(unresolved)'}, ${r.city ?? '?'}`)
     console.log(`   ${r.ok ? 'WOULD BUILD' : `WOULD FAIL at ${r.stage}`} · subject ${r.subjectBaths ?? '?'} bath / ${r.subjectSqft ?? '?'} sqft · custom-or-new ${r.customOrNew} · source ${r.pricingSource ?? 'n/a'}`)
     if (r.recommended != null) {
-      console.log(`   recommended $${r.recommended.toLocaleString()} (range $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
+      console.log(`   recommended $${r.recommended.toLocaleString()} (list tiers $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
+      console.log(`   worth $${r.valueRange[0]?.toLocaleString()}–$${r.valueRange[1]?.toLocaleString()} (the printed adjusted sale prices)`)
     }
     if (r.comps.length) {
       console.log(`   comps (${r.comps.length}):`)
@@ -353,6 +362,8 @@ async function main() {
     console.log(indent(r.renderArgsMarketOfferTiming))
     console.log('   render_args.market.askOutcome =')
     console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.pricing.rangeRule =')
+    console.log(indent(r.renderArgsPricingRangeRule))
     console.log('   render_args.pricing.reconciliation =')
     console.log(indent(r.renderArgsPricingReconciliation))
     console.log('   render_args.market.originalAskRealization =')

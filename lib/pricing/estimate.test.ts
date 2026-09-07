@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computePricing } from '@/lib/cma/pricing'
 import {
   adjustCompAlongMarket,
+  adjustedPriceRange,
   applyEngineRecommendedList,
   currentListAsk,
   estimateClosePrice,
@@ -10,6 +11,7 @@ import {
   priceCmaSet,
   reconcileAskAndComps,
   trimPpsfOutliers,
+  usableSaleToAskRatio,
 } from '@/lib/pricing/estimate'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CmaSubject } from '@/lib/cma/types'
@@ -593,5 +595,181 @@ describe('listPriceFromEngine is the only cover number', () => {
     expect(cover.highEnd).toBeLessThanOrEqual(749_900)
     expect(cover.failedAsk).toBe(749_900)
     expect(cover.notes.join(' ')).toMatch(/did not sell/i)
+  })
+})
+
+describe('D10 — the range and the point come off the printed adjusted prices', () => {
+  const sale = (adjustedPrice: number, weight = 1) => ({
+    ppsfTimeAdjusted: adjustedPrice / 2000,
+    adjustedPrice,
+    weight,
+  })
+
+  it('trims one sale at each end once six are priced', () => {
+    expect(adjustedPriceRange([100, 200, 300, 400, 500, 600])).toEqual({
+      low: 200,
+      high: 500,
+      rule: 'trimmed-one-each-end',
+      n: 6,
+      kept: 4,
+    })
+  })
+
+  it('keeps every sale under six', () => {
+    expect(adjustedPriceRange([100, 300, 200, 500, 400])).toEqual({
+      low: 100,
+      high: 500,
+      rule: 'min-max',
+      n: 5,
+      kept: 5,
+    })
+  })
+
+  it('will not draw a range from fewer than the comp floor', () => {
+    expect(adjustedPriceRange([100, 200])).toBeNull()
+  })
+
+  it('prices the low, the point and the high off the same sales', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted: [
+        sale(400_000),
+        sale(420_000),
+        sale(440_000),
+        sale(460_000),
+        sale(480_000),
+        sale(500_000),
+      ],
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 1,
+      qualitySet: false,
+    })
+    // Trimmed spread is 420,000-480,000; the weighted point of all six is
+    // 450,000; sale-to-ask of 1.00 leaves each figure where it is.
+    expect(engine.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(engine.rangeRule?.adjustedLow).toBe(420_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(480_000)
+    expect(engine.reconciledValue).toBe(450_000)
+    expect(engine.conservativeList).toBe(420_000)
+    expect(engine.recommendedList).toBe(450_000)
+    expect(engine.highEndList).toBe(480_000)
+    expect(engine.rangeRule?.saleToAskSource).toBe('city-index')
+  })
+
+  it('lets the weights move the point, not the range', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted: [
+        sale(400_000, 9),
+        sale(420_000, 1),
+        sale(440_000, 1),
+        sale(460_000, 1),
+        sale(480_000, 1),
+        sale(500_000, 1),
+      ],
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 1,
+      qualitySet: false,
+    })
+    expect(engine.rangeRule?.adjustedLow).toBe(420_000)
+    expect(engine.reconciledValue).toBe(421_429)
+    expect(engine.recommendedList).toBe(421_000)
+  })
+
+  it('carries the value to an ask at the local share of the original ask', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted: [sale(400_000), sale(450_000), sale(500_000)],
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 0.95,
+      qualitySet: false,
+    })
+    expect(engine.rangeRule?.rule).toBe('min-max')
+    expect(engine.reconciledValue).toBe(450_000)
+    expect(engine.recommendedList).toBe(474_000)
+    expect(engine.conservativeList).toBe(421_000)
+    expect(engine.highEndList).toBe(526_000)
+    expect(engine.rangeRule?.sentence).toContain('95.0 percent')
+  })
+
+  it('drops a sale-to-ask ratio more than 50 percent from the ask', () => {
+    expect(usableSaleToAskRatio(0.49)).toBeNull()
+    expect(usableSaleToAskRatio(1.51)).toBeNull()
+    expect(usableSaleToAskRatio(0.5)).toBe(0.5)
+    expect(usableSaleToAskRatio(97)).toBe(0.97)
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted: [sale(400_000), sale(450_000), sale(500_000)],
+      // 0.4 and 3.0 are the outliers; the honest median of the rest is 0.95.
+      saleToAskRatios: [0.4, 0.9, 0.95, 1.0, 3.0],
+      qualitySet: false,
+    })
+    expect(engine.rangeRule?.ratiosExcluded).toBe(2)
+    expect(engine.rangeRule?.saleToAskSource).toBe('these-sales')
+    expect(engine.rangeRule?.saleToAskRatio).toBe(0.95)
+  })
+
+  it('leaves a land subject on the price-per-square-foot path', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 0,
+      lastAsk: null,
+      adjusted: [sale(400_000), sale(450_000), sale(500_000)],
+      saleToAskRatios: [],
+      qualitySet: false,
+    })
+    expect(engine.rangeRule).toBeNull()
+    expect(engine.reconciledValue).toBeNull()
+  })
+
+  it('still prices a caller that carries no adjusted prices', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted: [
+        { ppsfTimeAdjusted: 200 },
+        { ppsfTimeAdjusted: 210 },
+        { ppsfTimeAdjusted: 220 },
+        { ppsfTimeAdjusted: 230 },
+      ],
+      saleToAskRatios: [],
+      qualitySet: false,
+    })
+    expect(engine.rangeRule).toBeNull()
+    expect(engine.compsImpliedClose).toBe(430_000)
+  })
+})
+
+describe('D10 — what the cover calls the value is the printed evidence', () => {
+  it('sets the value range to the adjusted sale prices, and the list tiers to the ask step', () => {
+    const adjusted = [400_000, 420_000, 440_000, 460_000, 480_000, 500_000].map((p) => ({
+      ppsfTimeAdjusted: p / 2000,
+      adjustedPrice: p,
+      weight: 1,
+    }))
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted,
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 0.95,
+      qualitySet: false,
+    })
+    const base = {
+      method1Low: 0, method1Mid: 450_000, method1High: 0, method2: null, method3: 450_000,
+      convergenceSpreadPct: null, converged: true, conservative: 0, recommended: 0, highEnd: 0,
+      valueLow: 0, valueHigh: 0, confidence: 'High' as const, confidenceReason: '', needsReview: false,
+      reviewReason: null, compPpsfCv: 0, priceOverride: null, improvementsValueAdd: null, notes: [],
+    }
+    const priced = applyEngineRecommendedList(base, engine)
+    expect(priced.valueLow).toBe(420_000)
+    expect(priced.valueHigh).toBe(480_000)
+    expect(priced.conservative).toBe(442_000)
+    expect(priced.recommended).toBe(474_000)
+    expect(priced.highEnd).toBe(505_000)
+    expect(priced.rangeRule?.saleToAskRatio).toBe(0.95)
   })
 })
