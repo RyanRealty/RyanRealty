@@ -28,9 +28,8 @@ describe('first-contact copy', () => {
     // reply to a request they did not make.
     const expired = composeCmaFirstContact('expired', FACTS)
     expect(expired.plan).toContain('came off the market without a sale')
-    expect(expired.plan).toContain('Sorry it did not sell')
     expect(expired.plan).not.toContain('The number for')
-    expect(expired.bodyText).toContain('We hope to earn your business')
+    expect(expired.bodyText).toContain('I would like a shot at this one')
 
     const fsbo = composeCmaFirstContact('fsbo', FACTS)
     expect(fsbo.plan).toContain('selling 1005 Butler Market yourself')
@@ -95,7 +94,7 @@ describe('first-contact copy', () => {
     const c = composeCmaFirstContact('expired', FACTS)
     expect(c.bodyText).toContain('This is Matt Ryan, owner of Ryan Realty in Bend')
     expect(c.bodyText).toContain('came off the market without a sale')
-    expect(c.bodyText).toContain('Reply or call to walk through the numbers')
+    expect(c.bodyText).toContain('Reply or call and I will walk you through the numbers')
     expect(c.bodyText).toContain('https://ryan-realty.com/reviews')
     expect(c.bodyText).toContain('https://ryan-realty.com/about')
     expect(c.bodyText).not.toContain('Call anytime')
@@ -153,7 +152,11 @@ describe('first-contact copy', () => {
         recommended_list: 392000,
         render_args: {
           market: { geoLabel: 'Redmond', geoSlug: 'redmond' },
-          subject: { city: 'Redmond', subdivision: 'Diamond Bar Ranch' },
+          subject: {
+            city: 'Redmond',
+            subdivision: 'Diamond Bar Ranch',
+            listingHistoryLine: 'Listed Mar 3, 2025 at $460,000, came off expired · 118 days on market.',
+          },
         },
       },
       { brokerName: 'Matt Ryan', lastListPrice: 460000 },
@@ -162,7 +165,10 @@ describe('first-contact copy', () => {
     expect(facts.subdivision).toBe('Diamond Bar Ranch')
     expect(facts.firstName).toBe('Blair')
     expect(facts.lastListPrice).toBe(460000)
+    expect(facts.listingHistoryLine).toContain('118 days on market')
     const letter = composeCmaFirstContact('expired', facts)
+    expect(letter.plan).toContain('118 days on market')
+    expect(letter.plan).not.toContain(' · ')
     expect(letter.bodyText).toContain('Diamond Bar Ranch:')
     expect(letter.bodyText).toMatch(/\/subdivisions\/diamond-bar-ranch/)
     expect(letter.bodyText).not.toContain('Redmond:')
@@ -190,15 +196,35 @@ describe('first-contact copy', () => {
   })
 })
 
-describe('Matt voice lock — Review/drip first-touch', () => {
-  it('empathizes without mannered syrup on expired and FSBO', () => {
+describe('Matt voice lock 2026-09-07 — personalized, no pandering', () => {
+  it('drops the stock apology and the "hope to earn your business" pitch', () => {
     const expired = composeCmaFirstContact('expired', FACTS)
-    expect(expired.bodyText).toMatch(/Sorry it did not sell/)
-    expect(expired.bodyText).toMatch(/We hope to earn your business/)
+    expect(expired.bodyText).not.toMatch(/sorry it did not sell/i)
+    expect(expired.bodyText).not.toMatch(/we hope to earn your business/i)
+    expect(expired.bodyText).toContain('I would like a shot at this one')
     expect(expired.bodyText).not.toMatch(/no pressure|wish you the best|excited|delighted|reaching out|touching base/i)
 
     const fsbo = composeCmaFirstContact('fsbo', FACTS)
-    expect(fsbo.bodyText).toMatch(/We hope to earn your business/)
+    expect(fsbo.bodyText).not.toMatch(/we hope to earn your business/i)
+    expect(fsbo.bodyText).toContain('I would like the chance to help you sell it')
     expect(fsbo.bodyText).not.toMatch(/no pressure|wish you the best|excited|delighted|reaching out|touching base/i)
+  })
+
+  it("opens with the subject's own list/cut/DOM history when the MLS row has it", () => {
+    const withHistory = composeCmaFirstContact('expired', {
+      ...FACTS,
+      listingHistoryLine: 'Listed Jun 12, 2025 at $699,000, cut to $650,000, came off expired · 94 days on market.',
+    })
+    expect(withHistory.plan).toContain('$699,000')
+    expect(withHistory.plan).toContain('$650,000')
+    expect(withHistory.plan).toContain('94 days on market')
+    expect(withHistory.plan).not.toContain(' · ')
+    const voice = checkBrandVoice(withHistory.bodyText)
+    expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
+  })
+
+  it('falls back to the generic opener when the MLS row has no history line', () => {
+    const noHistory = composeCmaFirstContact('expired', FACTS)
+    expect(noHistory.plan).toBe('1005 Butler Market came off the market without a sale.')
   })
 })

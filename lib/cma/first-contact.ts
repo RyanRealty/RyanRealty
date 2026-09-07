@@ -1,6 +1,6 @@
 /**
  * First-contact copy for a delivered CMA, by origin (Matt 2026-09-04, letter
- * lock 2026-09-05).
+ * lock 2026-09-05, personalization + de-pandering pass 2026-09-07).
  *
  * Pricing is identical across origins. Only the opening changes, and only to
  * say truthfully why we are writing. Expired and FSBO get a full letter:
@@ -8,11 +8,18 @@
  * site, and a place page when we have one. Asked reports skip the relist
  * ask because they already came to us.
  *
+ * The opener carries the subject's own listingHistoryLine (dated list price,
+ * cuts, days on market — lib/cma/listing-history-line.ts) when the MLS row
+ * has it, so the letter proves we looked at THIS listing instead of stating
+ * a generic fact that fits any expired home. Missing data omits the clause;
+ * never invented (CLAUDE.md §0).
+ *
  * Voice: marketing_brain_skills/brand-voice/VOICE.md. Write to one person,
- * say the fact, stop. Zero mannered prose / corporate syrup. For expired we
- * are sorry it did not sell and we hope to earn the business — plain words,
- * not empathy theater. No em dash, no semicolon, no exclamation. We after
- * the signed intro. No prior-agent blame. Never print CMA.
+ * say the fact, stop. Zero mannered prose / corporate syrup. No stock
+ * apology, no "we hope to earn your business" — Matt 2026-09-07: state
+ * what happened, make a direct first-person ask. No em dash, no semicolon,
+ * no exclamation. We after the signed intro. No prior-agent blame. Never
+ * print CMA.
  */
 
 import { composeInboundNumbersClause, type InboundPacketFacts, type InboundValuationCopy } from '@/lib/cma/inbound-packet'
@@ -43,6 +50,9 @@ export type CmaFirstContactFacts = InboundPacketFacts & {
   subdivision?: string | null
   neighborhoodName?: string | null
   neighborhoodSlug?: string | null
+  /** Subject's dated list/cut/off-market history line (lib/cma/listing-history-line.ts).
+   *  Never invented — null when the MLS row lacked the facts to build one. */
+  listingHistoryLine?: string | null
 }
 
 /** The one close every origin shares. The send rail appends the report URL to it. */
@@ -64,12 +74,24 @@ function introFor(brokerName: string | null): string {
   return `This is ${name} with Ryan Realty in Bend.`
 }
 
-function planFor(origin: CmaOrigin, named: string): string {
+/** listingHistoryLine joins its DOM clause with ' · ' for table display. In
+ *  letter prose that reads as a data artifact, so it becomes a comma clause. */
+function proseHistoryLine(historyLine: string | null): string | null {
+  const t = trim(historyLine)
+  return t ? t.replace(' · ', ', ') : null
+}
+
+function planFor(origin: CmaOrigin, named: string, historyLine: string | null): string {
   if (origin === 'expired') {
-    // Matt HARD LOCK: sorry it did not sell + empathize, no syrup.
-    return `Your listing on ${named} came off the market without a sale. Sorry it did not sell.`
+    // Matt directive 2026-09-07: the specific facts ARE the authenticity —
+    // no stock apology, no empathy theater. State what actually happened.
+    const line = proseHistoryLine(historyLine)
+    if (line) return `${named}: ${line} It did not sell.`
+    return `${named} came off the market without a sale.`
   }
   if (origin === 'fsbo') {
+    const line = proseHistoryLine(historyLine)
+    if (line) return `${named}: ${line} You are listing it yourself.`
     return `You are selling ${named} yourself.`
   }
   return `The number for ${named}, and the sales that set it.`
@@ -80,9 +102,13 @@ function closeFor(): string {
 }
 
 function offerFor(origin: CmaOrigin): string {
-  // Matt HARD LOCK: hope to earn the business — plain, not corporate flourish.
-  if (origin === 'expired' || origin === 'fsbo') {
-    return 'We hope to earn your business. Reply or call to walk through the numbers.'
+  // Matt directive 2026-09-07: no "we hope to earn your business" — plain
+  // first-person ask, the way a broker who actually wants the listing talks.
+  if (origin === 'expired') {
+    return 'I would like a shot at this one. Reply or call and I will walk you through the numbers.'
+  }
+  if (origin === 'fsbo') {
+    return 'I would like the chance to help you sell it. Reply or call and I will walk you through the numbers.'
   }
   return 'Reply or call to walk through the numbers.'
 }
@@ -108,7 +134,7 @@ function areaLine(facts: CmaFirstContactFacts): string | null {
 function resourceParagraphs(origin: CmaOrigin, facts: CmaFirstContactFacts): string[] {
   const out: string[] = []
   if (!isAskedOrigin(origin)) {
-    out.push(`Reviews are at ${REVIEWS_HREF}. Who we are is at ${ABOUT_HREF}.`)
+    out.push(`You can read reviews and see who we are at ${REVIEWS_HREF} and ${ABOUT_HREF}.`)
   }
   const area = areaLine(facts)
   if (area) out.push(area)
@@ -134,8 +160,12 @@ export function composeCmaFirstContact(
   const greeting = `Hi ${first},`
   const named = trim(facts.address) ?? 'this home'
   const intro = introFor(facts.brokerName ?? null)
-  const plan = planFor(origin, named)
-  const numbers = composeInboundNumbersClause(facts)
+  const plan = planFor(origin, named, facts.listingHistoryLine ?? null)
+  // The plan sentence already names the final list price when it draws on
+  // listingHistoryLine (expired/fsbo). Restating it as "Last list was $X" in
+  // the numbers clause repeats the same figure two sentences apart.
+  const planStatedPrice = (origin === 'expired' || origin === 'fsbo') && Boolean(proseHistoryLine(facts.listingHistoryLine ?? null))
+  const numbers = composeInboundNumbersClause(planStatedPrice ? { ...facts, lastListPrice: null } : facts)
   const close = closeFor()
   const offer = offerFor(origin)
   const bodyText = [
@@ -203,5 +233,6 @@ export function cmaFirstContactFactsFromRow(
     subdivision: strField(row.subject_subdivision) ?? strField(subject?.subdivision),
     neighborhoodName: strField(market?.geoLabel),
     neighborhoodSlug: strField(market?.geoSlug),
+    listingHistoryLine: strField(subject?.listingHistoryLine),
   }
 }
