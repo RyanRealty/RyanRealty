@@ -125,13 +125,23 @@ audit), `0301398e` (handoff).
   sibling's `90cffee8`; this branch dropped its duplicate.
 - Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
 
-**Round three (same day)**
+**Round three (same day), all landed through `10a9bcb2`**
 - Sign-in prompt no longer auto-opens on `/blog/*` (`signin-prompt-policy.ts`, reason
-  `guide`).
-- Monthly Bend + Redmond market report cron: `/api/cron/blog-monthly-city-report`, 3rd of
-  the month. Backfill with `?month=2026-08` after deploy. Builder and write path tested.
-- 52 older published posts in figure triage; verdicts land next.
+  `guide`). Verified in a fresh browser.
+- Monthly Bend + Redmond market report cron live: `/api/cron/blog-monthly-city-report`, 3rd
+  of the month 15:00 UTC, reads the Market Truth series the market page charts (NOT the stats
+  cache, which disagreed on Bend's August median). August 2026 posts published and match the
+  pages. `?month=YYYY-MM&dry=1` is the check before any backfill.
+- 52 older published posts triaged figure by figure (KEEP 5, FIX 37, RESTORE 9, RETIRE 1;
+  files `triage2-g1/2/3.md` in the session scratchpad, summary in the ledger). Same-day fix
+  pass: two fair-housing takedowns (`raising-kids-bend-parents-guide`,
+  `schools-central-oregon-guide-families`, redirected), two retirements (wildfire standards,
+  ADU proposal, redirected), seven steering sentences rewritten, five invented quotes removed,
+  eight math corrections, legal sentences attributed to OREF and TRID. `blog_posts`: 78
+  published (the two August reports included), 20 retired, 0 voice violations.
 - Photographer shot list: `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
+- Next: rewrite the two takedowns on program and offering facts; then the 37 FIX posts (mostly
+  unsourced price tiers, HOA dues, rental income in the resort guides) and 9 RESTORE posts.
 
 **Open**
 - Hero images for the nine new guides: resolved with real asset-library photos

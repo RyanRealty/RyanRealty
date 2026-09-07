@@ -275,8 +275,8 @@ All nine new guides now carry real, owned, grade-A library photos, nine distinct
 ## Second-half triage and first fix pass (2026-09-07, later)
 
 Three read-only passes over the 52 published posts untouched earlier in the day
-(`scratchpad/triage2-g1.md`, `g2.md`, `g3.md` in the session). Verdicts: KEEP 6, FIX 36, RESTORE
-8, RETIRE 2 (counts by the compiled summaries). Acted on the same day, live rows only, seeds
+(`scratchpad/triage2-g1.md`, `g2.md`, `g3.md` in the session). Verdicts: KEEP 5, FIX 37, RESTORE
+9, RETIRE 1. Acted on the same day, live rows only, seeds
 diverge as before:
 
 **Taken down (status `retired`, redirected).** `raising-kids-bend-parents-guide` (neighborhoods
@@ -320,3 +320,16 @@ neighborhoods, Sunriver at two prices), SB 1537 (two years stale), plus the two 
 takedowns. Cross-post conflicts to reconcile to one figure: Bend to Redmond mileage, Bend
 population, Mt. Bachelor distance, studded-tire dates, Black Butte and Brasada both "about
 1,800 acres".
+
+## Backfill and close (2026-09-07, end of day)
+
+- The cron published `bend-oregon-market-report-august-2026` and
+  `redmond-oregon-market-report-august-2026` through `?month=2026-08` after the dry run matched
+  the pages: Bend $749,500, down 5.7% from $795,000; Redmond $527,500, down 7.8% from $572,000.
+  Both carry FAQPage schema and name the market page's series as the source. September publishes
+  on October 3 without a hand.
+- Retired-slug redirects live for the wildfire-standards and ADU posts. The two fair-housing
+  takedowns redirect to `/blog` and `/schools`.
+- Guides no longer open the sign-in prompt (checked in a fresh browser on two posts).
+- Backlog queue for the next sessions: 37 FIX and 9 RESTORE posts, verdicts and exact sentences
+  in the three triage files, cross-post conflicts listed above. Rewrite the two takedowns first.
