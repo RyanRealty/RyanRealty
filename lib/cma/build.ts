@@ -50,12 +50,15 @@ import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
 import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
+import { getCmaListingPriceEvents } from '@/lib/data/cma/localOutcomeReads'
+import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   applyFailedAskCap,
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
+  buildFinalCycle,
   stampFinalCycleDom,
   feeLine,
   EXPIRED_LISTING_FEE_PCT,
@@ -717,6 +720,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       if (lastCycleFailed) {
         const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
         const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
+        // Chapter 1's graphic: the final listing period as a stepped line. The
+        // dated cuts come from the price-change records for THAT cycle's own
+        // ListingKey — not the subject's, which on a relisted address is a
+        // different attempt. A cycle with no dated change gets one undated
+        // step rather than a date from convention (§0).
+        const finalCycle = history.currentCycle
+        const priceEvents = finalCycle?.listingKey
+          ? await getCmaListingPriceEvents(finalCycle.listingKey).catch(() => [])
+          : []
         expiredAudit = {
           findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
           services: buildServicesList(subject),
@@ -724,6 +736,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             expectedConcessions: pricing.sellerNet?.expectedConcessions ?? null,
           }),
           feeLine: feeLine(),
+          finalCycle: buildFinalCycle({
+            cycle: finalCycle,
+            priceEvents,
+            listingKey: finalCycle?.listingKey ?? subject.listingKey,
+          }),
         }
       }
     }
@@ -734,6 +751,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // price. Each block is independently nullable (§0: cut, don't guess).
     const subjectPhotosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
     const extras = await buildCmaExtras({ subject, comps: adjusted, pricing, subjectPhotosCount })
+
+    // 4.755. Chapter 2 — "Priced right sells. Priced high sits", in the
+    // reader's own city. The cumulative offer-timing curve and the three
+    // first-ask outcome groups are computed HERE, at build, and hung on the
+    // market context so `render_args.market.offerTiming` /
+    // `render_args.market.askOutcome` are the renderer's only source. Each
+    // block carries its own §0 `source`; both also land in `citations` below,
+    // including when there is no market context to hang them on.
+    const localOutcomes = await buildCmaLocalOutcomes({ city: subject.city })
+    if (market) {
+      market.offerTiming = localOutcomes.offerTiming
+      market.askOutcome = localOutcomes.askOutcome
+    }
 
     // 4.76. What they own: the prior purchase at this address, and what the
     // recommendation says it has done since. Honest in both directions; a loss
@@ -984,6 +1014,43 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           ? { source: extras.photoBench.source, subject_photos: extras.photoBench.subjectPhotos, comp_median: extras.photoBench.compMedianPhotos }
           : { source: 'none' },
       },
+      // Chapter 2's two figures, one entry each (§0: one entry per figure
+      // class). Recorded whether or not there was a market context to hang
+      // them on, so a reviewer can always re-run the read that produced them.
+      market_offer_timing: localOutcomes.offerTiming
+        ? {
+            ...localOutcomes.offerTiming.source,
+            city: localOutcomes.offerTiming.city,
+            window_months: localOutcomes.offerTiming.windowMonths,
+            n: localOutcomes.offerTiming.n,
+            points: localOutcomes.offerTiming.points,
+            median_days: localOutcomes.offerTiming.medianDays,
+            withheld_reason: localOutcomes.offerTiming.reason,
+            ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
+          }
+        : { source: 'none', note: 'No closed or off-market rows returned for the subject city.' },
+      market_ask_outcome: localOutcomes.askOutcome
+        ? {
+            ...localOutcomes.askOutcome.source,
+            city: localOutcomes.askOutcome.city,
+            window_months: localOutcomes.askOutcome.windowMonths,
+            groups: localOutcomes.askOutcome.groups,
+            ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
+          }
+        : { source: 'none', note: 'No closed or off-market rows returned for the subject city.' },
+      final_cycle: expiredAudit?.finalCycle
+        ? {
+            ...expiredAudit.finalCycle.source,
+            list_date: expiredAudit.finalCycle.listDate,
+            initial_ask: expiredAudit.finalCycle.initialAsk,
+            cuts: expiredAudit.finalCycle.cuts,
+            cuts_dated: expiredAudit.finalCycle.cutsDated,
+            final_ask: expiredAudit.finalCycle.finalAsk,
+            off_market_date: expiredAudit.finalCycle.offMarketDate,
+            status: expiredAudit.finalCycle.status,
+            days: expiredAudit.finalCycle.days,
+          }
+        : { source: 'none', note: 'The subject has no failed final listing cycle.' },
       market_context: market
         ? {
             sources: cmaMarketSources(market),
