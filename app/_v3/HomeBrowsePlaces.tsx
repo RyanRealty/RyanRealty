@@ -16,10 +16,13 @@ export type HomePlaceDoor = {
 
 export function HomeBrowsePlaces({
   doors,
+  id = 'places',
   eyebrow = 'Central Oregon',
   heading = 'Browse places',
 }: {
   doors: readonly HomePlaceDoor[]
+  /** Bound in app/page.tsx for ci:page-purpose (id must appear in the page source). */
+  id?: string
   eyebrow?: string
   heading?: string
 }) {
@@ -28,7 +31,7 @@ export function HomeBrowsePlaces({
 
   return (
     <section
-      id="places"
+      id={id}
       className={`${V3_ROOT_CLASS} home-browse-places`}
       aria-labelledby="places-heading"
     >

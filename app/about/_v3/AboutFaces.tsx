@@ -1,23 +1,75 @@
 /**
- * Broker cutouts on cream. No card, no wash, no border — the transparent
- * edge is the composition (CLAUDE.md §3). Name is the door. Title, Call,
- * and Text sit under the portrait.
+ * Broker faces on cream. Roster cards carry light chrome + icon reach
+ * (call / text / email) for Home density; name remains the door. Title
+ * stays a role chip under the name.
  *
- * roster: /team (H1) and /about (H2, below Call/Text + firm proof).
+ * roster: /team (H1), /about and homepage (H2).
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
  */
 
-import Link from 'next/link'
-import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Heading } from '@/components/site/v3'
-import type { AboutFace } from './about-faces'
-import './about-faces.css'
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { V3_ROOT_CLASS, V3Heading } from "@/components/site/v3"
+import type { AboutFace } from "./about-faces"
+import "./about-faces.css"
+
+function IconPhone() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+      <path
+        d="M7.2 3.8h2.4l1.2 4.2-1.6 1.1a12.6 12.6 0 0 0 5.7 5.7l1.1-1.6 4.2 1.2v2.4c0 .9-.7 1.7-1.6 1.7A14.8 14.8 0 0 1 3.8 5.4c0-.9.8-1.6 1.7-1.6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconMessage() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+      <path
+        d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H10l-4.2 3.2V16.5H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconEnvelope() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+      <path
+        d="M4.5 7A1.5 1.5 0 0 1 6 5.5h12A1.5 1.5 0 0 1 19.5 7v10a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 17V7Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m5.2 7.2 6.8 5.2 6.8-5.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 export function AboutFaces({
   people,
   heading,
   headingLevel = 1,
-  size = 'roster',
+  size = "roster",
   reach = true,
 }: {
   people: readonly AboutFace[]
@@ -31,40 +83,43 @@ export function AboutFaces({
    * portrait never takes --lead or --solo: that pair is the poster.
    */
   headingLevel?: 1 | 2
-  size?: 'roster' | 'portrait'
-  /** Call / Text / Email on the face row, including /team/[slug] portrait. */
+  size?: "roster" | "portrait"
+  /** Call / Text / Email icon buttons on the face row, including portrait. */
   reach?: boolean
 }) {
   const [first, ...rest] = people
   if (!first) return null
   const shown = [first, ...rest]
-  const lead = headingLevel === 1 && size === 'roster'
+  const lead = headingLevel === 1 && size === "roster"
   const reachLinks = (person: AboutFace) =>
     reach ? (
-      <div className="about-faces__reach-row" id={size === 'portrait' ? 'contact-broker' : undefined}>
+      <div className="about-faces__reach-row" id={size === "portrait" ? "contact-broker" : undefined}>
         {person.tel ? (
           <a href={`tel:${person.tel}`} className="about-faces__reach" aria-label={`Call ${person.name}`}>
-            Call
+            <IconPhone />
+            <span className="about-faces__reach-label">Call</span>
           </a>
         ) : null}
         {person.tel ? (
           <a href={`sms:${person.tel}`} className="about-faces__reach" aria-label={`Text ${person.name}`}>
-            Text
+            <IconMessage />
+            <span className="about-faces__reach-label">Text</span>
           </a>
         ) : null}
         {person.email ? (
           <a href={`mailto:${person.email}`} className="about-faces__reach" aria-label={`Email ${person.name}`}>
-            Email
+            <IconEnvelope />
+            <span className="about-faces__reach-label">Email</span>
           </a>
         ) : null}
       </div>
     ) : null
 
-  if (size === 'portrait') {
+  if (size === "portrait") {
     return (
       <section
         id="faces"
-        className={cn(V3_ROOT_CLASS, 'about-faces', 'about-faces--portrait')}
+        className={cn(V3_ROOT_CLASS, "about-faces", "about-faces--portrait")}
         aria-labelledby="faces-heading"
       >
         <Link href={first.href} className="about-faces__photo-link">
@@ -96,9 +151,9 @@ export function AboutFaces({
       id="faces"
       className={cn(
         V3_ROOT_CLASS,
-        'about-faces',
-        lead && 'about-faces--lead',
-        shown.length === 1 && 'about-faces--solo',
+        "about-faces",
+        lead && "about-faces--lead",
+        shown.length === 1 && "about-faces--solo",
       )}
       aria-labelledby="faces-heading"
     >
@@ -119,8 +174,8 @@ export function AboutFaces({
                 alt={person.name}
                 width={800}
                 height={1200}
-                loading={index === 0 ? 'eager' : 'lazy'}
-                fetchPriority={index === 0 ? 'high' : undefined}
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : undefined}
                 decoding="async"
               />
             </Link>

@@ -52,6 +52,9 @@
   gap: var(--v3-space-sm);
   align-items: center;
   min-width: 0;
+  padding: var(--v3-space-sm);
+  border: var(--v3-rule-hairline);
+  background: color-mix(in srgb, var(--v3-cream) 92%, var(--v3-white));
 }
 
 .about-faces__photo-link {
@@ -112,42 +115,66 @@
 
 .about-faces__title {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.15rem 0.45rem;
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-label);
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
+  border: var(--v3-rule-hairline);
+  background: var(--v3-surface);
 }
 
 .about-faces__reach-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--v3-space-xs);
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-3xs);
 }
 
 .about-faces__reach {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
   min-width: var(--v3-tap);
   min-height: var(--v3-tap);
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-control);
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: var(--v3-underline-offset);
-  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  padding: 0;
+  color: var(--v3-ink);
+  line-height: 1;
+  text-decoration: none;
+  border: var(--v3-rule-hairline);
+  background: var(--v3-surface);
+  transition: background var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
 .about-faces__reach:hover,
 .about-faces__reach:focus-visible {
   color: var(--v3-ink);
-  text-decoration-color: currentColor;
+  background: var(--v3-wash);
+  border-color: color-mix(in srgb, var(--v3-navy) 22%, transparent);
 }
 
 .about-faces__reach:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
+}
+
+/* Icon buttons: aria-label carries Call/Text/Email; keep text for a11y tree only. */
+.about-faces__reach-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (min-width: 48rem) {
@@ -161,6 +188,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--v3-space-xs);
+    padding: var(--v3-space-sm);
   }
 
   .about-faces__name {
