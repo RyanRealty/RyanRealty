@@ -16,4 +16,18 @@ describe('reviews page composition', () => {
     expect(PAGE).toContain('headingLevel={1}')
     expect(PAGE).toContain('id="next"')
   })
+
+  it('puts Call/Text/Email/Schedule Quiet above V3Proof for above-fold reach at 375', () => {
+    const reachIdx = PAGE.indexOf('id="reach"')
+    const proofIdx = PAGE.indexOf('<V3Proof')
+    const doorsIdx = PAGE.indexOf('id="next"')
+    expect(reachIdx).toBeGreaterThan(-1)
+    expect(proofIdx).toBeGreaterThan(reachIdx)
+    expect(doorsIdx).toBeGreaterThan(proofIdx)
+    expect(PAGE).toContain('tel:${CONTACT.phoneDirectTel}')
+    expect(PAGE).toContain('sms:${CONTACT.phoneDirectTel}')
+    expect(PAGE).toContain('mailto:${CONTACT.email.primary}')
+    expect(PAGE).toContain("href: '/book'")
+    expect(PAGE).toContain('ariaLabel="Reach a broker"')
+  })
 })

@@ -2,12 +2,11 @@
  * /reviews - Google reviews as written, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (2026-09-03 leftover): Reviews = the record. The first viewport is
- * live GBP text as an instrument (V3Proof: figures, the strip of every review
- * on its month, year chips that filter, one reading pane). Full text stays in
- * the served HTML under a disclosure (`archive`), not as a 7k px card list.
- * Then Doors (contact, team, homes, valuation). PUBLIC_UI.md opens About on
- * Quiet + Sheet. The family's Sheet stays on /contact and /team/[slug].
+ * Look (2026-09-06): Reviews = the record, with reach on the first screen.
+ * Quiet Call/Text/Email/Schedule sits above V3Proof so mobile 375 has a way
+ * to reach a broker without scrolling past the instrument. V3Proof keeps the
+ * H1 (figures, strip, year chips, reading pane; full text under `archive`).
+ * Doors close the page. The family's Sheet stays on /contact and /team/[slug].
  *
  * Reviews are quoted as written. Brand-voice laws do not rewrite client text.
  * No aggregateRating on this page (self-serving on our own site).
@@ -33,6 +32,7 @@ import {
   V3Proof,
   V3Quiet,
   V3SectionTracker,
+  type V3QuietItem,
 } from '@/components/site/v3'
 import { formatDate } from '@/lib/format/date'
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
@@ -91,6 +91,13 @@ export default async function ReviewsPage() {
     ...(newestDate ? [{ value: formatDate(newestDate, { month: 'short', day: undefined, year: 'numeric' }), label: 'newest' }] : []),
   ]
 
+  const reachItems: V3QuietItem[] = [
+    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
+    { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
+    { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
+    { label: 'Schedule with a broker', href: '/book' },
+  ]
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -100,6 +107,10 @@ export default async function ReviewsPage() {
         />
         <V3SectionTracker />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
+
+        {/* Reach on the first screen at 375. Prior tip 83693d90 claimed this Quiet
+            above Proof but shipped an empty commit; doors alone sat ~1428px down. */}
+        <V3Quiet id="reach" ariaLabel="Reach a broker" items={reachItems} />
 
         {quotes.length > 0 ? (
           <V3Proof
