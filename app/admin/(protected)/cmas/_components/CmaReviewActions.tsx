@@ -348,6 +348,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           <Button
             onClick={() => deliver('drip')}
             disabled={isPending || !props.hasDocument}
+            variant={primaryIsSchedule ? undefined : 'quiet'}
             touch
             className="w-full"
           >
