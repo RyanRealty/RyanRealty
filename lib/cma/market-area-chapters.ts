@@ -2,21 +2,28 @@
  * Web + print chapters for market-area density. Our look. Our number.
  */
 
-import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
+  askOutcomeBarsPhoneSvg,
+  askOutcomeBarsSvg,
   daysToOfferPhoneSvg,
   daysToOfferSvg,
+  medianCloseLinePhoneSvg,
   medianCloseLineSvg,
-  priceRulerPhoneSvg,
-  priceRulerSvg,
+  offerTimingCurvePhoneSvg,
+  offerTimingCurveSvg,
+  type AskOutcome,
+  type AskOutcomeGroup,
   type DaysRow,
+  type OfferTiming,
 } from '@/lib/cma/market-charts'
+import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
-import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
+import type { CmaExpiredPeer, CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { renderUnsoldContrastMatrixHtml } from '@/lib/cma/comp-matrix'
+import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 
@@ -173,7 +180,14 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     market.saleToListRatio != null
       ? dec(market.saleToListRatio <= 2 ? market.saleToListRatio * 100 : market.saleToListRatio, 1)
       : null
-  const chart = medianCloseLineSvg(market.trend ?? [])
+  const trend = market.trend ?? []
+  const chart = medianCloseLineSvg(trend)
+  const chartPhone = medianCloseLinePhoneSvg(trend)
+  const chartHtml = chart
+    ? `<div class="szn median-wide" data-anim="chart">${chart}</div>${
+        chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''
+      }`
+    : ''
   const stats: Array<{ val: string; lbl: string; verdict?: string }> = []
   if (mos != null) {
     stats.push({
@@ -192,7 +206,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
       lbl: `median sold, every ${market.geoLabel} home`,
     })
   }
-  if (stats.length === 0) return chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''
+  if (stats.length === 0) return chartHtml
   const cells = stats
     .map(
       (s) => `<div class="stat">
@@ -203,33 +217,9 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     )
     .join('')
   return `<div class="stat-strip is-${Math.min(stats.length, 4)}">${cells}</div>
-  ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
+  ${chartHtml}`
 }
 
-function shortUsd(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000
-    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
-  }
-  return `$${Math.round(n / 1000)}K`
-}
-
-
-/** Side-by-side didn’t-sell matrix (expired/withdrawn peers). Soft-omits when empty. */
-export function renderExpiredPeersHtml(
-  subject: CmaSubject | null | undefined,
-  peers: readonly CmaExpiredPeer[] | null | undefined,
-): string {
-  if (!subject) return ''
-  return renderUnsoldContrastMatrixHtml(subject, peers)
-}
-
-/**
- * Both ends of what the kept sales come to once they are brought to this
- * house. Both figures already print in the Adjusted close row of the matrix,
- * so the sentence introduces no number the reader cannot check — nothing is
- * recomputed here (CLAUDE.md §0, numbers come from lib/pricing on render_args).
- */
 export function adjustedCloseRange(
   comps: readonly CmaAdjustedComp[] | null | undefined,
 ): { low: number; high: number; adjustments: string } | null {
@@ -248,71 +238,7 @@ export function adjustedCloseRange(
   return { low: Math.min(...priced), high: Math.max(...priced), adjustments }
 }
 
-/** The one sentence that reads the ruler for the seller. Facts, then stop. */
-export function bandOutcomeReading(
-  x: CmaBandOutcomes,
-  comps: readonly CmaAdjustedComp[] | null | undefined,
-): string {
-  const soldLo = Math.min(...x.sold)
-  const soldHi = Math.max(...x.sold)
-  const bits = [
-    `${int(x.soldTotal)} closed in this band, ${shortUsd(soldLo)} to ${shortUsd(soldHi)}.`,
-    `${int(x.unsoldTotal)} asked and did not sell.`,
-  ]
-  if (x.lastAsk != null && x.lastAsk > 0) {
-    bits.push(
-      x.lastAsk >= soldHi
-        ? 'Your ask sat at the top of the band.'
-        : x.lastAsk <= soldLo
-          ? 'Your ask sat at the bottom of the band.'
-          : 'Your ask sat inside the band.',
-    )
-  }
-  const adj = adjustedCloseRange(comps)
-  if (adj && adj.adjustments) {
-    // Short form here, exact dollars above the matrix (P8). Same two verified
-    // figures, read at the precision each surface needs.
-    bits.push(
-      `Adjusted for ${adj.adjustments}, homes like yours land at ${shortUsd(adj.low)} to ${shortUsd(adj.high)}.`,
-    )
-  }
-  return bits.join(' ')
-}
 
-export function renderBandOutcomesHtml(
-  x: CmaBandOutcomes | null | undefined,
-  comps?: readonly CmaAdjustedComp[] | null,
-  city?: string | null,
-): string {
-  if (!x || x.sold.length < 3 || x.unsold.length < 1) return ''
-  const ruler = {
-    sold: x.sold,
-    unsold: x.unsold,
-    list: x.list,
-    listLabel: `Recommended ${shortUsd(x.list)}`,
-    lastAsk: x.lastAsk,
-    lastAskLabel: x.lastAsk != null ? `Your last ask ${shortUsd(x.lastAsk)}` : null,
-    caption: 'Sold and unsold in this band',
-  }
-  const svg = priceRulerSvg(ruler)
-  if (!svg) return ''
-  // Two layouts of one graphic, and exactly one of them is ever visible: the
-  // wide ruler on paper and at reading width, the drawn-to-fit one below
-  // 700px. F6 — the wide ruler in a pan box cropped nine sold dots and the
-  // seller's own ask off the right edge of a phone.
-  const phone = priceRulerPhoneSvg(ruler)
-  const bandLabel = clientAreaLabel(x.label, city)
-  return `<div class="szn is-hero ruler-wide">${svg}</div>
-  ${phone ? `<div class="szn ruler-phone">${phone}</div>` : ''}
-  <p class="chart-read">${esc(bandOutcomeReading(x, comps))}</p>
-  <p class="small">${esc(
-    clientSourceLine(
-      x.source,
-      bandLabel ? `Closed sales and unsold listings in ${bandLabel}.` : 'Closed sales and unsold listings in this band.',
-      { city },
-    ),
-  )}</p>`
-}
 
 /**
  * How fast homes like yours went. One days axis, one named row per kept sale
@@ -372,7 +298,7 @@ export function renderDaysToOfferHtml(
   const svg = daysToOfferSvg(rows, 'How fast homes like yours went', tick)
   if (!svg) return ''
   const reading = [
-    `Each kept sale had an offer inside ${int(slowest)} days.`,
+    `Every sale below had an offer inside ${int(slowest)} days.`,
     tick ? `${possessive(marketPlace!)} median is ${int(marketMedian!)}.` : null,
     subjectDays != null && subjectDays > 0
       ? `Yours sat ${int(subjectDays)} days and never got one.`
@@ -385,7 +311,7 @@ export function renderDaysToOfferHtml(
   // wide strip in a pan box put the subject's own bar label, the punchline of
   // the chart, outside the visible width of a box nobody scrolls.
   const phone = daysToOfferPhoneSvg(rows, 'How fast homes like yours went', tick)
-  return `<div class="szn is-hero days-wide">${svg}</div>
+  return `<div class="szn days-wide">${svg}</div>
   ${phone ? `<div class="szn days-phone">${phone}</div>` : ''}
   <p class="chart-read">${esc(reading)}</p>`
 }
@@ -425,7 +351,7 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
     </section>`)
   }
   if (sold90) {
-    parts.push(`<section class="sc sc-navy" id="sold-90">
+    parts.push(`<section class="sc sc-cream" id="sold-90">
       <div class="in">
         <div class="kick r">Last 90 days</div>
         <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes sold for</h2>
@@ -531,7 +457,7 @@ export function widerMarketBodyHtml(
 export function immersiveWiderMarketChapters(a: MarketChapterArgs): string {
   const body = widerMarketBodyHtml(a, 'sub')
   if (!body) return ''
-  return `<section class="sc sc-navy" id="this-market">
+  return `<section class="sc sc-cream" id="this-market">
       <div class="in">
         <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
         <h2 class="h r">This market</h2>
@@ -550,4 +476,200 @@ export function printWiderMarketPages(a: MarketChapterArgs): CmaPageDef[] {
       body: `<h2 class="section">This market</h2>\n${body}`,
     },
   ]
+}
+
+// ── Chapter 2: priced right sells, priced high sits ─────────────────────────
+// docs/plans/CMA_REIMAGINED_2026-09-07.md chapter 2. Both figures are computed
+// at BUILD in lib/pricing through the DAL and stored on `render_args.market`.
+// Nothing below computes a statistic — it validates the stored shape and draws
+// it, and when the shape is absent the chapter argues the same claim from the
+// sales already printed in this document.
+
+/** Minimum sales behind a published group. Below it the graphic is omitted. */
+export const CHAPTER2_MIN_N = 30
+
+function num(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n : null
+}
+
+/**
+ * `render_args.market.offerTiming`, validated.
+ *
+ * The field arrives as JSON off a database row, so it is read defensively:
+ * a partial or malformed block draws nothing rather than a broken axis.
+ * Typed on the renderer side (lib/cma/market-charts.ts) rather than on
+ * CmaMarketContext so the build stream that writes it owns that type alone.
+ */
+export function readOfferTiming(market: CmaMarketContext | null | undefined): OfferTiming | null {
+  const raw = (market as unknown as { offerTiming?: unknown } | null)?.offerTiming
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const n = num(o.n)
+  const city = typeof o.city === 'string' ? o.city.trim() : ''
+  const windowMonths = num(o.windowMonths) ?? 12
+  if (!city || n == null || n < CHAPTER2_MIN_N) return null
+  const points = Array.isArray(o.points)
+    ? o.points
+        .map((p) => {
+          const days = num((p as Record<string, unknown>)?.days)
+          const pct = num((p as Record<string, unknown>)?.pct)
+          return days != null && pct != null ? { days, pct } : null
+        })
+        .filter((p): p is { days: number; pct: number } => p != null)
+    : []
+  if (points.length < 3) return null
+  return { city, windowMonths, n, points, medianDays: num(o.medianDays) }
+}
+
+/** `render_args.market.askOutcome`, validated. Every group needs CHAPTER2_MIN_N. */
+export function readAskOutcome(market: CmaMarketContext | null | undefined): AskOutcome | null {
+  const raw = (market as unknown as { askOutcome?: unknown } | null)?.askOutcome
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const city = typeof o.city === 'string' ? o.city.trim() : ''
+  if (!city || !Array.isArray(o.groups)) return null
+  const keys: AskOutcomeGroup['key'][] = ['sold-no-cut', 'sold-after-cut', 'did-not-sell']
+  const groups = o.groups
+    .map((g) => {
+      const r = g as Record<string, unknown>
+      const key = keys.find((k) => k === r.key)
+      const n = num(r.n)
+      const medianDays = num(r.medianDays)
+      if (!key || n == null || medianDays == null) return null
+      const group: AskOutcomeGroup = { key, n, medianDays, medianCutPct: num(r.medianCutPct) }
+      return group
+    })
+    .filter((g): g is AskOutcomeGroup => g != null)
+  // One thin group makes the comparison a lie, so the whole graphic goes.
+  if (groups.length < 2 || groups.some((g) => g.n < CHAPTER2_MIN_N)) return null
+  return { city, windowMonths: num(o.windowMonths) ?? 12, groups }
+}
+
+/** The §0 trace, at seller grain: what was counted, where, over how long. */
+function chapter2SourceLine(city: string, windowMonths: number, n: number | null): string {
+  const period = windowMonths === 12 ? 'the last 12 months' : `the last ${int(windowMonths)} months`
+  const count = n != null ? `${int(n)} closed sales. ` : ''
+  return `${count}Single-family sales in ${city} over ${period}, from the Oregon Data Share MLS.`
+}
+
+/** 2a. When homes like yours get their offer. */
+export function renderOfferTimingHtml(a: {
+  market: CmaMarketContext | null
+  subject: CmaSubject
+}): string {
+  const timing = readOfferTiming(a.market)
+  if (!timing) return ''
+  const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
+  const wide = offerTimingCurveSvg(timing, subjectDays)
+  if (!wide) return ''
+  const phone = offerTimingCurvePhoneSvg(timing, subjectDays)
+  const nineInTen = timing.points.find((p) => p.pct >= 90)
+  const reading = [
+    timing.medianDays != null && timing.medianDays > 0
+      ? `Half of the homes that sold in ${timing.city} had an offer inside ${int(timing.medianDays)} days.`
+      : null,
+    nineInTen ? `Nine in ten inside ${int(nineInTen.days)}.` : null,
+    subjectDays != null && subjectDays > 0 ? `Yours went ${int(subjectDays)} days without one.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return `<h3 class="subhead">When homes like yours get their offer</h3>
+  <div class="szn timing-wide">${wide}</div>
+  ${phone ? `<div class="szn timing-phone">${phone}</div>` : ''}
+  ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
+  <p class="small">${esc(chapter2SourceLine(timing.city, timing.windowMonths, timing.n))}</p>`
+}
+
+/** 2b. The first price decides the days. */
+export function renderAskOutcomeHtml(a: {
+  market: CmaMarketContext | null
+  subject: CmaSubject
+}): string {
+  const outcome = readAskOutcome(a.market)
+  if (!outcome) return ''
+  const mine: AskOutcomeGroup['key'] | null = subjectListingFailed(a.subject) ? 'did-not-sell' : null
+  const wide = askOutcomeBarsSvg(outcome, mine)
+  if (!wide) return ''
+  const phone = askOutcomeBarsPhoneSvg(outcome, mine)
+  const by = (k: AskOutcomeGroup['key']) => outcome.groups.find((g) => g.key === k) ?? null
+  const noCut = by('sold-no-cut')
+  const cut = by('sold-after-cut')
+  const dead = by('did-not-sell')
+  const reading = [
+    noCut ? `Homes that launched at the right price sold in a median of ${int(noCut.medianDays)} days.` : null,
+    cut
+      ? `Homes that had to cut took ${int(cut.medianDays)}${
+          cut.medianCutPct != null && cut.medianCutPct > 0
+            ? ` and gave up a median ${cut.medianCutPct.toFixed(1)} percent`
+            : ''
+        }.`
+      : null,
+    dead ? `Homes that never cut enough came off after a median ${int(dead.medianDays)} days.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return `<h3 class="subhead">The first price decides the days</h3>
+  <div class="szn outcome-wide">${wide}</div>
+  ${phone ? `<div class="szn outcome-phone">${phone}</div>` : ''}
+  ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
+  <p class="small">${esc(chapter2SourceLine(outcome.city, outcome.windowMonths, null))}</p>`
+}
+
+/**
+ * "Near you, these asked and did not sell."
+ *
+ * Short linked rows, never a matrix. The twelve-row side-by-side table this
+ * replaces asked a reader to compare a bathroom count across five listings
+ * that all share one fact: they did not sell. Address, ask, days, how it came
+ * off — and the address is a tracked link into the site.
+ */
+export function renderUnsoldPeerRowsHtml(
+  subject: CmaSubject,
+  peers: readonly CmaExpiredPeer[] | null | undefined,
+  ctx?: TrackedDocLinkCtx | null,
+): string {
+  if (!peers || peers.length === 0) return ''
+  const named = collapseExpiredPeerCycles(
+    peers.filter((p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, subject)),
+  )
+  if (named.length === 0) return ''
+  const rows = named
+    .slice(0, 6)
+    .map((p) => {
+      const href = trackedDocLink(
+        'listing',
+        {
+          listingKey: p.listingKey ?? null,
+          streetNumber: streetNumberOf(p.address),
+          streetName: streetNameOf(p.address),
+          city: subject.city,
+          subdivisionName: subject.subdivision,
+        },
+        ctx ?? {},
+      )
+      const status = cleanText(p.status)?.toLowerCase() ?? null
+      const facts = [
+        p.daysOnMarket != null && p.daysOnMarket > 0 ? `${int(p.daysOnMarket)} days` : null,
+        status ? `came off ${status}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      return `<li class="unsold-row"><a href="${esc(href)}" data-rr-track="cma-unsold-peer">${esc(p.address)}</a><span class="unsold-ask">${usd(p.listPrice)}</span>${
+        facts ? `<span class="unsold-meta">${esc(facts)}</span>` : ''
+      }</li>`
+    })
+    .join('')
+  return `<h3 class="subhead">Near you, these asked and did not sell</h3>
+  <ul class="unsold-list">${rows}</ul>`
+}
+
+/** "730 Quince" -> "730". MLS addresses on this row are already street-only. */
+function streetNumberOf(address: string): string | null {
+  return /^\s*(\d+[A-Za-z]?)\s/.exec(address)?.[1] ?? null
+}
+
+function streetNameOf(address: string): string | null {
+  const rest = address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim()
+  return rest || null
 }

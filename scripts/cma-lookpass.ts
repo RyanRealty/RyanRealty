@@ -12,6 +12,18 @@
  *
  * Usage:
  *   npx tsx scripts/cma-lookpass.ts <slug> [<slug> ...]
+ *   npx tsx scripts/cma-lookpass.ts --check <slug> [<slug> ...]
+ *
+ * `--check` adds three MECHANICAL failures on top of the shots, so the three
+ * defects Matt found on 2026-09-07 cannot come back without the tool saying so
+ * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means):
+ *
+ *   1. a banned word in the seller text of either document
+ *   2. a property address that is not inside a tracked ryan-realty.com link
+ *   3. a chart label outside its own viewBox at 375, measured in the browser
+ *      with getBBox() rather than estimated from a character count
+ *
+ * It exits non-zero on any of them.
  *
  * Per slug, writes to out/cma-look/<slug>/ (out/ is gitignored):
  *   letter.html, immersive.html          — the rendered HTML, as-is
@@ -135,6 +147,8 @@ async function screenshotDocument(opts: {
   width: number
   outDir: string
   extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
+  /** --check: collect chart labels that fall outside their own frame. */
+  svgFailures?: CheckFailure[]
 }): Promise<Shot[]> {
   const { browser, html, doc, width, outDir, extractChapters } = opts
   await fs.mkdir(outDir, { recursive: true })
@@ -166,6 +180,10 @@ async function screenshotDocument(opts: {
     // Fonts settle after the reveal class lands, so a heading measured for the
     // screenshot is measured in Amboqia, not in the fallback serif.
     await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve()))
+
+    if (opts.svgFailures && width <= 400) {
+      opts.svgFailures.push(...(await checkSvgTextInsideViewBox(page, doc)))
+    }
 
     const settledHtml = await page.content()
     const chapters = extractChapters(settledHtml)
@@ -201,6 +219,126 @@ async function screenshotDocument(opts: {
   } finally {
     await page.close().catch(() => {})
   }
+}
+
+/**
+ * ── --check ────────────────────────────────────────────────────────────────
+ * Three mechanical failures. Each one is a defect Matt found by opening the
+ * document, so each one now fails the tool instead of waiting for him.
+ */
+
+type CheckFailure = { doc: DocKind; rule: string; detail: string }
+
+/** 1. A banned word anywhere a seller reads (lib/cma/seller-text.ts). */
+function checkBannedWords(
+  doc: DocKind,
+  html: string,
+  findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>,
+): CheckFailure[] {
+  return findSellerBannedWords(html).map((hit) => ({
+    doc,
+    rule: `banned word "${hit.label}"`,
+    detail: `...${hit.excerpt}...`,
+  }))
+}
+
+/**
+ * 2. Every OTHER property's address is inside a tracked link.
+ *
+ * The addresses come from `render_args` rather than from a pattern over the
+ * prose: a regex for "a number then a street name" also matches a price, a
+ * date and a square-foot figure, and a check that cries wolf gets muted. The
+ * subject's own address is exempt — it is the title of the document, not a
+ * link out of it.
+ */
+function collectDocumentAddresses(renderArgs: Record<string, unknown> | null): {
+  subject: string | null
+  addresses: string[]
+} {
+  const a = (renderArgs ?? {}) as Record<string, any>
+  const out = new Set<string>()
+  const push = (v: unknown) => {
+    const t = String(v ?? '').trim()
+    if (t) out.add(t)
+  }
+  for (const c of a.comps ?? []) push(c?.address)
+  for (const r of a.extras?.band?.rivals ?? []) push(r?.address)
+  for (const p of a.extras?.marketArea?.expiredPeers ?? []) push(p?.address)
+  for (const n of a.subdivisionStory?.notableSales ?? []) push(n?.address)
+  const subject = String(a.subject?.streetAddress ?? '').trim() || null
+  if (subject) out.delete(subject)
+  return { subject, addresses: [...out] }
+}
+
+const TRACKED_HOST = 'https://ryan-realty.com/'
+
+function checkTrackedAddresses(doc: DocKind, html: string, addresses: readonly string[]): CheckFailure[] {
+  const fails: CheckFailure[] = []
+  // Every anchor whose href is a tracked ryan-realty.com link, with its text.
+  const tracked: string[] = []
+  for (const m of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    const href = m[1]!.replace(/&amp;/g, '&')
+    if (!href.startsWith(TRACKED_HOST)) continue
+    tracked.push(m[2]!.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+  }
+  const visible = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  for (const address of addresses) {
+    if (!visible.includes(address)) continue
+    if (tracked.some((t) => t.includes(address))) continue
+    fails.push({
+      doc,
+      rule: 'address is not a tracked link',
+      detail: `"${address}" appears in the document but is not inside an <a href="${TRACKED_HOST}...">`,
+    })
+  }
+  return fails
+}
+
+/**
+ * 3. No chart label outside its own frame at 375.
+ *
+ * Measured in the browser with getBBox(), which uses the real font metrics —
+ * every earlier version of this check estimated a text width from a character
+ * count and let a clipped label through.
+ */
+async function checkSvgTextInsideViewBox(
+  page: import('puppeteer-core').Page,
+  doc: DocKind,
+): Promise<CheckFailure[]> {
+  const bad = await page.evaluate(() => {
+    const out: string[] = []
+    for (const svg of Array.from(document.querySelectorAll('svg[viewBox]'))) {
+      const el = svg as SVGSVGElement
+      // Only what a reader can actually see: a hidden wide layout is allowed
+      // to be wider than the phone.
+      if (el.getClientRects().length === 0) continue
+      const vb = el.viewBox.baseVal
+      if (!vb || vb.width <= 0) continue
+      for (const node of Array.from(el.querySelectorAll('text'))) {
+        let b: DOMRect | null = null
+        try {
+          b = (node as SVGGraphicsElement).getBBox() as unknown as DOMRect
+        } catch {
+          continue
+        }
+        if (!b || (b.width === 0 && b.height === 0)) continue
+        const label = (node.textContent ?? '').trim()
+        const slack = 0.6
+        if (
+          b.x < vb.x - slack ||
+          b.y < vb.y - slack ||
+          b.x + b.width > vb.x + vb.width + slack ||
+          b.y + b.height > vb.y + vb.height + slack
+        ) {
+          out.push(
+            `"${label}" at ${b.x.toFixed(1)},${b.y.toFixed(1)} ${b.width.toFixed(1)}x${b.height.toFixed(1)} outside viewBox ${vb.width}x${vb.height} (${el.getAttribute('aria-label') ?? 'chart'})`,
+          )
+        }
+      }
+    }
+    return out
+  })
+  return bad.map((detail) => ({ doc, rule: 'chart label outside its viewBox at 375', detail }))
 }
 
 function escapeHtml(s: string): string {
@@ -266,6 +404,7 @@ async function writeContactSheet(outDir: string, slug: string, meta: Record<stri
 async function processSlug(
   slug: string,
   browser: import('puppeteer-core').Browser,
+  check: boolean,
   deps: {
     getCmaAdminRowBySlug: (slug: string) => Promise<Record<string, unknown> | null>
     getCmaRenderSourceBySlug: (slug: string) => Promise<CmaRenderSource | null>
@@ -273,13 +412,14 @@ async function processSlug(
     resolveCmaPrintHtml: (slug: string) => Promise<{ html: string; status: string } | null>
     immersiveFromRow: (row: CmaRenderSource, origin: string, hydrateArea: boolean) => Promise<string | null>
     extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
+    findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>
   },
-): Promise<{ slug: string; ok: boolean; contactSheet?: string }> {
+): Promise<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> {
   console.log(`\n=== ${slug} ===`)
   const adminRow = await deps.getCmaAdminRowBySlug(slug)
   if (!adminRow) {
     console.error(`  no cmas row for slug "${slug}"`)
-    return { slug, ok: false }
+    return { slug, ok: false, failures: [] }
   }
   const meta = {
     slug,
@@ -298,6 +438,10 @@ async function processSlug(
   await fs.mkdir(outDir, { recursive: true })
 
   const allShots: Shot[] = []
+  const failures: CheckFailure[] = []
+  const { subject: subjectAddress, addresses } = collectDocumentAddresses(
+    (adminRow.render_args as Record<string, unknown> | null) ?? null,
+  )
 
   // Letter: resolveCmaPrintHtml is the exact function lib/cma-pdf.ts calls
   // for the PDF and the ?print=1 route falls back to — reusing it means a
@@ -313,6 +457,7 @@ async function processSlug(
         width,
         outDir: path.join(outDir, `letter-${width}`),
         extractChapters: deps.extractChapters,
+        svgFailures: check ? failures : undefined,
       })
       allShots.push(...shots)
       for (const s of shots) {
@@ -348,6 +493,7 @@ async function processSlug(
         width,
         outDir: path.join(outDir, `immersive-${width}`),
         extractChapters: deps.extractChapters,
+        svgFailures: check ? failures : undefined,
       })
       allShots.push(...shots)
       for (const s of shots) {
@@ -360,16 +506,40 @@ async function processSlug(
     console.error(`  no immersive HTML for "${slug}" (render_args miss AND no stored html_content) — no immersive shots`)
   }
 
+  if (check) {
+    for (const [doc, html] of [
+      ['letter', letter?.html ?? null],
+      ['immersive', immersiveHtml],
+    ] as const) {
+      if (!html) continue
+      failures.push(...checkBannedWords(doc, html, deps.findSellerBannedWords))
+      failures.push(...checkTrackedAddresses(doc, html, addresses))
+    }
+    if (failures.length === 0) {
+      console.log(
+        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375`,
+      )
+    } else {
+      console.error(`  ✗ check: ${failures.length} failure(s)${subjectAddress ? ` on ${subjectAddress}` : ''}`)
+      for (const f of failures) console.error(`      [${f.doc}] ${f.rule}: ${f.detail}`)
+    }
+  }
+
   await writeContactSheet(outDir, slug, meta, allShots)
   const contactSheet = path.join(outDir, 'contact-sheet.html')
   console.log(`  contact sheet: ${contactSheet}`)
-  return { slug, ok: allShots.length > 0, contactSheet }
+  return { slug, ok: allShots.length > 0 && failures.length === 0, contactSheet, failures }
 }
 
 async function main(): Promise<void> {
-  const slugs = process.argv.slice(2).map((s) => s.trim().toLowerCase()).filter(Boolean)
+  const argv = process.argv.slice(2)
+  const check = argv.includes('--check')
+  const slugs = argv
+    .filter((a) => !a.startsWith('--'))
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
   if (slugs.length === 0) {
-    console.error('usage: npx tsx scripts/cma-lookpass.ts <slug> [<slug> ...]')
+    console.error('usage: npx tsx scripts/cma-lookpass.ts [--check] <slug> [<slug> ...]')
     process.exit(1)
   }
 
@@ -377,6 +547,7 @@ async function main(): Promise<void> {
   const { resolveCmaPrintHtml } = await import('@/lib/cma/print-html')
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
   const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
+  const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
   const puppeteerModule = await import('puppeteer-core')
   const puppeteer = puppeteerModule.default
 
@@ -396,16 +567,17 @@ async function main(): Promise<void> {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
 
-  const results: Array<{ slug: string; ok: boolean; contactSheet?: string }> = []
+  const results: Array<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> = []
   try {
     for (const slug of slugs) {
-      const result = await processSlug(slug, browser, {
+      const result = await processSlug(slug, browser, check, {
         getCmaAdminRowBySlug,
         getCmaRenderSourceBySlug,
         getCmaStoredHtmlBySlug,
         resolveCmaPrintHtml,
         immersiveFromRow,
         extractChapters,
+        findSellerBannedWords,
       })
       results.push(result)
     }
@@ -415,7 +587,10 @@ async function main(): Promise<void> {
 
   console.log('\n=== summary ===')
   for (const r of results) {
-    console.log(`  ${r.ok ? 'OK  ' : 'FAIL'} ${r.slug}${r.contactSheet ? ` — ${r.contactSheet}` : ''}`)
+    const failed = r.failures.length
+    console.log(
+      `  ${r.ok ? 'OK  ' : 'FAIL'} ${r.slug}${failed ? ` — ${failed} check failure(s)` : ''}${r.contactSheet ? ` — ${r.contactSheet}` : ''}`,
+    )
   }
   if (results.some((r) => !r.ok)) process.exit(1)
 }

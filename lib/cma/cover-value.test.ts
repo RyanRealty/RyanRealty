@@ -73,7 +73,7 @@ describe('cover and immersive value blocks', () => {
     expect(html).not.toMatch(/[—;]/)
   })
 
-  it('names the comp-supported range when the list sits outside it', () => {
+  it('names what the sales support when the list sits outside it', () => {
     const html = immersiveAnswerHtml({
       ...args,
       pricing: {
@@ -86,7 +86,7 @@ describe('cover and immersive value blocks', () => {
         predictedClose: null,
       },
     })
-    expect(html).toContain('The comp-supported range is $620,000 to $635,000')
+    expect(html).toContain('The sales support $620,000 to $635,000')
     expect(html).toMatch(/capped below this range/)
   })
 })

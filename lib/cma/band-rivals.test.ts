@@ -116,13 +116,14 @@ describe('renderBandRivalsHtml', () => {
         rival({ listingKey: 'P1', address: '88 Ranch', listPrice: 479000, status: 'Pending' }),
       ],
     })
-    expect(html).toContain('Who you are competing with at this price')
+    expect(html).toContain('Who you would compete with at')
     expect(html).toContain('123 Heritage')
     expect(html).toContain('88 Ranch')
     expect(html).toContain('$469,000')
-    expect(html).toContain('rival-list')
-    expect(html).toContain('rival-row')
-    expect(html).not.toContain('rival-grid')
+    // Cards, four and four (CMA_REIMAGINED_2026-09-07.md chapter 4).
+    expect(html).toContain('rival-grid')
+    expect(html).toContain('rival-card')
+    expect(html).not.toContain('rival-row')
     expect(html).not.toMatch(/Supabase|not the ZIP|confidence/i)
   })
 
@@ -159,14 +160,16 @@ describe('renderBandRivalsHtml', () => {
     expect(html).toContain('825 Poplar')
     expect(html).toContain('3 bd')
     expect(html).toContain('1,280 sqft')
-    expect(html).toContain('$25,250 above this recommend')
-    expect(html).toContain('160 sqft smaller')
-    expect(html).toContain('0 days')
-    expect(html).toContain('This home')
-    expect(html).toContain('1,440 sqft')
+    // "$25,250 above, 160 sqft smaller, 30 years older" — the referent is the
+    // chapter title, which names the price.
+    expect(html).toContain('$25,250 above, 160 sqft smaller, 30 years older')
+    expect(html).toContain('0 days on market')
+    // The seller's own row is gone: the delta line on each card is the
+    // comparison, and repeating their home as a row was a third statement of
+    // facts chapters 1 and 3 already carry.
+    expect(html).not.toContain('This home')
+    expect(html).not.toContain('is-subject')
     expect(html).toContain('$392,000')
-    expect(html).toContain('is-subject')
-    expect(html).toContain('https://cdn.example/subject.jpg')
   })
 
   it('names bed and bath gaps against the subject', () => {

@@ -601,17 +601,17 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
 describe('chapter order', () => {
   it('puts why and the three sales before the wider-market chapter', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    const why = html.indexOf('id="how-we-got-the-price"')
+    const why = html.indexOf('id="what-its-worth"')
     const market = html.indexOf('id="this-market"')
-    const sold = html.indexOf('id="sold-90"')
     expect(why).toBeGreaterThan(0)
     expect(market).toBeGreaterThan(why)
-    expect(sold).toBeGreaterThan(market)
+    // The 90-day bed-count board is cut (CMA_REIMAGINED_2026-09-07.md ch.5).
+    expect(html).not.toContain('id="sold-90"')
     // P4: the month ledger is gone; the days-to-offer strip took its place.
     expect(html).not.toContain('id="listing-trend"')
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
-    expect(html).toContain('Adjusted close')
+    expect(html).toContain('Sale price today')
     expect(html).not.toMatch(/\bN\/A\b/)
     expect(html).not.toContain('2,420,000')
     expect(html).toMatch(/\.page-num,\.pg-num/)
@@ -631,7 +631,8 @@ describe('chapter order', () => {
     expect(html).not.toContain('compare-board')
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
-    expect(html).toContain('sc-navy')
+    // ONE register: cream throughout, navy on the cover and the closing only.
+    expect(html).not.toContain('sc-navy')
     expect(html).not.toContain('id="listing-trend"')
     expect(html).toContain('id="inventory"')
     // F7: the board is one stat row, months of supply first with its verdict

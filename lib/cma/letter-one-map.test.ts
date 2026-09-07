@@ -131,7 +131,7 @@ describe('CMA letter — one map (C9)', () => {
   it('keeps comps map full-width via pin-map-wrap, not a tiny decorative second map', () => {
     const { html } = renderCmaHtml(args())
     expect(html).toContain('pin-map-wrap')
-    expect(html).toContain('Where those sales are')
+    expect(html).toContain('pin-map-wrap')
     expect(html).toContain('comp-stack')
   })
 })

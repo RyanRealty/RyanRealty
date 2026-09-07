@@ -19,7 +19,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { buildFailureFindings, finalCycleDaysOnMarket, stampFinalCycleDom } from './expired-audit'
-import { renderCompMatrixHtml } from './comp-matrix'
+import { subjectDomDays } from './comp-matrix'
 import { listingHistoryLine } from './listing-history-line'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -155,10 +155,16 @@ function comps(): CmaAdjustedComp[] {
 }
 
 /** The number the comps matrix actually prints for the subject. */
+/**
+ * The number the DOCUMENT prints for the subject's own days.
+ *
+ * It used to be scraped out of the sales table's "Days on market" row.
+ * CMA_REIMAGINED_2026-09-07.md cuts that row, and `subjectDomDays` is now the
+ * one definition every consumer reads: chapter 1's timeline, chapter 2's days
+ * chart, and the review. Same invariant, read at its source.
+ */
 function matrixSubjectDom(subject: CmaSubject): number | null {
-  const html = renderCompMatrixHtml(subject, comps())
-  const m = html.match(/(\d+)\s+days?\s+on\s+market/i)
-  return m ? Number(m[1]) : null
+  return subjectDomDays(subject)
 }
 
 /** The number the "your last listing" review prints. */

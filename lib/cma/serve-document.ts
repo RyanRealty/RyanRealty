@@ -12,7 +12,7 @@ import {
 } from '@/lib/data'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
-import { resolveCmaPrintHtml } from '@/lib/cma/print-html'
+import { resolveCmaPrintHtml, resolveDocLinkCtx } from '@/lib/cma/print-html'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
@@ -63,6 +63,7 @@ export async function immersiveFromRow(
   row: CmaRenderSource,
   origin: string,
   hydrateArea: boolean,
+  slug?: string,
 ): Promise<string | null> {
   if (!row.render_args || typeof row.render_args !== 'object') return null
   try {
@@ -96,6 +97,9 @@ export async function immersiveFromRow(
       broker,
       mapDataUri,
       subjectMapDataUri: null,
+      // Identity for every tracked link in the document. Resolved here rather
+      // than at build: it belongs to the delivery, not to the stored figures.
+      docLinks: slug ? await resolveDocLinkCtx(slug, broker.slug) : null,
     }
     const hydrated = hydrateArea ? await hydrateCmaMarketArea(base) : base
     return renderImmersiveCmaHtml(hydrated, origin)
@@ -207,7 +211,7 @@ export async function serveCmaDocument(opts: {
   if (!wantsPrint) {
     const source = await getCmaRenderSourceBySlug(safeSlug)
     if (source) {
-      const immersive = await immersiveFromRow(source, origin, false)
+      const immersive = await immersiveFromRow(source, origin, false, safeSlug)
       if (immersive) {
         return { kind: 'html', status: 200, html: withTracker(immersive), headers: CMA_DOC_HEADERS }
       }

@@ -190,6 +190,8 @@ describe('comparison strip + map key', () => {
     expect(html).toContain('3 bd')
     expect(html).toContain('1,800 sqft')
     expect(html).toContain('1996')
+    // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
+    // answers where the sales are.
     expect(html).toContain('0.4 miles NW')
     expect(html).toContain('9 days to offer')
     expect(html).toContain('16 DOM')
@@ -211,6 +213,8 @@ describe('comparison strip + map key', () => {
     expect(html).toContain('$505,000')
     expect(html).toContain('$281/sf')
     expect(html).toContain('adjusted close $511,000')
+    // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
+    // answers where the sales are.
     expect(html).toContain('0.4 miles NW')
     expect(html).toContain('9 days to offer')
     expect(html).toContain('Weak. Older than the subject by two years.')
@@ -248,14 +252,15 @@ describe('web and print tell the same comps story', () => {
       },
       'https://ryan-realty.com',
     )
-    const priceAt = html.indexOf('id="how-we-got-the-price"')
-    const streetAt = html.indexOf('id="your-street"')
+    const priceAt = html.indexOf('id="what-its-worth"')
     expect(priceAt).toBeGreaterThan(0)
-    expect(streetAt).toBeGreaterThan(priceAt)
+    // The subdivision year bars have no chapter of their own any more
+    // (CMA_REIMAGINED_2026-09-07.md).
+    expect(html).not.toContain('id="your-street"')
     expect(html).toContain('412 Cascade')
     expect(html).toContain('$505,000')
     expect(html).toContain('$511,000')
-    expect(html).toContain('Adjusted close')
+    expect(html).toContain('Sale price today')
     expect(html).not.toContain('Marker key')
     expect(html).toContain('aspect-ratio:1/1')
     expect(html).not.toContain('claude-sonnet-4-5')
@@ -270,9 +275,11 @@ describe('web and print tell the same comps story', () => {
     const matrixAt = html.indexOf('comp-matrix')
     expect(matrixAt).toBeGreaterThan(0)
     expect(html).toContain('412 Cascade')
-    expect(html).toContain('0.4 miles NW')
+    // Distance is cut by CMA_REIMAGINED_2026-09-07.md chapter 3 — the map
+    // answers where the sales are.
+    expect(html).not.toContain('0.4 miles NW')
     expect(html).toContain('Days to offer')
-    expect(html).toContain('Adjusted close')
+    expect(html).toContain('Sale price today')
     expect(html).toContain('$511,000')
     expect(html).not.toContain('class="flyer-title"')
     expect(html).not.toContain('Marker key')

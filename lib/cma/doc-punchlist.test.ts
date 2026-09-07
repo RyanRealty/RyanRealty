@@ -316,7 +316,7 @@ function immersive(over: Partial<RenderCmaArgs> = {}): string {
 
 /** Order-preserving list of the `<section class="page">` chapter headings. */
 function letterChapters(html: string): string[] {
-  return [...html.matchAll(/<h2 class="section">([\s\S]*?)<\/h2>/g)].map((m) =>
+  return [...html.matchAll(/<h2 class="section[^"]*">([\s\S]*?)<\/h2>/g)].map((m) =>
     m[1]!.replace(/<[^>]+>/g, '').trim(),
   )
 }
@@ -325,93 +325,73 @@ function immersiveScenes(html: string): string[] {
   return [...html.matchAll(/<section class="sc[^"]*" id="([a-z0-9-]+)"/g)].map((m) => m[1]!)
 }
 
-describe('P1 — one price ruler for sold and unsold', () => {
-  it('labels each plotted value once, not on both sides of the row', () => {
+describe('chapter 2 — priced right sells, priced high sits', () => {
+  // P1 built a price ruler of sold and unsold dots. Matt 2026-09-07: "the chart
+  // means nothing." CMA_REIMAGINED_2026-09-07.md chapter 2 replaces it with two
+  // graphics from local data plus the unsold listings as short linked rows.
+  it('argues the claim from local numbers, not a slogan', () => {
     const html = letter()
-    // The old lollipop printed the same figure as a row tick AND as an end
-    // label. $410K appearing twice inside the outcome graphic is that bug.
-    const svg = html.match(/<svg[^>]*aria-label="[^"]*sold and unsold[^"]*"[\s\S]*?<\/svg>/i)?.[0]
-    expect(svg, 'the sold/unsold graphic must render').toBeTruthy()
-    const labels = [...svg!.matchAll(/>\s*(\$[\d,.]+K?)\s*</g)].map((m) => m[1]!)
-    const dupes = labels.filter((v, i) => labels.indexOf(v) !== i)
-    expect(dupes, `duplicated labels in the band graphic: ${dupes.join(', ')}`).toEqual([])
-  })
-
-  it("labels the recommend and the seller's own last ask, and nothing else", () => {
-    const html = letter()
-    expect(html).toContain('Recommended $389K')
-    expect(html).toContain('Your last ask $460K')
+    expect(html).toContain('Priced right sells. Priced high sits.')
+    expect(html).toContain('How fast homes like yours went')
+    expect(html).toContain('Near you, these asked and did not sell')
+    // The ruler is gone from both documents.
+    expect(html).not.toContain('ruler-wide')
+    expect(html).not.toContain('Recommended $389K')
     expect(html).not.toContain("Didn't sell")
+    expect(immersive()).not.toContain('ruler-wide')
   })
 
-  it('states the reading under the graphic', () => {
-    const html = letter()
-    expect(html).toContain('9 closed in this band, $410K to $460K.')
-    expect(html).toContain('2 asked and did not sell.')
-    expect(html).toContain('Your ask sat at the top of the band.')
-    // The kept sales, once brought to this house. Both ends already print in
-    // the matrix's Adjusted close row, so the sentence adds no new figure.
-    expect(html).toContain('Adjusted for size and date, homes like yours land at $372K to $399K.')
+  it('lists the unsold listings as linked rows, never a matrix', () => {
+    const chapter = letter().split('Near you, these asked and did not sell')[1]!.split('</section>')[0]!
+    expect(chapter).toContain('unsold-list')
+    expect(chapter).not.toContain('comp-matrix')
+    expect(chapter).toMatch(/<a href="https:\/\/ryan-realty\.com\/homes-for-sale\/[^"]*utm_source=cma/)
   })
 })
 
-describe('P2 — the expired chapter is the why, so it comes first', () => {
-  it('puts Your last listing directly after How we got the price', () => {
+describe('chapter 1 — what happened comes FIRST, before the number', () => {
+  // CMA_REIMAGINED_2026-09-07.md moved it ahead of the price. P2 put it second,
+  // after How we got the price; the blueprint's reader gives the document
+  // ninety seconds and wants their own listing explained before anything else.
+  it('opens the document on what happened to their listing', () => {
     const chapters = letterChapters(letter())
-    const price = chapters.indexOf('How we got the price')
-    const last = chapters.findIndex((c) => /Your last listing/i.test(c))
-    const competition = chapters.findIndex((c) => /competing with/i.test(c))
-    expect(price).toBeGreaterThanOrEqual(0)
-    expect(last).toBe(price + 1)
-    expect(competition).toBeGreaterThan(last)
+    const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
+    const price = chapters.indexOf('$389,000.')
+    const competition = chapters.findIndex((c) => /compete with/i.test(c))
+    expect(happened).toBe(0)
+    expect(price).toBeGreaterThan(happened)
+    expect(competition).toBeGreaterThan(price)
   })
 
-  it('carries the price ruler and the failed-then-sold statistics', () => {
+  it('carries the failed-then-sold statistics', () => {
     const html = letter()
-    const start = html.indexOf('Your last listing')
+    const start = html.indexOf('and did not sell.')
     const end = html.indexOf('<section class="page"', start)
     const chapter = html.slice(start, end > 0 ? end : undefined)
-    expect(chapter).toContain('Your last ask $460K')
     expect(chapter).toContain('3,394')
     expect(chapter).toContain('94.2%')
     expect(chapter).toContain('12.3%')
   })
 
   it('does the same in the immersive, in the same place', () => {
-    const scenes = immersiveScenes(immersive())
-    const price = scenes.indexOf('how-we-got-the-price')
-    expect(scenes[price + 1]).toBe('your-last-listing')
-    expect(scenes.indexOf('competition')).toBeGreaterThan(price + 1)
+    const scenes = immersiveScenes(immersive()).filter((x) => x !== 'top')
+    expect(scenes[0]).toBe('what-happened')
+    expect(scenes.indexOf('what-its-worth')).toBeGreaterThan(0)
+    expect(scenes.indexOf('competition')).toBeGreaterThan(scenes.indexOf('what-its-worth'))
   })
 })
 
-describe('P3 — the market block never contradicts the number beside it', () => {
-  it('drops the 90-day band when the recommend sits outside it', () => {
+describe('the 90-day bed-count board is cut, so it cannot contradict the number', () => {
+  // P3 dropped the board when the recommend sat outside it. The blueprint cuts
+  // it outright: chapter 5 is four city figures, the median-close line and one
+  // sentence about the street. A board built on beds rather than living area
+  // describes a different product whatever the recommend is.
+  it('never prints the bed-count band', () => {
     const html = immersive()
     expect(html).not.toContain('$458,500')
-    expect(html).not.toContain('2 to 4 bedroom band')
-  })
-
-  it('keeps the band when the recommend sits inside it', () => {
-    const inBand = {
-      ...offProductSold90,
-      low: 370000,
-      median: 392000,
-      high: 405000,
-      bedsLabel: '3 bedroom',
-    }
-    const html = immersive({
-      extras: {
-        ...(args().extras as object),
-        marketArea: { ...marketArea, sold90: inBand },
-        sold90: inBand,
-      } as RenderCmaArgs['extras'],
-    })
-    expect(html).toContain('$392,000')
-  })
-
-  it('letter and immersive make the same call', () => {
-    expect(letter()).not.toContain('$458,500')
+    expect(html).not.toContain('bedroom band')
+    expect(html).not.toContain('id="sold-90"')
+    expect(html).not.toContain('closed in 90 days')
   })
 })
 
@@ -436,14 +416,15 @@ describe('P4 — how fast homes like yours went, not a month ledger', () => {
   })
 
   it('is in the immersive too', () => {
-    expect(immersiveScenes(immersive())).toContain('how-fast')
+    // Folded into chapter 2 — the days chart IS "priced high sits".
+    expect(immersiveScenes(immersive())).toContain('priced-right')
   })
 })
 
 describe('P5 — one statement each, once', () => {
   it('does not repeat the listing history line inside the competition chapter', () => {
     const html = letter()
-    const start = html.indexOf('competing with')
+    const start = html.indexOf('compete with')
     const chapter = html.slice(start, html.indexOf('<section class="page"', start))
     expect(chapter).not.toContain('Last on market Feb 2026')
   })
@@ -455,20 +436,25 @@ describe('P5 — one statement each, once', () => {
   })
 })
 
-describe('P6 — the land only when the lots differ', () => {
-  it('omits six identical rectangles and says the one fact instead', () => {
+describe('the land is cut, drawn or not', () => {
+  // P6 kept the chapter when the lots differed. CMA_REIMAGINED_2026-09-07.md
+  // cuts it outright: recorded lot outlines answer none of the three questions
+  // this document exists to answer.
+  it('draws no lot outlines even when the parcels differ', () => {
     const html = letter({
       parcels: {
         subject: { acres: 0.14, taxlot: '151303BD02800', rings: [[[0, 0], [1, 0], [1, 1], [0, 1]]] },
-        comps: comps.map((c) => ({
+        comps: comps.map((c, i) => ({
           listingKey: c.listingKey,
-          acres: c.lotAcres,
-          rings: [[[0, 0], [1, 0], [1, 1], [0, 1]]],
+          acres: (c.lotAcres ?? 0.14) * (1 + i),
+          rings: [[[0, 0], [1 + i, 0], [1 + i, 1], [0, 1]]],
         })),
       } as unknown as RenderCmaArgs['parcels'],
     })
-    expect(html).not.toContain('<h2 class="section">The land</h2>')
-    expect(html).toContain('Every kept sale sits on a 0.14 to 0.16 acre lot like this one.')
+    // Measure the document, not the stylesheet that still names the classes.
+    const body = html.split('</style>')[1]!
+    expect(body).not.toContain('<h2 class="section">The land</h2>')
+    expect(body).not.toContain('lot-strip')
   })
 })
 
@@ -485,17 +471,19 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // Measure the document, not the stylesheet that names the same classes.
     const html = letter().split('</style>')[1]!
     const lead = html.indexOf('The sales that set this price')
-    const matrix = html.indexOf('comp-matrix-wrap')
+    const matrix = html.indexOf('comp-matrix-wrap', lead)
     expect(lead).toBeGreaterThan(0)
     expect(matrix).toBeGreaterThan(lead)
-    expect(html).toMatch(/land at \$372,324 to \$398,788[\s\S]{0,120}\$389,000/)
+    // The recommend is the chapter TITLE now, so the lead stops at the range.
+    expect(html).toMatch(/land at \$372,324 to \$398,788/)
+    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('land at $372,324'))
   })
 
   it('explains the adjustment rows once', () => {
     const html = letter()
-    expect(html).toContain('Brought to today')
-    expect(html).toContain('Brought to your size')
-    expect(html).toMatch(/Brought to today moves each sale/i)
+    expect(html).toContain('Adjusted for date')
+    expect(html).toContain('Adjusted for size')
+    expect(html).toMatch(/Sale price today moves each sale for when it sold and how big it is/i)
   })
 })
 
@@ -627,7 +615,7 @@ function svgBoxes(svg: string): {
   texts: Array<{ x: number; y: number; size: number; anchor: string; text: string }>
 } {
   const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg)
-  if (!vb) throw new Error('the ruler must carry a viewBox')
+  if (!vb) throw new Error('the graphic must carry a viewBox')
   const circles = [...svg.matchAll(/<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/g)].map(
     (m) => ({ cx: +m[1]!, cy: +m[2]!, r: +m[3]! }),
   )
@@ -645,10 +633,13 @@ function svgBoxes(svg: string): {
   return { W: +vb[1]!, H: +vb[2]!, circles, texts }
 }
 
-describe('F6 — the price ruler fits a phone', () => {
-  const phoneRuler = (html: string): string => {
-    const wrap = /<div class="szn ruler-phone">([\s\S]*?)<\/div>/.exec(html)
-    expect(wrap, 'both documents must carry a phone layout of the ruler').toBeTruthy()
+describe('the phone layouts keep every mark inside the frame', () => {
+  // F6's mechanism, re-pointed at the graphics that replaced the ruler: a wide
+  // chart in a pan box crops the punchline, so each one ships a drawn-to-fit
+  // layout and exactly one is ever visible.
+  const phoneSvg = (html: string, cls: string): string => {
+    const wrap = new RegExp(`<div class="szn ${cls}">([\\s\\S]*?)</div>`).exec(html)
+    expect(wrap, `both documents must carry the ${cls} layout`).toBeTruthy()
     return wrap![1]!
   }
 
@@ -656,58 +647,59 @@ describe('F6 — the price ruler fits a phone', () => {
     ['letter', letter],
     ['immersive', immersive],
   ] as const) {
-    it(`draws every sold dot and both ticks inside the viewBox on the ${name}`, () => {
-      const svg = phoneRuler(render())
+    it(`draws chapter 1's timeline inside the viewBox on the ${name}`, () => {
+      const svg = phoneSvg(render(), 'timeline-phone')
       const { W, H, circles, texts } = svgBoxes(svg)
       expect(W).toBeLessThanOrEqual(400)
-
-      // Nine closed sales and two unsold listings. None may be cropped.
-      expect(circles).toHaveLength(11)
       for (const c of circles) {
-        expect(c.cx - c.r, `a dot at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
-        expect(c.cx + c.r, `a dot at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
+        expect(c.cx - c.r, `a mark at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
+        expect(c.cx + c.r, `a mark at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
         expect(c.cy - c.r).toBeGreaterThanOrEqual(0)
         expect(c.cy + c.r).toBeLessThanOrEqual(H)
       }
-
-      // Both ticks carry their label, and the label sits inside the frame.
-      const labels = texts.map((t) => t.text)
-      expect(labels).toContain('Recommended $389K')
-      expect(labels).toContain('Your last ask $460K')
       for (const t of texts) {
         const w = t.text.length * t.size * 0.58
         const left = t.anchor === 'end' ? t.x - w : t.anchor === 'middle' ? t.x - w / 2 : t.x
         expect(left, `"${t.text}" runs off the left edge`).toBeGreaterThanOrEqual(-0.5)
         expect(left + w, `"${t.text}" runs off the right edge`).toBeLessThanOrEqual(W + 0.5)
-        expect(t.y).toBeLessThanOrEqual(H)
-      }
-
-      // Two tick lines, both inside the plot.
-      const lines = [...svg.matchAll(/<line x1="([\d.]+)"[^>]*x2="([\d.]+)"/g)]
-      for (const l of lines) {
-        expect(+l[1]!).toBeGreaterThanOrEqual(0)
-        expect(+l[2]!).toBeLessThanOrEqual(W)
+        expect(t.y, `"${t.text}" runs off the bottom`).toBeLessThanOrEqual(H)
       }
     })
   }
 
-  it('shows the phone layout only below 700px, and never on paper', () => {
+  it('shows a phone layout only below 700px, and never on paper', () => {
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
       const flat = css.replace(/\s+/g, ' ')
-      expect(flat).toMatch(/\.ruler-phone\s*\{\s*display:\s*none/)
-      expect(flat).toMatch(/@media screen and \(max-width:\s*700px\)[^}]*\{[^@]*\.ruler-wide\s*\{\s*display:\s*none/)
-      expect(flat).toMatch(/@media print[^@]*\.ruler-phone\s*\{\s*display:\s*none\s*!important/)
+      for (const cls of ['timeline', 'days']) {
+        expect(flat).toMatch(new RegExp(`\\.${cls}-phone\\s*\\{\\s*display:\\s*none`))
+        expect(flat).toMatch(
+          new RegExp(`@media screen and \\(max-width:\\s*700px\\)[^}]*\\{[^@]*\\.${cls}-wide\\s*\\{\\s*display:\\s*none`),
+        )
+        expect(flat).toMatch(new RegExp(`@media print[^@]*\\.${cls}-phone\\s*\\{\\s*display:\\s*none\\s*!important`))
+      }
     }
   })
 
-  it('keeps the wide ruler for the printed page', () => {
-    expect(letter()).toContain('<div class="szn is-hero ruler-wide">')
+  it('puts no chart in a pan box on a phone', () => {
+    // CMA_REIMAGINED_2026-09-07.md § The register: "Nothing on a phone ever
+    // sits inside a scroll box: every graphic has a phone drawing." The
+    // median-close line was the last one held at min-width in an overflow box,
+    // and it cropped six of its twelve months at 375.
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      const flat = css.replace(/\s+/g, ' ')
+      expect(flat).not.toMatch(/\.szn\.is-hero\s*\{\s*overflow-x:\s*auto/)
+      expect(flat).not.toMatch(/\.szn[^{]*svg\s*\{\s*min-width/)
+    }
+  })
+
+  it('keeps the wide layout for the printed page', () => {
+    expect(letter()).toContain('<div class="szn timeline-wide">')
   })
 })
 
 describe('F7 — this market is a stat row, not a stacked list', () => {
   const marketBlock = (html: string): string => {
-    const start = html.indexOf('How fast this market is moving')
+    const start = html.indexOf('right now')
     expect(start, 'the market board must render').toBeGreaterThan(-1)
     const rest = html.slice(start)
     const end = rest.indexOf('</section>')
@@ -808,7 +800,7 @@ describe('the market median is a tick on the days chart', () => {
   it('reads the tick in the caption, between the kept sales and the subject', () => {
     const html = letter()
     expect(html).toMatch(
-      /Each kept sale had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
+      /Every sale below had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
     )
   })
 
@@ -820,7 +812,7 @@ describe('the market median is a tick on the days chart', () => {
     expect(svg).not.toContain('days-median')
     expect(svg).not.toContain('median 21 days')
     expect(html).not.toContain('median is 21')
-    expect(html).toContain('Each kept sale had an offer inside 51 days.')
+    expect(html).toContain('Every sale below had an offer inside 51 days.')
   })
 })
 
@@ -876,9 +868,13 @@ describe('no MLS placeholder reaches a seller-facing source line', () => {
     }
   }
 
-  it('falls the place clause back to the city that scoped the query', () => {
+  it('never prints an MLS placeholder as the place a figure came from', () => {
+    // The 90-day board that shipped "Closed 4 to 6 bedroom sales in N/A" is
+    // cut. The rule stands over the whole document: no placeholder reaches a
+    // seller-facing source line (clientSourceLine owns the mechanism).
     const html = letter(placeholderArgs('N/A'))
-    expect(html).toContain('Closed 4 to 6 bedroom sales in Redmond in the last 90 days.')
+    expect(html).not.toMatch(/\bin N\/A\b/)
+    expect(html).not.toMatch(/\bN\/A,/)
   })
 
   it('keeps a real subdivision exactly as the MLS states it', () => {
@@ -949,8 +945,8 @@ describe('F8 — the days-to-offer strip fits a phone', () => {
 
   it('leaves the wide strip exactly as it was for the printed page', () => {
     const html = letter()
-    expect(html).toContain('<div class="szn is-hero days-wide">')
-    const wide = /<div class="szn is-hero days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
+    expect(html).toContain('<div class="szn days-wide">')
+    const wide = /<div class="szn days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
     expect(wide).toContain('viewBox="0 0 720')
   })
 })

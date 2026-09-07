@@ -216,15 +216,15 @@ describe('print CMA magazine cover', () => {
 describe('immersive CMA first screen', () => {
   it('pays off the recommended list on the hero, not only after a scroll', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    const heroEnd = html.indexOf('id="how-we-got-the-price"')
+    const heroEnd = html.indexOf('id="what-its-worth"')
     const hero = html.slice(0, heroEnd)
     expect(hero).toContain('class="sc hero on"')
     expect(hero).toContain('Recommended list')
     expect(hero).toContain('$472,000')
     expect(hero).not.toContain('Expected close')
     expect(hero).toContain('hero-payoff')
-    expect(html).toContain('id="how-we-got-the-price"')
-    expect(html).toContain('Our Recommended List Price for your home.')
+    expect(html).toContain('id="what-its-worth"')
+    expect(html).toContain('$472,000.')
     expect(html).toContain('Recommended list')
   })
 

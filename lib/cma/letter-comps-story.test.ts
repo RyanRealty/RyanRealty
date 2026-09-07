@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import { renderExpiredPeersHtml } from '@/lib/cma/market-area-chapters'
+import { renderUnsoldPeerRowsHtml } from '@/lib/cma/market-area-chapters'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -229,25 +229,28 @@ function fiveSales(seed: CmaAdjustedComp): CmaAdjustedComp[] {
 }
 
 describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
-  it('matrix carries sales that set the list with DOM + listing history on subject and comps', () => {
+  it('the table carries the sales that set the list, with the blueprint rows', () => {
     const html = renderCompMatrixHtml(subject, fiveSales(sold))
     expect(html).toContain('The sales that set this price')
-    expect(html).toContain('Days on market')
-    expect(html).toContain('Listing history')
-    expect(html).toContain('42')
-    expect(html).toContain('Listed at $529,000, sold at $497,800 · 42 days on market')
-    expect(html).toContain('Asked $549,000, cut to $525,000, came off expired · 97 days on market')
+    expect(html).toContain('Sold for')
+    expect(html).toContain('Days to offer')
+    expect(html).toContain('Sale price today')
+    expect(html).toContain('20 days')
+    // Days on market and the listing-history paragraph are cut
+    // (CMA_REIMAGINED_2026-09-07.md chapter 3).
+    expect(html).not.toContain('Days on market')
+    expect(html).not.toContain('Listing history')
+    expect(html).not.toContain('Listed at $529,000, sold at $497,800')
   })
 
-  it('expired peers name homes and show what happened without saying overpriced', () => {
-    const html = renderExpiredPeersHtml(subject, [peer])
-    expect(html).toContain('Expired peers — what happened')
+  it('the unsold listings name homes and show what happened without saying overpriced', () => {
+    const html = renderUnsoldPeerRowsHtml(subject, [peer])
+    expect(html).toContain('Near you, these asked and did not sell')
     expect(html).toContain('88 Wren')
-    expect(html).toContain('comp-matrix')
-    expect(html).toContain('Last ask')
-    expect(html).toContain('Days on market')
-    expect(html).toContain('Listing history')
-    expect(html).toContain('Asked $549,000, cut to $519,000, came off expired · 97 days on market')
+    // Short linked rows, never a matrix (CMA_REIMAGINED_2026-09-07.md ch.2).
+    expect(html).not.toContain('comp-matrix')
+    expect(html).toContain('$519,000')
+    expect(html).toContain('97 days · came off expired')
     expect(html.toLowerCase()).not.toContain('overprice')
   })
 
@@ -272,16 +275,17 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
         daysOnMarket: 97,
       },
     })
-    expect(html).toContain('Who you are competing with at this price')
+    expect(html).toContain('Who you would compete with at')
     expect(html).toContain('44 Hawk')
-    expect(html).toContain('Listed at $525,000, now $505,000 · 28 days on market')
-    // P5, Matt 2026-09-07: the subject's own listing history belongs to Home
-    // location and, on an expired document, to Your last listing. Stating it a
-    // third time inside the competition rows is the duplication he called out.
+    // Cards carry price, size, days on market, and one delta line. The
+    // listing-history sentence is cut (CMA_REIMAGINED_2026-09-07.md ch.4).
+    expect(html).toContain('28 days on market')
+    expect(html).not.toContain('Listed at $525,000, now $505,000')
+    // The seller's own history belongs to chapter 1, stated once.
     expect(html).not.toContain('97 days on market')
   })
 
-  it('print spine orders comps → expired peers → competition', () => {
+  it('print spine orders unsold peers → the sales that set the price → competition', () => {
     const pages = assembleOpinionPages({
       subject,
       comps: fiveSales(sold),
@@ -293,12 +297,15 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       excludedOutliers: [],
     })
     const bodies = pages.map((p) => p.body).join('\n')
+    // CMA_REIMAGINED_2026-09-07.md reordered this: the unsold listings are
+    // chapter 2's evidence that priced high sits, so they come BEFORE the
+    // number they explain, and competition follows the number.
     const salesIdx = bodies.indexOf('The sales that set this price')
-    const expiredIdx = bodies.indexOf('Expired peers — what happened')
-    const compIdx = bodies.indexOf('Who you are competing with at this price')
-    expect(salesIdx).toBeGreaterThan(-1)
-    expect(expiredIdx).toBeGreaterThan(salesIdx)
-    expect(compIdx).toBeGreaterThan(expiredIdx)
+    const expiredIdx = bodies.indexOf('Near you, these asked and did not sell')
+    const compIdx = bodies.indexOf('Who you would compete with at')
+    expect(expiredIdx).toBeGreaterThan(-1)
+    expect(salesIdx).toBeGreaterThan(expiredIdx)
+    expect(compIdx).toBeGreaterThan(salesIdx)
   })
 
   it('immersive spine carries the same four beats', () => {
@@ -313,7 +320,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       mapDataUri: null,
     })
     expect(html).toContain('The sales that set this price')
-    expect(html).toContain('Expired peers — what happened')
+    expect(html).toContain('Near you, these asked and did not sell')
     expect(html).toContain('id="competition"')
     expect(html).toContain('days on market')
     expect(html.toLowerCase()).not.toContain('overprice')

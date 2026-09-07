@@ -106,6 +106,18 @@ table.comp-matrix thead th:first-child,table.comp-matrix tbody th{text-align:lef
 table.comp-matrix td.is-diff{font-weight:600}
 h3.subhead{font-size:17px;font-weight:600;margin:26px 0 8px}
 h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:20px 0 6px}
+.sc a{color:var(--navy)}
+.sc-navy a{color:var(--cream)}
+.rival-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:14px 0 8px}
+.rival-card{background:var(--cream);border:1px solid var(--ink12);overflow:hidden}
+.rival-card .rival-ph{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--navy)}
+.rival-card .rival-ph.is-empty{min-height:0}
+.rival-card .rival-body{padding:14px 16px 16px;min-width:0}
+.rival-card .rival-addr{display:block;font-size:15px;font-weight:600;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12);line-height:1.3}
+.rival-card .rival-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:24px;font-variant-numeric:tabular-nums;margin-top:8px;line-height:1}
+.rival-card .rival-facts{font-size:13px;opacity:.65;margin-top:6px;line-height:1.4}
+.rival-card .rival-meta{font-size:13px;margin-top:8px;line-height:1.4}
+@media (max-width:860px){.rival-grid{grid-template-columns:1fr 1fr}}
 .rival-list{margin-top:8px;border-top:1px solid var(--ink12)}
 .rival-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start;padding:8px 0;border-bottom:1px solid var(--ink12)}
 .rival-row.is-subject{border-bottom:2px solid currentColor}
@@ -241,16 +253,29 @@ table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;dis
 table.comp-matrix .matrix-addr{display:block}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
-@media screen and (max-width:700px){
-  .szn.is-hero{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .szn.is-hero svg{min-width:660px}
-}
-/* The price ruler is the one graphic panning destroys: its whole reading is
-   where two ticks sit inside a band, and a cropped end deletes half of it. It
-   ships in two layouts and exactly one is ever visible (F6). */
-.ruler-phone{display:none}
-@media screen and (max-width:700px){.ruler-wide{display:none}.ruler-phone{display:block}}
-@media print{.ruler-wide{display:block!important}.ruler-phone{display:none!important}}
+/* NO PAN BOX: every chart ships a 360-unit phone layout. */
+.median-phone{display:none}
+@media screen and (max-width:700px){.median-wide{display:none}.median-phone{display:block}}
+@media print{.median-wide{display:block!important}.median-phone{display:none!important}}
+.pin-map{max-height:60vh;object-fit:cover}
+/* Chapter 3's lead line, under the number that is the chapter title. */
+.worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
+table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65}
+table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
+/* Chapter 2's unsold listings: short linked rows, never a matrix. */
+ul.unsold-list{list-style:none;margin:10px 0 14px;padding:0;border-top:1px solid var(--ink12)}
+li.unsold-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:11px 0;border-bottom:1px solid var(--ink12)}
+li.unsold-row a{font-size:16px;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--ink12)}
+li.unsold-row .unsold-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+li.unsold-row .unsold-meta{grid-column:1 / -1;font-size:13px;opacity:.65}
+/* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
+.timing-phone,.outcome-phone{display:none}
+@media screen and (max-width:700px){.timing-wide,.outcome-wide{display:none}.timing-phone,.outcome-phone{display:block}}
+@media print{.timing-wide,.outcome-wide{display:block!important}.timing-phone,.outcome-phone{display:none!important}}
+/* Chapter 1's timeline. Same two-layout mechanism (see render-css-sections). */
+.timeline-phone{display:none}
+@media screen and (max-width:700px){.timeline-wide{display:none}.timeline-phone{display:block}}
+@media print{.timeline-wide{display:block!important}.timeline-phone{display:none!important}}
 /* Same mechanism for the days-to-offer strip (F8): panning put the subject's
    own bar label, the punchline, outside the visible width on a phone. */
 .days-phone{display:none}
@@ -268,6 +293,11 @@ table.comp-matrix .matrix-addr{display:block}
 .stat-strip .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
 .stat-strip .stat .lbl.vd{font-weight:600;opacity:.95;margin-top:6px}
 @media (max-width:700px){.stat-strip,.stat-strip.is-3,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}}
+/* The closing scene is the only navy one, so its buttons invert there rather
+   than carrying their own modifier class. */
+.sc-navy .btn.pri{background:var(--cream);color:var(--navy);box-shadow:0 12px 28px rgb(0 0 0 / .28)}
+.sc-navy .btn.sec{border-color:var(--cream);color:var(--cream)}
+.sc-navy .btn.ter{color:rgba(250,248,244,.75)}
 /* A chart drawn in navy ink is invisible on a navy scene. The median-close
    line printed a caption over a blank field until this landed. Scoped to the
    scene, not to one wrapper class, so a chart moved to a navy chapter cannot
