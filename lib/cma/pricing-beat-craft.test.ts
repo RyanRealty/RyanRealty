@@ -1,6 +1,6 @@
 /**
  * Falcon pricing beat craft (Matt 2026-09-07): no THE LIST / This list,
- * recommend once on hero, matrix ≥5, C1 summary stack kept.
+ * recommend once on hero, matrix ≥5 on immersive /view screen (not stack-only).
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -165,13 +165,23 @@ describe('pricing beat craft', () => {
     expect(html).toMatch(/opened to 5 mile|5 miles|nearby/i)
   })
 
-  it('restores closed-sales matrix path with C1 summary stack; ≥5 gate', () => {
+  it('immersive /view shows closed-sales matrix on screen (≥5); no Subject/Sale flyer dump', () => {
     expect(renderCompMatrixHtml(subject, five.slice(0, 4))).toBe('')
     const matrix = renderCompMatrixHtml(subject, five)
     expect(matrix).toContain('The sales that set this price')
-    expect(matrix).toContain('comp-stack-card')
     expect(matrix).toContain('comp-matrix')
+    expect(matrix).toContain('Sale price')
+    expect(matrix).toContain('Bedrooms')
+    expect(matrix).toContain('Living sqft')
+    expect(matrix).toContain('Days on market')
+    expect(matrix).toContain('Adjusted close')
+    // Shared HTML still emits stack markup for the letter path; immersive CSS hides it.
+    expect(matrix).toContain('comp-stack-card')
     expect(matrix).not.toContain('>Subject</span><span class="h c">Sale<')
+
+    const css = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
+    expect(css).toMatch(/\.comp-matrix-wrap\{display:block/)
+    expect(css).toMatch(/\.comp-stack\{display:none/)
 
     const scenes = assembleOpinionScenes({
       subject,
@@ -183,9 +193,10 @@ describe('pricing beat craft', () => {
       generatedAtIso: '2026-09-07T00:00:00.000Z',
     })
     expect(scenes).toContain('Our Recommended List Price for your home.')
-    expect(scenes).toContain('comp-stack-card')
+    expect(scenes).toContain('comp-matrix')
     expect(scenes).toContain('The sales that set this price')
     expect(scenes).not.toContain('The list')
+    expect(scenes).not.toContain('class="range-marks"')
   })
 
   it('hero still carries the number; pack CSS cuts cream void', () => {

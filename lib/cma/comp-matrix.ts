@@ -250,7 +250,7 @@ function matrixTable(cols: Col[]): string {
 }
 
 
-/** Screen letter (≤375+): one summary card per sale — never a Subject/Sale spreadsheet dump. */
+/** Letter screen (≤375+): summary cards. Immersive /view shows the matrix via CSS instead. Never a Subject/Sale flyer dump. */
 function joinFacts(parts: Array<string | null | undefined>): string | null {
   const kept = parts.filter((p): p is string => Boolean(p && String(p).trim()))
   return kept.length ? kept.join(' · ') : null

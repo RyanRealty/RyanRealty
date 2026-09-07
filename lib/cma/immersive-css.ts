@@ -80,8 +80,8 @@ img{max-width:100%;display:block}
 .comp-nv{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;line-height:1}
 .comp-facts{font-size:14px;opacity:.7;font-variant-numeric:tabular-nums;margin-top:4px}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
-.comp-matrix-wrap{display:none;margin:18px 0 8px;overflow-x:visible;max-width:100%}
-.comp-stack{display:block;margin:18px 0 8px;max-width:100%;min-width:0}
+.comp-matrix-wrap{display:block;margin:18px 0 8px;overflow-x:auto;max-width:100%}
+.comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
 .comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
 .comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
