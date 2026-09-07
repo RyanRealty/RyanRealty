@@ -15,6 +15,7 @@ import { isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent
 import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
+import { autoSendBuiltCma } from '@/lib/cma/auto-send'
 import { slugifyAddress } from '@/lib/cma-request'
 
 const MAX_ATTEMPTS = 3
@@ -152,10 +153,28 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
   })
 
   if (result.ok) {
+    // Per-lane Auto-send (Matt 2026-09-07). The switch lives in
+    // public.cma_lane_settings and every lane ships OFF; this call is a no-op
+    // until a broker turns one on at /admin/cmas. The decision — including the
+    // gate that stopped it — is recorded on the action row so "why did this one
+    // not go out" has an answer that is not a guess. It never throws, and a
+    // failure here never fails the build.
+    const autoSend = await autoSendBuiltCma(slug)
+    if (autoSend.outcome === 'error') {
+      console.warn('[cma-worker] auto-send:', slug, autoSend.reason)
+    }
+
     await updateCmaActionRow(action.id, {
       status: 'ready',
       executor_response: {
         ...prior,
+        lane_auto_send: {
+          at: new Date().toISOString(),
+          lane: autoSend.lane,
+          state: autoSend.state,
+          outcome: autoSend.outcome,
+          reason: autoSend.reason,
+        },
         build_attempts: attempts,
         built_by: 'cma-build-worker (deterministic, no LLM)',
         built_at: new Date().toISOString(),

@@ -206,3 +206,68 @@ export async function removeCmaFromDripAction(slug: string): Promise<{ ok: true 
     return { ok: false, error: e instanceof Error ? e.message : 'Remove failed.' }
   }
 }
+
+/**
+ * Move a lane's Auto-send switch.
+ *
+ * Gated on `settings.compliance`, which is superuser-only. Every other action
+ * in this file approves ONE document a broker has in front of them; this one
+ * decides that a whole lane may mail homeowners with no per-document review.
+ * CLAUDE.md §1 makes that the principal broker's call, so the capability that
+ * fronts the suppression list is the right one to front this too.
+ *
+ * The switch ships OFF and nothing in the codebase turns it on — only this
+ * action, from a click, with the email of whoever clicked recorded on the row
+ * and in public.admin_actions.
+ */
+export async function setCmaLaneAutoSendAction(
+  origin: string,
+  on: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const auth = await checkAdminAction('settings.compliance')
+    if (!auth.ok) {
+      return {
+        ok: false,
+        error:
+          auth.code === 'forbidden'
+            ? 'Auto-send is the principal broker’s switch. Ask Matt to turn this lane on.'
+            : auth.error,
+      }
+    }
+    const { setLaneAutoSend } = await import('@/lib/data/cma/lane-settings')
+    const res = await setLaneAutoSend(origin, on, auth.ctx.email ?? '')
+    if (!res.ok) return res
+    revalidatePath('/admin/cmas')
+    return { ok: true }
+  } catch (e) {
+    console.error('[setCmaLaneAutoSendAction]', e)
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not change the switch.' }
+  }
+}
+
+/**
+ * The next `ready` row in the same lane, for Approve-and-next.
+ *
+ * Returns a slug, or null when the lane is clear. Ordered oldest first — the
+ * document that has been waiting longest is the one to work next.
+ */
+export async function nextReadyCmaInLaneAction(
+  origin: string,
+  afterSlug: string,
+): Promise<{ slug: string | null }> {
+  const auth = await checkAdminAction('prospecting.view')
+  if (!auth.ok) return { slug: null }
+  const skip = afterSlug.trim().toLowerCase()
+  const { rows } = await listCmaQueue({ limit: 1000 })
+  const next = rows
+    .filter(
+      (r) =>
+        r.docKind === 'cma' &&
+        r.origin === origin &&
+        r.state === 'ready' &&
+        r.slug.toLowerCase() !== skip,
+    )
+    .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))[0]
+  return { slug: next?.slug ?? null }
+}
