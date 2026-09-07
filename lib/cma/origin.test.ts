@@ -35,6 +35,15 @@ describe('classifyCmaOrigin', () => {
     expect(classifyCmaOrigin('fsbo-backfill')).toBe('fsbo')
   })
 
+  it('never classifies a `cmas` row as a BPO', () => {
+    // BPOs are rows in broker_price_opinions, not cmas — the queue stamps
+    // origin 'bpo' on them when it unions them in. No request_source string
+    // produces that lane, and inventing one here would make the classifier
+    // claim a provenance nothing in the codebase writes.
+    expect(classifyCmaOrigin('bpo')).toBe('unknown')
+    expect(classifyCmaOrigin('bpo-admin')).toBe('unknown')
+  })
+
   it('is case- and whitespace-insensitive', () => {
     expect(classifyCmaOrigin('  Seller-LP ')).toBe('seller-valuation')
   })
@@ -57,6 +66,10 @@ describe('send lanes', () => {
     expect(sendModeForOrigin('seller-valuation')).toBe('now')
     expect(sendModeForOrigin('lead-form')).toBe('now')
     expect(sendModeForOrigin('broker')).toBe('now')
+    // A BPO is a broker asking for the brokerage's own opinion of value — it is
+    // never cold outreach, so it never rides the drip.
+    expect(sendModeForOrigin('bpo')).toBe('now')
+    expect(isAskedOrigin('bpo')).toBe(true)
     expect(sendModeForOrigin('expired')).toBe('drip')
     expect(sendModeForOrigin('fsbo')).toBe('drip')
   })
@@ -68,7 +81,7 @@ describe('send lanes', () => {
   })
 
   it('asked and cold are mutually exclusive, and every origin has a lane', () => {
-    const all: CmaOrigin[] = ['expired', 'fsbo', 'seller-valuation', 'lead-form', 'broker', 'internal', 'unknown']
+    const all: CmaOrigin[] = ['expired', 'fsbo', 'seller-valuation', 'lead-form', 'bpo', 'broker', 'internal', 'unknown']
     for (const o of all) {
       expect(isAskedOrigin(o) && isColdOrigin(o)).toBe(false)
       expect(['now', 'drip', 'manual']).toContain(sendModeForOrigin(o))

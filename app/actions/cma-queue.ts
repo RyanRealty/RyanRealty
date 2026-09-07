@@ -29,10 +29,21 @@ export type ApproveAndDeliverResult =
   | { ok: true; outcome: 'approved-only'; reason: string }
   | { ok: false; error: string; blocked?: 'audit' | 'state' | 'contact' }
 
+/**
+ * The queue row for a CMA slug.
+ *
+ * Scoped to `docKind === 'cma'` deliberately. The queue now unions in
+ * `broker_price_opinions` rows, and every path in this file finalizes and sends
+ * against the `cmas` table — approveCmaAction, sendCmaToLeadAction, the drip
+ * queue. A BPO reaching any of them would approve nothing and, if a slug ever
+ * did collide, could deliver someone else's document. BPO slugs are `bpo-`
+ * prefixed (lib/bpo/slug.ts) so a collision should be impossible; this makes
+ * "should be" into "is".
+ */
 async function findQueueRow(slug: string): Promise<CmaQueueRow | null> {
   const safe = slug.trim().toLowerCase()
-  const { rows } = await listCmaQueue({ limit: 500, includeArchived: true })
-  return rows.find((r) => r.slug.toLowerCase() === safe) ?? null
+  const { rows } = await listCmaQueue({ limit: 1000, includeArchived: true })
+  return rows.find((r) => r.docKind === 'cma' && r.slug.toLowerCase() === safe) ?? null
 }
 
 /**

@@ -23,6 +23,7 @@ const ORIGIN_ORDER: CmaOrigin[] = [
   'fsbo',
   'seller-valuation',
   'lead-form',
+  'bpo',
   'broker',
   'internal',
   'unknown',

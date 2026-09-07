@@ -62,6 +62,7 @@ const ORIGIN_ORDER: CmaOrigin[] = [
   'fsbo',
   'seller-valuation',
   'lead-form',
+  'bpo',
   'broker',
   'internal',
   'unknown',
@@ -96,6 +97,10 @@ function whyLine(r: CmaQueueRow): string | null {
 }
 
 function actionLabelFor(r: CmaQueueRow): string | null {
+  // A BPO is finalized and sent from /admin/bpo/[slug], which is the only path
+  // that can resolve its recipient (a linked CRM person). Offering an approve
+  // button here would be a button that cannot do its job.
+  if (r.docKind !== 'cma') return null
   if (r.state !== 'ready') return null
   if (!r.contactEmail) return null
   if (r.sendMode === 'now') return 'Send now'
@@ -249,7 +254,7 @@ export default async function CmaQueuePage({
               kind={r.state === 'queued' ? STATE_LABEL.queued : CMA_ORIGIN_LABEL[r.origin]}
               kindTone={STATE_TONE[r.state]}
               title={
-                <Link href={`/admin/cmas/${r.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                <Link href={r.detailHref} style={{ color: 'inherit', textDecoration: 'none' }}>
                   {r.address || r.slug}
                 </Link>
               }
@@ -280,7 +285,7 @@ export default async function CmaQueuePage({
                 ) : label ? (
                   <QueueAction slug={r.slug} label={label} approve={approveAndDeliverCma} />
                 ) : (
-                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={`/admin/cmas/${r.slug}`}>
+                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={r.detailHref}>
                     Review
                   </Link>
                 )
