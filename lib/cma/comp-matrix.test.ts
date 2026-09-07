@@ -262,6 +262,7 @@ describe('unsold contrast matrix', () => {
     originalListPrice: 549000,
     status: 'Expired',
     daysOnMarket: 97,
+    onMarketDate: '2026-01-15',
     photoUrl: null,
     listingHistoryLine: 'Asked $549,000, cut to $519,000, came off expired · 97 days on market',
     beds: 3,
@@ -269,6 +270,7 @@ describe('unsold contrast matrix', () => {
     sqft: 1420,
     yearBuilt: 1997,
     lotAcres: 0.22,
+    propertySubType: 'Single Family Residence',
     latitude: 43.705,
     longitude: -121.501,
   } as CmaExpiredPeer
@@ -290,7 +292,79 @@ describe('unsold contrast matrix', () => {
     expect(html.toLowerCase()).not.toContain('taught buyers')
   })
 
+
+  it('excludes the subject listing from peer columns (U1)', () => {
+    const subjectAsPeer = {
+      ...peer,
+      listingKey: 'SUBJ-1',
+      address: subject.streetAddress,
+      listPrice: 575000,
+    }
+    const html = renderUnsoldContrastMatrixHtml(
+      { ...subject, listingKey: 'SUBJ-1', streetAddress: '648 Douglas' },
+      [subjectAsPeer, peer],
+    )
+    expect(html).toContain('88 Wren')
+    expect(html).not.toMatch(/1\.\s*648 Douglas/)
+    // Subject column once — not also as peer #1
+    expect(html.match(/648 Douglas/g)?.length).toBe(1)
+  })
+
+  it('collapses same-address cycles into one peer with both histories (U2)', () => {
+    const jan = {
+      ...peer,
+      listingKey: 'W-JAN',
+      address: '15935 Woodchip',
+      listPrice: 475000,
+      onMarketDate: '2026-01-10',
+      listingHistoryLine: 'Listed Jan 10, 2026 at $475,000, came off expired · 80 days on market',
+      daysOnMarket: 80,
+    }
+    const jun = {
+      ...peer,
+      listingKey: 'W-JUN',
+      address: '15935 Woodchip',
+      listPrice: 450000,
+      onMarketDate: '2026-06-01',
+      listingHistoryLine: 'Listed Jun 1, 2026 at $450,000, came off canceled · 40 days on market',
+      daysOnMarket: 40,
+    }
+    const html = renderUnsoldContrastMatrixHtml(subject, [jan, jun])
+    expect(html).toContain('15935 Woodchip')
+    expect(html).toContain('came off expired · 80 days on market')
+    expect(html).toContain('came off canceled · 40 days on market')
+    // One peer column (matrix header + mobile stack both say "1." — never a bare twin "2.")
+    expect(html).toContain('1. 15935 Woodchip')
+    expect(html).not.toContain('2. 15935 Woodchip')
+    expect(html.match(/2\.\s*15935 Woodchip/g)).toBeNull()
+  })
+
+  it('prints peer DOM and finished history outcome when facts exist (U3)', () => {
+    const html = renderUnsoldContrastMatrixHtml(subject, [peer])
+    // Matrix DOM row + stack card both carry the peer sit-time (not a dash).
+    expect(html).toContain('data-fact="dom"')
+    expect(html).toContain('>97<')
+    expect(html).toContain('97 days on market')
+    expect(html).toContain('came off expired · 97 days on market')
+  })
+
+  it('aligns sold subject DOM row with history day count', () => {
+    const html = renderCompMatrixHtml(
+      {
+        ...subject,
+        listingHistoryLine: 'Listed Jul 2021 at $445,000, came off canceled · 133 days on market',
+        lastListDate: '2026-04-01',
+      },
+      padSales(comp),
+    )
+    expect(html).toContain('133 days on market')
+    // DOM row uses the history line's day count, not a fresh as-of-now derive.
+    expect(html).toContain('>133<')
+    expect(html).not.toContain('>137<')
+  })
+
   it('soft-fails when no peers — omit section, invent nothing', () => {
+
     expect(renderUnsoldContrastMatrixHtml(subject, null)).toBe('')
     expect(renderUnsoldContrastMatrixHtml(subject, [])).toBe('')
     expect(renderUnsoldContrastMatrixHtml(subject, [{ ...peer, address: '', listPrice: 0 }])).toBe('')

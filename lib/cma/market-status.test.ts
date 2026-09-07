@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { computeMarketArea, marketAreaPriceBand, similarBedRange } from './market-status'
+import {
+  collapseExpiredPeerCycles,
+  computeMarketArea,
+  marketAreaPriceBand,
+  pickExpiredPeers,
+  similarBedRange,
+  type CmaExpiredPeer,
+} from './market-status'
 import { listingTrendSvg, medianCloseLineSvg } from './market-charts'
 import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
 import { renderImmersiveCmaHtml } from './immersive'
@@ -282,6 +289,180 @@ describe('market status grain', () => {
     expect(area!.active?.medianDom).toBeNull()
     expect(area!.closed?.medianDom).toBeNull()
     expect(area!.selected.medianDom).toBe(32)
+  })
+})
+
+
+describe('pickExpiredPeers', () => {
+  const subj = {
+    beds: 3,
+    sqft: 1450,
+    latitude: 43.7,
+    longitude: -121.5,
+    listingKey: 'FALCON-15991',
+    mlsNumber: '220123456',
+    streetAddress: '15991 Falcon',
+  }
+
+  it('excludes the subject by listing key and by address (U1)', () => {
+    const peers = pickExpiredPeers(
+      [
+        row({
+          ListingKey: 'FALCON-15991',
+          StreetNumber: '15991',
+          StreetName: 'Falcon',
+          StandardStatus: 'Canceled',
+          ListPrice: 575_000,
+          ClosePrice: null,
+          CloseDate: null,
+          DaysOnMarket: 137,
+          CumulativeDaysOnMarket: 137,
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1450,
+        }),
+        row({
+          ListingKey: 'OTHER-1',
+          StreetNumber: '88',
+          StreetName: 'Wren',
+          StandardStatus: 'Expired',
+          ListPrice: 519_000,
+          ClosePrice: null,
+          CloseDate: null,
+          DaysOnMarket: 97,
+          CumulativeDaysOnMarket: 97,
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1420,
+        }),
+        row({
+          ListingKey: 'ADDR-DUP',
+          StreetNumber: '15991',
+          StreetName: 'Falcon Ln',
+          StandardStatus: 'Expired',
+          ListPrice: 560_000,
+          ClosePrice: null,
+          CloseDate: null,
+          DaysOnMarket: 40,
+          CumulativeDaysOnMarket: 40,
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1450,
+        }),
+      ],
+      subj,
+    )
+    expect(peers.map((p) => p.address)).toEqual(['88 Wren'])
+    expect(peers.every((p) => p.listingKey !== 'FALCON-15991')).toBe(true)
+  })
+
+  it('collapses same-address cycles into one peer with both histories (U2)', () => {
+    const peers = pickExpiredPeers(
+      [
+        row({
+          ListingKey: 'W-JAN',
+          StreetNumber: '15935',
+          StreetName: 'Woodchip',
+          StandardStatus: 'Expired',
+          ListPrice: 475_000,
+          OriginalListPrice: 475_000,
+          ClosePrice: null,
+          CloseDate: null,
+          OnMarketDate: '2026-01-10',
+          ListDate: '2026-01-10',
+          status_change_timestamp: '2026-03-31',
+          DaysOnMarket: 80,
+          CumulativeDaysOnMarket: 80,
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1400,
+        }),
+        row({
+          ListingKey: 'W-JUN',
+          StreetNumber: '15935',
+          StreetName: 'Woodchip',
+          StandardStatus: 'Canceled',
+          ListPrice: 450_000,
+          OriginalListPrice: 450_000,
+          ClosePrice: null,
+          CloseDate: null,
+          OnMarketDate: '2026-06-01',
+          ListDate: '2026-06-01',
+          status_change_timestamp: '2026-07-11',
+          DaysOnMarket: 40,
+          CumulativeDaysOnMarket: 40,
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1400,
+          Latitude: 43.701,
+          Longitude: -121.501,
+        }),
+      ],
+      subj,
+    )
+    expect(peers).toHaveLength(1)
+    expect(peers[0]!.address).toBe('15935 Woodchip')
+    expect(peers[0]!.listingHistoryLine).toMatch(/came off/i)
+    expect(peers[0]!.listingHistoryLine).toMatch(/\d+ days on market/i)
+    // Both cycles retained in history
+    expect(peers[0]!.listingHistoryLine).toMatch(/450,000/)
+    expect(peers[0]!.listingHistoryLine).toMatch(/475,000/)
+  })
+
+  it('populates peer DOM from MLS or on→off dates and finishes history (U3)', () => {
+    const peers = pickExpiredPeers(
+      [
+        row({
+          ListingKey: 'DOM-MLS',
+          StreetNumber: '12',
+          StreetName: 'Pine',
+          StandardStatus: 'Expired',
+          ListPrice: 500_000,
+          ClosePrice: null,
+          CloseDate: null,
+          OnMarketDate: '2026-01-01',
+          DaysOnMarket: 0,
+          CumulativeDaysOnMarket: 0,
+          status_change_timestamp: '2026-04-11',
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1400,
+        }),
+      ],
+      subj,
+    )
+    expect(peers).toHaveLength(1)
+    expect(peers[0]!.daysOnMarket).toBe(100)
+    expect(peers[0]!.listingHistoryLine).toMatch(/came off expired · 100 days on market/)
+  })
+
+  it('collapseExpiredPeerCycles merges duplicate addresses without dropping DOM', () => {
+    const a: CmaExpiredPeer = {
+      listingKey: 'A1',
+      address: '15935 Woodchip',
+      listPrice: 475000,
+      originalListPrice: null,
+      status: 'Expired',
+      daysOnMarket: 80,
+      onMarketDate: '2026-01-10',
+      photoUrl: null,
+      listingHistoryLine: 'Listed Jan at $475,000, came off expired · 80 days on market',
+      beds: 3,
+      baths: 2,
+      sqft: 1400,
+      yearBuilt: 1990,
+      lotAcres: 0.2,
+      propertySubType: 'Single Family Residence',
+      latitude: null,
+      longitude: null,
+    }
+    const b: CmaExpiredPeer = {
+      ...a,
+      listingKey: 'A2',
+      listPrice: 450000,
+      daysOnMarket: 40,
+      onMarketDate: '2026-06-01',
+      listingHistoryLine: 'Listed Jun at $450,000, came off canceled · 40 days on market',
+    }
+    const out = collapseExpiredPeerCycles([a, b])
+    expect(out).toHaveLength(1)
+    expect(out[0]!.daysOnMarket).toBe(40) // newest cycle primary
+    expect(out[0]!.listingHistoryLine).toContain('80 days on market')
+    expect(out[0]!.listingHistoryLine).toContain('40 days on market')
   })
 })
 

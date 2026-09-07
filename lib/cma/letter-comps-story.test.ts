@@ -119,6 +119,7 @@ const peer: CmaExpiredPeer = {
   originalListPrice: 549000,
   status: 'Expired',
   daysOnMarket: 97,
+  onMarketDate: '2026-01-15',
   photoUrl: null,
   listingHistoryLine: 'Asked $549,000, cut to $519,000, came off expired · 97 days on market',
   beds: 3,
@@ -126,6 +127,7 @@ const peer: CmaExpiredPeer = {
   sqft: 1420,
   yearBuilt: 1997,
   lotAcres: 0.22,
+  propertySubType: 'Single Family Residence',
   latitude: 43.705,
   longitude: -121.501,
 }

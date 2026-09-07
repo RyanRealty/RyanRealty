@@ -7,7 +7,7 @@
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { keepSameProductType } from '@/lib/cma/market-area'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
-import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -59,6 +59,8 @@ export type CmaExpiredPeer = {
   originalListPrice: number | null
   status: string
   daysOnMarket: number | null
+  /** Cycle start — used to label or collapse multi-cycle peers. */
+  onMarketDate: string | null
   photoUrl: string | null
   listingHistoryLine: string | null
   beds: number | null
@@ -66,6 +68,7 @@ export type CmaExpiredPeer = {
   sqft: number | null
   yearBuilt: number | null
   lotAcres: number | null
+  propertySubType: string | null
   latitude: number | null
   longitude: number | null
 }
@@ -178,11 +181,64 @@ function num(v: unknown): number | null {
 
 const EXPIRED_PEER_CAP = 5
 
+export type ExpiredPeerSubject = Pick<
+  CmaSubject,
+  'beds' | 'sqft' | 'latitude' | 'longitude' | 'listingKey' | 'mlsNumber' | 'streetAddress'
+>
+
 function peerAddress(row: CmaMarketAreaRow): string {
   return [row.StreetNumber, row.StreetName]
     .map((p) => (p ?? '').trim())
     .filter(Boolean)
     .join(' ')
+}
+
+/** Fold street noise so "15935 Woodchip" matches "15935 Woodchip Ln". */
+export function normalizePeerAddress(address: string): string {
+  return address
+    .toLowerCase()
+    .replace(/[.,#]/g, '')
+    .replace(/\b(street|st|avenue|ave|road|rd|drive|dr|lane|ln|court|ct|way|loop|circle|cir|place|pl|boulevard|blvd|terrace|ter)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function peerKeyIds(subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber'>): Set<string> {
+  const ids = new Set<string>()
+  for (const raw of [subject.listingKey, subject.mlsNumber]) {
+    const s = raw?.trim()
+    if (s) ids.add(s.toLowerCase())
+  }
+  return ids
+}
+
+/** True when this market-area row is the subject listing (not a peer). */
+export function isSubjectExpiredRow(
+  row: CmaMarketAreaRow,
+  subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'>,
+): boolean {
+  const ids = peerKeyIds(subject)
+  const key = String(row.ListingKey ?? '').trim().toLowerCase()
+  if (key && ids.has(key)) return true
+  const addr = peerAddress(row)
+  const subjAddr = subject.streetAddress?.trim()
+  if (addr && subjAddr && normalizePeerAddress(addr) === normalizePeerAddress(subjAddr)) return true
+  return false
+}
+
+/** True when a named peer is the subject (defense for stored args). */
+export function peerMatchesSubject(
+  peer: Pick<CmaExpiredPeer, 'listingKey' | 'address'>,
+  subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'>,
+): boolean {
+  const ids = peerKeyIds(subject)
+  const key = peer.listingKey.trim().toLowerCase()
+  if (key && ids.has(key)) return true
+  const subjAddr = subject.streetAddress?.trim()
+  if (peer.address.trim() && subjAddr && normalizePeerAddress(peer.address) === normalizePeerAddress(subjAddr)) {
+    return true
+  }
+  return false
 }
 
 function peerFitsSubject(
@@ -205,18 +261,88 @@ function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
   return dLat * dLat + dLng * dLng
 }
 
+/** MLS DOM when present; else on-market → off-market (status change) sit-time. */
 function peerDom(row: CmaMarketAreaRow): number | null {
   const d = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
-  return d != null && d > 0 ? d : null
+  if (d != null && d > 0) return d
+  const on = row.OnMarketDate ?? row.ListDate
+  const offRaw = row.status_change_timestamp ?? row.CloseDate
+  if (on && offRaw) {
+    const off = new Date(offRaw.length <= 10 ? `${offRaw}T12:00:00.000Z` : offRaw)
+    if (!Number.isNaN(off.getTime())) {
+      return daysOnMarketFrom({ onMarketDate: on, asOf: off })
+    }
+  }
+  return daysOnMarketFrom({ onMarketDate: on })
+}
+
+function onMarketSortKey(iso: string | null | undefined): number {
+  if (!iso) return 0
+  const t = new Date(iso.length <= 10 ? `${iso}T12:00:00.000Z` : iso).getTime()
+  return Number.isFinite(t) ? t : 0
+}
+
+/**
+ * Same street twice (two failed list cycles) → one peer column.
+ * Primary facts from the newest cycle; Listing history carries every cycle.
+ */
+export function collapseExpiredPeerCycles(peers: readonly CmaExpiredPeer[]): CmaExpiredPeer[] {
+  const byAddr = new Map<string, CmaExpiredPeer[]>()
+  const order: string[] = []
+  for (const peer of peers) {
+    const key = normalizePeerAddress(peer.address) || peer.listingKey
+    if (!byAddr.has(key)) {
+      byAddr.set(key, [])
+      order.push(key)
+    }
+    byAddr.get(key)!.push(peer)
+  }
+  return order.map((key) => {
+    const group = byAddr.get(key)!
+    if (group.length === 1) return group[0]!
+    const sorted = [...group].sort(
+      (a, b) => onMarketSortKey(b.onMarketDate) - onMarketSortKey(a.onMarketDate),
+    )
+    const primary = sorted[0]!
+    const histories = sorted
+      .map((p) => p.listingHistoryLine?.trim())
+      .filter((line): line is string => Boolean(line))
+    // De-dupe identical lines if the feed repeated a cycle.
+    const uniqueHist: string[] = []
+    for (const line of histories) {
+      if (!uniqueHist.includes(line)) uniqueHist.push(line)
+    }
+    return {
+      ...primary,
+      listingHistoryLine: uniqueHist.length > 0 ? uniqueHist.join(' · ') : primary.listingHistoryLine,
+    }
+  })
+}
+
+/**
+ * Cycle-month label when the same address must stay as separate columns.
+ * Used only if collapse is bypassed; prefer collapseExpiredPeerCycles.
+ */
+export function expiredPeerCycleLabel(peer: CmaExpiredPeer): string {
+  const addr = peer.address.trim()
+  const raw = peer.onMarketDate?.trim()
+  if (!raw) return addr
+  const d = new Date(raw.length <= 10 ? `${raw}T12:00:00.000Z` : raw)
+  if (Number.isNaN(d.getTime())) return addr
+  const mon = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
+  const yy = String(d.getUTCFullYear()).slice(-2)
+  const street = addr.replace(/^\d+\s+/, '').trim() || addr
+  return `${street} · ${mon} '${yy}`
 }
 
 export function pickExpiredPeers(
   rows: readonly CmaMarketAreaRow[],
-  subject: Pick<CmaSubject, 'beds' | 'sqft' | 'latitude' | 'longitude'>,
+  subject: ExpiredPeerSubject,
   cap = EXPIRED_PEER_CAP,
 ): CmaExpiredPeer[] {
   const named = rows
     .map((row) => {
+      if (isSubjectExpiredRow(row, subject)) return null
       const address = peerAddress(row)
       const listPrice = Number(row.ListPrice)
       if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
@@ -226,6 +352,7 @@ export function pickExpiredPeers(
         row.OriginalListPrice != null && Number.isFinite(Number(row.OriginalListPrice))
           ? Number(row.OriginalListPrice)
           : null
+      const onMarketDate = row.OnMarketDate ?? row.ListDate ?? null
       const daysOnMarket = peerDom(row)
       const status = row.StandardStatus
       const peer: CmaExpiredPeer = {
@@ -235,12 +362,13 @@ export function pickExpiredPeers(
         originalListPrice,
         status,
         daysOnMarket,
+        onMarketDate,
         photoUrl: row.PhotoURL ?? null,
         listingHistoryLine: buildListingHistoryLine({
           listPrice,
           originalListPrice,
           status,
-          onMarketDate: row.OnMarketDate ?? row.ListDate,
+          onMarketDate,
           daysOnMarket,
         }),
         beds: row.BedroomsTotal,
@@ -248,6 +376,7 @@ export function pickExpiredPeers(
         sqft: row.TotalLivingAreaSqFt,
         yearBuilt: row.year_built ?? null,
         lotAcres: row.lot_size_acres ?? null,
+        propertySubType: row.property_sub_type ?? null,
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }
@@ -263,15 +392,15 @@ export function pickExpiredPeers(
     slat != null && slng != null && Number.isFinite(slat) && Number.isFinite(slng)
       ? [...pool].sort((a, b) => peerDist2(a.row, slat, slng) - peerDist2(b.row, slat, slng))
       : [...pool]
-  const seen = new Set<string>()
-  const out: CmaExpiredPeer[] = []
+  const seenKeys = new Set<string>()
+  const picked: CmaExpiredPeer[] = []
   for (const item of ranked) {
-    if (seen.has(item.peer.listingKey)) continue
-    seen.add(item.peer.listingKey)
-    out.push(item.peer)
-    if (out.length >= cap) break
+    if (seenKeys.has(item.peer.listingKey)) continue
+    seenKeys.add(item.peer.listingKey)
+    picked.push(item.peer)
   }
-  return out
+  // Collapse multi-cycle same-address peers, then cap columns.
+  return collapseExpiredPeerCycles(picked).slice(0, cap)
 }
 
 function inBand(price: number | null, lo: number, hi: number): boolean {
@@ -420,6 +549,9 @@ export function computeMarketArea(input: {
     sqft: input.subject.sqft,
     latitude: input.subject.latitude,
     longitude: input.subject.longitude,
+    listingKey: input.subject.listingKey,
+    mlsNumber: input.subject.mlsNumber,
+    streetAddress: input.subject.streetAddress,
   })
 
   return {
