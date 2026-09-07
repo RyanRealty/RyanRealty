@@ -1,10 +1,15 @@
 /**
- * Home `/` featured community carousel slides.
+ * Home `/` featured community carousel slides — server loader + builders.
  *
  * Photo + sales figures + short blurb only. Figures come from the alias-aware
  * resort index overlay (same set `/communities/{slug}` prints) and optional
  * MarketPulse fields when present. No invented counts or prices.
+ *
+ * server-only: keep node:fs (via resort-community-content) off the client
+ * graph. Client island imports types/SOURCE from home-featured-community-shared.
  */
+
+import 'server-only'
 
 import { firstSentence } from '@/app/cities/_v3/cities-index-constants'
 import { belongingLine } from '@/app/communities/_v3/community-index-rows'
@@ -15,9 +20,16 @@ import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
 import { communityImage } from '@/lib/geo-images'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
-import { publicMarketPulseSource } from '@/lib/market/publish-public-methodology'
 import type { ResortCommunityEntry } from '@/lib/data/communities/registry'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import {
+  HOME_FEATURED_COMMUNITY_SOURCE,
+  type HomeFeaturedCommunityFigure,
+  type HomeFeaturedCommunitySlide,
+} from './home-featured-community-shared'
+
+export type { HomeFeaturedCommunityFigure, HomeFeaturedCommunitySlide }
+export { HOME_FEATURED_COMMUNITY_SOURCE }
 
 /** Curated Home featured set. Registry + dedicated photo only; miss omits. */
 export const HOME_FEATURED_COMMUNITY_SLUGS = [
@@ -32,21 +44,6 @@ export const HOME_FEATURED_COMMUNITY_SLUGS = [
   'crosswater',
   'widgi-creek',
 ] as const
-
-export type HomeFeaturedCommunityFigure = {
-  value: string
-  label: string
-}
-
-export type HomeFeaturedCommunitySlide = {
-  slug: string
-  name: string
-  city: string
-  href: string
-  photoSrc: string
-  blurb: string | null
-  figures: HomeFeaturedCommunityFigure[]
-}
 
 export type HomeFeaturedCommunityBuildInput = {
   entry: ResortCommunityEntry
@@ -156,10 +153,6 @@ export function buildHomeFeaturedCommunitySlides(
   }
   return out
 }
-
-export const HOME_FEATURED_COMMUNITY_SOURCE = publicMarketPulseSource(
-  'Alias-aware active inventory and median list for each resort community.',
-)
 
 /** Server loader for Home. Misses omit. Parallel pulse reads. */
 export async function loadHomeFeaturedCommunitySlides(): Promise<HomeFeaturedCommunitySlide[]> {

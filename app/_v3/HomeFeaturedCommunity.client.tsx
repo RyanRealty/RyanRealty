@@ -13,8 +13,8 @@ import {
   V3Eyebrow,
   V3Heading,
 } from '@/components/site/v3'
-import type { HomeFeaturedCommunitySlide } from './home-featured-communities'
-import { HOME_FEATURED_COMMUNITY_SOURCE } from './home-featured-communities'
+import type { HomeFeaturedCommunitySlide } from './home-featured-community-shared'
+import { HOME_FEATURED_COMMUNITY_SOURCE } from './home-featured-community-shared'
 import './home-featured-community.css'
 
 export function HomeFeaturedCommunity({
