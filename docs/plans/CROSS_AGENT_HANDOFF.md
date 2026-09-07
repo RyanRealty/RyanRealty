@@ -1,4 +1,46 @@
-# Current — 2026-09-07 (CMA funnel mission: four lanes, one engine, approved → sent → tracked)
+# Current — 2026-09-07 (Social channel tune-up)
+
+Owner: Claude session, worktree `wt/social-x-lock-20260907`. Brief with every figure and
+its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832
+
+**Shipped this commit**
+- `lib/x.ts`: X refresh serialized behind an Upstash lock, lock losers wait for the
+  persisted row. Root cause of the 2026-08-28 X death: token-heartbeat and
+  snapshot-channels both refreshed the rotating token at 12:00Z. Test
+  `lib/x.refresh-lock.test.ts`.
+- `vercel.json`: snapshot-channels moved to `20 12 * * *`.
+- `lib/brand/contact.ts`: YouTube points at the channel-id URL of @Ryan-Realty
+  (91 videos), the channel Matt picked. The @ryanrealtybend handle currently sits on a
+  7-video duplicate and Matt is moving it.
+
+**Done live on the platforms (2026-09-07, read back)**
+- GBP attributes: tiktok → @ryanrealtybend, pinterest → /ryanrealtybend, text →
+  sms:+15417033095 (was the old direct line), appointment → ryan-realty.com/book (was a 404).
+- GBP: replied to MJB's 5-star review from 10 Jul (approved wording). 0 unanswered.
+
+**Matt's calls (2026-09-07):** keep @Ryan-Realty on YouTube and move the handle · keep
+TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealtybend, close
+/ryanrealty · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
+reconnect X · fix LinkedIn page facts · review reply as written.
+
+**Waiting on Matt (manual, not API-reachable):** YouTube handle swap then re-grant at
+`/api/youtube/authorize` as the @Ryan-Realty owner · X re-grant at `/api/x/authorize` · TikTok
+display name, Business account, delete duplicate · Pinterest rename, close duplicate · KCM:
+disconnect Instagram · LinkedIn: 115 NW Oregon Ave #2, founded 2023, 2 to 10 employees,
+Privately Held · Instagram: https website, bio double space, name field.
+
+**Next for an agent once the YouTube token is re-granted:** upload
+`design_system/ryan-realty/assets/social/banner-photo/banner-2048x1152-youtube.jpg` as the
+banner, set the most-viewed short as trailer, prune the 8 empty playlists. After the X
+re-grant, confirm the 12:00Z heartbeat rolls `x_auth.expires_at` and the 12:20Z snapshot
+writes `x` rows.
+
+**Do not** rewrite the social bios on voice-canon grounds. Matt 2026-09-07: the canon is
+"still wrong". Copy he chose stays until he asks.
+
+---
+
+# Previous — 2026-09-07 (CMA funnel mission: four lanes, one engine, approved → sent → tracked)
 
 Owner: Claude (Fable). Landed on `origin/main` at `d3e573aa` from `wt/cma-ship-20260907`
 (merge of `wt/cma-doc-`, `-lanes-`, `-tracking-`, `-engine-20260907`). Goal doc of record:

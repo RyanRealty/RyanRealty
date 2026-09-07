@@ -11,7 +11,11 @@
  * snapshot in parallel against the same authenticated CRON_SECRET, collects
  * the per-platform results, and returns a single roll-up status report.
  *
- * Schedule: daily 12:00 UTC (05:00 Mountain), per vercel.json.
+ * Schedule: daily 12:20 UTC, per vercel.json. Twenty minutes after
+ * token-heartbeat (12:00) on purpose: both call the platform token helpers, and
+ * X + TikTok rotate their refresh tokens, so two refreshes in the same second
+ * kill the grant (X died that way 2026-08-28). lib/x.ts also serializes the
+ * refresh behind a Redis lock; the stagger keeps the two crons from even trying.
  * Auth: Authorization: Bearer $CRON_SECRET.
  * Manual invocation: GET /api/cron/snapshot-channels
  */

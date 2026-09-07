@@ -189,34 +189,86 @@ async function refreshXToken(refreshToken: string): Promise<string> {
   return json.access_token
 }
 
-export async function getXAccessToken(): Promise<string> {
+/**
+ * X rotates the refresh token on every use and kills the whole grant when a
+ * consumed refresh token is replayed. token-heartbeat, snapshot-channels and
+ * publisher-sweep all fired at 12:00 UTC and each called getXAccessToken(); on
+ * 2026-08-28 two of them refreshed with the same rotating token inside one
+ * second and every refresh since returned 400. One caller refreshes under a
+ * short Redis lock; every other caller waits for the persisted row instead of
+ * replaying the token. Without Redis configured the legacy direct path runs.
+ */
+const X_REFRESH_WINDOW_MS = 30 * 60 * 1000
+const X_REFRESH_LOCK_KEY = 'x:oauth:refresh-lock'
+const X_REFRESH_LOCK_TTL_S = 30
+const X_REFRESH_WAIT_MS = 500
+const X_REFRESH_WAIT_ROUNDS = 20
+
+async function readStoredXToken(): Promise<StoredXToken | null> {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('x_auth')
     .select('access_token, refresh_token, expires_at')
     .eq('id', 'default')
     .maybeSingle()
+  if (error || !data) return null
+  return data as StoredXToken
+}
 
-  if (error || !data) {
-    throw new Error('X not connected — visit /api/x/authorize to connect')
-  }
-
-  const token = data as StoredXToken
-  const expiresAtMs = new Date(token.expires_at).getTime()
+function xTokenIsFresh(token: StoredXToken): boolean {
   // 30-min refresh window: heartbeat runs daily, X access tokens last 2h. The old
   // 60-sec window meant proactive refresh almost never triggered. Fixed 2026-05-21
   // alongside the token-heartbeat auth-header bug.
-  const refreshWindowMs = 30 * 60 * 1000
+  return Date.now() < new Date(token.expires_at).getTime() - X_REFRESH_WINDOW_MS
+}
 
-  if (Date.now() < expiresAtMs - refreshWindowMs) {
-    return token.access_token
+function xRowIsNewer(current: StoredXToken, stale: StoredXToken): boolean {
+  return Date.parse(current.expires_at) > Date.parse(stale.expires_at)
+}
+
+export async function getXAccessToken(): Promise<string> {
+  const token = await readStoredXToken()
+  if (!token) {
+    throw new Error('X not connected — visit /api/x/authorize to connect')
   }
-
+  if (xTokenIsFresh(token)) return token.access_token
   if (!token.refresh_token) {
     throw new Error('X access token expired and no refresh token — reconnect via /api/x/authorize')
   }
+  return refreshXTokenSerialized(token)
+}
 
-  return refreshXToken(token.refresh_token)
+async function refreshXTokenSerialized(stale: StoredXToken): Promise<string> {
+  const staleRefresh = stale.refresh_token as string
+  let redis: Redis
+  try {
+    redis = getRedis()
+  } catch {
+    return refreshXToken(staleRefresh)
+  }
+
+  const acquired = await redis.set(X_REFRESH_LOCK_KEY, new Date().toISOString(), {
+    nx: true,
+    ex: X_REFRESH_LOCK_TTL_S,
+  })
+  if (acquired) {
+    try {
+      // A sibling may have finished between our read and the lock: re-read first.
+      const current = await readStoredXToken()
+      if (current && xRowIsNewer(current, stale) && xTokenIsFresh(current)) return current.access_token
+      return await refreshXToken(current?.refresh_token ?? staleRefresh)
+    } finally {
+      await redis.del(X_REFRESH_LOCK_KEY)
+    }
+  }
+
+  // Another process holds the lock. Wait for its row; never replay the token.
+  for (let round = 0; round < X_REFRESH_WAIT_ROUNDS; round++) {
+    await new Promise((resolve) => setTimeout(resolve, X_REFRESH_WAIT_MS))
+    const current = await readStoredXToken()
+    if (current && xRowIsNewer(current, stale)) return current.access_token
+  }
+  throw new Error('X token refresh is running in another process and did not persist within 10s')
 }
 
 async function initMediaUpload(

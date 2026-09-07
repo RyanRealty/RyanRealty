@@ -49,7 +49,11 @@ export const BRAND = {
   social: {
     instagram: 'https://www.instagram.com/ryanrealtybend',
     facebook: 'https://www.facebook.com/ryanrealtybend',
-    youtube: 'https://www.youtube.com/@ryanrealtybend',
+    /** Channel-id URL of the Ryan Realty channel that holds the library (91
+     *  videos, 10 subscribers on 2026-09-07). Matt chose it as THE channel that
+     *  day and is moving the @ryanrealtybend handle onto it; the id URL is right
+     *  before and after the move, the handle URL pointed at a 7-video duplicate. */
+    youtube: 'https://www.youtube.com/channel/UCpxIXnNVeG25oeDjfE3b4lw',
     tiktok: 'https://www.tiktok.com/@ryanrealtybend',
     x: 'https://x.com/ryanrealtybend',
     /** Real claimed slug (verified live 2026-06-10) — /company/ryanrealtybend 404s. */
