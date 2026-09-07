@@ -59,6 +59,25 @@
   min-height: var(--v3-tap, 44px);
 }
 
+/* Horizontal chip rail: trailing fade via navy mask (G27 — keep gradients out of TSX). */
+.srch-chip-rail {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(16, 39, 66, 1) calc(100% - 1.75rem),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(16, 39, 66, 1) calc(100% - 1.75rem),
+    transparent
+  );
+}
+
+/* Places multi-select body: locked height via CSS var (not arbitrary max-h-[…]). */
+.srch-places-body {
+  max-height: var(--srch-places-body-max, 28rem);
+}
+
 /* Removable-chip X. size-6 (24px) was the painted glyph; the control is the button. */
 .srch-chip button {
   min-width: var(--v3-tap, 44px);

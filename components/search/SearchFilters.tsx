@@ -513,13 +513,7 @@ export default function SearchFilters({
           All filters · Save this search. Map/List lives in the map shell, not
           here. At 375 the chip dropdowns fold into All filters (one Sheet). */}
       <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
-        <div
-          className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar"
-          style={{
-            WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
-            maskImage: 'linear-gradient(to right, black calc(100% - 28px), transparent)',
-          }}
-        >
+        <div className="srch-chip-rail flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
         {hideLocation ? null : (
         <div className="relative w-40 shrink-0 sm:w-56">
           <div className="srch-panel srch-tap min-h-11 flex min-w-0 items-center gap-2 px-3 transition focus-within:ring-2 focus-within:ring-primary/30">
@@ -600,7 +594,7 @@ export default function SearchFilters({
           open={openPanel === 'places'}
           onOpenChange={panelOpenHandler('places')}
         >
-          <div className="max-h-[28rem] overflow-auto p-3">
+          <div className="srch-places-body overflow-auto p-3">
             <p className="srch-label mb-2.5">Places</p>
             <p className="mb-3 text-xs text-muted-foreground">
               Select one or more. Map fits the selected place boundary.
