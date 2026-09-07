@@ -33,6 +33,10 @@ vi.mock('@/lib/cma/immersive', () => ({
     (renderImmersiveCmaHtml as (...inner: unknown[]) => string)(...args),
 }))
 
+vi.mock('@/lib/cma/map', () => ({
+  buildCmaMapDataUri: vi.fn(async () => ({ dataUri: 'data:image/png;base64,MAP' })),
+}))
+
 vi.mock('@/lib/cma/market-area-hydrate', () => ({
   hydrateCmaMarketArea: vi.fn(async (args: unknown) => args),
 }))
@@ -86,11 +90,49 @@ describe('serveCmaDocument', () => {
     expect(renderImmersiveCmaHtml).toHaveBeenCalled()
   })
 
-  it('serves stored HTML for a broker without an immersive rebuild', async () => {
+  it('prefers live immersive from render_args on admin Open report (C1/C4/C9 Tip Ready)', async () => {
     getCmaServeHead.mockResolvedValue({
       html_path: 'db:cmas.html_content:cma-648-se-douglas',
       status: 'draft',
       broker_slug: 'matthew-ryan',
+    })
+    getCmaStoredHtmlBySlug.mockResolvedValue('<html><body>648 SE Douglas stored</body></html>')
+    getCmaRenderSourceBySlug.mockResolvedValue({
+      html_path: 'db:cmas.html_content:cma-648-se-douglas',
+      status: 'draft',
+      render_args: {
+        comps: [{ address: '1 Pine', latitude: 43.7, longitude: -121.5 }],
+        subject: { streetAddress: '648 SE Douglas', latitude: 43.71, longitude: -121.51 },
+      },
+      broker_slug: 'matthew-ryan',
+      build_summary: null,
+    })
+    const result = await serveCmaDocument({
+      slug: 'cma-648-se-douglas',
+      requestUrl: 'https://ryan-realty.com/admin/cmas/cma-648-se-douglas/view',
+      isAdmin: true,
+      viewerEmail: 'matt@ryan-realty.com',
+      skipRegisterGate: true,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.html).toContain('DRAFT CMA FROM RENDER_ARGS')
+    expect(renderImmersiveCmaHtml).toHaveBeenCalled()
+    expect(getCmaStoredHtmlBySlug).not.toHaveBeenCalled()
+  })
+
+  it('falls back to stored HTML when render_args immersive cannot render', async () => {
+    getCmaServeHead.mockResolvedValue({
+      html_path: 'db:cmas.html_content:cma-648-se-douglas',
+      status: 'draft',
+      broker_slug: 'matthew-ryan',
+    })
+    getCmaRenderSourceBySlug.mockResolvedValue({
+      html_path: 'db:cmas.html_content:cma-648-se-douglas',
+      status: 'draft',
+      render_args: null,
+      broker_slug: 'matthew-ryan',
+      build_summary: null,
     })
     getCmaStoredHtmlBySlug.mockResolvedValue('<html><body>648 SE Douglas stored</body></html>')
     const result = await serveCmaDocument({
@@ -104,7 +146,6 @@ describe('serveCmaDocument', () => {
     if (result.kind !== 'html') return
     expect(result.html).toContain('648 SE Douglas stored')
     expect(renderImmersiveCmaHtml).not.toHaveBeenCalled()
-    expect(getCmaRenderSourceBySlug).not.toHaveBeenCalled()
   })
 
   it('404s a missing slug without loading blobs', async () => {

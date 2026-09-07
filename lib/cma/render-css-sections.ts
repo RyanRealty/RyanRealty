@@ -244,7 +244,7 @@ export function cmaSectionStyles(): string {
      future overflow is loud instead of silent. */
     /* C1 + C4: ONE comps path on screen = stacked sales (works at 375).
        Print keeps the side-by-side matrix. Never both visible at once. */
-  .comp-stack { display: block; margin: 8px 0 14px; }
+  .comp-stack { display: block; margin: 8px 0 14px; max-width: 100%; min-width: 0; }
   .comp-matrix-wrap { display: none; margin: 8px 0 14px; overflow-x: visible; }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
@@ -252,13 +252,18 @@ export function cmaSectionStyles(): string {
     margin: 0 0 12px;
     background: #fff;
     max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
   }
-  .comp-stack-addr { font-weight: 600; margin: 0 0 8px; color: var(--navy); }
-  .comp-stack-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; margin-bottom: 6px; }
-  .comp-stack-row { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 6px; padding: 5px 0; border-top: 1px solid rgba(16,39,66,.08); font-size: 12px; }
-  .comp-stack-row .k { color: rgba(16,39,66,.72); }
-  .comp-stack-row .n { font-variant-numeric: tabular-nums; }
-  .comp-stack-card .matrix-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; margin: 0 0 8px; }
+  .comp-stack-addr { font-weight: 600; margin: 0 0 6px; color: var(--navy); font-size: 14px; line-height: 1.25; }
+  .comp-stack-sold { font-size: 12px; margin: 0 0 8px; font-variant-numeric: tabular-nums; }
+  .comp-stack-nums { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 6px; font-variant-numeric: tabular-nums; }
+  .comp-stack-n { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .comp-stack-n .k { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; opacity: .6; color: var(--muted); }
+  .comp-stack-n .v { font-size: 16px; font-weight: 600; color: var(--navy); line-height: 1.1; }
+  .comp-stack-facts { font-size: 11px; opacity: .8; margin-top: 3px; line-height: 1.35; overflow-wrap: anywhere; }
+  .comp-stack-card .matrix-thumb { width: 100%; max-width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; margin: 0 0 8px; }
   @media print {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }

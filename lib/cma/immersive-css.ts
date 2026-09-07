@@ -80,12 +80,16 @@ img{max-width:100%;display:block}
 .comp-facts{font-size:14px;opacity:.7;font-variant-numeric:tabular-nums;margin-top:4px}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
 .comp-matrix-wrap{display:none;margin:18px 0 8px;overflow-x:visible;max-width:100%}
-.comp-stack{display:block;margin:18px 0 8px}
-.comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%}
-.comp-stack-addr{font-weight:600;margin:0 0 8px}
-.comp-stack-cols{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.7;margin-bottom:6px}
-.comp-stack-row{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;padding:6px 0;border-top:1px solid var(--ink12);font-size:13px}
-.comp-stack-card .matrix-thumb{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:0 0 8px}
+.comp-stack{display:block;margin:18px 0 8px;max-width:100%;min-width:0}
+.comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
+.comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
+.comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
+.comp-stack-nums{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 8px;font-variant-numeric:tabular-nums}
+.comp-stack-n{display:flex;flex-direction:column;gap:2px;min-width:0}
+.comp-stack-n .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.55}
+.comp-stack-n .v{font-size:22px;font-weight:600;line-height:1.1}
+.comp-stack-facts{font-size:14px;opacity:.78;margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
+.comp-stack-card .matrix-thumb{width:100%;max-width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:0 0 8px}
 @media print{.comp-stack{display:none!important}.comp-matrix-wrap{display:block!important;overflow-x:visible}}
 table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}

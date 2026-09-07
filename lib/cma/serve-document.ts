@@ -12,8 +12,9 @@ import {
 } from '@/lib/data'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
+import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
-import { canBrokerReviewCma, isCmaClientReady, cmaHasStoredHtml } from '@/lib/cma/draft-access'
+import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
 import { hydrateCmaMarketArea } from '@/lib/cma/market-area-hydrate'
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
@@ -71,9 +72,25 @@ async function immersiveFromRow(
     }
     const stored = row.render_args as unknown as RenderCmaArgs
     const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(row.build_summary))
-    const hydrated = hydrateArea
-      ? await hydrateCmaMarketArea({ ...stored, comps, broker })
-      : { ...stored, comps, broker }
+    // C9: render_args omits mapDataUri (~300KB). Rebuild the Google comps pin map
+    // here so Open report / immersive shows subject + numbered sales once.
+    let mapDataUri: string | null = stored.mapDataUri ?? null
+    if (!mapDataUri) {
+      try {
+        const map = await buildCmaMapDataUri(stored.subject, comps)
+        mapDataUri = map?.dataUri ?? null
+      } catch {
+        mapDataUri = null
+      }
+    }
+    const base = {
+      ...stored,
+      comps,
+      broker,
+      mapDataUri,
+      subjectMapDataUri: null,
+    }
+    const hydrated = hydrateArea ? await hydrateCmaMarketArea(base) : base
     return renderImmersiveCmaHtml(hydrated, origin)
   } catch (err) {
     console.error('[cma/serve] immersive render failed:', err)
@@ -160,13 +177,10 @@ export async function serveCmaDocument(opts: {
     }
   }
 
-  // Broker review: stored HTML, not a live immersive rebuild (that path is 45–60s).
-  if (opts.isAdmin && !wantsPrint && cmaHasStoredHtml(head.html_path)) {
-    const stored = await getCmaStoredHtmlBySlug(safeSlug)
-    if (stored) return storedHtmlResult(stored, origin)
-  }
-
-  if (!wantsPrint && !opts.isAdmin) {
+  // Live immersive from render_args first (admin Open report + public /cma).
+  // Tip Ready letter fixes (C1/C4/C9) land without a Falcon html_content rebuild.
+  // Market hydrate stays false (D27 freeze). Map rebuild is fail-open + local.
+  if (!wantsPrint) {
     const source = await getCmaRenderSourceBySlug(safeSlug)
     if (source) {
       const immersive = await immersiveFromRow(source, origin, false)
@@ -176,16 +190,7 @@ export async function serveCmaDocument(opts: {
     }
   }
 
-  if (opts.isAdmin && !wantsPrint) {
-    const source = await getCmaRenderSourceBySlug(safeSlug)
-    if (source) {
-      const immersive = await immersiveFromRow(source, origin, false)
-      if (immersive) {
-        return { kind: 'html', status: 200, html: withTracker(immersive), headers: CMA_DOC_HEADERS }
-      }
-    }
-  }
-
+  // Fallback: frozen stored HTML (print path, legacy rows, immersive render miss).
   const stored = await getCmaStoredHtmlBySlug(safeSlug)
   if (stored) return storedHtmlResult(stored, origin)
 

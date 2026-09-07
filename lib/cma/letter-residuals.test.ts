@@ -227,24 +227,34 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
 }
 
 describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
-  it('C1: one sales path — matrix/stack only, no flyer dump or strip cards', () => {
+  it('C1: one sales path — summary stack on screen markup, matrix for print, no flyer/strip/Subject·Sale dump', () => {
     const { html } = renderCmaHtml(args())
-    expect(html).toContain('The sales that set the list')
-    expect(html).toContain('comp-stack')
+    const immersive = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
+    for (const doc of [html, immersive]) {
+      expect(doc).toContain('The sales that set the list')
+      expect(doc).toContain('comp-stack-card')
+      expect(doc).toContain('Adjusted close')
+      expect(doc).not.toContain('class="flyer-title"')
+      expect(doc).not.toContain('class="comp-strip"')
+      expect(doc).not.toContain('comp-stack-cols')
+      expect(doc).not.toContain('>Subject</span><span class="h c">Sale</')
+      expect(doc).not.toContain('Marker key')
+    }
     expect(html).toContain('comp-matrix')
-    expect(html).not.toContain('class="flyer-title"')
-    expect(html).not.toContain('class="comp-strip"')
-    expect(html).not.toContain('Marker key')
     const salesHits = (html.match(/The sales that set the list/g) ?? []).length
     expect(salesHits).toBe(1)
   })
 
-  it('C9: at most one pin-map; never subject-only map; cover keeps photo', () => {
+  it('C9: exactly one comps pin-map when mapDataUri exists; never subject-only; cover keeps photo', () => {
     const { html } = renderCmaHtml(args())
-    const pins = html.match(/class="pin-map"/g) ?? []
-    expect(pins.length).toBeLessThanOrEqual(1)
-    expect(html).toContain('COMPSMAP')
-    expect(html).not.toContain('SUBJECTMAP')
+    const immersive = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
+    for (const doc of [html, immersive]) {
+      const pins = doc.match(/class="pin-map"/g) ?? []
+      expect(pins.length).toBe(1)
+      expect(doc).toContain('COMPSMAP')
+      expect(doc).not.toContain('SUBJECTMAP')
+      expect(doc).toContain('Where those sales are')
+    }
     expect(html).toContain('cdn.example/falcon.jpg')
     expect(html).not.toContain('<h2 class="section">THE HOUSE</h2>')
   })
@@ -260,11 +270,16 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     expect(hasTrend && hasInventory).toBe(false)
   })
 
-  it('C4: screen stylesheet stacks comps; print restores matrix', () => {
+  it('C4: screen stylesheet stacks comps without Subject·Sale 3-col dump; print restores matrix', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
+    const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
     expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
     expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
     expect(css).toMatch(/@media print \{[\s\S]*\.comp-matrix-wrap \{[^}]*display:\s*block/)
+    expect(css).not.toContain('comp-stack-cols')
+    expect(css).not.toContain('grid-template-columns: 1.1fr 1fr 1fr')
+    expect(immersive).not.toContain('comp-stack-cols')
+    expect(immersive).toContain('overflow-wrap:anywhere')
   })
 
   it('expired peers beat is visible in Matt voice', () => {

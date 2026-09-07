@@ -246,22 +246,35 @@ function matrixTable(cols: Col[]): string {
 }
 
 
-/** Mobile letter (≤375–700): one subject + one sale per block — never a wide 8-col table. */
-function matrixStack(subj: Col, comps: Col[]): string {
+/** Screen letter (≤375+): one summary card per sale — never a Subject/Sale spreadsheet dump. */
+function joinFacts(parts: Array<string | null | undefined>): string | null {
+  const kept = parts.filter((p): p is string => Boolean(p && String(p).trim()))
+  return kept.length ? kept.join(' · ') : null
+}
+
+function matrixStack(comps: readonly CmaAdjustedComp[]): string {
   const cards = comps
-    .map((c) => {
-      const pin = c.key.replace(/^c/, '')
+    .map((c, i) => {
+      const pin = String(i + 1)
       const src = c.photoUrl ? sparkPhotoAt(c.photoUrl, '320x240') ?? c.photoUrl : null
       const img = src
         ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
         : ''
-      const rows = ROWS.map((row, i) => {
-        const subVal = subj.cells[i] ?? '-'
-        const compVal = c.cells[i] ?? '-'
-        if (subVal === '-' && compVal === '-') return ''
-        return `<div class="comp-stack-row"><span class="k">${esc(row.label)}</span><span class="s">${esc(subVal)}</span><span class="c${row.figure ? ' n' : ''}">${esc(compVal)}</span></div>`
-      }).join('')
-      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(c.label)}</div><div class="comp-stack-cols"><span class="h s">Subject</span><span class="h c">Sale</span></div>${rows}</article>`
+      const ppsf =
+        c.sqft > 0 && c.closePrice > 0 ? `${usd(Math.round(c.closePrice / c.sqft))}/sf` : null
+      const facts = joinFacts([
+        c.beds != null ? `${int(c.beds)} bd` : null,
+        c.baths != null ? `${dec(c.baths, c.baths % 1 !== 0 ? 1 : 0)} ba` : null,
+        c.sqft > 0 ? `${int(c.sqft)} sqft` : null,
+        c.yearBuilt != null ? String(c.yearBuilt) : null,
+      ])
+      const time = joinFacts([
+        c.daysToOffer != null ? `${int(c.daysToOffer)}d to offer` : null,
+        c.domTotal != null ? `${int(c.domTotal)} DOM` : null,
+        c.proximity ? c.proximity : null,
+      ])
+      const history = c.listingHistoryLine?.trim() || null
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(c.address)}</div><div class="comp-stack-sold">Sold ${esc(dateLong(c.closeDate))} · ${usd(c.closePrice)}${ppsf ? ` · ${esc(ppsf)}` : ''}</div><div class="comp-stack-nums"><span class="comp-stack-n"><span class="k">Adjusted close</span><span class="v n">${usd(c.adjustedPrice)}</span></span></div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${time ? `<div class="comp-stack-facts">${esc(time)}</div>` : ''}${history ? `<div class="comp-stack-facts">${esc(history)}</div>` : ''}</article>`
     })
     .join('')
   return `<div class="comp-stack" aria-label="Comparable sales, stacked for narrow screens">${cards}</div>`
@@ -281,7 +294,7 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       return `${heading}${matrixTable([subj, ...group])}`
     })
     .join('')
-  const stack = matrixStack(subj, compCols)
+  const stack = matrixStack(comps)
   return `
   <h3 class="subhead">The sales that set the list</h3>
   ${tables}
