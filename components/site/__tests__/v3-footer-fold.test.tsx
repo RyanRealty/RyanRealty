@@ -102,7 +102,7 @@ describe('the footer fold', () => {
 
   it('closes on the Bend cityscape band with the real wordmark', () => {
     const out = html()
-    expect(out).toContain('/images/footer/bend-cityscape.jpg')
+    expect(out).toContain('/images/footer/bend-cityscape.png')
     expect(out).toContain('/images/brand/logo-horizontal-navy-transparent.png')
     expect(out).toContain('Central Oregon')
     expect(out).not.toMatch(/v3-btn/)

@@ -274,7 +274,7 @@ export function V3Footer({
       <div className="v3-footer__cityscape">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/images/footer/bend-cityscape.jpg"
+          src="/images/footer/bend-cityscape.png"
           alt=""
           width={2100}
           height={900}

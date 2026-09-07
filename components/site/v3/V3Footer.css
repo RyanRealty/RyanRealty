@@ -22,8 +22,9 @@
   border-top: var(--v3-rule-section);
 }
 
-/* PAGE_OUTLINE Footer: navy-on-cream Bend drawing as the closing band.
-   Wordmark overlays the cream sky. Not a second primary. */
+/* PAGE_OUTLINE Footer: navy line art (transparent PNG) on CSS cream.
+   Cream is --v3-cream only — never baked into the bitmap. Wordmark overlays
+   the sky as a separate img, not drawn into the art. */
 .v3-footer__cityscape {
   position: relative;
   overflow: hidden;
