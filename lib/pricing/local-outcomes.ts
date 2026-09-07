@@ -49,6 +49,17 @@ export const MIN_LOCAL_OUTCOME_N = 30
 /** Rolling window every figure in this module is measured over. */
 export const LOCAL_OUTCOME_WINDOW_MONTHS = 12
 
+/**
+ * Redfin's published definition of every share-of-list metric excludes sales
+ * that closed 50 percent above or below the ask (fetched 2026-09-07,
+ * docs/research/cma-professional-practice-2026-09-07.md §4). A close at 3x its
+ * own asking price is a data defect or a related-party transfer, and one of
+ * them drags a median. The SAME rule applies everywhere a close-to-ask ratio
+ * is measured in this repo, so it is stated once, here.
+ */
+export const ASK_RATIO_MIN = 0.5
+export const ASK_RATIO_MAX = 1.5
+
 /** The §0 trace that ships beside a figure and in `citations`. */
 export interface CmaStatSource {
   table: string
@@ -94,6 +105,18 @@ export interface CmaAskOutcomeGroup {
   medianDays: number | null
   /** `sold-after-cut` only: median of (original ask − final ask) / original ask, in percent. */
   medianCutPct?: number | null
+  /**
+   * Median close ÷ ORIGINAL ask, in percent — what the group actually realized
+   * against the price it opened at. Null on `did-not-sell` (nothing closed) and
+   * null when the count is under the minimum.
+   */
+  medianSoldToOriginalAskPct: number | null
+  /**
+   * How many sales that median was computed over — smaller than `n` whenever a
+   * row carries days but no usable pair of prices. Printing `n` beside a figure
+   * computed on fewer rows is the §0 defect this field exists to avoid.
+   */
+  soldToOriginalAskN: number
   reason: string | null
 }
 
@@ -110,6 +133,7 @@ export interface LocalClosedRow {
   days_to_pending?: number | null
   OriginalListPrice?: number | null
   ListPrice?: number | null
+  ClosePrice?: number | null
 }
 
 /** The rows `getCmaCityFailedOutcomes` returns, narrowed to what is measured. */
@@ -220,7 +244,7 @@ export function computeOfferTiming(args: {
     table: 'listings',
     filter: `City='${args.city}', PropertyType='A', property_sub_type='Single Family Residence', StandardStatus='Closed', CloseDate >= ${args.sinceIso}; days measured as days_to_pending (on-market date to accepted offer), rows with no days_to_pending excluded`,
     fetchedAt: args.fetchedAt,
-    query: `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"`,
+    query: `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice, ClosePrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"`,
   }
   if (n < MIN_LOCAL_OUTCOME_N) {
     return {
@@ -262,6 +286,21 @@ function askPair(row: LocalClosedRow): { original: number; final: number } | nul
   return { original, final }
 }
 
+/**
+ * Close ÷ ORIGINAL ask as a percent, or null when the row cannot support one:
+ * a missing price, a non-positive price, or a ratio outside the ±50 percent
+ * bounds above.
+ */
+export function soldToOriginalAskPct(row: LocalClosedRow): number | null {
+  const original = Number(row.OriginalListPrice)
+  const close = Number(row.ClosePrice)
+  if (!Number.isFinite(original) || original <= 0) return null
+  if (!Number.isFinite(close) || close <= 0) return null
+  const ratio = close / original
+  if (ratio < ASK_RATIO_MIN || ratio > ASK_RATIO_MAX) return null
+  return ratio * 100
+}
+
 /** True when the ask that closed the sale is below the ask that opened it. */
 export function soldAfterCut(row: LocalClosedRow): boolean {
   const asks = askPair(row)
@@ -290,32 +329,45 @@ function group(
   key: CmaAskOutcomeKey,
   days: number[],
   label: string,
-  cutPcts?: number[],
+  opts: { cutPcts?: number[]; realizationPcts?: number[] } = {},
 ): CmaAskOutcomeGroup {
   const n = days.length
+  const cutPcts = opts.cutPcts
+  // The realization median stands on its own count and its own minimum: a
+  // group can carry enough sales to publish days and not enough usable price
+  // pairs to publish a share, and the reverse.
+  const realizationPcts = opts.realizationPcts ?? []
+  const soldToOriginalAskN = realizationPcts.length
+  const realizationMedian =
+    key === 'did-not-sell' || soldToOriginalAskN < MIN_LOCAL_OUTCOME_N
+      ? null
+      : medianVerified(realizationPcts)
+  const medianSoldToOriginalAskPct = realizationMedian == null ? null : round1(realizationMedian)
+  const base = {
+    key,
+    n,
+    ...(cutPcts ? { medianCutPct: null as number | null } : {}),
+    medianSoldToOriginalAskPct,
+    soldToOriginalAskN,
+  }
   if (n < MIN_LOCAL_OUTCOME_N) {
     return {
-      key,
-      n,
+      ...base,
       medianDays: null,
-      ...(cutPcts ? { medianCutPct: null } : {}),
       reason: `${n} ${label} in this window, under the ${MIN_LOCAL_OUTCOME_N} needed to publish a median.`,
     }
   }
   const medianDays = medianVerified(days)
   if (medianDays == null) {
     return {
-      key,
-      n,
+      ...base,
       medianDays: null,
-      ...(cutPcts ? { medianCutPct: null } : {}),
       reason: 'The median could not be confirmed by a second computation, so no figure is published.',
     }
   }
   const medianCutPct = cutPcts ? medianVerified(cutPcts) : undefined
   return {
-    key,
-    n,
+    ...base,
     medianDays,
     ...(cutPcts ? { medianCutPct: medianCutPct == null ? null : round1(medianCutPct) } : {}),
     reason: null,
@@ -350,6 +402,13 @@ export function computeAskOutcome(args: {
   const cutPcts = cutRows
     .map((r) => askPair(r)!)
     .map(({ original, final }) => ((original - final) / original) * 100)
+  // What each sold group realized against the ask it OPENED at. Same rows, one
+  // more measurement; rows with no close price or a ratio outside ±50 percent
+  // are not datapoints and are counted out in the source line.
+  const realizationOf = (rows: readonly LocalClosedRow[]): number[] =>
+    rows.map(soldToOriginalAskPct).filter((n): n is number => n != null)
+  const noCutRealization = realizationOf(noCutRows)
+  const cutRealization = realizationOf(cutRows)
   const failedDays = args.failedRows
     .map(failedRowDays)
     .filter((d): d is number => d != null && d >= 0)
@@ -366,10 +425,13 @@ export function computeAskOutcome(args: {
       `Did not sell: StandardStatus in (Expired, Canceled, Withdrawn), off_market_date >= ${args.sinceIso}, ` +
       `days = list date to off-market date (finalCycleDaysOnMarket, the same span measured for the subject). ` +
       `Each group's n is the count the median was computed over: ${soldWithoutDays} sold row(s) and ` +
-      `${failedWithoutDays} off-market row(s) carried no usable days figure and were set aside.`,
+      `${failedWithoutDays} off-market row(s) carried no usable days figure and were set aside. ` +
+      `Share of the original ask = ClosePrice / OriginalListPrice on the same closed rows, ` +
+      `excluding closes more than 50% above or below that ask (${noCutRealization.length} of ${noCutRows.length} ` +
+      `no-cut and ${cutRealization.length} of ${cutRows.length} cut sale(s) carried a usable pair).`,
     fetchedAt: args.fetchedAt,
     query:
-      `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"` +
+      `select ListingKey, CloseDate, days_to_pending, OriginalListPrice, ListPrice, ClosePrice from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" = 'Closed' and "CloseDate" >= '${args.sinceIso}' order by "CloseDate", "ListingKey"` +
       ` ;; ` +
       `select ListingKey, "StandardStatus", "ListDate", "OnMarketDate", off_market_date, status_change_timestamp, "DaysOnMarket" from listings where "City" = '${args.city}' and "PropertyType" = 'A' and property_sub_type = 'Single Family Residence' and "StandardStatus" in ('Expired','Canceled','Withdrawn') and off_market_date >= '${args.sinceIso}' order by off_market_date, "ListingKey"`,
   }
@@ -378,8 +440,13 @@ export function computeAskOutcome(args: {
     city: args.city,
     windowMonths,
     groups: [
-      group('sold-no-cut', noCutDays, `sales in ${args.city} closed without the ask coming down`),
-      group('sold-after-cut', cutDays, `sales in ${args.city} closed after the ask came down`, cutPcts),
+      group('sold-no-cut', noCutDays, `sales in ${args.city} closed without the ask coming down`, {
+        realizationPcts: noCutRealization,
+      }),
+      group('sold-after-cut', cutDays, `sales in ${args.city} closed after the ask came down`, {
+        cutPcts,
+        realizationPcts: cutRealization,
+      }),
       group('did-not-sell', failedDays, `listings in ${args.city} came off the market unsold`),
     ],
     source,
@@ -392,3 +459,4 @@ export function localOutcomeWindowStart(asOf: Date, months = LOCAL_OUTCOME_WINDO
   d.setUTCMonth(d.getUTCMonth() - months)
   return d.toISOString().slice(0, 10)
 }
+

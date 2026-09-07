@@ -763,6 +763,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     if (market) {
       market.offerTiming = localOutcomes.offerTiming
       market.askOutcome = localOutcomes.askOutcome
+      market.localFailedThenSold = localOutcomes.localFailedThenSold
     }
 
     // 4.76. What they own: the prior purchase at this address, and what the
@@ -1029,6 +1030,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
           }
         : { source: 'none', note: 'No closed or off-market rows returned for the subject city.' },
+      market_local_failed_then_sold: localOutcomes.localFailedThenSold
+        ? {
+            ...localOutcomes.localFailedThenSold.source,
+            city: localOutcomes.localFailedThenSold.city,
+            window_months: localOutcomes.localFailedThenSold.windowMonths,
+            n: localOutcomes.localFailedThenSold.n,
+            median_share_of_failed_ask: localOutcomes.localFailedThenSold.medianShareOfFailedAsk,
+            withheld_reason: localOutcomes.localFailedThenSold.reason,
+            ...(market ? {} : { note: 'No market context for this city, so the figure is recorded here only.' }),
+          }
+        : { source: 'none', note: 'No failed cycles or closed sales returned for the subject city.' },
       market_ask_outcome: localOutcomes.askOutcome
         ? {
             ...localOutcomes.askOutcome.source,

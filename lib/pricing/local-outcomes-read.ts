@@ -12,6 +12,8 @@
 import 'server-only'
 import {
   getCmaCityClosedOutcomes,
+  getCmaCityClosedSales,
+  getCmaCityFailedCycles,
   getCmaCityFailedOutcomes,
 } from '@/lib/data/cma/localOutcomeReads'
 import {
@@ -22,15 +24,26 @@ import {
   type CmaAskOutcome,
   type CmaOfferTiming,
 } from '@/lib/pricing/local-outcomes'
+import {
+  computeLocalFailedThenSold,
+  FAILED_THEN_SOLD_WINDOW_MONTHS,
+  type CmaLocalFailedThenSold,
+} from '@/lib/pricing/failed-then-sold'
 
 export interface CmaLocalOutcomes {
   /** The cumulative offer-timing curve for the subject's city. */
   offerTiming: CmaOfferTiming | null
   /** Sold without a cut / sold after a cut / did not sell, same city + window. */
   askOutcome: CmaAskOutcome | null
+  /** The city's own failed-then-sold pairs over 24 months. */
+  localFailedThenSold: CmaLocalFailedThenSold | null
 }
 
-export const EMPTY_LOCAL_OUTCOMES: CmaLocalOutcomes = { offerTiming: null, askOutcome: null }
+export const EMPTY_LOCAL_OUTCOMES: CmaLocalOutcomes = {
+  offerTiming: null,
+  askOutcome: null,
+  localFailedThenSold: null,
+}
 
 /**
  * Both chapter-2 blocks for one city, over the trailing 12 months.
@@ -49,9 +62,16 @@ export async function buildCmaLocalOutcomes(args: {
   const sinceIso = localOutcomeWindowStart(asOf)
   const fetchedAt = new Date().toISOString()
 
-  const [closedRows, failedRows] = await Promise.all([
+  // The pair figure looks back further than the outcome figures, and both of
+  // its sides run over the SAME longer window: a failure 23 months old can be
+  // answered by a sale that closed last month.
+  const pairSinceIso = localOutcomeWindowStart(asOf, FAILED_THEN_SOLD_WINDOW_MONTHS)
+
+  const [closedRows, failedRows, failedCycles, closedSales] = await Promise.all([
     getCmaCityClosedOutcomes(city, sinceIso).catch(() => []),
     getCmaCityFailedOutcomes(city, sinceIso).catch(() => []),
+    getCmaCityFailedCycles(city, pairSinceIso).catch(() => []),
+    getCmaCityClosedSales(city, pairSinceIso).catch(() => []),
   ])
 
   // A total read miss is not a market with no sales. Say nothing rather than
@@ -59,6 +79,19 @@ export async function buildCmaLocalOutcomes(args: {
   if (closedRows.length === 0 && failedRows.length === 0) return EMPTY_LOCAL_OUTCOMES
 
   return {
+    // Both pair sides missing is a read miss, not a city where nothing ever
+    // came off the market: no block rather than "0 homes" (§0).
+    localFailedThenSold:
+      failedCycles.length === 0 && closedSales.length === 0
+        ? null
+        : computeLocalFailedThenSold({
+            failedRows: failedCycles,
+            closedRows: closedSales,
+            city,
+            sinceIso: pairSinceIso,
+            fetchedAt,
+            windowMonths: FAILED_THEN_SOLD_WINDOW_MONTHS,
+          }),
     offerTiming: computeOfferTiming({
       rows: closedRows,
       city,

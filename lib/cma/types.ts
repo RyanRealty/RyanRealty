@@ -174,6 +174,12 @@ export interface CmaMarketContext {
    */
   offerTiming?: import('@/lib/pricing/local-outcomes').CmaOfferTiming | null
   askOutcome?: import('@/lib/pricing/local-outcomes').CmaAskOutcome | null
+  /**
+   * The city's own failed-then-sold pairs over 24 months. When `n` is under
+   * the minimum the block still ships with its reason, and the chapter falls
+   * back to the regional FAILED_ASK_BACKTEST figure, named as regional.
+   */
+  localFailedThenSold?: import('@/lib/pricing/failed-then-sold').CmaLocalFailedThenSold | null
 }
 
 export interface CmaPricing {

@@ -20,6 +20,7 @@ import {
   medianSorted,
   medianVerified,
   soldAfterCut,
+  soldToOriginalAskPct,
   soldWithoutCut,
   usableDaysToPending,
   type LocalClosedRow,
@@ -260,3 +261,60 @@ describe('localOutcomeWindowStart', () => {
     expect(localOutcomeWindowStart(new Date('2026-03-31T00:00:00Z'), 1)).toBe('2026-03-03')
   })
 })
+
+describe('share of the original ask', () => {
+  it('is a percent of the ORIGINAL ask, not the final one', () => {
+    expect(
+      soldToOriginalAskPct({ OriginalListPrice: 500_000, ListPrice: 460_000, ClosePrice: 450_000 }),
+    ).toBe(90)
+  })
+
+  it('refuses a close more than 50 percent from the ask (Redfin exclusion)', () => {
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 160_000 })).toBeNull()
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 40_000 })).toBeNull()
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 150_000 })).toBe(150)
+    expect(soldToOriginalAskPct({ OriginalListPrice: 100_000, ClosePrice: 50_000 })).toBe(50)
+  })
+
+  it('is null when either price is missing', () => {
+    expect(soldToOriginalAskPct({ OriginalListPrice: 500_000 })).toBeNull()
+    expect(soldToOriginalAskPct({ ClosePrice: 500_000 })).toBeNull()
+  })
+
+  it('rides the sold groups and is never published for did-not-sell', () => {
+    const noCut = closedRun(MIN_LOCAL_OUTCOME_N, () => ({ ClosePrice: 495_000 }))
+    const cut = closedRun(MIN_LOCAL_OUTCOME_N, () => ({ ListPrice: 480_000, ClosePrice: 470_000 }))
+    const out = computeAskOutcome({
+      closedRows: [...noCut, ...cut],
+      failedRows: Array.from({ length: MIN_LOCAL_OUTCOME_N }, () => failed()),
+      city: 'Redmond',
+      sinceIso: SINCE,
+      fetchedAt: FETCHED,
+    })
+    const byKey = Object.fromEntries(out.groups.map((g) => [g.key, g]))
+    expect(byKey['sold-no-cut'].medianSoldToOriginalAskPct).toBe(99)
+    expect(byKey['sold-no-cut'].soldToOriginalAskN).toBe(MIN_LOCAL_OUTCOME_N)
+    expect(byKey['sold-after-cut'].medianSoldToOriginalAskPct).toBe(94)
+    expect(byKey['did-not-sell'].medianSoldToOriginalAskPct).toBeNull()
+    expect(byKey['did-not-sell'].soldToOriginalAskN).toBe(0)
+  })
+
+  it('withholds the share when the price pairs are thinner than the days', () => {
+    const rows = closedRun(MIN_LOCAL_OUTCOME_N).map((r, i) =>
+      i < 5 ? { ...r, ClosePrice: 495_000 } : r,
+    )
+    const out = computeAskOutcome({
+      closedRows: rows,
+      failedRows: [],
+      city: 'Redmond',
+      sinceIso: SINCE,
+      fetchedAt: FETCHED,
+    })
+    const noCut = out.groups.find((g) => g.key === 'sold-no-cut')!
+    expect(noCut.n).toBe(MIN_LOCAL_OUTCOME_N)
+    expect(noCut.medianDays).not.toBeNull()
+    expect(noCut.soldToOriginalAskN).toBe(5)
+    expect(noCut.medianSoldToOriginalAskPct).toBeNull()
+  })
+})
+

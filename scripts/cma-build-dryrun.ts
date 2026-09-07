@@ -89,6 +89,7 @@ type DryRun = {
    */
   renderArgsMarketOfferTiming: unknown
   renderArgsMarketAskOutcome: unknown
+  renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
 }
@@ -135,7 +136,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     needsReview: false, reviewReason: null, hardFailures: [],
     matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
-    renderArgsMarketAskOutcome: null, renderArgsExpiredAuditFinalCycle: null, error: null,
+    renderArgsMarketAskOutcome: null, renderArgsMarketLocalFailedThenSold: null, renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -241,6 +242,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const localOutcomes = await buildCmaLocalOutcomes({ city: subject.city }).catch(() => ({
     offerTiming: null,
     askOutcome: null,
+    localFailedThenSold: null,
   }))
   const finalCycleBlock = await (async () => {
     if (!lastCycleFailed) return null
@@ -287,6 +289,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     concessionSentenceTrimmed,
     renderArgsMarketOfferTiming: localOutcomes.offerTiming,
     renderArgsMarketAskOutcome: localOutcomes.askOutcome,
+    renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
   }
@@ -309,6 +312,7 @@ async function main() {
       hardFailures: [], matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0,
       concessionSentence: null, concessionSentenceTrimmed: null,
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
+      renderArgsMarketLocalFailedThenSold: null,
       renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
@@ -341,6 +345,8 @@ async function main() {
     console.log(indent(r.renderArgsMarketOfferTiming))
     console.log('   render_args.market.askOutcome =')
     console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.market.localFailedThenSold =')
+    console.log(indent(r.renderArgsMarketLocalFailedThenSold))
     console.log('   render_args.expiredAudit.finalCycle =')
     console.log(indent(r.renderArgsExpiredAuditFinalCycle))
     if (r.error) console.log(`   ✖ ${r.error}`)
