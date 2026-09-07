@@ -64,6 +64,10 @@ export async function GET(req: NextRequest) {
       // a reporting-side failure must never break the pixel response.
       const res = await recordEmailEvent({
         personId: ctx.personId,
+        // The token carries the sending broker (`b`) and the crm_timeline row
+        // above has always used it; email_events did not, so every open on this
+        // rail landed unattributed and per-broker engagement could not see it.
+        broker: ctx.broker ?? null,
         sendType: sendTypeFromEmailKey(ctx.emailKey),
         event: 'open',
         emailKey: ctx.emailKey || null,

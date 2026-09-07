@@ -46,6 +46,9 @@ export async function GET(req: NextRequest) {
       // must never break the 302 redirect.
       const res = await recordEmailEvent({
         personId: ctx.personId,
+        // Same omission as the open pixel: the signed token knows the broker,
+        // and dropping it here left email_events.broker null on every click.
+        broker: ctx.broker ?? null,
         sendType: sendTypeFromEmailKey(ctx.emailKey),
         event: 'click',
         emailKey: ctx.emailKey || null,

@@ -131,8 +131,23 @@ function inboundFacts(ctx: CmaSendContext): CmaFirstContactFacts {
   return ctx.facts
 }
 
-function linkifyHttp(html: string): string {
-  return html.replace(/https:\/\/[^\s<]+/g, (url) => `<a href="${url}">${url}</a>`)
+/**
+ * Turn the bare URLs the first-contact copy writes into links.
+ *
+ * TRAILING PUNCTUATION IS NOT PART OF THE URL. The copy puts URLs at the end of
+ * sentences ("Reviews are at https://ryan-realty.com/reviews."), and the greedy
+ * `[^\s<]+` match used to swallow the full stop — so every cold-origin CMA email
+ * shipped with `href=".../reviews."` and `href=".../about."`, two 404s per send,
+ * caught on the 2026-09-07 instrumentation audit by decoding the click tokens in
+ * a delivered message. The punctuation is put back OUTSIDE the anchor so the
+ * sentence still reads correctly.
+ */
+export function linkifyHttp(html: string): string {
+  return html.replace(/https:\/\/[^\s<]+/g, (url) => {
+    const trailing = url.match(/[.,;:!?]+$/)?.[0] ?? ''
+    const clean = trailing ? url.slice(0, -trailing.length) : url
+    return `<a href="${clean}">${clean}</a>${trailing}`
+  })
 }
 
 function bodyParagraphsHtml(bodyText: string, address: string | null): string {
@@ -365,11 +380,17 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
 
   const body = buildLeadBody(ctx, override)
   const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
+  const emailKey = `cma:${slug}`
   const trackedHtml = attributeOutbound(body.html, {
     brokerSlug: crmBrokerSlug,
     personId: personId ?? undefined,
-    emailKey: `cma:${slug}`,
+    emailKey,
     label: body.subject,
+    // Stamps the broker INTO the signed tracking token, so the open/click rows
+    // this send produces carry `broker` instead of null. Without it every CMA
+    // open and click landed unattributed in email_events and crm_timeline, and
+    // per-broker engagement could not see them.
+    broker: crmBrokerSlug,
   })
 
   // Primary rail: the signing broker's real mailbox (same DWD transport the
@@ -414,6 +435,40 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
   const resendId = fallback?.id
 
   const sentAt = new Date().toISOString()
+
+  // The `sent` row in the unified email_events store — the anchor every other
+  // event on this send hangs off.
+  //
+  // WHY IT MATTERS, not bookkeeping: Resend's delivered / bounced / complained /
+  // unsubscribed webhook knows the provider message id and the recipient, and
+  // NOTHING about `cma:<slug>`. recordEmailEvent backfills the key by looking up
+  // the `sent` row for that message id (getSentEventByMessageId). With no `sent`
+  // row this send had none to find, so every CMA bounce landed with
+  // email_key = null / send_type = 'other' and could never be attributed to the
+  // document that caused it. A bounce that cannot be traced to a CMA is a send
+  // the queue reports as delivered when it was not (§0).
+  //
+  // Non-blocking on purpose: the email is already gone. A reporting-side failure
+  // must never turn a completed send into an error the broker sees.
+  try {
+    const { recordEmailEvent } = await import('@/lib/crm/email-events')
+    const rec = await recordEmailEvent({
+      messageId: gmailMessageId ?? resendId ?? null,
+      recipientEmail: ctx.clientEmail,
+      personId,
+      broker: crmBrokerSlug,
+      sendType: 'cma',
+      event: 'sent',
+      emailKey,
+      subject: body.subject,
+      occurredAt: sentAt,
+      meta: { transport, slug, docType: 'cma' },
+    })
+    if (!rec.ok) console.warn('[sendCmaToLead] email_events sent row failed:', rec.error)
+  } catch (e) {
+    console.warn('[sendCmaToLead] email_events sent row threw:', e instanceof Error ? e.message : e)
+  }
+
   await updateCmaRowFieldsBySlug(slug, { status: 'delivered', delivered_at: sentAt })
   if (personId) {
     await stampCmaLinkOnPerson(personId, { cmaLink: `${SITE_URL}/cma/${slug}`, cmaSlug: slug })
