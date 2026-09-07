@@ -38,7 +38,7 @@ export const FAQ_ITEMS = [
   {
     question: 'How does a buyer broker get paid?',
     answer:
-      'In most deals the seller offers a buyer-agent commission in the MLS. If the seller offers nothing, the buyer-broker fee is written into your buyer-broker agreement before we tour. You see the number before you sign.',
+      'Your buyer-broker agreement states the fee before we tour, and in the offer we ask the seller to cover it. Since August 2024 that offer no longer appears in the MLS, so it is negotiated in each contract. Any balance the seller does not cover is yours at closing, and you saw the number before you signed.',
   },
 ] as const
 

@@ -418,7 +418,7 @@ export function V3Field({
                     >
                       <img
                         src={item.photoSrc}
-                        alt=""
+                        alt={item.title}
                         width={index === 0 ? 1280 : 640}
                         height={index === 0 ? 720 : 400}
                         loading={index < 3 ? 'eager' : 'lazy'}
@@ -497,7 +497,7 @@ export function V3Field({
                         <img
                           className="v3-field__thumb"
                           src={item.photoSrc}
-                          alt=""
+                          alt={item.title}
                           width={120}
                           height={120}
                           loading="lazy"

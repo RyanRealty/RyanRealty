@@ -211,6 +211,16 @@ const CHECKS = [
       '  indexable preset pages are destination pages; stripping their structured\n' +
       '  data fails CI.',
   },
+  {
+    file: 'app/search/page.tsx',
+    label: 'search root: SearchRootJsonLd (WebPage + ItemList)',
+    all: ['SearchRootJsonLd'],
+    why:
+      'The root search route (/homes-for-sale, unslugged filters) MUST render\n' +
+      '  SearchRootJsonLd — WebPage + an ItemList of the listings the page already\n' +
+      '  fetched — the same AEO-audit finding fixed on the [...slug] variant above:\n' +
+      '  the highest-traffic search surface was emitting no structured data at all.',
+  },
 
   // ── Price Drop Radar (2026-06-09) ──────────────────────────────────────
   {

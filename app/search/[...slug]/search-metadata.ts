@@ -75,7 +75,7 @@ export async function buildSearchSlugMetadata({
       robots:
         hasInvalidPresetSegment || (!!preset && isSortOnlyPreset(preset)) || shouldNoIndexSearchVariant(sp) || matrixNoIndex
           ? { index: false, follow: true }
-          : undefined,
+          : { index: true, follow: true },
       openGraph: {
         title,
         description: metaDesc,

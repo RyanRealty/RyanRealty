@@ -42,6 +42,7 @@ import {
   rewriteBlogCurrentMos,
 } from '@/lib/blog/publish-blog-current-mos'
 import { rewriteBlogMosVerdicts } from '@/lib/blog/publish-blog-mos-verdicts'
+import { publishBlogFaq } from '@/lib/blog/publish-blog-faq'
 import '@/components/site/v3/V3ArticleIsland.css'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
@@ -164,6 +165,9 @@ export default async function BlogPostPage({ params }: PageProps) {
       : undefined,
     author_name: post.author_name,
   })
+  // AEO: the Questions section of a guide is also its FAQPage schema. Same
+  // markup, one source, so the schema cannot drift from the visible answers.
+  const faqSchema = publishBlogFaq(rawBody)
   const currentMosBody = blogClaimsCurrentMos(rawBody)
     ? rewriteBlogCurrentMos(
         rawBody,
@@ -237,6 +241,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
         <MetadataBlock
           schemas={[
+            ...(faqSchema ? [faqSchema] : []),
             {
               type: 'breadcrumb',
               items: [

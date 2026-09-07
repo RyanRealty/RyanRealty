@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import type { V3ListingRowBadge } from './V3ListingRow'
+import { listingPhotoAlt } from './listing-photo-alt'
 
 const SOLID: Record<V3ListingRowBadge, boolean> = {
   hot: true,
@@ -73,7 +74,7 @@ export function SplitCardMedia({
       {src ? (
         <Image
           src={src}
-          alt=""
+          alt={listingPhotoAlt({ addressLine })}
           fill
           priority={priority}
           sizes={sizes}

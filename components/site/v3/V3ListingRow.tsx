@@ -40,6 +40,7 @@ import {
   publishListingSharePricePerSqft,
 } from '@/lib/listing/publish-listing-share'
 import { V3_ROOT_CLASS } from './atoms'
+import { listingPhotoAlt } from './listing-photo-alt'
 import './tokens.css'
 import './V3ListingRow.css'
 
@@ -158,7 +159,7 @@ export function V3ListingRow({
       {listing.photoUrl ? (
         <Image
           src={listing.photoUrl}
-          alt=""
+          alt={listingPhotoAlt(listing)}
           fill
           priority={priority}
           sizes={splitThumb ? '200px' : '72px'}

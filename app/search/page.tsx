@@ -30,6 +30,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
 } from '@/components/site/v3'
+import SearchRootJsonLd from './SearchRootJsonLd'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -187,6 +188,22 @@ function buildSearchTitle(filters: ReturnType<typeof parseFilters>): string {
   return `${parts.join(' ')} Homes for Sale`
 }
 
+/** Shared by generateMetadata and the WebPage JSON-LD so the two never drift. */
+function buildSearchDescription(filters: ReturnType<typeof parseFilters>): string {
+  return filters.city || filters.subdivision
+    ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
+    : 'Homes for sale across Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
+}
+
+/** Shared by generateMetadata and the WebPage JSON-LD so the canonical URL
+ *  published in both places is always the same value. */
+function buildSearchCanonical(sp: SearchParams): { siteUrl: string; canonical: URL } {
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const canonical = new URL('/homes-for-sale', siteUrl)
+  appendIndexableSearchParams(canonical, sp)
+  return { siteUrl, canonical }
+}
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -195,21 +212,23 @@ export async function generateMetadata({
   const sp = await searchParams
   const filters = parseFilters(sp)
   const title = buildSearchTitle(filters)
-  const description =
-    filters.city || filters.subdivision
-      ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
-      : 'Homes for sale across Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const canonical = new URL('/homes-for-sale', siteUrl)
-  appendIndexableSearchParams(canonical, sp)
+  const description = buildSearchDescription(filters)
+  const { siteUrl, canonical } = buildSearchCanonical(sp)
   const ogImage = `${siteUrl}/api/og?type=default`
   const noindex = shouldNoIndexSearchVariant(sp)
   return {
     title,
     description,
     alternates: { canonical: canonical.toString() },
-    robots: noindex ? { index: false, follow: true } : undefined,
-    openGraph: { title, description, url: canonical.toString(), images: [{ url: ogImage, width: 1200, height: 630 }] },
+    robots: noindex ? { index: false, follow: true } : { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: canonical.toString(),
+      siteName: 'Ryan Realty',
+      type: 'website',
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
     twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
   }
 }
@@ -363,6 +382,12 @@ export default async function SearchPage({
           ? undefined
           : totalCount
 
+  // JSON-LD ItemList source: whichever view is active already fetched real
+  // listings server-side (viewport for split, listings for list, the geocoded
+  // map rows for map) — no extra data fetch for the structured-data payload.
+  const jsonLdListings =
+    view === 'map' ? mapListingsWithCoords : view === 'list' ? listings : (viewport?.listings ?? [])
+
   // Multi Places: CSV in city/neighborhood/subdivision — primary (first) of the
   // finest grain drives placeQuery / boundary fit; listing query expands the
   // full set in toSearchAllFilter.
@@ -422,8 +447,18 @@ export default async function SearchPage({
   // fold on page load).
   const isAppFrame = view === 'map' || view === 'split'
 
+  const { siteUrl, canonical } = buildSearchCanonical(sp)
+
   return (
     <>
+    <SearchRootJsonLd
+      title={buildSearchTitle(filters)}
+      description={buildSearchDescription(filters)}
+      canonicalUrl={canonical.toString()}
+      siteUrl={siteUrl}
+      listings={jsonLdListings}
+      totalCount={resultsCount}
+    />
     {/* V3_LEDGER_CLASS: search is a data surface and wears the Ledger register
         (THE LOOK, PUBLIC_UI.md section 6). */}
     <main className={cn(V3_ROOT_CLASS, V3_LEDGER_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>

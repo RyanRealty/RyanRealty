@@ -94,7 +94,7 @@ export function HomeFeaturedCommunity({
 
         <figure className="home-featured-community__media">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={slide.photoSrc} alt="" decoding="async" />
+          <img src={slide.photoSrc} alt={`${slide.name} photo`} decoding="async" />
         </figure>
 
         <div className="home-featured-community__panel">

@@ -836,7 +836,7 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
             const lg = live?.[group.key]
             return (
               <div className="v3-chrome__menu-group" key={group.key}>
-                <h2 className="v3-chrome__menu-title" id={headingId}>
+                <p className="v3-chrome__menu-title" id={headingId}>
                   {group.href ? (
                     <Link href={group.href} onClick={close}>
                       {group.label}
@@ -844,7 +844,7 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
                   ) : (
                     group.label
                   )}
-                </h2>
+                </p>
                 {lg && lg.facts.length > 0 ? (
                   <p className="v3-chrome__menu-live">
                     {lg.facts.map((f, i) => (

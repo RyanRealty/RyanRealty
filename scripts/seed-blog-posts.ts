@@ -51,6 +51,8 @@ export type BlogPostSeed = {
   seo_description: string
   status: 'published' | 'draft'
   published_at: string
+  /** public.brokers.id of the byline broker. Optional so older seeds stay valid. */
+  author_broker_id?: string
 }
 
 async function seedPosts() {
@@ -86,6 +88,8 @@ async function seedPosts() {
         seo_description: post.seo_description,
         status: post.status,
         published_at: post.published_at,
+        ...(post.author_broker_id ? { author_broker_id: post.author_broker_id } : {}),
+        updated_at: new Date().toISOString(),
       },
       { onConflict: 'slug' }
     )
