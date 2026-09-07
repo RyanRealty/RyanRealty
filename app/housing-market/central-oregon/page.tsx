@@ -148,6 +148,9 @@ import {
   buildGuideRows,
 } from './_v3/region-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-charts'
+import {
+  marketReportDoorLinks,
+} from '@/lib/market/report-doors'
 import '../_v3/tremor-density.css'
 
 export const revalidate = 300
@@ -335,7 +338,7 @@ export default async function CentralOregonRegionPage() {
       'Source: Oregon Data Share via Ryan Realty.',
     ],
   })
-  summaryItems.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
+  summaryItems.push({ label: 'Months of supply (definition)', href: '/months-of-supply' })
 
   // The FAQ block's own outbound edges. PUBLIC_UI.md section 3 pattern 6 defines
   // Quiet as the block that "carries the graph's outbound edges", and answers naming
@@ -343,16 +346,12 @@ export default async function CentralOregonRegionPage() {
   // nowhere are the dead-text defect one pattern up. Each edge ships only when the
   // answers above it actually made that claim.
   const faqEdges: V3QuietItem[] = [
-    { label: 'Central Oregon housing market hub', href: '/housing-market' },
+    ...marketReportDoorLinks('region', {
+      include: ['hub', 'mos', 'history', 'published', 'method'],
+    }),
   ]
   if (region.activeCount != null) {
     faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
-  }
-  if (mosText != null) {
-    faqEdges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
-  }
-  if (firstClosedRow) {
-    faqEdges.push({ label: 'Closed sales explorer', href: HISTORY_PATH })
   }
 
   // The closing edges, built in ./_v3/region-sections.ts: every internal link the KB
@@ -647,8 +646,8 @@ export default async function CentralOregonRegionPage() {
 
         <V3Quiet
           id="explore"
-          eyebrow="More resources"
-          heading="Explore Central Oregon real estate"
+          eyebrow="Market reports"
+          heading="What each report is"
           items={exploreItems}
         />
       </main>

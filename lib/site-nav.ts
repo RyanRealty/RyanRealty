@@ -213,11 +213,17 @@ export const KB_TOP_NAV: TopNavGroup[] = [
   },
   {
     // Kept in SSOT for reachability / menu. Primary bar drops Market (Redfin-simple).
+    // Market report hierarchy — keep in lockstep with lib/market/report-doors.ts
+    // (ci:nav-reachability reads literal hrefs in this file).
     label: 'Market',
     href: '/housing-market',
     children: [
-      { href: '/housing-market', label: 'Market overview' },
-      { href: '/housing-market/reports', label: 'Market reports' },
+      { href: '/housing-market', label: 'Live housing market' },
+      { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
+      { href: '/months-of-supply', label: 'Months of supply' },
+      { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
+      { href: '/housing-market/history', label: 'Closed sales explorer' },
+      { href: '/housing-market/reports', label: 'Published reports' },
       { href: '/blog', label: 'Blog and guides' },
       { href: '/faq', label: 'FAQ' },
     ],
@@ -296,14 +302,15 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Market',
     links: [
-      { href: '/housing-market', label: 'Market overview' },
-      { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/blog', label: 'Blog and guides' },
-      NEWSLETTER_SUBSCRIBE,
-      { href: '/faq', label: 'FAQ' },
-      { href: '/activity', label: 'Recent activity' },
+      { href: '/housing-market', label: 'Live housing market' },
+      { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
+      { href: '/housing-market/history', label: 'Closed sales explorer' },
+      { href: '/housing-market/reports', label: 'Published reports' },
+      { href: '/blog', label: 'Blog and guides' },
+      { href: '/faq', label: 'FAQ' },
+      NEWSLETTER_SUBSCRIBE,
     ],
   },
   {

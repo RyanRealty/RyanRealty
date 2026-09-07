@@ -116,6 +116,10 @@ import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
+import {
+  marketReportDoorLinks,
+  marketReportHereBody,
+} from '@/lib/market/report-doors'
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 
@@ -126,8 +130,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Central Oregon Housing Market',
     description:
-      'Central Oregon housing market hub. Live single-family market data by city, with the full Central Oregon region report and per-city market pages. ' +
-      'Updated every 15 minutes from Oregon Data Share.',
+      'Live Central Oregon housing market hub: inventory and pace by city. Separate pages cover the region report, months of supply, and published weekly reports. ' +
+      'Updated every 15 minutes from Oregon Data Share / MarketPulse.',
     path: '/housing-market',
     keywords: [
       'Central Oregon housing market',
@@ -378,30 +382,28 @@ export default async function HousingMarketHubPage() {
   // linking nowhere are the dead-text defect one pattern up. Each edge ships only
   // when the answers above it actually made that claim.
   const faqEdges: V3QuietItem[] = [
-    { label: 'Central Oregon region report', href: '/housing-market/central-oregon' },
+    ...marketReportDoorLinks('hub', {
+      include: ['region', 'mos', 'history', 'published', 'method'],
+    }),
   ]
   if (hud.active != null) {
     faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
-  }
-  if (mosText != null) {
-    faqEdges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
-  }
-  if (closed) {
-    faqEdges.push({ label: `Closed sales explorer, ${closed.year}`, href: historyPath })
   }
 
   // The closing edges. Every internal link the KB hub carried, plus the outbound MLS
   // citation MarketSources used to render, plus any city with no live row.
   const exploreItems: V3QuietItem[] = [
-    { label: 'Central Oregon region report', href: '/housing-market/central-oregon' },
-    { label: 'Closed sales explorer', href: HISTORY_PATH },
-    { label: 'Market report index', href: '/housing-market/reports' },
+    {
+      kind: 'prose',
+      term: 'Where you are',
+      body: marketReportHereBody('hub'),
+    },
+    ...marketReportDoorLinks('hub'),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Communities and neighborhoods', href: '/communities' },
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
     { label: 'Open houses this week', href: '/open-houses' },
     { label: 'Recent price drops', href: '/price-drops' },
-    { label: 'Buying and selling guides', href: '/blog' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   if (cityFootnotes.length > 0) {
@@ -414,7 +416,7 @@ export default async function HousingMarketHubPage() {
       const slug = city.slug ?? CITY_SLUG[city.label]
       if (!slug) continue
       exploreItems.push({
-        label: `${city.label} market report`,
+        label: `${city.label} housing market`,
         href: `/housing-market/${slug}`,
       })
     }
@@ -525,7 +527,7 @@ export default async function HousingMarketHubPage() {
           <V3Ledger
             id="cities"
             eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Market by city')}
+            heading={v3Text('Live city market reports')}
             rows={[firstCityRow, ...restCityRows]}
             source={v3Text(
               'live MLS through Oregon Data Share, active single-family houses, one row per city',
@@ -537,7 +539,7 @@ export default async function HousingMarketHubPage() {
           <V3Ledger
             id="cities"
             eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Market by city')}
+            heading={v3Text('Live city market reports')}
             rows={[]}
             emptyMessage={v3Text(
               'No city returned a live single-family market row on this refresh.',
@@ -619,8 +621,8 @@ export default async function HousingMarketHubPage() {
 
         <V3Quiet
           id="explore"
-          eyebrow="More resources"
-          heading="Explore Central Oregon real estate"
+          eyebrow="Market reports"
+          heading="What each report is"
           items={exploreItems}
         />
       </main>

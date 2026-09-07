@@ -47,16 +47,20 @@ import { ReportsInquirySheet } from './_v3/ReportsInquirySheet.client'
 import { CityHeadlineSection, RangeTableSection, SalesAndWeeklySection } from './_v3/ReportsIslands'
 import { CANONICAL_PATH, SELL_HREF, siteUrl } from './_v3/hub-constants'
 import { parseReportsParams, buildRegionFigures } from './_v3/hub-sections'
+import {
+  marketReportDoorLinks,
+  marketReportHereBody,
+} from '@/lib/market/report-doors'
 
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Central Oregon market reports',
+  title: 'Published Central Oregon market reports',
   description:
-    'Sold volume, median price, days on market, and inventory by Central Oregon city. Pick cities and a time range. Weekly reports included.',
+    'Published weekly and sales reports for Central Oregon. Live inventory and pace live on the housing market hub. Pick cities and a time range.',
   alternates: { canonical: `${siteUrl}${CANONICAL_PATH}` },
   openGraph: {
-    title: 'Central Oregon market reports',
+    title: 'Published Central Oregon market reports',
     description:
       'Sold volume, median price, days on market, and inventory by city. Weekly reports included.',
     url: `${siteUrl}${CANONICAL_PATH}`,
@@ -66,7 +70,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Central Oregon market reports',
+    title: 'Published Central Oregon market reports',
     description:
       'Sold volume, median price, days on market, and inventory by city. Weekly reports included.',
     images: [defaultOgImage],
@@ -127,12 +131,13 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
               type: 'breadcrumb',
               items: [
                 { name: 'Home', url: '/' },
-                { name: 'Market reports', url: CANONICAL_PATH },
+                { name: 'Housing market', url: '/housing-market' },
+                { name: 'Published reports', url: CANONICAL_PATH },
               ],
             },
             {
               type: 'webPage',
-              name: 'Central Oregon real estate market reports',
+              name: 'Published Central Oregon market reports',
               description:
                 'Housing market report by city: sold volume, median price, days on market, inventory. Choose cities and time range.',
               url: CANONICAL_PATH,
@@ -140,16 +145,20 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           ]}
         />
         <V3Breadcrumb
-          trail={[{ label: 'Home', href: '/' }, { label: 'Market reports' }]}
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Housing market', href: '/housing-market' },
+            { label: 'Published reports' },
+          ]}
         />
 
         {firstFigure ? (
           <V3Instrument
             id="reports"
             level={1}
-            eyebrow={v3Text('Central Oregon')}
+            eyebrow={v3Text('Published reports')}
             headline={v3Text(
-              `Central Oregon market reports${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+              `Published Central Oregon market reports${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(
@@ -166,7 +175,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
         ) : (
           <V3Quiet
             id="reports"
-            heading="Central Oregon market reports"
+            heading="Published Central Oregon market reports"
             headingLevel={1}
             items={[
               {
@@ -186,12 +195,16 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
 
         <V3Quiet
           id="explore"
-          eyebrow="More resources"
-          heading="Keep reading"
+          eyebrow="Market reports"
+          heading="What each report is"
           items={[
-            { label: 'Housing market hub', href: '/housing-market' },
+            {
+              kind: 'prose',
+              term: 'Where you are',
+              body: marketReportHereBody('published'),
+            },
+            ...marketReportDoorLinks('published'),
             { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
-            { label: 'Months of supply', href: '/months-of-supply' },
             { label: 'Value my home', href: SELL_HREF },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
           ]}

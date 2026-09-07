@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { marketNavChildren } from './market/report-doors'
 import {
   FOOTER_NAV,
   KB_ABOUT_DROPDOWN,
@@ -61,17 +62,23 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     }
   })
 
-  it('Market SSOT stays short; deeper market links live in Menu+', () => {
+  it('Market panel lists the report hierarchy (same doors as Menu+ and report-doors)', () => {
     const market = KB_TOP_NAV.find((g) => g.label === 'Market')
-    const hrefs = market?.children.map((l) => l.href) ?? []
-    expect(hrefs).toContain('/housing-market')
-    expect(hrefs).toContain('/housing-market/reports')
-    expect(hrefs).toContain('/blog')
-    expect(hrefs).toContain('/faq')
+    const doors = marketNavChildren()
+    expect(market?.children.map((l) => l.href)).toEqual(doors.map((d) => d.href))
+    expect(market?.children.map((l) => l.label)).toEqual(doors.map((d) => d.label))
+    expect(market?.children.find((l) => l.href === '/housing-market')?.label).toBe(
+      'Live housing market',
+    )
+    expect(market?.children.find((l) => l.href === '/housing-market/reports')?.label).toBe(
+      'Published reports',
+    )
     const menuMarket = KB_MENU_GROUPS.find((g) => g.title === 'Market')
     const menuHrefs = menuMarket?.links.map((l) => l.href) ?? []
-    expect(menuHrefs).toContain('/months-of-supply')
-    expect(menuHrefs).toContain('/how-we-get-our-numbers')
+    for (const href of doors.map((d) => d.href)) {
+      expect(menuHrefs).toContain(href)
+    }
+    expect(menuHrefs).not.toContain('/activity')
   })
 
   it('Menu+ mirrors intent groups; About includes Join', () => {

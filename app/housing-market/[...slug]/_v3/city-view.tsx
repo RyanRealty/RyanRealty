@@ -90,8 +90,9 @@ export function CityMarketView({
   const cityLedger = buildCityLedger(snapshots, citySlug)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const faqItems = buildFaqItems(faqs, [
+    { label: 'Live housing market hub', href: '/housing-market' },
     { label: 'Closed sales explorer', href: '/housing-market/history' },
-    { label: 'Months of supply', href: '/months-of-supply' },
+    { label: 'Months of supply (definition)', href: '/months-of-supply' },
   ])
   // No valuation door (2026-08-27 single-ask consolidation, parity.json
   // market-report-detail openDefects: "Two asks render, the 3-step form and Value my
@@ -201,8 +202,8 @@ export function CityMarketView({
 
       <V3Quiet
         id="explore"
-        eyebrow="More resources"
-        heading={`Explore ${cityName} real estate`}
+        eyebrow="Market reports"
+        heading="What each report is"
         items={exploreItems}
       />
     </>

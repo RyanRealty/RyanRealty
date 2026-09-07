@@ -39,7 +39,8 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { publishCompleteMonthMedian } from '@/lib/market/publish-complete-month-median'
-import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG, HISTORY_PATH } from './geo-constants'
+import { COMPARISON_CITY_LABELS, COMPARISON_CITY_SLUG } from './geo-constants'
+import { marketReportDoorLinks } from '@/lib/market/report-doors'
 
 const MONTH_TICK = [
   'Jan',
@@ -347,9 +348,14 @@ export function buildExploreItems(args: {
   posts: readonly BlogPostCard[]
 }): V3QuietItem[] {
   const items: V3QuietItem[] = [
-    { label: 'Central Oregon housing market hub', href: '/housing-market' },
-    { label: 'Central Oregon region report', href: '/housing-market/central-oregon' },
-    { label: 'Closed sales explorer', href: HISTORY_PATH },
+    {
+      kind: 'prose',
+      term: 'Where you are',
+      body: args.communityName
+        ? `You are on the ${args.communityName} market page under ${args.cityName}. The live hub, region report, and other city reports are separate.`
+        : `You are on the ${args.cityName} housing market report. The live hub and Central Oregon region report are separate pages.`,
+    },
+    ...marketReportDoorLinks('hub').filter((door) => door.href !== `/housing-market/${args.citySlug}`),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
     { label: 'Value my home', href: args.valuationHrefValue },
@@ -376,7 +382,7 @@ export function buildExploreItems(args: {
     for (const city of args.footnotes) {
       const slug = COMPARISON_CITY_SLUG[city.label]
       if (!slug) continue
-      items.push({ label: `${city.label} market report`, href: `/housing-market/${slug}` })
+      items.push({ label: `${city.label} housing market`, href: `/housing-market/${slug}` })
     }
   }
   return items

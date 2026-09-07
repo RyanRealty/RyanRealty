@@ -26,6 +26,10 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
+  marketReportDoorLinks,
+  marketReportHereBody,
+} from '@/lib/market/report-doors'
+import {
   v3Text,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
@@ -229,15 +233,17 @@ export function buildGuideRows(posts: BlogPostCard[]): V3LedgerPlainRow[] {
  */
 export function buildExploreItems(footnotes: readonly CityFootnote[]): V3QuietItem[] {
   const items: V3QuietItem[] = [
-    { label: 'Central Oregon housing market hub', href: '/housing-market' },
-    { label: 'Closed sales explorer', href: HISTORY_PATH },
-    { label: 'Market report index', href: '/housing-market/reports' },
+    {
+      kind: 'prose',
+      term: 'Where you are',
+      body: marketReportHereBody('region'),
+    },
+    ...marketReportDoorLinks('region'),
     { label: 'All Central Oregon cities', href: '/cities' },
     { label: 'Communities and neighborhoods', href: '/communities' },
     { label: 'Browse homes for sale', href: listingsBrowsePath() },
     { label: 'Open houses this week', href: '/open-houses' },
     { label: 'Recent price drops', href: '/price-drops' },
-    { label: 'Buying and selling guides', href: '/blog' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   if (footnotes.length > 0) {
@@ -250,7 +256,7 @@ export function buildExploreItems(footnotes: readonly CityFootnote[]): V3QuietIt
       const slug = city.slug ?? CITY_SLUG[city.label]
       if (!slug) continue
       items.push({
-        label: `${city.label} market report`,
+        label: `${city.label} housing market`,
         href: `/housing-market/${slug}`,
       })
     }

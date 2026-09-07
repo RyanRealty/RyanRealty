@@ -164,6 +164,7 @@ import {
   marketVerdict,
 } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { marketReportHereBody } from '@/lib/market/report-doors'
 import { formatDateTime } from '@/lib/format/date'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -456,7 +457,12 @@ export default async function MonthsOfSupplyPage() {
   // "See the full market report" section carried, then any city with no live figure.
   const closingItems: V3QuietItem[] = [
     ...faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer })),
-    { kind: 'prose', term: 'See the full market report', body: MOS_RELATED_INTRO },
+    {
+      kind: 'prose',
+      term: 'Where you are',
+      body: marketReportHereBody('mos'),
+    },
+    { kind: 'prose', term: 'Related market pages', body: MOS_RELATED_INTRO },
     ...MOS_RELATED_LINKS.map((link) => ({ label: link.label, href: link.href })),
   ]
 
