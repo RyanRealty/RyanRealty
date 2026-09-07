@@ -460,7 +460,11 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/placeActivity/)
     expect(src).toMatch(/getBlogPostsBySlugs/)
     expect(src).not.toMatch(/getRecentBlogPosts/)
-    expect(src).not.toMatch(/id="guides"/)
+    // 2026-09-07: id="guides" is allowed for exactly one thing, the area-guide
+    // door to the Ryan Realty YouTube channel (areaGuideRow). Still no generic
+    // recent-posts feed on a community page.
+    expect(src).toMatch(/id="guides"/)
+    expect(src).toMatch(/areaGuideRow\(publicName, areaGuideVideo\)/)
     expect(src).toMatch(/Live · \$\{publicName\}/)
     expect(src).not.toMatch(/Live · \$\{cityName\}/)
   })
@@ -685,7 +689,10 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/publishPlaceFace\(\{\s*grain: 'community',\s*hud\s*\}\)/)
     expect(src).not.toMatch(/<CommunityStage/)
     expect(src).not.toMatch(/videoSrc=/)
-    expect(src).not.toMatch(/getAreaGuideVideo\(/)
+    // 2026-09-07: the area guide came back as a ledger DOOR below the fold
+    // (areaGuideRow → the Ryan Realty YouTube channel), never a looping hero.
+    expect(src).toMatch(/areaGuideRow\(/)
+    expect(src).not.toMatch(/autoPlay/)
   })
 
   // D103/D103b (home-d section objects) retired with the home-d revert

@@ -39,6 +39,27 @@ export type SchemaInput =
   | EventInput
   | ItemListInput
   | ServiceInput
+  | VideoInput
+
+/**
+ * A published video the page is about or embeds: the place area guides on the
+ * Ryan Realty YouTube channel. contentUrl is the file, embedUrl the channel
+ * player; Google needs at least one of them plus name, description, thumbnail.
+ */
+export type VideoInput = {
+  type: 'video'
+  name: string
+  description: string
+  /** The page that carries the video (relative or absolute). */
+  url?: string
+  contentUrl?: string
+  embedUrl?: string
+  thumbnailUrl?: string
+  /** ISO 8601 date. */
+  uploadDate?: string
+  /** ISO 8601 duration, e.g. PT27S. */
+  duration?: string
+}
 
 /** A single named, verified statistic — feeds Place.additionalProperty + Dataset.variableMeasured. */
 export type StatValue = { name: string; value: string | number; unitText?: string }
@@ -437,6 +458,20 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         })),
       })
 
+    case 'video':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        contentUrl: input.contentUrl,
+        embedUrl: input.embedUrl,
+        thumbnailUrl: input.thumbnailUrl,
+        uploadDate: input.uploadDate,
+        duration: input.duration,
+        publisher: { '@type': 'Organization', name: 'Ryan Realty', url: site },
+      })
     case 'service':
       return prune({
         '@context': 'https://schema.org',

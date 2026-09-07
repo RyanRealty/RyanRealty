@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-07T20:51:04.906Z",
+  "updated_at": "2026-09-07T21:40:01.644Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -1698,8 +1698,15 @@
       "height": 1080,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T21:55:08.852+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.477Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=NicOYXl4g64",
+          "scene_id": "NicOYXl4g64",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.414Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Fairhaven - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/fee91d8c-8031-4555-8d80-2309051055cf.mov"
@@ -1732,8 +1739,15 @@
       "height": 1080,
       "duration_sec": 30.029,
       "registered_at": "2026-06-02T21:55:14.728+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:42.528Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=x1xhva77kWQ",
+          "scene_id": "x1xhva77kWQ",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:42.456Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Rim - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/26f52587-5ccc-40df-bbac-6a8fd5a28f62.mov"
@@ -1766,8 +1780,15 @@
       "height": 1080,
       "duration_sec": 18.885,
       "registered_at": "2026-06-02T21:57:27.251+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.526Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=jjIQeK63tjc",
+          "scene_id": "jjIQeK63tjc",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.465Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sunset View Estates - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/f99e24d7-0097-4bc7-9e53-e34334ca979b.mov"
@@ -1800,8 +1821,15 @@
       "height": 1080,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T21:57:32.882+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.090Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=p2JoNqXxsKs",
+          "scene_id": "p2JoNqXxsKs",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.027Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - La Pine - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/dbbbdffc-00c8-4ad2-b3bd-b03e2e52ecf8.mov"
@@ -1834,8 +1862,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:57:37.828+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.470Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=PWD6NlLLOO4",
+          "scene_id": "PWD6NlLLOO4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.406Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sisters - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/a24ce6fd-aa6a-4894-ac84-be816144a9f5.mov"
@@ -1902,8 +1937,15 @@
       "height": 1080,
       "duration_sec": 22.722,
       "registered_at": "2026-06-02T21:57:49.491+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.473Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Qir06grwS6Q",
+          "scene_id": "Qir06grwS6Q",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.362Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Pronghorn - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/39021b3a-b793-4e28-99be-ca6b96f0d32d.mov"
@@ -1936,8 +1978,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:57:54.888+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.336Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qv3zPI3yays",
+          "scene_id": "qv3zPI3yays",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:43.268Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River West - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/b8dc271b-f5b7-494e-9b73-560d27af39d2.mov"
@@ -1970,8 +2019,15 @@
       "height": 1080,
       "duration_sec": 21.02,
       "registered_at": "2026-06-02T21:58:00.017+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.781Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=G6edxzPm-9s",
+          "scene_id": "G6edxzPm-9s",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.720Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tumalo - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/9059bbd8-68c1-4c5a-acd2-4d50a7eaf6ae.mov"
@@ -2004,8 +2060,15 @@
       "height": 1080,
       "duration_sec": 21.488,
       "registered_at": "2026-06-02T21:58:05.123+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.230Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=s_SlPU7tno4",
+          "scene_id": "s_SlPU7tno4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.151Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - The Parks at Broken Top - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/03b78f04-2669-48c2-8e3e-a3f01ebfe1f8.mov"
@@ -2038,8 +2101,15 @@
       "height": 1080,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T21:58:10.973+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.983Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qTEAzkAgW8E",
+          "scene_id": "qTEAzkAgW8E",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.922Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sunrise Village - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/d1a5558d-a40f-4c82-9f11-d3bf52e8be66.mov"
@@ -2072,8 +2142,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T21:58:15.482+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.222Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=8B4SuCK80e4",
+          "scene_id": "8B4SuCK80e4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.160Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Shevlin Ridge - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/95b48fd9-83fc-4ab4-9c8c-d01944d51ba8.mov"
@@ -2106,8 +2183,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T21:58:19.627+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.968Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=sB4SIMN1rgM",
+          "scene_id": "sB4SIMN1rgM",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.900Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Shevlin Park - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/6bab51b8-c32d-4bb0-a777-0a30c87561c4.mov"
@@ -2140,8 +2224,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T21:58:23.81+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.841Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=RGmsk_28qds",
+          "scene_id": "RGmsk_28qds",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.778Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Shevlin Landing - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/dda27686-9d4f-472c-b1c3-12b23f635bee.mov"
@@ -2174,8 +2265,15 @@
       "height": 1080,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T21:58:27.894+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.950Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=6ffqee1x6SA",
+          "scene_id": "6ffqee1x6SA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.889Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Powell Butte - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/19bb51ba-5e4d-46ca-969d-b826de84f81e.mov"
@@ -2208,8 +2306,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:58:32.937+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:01.116Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=DVfP6GZ2wSg",
+          "scene_id": "DVfP6GZ2wSg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:01.044Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Awbrey Village - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/bbe42d0c-1eb5-4689-9dcd-9f94aa69db19.mov"
@@ -2242,8 +2347,15 @@
       "height": 1080,
       "duration_sec": 14.013,
       "registered_at": "2026-06-02T21:58:37.099+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.270Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=tkdsW1oqX8g",
+          "scene_id": "tkdsW1oqX8g",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.208Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tetherow - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/df33f65d-d795-4007-a153-6c95357c9519.mov"
@@ -2276,8 +2388,15 @@
       "height": 1080,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T21:58:42.351+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.720Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Ua22XGWrib0",
+          "scene_id": "Ua22XGWrib0",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.639Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Boyd Acres - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/2f9269be-f2d6-4df3-b866-e136bda528fc.mov"
@@ -2310,8 +2429,15 @@
       "height": 1080,
       "duration_sec": 16.015,
       "registered_at": "2026-06-02T21:58:46.585+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.592Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=jbwhEu-KTsc",
+          "scene_id": "jbwhEu-KTsc",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.529Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Mountain View - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/9928777b-e7fc-4b90-b4d9-35f9d1b3daf7.mov"
@@ -2344,8 +2470,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:58:51.773+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.957Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=khmtv-MjXMg",
+          "scene_id": "khmtv-MjXMg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:43.886Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Southeast Bend - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/3a3576f2-9022-422c-a47f-3566223cb15f.mov"
@@ -2378,8 +2511,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T21:58:56.337+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.482Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=G9uy1sEe-cU",
+          "scene_id": "G9uy1sEe-cU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.422Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Orchard District - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/edb9fc36-297f-467e-905a-d05f290c573a.mov"
@@ -2412,8 +2552,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:02.016+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.705Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qYVY8BegwSE",
+          "scene_id": "qYVY8BegwSE",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.651Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Old Farm District - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/b6cff90d-7fa4-4e3d-9194-5f64cdce5770.mov"
@@ -2446,8 +2593,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T21:59:06.274+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.708Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=nCRK8DiadME",
+          "scene_id": "nCRK8DiadME",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.616Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Larkspur - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/bd62c5e1-2c6b-4276-9c6b-1cdc5f469d16.mov"
@@ -2480,8 +2634,15 @@
       "height": 1080,
       "duration_sec": 14.013,
       "registered_at": "2026-06-02T21:59:09.505+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.157Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Ngk1kooxPMw",
+          "scene_id": "Ngk1kooxPMw",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.091Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - 1925 Townhomes - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/9c02240d-116a-496c-975a-f4c6adf426c4.mov"
@@ -2514,8 +2675,15 @@
       "height": 1080,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T21:59:14.179+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.097Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=6c-q0Xf-tmI",
+          "scene_id": "6c-q0Xf-tmI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.032Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Mount Bachelor Village - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/ce72e2b0-687f-4fdc-a1f3-fc18c6811b05.mov"
@@ -2548,8 +2716,15 @@
       "height": 1080,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T21:59:19.075+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.216Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=yiQA22YFugA",
+          "scene_id": "yiQA22YFugA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.149Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Century West - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/e1c6e6fe-446d-4dd7-8630-9b9166953cdf.mov"
@@ -2582,8 +2757,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:24.089+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.341Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=ymnIhRsQt8Q",
+          "scene_id": "ymnIhRsQt8Q",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.276Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - North Rim - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/50750017-0ae5-4c01-9479-2b40d17b1ffe.mov"
@@ -2616,8 +2798,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:29.229+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.294Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=gERSriEPPAo",
+          "scene_id": "gERSriEPPAo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.230Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - West Hills - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/8a25c0b8-7440-415d-b9f5-9dc2e2731a7e.mov"
@@ -2650,8 +2839,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:34.125+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:01.377Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=gbSMVzAtu78",
+          "scene_id": "gbSMVzAtu78",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:01.306Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Awbrey Butte - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/63f1a2ce-73d6-4452-8791-9380328a9631.mov"
@@ -2684,8 +2880,15 @@
       "height": 1080,
       "duration_sec": 29.863,
       "registered_at": "2026-06-02T21:59:40.143+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.711Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=oVvjIK30MTI",
+          "scene_id": "oVvjIK30MTI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.652Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Summit West - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/3772b865-6982-4820-9a02-ad262fddf57e.mov"
@@ -2718,8 +2921,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:45.272+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.771Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=mQtThpJd00Q",
+          "scene_id": "mQtThpJd00Q",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.713Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - The Highlands - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/41e437e5-968c-4035-a52f-47d1caed596e.mov"
@@ -2752,8 +2962,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:50.815+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.580Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=3jwsLqyBI2A",
+          "scene_id": "3jwsLqyBI2A",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.500Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Discovery West - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/1c0e1471-90bc-45a5-9925-6e98d6adc6ce.mov"
@@ -2786,8 +3003,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T21:59:56.354+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.955Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=jvMyrZbKoeE",
+          "scene_id": "jvMyrZbKoeE",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.894Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Northwest Crossing - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/7a4fdf48-fd07-4dfa-ac6b-8f83afbbbc4f.mov"
@@ -2820,8 +3044,15 @@
       "height": 1080,
       "duration_sec": 30.029,
       "registered_at": "2026-06-02T22:00:03.134+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.818Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=HW4OKk658OI",
+          "scene_id": "HW4OKk658OI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.761Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Old Bend - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/5cf8a93a-91f0-404f-817d-6459909d50f8.mov"
@@ -2854,8 +3085,15 @@
       "height": 1080,
       "duration_sec": 30.029,
       "registered_at": "2026-06-02T22:00:09.963+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.848Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=4oK1jmD5f54",
+          "scene_id": "4oK1jmD5f54",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.783Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Bend - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/0c4bac17-16cb-4c1c-8065-44d08b559d68.mov"
@@ -2888,8 +3126,15 @@
       "height": 1080,
       "duration_sec": 10.009,
       "registered_at": "2026-06-02T22:00:12.899+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.555Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=frL1vXjgMOg",
+          "scene_id": "frL1vXjgMOg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.485Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Lost Tracks - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/f5148a5e-a070-4bd3-8a39-31cd838bda7a.mov"
@@ -2922,8 +3167,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:00:18.054+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.516Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=biuhiCUcTQo",
+          "scene_id": "biuhiCUcTQo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.453Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - The Eight at the Old Mill - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/f53fa0db-cbbd-4a5a-92e8-68afcbfd1406.mov"
@@ -2956,8 +3208,15 @@
       "height": 1080,
       "duration_sec": 28.027,
       "registered_at": "2026-06-02T22:00:24.368+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.579Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=WR5M3E9zz1E",
+          "scene_id": "WR5M3E9zz1E",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.515Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Southwest Bend - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/12568f9c-8605-4e2b-99cd-22cd8e490c06.mov"
@@ -2990,8 +3249,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:00:29.241+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.228Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qUAIy0CIsjs",
+          "scene_id": "qUAIy0CIsjs",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.168Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Southern Crossing - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/212cde99-c0e2-44ee-8dba-f0ec1cc2bb6e.mov"
@@ -3058,8 +3324,15 @@
       "height": 1080,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:00:39.561+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.430Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=U6KmNGmPcc4",
+          "scene_id": "U6KmNGmPcc4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.365Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tree Farm - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/61283bf6-0b0a-4909-aebe-06b7ab08542e.mov"
@@ -3092,8 +3365,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:00:44.612+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.864Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=ao9mwpyXpB8",
+          "scene_id": "ao9mwpyXpB8",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.799Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Skyliner Summit - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/c702c27b-3b26-429d-a59e-6d2569ccb09c.mov"
@@ -3126,8 +3406,15 @@
       "height": 1080,
       "duration_sec": 15.014,
       "registered_at": "2026-06-02T22:00:48.24+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:01.514Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=zsZBwxXRgUo",
+          "scene_id": "zsZBwxXRgUo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:01.440Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Awbrey Glen - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/b5502879-93d5-4cbc-ab63-4dd206c219a9.mov"
@@ -3160,8 +3447,15 @@
       "height": 1080,
       "duration_sec": 14.013,
       "registered_at": "2026-06-02T22:00:51.689+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.718Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=3P3Bl5eXBg4",
+          "scene_id": "3P3Bl5eXBg4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.654Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Mountain High - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/9dfe4a31-8622-4d8a-8461-d540b00cd5df.mov"
@@ -3194,8 +3488,15 @@
       "height": 1080,
       "duration_sec": 12.412,
       "registered_at": "2026-06-02T22:00:55.378+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.601Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=29LDG-JHXcQ",
+          "scene_id": "29LDG-JHXcQ",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:43.528Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River's Edge - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/1f7a07bf-b93a-40d9-ad8f-181ec542a761.mov"
@@ -3228,8 +3529,15 @@
       "height": 1080,
       "duration_sec": 25.525,
       "registered_at": "2026-06-02T22:01:01.271+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.455Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=SqgnTx0lXLg",
+          "scene_id": "SqgnTx0lXLg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.391Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Seventh Mountain - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/254723c3-a414-4b1e-ac53-d0134773161e.mov"
@@ -3262,8 +3570,15 @@
       "height": 1080,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T22:01:05.671+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.700Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=R44qcjLqYh8",
+          "scene_id": "R44qcjLqYh8",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.637Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Deschutes River Woods - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/e6badaac-daa2-4b00-a7ff-4785bffc667a.mov"
@@ -3296,8 +3611,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:01:09.888+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.052Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=4H8ZnoU2hdY",
+          "scene_id": "4H8ZnoU2hdY",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.991Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sundance - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/5205fd65-a923-49d6-9e87-85ea7d623c02.mov"
@@ -3330,8 +3652,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:01:15.706+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.641Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=CNx0Hua7j50",
+          "scene_id": "CNx0Hua7j50",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.576Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Canyon Estates - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/68580e2c-7e31-4d5a-a941-c2ff91f396bc.mov"
@@ -3364,8 +3693,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:01:21.102+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:42.860Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=TXeRwPKpTOo",
+          "scene_id": "TXeRwPKpTOo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:42.770Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Vale - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/9287f3eb-c5f0-4a9d-844e-f18d7c31bab0.mov"
@@ -3398,8 +3734,15 @@
       "height": 1080,
       "duration_sec": 17.384,
       "registered_at": "2026-06-02T22:01:25.213+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.149Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=vvXZjHD1lz8",
+          "scene_id": "vvXZjHD1lz8",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.049Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Broken Top - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/6fde1d11-7329-4af4-baa6-9336d662c7c6.mov"
@@ -3432,8 +3775,15 @@
       "height": 1080,
       "duration_sec": 21.02,
       "registered_at": "2026-06-02T22:01:29.625+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.682Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=AAWYFukZzWA",
+          "scene_id": "AAWYFukZzWA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.617Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Widgi Creek - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/f26dfce8-034c-4700-ab06-15f2a7c5337f.mov"
@@ -3466,8 +3816,15 @@
       "height": 1080,
       "duration_sec": 19.386,
       "registered_at": "2026-06-02T22:01:34.395+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.863Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=b5Av7dySj0I",
+          "scene_id": "b5Av7dySj0I",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.795Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Caldera Springs - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/7f8b3d2b-5150-4bbd-bd93-3bdfbf5c7c44.mov"
@@ -3500,8 +3857,15 @@
       "height": 1080,
       "duration_sec": 24.691,
       "registered_at": "2026-06-02T22:01:40.278+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.960Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=vPypEwXscRA",
+          "scene_id": "vPypEwXscRA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.896Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Crosswater - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/37c7ec67-39a0-4e87-beb8-b5a06a83e1f5.mov"
@@ -3534,8 +3898,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:01:47.079+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.290Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=YCC57KKpDdo",
+          "scene_id": "YCC57KKpDdo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.217Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Brasada Ranch - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/e1923880-0266-4d29-866f-2a6a8da7cef4.mov"
@@ -3568,8 +3939,15 @@
       "height": 1080,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:01:52.275+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.286Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Y9zJvxVpL1U",
+          "scene_id": "Y9zJvxVpL1U",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.223Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tanager - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/2520cb38-b297-4ee3-92ae-c48f860b53bf.mov"
@@ -3602,8 +3980,15 @@
       "height": 1080,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:01:57.996+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.331Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=NK3nACGynaU",
+          "scene_id": "NK3nACGynaU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.275Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Eagle Crest - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/8dc4d1d4-c664-4071-93a5-fb4ec301d012.mov"
@@ -3636,8 +4021,15 @@
       "height": 1080,
       "duration_sec": 30.029,
       "registered_at": "2026-06-02T22:02:04.243+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.913Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=NmJvMYReAHk",
+          "scene_id": "NmJvMYReAHk",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.828Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Ridge at Indian Ford - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/ae38d1b2-6815-4ec2-b547-234f7ed5428d.mov"
@@ -3670,8 +4062,15 @@
       "height": 1080,
       "duration_sec": 28.027,
       "registered_at": "2026-06-02T22:02:10.318+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:42.385Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=2MSRSn5LQkg",
+          "scene_id": "2MSRSn5LQkg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:42.305Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Meadows - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/13ab9819-e2b7-4d81-92ad-3738cfa24d65.mov"
@@ -3704,8 +4103,15 @@
       "height": 1080,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:02:16.136+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.920Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=ZPeKwNz6hdQ",
+          "scene_id": "ZPeKwNz6hdQ",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.854Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Vandevert Ranch - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/67d4814c-ac48-4ad0-aebd-68e72f013867.mov"
@@ -3738,8 +4144,15 @@
       "height": 1080,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:02:21.63+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.755Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qLmI-w5C-DU",
+          "scene_id": "qLmI-w5C-DU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.693Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Three Rivers South - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/29cc8ef5-926c-4640-b944-4b310e05ee09.mov"
@@ -3772,8 +4185,15 @@
       "height": 1080,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:02:27.217+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.155Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dcJ0PzxchXU",
+          "scene_id": "dcJ0PzxchXU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.072Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tollgate - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/53ddd63a-3628-4a51-bc45-24c9c9c12a97.mov"
@@ -3806,8 +4226,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:02:32.097+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.873Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=cFah4YqYVrk",
+          "scene_id": "cFah4YqYVrk",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.813Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Timber Creek - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/c20f309a-0ccf-4fa2-ba1b-465807df8fb6.mov"
@@ -3840,8 +4267,15 @@
       "height": 1080,
       "duration_sec": 29.028,
       "registered_at": "2026-06-02T22:02:37.895+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.422Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=y9K2hedXmnk",
+          "scene_id": "y9K2hedXmnk",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.357Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Whychus (Squaw Creek) Canyon Estates - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/b939336a-3f85-4eb8-b65e-a1ed575efcec.mov"
@@ -3874,8 +4308,15 @@
       "height": 1080,
       "duration_sec": 29.028,
       "registered_at": "2026-06-02T22:02:43.856+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.325Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dk6vH_Do5nw",
+          "scene_id": "dk6vH_Do5nw",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.253Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sage Meadow - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/03d42eea-0322-4656-963b-5bed1072961b.mov"
@@ -3908,8 +4349,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:02:49.062+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.066Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=wcvaEnoGQKg",
+          "scene_id": "wcvaEnoGQKg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.006Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Saddlestone - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/224ea7f2-b87b-4c15-9711-73477dc5de1b.mov"
@@ -3976,8 +4424,15 @@
       "height": 1080,
       "duration_sec": 22.889,
       "registered_at": "2026-06-02T22:02:59.147+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.093Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dxdinK4ZE2k",
+          "scene_id": "dxdinK4ZE2k",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.031Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Pine Meadow Village - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/035e9e87-5dc4-47bf-8d4b-3070ac0165c6.mov"
@@ -4010,8 +4465,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:03:04.369+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.986Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=S7Ar7pdcGwU",
+          "scene_id": "S7Ar7pdcGwU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.916Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Crossroads - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/c79fdc72-f7a7-423a-a3a4-37ed6fe1dfb5.mov"
@@ -4044,8 +4506,15 @@
       "height": 1080,
       "duration_sec": 30.029,
       "registered_at": "2026-06-02T22:03:10.678+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.512Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=pczxEiQRnoA",
+          "scene_id": "pczxEiQRnoA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.449Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Coyote Springs - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/565b8013-2bfe-425a-9dee-c91f23d21bd5.mov"
@@ -4078,8 +4547,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:03:15.924+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.491Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Mbbn6ES29JE",
+          "scene_id": "Mbbn6ES29JE",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.424Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Cascade Meadow Ranch - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/0c747fca-4ccb-4f4f-a980-625c222c1f3b.mov"
@@ -4112,8 +4588,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:03:21.25+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.639Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dURWTZ9F2Bg",
+          "scene_id": "dURWTZ9F2Bg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.574Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Clear Pine - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/94a48ee0-7ae2-431f-9bd4-7f77dfcdf817.mov"
@@ -4146,8 +4629,15 @@
       "height": 1080,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:03:25.959+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.499Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=RUMmaU2VKbs",
+          "scene_id": "RUMmaU2VKbs",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.428Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Three Rivers Recreation Sites - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/f45421fa-3c46-44fb-895a-cf60fedec1cc.mov"
@@ -4180,8 +4670,15 @@
       "height": 1080,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:03:31.272+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.006Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=VzkVbYL02jw",
+          "scene_id": "VzkVbYL02jw",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.939Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Terrebonne - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/587b6608-b601-4ce5-8ccf-5b8da5375946.mov"
@@ -4214,8 +4711,15 @@
       "height": 1080,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:03:36.584+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.733Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=9Qni42aqeLc",
+          "scene_id": "9Qni42aqeLc",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.671Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Culver - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/29c927eb-1e1e-40b4-aac0-a4c4d11a5b6f.mov"
@@ -4248,8 +4752,15 @@
       "height": 1080,
       "duration_sec": 28.027,
       "registered_at": "2026-06-02T22:03:43.506+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.887Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=GpxcaPa4U30",
+          "scene_id": "GpxcaPa4U30",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.821Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Camp Sherman - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/a6a9f100-8e84-4a5e-8bf5-027e8eeedffd.mov"
@@ -4282,8 +4793,15 @@
       "height": 1080,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:03:49.817+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.261Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=MwRfeahw0eI",
+          "scene_id": "MwRfeahw0eI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.195Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Crooked River Ranch - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/b1ff01f4-f9ac-43ff-b57d-0635b6fa0681.mov"
@@ -4316,8 +4834,15 @@
       "height": 1080,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:03:54.801+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.232Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=YlWewo-ShsU",
+          "scene_id": "YlWewo-ShsU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.167Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Madras - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/2509d8ff-9a9b-4840-b8f6-494cba066b68.mov"
@@ -4350,8 +4875,15 @@
       "height": 1080,
       "duration_sec": 25.191,
       "registered_at": "2026-06-02T22:04:00.164+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.591Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=PEuT2wUxH4A",
+          "scene_id": "PEuT2wUxH4A",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.532Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Prineville - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/444b7d05-f9db-41b1-8904-7521a061446f.mov"
@@ -4384,8 +4916,15 @@
       "height": 1080,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:04:05.04+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.043Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=gnraEwC4ycg",
+          "scene_id": "gnraEwC4ycg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.981Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Redmond - 1080p - h.265.mov)",
       "file_path": "public/asset-library/videos/curated/f76f61da-e9b2-4f1e-b642-3147dae7f828.mov"
@@ -4474,8 +5013,15 @@
       "height": 1920,
       "duration_sec": 22.722,
       "registered_at": "2026-06-02T22:04:14.915+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.302Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Qir06grwS6Q",
+          "scene_id": "Qir06grwS6Q",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.238Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Pronghorn - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/207fcca3-d4ea-4e92-98f7-6e6ed680509f.mp4"
@@ -4676,8 +5222,15 @@
       "height": 1920,
       "duration_sec": 16.015,
       "registered_at": "2026-06-02T22:04:33.85+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.470Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=jbwhEu-KTsc",
+          "scene_id": "jbwhEu-KTsc",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.403Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Mountain View - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/64e7c1ee-01a6-450e-a3a8-2503a83873c6.mp4"
@@ -4869,8 +5422,15 @@
       "height": 1920,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T22:04:52.831+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.573Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Ua22XGWrib0",
+          "scene_id": "Ua22XGWrib0",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.499Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Boyd Acres - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/064736ae-6d6f-41cb-904d-623a2ef44669.mp4"
@@ -5118,8 +5678,15 @@
       "height": 1920,
       "duration_sec": 29.696,
       "registered_at": "2026-06-02T22:05:14.073+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.823Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=oVvjIK30MTI",
+          "scene_id": "oVvjIK30MTI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.766Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Summit West - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/96cdae56-13d4-46b5-991a-8028e3467a96.mp4"
@@ -5356,8 +5923,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:05:48.986+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.820Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=khmtv-MjXMg",
+          "scene_id": "khmtv-MjXMg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:43.733Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Southeast Bend - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/603f953c-3b55-4707-9166-92f4c78d0cc8.mp4"
@@ -5574,8 +6148,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:06:03.22+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.205Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qv3zPI3yays",
+          "scene_id": "qv3zPI3yays",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:43.128Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River West - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/41ed1146-a859-4edf-b392-dde456065ac2.mp4"
@@ -5744,8 +6325,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:06:19.276+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.363Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=G9uy1sEe-cU",
+          "scene_id": "G9uy1sEe-cU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.303Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Orchard District - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/192a9561-c516-41f7-ae2d-24370f528acb.mp4"
@@ -6020,8 +6608,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:06:46.063+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.597Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qYVY8BegwSE",
+          "scene_id": "qYVY8BegwSE",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.539Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Old Farm District - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/637db55b-597f-4629-8d20-461f86ec1e89.mp4"
@@ -6233,8 +6828,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:07:04.001+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.842Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=nCRK8DiadME",
+          "scene_id": "nCRK8DiadME",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.773Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Larkspur - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/6bf447fa-d49f-4c7d-8cc3-c5f77f58216d.mp4"
@@ -6358,8 +6960,15 @@
       "height": 1920,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T22:07:17.143+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.348Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=yiQA22YFugA",
+          "scene_id": "yiQA22YFugA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.283Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Century West - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/996e701d-12ed-4b03-b2fe-36f4348a1f55.mp4"
@@ -6557,8 +7166,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:07:37.927+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.170Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=gERSriEPPAo",
+          "scene_id": "gERSriEPPAo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.102Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - West Hills - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/66bf8432-dad9-4c44-8e07-45c74aaa176a.mp4"
@@ -6684,8 +7300,15 @@
       "height": 1920,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T22:08:00.499+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.104Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qTEAzkAgW8E",
+          "scene_id": "qTEAzkAgW8E",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.040Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sunrise Village - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/804dd36a-413d-475c-bdfd-fea2865e089b.mp4"
@@ -6880,8 +7503,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:08:22.631+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.212Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=ymnIhRsQt8Q",
+          "scene_id": "ymnIhRsQt8Q",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.138Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - North Rim - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/0af0deec-c71f-4d76-b917-ebdc5ff5c8a0.mp4"
@@ -7051,8 +7681,15 @@
       "height": 1920,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T22:08:39.329+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.967Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=6c-q0Xf-tmI",
+          "scene_id": "6c-q0Xf-tmI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.903Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Mount Bachelor Village - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/15cb215a-0c49-451e-9156-ee692bd1b810.mp4"
@@ -7176,8 +7813,15 @@
       "height": 1920,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:08:51.069+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.443Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=3jwsLqyBI2A",
+          "scene_id": "3jwsLqyBI2A",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.387Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Discovery West - 9x16 Social 1080p - H.264.mp4)",
       "file_path": "public/asset-library/videos/curated/390b6cd9-91ee-4bde-89e7-b94711f392b5.mp4"
@@ -7367,8 +8011,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:09:19.351+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.979Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=DVfP6GZ2wSg",
+          "scene_id": "DVfP6GZ2wSg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.909Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Awbrey Village - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/30deaa5a-0feb-46cd-9886-07b9a1498548.mp4"
@@ -7443,8 +8094,15 @@
       "height": 1920,
       "duration_sec": 14.013,
       "registered_at": "2026-06-02T22:09:29.745+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.289Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Ngk1kooxPMw",
+          "scene_id": "Ngk1kooxPMw",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.217Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - 1925 Townhomes - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/019f4fd2-f7dc-4f49-801a-3120a3dbd594.mp4"
@@ -7690,8 +8348,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:09:51.009+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.647Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=mQtThpJd00Q",
+          "scene_id": "mQtThpJd00Q",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.578Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - The Highlands - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/2c5c036b-93c1-46bc-81ca-5dc50cd3cec9.mp4"
@@ -7914,8 +8579,15 @@
       "height": 1920,
       "duration_sec": 21.02,
       "registered_at": "2026-06-02T22:10:08.233+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.081Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=jvMyrZbKoeE",
+          "scene_id": "jvMyrZbKoeE",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.019Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Northwest Crossing - 9x16 Social 1080p - H.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f77a7205-daca-4f85-8fc7-f07a8e471e49.mp4"
@@ -8183,8 +8855,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:10:43.525+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:01.245Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=gbSMVzAtu78",
+          "scene_id": "gbSMVzAtu78",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:01.183Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Awbrey Butte - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/b3781ca1-cb84-438b-9371-e601b1083b71.mp4"
@@ -8301,8 +8980,15 @@
       "height": 1920,
       "duration_sec": 10.009,
       "registered_at": "2026-06-02T22:10:53.138+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.423Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=frL1vXjgMOg",
+          "scene_id": "frL1vXjgMOg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.355Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Lost Tracks - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/55baa346-f59f-4118-9bc7-3bd5aa42dbd4.mp4"
@@ -8757,8 +9443,15 @@
       "height": 1920,
       "duration_sec": 12.412,
       "registered_at": "2026-06-02T22:11:24.912+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.467Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=29LDG-JHXcQ",
+          "scene_id": "29LDG-JHXcQ",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:43.399Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River's Edge - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/7a322e7b-9c38-4b51-bfa4-2f37689eb9d7.mp4"
@@ -9035,8 +9728,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:11:49.267+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:43.047Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=TXeRwPKpTOo",
+          "scene_id": "TXeRwPKpTOo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:42.956Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Vale - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/5d24e9d1-5256-4406-b721-eb36020d7d67.mp4"
@@ -9272,8 +9972,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:12:13.228+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:42.677Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=x1xhva77kWQ",
+          "scene_id": "x1xhva77kWQ",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:42.609Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Rim - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f86af428-f717-4e87-a9ce-796c9e220662.mp4"
@@ -9524,8 +10231,15 @@
       "height": null,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:12:49.083+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.807Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=AAWYFukZzWA",
+          "scene_id": "AAWYFukZzWA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.741Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Widgi Creek - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/bbf2d8ec-2b70-4df7-af63-7c51d5b59b5f.mp4"
@@ -9783,8 +10497,15 @@
       "height": 1920,
       "duration_sec": 21.02,
       "registered_at": "2026-06-02T22:13:11.573+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.664Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=G6edxzPm-9s",
+          "scene_id": "G6edxzPm-9s",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.608Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tumalo - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/e18ad5b7-ced1-4cdb-8f07-10bfab84cbb5.mp4"
@@ -9934,8 +10655,15 @@
       "height": 1920,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:13:29.27+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.552Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=U6KmNGmPcc4",
+          "scene_id": "U6KmNGmPcc4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.493Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tree Farm - 9x16 Social 1080p - H.264.mp4)",
       "file_path": "public/asset-library/videos/curated/88e5de55-9ef0-4598-b73f-6770bfaa959b.mp4"
@@ -10163,8 +10891,15 @@
       "height": 1920,
       "duration_sec": 22.389,
       "registered_at": "2026-06-02T22:14:00.895+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.088Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=s_SlPU7tno4",
+          "scene_id": "s_SlPU7tno4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.021Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - The Parks at Broken Top - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/10b28e6a-4a96-4487-928f-0e8a68f6e72c.mp4"
@@ -10378,8 +11113,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:14:23.037+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.395Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=biuhiCUcTQo",
+          "scene_id": "biuhiCUcTQo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.331Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - The Eight at the Old Mill - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/ab884521-161f-4fbf-adf8-f8b2850ae0ea.mp4"
@@ -10550,8 +11292,15 @@
       "height": 1920,
       "duration_sec": 14.013,
       "registered_at": "2026-06-02T22:14:40.3+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.147Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=tkdsW1oqX8g",
+          "scene_id": "tkdsW1oqX8g",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.064Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tetherow - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/5d4ffff8-7a69-412d-a14b-faded5edde86.mp4"
@@ -10707,8 +11456,15 @@
       "height": 1920,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:14:56.767+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.168Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Y9zJvxVpL1U",
+          "scene_id": "Y9zJvxVpL1U",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.106Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tanager - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/bcda41bc-990c-49fa-b6e6-99e667b4a401.mp4"
@@ -10905,8 +11661,15 @@
       "height": 1920,
       "duration_sec": 18.718,
       "registered_at": "2026-06-02T22:15:24.889+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.404Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=jjIQeK63tjc",
+          "scene_id": "jjIQeK63tjc",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.342Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sunset View Estates - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/78c5fde6-391a-4564-bfec-5da187cd8ae3.mp4"
@@ -11017,8 +11780,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:15:40.186+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.938Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=4H8ZnoU2hdY",
+          "scene_id": "4H8ZnoU2hdY",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.879Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sundance - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/896329a2-0783-446f-984d-1629aa23f5a6.mp4"
@@ -11291,8 +12061,15 @@
       "height": 1920,
       "duration_sec": 28.027,
       "registered_at": "2026-06-02T22:16:04.844+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.457Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=WR5M3E9zz1E",
+          "scene_id": "WR5M3E9zz1E",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.396Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Southwest Bend - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/a9bddb1c-ac97-46b9-a426-7a899c5cb5b4.mp4"
@@ -11409,8 +12186,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:16:16.845+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:49.341Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qUAIy0CIsjs",
+          "scene_id": "qUAIy0CIsjs",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:49.280Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Southern Crossing - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/a1d1792b-09d9-41b6-b59c-752a68cb3a04.mp4"
@@ -11647,8 +12431,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:16:41.931+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.718Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=ao9mwpyXpB8",
+          "scene_id": "ao9mwpyXpB8",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.656Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Skyliner Summit - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/48e3ff5a-f1dc-4d4c-b1d4-082489b23f0c.mp4"
@@ -11957,8 +12748,15 @@
       "height": 1920,
       "duration_sec": 23.022,
       "registered_at": "2026-06-02T22:17:11.055+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.577Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=SqgnTx0lXLg",
+          "scene_id": "SqgnTx0lXLg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.514Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Seventh Mountain - 9x16 Social 1080p - H.264.mp4)",
       "file_path": "public/asset-library/videos/curated/2d62c4b3-fb91-4792-b1d2-bffdb11b778a.mp4"
@@ -12145,8 +12943,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:17:37.834+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.348Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=8B4SuCK80e4",
+          "scene_id": "8B4SuCK80e4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.282Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Shevlin Ridge - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/53e548bd-b8ec-4c29-9090-2698e4635894.mp4"
@@ -12299,8 +13104,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:17:53.715+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.089Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=sB4SIMN1rgM",
+          "scene_id": "sB4SIMN1rgM",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.027Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Shevlin Park - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/fe25eead-ed34-4e25-a098-4e1cc1bf2158.mp4"
@@ -12453,8 +13265,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:18:09.278+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.711Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=RGmsk_28qds",
+          "scene_id": "RGmsk_28qds",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.645Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Shevlin Landing - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/ef3e68a8-817e-4380-aeac-181da7d00eca.mp4"
@@ -12763,8 +13582,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:18:42.047+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:51.766Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=CNx0Hua7j50",
+          "scene_id": "CNx0Hua7j50",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:51.705Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - RIver Canyon Estates - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/c4c35a19-6373-40f0-b79a-a75f1519597b.mp4"
@@ -13013,8 +13839,15 @@
       "height": 1920,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:19:02.958+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.832Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=6ffqee1x6SA",
+          "scene_id": "6ffqee1x6SA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.773Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Powell Butte - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/5781615a-293f-47e8-aae4-bd1c76f77b6c.mp4"
@@ -13128,8 +13961,15 @@
       "height": 1920,
       "duration_sec": 14.013,
       "registered_at": "2026-06-02T22:19:14.392+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:54.844Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=3P3Bl5eXBg4",
+          "scene_id": "3P3Bl5eXBg4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:54.779Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Mountain High - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/4b4966c6-e9d2-4eb3-8596-24acd9437c8b.mp4"
@@ -13363,8 +14203,15 @@
       "height": 1920,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:19:35.014+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.613Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=NicOYXl4g64",
+          "scene_id": "NicOYXl4g64",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.543Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Fairhaven - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/180d0c2e-3e3f-4b02-843c-0637fe3dbc7b.mp4"
@@ -13564,8 +14411,15 @@
       "height": 1920,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:19:54.473+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.217Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=NK3nACGynaU",
+          "scene_id": "NK3nACGynaU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.154Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Eagle Crest - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/e20c67ee-8a91-40b8-98da-f175b6e2f7e4.mp4"
@@ -13804,8 +14658,15 @@
       "height": 1920,
       "duration_sec": 22.021,
       "registered_at": "2026-06-02T22:20:15.437+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:58.840Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=R44qcjLqYh8",
+          "scene_id": "R44qcjLqYh8",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:58.757Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Deschutes River Woods - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/837d9d1d-fafa-4824-95de-5ffbb71df69c.mp4"
@@ -14019,8 +14880,15 @@
       "height": 1920,
       "duration_sec": 24.391,
       "registered_at": "2026-06-02T22:20:36.984+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.089Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=vPypEwXscRA",
+          "scene_id": "vPypEwXscRA",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.027Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Crosswater - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f43059af-d503-4580-bb15-584dceac66db.mp4"
@@ -14335,8 +15203,15 @@
       "height": 1920,
       "duration_sec": 19.386,
       "registered_at": "2026-06-02T22:21:00.221+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.737Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=b5Av7dySj0I",
+          "scene_id": "b5Av7dySj0I",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.675Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Caldera Springs - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/d7c166e6-d3b2-4e2b-9f07-2989ded0dcf4.mp4"
@@ -14570,8 +15445,15 @@
       "height": 1920,
       "duration_sec": 17.384,
       "registered_at": "2026-06-02T22:21:24.66+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.988Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=vvXZjHD1lz8",
+          "scene_id": "vvXZjHD1lz8",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.924Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Broken Top - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/93fad24b-f5d6-4219-ba77-f4286c35057f.mp4"
@@ -14885,8 +15767,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:21:52.071+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:00.429Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=YCC57KKpDdo",
+          "scene_id": "YCC57KKpDdo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:00.355Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Brasada Ranch - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/d60cb8bc-d6fb-432a-bf5e-8f6acfcd0ee4.mp4"
@@ -15006,8 +15895,15 @@
       "height": 1920,
       "duration_sec": 15.014,
       "registered_at": "2026-06-02T22:22:03.872+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:40:01.644Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=zsZBwxXRgUo",
+          "scene_id": "zsZBwxXRgUo",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:40:01.577Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Awbrey Glen - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/fc01eb5d-25cf-40ec-9bbc-2e8c3ba251c1.mp4"
@@ -15253,8 +16149,15 @@
       "height": 1920,
       "duration_sec": 29.028,
       "registered_at": "2026-06-02T22:22:27.482+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.556Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=y9K2hedXmnk",
+          "scene_id": "y9K2hedXmnk",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.487Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Whychus (Squaw Creek) Canyon Estates - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/87b29b73-0463-4efb-acbd-4b2f1410a08a.mp4"
@@ -15365,8 +16268,15 @@
       "height": 1920,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:22:42.956+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.044Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=ZPeKwNz6hdQ",
+          "scene_id": "ZPeKwNz6hdQ",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.981Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Vandevert Ranch - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/785752db-bb50-40c4-823e-2aaf5dbb67a6.mp4"
@@ -15571,8 +16481,15 @@
       "height": 1920,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:23:04.509+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.293Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dcJ0PzxchXU",
+          "scene_id": "dcJ0PzxchXU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:45.224Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Tollgate - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/91a68323-e5b2-4eac-a63b-ea6c15668c70.mp4"
@@ -15728,8 +16645,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:23:20.991+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:45.003Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=cFah4YqYVrk",
+          "scene_id": "cFah4YqYVrk",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.936Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Timber Creek - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f2273ccc-46f2-4eca-bccd-9b0e6ec54d53.mp4"
@@ -15935,8 +16859,15 @@
       "height": 1920,
       "duration_sec": 26.025,
       "registered_at": "2026-06-02T22:23:41.054+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.629Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=qLmI-w5C-DU",
+          "scene_id": "qLmI-w5C-DU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.561Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Three Rivers South - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/d315ddbf-f02a-4571-8599-0b9bb838b747.mp4"
@@ -16180,8 +17111,15 @@
       "height": 1920,
       "duration_sec": 18.017,
       "registered_at": "2026-06-02T22:24:03.995+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:44.365Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=RUMmaU2VKbs",
+          "scene_id": "RUMmaU2VKbs",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:44.294Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Three Rivers Recreation Sites - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/df4736b1-a75c-4ad9-936c-14b0892039ee.mp4"
@@ -16537,8 +17475,15 @@
       "height": 1920,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:24:33.909+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:50.883Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=VzkVbYL02jw",
+          "scene_id": "VzkVbYL02jw",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:50.825Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Terrebonne - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/10604e22-8268-43cf-94b4-69f4aad2d210.mp4"
@@ -16816,8 +17761,15 @@
       "height": 1920,
       "duration_sec": 29.028,
       "registered_at": "2026-06-02T22:25:01.648+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:47.190Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dk6vH_Do5nw",
+          "scene_id": "dk6vH_Do5nw",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:47.128Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sage Meadow - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/ab9a8f13-8ae9-4117-a805-ad49f15969dc.mp4"
@@ -17055,8 +18007,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:25:25.284+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:46.946Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=wcvaEnoGQKg",
+          "scene_id": "wcvaEnoGQKg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:46.886Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Saddlestone - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f165c041-d0dc-4914-a06d-f0c87ca64c8d.mp4"
@@ -17268,8 +18227,15 @@
       "height": 1920,
       "duration_sec": 28.027,
       "registered_at": "2026-06-02T22:25:47.344+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:42.241Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=2MSRSn5LQkg",
+          "scene_id": "2MSRSn5LQkg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:42.114Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - River Meadows - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/2969c166-bd88-4c3d-896c-dd22d88cce9c.mp4"
@@ -18314,8 +19280,15 @@
       "height": 1920,
       "duration_sec": 22.889,
       "registered_at": "2026-06-02T22:27:09.897+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:53.238Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dxdinK4ZE2k",
+          "scene_id": "dxdinK4ZE2k",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:53.154Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Pine Meadow Village - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/b8673b44-5beb-47f6-8595-520ff9b054e0.mp4"
@@ -18656,8 +19629,15 @@
       "height": 1920,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:27:54.298+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.859Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=9Qni42aqeLc",
+          "scene_id": "9Qni42aqeLc",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.795Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Culver - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/d88fc77b-97d4-460d-8268-863e3b827a1c.mp4"
@@ -18851,8 +19831,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:28:13.445+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.135Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=S7Ar7pdcGwU",
+          "scene_id": "S7Ar7pdcGwU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.046Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Crossroads - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f5bedf5f-91b2-4dfb-ac1a-16d42762bd38.mp4"
@@ -19298,8 +20285,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:29:04.644+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.761Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=dURWTZ9F2Bg",
+          "scene_id": "dURWTZ9F2Bg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.700Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Clear Pine - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/59dbb863-2962-46da-9d23-b46d943dd014.mp4"
@@ -19491,8 +20485,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:29:26.151+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:59.616Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=Mbbn6ES29JE",
+          "scene_id": "Mbbn6ES29JE",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:59.554Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Cascade Meadow Ranch - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/308243ca-813e-4a38-99f7-200691c5c4c9.mp4"
@@ -20279,8 +21280,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:30:26.98+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:48.598Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=PWD6NlLLOO4",
+          "scene_id": "PWD6NlLLOO4",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:48.530Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Sisters - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/e6863550-0d7f-4a1c-970e-0403fe7e8cc4.mp4"
@@ -20534,8 +21542,15 @@
       "height": 1920,
       "duration_sec": 20.019,
       "registered_at": "2026-06-02T22:30:47.712+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.172Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=gnraEwC4ycg",
+          "scene_id": "gnraEwC4ycg",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.104Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Redmond - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/f460a422-ea8d-4f4f-91f5-2067ac628d19.mp4"
@@ -20787,8 +21802,15 @@
       "height": 1920,
       "duration_sec": 25.191,
       "registered_at": "2026-06-02T22:31:08.219+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:52.713Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=PEuT2wUxH4A",
+          "scene_id": "PEuT2wUxH4A",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:52.655Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Prineville - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/d33bb104-2a4f-4c6f-998e-18d5c5ceee9c.mp4"
@@ -20957,8 +21979,15 @@
       "height": 1920,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:31:24.335+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:55.351Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=YlWewo-ShsU",
+          "scene_id": "YlWewo-ShsU",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:55.287Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Madras - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/ee30df9c-9b20-4d77-96fe-f01c48a710f9.mp4"
@@ -21445,8 +22474,15 @@
       "height": 1920,
       "duration_sec": 25.024,
       "registered_at": "2026-06-02T22:32:05.623+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.964Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=p2JoNqXxsKs",
+          "scene_id": "p2JoNqXxsKs",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:57.900Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - La Pine - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/18ac12ce-77ca-4cd1-97e8-18b2df3c3d1e.mp4"
@@ -21618,8 +22654,15 @@
       "height": 1920,
       "duration_sec": 24.023,
       "registered_at": "2026-06-02T22:32:22.213+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:56.389Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=MwRfeahw0eI",
+          "scene_id": "MwRfeahw0eI",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.324Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Crooked River Ranch - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/3fe124c0-85b1-4fed-a458-855221607900.mp4"
@@ -21897,8 +22940,15 @@
       "height": 1920,
       "duration_sec": 28.027,
       "registered_at": "2026-06-02T22:32:49.368+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T21:39:57.032Z",
+      "used_in": [
+        {
+          "render_path": "https://www.youtube.com/watch?v=GpxcaPa4U30",
+          "scene_id": "GpxcaPa4U30",
+          "render_type": "youtube",
+          "used_at": "2026-09-07T21:39:56.948Z"
+        }
+      ],
       "approval": "intake",
       "notes": "Ingested from Google Drive (Area Guide - Camp Sherman - 9x16 Social - h.264.mp4)",
       "file_path": "public/asset-library/videos/curated/bde2340c-1243-4ffa-b02b-5df400a44292.mp4"

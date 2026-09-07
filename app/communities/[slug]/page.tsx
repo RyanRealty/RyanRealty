@@ -16,7 +16,8 @@ import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
 import { buildActivityItems } from '@/lib/kb/place-sections'
-import { activityRows, placeFigureRows, PLACE_COUNT_TRACE, type CityPlaceItem } from '@/app/cities/[slug]/_v3/city-sections'
+import { activityRows, areaGuideRow, placeFigureRows, PLACE_COUNT_TRACE, type CityPlaceItem } from '@/app/cities/[slug]/_v3/city-sections'
+import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import { communityImage } from '@/lib/geo-images'
 import type { Metadata } from 'next'
 import { getCommunityBySlug, getCommunityListings } from '@/app/actions/communities'
@@ -28,6 +29,7 @@ import {
   getResortBoundaryGeoJSON,
   getResortCommunityBySlug,
   getBlogPostsBySlugs,
+  getAreaGuideVideo,
   getPriceHistory,
   getDetachedOverlays,
   cityDetachedSlug,
@@ -303,6 +305,11 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
   // Face is leftover membership (Tetherow 16 SFR), never alias Field length.
   const face = publishPlaceFace({ grain: 'community', hud })
   const libraryHero = await withTimeoutFallback(communityLibraryHero(slug), null, 3000, 'comm:libraryHero')
+  // The approved area guide for THIS community, exact slug only (a Bend guide
+  // on a Tetherow page is wrong). A door in a ledger below the fold, never a
+  // looping hero: the first fold stays Split + leftover face.
+  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'comm:areaGuide')
+  const [firstGuide, ...restGuide] = areaGuideRow(publicName, areaGuideVideo)
   const stagePosterSrc = stagePoster(slug, community.heroImageUrl, libraryHero)
   const headline = belongingHeadline(publicName, richContent)
   const belonging = belongingFigures(richContent, placeCharacter)
@@ -626,6 +633,8 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     asOfLabel,
     faqs: pageFaqs,
   })
+  const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
+  if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
 
   const trail = communityPageTrail(
     cityName && citySlug ? { label: cityName, slug: citySlug } : null,
@@ -778,6 +787,18 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         ) : null}
 
         <V3PlaceCharacter placeName={publicName} character={placeCharacter} />
+
+        {/* The area guide, one row, a door to the Ryan Realty YouTube channel
+            (or the file when a cut is not uploaded). Pattern 3, Ledger. */}
+        {firstGuide ? (
+          <V3Ledger
+            id="guides"
+            layout="magazine"
+            eyebrow={v3Text(`${publicName} · Video`)}
+            heading={v3Text(`${publicName} area guide`)}
+            rows={[firstGuide, ...restGuide]}
+          />
+        ) : null}
 
         <CommunityAlertSheet
           communityName={publicName}

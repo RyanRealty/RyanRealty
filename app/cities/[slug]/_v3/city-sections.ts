@@ -259,20 +259,26 @@ export function activityRows(items: readonly CityActivityItem[]): V3LedgerFigure
  */
 export function areaGuideRow(
   placeName: string,
-  video: { url: string } | null | undefined,
+  video: { url: string; youtube?: { url: string; thumbnailUrl: string | null } | null } | null | undefined,
   posterSrc?: string,
 ): V3LedgerPlainRow[] {
-  const url = video?.url?.trim()
-  if (!url) return []
+  const fileUrl = video?.url?.trim()
+  if (!fileUrl) return []
+  // The same cut sits on the Ryan Realty YouTube channel; when it does, the
+  // door opens there so the watch counts for the channel. The file is the
+  // fallback for a guide that has not been uploaded.
+  const yt = video?.youtube ?? null
+  const href = yt?.url?.trim() || fileUrl
+  const poster = posterSrc?.trim() || yt?.thumbnailUrl?.trim() || ''
   return [
     {
       id: 'area-guide',
-      href: url,
+      href,
       newTab: true,
       when: v3Text('Area guide'),
       what: v3Text(`Watch ${placeName}`),
-      detail: v3Text('The approved silent flyover, straight from the file.'),
-      ...(posterSrc?.trim() ? { media: { src: posterSrc.trim() } } : {}),
+      detail: v3Text(yt ? 'On the Ryan Realty YouTube channel.' : 'The approved silent flyover, straight from the file.'),
+      ...(poster ? { media: { src: poster } } : {}),
     },
   ]
 }

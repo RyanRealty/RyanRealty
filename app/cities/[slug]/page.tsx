@@ -150,6 +150,7 @@ import { buildPublicMixFigures } from '@/app/housing-market/[...slug]/_v3/geo-fi
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
 import { buildCitySchemas } from './_v3/city-metadata'
+import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the primary Central Oregon cities (finite, in-repo). Long-tail city
@@ -635,6 +636,10 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
     faq: marketFaq,
     hasMap: true,
   })
+  // The area guide as a VideoObject: the file is contentUrl, the channel upload
+  // is embedUrl, so the video indexes once and credits the channel.
+  const cityGuideSchema = areaGuideVideoSchema(cityName, `/cities/${slug}`, areaGuideVideo)
+  if (cityGuideSchema) citySchemas.push(cityGuideSchema)
 
   // The read may not have completed: render the Atlas anyway, with its
   // honest sentence, instead of deleting the section (pass five, R7).

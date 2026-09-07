@@ -104,7 +104,9 @@ import type { Metadata } from 'next'
 import { SubdivisionUnavailable, SUBDIVISION_UNAVAILABLE_METADATA } from './SubdivisionUnavailable'
 import { subdivisionListingsPath } from '@/lib/slug'
 import { publishPlaceBrowseHref } from '@/lib/search/publish-place-browse-href'
-import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { getAreaGuideVideo, getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
+import { areaGuideRow } from '@/app/cities/[slug]/_v3/city-sections'
+import { areaGuideLookupSlugs, areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import { cityStagePoster, placeLibraryHero } from '@/app/cities/[slug]/_v3/city-opening'
 import {
   placeCostChart,
@@ -146,8 +148,8 @@ import {
   V3_FOOTER_COLUMNS,
   V3Heading,
   V3Instrument,
+  V3Ledger,
   V3PlaceCharacter,
-
   V3SectionTracker,
   V3SourceLine,
   type V3InstrumentFigure,
@@ -603,6 +605,17 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const placeDescription = placeCity
     ? `Homes for sale in ${displayName}, a subdivision in ${placeCity}, with a boundary map and live listings.`
     : `Homes for sale in ${displayName}, a subdivision in Central Oregon, with a boundary map and live listings.`
+  // The approved area guide for this place. A plat carries a recording suffix
+  // (phase, unit, no); the guide is cut for the named place, so the phase
+  // resolves to its parent and never to a different place (areaGuideLookupSlugs).
+  const areaGuideVideo = await withTimeoutFallback(
+    getAreaGuideVideo(areaGuideLookupSlugs(slug)),
+    null,
+    3000,
+    'plat:areaGuide',
+  )
+  const [firstGuide, ...restGuide] = areaGuideRow(displayName, areaGuideVideo)
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -628,6 +641,8 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
       hasMap: hasMap ? `/subdivisions/${slug}` : undefined,
     },
   ]
+  const platGuideSchema = areaGuideVideoSchema(displayName, `/subdivisions/${slug}`, areaGuideVideo)
+  if (platGuideSchema) schemas.push(platGuideSchema)
 
   const inventorySource = homesLedgerTrace(platScope)
   const splitCity = placeCity ?? undefined
@@ -774,6 +789,18 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
         {/* Pattern 6, Quiet — build years and HOA as sentences, because
             PLACE_CONTENT_RULES R1-R3 forbid publishing them as bare figures. */}
         <V3PlaceCharacter placeName={displayName} character={placeCharacter} />
+
+        {/* The area guide, one row, a door to the Ryan Realty YouTube channel
+            (or the file when a cut is not uploaded). Pattern 3, Ledger. */}
+        {firstGuide ? (
+          <V3Ledger
+            id="guides"
+            layout="magazine"
+            eyebrow={v3Text(`${displayName} · Video`)}
+            heading={v3Text(`${displayName} area guide`)}
+            rows={[firstGuide, ...restGuide]}
+          />
+        ) : null}
 
         {/* Pattern 3, Ledger — recorded instruments, every row a door. */}
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />

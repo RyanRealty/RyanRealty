@@ -99,7 +99,10 @@ describe('community first screen leftover face + split', () => {
     expect(SRC).toMatch(/firstAboutParagraph\(aboutParagraphs\)/)
     expect(SRC).toMatch(/getBlogPostsBySlugs/)
     expect(SRC).not.toMatch(/getRecentBlogPosts/)
-    expect(SRC).not.toMatch(/id="guides"/)
+    // 2026-09-07: id="guides" is the one area-guide door to the Ryan Realty
+    // YouTube channel (areaGuideRow), below the fold. Still no recent-posts feed.
+    expect(SRC).toMatch(/id="guides"/)
+    expect(SRC).toMatch(/areaGuideRow\(publicName, areaGuideVideo\)/)
   })
 
   it('does not label first-screen copy with plat/nest/parent/child/sibling/CDP/Feeders', () => {

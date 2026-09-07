@@ -93,6 +93,7 @@ import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 import { buildNeighborhoodSchemas } from './neighborhood-schemas'
+import { areaGuideVideoSchema } from '@/lib/site/area-guide-schema'
 import {
   leftoverClosedCount,
   placeCostChart,
@@ -503,6 +504,12 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     asOfIso,
     asOfLabel,
   })
+  const neighborhoodGuideSchema = areaGuideVideoSchema(
+    neighborhood.name,
+    `/cities/${citySlug}/${neighborhoodSlug}`,
+    areaGuideVideo,
+  )
+  if (neighborhoodGuideSchema) neighborhoodSchemas.push(neighborhoodGuideSchema)
   // FAQPage rides with the schemas (2026-08-27 audit: the visible FAQ rendered
   // with NO FAQPage emission, against this contract's own jsonLd requirement —
   // the items are the same faqs array V3Quiet renders, one source, two sinks).

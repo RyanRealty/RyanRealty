@@ -38,6 +38,18 @@ writes `x` rows.
 **Do not** rewrite the social bios on voice-canon grounds. Matt 2026-09-07: the canon is
 "still wrong". Copy he chose stays until he asks.
 
+**YouTube wired into the site (later 7 Sep, `wt/youtube-wire-20260907`).** Matt kept
+@Ryan-Realty on matt.lists.homes@gmail.com (declined the Brand Account move) and said
+"just wire it in to our site". Done: every approved area-guide asset carries its channel
+upload in `used_in` (render_type `youtube`, 150 rows via lib/asset-library.mjs markUsed,
+manifest committed); `getAreaGuideVideo` exposes `youtube`; the area-guide row now opens
+the channel and community + subdivision pages gained the row (contract tests moved with a
+reason); every place page emits a VideoObject (new `type: 'video'` in lib/site/json-ld);
+8 `listing_videos` rows (source `youtube`) put the channel's listing tours on the seven
+Ryan Realty listings they film. Alias geo_tags added: inn-of-the-7th-mountain, rivers-edge,
+mt-bachelor-village, three-rivers. Still Matt's: the token grant as matt.lists.homes@gmail.com,
+the handle claim on 22 Sep.
+
 ---
 
 # Previous — 2026-09-07 (CMA funnel mission: four lanes, one engine, approved → sent → tracked)
