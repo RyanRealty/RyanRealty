@@ -129,7 +129,7 @@ export function buildLiveFigures(hud: LeftoverHudKpis | null, mosText: string | 
     })
   }
 
-  const clauses = [`leftover membership, active single-family houses in ${geoName}`]
+  const clauses = [`Oregon Data Share via MarketPulse, active single-family houses in ${geoName}`]
   const trace =
     `${clauses.join('. ')}.` + (mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
 
@@ -439,7 +439,7 @@ export function buildCityPeriodFigures(args: {
   if (figures.length === 0) return { figures, trace: null }
   return {
     figures,
-    trace: '12-month leftover figures are Market Truth, labeled by window',
+    trace: '12-month figures via Oregon Data Share / MarketPulse, labeled by window',
   }
 }
 

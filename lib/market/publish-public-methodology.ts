@@ -25,3 +25,12 @@ export function assertPublicMethodology(text: string): void {
     throw new Error(`Visitor methodology leaked an internal stamp: ${text}`)
   }
 }
+
+/** One human source line for live MLS / MarketPulse figures on public pages. */
+export const PUBLIC_MARKET_PULSE_SOURCE = 'Oregon Data Share via MarketPulse'
+
+/** Visitor-facing live-pulse source. No internal "leftover" jargon. */
+export function publicMarketPulseSource(extra?: string): string {
+  const clause = typeof extra === 'string' ? extra.trim() : ''
+  return clause ? `${PUBLIC_MARKET_PULSE_SOURCE}. ${clause}` : PUBLIC_MARKET_PULSE_SOURCE
+}

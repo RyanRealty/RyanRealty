@@ -382,7 +382,8 @@ describe('public place pages', () => {
     const reports = readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8')
     expect(annual).toMatch(/getPublicPlaceSegments/)
     expect(region).toMatch(/getPublicPlaceSegments/)
-    expect(reports).toMatch(/getPublicPlaceSegments/)
+    // Cos IA: /reports is sales/weekly only — segment pulse lives on the hub.
+    expect(reports).not.toMatch(/getPublicPlaceSegments/)
     const searchLayer = readFileSync(resolve('lib/market/search-city-sfr-publish.ts'), 'utf8')
     const searchTail = readFileSync(resolve('app/search/[...slug]/sections/SeoTail.tsx'), 'utf8')
     expect(searchLayer).toMatch(/getPublicPlaceSegments/)

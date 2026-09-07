@@ -1,78 +1,52 @@
 /**
- * /housing-market/reports — Central Oregon market reports hub, on the
- * components/site/v3 barrel.
+ * /housing-market/reports .  sales reports and weekly snapshots.
  *
- * VISITOR OBJECTIVE: pick cities and a range, read live single-family numbers,
- * open a weekly or sales report, or value a home.
- * MACHINE OBJECTIVE: Dataset JSON-LD of the verified city figures, WebPage,
- * BreadcrumbList.
- *
- * E-CUT 2026-08-13 collapsed the dual URL space. Implementation lives here.
- * /reports 308s here. P10 wrap 2026-08-13: KB chrome off, v3 on. Islands
- * (ReportsByCityView, ReportsIndexContent) stay leftover mixed.
- *
- * DROPPED: KbHero, KbBreadcrumb, KbFooter, KbSell, SmoothScrollProvider, kb.css.
- * Capture: submitMarketPageInquiry via ReportsInquirySheet. First-screen ask
- * is the city figures. Value my home lives in Quiet. D9: city Ledger stays type; the range table is an island, not a
- * flattened series. D11: copy states the fact.
- *
- * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a
- * v3 island, not a seventh pattern. pageType='market-reports'.
+ * Cos IA: this page is NOT the live pulse dashboard. Live inventory / MOS / city
+ * pulse live on /housing-market. Here: download or view sales by city and week.
+ * Stats: Oregon Data Share via MarketPulse only. Never invent.
  */
 
-import type { Metadata } from 'next'
-import { getDetachedOverlays } from '@/lib/data/market-truth/getSellBendMarket'
-import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { marketVerdict, MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
-import { formatDate } from '@/lib/format/date'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import {
-  getPublicPlaceSegments,
-  publicSegmentBrowseHref,
-  publicSegmentNoun,
-} from '@/lib/data/market-truth/public-segments'
-import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
+import type { Metadata } from "next"
+import { MetadataBlock } from "@/components/site/MetadataBlock"
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Quiet,
   V3SectionTracker,
-} from '@/components/site/v3'
-import { ReportsInquirySheet } from './_v3/ReportsInquirySheet.client'
-import { CityHeadlineSection, RangeTableSection, SalesAndWeeklySection } from './_v3/ReportsIslands'
-import { CANONICAL_PATH, SELL_HREF, siteUrl } from './_v3/hub-constants'
-import { parseReportsParams, buildRegionFigures } from './_v3/hub-sections'
+} from "@/components/site/v3"
+import { ReportsInquirySheet } from "./_v3/ReportsInquirySheet.client"
+import { RangeTableSection, SalesAndWeeklySection } from "./_v3/ReportsIslands"
+import { CANONICAL_PATH, SELL_HREF, siteUrl } from "./_v3/hub-constants"
+import { parseReportsParams } from "./_v3/hub-sections"
 import {
   marketReportDoorLinks,
   marketReportHereBody,
-} from '@/lib/market/report-doors'
+} from "@/lib/market/report-doors"
+import { PUBLIC_MARKET_PULSE_SOURCE } from "@/lib/market/publish-public-methodology"
 
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Published Central Oregon market reports',
+  title: "Central Oregon sales and weekly reports",
   description:
-    'Published weekly and sales reports for Central Oregon. Live inventory and pace live on the housing market hub. Pick cities and a time range.',
+    "Sales reports and weekly snapshots for Central Oregon. Live inventory and pace live on the Live market hub. Download or view sales by city and week.",
   alternates: { canonical: `${siteUrl}${CANONICAL_PATH}` },
   openGraph: {
-    title: 'Published Central Oregon market reports',
+    title: "Central Oregon sales and weekly reports",
     description:
-      'Sold volume, median price, days on market, and inventory by city. Weekly reports included.',
+      "Sales reports and weekly snapshots by city. Live pulse numbers live on the housing market hub.",
     url: `${siteUrl}${CANONICAL_PATH}`,
-    type: 'website',
-    siteName: 'Ryan Realty',
-    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: 'Ryan Realty market reports' }],
+    type: "website",
+    siteName: "Ryan Realty",
+    images: [{ url: defaultOgImage, width: 1200, height: 630, alt: "Ryan Realty market reports" }],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Published Central Oregon market reports',
+    card: "summary_large_image",
+    title: "Central Oregon sales and weekly reports",
     description:
-      'Sold volume, median price, days on market, and inventory by city. Weekly reports included.',
+      "Sales reports and weekly snapshots by city. Live pulse numbers live on the housing market hub.",
     images: [defaultOgImage],
   },
 }
@@ -82,44 +56,6 @@ type PageProps = { searchParams: Promise<{ [key: string]: string | string[] | un
 export default async function ReportsIndexPage({ searchParams }: PageProps) {
   const params = await searchParams
   const { cities: selectedCities, period } = parseReportsParams(params ?? null)
-  const [regionOverlays, publicSegments, publicPace] = await Promise.all([
-    getDetachedOverlays([{ geoType: 'region', geoSlug: 'central-oregon' }]),
-    getPublicPlaceSegments({ geoType: 'region', geoSlug: 'central-oregon' }),
-    getPublicDetachedPace({ geoType: 'region', geoSlug: 'central-oregon' }),
-  ])
-  const regionMt = regionOverlays.get('region:central-oregon')
-  const hud = leftoverHudKpis({
-    grain: 'region',
-    headlines: regionMt?.headlines ?? null,
-    inventory: regionMt?.inventory ?? null,
-    pace: publicPace,
-  })
-
-  const mosRaw = hud.monthsSupply != null && hud.monthsSupply > 0 ? hud.monthsSupply : null
-  const verdict = marketVerdict(mosRaw)
-  const regionFigures = buildRegionFigures(hud)
-  for (const row of publicSegments) {
-    if (row.monthsOfSupply == null || row.activeCount == null || row.activeCount <= 0) continue
-    regionFigures.push({
-      value: v3Text(formatMonthsOfSupply(row.monthsOfSupply)),
-      label: v3Text(`${publicSegmentNoun(row.segment, row.activeCount)} · months of supply`),
-      href: publicSegmentBrowseHref(null, row.segment),
-    })
-  }
-  for (const item of publicPaceItems(publicPace)) {
-    regionFigures.push({
-      value: v3Text(item.value),
-      label: v3Text(item.label),
-    })
-  }
-  const extraTrace =
-    publicSegments.length > 0 || publicPaceItems(publicPace).length > 0
-      ? ' Extra product-type months of supply and 12-month pace are leftover membership, sample-gated.'
-      : ''
-  const [firstFigure, ...restFigures] = regionFigures
-  const leftoverStamp = regionMt?.headlines?.computedAt ?? regionMt?.inventory?.computedAt ?? null
-  const refreshedAt = leftoverStamp
-  const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
 
   return (
     <>
@@ -128,85 +64,71 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
         <MetadataBlock
           schemas={[
             {
-              type: 'breadcrumb',
+              type: "breadcrumb",
               items: [
-                { name: 'Home', url: '/' },
-                { name: 'Housing market', url: '/housing-market' },
-                { name: 'Published reports', url: CANONICAL_PATH },
+                { name: "Home", url: "/" },
+                { name: "Housing market", url: "/housing-market" },
+                { name: "Sales and weekly reports", url: CANONICAL_PATH },
               ],
             },
             {
-              type: 'webPage',
-              name: 'Published Central Oregon market reports',
+              type: "webPage",
+              name: "Central Oregon sales and weekly reports",
               description:
-                'Housing market report by city: sold volume, median price, days on market, inventory. Choose cities and time range.',
+                "Sales reports and weekly snapshots by city. Live pulse numbers live on the housing market hub.",
               url: CANONICAL_PATH,
             },
           ]}
         />
         <V3Breadcrumb
           trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Housing market', href: '/housing-market' },
-            { label: 'Published reports' },
+            { label: "Home", href: "/" },
+            { label: "Housing market", href: "/housing-market" },
+            { label: "Sales and weekly reports" },
           ]}
         />
 
-        {firstFigure ? (
-          <V3Instrument
-            id="reports"
-            level={1}
-            eyebrow={v3Text('Published reports')}
-            headline={v3Text(
-              `Published Central Oregon market reports${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
-            )}
-            figures={[firstFigure, ...restFigures]}
-            source={v3Text(
-              `Leftover membership, Central Oregon single-family houses. A miss omits. ${MOS_METHODOLOGY_CLAUSE}${
-                mosText ? ` This refresh: ${mosText} months of supply.` : ''
-              }${extraTrace}`,
-            )}
-            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-            action={{
-              label: v3Text('Live figures by city'),
-              href: '#cities',
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="reports"
-            heading="Published Central Oregon market reports"
-            headingLevel={1}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No live region figures right now',
-                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a region median or a verdict. City rows below carry their own live figures.',
-              },
-            ]}
-          />
-        )}
+        <V3Quiet
+          id="reports"
+          eyebrow="Sales reports · Weekly snapshots"
+          heading="Central Oregon sales and weekly reports"
+          headingLevel={1}
+          items={[
+            {
+              kind: "prose",
+              term: "What this page is",
+              body: "Download or view sales by city and week. Live inventory, months of supply, and city pulse live on the Live market hub. This page does not re-host those numbers.",
+            },
+            { label: "Live market hub", href: "/housing-market" },
+            { label: "City pulse (Bend)", href: "/housing-market/bend" },
+            { label: "Months of supply", href: "/months-of-supply" },
+            {
+              kind: "prose",
+              term: "Source",
+              body: `${PUBLIC_MARKET_PULSE_SOURCE}. Closed-sales cards and weekly snapshots use the same Oregon Data Share path the live pages cite.`,
+            },
+          ]}
+        />
 
-        <CityHeadlineSection selectedCities={selectedCities} />
         <RangeTableSection selectedCities={selectedCities} period={period} />
         <SalesAndWeeklySection />
 
-        <ReportsInquirySheet /> {/* hydration-safe: visitor-caused sheet state */}
+        <ReportsInquirySheet />
 
         <V3Quiet
           id="explore"
-          eyebrow="Market reports"
+          eyebrow="Sales and weekly"
           heading="What each report is"
           items={[
             {
-              kind: 'prose',
-              term: 'Where you are',
-              body: marketReportHereBody('published'),
+              kind: "prose",
+              term: "Where you are",
+              body: marketReportHereBody("published"),
             },
-            ...marketReportDoorLinks('published'),
-            { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
-            { label: 'Value my home', href: SELL_HREF },
-            { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+            ...marketReportDoorLinks("published"),
+            { label: "Homes for sale", href: "/homes-for-sale?view=list" },
+            { label: "Value my home", href: SELL_HREF },
+            { label: "Oregon Data Share", href: "https://www.oregondatashare.com" },
           ]}
         />
       </main>

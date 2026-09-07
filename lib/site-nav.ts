@@ -2,8 +2,8 @@
  * lib/site-nav.ts — SINGLE source of truth for public site navigation.
  *
  * Matt lock 2026-08-10 (SEO/IA plan):
- *   Top bar (chrome): Homes · Places · Sell · About (Market folded into Places).
- *   SSOT still carries Market for reachability / menu.
+ *   Top bar (chrome): Homes · Places · Market · Sell · About (ia-lock).
+ *   Market is first-class — not buried in Places.
  *   Lifestyle (parks, schools, trails, events, venues, golf) lives under Areas
  *   One chrome (KbNav) for public pages — dual SiteHeader/KbNav trees retired
  *
@@ -206,25 +206,24 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/communities/broken-top', label: 'Broken Top' },
       { href: '/communities/eagle-crest', label: 'Eagle Crest' },
       { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
-      { href: '/housing-market', label: 'Housing market' },
       { href: '/neighborhoods', label: 'All neighborhoods' },
       { href: '/subdivisions', label: 'All subdivisions' },
     ],
   },
   {
-    // Kept in SSOT for reachability / menu. Primary bar drops Market (Redfin-simple).
+    // First-class chrome (ia-lock).
     // Market report hierarchy — keep in lockstep with lib/market/report-doors.ts
     // (ci:nav-reachability reads literal hrefs in this file).
     label: 'Market',
     href: '/housing-market',
     children: [
-      { href: '/housing-market', label: 'Live housing market' },
-      { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
+      { href: '/housing-market', label: 'Live market' },
+      { href: '/housing-market/central-oregon', label: 'Region deep dive' },
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
       { href: '/housing-market/history', label: 'Closed sales explorer' },
-      { href: '/housing-market/reports', label: 'Published reports' },
-      { href: '/blog', label: 'Blog and guides' },
+      { href: '/housing-market/reports', label: 'Sales and weekly reports' },
+      { href: '/blog', label: 'Market stories' },
       { href: '/faq', label: 'FAQ' },
     ],
   },
@@ -302,13 +301,13 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Market',
     links: [
-      { href: '/housing-market', label: 'Live housing market' },
-      { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
+      { href: '/housing-market', label: 'Live market' },
+      { href: '/housing-market/central-oregon', label: 'Region deep dive' },
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
       { href: '/housing-market/history', label: 'Closed sales explorer' },
-      { href: '/housing-market/reports', label: 'Published reports' },
-      { href: '/blog', label: 'Blog and guides' },
+      { href: '/housing-market/reports', label: 'Sales and weekly reports' },
+      { href: '/blog', label: 'Market stories' },
       { href: '/faq', label: 'FAQ' },
       NEWSLETTER_SUBSCRIBE,
     ],
@@ -345,7 +344,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
 /**
  * Public sitemap: Markets / Buy · Sell · Join / Company / Contact (footer rebuild 2026-09-06).
  * Town clusters stay under Markets for SEO. Buy · Sell · Join densifies the action doors.
- * Header chrome: Homes / Places / Sell / About.
+ * Header chrome: Homes / Places / Market / Sell / About.
  */
 const FOOTER_MORE_CITIES = ['La Pine', 'Terrebonne', 'Prineville', 'Madras'] as const
 
@@ -393,7 +392,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/reviews', label: 'Client reviews' },
       { href: '/invest', label: 'Invest' },
       { href: '/housing-market', label: 'Housing market' },
-      { href: '/blog', label: 'Blog and guides' },
+      { href: '/blog', label: 'Market stories' },
     ],
   },
   {

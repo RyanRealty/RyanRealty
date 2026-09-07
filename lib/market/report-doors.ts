@@ -1,21 +1,17 @@
 /**
- * Market report family doors — one hierarchy for nav + page closings.
+ * Market report family doors — one hierarchy for nav + page closings + hub chooser.
  *
- * Buyers were landing on /housing-market, /housing-market/central-oregon,
- * /housing-market/[city], /months-of-supply, and /housing-market/reports with
- * overlapping "market report" labels and no shared map of what each URL is.
- * This module is the map. Copy only. No figures.
+ * Five public products (Cos IA package):
+ *   1. Live market — /housing-market
+ *   2. City pulse — /housing-market/[city] (+ hub #cities)
+ *   3. Sales reports — /housing-market/reports (period / PDF cards)
+ *   4. Weekly snapshots — /housing-market/reports (dated archive)
+ *   5. Market stories — /blog (never titled as the live report)
  *
- * Hierarchy (SITE_PAGES / PAGE_INVENTORY):
- *   Live hub → city reports + region report
- *   Definition → /months-of-supply
- *   Method → /how-we-get-our-numbers
- *   Closed sales explorer → /housing-market/history
- *   Published weekly/sales → /housing-market/reports
- *   Words → /blog, /faq
+ * Supporting doors: region deep dive, MOS definition, method, closed-sales explorer, FAQ.
+ * /housing-market/explore permanently redirects to the live hub (retired builder).
  *
- * One stats source on the public market pages: MarketPulse / Oregon Data Share
- * (plus closed-sales marts where a page already says so). Do not invent numbers here.
+ * One stats source: MarketPulse / Oregon Data Share. Do not invent numbers here.
  */
 
 export type MarketReportDoorId =
@@ -31,46 +27,39 @@ export type MarketReportDoorId =
 export type MarketReportDoor = {
   id: MarketReportDoorId
   href: string
-  /** Plain label: what the destination is, not a marketing synonym. */
   label: string
 }
 
-/** Ordered Market family. Labels say the job of the page. */
 export const MARKET_REPORT_DOORS: readonly MarketReportDoor[] = [
-  { id: 'hub', href: '/housing-market', label: 'Live housing market hub' },
-  { id: 'region', href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
-  { id: 'mos', href: '/months-of-supply', label: 'Months of supply (definition)' },
+  { id: 'hub', href: '/housing-market', label: 'Live market' },
+  { id: 'region', href: '/housing-market/central-oregon', label: 'Region deep dive' },
+  { id: 'mos', href: '/months-of-supply', label: 'Months of supply' },
   { id: 'method', href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
   { id: 'history', href: '/housing-market/history', label: 'Closed sales explorer' },
-  { id: 'published', href: '/housing-market/reports', label: 'Published weekly and sales reports' },
-  { id: 'blog', href: '/blog', label: 'Blog and guides' },
+  { id: 'published', href: '/housing-market/reports', label: 'Sales and weekly reports' },
+  { id: 'blog', href: '/blog', label: 'Market stories' },
   { id: 'faq', href: '/faq', label: 'FAQ' },
 ] as const
 
 const HERE_COPY: Record<MarketReportDoorId, string> = {
-  hub: 'You are on the live Central Oregon housing market hub. City rows open each city’s live report. The region report, months of supply, and published weekly reports are separate pages.',
+  hub: 'You are on the live Central Oregon market. City pulse rows open each city’s live report. Sales and weekly reports, months of supply, and the region deep dive are separate pages.',
   region:
-    'You are on the Central Oregon region report. The live hub and each city report are separate. Months of supply is the definition page.',
-  mos: 'You are on the months of supply definition page. Live figures still live on the housing market hub and city reports.',
+    'You are on the Central Oregon region deep dive (charts and closed-sales detail). Live inventory and city pulse live on the housing market hub.',
+  mos: 'You are on the months of supply definition page. Live figures still live on the housing market hub and city pulse pages.',
   method:
     'You are on how we get our numbers. This page has no live figures — it explains the method behind the market pages.',
   history:
-    'You are on the closed sales explorer. Live inventory and months of supply live on the housing market hub and city reports.',
+    'You are on the closed sales explorer. Live inventory and months of supply live on the housing market hub and city pulse pages.',
   published:
-    'You are on published weekly and sales reports. The live housing market hub is the current inventory and pace page.',
-  blog: 'You are in guides and blog posts. Live market figures live on the housing market hub and city reports.',
-  faq: 'You are on FAQ. Live market figures live on the housing market hub and city reports.',
+    'You are on sales reports and weekly snapshots. The live market hub is the current inventory and pace page.',
+  blog: 'You are in market stories and guides. Live figures live on the housing market hub and city pulse pages.',
+  faq: 'You are on FAQ. Live market figures live on the housing market hub and city pulse pages.',
 }
 
-/** Prose “where you are” for the current market page. */
 export function marketReportHereBody(here: MarketReportDoorId): string {
   return HERE_COPY[here]
 }
 
-/**
- * Quiet link rows for sibling market pages. Drops the page the visitor is on
- * so we never offer a door to “here.”
- */
 export function marketReportDoorLinks(
   here: MarketReportDoorId,
   options?: { include?: readonly MarketReportDoorId[] },
@@ -81,7 +70,17 @@ export function marketReportDoorLinks(
     .map((door) => ({ label: door.label, href: door.href }))
 }
 
-/** Nav children for Market (desktop panel + Menu+). Same order, same words. */
+/** Hub entry chooser: Live · By city · Explore · Sales/weekly · MOS. */
+export function marketHubChooser(): ReadonlyArray<{ label: string; href: string }> {
+  return [
+    { label: 'Live market', href: '/housing-market' },
+    { label: 'By city', href: '/housing-market#cities' },
+    { label: 'Explore', href: '/housing-market/history' },
+    { label: 'Sales / weekly', href: '/housing-market/reports' },
+    { label: 'Months of supply', href: '/months-of-supply' },
+  ]
+}
+
 export function marketNavChildren(): ReadonlyArray<{ label: string; href: string }> {
   return MARKET_REPORT_DOORS.map((door) => ({
     href: door.href,
@@ -92,9 +91,9 @@ export function marketNavChildren(): ReadonlyArray<{ label: string; href: string
 function navLabel(id: MarketReportDoorId): string {
   switch (id) {
     case 'hub':
-      return 'Live housing market'
+      return 'Live market'
     case 'region':
-      return 'Central Oregon region report'
+      return 'Region deep dive'
     case 'mos':
       return 'Months of supply'
     case 'method':
@@ -102,9 +101,9 @@ function navLabel(id: MarketReportDoorId): string {
     case 'history':
       return 'Closed sales explorer'
     case 'published':
-      return 'Published reports'
+      return 'Sales and weekly reports'
     case 'blog':
-      return 'Blog and guides'
+      return 'Market stories'
     case 'faq':
       return 'FAQ'
   }

@@ -158,15 +158,15 @@ export const revalidate = 300
 // Metadata - unchanged from the KB page.
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Central Oregon market report',
+    title: 'Central Oregon region deep dive',
     description:
       'Regional market data for Central Oregon: active inventory, median list price, months of supply, and pace by city. ' +
       'Single-family homes. Updated every 15 minutes from Oregon Data Share.',
     path: '/housing-market/central-oregon',
     keywords: [
-      'Central Oregon housing market',
+      'Central Oregon region deep dive',
       'Central Oregon real estate market',
-      'Central Oregon market report',
+      'Central Oregon region deep dive',
       'Bend Redmond Sisters market data',
       'Oregon real estate market',
       'Ryan Realty',
@@ -301,7 +301,7 @@ export default async function CentralOregonRegionPage() {
   const liveTrace =
     region.live.trace +
     (extraLive.length > 0
-      ? ' Extra product-type inventory and 12-month pace are leftover membership, sample-gated.'
+      ? ' Extra product-type inventory and 12-month pace are sample-gated when published.'
       : '')
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
   const cityLedger = buildCityLedger(citySnapshots, {
@@ -376,7 +376,7 @@ export default async function CentralOregonRegionPage() {
     },
     {
       type: 'webPage',
-      name: 'Central Oregon market report',
+      name: 'Central Oregon region deep dive',
       description:
         'Live Central Oregon regional market data: active inventory, median list price, months of supply, and pace. Single-family homes only.',
       url: '/housing-market/central-oregon',
@@ -441,7 +441,7 @@ export default async function CentralOregonRegionPage() {
             className="hm-tremor"
             eyebrow={v3Text('Central Oregon, Oregon')}
             headline={v3Text(
-              `Central Oregon market report${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+              `Region deep dive · Central Oregon${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstLiveFigure, ...restLiveFigures]}
             /* First viewport is the verdict + chart, not the leftover KPI wall.
@@ -455,7 +455,7 @@ export default async function CentralOregonRegionPage() {
         ) : (
           <V3Quiet
             id="market"
-            heading="Central Oregon market report"
+            heading="Region deep dive · Central Oregon"
             headingLevel={1}
             items={[
               {
@@ -482,7 +482,7 @@ export default async function CentralOregonRegionPage() {
             // this Ledger replaces printed only the count and the median, so the
             // inherited source line was never written to cover a pace figure.
             source={v3Text(
-              'leftover membership, one row per city. The count and the median list price are leftover active houses. Months of supply is leftover membership',
+              'Oregon Data Share via MarketPulse, one row per city (city pulse). Count and median list are active single-family houses; months of supply uses the same path',
             )}
             updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
             action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}

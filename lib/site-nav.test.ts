@@ -15,7 +15,7 @@ import {
 import { getPlaceLinks, canonicalCommunitySlug } from './place-links'
 
 describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
-  it('SSOT still carries five intent groups (chrome primary drops Market)', () => {
+  it('SSOT still carries five intent groups (including first-class Market)', () => {
     expect(KB_TOP_LINKS.map((l) => l.label)).toEqual(['Buy', 'Areas', 'Market', 'Sell', 'About'])
     expect(KB_TOP_LINKS.map((l) => l.href)).toEqual([
       '/homes-for-sale?view=list',
@@ -41,19 +41,19 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(KB_ABOUT_DROPDOWN.map((l) => l.href).sort()).toEqual(['/contact', '/reviews', '/team'])
   })
 
-  it('Areas top panel is places-first (market folded in; lifestyle in Menu+)', () => {
+  it('Areas top panel is places-first (Market is its own chrome group; lifestyle in Menu+)', () => {
     const areas = KB_TOP_NAV.find((g) => g.label === 'Areas')
     const hrefs = areas?.children.map((l) => l.href) ?? []
     for (const h of [
       '/cities',
       '/communities',
       '/communities/tetherow',
-      '/housing-market',
       '/neighborhoods',
       '/subdivisions',
     ]) {
       expect(hrefs).toContain(h)
     }
+    expect(hrefs).not.toContain('/housing-market')
     expect(hrefs).not.toContain('/lp/central-oregon-golf')
     const menuAreas = KB_MENU_GROUPS.find((g) => g.title === 'Areas')
     const menuHrefs = menuAreas?.links.map((l) => l.href) ?? []
@@ -68,10 +68,10 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(market?.children.map((l) => l.href)).toEqual(doors.map((d) => d.href))
     expect(market?.children.map((l) => l.label)).toEqual(doors.map((d) => d.label))
     expect(market?.children.find((l) => l.href === '/housing-market')?.label).toBe(
-      'Live housing market',
+      'Live market',
     )
     expect(market?.children.find((l) => l.href === '/housing-market/reports')?.label).toBe(
-      'Published reports',
+      'Sales and weekly reports',
     )
     const menuMarket = KB_MENU_GROUPS.find((g) => g.title === 'Market')
     const menuHrefs = menuMarket?.links.map((l) => l.href) ?? []

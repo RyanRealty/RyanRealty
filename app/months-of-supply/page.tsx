@@ -353,7 +353,7 @@ export default async function MonthsOfSupplyPage() {
 
   // The region trace: the query, then the two canonical clauses, printed verbatim.
   const regionTrace =
-    'Months of supply is leftover membership, the same pile as the leftover HUD. Extra product-type months of supply and 12-month pace are leftover, sample-gated. A miss omits. ' +
+    'Oregon Data Share via MarketPulse. Months of supply for single-family houses. Extra product-type months of supply and 12-month pace are sample-gated and omitted when unpublished. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE
@@ -399,9 +399,9 @@ export default async function MonthsOfSupplyPage() {
   // exactly this reason ("A zero-row query is a fact worth printing").
   const cityFootnotes = MOS_CITY_LABELS.filter((label) => !rowed.has(label)).map(
     (label) => {
-      if (label !== 'Bend') return `${label} returned no leftover market row`
-      if (bendHud.active == null) return `${label} has no published leftover active count`
-      return `${label} shows ${bendHud.active.toLocaleString('en-US')} leftover active with no published months of supply`
+      if (label !== 'Bend') return `${label} returned no market row on this refresh`
+      if (bendHud.active == null) return `${label} has no published active count on this refresh`
+      return `${label} shows ${bendHud.active.toLocaleString('en-US')} active with no published months of supply`
     },
   )
   const cityFootnoteSentence =
@@ -419,7 +419,7 @@ export default async function MonthsOfSupplyPage() {
   // listings - so the same two imported clauses the region trace carries are appended
   // here. Same string in both branches, because it is the same query either way.
   const cityTrace =
-    'Leftover membership, active single-family houses, one leftover count per city. A miss omits. ' +
+    'Oregon Data Share via MarketPulse. Active single-family houses, one count per city. ' +
     MOS_METHODOLOGY_CLAUSE +
     ' ' +
     MOS_THRESHOLD_CLAUSE

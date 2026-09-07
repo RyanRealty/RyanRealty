@@ -9,7 +9,6 @@ const files = {
   annual: readFileSync(resolve('app/housing-market/annual-review/page.tsx'), 'utf8'),
   cities: readFileSync(resolve('app/cities/page.tsx'), 'utf8'),
   snapshot: readFileSync(resolve('components/site/MarketSnapshot.tsx'), 'utf8'),
-  reports: readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8'),
   searchOg: readFileSync(resolve('app/search/og/[...slug]/route.tsx'), 'utf8'),
   housingOg: readFileSync(resolve('app/housing-market/og/[...slug]/route.tsx'), 'utf8'),
   // SiteHeader was deleted 2026-08-27 with the legacy chrome. V3Chrome is the
@@ -59,6 +58,14 @@ describe('D21 leftover MOS destinations and leftover remainder', () => {
     expect(chrome).not.toMatch(/leftoverHudKpis|getMarketPulseCitySnapshots|monthsOfSupply/)
     expect(files.mega).toMatch(/leftoverHudKpis/)
     expect(files.mega).not.toMatch(/getMarketPulse\(/)
+  })
+
+  it('reports page does not publish live MOS pulse (sales/weekly only)', () => {
+    const reports = readFileSync(resolve('app/housing-market/reports/page.tsx'), 'utf8')
+    expect(reports).not.toMatch(/leftoverHudKpis/)
+    expect(reports).not.toMatch(/buildRegionFigures/)
+    expect(reports).toMatch(/Sales reports/)
+    expect(reports).toMatch(/Live market hub/)
   })
 
   it('search city FAQ leftover HUD, not pulse fill', () => {

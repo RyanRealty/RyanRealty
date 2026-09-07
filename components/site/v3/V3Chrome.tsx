@@ -28,7 +28,7 @@
  * it warns by name if one is not.
  *
  * LABELS COME FROM THE IA LOCK (docs/plans/PUBLIC_PRODUCT/ia-lock.md).
- * The locked words are Homes, Places, Sell, About (Market folded into Places).
+ * The locked words are Homes, Places, Market, Sell, About (ia-lock.md).
  * Saved / Sign in are account affordances rather than nav words. Where a locked word lands on an
  * existing group the group is RENAMED, never rebuilt: Buy renders as Homes and
  * Areas renders as Places, each keeping its own href and its own children. A
@@ -97,8 +97,8 @@ const LOCKED_LABEL: Readonly<Record<string, string | undefined>> = {
 /** The site-nav group whose destination is the visitor's own saved work. */
 const ACCOUNT_KEY = 'Your account'
 
-/** Primary bar destinations (Redfin-simple). Market stays in SSOT / menu only. */
-const PRIMARY_BAR_KEYS = new Set(['Buy', 'Areas', 'Sell', 'About'])
+/** Primary bar destinations (ia-lock: Homes · Places · Market · Sell · About). */
+const PRIMARY_BAR_KEYS = new Set(['Buy', 'Areas', 'Market', 'Sell', 'About'])
 
 /** Place marks for community doors in chrome menus (existing stills, not text dumps). */
 const CHROME_MARKS: Readonly<Record<string, string>> = {

@@ -117,9 +117,11 @@ import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
 import { buildMosSupplyChart } from '@/app/months-of-supply/_v3/mos-chart'
 import {
+  marketHubChooser,
   marketReportDoorLinks,
   marketReportHereBody,
 } from '@/lib/market/report-doors'
+import { publicMarketPulseSource } from '@/lib/market/publish-public-methodology'
 import { buildLongViewSection } from './_v3/region-charts'
 import './_v3/tremor-density.css'
 
@@ -472,6 +474,20 @@ export default async function HousingMarketHubPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Housing market' }]} />
 
+        <V3Quiet
+          id="chooser"
+          eyebrow="Market reports"
+          heading="Pick a report"
+          items={[
+            {
+              kind: 'prose',
+              term: 'Five products',
+              body: 'Live market · City pulse · Sales reports · Weekly snapshots · Market stories. Choose a door below.',
+            },
+            ...marketHubChooser(),
+          ]}
+        />
+
         {/* LEVEL 1, THE PAGE'S ANSWER (2026-08-27 hero-reorder fix, parity.json
             market-report openDefects item 1): live single-family figures lead,
             under ONE clock (refreshedAt), so this section's stamp is never
@@ -489,7 +505,7 @@ export default async function HousingMarketHubPage() {
             className="hm-tremor"
             eyebrow={v3Text('Central Oregon, Oregon')}
             headline={v3Text(
-              `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+              `Live market · Central Oregon${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
             /* First viewport is the verdict + chart, not the leftover KPI wall.
@@ -498,11 +514,14 @@ export default async function HousingMarketHubPage() {
             chartFirst
             foldAfter={0}
             source={v3Text(
-              `${
-                publicSegments.length > 0 || publicPaceHasRow(publicPace) || publicMixHasRow(publicMix)
-                  ? 'Single-family figures, extra product types, and 12-month pace cover the Central Oregon region beyond the city rows. A miss omits. Not closed sales of every type'
-                  : 'Single-family houses across the Central Oregon region beyond the city rows. Not closed sales of every type'
-              }.${mosText != null ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : ''}`,
+              publicMarketPulseSource(
+                [
+                  'Single-family houses across the Central Oregon region beyond the city rows.',
+                  mosText != null ? `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' '),
+              ),
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             chart={mosChart ?? regionChart}
@@ -510,7 +529,7 @@ export default async function HousingMarketHubPage() {
         ) : (
           <V3Quiet
             id="market"
-            heading="Central Oregon housing market"
+            heading="Live market · Central Oregon"
             headingLevel={1}
             items={[
               {
@@ -529,9 +548,7 @@ export default async function HousingMarketHubPage() {
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Live city market reports')}
             rows={[firstCityRow, ...restCityRows]}
-            source={v3Text(
-              'live MLS through Oregon Data Share, active single-family houses, one row per city',
-            )}
+            source={v3Text(publicMarketPulseSource('Active single-family houses, one row per city (city pulse).'))}
             updated={cityRefreshedAt ? v3Text(formatDate(cityRefreshedAt)) : undefined}
             action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}
           />

@@ -83,16 +83,16 @@ export const MOS_FAQ_REST: readonly MosFaq[] = [
   {
     question: 'Where does the number on this page come from?',
     answer:
-      'The figures above are leftover membership of single-family houses, the same pile as the leftover HUD. If leftover cannot publish a figure, this page omits it. We do not fill it from the live MLS snapshot.',
+      'The figures above are Oregon Data Share via MarketPulse, single-family houses. If a figure cannot publish on this refresh, this page omits it rather than inventing one.',
   },
 ]
 
 /** The closing doors, carried from the pre-v3 "See the full market report" block. */
 export const MOS_RELATED_LINKS: ReadonlyArray<{ label: string; href: string }> = [
-  { label: 'Live housing market hub', href: '/housing-market' },
-  { label: 'Central Oregon region report', href: MOS_REGION_REPORT },
+  { label: 'Live market', href: '/housing-market' },
+  { label: 'Region deep dive', href: MOS_REGION_REPORT },
   { label: 'Bend housing market', href: MOS_CITY_REPORT.Bend },
-  { label: 'Published weekly and sales reports', href: '/housing-market/reports' },
+  { label: 'Sales and weekly reports', href: '/housing-market/reports' },
   { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
 ]
 

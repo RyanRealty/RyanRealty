@@ -76,7 +76,7 @@ describe('buildLiveFigures — list median digits', () => {
     expect(labels).toContain('under contract now')
     expect(labels).toContain('closed in the last 30 days')
     expect(labels).toContain('days to an offer, last 90 days')
-    expect(live.trace).toMatch(/leftover membership/)
+    expect(live.trace).toMatch(/Oregon Data Share via MarketPulse/)
     expect(live.trace).not.toMatch(/live MLS/)
   })
 
@@ -124,7 +124,7 @@ describe('buildCityPeriodFigures — leftover 12-month overlay', () => {
     expect(values).not.toContain('$719,000')
     expect(values).not.toContain('1,640')
     expect(values).not.toContain('-2.1%')
-    expect(trace).toMatch(/Market Truth/)
+    expect(trace).toMatch(/Oregon Data Share \/ MarketPulse/)
     expect(trace).not.toMatch(/mt-v1/)
     expect(trace).not.toMatch(/the last 12 months from market_stats_cache/)
   })

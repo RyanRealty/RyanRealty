@@ -58,8 +58,8 @@ async function CityHeadlineLedger({ selectedCities }: { selectedCities: string[]
     return (
       <V3Ledger
         id="cities"
-        eyebrow={v3Text('By city')}
-        heading={v3Text('Live figures by city')}
+        eyebrow={v3Text('City pulse')}
+        heading={v3Text('City pulse (live on hub)')}
         rows={[]}
         emptyMessage={v3Text('No city in this selection returned a live single-family market row.')}
       />
@@ -69,11 +69,11 @@ async function CityHeadlineLedger({ selectedCities }: { selectedCities: string[]
   return (
     <V3Ledger
       id="cities"
-      eyebrow={v3Text('By city')}
-      heading={v3Text('Live figures by city')}
+      eyebrow={v3Text('City pulse')}
+      heading={v3Text('City pulse (live on hub)')}
       rows={[first, ...rest]}
       source={v3Text(
-        'Leftover membership, active single-family houses, one leftover count per city. A miss omits.',
+        'Oregon Data Share via MarketPulse. Active single-family houses, one row per city.',
       )}
       updated={stamp ? v3Text(formatDate(stamp)) : undefined}
       action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}
