@@ -1,3 +1,47 @@
+# Current — 2026-09-07 (CMA funnel mission: four lanes, one engine, approved → sent → tracked)
+
+Owner: Claude (Fable). Landed on `origin/main` at `d3e573aa` from `wt/cma-ship-20260907`
+(merge of `wt/cma-doc-`, `-lanes-`, `-tracking-`, `-engine-20260907`). Goal doc of record:
+`docs/plans/CMA_FUNNEL_MISSION_2026-09-07.md` (per-stream ledger) and
+`docs/plans/CMA_DOC_PUNCHLIST_2026-09-07.md`. Matt 2026-09-07: "expireds/fsbo/seller
+valuation/and BPOs all using the same engine but with their own nuances, easily managed and
+tracked … approved and then sent out and tracked so that we can get leads."
+
+**Shipped**
+- `scripts/cma-lookpass.ts <slug>`: every chapter screenshotted at letter 816/375 and immersive
+  1280/375 from `render_args`, read-only. THE visual gate before a CMA URL goes to Matt.
+- Document: expired "Your last listing" is chapter 3 with a price ruler (sold, unsold, your last
+  ask, recommended); "How fast homes like yours went" days-to-offer bars with the city median tick;
+  one comps matrix with thumbnails, lead line and legend; no count-up on §0 figures; one chapter
+  order for print and immersive; `?print=1` renders from `render_args` like the PDF; phone
+  layouts for both charts; MLS `N/A` never in seller text.
+- Lanes: `request_source` backfilled (FSBO 2→15, unknown 36→19, migration
+  `20260907130000`); `bpo` origin (rows live in `broker_price_opinions`, no auto-send path);
+  `cma_lane_settings` (migration `20260907140000`) with per-lane **Auto-send, all OFF**,
+  superuser-only; lane strip + filter on `/admin/cmas`; Approve-and-next; `lib/cma/auto-send.ts`
+  after a build, `ready` rows only.
+- Tracking: `email_events` now gets a `sent` row and the broker; `linkifyHttp` no longer eats
+  the sentence-final period (every cold CMA email carried two 404 links); `getCmaOutcomes`,
+  `getCmaLaneFunnel`; "What happened" panel on the review page; reply / first open → broker
+  alert rail. Proven with one send to matt@ryan-realty.com (open, click, visit, identity).
+- Engine: contract graded custom/new subjects with the resale exact-bath rule → fixed (59 of
+  136 failures; 49 build); failed rows carry one broker-readable sentence; D12 fixed; audit v4
+  (a `critical` in any category forces `review`) and `scripts/cma-reverdict.ts --write` run —
+  66 stored verdicts moved, 45 left the ready lane; one DOM definition (final cycle
+  list→off-market); concession count over the printed set.
+
+**Open**
+- The 59 bath-rule failures are being rebuilt for real (agent running at handoff time); see the
+  lane census `npx tsx scripts/cma-lanes-check.ts`.
+- Inbound EMAIL replies still do not advance the CRM stage or pause sequences (only the CMA
+  alert is wired). `queueBrokerAlert` dedupe has no time bucket: a second reply never alerts.
+- D21 in `CMA_STATE_OF_THE_WORLD.md`: price-tier guard has no reference when the subject's
+  subdivision cell is thin or missing (29 of 290 built). Matt picks the fallback.
+- `CmaLaneFunnel` exported, not yet mounted on the `/admin/cmas` list.
+- 8 `zz-test-rebrand-*` fixtures leaked into production `cmas` (3 marked delivered).
+- Grok session 2026-09-06 parked three public-page commits on `wt/public-pages-20260906` and
+  left `stash@{22}` `wip-before-vercel-prod-cma` (two publish-check script edits).
+
 # Current — 2026-09-07 (AEO guide pack, backlog grind, title)
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
