@@ -7,6 +7,9 @@
  *
  * server-only: keep node:fs (via resort-community-content) off the client
  * graph. Client island imports types/SOURCE from home-featured-community-shared.
+ *
+ * Loader never depends on content/pulse/figures succeeding: registry + dedicated
+ * photo alone still publish slides so Home keeps `#featured-community` painted.
  */
 
 import 'server-only'
@@ -20,7 +23,10 @@ import { formatCount } from '@/lib/format/count'
 import { formatPriceExact } from '@/lib/format/money'
 import { communityImage } from '@/lib/geo-images'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
-import type { ResortCommunityEntry } from '@/lib/data/communities/registry'
+import {
+  getResortCommunityBySlug,
+  type ResortCommunityEntry,
+} from '@/lib/data/communities/registry'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import {
   HOME_FEATURED_COMMUNITY_SOURCE,
@@ -154,35 +160,96 @@ export function buildHomeFeaturedCommunitySlides(
   return out
 }
 
-/** Server loader for Home. Misses omit. Parallel pulse reads. */
-export async function loadHomeFeaturedCommunitySlides(): Promise<HomeFeaturedCommunitySlide[]> {
-  const { getResortCommunityBySlug } = await import('@/lib/data/communities/registry')
-  const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
-  const { getResortCommunityContent } = await import('@/lib/resort-community-content')
-  const { getMarketPulse } = await import('@/lib/data')
+/** Registry + dedicated photo only. No network / node:fs. Always safe on Home. */
+export function buildHomeFeaturedCommunitySlidesFromRegistry(): HomeFeaturedCommunitySlide[] {
+  const inputs: HomeFeaturedCommunityBuildInput[] = []
+  for (const slug of HOME_FEATURED_COMMUNITY_SLUGS) {
+    const entry = getResortCommunityBySlug(slug)
+    if (!entry) continue
+    inputs.push({
+      entry,
+      content: null,
+      figures: null,
+      pulse: null,
+    })
+  }
+  return buildHomeFeaturedCommunitySlides(inputs)
+}
 
-  const figuresByKey = await getRegistryResortPublicFigures().catch(
-    () => new Map<string, RegistryResortPublicFigures>(),
-  )
-  const inputs = await Promise.all(
-    HOME_FEATURED_COMMUNITY_SLUGS.map(
-      async (slug): Promise<HomeFeaturedCommunityBuildInput | null> => {
-        const entry = getResortCommunityBySlug(slug)
-        if (!entry) return null
-        const [content, pulse] = await Promise.all([
-          getResortCommunityContent(slug).catch(() => null),
-          getMarketPulse({ geoType: 'community', geoSlug: slug }).catch(() => null),
-        ])
-        return {
-          entry,
-          content,
-          figures: figuresByKey.get(slug) ?? null,
-          pulse,
-        }
-      },
-    ),
-  )
-  return buildHomeFeaturedCommunitySlides(
-    inputs.filter((row): row is HomeFeaturedCommunityBuildInput => row != null),
-  )
+type ContentLoader = (slug: string) => Promise<ResortCommunityContent | null>
+type PulseLoader = (slug: string) => Promise<MarketPulse | null>
+
+async function loadOptionalEnrichment(): Promise<{
+  figuresByKey: Map<string, RegistryResortPublicFigures>
+  getContent: ContentLoader
+  getPulse: PulseLoader
+}> {
+  let figuresByKey = new Map<string, RegistryResortPublicFigures>()
+  let getContent: ContentLoader = async () => null
+  let getPulse: PulseLoader = async () => null
+
+  try {
+    const { getRegistryResortPublicFigures } = await import(
+      '@/lib/kb/registry-resort-public-figures'
+    )
+    figuresByKey = await getRegistryResortPublicFigures().catch(
+      () => new Map<string, RegistryResortPublicFigures>(),
+    )
+  } catch {
+    figuresByKey = new Map()
+  }
+
+  try {
+    const { getResortCommunityContent } = await import('@/lib/resort-community-content')
+    getContent = async (slug) => getResortCommunityContent(slug).catch(() => null)
+  } catch {
+    getContent = async () => null
+  }
+
+  try {
+    const { getMarketPulse } = await import('@/lib/data')
+    getPulse = async (slug) =>
+      getMarketPulse({ geoType: 'community', geoSlug: slug }).catch(() => null)
+  } catch {
+    getPulse = async () => null
+  }
+
+  return { figuresByKey, getContent, getPulse }
+}
+
+/**
+ * Server loader for Home. Enrichment misses omit fields; registry+photo still
+ * publish. Top-level failure falls back to registry-only so page mount never
+ * receives a thrown empty from a swallowed import error.
+ */
+export async function loadHomeFeaturedCommunitySlides(): Promise<HomeFeaturedCommunitySlide[]> {
+  try {
+    const { figuresByKey, getContent, getPulse } = await loadOptionalEnrichment()
+    const inputs = await Promise.all(
+      HOME_FEATURED_COMMUNITY_SLUGS.map(
+        async (slug): Promise<HomeFeaturedCommunityBuildInput | null> => {
+          const entry = getResortCommunityBySlug(slug)
+          if (!entry) return null
+          const [content, pulse] = await Promise.all([getContent(slug), getPulse(slug)])
+          return {
+            entry,
+            content,
+            figures: figuresByKey.get(slug) ?? null,
+            pulse,
+          }
+        },
+      ),
+    )
+    const slides = buildHomeFeaturedCommunitySlides(
+      inputs.filter((row): row is HomeFeaturedCommunityBuildInput => row != null),
+    )
+    if (slides.length > 0) return slides
+    return buildHomeFeaturedCommunitySlidesFromRegistry()
+  } catch (err) {
+    console.error(
+      '[home-featured-community] loader failed; registry+photo fallback',
+      err,
+    )
+    return buildHomeFeaturedCommunitySlidesFromRegistry()
+  }
 }

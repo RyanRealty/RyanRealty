@@ -7,6 +7,7 @@ import {
   HOME_FEATURED_COMMUNITY_SOURCE,
   buildHomeFeaturedCommunitySlide,
   buildHomeFeaturedCommunitySlides,
+  buildHomeFeaturedCommunitySlidesFromRegistry,
   homeFeaturedBlurb,
   homeFeaturedSalesFigures,
 } from './home-featured-communities'
@@ -162,5 +163,17 @@ describe('HOME_FEATURED_COMMUNITY_SLUGS', () => {
     expect(HOME_FEATURED_COMMUNITY_SLUGS.length).toBeGreaterThanOrEqual(4)
     expect(HOME_FEATURED_COMMUNITY_SLUGS).toContain('tetherow')
     expect(HOME_FEATURED_COMMUNITY_SOURCE).toMatch(/Oregon Data Share via MarketPulse/)
+  })
+})
+
+describe('buildHomeFeaturedCommunitySlidesFromRegistry', () => {
+  it('publishes curated registry+photo slides without enrichment', () => {
+    const slides = buildHomeFeaturedCommunitySlidesFromRegistry()
+    expect(slides.length).toBeGreaterThanOrEqual(4)
+    expect(slides.some((s) => s.slug === 'tetherow')).toBe(true)
+    for (const slide of slides) {
+      expect(slide.photoSrc.length).toBeGreaterThan(0)
+      expect(slide.href).toBe(`/communities/${slide.slug}`)
+    }
   })
 })

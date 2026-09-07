@@ -96,7 +96,10 @@ export default async function Home() {
       getBrokers().catch(() => []),
       loadOpenHouseBadgeLabels().catch(() => ({})),
       getReviews(6).catch(() => null),
-      loadHomeFeaturedCommunitySlides().catch(() => []),
+      loadHomeFeaturedCommunitySlides().catch((err) => {
+        console.error('[home] featured community loader failed', err)
+        return []
+      }),
     ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
@@ -191,9 +194,7 @@ export default async function Home() {
           emptyMessage="No active homes with a photo and list price right now."
         />
 
-        {featuredCommunitySlides.length > 0 ? (
-          <HomeFeaturedCommunity id="featured-community" slides={featuredCommunitySlides} />
-        ) : null}
+        <HomeFeaturedCommunity id="featured-community" slides={featuredCommunitySlides} />
 
         <V3Doors id="doors" name={v3Text('Buy, sell, or work with us')} doors={doors} />
 

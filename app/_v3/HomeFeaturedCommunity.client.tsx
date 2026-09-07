@@ -3,7 +3,8 @@
 /**
  * Home featured community carousel. One community at a time: photo left,
  * sales + blurb right, prev/next + dots. Slides arrive prebuilt from the
- * server — this island only pages them.
+ * server — this island only pages them. Empty slides still mount the section
+ * landmark so Home smoke never sees a missing #featured-community.
  */
 import { useId, useState } from 'react'
 import Link from 'next/link'
@@ -30,7 +31,30 @@ export function HomeFeaturedCommunity({
 }) {
   const labelId = useId()
   const [index, setIndex] = useState(0)
-  if (slides.length === 0) return null
+
+  if (slides.length === 0) {
+    return (
+      <section
+        id={id}
+        className={`${V3_ROOT_CLASS} home-featured-community home-featured-community--empty`}
+        aria-labelledby={`${id}-heading`}
+      >
+        <div className="home-featured-community__head">
+          {eyebrow.trim() ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
+          <V3Heading level={2} id={`${id}-heading`} className="home-featured-community__heading">
+            {heading}
+          </V3Heading>
+        </div>
+        <p className="home-featured-community__empty" role="status">
+          Resort and planned-community spotlights will show here when registry
+          photos are available.{' '}
+          <Link href="/communities" className="home-featured-community__more">
+            Every community
+          </Link>
+        </p>
+      </section>
+    )
+  }
 
   const safeIndex = ((index % slides.length) + slides.length) % slides.length
   const slide = slides[safeIndex]!

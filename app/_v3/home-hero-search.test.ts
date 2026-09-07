@@ -199,7 +199,9 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/id="communities"/)
     expect(PAGE).toMatch(/HomeFeaturedCommunity/)
     expect(PAGE).toMatch(/loadHomeFeaturedCommunitySlides/)
-    expect(PAGE).toMatch(/featured-community/)
+        expect(PAGE).toMatch(/featured-community/)
+    // Always mount — never omit #featured-community when slides miss.
+    expect(PAGE).not.toMatch(/featuredCommunitySlides\.length > 0 \?/)
     expect(PAGE).toMatch(/pictogram: 'buy'/)
     expect(PAGE).toMatch(/pictogram: 'work'/)
     expect(PAGE).toMatch(/loadOpenHouseBadgeLabels/)
