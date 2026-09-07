@@ -8,6 +8,7 @@
  */
 
 import { zonedDayMinutes } from '@/lib/format/date'
+// date-format-ok: formatToParts for drip-window timezone arithmetic + ETA wall-clock label
 import {
   DRIP_SPACING_MINUTES,
   DRIP_TIMEZONE,
