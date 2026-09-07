@@ -172,20 +172,22 @@ export async function loadHomeFeaturedCommunitySlides(): Promise<HomeFeaturedCom
     () => new Map<string, RegistryResortPublicFigures>(),
   )
   const inputs = await Promise.all(
-    HOME_FEATURED_COMMUNITY_SLUGS.map(async (slug) => {
-      const entry = getResortCommunityBySlug(slug)
-      if (!entry) return null
-      const [content, pulse] = await Promise.all([
-        getResortCommunityContent(slug).catch(() => null),
-        getMarketPulse({ geoType: 'community', geoSlug: slug }).catch(() => null),
-      ])
-      return {
-        entry,
-        content,
-        figures: figuresByKey.get(slug) ?? null,
-        pulse,
-      } satisfies HomeFeaturedCommunityBuildInput
-    }),
+    HOME_FEATURED_COMMUNITY_SLUGS.map(
+      async (slug): Promise<HomeFeaturedCommunityBuildInput | null> => {
+        const entry = getResortCommunityBySlug(slug)
+        if (!entry) return null
+        const [content, pulse] = await Promise.all([
+          getResortCommunityContent(slug).catch(() => null),
+          getMarketPulse({ geoType: 'community', geoSlug: slug }).catch(() => null),
+        ])
+        return {
+          entry,
+          content,
+          figures: figuresByKey.get(slug) ?? null,
+          pulse,
+        }
+      },
+    ),
   )
   return buildHomeFeaturedCommunitySlides(
     inputs.filter((row): row is HomeFeaturedCommunityBuildInput => row != null),
