@@ -14,6 +14,7 @@ describe('cma place links fallback', () => {
     })
     expect(links[0]?.label).toBe('Deschutes River Recreation Homesites')
     expect(links[0]?.href).toContain('/communities/three-rivers')
+    expect(links[0]?.href).toContain('utm_campaign=cma-letter')
     expect(links.some((l) => l.href.includes('/cities/bend'))).toBe(true)
   })
 

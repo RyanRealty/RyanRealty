@@ -221,6 +221,28 @@ function matrixTable(cols: Col[]): string {
   </div>`
 }
 
+
+/** Mobile letter (≤375–700): one subject + one sale per block — never a wide 8-col table. */
+function matrixStack(subj: Col, comps: Col[]): string {
+  const cards = comps
+    .map((c) => {
+      const pin = c.key.replace(/^c/, '')
+      const src = c.photoUrl ? sparkPhotoAt(c.photoUrl, '320x240') ?? c.photoUrl : null
+      const img = src
+        ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer"/>`
+        : ''
+      const rows = ROWS.map((row, i) => {
+        const subVal = subj.cells[i] ?? '-'
+        const compVal = c.cells[i] ?? '-'
+        if (subVal === '-' && compVal === '-') return ''
+        return `<div class="comp-stack-row"><span class="k">${esc(row.label)}</span><span class="s">${esc(subVal)}</span><span class="c${row.figure ? ' n' : ''}">${esc(compVal)}</span></div>`
+      }).join('')
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(c.label)}</div><div class="comp-stack-cols"><span class="h s">Subject</span><span class="h c">Sale</span></div>${rows}</article>`
+    })
+    .join('')
+  return `<div class="comp-stack" aria-label="Comparable sales, stacked for narrow screens">${cards}</div>`
+}
+
 export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdjustedComp[]): string {
   if (comps.length === 0) return ''
   const subj = subjectCol(subject)
@@ -235,8 +257,10 @@ export function renderCompMatrixHtml(subject: CmaSubject, comps: readonly CmaAdj
       return `${heading}${matrixTable([subj, ...group])}`
     })
     .join('')
+  const stack = matrixStack(subj, compCols)
   return `
   <h3 class="subhead">The sales that set the list</h3>
   ${tables}
+  ${stack}
   <p class="small">Adjusted close moves the sale for time and size.</p>`
 }

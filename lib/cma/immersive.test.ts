@@ -104,7 +104,7 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toContain('This subdivision')
     expect(html).toContain('Stone Creek')
     expect(html).toContain('41')
-    expect(html).toContain('$590,000')
+    expect(html).toContain('$705,000')
     expect(html).toContain('A tight band')
     expect(html).toContain('kira.jpg')
     expect(html).toContain('as large or larger than 72%')

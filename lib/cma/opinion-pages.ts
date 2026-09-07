@@ -35,7 +35,6 @@ import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
-import { assembleCompFlyerPages } from '@/lib/cma/opinion-flyers'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaMarketArea, CmaSoldBand } from '@/lib/cma/market-status'
@@ -54,7 +53,7 @@ export type OpinionPageArgs = {
   extras?: CmaExtras | null
   subdivisionStory?: SubdivisionStory | null
   mapDataUri: string | null
-  /** Subject pin + subdivision outline. No numbered comps. */
+  /** Deprecated for letter render (C9). Ignored — comps map is the single map. */
   subjectMapDataUri?: string | null
   tiersUsed?: string[]
   generatedAtIso: string
@@ -182,15 +181,13 @@ export function snapshotPage(a: OpinionPageArgs): CmaPageDef {
     ? `<p>${esc(s.listingHistoryLine.trim())}</p>`
     : ''
   const sectionTitle = subjectSectionTitle(s)
-  const locationMap = a.subjectMapDataUri
-    ? `<div class="pin-map-wrap">${renderCompPinMapHtml(s, [], a.subjectMapDataUri, 'Home location')}</div><p>The pin is this house.</p>`
-    : ''
+  // C9: letter keeps at most one map — the comps pin map on the pricing page.
+  // Subject-only maps do not render here even when subjectMapDataUri is still stamped.
   return {
     meta: `${esc(s.streetAddress)} · ${sectionTitle}`,
     toc: sectionTitle,
     body: `
   <h2 class="section">${sectionTitle}</h2>
-  ${locationMap}
   ${kvTable(rows)}
   ${history}`,
   }
@@ -555,7 +552,7 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
         `<tr><td>${y.year}</td><td>${int(y.count)}</td><td>${usd(y.medianClose)}</td><td>${y.medianPpsf != null ? usd(Math.round(y.medianPpsf)) : '—'}</td></tr>`,
     )
     .join('')
-  const yearChart = subdivisionYearChartSvg(f.years)
+  // C3: letter keeps ≤2 labeled charts elsewhere; subdivision uses the year table only.
   const sections = st.sections
     .map((sec) => `<h3 class="subhead">${esc(sec.heading)}</h3><p>${esc(sec.body)}</p>`)
     .join('')
@@ -585,7 +582,6 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
   <h2 class="section">${esc(f.name)}</h2>
   <p>${int(f.totalSales)} closed single-family sales in ${esc(f.name)}.</p>
   ${sections}
-  ${yearChart ? `<div class="chart-block" data-anim="chart">${yearChart}</div>` : ''}
   <table class="comp-table">
     <thead><tr><th>Year</th><th>Sales</th><th>Median close</th><th>Median $/sqft</th></tr></thead>
     <tbody>${yearRows}</tbody>
@@ -595,9 +591,16 @@ export function subdivisionChapterPage(a: OpinionPageArgs): CmaPageDef | null {
   }
 }
 
+/**
+ * Letter spine (Cos C1–C4 + C9): three acts, then a short details appendix.
+ * 1) Number + why (cover + pricing)
+ * 2) Comps that prove it (matrix + one comps map; no flyer dump)
+ * 3) Next step lives in render closing — details/charts stay below the fold.
+ * Charts: at most two labeled chart pages (outcomes + one market trend).
+ */
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const rest: CmaPageDef[] = []
-  rest.push(snapshotPage(a))
+  // Act 2 first after cover: comps proof before the MLS dump.
   rest.push(
     pricingPage({
       subject: a.subject,
@@ -610,29 +613,33 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   )
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
-  const outcomes = outcomesPage(a)
-  if (outcomes) rest.push(outcomes)
-  const status = statusGridPage(a)
-  if (status) rest.push(status)
-  const sold90 = sold90Page(a)
-  if (sold90) rest.push(sold90)
-  const kpis = marketKpiPage(a)
-  if (kpis) rest.push(kpis)
-  const trends = trendChartsPage(a)
-  if (trends) rest.push(trends)
-  const seasonality = seasonalityPage(a)
-  if (seasonality) rest.push(seasonality)
-  const volume = marketVolumePage(a)
-  if (volume) rest.push(volume)
+
+  // Details appendix (demoted hierarchy): house facts, land, ≤2 charts.
+  rest.push(snapshotPage(a))
   const lotLines = lotLinesPage(a)
   if (lotLines) rest.push(lotLines)
-  rest.push(...assembleCompFlyerPages(a.comps, subjectPossessive(a.subject)))
+
+  let charts = 0
+  const outcomes = outcomesPage(a)
+  if (outcomes && charts < 2) {
+    rest.push(outcomes)
+    charts += 1
+  }
+  const trends = trendChartsPage(a)
+  if (trends && charts < 2) {
+    rest.push(trends)
+    charts += 1
+  }
+  // Drop unlabeled sparklines / extra market boards from the letter (C3):
+  // status grid, sold90, KPI strip, seasonality sparkline, volume.
+
   const subdivision = subdivisionChapterPage(a)
   if (subdivision) rest.push(subdivision)
   const permits = permitsPage(a)
   if (permits) rest.push(permits)
   const net = sellerNetPage(a)
   if (net) rest.push(net)
+  // C1: comps once via matrix + map — no per-sale flyer pages inline.
   return rest
 }
 

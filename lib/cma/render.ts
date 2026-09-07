@@ -67,7 +67,7 @@ export interface RenderCmaArgs {
   broker: CmaBroker
   client: CmaClient
   mapDataUri: string | null
-  /** Subject pin + subdivision outline. Cover aerial and Home location. */
+  /** Deprecated (C9). Letter ignores this — comps map is the single map. */
   subjectMapDataUri?: string | null
   generatedAtIso: string
   subjectTrace: string
@@ -139,8 +139,8 @@ function monthsSince(iso: string | null): number | null {
  * no-photo branch returned null rather than the aerial. The 655 12th CMA led
  * with a January 2023 photo on a 2026 pricing document (found 2026-08-25).
  *
- * Order: a current photo, else the aerial, else the stale photo captioned
- * honestly (a dated picture of the house beats no picture), else nothing.
+ * Order: a current photo, else the stale photo captioned honestly, else nothing.
+ * Letter path never falls back to a map here (C9 — comps map is the single map).
  */
 function heroForSubject(
   subject: CmaSubject,
@@ -222,7 +222,8 @@ function coverSpecsLine(subject: CmaSubject): string {
 }
 
 function coverPage(a: RenderCmaArgs): PageDef {
-  const hero = heroForSubject(a.subject, a.subjectMapDataUri ?? null)
+  // Cover prefers MLS photo; never a second map (C9). Non-map fallback when no photo.
+  const hero = heroForSubject(a.subject, null)
   const specs = coverSpecsLine(a.subject)
   const prepared = [
     a.client.name ? `Prepared for ${a.client.name}` : null,
@@ -322,8 +323,11 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   const tel = phoneHref(b.phone)
   const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
   const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
-  const lead = 'Call or text.'
-  const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}`
+  // Voice lock: plain broker, no syrup. Expired: acknowledge it did not sell; ask to earn the work.
+  const lead = isAudit
+    ? 'Sorry this listing did not sell. If you want a second look at the number, call or text.'
+    : 'Call or text if you want to walk the comps.'
+  const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}&utm_content=letter-next-step`
   return {
     meta: `${esc(a.subject.streetAddress)} · Your Next Step`,
     toc: 'Your next step',
@@ -331,10 +335,10 @@ function nextStepPage(a: RenderCmaArgs): PageDef {
   <h2 class="section">Your next step</h2>
   <p class="cta-lead">${lead}</p>
   <div class="cta-actions">
-    ${tel && b.phone ? `<a href="tel:${tel}">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
-    ${tel ? `<a href="sms:${tel}">Text ${first}</a>` : ''}
-    ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}">Email ${first}</a>` : ''}
-    ${onMarket ? '' : `<a class="ghost" href="${consultUrl}">Book a conversation</a>`}
+    ${tel && b.phone ? `<a href="tel:${tel}" data-rr-track="cma-call">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
+    ${tel ? `<a href="sms:${tel}" data-rr-track="cma-text">Text ${first}</a>` : ''}
+    ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}" data-rr-track="cma-email">Email ${first}</a>` : ''}
+    ${onMarket ? '' : `<a class="ghost" href="${consultUrl}" data-rr-track="cma-book">Book a conversation</a>`}
   </div>
   ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here.</p>` : ''}`,
   }

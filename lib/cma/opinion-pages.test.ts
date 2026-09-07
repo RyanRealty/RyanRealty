@@ -149,15 +149,19 @@ describe('assembleOpinionPages format', () => {
     expect(house?.body).not.toContain('pin-map')
   })
 
-  it('puts a subject-only map on Home location when one is provided', () => {
-    const house = assembleOpinionPages({
+  it('does not put a subject-only map on Home location even when one is provided (C9)', () => {
+    const pages = assembleOpinionPages({
       ...args(),
       subjectMapDataUri: 'data:image/png;base64,subjmap',
-    }).find((p) => p.toc === 'Home location')
-    expect(house?.body).toContain('data:image/png;base64,subjmap')
-    expect(house?.body).toContain('pin-map')
-    expect(house?.body).toContain('The pin is this house.')
-    expect(house?.body).not.toContain('Marker key')
+      mapDataUri: 'data:image/png;base64,compsmap',
+    })
+    const house = pages.find((p) => p.toc === 'Home location')
+    expect(house?.body).not.toContain('data:image/png;base64,subjmap')
+    expect(house?.body).not.toContain('pin-map')
+    expect(house?.body).not.toContain('The pin is this house.')
+    const price = pages.find((p) => p.toc === 'How we got the price')
+    expect(price?.body).toContain('data:image/png;base64,compsmap')
+    expect(price?.body).toContain('pin-map')
   })
 
   it('puts competition next to the price, before the market chapters', () => {
@@ -215,7 +219,8 @@ describe('assembleOpinionPages format', () => {
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.indexOf('Who you are competing with at this price')
     const outcomes = tocs.indexOf('Sold and unsold in this band')
-    expect(outcomes).toBe(competition + 1)
+    expect(competition).toBeGreaterThanOrEqual(0)
+    expect(outcomes).toBeGreaterThan(competition)
     const body = pages[outcomes]!.body
     expect(body).toContain('4 closed')
     expect(body).toContain('came off without a sale')

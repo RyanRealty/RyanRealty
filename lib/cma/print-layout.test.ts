@@ -177,20 +177,14 @@ describe('print CMA layout', () => {
     })
     expect(page).not.toBeNull()
     const html = page!.body
-    expect(html).toMatch(/Median close by year/i)
+    // C3: subdivision keeps the year table; no sparkline chart on the letter.
+    expect(html).toContain('Median close')
+    expect(html).toContain('2016')
+    expect(html).toContain('$239,449')
+    expect(html).toContain('2024')
+    expect(html).toContain('$492,000')
+    expect(html).not.toMatch(/<path d="/)
     expect(html).not.toMatch(/Closed sales by year/i)
-    const d = html.match(/<path d="([^"]+)"/)?.[1] ?? ''
-    const ys = [...d.matchAll(/[ML]([\d.]+),([\d.]+)/g)].map((m) => Number(m[2]))
-    expect(ys).toHaveLength(years.length)
-    const i2016 = years.findIndex((y) => y.year === 2016)
-    const i2024 = years.findIndex((y) => y.year === 2024)
-    const iCountFloor = years.findIndex((y) => y.count === 5)
-    expect(iCountFloor).toBe(i2024)
-    // Higher close sits higher on the chart (smaller SVG y). 2024 is the
-    // peak close and the volume floor: it must be the top of the line, not
-    // the bottom.
-    expect(ys[i2024]!).toBeLessThan(ys[i2016]!)
-    expect(ys[i2024]!).toBe(Math.min(...ys))
   })
 
   it('does not insert a contents sheet', () => {

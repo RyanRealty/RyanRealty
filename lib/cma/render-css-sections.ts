@@ -242,8 +242,30 @@ export function cmaSectionStyles(): string {
      clipper: it is what removed sales 4 through 12 from a twelve-comp CMA with
      no error and no visible truncation. In print the box stays visible, so any
      future overflow is loud instead of silent. */
-  .comp-matrix-wrap { overflow-x: visible; margin: 8px 0 14px; }
-  @media screen {
+    /* C4: stacked comps on narrow screens; table stays for print/desktop. */
+  .comp-stack { display: none; margin: 8px 0 14px; }
+  .comp-stack-card {
+    border: 1px solid var(--navy-line);
+    padding: 12px;
+    margin: 0 0 12px;
+    background: #fff;
+  }
+  .comp-stack-addr { font-weight: 600; margin: 0 0 8px; color: var(--navy); }
+  .comp-stack-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; margin-bottom: 6px; }
+  .comp-stack-row { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 6px; padding: 5px 0; border-top: 1px solid rgba(16,39,66,.08); font-size: 12px; }
+  .comp-stack-row .k { color: rgba(16,39,66,.72); }
+  .comp-stack-row .n { font-variant-numeric: tabular-nums; }
+  .comp-stack-card .matrix-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; margin: 0 0 8px; }
+  @media screen and (max-width: 700px) {
+    .comp-matrix-wrap { display: none !important; }
+    .comp-stack { display: block; }
+  }
+  @media print {
+    .comp-stack { display: none !important; }
+    .comp-matrix-wrap { display: block !important; overflow-x: visible; }
+  }
+.comp-matrix-wrap { overflow-x: visible; margin: 8px 0 14px; }
+  @media screen and (min-width: 701px) {
     .comp-matrix-wrap {
       overflow-x: auto;
       max-width: 100%;
