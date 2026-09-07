@@ -505,7 +505,7 @@ export default async function HousingMarketHubPage() {
             className="hm-tremor"
             eyebrow={v3Text('Central Oregon, Oregon')}
             headline={v3Text(
-              `Live market · Central Oregon${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+              `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstSfrFigure, ...restSfrFigures]}
             /* First viewport is the verdict + chart, not the leftover KPI wall.
@@ -529,7 +529,7 @@ export default async function HousingMarketHubPage() {
         ) : (
           <V3Quiet
             id="market"
-            heading="Live market · Central Oregon"
+            heading="Central Oregon housing market"
             headingLevel={1}
             items={[
               {
