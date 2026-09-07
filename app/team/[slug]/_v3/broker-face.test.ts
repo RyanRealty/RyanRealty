@@ -20,6 +20,7 @@ describe('broker fold', () => {
     expect(BODY).toMatch(/\breach\b/)
     expect(BODY).not.toContain('reach={false}')
     expect(BODY).not.toContain('BrokerValuationSheet')
+    expect(PAGE).toContain('licenseNumber: broker.license_number')
   })
 })
 
@@ -33,13 +34,15 @@ describe('broker conversion order (PAGE_INVENTORY §6)', () => {
     expect(PAGE).not.toContain("from './_v3/BrokerValuationSheet.client'")
   })
 
-  it('prints firm proof and firm sales before any personal dashboard', () => {
+  it('prints firm proof, active listings, and firm sales before any personal dashboard', () => {
     expect(at('id="contact-broker"')).toBeLessThan(at('id="profile"'))
     expect(at('id="contact-broker"')).toBeLessThan(at('id="proof"'))
-    expect(at('id="proof"')).toBeLessThan(at('id="firm-sales"'))
+    expect(at('id="proof"')).toBeLessThan(at('id="active-listings"'))
+    expect(at('id="active-listings"')).toBeLessThan(at('id="firm-sales"'))
     expect(at('id="firm-sales"')).toBeLessThan(at('id="record"'))
     expect(at('id="firm-sales"')).toBeLessThan(at('id="track-record"'))
     expect(BODY).toContain('hasOwnSales && record.figures.length')
     expect(PAGE).toContain('hasRealPersonalRecord')
+    expect(PAGE).toContain('publishActiveListingRows')
   })
 })

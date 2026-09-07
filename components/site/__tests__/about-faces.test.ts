@@ -109,6 +109,8 @@ describe('aboutFaceFromBroker', () => {
       tel: aboutPhoneE164(BROKERS.matt.phone),
       email: null,
       bookHref: '/book?agent=matt',
+      license: BROKERS.matt.license,
+      phoneDisplay: BROKERS.matt.phone,
     })
   })
 
@@ -160,6 +162,18 @@ describe('aboutFaceFromBroker', () => {
       tel: null,
       email: null,
       bookHref: '/book?agent=matt',
+      license: BROKERS.matt.license,
+      phoneDisplay: null,
     })
+  })
+})
+
+describe('about faces credentials', () => {
+  it('prints Oregon license under the title on roster and portrait', () => {
+    const src = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
+    expect(src).toContain('about-faces__license')
+    expect(src).toContain('OR #{person.license}')
+    expect(src).toContain('about-faces__contact')
+    expect(src).toContain('phoneDisplay')
   })
 })

@@ -2,9 +2,9 @@
  * /team/[slug] - one broker's page, on the components/site/v3 barrel.
  *
  * PAGE_INVENTORY §6 / PAGE_OUTLINE /team/[slug]:
- * 1. Normal headshot, name, title, license, firm review door
- * 2. Call / Text / Email above any CMA sheet (valuation is /sell)
- * 3. Firm proof (same reviews + firm sales as About), labeled Ryan Realty
+ * 1. Portrait: name, title, OR license, readable phone/email, Call|Text|Email|Schedule
+ * 2. Reviews door + asks (Schedule / valuation / contact / team)
+ * 3. Firm proof, active listings, firm sales
  * 4. Personal Atlas / Ledger / Instrument only if hasRealPersonalRecord
  * 5. Bio, facts only
  * 6. Doors: team · reviews · sell
@@ -23,7 +23,14 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getAgentBySlug } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
-import { getBrokerageListingTiles, getReviews, getBrokerSales } from '@/lib/data'
+import {
+  getBrokerageListingTiles,
+  getReviews,
+  getBrokerSales,
+  getListingTiles,
+  getListingKeysForBrokerByLicense,
+  getListingKeysByListAgentEmail,
+} from '@/lib/data'
 import { normalizeAgentSlug, BROKER_EMAIL_BY_SLUG, type BrokerSlug } from '@/lib/agent-attribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
@@ -48,6 +55,7 @@ import {
   factualFallbackBio,
   HEADSHOT,
   hasRealPersonalRecord,
+  publishActiveListingRows,
   publishFirmClosingRows,
   publishOwnClosingRows,
 } from './_v3/sale-rows'
@@ -104,11 +112,26 @@ export default async function TeamMemberPage({ params }: Props) {
   const canonicalUrl = `${siteUrl}/team/${canonicalPathSlug}`
   const shownName = aboutDisplayName(canonicalPathSlug, broker.display_name)
 
-  const [reviews, brokerageTiles, brokerSales, regionAtlas] = await Promise.all([
+  const [reviews, brokerageTiles, brokerSales, regionAtlas, activeTiles] = await Promise.all([
     getReviews(50),
     getBrokerageListingTiles({ officeName: OFFICE_NAME, limit: 60 }),
     getBrokerSales({ email: broker.email, mlsId: broker.mls_id }),
     buildRegionAtlasRegions().catch(() => null),
+    (async () => {
+      const keys = new Set<string>()
+      if (broker.license_number?.trim()) {
+        for (const k of await getListingKeysForBrokerByLicense(broker.license_number)) keys.add(k)
+      }
+      if (broker.email?.trim()) {
+        for (const k of await getListingKeysByListAgentEmail(broker.email)) keys.add(k)
+      }
+      if (keys.size === 0) return []
+      return getListingTiles({
+        listingKeys: [...keys].slice(0, 200),
+        status: 'active',
+        limit: 8,
+      }).catch(() => [])
+    })(),
   ])
   const record = buildBrokerRecord(brokerSales)
   const recordSource = brokerRecordSource(firstName, record)
@@ -147,20 +170,31 @@ export default async function TeamMemberPage({ params }: Props) {
     headshotPng: HEADSHOT[broker.slug] ?? HEADSHOT[canonicalPathSlug] ?? null,
     phoneDirect: broker.phone,
     email: broker.email,
+    licenseNumber: broker.license_number,
   })
 
   const bookHref = aboutBookHref(canonicalPathSlug)
 
-  const identityItems: V3QuietItem[] = [
-    ...(broker.license_number
-      ? [{ kind: 'prose' as const, term: 'Oregon license', body: `OR #${broker.license_number}` }]
-      : []),
-    ...(broker.phone ? [{ kind: 'prose' as const, term: 'Phone', body: broker.phone }] : []),
-    ...(broker.email ? [{ kind: 'prose' as const, term: 'Email', body: broker.email }] : []),
-    ...(reviewCount > 0
-      ? [{ label: `${reviewCount} Google reviews · ${reviewAverage.toFixed(1)} of 5`, href: '/reviews' }]
-      : []),
-  ]
+  const activeRows = publishActiveListingRows(activeTiles)
+
+  // When the portrait face already prints license + phone + email above the fold,
+  // keep this Quiet to the reviews door (P5) rather than restating contact.
+  const identityItems: V3QuietItem[] = face
+    ? [
+        ...(reviewCount > 0
+          ? [{ label: `${reviewCount} Google reviews · ${reviewAverage.toFixed(1)} of 5`, href: '/reviews' }]
+          : [{ label: 'Client reviews', href: '/reviews' }]),
+      ]
+    : [
+        ...(broker.license_number
+          ? [{ kind: 'prose' as const, term: 'Oregon license', body: `OR #${broker.license_number}` }]
+          : []),
+        ...(broker.phone ? [{ kind: 'prose' as const, term: 'Phone', body: broker.phone }] : []),
+        ...(broker.email ? [{ kind: 'prose' as const, term: 'Email', body: broker.email }] : []),
+        ...(reviewCount > 0
+          ? [{ label: `${reviewCount} Google reviews · ${reviewAverage.toFixed(1)} of 5`, href: '/reviews' }]
+          : [{ label: 'Client reviews', href: '/reviews' }]),
+      ]
 
   const contactItems: V3QuietItem[] = [
     ...(broker.phone ? [{ kind: 'prose' as const, term: 'Phone', body: broker.phone }] : []),
@@ -260,7 +294,7 @@ export default async function TeamMemberPage({ params }: Props) {
         <V3Quiet
           id="profile"
           eyebrow={`${shownName} · ${broker.title ?? 'Real Estate Broker'}`}
-          heading={face ? `${firstName}'s license and contact` : shownName}
+          heading={face ? `${firstName}'s reviews` : shownName}
           headingLevel={face ? 2 : 1}
           items={identityItems}
         />
@@ -314,6 +348,18 @@ export default async function TeamMemberPage({ params }: Props) {
             quotes={quotes}
             source={{ label: 'Every review', href: '/reviews' }}
             record={false}
+          />
+        ) : null}
+
+        {activeRows[0] ? (
+          <V3Ledger
+            id="active-listings"
+            eyebrow={v3Text(`${firstName} · Listings`)}
+            heading={v3Text('Active listings')}
+            rows={[activeRows[0], ...activeRows.slice(1)]}
+            source={v3Text(
+              `Active MLS listings where ${firstName} is the listing broker. Ask price as published.`,
+            )}
           />
         ) : null}
 

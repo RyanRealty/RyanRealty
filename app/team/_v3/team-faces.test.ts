@@ -58,3 +58,19 @@ describe('team roster density', () => {
     expect(rosterPhoto).not.toMatch(/--v3-carousel-h/)
   })
 })
+
+describe('team card credentials', () => {
+  it('carries Oregon license onto each face from live broker data', () => {
+    const matt = aboutFaceFromBroker({
+      slug: BROKERS.matt.slug,
+      fullName: BROKERS.matt.name,
+      title: BROKERS.matt.title,
+      headshotPng: '/images/brokers/ryan-matt.png',
+      phoneDirect: BROKERS.matt.phone,
+      licenseNumber: BROKERS.matt.license,
+    })
+    expect(matt?.license).toBe(BROKERS.matt.license)
+    const faces = readFileSync('app/about/_v3/AboutFaces.tsx', 'utf8')
+    expect(faces).toContain('about-faces__license')
+  })
+})

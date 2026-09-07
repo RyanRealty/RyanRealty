@@ -1,7 +1,7 @@
 /**
- * Broker faces on cream. Roster cards carry labeled reach
- * (Call / Text / Email / Schedule) for luxury density. Name remains the door.
- * Title stays a role chip under the name.
+ * Broker faces on cream. Roster cards carry license under title plus labeled
+ * reach (Call / Text / Email / Schedule). Portrait puts Oregon license,
+ * readable phone/email, and the same CTA strip above the fold.
  *
  * roster: /team (H1), /about and homepage (H2).
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
@@ -77,6 +77,34 @@ function IconCalendar() {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+
+function faceIdentity(person: AboutFace, opts?: { contact?: boolean }) {
+  return (
+    <>
+      {person.title ? <p className="about-faces__title">{person.title}</p> : null}
+      {person.license ? (
+        <p className="about-faces__license">OR #{person.license}</p>
+      ) : null}
+      {opts?.contact ? (
+        <div className="about-faces__contact">
+          {person.phoneDisplay ? (
+            <p className="about-faces__contact-line">
+              <span className="about-faces__contact-term">Phone</span>
+              <span className="about-faces__contact-value">{person.phoneDisplay}</span>
+            </p>
+          ) : null}
+          {person.email ? (
+            <p className="about-faces__contact-line">
+              <span className="about-faces__contact-term">Email</span>
+              <span className="about-faces__contact-value">{person.email}</span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -160,7 +188,7 @@ export function AboutFaces({
           <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
             {heading}
           </V3Heading>
-          {first.title ? <p className="about-faces__title">{first.title}</p> : null}
+          {faceIdentity(first, { contact: true })}
           {reachLinks(first)}
         </div>
       </section>
@@ -204,7 +232,7 @@ export function AboutFaces({
               <Link href={person.href} className="about-faces__name">
                 {person.name}
               </Link>
-              {person.title ? <p className="about-faces__title">{person.title}</p> : null}
+              {faceIdentity(person)}
               {reachLinks(person)}
             </div>
           </li>

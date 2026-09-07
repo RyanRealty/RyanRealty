@@ -2,12 +2,12 @@
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
  * PAGE_INVENTORY §6 / PAGE_OUTLINE /about (locked 2026-09-05):
- * 1. One line who we are · Call · Text
+ * 1. Who we are · office · firm/principal licenses · Call/Text/Email/Schedule
  * 2. Firm proof (V3Proof)
  * 3. Firm sales (same house row)
  * 4. Brokers as doors, not a poster that eats the fold
  * 5. Atlas of the service area
- * 6 and 7. How it started (short Quiet) + licenses as one sourced line, not a KPI
+ * 6 and 7. How it started (short Quiet) + licenses restated as sourced line
  * 8. V3Answers
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
@@ -108,10 +108,16 @@ export default async function AboutPage() {
       term: 'Office',
       body: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
     },
+    { kind: 'fact', term: 'Firm license', value: FIRM_LICENSE },
+    {
+      label: `Principal broker OR #${BROKERS.matt.license}`,
+      href: teamPath(BROKERS.matt.slug),
+    },
     { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
     { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
     { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
     { label: 'Schedule with a broker', href: '/book' },
+    { label: 'Client reviews', href: '/reviews' },
     { label: 'Contact', href: '/contact' },
   ]
 

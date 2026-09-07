@@ -17,6 +17,10 @@ export type AboutFace = {
   email: string | null
   /** /book?agent=<key> when the roster knows this broker. */
   bookHref: string | null
+  /** Oregon license digits from live RR data / BROKERS. Never invented. */
+  license: string | null
+  /** Readable dotted phone for above-the-fold contact (not icon-only). */
+  phoneDisplay: string | null
 }
 
 const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/
@@ -60,6 +64,7 @@ export function aboutFaceFromBroker(b: {
   headshotPng?: string | null
   phoneDirect?: string | null
   email?: string | null
+  licenseNumber?: string | null
 }): AboutFace | null {
   const name = b.fullName?.trim()
   const slug = b.slug?.trim()
@@ -67,6 +72,9 @@ export function aboutFaceFromBroker(b: {
   if (!name || !slug || !src) return null
   if (!CANONICAL_HEADSHOT.test(src)) return null
   const title = b.title?.trim()
+  const roster = BROKER_BY_SLUG.get(slug)
+  const license = b.licenseNumber?.trim() || roster?.license || null
+  const phoneDisplay = b.phoneDirect?.trim() || null
   return {
     href: teamPath(slug),
     src,
@@ -75,5 +83,7 @@ export function aboutFaceFromBroker(b: {
     tel: aboutPhoneE164(b.phoneDirect),
     email: b.email?.trim() || null,
     bookHref: aboutBookHref(slug),
+    license,
+    phoneDisplay,
   }
 }

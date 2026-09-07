@@ -4,6 +4,7 @@ import {
   factualFallbackBio,
   hasRealPersonalRecord,
   PERSONAL_RECORD_FLOOR,
+  publishActiveListingRows,
   publishFirmClosingRows,
   publishOwnClosingRows,
 } from './sale-rows'
@@ -134,5 +135,93 @@ describe('publishFirmClosingRows', () => {
       sale({ ListingKey: 'open', CloseDate: null, ClosePrice: 500000, StandardStatus: 'Active' }),
     ])
     expect(rows.map((row) => row.id)).toEqual(['keep'])
+  })
+})
+
+describe('publishActiveListingRows', () => {
+  it('maps active ListingTile cards onto house-row ledger rows', async () => {
+    const { publishActiveListingRows } = await import('./sale-rows')
+    const rows = publishActiveListingRows([
+      {
+        listingKey: 'A1',
+        listNumber: '1',
+        status: 'Active',
+        listPrice: 725000,
+        closePrice: null,
+        closeDate: null,
+        beds: 3,
+        baths: 2,
+        sqft: 1900,
+        streetNumber: '12',
+        streetName: 'Deschutes',
+        streetSuffix: 'Rd',
+        city: 'Bend',
+        citySlug: 'bend',
+        postalCode: '97701',
+        subdivisionName: null,
+        subdivisionSlug: null,
+        lat: null,
+        lng: null,
+        photoUrl: 'https://example.com/a.jpg',
+        propertyType: 'Residential',
+        propertySubType: null,
+        onMarketDate: null,
+        modifiedAt: null,
+        pricePerSqft: null,
+        lotSizeAcres: null,
+        yearBuilt: null,
+        garageSpaces: null,
+        poolYn: null,
+        hasVirtualTour: null,
+        tourUrl: null,
+        dom: 12,
+        priceDropCount: null,
+        addressSlug: null,
+        boundaryCity: null,
+        boundaryNeighborhood: null,
+        boundarySubdivision: null,
+      },
+      {
+        listingKey: 'B2',
+        listNumber: '2',
+        status: 'Active',
+        listPrice: null,
+        closePrice: null,
+        closeDate: null,
+        beds: null,
+        baths: null,
+        sqft: null,
+        streetNumber: null,
+        streetName: null,
+        city: null,
+        citySlug: null,
+        postalCode: null,
+        subdivisionName: null,
+        subdivisionSlug: null,
+        lat: null,
+        lng: null,
+        photoUrl: null,
+        propertyType: null,
+        propertySubType: null,
+        onMarketDate: null,
+        modifiedAt: null,
+        pricePerSqft: null,
+        lotSizeAcres: null,
+        yearBuilt: null,
+        garageSpaces: null,
+        poolYn: null,
+        hasVirtualTour: null,
+        tourUrl: null,
+        dom: null,
+        priceDropCount: null,
+        addressSlug: null,
+        boundaryCity: null,
+        boundaryNeighborhood: null,
+        boundarySubdivision: null,
+      },
+    ] as any)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.id).toBe('A1')
+    expect(String(rows[0]!.when)).toContain('Active')
   })
 })

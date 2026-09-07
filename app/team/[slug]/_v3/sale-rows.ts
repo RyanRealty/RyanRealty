@@ -11,7 +11,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { publishCardAddress } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
-import type { BrokerSaleTile } from '@/lib/data'
+import type { BrokerSaleTile, ListingTile } from '@/lib/data'
 import type { PriceDropTile } from '@/lib/data/listings/getPriceDropTiles'
 
 function inServiceArea(postal: string | null | undefined): boolean {
@@ -126,6 +126,68 @@ function houseRowSpecs(tile: PriceDropTile): string | null {
   }
   if (typeof tile.TotalLivingAreaSqFt === 'number' && tile.TotalLivingAreaSqFt > 0) {
     parts.push(`${Math.round(tile.TotalLivingAreaSqFt).toLocaleString('en-US')} sqft`)
+  }
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
+
+/** Active listings for a broker profile — existing house-row Ledger cards only. */
+export function publishActiveListingRows(
+  tiles: readonly ListingTile[],
+  limit = 8,
+): V3LedgerFigureRow[] {
+  return tiles
+    .filter((t) => t.listingKey && t.listPrice != null && Number(t.listPrice) > 0)
+    .slice(0, limit)
+    .map((tile): V3LedgerFigureRow | null => {
+      const what =
+        publishCardAddress({
+          streetNumber: tile.streetNumber,
+          streetName: tile.streetName,
+          streetSuffix: tile.streetSuffix,
+          city: tile.city,
+        }) || 'Address withheld'
+      const sub = displaySubdivision(tile.subdivisionName)
+      const detailParts = [
+        houseRowSpecsFromListing(tile),
+        sub,
+      ].filter((part): part is string => Boolean(part && part.trim()))
+      const photo = (tile.photoUrl ?? '').trim()
+      const when =
+        typeof tile.dom === 'number' && Number.isFinite(tile.dom) && tile.dom >= 0
+          ? `Active · ${Math.round(tile.dom)} DOM`
+          : 'Active'
+      return {
+        href: listingTileHref({
+          listingKey: tile.listingKey,
+          streetNumber: tile.streetNumber,
+          streetName: tile.streetName,
+          city: tile.city,
+          subdivisionName: tile.subdivisionName,
+        }),
+        when: v3Text(when),
+        what: v3Text(what),
+        detail: detailParts.length > 0 ? v3Text(detailParts.join(' · ')) : undefined,
+        value: v3Text(formatPriceExact(Number(tile.listPrice))),
+        id: tile.listingKey,
+        media: photo ? { src: photo } : undefined,
+      }
+    })
+    .filter((row): row is V3LedgerFigureRow => row !== null)
+}
+
+function houseRowSpecsFromListing(tile: ListingTile): string | null {
+  const parts: string[] = []
+  if (typeof tile.beds === 'number' && Number.isFinite(tile.beds)) {
+    parts.push(`${Math.round(tile.beds)} bd`)
+  }
+  if (typeof tile.baths === 'number' && Number.isFinite(tile.baths)) {
+    const baths = tile.baths
+    const bathsLabel = Number.isInteger(baths) ? String(baths) : String(Math.round(baths * 10) / 10)
+    parts.push(`${bathsLabel} ba`)
+  }
+  if (typeof tile.sqft === 'number' && tile.sqft > 0) {
+    parts.push(`${Math.round(tile.sqft).toLocaleString('en-US')} sqft`)
   }
   return parts.length > 0 ? parts.join(' · ') : null
 }
