@@ -60,6 +60,9 @@ type DryRun = {
   recommended: number | null
   range: [number | null, number | null]
   confidence: string | null
+  compPpsfCv: number | null
+  needsReview: boolean
+  reviewReason: string | null
   hardFailures: string[]
   error: string | null
 }
@@ -80,7 +83,8 @@ async function dryRun(slug: string): Promise<DryRun> {
   const base: DryRun = {
     slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null,
     subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
-    recommended: null, range: [null, null], confidence: null, hardFailures: [], error: null,
+    recommended: null, range: [null, null], confidence: null, compPpsfCv: null,
+    needsReview: false, reviewReason: null, hardFailures: [], error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -158,6 +162,9 @@ async function dryRun(slug: string): Promise<DryRun> {
     recommended: pricing.recommended,
     range: [pricing.conservative, pricing.highEnd],
     confidence: pricing.confidence,
+    compPpsfCv: pricing.compPpsfCv ?? null,
+    needsReview: pricing.needsReview === true,
+    reviewReason: pricing.reviewReason ?? null,
     hardFailures,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
   }
@@ -176,14 +183,15 @@ async function main() {
     const r = await dryRun(slug).catch((e): DryRun => ({
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
-      range: [null, null], confidence: null, hardFailures: [], error: e instanceof Error ? e.message : String(e),
+      range: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
+      hardFailures: [], error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
     if (asJson) continue
     console.log(`\n── ${r.slug} — ${r.address ?? '(unresolved)'}, ${r.city ?? '?'}`)
     console.log(`   ${r.ok ? 'WOULD BUILD' : `WOULD FAIL at ${r.stage}`} · subject ${r.subjectBaths ?? '?'} bath / ${r.subjectSqft ?? '?'} sqft · custom-or-new ${r.customOrNew} · source ${r.pricingSource ?? 'n/a'}`)
     if (r.recommended != null) {
-      console.log(`   recommended $${r.recommended.toLocaleString()} (range $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence}`)
+      console.log(`   recommended $${r.recommended.toLocaleString()} (range $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
     }
     if (r.comps.length) {
       console.log(`   comps (${r.comps.length}):`)

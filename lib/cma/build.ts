@@ -23,7 +23,7 @@ import {
 import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
-import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
@@ -298,17 +298,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }
 
     if (selection.comps.length < MIN_COMPS) {
-      // Lead with the CONSTRAINT that starved it, not the bare count. A broker
-      // reading "only 2 qualifying closed comps found" cannot tell whether the
-      // subject is genuinely unpriceable or the search was too narrow; the
-      // diagnosis names the binding band, radius, or exclusion.
-      const why = selection.diagnostics.starved_reason
-      // The trace already ends with `why` whenever the diagnosis was produced,
-      // so appending it wholesale printed the same paragraph twice.
-      const rest = selection.trace.filter((t) => t !== why)
-      const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${why ?? ''}${
-        rest.length ? ` Full search trace: ${rest.join(' ')}` : ''
-      }`
+      // ONE broker-readable sentence on the row. Until 2026-09-07 this stored
+      // the diagnosis plus the entire tier-by-tier search trace — up to 2,000
+      // characters of SQL that the queue then printed at a broker, on 74 live
+      // rows. Every bit of that detail is still persisted structurally under
+      // build_summary.comp_selection (the ladder, the per-tier row counts, the
+      // exclusion totals, starved_reason), so nothing is lost; the prose on the
+      // row now says only what the reader can act on.
+      const err = brokerCompRefusal({
+        diagnostics: selection.diagnostics,
+        found: selection.comps.length,
+        minComps: MIN_COMPS,
+        subjectBaths: subject.baths,
+        subjectCity: subject.city,
+      })
         .replace(/\s+/g, ' ')
         .trim()
       await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics })
