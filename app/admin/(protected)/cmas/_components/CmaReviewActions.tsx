@@ -30,9 +30,10 @@ import {
   approveAndDeliverCma,
   holdCmaInDripAction,
   removeCmaFromDripAction,
+  nextReadyCmaInLaneAction,
 } from '@/app/actions/cma-queue'
 import { cmaClientIntentLabel, isCmaClientIntent, type CmaClientIntent } from '@/lib/cma/client-intent'
-import type { CmaSendMode } from '@/lib/cma/origin'
+import type { CmaOrigin, CmaSendMode } from '@/lib/cma/origin'
 import './cma-review.css'
 
 export interface CmaReviewActionsProps {
@@ -53,6 +54,8 @@ export interface CmaReviewActionsProps {
   brokerSlug: string | null
   brokers: Array<{ slug: string; displayName: string }>
   hasDocument: boolean
+  /** Which lane this document is on — drives Approve-and-next. */
+  origin: CmaOrigin
   /** Origin send lane. */
   sendMode: CmaSendMode
   /** True when this CMA is currently in the weekday drip queue. */
@@ -200,6 +203,16 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
       if (res.outcome === 'sent') toast.success('Sent.')
       else if (res.outcome === 'queued') toast.success(`Scheduled. ${res.position} waiting in the drip.`)
       else toast.success(res.reason)
+
+      // Approve and next: one tap approves this document and lands on the next
+      // ready one in the same lane, so working a lane is a sequence of taps
+      // instead of a trip back through the list every time. The lane is asked
+      // AFTER the send, so the row just handled is already out of `ready`.
+      const { slug: next } = await nextReadyCmaInLaneAction(props.origin, props.slug)
+      if (next) {
+        router.push(`/admin/cmas/${next}`)
+        return
+      }
       router.refresh()
     })
   }
@@ -378,6 +391,12 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           <Button onClick={saveEmail} disabled={isPending} variant="quiet" touch className="w-full">
             {isPending ? 'Working…' : 'Save email for drip'}
           </Button>
+        ) : null}
+
+        {showSchedule || showSendNow ? (
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
+            This lands on the next ready document in this lane.
+          </p>
         ) : null}
 
         {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}

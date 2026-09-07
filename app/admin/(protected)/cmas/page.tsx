@@ -7,7 +7,11 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listCmaQueue, type CmaQueueRow, type CmaQueueState } from '@/lib/data'
 import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
-import { approveAndDeliverCma } from '@/app/actions/cma-queue'
+import { approveAndDeliverCma, setCmaLaneAutoSendAction } from '@/app/actions/cma-queue'
+import { getLaneSettings, AUTO_SEND_LANES } from '@/lib/data/cma/lane-settings'
+import { isColdOrigin } from '@/lib/cma/origin'
+import { hasCapability } from '@/lib/admin/capabilities'
+import { LaneAutoSendSwitch } from '@/app/admin/(protected)/cmas/_components/queue/LaneAutoSendSwitch.client'
 import { QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import { QueueAction } from '@/app/admin/(protected)/cmas/_components/queue/QueueAction.client'
 import { DripQueueActions } from '@/app/admin/(protected)/cmas/_components/queue/DripQueueActions.client'
@@ -127,12 +131,102 @@ function asView(r: CmaQueueRow): CmaQueueViewRow {
   }
 }
 
+/**
+ * The lane strip: one card per lane, its work in numbers, and the Auto-send
+ * switch that decides whether that lane still needs a per-document tap.
+ *
+ * Every lane renders whether or not it has documents today — the control has to
+ * be findable before the first one arrives. `internal` and `unknown` have no
+ * card: both classify to sendMode 'manual', so a switch there would be a
+ * control with nothing behind it.
+ */
+function LaneStrip({
+  rows,
+  settings,
+  canFlip,
+}: {
+  rows: CmaQueueRow[]
+  settings: Awaited<ReturnType<typeof getLaneSettings>>
+  canFlip: boolean
+}) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(228px, 1fr))',
+        gap: 8,
+        margin: '0 0 12px',
+      }}
+    >
+      {AUTO_SEND_LANES.map((lane) => {
+        const mine = rows.filter((r) => r.origin === lane)
+        const n = (s: CmaQueueState) => mine.filter((r) => r.state === s).length
+        const setting = settings[lane]
+        const cold = isColdOrigin(lane)
+        // A BPO is the brokerage's own opinion of value, read by a broker, and
+        // its send path needs a linked CRM person. The switch exists in the
+        // vocabulary and has nothing behind it — say so rather than arm it.
+        const disabledReason = lane === 'bpo' ? 'Sent from the BPO page' : null
+        return (
+          <div
+            key={lane}
+            style={{
+              border: '1px solid var(--a-border)',
+              borderRadius: 'var(--a-r-md)',
+              background: 'var(--a-surface)',
+              padding: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              minWidth: 0,
+            }}
+          >
+            <Link
+              href={cmaQueueHref({ origin: lane, state: 'all' })}
+              style={{ color: 'var(--a-text)', textDecoration: 'none', fontWeight: 600 }}
+            >
+              {CMA_ORIGIN_LABEL[lane]}{' '}
+              <span style={{ color: 'var(--a-text-2)', fontWeight: 400, fontVariantNumeric: 'tabular-nums' }}>
+                {mine.length}
+              </span>
+            </Link>
+            <span
+              style={{
+                color: 'var(--a-text-2)',
+                fontSize: 'var(--a-text-xs)',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {n('ready')} ready · {n('flagged')} flagged · {n('failed')} failed · {n('queued')} in drip ·{' '}
+              {n('sent')} sent
+            </span>
+            {canFlip ? (
+              <LaneAutoSendSwitch
+                lane={lane}
+                laneLabel={CMA_ORIGIN_LABEL[lane]}
+                on={setting.autoSend}
+                cold={cold}
+                disabledReason={disabledReason}
+                setAutoSend={setCmaLaneAutoSendAction}
+              />
+            ) : (
+              <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-xs)' }}>
+                Auto-send {setting.autoSend ? 'on' : 'off'}
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default async function CmaQueuePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireAdminPage('prospecting.view')
+  const admin = await requireAdminPage('prospecting.view')
   const sp = await searchParams
   const filters: CmaQueueViewFilters = {
     q: str(sp.q),
@@ -144,7 +238,10 @@ export default async function CmaQueuePage({
     sort: str(sp.sort) as CmaQueueSort | undefined,
   }
 
-  const { rows, total } = await listCmaQueue({ limit: WINDOW })
+  const [{ rows, total }, laneSettings] = await Promise.all([
+    listCmaQueue({ limit: WINDOW }),
+    getLaneSettings(),
+  ])
 
   const { listQueuedFirstTouch, getLastDripSentAt } = await import('@/lib/data/prospecting/drip-queue')
   const [dripQueued, lastDripSentAt] = await Promise.all([
@@ -203,6 +300,12 @@ export default async function CmaQueuePage({
           Prospecting
         </Link>
       </VerdictLine>
+
+      <LaneStrip
+        rows={rows}
+        settings={laneSettings}
+        canFlip={hasCapability(admin, 'settings.compliance')}
+      />
 
       <QueueFilters
         filters={filters}
