@@ -2,12 +2,12 @@
  * Web + print chapters for market-area density. Our look. Our number.
  */
 
-import { dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
+import { dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { listingTrendSvg, medianCloseLineSvg } from '@/lib/cma/market-charts'
 import { PRINT_NAVY_CREAM, renderPrintOutcomeStripSvg } from '@/lib/charts/print-svg'
-import type { CmaBandOutcomes, CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
+import type { CmaBandOutcomes, CmaExpiredPeer, CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -111,6 +111,41 @@ function shortUsd(n: number): string {
     return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
   }
   return `$${Math.round(n / 1000)}K`
+}
+
+
+export function renderExpiredPeersHtml(peers: readonly CmaExpiredPeer[] | null | undefined): string {
+  if (!peers || peers.length === 0) return ''
+  const cards = peers
+    .map((p) => {
+      const photo = sparkPhotoAt(p.photoUrl, '320x320')
+      const img = photo
+        ? `<img class="rival-ph" src="${esc(photo)}" alt="${esc(p.address)}" loading="lazy" referrerpolicy="no-referrer"/>`
+        : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
+      const facts = [
+        p.beds != null ? `${int(p.beds)} bd` : null,
+        p.baths != null ? `${p.baths % 1 === 0 ? int(p.baths) : p.baths.toFixed(1)} ba` : null,
+        p.sqft != null && p.sqft > 0 ? `${int(p.sqft)} sqft` : null,
+        p.status ? p.status : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      const history = p.listingHistoryLine?.trim()
+      return `<article class="rival-row">
+    ${img}
+    <div class="rival-body">
+      <div class="rival-addr">${esc(p.address)}</div>
+      ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
+      ${history ? `<div class="rival-meta">${esc(history)}</div>` : ''}
+    </div>
+    <div class="rival-ask">${usd(p.listPrice)}</div>
+  </article>`
+    })
+    .join('')
+  return `
+  <h3 class="subhead">Homes like this that came off without a sale</h3>
+  <p>Same band. What happened on the ones that did not sell.</p>
+  <div class="rival-list">${cards}</div>`
 }
 
 export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): string {

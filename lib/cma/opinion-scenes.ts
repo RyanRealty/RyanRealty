@@ -4,10 +4,11 @@
  */
 
 import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
+import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
-import { immersiveWiderMarketChapters, renderBandOutcomesHtml } from '@/lib/cma/market-area-chapters'
+import { immersiveWiderMarketChapters, renderBandOutcomesHtml, renderExpiredPeersHtml } from '@/lib/cma/market-area-chapters'
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
@@ -77,6 +78,8 @@ function competitionScene(a: OpinionSceneArgs): string {
       latitude: a.subject.latitude,
       longitude: a.subject.longitude,
       photoUrl: a.subject.photoUrl,
+      listingHistoryLine: a.subject.listingHistoryLine,
+      daysOnMarket: daysOnMarketFrom({ onMarketDate: a.subject.lastListDate }),
     },
   })
 }
@@ -104,14 +107,15 @@ function seasonalityScene(a: OpinionSceneArgs): string {
 }
 
 function outcomesScene(a: OpinionSceneArgs): string {
-  const html = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
-  if (!html) return ''
+  const chart = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
+  const peers = renderExpiredPeersHtml(a.extras?.marketArea?.expiredPeers)
+  if (!chart && !peers) return ''
   return `
   <section class="sc sc-cream" id="sold-unsold">
     <div class="in wide">
       <div class="kick r">This price band</div>
       <h2 class="h r">Sold and unsold in this band</h2>
-      <div class="r">${html}</div>
+      <div class="r">${chart || ''}${peers}</div>
     </div>
   </section>`
 }
@@ -239,13 +243,15 @@ function nextScene(a: OpinionSceneArgs): string {
 
 export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   // Mirror print letter spine (C1–C4 + C9): price/comps first, ≤2 charts, next step last.
-  const parts: string[] = [priceScene(a), competitionScene(a)]
+  const parts: string[] = [priceScene(a)]
+  // Matt HARD LOCK story: comps → expired peers → live competition.
   let charts = 0
   const outcomes = outcomesScene(a)
-  if (outcomes && charts < 2) {
+  if (outcomes) {
     parts.push(outcomes)
-    charts += 1
+    if (a.extras?.marketArea?.outcomes) charts += 1
   }
+  parts.push(competitionScene(a))
   const wider = immersiveWiderMarketChapters(a)
   if (wider && charts < 2) {
     parts.push(wider)

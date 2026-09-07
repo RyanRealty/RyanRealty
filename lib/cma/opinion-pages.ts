@@ -6,6 +6,7 @@
 import { buildLinePlot } from '@/lib/charts/plot'
 import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
+import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
@@ -21,6 +22,7 @@ import {
 import { clientSourceLine, formatClientMlsField } from '@/lib/cma/client-facing'
 import {
   renderBandOutcomesHtml,
+  renderExpiredPeersHtml,
   renderInventoryBoardHtml,
   renderListingTrendHtml,
   renderSold90Html,
@@ -462,14 +464,16 @@ export function marketVolumePage(_a: OpinionPageArgs): CmaPageDef | null {
 }
 
 export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
-  const html = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
-  if (!html) return null
+  const chart = renderBandOutcomesHtml(a.extras?.marketArea?.outcomes)
+  const peers = renderExpiredPeersHtml(a.extras?.marketArea?.expiredPeers)
+  if (!chart && !peers) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Sold and unsold`,
     toc: 'Sold and unsold in this band',
     body: `
   <h2 class="section">Sold and unsold in this band</h2>
-  ${html}`,
+  ${chart || '<p>Homes like this in the same price band that came off without a sale.</p>'}
+  ${peers}`,
   }
 }
 
@@ -497,6 +501,8 @@ export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
         latitude: a.subject.latitude,
         longitude: a.subject.longitude,
         photoUrl: a.subject.photoUrl,
+        listingHistoryLine: a.subject.listingHistoryLine,
+        daysOnMarket: daysOnMarketFrom({ onMarketDate: a.subject.lastListDate }),
       },
     }),
   }
@@ -611,20 +617,21 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
       mapDataUri: a.mapDataUri,
     }),
   )
+  // Matt HARD LOCK story: comps (above) → expired peers → live competition.
+  let charts = 0
+  const outcomes = outcomesPage(a)
+  if (outcomes) {
+    rest.push(outcomes)
+    if (a.extras?.marketArea?.outcomes) charts += 1
+  }
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
 
-  // Details appendix (demoted hierarchy): house facts, land, ≤2 charts.
+  // Details appendix (demoted hierarchy): house facts, land, ≤1 more chart.
   rest.push(snapshotPage(a))
   const lotLines = lotLinesPage(a)
   if (lotLines) rest.push(lotLines)
 
-  let charts = 0
-  const outcomes = outcomesPage(a)
-  if (outcomes && charts < 2) {
-    rest.push(outcomes)
-    charts += 1
-  }
   const trends = trendChartsPage(a)
   if (trends && charts < 2) {
     rest.push(trends)

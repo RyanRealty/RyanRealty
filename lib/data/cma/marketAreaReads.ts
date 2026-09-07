@@ -15,6 +15,13 @@ function client() {
 }
 
 export type CmaMarketAreaRow = {
+  ListingKey?: string | null
+  StreetNumber?: string | null
+  StreetName?: string | null
+  PhotoURL?: string | null
+  OriginalListPrice?: number | null
+  Latitude?: number | null
+  Longitude?: number | null
   StandardStatus: string
   ListPrice: number | null
   ClosePrice: number | null
@@ -29,10 +36,12 @@ export type CmaMarketAreaRow = {
   status_change_timestamp: string | null
   SubdivisionName: string | null
   property_sub_type?: string | null
+  year_built?: number | null
+  lot_size_acres?: number | null
 }
 
 const COLS =
-  'StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type'
+  'ListingKey, StreetNumber, StreetName, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres'
 
 type ListingQuery = {
   eq: (col: string, val: string) => ListingQuery

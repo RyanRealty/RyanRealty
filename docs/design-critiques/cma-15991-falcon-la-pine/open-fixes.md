@@ -2,7 +2,7 @@
 Updated: 2026-09-06
 Path: existing admin CMA letter /view only (no new product)
 Handoff: Cos → Admin Engineer
-Tip Ready: `fix/cma-letter-one-map` (C1–C4 + C9 + voice scrub + tracked place/CTA links). Do not merge until Cos/Desk rebuild Falcon.
+Tip Ready: `fix/cma-letter-one-map` (C1–C4 + C9 + voice scrub + tracked place/CTA links + Matt HARD LOCK comps story beats). Do not merge until Cos/Desk rebuild Falcon.
 
 | id | severity | finding | status | opened |
 |----|----------|---------|--------|--------|
@@ -16,3 +16,4 @@ Tip Ready: `fix/cma-letter-one-map` (C1–C4 + C9 + voice scrub + tracked place/
 | C8 | worth fixing | Three essay closers (What’s Next / Process / Marketing) — one next step + Call/Email | open | 2026-09-06 |
 | C9 | worth fixing | Dual maps — keep comps map with subject highlighted only | tip/cma-letter-one-map | 2026-09-06 |
 | C10 | minor | Collapse Status/MLS# block by default | open | 2026-09-06 |
+| H1 | blocker | Matt HARD LOCK comps story: (1) sales that set the list once (2) expired peers what-happened (3) active competition (4) DOM + listing history on every home | tip/cma-letter-one-map | 2026-09-06 |
