@@ -97,6 +97,8 @@ type DryRun = {
   renderArgsPricingReconciliation: unknown
   /** render_args.pricing.rangeRule — how the low and high were produced. */
   renderArgsPricingRangeRule: unknown
+  /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
+  renderArgsPricingTimeAdjustment: unknown
   renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
@@ -146,7 +148,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
-    renderArgsPricingRangeRule: null, renderArgsExpiredAuditFinalCycle: null, error: null,
+    renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -304,6 +307,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketOriginalAskRealization: localOutcomes.originalAskRealization,
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
+    renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
@@ -329,7 +333,7 @@ async function main() {
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
-      renderArgsExpiredAuditFinalCycle: null,
+      renderArgsPricingTimeAdjustment: null, renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -362,6 +366,8 @@ async function main() {
     console.log(indent(r.renderArgsMarketOfferTiming))
     console.log('   render_args.market.askOutcome =')
     console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.pricing.timeAdjustment =')
+    console.log(indent(r.renderArgsPricingTimeAdjustment))
     console.log('   render_args.pricing.rangeRule =')
     console.log(indent(r.renderArgsPricingRangeRule))
     console.log('   render_args.pricing.reconciliation =')

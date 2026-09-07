@@ -14,12 +14,13 @@ import { computePricing } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
+import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import {
   describePath,
   INDEX_MIN_N,
+  marketIndexTrend,
   marketPath,
   timeAdjustAlongPath,
   type MarketIndexPoint,
@@ -100,6 +101,99 @@ export const RANGE_TRIM_MIN_N = 6
  */
 export const SALE_TO_ASK_MIN = 0.5
 export const SALE_TO_ASK_MAX = 1.5
+
+/** Months of index the printed time-adjustment rate is measured over. */
+export const TIME_ADJUSTMENT_WINDOW_MONTHS = 12
+
+export interface PricingTimeAdjustment {
+  /** Compound monthly change in the local price a square foot, percent. */
+  pctPerMonth: number | null
+  windowMonths: number
+  /** Sales behind that rate. */
+  n: number
+  /** Which basis the date adjustment actually used on this build. */
+  basis: 'city-monthly-index' | 'year-over-year' | 'none'
+  source: {
+    table: string
+    filter: string
+    fetchedAt: string
+    query: string
+  }
+  /** The basis in one sentence, for the line beside the first adjusted sale. */
+  sentence: string
+}
+
+/**
+ * The basis the date adjustment used, written out. Fannie Mae B4-1.3-09
+ * requires the report to describe the data source and technique behind a time
+ * adjustment; no chapter showed it (research brief 2026-09-07, item 5).
+ *
+ * Two bases, because the engine has two paths: the monthly city index the
+ * facts path walks sale by sale, and — where there is no index — the
+ * year-over-year median move the listings path spreads across the months.
+ * Whichever one moved the numbers is the one printed.
+ */
+export function buildTimeAdjustmentBasis(opts: {
+  citySlug: string
+  points: MarketIndexPoint[]
+  asOf: string
+  yoyMedianPriceDeltaPct?: number | null
+  fetchedAt?: string
+  windowMonths?: number
+}): PricingTimeAdjustment {
+  const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
+  const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
+  const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
+  if (trend.pctPerMonth != null) {
+    const direction = trend.pctPerMonth > 0 ? 'up' : trend.pctPerMonth < 0 ? 'down' : 'flat'
+    return {
+      pctPerMonth: trend.pctPerMonth,
+      windowMonths,
+      n: trend.n,
+      basis: 'city-monthly-index',
+      source: {
+        table: 'pricing_market_index',
+        filter: `city_slug='${opts.citySlug}', months ${trend.months} with at least ${INDEX_MIN_N} sales in the ${windowMonths} months to ${opts.asOf.slice(0, 10)}; median price a square foot ${trend.fromPpsf} to ${trend.toPpsf}${trend.capped ? '; the ±25% path cap bound this window' : ''}`,
+        fetchedAt,
+        query: `select month, n, median_ppsf, median_sale_to_original, median_days_to_offer from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
+      },
+      sentence:
+        direction === 'flat'
+          ? `Prices a square foot in this city have been flat over the last ${windowMonths} months, across ${trend.n.toLocaleString('en-US')} sales, so each sale below moves very little for when it sold.`
+          : `Prices a square foot in this city have moved ${direction} ${Math.abs(trend.pctPerMonth)} percent a month over the last ${windowMonths} months, across ${trend.n.toLocaleString('en-US')} sales. Each sale below is moved by that path between the month it closed and today.`,
+    }
+  }
+  const yoy = opts.yoyMedianPriceDeltaPct
+  if (yoy != null && Number.isFinite(yoy)) {
+    const perMonth = Math.round((yoy / 12) * 10) / 10
+    return {
+      pctPerMonth: perMonth,
+      windowMonths: 12,
+      n: 0,
+      basis: 'year-over-year',
+      source: {
+        table: 'market context (market_stats_cache / market_pulse_live)',
+        filter: `Year-over-year median sale price change for this city, ${yoy}% over 12 months, spread evenly across the months`,
+        fetchedAt,
+        query: 'getCmaMarketContext(subject) -> yoyMedianPriceDeltaPct',
+      },
+      sentence: `Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy)} percent against a year ago, about ${Math.abs(perMonth)} percent a month, and each sale below is moved by that rate for the months since it closed.`,
+    }
+  }
+  return {
+    pctPerMonth: null,
+    windowMonths,
+    n: 0,
+    basis: 'none',
+    source: {
+      table: 'none',
+      filter: 'No monthly index and no year-over-year figure for this city, so no sale was moved for its date.',
+      fetchedAt,
+      query: '',
+    },
+    sentence: 'There is no measured price path for this city, so no sale below was moved for when it sold.',
+  }
+}
 
 export type PricingRangeRuleName = 'trimmed-one-each-end' | 'min-max'
 
@@ -601,6 +695,13 @@ export function priceCmaSet(args: {
   pricing.reconciliation = reconcileAdjustedSales({
     sales: args.adjusted as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
+  })
+  // What moved each sale for its date, stated where the document can print it.
+  pricing.timeAdjustment = buildTimeAdjustmentBasis({
+    citySlug: citySlug(args.subject.city),
+    points: args.marketIndex,
+    asOf: args.asOf,
+    yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
   })
   return applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,

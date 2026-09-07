@@ -147,3 +147,59 @@ export function describePath(path: MarketPath): string {
     path.regime === 'rising' ? 'rising' : path.regime === 'falling' ? 'falling' : 'flat'
   return `Market path ${path.fromPpsf} → ${path.toPpsf} $/sqft over ${path.months} months (${dir}, ${rate}). Time factor ${path.factor} (${pct}%)${path.capped ? ', capped at 25%' : ''}.`
 }
+
+/**
+ * The time-adjustment BASIS, stated as one rate a document can print.
+ *
+ * Fannie Mae B4-1.3-09 (effective 2025-06-04, fetched 2026-09-07) requires a
+ * time adjustment where the market moved AND requires the report to describe
+ * "the data sources, tool(s), and technique(s) used". Ours walks the monthly
+ * median price per square foot for the city between each sale's close and
+ * today, and no chapter showed the reader the index it walks. This is that
+ * index in one number: the compound monthly rate between the price a foot
+ * `windowMonths` ago and the price a foot today, over the months that carry
+ * enough sales to count.
+ *
+ * `n` is the number of SALES behind the months in the window, not the number
+ * of months — it is the weight a reader should give the rate.
+ */
+export type MarketIndexTrend = {
+  /** Compound monthly change, in percent, one decimal. Null when the index cannot say. */
+  pctPerMonth: number | null
+  windowMonths: number
+  /** Sales behind the usable months inside the window. */
+  n: number
+  /** Usable months (n >= INDEX_MIN_N) inside the window. */
+  months: number
+  fromPpsf: number | null
+  toPpsf: number | null
+  /** True when the ±25% path cap bound the factor over this window. */
+  capped: boolean
+}
+
+export function marketIndexTrend(opts: {
+  points: MarketIndexPoint[]
+  asOf: string
+  windowMonths: number
+}): MarketIndexTrend {
+  const asOf = opts.asOf.slice(0, 10)
+  const from = new Date(asOf + 'T00:00:00Z')
+  from.setUTCMonth(from.getUTCMonth() - opts.windowMonths)
+  const fromIso = from.toISOString().slice(0, 10)
+  const inWindow = usable(opts.points).filter(
+    (p) => p.month >= monthKey(fromIso) && p.month <= monthKey(asOf),
+  )
+  const path = marketPath({ points: opts.points, fromDate: fromIso, toDate: asOf })
+  return {
+    pctPerMonth:
+      path.source === 'index' && path.monthlyRate != null
+        ? Math.round(path.monthlyRate * 1000) / 10
+        : null,
+    windowMonths: opts.windowMonths,
+    n: inWindow.reduce((sum, p) => sum + p.n, 0),
+    months: inWindow.length,
+    fromPpsf: path.fromPpsf,
+    toPpsf: path.toPpsf,
+    capped: path.capped,
+  }
+}

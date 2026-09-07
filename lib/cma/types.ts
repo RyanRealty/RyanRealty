@@ -236,6 +236,13 @@ export interface CmaPricing {
    * from the evidence beside it.
    */
   rangeRule?: import('@/lib/pricing/estimate').PricingRangeRule | null
+  /**
+   * The basis the date adjustment used — the local price path, its window, the
+   * sales behind it, and a sentence for the line beside the first adjusted
+   * sale. Fannie Mae B4-1.3-09 requires the technique be described; no chapter
+   * showed it before (research brief 2026-09-07, item 5).
+   */
+  timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */
