@@ -35,7 +35,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
@@ -46,6 +45,7 @@ import { cn } from '@/lib/utils'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
 
@@ -53,6 +53,8 @@ export type SearchFiltersInitial = {
   city?: string
   subdivision?: string
   neighborhood?: string
+  /** School district slug or label (Places grain). Listing filter expands to district cities. */
+  schoolDistrict?: string
   minPrice?: string
   maxPrice?: string
   beds?: string
@@ -93,6 +95,8 @@ const PLACE_COMMUNITY_OPTIONS = getAllResortCommunities()
 const PLACE_SUBDIVISION_OPTIONS = Object.keys(SUBDIVISION_ALIASES).sort((a, b) =>
   a.localeCompare(b),
 )
+
+const PLACE_SCHOOL_DISTRICT_OPTIONS = getSchoolDistrictOptions()
 
 const STATUS_OPTIONS = [
   { value: 'Active', label: 'For sale' },
@@ -317,6 +321,7 @@ export default function SearchFilters({
         'city' in updates ||
         'neighborhood' in updates ||
         'subdivision' in updates ||
+        'schoolDistrict' in updates ||
         'postalCode' in updates
       ) {
         params.delete('bbox')
@@ -520,8 +525,8 @@ export default function SearchFilters({
       <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
         <div className="srch-chip-rail flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
         {hideLocation ? null : (
-        <div className="relative w-40 shrink-0 sm:w-56">
-          <div className="srch-panel srch-tap min-h-11 flex min-w-0 items-center gap-2 px-3 transition focus-within:ring-2 focus-within:ring-primary/30">
+        <div className="relative w-48 shrink-0 sm:w-64">
+          <div className="srch-panel srch-tap relative min-h-11 flex min-w-0 items-center gap-1.5 px-2 transition focus-within:ring-2 focus-within:ring-primary/30 sm:px-3">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
               ref={locationInputRef}
@@ -564,6 +569,11 @@ export default function SearchFilters({
                 locationOpen && highlight >= 0 ? `search-filters-suggest-item-${highlight}` : undefined
               }
             />
+            {/* Speech-to-text lives inside the search bar (Matt 2026-09-07) — not a standalone filter-row mic. */}
+            <VoiceSearchButton
+              onTranscript={applyNaturalQuery}
+              className="srch-mic-inbar size-9 shrink-0 border-0 bg-transparent shadow-none hover:bg-muted/60"
+            />
           </div>
           <ParsedSearchNotice chips={parsedChips} className="absolute left-0 right-0 top-full z-50 mt-1" />
           {locationOpen && (
@@ -580,21 +590,23 @@ export default function SearchFilters({
         </div>
         )}
         <div className="flex shrink-0 items-center gap-2">
-        {/* Places — one structured multi-select for City / Neighborhood / Community / Subdivision. */}
+        {/* Places — City / Neighborhood / Community / Subdivision / School district. */}
         <FilterDropdown
           label={(() => {
             const cities = splitCsv(initialFilters.city)
             const hoods = splitCsv(initialFilters.neighborhood)
             const subs = splitCsv(initialFilters.subdivision)
-            const n = cities.length + hoods.length + subs.length
+            const districts = splitCsv(initialFilters.schoolDistrict)
+            const n = cities.length + hoods.length + subs.length + districts.length
             if (n === 0) return 'Places'
-            if (n === 1) return `Places: ${cities[0] ?? hoods[0] ?? subs[0]}`
+            if (n === 1) return `Places: ${cities[0] ?? hoods[0] ?? subs[0] ?? districts[0]}`
             return `Places: ${n}`
           })()}
           active={Boolean(
             initialFilters.city?.trim() ||
               initialFilters.neighborhood?.trim() ||
-              initialFilters.subdivision?.trim(),
+              initialFilters.subdivision?.trim() ||
+              initialFilters.schoolDistrict?.trim(),
           )}
           open={openPanel === 'places'}
           onOpenChange={panelOpenHandler('places')}
@@ -603,7 +615,7 @@ export default function SearchFilters({
             <div className="shrink-0 border-b border-border p-3">
               <p className="srch-label mb-2">Places</p>
               <p className="mb-2 text-xs text-muted-foreground">
-                Select one or more. Map draws the place boundary and zooms to it.
+                Select one or more. Map draws the place boundary when GIS exists and zooms to it.
               </p>
               <Label className="sr-only" htmlFor="srch-places-typeahead">
                 Search places
@@ -613,7 +625,7 @@ export default function SearchFilters({
                 type="search"
                 value={placesQuery}
                 onChange={(e) => setPlacesQuery(e.target.value)}
-                placeholder="Search cities, neighborhoods, communities…"
+                placeholder="Search cities, neighborhoods, communities, school districts…"
                 autoComplete="off"
               />
             </div>
@@ -632,7 +644,19 @@ export default function SearchFilters({
                 const subOpts = PLACE_SUBDIVISION_OPTIONS.filter(
                   (name) => !q || normalizeSearchKey(name).includes(q),
                 )
-                const empty = cityOpts.length + hoodOpts.length + communityOpts.length + subOpts.length === 0
+                const schoolOpts = PLACE_SCHOOL_DISTRICT_OPTIONS.filter(
+                  (d) =>
+                    !q ||
+                    normalizeSearchKey(d.label).includes(q) ||
+                    normalizeSearchKey(d.slug).includes(q),
+                )
+                const empty =
+                  cityOpts.length +
+                    hoodOpts.length +
+                    communityOpts.length +
+                    subOpts.length +
+                    schoolOpts.length ===
+                  0
                 return (
                   <>
                     {empty ? (
@@ -781,7 +805,7 @@ export default function SearchFilters({
                     {subOpts.length > 0 || !q ? (
                       <>
                         <p className="srch-label mb-1.5">Subdivision</p>
-                        <div className="flex flex-col gap-1">
+                        <div className="mb-3 flex flex-col gap-1">
                           {!q ? (
                             <Button
                               type="button"
@@ -819,6 +843,59 @@ export default function SearchFilters({
                               className="justify-start"
                             >
                               {name}
+                            </Button>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+
+                    {schoolOpts.length > 0 || !q ? (
+                      <>
+                        <p className="srch-label mb-1.5">School district</p>
+                        <div className="flex flex-col gap-1">
+                          {!q ? (
+                            <Button
+                              type="button"
+                              variant={initialFilters.schoolDistrict?.trim() ? 'ghost' : 'default'}
+                              size="sm"
+                              onClick={() =>
+                                updateUrl({ schoolDistrict: undefined })
+                              }
+                              className="justify-start"
+                            >
+                              Any school district
+                            </Button>
+                          ) : null}
+                          {schoolOpts.map((d) => (
+                            <Button
+                              key={d.slug}
+                              type="button"
+                              variant={
+                                csvHas(initialFilters.schoolDistrict, d.slug) ||
+                                csvHas(initialFilters.schoolDistrict, d.label)
+                                  ? 'default'
+                                  : 'ghost'
+                              }
+                              size="sm"
+                              onClick={() => {
+                                const cur = initialFilters.schoolDistrict
+                                const on =
+                                  csvHas(cur, d.slug) || csvHas(cur, d.label)
+                                const next = on
+                                  ? undefined
+                                  : d.slug
+                                // Honest listing pin: cities the district's schools sit in.
+                                // Boundary draws only when public.boundaries has geo (gap rule).
+                                updateUrl({
+                                  schoolDistrict: next,
+                                  city: next ? d.cities.join(',') : undefined,
+                                  postalCode: undefined,
+                                })
+                                setLocationQuery(next ? d.label : '')
+                              }}
+                              className="justify-start"
+                            >
+                              {d.label}
                             </Button>
                           ))}
                         </div>
@@ -1072,34 +1149,44 @@ export default function SearchFilters({
             {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
           </span>
         </Button>
-        <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
         <SaveSearchButton user={viewerState.signedIn} />
         {hideViewToggle ? null : (
-        <ToggleGroup
-          type="single"
-          value={view}
-          onValueChange={(v) => {
-            if (v === 'split' || v === 'list' || v === 'map') {
-              setFilter('view', v)
-              setView(v)
-            }
-          }}
-          variant="outline"
-          size="sm"
-          className="ml-auto flex h-11 overflow-hidden rounded-md border border-border/60 bg-muted/40"
-          aria-label="View"
-        >
-          {(['list', 'split', 'map'] as const).map((v) => (
-            <ToggleGroupItem
-              key={v}
-              value={v}
-              className="srch-chip h-11 rounded-none border-0 px-2.5 text-muted-foreground data-[state=on]:text-foreground"
-              aria-label={`${v} view`}
-            >
-              {v === 'list' ? 'List' : v === 'split' ? 'Split' : 'Map'}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <div className="map-search-mapsort__pill ml-auto shrink-0" role="group" aria-label="Map and sort">
+          <div className="map-search-views map-search-mapsort__views" role="radiogroup" aria-label="View">
+            {(['map', 'split', 'list'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={view === v}
+                aria-label={`${v} view`}
+                className={v === 'split' ? 'max-sm:hidden' : undefined}
+                onClick={() => {
+                  setFilter('view', v)
+                  setView(v)
+                }}
+              >
+                {v === 'list' ? 'List' : v === 'split' ? 'Split' : 'Map'}
+              </button>
+            ))}
+          </div>
+          <span className="map-search-mapsort__rule" aria-hidden />
+          <button
+            type="button"
+            className="map-search-mapsort__sort"
+            aria-label="Sort results"
+            onClick={() => {
+              // Open All-filters is wrong; cycle common sorts via URL like MapSearchView.
+              const order = ['newest', 'price_asc', 'price_desc', 'oldest'] as const
+              const cur = initialFilters.sort?.trim() || 'newest'
+              const idx = order.indexOf(cur as (typeof order)[number])
+              const next = order[(idx + 1) % order.length]
+              setFilter('sort', next === 'newest' ? undefined : next)
+            }}
+          >
+            Sort
+          </button>
+        </div>
         )}
       </div>
 

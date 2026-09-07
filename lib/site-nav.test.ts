@@ -50,6 +50,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       '/communities/tetherow',
       '/neighborhoods',
       '/subdivisions',
+      '/schools',
     ]) {
       expect(hrefs).toContain(h)
     }

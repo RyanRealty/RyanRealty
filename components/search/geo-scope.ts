@@ -15,7 +15,7 @@ import { displaySubdivision } from '@/lib/slug'
  */
 
 /** The filter keys that pin a search to a place. */
-export const GEO_SCOPE_KEYS = ['city', 'subdivision', 'neighborhood', 'postalCode'] as const
+export const GEO_SCOPE_KEYS = ['city', 'subdivision', 'neighborhood', 'schoolDistrict', 'postalCode'] as const
 
 export type GeoScopeKey = (typeof GEO_SCOPE_KEYS)[number]
 
@@ -32,6 +32,7 @@ export function stripGeoScope<T extends GeoScoped>(filters: T): T {
     city: undefined,
     subdivision: undefined,
     neighborhood: undefined,
+    schoolDistrict: undefined,
     postalCode: undefined,
   }
 }
@@ -45,12 +46,14 @@ export function geoScopeLabel(filters: {
   city?: string | null
   subdivision?: string | null
   neighborhood?: string | null
+  schoolDistrict?: string | null
   postalCode?: string | null
 }): string | null {
   const first = (raw: string | null | undefined) => raw?.split(',')[0]?.trim() || null
   const subdivisionRaw = first(filters.subdivision)
   const subdivision = subdivisionRaw ? displaySubdivision(subdivisionRaw) : null
   const parts = [
+    first(filters.schoolDistrict),
     subdivision,
     first(filters.neighborhood),
     first(filters.city),

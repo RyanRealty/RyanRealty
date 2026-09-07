@@ -35,7 +35,7 @@ export type ChromeLiveInputs = {
     stamp: string
   } | null
   /**
-   * Detached homes for sale per town, keyed by the town's destination href.
+   * Active listing counts per town, keyed by the town's destination href.
    * Read from the same city snapshot the homepage ledger prints, so one page
    * never carries two counts for one town.
    */
@@ -119,7 +119,8 @@ export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
   const values: Record<string, string> = {}
   for (const t of input.towns) if (t.count != null) values[t.href] = n(t.count)
   if (Object.keys(values).length > 0) {
-    out.Areas = { eyebrow: 'Detached homes for sale', facts: [], values }
+    // Places mega: city counts beside links; no DETACHED HOMES FOR SALE kicker (Matt 2026-09-07).
+    out.Areas = { eyebrow: '', facts: [], values }
   }
 
   if (input.region) {

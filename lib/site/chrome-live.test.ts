@@ -24,6 +24,7 @@ describe('composeChromeLive', () => {
       '501 sold in 30 days',
     ])
     expect(live.Areas?.values).toEqual({ '/cities/bend': '1,204', '/cities/redmond': '512' })
+    expect(live.Areas?.eyebrow).toBe('')
     expect(live.Market?.facts.map((f) => `${f.figure} ${f.label}`)).toEqual([
       '$750K median list price',
       '5.1 months of supply, balanced market',

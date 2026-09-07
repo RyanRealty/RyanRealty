@@ -972,3 +972,33 @@
     clip-path: inset(50%);
   }
 }
+
+/* Places mega (Matt 2026-09-07) — wide multi-column, not a skinny two-col box. */
+.v3-chrome__panel--places {
+  width: max-content;
+  max-width: min(96vw, 72rem);
+  min-width: min(92vw, 42rem);
+  padding: var(--v3-space-sm);
+}
+
+.v3-chrome__places-mega {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: var(--v3-space-sm) var(--v3-space-md);
+  min-width: 0;
+}
+
+.v3-chrome__places-col { min-width: 0; }
+
+.v3-chrome__places-heading {
+  margin: 0 0 var(--v3-space-3xs);
+  padding: 0 var(--v3-space-sm);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-chrome__panel-list--stacked { grid-template-columns: minmax(0, 1fr); }
+.v3-chrome__panel-list--stacked:has(> li:nth-child(9)) { grid-template-columns: minmax(0, 1fr); }

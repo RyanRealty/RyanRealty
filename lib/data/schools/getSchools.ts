@@ -67,3 +67,33 @@ export function getSchools(): SchoolDistrictGroup[] {
 export function getSchoolsCount(): number {
   return CO_SCHOOLS.length
 }
+
+/** District options for Places search grain — label, slug, and cities that feed it. */
+export type SchoolDistrictOption = {
+  label: string
+  slug: string
+  cities: string[]
+}
+
+/**
+ * Unique school districts from the registry, each with the cities its schools sit in.
+ * Used by /homes-for-sale Places multi-select (filter via city CSV; boundary via GIS).
+ */
+export function getSchoolDistrictOptions(): SchoolDistrictOption[] {
+  const bySlug = new Map<string, { label: string; cities: Set<string> }>()
+  for (const school of CO_SCHOOLS) {
+    let row = bySlug.get(school.districtSlug)
+    if (!row) {
+      row = { label: school.district, cities: new Set() }
+      bySlug.set(school.districtSlug, row)
+    }
+    if (school.city.trim()) row.cities.add(school.city.trim())
+  }
+  return [...bySlug.entries()]
+    .map(([slug, row]) => ({
+      label: row.label,
+      slug,
+      cities: [...row.cities].sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+}

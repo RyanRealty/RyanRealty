@@ -138,6 +138,7 @@ function parseFilters(sp: SearchParams): SearchFiltersState {
     city: sp.city?.trim() || undefined,
     subdivision: sp.subdivision?.trim() || undefined,
     neighborhood: sp.neighborhood?.trim() || undefined,
+    schoolDistrict: sp.schoolDistrict?.trim() || undefined,
     status: sp.status?.trim() || 'Active',
     sort: sp.sort?.trim() || 'newest',
     propertyType: sp.propertyType?.trim() || undefined,
@@ -252,6 +253,7 @@ export default async function SearchPage({
     city: effectiveFilters.city,
     neighborhood: effectiveFilters.neighborhood,
     subdivision: effectiveFilters.subdivision,
+    schoolDistrict: (effectiveFilters as { schoolDistrict?: string }).schoolDistrict,
   })
   const boundaryCityName =
     effectiveFilters.city?.split(',')[0]?.trim() ||
@@ -380,6 +382,7 @@ export default async function SearchPage({
     city: sp.city ?? '',
     subdivision: sp.subdivision ?? '',
     neighborhood: sp.neighborhood ?? '',
+    schoolDistrict: sp.schoolDistrict ?? '',
     minPrice: sp.minPrice ?? '',
     maxPrice: sp.maxPrice ?? '',
     beds: sp.beds ?? '',

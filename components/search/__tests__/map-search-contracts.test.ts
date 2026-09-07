@@ -223,7 +223,7 @@ describe('390 Map uses one camera', () => {
   it('Places menu has one scroll region and an in-menu typeahead', () => {
     const src = readSrc('components/search/SearchFilters.tsx')
     expect(src).toMatch(/srch-places-typeahead/)
-    expect(src).toMatch(/Search cities, neighborhoods, communities/)
+    expect(src).toMatch(/Search cities, neighborhoods, communities, school districts/)
     expect(src).toMatch(/placesQuery/)
     // Nested dual scrollbars FAIL — no max-h-40 overflow-auto section lists.
     expect(src).not.toMatch(/max-h-40[^\n]*overflow-auto/)
@@ -238,6 +238,28 @@ describe('390 Map uses one camera', () => {
     const resolver = readSrc('lib/search/resolve-search-place-boundary.ts')
     expect(resolver).toMatch(/bend-\$\{district\.slug\}/)
     expect(resolver).toMatch(/geoType: 'subdivision'/)
+  })
+
+  it('search chrome: mic in bar, Map|Sort floating pill, school district Places grain', () => {
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/srch-mic-inbar/)
+    expect(filters).toMatch(/VoiceSearchButton/)
+    expect(filters).toMatch(/PLACE_SCHOOL_DISTRICT_OPTIONS/)
+    expect(filters).toMatch(/School district/)
+    expect(filters).toMatch(/schoolDistrict/)
+    expect(filters).toMatch(/map-search-mapsort__pill/)
+    const map = readSrc('components/search/MapSearchView.tsx')
+    expect(map).toMatch(/map-search-mapsort/)
+    expect(map).toMatch(/aria-label="Map and sort"/)
+    const css = readSrc('components/search/search-ledger.css')
+    expect(css).toMatch(/map-search-mapsort__pill/)
+    const chromeLive = readSrc('lib/site/chrome-live.ts')
+    expect(chromeLive).not.toMatch(/Detached homes for sale/)
+    const chrome = readSrc('components/site/v3/V3Chrome.tsx')
+    expect(chrome).toMatch(/v3-chrome__panel--places/)
+    expect(chrome).toMatch(/placesMegaSections/)
+    const resolver = readSrc('lib/search/resolve-search-place-boundary.ts')
+    expect(resolver).toMatch(/geoType: 'school_district'/)
   })
 
   it('MapSearchView keeps the in-shell Map/List toggle', () => {
@@ -501,7 +523,7 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
   const geo = readSrc('components/search/geo-scope.ts')
 
   it('geo-scope helper strips city/subdivision/neighborhood/postalCode', () => {
-    expect(geo).toMatch(/export const GEO_SCOPE_KEYS = \['city', 'subdivision', 'neighborhood', 'postalCode'\] as const/)
+    expect(geo).toMatch(/export const GEO_SCOPE_KEYS = \['city', 'subdivision', 'neighborhood', 'schoolDistrict', 'postalCode'\] as const/)
     expect(geo).toMatch(/export function stripGeoScope/)
     expect(geo).toMatch(/city: undefined/)
     expect(geo).toMatch(/subdivision: undefined/)

@@ -27,13 +27,6 @@ import { useViewerListingState } from '@/components/search/use-viewer-listing-st
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import AreaPicker from '@/components/search/AreaPicker'
 import { type V3ListingRowBadge as ListingBadge } from '@/components/site/v3'
 import { SplitListingCard } from '@/components/search/SplitListingCard'
@@ -96,6 +89,7 @@ const SORT_OPTIONS = [
 /** Compact filter crumbs for the mockup count row ("N homes · Bend · $500K+"). */
 function buildFiltersSummary(f: SearchFiltersInitial): string {
   const parts: string[] = []
+  if (f.schoolDistrict?.trim()) parts.push(f.schoolDistrict.trim())
   if (f.city?.trim()) parts.push(f.city.trim())
   if (f.subdivision?.trim()) parts.push(f.subdivision.trim())
   if (f.postalCode?.trim()) parts.push(f.postalCode.trim())
@@ -328,6 +322,7 @@ export default function MapSearchView({
   const [resultsDegraded, setResultsDegraded] = useState(initialDegraded)
   // Local sort so the Select stays in sync while URL replace + viewport refetch run.
   const [sortValue, setSortValue] = useState(filters.sort?.trim() || 'newest')
+  const [sortOpen, setSortOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   // Per-user hidden homes ("Hide homes I don't want to see"). Same edge-of-
   // render model as SearchResults: viewport results are SHARED caches, so the
@@ -393,9 +388,10 @@ export default function MapSearchView({
         city: filters.city,
         subdivision: filters.subdivision,
         neighborhood: filters.neighborhood,
+        schoolDistrict: filters.schoolDistrict,
         postalCode: filters.postalCode,
       }),
-    [filters.city, filters.subdivision, filters.neighborhood, filters.postalCode]
+    [filters.city, filters.subdivision, filters.neighborhood, filters.schoolDistrict, filters.postalCode]
   )
   // A URL that arrives with ?poly= encodes a search whose place pin was
   // ALREADY superseded by the drawn shape (drawing calls dropGeoScope, and the
@@ -835,7 +831,7 @@ export default function MapSearchView({
   // the row / sheet show previous N + "Updating…" (SEARCH_UX_WAVE3 pan sticky count).
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
-      {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
+      {/* Count row — Sort moved to floating Map|Sort pill (Matt 2026-09-07). */}
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3">
         <p className="srch-count min-w-0 flex-1 text-muted-foreground" aria-live="polite">
           {resultsDegraded ? (
@@ -858,21 +854,6 @@ export default function MapSearchView({
             <span className="ml-2 text-xs text-muted-foreground">Updating…</span>
           ) : null}
         </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="srch-label hidden sm:inline">Sort</span>
-          <Select value={sortValue} onValueChange={handleSortChange}>
-            <SelectTrigger className="srch-square h-9 w-[10.5rem]" aria-label="Sort results" size="sm">
-              <SelectValue placeholder="Newest">{sortLabel}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
       {resultsDegraded ? (
         <div className="srch-panel m-4 p-8 text-center">
@@ -1067,6 +1048,81 @@ export default function MapSearchView({
           replaces the drawn shape set, so it rides the identical ?shapes=
           contract and is shareable + alert-savable like any drawn area. */}
       <AreaPicker shapes={drawnShapes} onApply={handleAreaShapes} />
+      {/* Zillow-style floating Map | Sort pill (Matt 2026-09-07). */}
+      <div className="map-search-mapsort pointer-events-none absolute bottom-[5.5rem] left-1/2 z-[110] -translate-x-1/2 lg:bottom-6">
+        <div className="map-search-mapsort__pill pointer-events-auto" role="group" aria-label="Map and sort">
+          <div className="map-search-views map-search-mapsort__views" role="radiogroup" aria-label="View">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={layoutView === 'map'}
+              aria-label="Map view"
+              onClick={() => applyView('map')}
+            >
+              Map
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={layoutView === 'split'}
+              aria-label="Split view"
+              className="max-lg:hidden"
+              onClick={() => applyView('split')}
+            >
+              Split
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={layoutView === 'list'}
+              aria-label="List view"
+              onClick={() => applyView('list')}
+            >
+              List
+            </button>
+          </div>
+          <span className="map-search-mapsort__rule" aria-hidden />
+          <div className="relative">
+            <button
+              type="button"
+              className="map-search-mapsort__sort"
+              aria-expanded={sortOpen}
+              aria-haspopup="listbox"
+              aria-label={`Sort: ${sortLabel}`}
+              onClick={() => setSortOpen((o) => !o)}
+            >
+              Sort
+            </button>
+            {sortOpen ? (
+              <ul
+                className="srch-pop map-search-mapsort__menu absolute bottom-full left-1/2 z-[120] mb-2 min-w-[14rem] -translate-x-1/2 py-1"
+                role="listbox"
+                aria-label="Sort results"
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <li key={o.value}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={sortValue === o.value}
+                      className={cn(
+                        'flex w-full items-center px-3 py-2 text-left text-sm',
+                        sortValue === o.value ? 'bg-muted font-medium text-foreground' : 'text-foreground',
+                      )}
+                      onClick={() => {
+                        handleSortChange(o.value)
+                        setSortOpen(false)
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </div>
+      </div>
       {areaDirty ? (
         <Button
           type="button"
@@ -1125,44 +1181,6 @@ export default function MapSearchView({
 
   return (
     <div className="map-search-shell flex min-h-0 flex-1 w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
-      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1">
-        {listOnly ? null : (
-        <div className="map-search-views" role="radiogroup" aria-label="View">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={layoutView === 'map'}
-            aria-label="Map view"
-            onClick={() => applyView('map')}
-          >
-            Map
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={layoutView === 'split'}
-            aria-label="Split view"
-            className="max-lg:hidden"
-            onClick={() => applyView('split')}
-          >
-            Split
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={layoutView === 'list'}
-            aria-label="List view"
-            onClick={() => applyView('list')}
-          >
-            List
-          </button>
-        </div>
-        )}
-        <p className="srch-figure hidden min-w-0 flex-1 truncate text-xs text-muted-foreground lg:block" aria-live="polite">
-          {resultsDegraded ? 'Search delayed' : listCountPhrase !== 'Homes' ? listCountPhrase : filtersSummary || ''}
-        </p>
-      </div>
-
       {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: full-bleed
           map under a Zillow-style bottom sheet (peek → expand). Never double-render. */}
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">

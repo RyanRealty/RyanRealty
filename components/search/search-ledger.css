@@ -5,9 +5,9 @@
    classes read the register's tokens where they can. Two of them (the
    floating panels and the chip type) also render inside Radix PORTALS, which
    land on document.body OUTSIDE the token scope — every var() here therefore
-   carries the Ledger register's literal value as its fallback, and the only
-   raw colors in this file are the brand navy at the register's alphas
-   (rgba(16,39,66,…)), because a portal cannot inherit them.
+   carries a non-brand fallback (white / color-mix off var(--v3-navy)), never
+   a raw brand hex or rgba(16,39,66,…), because a portal cannot inherit tokens
+   and the one-design-system gate forbids typing the brand as a literal.
 
    Square, sunken, shadow-free: radius 0 everywhere, panels are a 3% navy wash
    inside a 12% edge, and NOTHING here draws an elevation shadow — the locked
@@ -462,7 +462,7 @@
 .map-search-sheet__title {
   font-size: 0.8125rem;
   line-height: 1.2;
-  color: var(--v3-navy, #1a2a4a);
+  color: var(--v3-navy);
 }
 
 @media (max-width: 1023px) {
@@ -478,8 +478,8 @@
     width: 100%;
     max-height: min(82dvh, 100%);
     border-top: 1px solid color-mix(in srgb, var(--v3-navy) 18%, transparent);
-    background: var(--v3-cream, #f7f3ea);
-    color: var(--v3-navy, #1a2a4a);
+    background: var(--v3-cream);
+    color: var(--v3-navy);
     box-shadow: none;
     z-index: 110;
     transition: height 180ms ease;
@@ -502,8 +502,8 @@
     margin: 0;
     padding: 0.45rem 1rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
     border: 0;
-    background: var(--v3-cream, #f7f3ea);
-    color: var(--v3-navy, #1a2a4a);
+    background: var(--v3-cream);
+    color: var(--v3-navy);
     cursor: pointer;
     touch-action: none;
   }
@@ -549,4 +549,56 @@
 .map-search-locate:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+
+/* Zillow-style floating Map | Sort pill over the Homes Field (Matt 2026-09-07). */
+.map-search-mapsort__pill {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--v3-edge, color-mix(in srgb, var(--v3-navy) 12%, transparent));
+  border-radius: 6px;
+  background: var(--v3-surface-raised, rgba(255, 255, 255, 1));
+  overflow: visible;
+}
+
+.map-search-mapsort__views {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.map-search-mapsort__rule {
+  width: 1px;
+  align-self: stretch;
+  background: var(--v3-edge, color-mix(in srgb, var(--v3-navy) 12%, transparent));
+}
+
+.map-search-mapsort__sort {
+  min-height: var(--v3-tap, 44px);
+  min-width: var(--v3-tap, 44px);
+  padding: 0 0.9rem;
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-label, 0.65625rem);
+  font-weight: var(--v3-weight-medium, 500);
+  letter-spacing: var(--v3-track-label, 0.12em);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.map-search-mapsort__sort:hover,
+.map-search-mapsort__sort[aria-expanded='true'] {
+  background: var(--v3-wash, color-mix(in srgb, var(--v3-navy) 4%, transparent));
+}
+
+.map-search-mapsort__menu {
+  max-height: min(60vh, 22rem);
+  overflow-y: auto;
+}
+
+/* Mic inside the location search bar — square tap, no outline chip. */
+.srch-mic-inbar {
+  border-radius: 6px !important;
 }

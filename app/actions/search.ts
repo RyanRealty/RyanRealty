@@ -35,6 +35,8 @@ export type SearchFilters = {
   subdivision?: string
   /** Bend district / resort-community label (listing_tile_mv.boundary_neighborhood). */
   neighborhood?: string
+  /** School district slug (Places grain). Listing pin uses district cities. */
+  schoolDistrict?: string
   postalCode?: string
   status?: string
   sort?: string

@@ -72,4 +72,28 @@ describe('resolveSearchPlaceBoundaryTarget', () => {
     })
     expect(t?.geoSlug).toBe('bend-southern-crossing')
   })
+
+  it('resolves a school district via registry slug (GIS geo_type=school_district)', () => {
+    const t = resolveSearchPlaceBoundaryTarget({
+      schoolDistrict: 'bend-la-pine',
+      city: 'Bend,La Pine,Sunriver,Tumalo',
+    })
+    expect(t).toEqual({
+      kind: 'school_district',
+      geoType: 'school_district',
+      geoSlug: 'bend-la-pine',
+      label: 'Bend-La Pine Schools',
+      placeQuery: 'Bend-La Pine Schools Oregon',
+    })
+  })
+
+  it('prefers school district over neighborhood when both are set', () => {
+    const t = resolveSearchPlaceBoundaryTarget({
+      schoolDistrict: 'redmond',
+      neighborhood: 'Southern Crossing',
+      city: 'Redmond',
+    })
+    expect(t?.kind).toBe('school_district')
+    expect(t?.geoSlug).toBe('redmond')
+  })
 })

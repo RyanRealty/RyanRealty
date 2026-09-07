@@ -646,7 +646,12 @@ export type {
   SchoolHomeTile,
   SchoolStats,
 } from '@/lib/data/schools/getSchoolDetail'
-export { getSchools, getSchoolsCount } from '@/lib/data/schools/getSchools'
+export {
+  getSchools,
+  getSchoolsCount,
+  getSchoolDistrictOptions,
+} from '@/lib/data/schools/getSchools'
+export type { SchoolDistrictOption } from '@/lib/data/schools/getSchools'
 export type {
   SchoolDistrictGroup,
   SchoolsByLevel,

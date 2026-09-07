@@ -1,23 +1,26 @@
 /**
  * Resolve which authoritative GIS boundary to draw for /homes-for-sale Places
- * multi-select (city / neighborhood / community / subdivision).
+ * multi-select (school district / neighborhood / community / subdivision / city).
  *
  * Polygons come only from public.boundaries via getBoundaryGeoJSON — never
  * invented. Multi Places CSV: the primary (first) token of the finest grain
  * drives the ring + camera; listing queries still expand the full CSV.
  *
  * Slug conventions (docs/DATABASE_FOR_AI_AGENTS.md §3):
- *   city          geoType=city,         geoSlug=slugify(city)
- *   Bend district geoType=neighborhood, geoSlug=bend-<district-slug>
- *   resort        geoType=neighborhood, geoSlug=bare registry slug (storage)
- *   plat          geoType=subdivision,  geoSlug=slugify(plat name)
+ *   school district  geoType=school_district, geoSlug=districtSlug (registry)
+ *   city             geoType=city,            geoSlug=slugify(city)
+ *   Bend district    geoType=neighborhood,    geoSlug=bend-<district-slug>
+ *   resort           geoType=neighborhood,    geoSlug=bare registry slug (storage)
+ *   plat             geoType=subdivision,     geoSlug=slugify(plat name)
  */
 
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { slugify } from '@/lib/slug'
 
 export type SearchPlaceBoundaryKind =
+  | 'school_district'
   | 'neighborhood'
   | 'community'
   | 'subdivision'
@@ -26,7 +29,7 @@ export type SearchPlaceBoundaryKind =
 export type SearchPlaceBoundaryTarget = {
   kind: SearchPlaceBoundaryKind
   /** RPC geo_type for getBoundaryGeoJSON / boundaries table. */
-  geoType: 'city' | 'neighborhood' | 'subdivision'
+  geoType: 'city' | 'neighborhood' | 'subdivision' | 'school_district'
   geoSlug: string
   label: string
   /** PlacesService / map placeQuery string. */
@@ -55,18 +58,44 @@ function resortByLabel(label: string) {
   )
 }
 
+function schoolDistrictByToken(token: string) {
+  const key = token.trim().toLowerCase()
+  const slugKey = slugify(token)
+  return (
+    getSchoolDistrictOptions().find(
+      (d) => d.slug === key || d.slug === slugKey || d.label.toLowerCase() === key,
+    ) ?? null
+  )
+}
+
 /**
  * Pure: pick the boundary target from URL place filters.
  * Returns null when nothing place-scoped is selected (regional camera).
+ * Finest grain wins: school district → neighborhood → community/subdivision → city.
  */
 export function resolveSearchPlaceBoundaryTarget(input: {
   city?: string | null
   neighborhood?: string | null
   subdivision?: string | null
+  schoolDistrict?: string | null
 }): SearchPlaceBoundaryTarget | null {
+  const primarySchoolDistrict = firstCsv(input.schoolDistrict)
   const primaryNeighborhood = firstCsv(input.neighborhood)
   const primarySubdivision = firstCsv(input.subdivision)
   const primaryCity = firstCsv(input.city)
+
+  if (primarySchoolDistrict) {
+    const district = schoolDistrictByToken(primarySchoolDistrict)
+    if (district) {
+      return {
+        kind: 'school_district',
+        geoType: 'school_district',
+        geoSlug: district.slug,
+        label: district.label,
+        placeQuery: `${district.label} Oregon`,
+      }
+    }
+  }
 
   if (primaryNeighborhood) {
     const district = bendDistrictByLabel(primaryNeighborhood)
@@ -87,7 +116,6 @@ export function resolveSearchPlaceBoundaryTarget(input: {
     if (resort) {
       return {
         kind: 'community',
-        // Resorts are stored as geo_type=neighborhood with the bare registry slug.
         geoType: 'neighborhood',
         geoSlug: resort.slug,
         label: resort.label,

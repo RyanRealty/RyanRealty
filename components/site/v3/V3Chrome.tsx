@@ -370,6 +370,27 @@ function isCurrentPath(pathname: string | null, href: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`)
 }
 
+
+/** Places mega sections — cities / communities / neighborhoods / subdivisions / schools. */
+function placesMegaSections(links: readonly NavLink[]): { heading: string; links: NavLink[] }[] {
+  const buckets: { heading: string; test: (href: string) => boolean; links: NavLink[] }[] = [
+    { heading: 'Cities', test: (h) => h === '/cities' || h.startsWith('/cities/'), links: [] },
+    { heading: 'Communities', test: (h) => h === '/communities' || h.startsWith('/communities/'), links: [] },
+    { heading: 'Neighborhoods', test: (h) => h === '/neighborhoods' || h.startsWith('/neighborhoods/'), links: [] },
+    { heading: 'Subdivisions', test: (h) => h === '/subdivisions' || h.startsWith('/subdivisions/'), links: [] },
+    { heading: 'School districts', test: (h) => h === '/schools' || h.startsWith('/schools/'), links: [] },
+  ]
+  const other: NavLink[] = []
+  for (const link of links) {
+    const bucket = buckets.find((b) => b.test(link.href))
+    if (bucket) bucket.links.push(link)
+    else other.push(link)
+  }
+  const sections = buckets.filter((b) => b.links.length > 0).map(({ heading, links: ls }) => ({ heading, links: ls }))
+  if (other.length) sections.push({ heading: 'More', links: other })
+  return sections
+}
+
 /* -------------------------------------------------------------------------- */
 /* One bar destination: a link, plus a disclosure for its children              */
 /* -------------------------------------------------------------------------- */
@@ -493,36 +514,83 @@ function V3ChromeDestination({
       >
         <IconChevron />
       </button>
-      <div className={cn('v3-chrome__panel', column && 'v3-chrome__panel--live')} id={panelId}>
-        {live && !column ? <p className="v3-chrome__panel-caption">{live.eyebrow}</p> : null}
-        <ul className="v3-chrome__panel-list">
-          {group.featured.map((link) => {
-            const value = live?.values?.[link.href]
-            return (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="v3-chrome__panel-link"
-                  onClick={() => setOpenPath(null)}
-                >
-                  {CHROME_MARKS[link.href] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={CHROME_MARKS[link.href]}
-                      alt=""
-                      className="v3-chrome__link-mark"
-                      width={28}
-                      height={28}
-                      decoding="async"
-                    />
-                  ) : null}
-                  <span>{link.label}</span>
-                  {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+      <div
+        className={cn(
+          'v3-chrome__panel',
+          column && 'v3-chrome__panel--live',
+          group.key === 'Areas' && 'v3-chrome__panel--places',
+        )}
+        id={panelId}
+      >
+        {live && !column && live.eyebrow.trim() ? (
+          <p className="v3-chrome__panel-caption">{live.eyebrow}</p>
+        ) : null}
+        {group.key === 'Areas' ? (
+          <div className="v3-chrome__places-mega">
+            {placesMegaSections(group.featured).map((section) => (
+              <div key={section.heading} className="v3-chrome__places-col">
+                <p className="v3-chrome__places-heading">{section.heading}</p>
+                <ul className="v3-chrome__panel-list v3-chrome__panel-list--stacked">
+                  {section.links.map((link) => {
+                    const value = live?.values?.[link.href]
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="v3-chrome__panel-link"
+                          onClick={() => setOpenPath(null)}
+                        >
+                          {CHROME_MARKS[link.href] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={CHROME_MARKS[link.href]}
+                              alt=""
+                              className="v3-chrome__link-mark"
+                              width={28}
+                              height={28}
+                              decoding="async"
+                            />
+                          ) : null}
+                          <span>{link.label}</span>
+                          {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ul className="v3-chrome__panel-list">
+            {group.featured.map((link) => {
+              const value = live?.values?.[link.href]
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="v3-chrome__panel-link"
+                    onClick={() => setOpenPath(null)}
+                  >
+                    {CHROME_MARKS[link.href] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={CHROME_MARKS[link.href]}
+                        alt=""
+                        className="v3-chrome__link-mark"
+                        width={28}
+                        height={28}
+                        decoding="async"
+                      />
+                    ) : null}
+                    <span>{link.label}</span>
+                    {value ? <span className="v3-chrome__panel-value">{value}</span> : null}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        )}
         {column ? <V3ChromeLivePanel live={live} /> : null}
       </div>
     </div>
