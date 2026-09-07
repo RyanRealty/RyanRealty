@@ -256,16 +256,16 @@ export function bandOutcomeReading(
   const soldLo = Math.min(...x.sold)
   const soldHi = Math.max(...x.sold)
   const bits = [
-    `${int(x.soldTotal)} closed in this band, ${shortUsd(soldLo)} to ${shortUsd(soldHi)}.`,
+    `${int(x.soldTotal)} closed in your price range, ${shortUsd(soldLo)} to ${shortUsd(soldHi)}.`,
     `${int(x.unsoldTotal)} asked and did not sell.`,
   ]
   if (x.lastAsk != null && x.lastAsk > 0) {
     bits.push(
       x.lastAsk >= soldHi
-        ? 'Your ask sat at the top of the band.'
+        ? 'Your ask sat at the top of that range.'
         : x.lastAsk <= soldLo
-          ? 'Your ask sat at the bottom of the band.'
-          : 'Your ask sat inside the band.',
+          ? 'Your ask sat at the bottom of that range.'
+          : 'Your ask sat inside that range.',
     )
   }
   const adj = adjustedCloseRange(comps)
@@ -292,7 +292,7 @@ export function renderBandOutcomesHtml(
     listLabel: `Recommended ${shortUsd(x.list)}`,
     lastAsk: x.lastAsk,
     lastAskLabel: x.lastAsk != null ? `Your last ask ${shortUsd(x.lastAsk)}` : null,
-    caption: 'Sold and unsold in this band',
+    caption: 'Sold and unsold in your price range',
   }
   const svg = priceRulerSvg(ruler)
   if (!svg) return ''
@@ -308,7 +308,7 @@ export function renderBandOutcomesHtml(
   <p class="small">${esc(
     clientSourceLine(
       x.source,
-      bandLabel ? `Closed sales and unsold listings in ${bandLabel}.` : 'Closed sales and unsold listings in this band.',
+      bandLabel ? `Closed sales and unsold listings in ${bandLabel}.` : 'Closed sales and unsold listings in your price range.',
       { city },
     ),
   )}</p>`
@@ -372,7 +372,7 @@ export function renderDaysToOfferHtml(
   const svg = daysToOfferSvg(rows, 'How fast homes like yours went', tick)
   if (!svg) return ''
   const reading = [
-    `Each kept sale had an offer inside ${int(slowest)} days.`,
+    `Every sale below had an offer inside ${int(slowest)} days.`,
     tick ? `${possessive(marketPlace!)} median is ${int(marketMedian!)}.` : null,
     subjectDays != null && subjectDays > 0
       ? `Yours sat ${int(subjectDays)} days and never got one.`

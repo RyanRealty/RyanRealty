@@ -164,7 +164,7 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
     }
   }
 
-  return { src: null, caption: 'No MLS photo on file for the subject.' }
+  return { src: null, caption: 'No MLS photo on file for this home.' }
 }
 
 function coverSpecsLine(subject: CmaSubject): string {

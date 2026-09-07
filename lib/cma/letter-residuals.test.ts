@@ -244,7 +244,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     for (const doc of [html, immersive]) {
       expect(doc).toContain('The sales that set this price')
       expect(doc).toContain('comp-stack-card')
-      expect(doc).toContain('Adjusted close')
+      expect(doc).toContain('Sale price today')
       expect(doc).not.toContain('class="flyer-title"')
       expect(doc).not.toContain('class="comp-strip"')
       expect(doc).not.toContain('comp-stack-cols')
@@ -308,7 +308,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       excludedOutliers: [],
     })
     const body = pages.map((p) => p.body).join('\n')
-    expect(body).toContain('Expired peers — what happened')
+    expect(body).toContain('Near you, these asked and did not sell')
     expect(body).toContain('88 Wren')
     expect(body.toLowerCase()).not.toContain('overprice')
   })
@@ -341,7 +341,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       generatedAtIso: '2026-09-06T00:00:00.000Z',
     })
     const salesAt = html.indexOf('The sales that set this price')
-    const peersAt = html.indexOf('Expired peers — what happened')
+    const peersAt = html.indexOf('Near you, these asked and did not sell')
     const competitionAt = html.indexOf('id="competition"')
     expect(salesAt).toBeGreaterThan(0)
     expect(peersAt).toBeGreaterThan(salesAt)

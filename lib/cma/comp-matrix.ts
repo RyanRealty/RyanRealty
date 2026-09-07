@@ -147,7 +147,7 @@ function subjectCol(subject: CmaSubject): Col {
       subject.garageSpaces != null ? int(subject.garageSpaces) : '-',
       subjectDom != null ? int(subjectDom) : '-',
       '-',
-      'Subject',
+      '-',
       dash(subject.subdivision),
       '-',
       '-',
@@ -228,10 +228,10 @@ const ROWS: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'list
   { label: 'Days to offer', figure: true },
   { label: 'Distance', figure: false },
   { label: 'Subdivision', figure: false },
-  { label: 'Brought to today', figure: true },
+  { label: 'Adjusted for date', figure: true },
   { label: 'Style (one story vs two)', figure: true },
-  { label: 'Brought to your size', figure: true },
-  { label: 'Adjusted close', figure: true },
+  { label: 'Adjusted for size', figure: true },
+  { label: 'Sale price today', figure: true },
   { label: 'Listing history', figure: false, fact: 'listing-history' },
 ]
 
@@ -348,7 +348,7 @@ function matrixStack(comps: readonly CmaAdjustedComp[]): string {
           closeDate: c.closeDate,
           daysOnMarket: c.domTotal,
         })
-      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(c.address)}</div><div class="comp-stack-sold">Sold ${esc(dateLong(c.closeDate))} · ${usd(c.closePrice)}${ppsf ? ` · ${esc(ppsf)}` : ''}</div><div class="comp-stack-nums"><span class="comp-stack-n"><span class="k">Adjusted close</span><span class="v n">${usd(c.adjustedPrice)}</span></span></div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${domLabel ? `<div class="comp-stack-facts" data-fact="dom">${esc(domLabel)}</div>` : ''}${time ? `<div class="comp-stack-facts">${esc(time)}</div>` : ''}${history ? `<div class="comp-stack-facts" data-fact="listing-history">${esc(history)}</div>` : ''}</article>`
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(c.address)}</div><div class="comp-stack-sold">Sold ${esc(dateLong(c.closeDate))} · ${usd(c.closePrice)}${ppsf ? ` · ${esc(ppsf)}` : ''}</div><div class="comp-stack-nums"><span class="comp-stack-n"><span class="k">Sale price today</span><span class="v n">${usd(c.adjustedPrice)}</span></span></div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${domLabel ? `<div class="comp-stack-facts" data-fact="dom">${esc(domLabel)}</div>` : ''}${time ? `<div class="comp-stack-facts">${esc(time)}</div>` : ''}${history ? `<div class="comp-stack-facts" data-fact="listing-history">${esc(history)}</div>` : ''}</article>`
     })
     .join('')
   return `<div class="comp-stack" aria-label="Comparable sales, stacked for narrow screens">${cards}</div>`
@@ -362,13 +362,11 @@ function matrixStack(comps: readonly CmaAdjustedComp[]): string {
  */
 function adjustmentLegend(comps: readonly CmaAdjustedComp[]): string {
   const bits = [
-    'Brought to today moves each sale to what it would bring in this market.',
-    'Brought to your size adjusts for the difference in living area.',
+    'Sale price today moves each sale for when it sold and how big it is.',
   ]
   if (comps.some((c) => (c.storyAdjustment ?? 0) !== 0)) {
-    bits.push('Style adjusts a one story against a two story.')
+    bits.push('It also adjusts a one story against a two story.')
   }
-  bits.push('Adjusted close is the sale after those moves.')
   return `<p class="small">${esc(bits.join(' '))}</p>`
 }
 
@@ -438,7 +436,7 @@ function unsoldSubjectCol(subject: CmaSubject): Col {
       dash(subject.propertySubType),
       list != null ? usd(list) : '-',
       listSf != null ? `${usd(listSf)}/sf` : '-',
-      dash(subject.standardStatus) || 'Subject',
+      dash(subject.standardStatus) || 'Your home',
       subject.beds != null ? int(subject.beds) : '-',
       subject.baths != null ? dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0) : '-',
       living != null && living > 0 ? int(living) : '-',
@@ -516,7 +514,7 @@ function unsoldStack(peers: readonly CmaExpiredPeer[]): string {
       return `<article class="comp-stack-card" data-peer="expired" data-pin="${esc(pin)}">${img}<div class="comp-stack-addr">${esc(pin)}. ${esc(p.address)}</div><div class="comp-stack-sold">Last ask ${usd(p.listPrice)}${askSf ? ` · ${esc(askSf)}` : ''}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${domLabel ? `<div class="comp-stack-facts" data-fact="dom">${esc(domLabel)}</div>` : ''}${history ? `<div class="comp-stack-facts" data-fact="listing-history">${esc(history)}</div>` : ''}</article>`
     })
     .join('')
-  return `<div class="comp-stack" aria-label="Listings in this band that did not sell">${cards}</div>`
+  return `<div class="comp-stack" aria-label="Listings in your price range that did not sell">${cards}</div>`
 }
 
 /**
@@ -555,8 +553,7 @@ export function renderUnsoldContrastMatrixHtml(
     })
     .join('')
   return `
-  <h3 class="subhead">Expired peers — what happened</h3>
-  <p>Same band. These listings came off without a sale.</p>
+  <h3 class="subhead">Near you, these asked and did not sell</h3>
   ${tables}
   ${unsoldStack(named)}`
 }

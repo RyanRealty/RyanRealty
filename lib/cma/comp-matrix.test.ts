@@ -69,7 +69,7 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toContain('Garage')
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
-    expect(html).toContain('Adjusted close')
+    expect(html).toContain('Sale price today')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
     expect(html).not.toContain('matrix-thumb')
@@ -191,9 +191,9 @@ describe('land columns', () => {
     expect(html).toMatch(/31,363/)
   })
 
-  it('labels the adjusted-price row as adjusted close', () => {
-    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).toContain('Adjusted close')
-    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Adjusted close')
+  it('labels the adjusted-price row as sale price today', () => {
+    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).toContain('Sale price today')
+    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Sale price today')
     expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
   })
 
@@ -282,7 +282,7 @@ describe('unsold contrast matrix', () => {
 
   it('emits side-by-side matrix with DOM + listing history when peers exist', () => {
     const html = renderUnsoldContrastMatrixHtml(subject, [peer])
-    expect(html).toContain('Expired peers — what happened')
+    expect(html).toContain('Near you, these asked and did not sell')
     expect(html).toContain('comp-matrix')
     expect(html).toContain('88 Wren')
     expect(html).toContain('Last ask')

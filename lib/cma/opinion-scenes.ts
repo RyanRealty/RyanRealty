@@ -127,8 +127,8 @@ function outcomesScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="sold-unsold">
     <div class="in wide">
-      <div class="kick r">This price band</div>
-      <h2 class="h r">Sold and unsold in this band</h2>
+      <div class="kick r">Your price range</div>
+      <h2 class="h r">Sold and unsold in your price range</h2>
       <div class="r">${chart || ''}${peers}</div>
     </div>
   </section>`
@@ -336,7 +336,7 @@ function nextScene(a: OpinionSceneArgs): string {
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${a.expiredAudit ? 'Sorry this listing did not sell.' : 'Call or text.'}</h2>
-        <p class="lede r">${a.expiredAudit ? 'If you want a second look at the number, call or text.' : 'Call or text if you want to walk the comps.'}</p>
+        <p class="lede r">${a.expiredAudit ? 'If you want a second look at the number, call or text.' : 'Call or text if you want to walk the sales.'}</p>
         <div class="cta r">
           ${tel ? `<a class="btn pri" href="tel:${esc(tel)}" data-rr-track="cma-call">Call ${esc(br.phone ?? '')}</a>` : ''}
           ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}" data-rr-track="cma-email">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}

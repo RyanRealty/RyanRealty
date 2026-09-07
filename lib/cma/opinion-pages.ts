@@ -484,11 +484,11 @@ export function outcomesPage(a: OpinionPageArgs): CmaPageDef | null {
   if (!chart && !peers) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Sold and unsold`,
-    toc: 'Sold and unsold in this band',
+    toc: 'Sold and unsold in your price range',
     body: `
-  <h2 class="section">Sold and unsold in this band</h2>
+  <h2 class="section">Sold and unsold in your price range</h2>
   ${chart || ''}
-  ${peers || '<p>Homes like this in the same price band that came off without a sale.</p>'}`,
+  ${peers || '<p>Homes like this in the same price range that came off without a sale.</p>'}`,
   }
 }
 
@@ -603,7 +603,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
   ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
   <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date on this report and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
-  <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in the subject property. Any such interest, should one arise, will be disclosed in writing.</p>
+  <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>`
 }
 
@@ -617,7 +617,7 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
   const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
   const lead = isAudit
     ? 'Sorry this listing did not sell. If you want a second look at the number, call or text.'
-    : 'Call or text if you want to walk the comps.'
+    : 'Call or text if you want to walk the sales.'
   const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}&utm_content=letter-next-step`
   return {
     meta: `${esc(a.subject.streetAddress)} · Your next step`,

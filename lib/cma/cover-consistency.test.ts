@@ -217,6 +217,6 @@ describe('immersive CMA — same two contracts, same source data', () => {
     expect(html).not.toContain('Confidence: High')
     expect(html).not.toContain('Confidence: Moderate')
     expect(html).toMatch(/capped below this range/)
-    expect(html).toContain('The comp-supported range is $620,000 to $635,000')
+    expect(html).toContain('The sales support $620,000 to $635,000')
   })
 })

@@ -218,13 +218,13 @@ describe('assembleOpinionPages format', () => {
     })
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.indexOf('Who you are competing with at this price')
-    const outcomes = tocs.indexOf('Sold and unsold in this band')
+    const outcomes = tocs.indexOf('Sold and unsold in your price range')
     expect(outcomes).toBeGreaterThanOrEqual(0)
     expect(competition).toBeGreaterThan(outcomes)
     const body = pages[outcomes]!.body
     // P1: one price ruler. Sold are filled dots, unsold hollow, and only the
     // recommend and the seller's own last ask carry a label.
-    expect(body).toContain('4 closed in this band')
+    expect(body).toContain('4 closed in your price range')
     expect(body).toContain('asked and did not sell')
     expect(body).not.toContain("Didn't sell")
     expect(body).toContain('Recommended $')

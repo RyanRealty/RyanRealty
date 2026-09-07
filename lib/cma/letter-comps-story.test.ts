@@ -241,7 +241,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
 
   it('expired peers name homes and show what happened without saying overpriced', () => {
     const html = renderExpiredPeersHtml(subject, [peer])
-    expect(html).toContain('Expired peers — what happened')
+    expect(html).toContain('Near you, these asked and did not sell')
     expect(html).toContain('88 Wren')
     expect(html).toContain('comp-matrix')
     expect(html).toContain('Last ask')
@@ -294,7 +294,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     })
     const bodies = pages.map((p) => p.body).join('\n')
     const salesIdx = bodies.indexOf('The sales that set this price')
-    const expiredIdx = bodies.indexOf('Expired peers — what happened')
+    const expiredIdx = bodies.indexOf('Near you, these asked and did not sell')
     const compIdx = bodies.indexOf('Who you are competing with at this price')
     expect(salesIdx).toBeGreaterThan(-1)
     expect(expiredIdx).toBeGreaterThan(salesIdx)
@@ -313,7 +313,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       mapDataUri: null,
     })
     expect(html).toContain('The sales that set this price')
-    expect(html).toContain('Expired peers — what happened')
+    expect(html).toContain('Near you, these asked and did not sell')
     expect(html).toContain('id="competition"')
     expect(html).toContain('days on market')
     expect(html.toLowerCase()).not.toContain('overprice')

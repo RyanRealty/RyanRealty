@@ -611,7 +611,7 @@ describe('chapter order', () => {
     expect(html).not.toContain('id="listing-trend"')
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
-    expect(html).toContain('Adjusted close')
+    expect(html).toContain('Sale price today')
     expect(html).not.toMatch(/\bN\/A\b/)
     expect(html).not.toContain('2,420,000')
     expect(html).toMatch(/\.page-num,\.pg-num/)

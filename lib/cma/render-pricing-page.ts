@@ -3,7 +3,7 @@
  * matcher rules and the sales brought to this house.
  */
 
-import { dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { cleanText, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
@@ -29,6 +29,21 @@ function sellerNetBlock(p: CmaPricing): string {
   return `
   <h3 class="subhead">Close price and seller net</h3>
   <p class="small">${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
+}
+
+/**
+ * The map legend, written here rather than taken from `describeCompSearch`.
+ *
+ * `lib/pricing/search-story.ts` writes "The pins are the sales we kept", and
+ * "kept" is banned seller copy (blueprint § Words). The pricing unit owns the
+ * SEARCH, not the sentence a seller reads about it, so the legend is composed
+ * from the same facts in the document's own voice.
+ */
+function mapLegend(subdivision: string | null | undefined): string {
+  const name = cleanText(subdivision)
+  return name
+    ? `The pins are the sales below. The outline is ${name}, when that boundary is on file.`
+    : 'The pins are the sales below.'
 }
 
 /**
@@ -59,7 +74,7 @@ function matrixLead(input: {
   if (!adj || !adj.adjustments || !(input.pricing.recommended > 0)) return ''
   const n = input.comps.length
   return `<p class="chart-read">${esc(
-    `The ${n} closed ${n === 1 ? 'sale' : 'sales'} below set this number. Brought to your ${adj.adjustments}, they land at ${usd(adj.low)} to ${usd(adj.high)}. Recommended list ${usd(input.pricing.recommended)}.`,
+    `The ${n} closed ${n === 1 ? 'sale' : 'sales'} below set this number. Adjusted for ${adj.adjustments}, they land at ${usd(adj.low)} to ${usd(adj.high)}. Recommended list ${usd(input.pricing.recommended)}.`,
   )}</p>`
 }
 
@@ -83,7 +98,7 @@ function howTheListWasSet(input: {
   if (sqft == null || !(sqft > 0) || close == null || !(close > 0)) return ''
   const ppsf = usd(Math.round(close / sqft))
   const bits = [
-    `Brought to today, these sales carry a median of ${ppsf} per square foot at ${int(sqft)} sq ft.`,
+    `Adjusted for date and size, these sales carry a median of ${ppsf} per square foot at ${int(sqft)} sq ft.`,
   ]
   const stl = saleToListPct(input.market?.saleToListRatio ?? null)
   if (stl && input.market) {
@@ -115,7 +130,7 @@ export function pricingPage(input: {
     : `
   <h2 class="section">How we got the price</h2>
   <p>${esc(listPriceLead(p, { perSqft: recPpsf }))}${
-    range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
+    range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
   }${range.note ? ` ${esc(range.note)}` : ''}</p>
   <div class="stat-strip is-3">
     <div class="stat"><div class="lbl">List low</div><div class="val">${usd(p.conservative)}</div></div>
@@ -124,7 +139,7 @@ export function pricingPage(input: {
   </div>`
   const outOfRangeNote =
     input.omitLeadPrices && range.outOfRange
-      ? `<p>The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.${range.note ? ` ${esc(range.note)}` : ''}</p>`
+      ? `<p>The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.${range.note ? ` ${esc(range.note)}` : ''}</p>`
       : input.omitLeadPrices && range.note
         ? `<p>${esc(range.note)}</p>`
         : ''
@@ -137,7 +152,7 @@ export function pricingPage(input: {
   ${searchStory(search.body)}
   ${renderCompMatrixHtml(s, input.comps, matrixLead({ comps: input.comps, pricing: p }))}
   ${howTheListWasSet({ subject: s, market: input.market, pricing: p })}
-  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${search.legend ? `<p>${esc(search.legend)}</p>` : ''}` : ''}
+  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div><p>${esc(mapLegend(s.subdivision))}</p>` : ''}
   ${sellerNetBlock(p)}
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
 `,

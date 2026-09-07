@@ -85,7 +85,7 @@ describe('pricingPage', () => {
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
-    expect(html).toContain('Adjusted close')
+    expect(html).toContain('Sale price today')
     expect(html).toContain('Recommended list')
     expect(html).toContain('List low')
     expect(html).toContain('List high')

@@ -346,11 +346,11 @@ describe('P1 — one price ruler for sold and unsold', () => {
 
   it('states the reading under the graphic', () => {
     const html = letter()
-    expect(html).toContain('9 closed in this band, $410K to $460K.')
+    expect(html).toContain('9 closed in your price range, $410K to $460K.')
     expect(html).toContain('2 asked and did not sell.')
-    expect(html).toContain('Your ask sat at the top of the band.')
+    expect(html).toContain('Your ask sat at the top of that range.')
     // The kept sales, once brought to this house. Both ends already print in
-    // the matrix's Adjusted close row, so the sentence adds no new figure.
+    // the matrix's Sale price today row, so the sentence adds no new figure.
     expect(html).toContain('Adjusted for size and date, homes like yours land at $372K to $399K.')
   })
 })
@@ -493,9 +493,9 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
 
   it('explains the adjustment rows once', () => {
     const html = letter()
-    expect(html).toContain('Brought to today')
-    expect(html).toContain('Brought to your size')
-    expect(html).toMatch(/Brought to today moves each sale/i)
+    expect(html).toContain('Adjusted for date')
+    expect(html).toContain('Adjusted for size')
+    expect(html).toMatch(/Sale price today moves each sale for when it sold and how big it is/i)
   })
 })
 
@@ -808,7 +808,7 @@ describe('the market median is a tick on the days chart', () => {
   it('reads the tick in the caption, between the kept sales and the subject', () => {
     const html = letter()
     expect(html).toMatch(
-      /Each kept sale had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
+      /Every sale below had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
     )
   })
 
@@ -820,7 +820,7 @@ describe('the market median is a tick on the days chart', () => {
     expect(svg).not.toContain('days-median')
     expect(svg).not.toContain('median 21 days')
     expect(html).not.toContain('median is 21')
-    expect(html).toContain('Each kept sale had an offer inside 51 days.')
+    expect(html).toContain('Every sale below had an offer inside 51 days.')
   })
 })
 
