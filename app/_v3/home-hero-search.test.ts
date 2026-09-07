@@ -16,9 +16,9 @@ describe('homepage hero search uses the public search stack', () => {
     expect(PAGE).toMatch(/headline=\{v3Text\('Homes for sale in Central Oregon'\)\}/)
     expect(PAGE).not.toContain('home-hero-search__job')
     expect(PAGE).not.toMatch(/headline=\{v3Text\('Ryan Realty, Bend'\)\}/)
-    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Ryan Realty, Bend'\s*\}/)
-    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
-    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Ryan Realty, Bend'/)
+    expect(PAGE).toMatch(/title:\s*\{\s*absolute:\s*'Homes for Sale in Central Oregon \| Ryan Realty, Bend'\s*\}/)
+    expect(PAGE).toMatch(/openGraph: \{[\s\S]*?title: 'Homes for Sale in Central Oregon \| Ryan Realty, Bend'/)
+    expect(PAGE).toMatch(/twitter: \{[\s\S]*?title: 'Homes for Sale in Central Oregon \| Ryan Realty, Bend'/)
     expect(PAGE).toMatch(/<HomeHeroSearch[^>]*valuationHref=/)
   })
 

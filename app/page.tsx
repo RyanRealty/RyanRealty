@@ -44,27 +44,28 @@ const D11_HOMEPAGE_LEAD =
  * featured community carousel (photo, sales, blurb, prev/next), Buy/Sell/Work-with-us
  * doors with line pictograms, brokers, places, proof. No Atlas, map block, town ledger,
  * market essay, or Invest door on home. Brand stays in
- * metadata title/OG only. absolute title skips the layout suffix.
+ * metadata title/OG only, as the tail of the keyword title Matt picked
+ * 2026-09-07. absolute title skips the layout suffix.
  */
 export const revalidate = 300
 
 export const metadata: Metadata = {
-  title: { absolute: 'Ryan Realty, Bend' },
+  title: { absolute: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' },
   description:
     `Active homes for sale in ${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`,
   alternates: { canonical: siteUrl },
   openGraph: {
-    title: 'Ryan Realty, Bend',
+    title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
     description:
       'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. Live list prices, days on market, and closed comps.',
     url: siteUrl,
     siteName: 'Ryan Realty',
     type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty, Bend' }],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Homes for Sale in Central Oregon | Ryan Realty, Bend' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ryan Realty, Bend',
+    title: 'Homes for Sale in Central Oregon | Ryan Realty, Bend',
     description: 'Active Central Oregon homes for sale. List prices and days on market, town by town.',
   },
 }

@@ -79,8 +79,8 @@ const REQUIRED = [
         msg: 'Homepage Stage action is search (HomeHeroSearch), not a leftover count sentence',
       },
       {
-        re: /title:\s*(?:\{\s*absolute:\s*)?['"]Ryan Realty, Bend['"]/,
-        msg: 'metadata title must be "Ryan Realty, Bend" (absolute, so the layout suffix does not double the brand)',
+        re: /title:\s*\{\s*absolute:\s*['"]Homes for Sale in Central Oregon \| Ryan Realty, Bend['"]/,
+        msg: 'metadata title must be "Homes for Sale in Central Oregon | Ryan Realty, Bend" (Matt 2026-09-07; absolute, so the layout suffix does not double the brand)',
       },
     ],
   },

@@ -1,4 +1,55 @@
-# Current — 2026-09-07 (AI answer share: who the engines name for Bend)
+# Current — 2026-09-07 (AEO guide pack, backlog grind, title)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
+`wt/aeo-landing-20260907` (squash of `wt/aeo-briefs-audit-20260907` onto the
+sibling's `90cffee8`). Earlier on `origin/main`: `5f9987ab` (fifteen guides + site
+audit), `0301398e` (handoff).
+
+**Shipped**
+- Fifteen buyer + seller guides from the Cos AEO brief pack are live (six rewrites,
+  three drafts rebuilt, six new). Matt then asked for the cut figures back, dated;
+  they are in with their as-of dates. Ledger and brief-to-slug map:
+  `docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md`.
+- Backlog grind (Matt: "yes, both"): 29 archived posts triaged. 13 restored on
+  primary sources (rates, equity, rent vs buy on HUD FY2026 FMR, mortgage programs
+  with 2026 limits, second home vs investment with 2026 IRS thresholds, wildfire
+  code, insurance, renovations on NAR 2025, Bend housing target on OHNA), 16
+  retired with redirects to the page that replaced each, 18 semicolon fixes on
+  10 published posts. `blog_posts`: 80 published, 16 retired, 0 archived, 0 voice
+  violations. Seeds: `aeo-guides-2026-09.ts`, `restored-guides-2026-09.ts`, one
+  slug per file.
+- Homepage title is `Homes for Sale in Central Oregon | Ryan Realty, Bend`
+  (Matt 2026-09-07); VOICE.md, `ci:seo-shell`, and the hero test moved with it.
+- Guides end in `<h2>Questions</h2>` + five h3/p pairs; `lib/blog/publish-blog-faq.ts`
+  ships that as FAQPage JSON-LD. Site audit fixes: listing photo alt
+  (`ci:listing-photo-alt`), search robots + og + ItemList, menu labels not h2,
+  `/buy` FAQ corrected. The market page price FAQ and chrome scope are the
+  sibling's `90cffee8`; this branch dropped its duplicate.
+- Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
+
+**Open**
+- Hero stills for the nine new guides: Matt chose Studio stills. Sixteen
+  candidates across two subjects scored 71 to 78 against the 85 vision bar (all
+  `warped_architecture`), run stopped at $7.80. Contact sheet sent to Matt. Guides
+  keep library photos until he picks frames or the subject list goes landscape-only.
+- From the answer-share baseline: a dated monthly Bend and Redmond report page
+  with median sale price and months of supply stated once, and third-party
+  profiles for all three brokers, are the next AEO moves. Any "median home price"
+  in a guide is the sale price and month, matching the FAQ.
+- `scripts/build-legacy-redirects.mjs` regenerates from the committed JSON plus
+  its CURATED map; three stale CURATED targets were corrected so a regen no longer
+  reverts hand fixes. Expect the live-sitemap 404 warnings.
+- `npm run push` from a worktree branch stamps then runs a plain `git push` that
+  fails with no upstream. Follow with `git push origin HEAD:main` inside the marker
+  window, and fetch first: a sibling landing between rebase and push rejects it.
+
+**Do not**
+- Reseed blog posts without diffing against the live rows first.
+- Print a figure in a guide without its as-of date and source in the ledger.
+
+---
+
+# Previous — 2026-09-07 (AI answer share: who the engines name for Bend)
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
 `fix/bend-market-figure-truth`, landing on `origin/main` with this block.
