@@ -117,12 +117,28 @@ describe('the footer fold', () => {
   it('renders navy social icon buttons, not plain text social links', () => {
     const out = html()
     expect(out).toContain('v3-footer__social-btn')
-    expect(out).toContain('aria-label="Instagram"')
-    expect(out).toContain('aria-label="Facebook"')
-    expect(out).toContain('aria-label="YouTube"')
-    expect(out).not.toMatch(/>Instagram</)
-    expect(out).not.toMatch(/>Facebook</)
-    expect(out).not.toMatch(/>YouTube</)
+    for (const label of [
+      'Instagram',
+      'Facebook',
+      'YouTube',
+      'TikTok',
+      'X',
+      'LinkedIn',
+      'Pinterest',
+      'Threads',
+    ]) {
+      expect(out).toContain(`aria-label="${label}"`)
+      expect(out).not.toMatch(new RegExp(`>${label}<`))
+    }
+    expect(out.match(/v3-footer__social-btn/g) ?? []).toHaveLength(8)
+    expect(out).not.toMatch(/aria-label="Google/)
+  })
+
+  it('shows the full office mailing address linked to GBP maps', () => {
+    const out = html()
+    expect(out).toContain('115 NW Oregon Ave #2, Bend, OR 97703')
+    expect(out).toContain('maps.google.com/?cid=11038319841912529644')
+    expect(out).not.toMatch(/>Bend, Oregon</)
   })
 
   it('renders Markets town clusters plus Buy · Sell · Join, Company, Contact', () => {
