@@ -227,3 +227,68 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
   - `out/cma-look/cma-65365-concorde/contact-sheet.html` (6.48-acre land)
   - `out/cma-look/cma-19968/contact-sheet.html` (FSBO)
   - `out/cma-look/cma-1617-nw-8th/contact-sheet.html` (seller LP)
+
+- **A · a8914ed5** (`wt/cma-doc-20260907`) — F6 and F7 off the orchestrator's read
+  of the regenerated shots.
+
+  - **F6. The ruler was cropped on a phone.** The 720-unit ruler was held at
+    `min-width` inside a pan box below 700px, the fix a previous round applied
+    to every wide chart. It is right for a twelve-row days strip and wrong for
+    this one: the ruler's whole reading is where two ticks sit inside a band,
+    so a cropped end deletes half of it. At 375 the seller saw the "$360K"
+    unsold dot and the recommend tick — nine closed sales and their own failed
+    ask were off the right edge of a box nobody scrolls. `priceRulerPhoneSvg`
+    draws the same domain (`rulerDomain` is shared, so the two layouts cannot
+    disagree about where a dot sits) into a 360-unit frame that scales with no
+    crop: lane names in a left gutter, the recommend labelled above the plot
+    and the last ask below, each label clamped to the frame by its own
+    estimated width. Both documents emit both layouts and exactly one is ever
+    visible — `.ruler-wide` on paper and above 700px, `.ruler-phone` below.
+    The failing test measures the rendered SVG: every one of the eleven dots
+    and every text box inside the viewBox, both tick labels present.
+  - **F7. "This market" printed its KPIs as a stacked list.** The letter
+    carried no rule for the immersive's `.stat3` grid, so four figures printed
+    number-then-label down the page under a 42px months-of-supply hero. It is
+    now the stat row the document already uses for the failed-then-sold
+    statistics, `stat-strip is-4`, months of supply first with its verdict word
+    under it, then the other three; two columns below 700px. The median-close
+    line stays under it. Nothing recomputed, no figure changed.
+  - **Two of those labels were not what the numbers are** (CLAUDE.md §0, §7).
+    `medianDom` is `market_stats_cache.median_dom`, which medians
+    `listings.days_to_pending` — on-market date to pending. It was labelled
+    "median days on market". It now reads **median days to an accepted offer**,
+    which is what the column measures. `saleToListRatio` carries
+    `median_sale_to_original_list` from the pace read, not sale to the final
+    ask; "sold to list" reads to a seller who cut twice as the last ask, a
+    different and better-looking number. It now reads **sold price to original
+    ask**.
+  - **The 90-day band had no register on the letter either.** `.st-n` / `.st-l`
+    existed only in the immersive stylesheet, so "8" and "closed in 90 days"
+    printed at body size on one line each. Same missing-register defect, two
+    rules.
+
+  **For the orchestrator, not acted on:** the stated reason the Redmond median
+  stays off the days-to-offer chart — "it is a list-to-close figure, and two
+  measures do not share an axis" — does not hold. `market_stats_cache.median_dom`
+  and the comps' `daysToOffer` (`lib/cma/comps.ts:131`) read the same column,
+  `listings.days_to_pending`. They ARE the same measure, so the 21-day tick is
+  commensurate with the bars. Whether to put it back is a document decision,
+  not a data one. Separately, `cma-65365-concorde` prints "Closed 4 to 6
+  bedroom sales in N/A in the last 90 days" — an MLS placeholder in a
+  client-facing source line, the same class the subdivision chapter fixed.
+
+  Verified: `npx vitest run lib/cma` 1,763 passing; `npx tsc --noEmit` clean;
+  `ci:brand-voice`, `ci:voice-constructions`, `ci:cma-opinion-spine`,
+  `ci:cma-exemplar`, `ci:market-chart-honesty`, `ci:design-tokens`,
+  `ci:pdf-page-safety` green. Look-pass re-run and the affected shots read by
+  eye on `cma-2465-7th-redmond-97756`, `cma-19968`, `cma-65365-concorde`:
+  - F6 `out/cma-look/cma-2465-7th-redmond-97756/immersive-375/03-your-last-listing.png`
+    and `letter-375/03-your-last-listing.png` — every sold dot, the unsold dot,
+    and both ticks inside the frame; `letter-816` and `immersive-1280`
+    unchanged.
+  - F7 `out/cma-look/cma-2465-7th-redmond-97756/letter-816/06-this-market.png`
+    and `letter-375/06-this-market.png`;
+    `out/cma-look/cma-19968/letter-816/05-this-market.png` and
+    `immersive-375/05-this-market.png`;
+    `out/cma-look/cma-65365-concorde/letter-816/06-this-market.png` and
+    `letter-375/06-this-market.png`.
