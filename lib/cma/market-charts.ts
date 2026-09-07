@@ -232,6 +232,20 @@ export type DaysRow = {
   valueLabel: string
 }
 
+/**
+ * Row labels are right-anchored in a fixed gutter, so a long address grows
+ * LEFT and off the sheet. At twelve comps that put eight paragraphs 4pt into
+ * the left margin and failed the page-safety contract. Twenty-four characters
+ * is what the 136-unit gutter holds at 12px.
+ */
+const DAYS_LABEL_MAX = 24
+
+function fitLabel(text: string): string {
+  const t = text.trim()
+  if (t.length <= DAYS_LABEL_MAX) return t
+  return `${t.slice(0, DAYS_LABEL_MAX - 1).trimEnd()}…`
+}
+
 export function daysToOfferSvg(rows: readonly DaysRow[], caption: string): string {
   const kept = rows.filter((r) => Number.isFinite(r.days) && r.days >= 0)
   if (kept.length < 3) return ''
@@ -257,7 +271,7 @@ export function daysToOfferSvg(rows: readonly DaysRow[], caption: string): strin
       const end = x(row.days)
       const stroke = row.subject ? RULER_INK : RULER_MUTED
       const width = row.subject ? 7 : 5
-      return `<text x="${gutter - 14}" y="${(mid + 4).toFixed(1)}" text-anchor="end" font-size="12" ${row.subject ? `font-weight="600" ` : ''}fill="${RULER_INK}">${esc(row.label)}</text>
+      return `<text x="${gutter - 14}" y="${(mid + 4).toFixed(1)}" text-anchor="end" font-size="12" ${row.subject ? `font-weight="600" ` : ''}fill="${RULER_INK}">${esc(fitLabel(row.label))}</text>
     <line x1="${plotL}" y1="${(mid).toFixed(1)}" x2="${Math.max(end, plotL + 1).toFixed(1)}" y2="${(mid).toFixed(1)}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="butt"/>
     <text x="${(Math.max(end, plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}" font-size="12" ${row.subject ? `font-weight="600" ` : ''}fill="${RULER_INK}">${esc(row.valueLabel)}</text>`
     })
