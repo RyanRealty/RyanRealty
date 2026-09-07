@@ -3,21 +3,20 @@
 /**
  * ContactCmaCard — the contact's CMAs from public.cmas (the in-house CMA
  * engine), right-rail card. Each row: address, status, value range, review,
- * and Send from CRM when a PDF exists. Send opens compose — it does not
- * fire a one-click email.
+ * and Review & send when a PDF exists. Primary path is CMA Review
+ * EmailBodyEditor — never People Blank compose.
  *
  * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
  * Card -> av2-pane, Badge -> StateWord (build + delivery states are system
  * words), and the Review / Send anchors carry av2-btn so hover/pressed/focus
  * come from the stylesheet.
  *
- * Gate note (ci:admin-ui rule C): "Send from CRM" is an anchor, not a
+ * Gate note (ci:admin-ui rule C): "Review & send" is an anchor, not a
  * primary Button, so this card stays at zero extra primaries.
  */
 import { FileText } from 'lucide-react'
 import { formatDate } from '@/lib/format/date'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
-import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { StateWord, type AdminState } from '@/components/admin/v2'
 
 function fmtDate(iso: string): string {
@@ -49,6 +48,7 @@ export function ContactCmaCard(props: {
   personId: number
   cmas: ContactCma[]
 }) {
+  void props.personId // callers still pass personId; Review path does not need it
   if (props.cmas.length === 0) return null
 
   return (
@@ -85,17 +85,12 @@ export function ContactCmaCard(props: {
               </div>
               <div className="mt-2 flex items-center gap-2">
                 {!building ? (
-                  <a href={c.reviewUrl} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
-                    Review
-                  </a>
-                ) : null}
-                {attachable ? (
                   <a
-                    href={cmaCrmComposeHref({ personId: props.personId, slug: c.slug, channel: 'email' })}
-                    className="av2-btn"
+                    href={c.reviewUrl}
+                    className={attachable ? 'av2-btn' : 'av2-btn av2-btn--quiet'}
                     style={{ textDecoration: 'none' }}
                   >
-                    Send from CRM
+                    {attachable ? 'Review & send' : 'Review'}
                   </a>
                 ) : null}
               </div>

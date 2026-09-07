@@ -246,7 +246,7 @@ export default async function CmaQueuePage({
           return (
             <QueueRow
               key={r.id}
-              kind={CMA_ORIGIN_LABEL[r.origin]}
+              kind={r.state === 'queued' ? STATE_LABEL.queued : CMA_ORIGIN_LABEL[r.origin]}
               kindTone={STATE_TONE[r.state]}
               title={
                 <Link href={`/admin/cmas/${r.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>

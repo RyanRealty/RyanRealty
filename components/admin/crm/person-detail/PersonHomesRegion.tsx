@@ -9,7 +9,6 @@
 
 import { getContactNextStep } from '@/app/actions/contact-next-step'
 import { startBpoForm } from '@/app/admin/(protected)/crm/[id]/form-actions'
-import { cmaCrmComposeHref } from '@/lib/cma/crm-compose-href'
 import { OwnedHomeCard } from '@/components/admin/crm/OwnedHomeCard'
 import { ContactCmaCard } from '@/components/admin/crm/ContactCmaCard'
 import { ContactBpoCard } from '@/components/admin/crm/ContactBpoCard'
@@ -31,7 +30,6 @@ export async function PersonHomesRegion({
   subdivision,
   contactCmas,
   contactBpos,
-  reviewableCmaId,
 }: {
   personId: number
   fubLegacyId: number | null
@@ -42,8 +40,6 @@ export async function PersonHomesRegion({
   subdivision: string | null
   contactCmas: ContactCma[]
   contactBpos: ContactBpo[]
-  /** Ready CMA delivery id from identity core; only applied when next step is CMA. */
-  reviewableCmaId: string | null
 }) {
   const [nextStep, homeMedia, homeMatches, prospectStories, place] = await Promise.all([
     getContactNextStep(personId),
@@ -67,7 +63,15 @@ export async function PersonHomesRegion({
       ['Active', 'Coming Soon', 'Active Under Contract', 'Pending'].includes(m.status ?? ''),
     ) ?? null
   const homeFacts = confirmedMatches.find((m) => m.beds || m.sqft) ?? null
-  const reviewId = nextStep.step.kind === 'cma' ? reviewableCmaId : null
+  // Prefer a real CMA slug (never a delivery UUID) so Review opens EmailBodyEditor.
+  const reviewSlug =
+    nextStep.step.kind === 'cma'
+      ? (
+          contactCmas.find((c) => c.hasDocument && c.status !== 'archived')?.slug ??
+          contactCmas[0]?.slug ??
+          null
+        )
+      : null
 
   return (
     <>
@@ -101,9 +105,8 @@ export async function PersonHomesRegion({
               ? `${homeActiveListing.status}${usd(homeActiveListing.listPrice) ? ` · ${usd(homeActiveListing.listPrice)}` : ''}`
               : null
           }
-          reviewDeliveryId={reviewId}
+          reviewSlug={reviewSlug}
           buildHref="?intent=cma"
-          composeHref={reviewId ? cmaCrmComposeHref({ personId, slug: reviewId, channel: 'email' }) : null}
         />
       ) : null}
       {contactCmas.length > 0 ? (
