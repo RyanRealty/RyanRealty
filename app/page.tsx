@@ -211,7 +211,7 @@ export default async function Home() {
             eyebrow="Google reviews"
             headline="What clients say"
             headingLevel={2}
-            claim="Verified Google reviews from closings we handled."
+            claim="What our clients say about working with us. Every review is from Google, as written."
             figures={[
               { value: reviewAverage.toFixed(1), label: 'Average rating' },
               { value: String(reviewCount), label: 'Google reviews' },

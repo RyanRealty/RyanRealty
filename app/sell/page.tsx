@@ -86,7 +86,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Sell Your Home in Central Oregon',
     description:
-      'List your Central Oregon home with Ryan Realty. The listing fee is 3% of the sale price, photos within 48 hours of signing, and a written report every week it is listed.',
+      'List your Central Oregon home with Ryan Realty. One 3% listing plan with everything included, professional photos within 48 hours of signing, and a written report every week you are on the market. Local experts, exceptional customer service.',
     path: ROUTE_PATH,
     ogImage: SELL_POSTER,
     keywords: [

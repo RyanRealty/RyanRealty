@@ -104,16 +104,16 @@ export const ABOUT_FAQ_ITEMS = [
     // No hand-off." — is not repeated here. What is left is the part that
     // section does not say: what the hand-off would have been to.
     question: 'Will I work with the same broker from start to finish?',
-    answer: 'Yes. No hand-off to a junior agent or a transaction desk.',
+    answer: 'Yes. The broker you meet first is the broker who works with you through closing. We are a small team of local experts, and we stay with you.',
   },
   {
     question: 'Do you cover Tumalo?',
     answer:
-      'Tumalo is unincorporated and not a separate MLS city. It is served as part of the Bend market.',
+      'Yes. Tumalo is unincorporated and the MLS counts it as part of Bend, so you will find Tumalo homes under Bend on this site. We know the area well and help buyers and sellers there all the time.',
   },
   {
     question: 'How do I get a home valuation?',
     answer:
-      'Use Value my home. A broker prepares a comparative market analysis from recent comparable sales and gives you a price range, with the comps that support it.',
+      'Use Value my home. A broker prepares a comparative market analysis from recent sales near you and sends a price range within 24 hours, with the comps that support it. It is free, and there is no listing agreement.',
   },
 ] as const

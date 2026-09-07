@@ -1,5 +1,7 @@
 /**
- * GBP review-ask draft — westside backlog #9 / R-125.
+ * GBP review-ask draft — westside backlog #9 / R-125. Body rewritten in the
+ * one voice doc 2026-09-07 (marketing_brain_skills/brand-voice/VOICE.md) and
+ * mirrored by the crm_templates row `email-google-review`.
  *
  * Matt 2026-07-29: no engine, no auto-send. On close we stage his ask as a
  * ready CRM email draft with the write-review URL so the ask never depends
@@ -11,14 +13,28 @@
  */
 import { GBP_REVIEW_URL } from '@/lib/brand/contact'
 
-export const REVIEW_ASK_SUBJECT = 'Google review'
+export const REVIEW_ASK_SUBJECT = 'A quick favor'
 
 export function buildReviewAskBody(address?: string | null): string {
   const place = (address ?? '').trim()
-  const lead = place
-    ? `If you want to leave a review of the work on ${place}, this link opens the form.`
-    : 'If you want to leave a review of the work, this link opens the form.'
-  return `${lead}\n\n${GBP_REVIEW_URL}`
+  const thanks = place
+    ? `Thank you again for trusting us with ${place}. It meant a lot to work with you.`
+    : 'Thank you again for trusting us with your home. It meant a lot to work with you.'
+  return [
+    'Hi,',
+    '',
+    thanks,
+    '',
+    'If you have two minutes, would you leave us a Google review? A few honest sentences about how it went helps the next family in Central Oregon find us. This link opens the review form:',
+    '',
+    GBP_REVIEW_URL,
+    '',
+    "Thank you. We're here whenever you need anything real estate, or just have a question about the market.",
+    '',
+    'Matt Ryan',
+    'Ryan Realty | Bend, Oregon',
+    '541.703.3095',
+  ].join('\n')
 }
 
 export function isReviewAskDraft(input: { subject?: string | null; body?: string | null }): boolean {

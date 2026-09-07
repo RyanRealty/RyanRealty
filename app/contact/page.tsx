@@ -51,7 +51,7 @@ type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string
 export const metadata: Metadata = {
   title: 'Contact · Call, text, or write',
   description:
-    'Call, text, or email Ryan Realty about buying or selling in Central Oregon. A broker replies within one business day.',
+    'Call, text, or email Ryan Realty about buying or selling in Central Oregon. Local experts, and a broker gets back to you within one business day.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
   openGraph: {
     title: 'Contact · Ryan Realty',
@@ -133,7 +133,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const introItems: V3QuietItem[] = [
     // The H1 lives on this Quiet; with no rows it would not render at all
     // (V3Quiet returns null on empty items — evaluator B2). One true line.
-    { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts, and a broker who stays with you from the first call through closing.' },
+    { kind: 'prose' as const, body: 'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities. Local experts who take care of you from the first call through closing.' },
     {
       kind: 'prose' as const,
       term: 'Office',

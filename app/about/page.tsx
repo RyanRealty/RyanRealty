@@ -60,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'About Ryan Realty · Bend, Oregon',
     description:
-      'Ryan Realty is a Bend, Oregon brokerage, open since June 2023. Every listing gets video, a 3D walkthrough, and a price built from closed comps. The broker you call closes your sale.',
+      'Ryan Realty is a boutique brokerage in Bend, Oregon. Local experts in Central Oregon real estate, known for exceptional customer service. Ryan Realty LLC since 2014, Bend office open since June 2023.',
     path: ROUTE_PATH,
     ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
     keywords: [
@@ -101,7 +101,7 @@ export default async function AboutPage() {
   const whoItems: V3QuietItem[] = [
     {
       kind: 'prose',
-      body: `A Bend brokerage, open since ${BRAND.foundedLabel}.`,
+      body: `A boutique brokerage in Bend. Ryan Realty LLC since ${BRAND.llcSince}, Bend office open since ${BRAND.foundedLabel}.`,
     },
     {
       kind: 'prose',
@@ -124,7 +124,7 @@ export default async function AboutPage() {
   const originItems: V3QuietItem[] = [
     {
       kind: 'prose',
-      body: `Matt Ryan opened Ryan Realty in Bend in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from Hjalmar "Red" Erickson.`,
+      body: `Matt Ryan started Ryan Realty LLC in ${BRAND.llcSince} and opened the Bend office in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from his mentor, Hjalmar "Red" Erickson, and runs the brokerage the way Red taught him: every client gets the same care and the same effort.`,
     },
   ]
 
