@@ -102,10 +102,20 @@ const pricing = {
   notes: [],
 } as unknown as CmaPricing
 
+
+function fiveSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
+  return Array.from({ length: n }, (_, i) => ({
+    ...seed,
+    listingKey: seed.listingKey ? `${seed.listingKey}-${i}` : `C${i + 1}`,
+    address: i === 0 ? seed.address : `${100 + i} Peer St`,
+    adjustedPrice: (seed.adjustedPrice ?? seed.closePrice ?? 500000) + i * 1000,
+  }))
+}
+
 function args(): RenderCmaArgs {
   return {
     subject,
-    comps: [comp],
+    comps: fiveSales(comp),
     market: null,
     pricing,
     broker,
@@ -206,14 +216,15 @@ describe('print CMA magazine cover', () => {
 describe('immersive CMA first screen', () => {
   it('pays off the recommended list on the hero, not only after a scroll', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    const heroEnd = html.indexOf('id="answer"')
+    const heroEnd = html.indexOf('id="how-we-got-the-price"')
     const hero = html.slice(0, heroEnd)
     expect(hero).toContain('class="sc hero on"')
     expect(hero).toContain('Recommended list')
     expect(hero).toContain('$472,000')
     expect(hero).not.toContain('Expected close')
     expect(hero).toContain('hero-payoff')
-    expect(html).toContain('id="answer"')
+    expect(html).toContain('id="how-we-got-the-price"')
+    expect(html).toContain('Our Recommended List Price for your home.')
     expect(html).toContain('Recommended list')
   })
 

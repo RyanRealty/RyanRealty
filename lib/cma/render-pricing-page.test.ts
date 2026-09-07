@@ -9,15 +9,20 @@ const subject = {
   sqft: 1631,
 } as CmaSubject
 
-const comps = [
-  {
-    address: '3344 SW Cascade Vista',
-    closePrice: 655000,
-    timeAdjustment: 0,
-    sizeAdjustment: -23200,
-    adjustedPrice: 636000,
-  },
-] as CmaAdjustedComp[]
+const seedComp = {
+  address: '3344 SW Cascade Vista',
+  closePrice: 655000,
+  timeAdjustment: 0,
+  sizeAdjustment: -23200,
+  adjustedPrice: 636000,
+} as CmaAdjustedComp
+
+const comps = Array.from({ length: 5 }, (_, i) => ({
+  ...seedComp,
+  address: i === 0 ? seedComp.address : `${3300 + i} SW Cascade Vista`,
+  listingKey: `C${i + 1}`,
+  adjustedPrice: seedComp.adjustedPrice + i * 500,
+})) as CmaAdjustedComp[]
 
 const pricing = {
   method1Low: 620000,
@@ -73,7 +78,7 @@ describe('pricingPage', () => {
     expect(html).toContain('$392 per square foot')
     expect(html).toContain('At 98.9 percent of list that is $655,000')
     expect(html).not.toContain('Marker key')
-    expect(html).toContain('The sales that set the list')
+    expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
     expect(html).toContain('Adjusted close')

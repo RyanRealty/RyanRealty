@@ -78,17 +78,18 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
 }
 
 export function immersiveAnswerHtml(a: CoverArgs): string {
+  // Price + range live once on the hero photo. This beat only carries the
+  // search story / ask note — never the sparse three-number bar or a second
+  // "List $X to $Y. Recommended list $Z" block.
   const p = a.pricing
   const range = pricingRangeDisplay(p)
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
-  return `
-    <div class="range r">
-      <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
-      <div class="range-marks">
-        <div class="rm"><div class="rm-v">${usd(p.conservative)}</div><div class="rm-l">List low</div></div>
-        <div class="rm mid"><div class="rm-v">${usd(p.recommended)}</div><div class="rm-l">Recommended list</div></div>
-        <div class="rm" style="text-align:right"><div class="rm-v">${usd(p.highEnd)}</div><div class="rm-l">List high</div></div>
-      </div>
-    </div>
-    <p class="body r">${esc(listPriceLead(p, { includeExpectedClose: false }))}${currentAskLine(p) ? ` ${esc(currentAskLine(p)!)}` : ''}${range.outOfRange ? ` The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''}${range.note ? ` ${esc(range.note)}` : ''} ${esc(story.body)}</p>`
+  const bits = [
+    currentAskLine(p),
+    range.outOfRange ? `The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
+    range.note,
+    story.body,
+  ].filter((b): b is string => Boolean(b && String(b).trim()))
+  if (bits.length === 0) return ''
+  return `<p class="body r">${bits.map((b) => esc(b)).join(' ')}</p>`
 }

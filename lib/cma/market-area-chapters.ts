@@ -167,7 +167,7 @@ export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): s
     lastAsk: x.lastAsk,
     xMinLabel: shortUsd(x.lo),
     xMaxLabel: shortUsd(x.hi),
-    listLabel: 'This list',
+    listLabel: 'Recommend',
     lastAskLabel: x.lastAsk != null ? 'Last ask' : null,
     caption: 'Sold and unsold in this band',
     colors: PRINT_NAVY_CREAM,
@@ -177,7 +177,7 @@ export function renderBandOutcomesHtml(x: CmaBandOutcomes | null | undefined): s
     x.lastAsk != null && Math.abs(x.lastAsk - x.list) > 1000
       ? ` The last listing asked ${usd(x.lastAsk)}.`
       : ''
-  return `<p>${int(x.soldTotal)} closed. ${int(x.unsoldTotal)} listings in this band came off without a sale. This list is ${usd(x.list)}.${last}</p>
+  return `<p>${int(x.soldTotal)} closed. ${int(x.unsoldTotal)} listings in this band came off without a sale. Recommend is ${usd(x.list)}.${last}</p>
   <div class="szn is-hero" data-anim="chart">${svg}</div>
   <p class="small">${esc(clientSourceLine(x.source, `Closed sales and unsold listings in ${x.label}.`))}</p>`
 }

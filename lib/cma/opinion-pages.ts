@@ -372,7 +372,7 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
     toc: 'Seller net at list',
     body: `
   <h2 class="section">Seller net at list</h2>
-  <p>Net at list is list minus ${usd(concession)}, before commission and closing costs. That concession is the median of the sales that set this list, including sales that reported none.</p>
+  <p>Net at list is list minus ${usd(concession)}, before commission and closing costs. That concession is the median of the sales that set this price, including sales that reported none.</p>
   <div class="stat-strip is-3">
     ${low != null ? `<div class="stat"><div class="lbl">Net at list low</div><div class="val">${usd(low)}</div></div>` : ''}
     ${rec != null ? `<div class="stat"><div class="lbl">Net at recommended list</div><div class="val">${usd(rec)}</div></div>` : ''}
@@ -383,7 +383,7 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
     <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(a.pricing.recommended)}</div></div>
     <div class="stat"><div class="lbl">List high</div><div class="val">${usd(a.pricing.highEnd)}</div></div>
   </div>
-  ${n.knownCount > 0 ? `<p class="small">${n.givenCount} of ${n.knownCount} sales that set this list reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>` : ''}`,
+  ${n.knownCount > 0 ? `<p class="small">${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>` : ''}`,
   }
 }
 

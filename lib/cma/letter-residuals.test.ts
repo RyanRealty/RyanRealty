@@ -78,6 +78,15 @@ const comp: CmaAdjustedComp = {
   weight: 1,
 }
 
+function fiveSales(seed: CmaAdjustedComp): CmaAdjustedComp[] {
+  return Array.from({ length: 5 }, (_, i) => ({
+    ...seed,
+    listingKey: `C${i + 1}`,
+    address: i === 0 ? seed.address : `${10 + i} Pine`,
+    adjustedPrice: seed.adjustedPrice + i * 1000,
+  }))
+}
+
 const broker: CmaBroker = {
   id: 'id-matt',
   slug: 'matthew-ryan',
@@ -198,7 +207,7 @@ const extras = {
 function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
   return {
     subject,
-    comps: [comp],
+    comps: fiveSales(comp),
     market: {
       geoLabel: 'La Pine',
       medianSalePrice: 450000,
@@ -231,7 +240,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     const { html } = renderCmaHtml(args())
     const immersive = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     for (const doc of [html, immersive]) {
-      expect(doc).toContain('The sales that set the list')
+      expect(doc).toContain('The sales that set this price')
       expect(doc).toContain('comp-stack-card')
       expect(doc).toContain('Adjusted close')
       expect(doc).not.toContain('class="flyer-title"')
@@ -241,7 +250,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       expect(doc).not.toContain('Marker key')
     }
     expect(html).toContain('comp-matrix')
-    const salesHits = (html.match(/The sales that set the list/g) ?? []).length
+    const salesHits = (html.match(/The sales that set this price/g) ?? []).length
     expect(salesHits).toBe(1)
   })
 
@@ -285,7 +294,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
   it('expired peers beat is visible in Matt voice', () => {
     const pages = assembleOpinionPages({
       subject,
-      comps: [comp],
+      comps: fiveSales(comp),
       market: null,
       pricing,
       extras,
@@ -318,7 +327,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
   it('immersive story order: comps → expired peers → competition', () => {
     const html = assembleOpinionScenes({
       subject,
-      comps: [comp],
+      comps: fiveSales(comp),
       market: null,
       pricing,
       extras,
@@ -326,7 +335,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       broker,
       generatedAtIso: '2026-09-06T00:00:00.000Z',
     })
-    const salesAt = html.indexOf('The sales that set the list')
+    const salesAt = html.indexOf('The sales that set this price')
     const peersAt = html.indexOf('Expired peers — what happened')
     const competitionAt = html.indexOf('id="competition"')
     expect(salesAt).toBeGreaterThan(0)

@@ -13,6 +13,7 @@ img{max-width:100%;display:block}
 .page-num,.pg-num,.pageNumber,.pg-footer,.toc .p{display:none}
 .sc{min-height:100svh;display:flex;align-items:center;padding:96px 24px;position:relative}
 .sc.tight{min-height:72svh}
+.sc.pack{min-height:0;align-items:flex-start;padding-top:48px;padding-bottom:56px}
 .sc-cream{background:var(--cream)}
 .sc-navy{background:var(--navy);color:var(--cream)}
 .in{max-width:880px;margin:0 auto;width:100%}

@@ -185,7 +185,7 @@ describe('assembleOpinionPages format', () => {
           priceHi: 494000,
           selected: {
             key: 'selected',
-            label: 'Used in the list',
+            label: 'Used for the recommend',
             count: 3,
             low: 390000,
             median: 410000,

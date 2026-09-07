@@ -117,7 +117,7 @@ function byronPricing(overrides: Partial<CmaPricing> = {}): CmaPricing {
 function byronArgs(pricingOverrides: Partial<CmaPricing> = {}): RenderCmaArgs {
   return {
     subject,
-    comps: [comp],
+    comps: fiveSales(comp),
     market: null,
     pricing: byronPricing(pricingOverrides),
     broker,
@@ -133,6 +133,16 @@ function byronArgs(pricingOverrides: Partial<CmaPricing> = {}): RenderCmaArgs {
     development: null,
     rental: null,
   }
+}
+
+
+function fiveSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
+  return Array.from({ length: n }, (_, i) => ({
+    ...seed,
+    listingKey: seed.listingKey ? `${seed.listingKey}-${i}` : `C${i + 1}`,
+    address: i === 0 ? seed.address : `${100 + i} Peer St`,
+    adjustedPrice: (seed.adjustedPrice ?? seed.closePrice ?? 500000) + i * 1000,
+  }))
 }
 
 describe('print CMA cover — no confidence pills, community not ZIP', () => {

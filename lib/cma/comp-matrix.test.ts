@@ -38,10 +38,19 @@ const comp = {
   adjustedPrice: 465744,
 } as CmaAdjustedComp
 
+function padSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
+  return Array.from({ length: n }, (_, i) => ({
+    ...seed,
+    address: i === 0 ? seed.address : `${100 + i} Pad St`,
+    listingKey: `P${i + 1}`,
+    adjustedPrice: seed.adjustedPrice + i * 1000,
+  }))
+}
+
 describe('renderCompMatrixHtml', () => {
   it('prints a subject column and one column per sale with the RPR facts', () => {
-    const html = renderCompMatrixHtml(subject, [comp])
-    expect(html).toContain('The sales that set the list')
+    const html = renderCompMatrixHtml(subject, padSales(comp))
+    expect(html).toContain('The sales that set this price')
     expect(html).toContain('class="kv is-wide comp-matrix"')
     expect(html).toContain('648 Douglas')
     expect(html).toContain('1. 947 6th')
@@ -67,13 +76,18 @@ describe('renderCompMatrixHtml', () => {
   })
 
   it('keeps the CMA a seller actually gets to one undivided table', () => {
-    // TARGET_COMPS is 5 and MIN_COMPS is 3 (lib/cma/comps.ts), so the whole
-    // ordinary range must render as a single table with no group captions.
-    for (const n of [3, 4, 5]) {
-      const html = renderCompMatrixHtml(subject, Array.from({ length: n }, () => comp))
-      expect(html.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(1)
-      expect(html).not.toContain('<h4 class="subhead">')
-    }
+    // TARGET_COMPS is 5 and MIN_COMPS is 5 (lib/cma/comps.ts), so the priced
+    // set renders as a single table with no group captions.
+    const html = renderCompMatrixHtml(subject, padSales(comp, 5))
+    expect(html.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(1)
+    expect(html).not.toContain('<h4 class="subhead">')
+  })
+
+  it('fails closed below five closed sales — no thin matrix paint', () => {
+    expect(renderCompMatrixHtml(subject, [])).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 1))).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 4))).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 5))).toContain('The sales that set this price')
   })
 
   it('never strands a table holding a single sale', () => {
@@ -128,7 +142,7 @@ describe('renderCompMatrixHtml', () => {
   it('does not print MLS N/A into the grid', () => {
     const html = renderCompMatrixHtml(
       { ...subject, subdivision: 'N/A', propertySubType: 'None' },
-      [{ ...comp, subdivision: 'N/A' }],
+      padSales({ ...comp, subdivision: 'N/A' }),
     )
     expect(html).not.toMatch(/N\/A/i)
     expect(html).not.toMatch(/>None</)
@@ -155,51 +169,51 @@ describe('land columns', () => {
   } as unknown as CmaAdjustedComp
 
   it('never prints a living area of 0 for a land comp', () => {
-    const html = renderCompMatrixHtml(landSubject, [landComp])
+    const html = renderCompMatrixHtml(landSubject, padSales(landComp))
     expect(html).not.toMatch(/>0</)
   })
 
   it('leaves the per-sqft rows blank rather than dividing by zero', () => {
-    const html = renderCompMatrixHtml(landSubject, [landComp])
+    const html = renderCompMatrixHtml(landSubject, padSales(landComp))
     expect(html).not.toMatch(/Infinity/)
     expect(html).not.toMatch(/NaN/)
   })
 
   it('still carries the lot size, which is the size that matters for land', () => {
-    const html = renderCompMatrixHtml(landSubject, [landComp])
+    const html = renderCompMatrixHtml(landSubject, padSales(landComp))
     // 0.72 acres -> 31,363 sqft
     expect(html).toMatch(/31,363/)
   })
 
   it('labels the adjusted-price row as adjusted close', () => {
-    expect(renderCompMatrixHtml(landSubject, [landComp])).toContain('Adjusted close')
-    expect(renderCompMatrixHtml(subject, [comp])).toContain('Adjusted close')
-    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(/as your house/i)
+    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).toContain('Adjusted close')
+    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Adjusted close')
+    expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
   })
 
   it('prints sale price per square foot on an improved report', () => {
-    expect(renderCompMatrixHtml(subject, [comp])).toContain('Sale price / sqft')
-    expect(renderCompMatrixHtml(subject, [comp])).toContain('$478/sf')
+    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Sale price / sqft')
+    expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('$478/sf')
   })
 
   it('does not lecture the per-square-foot formula', () => {
-    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(
+    expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(
       /Sale price per square foot is close price over living area/,
     )
-    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(
+    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).not.toMatch(
       /Sale price per square foot is close price over living area/,
     )
   })
 
   it('never says "as your house"', () => {
-    expect(renderCompMatrixHtml(subject, [comp])).not.toMatch(/as your house/i)
-    expect(renderCompMatrixHtml(landSubject, [landComp])).not.toMatch(/as your house/i)
+    expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
+    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).not.toMatch(/as your house/i)
   })
 
   it('puts a thumbnail above each column when a photo exists', () => {
     const html = renderCompMatrixHtml(
       { ...subject, photoUrl: 'https://cdn.example/subject.jpg' },
-      [{ ...comp, photoUrl: 'https://cdn.example/comp.jpg' }],
+      padSales({ ...comp, photoUrl: 'https://cdn.example/comp.jpg' }),
     )
     expect(html).toContain('matrix-thumb')
     expect(html).toContain('https://cdn.example/subject.jpg')
@@ -207,7 +221,7 @@ describe('land columns', () => {
   })
 
   it('still prints living area for an improved comp', () => {
-    const html = renderCompMatrixHtml(subject, [comp])
+    const html = renderCompMatrixHtml(subject, padSales(comp))
     expect(html).toMatch(/1,036/)
   })
 })

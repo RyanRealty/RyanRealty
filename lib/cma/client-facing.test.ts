@@ -136,7 +136,71 @@ const comps: CmaAdjustedComp[] = [
     adjustedPrice: 900000,
     weight: 0.4,
   },
-]
+
+  {
+    listingKey: 'C-PAD3',
+    mlsNumber: '13',
+    address: '19003 Pad Rd',
+    city: 'Bend',
+    subdivision: null,
+    latitude: 44.05,
+    longitude: -121.3,
+    beds: 3,
+    baths: 2,
+    sqft: 2200,
+    lotAcres: 1.0,
+    propertySubType: null,
+    yearBuilt: 2000,
+    photoUrl: null,
+    publicRemarks: null,
+    viewDescription: null,
+    taxAnnual: null,
+    listPrice: 1000000,
+    closePrice: 980000,
+    closeDate: '2026-03-01',
+    daysToOffer: 10,
+    domTotal: 18,
+    selectionTier: 'primary',
+    monthsSinceClose: 4,
+    timeAdjustment: 0,
+    timeAdjustedPrice: 980000,
+    ppsfTimeAdjusted: 445,
+    sizeAdjustment: 0,
+    adjustedPrice: 980000 + 3*1000,
+    weight: 0.4,
+  },
+  {
+    listingKey: 'C-PAD4',
+    mlsNumber: '14',
+    address: '19004 Pad Rd',
+    city: 'Bend',
+    subdivision: null,
+    latitude: 44.05,
+    longitude: -121.3,
+    beds: 3,
+    baths: 2,
+    sqft: 2200,
+    lotAcres: 1.0,
+    propertySubType: null,
+    yearBuilt: 2000,
+    photoUrl: null,
+    publicRemarks: null,
+    viewDescription: null,
+    taxAnnual: null,
+    listPrice: 1000000,
+    closePrice: 980000,
+    closeDate: '2026-03-01',
+    daysToOffer: 10,
+    domTotal: 18,
+    selectionTier: 'primary',
+    monthsSinceClose: 4,
+    timeAdjustment: 0,
+    timeAdjustedPrice: 980000,
+    ppsfTimeAdjusted: 445,
+    sizeAdjustment: 0,
+    adjustedPrice: 980000 + 4*1000,
+    weight: 0.4,
+  },]
 
 const pricingOverride: CmaPricing = {
   method1Low: 940000,
@@ -407,7 +471,7 @@ describe('engine output no longer contains the Tumalo leaks', () => {
   it('immersive HTML shares the same hygiene', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     expect(html).not.toMatch(LEAK)
-    expect(html).toContain('How we got the price')
+    expect(html).toContain('Our Recommended List Price for your home.')
     expect(html).toContain('pricing report')
     expect(html).not.toContain('broker price opinion')
     expect(html).not.toContain('claude-sonnet-4-5')

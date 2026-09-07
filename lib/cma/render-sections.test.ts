@@ -124,7 +124,7 @@ const broker: CmaBroker = {
 
 const bareArgs: RenderCmaArgs = {
   subject,
-  comps: [comp],
+  comps: fiveSales(comp),
   market: null,
   pricing,
   broker,
@@ -139,6 +139,16 @@ const bareArgs: RenderCmaArgs = {
   expiredAudit: null,
   development: null,
   rental: null,
+}
+
+
+function fiveSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
+  return Array.from({ length: n }, (_, i) => ({
+    ...seed,
+    listingKey: seed.listingKey ? `${seed.listingKey}-${i}` : `C${i + 1}`,
+    address: i === 0 ? seed.address : `${100 + i} Peer St`,
+    adjustedPrice: (seed.adjustedPrice ?? seed.closePrice ?? 500000) + i * 1000,
+  }))
 }
 
 describe('capability blocks return nothing when their data is absent', () => {

@@ -168,7 +168,7 @@ function diag(over: Partial<CompSelectionDiagnostics> = {}): CompSelectionDiagno
     starved_at: 'rural-county-24mo',
     starved_reason: null,
     target_comps: 5,
-    min_comps: 3,
+    min_comps: 5,
     candidates: 2,
     excluded_totals: emptyExclusions(),
     outliers_excluded: 0,

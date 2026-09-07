@@ -152,9 +152,9 @@ export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | nu
   const bits: string[] = []
   if (subject.recommendedList != null && subject.recommendedList > 0) {
     const d = Math.round(r.listPrice - subject.recommendedList)
-    if (d === 0) bits.push('same as this list')
-    else if (d > 0) bits.push(`${usd(d)} above this list`)
-    else bits.push(`${usd(-d)} below this list`)
+    if (d === 0) bits.push('same as this recommend')
+    else if (d > 0) bits.push(`${usd(d)} above this recommend`)
+    else bits.push(`${usd(-d)} below this recommend`)
   }
   if (r.sqft != null && r.sqft > 0 && subject.sqft != null && subject.sqft > 0) {
     const d = Math.round(r.sqft - subject.sqft)

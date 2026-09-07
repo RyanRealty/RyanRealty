@@ -35,7 +35,7 @@ export function compsPriceChartSvg(input: {
         filled: false,
       })),
       {
-        tick: 'This list',
+        tick: 'Recommend',
         value: input.recommended,
         label: shortUsd(input.recommended),
         filled: true,

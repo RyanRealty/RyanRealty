@@ -492,7 +492,7 @@ export function renderPrintOutcomeStripSvg(input: {
       filled: false,
     })),
     {
-      tick: 'This list',
+      tick: input.listLabel,
       value: input.list,
       label: moneyK(input.list),
       filled: true,

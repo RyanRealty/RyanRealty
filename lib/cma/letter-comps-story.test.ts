@@ -216,10 +216,20 @@ const extras: CmaExtras = {
   marketArea,
 }
 
+
+function fiveSales(seed: CmaAdjustedComp): CmaAdjustedComp[] {
+  return Array.from({ length: 5 }, (_, i) => ({
+    ...seed,
+    listingKey: `C${i + 1}`,
+    address: i === 0 ? seed.address : `${20 + i} Peer`,
+    adjustedPrice: (seed.adjustedPrice ?? seed.closePrice) + i * 1000,
+  }))
+}
+
 describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
   it('matrix carries sales that set the list with DOM + listing history on subject and comps', () => {
-    const html = renderCompMatrixHtml(subject, [sold])
-    expect(html).toContain('The sales that set the list')
+    const html = renderCompMatrixHtml(subject, fiveSales(sold))
+    expect(html).toContain('The sales that set this price')
     expect(html).toContain('Days on market')
     expect(html).toContain('Listing history')
     expect(html).toContain('42')
@@ -265,7 +275,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
   it('print spine orders comps → expired peers → competition', () => {
     const pages = assembleOpinionPages({
       subject,
-      comps: [sold],
+      comps: fiveSales(sold),
       market: null,
       pricing,
       extras,
@@ -274,7 +284,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       excludedOutliers: [],
     })
     const bodies = pages.map((p) => p.body).join('\n')
-    const salesIdx = bodies.indexOf('The sales that set the list')
+    const salesIdx = bodies.indexOf('The sales that set this price')
     const expiredIdx = bodies.indexOf('Expired peers — what happened')
     const compIdx = bodies.indexOf('Who you are competing with at this price')
     expect(salesIdx).toBeGreaterThan(-1)
@@ -285,7 +295,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
   it('immersive spine carries the same four beats', () => {
     const html = assembleOpinionScenes({
       subject,
-      comps: [sold],
+      comps: fiveSales(sold),
       market: null,
       pricing,
       extras,
@@ -293,7 +303,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       generatedAtIso: '2026-09-06T12:00:00.000Z',
       mapDataUri: null,
     })
-    expect(html).toContain('The sales that set the list')
+    expect(html).toContain('The sales that set this price')
     expect(html).toContain('Expired peers — what happened')
     expect(html).toContain('id="competition"')
     expect(html).toContain('days on market')

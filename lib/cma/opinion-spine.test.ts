@@ -106,7 +106,7 @@ const marketArea: CmaMarketArea = {
   priceHi: 600000,
   selected: {
     key: 'selected',
-    label: 'Used in the list',
+    label: 'Used for the recommend',
     count: 1,
     low: 485000,
     median: 485000,
@@ -170,10 +170,20 @@ const marketArea: CmaMarketArea = {
   ],
 }
 
+
+function fiveSales(seed: CmaAdjustedComp): CmaAdjustedComp[] {
+  return Array.from({ length: 5 }, (_, i) => ({
+    ...seed,
+    listingKey: `C${i + 1}`,
+    address: i === 0 ? seed.address : `${40 + i} Peer`,
+    adjustedPrice: (seed.adjustedPrice ?? 500000) + i * 1000,
+  }))
+}
+
 function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
   return {
     subject,
-    comps: [comp],
+    comps: fiveSales(comp),
     market: {
       geoSlug: 'redmond',
       geoLabel: 'Redmond',
@@ -273,7 +283,7 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('<h2 class="section">Home location</h2>')
     expect(html).not.toContain('<h2 class="section">Property facts</h2>')
     expect(html).toContain('How we got the price')
-    expect(html).toContain('The sales that set the list')
+    expect(html).toContain('The sales that set this price')
     expect(html).toContain('Where those sales are')
     expect(html).toContain('12 Pine')
     expect(html).toContain('data-comp="1"')
@@ -356,7 +366,7 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('Net at recommended list')
     expect(html).toContain('$467,000')
     expect(html).not.toMatch(/typical concessions/)
-    expect(html).toContain('sales that set this list')
+    expect(html).toContain('sales that set this price')
     expect(html).not.toMatch(BANNED)
     const priceAt = html.indexOf('How we got the price')
     const houseAt = html.indexOf('<h2 class="section">Home location</h2>')

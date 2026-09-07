@@ -79,13 +79,13 @@ describe('print lollipop rows', () => {
       rows: [
         { tick: '1345 3rd', value: 372_000, label: '$372K', filled: false },
         { tick: '2465 7th', value: 399_000, label: '$399K', filled: false },
-        { tick: 'This list', value: 401_000, label: '$401K', filled: true },
+        { tick: 'Recommend', value: 401_000, label: '$401K', filled: true },
       ],
       caption: 'Adjusted comparable sales',
       colors: PRINT_NAVY_CREAM,
     })
     expect(svg).toContain('1345 3rd')
-    expect(svg).toContain('This list')
+    expect(svg).toContain('Recommend')
     expect(svg).toContain('$401K')
     expect(svg).toContain('$372K')
     expect(svg.match(/<circle/g)?.length).toBe(3)
@@ -101,14 +101,14 @@ describe('print outcome strip', () => {
       lastAsk: 460_000,
       xMinLabel: '$341K',
       xMaxLabel: '$460K',
-      listLabel: 'This list',
+      listLabel: 'Recommend',
       lastAskLabel: 'Last ask',
       caption: 'Sold and unsold in this band',
       colors: PRINT_NAVY_CREAM,
     })
     expect(svg).not.toMatch(/>Sold</)
     expect(svg).toContain('$380K')
-    expect(svg).toContain('This list')
+    expect(svg).toContain('Recommend')
     expect(svg).toContain("Didn't sell")
     expect(svg).toContain('Last ask')
     expect(svg).toContain('$401K')
