@@ -166,6 +166,14 @@ export interface CmaMarketContext {
    * Absent when the mart row is missing. Never a zero fill.
    */
   yearMart?: CmaMartYearFigure | null
+  /**
+   * Chapter 2 of the seller document ("Priced right sells. Priced high sits"),
+   * computed at BUILD in lib/pricing/local-outcomes.ts and stored on
+   * `render_args`. Never derived in a renderer. Each carries its own `source`.
+   * Optional: absent on rows built before 2026-09-07.
+   */
+  offerTiming?: import('@/lib/pricing/local-outcomes').CmaOfferTiming | null
+  askOutcome?: import('@/lib/pricing/local-outcomes').CmaAskOutcome | null
 }
 
 export interface CmaPricing {

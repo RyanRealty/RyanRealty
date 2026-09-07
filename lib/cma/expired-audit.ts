@@ -91,6 +91,9 @@ export interface ExpiredAuditData {
   services: string[]
   netSheet: ExpiredNetSheet
   feeLine: string
+  /** The final listing period as a timeline — chapter 1's graphic. Optional
+   *  on rows built before it existed; null when the cycle proves nothing. */
+  finalCycle?: ExpiredFinalCycle | null
 }
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
@@ -175,6 +178,137 @@ export function stampFinalCycleDom(
   if (!line) return null
   subject.listingHistoryLine = line.endsWith('.') ? line : `${line}.`
   return dom
+}
+
+// ── The final listing period, as a timeline ─────────────────────────────────
+
+/** One dated step in the ask. `ask` is the price AFTER the change. */
+export interface ExpiredFinalCycleCut {
+  /** YYYY-MM-DD, or null on the undated fallback below. */
+  date: string | null
+  ask: number
+}
+
+/**
+ * The subject's final listing period, drawn rather than described.
+ *
+ * Chapter 1 of the reimagined document is one picture: a time axis from list
+ * date to off-market date, the value range shaded across it, and the ask as a
+ * stepped line that never enters the range. This is that line's data.
+ *
+ * `cuts` is every DATED change to the ask, oldest first, from the
+ * price-change records (`price_history` + the MLS change log in
+ * `listing_history`). When the record holds no dated change but the two asks
+ * on the listing row differ, one undated step is emitted — `date: null`,
+ * `ask: finalAsk` — and `cutsDated` is false, so the renderer draws a flat
+ * line at the original ask rather than inventing a date for the step. §0: a
+ * date is a number, and a date from convention is a fabrication.
+ */
+export interface ExpiredFinalCycle {
+  /** YYYY-MM-DD the listing went on. */
+  listDate: string | null
+  /** The ask it opened at (`OriginalListPrice`). */
+  initialAsk: number | null
+  cuts: ExpiredFinalCycleCut[]
+  /** False when `cuts` was reconstructed from the two asks with no dated event. */
+  cutsDated: boolean
+  /** The ask it came off at (`ListPrice`). */
+  finalAsk: number | null
+  /** YYYY-MM-DD it came off the market. */
+  offMarketDate: string | null
+  /** Expired / Canceled / Withdrawn. */
+  status: string | null
+  /** List date to off-market date — `finalCycleDaysOnMarket`, one definition. */
+  days: number | null
+  /** §0 trace: where each field came from. */
+  source: { table: string; filter: string; fetchedAt: string; query: string }
+}
+
+function positiveAsk(value: unknown): number | null {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null
+}
+
+function dayString(value: string | null | undefined): string | null {
+  const s = String(value ?? '').trim().slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null
+}
+
+/**
+ * Build the timeline from the final cycle plus whatever dated price events the
+ * record holds. Pure — the caller does the reading (lib/pricing/local-outcomes
+ * -read.ts's sibling in the builder), so this stays unit-testable.
+ *
+ * Events outside the cycle's own window are dropped: a price change dated
+ * before the list date belongs to a prior attempt at the same address, and one
+ * after the off-market date is a post-withdrawal edit, not something the
+ * market saw.
+ */
+export function buildFinalCycle(args: {
+  cycle: BpoListingCycle | null | undefined
+  priceEvents?: ReadonlyArray<{ date: string; ask: number }>
+  listingKey?: string | null
+  fetchedAt?: string
+}): ExpiredFinalCycle | null {
+  const cycle = args.cycle
+  if (!cycle) return null
+  const listDate = dayString(cycle.listDate)
+  const offMarketDate = dayString(cycle.offMarketDate)
+  const initialAsk = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
+  const finalAsk = positiveAsk(cycle.finalListPrice)
+  const days = finalCycleDaysOnMarket(cycle)
+
+  const dated: ExpiredFinalCycleCut[] = []
+  const seen = new Set<string>()
+  for (const e of args.priceEvents ?? []) {
+    const date = dayString(e.date)
+    const ask = positiveAsk(e.ask)
+    if (!date || ask == null) continue
+    if (listDate && date < listDate) continue
+    if (offMarketDate && date > offMarketDate) continue
+    // The opening ask is the line's start, not a step in it.
+    if (initialAsk != null && ask === initialAsk && dated.length === 0) continue
+    const k = `${date}|${ask}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    dated.push({ date, ask })
+  }
+  dated.sort((a, b) => String(a.date).localeCompare(String(b.date)))
+
+  const cutsDated = dated.length > 0
+  const cuts: ExpiredFinalCycleCut[] = cutsDated
+    ? dated
+    : initialAsk != null && finalAsk != null && finalAsk !== initialAsk
+      ? [{ date: null, ask: finalAsk }]
+      : []
+
+  return {
+    listDate,
+    initialAsk,
+    cuts,
+    cutsDated,
+    finalAsk,
+    offMarketDate,
+    status: cycle.status ?? null,
+    days,
+    source: {
+      table: 'listings + price_history + listing_history',
+      filter:
+        `ListingKey='${args.listingKey ?? cycle.listingKey ?? ''}'. ` +
+        `listDate from listings."ListDate" (falling back to "OnMarketDate"), offMarketDate from listings.off_market_date ` +
+        `(falling back to status_change_timestamp), initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
+        `days = list date to off-market date in whole calendar days. ` +
+        (cutsDated
+          ? `${dated.length} dated ask change(s) inside the cycle window from price_history.new_price and the ` +
+            `listing_history 'ListPrice: A → B' change log.`
+          : `No dated ask change is recorded for this cycle, so the step carries no date.`),
+      fetchedAt: args.fetchedAt ?? new Date().toISOString(),
+      query:
+        `select "ListingKey", "StandardStatus", "ListDate", "OnMarketDate", off_market_date, status_change_timestamp, "OriginalListPrice", "ListPrice", "DaysOnMarket" from listings where "ListingKey" = '${args.listingKey ?? cycle.listingKey ?? ''}'` +
+        ` ;; select old_price, new_price, changed_at from price_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by changed_at` +
+        ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date`,
+    },
+  }
 }
 
 /**

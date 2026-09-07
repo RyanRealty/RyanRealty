@@ -80,7 +80,25 @@ type DryRun = {
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
+  /**
+   * The three chapter-1/chapter-2 blocks EXACTLY as buildCma hangs them on
+   * `render_args` — `render_args.market.offerTiming`,
+   * `render_args.market.askOutcome`, `render_args.expiredAudit.finalCycle`.
+   * Computed here through the same functions the build calls, so the dry run
+   * shows the shipped shape without writing a row.
+   */
+  renderArgsMarketOfferTiming: unknown
+  renderArgsMarketAskOutcome: unknown
+  renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
+}
+
+/** JSON, indented under the dry-run's own two-space report gutter. */
+function indent(value: unknown): string {
+  return JSON.stringify(value, null, 2)
+    .split('\n')
+    .map((l) => `     ${l}`)
+    .join('\n')
 }
 
 /** Exactly what lib/cma/comp-matrix.ts subjectDomDays reads off the subject. */
@@ -105,8 +123,10 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { MIN_COMPS } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
-  const { buildFailureFindings, stampFinalCycleDom } = await import('@/lib/cma/expired-audit')
+  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle } = await import('@/lib/cma/expired-audit')
   const { attachSellerNet } = await import('@/lib/pricing/seller-net')
+  const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
+  const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
 
   const base: DryRun = {
     slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null,
@@ -114,7 +134,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     recommended: null, range: [null, null], confidence: null, compPpsfCv: null,
     needsReview: false, reviewReason: null, hardFailures: [],
     matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
-    concessionSentenceTrimmed: null, error: null,
+    concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
+    renderArgsMarketAskOutcome: null, renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -215,6 +236,20 @@ async function dryRun(slug: string): Promise<DryRun> {
     return domFromHistoryLine(f?.fact ?? null)
   })()
 
+  // The three blocks buildCma hangs on render_args, computed through the same
+  // functions the build calls (lib/cma/build.ts steps 4.7 and 4.755).
+  const localOutcomes = await buildCmaLocalOutcomes({ city: subject.city }).catch(() => ({
+    offerTiming: null,
+    askOutcome: null,
+  }))
+  const finalCycleBlock = await (async () => {
+    if (!lastCycleFailed) return null
+    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+    const cycle = history.currentCycle
+    const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
+    return buildFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
+  })()
+
   const contract = evaluateAccuracyContract({
     comps: adjusted,
     pricing,
@@ -250,6 +285,9 @@ async function dryRun(slug: string): Promise<DryRun> {
     keptCompCount: adjusted.length,
     concessionSentence,
     concessionSentenceTrimmed,
+    renderArgsMarketOfferTiming: localOutcomes.offerTiming,
+    renderArgsMarketAskOutcome: localOutcomes.askOutcome,
+    renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
   }
 }
@@ -270,6 +308,8 @@ async function main() {
       range: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
       hardFailures: [], matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0,
       concessionSentence: null, concessionSentenceTrimmed: null,
+      renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
+      renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -297,6 +337,12 @@ async function main() {
       console.log(`   concessions · kept comps ${r.keptCompCount} · "${r.concessionSentence}" · ${denom === r.keptCompCount ? 'SAME SET' : 'DIFFERENT SET'}`)
       if (r.concessionSentenceTrimmed) console.log(`   concessions · 5-comp kept set · "${r.concessionSentenceTrimmed}"`)
     }
+    console.log('   render_args.market.offerTiming =')
+    console.log(indent(r.renderArgsMarketOfferTiming))
+    console.log('   render_args.market.askOutcome =')
+    console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.expiredAudit.finalCycle =')
+    console.log(indent(r.renderArgsExpiredAuditFinalCycle))
     if (r.error) console.log(`   ✖ ${r.error}`)
   }
   if (asJson) console.log(JSON.stringify(out, null, 2))
