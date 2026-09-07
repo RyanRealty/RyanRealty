@@ -6,6 +6,7 @@ import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, sparkPhotoA
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
+  daysToOfferPhoneSvg,
   daysToOfferSvg,
   medianCloseLineSvg,
   priceRulerPhoneSvg,
@@ -379,7 +380,13 @@ export function renderDaysToOfferHtml(
   ]
     .filter(Boolean)
     .join(' ')
-  return `<div class="szn is-hero">${svg}</div>
+  // Two layouts of one graphic, exactly one ever visible: the wide strip on
+  // paper and at reading width, the drawn-to-fit one below 700px. F8 — the
+  // wide strip in a pan box put the subject's own bar label, the punchline of
+  // the chart, outside the visible width of a box nobody scrolls.
+  const phone = daysToOfferPhoneSvg(rows, 'How fast homes like yours went', tick)
+  return `<div class="szn is-hero days-wide">${svg}</div>
+  ${phone ? `<div class="szn days-phone">${phone}</div>` : ''}
   <p class="chart-read">${esc(reading)}</p>`
 }
 

@@ -885,3 +885,72 @@ describe('no MLS placeholder reaches a seller-facing source line', () => {
     expect(letter()).toContain('Diamond Bar Ranch')
   })
 })
+
+// ── F8 (orchestrator look-pass, 2026-09-07) ─────────────────────────────────
+
+describe('F8 — the days-to-offer strip fits a phone', () => {
+  const phoneDays = (html: string): string => {
+    const wrap = /<div class="szn days-phone">([\s\S]*?)<\/div>/.exec(html)
+    expect(wrap, 'both documents must carry a phone layout of the days strip').toBeTruthy()
+    return wrap![1]!
+  }
+
+  for (const [name, render] of [
+    ['letter', letter],
+    ['immersive', immersive],
+  ] as const) {
+    it(`draws every bar, the subject label and the median inside the viewBox on the ${name}`, () => {
+      const svg = phoneDays(render())
+      const { W, H, texts } = svgBoxes(svg)
+      expect(W).toBeLessThanOrEqual(400)
+
+      // Five kept sales and the subject's own failed listing.
+      const labels = texts.map((t) => t.text)
+      for (const addr of ['730 Quince', '840 Quince', '1737 7th', '2485 7th', '735 Oak']) {
+        expect(labels.some((l) => l.includes(addr)), `${addr} lost its row`).toBe(true)
+      }
+      expect(labels.some((l) => /days, no offer$/.test(l)), 'the punchline label').toBe(true)
+      expect(labels).toContain('Redmond median 21 days')
+
+      // Six bars plus the axis plus the median hairline, none off the frame.
+      const lines = [...svg.matchAll(/<line ([^>]*)\/>/g)].map((m) => m[1]!)
+      const at = (a: string, k: string) => Number(new RegExp(`${k}="([-\\d.]+)"`).exec(a)?.[1] ?? 0)
+      const bars = lines.filter((a) => at(a, 'stroke-width') >= 3 && at(a, 'y1') === at(a, 'y2'))
+      expect(bars).toHaveLength(6)
+      for (const a of lines) {
+        expect(at(a, 'x1')).toBeGreaterThanOrEqual(0)
+        expect(at(a, 'x2')).toBeLessThanOrEqual(W)
+        expect(at(a, 'y1')).toBeGreaterThanOrEqual(0)
+        expect(at(a, 'y2')).toBeLessThanOrEqual(H)
+      }
+
+      // Every text box — address, value, median label — inside the frame.
+      for (const t of texts) {
+        const w = t.text.length * t.size * 0.58
+        const left = t.anchor === 'end' ? t.x - w : t.anchor === 'middle' ? t.x - w / 2 : t.x
+        expect(left, `"${t.text}" runs off the left edge`).toBeGreaterThanOrEqual(-0.5)
+        expect(left + w, `"${t.text}" runs off the right edge`).toBeLessThanOrEqual(W + 0.5)
+        expect(t.y).toBeLessThanOrEqual(H)
+        expect(t.y).toBeGreaterThanOrEqual(0)
+      }
+    })
+  }
+
+  it('shows the phone layout only below 700px, and never on paper', () => {
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      const flat = css.replace(/\s+/g, ' ')
+      expect(flat).toMatch(/\.days-phone\s*\{\s*display:\s*none/)
+      expect(flat).toMatch(
+        /@media screen and \(max-width:\s*700px\)[^}]*\{[^@]*\.days-wide\s*\{\s*display:\s*none/,
+      )
+      expect(flat).toMatch(/@media print[^@]*\.days-phone\s*\{\s*display:\s*none\s*!important/)
+    }
+  })
+
+  it('leaves the wide strip exactly as it was for the printed page', () => {
+    const html = letter()
+    expect(html).toContain('<div class="szn is-hero days-wide">')
+    const wide = /<div class="szn is-hero days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
+    expect(wide).toContain('viewBox="0 0 720')
+  })
+})

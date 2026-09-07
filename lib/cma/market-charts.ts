@@ -450,3 +450,99 @@ export function daysToOfferSvg(
 // The twelve-month new-listing ledger was deleted 2026-09-07 (P4). It printed
 // one to three listings a month and a row of dashes, answered no question a
 // seller has, and the days-to-offer strip above replaced it on both documents.
+
+/**
+ * The same days strip, laid out for a phone.
+ *
+ * F8, 2026-09-07: the 720-unit strip was held at `min-width` inside a pan box
+ * below 700px. That is the right call for a wide chart whose reading survives
+ * a cropped tail — but this chart's punchline is the subject's own bar and its
+ * label ("192 days, no offer"), and at 375 both that label and the market
+ * median's label sat outside the visible width of a box no seller scrolls.
+ *
+ * So this layout is drawn to fit, the way `priceRulerPhoneSvg` is. The row
+ * label moves out of the left gutter and sits ABOVE its bar, which frees the
+ * whole frame for the bar and puts the value at the right edge where the eye
+ * already is. The median rides the same domain as the bars, so it can never
+ * disagree with the wide layout about where it sits, and its label flips to
+ * the left of the hairline rather than off the frame.
+ */
+export function daysToOfferPhoneSvg(
+  rows: readonly DaysRow[],
+  caption: string,
+  median?: DaysMedianTick | null,
+): string {
+  const kept = rows.filter((r) => Number.isFinite(r.days) && r.days >= 0)
+  if (kept.length < 3) return ''
+  const tick =
+    median != null && Number.isFinite(median.days) && median.days > 0 && median.label.trim()
+      ? median
+      : null
+  const max = Math.max(...kept.map((r) => r.days), tick?.days ?? 0)
+  if (!(max > 0)) return ''
+
+  const W = 360
+  const FS = 11
+  // Geist runs about 0.58em per character at this size. Deliberately generous:
+  // a label three units short is invisible, three units long is a clipped word.
+  const width = (s: string) => s.length * FS * 0.58
+  const plotL = 6
+  const plotR = W - 6
+  const rowH = 32
+  const top = tick ? 24 : 6
+  const baseY = top + kept.length * rowH + 2
+  const H = baseY + 4
+  const x = (v: number) => plotL + ((plotR - plotL) * v) / max
+
+  const bars = kept
+    .map((row, i) => {
+      const labelY = top + i * rowH + 11
+      const barY = top + i * rowH + 20
+      const end = Math.max(x(row.days), plotL + 1)
+      const stroke = row.subject ? RULER_INK : RULER_MUTED
+      const weight = row.subject ? 6 : 4
+      // The value owns the right edge; the address takes what is left of the
+      // frame, truncated by its own measured width rather than a fixed count.
+      const room = plotR - width(row.valueLabel) - 8 - plotL
+      const maxChars = Math.max(6, Math.floor(room / (FS * 0.58)))
+      const label =
+        row.label.trim().length <= maxChars
+          ? row.label.trim()
+          : `${row.label.trim().slice(0, maxChars - 1).trimEnd()}…`
+      const bold = row.subject ? ' font-weight="600"' : ''
+      return `<text x="${plotL}" y="${labelY}"${bold} font-size="${FS}" fill="${RULER_INK}">${esc(label)}</text>
+    <text x="${plotR}" y="${labelY}" text-anchor="end"${bold} font-size="${FS}" fill="${RULER_INK}">${esc(row.valueLabel)}</text>
+    <line x1="${plotL}" y1="${barY}" x2="${end.toFixed(1)}" y2="${barY}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>`
+    })
+    .join('\n    ')
+
+  // The row label owns the full width here, so the wide layout's one
+  // continuous hairline would strike through six addresses. The median is a
+  // comb instead: one short segment inside each bar's own band, which reads as
+  // one vertical rule and touches no text. The label flips to the left of the
+  // comb rather than off the frame.
+  const medianMark = (() => {
+    if (!tick) return ''
+    const tx = x(tick.days)
+    const text = tick.label.trim()
+    const w = width(text)
+    const flip = tx + 6 + w > W
+    const lx = flip ? Math.max(tx - 6, w) : Math.min(tx + 6, W - w)
+    const teeth = kept
+      .map((_, i) => {
+        const barY = top + i * rowH + 20
+        return `<line class="days-median" x1="${tx.toFixed(1)}" y1="${barY - 7}" x2="${tx.toFixed(1)}" y2="${barY + 7}" stroke="${RULER_MUTED}" stroke-width="1"/>`
+      })
+      .join('\n    ')
+    return `${teeth}
+    <text x="${lx.toFixed(1)}" y="12"${flip ? ' text-anchor="end"' : ''} font-size="${FS}" font-weight="600" fill="${RULER_MUTED}">${esc(text)}</text>`
+  })()
+
+  // No zero axis: with the labels out of a gutter, a vertical rule at the
+  // origin would run under the first character of every address. Six bars
+  // starting flush on one edge already state where zero is.
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(caption)}" class="trend-svg">
+    ${medianMark}
+    ${bars}
+  </svg>`
+}
