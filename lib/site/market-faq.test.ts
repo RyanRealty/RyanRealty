@@ -34,6 +34,41 @@ describe('buildMarketFaq', () => {
     expect(mos?.answer).toContain("seller's market") // <= 4 months
   })
 
+  // 2026-09-07: an answer engine quoted the list-only price sentence as Bend's
+  // "median home price" beside four peers' SALE medians. When the page has the
+  // closed-sale month, the sale price answers the question and the list price
+  // follows, named as the price of homes for sale.
+  it('leads the price answer with the sale price when the month is known', () => {
+    const r = buildMarketFaq('Bend', {
+      grain: 'city',
+      source: 'market-truth',
+      activeCount: 603,
+      medianListPrice: 950_000,
+      medianSalePrice: 750_000,
+      medianSaleMonthLabel: 'August 2026',
+      monthsOfSupply: 3.9,
+      medianDaysToPending: 23,
+      refreshedAt: '2026-09-06',
+    })
+    const price = r.faqs.find((f) => f.question === 'What is the median home price in Bend?')
+    expect(price?.answer).toBe(
+      'The median sale price for a single-family home in Bend was $750,000 in August 2026. ' +
+        'The median list price of the single-family homes for sale is $950,000 as of September 2026, ' +
+        'based on a direct count of the active MLS listings.',
+    )
+    expect(r.datasetVariables.map((v) => v.name)).toEqual(
+      expect.arrayContaining(['Median Sale Price', 'Median List Price']),
+    )
+    expect(r.datasetVariables.find((v) => v.name === 'Median Sale Price')?.value).toBe(750_000)
+  })
+
+  it('needs the month label to publish a sale price', () => {
+    const r = buildMarketFaq('Bend', { grain: 'city', medianListPrice: 950_000, medianSalePrice: 750_000 })
+    const price = r.faqs.find((f) => f.question.includes('median home price'))
+    expect(price?.answer).not.toContain('sale price')
+    expect(price?.answer).toContain('$950,000')
+  })
+
   // CLAUDE.md section 0: "Never round in a way that changes the narrative."
   // Rounding months-of-supply BEFORE classifying it walks the VERDICT across a
   // canonical boundary in both directions; rounding it naively for display walks

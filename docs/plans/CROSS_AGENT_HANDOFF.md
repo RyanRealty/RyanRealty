@@ -1,4 +1,103 @@
-# Current — 2026-09-07 (AEO guide pack + site audit)
+# Current — 2026-09-07 (AEO guide pack, backlog grind, title)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
+`wt/aeo-landing-20260907` (squash of `wt/aeo-briefs-audit-20260907` onto the
+sibling's `90cffee8`). Earlier on `origin/main`: `5f9987ab` (fifteen guides + site
+audit), `0301398e` (handoff).
+
+**Shipped**
+- Fifteen buyer + seller guides from the Cos AEO brief pack are live (six rewrites,
+  three drafts rebuilt, six new). Matt then asked for the cut figures back, dated;
+  they are in with their as-of dates. Ledger and brief-to-slug map:
+  `docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md`.
+- Backlog grind (Matt: "yes, both"): 29 archived posts triaged. 13 restored on
+  primary sources (rates, equity, rent vs buy on HUD FY2026 FMR, mortgage programs
+  with 2026 limits, second home vs investment with 2026 IRS thresholds, wildfire
+  code, insurance, renovations on NAR 2025, Bend housing target on OHNA), 16
+  retired with redirects to the page that replaced each, 18 semicolon fixes on
+  10 published posts. `blog_posts`: 80 published, 16 retired, 0 archived, 0 voice
+  violations. Seeds: `aeo-guides-2026-09.ts`, `restored-guides-2026-09.ts`, one
+  slug per file.
+- Homepage title is `Homes for Sale in Central Oregon | Ryan Realty, Bend`
+  (Matt 2026-09-07); VOICE.md, `ci:seo-shell`, and the hero test moved with it.
+- Guides end in `<h2>Questions</h2>` + five h3/p pairs; `lib/blog/publish-blog-faq.ts`
+  ships that as FAQPage JSON-LD. Site audit fixes: listing photo alt
+  (`ci:listing-photo-alt`), search robots + og + ItemList, menu labels not h2,
+  `/buy` FAQ corrected. The market page price FAQ and chrome scope are the
+  sibling's `90cffee8`; this branch dropped its duplicate.
+- Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
+
+**Open**
+- Hero stills for the nine new guides: Matt chose Studio stills. Sixteen
+  candidates across two subjects scored 71 to 78 against the 85 vision bar (all
+  `warped_architecture`), run stopped at $7.80. Contact sheet sent to Matt. Guides
+  keep library photos until he picks frames or the subject list goes landscape-only.
+- From the answer-share baseline: a dated monthly Bend and Redmond report page
+  with median sale price and months of supply stated once, and third-party
+  profiles for all three brokers, are the next AEO moves. Any "median home price"
+  in a guide is the sale price and month, matching the FAQ.
+- `scripts/build-legacy-redirects.mjs` regenerates from the committed JSON plus
+  its CURATED map; three stale CURATED targets were corrected so a regen no longer
+  reverts hand fixes. Expect the live-sitemap 404 warnings.
+- `npm run push` from a worktree branch stamps then runs a plain `git push` that
+  fails with no upstream. Follow with `git push origin HEAD:main` inside the marker
+  window, and fetch first: a sibling landing between rebase and push rejects it.
+
+**Do not**
+- Reseed blog posts without diffing against the live rows first.
+- Print a figure in a guide without its as-of date and source in the ledger.
+
+---
+
+# Previous — 2026-09-07 (AI answer share: who the engines name for Bend)
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
+`fix/bend-market-figure-truth`, landing on `origin/main` with this block.
+
+**Measured** (report: https://claude.ai/code/artifact/8080b7fa-4cda-4bd8-9768-ad46f45b38c2,
+baseline + browser recipes in memory `project_ai_visibility_2026-09`)
+- Ryan Realty named in 0 of 16 non-personalized runs (ChatGPT anon 4, Google
+  AI Mode anon 9, Gemini 3) across best-agent, sell-my-house, F1 battery,
+  market, Sunriver, expired, Tetherow. Perplexity on Matt's account 3 of 7
+  (unverifiable for personalization; logged-out Perplexity now forces signup).
+- Shortlists are ordered by Google Business Profile review count (High Desert
+  483, Ladd 270, Varsity 129, McGlone 100, Bend Premier 78; RR 25 site-reported)
+  and Zillow review count (Schaake 239, Frazier 194, Keyte 191; Matt 6).
+- The one non-personalized citation: Google AI Mode quoted the Bend FAQ JSON-LD
+  "median list price $950,000" as Bend's median home price beside peers' sale
+  medians ($733K to $780K). The page chart said "Median sale price $750K in Aug
+  2026". Every F1 path in `lib/seo/ai-query-map.json` was cited by nobody.
+
+**Shipped (this commit)**
+- `lib/site/market-faq.ts` price answer leads with the median SALE price and
+  month from the page chart series (`lib/market/latest-sale-median.ts`), then
+  the list price of homes for sale, named as such. Dataset adds Median Sale
+  Price. Wired on `/housing-market/[...slug]` and `/cities/[slug]`.
+- `lib/site/chrome-live.ts` Market/Sell eyebrows say "Central Oregon": the
+  region row rendered unlabeled on every page and read as that page's place.
+- Admin analytics overview renders `aiReferrers` (was fetched and discarded).
+- Scheduled task `ai-answer-share-bend-monthly` (desktop app, 1st of month
+  09:00) reruns the battery and republishes the report.
+
+**Found, not fixed**
+- `review-ask-on-close` cron works but has only ever staged drafts for TEST
+  people (crm_people 57840 "Marketing Test Lead", 63415 "Vault Test Buyer",
+  61945 "G4 Accept"); zero review asks sent (no timeline row carries the GBP
+  write-review URL). `tc_deals` holds ONE closed deal in the last 90 days and it
+  is a Vault test (60935 Apollo Place). Real closings are not reaching
+  `tc_deals` + `tc_deal_people`, so no real client is ever asked. Review count
+  is the ranking; this rail is the fix and it is dry. Owner: TC/CRM.
+- No Zillow review URL exists in the repo; a Zillow ask needs Matt's profile link.
+- Third-party proof (Zillow, Realtor.com, FastExpert, U.S. News profiles) and any
+  press release are publishing actions: Matt approves each.
+
+**Do not**
+- Compute a YoY percent in the FAQ from exact values: the chart writes its
+  claim from compacted labels and the two can differ in the last digit.
+
+---
+
+# Previous — 2026-09-07 (AEO guide pack + site audit)
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-wt-aeo-audit`, branch
 `wt/aeo-briefs-audit-20260907`, landed on `origin/main` at `5f9987ab`.

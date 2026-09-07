@@ -148,11 +148,15 @@ checks.push({
 
 const faq = src('lib/site/market-faq.ts')
 checks.push({
-  label: 'place FAQ median list uses formatPriceExact',
+  // Both figures in the price answer print exact whole dollars: the sale price
+  // (2026-09-07, leads the answer when the page has the closed-sale month) and
+  // the list price of the homes for sale.
+  label: 'place FAQ median sale and list prices use formatPriceExact',
   ok:
     /from ['"]@\/lib\/format\/money['"]/.test(faq) &&
-    /formatPriceExact\(pulse\.medianListPrice\)/.test(faq) &&
-    !/formatPrice\(pulse\.medianListPrice\)/.test(faq),
+    /formatPriceExact\(salePrice\)/.test(faq) &&
+    /formatPriceExact\(listPrice\)/.test(faq) &&
+    !/formatPrice\((?:salePrice|listPrice|pulse\.medianListPrice|pulse\.medianSalePrice)\)/.test(faq),
 })
 
 // The card moved from formatPublishedAsk(number) to the SALE-aware publisher on

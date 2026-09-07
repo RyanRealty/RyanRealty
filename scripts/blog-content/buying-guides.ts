@@ -47,7 +47,7 @@ export const posts: BlogPostSeed[] = [
 <h3>Electrical System</h3>
 
 <ul>
-<li>Panel capacity and condition (100-amp service is minimum for modern homes; 200-amp is preferred)</li>
+<li>Panel capacity and condition (100-amp service is the minimum for modern homes and 200-amp is preferred)</li>
 <li>Wiring type (aluminum wiring from the 1960s-70s requires special connectors and careful monitoring)</li>
 <li>GFCI protection in bathrooms, kitchens, garages, and exterior outlets</li>
 <li>Smoke detectors and carbon monoxide detectors (Oregon requires CO detectors in all homes)</li>
@@ -213,178 +213,6 @@ export const posts: BlogPostSeed[] = [
 <p>A good inspection protects you from expensive surprises and gives you the information to make an informed decision. Don't skip it, don't rush it, and don't be afraid of what it might find. Knowledge is always better than ignorance when you're making the largest purchase of your life.</p>
 
 <p>Have questions about what to look for in a specific property? <a href="/team">Our team</a> can connect you with experienced inspectors and help you interpret the results.</p>
-`,
-  },
-
-  // ─── 4. How to Choose the Right Mortgage ───
-  {
-    title: 'How to Choose the Right Mortgage for Your Situation',
-    slug: 'how-to-choose-the-right-mortgage',
-    category: 'Buying Guides',
-    tags: ['mortgage', 'financing', 'buying guide', 'home buying'],
-    hero_image_url:
-      'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1920&q=80',
-    published_at: '2025-11-05T10:00:00Z',
-    status: 'published',
-    seo_title: 'How to Choose the Right Mortgage in Central Oregon',
-    seo_description:
-      'Compare conventional, FHA, VA, USDA, and jumbo mortgages for Central Oregon home buyers. Covers ARM vs fixed, points, rate locks, and local vs national lenders.',
-    excerpt:
-      'A practical comparison of mortgage types available to Central Oregon buyers, including which rural areas qualify for USDA loans and when an ARM might actually make sense.',
-    content: `
-<p>Choosing a mortgage is not as simple as getting the lowest rate. The right loan depends on your down payment, credit score, how long you plan to stay, and where in Central Oregon you're buying. This guide compares the major loan types, explains the trade-offs, and helps you figure out which one fits your actual situation.</p>
-
-<h2>The Major Loan Types</h2>
-
-<h3>Conventional Loans</h3>
-
-<p>Conventional loans aren't backed by a government agency. They're originated by private lenders and typically sold to Fannie Mae or Freddie Mac. For most buyers in Central Oregon with decent credit and some savings, a conventional loan is the default choice.</p>
-
-<p><strong>Minimum down payment:</strong> 3% for first-time buyers through Conventional 97 or HomeReady programs, 5% standard, 20% to avoid PMI.</p>
-
-<p><strong>Credit score requirement:</strong> 620 minimum, but you'll get significantly better rates above 740.</p>
-
-<p><strong>PMI:</strong> Required if your down payment is less than 20%. Typically costs 0.5% to 1% of the loan amount per year. The key advantage: PMI automatically cancels once your equity reaches 22%, or you can request cancellation at 20%. This is a meaningful difference compared to FHA loans.</p>
-
-<p><strong>Loan limits for 2025:</strong> The conforming limit for Deschutes, Crook, and Jefferson counties is $806,500. If you need more than that, you're looking at a jumbo loan.</p>
-
-<p><strong>Best for:</strong> Buyers with credit scores above 680, at least 5% down payment, and stable income documentation.</p>
-
-<h3>FHA Loans</h3>
-
-<p>FHA loans are insured by the Federal Housing Administration and designed for buyers who have lower credit scores or smaller down payments.</p>
-
-<p><strong>Minimum down payment:</strong> 3.5% with a credit score of 580 or higher. 10% down with scores between 500 and 579.</p>
-
-<p><strong>Credit score requirement:</strong> 580 for the 3.5% down payment option, which is significantly more lenient than conventional loans.</p>
-
-<p><strong>Mortgage insurance:</strong> This is the catch. FHA loans require an upfront mortgage insurance premium (MIP) of 1.75% of the loan amount (rolled into the loan) plus an annual premium of 0.55% to 0.75%. For loans with less than 10% down, the annual premium lasts the life of the loan. It never drops off. The only way to stop paying it is to refinance into a conventional loan once you have 20% equity.</p>
-
-<p>On a $400,000 loan, the upfront MIP is $7,000, and the annual premium adds roughly $183 to $250 per month. Over 10 years, you might pay $29,000 in mortgage insurance before refinancing out of it.</p>
-
-<p><strong>Loan limits:</strong> $524,225 for Central Oregon counties in 2025. This can be a constraint in Bend's higher-priced neighborhoods.</p>
-
-<p><strong>Best for:</strong> Buyers with credit scores between 580 and 680 who can't qualify for conventional loans, with a plan to refinance once they've built equity.</p>
-
-<h3>VA Loans</h3>
-
-<p>Available to active duty military, veterans, and eligible surviving spouses. If you qualify, this is almost always the best deal available.</p>
-
-<p><strong>Down payment:</strong> Zero. No down payment required.</p>
-
-<p><strong>Mortgage insurance:</strong> None. No PMI, no MIP, nothing.</p>
-
-<p><strong>Funding fee:</strong> 2.15% for first-time use (1.25% with 5% down, 1% with 10% down). Exempt for veterans with service-connected disabilities. This fee can be financed into the loan.</p>
-
-<p><strong>Interest rates:</strong> Typically 0.25% to 0.5% lower than conventional rates because the government guarantee reduces lender risk.</p>
-
-<p><strong>No loan limit:</strong> For borrowers with full entitlement (first use or fully restored entitlement), there's no loan limit.</p>
-
-<p>Central Oregon has a significant veteran community. Local lenders here process VA loans regularly and understand the nuances of the program. The VA appraisal process has some additional property condition requirements (Minimum Property Requirements), so work with an agent who's experienced with VA transactions.</p>
-
-<p><strong>Best for:</strong> Any eligible veteran or active duty service member buying a primary residence.</p>
-
-<h3>USDA Loans</h3>
-
-<p>The USDA Rural Development loan program offers zero down payment loans for properties in eligible rural areas. This is the one most people don't know about, and in Central Oregon, it applies to more areas than you might expect.</p>
-
-<p><strong>Eligible areas in Central Oregon:</strong> La Pine, Prineville, Madras, Culver, Terrebonne, and many unincorporated areas in all three counties. Parts of the Redmond outskirts may also qualify. Bend proper does not qualify, and Redmond's city core likely does not, but check the USDA eligibility map for the specific address.</p>
-
-<p><strong>Down payment:</strong> Zero.</p>
-
-<p><strong>Income limits:</strong> Your household income must be at or below 115% of the area median income. For Deschutes County, this is approximately $105,000 for a household of 1 to 4 people (check current limits as they adjust annually).</p>
-
-<p><strong>Guarantee fee:</strong> 1% upfront (financed into the loan) plus 0.35% annual fee. This is significantly less expensive than FHA mortgage insurance.</p>
-
-<p><strong>Best for:</strong> Moderate-income buyers looking at homes in Prineville, La Pine, Madras, or other eligible rural areas who don't have a down payment saved.</p>
-
-<h3>Jumbo Loans</h3>
-
-<p>If you're buying above the conforming limit ($806,500 in Central Oregon counties), you need a jumbo loan. These are held by the originating lender rather than sold to Fannie Mae or Freddie Mac, which means terms vary more between lenders.</p>
-
-<p><strong>Down payment:</strong> Typically 10% to 20%, though some lenders offer 5% down jumbo products.</p>
-
-<p><strong>Credit score requirement:</strong> Usually 700 or higher, with some lenders requiring 720+.</p>
-
-<p><strong>Reserves:</strong> Jumbo lenders often require 6 to 12 months of mortgage payments in liquid reserves after closing.</p>
-
-<p><strong>Interest rates:</strong> Historically, jumbo rates were higher than conforming, but in recent years they've been very competitive and sometimes even lower.</p>
-
-<p><strong>Best for:</strong> Buyers purchasing higher-end homes in Bend's west side, Broken Top, Awbrey Butte, or other premium Central Oregon locations.</p>
-
-<h2>Fixed Rate vs Adjustable Rate Mortgages</h2>
-
-<h3>Fixed Rate</h3>
-
-<p>Your interest rate and monthly payment (principal and interest) stay the same for the life of the loan. The most common terms are 30-year and 15-year fixed.</p>
-
-<p>A 30-year fixed gives you the lowest monthly payment but costs more in total interest. A 15-year fixed has higher payments but builds equity much faster and saves a substantial amount in interest. On a $450,000 loan, the difference in total interest paid between a 30-year and 15-year can be $150,000 or more.</p>
-
-<h3>Adjustable Rate (ARM)</h3>
-
-<p>An ARM has a fixed rate for an initial period (typically 5, 7, or 10 years), then adjusts periodically based on a market index. A 7/1 ARM, for example, is fixed for 7 years, then adjusts annually.</p>
-
-<p>ARMs get a bad reputation because of the 2008 housing crisis, but they've changed significantly since then. Modern ARMs have:</p>
-
-<ul>
-<li>Caps on how much the rate can increase at each adjustment (typically 2%)</li>
-<li>Lifetime caps (usually 5% above the initial rate)</li>
-<li>Clear adjustment schedules</li>
-</ul>
-
-<p><strong>When an ARM makes sense:</strong> If you're confident you'll sell or refinance within the fixed period, the lower initial rate saves real money. A 7/1 ARM typically offers a rate 0.5% to 1% below a 30-year fixed. On a $500,000 loan, that's $2,500 to $5,000 per year in savings during the fixed period. Central Oregon has a fairly mobile population, with many buyers staying 5 to 7 years before moving. If that describes you, an ARM deserves consideration.</p>
-
-<p><strong>When an ARM doesn't make sense:</strong> If this is your forever home and you value payment certainty, stick with a fixed rate.</p>
-
-<h2>Points and Rate Locks</h2>
-
-<h3>Mortgage Points</h3>
-
-<p>One point equals 1% of your loan amount and typically reduces your rate by 0.25%. On a $450,000 loan, one point costs $4,500 and might reduce your rate from 6.5% to 6.25%, saving about $85 per month. You'd break even in about 53 months (just under 4.5 years).</p>
-
-<p>Buying points makes sense if you plan to keep the loan for longer than the break-even period. It doesn't make sense if you might sell or refinance within a few years. Your lender can calculate the exact break-even point for your specific scenario.</p>
-
-<h3>Rate Locks</h3>
-
-<p>A rate lock guarantees your interest rate for a specified period, typically 30 to 60 days. In a rising rate environment, a rate lock protects you from increases between application and closing. In a falling rate environment, you might prefer a shorter lock or a float-down option (which lets you take advantage of rate drops).</p>
-
-<p>Longer lock periods (60 to 90 days) sometimes cost slightly more (usually 0.125% to 0.25% higher rate). If your closing timeline is straightforward, a 30-day lock is usually sufficient and cheapest.</p>
-
-<h2>Local Lender vs National Lender</h2>
-
-<p>This is a real decision in Central Oregon, and there are legitimate trade-offs:</p>
-
-<p><strong>Local lenders</strong> (community banks, credit unions, local mortgage companies) understand Central Oregon's market. They know that a home in the Badlands with 40 acres isn't comparable to a subdivision home in southeast Bend, even if they're at similar price points. They're often more flexible with unique properties, self-employed borrowers, and unusual situations. Communication tends to be more personal and responsive.</p>
-
-<p><strong>National lenders</strong> (large banks, online lenders) sometimes offer lower rates due to scale, and their technology for document submission and tracking is often more polished. However, your loan officer may not know anything about Central Oregon's market specifics, and decisions may need to go through layers of approval.</p>
-
-<p>For a straightforward purchase (W-2 income, standard property, conforming loan amount), a national lender with a competitive rate is fine. For anything more complex (self-employment, rural property, unique home, jumbo loan), a local lender who understands the market is worth their weight in gold. The slightly higher rate, if there even is one, is offset by a smoother process and fewer surprises.</p>
-
-<h2>The Current Rate Environment</h2>
-
-<p>Rather than quote specific rates that will be outdated by the time you read this, here's how to think about rates in context:</p>
-
-<ul>
-<li><strong>Historical perspective:</strong> The 30-year average over the past 50 years is about 7.7%. The ultra-low rates of 2020-2021 (below 3%) were a historical anomaly, not the norm.</li>
-<li><strong>What matters most:</strong> The monthly payment you can comfortably afford, not whether the rate is "good" by some abstract standard.</li>
-<li><strong>Rate vs price:</strong> Waiting for lower rates while prices rise can cost more than buying now at a higher rate. A $500,000 house at 7% costs less per month than a $550,000 house at 6%.</li>
-<li><strong>You can refinance rates, you can't refinance price:</strong> If rates drop significantly after you buy, you can refinance. You can't undo paying a higher price because you waited and prices went up.</li>
-</ul>
-
-<h2>How to Compare Loan Offers</h2>
-
-<p>When you receive Loan Estimates from multiple lenders (and you should get at least three), focus on these specific numbers:</p>
-
-<ul>
-<li><strong>Interest rate and APR:</strong> The APR includes fees and points, so it's a better comparison tool than the rate alone.</li>
-<li><strong>Total closing costs:</strong> Section J of the Loan Estimate.</li>
-<li><strong>Monthly payment:</strong> Including taxes, insurance, and PMI/MIP if applicable.</li>
-<li><strong>Total interest paid over the loan term:</strong> This is the true cost of the loan.</li>
-</ul>
-
-<p>Don't just chase the lowest rate. A lender offering 0.125% lower but charging $3,000 more in fees might not be the better deal, depending on how long you keep the loan.</p>
-
-<p>The mortgage you choose affects your finances for decades. Spend the time to understand your options, get multiple quotes, and choose the loan that fits your actual plans, not just the one with the shiniest marketing. Want to talk through which option makes sense for your situation? <a href="/team">Reach out to our team</a> and we'll connect you with lenders who know the Central Oregon market.</p>
 `,
   },
 
@@ -755,7 +583,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>Earnest money is a good-faith deposit that accompanies your purchase offer. It tells the seller: I'm serious about this transaction and I'm putting real money behind my commitment. Without it, a buyer could tie up a property with an offer, preventing the seller from accepting other offers, with zero financial risk. That wouldn't be fair to the seller, so earnest money creates skin in the game.</p>
 
-<p>When the transaction closes successfully, your earnest money is applied toward your down payment and closing costs. It's not an additional cost; it's money you were going to spend anyway, just paid earlier in the process.</p>
+<p>When the transaction closes successfully, your earnest money is applied toward your down payment and closing costs. It's not an additional cost. It's money you were going to spend anyway, just paid earlier in the process.</p>
 
 <h2>Typical Amounts in Central Oregon</h2>
 
@@ -849,7 +677,7 @@ export const posts: BlogPostSeed[] = [
 
 <h2>Tax Implications</h2>
 
-<p>Earnest money that becomes part of your down payment at closing has no separate tax implications; it's simply part of your home purchase. However, if you forfeit earnest money because a deal falls through, you may be able to deduct the loss in some circumstances. Consult a tax professional for advice specific to your situation.</p>
+<p>Earnest money that becomes part of your down payment at closing has no separate tax implications. It's simply part of your home purchase. However, if you forfeit earnest money because a deal falls through, you may be able to deduct the loss in some circumstances. Consult a tax professional for advice specific to your situation.</p>
 
 <h2>Putting It All Together</h2>
 
@@ -858,7 +686,7 @@ export const posts: BlogPostSeed[] = [
 <ul>
 <li>In Central Oregon, $2,000 to $10,000 is typical depending on price range</li>
 <li>It's held by the escrow company, not the seller</li>
-<li>Contingencies protect your deposit; understand when they expire</li>
+<li>Contingencies protect your deposit. Understand when they expire</li>
 <li>Deliver on time, every time</li>
 <li>Don't waive contingencies unless you fully understand the financial risk</li>
 <li>At closing, it applies toward your purchase costs</li>
@@ -898,7 +726,7 @@ export const posts: BlogPostSeed[] = [
 
 <ul>
 <li>New listings increase 40% to 60% compared to winter months</li>
-<li>Buyer activity spikes; homes receive the most showings and offers during this period</li>
+<li>Buyer activity spikes. Homes receive the most showings and offers during this period</li>
 <li>Median days on market drops to its lowest point (often 15 to 30 days for well-priced homes)</li>
 <li>Multiple offer situations are most common in April and May</li>
 <li>Prices tend to be at or near seasonal highs</li>
@@ -946,7 +774,7 @@ export const posts: BlogPostSeed[] = [
 
 <ul>
 <li>Inventory is at its annual low, sometimes 40% to 50% below summer levels</li>
-<li>Buyer competition is minimal; you may be the only offer on a property</li>
+<li>Buyer competition is minimal. You may be the only offer on a property</li>
 <li>Sellers are often motivated by job relocation, financial pressures, or life changes that don't wait for spring</li>
 <li>Price negotiations favor buyers more than any other season</li>
 <li>Homes are harder to evaluate (landscaping under snow, can't see roof easily, etc.)</li>

@@ -52,6 +52,7 @@ import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-trut
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
 import { getPublicDetachedMonthly, leftoverOrCacheMonthly } from '@/lib/data/market-truth/public-monthly'
 import { buildMarketFaq } from '@/lib/site/market-faq'
+import { latestSaleMedian } from '@/lib/market/latest-sale-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -178,6 +179,9 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const verdict = marketVerdict(mosRaw)
 
   const refreshedAt = mt?.headlines?.computedAt ?? mt?.inventory?.computedAt ?? null
+  // The FAQ's sale price is the chart's latest complete month, so the two
+  // cannot disagree on the same page.
+  const saleMedian = latestSaleMedian(chartMonths.months, currentMonthKey)
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     geoName,
     {
@@ -188,6 +192,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       activeCount: hud.active,
       pulseActiveCount: hud.active,
       medianListPrice: hud.medianList,
+      medianSalePrice: saleMedian?.value ?? null,
+      medianSaleMonthLabel: saleMedian?.monthLabel ?? null,
       medianDaysToPending: hud.daysToPending,
       refreshedAt,
     },

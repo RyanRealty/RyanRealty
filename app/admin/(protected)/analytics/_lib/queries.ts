@@ -80,6 +80,8 @@ export type OverviewData = {
   topSources: { sourceMedium: string; sessions: number }[]
   topLandingPages: { pagePath: string; sessions: number }[]
   paidSpendUsd: number | null
+  /** Sessions referred by AI assistants (lib/ai-referrers.ts host roster), most first. */
+  aiReferrers: { engine: string; sessions: number; users: number }[]
 }
 
 export async function fetchOverview(range: DateRange): Promise<OverviewData> {
@@ -115,6 +117,7 @@ export async function fetchOverview(range: DateRange): Promise<OverviewData> {
       topSources: [],
       topLandingPages: [],
       paidSpendUsd,
+      aiReferrers: [],
     }
   }
 
@@ -136,6 +139,9 @@ export async function fetchOverview(range: DateRange): Promise<OverviewData> {
     topSources: d.topSources.slice(0, 3).map((s) => ({ sourceMedium: s.sourceMedium, sessions: s.sessions })),
     topLandingPages: d.topPages.slice(0, 3).map((p) => ({ pagePath: p.pagePath, sessions: p.views })),
     paidSpendUsd,
+    aiReferrers: [...d.aiReferrers]
+      .sort((a, b) => b.sessions - a.sessions)
+      .map((r) => ({ engine: r.engine, sessions: r.sessions, users: r.users })),
   }
 }
 

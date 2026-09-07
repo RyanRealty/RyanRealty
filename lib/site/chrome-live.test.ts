@@ -25,6 +25,10 @@ describe('composeChromeLive', () => {
     ])
     expect(live.Areas?.values).toEqual({ '/cities/bend': '1,204', '/cities/redmond': '512' })
     expect(live.Areas?.eyebrow).toBe('')
+    // The region's figures render on every page beside that page's own place
+    // figures; the eyebrow is the only thing that says which population they are.
+    expect(live.Market?.eyebrow).toBe('Central Oregon detached homes right now')
+    expect(live.Sell?.eyebrow).toBe('Central Oregon sellers right now')
     expect(live.Market?.facts.map((f) => `${f.figure} ${f.label}`)).toEqual([
       '$750K median list price',
       '5.1 months of supply, balanced market',

@@ -1,12 +1,7 @@
 import type { BlogPostSeed } from '../seed-blog-posts'
 
 /**
- * Buyer + seller AEO guide pack, 2026-09-07. Fifteen guides from the
- * keyword brief (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md). Six of
- * these slugs replaced older seed entries in the sibling files, so each slug
- * lives in exactly one seed file. Every number in these bodies traces to the
- * source named in that doc; market figures link to the live market pages
- * rather than freezing here.
+ * Buyer + seller AEO guide pack, 2026-09-07. Fifteen guides from the keyword brief (docs/plans/PUBLIC_PRODUCT/AEO_GUIDES_2026-09.md). Six of these slugs replaced older seed entries in the sibling files, so each slug lives in exactly one seed file. Every number in these bodies traces to the source named in that doc; dated figures carry their as-of date in the text.
  */
 export const posts: BlogPostSeed[] = [
   {
@@ -22,10 +17,11 @@ export const posts: BlogPostSeed[] = [
     seo_description: "What it costs to live in Bend: live housing numbers, Oregon income and property tax rules, insurance, utilities, and how to build a budget before you tour.",
     excerpt: "Housing is the cost that decides whether Bend works. A plain look at the housing numbers, the Oregon tax trade, insurance, utilities, and how to build a Bend budget before you tour.",
     content: `
-<p>Most cost-of-living pages are a pile of numbers nobody checked. This one is built the other way. Housing is the cost that decides whether Bend works for you, and the housing numbers on this site are pulled from live MLS data, so we link to them instead of freezing a figure here. The rest of the picture is the parts of an Oregon budget that do not change month to month.</p>
+<p>Most cost-of-living pages are a pile of numbers nobody checked. This one is built the other way. Every figure below names its source and the date we pulled it, September 7, 2026, and the housing figures link to the live market pages that update from MLS data every day. Where a number moves weekly, we say so.</p>
 
 <h2>Housing is the real cost</h2>
-<p>Bend is priced like a resort town. The median sale price, price per square foot, and days on market for the city are on the <a href="/housing-market/bend">Bend market page</a>, updated from closed sales in our MLS database. Redmond, Sisters, La Pine, and Sunriver each have their own page, and the gap between Bend and the towns around it is the biggest lever a relocating buyer has. Turn the median into a payment with your lender, using today's rate and your down payment, and add property taxes and insurance for the specific house. That payment, not the price, is the number to plan around.</p>
+<p>Bend is priced like a resort town. Over the ninety days ending September 7, 2026, the median closed sale price for a single-family home in Bend was $733,000, from 475 closings in our MLS database. Redmond's was $499,000 from 143 closings. The live version of both, with price per square foot and days on market, is on the <a href="/housing-market/bend">Bend</a> and <a href="/housing-market/redmond">Redmond</a> market pages.</p>
+<p>Turn those into a payment. Freddie Mac's national average 30-year fixed rate was 6.71% for the week of September 3, 2026. With 20% down, the Bend median pencils to $3,788 a month in principal and interest, plus about $426 in property tax at the county's average effective rate, for $4,214 before insurance. Redmond pencils to $2,579 plus $290, or $2,869. The rate moves every week and the medians move every day, so treat these as the September 2026 picture and run your own address with a lender.</p>
 <p>Renting first is common. We do not publish rent figures because we do not have a verified source for them, and we would rather send you nothing than a number we cannot stand behind. Ask us and we will pull current rental listings for the neighborhood you are considering.</p>
 
 <h2>West side, east side, and the towns nearby</h2>
@@ -37,10 +33,14 @@ export const posts: BlogPostSeed[] = [
 <p>Oregon has no state real estate transfer tax outside of Washington County, so buying or selling in Deschutes County carries no transfer tax line at closing.</p>
 
 <h2>Insurance, utilities, and getting around</h2>
-<p>Homeowners insurance is the line that moves most by address. Much of Central Oregon is wildfire-exposed, and premiums on two homes a mile apart can differ a lot. Get a quote on the specific house before you write an offer. Utilities depend on the home, the heat source, and the season, and the City of Bend, Pacific Power, and Cascade Natural Gas publish their rate schedules. Ask the seller for a year of bills during the inspection period. Bend drives short. Most crosstown trips are minutes outside the summer peak, and Cascades East Transit runs fixed routes in town.</p>
+<p>Homeowners insurance is the line that moves most by address. Much of Central Oregon is wildfire-exposed, and premiums on two homes a mile apart can differ a lot. Get a quote on the specific house before you write an offer.</p>
+<p>City of Bend water and sewer rates in effect since July 1, 2025: water is a $29.79 monthly base plus $2.48 per 100 cubic feet used, and sewer is a $42.71 base plus $4.48 per 100 cubic feet of your winter-quarter average, per the city's published rate schedule. Electricity and natural gas depend on the home and the season, so ask the seller for a year of Pacific Power and Cascade Natural Gas bills during the inspection period.</p>
+<p>Gas costs more here than in most of the country. On September 7, 2026, AAA put Oregon's average at $5.02 a gallon against a $4.15 national average. That number moves daily. Bend drives short. Most crosstown trips are minutes outside the summer peak, and Cascades East Transit runs fixed routes in town.</p>
+<p>For 2026 individual marketplace coverage, Oregon's Division of Financial Regulation approved silver-plan premiums for a 40-year-old between $518 and $620 a month depending on the carrier, an average increase of 9.7% over 2025. Five of the six carriers sell in Deschutes County.</p>
 
 <h2>The reason people pay it</h2>
-<p>The mountain, the river, and the trails are the line items people move here for. Mt. Bachelor is about 21 miles from downtown by road. The Deschutes River Trail runs through the city. Most of the outdoor life bills at the cost of gas and gear, and a season pass at the mountain is the one recurring cost to price in.</p>
+<p>The mountain, the river, and the trails are the line items people move here for. Mt. Bachelor is about 21 miles from downtown by road, and its 2026-27 adult full season pass was $1,399 on September 7, 2026, with a price increase scheduled for September 30. The Deschutes River Trail runs through the city. Most of the rest of the outdoor life bills at the cost of gas and gear.</p>
+<p>Set the costs against the income side. Bend's median household income is $96,394, per the Census Bureau's 2020-2024 American Community Survey. Next to the payment on the median house above, that is the town's central tension, and it is why Redmond keeps absorbing Bend's demand.</p>
 
 <h2>How to build a Bend budget before you tour</h2>
 <ol>
@@ -53,13 +53,13 @@ export const posts: BlogPostSeed[] = [
 
 <h2>Questions</h2>
 <h3>What is the biggest cost of living in Bend?</h3>
-<p>Housing. Bend's median sale price is on the <a href="/housing-market/bend">Bend market page</a>, updated from live MLS closings, and it sits well above the towns around it. Everything else in a Bend budget is small next to the payment.</p>
+<p>Housing. The median single-family sale in Bend was $733,000 over the ninety days ending September 7, 2026, from MLS closings, and the live number is on the <a href="/housing-market/bend">Bend market page</a>. Everything else in a Bend budget is small next to the payment.</p>
 <h3>How much income do people need to buy in Bend?</h3>
-<p>It depends on the down payment, the rate, the side of town, and the insurance on the specific house, so there is no single number. Take the current median from the market page to a lender and ask for the payment with taxes and insurance. That is the income question answered for your situation.</p>
+<p>It depends on the down payment, the rate, the side of town, and the insurance on the specific house, so there is no single number. As a September 2026 reference, the Bend median with 20% down at Freddie Mac's 6.71% rate pencils to about $4,214 a month with property tax and before insurance. Take the current median to a lender and ask for the payment with taxes and insurance for a real address.</p>
 <h3>How does Bend compare with Redmond on everyday costs?</h3>
-<p>Housing is the difference. Redmond closes at a lower price per square foot than Bend, and the two pages show the current gap. Taxes are the same state rules in both towns, and groceries, fuel, and utilities come from the same regional providers.</p>
+<p>Housing is the difference. Over the ninety days ending September 7, 2026, Redmond's median single-family sale was $499,000 against Bend's $733,000. Taxes are the same state rules in both towns, and groceries, fuel, and utilities come from the same regional providers.</p>
 <h3>Do property taxes make Bend more expensive than people expect?</h3>
-<p>Usually the opposite. Oregon taxes assessed value, which Measure 50 caps at 3% growth a year, so many Bend homes carry a bill below what the sale price would suggest. The bill for any address is public on the county's DIAL lookup.</p>
+<p>Usually the opposite. Oregon taxes assessed value, which Measure 50 caps at 3% growth a year, so many Bend homes carry a bill below what the sale price would suggest. For fiscal 2025-26 the Department of Revenue puts Deschutes County's average effective rate at about 0.7% of real market value. The bill for any address is public on the county's DIAL lookup.</p>
 <h3>What should relocators budget beyond the mortgage payment?</h3>
 <p>Homeowners insurance quoted on the specific address, property taxes from the county lookup, HOA dues if the home has an association, utilities from a year of the seller's bills, and the recurring costs of the outdoor life you are moving for.</p>
 
@@ -357,7 +357,7 @@ export const posts: BlogPostSeed[] = [
 <p>The down payment is the part of the price you are not borrowing. Closing costs are the fees to make the loan and the sale, paid on top of it. Prepaids are the first year of homeowners insurance, interest from the closing date to the end of the month, and a share of property taxes, collected at closing. Your cash to close is all three added together, and it is on the Closing Disclosure your lender is required to give you at least three business days before you sign.</p>
 
 <h2>Typical buyer line items</h2>
-<p><strong>Lender charges.</strong> Origination, underwriting, and the appraisal. These vary by lender, which is why you compare Loan Estimates. Under the federal TRID rules the lender's own fees carry zero tolerance, so they cannot go up between the Loan Estimate and closing, and certain third-party charges cannot rise more than 10% in total.</p>
+<p><strong>Lender charges.</strong> Origination, underwriting, and the appraisal. These vary by lender, which is why you compare Loan Estimates. Under the federal TRID rules the lender's own fees carry zero tolerance, so they cannot go up between the Loan Estimate and closing, and certain third-party charges cannot rise more than 10% in total. As one published anchor, the VA's appraisal fee schedule effective May 1, 2026 sets a single-family appraisal in Oregon at $850, and conventional appraisals in Central Oregon price in the same territory.</p>
 <p><strong>Title and escrow.</strong> The lender's title policy protects the loan, and the buyer usually pays for it. In Central Oregon practice the seller customarily pays for the owner's policy, and the escrow fee is customarily split. Both are contract terms and an offer can allocate them differently.</p>
 <p><strong>Recording.</strong> Deschutes County charges $102 to record the first page of a deed or mortgage and $5 for each additional page, per the county clerk's fee schedule effective July 1, 2026.</p>
 <p><strong>Prepaids.</strong> The first year of homeowners insurance, prepaid interest, and prorated property taxes. Oregon's property tax year runs July 1 through June 30, and escrow splits the current year to the day of closing.</p>
@@ -471,6 +471,10 @@ export const posts: BlogPostSeed[] = [
 <h2>When waiting makes sense</h2>
 <p>Waiting makes sense when your own numbers say so: when the payment on the homes you like does not fit, when your down payment is still growing, or when your job or your move is not settled. Waiting to time the market does not work here, because the thing that moves Bend prices most is mortgage rates, and nobody prices those well. A buyer who waits for a lower price often meets a higher rate, and the payment ends up the same. If the payment fits and you plan to stay for years, the market conditions are a negotiating question, not a go or no-go question.</p>
 
+<h2>The refinance argument, and its limits</h2>
+<p>The case for buying now in a soft market is that you negotiate the price and the credits today, and you can refinance the rate later if rates fall. The price is permanent. The rate is not. That argument holds when two things are true: the payment at today's rate fits without strain, and you plan to hold the home long enough that a refinance, which has its own closing costs, pays for itself. It fails when the payment only works if a refinance shows up on schedule. Nobody can promise that schedule, so we do not price a purchase on it.</p>
+<p>The case for waiting is that inventory has been growing, and a buyer who waits may have more to choose from. That is true in the upper bands and less true at the entry level, where the choice is already thin. Rising inventory is a reason to negotiate harder now, not by itself a reason to sit out.</p>
+
 <h2>What to check before you decide</h2>
 <p>Get a real pre-approval, not a prequalification. Run the payment with taxes and insurance for the specific house, because insurance varies by address here. Look at the closed sales for the district, not the list prices. Then decide how much leverage the market gives you and use it in the offer.</p>
 
@@ -559,6 +563,9 @@ export const posts: BlogPostSeed[] = [
 <p>Measure 50, passed in 1997, set every property's maximum assessed value and limited its growth to 3% per year, no matter what the market does. Your tax is charged on assessed value, which is the lower of that capped number and the real market value. Central Oregon prices have grown far faster than 3% a year for most of the time since, so on most homes the assessed value sits well below the market value. A long-held home carries decades of capped growth. A newly built home enters the rolls closer to market. That is why your bill and your neighbor's can differ on the same street.</p>
 <p>Your purchase does not reset the assessed value to the price you paid. That is the part that surprises buyers from California and other states.</p>
 
+<h2>What Deschutes County owners actually pay</h2>
+<p>In the Oregon Department of Revenue's property tax statistics report for fiscal 2025-26, Deschutes County's average consolidated rate was $16.80 per $1,000 of assessed value. Because assessed value trails market value, that works out to an average effective rate of about 0.698% of real market value, which the report states as $6.98 per $1,000 of Measure 5 value. At that effective rate a home at Bend's ninety-day median sale price of $733,000, as of September 7, 2026, carries about $5,116 a year. Your exact rate depends on your tax code area, so two Bend addresses can differ.</p>
+
 <h2>Looking up an account</h2>
 <p>Every Deschutes County account is public on the county's DIAL lookup at dial.deschutes.org. Search by address, owner, or account number and you get the assessed value, the real market value, the tax code area, and the current bill. Before you write an offer, look up the house. Before you list, look up your own and the comps. The rate depends on your tax code area, which is the specific stack of city, school, fire, and bond levies where the home sits, so two Bend addresses can differ.</p>
 
@@ -574,6 +581,7 @@ export const posts: BlogPostSeed[] = [
 <h2>Relief programs for 2026</h2>
 <p><strong>Senior and disabled deferral.</strong> Oregon does not freeze taxes for seniors. It offers a deferral. The state pays the tax, places a lien on the home, and collects the balance with 6% annual interest when the home sells or transfers. For the 2026-27 tax year you qualify at age 62 or older, or if you are disabled and eligible for Social Security disability benefits, with household income under $70,000 and at least five full years owning and living in the home, per the Department of Revenue's program guide.</p>
 <p><strong>Disabled veteran exemption.</strong> For 2026 a qualifying veteran or surviving spouse can exempt $27,092 or $32,512 of assessed value, depending on the category. The amount rises 3% each year. Claims are filed with the county assessor on or before April 1 before the tax year.</p>
+<p><strong>Active-duty exemption.</strong> Set by formula under ORS 307.286, not by a published table: $60,000 of assessed value in the 2005-06 tax year, growing 3% a year since. The county assessor quotes the current-year figure when you file.</p>
 
 <h2>If you think the number is wrong</h2>
 <p>Appeals go to the county's Property Value Appeals Board. The petition is due by December 31, or the next business day. The appeal argues the real market value as of the assessment date, so recent comparable sales are the evidence that moves the board. If you bought the home for less than the county's market value, the closing statement is the first exhibit.</p>
@@ -723,6 +731,10 @@ export const posts: BlogPostSeed[] = [
 
 <h2>Warranties, HOAs, and what Oregon requires</h2>
 <p>Oregon does not set the terms of a new-home warranty. What state law requires, under ORS 701.320, is that the contractor make you a written offer of a warranty against defects in materials and workmanship, and you can accept or refuse it. The terms are the builder's, so read the warranty section and get it in writing before you sign. Oregon also requires the builder to be licensed with the Construction Contractors Board, and the CCB runs a notice-of-defect process for construction claims. Almost every new subdivision in Bend and Redmond has a homeowners association. Read the dues, the rules, and the transfer fees before you write the offer. Our <a href="/blog/hoa-guide-central-oregon">HOA guide</a> covers what to look for.</p>
+
+<h2>What the city charges to build</h2>
+<p>System development charges are the one-time fees a city collects at permit for the water, sewer, and road capacity a new home uses. Bend's adopted schedule, exhibit A to the council's fee resolution, lists the residential single-unit rate as an average of $7,181 for water, $5,890 for sewer, and $9,426 for transportation, $22,497 in total, with tiers by home size, and it is not phased in for residential. The parks charge is set separately by the Bend Park and Recreation District and is not in the city's table, so there is no single published all-in figure. A builder's price includes these fees. A custom build pays them at permit. The Census Bureau counted 646 new single-family units authorized by the City of Bend in 2025 and 1,166 across Deschutes County's permitting jurisdictions, so the fees fund a pipeline that is still well short of the state's target, covered in <a href="/blog/bend-new-growth-plan-housing-20-years">Bend's housing target</a>.</p>
+<p>New homes permitted in Bend from May 15, 2026, and in Sisters and unincorporated Deschutes County from April 1, 2026, are built to Oregon's R327 wildfire code. The vents, siding, deck materials, and the noncombustible zone at the foundation are in the plans because the code requires them. <a href="/blog/deschutes-county-wildfire-building-codes">Wildfire building codes and defensible space</a> covers what that means for insurance.</p>
 
 <h2>Resale comps still matter</h2>
 <p>A new home is priced by the builder, not by an appraiser, until the loan is underwritten. If the price with upgrades is above what comparable homes in the subdivision have closed at, the appraisal can come in low. We pull the closed sales in the subdivision and the nearby resale homes before you sign, so the number you agree to is one the lender will support.</p>

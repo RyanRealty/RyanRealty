@@ -74,7 +74,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>Central Oregon weather follows a pattern that surprises people who assume "Oregon equals rain."</p>
 
-<p><strong>Summer (June through September):</strong> This is why people move here. Daytime highs of 75 to 90 degrees, cool nights in the 40s and 50s, and almost zero rain. Wildfire smoke can be an issue in August and early September, ranging from hazy to genuinely unhealthy air quality days. Some summers are worse than others; 2020 and 2021 were particularly bad, while other years barely register.</p>
+<p><strong>Summer (June through September):</strong> This is why people move here. Daytime highs of 75 to 90 degrees, cool nights in the 40s and 50s, and almost zero rain. Wildfire smoke can be an issue in August and early September, ranging from hazy to genuinely unhealthy air quality days. Some summers are worse than others. 2020 and 2021 were particularly bad, while other years barely register.</p>
 
 <p><strong>Fall (October and November):</strong> Crisp and beautiful, with highs in the 40s to 60s. The aspens and larches turn gold. First snow can come as early as mid-October, though November is more typical for accumulation.</p>
 
@@ -103,7 +103,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>The Bend-La Pine School District serves about 17,000 students across the area. It's a solid public school system, though not without challenges.</p>
 
-<p><strong>Elementary schools:</strong> Generally well-regarded, with several scoring above state averages. Neighborhood matters here; schools on the west side (like Westside Village Magnet School) and in NW Crossing tend to rate higher, but it's not a dramatic gap.</p>
+<p><strong>Elementary schools:</strong> Generally well-regarded, with several scoring above state averages. Neighborhood matters here. Schools on the west side (like Westside Village Magnet School) and in NW Crossing tend to rate higher, but it's not a dramatic gap.</p>
 
 <p><strong>Middle and high schools:</strong> Bend has three main high schools: Bend Senior High, Mountain View, and Summit. Summit has a strong reputation for academics and athletics. Mountain View has a solid career and technical education program. Bend Senior is the oldest and most centrally located.</p>
 
@@ -159,9 +159,9 @@ export const posts: BlogPostSeed[] = [
 
 <p><strong>Three to four months before:</strong> Connect with a local real estate agent who knows the neighborhoods. Begin seriously looking at homes. Register for school transfers. Schedule visits with potential employers.</p>
 
-<p><strong>Two months before:</strong> Make an offer on a home (or secure a rental; rental inventory is tight, so start early). Set up utility accounts. Transfer medical records and get on provider waitlists.</p>
+<p><strong>Two months before:</strong> Make an offer on a home, or secure a rental. Rental inventory is tight, so start early. Set up utility accounts. Transfer medical records and get on provider waitlists.</p>
 
-<p><strong>One month before:</strong> Confirm closing dates or lease start. Arrange movers (book early during summer months; moving companies get very busy May through September). Forward mail. Update insurance.</p>
+<p><strong>One month before:</strong> Confirm closing dates or lease start. Arrange movers. Book early in summer, when moving companies are busiest from May through September. Forward mail. Update insurance.</p>
 
 <p><strong>First two weeks:</strong> Get Oregon driver's license and register your vehicle (you have 30 days). Set up local bank account if needed. Explore neighborhoods on foot or by bike. Introduce yourself to neighbors.</p>
 
@@ -511,7 +511,7 @@ export const posts: BlogPostSeed[] = [
 
 <p>Irrigation rights are important for rural properties in the Sisters area. Properties with irrigation water rights can maintain green pastures and gardens during the dry summer months. Without irrigation rights, you're limited to drought-tolerant landscaping and well water, which can be expensive and unpredictable in terms of flow rate.</p>
 
-<p>Well water is the norm for properties outside city limits. Well depth and water quality vary by location. Always get a well inspection and flow test as part of your purchase contingencies. Some areas west of town have excellent water at moderate depths; other areas require deeper, more expensive wells.</p>
+<p>Well water is the norm for properties outside city limits. Well depth and water quality vary by location. Always get a well inspection and flow test as part of your purchase contingencies. Some areas west of town have excellent water at moderate depths. Other areas require deeper, more expensive wells.</p>
 
 <p>Septic systems are standard outside city limits as well. A septic inspection is essential before purchasing any rural property. Replacement costs for a failed septic system run $15,000 to $40,000 depending on the system type and soil conditions.</p>
 
