@@ -30,6 +30,7 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
+import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { sellerFacingFindingMeaning, type ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { composeInboundCoverLine } from '@/lib/cma/inbound-packet'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
@@ -87,6 +88,12 @@ export interface RenderCmaArgs {
   listingPlan?: ListingPlan | null
   thisHomePlan?: string[] | null
   tiersUsed?: string[]
+  /**
+   * Who this document went to. Every address and CTA links back into the site
+   * carrying it. Resolved at SERVE (print-html / serve-document), never stored
+   * on render_args — identity belongs to the delivery, not to the figures.
+   */
+  docLinks?: TrackedDocLinkCtx | null
 }
 
 interface PageDef {

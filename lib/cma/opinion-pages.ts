@@ -7,16 +7,17 @@
  * rather than printing an empty frame.
  */
 
-import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
+import { competitionHeading, renderBandRivalsHtml, type BandRivalsInput } from '@/lib/cma/band-rivals'
+import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
-import { dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
+import { cleanText, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
   renderAskOutcomeHtml,
+  renderInventoryBoardHtml,
   renderDaysToOfferHtml,
   renderOfferTimingHtml,
   renderUnsoldPeerRowsHtml,
-  widerMarketBodyHtml,
 } from '@/lib/cma/market-area-chapters'
 import {
   FAILED_ASK_BACKTEST,
@@ -96,22 +97,26 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
   const high = sellerNetFromPrice(a.pricing.highEnd, concession)
   if (low == null && rec == null && high == null) return null
   return {
-    meta: `${esc(a.subject.streetAddress)} · Seller net at list`,
-    toc: 'Seller net at list',
+    meta: `${esc(a.subject.streetAddress)} · Net at list`,
+    toc: 'Net at list',
     body: `
-  <h2 class="section">Seller net at list</h2>
-  <p>Net at list is list minus ${usd(concession)}, before commission and closing costs. That concession is the median of the sales that set this price, including sales that reported none.</p>
-  <div class="stat-strip is-3">
-    ${low != null ? `<div class="stat"><div class="lbl">Net at list low</div><div class="val">${usd(low)}</div></div>` : ''}
-    ${rec != null ? `<div class="stat"><div class="lbl">Net at recommended list</div><div class="val">${usd(rec)}</div></div>` : ''}
-    ${high != null ? `<div class="stat"><div class="lbl">Net at list high</div><div class="val">${usd(high)}</div></div>` : ''}
+  <h2 class="section">Net at list</h2>
+  ${
+    concession <= 0
+      ? `<p>${esc(
+          `The sales that set this price reported no seller concessions, so what you net at list is the list price: ${usd(a.pricing.conservative)} to ${usd(a.pricing.highEnd)}, ${usd(a.pricing.recommended)} at the recommended list. Commission and closing costs come out of that.`,
+        )}</p>`
+      : `<div class="stat-strip is-3">
+    ${low != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.conservative)}</div><div class="val">${usd(low)}</div></div>` : ''}
+    ${rec != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.recommended)}</div><div class="val">${usd(rec)}</div></div>` : ''}
+    ${high != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.highEnd)}</div><div class="val">${usd(high)}</div></div>` : ''}
   </div>
-  <div class="stat-strip is-3">
-    <div class="stat"><div class="lbl">List low</div><div class="val">${usd(a.pricing.conservative)}</div></div>
-    <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(a.pricing.recommended)}</div></div>
-    <div class="stat"><div class="lbl">List high</div><div class="val">${usd(a.pricing.highEnd)}</div></div>
-  </div>
-  ${n.knownCount > 0 ? `<p class="small">${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>` : ''}`,
+  <p class="small">${esc(
+    `Net at list is the list price minus ${usd(concession)}, before commission and closing costs. That figure is the median concession across the sales printed above${
+      n.knownCount > 0 ? `, ${n.givenCount} of ${n.knownCount} of which reported one` : ''
+    }.`,
+  )}</p>`
+  }`,
   }
 }
 
@@ -262,48 +267,84 @@ export function pricedRightBodyHtml(a: OpinionPageArgs): string {
 
 export const PRICED_RIGHT_HEADING = 'Priced right sells. Priced high sits.'
 
-/** This market. The 90-day band renders only when it is this house's product. */
+/**
+ * Chapter 5. The city right now.
+ *
+ * Four figures in one row, the median-close line, and one sentence about the
+ * street with its four most recent sales as tracked links. Nothing else: the
+ * 90-day bed-count board and the ten-year subdivision table are cut.
+ */
 export function thisMarketPage(a: OpinionPageArgs): CmaPageDef | null {
-  const body = widerMarketBodyHtml(
-    { subject: a.subject, comps: a.comps, market: a.market, extras: a.extras, pricing: a.pricing },
-    'h3',
-  )
-  if (!body) return null
+  const body = thisMarketBodyHtml(a, 'h3')
+  if (!body.trim()) return null
+  const heading = thisMarketHeading(a)
   return {
-    meta: `${esc(a.subject.streetAddress)} · This market`,
-    toc: 'This market',
+    meta: `${esc(a.subject.streetAddress)} · ${esc(heading)}`,
+    toc: heading,
     body: `
-  <h2 class="section">This market</h2>
+  <h2 class="section">${esc(heading)}</h2>
   ${body}`,
   }
+}
+
+/** "Redmond right now". */
+export function thisMarketHeading(a: Pick<OpinionPageArgs, 'subject' | 'market'>): string {
+  const place = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city) ?? 'This market'
+  return `${place} right now`
+}
+
+/** Shared by the letter chapter and its immersive twin. */
+export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): string {
+  const board = renderInventoryBoardHtml(a.market)
+  const street = subdivisionLineHtml(a, headingTag)
+  return [board, street].filter(Boolean).join('\n  ')
+}
+
+/**
+ * The street, in one sentence: how many have sold here and the four most
+ * recent, each a tracked link. It is what survives of the ten-year subdivision
+ * table the blueprint cut.
+ */
+function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): string {
+  const f = a.subdivisionStory?.facts
+  const name = cleanText(f?.name ?? null)
+  if (!f || !name || !(f.totalSales > 0)) return ''
+  const recent = [...(a.subdivisionStory?.notableSales ?? [])]
+    .filter((n) => n.address.trim())
+    .slice(0, 4)
+  const links = recent
+    .map((n) => {
+      const href = trackedDocLink(
+        'listing',
+        {
+          streetNumber: /^\s*(\d+[A-Za-z]?)\s/.exec(n.address)?.[1] ?? null,
+          streetName: n.address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null,
+          city: a.subject.city,
+          subdivisionName: name,
+        },
+        a.docLinks ?? {},
+      )
+      return `<a href="${esc(href)}" data-rr-track="cma-street-sale">${esc(n.address)}</a> ${usd(n.closePrice)}`
+    })
+    .join(', ')
+  const sub = (text: string) =>
+    headingTag === 'h3' ? `<h3 class="subhead">${esc(text)}</h3>` : `<h3 class="sub r">${esc(text)}</h3>`
+  return `${sub(name)}
+  <p>${int(f.totalSales)} homes have sold in ${esc(name)}.${
+    links ? ` The most recent ${recent.length === 1 ? 'one' : recent.length === 4 ? 'four' : String(recent.length)}: ${links}.` : ''
+  }</p>`
 }
 
 /** ORS 696 / OAR 863-015-0190 disclosure and signature. Both documents (P10). */
 export function disclosurePage(a: OpinionPageArgs): CmaPageDef | null {
   const b = a.broker
   if (!b) return null
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const headshot = b.photoUrl ? (b.photoUrl.startsWith('http') ? b.photoUrl : `${site}${b.photoUrl}`) : null
   return {
     meta: `${esc(a.subject.streetAddress)} · Disclosure · ${esc(b.displayName)}`,
-    toc: 'Disclosure and signature',
+    toc: 'Disclosure',
     body: `
   <h2 class="section">Disclosure</h2>
-  ${cmaDisclosureProseHtml(a)}
-  <div class="signature-page">
-    ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
-    <div class="sig-content">
-      <div class="sig-name">${esc(b.displayName)}</div>
-      <div class="sig-printed">${esc(b.displayName)}</div>
-      <div class="sig-title">${esc(b.title)} · Ryan Realty · Prepared ${dateLong(a.generatedAtIso)}</div>
-      <div class="sig-contact">
-        ${b.phone ? `<strong>${phoneHref(b.phone) ? `<a href="tel:${phoneHref(b.phone)}">${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : esc(dottedPhone(b.phone) ?? b.phone)}</strong><br/>` : ''}
-        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
-        ryan-realty.com · Bend · Oregon
-      </div>
-      ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
-    </div>
-  </div>`,
+  ${cmaDisclosureProseHtml(a)}`,
   }
 }
 
@@ -323,61 +364,104 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
 
 /** What we would like them to do next. We, never I (VOICE.md). */
 export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
-  const b = a.broker
-  if (!b) return null
-  const isAudit = Boolean(a.expiredAudit)
-  const tel = phoneHref(b.phone)
-  const first = esc(b.displayName.split(/\s+/)[0] ?? b.displayName)
-  const onMarket = /active|pending|coming/i.test(a.subject.standardStatus ?? '')
-  const lead = isAudit
-    ? 'Sorry this listing did not sell. If you want a second look at the number, call or text.'
-    : 'Call or text if you want to walk the sales.'
-  const consultUrl = `https://ryan-realty.com/contact?utm_source=crm&utm_medium=doc&utm_campaign=${isAudit ? 'expired' : 'cma'}&utm_content=letter-next-step`
+  const br = a.broker
+  if (!br) return null
   return {
     closing: true,
     meta: `${esc(a.subject.streetAddress)} · Your next step`,
     toc: 'Your next step',
     body: `
-  <h2 class="section">Your next step</h2>
-  <p class="cta-lead">${lead}</p>
-  <div class="cta-actions">
-    ${tel && b.phone ? `<a href="tel:${tel}" data-rr-track="cma-call">Call ${first} · ${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : ''}
-    ${tel ? `<a href="sms:${tel}" data-rr-track="cma-text">Text ${first}</a>` : ''}
-    ${b.email ? `<a class="ghost" href="mailto:${esc(b.email)}" data-rr-track="cma-email">Email ${first}</a>` : ''}
-    ${onMarket ? '' : `<a class="ghost" href="${consultUrl}" data-rr-track="cma-book">Book a conversation</a>`}
-  </div>
-  ${isAudit ? `<p class="cta-reply-note">Reply to the text that brought you here.</p>` : ''}`,
+  <h2 class="section">${esc(nextStepHeading(a))}</h2>
+  <div class="cta-actions">${nextStepButtonsHtml(a)}</div>
+  ${nextStepSignatureHtml(a)}`,
   }
 }
 
+/** "Sorry this listing did not sell." */
+export function nextStepHeading(a: Pick<OpinionPageArgs, 'expiredAudit'>): string {
+  return a.expiredAudit ? 'Sorry this listing did not sell.' : 'What happens next.'
+}
+
+/**
+ * TWO buttons, both tracked and both carrying identity: talk with the broker,
+ * and see what is for sale near them. The four-way call / text / email / book
+ * row asked a homeowner on a phone to make a choice before they had made the
+ * decision.
+ */
+export function nextStepButtonsHtml(a: OpinionPageArgs): string {
+  const first = a.broker?.displayName.split(/\s+/)[0] ?? 'us'
+  const book = trackedDocLink('book', '', a.docLinks ?? {})
+  const search = trackedDocLink('search', a.subject.city, a.docLinks ?? {})
+  return `<a href="${esc(book)}" data-rr-track="cma-book">Talk with ${esc(first)}</a>
+    <a class="ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+}
+
+/** The signature, the licence, the date, and the one disclosure sentence. */
+export function nextStepSignatureHtml(a: OpinionPageArgs): string {
+  const b = a.broker
+  if (!b) return ''
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const headshot = b.photoUrl
+    ? b.photoUrl.startsWith('http')
+      ? b.photoUrl
+      : `${site}${b.photoUrl}`
+    : null
+  const client = cleanText(a.client?.name ?? null)
+  return `<div class="signature-page">
+    ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
+    <div class="sig-content">
+      <div class="sig-name">${esc(b.displayName)}</div>
+      <div class="sig-printed">${esc(b.displayName)}</div>
+      <div class="sig-title">${esc(b.title)} · Ryan Realty</div>
+      <div class="sig-contact">
+        ${b.phone ? `<strong>${phoneHref(b.phone) ? `<a href="tel:${phoneHref(b.phone)}">${esc(dottedPhone(b.phone) ?? b.phone)}</a>` : esc(dottedPhone(b.phone) ?? b.phone)}</strong><br/>` : ''}
+        ${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a><br/>` : ''}
+        ryan-realty.com · Bend · Oregon
+      </div>
+      ${b.licenseNumber ? `<div class="sig-license">Oregon Real Estate License # ${esc(b.licenseNumber)}</div>` : ''}
+    </div>
+  </div>
+  <p class="fine">${esc(
+    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a pricing report. It is not an appraisal.`,
+  )}</p>`
+}
+
+/** Chapter 4. Who you would compete with at the recommended list. */
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
   const b = a.extras?.band
   if (!b) return null
-  const rivals = b.rivals ?? []
   return {
     meta: `${esc(a.subject.streetAddress)} · At this price`,
-    toc: 'Who you are competing with at this price',
-    body: renderBandRivalsHtml({
-      city: a.subject.city,
-      lo: b.lo,
-      hi: b.hi,
-      activeCount: b.activeCount,
-      pendingCount: b.pendingCount,
-      rivals,
-      subject: {
-        beds: a.subject.beds,
-        baths: a.subject.baths,
-        sqft: a.subject.sqft,
-        yearBuilt: a.subject.yearBuilt,
-        lotAcres: a.subject.lotAcres,
-        recommendedList: a.pricing.recommended,
-        latitude: a.subject.latitude,
-        longitude: a.subject.longitude,
-        photoUrl: a.subject.photoUrl,
-        listingHistoryLine: a.subject.listingHistoryLine,
-        daysOnMarket: daysOnMarketFrom({ onMarketDate: a.subject.lastListDate }),
-      },
-    }),
+    toc: competitionHeading(a.pricing.recommended),
+    body: renderBandRivalsHtml(competitionArgs(a)),
+  }
+}
+
+/** Shared by the letter chapter and its immersive twin. */
+export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
+  const b = a.extras!.band!
+  return {
+    city: a.subject.city,
+    lo: b.lo,
+    hi: b.hi,
+    activeCount: b.activeCount,
+    pendingCount: b.pendingCount,
+    rivals: b.rivals ?? [],
+    docLinks: a.docLinks ?? null,
+    recommendedList: a.pricing.recommended,
+    subject: {
+      beds: a.subject.beds,
+      baths: a.subject.baths,
+      sqft: a.subject.sqft,
+      yearBuilt: a.subject.yearBuilt,
+      lotAcres: a.subject.lotAcres,
+      recommendedList: a.pricing.recommended,
+      latitude: a.subject.latitude,
+      longitude: a.subject.longitude,
+      photoUrl: a.subject.photoUrl,
+      listingHistoryLine: a.subject.listingHistoryLine,
+      daysOnMarket: daysOnMarketFrom({ onMarketDate: a.subject.lastListDate }),
+    },
   }
 }
 

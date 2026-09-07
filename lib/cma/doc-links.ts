@@ -16,7 +16,17 @@
 
 import { homesForSalePath, listingTileHref, listingsBrowsePath, slugify } from '@/lib/slug'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * PINNED, not read from the environment.
+ *
+ * This URL goes into a document that is emailed to a homeowner and lives in
+ * their inbox for months. `NEXT_PUBLIC_SITE_URL` is the preview host on every
+ * non-production build — a look-pass on this machine renders
+ * `ryanrealty.vercel.app`, which strips the auth cookie and is not a link we
+ * ever want a seller to tap. A delivered document links to the production
+ * domain or it does not link.
+ */
+const SITE_URL = 'https://ryan-realty.com'
 
 export type TrackedDocLinkKind = 'listing' | 'place' | 'market' | 'search' | 'book' | 'site'
 

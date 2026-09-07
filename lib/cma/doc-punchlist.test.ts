@@ -357,7 +357,7 @@ describe('chapter 1 — what happened comes FIRST, before the number', () => {
     const chapters = letterChapters(letter())
     const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
     const price = chapters.indexOf('$389,000.')
-    const competition = chapters.findIndex((c) => /competing with/i.test(c))
+    const competition = chapters.findIndex((c) => /compete with/i.test(c))
     expect(happened).toBe(0)
     expect(price).toBeGreaterThan(happened)
     expect(competition).toBeGreaterThan(price)
@@ -381,33 +381,17 @@ describe('chapter 1 — what happened comes FIRST, before the number', () => {
   })
 })
 
-describe('P3 — the market block never contradicts the number beside it', () => {
-  it('drops the 90-day band when the recommend sits outside it', () => {
+describe('the 90-day bed-count board is cut, so it cannot contradict the number', () => {
+  // P3 dropped the board when the recommend sat outside it. The blueprint cuts
+  // it outright: chapter 5 is four city figures, the median-close line and one
+  // sentence about the street. A board built on beds rather than living area
+  // describes a different product whatever the recommend is.
+  it('never prints the bed-count band', () => {
     const html = immersive()
     expect(html).not.toContain('$458,500')
-    expect(html).not.toContain('2 to 4 bedroom band')
-  })
-
-  it('keeps the band when the recommend sits inside it', () => {
-    const inBand = {
-      ...offProductSold90,
-      low: 370000,
-      median: 392000,
-      high: 405000,
-      bedsLabel: '3 bedroom',
-    }
-    const html = immersive({
-      extras: {
-        ...(args().extras as object),
-        marketArea: { ...marketArea, sold90: inBand },
-        sold90: inBand,
-      } as RenderCmaArgs['extras'],
-    })
-    expect(html).toContain('$392,000')
-  })
-
-  it('letter and immersive make the same call', () => {
-    expect(letter()).not.toContain('$458,500')
+    expect(html).not.toContain('bedroom band')
+    expect(html).not.toContain('id="sold-90"')
+    expect(html).not.toContain('closed in 90 days')
   })
 })
 
@@ -440,7 +424,7 @@ describe('P4 — how fast homes like yours went, not a month ledger', () => {
 describe('P5 — one statement each, once', () => {
   it('does not repeat the listing history line inside the competition chapter', () => {
     const html = letter()
-    const start = html.indexOf('competing with')
+    const start = html.indexOf('compete with')
     const chapter = html.slice(start, html.indexOf('<section class="page"', start))
     expect(chapter).not.toContain('Last on market Feb 2026')
   })
@@ -703,7 +687,7 @@ describe('the phone layouts keep every mark inside the frame', () => {
 
 describe('F7 — this market is a stat row, not a stacked list', () => {
   const marketBlock = (html: string): string => {
-    const start = html.indexOf('How fast this market is moving')
+    const start = html.indexOf('right now')
     expect(start, 'the market board must render').toBeGreaterThan(-1)
     const rest = html.slice(start)
     const end = rest.indexOf('</section>')
@@ -872,9 +856,13 @@ describe('no MLS placeholder reaches a seller-facing source line', () => {
     }
   }
 
-  it('falls the place clause back to the city that scoped the query', () => {
+  it('never prints an MLS placeholder as the place a figure came from', () => {
+    // The 90-day board that shipped "Closed 4 to 6 bedroom sales in N/A" is
+    // cut. The rule stands over the whole document: no placeholder reaches a
+    // seller-facing source line (clientSourceLine owns the mechanism).
     const html = letter(placeholderArgs('N/A'))
-    expect(html).toContain('Closed 4 to 6 bedroom sales in Redmond in the last 90 days.')
+    expect(html).not.toMatch(/\bin N\/A\b/)
+    expect(html).not.toMatch(/\bN\/A,/)
   })
 
   it('keeps a real subdivision exactly as the MLS states it', () => {

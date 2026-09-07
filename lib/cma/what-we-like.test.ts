@@ -339,8 +339,8 @@ describe('report extras pages (when-to-list + competition)', () => {
   it('names band rivals and drops seasonality, cash mix, and photo-bench pages', () => {
     const { html } = renderCmaHtml(args({}, { extras }))
     expect(html).not.toContain('When to List')
-    expect(html).toContain('Who you are competing with at this price')
-    expect(html).toContain('14 homes for sale')
+    expect(html).toContain('Who you would compete with at')
+    expect(html).toContain('14 homes are for sale')
     expect(html).not.toContain('31.5% closed in cash')
     expect(html).not.toContain('median of 40 photos')
     expect(html).not.toMatch(/Supabase|seasonality fixture|band fixture|financing fixture/)
@@ -350,7 +350,7 @@ describe('report extras pages (when-to-list + competition)', () => {
     const { html } = renderCmaHtml(args({}))
     expect(html).not.toContain('When to List')
     expect(html).not.toContain('Your Competition')
-    expect(html).not.toContain('Who you are competing with at this price')
+    expect(html).not.toContain('Who you would compete with at')
   })
 
   it('a lone financing block does not invent a competition chapter', () => {

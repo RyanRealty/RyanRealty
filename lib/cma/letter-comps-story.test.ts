@@ -275,12 +275,13 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
         daysOnMarket: 97,
       },
     })
-    expect(html).toContain('Who you are competing with at this price')
+    expect(html).toContain('Who you would compete with at')
     expect(html).toContain('44 Hawk')
-    expect(html).toContain('Listed at $525,000, now $505,000 · 28 days on market')
-    // P5, Matt 2026-09-07: the subject's own listing history belongs to Home
-    // location and, on an expired document, to Your last listing. Stating it a
-    // third time inside the competition rows is the duplication he called out.
+    // Cards carry price, size, days on market, and one delta line. The
+    // listing-history sentence is cut (CMA_REIMAGINED_2026-09-07.md ch.4).
+    expect(html).toContain('28 days on market')
+    expect(html).not.toContain('Listed at $525,000, now $505,000')
+    // The seller's own history belongs to chapter 1, stated once.
     expect(html).not.toContain('97 days on market')
   })
 
@@ -301,7 +302,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     // number they explain, and competition follows the number.
     const salesIdx = bodies.indexOf('The sales that set this price')
     const expiredIdx = bodies.indexOf('Near you, these asked and did not sell')
-    const compIdx = bodies.indexOf('Who you are competing with at this price')
+    const compIdx = bodies.indexOf('Who you would compete with at')
     expect(expiredIdx).toBeGreaterThan(-1)
     expect(salesIdx).toBeGreaterThan(expiredIdx)
     expect(compIdx).toBeGreaterThan(salesIdx)

@@ -164,7 +164,7 @@ describe('assembleOpinionPages format', () => {
   it('puts competition next to the price, before the market chapter', () => {
     const tocs = assembleOpinionPages(args()).map((p) => p.toc)
     const price = tocs.indexOf('$429,000.')
-    const competition = tocs.indexOf('Who you are competing with at this price')
+    const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
     expect(price).toBeGreaterThanOrEqual(0)
     expect(competition).toBe(price + 1)
   })
@@ -221,7 +221,7 @@ describe('assembleOpinionPages format', () => {
       },
     })
     const tocs = pages.map((p) => p.toc)
-    const competition = tocs.indexOf('Who you are competing with at this price')
+    const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
     // Chapter 2 now carries the unsold story, and it sits BEFORE the number.
     const outcomes = tocs.indexOf('Priced right sells. Priced high sits.')
     expect(outcomes).toBeGreaterThanOrEqual(0)

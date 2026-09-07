@@ -107,6 +107,11 @@ export function cmaStylesheet(siteUrl: string): string {
     .hero-caption { display: none; }
   }
 
+  /* Two colours. A browser's default blue on a tracked address breaks the
+     palette on every chapter that links out, which is now all of them. */
+  .page a { color: var(--navy); }
+  .page-closing a { color: var(--cream); }
+
   .pg-header {
     display: flex;
     justify-content: space-between;
@@ -600,6 +605,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .cta-actions a.ghost { background: transparent; color: var(--navy); }
   .cta-reply-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .page-closing p.fine { margin-top: 20px; font-size: 9.5px; line-height: 1.6; }
   .signature-page .sig-license {
     margin-top: 12px;
     padding-top: 10px;

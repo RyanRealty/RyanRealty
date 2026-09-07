@@ -306,7 +306,7 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('Status in this market')
     expect(html).not.toContain('What 3 bedroom / 2 bath homes sold for')
     expect(html).not.toContain('Permits and ownership')
-    expect(html).not.toContain('Seller net at list')
+    expect(html).not.toContain('<h2 class="section">Net at list</h2>')
   })
 
   it('renders conditional chapters when extras and sellerNet are provided', () => {
@@ -363,12 +363,12 @@ describe('print CMA price-opinion spine', () => {
     // so the 90-day band and the inventory board print on both — the band only
     // when the recommend sits inside it (P3).
     expect(html).not.toContain('Status in this market')
-    expect(html).toContain('What 3 bedroom / 2 bath homes sold for')
-    expect(html).toContain('How fast this market is moving')
+    expect(html).not.toContain('What 3 bedroom / 2 bath homes sold for')
+    expect(html).toContain('right now')
     expect(html).not.toContain('Permits and ownership')
     expect(html).not.toContain('B-88')
-    expect(html).toContain('Seller net at list')
-    expect(html).toContain('Net at recommended list')
+    expect(html).toContain('<h2 class="section">Net at list</h2>')
+    expect(html).toContain('At $475,000')
     expect(html).toContain('$467,000')
     expect(html).not.toMatch(/typical concessions/)
     expect(html).toContain('sales that set this price')
@@ -376,10 +376,10 @@ describe('print CMA price-opinion spine', () => {
     // Blueprint order: what happened, priced right, what it is worth,
     // competition, this market, net at list, disclosure, next step.
     const priceAt = html.indexOf('$475,000.')
-    const marketAt = html.indexOf('<h2 class="section">This market</h2>')
-    const netAt = html.indexOf('Seller net at list')
+    const marketAt = html.indexOf(' right now</h2>')
+    const netAt = html.indexOf('<h2 class="section">Net at list</h2>')
     const discAt = html.indexOf('<h2 class="section">Disclosure</h2>')
-    const nextAt = html.indexOf('<h2 class="section">Your next step</h2>')
+    const nextAt = html.indexOf('Talk with Matt')
     expect(priceAt).toBeGreaterThan(0)
     expect(marketAt).toBeGreaterThan(priceAt)
     expect(netAt).toBeGreaterThan(marketAt)

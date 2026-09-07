@@ -527,6 +527,35 @@ export function cmaSectionStyles(): string {
     margin: 0 0 6px 0;
   }
 
+  /* Chapter 4: cards, four and four. Photo, linked address, price, size, days
+     on market, and one delta line against your home. */
+  .rival-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 8px 0 14px; }
+  .rival-card {
+    border: 1px solid var(--navy-line);
+    background: var(--cream);
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rival-card .rival-ph { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--navy-fill); }
+  .rival-card .rival-ph.is-empty { min-height: 0; }
+  .rival-card .rival-body { padding: 7px 9px 9px; min-width: 0; }
+  .rival-card .rival-addr {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--navy);
+    text-decoration: none;
+    border-bottom: 1px solid var(--navy-line);
+    line-height: 1.25;
+  }
+  .rival-card .rival-ask { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .rival-card .rival-facts { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .rival-card .rival-meta { font-size: 9px; color: var(--navy); margin-top: 4px; line-height: 1.35; }
+  @media screen and (max-width: 700px) {
+    .rival-grid { grid-template-columns: 1fr 1fr; }
+  }
+
   .rival-list { margin: 4px 0 12px; border-top: 1px solid var(--navy-line); }
   .rival-row {
     display: grid;

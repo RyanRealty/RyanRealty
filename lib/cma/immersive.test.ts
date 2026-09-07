@@ -55,8 +55,10 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toContain('$584,000')
     expect(html).toContain('$619,999')
     expect(html).toContain('Prepared for Eric Demello')
-    expect(html).toContain('Call 541.703.3095')
-    expect(html).toContain('?print=1')
+    // Two tracked buttons (CMA_REIMAGINED_2026-09-07.md chapter 7).
+    expect(html).toContain('Talk with Matt')
+    expect(html).toContain('See homes for sale near you')
+    expect(html).toContain('https://ryan-realty.com/book?')
   })
 
   it('opens on the price opinion, not a marketing plan', () => {

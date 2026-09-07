@@ -208,6 +208,6 @@ describe('print CMA layout', () => {
     })
     expect(pages).toHaveLength(1)
     expect(pages[0].body).toContain('What 2 to 4 bedroom homes sold for')
-    expect(pages[0].body).toContain('How fast this market is moving')
+    expect(pages[0].body).toContain('This market')
   })
 })

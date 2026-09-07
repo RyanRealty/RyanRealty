@@ -603,10 +603,10 @@ describe('chapter order', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
     const why = html.indexOf('id="what-its-worth"')
     const market = html.indexOf('id="this-market"')
-    const sold = html.indexOf('id="sold-90"')
     expect(why).toBeGreaterThan(0)
     expect(market).toBeGreaterThan(why)
-    expect(sold).toBeGreaterThan(market)
+    // The 90-day bed-count board is cut (CMA_REIMAGINED_2026-09-07.md ch.5).
+    expect(html).not.toContain('id="sold-90"')
     // P4: the month ledger is gone; the days-to-offer strip took its place.
     expect(html).not.toContain('id="listing-trend"')
     expect(html).not.toContain('id="status-grid"')

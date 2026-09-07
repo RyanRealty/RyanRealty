@@ -4,13 +4,16 @@
  */
 
 import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
-import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { pricingPage, whatItsWorthHeading } from '@/lib/cma/render-pricing-page'
-import { widerMarketBodyHtml } from '@/lib/cma/market-area-chapters'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
   OPINION_CHAPTER_ORDER,
   PRICED_RIGHT_HEADING,
+  competitionArgs,
+  nextStepButtonsHtml,
+  nextStepHeading,
+  thisMarketBodyHtml,
+  thisMarketHeading,
   cmaDisclosureProseHtml,
   pricedRightBodyHtml,
   sellerNetPage,
@@ -60,29 +63,8 @@ function priceScene(a: OpinionSceneArgs): string {
 }
 
 function competitionScene(a: OpinionSceneArgs): string {
-  const b = a.extras?.band
-  if (!b) return ''
-  return renderBandRivalsSceneHtml({
-    city: a.subject.city,
-    lo: b.lo,
-    hi: b.hi,
-    activeCount: b.activeCount,
-    pendingCount: b.pendingCount,
-    rivals: b.rivals ?? [],
-    subject: {
-      beds: a.subject.beds,
-      baths: a.subject.baths,
-      sqft: a.subject.sqft,
-      yearBuilt: a.subject.yearBuilt,
-      lotAcres: a.subject.lotAcres,
-      recommendedList: a.pricing.recommended,
-      latitude: a.subject.latitude,
-      longitude: a.subject.longitude,
-      photoUrl: a.subject.photoUrl,
-      listingHistoryLine: a.subject.listingHistoryLine,
-      daysOnMarket: daysOnMarketFrom({ onMarketDate: a.subject.lastListDate }),
-    },
-  })
+  if (!a.extras?.band) return ''
+  return renderBandRivalsSceneHtml(competitionArgs(a))
 }
 
 
@@ -133,18 +115,15 @@ function pricedRightScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
-/** This market. Web twin of thisMarketPage, same 90-day band gate (P3). */
+/** Chapter 5. Web twin of thisMarketPage. */
 function thisMarketScene(a: OpinionSceneArgs): string {
-  const body = widerMarketBodyHtml(
-    { subject: a.subject, comps: a.comps, market: a.market, extras: a.extras, pricing: a.pricing },
-    'sub',
-  )
-  if (!body) return ''
+  const body = thisMarketBodyHtml(a, 'sub')
+  if (!body.trim()) return ''
   return `
-  <section class="sc sc-cream" id="this-market">
-    <div class="in">
-      <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
-      <h2 class="h r">This market</h2>
+  <section class="sc sc-cream pack" id="this-market">
+    <div class="in wide">
+      <div class="kick r">The market</div>
+      <h2 class="h r">${esc(thisMarketHeading(a))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`
@@ -188,25 +167,27 @@ function disclosureScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
+/** Chapter 7. The closing, and the only navy scene. Web twin of nextStepPage. */
 function nextScene(a: OpinionSceneArgs): string {
   const br = a.broker
-  const photo = br.photoUrl ? `<img class="br-img" src="${esc(br.photoUrl)}" alt="${esc(br.displayName)}"/>` : ''
-  const tel = br.phone ? br.phone.replace(/[^+\d]/g, '') : null
+  const site = 'https://ryan-realty.com'
+  const photo = br.photoUrl
+    ? `<img class="br-img" src="${esc(br.photoUrl.startsWith('http') ? br.photoUrl : `${site}${br.photoUrl}`)}" alt="${esc(br.displayName)}"/>`
+    : ''
   return `
   <section class="sc sc-navy" id="next-step">
     <div class="in next-in">
       ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
-        <h2 class="h r">${a.expiredAudit ? 'Sorry this listing did not sell.' : 'Call or text.'}</h2>
-        <p class="lede r">${a.expiredAudit ? 'If you want a second look at the number, call or text.' : 'Call or text if you want to walk the sales.'}</p>
-        <div class="cta r">
-          ${tel ? `<a class="btn pri" href="tel:${esc(tel)}" data-rr-track="cma-call">Call ${esc(br.phone ?? '')}</a>` : ''}
-          ${br.email ? `<a class="btn sec" href="mailto:${esc(br.email)}" data-rr-track="cma-email">Email ${esc(br.displayName.split(' ')[0])}</a>` : ''}
-          <a class="btn ter" href="?print=1" data-rr-track="cma-print">Read the full report</a>
-        </div>
-        <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Licensed in Oregon, ${esc(br.licenseNumber)}` : ''}</div>
-        <div class="fine r">Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${esc(a.clientName ?? a.client?.name ?? 'the owner')}. This is a pricing report. It is not an appraisal.</div>
+        <h2 class="h r">${esc(nextStepHeading(a))}</h2>
+        <div class="cta r">${nextStepButtonsHtml(a)}</div>
+        <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
+        <div class="fine r">${esc(
+          `Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${
+            a.clientName ?? a.client?.name ?? 'the owner'
+          }. This is a pricing report. It is not an appraisal.`,
+        )}</div>
       </div>
     </div>
   </section>`
