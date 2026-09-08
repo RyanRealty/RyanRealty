@@ -322,7 +322,11 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
     // for the version that draws them.
     claim: showOutcomes
       ? 'Not a selection. Every home Ryan Realty listed and closed in the last twelve months, with what each one did, against what the whole market did in the same year.'
-      : 'Not a selection. Every home Ryan Realty listed and closed in the last twelve months, and the people who worked with us on them.',
+      // The quiet form's claim is about the WHOLE record, because the figure
+      // beside it is the all-time count and the line under it is "7 of them
+      // closed in the last 12 months". A claim scoped to twelve months made
+      // that "them" circular.
+      : 'Not a selection. Every home Ryan Realty has listed and closed, and the people who worked with us on them.',
     marks,
     strips,
     // Round three named first-read clarity as the weakest thing: nothing said

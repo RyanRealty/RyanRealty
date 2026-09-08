@@ -47,6 +47,13 @@ export type SellComp = {
 
 /** One reading in the answer: a plain sentence with its figure inside it. */
 export type SellAnswerReading = {
+  /**
+   * A share this reading can DRAW, 0..100, or null when the figure is not a
+   * share of anything. The evaluator (2026-09-08) called out that two adjacent
+   * readings wore the same shape — number, label, sentence — so the one that
+   * IS a proportion draws itself as one instead of borrowing the other's form.
+   */
+  meterPct?: number | null
   /** Stable key for React and for the tests. */
   key: 'pace' | 'cash' | 'comps'
   /** The short label a person scans. Never jargon. */
@@ -200,6 +207,7 @@ export function sellAnswerReadings(d: SellAnswerData): SellAnswerReading[] {
       key: 'cash',
       label: 'Who is buying',
       value: `${cash}%`,
+      meterPct: cash,
       sentence: `${cash}% of ${d.placeLabel} buyers paid cash over the last year.`,
       detail: 'Share of closed detached sales recorded as a cash purchase, trailing 12 months.',
     })

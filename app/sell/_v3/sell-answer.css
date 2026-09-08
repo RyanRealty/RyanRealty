@@ -204,6 +204,26 @@
   color: var(--v3-ink-muted);
 }
 
+.sell-answer__meter {
+  margin: var(--v3-space-3xs) 0 var(--v3-space-2xs);
+  block-size: var(--v3-space-xs);
+  background: var(--v3-wash);
+}
+
+.sell-answer__meter-fill {
+  display: block;
+  block-size: 100%;
+  background: var(--v3-ink);
+  transform-origin: left center;
+  animation: sell-answer-draw var(--v3-dur-rise) var(--v3-ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sell-answer__meter-fill {
+    animation: none;
+  }
+}
+
 .sell-answer__reading-sentence {
   margin: 0;
   font-size: var(--v3-size-body);

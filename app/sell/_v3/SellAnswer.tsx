@@ -121,6 +121,17 @@ export function SellAnswer({ answer }: { answer: SellAnswerData }) {
                 <span className="sell-answer__reading-value">{reading.value}</span>
                 <span className="sell-answer__reading-label">{reading.label}</span>
               </p>
+              {/* A proportion draws itself. Cash against financed is the one
+                  reading here that IS a share, so it gets a meter rather than
+                  the number-and-label shape its neighbour already wears. */}
+              {reading.meterPct != null ? (
+                <p className="sell-answer__meter" aria-hidden="true">
+                  <span
+                    className="sell-answer__meter-fill"
+                    style={{ inlineSize: `${reading.meterPct}%` }}
+                  />
+                </p>
+              ) : null}
               <p className="sell-answer__reading-sentence">{reading.sentence}</p>
               <button
                 type="button"
