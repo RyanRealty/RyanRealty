@@ -82,11 +82,22 @@ const BEND_NEIGHBORHOODS = (() => {
 // notFound guard). The old hardcoded copy here drifted (97734/Culver was
 // listed but the page never served it), so the crawl asserted a 404 route
 // as healthy inventory (2026-07-17 smoke full-crawl failure).
+//
+// CANONICAL_ZIPS moved out of the page into app/zip/[zip]/_v3/zip-constants.ts
+// (the page now imports it), so the single-file regex threw on every run and
+// docs/ROUTE_INVENTORY.md went stale again: the 2026-09-07 deletion of the
+// /dashboard/marketing pages never reached the inventory, and the route smoke
+// kept asserting two 404s as healthy routes (PR #200 CI, 2026-09-08). Same
+// remedy as the city slugs above: search the candidates in order.
+const ZIP_SLUG_SOURCES = ['app/zip/[zip]/_v3/zip-constants.ts', 'app/zip/[zip]/page.tsx']
+
 const ZIP_CODES = (() => {
-  const src = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
-  const block = src.match(/CANONICAL_ZIPS = new Set\(\[([\s\S]*?)\]\)/)?.[1]
-  if (!block) throw new Error('app/zip/[zip]/page.tsx no longer defines CANONICAL_ZIPS as a Set literal')
-  return [...block.matchAll(/'(\d{5})'/g)].map((m) => m[1])
+  for (const candidate of ZIP_SLUG_SOURCES) {
+    const src = readFileSync(resolve(candidate), 'utf8')
+    const block = src.match(/CANONICAL_ZIPS = new Set\(\[([\s\S]*?)\]\)/)?.[1]
+    if (block) return [...block.matchAll(/'(\d{5})'/g)].map((m) => m[1])
+  }
+  throw new Error(`none of ${ZIP_SLUG_SOURCES.join(', ')} defines CANONICAL_ZIPS as a Set literal`)
 })()
 
 // LP route slugs — these are existing app/lp/<slug>/page.tsx files.
