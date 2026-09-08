@@ -1,4 +1,72 @@
-# Current — 2026-09-08 (SITE-04 verified on a legal instrument; the instrument is the finding)
+# Current — 2026-09-08 (SITE-03 shipped on the city grain; the sub-city questions are on the node)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200 at
+`95197c9`. `ci:gates` 157/157, `test:unit` 888 files, `tsc` clean cold.
+
+**What shipped.** `V3PlaceDoor`, a new v3 primitive: beside "Bend real estate", a filled
+plate reading **"664 detached homes for sale"** that opens `/homes-for-sale/bend`, with the §0
+trace collapsed beneath it. One fact, at control size, under the place name. The city page
+mounts it; the alerts strip and the market Instrument's own way into the same URL step down to
+the outline, so the page has one filled route into inventory and the fold has one filled
+control. Count comes off the face the page already publishes (`leftoverHudKpis` →
+`publishPlaceFace`); no new read. A real bug fixed in the publisher: `/homes-for-sale/bend/tetherow`
+is a legacy-redirect key back to `/communities/tetherow`, so a door there would 301 to itself —
+`publishPlaceBrowseHref` now refuses any path middleware would redirect, and the key is untouched
+because a live 301 is Matt's call.
+
+**Not the node as written, and the node text needs amending.** The item asks for
+"673 homes for sale · 3.9 months · seller's market · 23 days to pending · read Sep 7" from
+`market_stats_cache` on three templates. Three verified blockers: §0 (MOS/verdict/DTP are
+unpublishable below city grain — `geo-grain-trust.ts` carries the Century West "48.0 MONTHS"
+measurement); the five-figure string is the leftover HUD `ci:taste-canon` hard-fails; and
+`market_stats_cache` has no months-of-supply column. The item's own accept text asks for a
+figure set its own §0 rules forbid.
+
+**City only, by decision; sub-city held, not dropped.** Built, reviewed and reverted. On the
+node with evidence: (a) at community grain the door's boundary-membership count can exceed the
+destination's City+SubdivisionName count — "10 homes" one click from "7"; (b) neighborhood
+counts Active+AUC while city/community count Active only, one label over two populations;
+(c) PUBLIC_UI §3 gives the neighborhood an Instrument opening, not a copy of the city door —
+one shape at three grains needs Matt; (d) Tetherow can carry no browse door until the 301 is
+decided; (e) the community copy block top-anchors above the scrim (white-on-photo measured
+2.57:1 on Broken Top) and needs a local scrim before any door lands there; (f) "read through
+the Market Truth metric layer" is visitor-facing in seven traces site-wide — one vocabulary
+decision, not a per-page edit. The primitive stays grain-aware for the next round.
+
+**Green gates lied, three rounds running.** The first build passed 161/161 gates and 9,493
+tests and the page was broken: the wrapper inherited `.v3 { background }` and painted a cream
+band across the hero with white text on it at ~1.03:1. Nobody had looked. Adversarial review
+then caught, across three rounds: a detached-only count labelled plain "homes for sale" above an
+all-types search (R-024, 664 vs 839 on the same `computed_at`); the verdict stated twice; two
+filled primaries; Tetherow left with no filled ask; "inside the city boundary" when the writer is
+MLS City text; a read date from a different pipeline than its count; "at this grain" and "the
+metric layer" in buyer-facing prose; a second filled primary to the identical URL six sections
+down; and the numeral raised to the lead size to answer one reviewer, then measured at 55px
+against the H1's 27px cap by the next. **Lessons for the loop:** a lane must capture and LOOK
+before it reports (make it mechanical: no receipt without the builder's own capture paths); and
+one reviewer's fix is the next reviewer's finding — measure both sides of a composition change.
+
+**The instrument, stated plainly.** Separate Sonnet evaluator, three scorings of the eight
+re-captured city records: **73 / 68 / 64, median 68**, against 60 on the same model and rubric
+before the change. Recorded as a rise, inside a band this instrument spread 5–13 points within one
+call today. Its first return carried a factually false defect (it read the outlined alerts button
+as filled — measured 84% light fill); challenged with the measurement, it re-examined the pixels,
+withdrew it, and re-ran three fresh passes to the same median. **The receipt contract has a hole:**
+`scripts/lib/taste-receipt.mjs` counts `shotsHash` among `IDENTITY_KEYS`, so any re-capture forces
+`"rebaselined"` and `"rose"` is never recordable across a real change — the rise rule cannot bind
+through the gate as written. Proposed fix: identity = evaluatorModel + rubricVersion; shotsHash
+binds the score to its files and must *differ* from the prior for a rise claim.
+
+**Queue at handoff.** SITE-03 is mine and should move to `blocked` with `blocked_until` on
+landing (the accept needs 28 days of GA4 click-through per `rr_vid`). SITE-07 is live under
+`cloud-grinder-2026-09-08-20`; SITE-08 and SITE-12 under `01NESdvn`. Three owners is the cap.
+Nothing else is open.
+
+**Still open for Matt, unchanged:** (a) may the alert capture take an `events` override so a
+price-drop alert is its own measurable row; (b) is "every new listing, by email" acceptable over
+the literal "one email per listing", given the hourly cron batches sends.
+
+## Prior — 2026-09-08 (SITE-04 verified on a legal instrument; the instrument is the finding)
 
 Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200 at
 `ddd8f45`. Main merged in at `9efa2cf` (50 commits, 7 conflicts, each resolved keeping both
