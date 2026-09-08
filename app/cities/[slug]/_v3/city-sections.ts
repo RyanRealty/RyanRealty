@@ -531,11 +531,19 @@ const FEED = 'live MLS through Oregon Data Share'
  * The trace over the Instrument's leftover-HUD figures. Every figure names its
  * own window on its label; a cell the metric layer withheld is absent, never
  * estimated (§0). The MoS clauses ride along only when a supply figure prints.
+ *
+ * MLS CITY, NOT A POLYGON. §0 rule 1 makes a trace name the filter that actually
+ * ran, and the writer behind these figures is public.refresh_place_membership,
+ * whose header states "Cities: MLS city text (D5), hyphen slug. Never city
+ * polygons." (supabase/migrations/20260823001500_refresh_place_membership.sql:2).
+ * "Inside the city boundary" named a spatial filter no query performs. The place
+ * door's own city trace now says the same sentence, so the two traces this page
+ * prints agree (lib/market/publish-place-door.ts).
  */
 export function cityMarketTrace(cityName: string, hasMos: boolean): string {
   return (
     `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-    `detached single-family houses inside the ${cityName} city boundary. ` +
+    `detached single-family houses whose MLS City is ${cityName}. ` +
     `Every figure names its own window; a figure the layer withheld is absent, not estimated.` +
     (hasMos ? ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}` : '')
   )

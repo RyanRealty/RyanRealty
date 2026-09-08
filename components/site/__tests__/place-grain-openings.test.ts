@@ -284,6 +284,142 @@ describe('master-plan opening', () => {
   })
 })
 
+describe('place door (SITE-03, city grain only this round)', () => {
+  const cityPage = readFileSync(resolve('app/cities/[slug]/page.tsx'), 'utf8')
+  const nbhPage = readFileSync(resolve('app/cities/[slug]/[neighborhoodSlug]/page.tsx'), 'utf8')
+  const communityPage = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
+  const subdivisionPage = readFileSync(resolve('app/subdivisions/[slug]/page.tsx'), 'utf8')
+  const cityStrip = readFileSync(resolve('app/cities/[slug]/_v3/CityAlertSheet.client.tsx'), 'utf8')
+  const primitive = readFileSync(resolve('components/site/v3/V3PlaceDoor.tsx'), 'utf8')
+  const doorCss = readFileSync(resolve('components/site/v3/V3PlaceDoor.css'), 'utf8')
+  const openingCss = readFileSync(resolve('components/place/place-opening.css'), 'utf8')
+
+  it('mounts the door under the city H1, off the face the page already publishes', () => {
+    expect(cityPage).toMatch(/<V3PlaceDoor/)
+    // The door reads the face this page already computed, under the city grain,
+    // which derives the trace. A NEW market read for the opening is the thing
+    // this node was not allowed to add.
+    expect(cityPage).toMatch(/publishPlaceDoor\(\{\n\s+face,\n\s+grain: 'city',\n\s+placeName: cityName,/)
+    expect(cityPage).not.toMatch(/\.from\('market_stats_cache'\)/)
+    expect(cityPage).not.toMatch(/\.from\('market_pulse_live'\)/)
+    // It sits inside the opening's copy block, after the heading.
+    expect(cityPage.indexOf('place-opening__copy')).toBeLessThan(cityPage.indexOf('<V3PlaceDoor'))
+    expect(cityPage.indexOf('<V3Heading level={1}')).toBeLessThan(cityPage.indexOf('<V3PlaceDoor'))
+    // The page hands in no trace it built beside the call.
+    expect(cityPage).not.toMatch(/placeDoorTrace/)
+  })
+
+  it('does NOT mount the door on the neighborhood, community or subdivision openings', () => {
+    // Decided 2026-09-08: SITE-03 ships on the city grain only this round. At
+    // community grain the door's boundary-membership count can exceed the
+    // destination search's City+SubdivisionName count (a section 0
+    // contradiction one click apart), and three grains wearing one first
+    // screen is a PUBLIC_UI section 3 lock break that needs the owner's
+    // decision. Those questions sit on the node, not in code. The publisher
+    // stays grain-aware so a later round can wire it without redesign; no
+    // sub-city page imports it now, and this test locks that.
+    for (const page of [nbhPage, communityPage, subdivisionPage]) {
+      expect(page).not.toMatch(/<V3PlaceDoor/)
+      expect(page).not.toMatch(/publishPlaceDoor/)
+      expect(page).not.toMatch(/publish-place-door/)
+    }
+  })
+
+  it('states the verdict ONCE on the city page, in the caption and not on the door', () => {
+    expect(cityPage).toMatch(/cityVerdictCaption/)
+    // The door comes first, then the line that states the supply figure and the
+    // verdict. The door itself carries neither.
+    expect(cityPage.indexOf('<V3PlaceDoor')).toBeLessThan(cityPage.indexOf('place-opening__caption'))
+    expect(cityPage).not.toMatch(/verdict=\{placeDoor/)
+  })
+
+  it('gives the primitive no way to render a second figure or a verdict', () => {
+    // The primitive can only render what its props allow. No verdict, no
+    // median, no months of supply, no days-to-pending prop exists, so neither
+    // the strip nor the duplicated verdict can be built.
+    expect(primitive).toMatch(/count: string/)
+    expect(primitive).toMatch(/countLabel: string/)
+    // No verdict PROP and no verdict markup. The words survive in the header
+    // comment that explains why the prop is gone; the type and the JSX do not.
+    expect(primitive).not.toMatch(/verdict\??: string/)
+    expect(primitive).not.toMatch(/v3-place-door__verdict/)
+    expect(primitive).not.toMatch(/\{verdict/)
+    expect(primitive).not.toMatch(/medianList|monthsOfSupply|daysToPending/)
+    // The trace is the existing atom, never a new trace control.
+    expect(primitive).toMatch(/V3SourceDisclosure/)
+    // No formatting inside the primitive (ci:public-v3 rule 3).
+    expect(primitive).not.toMatch(/toLocaleString|Intl\.NumberFormat|toLocaleDateString/)
+  })
+
+  it('uses the site freshness idiom, not a stamp of its own', () => {
+    expect(primitive).toMatch(/updated \$\{stamp\}/)
+    expect(doorCss).not.toMatch(/text-transform: uppercase/)
+    expect(doorCss).not.toMatch(/v3-place-door__read/)
+  })
+
+  it('does not paint a surface over the opening photograph', () => {
+    // The wrapper carries V3_ROOT_CLASS, and `.v3` in tokens.css sets a cream
+    // background. Unset it, or the door slabs a band across the still and its
+    // own on-media (white) lines land on cream.
+    expect(doorCss).toMatch(/\.v3\.v3-place-door \{[^}]*background: transparent;/)
+  })
+
+  it('stamps the door with the read that made the count', () => {
+    // The city count and its stamp both come off leftover Market Truth
+    // (leftoverStamp is that read's own computed_at); nothing borrowed.
+    expect(cityPage).toMatch(/readDate: leftoverStamp \? formatDate\(leftoverStamp\) : null,/)
+  })
+
+  it('keeps ONE filled control in the first viewport, and never none', () => {
+    // The door is the fold's primary, so the alerts strip that mounts right
+    // after the opening steps down, but ONLY when a door actually rendered. A
+    // city whose Market Truth read withheld the active count draws no door,
+    // and an unconditional ghost would ship that fold with no filled control.
+    expect(cityStrip).toMatch(/emphasis=\{demote \? 'ghost' : 'primary'\}/)
+    expect(cityStrip).not.toMatch(/emphasis="ghost"/)
+    expect(cityStrip).not.toMatch(/emphasis="primary"/)
+    expect(cityPage).toMatch(/<CityAlertsStrip[\s\S]{0,700}demote=\{placeDoor != null\}/)
+    expect(cityPage.indexOf('<V3PlaceDoor')).toBeLessThan(cityPage.indexOf('<CityAlertsStrip'))
+  })
+
+  it('owns the browse destination: the market Instrument draws no second filled button to the same href', () => {
+    // /cities/bend rendered the door at /homes-for-sale/bend AND, inside
+    // .v3-instrument__action, a second v3-btn--primary at the identical href
+    // ("See every Bend home for sale"). One destination, one filled control.
+    const instrumentAction = cityPage.match(
+      /action=\{\{\n\s+label: v3Text\(`See every \$\{cityName\} home for sale`\),\n\s+href: homesForSalePath\(cityName\),\n\s+variant: '(\w+)',/,
+    )
+    expect(instrumentAction?.[1]).toBe('ghost')
+    // And no other filled action is written anywhere in the page source.
+    expect(cityPage).not.toMatch(/variant: 'primary'/)
+    expect(cityPage).not.toMatch(/variant="primary"/)
+  })
+
+  it('keeps the count subordinate to the H1 and the arrow beside the label', () => {
+    // (c) The place leads the Stage, not the number. For one round the numeral
+    // wore --v3-size-num-lead because the alerts strip's count beneath it
+    // measured 55px against the door's 30px; at the lead size it measured 55px
+    // against the H1's 27px cap and the Stage had become a number hero, which
+    // PUBLIC_UI section 3 forbids. The door is a control naming one fact on its
+    // way somewhere: it wears --v3-size-num and never the lead size.
+    expect(doorCss).toMatch(/\.v3-place-door__count \{[^}]*font-size: var\(--v3-size-num\);/)
+    // The comment above the rule may name the lead token as history; the rule may not.
+    expect(doorCss).not.toMatch(/font-size: var\(--v3-size-num-lead\)/)
+    // (a) place-opening.css makes the plate full-width under 40rem, so the label
+    // must not own the flexible track or the arrow lands at the far edge: the
+    // slack trails the arrow.
+    expect(openingCss).toMatch(/@media \(max-width: 39\.99rem\) \{[\s\S]*?\.v3-place-door \.v3-btn \{\s*width: 100%;/)
+    expect(doorCss).toMatch(/\.v3-place-door__door \{[^}]*grid-template-columns: auto auto 1fr;/)
+    expect(doorCss).not.toMatch(/grid-template-columns: auto minmax\(0, 1fr\) auto/)
+    expect(doorCss).toMatch(/\.v3-place-door__arrow \{[^}]*justify-self: start;/)
+    // The plate's floor and corner stay the atom's and the register's: no
+    // literal radius, no raw color, no min-height of its own.
+    expect(doorCss).not.toMatch(/border-radius:\s*\d/)
+    expect(doorCss).not.toMatch(/min-height:/)
+    expect(doorCss).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+  })
+})
+
 describe('communities index rows', () => {
   it('puts the live count on the door and belonging in the detail', () => {
     const content = {

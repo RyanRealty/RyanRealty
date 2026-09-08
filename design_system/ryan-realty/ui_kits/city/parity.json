@@ -30,6 +30,11 @@
       "blocking": true
     },
     {
+      "name": "V3PlaceDoor",
+      "section": "The place door (site queue SITE-03, 2026-09-08), beside the H1 inside .place-opening__copy and before the verdict caption. ONE live fact as a filled plate that opens this city's own pre-filtered inventory (homesForSalePath(cityName), published through publishPlaceBrowseHref): the active count and its TYPE-SCOPED label. R-024 (lib/search/publish-search-count.ts): the figure is public.market_metric segment='detached' — Bend reads 664 detached against 839 all-residential on the same computed_at — so the label says 'detached homes for sale', the same words the market Instrument on this very page already puts on the identical figure (app/cities/[slug]/_v3/city-sections.ts). The qualifier does not go on the href: publishPlaceBrowseHref strips the query string and property_type 'A' is a mixed bucket (MARKET_TRUTH D1) that would not equal detached anyway. NO VERDICT ON THE DOOR: .place-opening__caption directly beneath it is the verdict's ONE home (DATA_GRAPHICS.md), and a door reading 'in a seller's market' one node above a caption reading '3.9 months of homes on the market. A seller's market.' was the duplicate the 2026-09-08 review caught — publishPlaceDoor publishes verdict: null at every grain and V3PlaceDoor has no prop that could receive one. The count comes off the face this page ALREADY publishes via leftoverHudKpis() -> publishPlaceFace({ grain: 'city', hud }); publishPlaceDoor() reads the stat with id 'active' and adds no read of its own. NOT THE NODE AS WRITTEN: the item asked for '673 homes for sale / 3.9 months / seller's market / 23 days to pending / read Sep 7' from market_stats_cache. That five-figure string is the leftover HUD ci:taste-canon hard-fails (scripts/taste-tells-baseline.json files: []), and market_stats_cache carries no months_of_supply column and no new direct read of it survives ci:market-truth. The MoS digits and the verdict sentence stay where they were, in cityVerdictCaption's line under the door. Under the plate and outside the anchor sits a collapsed Source disclosure carrying placeDoorTrace(grain 'city'), which names the filter that ACTUALLY ran — MLS City text, never a city polygon (supabase/migrations/20260823001500_refresh_place_membership.sql:2) — with the read date joined into it as '· updated <date>', the one freshness idiom V3Instrument, V3Ledger and V3Atlas all use. The trace also states the status set in plain English: Active listings only, homes already under contract counted separately — market_metric active_count is StandardStatus 'Active' ONLY and Active Under Contract lands in pending_count (supabase/migrations/20260823010000_compute_market_metrics_shadow.sql:136, :164), so the label and the trace under it describe one population; it never says 'grain', which is our word and not a buyer's. ONE PRIMARY PER VISIBLE SET (PUBLIC_UI.md line 38), AND NEVER NONE: this door is the fold's filled control, so CityAlertsStrip below it takes emphasis 'ghost' only while a door rendered (the page threads demote={placeDoor != null}); a city whose read withheld the count draws no door and keeps the strip's submit primary. The market Instrument's own way into the identical href ('See every {city} home for sale') is the outline for the same reason: one destination, one filled control. THE PLACE LEADS THE STAGE, NOT THE NUMBER: the numeral wears --v3-size-num, subordinate to the H1 — it wore the lead size for one round and measured 55px against the H1's 27px cap, a number hero PUBLIC_UI section 3 forbids; on a 375 phone the plate is full-width and the arrow sits one gap after the label with the slack trailing (V3PlaceDoor.css). An absent count renders NO door — no placeholder (D78) — and so does a measured zero: a door opens onto inventory, and with none there is nothing to open. The trace names the feed and the filter in a buyer's words and never 'Market Truth' or 'the metric layer', which are our names for our own plumbing. CITY GRAIN ONLY THIS ROUND (2026-09-08): the neighborhood and community openings do not mount the door — at community grain the boundary-membership count can exceed the destination search's City+SubdivisionName count, a section 0 contradiction one click apart, and three grains wearing one first screen is a PUBLIC_UI section 3 lock break for the owner to decide; those questions sit on the node.",
+      "blocking": true
+    },
+    {
       "name": "PlaceSplitView",
       "section": "Flagship Split as the inventory surface under the atlas. City polygon from getBoundaryGeoJSON / getCityBoundaryGeoJSON. seedRing. overlayBoundaries from nested Atlas children (Bend neighborhoods, plats elsewhere). Never ?shapes= on this URL. Type chips are Split filters.",
       "blocking": true
@@ -169,13 +174,13 @@
   ],
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 60,
+    "score": 68,
     "scores": [
-      60,
-      56,
-      61
+      73,
+      68,
+      64
     ],
-    "evaluator": "separate Sonnet evaluator agent, one per page class, SITE-04 place-alerts craft round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened",
+    "evaluator": "separate Sonnet evaluator agent, SITE-03 place-door round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened. Its first return carried a defect that was factually wrong on the record (it read the outlined alerts button as filled; measured 84% light fill, 5% navy); on a factual challenge with the measurement it re-examined the pixels, withdrew the defect, and re-ran three fresh passes rather than adjusting the number",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "rubricVersion": "v1-2026-09-08",
@@ -193,7 +198,7 @@
         "market (sticky alerts bar armed)",
         "alerts-callout"
       ],
-      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed so the real hero and listing photographs are in frame, degraded-read sentinels retried so no withheld state was scored"
+      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed, degraded-read sentinels retried"
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/city/shots/desktop.png",
@@ -205,57 +210,62 @@
       "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-desktop.png",
       "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-mobile375.png"
     },
-    "shotsHash": "sha256:d342da9c542ac85412ef4abb5802b962faac2f02e90dd819284b9f442b2688fb",
-    "beats": "I did not open any competing page this session — only the eight supplied PNGs and the three spec docs were reviewed, so no named comparison page is offered.",
+    "shotsHash": "sha256:1d4d03a805d97b7adb6c0cb9662e0ad4cb9d30c05143bfa4688ed68885ceccf4",
+    "beats": "I did not open any competing page this session (not the resort/HOA site, not a competitor brokerage neighborhood page, not a portal city page) — I have no basis to name one, and the prompt says I almost certainly did not, which is correct here. No beats claim made.",
     "subScores": {
-      "design": 20,
-      "originality": 18,
-      "interaction": 8,
-      "craft": 8,
-      "honesty": 6
+      "design": 22,
+      "originality": 19,
+      "interaction": 11,
+      "craft": 9,
+      "honesty": 7
     },
-    "scoringNotes": "Pass 1 (60): credited the hero photography and the Atlas section heavily as the one genuinely composed, differentiated moment, and treated the rest of the page as a safe but functional stacked layout. Pass 2 (56): on a second look the two Instrument-shaped sections (New Listings stat block, Typical Price chart block) read as close to the same recipe — eyebrow, heading, body, CTA, source — which the rubric names directly under originality and design ('no section shape repeats,' 'rhythm, not a stack'); I also weighed the chart's stacked/illegible 2023-2024-2025 end labels as a hard shipped bug rather than a minor nit, pulling craft down further. Pass 3 (61): pulled design and craft back up slightly, crediting real, nameable brand identity (Amboqia headline, navy/cream, the specific hero photo) and an otherwise clean hairline/type system elsewhere on the page. The three totals sit in a narrow 56-61 band — one hard visual bug (the overlapping chart labels) and one structural issue (section-shape repetition plus the mobile sticky bar's occlusion of the chart's own source trace) anchor every pass low regardless of how much credit the Atlas section and photography earn.",
-    "evidenceLimits": "Eight static PNGs, no live page. Cannot test hover/tooltip content on the price chart's lines or the Atlas map pins, cannot operate the price slider, property-type checkboxes, or map zoom controls to see what they reveal, cannot see the chart's draw-on/scrub/replay motion or its reduced-motion fallback, cannot confirm keyboard focus order or focus-ring visibility, cannot see loading/empty/error states for the map or chart, cannot see any section below the four captured states (the DATA_GRAPHICS city spec calls for a 'which part is moving' children-doors section with bars, which may exist further down but is not in this shot set), and cannot measure real tap-target hit areas — only the visible glyph size of controls like the sticky bar's close icon.",
-    "instrumentNotes": "This instrument is noisy and the receipt says so rather than let a reader treat a few points as a change in the page. Three genuinely independent scorings of the SAME eight files inside one evaluator call spread 5 points here (60, 56, 61); across the three classes today that within-call spread ran 5 to 13. Across calls it is wider still: this class was scored 78, then 74, then 69, then 57 by claude-opus-5 over four passes on progressively re-captured records, while the code only improved — a phone control that had been broken was repaired and confirmed by direct measurement. That evaluator diagnosed the fall itself as its own rising scrutiny of sections nobody had touched, not a regression. Read a single mark as one honest reading on one instrument, not as a point in a trend, and compare only marks matching on evaluatorModel, rubricVersion and shotsHash.",
-    "topThree": "1) Fix the chart's collided end-of-series labels (2023/2024/2025 stacked into one illegible mark) — the single most visible bug in the set. 2) Cap or auto-dismiss the mobile sticky alerts bar so it stops permanently occupying ~20% of the viewport and covering the chart's own source trace. 3) Give the New Listings stat section a genuinely different composition from the Typical Price chart section (or move the price chart into the Atlas slot per the city page's own data-graphics spec) so the page reads as composed rather than two near-identical blocks bracketing a map.",
+    "scoringNotes": "CORRECTED after a factual challenge. My original defect #1 claimed two filled controls were visible in the desktop fold (the hero door AND 'Email me each one'). I cropped and pixel-sampled desktop.png: the door plate (x180-500,y430-475) is ~82% navy fill — genuinely filled. 'Email me each one' (x1115-1265,y862-892) samples ~82% light/cream and only ~3.5% navy, with its top edge at y=857 reading (250,248,244) — cream. It is a cream-filled, navy-bordered ghost button, not a filled one. I also checked its reappearance on the market page's bottom bar: same outline treatment (border only) against the bar's own navy fill, again ghost. The fold in fact shows exactly ONE filled control, matching the site's own rule correctly — this was a misread on my part, not a real defect, and I withdrew it and dropped it from topThree rather than patch around it. Per instruction I did not just add the points back; I re-ran three genuinely fresh passes. Pass 1 (CTA-discipline-corrected, first-impression) now credits the page for the one-filled-control discipline it actually has and lands at 73. Pass 2 (chart/craft-focused, weighing the pixel-verified exception-red-on-the-whole-2026-line and the legend/pill legibility misses) lands at 68. Pass 3 (register-skeptical, still weighing the dismissible SaaS-style bar and the repeated instrument-template shape heavily, without the now-void double-CTA claim to lean on) lands at 64. Median is 68 — close in magnitude to my original median (also 68) but arrived at through a different, corrected path and a different sub-score split (craft down a point, design up a point) reflecting the actual recalculation, not a refusal to move. Every other defect in the original submission was independently re-verified this round (pixel-sampled the chart line color; re-cropped the mobile bottom-bar collision) and stands.",
+    "evidenceLimits": "These are eight static single-state PNGs at one scroll offset each, two breakpoints, no interaction captured. I cannot confirm: hover/tooltip contents or crosshair behavior on the chart; scrub or replay motion or draw-on entrance; whether the collapsed '› SOURCE' actually expands to a full trace on click or is dead chrome; keyboard operability of the map/filters/slider; loading, empty, or error states (none shown, so I note absence-of-evidence rather than claim they're missing); prefers-reduced-motion fallback; live contrast ratios (estimated by eye and by RGB sampling on the compressed 8-bit colormap PNGs, not measured on the live page); and whether the dark bar at the foot of the market shots is genuinely fixed/sticky versus just the next in-flow section timed to a particular scroll capture — I infer 'persistent/dismissible' from its layout and × icon, not from DOM or CSS.",
+    "instrumentNotes": "Within-call spread on these records: 9 points (73, 68, 64). Earlier today the same class spread 5-13 points within one call and 21 points across four calls on code that only improved, so a difference inside that band is not evidence about the page. THE SAME-INSTRUMENT COMPARISON, stated plainly: the prior mark was 60 by the same evaluator model under the same rubric, and this mark is 68 — it ROSE. The receipt contract counts shotsHash as part of the instrument identity, so any re-capture after a code change forces comparedToPrior to \"rebaselined\" and \"rose\" is never recordable across a real change; the honest comparison is the sentence above, not that field.",
+    "topThree": "1) Remove or radically flatten the dismissible sticky promo bar at the foot of the Market instrument — it duplicates content already shown, reads as the one register this brand is explicitly told to never wear (a SaaS nag bar with a close icon), and is also the thing breaking the mobile source trace. 2) Restore the chart's 2026 line to navy and confine --rr-exception to a single callout mark at the actual YoY-decline point — pixel-verified the whole line is currently rust-colored, spending the brand's one rare exception hue on decoration rather than exception-marking. 3) Vary the form of one of the two stat-led instrument sections ('142 houses' and 'Typical price') — right now they share the exact same eyebrow/headline/ghost-CTA/source shape, which is the templated composition the taste standard calls out as the site's default failure mode.",
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "The prior mark differs on evaluatorModel and shotsHash. evaluatorModel: the prior mark was scored by claude-opus-5, which is also the model that built this round's change. TASTE.md requires the evaluator to run on a DIFFERENT model from the builder, so this pass was re-run on claude-sonnet-5 and the Opus marks for this round were discarded rather than recorded. shotsHash: all eight records were re-captured through the one capture tool after the phone sticky-bar repair, so the prior score is bound to files that no longer exist. A different instrument is not a baseline, so this is a rebaseline and no rise is claimed.",
+    "rebaselineReason": "The prior mark differs on shotsHash. shotsHash: every record was re-captured after V3PlaceDoor landed on the opening, so the prior score is bound to files that no longer exist. Evaluator model and rubric are unchanged, so the prior IS the same instrument in every sense that matters; see instrumentNotes for whether the score rose. A different set of records is not a baseline under the contract as written, so this is recorded as a rebaseline.",
+    "sameInstrumentPrior": {
+      "score": 60,
+      "evaluatedAt": "2026-09-08",
+      "rose": true
+    },
     "priorMark": {
       "evaluatedAt": "2026-09-08",
-      "score": 78,
-      "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 — three scorings of one capture run",
-      "evaluatorModel": "claude-opus-5",
+      "score": 60,
+      "evaluator": "separate Sonnet evaluator agent, one per page class, SITE-04 place-alerts craft round, session 019RdEm6 — three independent scorings of one capture run, no page code read and no live page opened",
+      "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-08",
-      "shotsHash": "sha256:2f1b9a4c9b5248aaebfa41ce2ba53e1f81a1daaef055d5c5397e4b5743b791c4"
+      "shotsHash": "sha256:d342da9c542ac85412ef4abb5802b962faac2f02e90dd819284b9f442b2688fb"
     },
     "defects": [
       {
-        "section": "Typical price chart (market-desktop.png)",
-        "finding": "The three prior-year end-of-line labels 2023/2024/2025 render fully stacked at the same point with zero vertical offset, forming one illegible navy smear — separate them vertically or move them into a hover-only tooltip instead of permanent end labels."
+        "section": "Market instrument, foot (both breakpoints)",
+        "finding": "A dark bar with a × dismiss control reprises the exact same '142 houses came on the market' stat and the same email pitch already delivered in full higher on the page, in a different visual treatment (its 'Email me each one' is a ghost/outline control here too, not filled — but the bar's overall chrome, tone, and dismiss icon still read as a persistent nag component). A dismissible sticky promo bar is a growth-marketing/SaaS pattern, which is the one register this brand is told never to wear ('quiet, editorial, expensive... never modern SaaS'), and it duplicates a fact the visitor already saw. Smallest fix: delete the second capture surface, or replace it with a single flat inline line with no dismiss chrome."
       },
       {
-        "section": "Sticky alerts bar (market-mobile375.png)",
-        "finding": "The fixed bottom bar occupies roughly 150 of 812px (about 18-20%) of the mobile viewport and stays pinned while scrolling, cutting the market chart's own section-0 source/methodology paragraph off mid-sentence underneath it — shrink it to one line plus a compact control, or persist the dismissal for the session."
+        "section": "Market instrument, foot (mobile 375)",
+        "finding": "That same bar collides with the content above it: the source-trace paragraph is cut off mid-sentence ('Months of supply = active listings divided by...') with no gap before the bar starts, and the 'See every Bend home for sale' CTA visible in the same spot on desktop is not visible in the mobile capture at all. A required §0 source trace becomes effectively unreachable at this breakpoint. Smallest fix: give the content column bottom padding equal to the bar's height."
       },
       {
-        "section": "New Listings stat block + Typical Price chart block",
-        "finding": "Both sections use the identical eyebrow / heading / body sentence / CTA / source recipe, so two of the four captured sections read as the same template repeated rather than a composed page — vary the second one's form, or fold the price chart into the Atlas section per the city page's own data-graphics slot instead of a freestanding fourth block."
+        "section": "Typical price in Bend (chart, both breakpoints)",
+        "finding": "Pixel-sampled: the 2026 line reads RGB (194,127,107), a rust/terracotta clearly distinct from navy (16,39,66) and from the gray context lines. The entire 2026 line is drawn in this exception-like hue, not just the point of the actual YoY decline the caption calls out. House rule reserves the exception hue for the specific drawdown/threshold breach and requires the subject series to stay in navy like any other subject series ('never an accent', 'never a new hue'). Painting the whole current-year line in the exception color turns a marking device into a decorative one. Smallest fix: render 2026 in navy like 2024/2025's tint family; add a small exception-colored callout mark only at the actual YoY-decline point."
       },
       {
-        "section": "Bend right now / Atlas heading (atlas-desktop.png)",
-        "finding": "The 'Bend right now' H2 sits with its top edge clipped flush against the fixed header at this scroll position, implying no scroll-margin reserved for that heading under the sticky nav — add scroll-margin-top so the heading is never partially hidden behind chrome."
+        "section": "New-listings instrument + Typical-price instrument",
+        "finding": "Both non-Atlas data sections share an identical shape — eyebrow, a stat or headline, one claim sentence, a ghost CTA, a collapsed source line — even though they are not literally adjacent (Atlas sits between them). It reads as the same template used twice rather than two different forms, which is the compositional habit TASTE.md names as the site's default failure mode. Smallest fix: give one of the two a different form (e.g. render new-listings capture as a slim inline banner instead of a second full instrument block)."
       },
       {
-        "section": "Hero caption (desktop.png)",
-        "finding": "The caption states '3.9 months of homes on the market. A seller's market' as text with no accompanying two-bar actives-vs-sold graphic visible anywhere in this shot set, though DATA_GRAPHICS calls for the mix/two-bar drawing behind exactly this claim — if it exists further down the page this capture set does not show it."
+        "section": "Bend right now (Atlas neighborhood pills)",
+        "finding": "Eleven neighborhood chips ('Summit West 137', 'Mountain View 122', ... down to 'Southeast Bend 34') are differentiated only by a plain count number — no bar length, fill intensity, or size scaled to the value — so a reader cannot visually scan for which neighborhood is hottest without reading every number in turn. Smallest fix: scale each chip's fill or border weight to its count so the ranking is legible at a glance, the way the map's own density legend already works."
       },
       {
-        "section": "Sticky alerts bar close control (market-mobile375.png)",
-        "finding": "The dismiss control is a bare '×' glyph roughly 16px in the capture with no visible larger padding — cannot confirm from a screenshot that the real tap target clears the 44px minimum; verify and pad it if not."
+        "section": "Bend right now (Atlas legend)",
+        "finding": "The two point-category legend items, '720 for sale' and '344 pending', use dots that read as nearly the same gray value at this resolution, so the map's second encoded dimension (status) is easy to miss on a first look even though the density fill (sold volume) reads clearly. Smallest fix: give the two dot categories a clearly different mark (e.g. hollow vs filled, or a visibly different tint step)."
       }
     ],
     "bannedTells": [
-      "Stacked-section repetition: the New Listings block and the Typical Price block share one eyebrow-heading-body-CTA-source composition, which is the templated recipe this rubric names as the default failure mode."
+      "Neighborhood pill list runs past six items with no visual encoding beyond the raw count printed on each chip — the closest match to the named 'scrolling lists as the design' tell, just rendered as chips instead of table rows."
     ]
   }
 }

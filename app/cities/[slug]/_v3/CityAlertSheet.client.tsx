@@ -75,9 +75,26 @@ type Props = {
   updatedAt: string | null
   /** The browse path this page already links for the city; the strip adds the newest sort. */
   browseHref: string
+  /**
+   * True when the opening above rendered the place door (SITE-03). ONE primary
+   * per visible set (PUBLIC_UI.md line 38): the door is the fold's filled
+   * control, so the strip steps down to the outline beneath it. False when
+   * publishPlaceDoor returned null: a city whose Market Truth read withheld the
+   * active count draws no door, and a fold with no filled control at all is
+   * the other failure, so the submit stays primary there.
+   */
+  demote: boolean
 }
 
-export function CityAlertsStrip({ id, cityName, geoSlug, newCount30d, updatedAt, browseHref }: Props) {
+export function CityAlertsStrip({
+  id,
+  cityName,
+  geoSlug,
+  newCount30d,
+  updatedAt,
+  browseHref,
+  demote,
+}: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
       const result = await submitSearchAlertSignup({
@@ -118,7 +135,10 @@ export function CityAlertsStrip({ id, cityName, geoSlug, newCount30d, updatedAt,
       stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing by email. Unsubscribe any time.')}
       updatedAt={updatedAt}
       trap={TRAP}
-      emphasis="primary"
+      // ONE primary per VISIBLE set (PUBLIC_UI.md line 38), and never zero. See
+      // `demote` on Props: the outline under a rendered door, primary when the
+      // opening published no door.
+      emphasis={demote ? 'ghost' : 'primary'}
       onSubmit={submit}
     />
   )
