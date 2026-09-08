@@ -174,13 +174,92 @@
     "V3Footer"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 67,
-    "beats": "Zillow's Bend, OR real estate page on the city Atlas: live pins inside Bend's recorded boundary with type toggles, and no leftover HUD tiles on the hero photograph.",
-    "evaluator": "separate grok-4.6 evaluator, place-pages pass, session 01a06fc0",
+    "evaluatedAt": "2026-09-08",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-07 pass, run by the cloud grinder against its own dev server on /cities/bend and /cities/redmond at 1440 and 375; it drove the calculator, toggled loan/cash, opened the rate disclosure and clicked through to the filtered search, then scored the same evidence three times in one call. The builder did not grade its own page.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/cities/bend",
+        "/cities/redmond"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "afford-default",
+        "afford-terms-open",
+        "afford-cash"
+      ]
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/city/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/city/shots/mobile375.png"
-    }
+      "mobile375": "design_system/ryan-realty/ui_kits/city/shots/mobile375.png",
+      "affordDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-desktop.png",
+      "affordMobile375": "design_system/ryan-realty/ui_kits/city/shots/afford-mobile375.png",
+      "affordTermsDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-terms-desktop.png",
+      "affordTermsMobile375": "design_system/ryan-realty/ui_kits/city/shots/afford-terms-mobile375.png",
+      "affordCashDesktop": "design_system/ryan-realty/ui_kits/city/shots/afford-cash-desktop.png",
+      "affordCashMobile375": "design_system/ryan-realty/ui_kits/city/shots/afford-cash-mobile375.png"
+    },
+    "shotsHash": "sha256:386bbbd595bf15ae82e698ef3c92d813058400a1a62af6e30e92eadc35dbe73f",
+    "scores": [
+      61,
+      65,
+      70
+    ],
+    "score": 65,
+    "breakdown": {
+      "design": 20,
+      "originality": 19,
+      "interaction": 10,
+      "craft": 10,
+      "honesty": 6
+    },
+    "beats": "Zillow's Bend, OR city page, on the affordability question specifically: #afford is a bidirectional payment-price control tied to THIS city's published median asking price, publishes the local financing mix as measured data (Bend detached: 63.2% conventional, 27.8% cash) and a 30-year rate carrying its Freddie Mac PMMS week stamp, and ends in the filtered local search at the ceiling the visitor chose. Zillow's calculator runs on national assumptions, carries no source trace, and does not hand the result back to a local search.",
+    "defects": [
+      {
+        "section": "#afford",
+        "severity": "taste",
+        "finding": "None found by the evaluator on either page class. It named this section the best thing on the page and the standard the rest of the page should be rebuilt to meet."
+      },
+      {
+        "section": "#faq",
+        "severity": "taste",
+        "finding": "The city FAQ renders as a plain-text accordion while the neighborhood page ships the same v3-answers component as number-forward answers with an MOS gauge. One component, two looks, and the city holds the weaker one."
+      },
+      {
+        "section": "#faq",
+        "severity": "honesty",
+        "finding": "Confirmed in the DOM: city answer items carry no per-answer source disclosure, where the neighborhood instance carries one on every row."
+      },
+      {
+        "section": "#homes",
+        "severity": "taste",
+        "finding": "Neighborhoods, Communities, Golf communities, Latest market activity and Open houses are five consecutive sections sharing one shape (eyebrow, heading, photo-and-price rows, source line) — the banned stacked-section tell."
+      },
+      {
+        "section": "#homes",
+        "severity": "taste",
+        "finding": "The property-type tiles (\"63 Condos in Bend · BUYER’S MARKET\") are a figure plus a verdict word plus jargon with no plain sentence and nothing to interact with — the banned KPI-grid tell."
+      },
+      {
+        "section": "#homes",
+        "severity": "craft",
+        "finding": "At 375 the neighborhood chip carousel clips its third chip mid-word with no fade, arrow or peek affordance signalling that it scrolls."
+      }
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-06",
+      "score": 67,
+      "evaluatorModel": "grok-4.6",
+      "rubricVersion": "none-recorded",
+      "shotsHash": "none-recorded"
+    },
+    "rebaselineReason": "The prior mark differs on evaluatorModel (grok-4.6 against claude-sonnet-5), on rubricVersion (the 2026-09-06 receipt predates the versioned rubric and records none, against v1-2026-09-08) and on shotsHash (it recorded none, and its two shots have since been recaptured and six state shots added). Three of three identity keys drift, so 67 is not a baseline this mark can be measured against. 65 is the first mark on the new instrument and the next pass must rise above 65 — this is not a claim that the page improved."
   }
 }
