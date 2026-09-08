@@ -394,6 +394,8 @@ export function cmaSectionStyles(): string {
   /* The price-path primitive (blueprint, Delta 1). Two layouts of one line,
      exactly one visible, same mechanism as every other chart here. */
   .pp-wrap { margin: 8px 0 4px; }
+  .pp-wrap.is-compact { margin: 5px 0 0; }
+  .rival-card .pp-wrap { margin: 5px 0 0; }
   .pp svg { width: 100%; height: auto; display: block; }
   .pp-phone { display: none; }
   @media screen and (max-width: 700px) {
@@ -403,6 +405,9 @@ export function cmaSectionStyles(): string {
   @media print {
     .pp-wide { display: block !important; }
     .pp-phone { display: none !important; }
+    /* A card in a four-up grid is narrower than the wide line at every
+       viewport, so the compact drawing is the only one it carries. */
+    .pp-wrap.is-compact .pp { display: block !important; }
   }
   /* Chapter 2: one story per listing that did not sell, never a matrix. */
   .dns-set { display: grid; gap: 14px; margin: 12px 0 8px; }
@@ -611,6 +616,10 @@ export function cmaSectionStyles(): string {
   .rival-card .rival-meta { font-size: 9px; color: var(--navy); margin-top: 4px; line-height: 1.35; }
   @media screen and (max-width: 700px) {
     .rival-grid { grid-template-columns: 1fr 1fr; }
+  }
+  /* Two cards across 375px leaves 130px a card. One card, full width. */
+  @media screen and (max-width: 480px) {
+    .rival-grid { grid-template-columns: 1fr; }
   }
 
   .rival-list { margin: 4px 0 12px; border-top: 1px solid var(--navy-line); }

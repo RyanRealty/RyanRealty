@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  competitorCutLine,
   pickBandRivals,
   renderBandRivalsHtml,
   rivalAddress,
@@ -22,6 +23,8 @@ function rival(over: Partial<CmaBandRival> = {}): CmaBandRival {
     yearBuilt: over.yearBuilt ?? 1974,
     lotAcres: over.lotAcres ?? 0.16,
     propertySubType: over.propertySubType ?? 'Single Family Residence',
+    originalListPrice: over.originalListPrice ?? null,
+    onMarketDate: over.onMarketDate ?? null,
   }
 }
 
@@ -193,5 +196,62 @@ describe('renderBandRivalsHtml', () => {
     })
     expect(html).toContain('1 more bed')
     expect(html).toContain('1 more bath')
+  })
+})
+
+describe('who has already come down', () => {
+  // Delta 1: "Every active and pending row carries its price history line and
+  // days on market too, so the reader sees which competitors have already cut.
+  // Sentence: how many have cut, median cut."
+  const listed = (over: Partial<CmaBandRival>) =>
+    rival({ onMarketDate: '2026-06-01', ...over })
+
+  it('counts the cuts over the homes this chapter prints, and states the median', () => {
+    const line = competitorCutLine([
+      listed({ listingKey: 'A', originalListPrice: 500000, listPrice: 470000 }),
+      listed({ listingKey: 'B', originalListPrice: 480000, listPrice: 470000 }),
+      listed({ listingKey: 'C', originalListPrice: 460000, listPrice: 460000 }),
+      listed({ listingKey: 'D', originalListPrice: 455000, listPrice: 455000 }),
+    ])
+    expect(line).toBe('2 of the 4 homes below have already come down, a median cut of $20,000, or 4.0 percent.')
+  })
+
+  it('says so plainly when nothing has come down', () => {
+    expect(
+      competitorCutLine([
+        listed({ listingKey: 'A', originalListPrice: 470000, listPrice: 470000 }),
+        listed({ listingKey: 'B', originalListPrice: 460000, listPrice: 460000 }),
+      ]),
+    ).toBe('None of the 2 homes below has come down from its opening price.')
+  })
+
+  it('leaves out a home whose opening ask is not on the record rather than assuming it never cut', () => {
+    const line = competitorCutLine([
+      listed({ listingKey: 'A', originalListPrice: 500000, listPrice: 470000 }),
+      listed({ listingKey: 'B', originalListPrice: null, listPrice: 470000 }),
+    ])
+    expect(line).toBe('The one home below has already come down, a median cut of $30,000, or 6.0 percent.')
+    expect(competitorCutLine([listed({ originalListPrice: null })])).toBeNull()
+  })
+
+  it('draws each competitor its own price path on the card', () => {
+    const html = renderBandRivalsHtml({
+      city: 'Redmond',
+      lo: 400000,
+      hi: 480000,
+      activeCount: 12,
+      pendingCount: 3,
+      recommendedList: 440000,
+      rivals: [listed({ listingKey: 'A', originalListPrice: 500000, listPrice: 470000 })],
+    })
+    expect(html).toContain('class="pp-wrap is-compact"')
+    expect(html).toContain('data-path="rival-A"')
+    // The opening ask and the ask today are both on the drawing, so the cut
+    // sentence above it can be checked against the picture.
+    expect(html).toContain('$500K')
+    // The card prints the ask today in 24px type right above the drawing, so
+    // the drawing does not repeat it — the reading does, for a screen reader.
+    expect(html).toContain('later asked $470K, date not recorded, still for sale')
+    expect(html).toContain('already come down')
   })
 })

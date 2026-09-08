@@ -5,6 +5,7 @@
 
 import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 
 const esc = escapeHtml
 
@@ -216,13 +217,31 @@ function rivalCard(
       : null,
   ])
   const vs = rivalVsSubjectLine(r, subject)
-  return `<article class="rival-card">
+  // Delta 1: "Every active and pending row carries its price history line and
+  // days on market too, so the reader sees which competitors have already
+  // cut." The compact drawing, because a card in a four-up grid is narrower
+  // than the wide line at every viewport.
+  const path = priceHistoryLineCompactHtml(
+    pricePathFromListing({
+      address: r.address,
+      listPrice: r.listPrice,
+      originalListPrice: r.originalListPrice ?? null,
+      onMarketDate: r.onMarketDate ?? null,
+      daysOnMarket: r.daysOnMarket,
+      status: r.status,
+    }),
+    `rival-${r.listingKey}`,
+  )
+  return `<article class="rival-card" data-rival="${esc(r.listingKey)}" data-status="${esc(
+    r.status.toLowerCase(),
+  )}">
     ${img}
     <div class="rival-body">
       <a class="rival-addr" href="${esc(href)}" data-rr-track="cma-competition">${esc(r.address)}</a>
       <div class="rival-ask">${usd(r.listPrice)}</div>
       ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
       ${vs ? `<div class="rival-meta">${esc(vs)}</div>` : ''}
+      ${path}
     </div>
   </article>`
 }
@@ -245,6 +264,51 @@ export function competitionSentence(input: {
     bits.push(`The nearest ${int(input.shown)} are below.`)
   }
   return bits.join(' ')
+}
+
+/**
+ * Who among the homes below has already come down, and by how much.
+ *
+ * Delta 1: "Sentence: how many have cut, median cut." The figure is taken over
+ * the homes THIS CHAPTER PRINTS, not over the whole price range — each one
+ * draws its own opening ask and its ask today on the card, so a reader can add
+ * the set up and land on the same median. A home whose opening ask is not on
+ * the record is left out of both counts rather than assumed never to have cut.
+ */
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
+}
+
+export function competitorCutLine(rivals: readonly CmaBandRival[]): string | null {
+  const known = rivals.filter(
+    (r) =>
+      r.listPrice > 0 &&
+      r.originalListPrice != null &&
+      Number.isFinite(r.originalListPrice) &&
+      r.originalListPrice > 0,
+  )
+  if (known.length === 0) return null
+  const cuts = known
+    .filter((r) => r.originalListPrice! > r.listPrice)
+    .map((r) => ({
+      dollars: r.originalListPrice! - r.listPrice,
+      pct: ((r.originalListPrice! - r.listPrice) / r.originalListPrice!) * 100,
+    }))
+  const shown = known.length
+  if (cuts.length === 0) {
+    return shown === 1
+      ? 'The one home below has not come down from its opening price.'
+      : `None of the ${int(shown)} homes below has come down from its opening price.`
+  }
+  const cut = `a median cut of ${usd(Math.round(median(cuts.map((c) => c.dollars))))}, or ${median(
+    cuts.map((c) => c.pct),
+  ).toFixed(1)} percent`
+  if (shown === 1) return `The one home below has already come down, ${cut}.`
+  return `${int(cuts.length)} of the ${int(shown)} homes below ${
+    cuts.length === 1 ? 'has' : 'have'
+  } already come down, ${cut}.`
 }
 
 export type BandRivalsInput = {
@@ -279,7 +343,9 @@ function competitionBody(input: BandRivalsInput): string {
     pendingCount: input.pendingCount,
     shown: actives.length + pendings.length,
   })
+  const cutLine = competitorCutLine(input.rivals)
   return `<p>${esc(sentence)}</p>
+  ${cutLine ? `<p>${esc(cutLine)}</p>` : ''}
   ${actives.length ? `<h3 class="subhead">For sale now</h3><div class="rival-grid">${cards(actives)}</div>` : ''}
   ${pendings.length ? `<h3 class="subhead">Under contract</h3><div class="rival-grid">${cards(pendings)}</div>` : ''}`
 }

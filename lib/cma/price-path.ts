@@ -297,12 +297,26 @@ function geometry(path: PricePath): Geometry | null {
   return { t0, t1, lo: min - pad, hi: max + pad, steps }
 }
 
-export type PricePathLayout = { width: number; height: number; fontSize: number }
+export type PricePathLayout = {
+  width: number
+  height: number
+  fontSize: number
+  /**
+   * A slot whose own card already prints the ask today and the days on market
+   * in type large enough to read. The drawing carries the opening ask and the
+   * shape of the path and drops every label that would repeat the card — 320
+   * units of line with four labels inside 130px of card renders at six pixels,
+   * which is a decoration, not a figure.
+   */
+  minimal?: boolean
+}
 
 /** Reading width and paper. Wide enough for two labels and a status word. */
 export const PRICE_PATH_WIDE: PricePathLayout = { width: 560, height: 96, fontSize: 11.5 }
 /** A phone card. Drawn to fit — never the wide one inside a pan box. */
 export const PRICE_PATH_PHONE: PricePathLayout = { width: 320, height: 92, fontSize: 10.5 }
+/** A card in a grid: one label, the line, the drop. */
+export const PRICE_PATH_CARD: PricePathLayout = { width: 220, height: 46, fontSize: 11, minimal: true }
 
 /**
  * The whole primitive. One listing, one line, both layouts from one geometry
@@ -320,12 +334,24 @@ export function priceHistoryLineSvg(
   const g = geometry(path)
   if (!g) return ''
   const { width: W, height: H, fontSize: fs } = layout
+  const minimal = layout.minimal === true
+  // The opening-ask label sits above the first vertex, so the top of the band
+  // has to leave a line of type above it in EVERY layout — a minimal drawing
+  // that pulled the band up to 13 put "$435K" a pixel outside its own viewBox.
   const top = 20
-  const bottom = H - 20
+  const bottom = minimal ? H - 8 : H - 20
   const left = 2
-  // The end label ("sold $457K · 25 days") owns the right margin.
-  const endText = priceHistoryEndLabel(path)
-  const right = W - Math.min(Math.max(endText.length * fs * 0.56 + 10, 60), W * 0.44)
+  // The end label ("sold $457K · 25 days") owns the right margin. A long one
+  // ("under contract $419K · 326 days" on a 320-unit phone drawing) needs more
+  // margin than the drawing can give it, so the reserve is capped at half the
+  // width and the LABEL shrinks to fit inside what it got. Capping the reserve
+  // alone is what let four competitor labels run past their own viewBox and
+  // clip — the look-pass caught it with getBBox before it reached a reader.
+  const endText = minimal ? '' : priceHistoryEndLabel(path)
+  const need = endText.length * fs * 0.56 + 10
+  const reserve = minimal ? 6 : Math.min(Math.max(need, 60), W * 0.52)
+  const endFs = need > reserve ? Math.max(fs * (reserve / need), 8) : fs
+  const right = W - reserve
   const x = (t: number) => left + ((right - left) * (t - g.t0)) / Math.max(g.t1 - g.t0, 1)
   const y = (v: number) => bottom - ((bottom - top) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
 
@@ -391,9 +417,15 @@ export function priceHistoryLineSvg(
   <circle cx="${left + 1}" cy="${startY.toFixed(1)}" r="3.2" fill="${INK}"/>
   <text x="${left}" y="${(startY - 8).toFixed(1)}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(openLabel)}</text>
   <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="3.2" fill="none" stroke="${INK}" stroke-width="1.6"/>
-  <text x="${(endX + 8).toFixed(1)}" y="${(endY + 4).toFixed(1)}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(endText)}</text>
+  ${
+    minimal
+      ? ''
+      : `<text x="${(endX + 8).toFixed(1)}" y="${(endY + 4).toFixed(1)}" font-size="${endFs.toFixed(
+          2,
+        )}" font-weight="600" fill="${INK}">${esc(endText)}</text>
   <text x="${left}" y="${(H - 3).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.startDate))}</text>
-  <text x="${right.toFixed(1)}" y="${(H - 3).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.endDate))}</text>
+  <text x="${right.toFixed(1)}" y="${(H - 3).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.endDate))}</text>`
+  }
 </svg>`
 }
 
@@ -445,4 +477,19 @@ export function priceHistoryLineHtml(path: PricePath | null, id?: string): strin
   if (!wide) return ''
   const phone = priceHistoryLinePhoneSvg(path, id)
   return `<div class="pp-wrap"><div class="pp pp-wide">${wide}</div><div class="pp pp-phone">${phone}</div></div>`
+}
+
+/**
+ * One path drawn once, at the fitted width, for a slot too narrow to carry the
+ * wide drawing at any viewport — a card in a four-up grid, where 560 units of
+ * line inside 260px of card scales the labels to five pixels. Same geometry,
+ * same figures, one layout instead of a pair.
+ */
+export function priceHistoryLineCompactHtml(path: PricePath | null, id?: string): string {
+  if (!path) return ''
+  const svg = priceHistoryLineSvg(path, PRICE_PATH_CARD, id)
+  if (!svg) return ''
+  // The reading stays on the wrapper: the drawing itself drops the labels the
+  // card already prints, so the words are what a screen reader gets.
+  return `<div class="pp-wrap is-compact" title="${esc(priceHistoryReading(path))}"><div class="pp">${svg}</div></div>`
 }

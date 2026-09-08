@@ -119,6 +119,9 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .rival-card .rival-facts{font-size:13px;opacity:.65;margin-top:6px;line-height:1.4}
 .rival-card .rival-meta{font-size:13px;margin-top:8px;line-height:1.4}
 @media (max-width:860px){.rival-grid{grid-template-columns:1fr 1fr}}
+/* Two competitor cards across 375px leaves 130px a card: an address on three
+   lines and a price path drawn at six pixels. One card, full width. */
+@media (max-width:560px){.rival-grid{grid-template-columns:1fr}}
 .rival-list{margin-top:8px;border-top:1px solid var(--ink12)}
 .rival-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start;padding:8px 0;border-bottom:1px solid var(--ink12)}
 .rival-row.is-subject{border-bottom:2px solid currentColor}
@@ -269,6 +272,11 @@ table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block
 .pp-phone{display:none}
 @media screen and (max-width:700px){.pp-wide{display:none}.pp-phone{display:block}}
 @media print{.pp-wide{display:block!important}.pp-phone{display:none!important}}
+/* A card in a four-up grid is narrower than the wide line at every viewport,
+   so the compact drawing is the only one it carries — print included. */
+.pp-wrap.is-compact{margin:10px 0 0}
+.rival-card .pp-wrap{margin:10px 0 0}
+@media print{.pp-wrap.is-compact .pp{display:block!important}}
 /* Chapter 2: one story per listing that did not sell. */
 .dns-set{display:grid;gap:26px;margin:22px 0 10px}
 .dns-card{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px;padding-top:22px;border-top:1px solid var(--ink12)}
