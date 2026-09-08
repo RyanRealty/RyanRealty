@@ -433,6 +433,29 @@ the surface must land as queue items, never as a new plan; community traffic is 
 called done on evaluator + function; the site cannot change impressions or the AI
 shortlists (reviews, rankings); parallel lanes cost merges and rate limits.
 
+**UNFINISHED AND PUSHED ON PURPOSE (2026-09-08 16:30 UTC, 8bf1621).** The alerts
+strip carries a craft round closing the seven item-level defects the evaluator named:
+the count as a door at rest, the sticky disclosure off the size and contrast floor, the
+bar collapsed at 375 with the page reserving its height, the scope carried on the sticky
+where the alert is wider than the count, one sentence shared by callout and sticky, the
+bare MLS alias out of visitor prose, and a drawn caret replacing the browser triangle.
+
+It is pushed WITHOUT record shots and WITHOUT an evaluator pass, which is a deliberate
+trade, not an oversight: a builder lane wrote it, the container restarted before the lane
+reported, and the work was recovered from its worktree as an uncommitted patch and
+three-way merged onto this branch (five files conflicted with round three and the
+tap-target fix; each was resolved to keep both changes). Verified: 86 unit tests, tsc
+clean, ci:gates 145/145. Not verified: nothing visual. So the marks still stand at city
+78, neighborhood 72, community 65 on the 2026-09-08 instrument, and the three receipts
+still point at the pre-craft records.
+
+PICK IT UP HERE: warm the three routes with curl and a browser user agent until they
+answer in about two seconds, capture with
+`node scripts/take-route-shots.mjs <class> <url> --states atlas=#atlas,market=#market,alerts-callout=#alerts`,
+LOOK at the shots, then re-score and rewrite the three receipts. Do not call the defects
+closed until a separate evaluator has seen them. The tool will refuse to write a record
+that caught the degraded read, so a throw there means warm the route again, not a bug.
+
 **Next (the queue, in order)**
 1. SITE-02 `/sell`: show the sourced answer between the address and the contact step
    (the form goes straight to email today). The DAL for the answer exists:
