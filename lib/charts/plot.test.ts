@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { buildBarPlot, buildLinePlot, buildMixPlot, buildRangePlot, linePath } from './plot'
+import {
+  buildBarPlot,
+  buildLinePlot,
+  buildMixPlot,
+  buildPairPlot,
+  buildRangePlot,
+  buildStripPlot,
+  linePath,
+} from './plot'
 
 describe('shared chart plot', () => {
   it('draws straight segments and lifts across a gap', () => {
@@ -258,5 +266,101 @@ describe('range plot (lollipop / dumbbell)', () => {
     expect(outside?.kind).toBe('range')
     if (outside?.kind !== 'range') return
     expect(outside.ref).toBeNull()
+  })
+})
+
+
+/*
+ * THE ANSWER GEOMETRIES (site queue SITE-02b). Two shapes the four kinds above
+ * could not express: two named counts on one scale, and N marks on one shared
+ * axis. Both are what lets the place answer be DRAWN instead of tiled.
+ */
+describe('pair — two named counts on one shared scale', () => {
+  it('scales the shorter bar against the taller one, never an invented ceiling', () => {
+    const plot = buildPairPlot([
+      { name: 'For sale right now', value: 671, label: '671' },
+      { name: 'Under contract in a month', value: 173, label: '173' },
+    ])
+    expect(plot?.kind).toBe('pair')
+    expect(plot?.bars[0]?.pct).toBe(100)
+    expect(plot?.bars[0]?.leads).toBe(true)
+    expect(plot?.bars[1]?.pct).toBeCloseTo((173 / 671) * 100, 6)
+    expect(plot?.bars[1]?.leads).toBe(false)
+    expect(plot?.maxLabel).toBe('671')
+  })
+
+  it('refuses one bar: the drawing IS the comparison', () => {
+    expect(buildPairPlot([{ name: 'For sale', value: 671, label: '671' }])).toBeNull()
+    expect(
+      buildPairPlot([
+        { name: 'a', value: 0, label: '0' },
+        { name: 'b', value: 0, label: '0' },
+      ]),
+    ).toBeNull()
+    expect(
+      buildPairPlot([
+        { name: 'a', value: Number.NaN, label: 'n/a' },
+        { name: 'b', value: 8, label: '8' },
+      ]),
+    ).toBeNull()
+  })
+})
+
+describe('strip — N marks on one shared axis', () => {
+  const marks = (ats: number[]) =>
+    ats.map((at, i) => ({ id: `k${i}`, at, tick: `t${i}`, label: `reading ${i}` }))
+
+  it('stacks marks that would overprint into lanes, in x order', () => {
+    // Six closes across five months, two of them in the same month.
+    const plot = buildStripPlot(marks([0, 1, 2, 3, 4, 4]))
+    expect(plot?.kind).toBe('strip')
+    const lanes = plot?.points.map((p) => p.lane) ?? []
+    expect(lanes).toEqual([0, 0, 0, 0, 0, 1])
+    expect(plot?.lanes).toBe(2)
+    // Sorted by x, so the drawing reads left to right whatever order it arrived.
+    expect((plot?.points ?? []).every((p, i, all) => i === 0 || p.xPct >= all[i - 1]!.xPct)).toBe(true)
+  })
+
+  it('keeps a declared domain whatever the marks read — a rule has fixed ends', () => {
+    const plot = buildStripPlot(marks([23]), {
+      min: 0,
+      max: 120,
+      ticks: [
+        { at: 0, label: '0' },
+        { at: 120, label: '120 days' },
+        { at: 400, label: 'off the rule' },
+      ],
+    })
+    expect(plot?.points[0]?.xPct).toBeCloseTo((23 / 120) * 100, 6)
+    // A tick outside the domain is dropped rather than pinned to an edge.
+    expect(plot?.ticks.map((t) => t.label)).toEqual(['0', '120 days'])
+  })
+
+  it('draws a context mark inside the domain and drops one outside it', () => {
+    const inside = buildStripPlot(marks([23]), {
+      min: 0,
+      max: 120,
+      refValue: 31,
+      refLabel: 'Bend 31',
+    })
+    expect(inside?.ref?.label).toBe('Bend 31')
+    expect(inside?.ref?.xPct).toBeCloseTo((31 / 120) * 100, 6)
+
+    const outside = buildStripPlot(marks([23]), {
+      min: 0,
+      max: 120,
+      refValue: 400,
+      refLabel: 'somewhere else',
+    })
+    expect(outside?.ref).toBeNull()
+  })
+
+  it('pads by one unit when every mark shares an x, not by a share of the value', () => {
+    // A month index is ~24,300. Six percent of that is a domain 1,458 months
+    // wide around one point, which is not a chart of anything.
+    const plot = buildStripPlot(marks([24_312, 24_312]))
+    expect(plot?.points[0]?.xPct).toBeCloseTo(50, 6)
+    expect(plot?.points[1]?.xPct).toBeCloseTo(50, 6)
+    expect(plot?.points[1]?.lane).toBe(1)
   })
 })

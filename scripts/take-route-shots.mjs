@@ -47,6 +47,15 @@
  *                `a`          scroll to `#a` when it exists, else shoot the top
  *                `b=SEL`      scroll SEL into view, then shoot the viewport
  *                `c=SEL!click` scroll to SEL, click it, then shoot the viewport
+ *                `d=SEL!type:TEXT` scroll to SEL, fill it with TEXT, submit its
+ *                             form, wait for the answer, then shoot. A states
+ *                             argument containing `!type:` is separated by
+ *                             SEMICOLONS, because an address carries commas.
+ *   --await SEL  after a `!type:` submit, wait for SEL to be visible before the
+ *                shot. Network-idle only says the fetches stopped; it does not
+ *                say the answer painted, and without this the capture caught a
+ *                "reading sales, a few seconds" step (2026-09-08). Name the
+ *                thing the state exists to show.
  *   --out <dir>  write somewhere other than the route's shots/ directory
  *   --full       whole-page capture instead of the first viewport. Height-capped
  *                (see MAX_FULL_PAGE_HEIGHT) — a 16,000px stitch is the thing
@@ -149,36 +158,58 @@ export const MAX_FULL_PAGE_HEIGHT = 6000
 // argv
 // ---------------------------------------------------------------------------
 
+/**
+ * A state's optional action, and why `!type:` exists.
+ *
+ * `!click` reaches anything behind a disclosure or a tab. It cannot reach a
+ * state behind a FORM: the /sell answer and the place-page ask only exist after
+ * a visitor has typed an address and submitted it, so the shot that records
+ * them had no way to be taken with this tool — which is exactly how lanes end
+ * up writing their own capture script again (SITE-02b, 2026-09-08).
+ *
+ * `!type:<text>` fills the selector, submits its form, and waits for the answer
+ * to land before the shot. An address carries commas, so a states argument that
+ * uses `!type:` is separated by SEMICOLONS instead; without one the comma split
+ * stays exactly as it was.
+ */
 export function parseStates(raw) {
+  const arg = String(raw ?? '')
   const states = []
-  for (const chunk of String(raw ?? '')
-    .split(',')
+  for (const chunk of arg
+    .split(arg.includes('!type:') ? ';' : ',')
     .map((s) => s.trim())
     .filter(Boolean)) {
     const eq = chunk.indexOf('=')
     if (eq === -1) {
-      states.push({ name: chunk, selector: `#${chunk}`, click: false, selectorImplied: true })
+      states.push({ name: chunk, selector: `#${chunk}`, click: false, type: null, selectorImplied: true })
       continue
     }
     const name = chunk.slice(0, eq).trim()
     let selector = chunk.slice(eq + 1).trim()
     let click = false
-    if (selector.endsWith('!click')) {
+    let type = null
+    const bang = selector.indexOf('!type:')
+    if (bang !== -1) {
+      type = selector.slice(bang + '!type:'.length)
+      selector = selector.slice(0, bang).trim()
+    } else if (selector.endsWith('!click')) {
       click = true
       selector = selector.slice(0, -'!click'.length).trim()
     }
-    states.push({ name, selector, click, selectorImplied: false })
+    states.push({ name, selector, click, type, selectorImplied: false })
   }
   return states
 }
 
 function parseArgv(argv) {
   const positional = []
-  const opts = { states: [], out: null, full: false, keepRaw: false }
+  const opts = { states: [], out: null, full: false, keepRaw: false, awaitSelector: null }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
     if (a === '--states') opts.states = parseStates(argv[++i])
     else if (a.startsWith('--states=')) opts.states = parseStates(a.slice('--states='.length))
+    else if (a === '--await') opts.awaitSelector = argv[++i]
+    else if (a.startsWith('--await=')) opts.awaitSelector = a.slice('--await='.length)
     else if (a === '--out') opts.out = argv[++i]
     else if (a.startsWith('--out=')) opts.out = a.slice('--out='.length)
     else if (a === '--full') opts.full = true
@@ -295,6 +326,31 @@ async function waitImages(page, timeout = 15000) {
 
 /** Current scroll offset, Lenis wrapper or window. */
 const readScrollY = (page) => page.evaluate(() => window.scrollY || document.documentElement.scrollTop || 0)
+
+/**
+ * Wait until a region's rendered text stops changing.
+ *
+ * `networkidle` says the fetches finished; it does not say the answer painted.
+ * A form whose submit runs a server action goes idle while a "reading sales"
+ * step is still on screen, and the shot catches the spinner. This samples the
+ * region's text and returns once two consecutive samples match, capped so a
+ * genuinely animating region cannot hang the capture.
+ */
+async function settleText(page, selector, { every = 500, cap = 45000 } = {}) {
+  const read = () =>
+    page
+      .evaluate((sel) => document.querySelector(sel)?.innerText?.length ?? -1, selector)
+      .catch(() => -1)
+  const started = Date.now()
+  let previous = await read()
+  while (Date.now() - started < cap) {
+    await page.waitForTimeout(every)
+    const next = await read()
+    if (next === previous && Date.now() - started > 1500) return true
+    previous = next
+  }
+  return false
+}
 
 /**
  * Trap 1 — real wheel input, because Lenis ignores programmatic scrollTo.
@@ -480,6 +536,69 @@ async function main() {
               failed = true
             })
             await page.waitForTimeout(700)
+          }
+          if (state.type != null) {
+            // Fill, submit the owning form, and wait for the ANSWER — not for
+            // the spinner. The first cut waited on networkidle and shot "Reading
+            // Sunriver sales. A few seconds." (2026-09-08), which is a picture
+            // of a loading step. So the settle also waits for the form's own
+            // text to stop changing, and the shot re-finds the form afterwards
+            // because an answer that replaces a step moves the page under it.
+            const ok = await page
+              .fill(state.selector, state.type, { timeout: 5000 })
+              .then(() => true)
+              .catch((err) => {
+                console.error(
+                  `  ${viewport.key}: state "${state.name}" — fill failed: ${err.message.split('\n')[0]}`,
+                )
+                failed = true
+                return false
+              })
+            if (ok) {
+              await page.evaluate((sel) => {
+                const el = document.querySelector(sel)
+                const form = el?.closest('form') ?? el?.parentElement
+                if (form) form.setAttribute('data-shot-anchor', '1')
+              }, state.selector)
+              const submit = page
+                .locator(state.selector)
+                .locator('xpath=ancestor::form[1]')
+                .locator('button[type=submit]')
+                .first()
+              if ((await submit.count().catch(() => 0)) > 0) {
+                await submit.click({ timeout: 5000 }).catch(() => {})
+              } else {
+                await page.press(state.selector, 'Enter').catch(() => {})
+              }
+              // Park the pointer. The click leaves the cursor where the submit
+              // button used to be, and an answer that renders under it comes up
+              // already hovered — the shot then records one figure mid-reading
+              // and the rest idle, which is not a state the page has.
+              await page.mouse.move(0, 0)
+              await page.waitForLoadState('networkidle', { timeout: 60000 }).catch(() => {})
+              if (opts.awaitSelector) {
+                await page
+                  .waitForSelector(opts.awaitSelector, { state: 'visible', timeout: 90000 })
+                  .catch(() => {
+                    console.error(
+                      `  ${viewport.key}: state "${state.name}" — --await ${opts.awaitSelector} never appeared`,
+                    )
+                    failed = true
+                  })
+              }
+              await settleText(page, '[data-shot-anchor="1"]')
+              const anchor = await page
+                .evaluate(() => {
+                  const el = document.querySelector('[data-shot-anchor="1"]')
+                  if (!el) return null
+                  return (
+                    el.getBoundingClientRect().top +
+                    (window.scrollY || document.documentElement.scrollTop || 0)
+                  )
+                })
+                .catch(() => null)
+              await wheelTo(page, Math.max(0, (anchor ?? target) - 24))
+            }
           }
         }
 

@@ -46,6 +46,18 @@ describe('communityPageTrail', () => {
       { label: 'Tetherow' },
     ])
   })
+
+  it('gives a community that IS its own town one crumb, not its name twice', () => {
+    // /communities/sunriver rendered "Sunriver / Sunriver" — a parent link and a
+    // current page with the same name (2026-09-08).
+    expect(communityPageTrail({ label: 'Sunriver', slug: 'sunriver' }, 'Sunriver')).toEqual([
+      { label: 'Sunriver' },
+    ])
+    // Case and spacing do not make it a different place.
+    expect(communityPageTrail({ label: 'sunriver ', slug: 'sunriver' }, 'Sunriver')).toEqual([
+      { label: 'Sunriver' },
+    ])
+  })
 })
 
 describe('subdivisionPageTrail', () => {
