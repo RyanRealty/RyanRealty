@@ -177,12 +177,33 @@ export function V3AlertsStrip({
     const footer = document.querySelector('.v3-footer') ?? document.querySelector('footer')
     const observers: IntersectionObserver[] = []
 
+    // "Passed" from the anchor's rect. An IntersectionObserver alone is not
+    // enough: it fires only when intersection CHANGES, so a jump from below the
+    // Atlas to above it (both non-intersecting, an anchor link or the Home key)
+    // would leave `passed` true with the callout back on screen. The observer
+    // gives the initial state and every crossing; a passive, frame-throttled
+    // scroll read keeps it honest across jumps.
+    const readPassed = () => {
+      if (!anchor) return
+      const rect = anchor.getBoundingClientRect()
+      const intersecting = rect.bottom > 0 && rect.top < window.innerHeight
+      setSticky((s) => ({ ...s, passed: anchorPassed({ isIntersecting: intersecting, boundingClientRect: rect }) }))
+    }
+    let frame = 0
+    const onScroll = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        readPassed()
+      })
+    }
     if (anchor) {
       const io = new IntersectionObserver(([entry]) => {
         if (entry) setSticky((s) => ({ ...s, passed: anchorPassed(entry) }))
       })
       io.observe(anchor)
       observers.push(io)
+      window.addEventListener('scroll', onScroll, { passive: true })
     }
     if (section) {
       const io = new IntersectionObserver(([entry]) => {
@@ -198,7 +219,11 @@ export function V3AlertsStrip({
       io.observe(footer)
       observers.push(io)
     }
-    return () => observers.forEach((io) => io.disconnect())
+    return () => {
+      observers.forEach((io) => io.disconnect())
+      window.removeEventListener('scroll', onScroll)
+      if (frame) window.cancelAnimationFrame(frame)
+    }
   }, [id, stickyAfter])
 
   const dismiss = useCallback(() => {

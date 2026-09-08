@@ -53,12 +53,11 @@
     padding-left: 0;
     border-left: 0;
   }
-
-  /* Wide enough for the numeral to be the door; the ghost link is the phone's. */
-  .v3-alerts--figure .v3-alerts__browse {
-    display: none;
-  }
 }
+
+/* The ghost link stays at every width: the numeral is a quiet door (no rest
+   underline, by the Instrument idiom), so the link under the claim is what
+   tells a reader there is somewhere to go. */
 
 .v3-alerts__lead {
   display: grid;

@@ -23,7 +23,7 @@ const BINDERS = [
 ]
 
 const PROMISE_LITERAL =
-  'promise={`Every new listing in ${copy.scopePhrase}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}'
+  "promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}"
 
 const STICKY_NOTE_LITERAL = 'stickyNote="Every new listing by email. Unsubscribe any time."'
 
@@ -62,6 +62,9 @@ describe('the display numeral threshold', () => {
     expect(copy.claim).toBe('houses came on the market in Bend in the last 30 days.')
     expect(copy.stickyClaim).toEqual({ before: 'houses listed in', place: 'Bend', after: 'in the last 30 days' })
     expect(copy.eyebrow).toBe('New listings · Bend')
+    // No scope line on a same-scope city, so the promise names the city itself.
+    expect(copy.scopeLine).toBeNull()
+    expect(copy.promiseScope).toBe('Bend')
     expect(copy.source).toContain('148 houses')
     expect(copy.source).toContain('new_listings_30d')
     expect(copy.source).toContain('city:bend')
@@ -95,6 +98,8 @@ describe('placeAlertsCopy', () => {
     expect(copy.claim).toBe('houses came on the market in Awbrey Butte in the last 30 days.')
     expect(copy.scopePhrase).toBe('Bend, Awbrey Butte included')
     expect(copy.scopeLine).toBe('The alert covers all of Bend, Awbrey Butte included.')
+    // The scope line says it; the promise does not say it again 200px away.
+    expect(copy.promiseScope).toBeNull()
     expect(placeAlertsScope('Bend', 'Bend')).toBe('Bend')
     expect(copy.sent.heading).toBe('Set. New Bend listings land by email when they hit the market.')
     expect(copy.stickyLabel).toBe('Bend listing alerts')
@@ -110,6 +115,7 @@ describe('placeAlertsCopy', () => {
       matchNames: ['Tetherow', 'Triple', 'Tetherow Resort'],
     })
     expect(copy.scopeLine).toBe('The alert covers every listing the MLS files under Tetherow, Triple or Tetherow Resort.')
+    expect(copy.promiseScope).toBeNull()
     expect(placeAlertsScopeLine({ placeName: 'Bend', scopeName: 'Bend', matchNames: ['Bend'] })).toBeNull()
     expect(placeAlertsScopeLine({ placeName: 'Bend', scopeName: 'Bend' })).toBeNull()
     expect(joinNames(['A'])).toBe('A')

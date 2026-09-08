@@ -108,7 +108,7 @@ export function CityAlertsStrip({ id, cityName, geoSlug, newCount30d, updatedAt,
       {...copy}
       id={id}
       href={newestFirstHref(browseHref)}
-      promise={`Every new listing in ${copy.scopePhrase}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
+      promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
       stickyNote="Every new listing by email. Unsubscribe any time."
       updatedAt={updatedAt}
       trap={TRAP}

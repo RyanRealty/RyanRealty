@@ -87,6 +87,11 @@ export type PlaceAlertsCopy = {
   scopeLine: string | null
   /** The scope the promise names: "Bend", or "Bend, Awbrey Butte included". */
   scopePhrase: string
+  /**
+   * The scope the PROMISE names, or null when the scope line already says it:
+   * the two sit 200px apart and one statement is enough (evaluator, round 3).
+   */
+  promiseScope: string | null
   submitLabel: string
   browseLabel: string
   sent: { heading: string; body: string }
@@ -183,17 +188,20 @@ export function placeAlertsSource(input: {
 
 export function placeAlertsCopy(input: PlaceAlertsInput): PlaceAlertsCopy {
   const n = publishableNewCount(input.newCount30d)
+  const scopeLine = placeAlertsScopeLine({
+    placeName: input.placeName,
+    scopeName: input.scopeName,
+    matchNames: input.matchNames,
+  })
+  const scopePhrase = placeAlertsScope(input.placeName, input.scopeName)
   return {
     eyebrow: `New listings · ${input.placeName}`,
     count: earnsDisplayFigure(n) ? formatCount(n) : null,
     claim: placeAlertsClaim(input.placeName, input.scopeName, n),
     stickyClaim: placeAlertsStickyClaim(input.placeName, input.scopeName, n),
-    scopeLine: placeAlertsScopeLine({
-      placeName: input.placeName,
-      scopeName: input.scopeName,
-      matchNames: input.matchNames,
-    }),
-    scopePhrase: placeAlertsScope(input.placeName, input.scopeName),
+    scopeLine,
+    scopePhrase,
+    promiseScope: scopeLine ? null : scopePhrase,
     submitLabel: 'Email me each one',
     browseLabel: `See the newest ${input.placeName} listings`,
     sent: {
