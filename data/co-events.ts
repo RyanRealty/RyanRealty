@@ -1019,8 +1019,9 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.0601,
     lng: -121.3138,
     recurrence: 'Annually, Labor Day weekend',
-    nextConfirmedDate: '2026-09-04',
-    endDate: '2026-09-06',
+    // 2026 weekend has passed (Sep 4 to 6). 2027 dates are not published yet; null until the official site confirms them (G-FRESH).
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Ticketed',
     organizer: 'Bend Comedy',
     officialUrl: 'https://www.bendcomedyfestival.com/',
