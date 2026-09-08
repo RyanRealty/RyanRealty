@@ -120,7 +120,14 @@ npx tsx scripts/site-queue-status.ts --touch SITE-02,SITE-05 --owner <your-sessi
 ```
 
 It writes only `heartbeat_at` and only for the session that holds the node, so it can
-neither revive someone else's claim nor read as progress. A session that cannot finish a
+neither revive someone else's claim nor read as progress.
+
+**A commit already counts.** `.husky/post-commit` reads the `Node:` trailer every site
+commit carries (G72) and touches that node, so a lane that is committing is heartbeating
+for free. Call `--touch` when a lane goes quiet for an hour without committing — reading,
+capturing, waiting on an evaluator. That gap is exactly where this failed on 2026-09-08:
+two lanes had branches moving 16 minutes earlier and heartbeats reading two hours old,
+one hour from having live work released out from under them. A session that cannot finish a
 node releases it (`open`, `owner_session` null) before it ends.
 
 ### 3. Run the lanes — the evaluator scores BEFORE the push
