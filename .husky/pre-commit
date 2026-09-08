@@ -12,6 +12,12 @@
 
 set -eo pipefail
 
+# G74 — an oversized review screenshot must never enter history. Git is
+# append-only, so unlike every other gate this one has no second chance at
+# push time: once a 10 MB PNG is in a commit, every clone pays for it forever.
+# It is a stat() walk of ~80 files, so it costs nothing to run here.
+npm run --silent ci:shot-weight
+
 # UNIT tests only. The *.int.test.ts project hits live Supabase; under the old
 # `npm test` this hook ran the whole suite on every commit — 5-10 minutes, and
 # it flaked whenever a concurrent Vercel build saturated the connection pool
