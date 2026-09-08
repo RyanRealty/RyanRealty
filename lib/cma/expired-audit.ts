@@ -894,12 +894,35 @@ export const FAILED_ASK_CLAMP_SOURCE = `${FAILED_ASK_BACKTEST.pairs.toLocaleStri
 
 /**
  * Which share of the failed ask holds each printed tier, and how a seller
- * sentence names it. The high end is never held below the ask itself: a home
- * CAN sell for what it asked, 12.3 percent of these pairs did, and the top of
- * a range is where that belongs.
+ * sentence names it.
+ *
+ * ONE CEILING FOR THE WHOLE PRINTED LIST BAND (round four, class E).
+ * The high end used to have a ceiling of its own — the ask itself, on the
+ * reasoning that a home CAN sell for what it asked and 12.3 percent of these
+ * pairs did. What that produced on cma-65365-concorde was a document holding
+ * the recommendation to $1,473,000 and printing $1,500,000, the ask that had
+ * just failed, as the top of the same band: three list numbers on two screens,
+ * the highest of them the number the document had just said not to go back to.
+ * A sale price a home may still reach is a statement about VALUE and belongs
+ * in the worth range (`rangeRule`, the spread of the adjusted sale prices).
+ * The list band is what we recommend ASKING, and there is one ceiling on it.
+ *
+ * A stale failure (past FAILED_ASK_RECENCY_MONTHS) is still held at the ask
+ * itself rather than below it — that is a separate pricing decision with its
+ * own backtest — so on that branch all three ceilings are the ask and the band
+ * collapses to one number. `resolveFinalCycle` has already suppressed the
+ * stale ask from the prose, so no reader is shown a band topped by an ask the
+ * document told them failed.
  */
 function clampCeilings(ask: number, recent: boolean) {
   const round1k = (n: number) => Math.round(n / 1000) * 1000
+  const recommended = {
+    ratio: recent ? FAILED_ASK_BACKTEST.closeP75Ratio : 1,
+    value: recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask,
+    phrase: recent
+      ? 'the 75th percentile of what failed listings later sold for'
+      : (null as string | null),
+  }
   return {
     conservative: {
       ratio: recent ? FAILED_ASK_BACKTEST.closeMedianRatio : 1,
@@ -908,14 +931,9 @@ function clampCeilings(ask: number, recent: boolean) {
       // name and the sentence must not name one.
       phrase: recent ? 'the middle of what failed listings later sold for' : (null as string | null),
     },
-    recommended: {
-      ratio: recent ? FAILED_ASK_BACKTEST.closeP75Ratio : 1,
-      value: recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask,
-      phrase: recent
-        ? 'the 75th percentile of what failed listings later sold for'
-        : (null as string | null),
-    },
-    highEnd: { ratio: 1, value: ask, phrase: null as string | null },
+    recommended,
+    // The same ceiling, from the same measured share. Never the ask.
+    highEnd: { ...recommended },
   }
 }
 
@@ -1003,7 +1021,9 @@ export function applyFailedAskCap(
   const ceilings = clampCeilings(ask, recent)
   const consCeil = ceilings.conservative.value
   const recCeil = ceilings.recommended.value
-  if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= ask) return none
+  const highCeil = ceilings.highEnd.value
+  if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= highCeil)
+    return none
 
   const uncapped = pricing.recommended
   // What the EVIDENCE supported, not what a previous application of this same
@@ -1018,7 +1038,7 @@ export function applyFailedAskCap(
   }
   pricing.conservative = Math.min(pricing.conservative, consCeil)
   pricing.recommended = Math.min(pricing.recommended, recCeil)
-  pricing.highEnd = Math.min(pricing.highEnd, ask)
+  pricing.highEnd = Math.min(pricing.highEnd, highCeil)
   const applications: CmaPricingClampApplication[] = (
     ['conservative', 'recommended', 'highEnd'] as const
   )
