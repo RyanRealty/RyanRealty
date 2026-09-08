@@ -30,6 +30,14 @@ export type EventName =
   | 'cma_anchor_click'
   | 'valuation_requested'
   | 'place_value_answer'
+  /**
+   * A visitor submitted the ADDRESS step of a valuation form, before any
+   * contact was asked. Site queue SITE-02: the accept test is the share of
+   * address submits that end in a valuation request, and that ratio had no
+   * denominator — only the successful submit fired an event, so a visitor who
+   * typed their house and left was invisible. Params: form, surface.
+   */
+  | 'address_submit'
   | 'sign_up'
   | 'open_house_rsvp'
   | 'open_house_page_view'

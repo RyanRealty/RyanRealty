@@ -1,0 +1,245 @@
+/* The /sell answer body (SITE-02). Tokens only — every color, rule, size and
+   duration below resolves through components/site/v3/tokens.css, so changing
+   a token moves this surface with the other 118 pages (ci:one-design-system).
+   No elevation shadow, no raw brand value, no second radius rhythm. */
+
+.sell-answer {
+  display: grid;
+  gap: var(--v3-space-md);
+  text-align: start;
+}
+
+.sell-answer__eyebrow {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__stamp {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.sell-answer__claim {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-ink);
+  text-wrap: balance;
+}
+
+/* ── the drawing: homes for sale against a month of sales ─────────────────── */
+
+.sell-answer__figure {
+  margin: 0;
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding-block: var(--v3-space-sm);
+  border-block: var(--v3-rule-hairline);
+}
+
+.sell-answer__caption {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.sell-answer__bars {
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+.sell-answer__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label value' 'track track';
+  align-items: baseline;
+  column-gap: var(--v3-space-sm);
+  row-gap: var(--v3-space-3xs);
+}
+
+.sell-answer__bar-label {
+  grid-area: label;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__bar-value {
+  grid-area: value;
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+
+.sell-answer__track {
+  grid-area: track;
+  display: block;
+  block-size: var(--v3-space-sm);
+  background: var(--v3-wash);
+}
+
+.sell-answer__fill {
+  display: block;
+  block-size: 100%;
+  background: var(--v3-ink);
+  transform-origin: left center;
+  animation: sell-answer-draw var(--v3-dur-rise) var(--v3-ease-out) both;
+}
+
+/* The pace bar is the context series, so it reads as a tint of the same ink
+   rather than as a second hue (PUBLIC_UI: navy on cream, tints for context). */
+.sell-answer__bar--pace .sell-answer__fill {
+  background: var(--v3-ink-muted);
+}
+
+@keyframes sell-answer-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Reduced motion gets the same graphic, already complete. */
+@media (prefers-reduced-motion: reduce) {
+  .sell-answer__fill {
+    animation: none;
+  }
+}
+
+.sell-answer__verdict {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__verdict-months {
+  /* Body face, not the display face. --v3-font-num is Amboqia, which belongs on
+     a figure that stands alone (the bar values above); set inside a running
+     sentence at source size it read as a font-loading fault, not as emphasis. */
+  font-family: var(--v3-font-body);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+/* ── the readings ─────────────────────────────────────────────────────────── */
+
+.sell-answer__readings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.sell-answer__reading + .sell-answer__reading {
+  padding-block-start: var(--v3-space-sm);
+  border-block-start: var(--v3-rule-hairline);
+}
+
+.sell-answer__reading-line {
+  margin: 0 0 var(--v3-space-3xs);
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-xs);
+}
+
+.sell-answer__reading-value {
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+
+.sell-answer__reading-label {
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__reading-sentence {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.sell-answer__more {
+  margin-block-start: var(--v3-space-3xs);
+  min-block-size: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.sell-answer__more:hover {
+  color: var(--v3-ink);
+}
+
+.sell-answer__detail {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__detail--closed {
+  display: none;
+}
+
+.sell-answer__door {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+}
+
+.sell-answer__source {
+  margin-block-start: calc(var(--v3-space-3xs) * -1);
+}
+
+/* ── the proof block in its QUIET form ────────────────────────────────────────
+   V3ProofBlock lays its body out as drawing + rail. With the outcome strips
+   off (Matt has not ruled on publishing them) the drawing column holds one
+   sentence, and at 1440 that left two thirds of the section as empty cream
+   beside the rail — verified in the browser, 2026-09-08.
+
+   This is layout for one instance, not a second look: no color, no radius, no
+   type, no motion, only the column count and the order. The primitive and its
+   stylesheet are untouched, and the rule disappears the day the strips turn on
+   because the page stops passing the class. */
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__drawing {
+  order: -1;
+}
+
+@media (min-width: 62rem) {
+  .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__rail {
+    /* Three things sit in the rail — the record, the reviews, the reach. Given
+       the full measure they read as a row instead of a stack in a gutter. */
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr) minmax(0, 0.9fr);
+    gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
