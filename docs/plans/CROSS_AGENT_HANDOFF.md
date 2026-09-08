@@ -1,4 +1,54 @@
-# Current — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+# Current — 2026-09-08 (round 3 interrupted by a container restart; everything recovered, nothing on main yet)
+
+Owner: Claude (Opus 5), session 01Aubwpa. **Read this before touching SITE-02b or SITE-06.**
+
+**What happened.** A round of two lanes (SITE-02b the drawing primitive, SITE-06 the listing
+ending) was running in workflow worktrees when the container restarted. The workflow died. Both
+lanes' work survived on disk and is now committed and pushed; the SITE-06 lane had committed
+NOTHING, so its whole change set was recovered out of the worktree by hand.
+
+**Where the work is.** Integration branch `origin/claude/run-loop-pcp7q3` at **0df89ac08** —
+main plus the proof ruling plus both lanes merged clean (the only merge fix was re-seeding
+`scripts/shot-weight-baseline.json`, because the lane re-shot listing-detail/desktop.png at
+275,173 bytes and the shrink-only list had to drop it). Lane branches also on origin:
+`wt/site-02b-drawing` (062157fd2), `wt/site-06-listing-ending` (387a6b6bf),
+`wt/site-02b-eval` (its evaluator's branch).
+
+**NOT DONE, and this is the important part.** Nothing from round 3 is on main, and I did NOT
+verify either lane. The gate chain has not run on 0df89ac08, no evaluator score has been read
+or recorded, and no `tasteReview` receipt exists for either page class. Treat both lanes as
+unproven work in a safe place, not as finished items.
+
+**SITE-06 needs an adversarial read before it is trusted**: the lane edited a GATE
+(`scripts/check-alert-capture-disclosure.mjs`) and the governed-send path
+(`lib/comms/site-confirmations.ts`). A payment email to a visitor is a system confirmation only
+if that visitor just asked for it (CLAUDE.md §1); read that diff before running anything.
+
+**Landed on main earlier in this session:** the §0 fix where the sticky ask published
+`Source: market_pulse_live` for a `market_metric` figure (4fb0ccb07, verified live), and
+before that the round-1 primitives and their /sell wiring.
+
+**MATT RULED 2026-09-08, verbatim: "Hold those we only want positive."** The proof block's two
+outcome strips (our sale-to-first-ask and days-to-contract against the Bend median: 52 days
+against 29, 93.7% against 97.0%, n=7) DO NOT PUBLISH. `showOutcomes` now defaults to false so
+no caller ships the comparison by omission; a test pins it. The figures themselves are
+untouched — this decides what we publish, never what we measure — and with the strips off the
+section says only what it shows, so nothing is implied by omission. The same rule binds any
+surface that would draw our own performance against a market benchmark. Locked in
+`docs/plans/PUBLIC_PRODUCT/decisions.md` (2026-09-08) and shipped in faa5606cc.
+
+**Next session, in this order:** (1) `git checkout claude/run-loop-pcp7q3`, read the SITE-06
+gate and comms diffs adversarially; (2) `npm run test:unit` and one `npm run ci:gates` on
+0df89ac08 — stop every dev server first or `ci:commit-compiles` is OOM-killed and prints
+"Killed" as its only error; (3) a separate evaluator per page class (community, sell,
+listing-detail) with the shots the lanes already took, recording each receipt in that route's
+`parity.json`; (4) fix what it names; (5) merge to main, one push, one deploy verify, evidence
+on both nodes. The nodes carry the same instructions and are heartbeated — release them
+(`site-queue-status.ts --claim` is the only claim path) if you will not finish them.
+
+---
+
+## Prior — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
 
 Owner: Claude (Opus 5), session 3db16241, main checkout. `origin/main` at 1e61fa00.
 
