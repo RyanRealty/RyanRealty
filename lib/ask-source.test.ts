@@ -102,23 +102,32 @@ describe('ask-source · the payload', () => {
     installStorage()
   })
 
-  it('merges the stamp into a GA4 payload', () => {
+  it('merges the stamp into a GA4 payload as ask_source', () => {
     markAskSource('sticky')
-    expect(withAskSource({ form: 'sell' })).toEqual({ form: 'sell', source: 'sticky' })
+    expect(withAskSource({ form: 'sell' })).toEqual({ form: 'sell', ask_source: 'sticky' })
   })
 
-  it('leaves an unattributed payload untouched — no source: undefined key', () => {
+  it('never overwrites the existing `source` key — /sell already sends seller_lp', () => {
+    markAskSource('sticky')
+    expect(withAskSource({ source: 'seller_lp', classification: 'hot' })).toEqual({
+      source: 'seller_lp',
+      classification: 'hot',
+      ask_source: 'sticky',
+    })
+  })
+
+  it('leaves an unattributed payload untouched — no ask_source: undefined key', () => {
     const payload = { form: 'sell' }
     const merged = withAskSource(payload)
     expect(merged).toEqual({ form: 'sell' })
-    expect('source' in merged).toBe(false)
+    expect('ask_source' in merged).toBe(false)
   })
 
   it('does NOT consume, so one read can feed the event and the metadata', () => {
     markAskSource('sticky')
     const source = readAskSource()
-    expect(withAskSource({ a: 1 }, source)).toEqual({ a: 1, source: 'sticky' })
-    expect(withAskSource({ b: 2 }, source)).toEqual({ b: 2, source: 'sticky' })
+    expect(withAskSource({ a: 1 }, source)).toEqual({ a: 1, ask_source: 'sticky' })
+    expect(withAskSource({ b: 2 }, source)).toEqual({ b: 2, ask_source: 'sticky' })
   })
 
   it('an explicit null beats what is in storage', () => {

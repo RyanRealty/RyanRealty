@@ -15,10 +15,20 @@
  *   2. THE FORM READS ONCE. On submit, the form calls `readAskSource()`, which
  *      returns the stamp AND CLEARS IT. Clearing on read is what stops one
  *      sticky click attributing every later submit in the session.
- *   3. THE PAYLOAD CARRIES IT. `withAskSource(payload)` merges `{ source }`
+ *   3. THE PAYLOAD CARRIES IT. `withAskSource(payload)` merges `{ ask_source }`
  *      into a GA4 payload when a stamp is present and leaves the payload
- *      untouched when it is not, so an unattributed submit never grows a
- *      `source: undefined` key that GA4 would report as a distinct value.
+ *      untouched when it is not, so an unattributed submit never grows an
+ *      `ask_source: undefined` key that GA4 would report as a distinct value.
+ *
+ * WHY THE KEY IS `ask_source` AND NOT `source`. /sell's submit already fires
+ * `trackEvent('generate_lead', { source: 'seller_lp', ... })`
+ * (app/sell/_v3/SellValueForm.tsx). `source` on that event is taken, and it
+ * means something else — WHICH FORM this was, not WHICH CONTROL sent the
+ * visitor to it. Merging a second meaning into the same key would overwrite a
+ * live dimension every existing seller-lead report reads, and the two facts are
+ * not alternatives: a sticky-attributed submit is `source=seller_lp` AND
+ * `ask_source=sticky`. So the accept test for SITE-05 reads
+ * `ask_source='sticky'`, not `source='sticky'`.
  *
  * WHY sessionStorage AND NOT A QUERY PARAM. The sticky control's href on /sell
  * is a same-page anchor (`#get-value`) — there is no navigation to hang a
@@ -126,16 +136,20 @@ export function readAskSource(): AskSource | null {
 }
 
 /**
- * Merge `{ source }` into an analytics payload. NON-CONSUMING: pass the value
- * you already read (the normal case, so one `readAskSource()` can feed both the
- * GA4 event and the request metadata), or omit it and this peeks. A payload
- * with no stamp comes back byte-identical — never with `source: undefined`.
+ * Merge `{ ask_source }` into an analytics payload. NON-CONSUMING: pass the
+ * value you already read (the normal case, so one `readAskSource()` can feed
+ * both the GA4 event and the request metadata), or omit it and this peeks. A
+ * payload with no stamp comes back byte-identical — never carrying
+ * `ask_source: undefined`, which GA4 would report as its own value.
+ *
+ * It never touches an existing `source` key. See the header: on /sell that key
+ * is already `seller_lp` and means a different thing.
  */
 export function withAskSource<T extends Record<string, unknown>>(
   payload: T,
   source?: AskSource | null,
-): T | (T & { source: AskSource }) {
+): T | (T & { ask_source: AskSource }) {
   const resolved = source === undefined ? peekAskSource() : source
   if (!resolved) return payload
-  return { ...payload, source: resolved }
+  return { ...payload, ask_source: resolved }
 }
