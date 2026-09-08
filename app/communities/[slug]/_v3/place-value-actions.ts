@@ -170,7 +170,7 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
       pace: paceTrace,
       comps: comps?.trace ?? null,
     },
-    unmatchedSentence: `We could not match ${streetOf(address)} to a sales record on the first pass.`,
+    unmatchedSentence: `Nothing in the sales record matches ${streetOf(address)} on the first pass.`,
   })
 
   const stamp = answer?.asOf ? `; updated ${formatDate(answer.asOf)}` : ''

@@ -42,6 +42,16 @@
   color: var(--v3-ink);
 }
 
+/* ONE LEAD FIGURE, TWO SUPPORTING ONES. Three claims at one size read as three
+   equal bands with no rhythm — the separate evaluator's finding, and TASTE.md's
+   craft rule asks for hierarchy by size AND weight. The first drawing is the
+   answer to the question the visitor asked; the two under it are what that
+   answer is made of, and they say so by being quieter. */
+.v3 .v3-drawing__figure:first-child .v3-drawing__claim {
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+}
+
 .v3 .v3-drawing__quiet {
   margin: 0;
   font-size: var(--v3-size-body-sm);
@@ -254,6 +264,13 @@
   block-size: 0.875rem;
 }
 
+/* A rule carries ONE mark and that mark wears its reading above it, so the
+   track needs more headroom than a lane of dots does. At 375 the label sat
+   hard against the top of the figure (evaluator, 2026-09-08). */
+.v3 .v3-drawing__strip--rule {
+  --v3-drawing-lane-step: 2.25rem;
+}
+
 /* THE CONTEXT MARK. A hairline through the rule with its name beside it: the
    city median the subject is read against. Tint, never a second hue. */
 .v3 .v3-drawing__context {
@@ -375,10 +392,18 @@
 }
 
 @media (max-width: 30rem) {
-  /* At 375 the reading needs the whole measure; the source drops under it. */
+  /* At 375 the reading needs the whole measure; the source drops under it and
+     the row sizes to its content, so the trace sits against the drawing rather
+     than under an empty band. */
   .v3 .v3-drawing__foot {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--v3-space-3xs);
+    min-block-size: 0;
+  }
+
+  /* The axis reads at the narrow measure without crowding the rule above it. */
+  .v3 .v3-drawing__axis {
+    font-size: var(--v3-size-eyebrow);
   }
 
   .v3 .v3-drawing__source {

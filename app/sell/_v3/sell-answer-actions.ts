@@ -300,7 +300,7 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
       pace: answer?.trace.find((line) => line.startsWith('days to pending')) ?? null,
       comps: trace.find((line) => line.startsWith('comparable closes')) ?? null,
     },
-    unmatchedSentence: `We could not match ${street} to a sales record on the first pass.`,
+    unmatchedSentence: `Nothing in the sales record matches ${street} on the first pass.`,
   })
 
   const data: SellAnswerData = {

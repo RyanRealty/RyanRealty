@@ -219,10 +219,15 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
       .filter((row): row is { mark: PlaceCompMark; at: number } => row.at != null)
       .sort((a, b) => a.at - b.at)
     const n = input.compCount ?? marks.length
+    // ONE VOICE ACROSS THE THREE CLAIMS. The supply and pace claims state a
+    // fact about the place; this one used to start "We already found…", and the
+    // separate evaluator called the shift jarring on both surfaces (2026-09-08).
+    // Every claim now speaks the same way — the drawing is an instrument
+    // reading, not the brokerage talking about itself.
     const claim =
       input.subjectFound && n > 0
-        ? `We already found ${n} recent ${input.placeLabel} ${n === 1 ? 'sale' : 'sales'} close enough to ${input.street} to price it${input.subjectSummary ? `, which the record reads as ${input.subjectSummary}` : ''}.`
-        : `We could not match ${input.street} to a sales record on the first pass.`
+        ? `${n} recent ${input.placeLabel} ${n === 1 ? 'sale is' : 'sales are'} close enough to ${input.street} to price it${input.subjectSummary ? `, which the record reads as ${input.subjectSummary}` : ''}.`
+        : input.unmatchedSentence
     out.push({
       key: 'comps',
       draw: 'strip',

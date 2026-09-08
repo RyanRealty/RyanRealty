@@ -136,11 +136,25 @@ export type V3DrawingProps = {
   className?: string
 }
 
-/** The prompt under a drawing before the reader has asked it anything. */
-const IDLE = {
+/**
+ * What sits in the reading row before the reader has asked anything.
+ *
+ * EVERY drawing gets a line, because a blank footer under the second and third
+ * figures made them look incomplete rather than restful — the separate
+ * evaluator's functional finding, 2026-09-08. But three copies of one
+ * instruction read as instructions rather than as an affordance, so the LEAD
+ * figure carries the how and the rest carry what their own reading holds.
+ */
+const IDLE_LEAD = {
   pair: 'Hover, tap or tab a bar for what it counts.',
   strip: 'Hover, tap or tab a sale for its size and its month.',
-  rule: 'Hover, tap or tab a mark for the window behind it.',
+  rule: 'Hover, tap or tab the mark for the window behind it.',
+} as const
+
+const IDLE_REST = {
+  pair: 'Each bar gives up what it counts.',
+  strip: 'Each sale gives up its size and its month.',
+  rule: 'The mark gives up the window behind it.',
 } as const
 
 type Reading = { key: string; text: string } | null
@@ -432,11 +446,10 @@ function V3DrawingFigureView({
         </figcaption>
       ) : null}
 
-      {/* THE FOOTER: what this mark says, and where the figure came from.
-          One row, because three copies of "hover, tap or tab…" down one answer
-          read as instructions rather than as an affordance (looked at the shot,
-          2026-09-08) — so only the FIRST drawing carries the prompt, and every
-          drawing carries its source in the same place, in the same form. */}
+      {/* THE FOOTER: what this mark says, and where the figure came from. One
+          row, in the same place on every figure, so the trace is never pooled at
+          the foot of the section where a reader cannot tell which number it
+          belongs to. */}
       <div className="v3-drawing__foot">
         {plot != null ? (
           <p
@@ -444,7 +457,7 @@ function V3DrawingFigureView({
             className={cn('v3-drawing__reading', !live && 'is-idle')}
             aria-live="polite"
           >
-            {live ?? (first ? IDLE[figure.draw] : '')}
+            {live ?? (first ? IDLE_LEAD[figure.draw] : IDLE_REST[figure.draw])}
           </p>
         ) : (
           <span />

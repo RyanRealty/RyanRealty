@@ -283,14 +283,14 @@ describe('the pace and the comparable sales are drawings, not rows', () => {
       subjectSummary: null,
       asOfLabel: null,
       sources: { comps: 'comparable closes unmatched — the address did not resolve' },
-      unmatchedSentence: 'We could not match 2732 NW Ordway Ave to a sales record on the first pass.',
+      unmatchedSentence: 'Nothing in the sales record matches 2732 NW Ordway Ave on the first pass.',
     })
     const comps = unmatched.find((f) => f.key === 'comps')
-    expect(comps?.claim).toContain('could not match')
+    expect(comps?.claim).toContain('Nothing in the sales record matches')
     // The claim says what happened; the quiet line says what happens next. It
     // used to repeat the claim word for word under itself (browser, 2026-09-08).
     expect(comps?.emptyReason).toContain('by hand')
-    expect(comps?.emptyReason).not.toContain('could not match')
+    expect(comps?.emptyReason).not.toContain('Nothing in the sales record')
     expect(comps?.points).toHaveLength(0)
   })
 
@@ -298,6 +298,15 @@ describe('the pace and the comparable sales are drawings, not rows', () => {
     for (const figure of FIGURES()) {
       expect(figure.source.trim().length).toBeGreaterThan(10)
       expect(figure.claim.trim().length).toBeGreaterThan(10)
+    }
+  })
+
+  it('speaks with one voice across the three claims', () => {
+    // "We already found 8 recent sales" beside "48 homes are for sale" was a
+    // voice shift the separate evaluator called jarring on both surfaces
+    // (2026-09-08). Every claim states the fact; none of them says "we".
+    for (const figure of FIGURES()) {
+      expect(figure.claim).not.toMatch(/\b[Ww]e\b/)
     }
   })
 })
