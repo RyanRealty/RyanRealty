@@ -220,3 +220,5 @@ scripts/place-documents/ocr
 #   node scripts/gis/build-basemap-skeleton.mjs
 .basemap-work/
 data/basemap/central-oregon-detail.ndjson
+!.claude/skills/site-queue/
+!.claude/skills/loop-status/
