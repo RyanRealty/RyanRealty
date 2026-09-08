@@ -55,10 +55,45 @@ declare global {
 
 type Step = 'address' | 'answer' | 'qualify' | 'when' | 'success'
 
-const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[] = [
-  { value: 'ready-now', label: 'Ready now', sub: 'Listing in the next 90 days.' },
-  { value: 'next-3-6', label: 'In the next three to six months', sub: 'Planning the move.' },
-  { value: 'exploring', label: 'Just exploring', sub: 'Want the number, no plans yet.' },
+/**
+ * The timeframe, as a SCALE rather than three identical boxes.
+ *
+ * The evaluator (2026-09-08) named the uniform card grid for what it is: the
+ * statistically safe layout, three containers of equal weight standing in for a
+ * decision that is not equal-weighted at all. `horizon` is where the option
+ * sits on the line from "now" to "someday", and the row's mark and type weight
+ * are drawn from it — so the three read as one continuum a person locates
+ * themselves on, and the nearest one is visibly the nearest.
+ */
+const TIMELINE_OPTIONS: {
+  value: SellerLPTimeline
+  label: string
+  sub: string
+  when: string
+  /** 0 = now, 1 = someday. Drives the mark and the weight. */
+  horizon: number
+}[] = [
+  {
+    value: 'ready-now',
+    label: 'Ready now',
+    sub: 'You want it listed and sold.',
+    when: 'Inside 90 days',
+    horizon: 0,
+  },
+  {
+    value: 'next-3-6',
+    label: 'Later this year',
+    sub: 'You are planning the move.',
+    when: 'Three to six months',
+    horizon: 0.5,
+  },
+  {
+    value: 'exploring',
+    label: 'Just curious',
+    sub: 'You want the number, not a plan.',
+    when: 'No date yet',
+    horizon: 1,
+  },
 ]
 
 /** The lane that gets a booking prompt: a seller listing inside 90 days. */
@@ -226,27 +261,27 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         <p className="mt-2 text-sm text-muted-foreground">
           It changes what we send you, not whether we send it.
         </p>
-        <div className="mt-5 grid gap-2">
+        <ol className="sell-when">
           {TIMELINE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              disabled={pending}
-              onClick={() => {
-                setTimeline(opt.value)
-                submit(opt.value)
-              }}
-              className={cn(
-                'min-h-11 border border-border p-4 text-left',
-                'hover:border-primary focus-visible:border-primary',
-                timeline === opt.value && 'border-primary',
-              )}
-            >
-              <span className="block font-semibold text-foreground">{opt.label}</span>
-              <span className="mt-0.5 block text-sm text-muted-foreground">{opt.sub}</span>
-            </button>
+            <li key={opt.value}>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  setTimeline(opt.value)
+                  submit(opt.value)
+                }}
+                className={cn('sell-when__opt', timeline === opt.value && 'sell-when__opt--picked')}
+                style={{ ['--sell-when-horizon' as string]: String(opt.horizon) }}
+              >
+                <span className="sell-when__mark" aria-hidden="true" />
+                <span className="sell-when__label">{opt.label}</span>
+                <span className="sell-when__when">{opt.when}</span>
+                <span className="sell-when__sub">{opt.sub}</span>
+              </button>
+            </li>
           ))}
-        </div>
+        </ol>
         {pending ? <p className="mt-3 text-sm text-muted-foreground">Sending</p> : null}
         {error ? (
           <p className="mt-3 text-sm font-medium text-destructive" role="alert">

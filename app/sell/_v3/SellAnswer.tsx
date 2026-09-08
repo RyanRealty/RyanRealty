@@ -106,8 +106,7 @@ export function SellAnswer({ answer }: { answer: SellAnswerData }) {
           {answer.verdictLabel && answer.monthsOfSupply ? (
             <p className="sell-answer__verdict">
               <span className="sell-answer__verdict-months">{answer.monthsOfSupply} months</span> of
-              homes on the market. Four months or less is a seller&apos;s market, six or more is a
-              buyer&apos;s, so {answer.placeLabel} is a {answer.verdictLabel}.
+              homes on the market, which is a {answer.verdictLabel}.
             </p>
           ) : null}
         </figure>
@@ -134,6 +133,36 @@ export function SellAnswer({ answer }: { answer: SellAnswerData }) {
               <p className={cn('sell-answer__detail', !isOpen && 'sell-answer__detail--closed')}>
                 {reading.detail}
               </p>
+
+              {/* The comps themselves. A count with no way to check it is half
+                  the transparency: these name WHICH homes the ladder matched,
+                  how alike they are and when they sold. No prices — that is
+                  Matt's ruling and it is what the written valuation is for. */}
+              {reading.key === 'comps' && answer.comps.length > 0 ? (
+                <ul className="sell-answer__comps">
+                  {answer.comps.map((comp) => (
+                    <li key={comp.id} className="sell-answer__comp">
+                      <span className="sell-answer__comp-street">{comp.street}</span>
+                      <span className="sell-answer__comp-where">
+                        {comp.where}
+                        {comp.proximity ? ` · ${comp.proximity}` : ''}
+                      </span>
+                      <span className="sell-answer__comp-facts">{comp.facts}</span>
+                      <span className="sell-answer__comp-when">{comp.when}</span>
+                    </li>
+                  ))}
+                  {answer.compCount != null && answer.compCount > answer.comps.length ? (
+                    <li className="sell-answer__comp sell-answer__comp--more">
+                      <span className="sell-answer__comp-street">
+                        {answer.compCount - answer.comps.length} more in the written valuation
+                      </span>
+                      <span className="sell-answer__comp-where">
+                        with what each one sold for
+                      </span>
+                    </li>
+                  ) : null}
+                </ul>
+              ) : null}
             </li>
           )
         })}

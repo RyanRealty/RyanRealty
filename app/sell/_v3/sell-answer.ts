@@ -22,6 +22,29 @@
  * the same raw value. Nothing in this file does arithmetic on that figure.
  */
 
+/**
+ * One comparable close, as the answer is allowed to show it.
+ *
+ * NO PRICE. Matt's ruling stands: a typed address on a public page gets no
+ * dollar figure, and a comp's close price is a dollar figure. What the visitor
+ * gets is the thing a bare count could not give them — WHICH homes the ladder
+ * matched to theirs, how alike they are, and when they sold — so the count is
+ * checkable instead of asserted. The prices are in the written valuation.
+ */
+export type SellComp = {
+  id: string
+  /** Street line only. "2515 NW Crossing Dr". */
+  street: string
+  /** "NorthWest Crossing" or the city when the plat is not published. */
+  where: string
+  /** "4 bed · 3 bath · 2,410 sq ft · built 2006" — whichever of those exist. */
+  facts: string
+  /** "Closed July 2026". */
+  when: string
+  /** "0.4 miles NW" when the ladder reported it. */
+  proximity: string | null
+}
+
 /** One reading in the answer: a plain sentence with its figure inside it. */
 export type SellAnswerReading = {
   /** Stable key for React and for the tests. */
@@ -70,6 +93,8 @@ export type SellAnswerData = {
   subjectFound: boolean
   /** "4 bed, 3 bath, 2,410 sq ft, built 2006" when the subject carries facts. */
   subjectSummary: string | null
+  /** The comparable closes themselves, so the count is checkable. Never priced. */
+  comps: SellComp[]
   /** The day the market figures were computed, formatted. */
   asOfLabel: string | null
   /** One line per figure: what it is, where it came from, when (§0). */
@@ -175,18 +200,17 @@ export function sellAnswerReadings(d: SellAnswerData): SellAnswerReading[] {
       key: 'cash',
       label: 'Who is buying',
       value: `${cash}%`,
-      sentence: `${cash}% of ${d.placeLabel} buyers paid cash over the last year, so financing is not the only thing setting the pace.`,
+      sentence: `${cash}% of ${d.placeLabel} buyers paid cash over the last year.`,
       detail: 'Share of closed detached sales recorded as a cash purchase, trailing 12 months.',
     })
   }
 
   if (d.subjectFound && d.compCount != null && d.compCount > 0) {
-    const what = d.subjectSummary ? ` It read your home as ${d.subjectSummary}.` : ''
     out.push({
       key: 'comps',
       label: 'Comparable sales we already found',
       value: String(d.compCount),
-      sentence: `The comp ladder found ${d.compCount} recent ${d.compCount === 1 ? 'sale' : 'sales'} close enough to ${d.street} to price it.${what}`,
+      sentence: `Close enough to ${d.street} to price it${d.subjectSummary ? `, which the record reads as ${d.subjectSummary}` : ''}.`,
       detail:
         'The same comparable-sales ladder the written valuation runs: MLS history for the address first, county assessor facts second, then closed sales matched on size, age, and distance.',
     })

@@ -65,6 +65,7 @@ import {
   V3Stage,
   V3StickyAsk,
   V3SectionTracker,
+  V3SourceDisclosure,
   proofBlockView,
   type V3InstrumentFigure,
   type V3ProofReach,
@@ -352,6 +353,17 @@ export default async function SellPage() {
             // this instance only; the class goes away when the strips come on.
             className={proofView.strips.length === 0 ? 'sell-proof--quiet' : undefined}
           />
+        ) : null}
+
+        {/* §0. The block prints its own trace only alongside the drawing, and
+            the drawing is off here — which would leave the closed-volume and
+            review figures on a public page with no source available. The
+            collapsed trace atom carries it: present on the section, never a
+            paragraph of methodology competing with the figures. */}
+        {proofView && proofView.strips.length === 0 ? (
+          <div className="sell-proof-trace">
+            <V3SourceDisclosure source={proofView.trace} />
+          </div>
         ) : null}
 
         {bend && firstBendFigure ? (

@@ -249,6 +249,61 @@
   margin-block-start: calc(var(--v3-space-3xs) * -1);
 }
 
+/* ── the comps: which homes the ladder matched ───────────────────────────────
+   A ledger of real rows, not a paragraph claiming a number. Every row is the
+   same template, so the run reads as one thing enumerated. */
+
+.sell-answer__comps {
+  margin: var(--v3-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.sell-answer__comp {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  column-gap: var(--v3-space-sm);
+  padding-block: var(--v3-space-2xs);
+  border-block-start: var(--v3-rule-hairline);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__comp-street {
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+.sell-answer__comp-facts,
+.sell-answer__comp-when {
+  font-variant-numeric: tabular-nums;
+}
+
+.sell-answer__comp-where,
+.sell-answer__comp-when {
+  text-align: end;
+}
+
+.sell-answer__comp--more .sell-answer__comp-street {
+  font-weight: var(--v3-weight-body);
+  color: var(--v3-ink-muted);
+}
+
+@media (max-width: 30rem) {
+  .sell-answer__comp {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .sell-answer__comp-where,
+  .sell-answer__comp-when {
+    text-align: start;
+  }
+}
+
 /* ── the proof block in its QUIET form ────────────────────────────────────────
    V3ProofBlock lays its body out as drawing + rail. With the outcome strips
    off (Matt has not ruled on publishing them) the drawing column holds one
@@ -277,4 +332,84 @@
     gap: var(--v3-space-2xl);
     align-items: start;
   }
+}
+
+/* The proof block's §0 trace when the drawing (and with it the block's own
+   trace line) is off. Aligned to the same measure the section uses so it reads
+   as part of it rather than as a stray line under it. */
+.sell-proof-trace {
+  max-inline-size: var(--v3-measure);
+  margin: calc(var(--v3-space-xl) * -1) auto var(--v3-space-2xl);
+  padding-inline: var(--v3-space-md);
+}
+
+/* ── the timeframe, as a scale ───────────────────────────────────────────────
+   Three identical containers were the tell (evaluator, 2026-09-08): a template
+   shape standing in for a decision that is not equal-weighted. The horizon
+   custom property (0 = now, 1 = someday) drives the mark's size and the row's
+   ink, so the three read as one continuum and the nearest option is visibly
+   the nearest. Tap target stays 44px on every row. */
+
+.sell-when {
+  margin: var(--v3-space-lg) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  border-block-start: var(--v3-rule-hairline);
+}
+
+.sell-when__opt {
+  inline-size: 100%;
+  min-block-size: var(--v3-tap);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--v3-space-sm);
+  padding-block: var(--v3-space-sm);
+  border: 0;
+  border-block-end: var(--v3-rule-hairline);
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.sell-when__opt:hover,
+.sell-when__opt:focus-visible,
+.sell-when__opt--picked {
+  background: var(--v3-wash);
+}
+
+/* The mark IS the horizon: a full disc for now, a thin ring for someday. */
+.sell-when__mark {
+  grid-row: 1 / span 2;
+  align-self: center;
+  inline-size: var(--v3-space-sm);
+  block-size: var(--v3-space-sm);
+  border: 1px solid var(--v3-ink);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink);
+  opacity: calc(1 - (var(--sell-when-horizon) * 0.75));
+}
+
+.sell-when__label {
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+.sell-when__when {
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+  text-align: end;
+}
+
+.sell-when__sub {
+  grid-column: 2 / -1;
+  margin-block-start: var(--v3-space-3xs);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
 }

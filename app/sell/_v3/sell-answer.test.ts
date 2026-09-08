@@ -44,6 +44,16 @@ const BEND: SellAnswerData = {
   compCount: 6,
   subjectFound: true,
   subjectSummary: '4 bed, 3 bath, 2,410 sq ft, built 2006',
+  comps: [
+    {
+      id: 'k1',
+      street: '2515 NW Crossing Dr',
+      where: 'NorthWest Crossing',
+      facts: '4 bed · 3 bath · 2,388 sq ft · built 2005',
+      when: 'Closed July 2026',
+      proximity: '0.4 miles NW',
+    },
+  ],
   asOfLabel: 'Sep 8, 2026',
   trace: ['months of supply 3.9 (seller’s market) — market_metric city:bend'],
 }
@@ -175,9 +185,13 @@ describe('the form asks in the order the nodes fixed', () => {
     expect(form.indexOf("setStep('when')")).toBeGreaterThan(-1)
     expect(form).toContain('submit(opt.value)')
     // Every option carries a timeframe, so no submit can land without one.
-    expect(form).toContain("{ value: 'ready-now'")
-    expect(form).toContain("{ value: 'next-3-6'")
-    expect(form).toContain("{ value: 'exploring'")
+    for (const v of ['ready-now', 'next-3-6', 'exploring']) {
+      expect(form).toContain(`value: '${v}'`)
+    }
+    // The three read as a SCALE, not as three identical containers: the
+    // horizon drives the mark and the weight (evaluator defects 3 and 9).
+    expect(form).toContain('horizon')
+    expect(form).toContain('--sell-when-horizon')
   })
 
   it('offers the near-term lane a booking, and only that lane', () => {

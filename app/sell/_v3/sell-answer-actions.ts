@@ -14,9 +14,10 @@
  * NOTHING NEW IS FETCHED. Every read here already exists and already ships:
  *   · getPlaceValueAnswer  — the SITE-01 place answer (Market Truth verdict,
  *     pace, cash share), which composes the reads the place pages make.
- *   · countCompsForAddress — the SITE-01 comp count, which runs the same comp
- *     ladder buildCma runs and stops before the LLM judge, so an ungated public
- *     field costs database reads and nothing else.
+ *   · selectCompsPreferringFacts — the same comp ladder buildCma runs, stopped
+ *     before the LLM judge and the audit, so an ungated public field costs
+ *     database reads and nothing else. It returns the comps themselves, which
+ *     the answer shows WITHOUT prices so the count is checkable.
  *   · resolveCmaSubject + resolvePlaceContextFromListing — the existing address
  *     and place resolvers. THERE IS NO NEW GEOCODER HERE and there must not be:
  *     the address arrives already validated by Google Places on the field, and
@@ -37,13 +38,14 @@
 import { headers } from 'next/headers'
 import { getStrictLimiter } from '@/lib/rate-limit'
 import { getPlaceValueAnswer, type PlaceValueAnswer } from '@/lib/data/places/getPlaceValueAnswer'
-import { countCompsForAddress } from '@/lib/cma/place-comps'
 import { resolveCmaSubject } from '@/lib/cma/subject'
+import { selectCompsPreferringFacts } from '@/lib/pricing/select'
+import { formatMonthYear } from '@/lib/format/date'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { slugify } from '@/lib/slug'
-import { splitSellAddress, type SellAnswerData } from './sell-answer'
+import { splitSellAddress, type SellAnswerData, type SellComp } from './sell-answer'
 
 export type SellAnswerInput = {
   address: string
@@ -171,12 +173,18 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
   }
   const { street, city, postalCode } = splitSellAddress(address)
 
-  const [comps, resolved] = await Promise.all([
-    countCompsForAddress({ rawAddress: address, city: city ?? '', postalCode }).catch(() => null),
-    resolveCmaSubject({ rawAddress: address, city, postalCode }).catch(() => null),
-  ])
-
+  // ONE subject resolve, then the ladder. This used to call
+  // countCompsForAddress (which resolves the subject again internally) beside
+  // its own resolveCmaSubject, so an ungated public field ran the resolver
+  // twice per submit. It also only ever returned a COUNT, and a count with no
+  // way to check it is half the transparency (evaluator, 2026-09-08).
+  const resolved = await resolveCmaSubject({ rawAddress: address, city, postalCode }).catch(
+    () => null,
+  )
   const subject = resolved?.subject ?? null
+  const selection = subject
+    ? await selectCompsPreferringFacts(subject).catch(() => null)
+    : null
   const candidates = grainCandidates({
     city: subject?.city ?? city,
     subdivisionName: subject?.subdivision ?? null,
@@ -226,7 +234,38 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
   const mos = answer?.monthsOfSupply ?? null
   const activeCount = answer?.activeCount ?? null
   const salesPerMonth = salesPerMonthFrom(activeCount, mos)
-  const compCount = comps?.subjectFound ? comps.count : null
+  const compRows = selection?.comps ?? []
+  const compCount = subject ? compRows.length : null
+
+  // The comps themselves, WITHOUT prices (Matt's ruling), so the count above is
+  // checkable rather than asserted. Four is enough to show the ladder's reach
+  // without turning the answer into a table.
+  const comps: SellComp[] = compRows.slice(0, 4).map((c) => ({
+    id: c.listingKey,
+    street: c.address.split(',')[0]?.trim() || c.address,
+    where: c.subdivision?.trim() || c.city,
+    facts: [
+      c.beds != null ? `${c.beds} bed` : null,
+      c.baths != null ? `${c.baths} bath` : null,
+      c.sqft ? `${Math.round(c.sqft).toLocaleString('en-US')} sq ft` : null,
+      c.yearBuilt != null ? `built ${c.yearBuilt}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+    when: `Closed ${formatMonthYear(c.closeDate)}`,
+    proximity: c.proximity?.trim() || null,
+  }))
+
+  const subjectSummary = subject
+    ? [
+        subject.beds != null ? `${subject.beds} bed` : null,
+        subject.baths != null ? `${subject.baths} bath` : null,
+        subject.sqft != null ? `${Math.round(subject.sqft).toLocaleString('en-US')} sq ft` : null,
+        subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
+      ]
+        .filter(Boolean)
+        .join(', ') || null
+    : null
 
   const trace: string[] = [...(answer?.trace ?? [])]
   if (salesPerMonth != null && activeCount != null && mos != null) {
@@ -234,8 +273,12 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
       `homes under contract in a typical month ${Math.round(salesPerMonth)} — derived as homes for sale ÷ months of supply, which recovers the six-month close pace the months-of-supply formula divides by; market_metric ${picked.geoType}:${picked.geoSlug}`,
     )
   }
-  if (comps) {
-    trace.push(`comparable closes ${compCount ?? 'unmatched'} — Ryan Realty CMA comp ladder; ${comps.trace}`)
+  if (subject) {
+    trace.push(
+      `comparable closes ${compCount ?? 'unmatched'} — Ryan Realty CMA comp ladder (the same ladder the written valuation runs), tiers ${selection?.tiersUsed?.join(' → ') || 'none'}; subject resolved from ${resolved?.trace ?? 'MLS history and county assessor facts'}`,
+    )
+  } else {
+    trace.push(`comparable closes unmatched — ${resolved?.trace ?? 'the address did not resolve to a property record'}`)
   }
 
   const data: SellAnswerData = {
@@ -251,8 +294,9 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     daysToPending: answer?.daysToPending ?? null,
     cashSharePct: answer?.cashShare != null ? answer.cashShare * 100 : null,
     compCount,
-    subjectFound: Boolean(comps?.subjectFound),
-    subjectSummary: comps?.subjectSummary ?? null,
+    subjectFound: Boolean(subject),
+    subjectSummary,
+    comps,
     asOfLabel: answer?.asOf ? formatDate(answer.asOf) : null,
     trace,
   }

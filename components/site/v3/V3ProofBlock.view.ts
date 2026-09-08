@@ -294,15 +294,28 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
       }
     : null
 
+  // "7 closings" sits beside a record tile reading "17 homes closed" with
+  // nothing saying the two count different windows, so the numbers read as a
+  // contradiction (evaluator, 2026-09-08). In the QUIET form — where the tile
+  // is the loudest thing on screen and there is no drawing between them — the
+  // line names the relationship instead: 7 OF THE 17, in the last twelve
+  // months. Callers that draw the strips keep the wording they already ship.
   const windowLine =
     o.closings > 0 && block.window.start && block.window.end
-      ? `${o.closings} closing${o.closings === 1 ? '' : 's'}, ${formatMonthYear(block.window.start)} to ${formatMonthYear(block.window.end)}${o.cities.length ? `, in ${o.cities.join(' and ')}` : ''}.`
+      ? showOutcomes
+        ? `${o.closings} closing${o.closings === 1 ? '' : 's'}, ${formatMonthYear(block.window.start)} to ${formatMonthYear(block.window.end)}${o.cities.length ? `, in ${o.cities.join(' and ')}` : ''}.`
+        : `${o.closings} of them closed in the last ${block.window.months} months, ${formatMonthYear(block.window.start)} to ${formatMonthYear(block.window.end)}${o.cities.length ? `, in ${o.cities.join(' and ')}` : ''}.`
       : ''
 
   return {
     id,
-    eyebrow: `The record · last ${block.window.months} months`,
-    heading: 'Every home we listed and closed',
+    // The eyebrow and heading say what is actually on screen. With the strips
+    // off there is no per-home drawing, so "Every home we listed and closed"
+    // promised a ledger the section does not show (evaluator, 2026-09-08).
+    eyebrow: showOutcomes ? `The record · last ${block.window.months} months` : 'The record',
+    heading: showOutcomes
+      ? 'Every home we listed and closed'
+      : 'What we have sold, and what the sellers said',
     headingLevel: input.headingLevel ?? 2,
     // The claim names what is actually drawn. With the strips off it must not
     // promise "what each one did against the market" — that is the sentence
