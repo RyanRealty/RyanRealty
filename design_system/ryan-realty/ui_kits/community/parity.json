@@ -12,7 +12,7 @@
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently.",
+      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently. 2026-09-08: the FAQPage items are now answersFaqItems(placeAnswers) — derived FROM the rendered rows, not built beside them.",
       "blocking": true
     },
     {
@@ -77,7 +77,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "FAQ. Verified questions from buildMarketFaq, each answer a disclosure. Doors are the explore edges. Not a Quiet wall.",
+      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own §0 trace. Two drawings cover the class — a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict is WITHHELD and said so: publishMonthsOfSupply refuses a community's supply ratio (lib/market/geo-grain-trust.ts), so the question is answered with the closed count and the same sentence SITE-01 put on the address answer. The inventory row carries listedVsDetachedNote, one wording shared with reconcileListedVsDetachedFaq, so the every-property-type Field count and the single-family figure are reconciled rather than left to be spotted. Its closing action is #value — CommunityPlaceValue, the SITE-01 address ask at the top of this page.",
       "blocking": true
     },
     {
@@ -102,7 +102,7 @@
     },
     {
       "name": "CommunityPlaceValue",
-      "section": "The first-screen ask (site queue SITE-01, Matt 2026-09-07): V3PlaceValue bound to this route's server actions. Address in, verdict and pace out with no contact asked (months of supply verdict, days to pending, cash share, comparable-close count, each with its source and date), then email required and phone optional to deliver the written valuation. Never a dollar figure on the page. Renders on every community page: where Market Truth publishes no verdict (Brasada Ranch, too few recent sales) the answer says so and still carries the comparable-close count from the CMA engine, the figure the written valuation is built on. The kill-list ban on a KPI strip as the first thing you read still holds: nothing prints until the visitor types their own address.",
+      "section": "The first-screen ask (site queue SITE-01, Matt 2026-09-07): V3PlaceValue bound to this route's server actions. Address in, verdict and pace out with no contact asked (months of supply verdict, days to pending, cash share, comparable-close count, each with its source and date), then email required and phone optional to deliver the written valuation. Never a dollar figure on the page. Renders on every community page: where Market Truth publishes no verdict (Brasada Ranch, too few recent sales) the answer says so and still carries the comparable-close count from the CMA engine, the figure the written valuation is built on. The kill-list ban on a KPI strip as the first thing you read still holds: nothing prints until the visitor types their own address. Carries id=\"value\" (SITE-08): the closing answer set's last row links back to this field, and the id lives on the primitive so the anchor cannot drift from the control.",
       "blocking": true
     }
   ],
@@ -232,22 +232,10 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 cited-Q&A pass, session 01NESdvn — three scorings of one shot set, median reported",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
-    "rubricVersion": "v1-2026-09-08",
-    "scores": [
-      60,
-      55,
-      64
-    ],
-    "comparedToPrior": "rebaselined",
-    "priorMark": {
-      "evaluatedAt": "2026-09-07",
-      "score": 59,
-      "evaluatorModel": "claude-fable-5-1",
-      "rubricVersion": "v0-pre-receipt-contract"
-    },
-    "shotsHash": "sha256:3192935af6f45ac76ebaa0e8b1fae3e3863a80837e8e6da4b73b31dfff90232f",
     "shotSpec": {
       "routes": [
         "/communities/tetherow"
@@ -257,37 +245,59 @@
         375
       ],
       "states": [
-        "top",
-        "answer"
+        "default",
+        "answers-first-row-open"
       ]
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
-      "answerDesktop": "design_system/ryan-realty/ui_kits/community/shots/answer-desktop.png",
-      "answerMobile375": "design_system/ryan-realty/ui_kits/community/shots/answer-mobile375.png"
+      "answersDesktop": "design_system/ryan-realty/ui_kits/community/shots/answers-desktop.png",
+      "answersMobile375": "design_system/ryan-realty/ui_kits/community/shots/answers-mobile375.png"
     },
-    "beats": "Zillow's Tetherow page and tetherow.com: the two-bar months of supply, the pace mark on a rule and the comparable-sale dot strip show live interactive sales depth neither offers.",
+    "shotsHash": "sha256:1190c1436a67ff05c2e13297504297c385a6698f73c35cd4b7a4b4b3759d8b87",
+    "scores": [
+      79,
+      74,
+      77
+    ],
+    "score": 77,
+    "breakdown": {
+      "design": 22,
+      "originality": 24,
+      "interaction": 10,
+      "craft": 12,
+      "honesty": 9
+    },
+    "beats": "Tetherow's own resort site's real-estate page. We win decisively on honesty: when sample size is too thin for a fair buyer's/seller's call the page says so in plain language and shows the 24-closed-sale dot tally instead of forcing a verdict — no resort or portal page does that. We lose on Tetherow.com's amenity photography that this figure-first section does not attempt.",
     "defects": [
       {
-        "section": "months-of-supply two-bar",
-        "finding": "FIXED in 179964f16. Bars read 48 and 8, which divide to 6.0 (a buyer's market), while the caption said 5.8 months and balanced. The pace was rounded from 8.28; it now keeps a decimal so the reader's division reproduces the verdict."
+        "section": "answers list, HOA / school-district rows",
+        "severity": "taste",
+        "finding": "The community route passes market-faq.ts prose rows as extra into buildPlaceAnswers, so they render with the same hairline-row chrome as the cited figure rows with no figure — indistinguishable from a plain FAQ accordion, the exact tell this split exists to prevent."
       },
       {
-        "section": "hero Stage background",
-        "finding": "The hero photo renders as a broken-image glyph in the shots. Traced to this sandbox's proxy relaying the Supabase asset host, not a live-site fault, but the page should carry an onError fallback so a flaky CDN never shows a torn icon on the brand's fold."
+        "section": "mobile sticky bar",
+        "severity": "functional",
+        "finding": "Same obstruction as neighborhood — the listings bar covers close to 40% of the 375px viewport, truncating the withheld-verdict explanation mid-sentence."
       },
       {
-        "section": "answer sheet at 1440",
-        "finding": "The answer fills only the left ~804px; the remaining ~636px stays flat navy for the whole scroll depth, reading as unfinished rather than composed."
-      },
-      {
-        "section": "place-answer data",
-        "finding": "The captured answer is for a Sunriver address typed on the Tetherow page, which is the flow working as designed but makes a confusing record. Recapture with a Tetherow street so the shot proves the drawing against that place's thinner history."
+        "section": "dot-tally instrument",
+        "severity": "taste",
+        "finding": "One undifferentiated row of 24 dots gives no per-dot hover cue in the still, so whether an individual sale is interrogable cannot be confirmed; it reads closer to a count illustration than a chart."
       }
     ],
-    "score": 60,
-    "evaluator": "separate Sonnet evaluator, SITE-02b drawing pass, three independent scorings of one shot set (60 / 55 / 64)",
-    "rebaselineReason": "The 59 was a different instrument on every identity key: evaluatorModel (claude-fable-5-1, not claude-sonnet-5), rubricVersion (v0-pre-receipt-contract, before the three-scoring rule existed) and shotsHash (that receipt recorded none, and the shots have since been retaken). The drawing is a real improvement on what the 59 named, but a mark from another model against other shots is not a baseline, so this is recorded as a rebaseline rather than a claimed rise."
+    "openRaise": [
+      "answers list, trailing rows — give the market-faq-sourced HOA/school rows their own quieter row style, or move them under a disclosure, so a figure-less row never wears the figure-row's clothes",
+      "mobile sticky bar — same fix as neighborhood",
+      "dot-tally row — add a faint reference tally (the wider Bend rate) so the honesty device reads as a comparison, not just a count"
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-07",
+      "score": 59
+    },
+    "rebaselineReason": "The prior 59 carries no evaluatorModel, no rubricVersion and no shotsHash — it was scored by a different model against shots that have since been recaptured, so it is not the same instrument. Recorded as a rebaseline, not a rise, even though 77 is above it.",
+    "captureCaveat": "desktop.png and mobile375.png show the opening without its hero PHOTOGRAPH: a cold-cache Next-optimizer re-encode of a remote MLS image had not finished when the camera fired. Not scored as a page defect. The section this item built is in answers-desktop.png / answers-mobile375.png, which render complete."
   }
 }

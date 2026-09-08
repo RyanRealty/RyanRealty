@@ -400,7 +400,15 @@ export type {
  */
 export { V3Answers, splitQuietItems } from './V3Answers'
 
-export type { V3AnswersProps, V3Answer, V3AnswersDoor } from './V3Answers'
+export type {
+  V3AnswersProps,
+  V3Answer,
+  V3AnswersDoor,
+  V3AnswerFigure,
+  V3AnswerMark,
+  V3AnswerScale,
+  V3AnswerTally,
+} from './V3Answers'
 
 /* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */

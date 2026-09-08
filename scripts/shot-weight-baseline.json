@@ -3,8 +3,6 @@
   "generated_by": "check-shot-weight.mjs --write-baseline",
   "cap_bytes": 1048576,
   "files": {
-    "design_system/ryan-realty/ui_kits/neighborhood/shots/desktop.png": 10619761,
-    "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png": 4612775,
     "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png": 1525105,
     "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png": 1478031,
     "design_system/ryan-realty/ui_kits/contact/shots/desktop.png": 1469576,

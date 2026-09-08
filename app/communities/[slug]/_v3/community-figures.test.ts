@@ -4,6 +4,7 @@ import { resortQuietItems } from '../../_v3/resort-doors'
 import {
   buildExploreEdges,
   communityDocumentItems,
+  listedVsDetachedNote,
   reconcileListedVsDetachedFaq,
   reconcilePlaceHoaFaq,
 } from './community-figures'
@@ -84,14 +85,25 @@ describe('reconcileListedVsDetachedFaq', () => {
     { question: 'How many single-family homes are for sale in Tetherow?', answer: 'There are 18 active single-family listings in Tetherow.' },
   ]
 
-  it('appends the reconciling sentence to the count FAQ answer, from live numbers', () => {
+  it('appends the reconciling lines to the count FAQ answer, from live numbers', () => {
     const out = reconcileListedVsDetachedFaq(baseFaqs, { placeName: 'Tetherow', listedCount: 25, detachedCount: 18 })
     const countAnswer = out.find((f) => f.question.startsWith('How many'))?.answer ?? ''
-    expect(countAnswer).toMatch(/25 homes listed for Tetherow/)
+    expect(countAnswer).toMatch(/That 18 is single-family only/)
+    expect(countAnswer).toMatch(/25 homes listed/)
     expect(countAnswer).toMatch(/every property type/)
-    expect(countAnswer).toMatch(/18 is the single-family subset/)
     // Every other answer is untouched.
     expect(out[0]).toEqual(baseFaqs[0])
+  })
+
+  // SITE-08 pass 2: the answer row prints one paragraph per line, so the two
+  // counts can never share a clause again.
+  it('keeps the two counts in two separate lines, this answer first', () => {
+    const lines = listedVsDetachedNote({ placeName: 'Tetherow', listedCount: 25, detachedCount: 18 })
+    expect(lines).toHaveLength(2)
+    expect(lines?.[0]).toContain('18')
+    expect(lines?.[0]).not.toContain('25')
+    expect(lines?.[1]).toContain('25')
+    expect(listedVsDetachedNote({ placeName: 'Tetherow', listedCount: 18, detachedCount: 18 })).toBeNull()
   })
 
   it('is a no-op when the counts already agree or either is absent', () => {

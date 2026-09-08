@@ -21,13 +21,39 @@
  *
  * INDEXABLE ANYWAY. `details` keeps every answer in the served HTML — a
  * crawler reads a closed disclosure exactly as it reads an open paragraph, and
- * the caller's FAQPage JSON-LD describes the same strings. Nothing is hidden
- * behind script, and the section works with JavaScript off.
+ * the caller's FAQPage JSON-LD describes the same strings. Every sentence,
+ * every trace and every mark is emitted by the SERVER render, including the
+ * drawing's client component, so the section reads with scripting off; what
+ * hydration adds is the crosshair and the count-through, and nothing else.
  *
  * THE FORM. Two columns on a wide window: the heading and the outbound doors
  * hold the left rail, the questions hold the right. One column at 390, in
  * reading order (heading, questions, doors). The page it closes is not another
  * full-width hairline stack (TASTE.md: "the stacked-section page").
+ *
+ * THE ANSWER IS A NUMBER, SO THE ROW CARRIES ONE (site queue SITE-08). Every
+ * question on a place page is about one figure. A row may therefore declare a
+ * `figure`, and then:
+ *   - CLOSED, the value sits on the row, tabular, right of the question. The
+ *     section reads as an answer sheet at a glance — 4.9 months, 29 days, 95%,
+ *     39%, 120 sales down one edge — instead of as a list of things to open.
+ *     TASTE ritual question 2 ("is the first read instant?") is answered by the
+ *     shut section, not by the opened one.
+ *   - OPEN, the figure is DRAWN before the sentence, and the drawing is an
+ *     instrument rather than a picture: the rule takes a crosshair the reader
+ *     scrubs with a pointer or the arrow keys, the tally counts through under
+ *     the pointer, and both carry a readout. Geometry and its refusals live in
+ *     ./V3Answers.marks.ts, the interrogation in ./answer-mark.client.tsx; a
+ *     figure that cannot be drawn honestly opens onto its sentence alone
+ *     rather than onto a mark in the wrong place.
+ * Each drawing is ONE role="img" whose label reads the whole thing as a
+ * sentence, and its positioned spans and its readout are aria-hidden, so a
+ * screen reader gets one clean reading rather than a second copy of text that
+ * is already in the row.
+ *
+ * A row may also carry ONE `action`. The last question on a place page is where
+ * the reader wants to do something about the answer, and the doors in the left
+ * rail are the page's outbound graph, not this row's next step.
  *
  * Barrel law honored here:
  *  - Server component, native disclosure, works before hydration.
@@ -35,6 +61,8 @@
  *  - No raw color and no hardcoded motion: every value resolves through
  *    ./tokens.css in ./V3Answers.css, and the mark's motion reads
  *    --v3-dur-state, which reduced motion collapses.
+ *  - The one client file is the drawing, and it holds no data of its own: it
+ *    is handed geometry the server already resolved.
  *  - Names are enforced at RENDER, the discipline V3Quiet states: a question
  *    with no text, an answer with no body, or a door with no label or href is
  *    dropped rather than shipped nameless, and a block with nothing left
@@ -43,9 +71,23 @@
  */
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3Eyebrow, V3Heading, V3_ROOT_CLASS } from './atoms'
+import { V3Eyebrow, V3Figure, V3Heading, V3SourceLine, V3_ROOT_CLASS } from './atoms'
+import { AnswerMarkDrawing } from './answer-mark.client'
+import type { V3AnswerMark } from './V3Answers.marks'
 import './tokens.css'
 import './V3Answers.css'
+
+export type { V3AnswerMark, V3AnswerScale, V3AnswerTally } from './V3Answers.marks'
+
+/** The one number an answer is about, as the reader sees it. */
+export type V3AnswerFigure = {
+  /** Formatted and unit-bearing: "4.9", "29 days", "95.0%", "120". */
+  value: string
+  /** What it measures, in plain words. Never a column name, never jargon. */
+  label: string
+  /** The drawing the open row leads with. Omit when the figure has no honest one. */
+  mark?: V3AnswerMark
+}
 
 export type V3Answer = {
   /** The question. It is the summary's text and the control's accessible name. */
@@ -56,6 +98,12 @@ export type V3Answer = {
   open?: boolean
   /** Hash target, for a `?` on another page landing on one question. */
   id?: string
+  /** The one sourced figure this answer is about (SITE-08). */
+  figure?: V3AnswerFigure
+  /** Where the answer's source came from, as the trace line §0 requires. */
+  source?: string
+  /** ONE next step for this answer. Not an outbound door — those are `doors`. */
+  action?: { label: string; href: string }
 }
 
 /** An outbound edge, same shape as a Quiet door row. */
@@ -151,7 +199,28 @@ function paragraphs(body: V3Answer['body']): string[] {
   return lines.map((line) => line.trim()).filter((line) => line.length > 0)
 }
 
-type RenderableAnswer = { question: string; body: string[]; open: boolean; id?: string }
+type RenderableAnswer = {
+  question: string
+  body: string[]
+  open: boolean
+  id?: string
+  figure?: V3AnswerFigure
+  source?: string
+  action?: { label: string; href: string }
+}
+
+/**
+ * A figure with no value or no label is not a figure — it is a naked numeral or
+ * an orphan word, and both are TASTE tells ("KPI grids: a number with no plain
+ * sentence beside it"). Dropped rather than half-rendered.
+ */
+function toFigure(figure: V3AnswerFigure | undefined): V3AnswerFigure | undefined {
+  if (!figure || typeof figure !== 'object') return undefined
+  const value = text(figure.value)
+  const label = text(figure.label)
+  if (!value || !label) return undefined
+  return figure.mark ? { value, label, mark: figure.mark } : { value, label }
+}
 
 function toRenderable(questions: readonly V3Answer[]): RenderableAnswer[] {
   const out: RenderableAnswer[] = []
@@ -163,10 +232,31 @@ function toRenderable(questions: readonly V3Answer[]): RenderableAnswer[] {
     const question = text(item.question)
     const body = paragraphs(item.body)
     if (!question || body.length === 0) continue
-    out.push({ question, body, open: item.open === true, id: text(item.id) })
+    const actionLabel = text(item.action?.label)
+    const actionHref = text(item.action?.href)
+    out.push({
+      question,
+      body,
+      open: item.open === true,
+      id: text(item.id),
+      figure: toFigure(item.figure),
+      source: text(item.source),
+      ...(actionLabel && actionHref ? { action: { label: actionLabel, href: actionHref } } : {}),
+    })
   }
   return out
 }
+
+/**
+ * The drawing, or nothing.
+ *
+ * Geometry and its refusals live in ./V3Answers.marks.ts; the rendering, the
+ * crosshair, the scrub and the count-through live in ./answer-mark.client.tsx,
+ * because TASTE.md's chart bar is that a data drawing has to be interrogable
+ * and a server component cannot hold a pointer. The server still renders the
+ * complete drawing — the client file adds handlers on hydration and nothing
+ * else, so the row works shut, open, and with scripting off.
+ */
 
 function toDoors(doors: readonly V3AnswersDoor[] | undefined): V3AnswersDoor[] {
   if (!doors) return []
@@ -225,15 +315,85 @@ export function V3Answers({
       aria-labelledby={headingId}
     >
       <div className="v3-answers__grid">
-        <div className="v3-answers__head">
-          {contextLine ? <V3Eyebrow>{contextLine}</V3Eyebrow> : null}
-          {title ? (
-            <V3Heading level={headingLevel} id={headingId} className="v3-answers__heading">
-              {title}
-            </V3Heading>
+        {/* THE RAIL IS ONE COLUMN, AND IT STAYS PUT. The title, the basis
+            note and the outbound doors travel with the reader down a long
+            question set on a wide window. Before this they were two separate
+            grid areas stacked at the top and the left half of the section was
+            empty for most of its height, which on a place page is most of a
+            screen of nothing beside the only content anyone is reading.
+            Sticky, no motion, and a no-op wherever the list is shorter than
+            the viewport. */}
+        <div className="v3-answers__rail">
+          <div className="v3-answers__head">
+            {contextLine ? <V3Eyebrow>{contextLine}</V3Eyebrow> : null}
+            {title ? (
+              <V3Heading level={headingLevel} id={headingId} className="v3-answers__heading">
+                {title}
+              </V3Heading>
+            ) : null}
+            {trailingNote ? <p className="v3-answers__note">{trailingNote}</p> : null}
+          </div>
+
+
+          {edges.length > 0 ? (
+            /*
+             * Past a handful, the doors fold.
+             *
+             * A community page closed on FORTY-ONE of these — every recorded
+             * governing document, every golf course, every sibling resort, plus
+             * the generic site edges — as one flat list about 2,000px tall. That
+             * is TASTE's "scrolling list as the design" and it was the largest
+             * single block on the page after the prose.
+             *
+             * Folding rather than cutting, deliberately: these edges are the
+             * node's outbound graph, the internal-link gates read them, and a
+             * closed native disclosure keeps every anchor in the HTML for a
+             * crawler while showing the reader a count they can act on. The
+             * summary names how many, so the fold is an offer and not a place to
+             * hide destinations — the same rule the footer's fold follows, with
+             * the same chevron.
+             */
+            edges.length > FOLD_DOORS_PAST ? (
+              <details className="v3-answers__edges">
+                <summary className="v3-answers__edges-summary">
+                  {text(doorsLabel) ?? 'Where to go next'}
+                  <span className="v3-answers__edges-count">
+                    {edges.length}
+                    {/* The same +/- mark the questions beside it use. A chevron
+                        here would put two disclosure glyphs in one section. */}
+                    <span aria-hidden="true" className="v3-answers__mark" />
+                  </span>
+                </summary>
+                <ul className="v3-answers__doors">
+                  {edges.map((door) => (
+                    <li key={door.href} className="v3-answers__door-item">
+                      <Link href={door.href} className="v3-answers__door">
+                        <span className="v3-answers__door-label">{door.label}</span>
+                        <span aria-hidden="true" className="v3-answers__door-mark">
+                          →
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : (
+              <ul className="v3-answers__doors">
+                {edges.map((door) => (
+                  <li key={door.href} className="v3-answers__door-item">
+                    <Link href={door.href} className="v3-answers__door">
+                      <span className="v3-answers__door-label">{door.label}</span>
+                      <span aria-hidden="true" className="v3-answers__door-mark">
+                        →
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )
           ) : null}
-          {trailingNote ? <p className="v3-answers__note">{trailingNote}</p> : null}
         </div>
+
 
         {rows.length > 0 ? (
           <ul className="v3-answers__list">
@@ -252,77 +412,47 @@ export function V3Answers({
                 <details className="v3-answers__row" open={row.open}>
                   <summary className="v3-answers__q">
                     <span className="v3-answers__q-text">{row.question}</span>
+                    {/* THE ANSWER, SHUT. A figure on the closed row is what
+                        turns this from a list of things to open into a sheet
+                        the reader has already read. */}
+                    {row.figure ? (
+                      /* The barrel's own figure atom, not a second one: same
+                         numeral face, same tabular rule, same label treatment
+                         as every Instrument on the page (TASTE consistency). */
+                      <V3Figure
+                        value={row.figure.value}
+                        label={row.figure.label}
+                        className="v3-answers__q-figure"
+                      />
+                    ) : null}
                     <span aria-hidden="true" className="v3-answers__mark" />
                   </summary>
                   <div className="v3-answers__a">
+                    {row.figure?.mark ? <AnswerMarkDrawing mark={row.figure.mark} /> : null}
                     {row.body.map((line, lineIndex) => (
                       <p className="v3-answers__para" key={lineIndex}>
                         {line}
                       </p>
                     ))}
+                    {row.action ? (
+                      <Link href={row.action.href} className="v3-answers__action">
+                        <span className="v3-answers__action-label">{row.action.label}</span>
+                        <span aria-hidden="true" className="v3-answers__action-mark">
+                          &rarr;
+                        </span>
+                      </Link>
+                    ) : null}
+                    {/* §0. The trace sits with the figure it explains, not in a
+                        single line at the foot of the section describing eight
+                        different populations at once. */}
+                    {row.source ? (
+                      <V3SourceLine source={row.source} className="v3-answers__source" />
+                    ) : null}
                   </div>
                 </details>
               </li>
             ))}
           </ul>
-        ) : null}
-
-        {edges.length > 0 ? (
-          /*
-           * Past a handful, the doors fold.
-           *
-           * A community page closed on FORTY-ONE of these — every recorded
-           * governing document, every golf course, every sibling resort, plus
-           * the generic site edges — as one flat list about 2,000px tall. That
-           * is TASTE's "scrolling list as the design" and it was the largest
-           * single block on the page after the prose.
-           *
-           * Folding rather than cutting, deliberately: these edges are the
-           * node's outbound graph, the internal-link gates read them, and a
-           * closed native disclosure keeps every anchor in the HTML for a
-           * crawler while showing the reader a count they can act on. The
-           * summary names how many, so the fold is an offer and not a place to
-           * hide destinations — the same rule the footer's fold follows, with
-           * the same chevron.
-           */
-          edges.length > FOLD_DOORS_PAST ? (
-            <details className="v3-answers__edges">
-              <summary className="v3-answers__edges-summary">
-                {text(doorsLabel) ?? 'Where to go next'}
-                <span className="v3-answers__edges-count">
-                  {edges.length}
-                  {/* The same +/- mark the questions beside it use. A chevron
-                      here would put two disclosure glyphs in one section. */}
-                  <span aria-hidden="true" className="v3-answers__mark" />
-                </span>
-              </summary>
-              <ul className="v3-answers__doors">
-                {edges.map((door) => (
-                  <li key={door.href} className="v3-answers__door-item">
-                    <Link href={door.href} className="v3-answers__door">
-                      <span className="v3-answers__door-label">{door.label}</span>
-                      <span aria-hidden="true" className="v3-answers__door-mark">
-                        →
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : (
-            <ul className="v3-answers__doors">
-              {edges.map((door) => (
-                <li key={door.href} className="v3-answers__door-item">
-                  <Link href={door.href} className="v3-answers__door">
-                    <span className="v3-answers__door-label">{door.label}</span>
-                    <span aria-hidden="true" className="v3-answers__door-mark">
-                      →
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )
         ) : null}
       </div>
     </section>
