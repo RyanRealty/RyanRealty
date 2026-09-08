@@ -90,6 +90,25 @@ export type AnswerFiguresInput = {
 const one = (value: number) => Math.round(value).toLocaleString('en-US')
 
 /**
+ * The monthly sales pace, printed so a reader's own arithmetic reproduces the
+ * verdict beside it.
+ *
+ * Months of supply IS homes-for-sale divided by this number, and the drawing
+ * invites the division by showing both bars. Rounding the pace to a whole
+ * number breaks that: Sunriver on 2026-09-08 was 48 for sale against 8.28 a
+ * month = 5.8 months, a balanced market, but the bar printed 8 and 48 / 8 is
+ * 6.0 — a BUYER'S market on the canon's own thresholds (<=4 seller, 4-6
+ * balanced, >=6 buyer). The reader who checks our work got a different verdict
+ * than our caption, and the bar's note claimed the division "recovers it
+ * exactly". CLAUDE.md section 0: never round in a way that changes the
+ * narrative, and the verdict must match the number.
+ *
+ * So a whole number prints whole, and anything else keeps one decimal.
+ */
+const pace = (value: number) =>
+  Number.isInteger(value) ? value.toLocaleString('en-US') : value.toFixed(1)
+
+/**
  * The strip's x axis: the close month as a monotonic index (year * 12 + month).
  *
  * Months, not milliseconds, because the axis IS the close month — two sales
@@ -149,12 +168,14 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
     input.salesPerMonth != null &&
     input.monthsOfSupply
   ) {
-    const sold = Math.round(input.salesPerMonth)
+    // NOT rounded to a whole number: see `pace` above — the reader divides the
+    // two bars and must land on the months of supply we publish.
+    const sold = input.salesPerMonth
     out.push({
       key: 'supply',
       draw: 'pair',
       caption: 'homes for sale against a month of sales',
-      claim: `${one(input.activeCount)} detached homes are for sale in ${input.placeLabel}, and about ${one(sold)} of them go under contract in a typical month.`,
+      claim: `${one(input.activeCount)} detached homes are for sale in ${input.placeLabel}, and about ${pace(sold)} of them go under contract in a typical month.`,
       bars: [
         {
           name: 'For sale right now',
@@ -165,8 +186,8 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
         {
           name: 'Under contract in a month',
           value: sold,
-          label: one(sold),
-          note: `About ${one(sold)} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale divided by months of supply recovers it exactly. Not a forecast — it is what the last six months did.`,
+          label: pace(sold),
+          note: `About ${pace(sold)} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale divided by months of supply recovers it exactly. Not a forecast — it is what the last six months did.`,
         },
       ],
       ...(input.verdictLabel
