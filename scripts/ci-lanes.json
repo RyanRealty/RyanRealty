@@ -84,6 +84,8 @@
     "ci:publish-subdivision-closed-price",
     "ci:row-cap",
     "ci:server-type-reexport",
+    "ci:shot-weight",
+    "ci:site-primitive-wired",
     "ci:sms-consent",
     "ci:stage-truth",
     "ci:streamed-redirect",
@@ -1206,7 +1208,9 @@
       "app/cities/**/page.tsx",
       "app/communities/**/page.tsx",
       "app/subdivisions/**/page.tsx",
-      "components/site/v3/V3Atlas.client.tsx"
+      "components/site/v3/V3Atlas.client.tsx",
+      "scripts/lib/taste-receipt.mjs",
+      "scripts/taste-receipt-v2-baseline.json"
     ],
     "ci:tool-discipline": [
       "lib/**",

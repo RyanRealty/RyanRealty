@@ -188,10 +188,12 @@ export function V3ListingRow({
               onOpenTour()
             }}
           >
-            3D tour
+            <span className="v3-lrow__tour-label">3D tour</span>
           </button>
         ) : (
-          <span className="v3-lrow__tour">3D tour</span>
+          <span className="v3-lrow__tour">
+            <span className="v3-lrow__tour-label">3D tour</span>
+          </span>
         )
       ) : null}
       <span className="v3-lrow__addr-tip">{listing.addressLine}</span>

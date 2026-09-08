@@ -11,7 +11,7 @@ import { competitionHeading, renderBandRivalsHtml, type BandRivalsInput } from '
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
-import { UNADDRESSED_DOC_LINKS, cleanText, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
   chapter2bSourceLine,
@@ -255,7 +255,12 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     expiredAudit: a.expiredAudit,
     rangeLow: a.pricing.valueLow,
     rangeHigh: a.pricing.valueHigh,
-    rangeLabel: 'where homes like yours sold',
+    // ONE meaning for "homes like yours" in this document, and it is the
+    // ADJUSTED range (tasteReview round two, §3.B: chapter 1 shaded
+    // $372K–$399K under that phrase while chapter 5 printed $410K–$460K under
+    // the same phrase, and chapter 2 a third figure a foot). The label says
+    // which of the two it is, on the mark, where the reader meets it.
+    rangeLabel: 'where homes like yours sold, adjusted for date and size',
     domDays: subjectDomDays(a.subject),
   })
   if (!timeline) {
@@ -390,6 +395,8 @@ export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
     docLinks: a.docLinks ?? null,
     rangeLow: a.pricing.valueLow,
     rangeHigh: a.pricing.valueHigh,
+    // The SAME gate whatHappenedPage / whatHappenedScene render on.
+    askVerdictInChapterOne: (a.expiredAudit?.findings.length ?? 0) > 0,
   }
 }
 
@@ -447,38 +454,32 @@ export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub')
 }
 
 /**
- * The city median, reconciled against this house, in one sentence.
+ * What the sales behind the price actually sold for, before any adjustment,
+ * in one sentence — so a reader who meets a $500K city market three screens
+ * after a $395,000 recommendation knows which set each figure is over.
  *
- * "$532,311 · median sold, every Redmond home" printed in 56px beside a
- * $395,000 recommendation with nothing between them is the first thing an
- * expired owner quotes back. Both figures are right and they are measured over
- * different sets of houses, so the chapter says which is which BEFORE it shows
- * the board (§0: reconcile narrative to data).
- *
- * Every figure in it is printed elsewhere in this document: the city median is
- * the board's own tile, and the range is the close prices of the same sales
- * chapter 3 lists.
+ * WHAT CAME OUT OF IT, AND WHY (tasteReview round two, §3.D). The sentence
+ * used to open on the pooled city median: "$532,311 is every Redmond home, all
+ * sizes." Three hundred pixels below it the month line drew twelve medians
+ * running $461K to $530K over the same year and the same city. A pooled median
+ * over the same homes cannot sit above every month it is pooled from, and the
+ * row carries no window, table or fetch stamp beside that figure that would
+ * explain the two as different sets. §0: a figure that cannot be reconciled to
+ * what is drawn under it does not ship. The sentence keeps the half every
+ * reader can check — the five close prices printed in chapter 3's own grid —
+ * and labels them RAW, which is the other half of giving "homes like yours"
+ * one meaning (§3.B): chapter 1's shaded zone is the adjusted range, this is
+ * the unadjusted one, and each says which it is.
  */
 export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
-  const median = a.market?.medianSalePrice
-  if (median == null || !(median > 0)) return ''
   const closes = a.comps
     .map((c) => c.closePrice)
     .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
   if (closes.length < 2) return ''
-  const place = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city) ?? 'this market'
-  const s = a.subject
-  const shape = [
-    s.beds != null ? `${int(s.beds)} bed` : null,
-    s.baths != null ? `${s.baths % 1 === 0 ? int(s.baths) : s.baths.toFixed(1)} bath` : null,
-    s.sqft != null && s.sqft > 0 ? `around ${int(Math.round(s.sqft / 50) * 50)} sqft` : null,
-  ]
-    .filter(Boolean)
-    .join(', ')
   return `<p class="chart-read">${esc(
-    `${usd(median)} is every ${place} home, all sizes. Homes like yours${
-      shape ? `, ${shape},` : ''
-    } closed at ${usd(Math.min(...closes))} to ${usd(Math.max(...closes))}.`,
+    `The ${countWord(closes.length)} sales behind your price sold for ${usd(
+      Math.min(...closes),
+    )} to ${usd(Math.max(...closes))} before adjusting for date and size.`,
   )}</p>`
 }
 
@@ -496,19 +497,31 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
     .slice(0, 4)
   const links = recent
     .map((n) => {
+      // THE SALE'S OWN LISTING PAGE. `trackedDocLink('listing', …)` falls back
+      // to a place-scoped search when the target carries no id, and this call
+      // passed none — so four addresses presented as links to four specific
+      // homes all landed on /homes-for-sale/redmond (tasteReview round two,
+      // §2.4). The notable sale carries `listNumber`, which is the MLS number
+      // `listingTileHref` builds the canonical URL from.
       const href = trackedDocLink(
         'listing',
         {
+          mlsNumber: n.listNumber ?? null,
           streetNumber: /^\s*(\d+[A-Za-z]?)\s/.exec(n.address)?.[1] ?? null,
           streetName: n.address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null,
           city: a.subject.city,
-          subdivisionName: name,
+          subdivision: name,
         },
         a.docLinks ?? UNADDRESSED_DOC_LINKS,
       )
-      return `<a href="${esc(href)}" data-rr-track="cma-street-sale">${esc(n.address)}</a> ${usd(n.closePrice)}`
+      // 21px tall inline links were the last sub-44px targets on the phone
+      // (tasteReview round two, item 3). The address and its price travel as
+      // ONE tappable chip, which is also how they read.
+      return `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
+        n.address,
+      )} <span class="n">${usd(n.closePrice)}</span></a>`
     })
-    .join(', ')
+    .join('')
   const sub = (text: string) =>
     headingTag === 'h3' ? `<h3 class="subhead">${esc(text)}</h3>` : `<h3 class="sub r">${esc(text)}</h3>`
   // §0: the count is over a WINDOW, and the window was nowhere on the screen.
@@ -521,8 +534,9 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       : ''
   return `${sub(name)}
   <p>${int(f.totalSales)} homes have sold in ${esc(name)}${esc(span)}.${
-    links ? ` The most recent ${recent.length === 1 ? 'one' : recent.length === 4 ? 'four' : String(recent.length)}: ${links}.` : ''
+    links ? ` The most recent ${recent.length === 1 ? 'one' : countWord(recent.length)}:` : ''
   }</p>
+  ${links ? `<p class="street-sales">${links}</p>` : ''}
   <p class="small">${esc(
     `Closed single-family sales recorded in ${name}${span}, from the Oregon Data Share MLS.`,
   )}</p>`
@@ -558,6 +572,48 @@ export const BASIS_AND_LIMITS_HEADING = 'Basis and limits'
  * adjusts for date, size and style, and for nothing else, because the record
  * carries nothing else.
  */
+/**
+ * Exactly the adjustments the grid PRINTS, named the same way twice.
+ *
+ * tasteReview round two, §2.1: the limitations block said the grid moves each
+ * sale "for when it sold, for size, and for style" while the grid printed no
+ * style row — `foldIdenticalRows` drops an all-$0 row — and two paragraphs
+ * later the same chapter said the value rests on sales "adjusted for market
+ * conditions and size". A limitations block that names an adjustment nobody
+ * made, and then contradicts itself about which were made, is the worst
+ * sentence in the document to get wrong. Both paragraphs now read the same
+ * function, and that function reads the sales.
+ */
+export function adjustmentsMade(comps: readonly CmaAdjustedComp[]): string[] {
+  const any = (pick: (c: CmaAdjustedComp) => number | null | undefined): boolean =>
+    comps.some((c) => {
+      const v = pick(c)
+      return v != null && Number.isFinite(v) && v !== 0
+    })
+  const made: string[] = []
+  if (any((c) => c.timeAdjustment)) made.push('date')
+  if (any((c) => c.sizeAdjustment)) made.push('size')
+  if (any((c) => c.storyAdjustment)) made.push('style')
+  return made
+}
+
+/** "for when it sold and for size" — the limitations paragraph's phrasing. */
+function adjustmentsMadeClause(comps: readonly CmaAdjustedComp[]): string {
+  const made = adjustmentsMade(comps)
+  const words = made.map((m) => (m === 'date' ? 'for when it sold' : `for ${m}`))
+  if (words.length === 0) return 'for nothing at all'
+  if (words.length === 1) return words[0]!
+  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`
+}
+
+/** "adjusted for date and size" — the basis paragraph's phrasing. */
+function adjustedForClause(comps: readonly CmaAdjustedComp[]): string {
+  const made = adjustmentsMade(comps)
+  if (made.length === 0) return 'unadjusted'
+  if (made.length === 1) return `adjusted for ${made[0]}`
+  return `adjusted for ${made.slice(0, -1).join(', ')} and ${made[made.length - 1]}`
+}
+
 export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   const b = a.broker
   const name = b?.displayName ?? 'the preparing broker'
@@ -572,17 +628,23 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
     dateLong(a.generatedAtIso),
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
   <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it — the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
-  <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale for when it sold, for size, and for style. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
+  <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
+    adjustmentsMadeClause(a.comps),
+  )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
+  <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, ${esc(
+    adjustedForClause(a.comps),
+  )}, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
+  <div class="comp-fold" data-fold-label="The rest of the disclosure">
   <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
   <p><strong>Property description.</strong> ${propertyDescription(a.subject)}${
     formatClientMlsField(a.subject.viewDescription)
       ? ` View: ${esc(formatClientMlsField(a.subject.viewDescription)!)}.`
       : ''
   }</p>
-  <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
   ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
   <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
-  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>`
+  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
+  </div>`
 }
 
 /** What we would like them to do next. We, never I (VOICE.md). */

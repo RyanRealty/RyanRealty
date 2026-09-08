@@ -20,7 +20,7 @@ import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/dat
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
-import { fleetNodePriority, isStaleInProgress, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
+import { fleetNodePriority, isMeasurementWindowDue, isSiteClaim, isStaleInProgress, MAX_SITE_WORKERS, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
@@ -41,6 +41,8 @@ type NodeRow = {
   owner_session: string | null
   evidence?: string | null
   updated_at: string
+  heartbeat_at?: string | null
+  blocked_until?: string | null
 }
 
 function gapOrder(gap: string | null): number {
@@ -105,7 +107,7 @@ async function main() {
     sb
       .from('loop_work_nodes')
       .select(
-        'id,depends_on,domain,version_gap,title,objective,output,accept,state,evidence,blocked_reason,owner_session,updated_at',
+        'id,depends_on,domain,version_gap,title,objective,output,accept,state,evidence,blocked_reason,owner_session,updated_at,heartbeat_at,blocked_until',
       )
       .order('created_at', { ascending: true }),
   ])
@@ -119,32 +121,72 @@ async function main() {
   // is released here, before eligibility is computed, so the node is servable
   // in this same boot. in_progress -> open is a legal transition and the DB
   // trigger enforces it below us.
-  // Site queue items (public-ux, SITE-*) move in hours, not days: a claim that
-  // has not been touched for SITE_STALE_HOURS is a session that ended without
-  // releasing (2026-09-08: four grinder claims and two local claims sat frozen
-  // for five hours while every hourly fire stopped at the guard).
-  const SITE_STALE_HOURS = 3
-  const isSiteNode = (n: NodeRow) => n.domain === 'public-ux' && String(n.version_gap ?? '').startsWith('SITE-')
-  const staleSite = (n: NodeRow) => now.getTime() - Date.parse(n.updated_at) > SITE_STALE_HOURS * 60 * 60 * 1000
+  // Site queue items (public-ux, SITE-*) move in hours, not days; the window
+  // and the rule live in lib/data/loop/work-node.ts (SITE_CLAIM_IDLE_HOURS,
+  // isSiteClaim, isStaleInProgress) so the brief, the tests and the skill agree.
+  //
+  // LIVENESS, NOT IDLENESS (2026-09-08). Staleness reads heartbeat_at, which the
+  // owning session writes while it holds the node (touchWorkNode). updated_at
+  // could not tell a dead claim from a slow one: on 2026-09-08 dead sessions'
+  // claims looked fresh for the whole window while a live lane that had built
+  // for hours without committing was armed for wrongful release.
   const released: NodeRow[] = []
   for (const n of nodes) {
     if (n.state !== 'in_progress') continue
-    const stale = isSiteNode(n) ? staleSite(n) : isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)
-    if (!stale) continue
+    if (
+      !isStaleInProgress(
+        {
+          state: n.state,
+          updatedAt: n.updated_at,
+          heartbeatAt: n.heartbeat_at ?? null,
+          domain: n.domain,
+          versionGap: n.version_gap,
+        },
+        now,
+      )
+    )
+      continue
     // The brief keeps its own client on purpose (lib/data/loop/work-graph.ts
-    // carries server-only and cannot load in a CLI). Optimistic on state, so a
-    // sibling session that just continued the node is not knocked back to open.
+    // carries server-only and cannot load in a CLI). Optimistic on the state AND
+    // the owner it judged: a node re-claimed by a live session between the read
+    // and this write is never knocked back to open.
     const res = await sb
       .from('loop_work_nodes')
-      .update({ state: 'open', owner_session: null, updated_at: new Date().toISOString() })
+      .update({ state: 'open', owner_session: null, heartbeat_at: null, updated_at: new Date().toISOString() })
       .eq('id', n.id)
       .eq('state', 'in_progress')
+      .eq('owner_session', n.owner_session ?? '')
+      .select('id')
     if (res.error) {
       console.error(`stale release failed for ${n.title}: ${res.error.message}`)
       continue
     }
+    if (!res.data?.length) continue // taken or continued between the read and the write
     n.state = 'open'
+    n.owner_session = null
     released.push(n)
+  }
+
+  // A measurement window reopens itself. A node that shipped but whose accept
+  // test needs production time is blocked on the CALENDAR, not on a person, so
+  // nobody should have to remember it (2026-09-08: five items were live while
+  // the graph read done=2, each with its re-open date sitting in prose).
+  const reopened: NodeRow[] = []
+  for (const n of nodes) {
+    if (!isMeasurementWindowDue({ state: n.state, blockedUntil: n.blocked_until ?? null }, now)) continue
+    const res = await sb
+      .from('loop_work_nodes')
+      .update({ state: 'open', blocked_until: null, owner_session: null, updated_at: new Date().toISOString() })
+      .eq('id', n.id)
+      .eq('state', 'blocked')
+      .select('id')
+    if (res.error) {
+      console.error(`measurement reopen failed for ${n.title}: ${res.error.message}`)
+      continue
+    }
+    if (!res.data?.length) continue
+    n.state = 'open'
+    reopened.push(n)
   }
 
   const doneIds = new Set(nodes.filter((n) => n.state === 'done').map((n) => n.id))
@@ -235,14 +277,36 @@ async function main() {
   push('')
   push('--- WORK GRAPH ---')
   push(`nodes: ${nodes.length} · open ${nodes.filter((n) => n.state === 'open').length} · in_progress ${inProgress.length} · blocked ${blocked.length} · done ${nodes.filter((n) => n.state === 'done').length}`)
+  for (const n of reopened) {
+    push(`  REOPENED ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — its measurement window came due, back to open`)
+  }
   for (const n of released) {
-    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${isSiteNode(n) ? `${SITE_STALE_HOURS} hours` : `${STALE_IN_PROGRESS_DAYS} days`}) — open again`)
+    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${isSiteClaim({ domain: n.domain, versionGap: n.version_gap }) ? `${SITE_CLAIM_IDLE_HOURS} hours` : `${STALE_IN_PROGRESS_DAYS} days`}) — open again`)
   }
   for (const n of inProgress) {
     push(`  IN_PROGRESS ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — owner ${n.owner_session ?? '?'}`)
   }
   if (siteFirst) {
     push('  SITE FIRST: app/** or components/site/** changed in the last 14 days; serving the oldest open public-ux node')
+  }
+  {
+    // The fleet cap, printed where a session decides whether to start (Matt
+    // 2026-09-08). Four concurrent workers plus an hourly cloud fire exhausted
+    // the shared account allowance at 09:13Z and killed every one of them in
+    // the same minute, freezing 7 nodes. Workers are counted by distinct owner,
+    // not by claim, because the allowance is per account.
+    const siteOwners = new Set(
+      nodes
+        .filter((n) => n.state === 'in_progress' && isSiteClaim({ domain: n.domain, versionGap: n.version_gap }))
+        .map((n) => n.owner_session ?? '?'),
+    )
+    if (siteOwners.size >= MAX_SITE_WORKERS) {
+      push(
+        `  SITE FLEET FULL: ${siteOwners.size}/${MAX_SITE_WORKERS} workers hold site claims (${[...siteOwners].join(', ')}). Do not start another; one account allowance feeds them all.`,
+      )
+    } else if (siteOwners.size > 0) {
+      push(`  site workers: ${siteOwners.size}/${MAX_SITE_WORKERS} (cap ${MAX_SITE_WORKERS}, max 2 claims each)`)
+    }
   }
   for (const n of blocked) {
     push(`  BLOCKED ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — ${n.blocked_reason ?? 'no reason recorded'}`)

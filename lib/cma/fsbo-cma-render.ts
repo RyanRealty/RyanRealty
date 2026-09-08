@@ -65,9 +65,18 @@ export function factsFromCmaSurface(input: {
   }
 }
 
-/** Cover masthead label — pricing report, not bare CMA. */
+/**
+ * Cover masthead label.
+ *
+ * ONE NAME FOR THE DOCUMENT. The web document's kicker reads "Price opinion ·
+ * <address>" (lib/cma/inbound-packet.ts); the letter's eyebrow read "PRICING
+ * REPORT", so the same document introduced itself by two names depending on
+ * which copy a reader opened (tasteReview round two, closing note). The page
+ * <title> and the PDF filename keep "Pricing report" — that is the file's name,
+ * not the document's masthead.
+ */
 export function cmaCoverLabelHtml(): string {
-  return `<div class="cover-label" data-template="${CMA_COVER_INTRO_V1}">Pricing report</div>`
+  return `<div class="cover-label" data-template="${CMA_COVER_INTRO_V1}">Price opinion</div>`
 }
 
 export function cmaCoverIntroBlurbHtml(facts: FsboCmaMergeFacts): string {

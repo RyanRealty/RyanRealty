@@ -30,7 +30,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
-import { coverWorthSentence } from '@/lib/cma/cover-value'
+import { coverWorthSentence, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
@@ -148,6 +148,17 @@ function monthsSince(iso: string | null): number | null {
  *
  * Order: a current photo, else the stale photo captioned honestly, else nothing.
  * Never a map (C9 — comps map is the single map; cover uses photo or empty).
+ *
+ * THERE IS NOTHING HERE TO CHOOSE BETWEEN, and that is the finding, not an
+ * omission (tasteReview round two, item 4: "the cover still opens on the
+ * annotated aerial"). Checked on 2026-09-08 against the stored rows for all
+ * four exemplars: `extras.photos.current` holds exactly ONE url on each,
+ * `extras.photos.historical` is empty, and `subject.photoUrl` IS that url. The
+ * annotated aerial on 2465 7th is the only photograph the MLS record carries
+ * for that home. A renderer rule that skipped the first photo would degrade
+ * every listing whose first photo is its front elevation, which is most of
+ * them; the photo SET belongs to the build side, and until a row carries more
+ * than one there is no selection to make.
  */
 function heroForSubject(subject: CmaSubject): { src: string | null; caption: string; stale: boolean } {
   // C9: cover may use a photo, never a map — comps pin map is the single letter map.
@@ -193,6 +204,9 @@ function coverPage(a: RenderCmaArgs): PageDef {
     `by ${a.broker.displayName}, Ryan Realty`,
   ].join(' ')
   const worth = coverWorthSentence(a.pricing)
+  // A quarter-of-the-price range meets the reader on the cover first, and it
+  // said nothing about why it was that wide (tasteReview round two, §3.E).
+  const why = rangeSpreadCauseSentence(a.pricing)
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
@@ -204,6 +218,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
       <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}</div>
       ${worth ? `<p class="cover-worth">${esc(worth)}</p>` : ''}
+      ${why ? `<p class="cover-why">${esc(why)}</p>` : ''}
       <p class="cover-presented">${esc(`${prepared} · ${dateLong(a.generatedAtIso)}`)}</p>
       ${hero.stale ? `<p class="hero-caption">${esc(hero.caption)}</p>` : ''}
     </div>

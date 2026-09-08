@@ -35,6 +35,9 @@ import { resolve } from 'path'
 import { execSync } from 'child_process'
 import { homedir } from 'os'
 import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
+// The live probe speaks the shared CI user agent: the middleware bot screen
+// 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
+import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
@@ -350,7 +353,16 @@ async function main() {
   const tipFiles = listChangedFiles()
   const tipClass = classifyDiff(tipFiles, { skippable: isVercelSkippable })
   const skippableTip = isSkippableTip(tipClass.status)
-  const waitMs = skippableTip ? SKIP_WAIT_MS : TIMEOUT_MS
+  // let, not const (2026-09-08): the short SKIP window exists to stop a docs-only
+  // tip from waiting 15 minutes for a deploy Vercel will never make. Once a
+  // deployment for this SHA is actually FOUND, that reasoning is spent — the
+  // deploy exists and is building, so the full budget applies. Leaving it const
+  // made every site round time out at 45s on a BUILDING deploy and exit 2, which
+  // is indistinguishable from a real production ERROR: the net that catches a
+  // broken generate was being read as noise. A merge commit makes it worse,
+  // because `git diff-tree -r` prints zero files for a merge, so the tip
+  // classifies as skippable even when the merged range rebuilds the site.
+  let waitMs = skippableTip ? SKIP_WAIT_MS : TIMEOUT_MS
   if (skippableTip) {
     out(
       `tip is Next-skippable (${tipClass.status}, ${tipClass.files.length} file(s)) — SKIP if no deploy in ${SKIP_WAIT_MS / 1000}s`,
@@ -391,6 +403,11 @@ async function main() {
     if (deployment) {
       const deployId = deployment.uid ?? deployment.id
       const state = deployment.state ?? 'UNKNOWN'
+      if (waitMs !== TIMEOUT_MS) {
+        // The deploy exists: give it the real budget, not the skip window.
+        waitMs = TIMEOUT_MS
+        out(`deploy found for a tip classified skippable — waiting the full ${TIMEOUT_MS / 60000} min`)
+      }
       if (state !== lastState) {
         out(`deploy ${deployId}: ${state}`)
         lastState = state
@@ -403,7 +420,7 @@ async function main() {
           const live = await fetch('https://ryan-realty.com/', {
             method: 'GET',
             redirect: 'follow',
-            headers: { 'user-agent': 'RyanRealty-deploy-verify' },
+            headers: { 'user-agent': CI_PROBE_USER_AGENT },
             signal: AbortSignal.timeout(20_000),
           })
           out(`ryan-realty.com GET ${live.status}`)

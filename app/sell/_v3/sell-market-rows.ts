@@ -53,9 +53,16 @@ export function sellBendLedgerRows(
     }
   })
 
-  const paceRows: V3LedgerFigureRow[] = publicPaceItems(pace).map((item) => {
+  const paceRows: V3LedgerFigureRow[] = publicPaceItems(pace).map((item, i) => {
     const { what, detail } = splitWindow(item.label)
     return {
+      // Every pace row points at the SAME market report, and V3Ledger keys a row
+      // by `id ?? href` — so without an id of its own each pace row collided
+      // with the one before it and React logged "two children with the same key"
+      // eight times on every /sell load (2026-09-08, verified in the browser
+      // console, pre-existing). A duplicate key lets React reuse the wrong DOM
+      // node between renders, which is a correctness bug and not only noise.
+      id: `pace-${i}-${what.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
       href: BEND_MARKET_HREF,
       when: v3Text('Pace'),
       what: v3Text(what),

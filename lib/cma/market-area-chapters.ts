@@ -12,6 +12,7 @@ import {
   monthsOfSupplyBarsSvg,
   daysToOfferPhoneSvg,
   daysToOfferSvg,
+  medianCloseCaption,
   medianCloseLinePhoneSvg,
   medianCloseLineSvg,
   offerTimingCurvePhoneSvg,
@@ -186,7 +187,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
   const chartHtml = chart
     ? `<div class="szn median-wide" data-anim="chart">${chart}</div>${
         chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''
-      }`
+      }${medianCloseCaption(trend)}`
     : ''
 
   // The monthly pace the PUBLISHED months-of-supply figure was divided by.
@@ -244,9 +245,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     sentences.push(
       // "Half of them" sat after a sentence whose subject is the homes FOR
       // SALE; this median is over the homes that sold.
-      `Half of the homes that sold had an accepted offer inside ${int(
-        offerMedian,
-      )} days; the other half waited longer.`,
+      `Half of the homes that sold had an accepted offer inside ${int(offerMedian)} days.`,
     )
   }
   if (chart) {

@@ -123,10 +123,12 @@ export function SplitCardMedia({
               onOpenTour()
             }}
           >
-            {tourLabel}
+            <span className="v3-lrow__tour-label">{tourLabel}</span>
           </button>
         ) : (
-          <span className="v3-lrow__tour">3D Walkthrough</span>
+          <span className="v3-lrow__tour">
+            <span className="v3-lrow__tour-label">3D Walkthrough</span>
+          </span>
         )
       ) : null}
       {photos.length > 1 ? (

@@ -77,13 +77,83 @@ export function fleetNodePriority(title: string): number {
 /** A node in_progress with no update for this many days is stranded work. */
 export const STALE_IN_PROGRESS_DAYS = 3
 
+/**
+ * Site queue claims (domain public-ux, version_gap SITE-*) go stale in HOURS,
+ * not days. Sessions are disposable and several run at once (Matt 2026-09-07);
+ * a cloud session killed mid-round by a rate limit leaves its claim
+ * in_progress, and the sentinel's orphan release only knows Cursor agents.
+ * Observed 2026-09-08: four grinder claims and two local claims sat frozen for
+ * five hours while every hourly fire stopped at the guard. The window matches
+ * the grinder's own concurrency guard (3 hours), so a live lane must heartbeat
+ * the node it holds (the site-queue skill's rule) or lose it.
+ */
+export const SITE_CLAIM_IDLE_HOURS = 3
+
+/** A site queue claim: the public-ux domain AND a SITE-* version gap. */
+export function isSiteClaim(node: { domain?: string | null; versionGap?: string | null }): boolean {
+  return node.domain === 'public-ux' && String(node.versionGap ?? '').startsWith('SITE-')
+}
+
+/**
+ * How many site queue nodes one session may hold at once (Matt 2026-09-08:
+ * "three lanes, hard cap"). The cap is on CLAIMS, not on sessions, because a
+ * session is only expensive while it holds work: on 2026-09-08 one session held
+ * four SITE nodes and took all four down with it when the shared account
+ * allowance ran out. Two bounds one death at two frozen nodes.
+ */
+export const MAX_SITE_CLAIMS_PER_SESSION = 2
+
+/**
+ * How many workers may hold site claims at once. Four concurrent lanes plus an
+ * hourly cloud fire exhausted the shared allowance at 09:13Z on 2026-09-08 and
+ * killed every worker in the same minute. Three is the cap until the cost per
+ * item drops.
+ */
+export const MAX_SITE_WORKERS = 3
+
+/**
+ * Liveness, not idleness. A claim is alive because its owner SAID so
+ * (heartbeat_at), never because the row happened to change: `updated_at` moves
+ * when anyone writes anything, and it does NOT move while a lane spends three
+ * hours building without committing. On 2026-09-08 both failures happened at
+ * once — dead sessions' claims looked fresh for the whole window, and a live
+ * lane was armed for wrongful release. A node that has never heartbeated falls
+ * back to updated_at so every pre-existing row keeps its old behaviour.
+ */
 export function isStaleInProgress(
-  node: { state: WorkNodeState; updatedAt: string },
+  node: {
+    state: WorkNodeState
+    updatedAt: string
+    heartbeatAt?: string | null
+    domain?: string | null
+    versionGap?: string | null
+  },
   now: Date = new Date(),
 ): boolean {
   if (node.state !== 'in_progress') return false
-  const ageMs = now.getTime() - Date.parse(node.updatedAt)
-  return ageMs > STALE_IN_PROGRESS_DAYS * 24 * 60 * 60 * 1000
+  const beat = node.heartbeatAt ? Date.parse(node.heartbeatAt) : Date.parse(node.updatedAt)
+  if (!Number.isFinite(beat)) return false
+  const ageMs = now.getTime() - beat
+  const limitMs = isSiteClaim(node)
+    ? SITE_CLAIM_IDLE_HOURS * 60 * 60 * 1000
+    : STALE_IN_PROGRESS_DAYS * 24 * 60 * 60 * 1000
+  return ageMs > limitMs
+}
+
+/**
+ * A node blocked on a measurement window reopens itself. `blocked_until` is set
+ * when a node ships but its accept test needs production time; the boot brief
+ * moves it back to open once the date passes, with no human in the path. A
+ * blocked node with no `blocked_until` is blocked on a person and stays put.
+ */
+export function isMeasurementWindowDue(
+  node: { state: WorkNodeState; blockedUntil?: string | null },
+  now: Date = new Date(),
+): boolean {
+  if (node.state !== 'blocked') return false
+  if (!node.blockedUntil) return false
+  const due = Date.parse(node.blockedUntil)
+  return Number.isFinite(due) && due <= now.getTime()
 }
 
 // ── Orphan auto-release (pre-arm item 3, ARMING-RUNBOOK Step 1) ──────────────

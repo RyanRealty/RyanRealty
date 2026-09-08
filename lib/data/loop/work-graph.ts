@@ -23,6 +23,8 @@ import {
   isStaleInProgress,
   type WorkNodeDraft,
   type WorkNodeState,
+  MAX_SITE_CLAIMS_PER_SESSION,
+  isSiteClaim,
 } from './work-node'
 
 export type { WorkNodeDraft, WorkNodeState }
@@ -136,8 +138,87 @@ async function transition(
   }
 }
 
+/**
+ * Heartbeat: the owning session says it is still alive on this node.
+ *
+ * It writes ONLY heartbeat_at, and only for the session that actually holds the
+ * node, so it cannot revive someone else's claim and cannot be mistaken for
+ * progress. loop_work_nodes_guard fires on a state change, so this never
+ * touches it. Call it at every lane report, at each round boundary, and at
+ * least every hour while a lane is building — the boot brief releases a site
+ * claim whose heartbeat is older than SITE_CLAIM_IDLE_HOURS.
+ */
+export async function touchWorkNode(
+  id: string,
+  ownerSession: string,
+): Promise<{ data: { id: string } | null; error: string | null }> {
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('loop_work_nodes')
+      .update({ heartbeat_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('state', 'in_progress')
+      .eq('owner_session', ownerSession)
+      .select('id')
+      .maybeSingle()
+    if (error) return { data: null, error: error.message }
+    if (!data?.id) {
+      return { data: null, error: 'heartbeat matched no row — this session no longer holds the node (released or taken)' }
+    }
+    return { data: { id: data.id as string }, error: null }
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err.message : 'heartbeat failed' }
+  }
+}
+
+/**
+ * How many site nodes this session already holds. The cap exists because a
+ * session takes every node it holds down with it: on 2026-09-08 one session
+ * held four and froze all four for hours when the shared account allowance ran
+ * out (Matt: "three lanes, hard cap").
+ */
+export async function countSiteClaims(ownerSession: string): Promise<number> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('loop_work_nodes')
+    .select('domain,version_gap')
+    .eq('state', 'in_progress')
+    .eq('owner_session', ownerSession)
+  if (error) return 0
+  return (data ?? []).filter((r) =>
+    isSiteClaim({ domain: r.domain as string, versionGap: r.version_gap as string | null }),
+  ).length
+}
+
 export async function claimWorkNode(id: string, ownerSession: string) {
-  return transition(id, 'in_progress', { owner_session: ownerSession, blocked_reason: null })
+  // The cap is enforced here rather than left to a session's own discipline,
+  // because the session that most needs the limit is the one already in
+  // trouble. A refused claim is not an error the caller must handle specially:
+  // it takes the next eligible node, or none.
+  const sb = createServiceClient()
+  const { data: node } = await sb
+    .from('loop_work_nodes')
+    .select('domain,version_gap')
+    .eq('id', id)
+    .maybeSingle()
+  const wantsSite = node
+    ? isSiteClaim({ domain: node.domain as string, versionGap: node.version_gap as string | null })
+    : false
+  if (wantsSite) {
+    const held = await countSiteClaims(ownerSession)
+    if (held >= MAX_SITE_CLAIMS_PER_SESSION) {
+      return {
+        data: null,
+        error: `claim refused: ${ownerSession} already holds ${held} site node(s), cap is ${MAX_SITE_CLAIMS_PER_SESSION} (Matt 2026-09-08). Finish or release one first.`,
+      }
+    }
+  }
+  return transition(id, 'in_progress', {
+    owner_session: ownerSession,
+    blocked_reason: null,
+    heartbeat_at: new Date().toISOString(),
+  })
 }
 
 /** Claim every node in a ship class so another session cannot steal a sibling and push alone. */
@@ -155,13 +236,19 @@ export async function claimShipClass(ids: string[], ownerSession: string) {
   return { data: { claimed, failed }, error: null }
 }
 
-export async function blockWorkNode(id: string, reason: string) {
+/**
+ * `until` marks a node blocked on TIME rather than on a person: the boot brief
+ * reopens it once the date passes, with nobody in the path. Omit it and the
+ * node is blocked on a human and stays blocked until one acts.
+ */
+export async function blockWorkNode(id: string, reason: string, until?: Date | string | null) {
   if (!reason.trim()) return { data: null, error: 'blocked_reason is required' }
-  return transition(id, 'blocked', { blocked_reason: reason })
+  const blockedUntil = until ? new Date(until).toISOString() : null
+  return transition(id, 'blocked', { blocked_reason: reason, blocked_until: blockedUntil })
 }
 
 export async function releaseWorkNode(id: string) {
-  return transition(id, 'open', { owner_session: null, blocked_reason: null })
+  return transition(id, 'open', { owner_session: null, blocked_reason: null, heartbeat_at: null })
 }
 
 /** Done requires evidence — an unaudited claim never enters durable state. */

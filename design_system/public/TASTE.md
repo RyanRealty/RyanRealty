@@ -38,10 +38,10 @@ agree on the cause, and it is not the model's ceiling:
 
 ## The binding ritual (builder)
 
-After building any public surface: render it at desktop and 375px, screenshot
-both, **look at the screenshots as a person would**, and answer these in the
-session before handing it to the evaluator. `ci:gates` passing is not this
-pass. Reading the component is not this pass. Matt 2026-09-05: we build, we
+After building any public surface: render it on your own dev server at desktop
+and 375px, screenshot both, **look at the screenshots as a person would**, and
+answer these in the session before handing it to the evaluator — all of it
+before the branch is pushed. `ci:gates` passing is not this pass. Reading the component is not this pass. Matt 2026-09-05: we build, we
 read the code, we do not look, and a human opens it and it is gross.
 
 The object to copy when a data surface needs to feel like this shop: **V3Atlas**
@@ -79,34 +79,91 @@ not a tile that says 3.9.
    the section is not done.
 
 ## The receipt (`tasteReview` on the route's `parity.json`) is not a score in a
-JSON file. As of 2026-09-05 it is:
+JSON file. As of 2026-09-08 it records the INSTRUMENT, not just the number:
 
 ```json
 {
   "evaluatedAt": "YYYY-MM-DD",
-  "score": 0,
-  "beats": "named competing page and the metric we win",
-  "evaluator": "separate agent id — never the builder, never 'pending'",
+  "rubricVersion": "v1-2026-09-08",
+  "evaluator": "separate agent id and how it was run — never the builder, never 'pending'",
+  "evaluatorModel": "claude-opus-4-1",
+  "builderModel": "claude-sonnet-4-5",
+  "shotSpec": {
+    "routes": ["/cities/bend"],
+    "viewports": [1440, 375],
+    "states": ["default", "answer-open"]
+  },
   "shots": {
     "desktop": "path/to/1440.png",
     "mobile375": "path/to/375.png"
-  }
+  },
+  "shotsHash": "sha256:<64 hex over every file in shots>",
+  "scores": [81, 84, 82],
+  "score": 82,
+  "beats": "named competing page and the metric we win",
+  "defects": [
+    { "section": "#rails", "severity": "taste", "finding": "named finding, 10+ characters" }
+  ],
+  "comparedToPrior": "first | rose | rebaselined",
+  "priorMark": {
+    "evaluatedAt": "YYYY-MM-DD",
+    "score": 77,
+    "evaluatorModel": "…",
+    "rubricVersion": "…",
+    "shotsHash": "sha256:…"
+  },
+  "rebaselineReason": "names the key(s) that differ, when comparedToPrior is rebaselined"
 }
 ```
 
+**Rubric version: `v1-2026-09-08`** — the five-criterion table below. Change a
+weight, a criterion, or a passing bar and the version changes with it, so a
+receipt says which rubric produced its number. Versions: `v1-2026-09-08`
+(first versioned rubric; the table is the one in use since 2026-09-01).
+
+Each field is checked, not decorative (`scripts/check-taste-canon.mjs`, contract
+in `scripts/lib/taste-receipt.mjs`):
+
+- **`score` is the MEDIAN of `scores`, three scorings of the same shots in one
+  evaluator call.** One pass is noise: SITE-11's node records four passes on one
+  page — 82, then 81, then 75 and 88 on the same commit (cef947d/7cb70d9). The
+  three raw numbers stay in the receipt.
+- **`evaluatorModel` and `builderModel` are model strings, not sentences**, and
+  they must differ — the different-model rule is now the gate's, not prose.
+- **`shotsHash`** is sha256 over every file in `shots`, in sorted key order.
+  Get it with `node scripts/lib/taste-receipt.mjs <parity.json>`. The gate
+  recomputes it, so a receipt cannot claim a score for shots that changed.
+- **`shotSpec`** says what was captured: the routes, the viewports (375 and a
+  desktop width of 1280 or more), and which states.
+- **`defects`** are the named findings behind the number. Empty is allowed only
+  above 95 — below that the rubric lost points somewhere, so say where.
+- **`comparedToPrior` cannot be `"first"` when the route's committed receipt
+  already carries a score.** The gate reads the receipt at HEAD; a fresh mark
+  that ignores it is refused. "First" is not an exit from the rise rule.
+
 Both PNGs must exist in the repo. `ci:taste-canon` fails a new review without
-them. Leftover HUD (`PlaceFaceStrip` on a place opening) and the Atlas
-"pinch to zoom" sentence are mechanical tells: a score of 86 cannot outvote
-them (`scripts/taste-tells-baseline.json`, shrink-only). X research:
-`docs/research/taste-on-x-2026-09-05.md`.
+them. Receipts written before this shape landed stay valid; ones already dated
+2026-09-08 sit in `scripts/taste-receipt-v2-baseline.json` (shrink-only) and
+leave it on their next pass. Leftover HUD (`PlaceFaceStrip` on a place opening)
+and the Atlas "pinch to zoom" sentence are mechanical tells: a score of 86
+cannot outvote them (`scripts/taste-tells-baseline.json`, shrink-only). X
+research: `docs/research/taste-on-x-2026-09-05.md`.
 
 The critique pass is a SEPARATE agent (mandatory since 2026-09-01)
 
 The builder never grades its own page. After the ritual, spawn an evaluator
-(`Agent`, any model, with the desktop + 375px screenshots and the rendered
-page's URL) with this rubric. It returns named defects with the section id;
-the builder fixes and re-submits. Ship only when the evaluator passes every
-row.
+(`Agent`, on a DIFFERENT model from the builder, with the desktop + 375px
+screenshots and the rendered page's URL) with this rubric. It returns named
+defects with the section id and three scorings; the builder fixes and
+re-submits. Ship only when the evaluator passes every row.
+
+**The pass runs against the lane's own dev server, BEFORE the branch is
+pushed** (2026-09-08). A defect found before the push costs a fix. The same
+defect found after the merge costs a public commit, a re-capture, and the full
+unit suite — 17 of the site queue's first 37 item commits were that rework
+(2026-09-08 forensic audit of the queue's first day).
+The lane captures, scores, fixes, and re-scores on its own machine; landing is
+what happens to a page that has already risen.
 
 **The score must rise (Matt 2026-09-07: "I want to be done with these shitty
 looking sites").** A site queue item (`loop_work_nodes`, domain public-ux,
@@ -117,6 +174,17 @@ It is written into every open SITE node's accept test and into
 `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`. A page that still looks bad is
 a failed item, not a done one. Weights are deliberate: craft and function are what the model already
 does well; the bland-output problem lives in design quality and originality.
+
+**Two marks are comparable only when they came from the same instrument.**
+A prior `tasteReview` whose `evaluatorModel`, `rubricVersion` or `shotsHash`
+differs from the current one is NOT a baseline, and the rise rule does not
+apply to it. The item re-baselines: record `comparedToPrior: "rebaselined"`,
+keep the old mark in `priorMark`, and name the differing key(s) in
+`rebaselineReason`. The new mark is the first mark on the new instrument, and
+the next pass must rise above it. Nobody is asked to decide this — the gate
+computes the drift from the three keys. This is the SITE-M1 case, where an 88
+"from a different evaluator against shots that no longer exist" blocked a 77
+until Matt personally accepted it. Same instrument, no rise, no ship.
 
 | Criterion | Weight | Passing looks like |
 |---|---|---|

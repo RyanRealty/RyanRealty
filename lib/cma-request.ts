@@ -55,6 +55,23 @@ export type CreateCmaRequestInput = {
     improvementsSpend?: string
     condition?: string
   } | null
+  /**
+   * WHICH CONTROL sent the visitor to the ask that produced this request —
+   * one of lib/ask-source.ts's closed set (sticky, hero, chrome, inline,
+   * footer), or null. Site queue SITE-05: the accept test is the share of
+   * valuation requests carrying `sticky`, and GA4 alone cannot be audited
+   * against the rows, so the stamp rides into the queued action's payload
+   * beside the request. Never confused with `requestSource`, which says which
+   * SURFACE the request came from.
+   */
+  askSource?: string | null
+  /**
+   * Absolute booking URL to offer in the lead's same-minute confirmation.
+   * Site queue SITE-10: set only for the near-term lane (a seller listing
+   * inside 90 days), whose next useful step is a conversation rather than
+   * another document. Null leaves the confirmation exactly as it was.
+   */
+  leadBookHref?: string | null
   /** Where the request came from. Default 'seller-lp'. */
   requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron' | 'crm-kickoff' | 'place-page'
   /** Doc-type LABEL for the cmas row. Since 2026-08-05 (Matt: one CMA) the
@@ -314,6 +331,9 @@ export async function createCmaRequest(
           home_details: homeDetails,
           crm_person_id: linkedPersonId,
           client_intent: isCmaClientIntent(hd?.intent) ? hd.intent : null,
+          // SITE-05 attribution. Absent, not null, when there is no stamp, so a
+          // query for the sticky control's share reads a present key only.
+          ...(input.askSource ? { ask_source: input.askSource } : {}),
           // D8 kick-off + notify: the build worker texts each listed broker a
           // review link when the draft is ready. A LIST, not a flag — kickers
           // that attach to this build while it is open append their own
@@ -470,6 +490,7 @@ export async function createCmaRequest(
         brokerName: broker.displayName,
         brokerEmail: broker.email,
         brokerPhone: broker.phone,
+        bookHref: input.leadBookHref ?? null,
       }).catch((e) => console.warn('[cma-request] lead confirmation failed:', e))
     }
 

@@ -86,6 +86,17 @@ jobs:
       # Split into explicit start / wait / smoke. Same semantics, but the wait
       # reports what it saw on each probe and the server log is dumped on
       # failure, so a red run now explains itself instead of timing out mutely.
+      # ci:tap-targets (below) drives headless Chromium through Playwright.
+      # The e2e job installs the browser before its own runs; this job did
+      # not, so from 990e86c every pull request failed the smoke step with
+      # "Executable doesn't exist at ~/.cache/ms-playwright/…" (2026-09-05
+      # session 014FzYVn recorded it as "CI tap-targets needs browser"). Same
+      # install line as the e2e job, gated to pull requests like the step it
+      # serves, so pushes to main pay nothing extra.
+      - name: Install Playwright browsers (route smoke + tap targets)
+        if: github.event_name == 'pull_request'
+        run: npx playwright install --with-deps chromium
+
       - name: Route smoke test
         if: github.event_name == 'pull_request'
         run: |

@@ -54,6 +54,10 @@ export function immersiveInteractionCss(): string {
 .tl-mark,.bar-row,.month-mark,.pp-cut,.ws-dot{cursor:pointer}
 .tl-mark:focus-visible,.bar-row:focus-visible,.month-mark:focus-visible,.pp-cut:focus-visible,.ws-dot:focus-visible{outline:3px solid rgba(16,39,66,.35)}
 .tl-mark circle:last-of-type,.month-mark circle:last-of-type,.ws-dot circle:last-of-type{stroke:rgba(16,39,66,.16);stroke-width:5;paint-order:stroke}
+/* A SET-ASIDE sale is hollow, and stays hollow: the soft focus ring above is
+   a :last-of-type rule, and CSS beats the element's own stroke attribute, so
+   the hollow mark rendered as a washed-out blob until this took it back. */
+.ws-dot circle.ws-aside{stroke:var(--navy);stroke-width:1.75;paint-order:normal}
 .tl-mark:hover circle:last-of-type,.month-mark:hover circle:last-of-type,.ws-dot:hover circle:last-of-type{stroke:rgba(16,39,66,.45)}
 .bar-row.is-read rect{fill:rgba(16,39,66,.06)}
 .tl-mark.is-read circle:last-of-type,.month-mark.is-read circle:last-of-type,.ws-dot.is-read circle:last-of-type{r:6;stroke:var(--navy)}
@@ -78,11 +82,33 @@ export function immersiveInteractionCss(): string {
 .pp-list li{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid var(--ink12)}
 .pp-list .k{opacity:.65}
 .pp-list .v{font-variant-numeric:tabular-nums;font-weight:600}
-/* A sale, its pin and its price path light together. */
+/* A sale, its pin and its price path light together. The COLUMN end of that
+   pair is a control too: an overlay inside the header cell, so the <th> keeps
+   its header semantics and the reader gets a 44px target and a focus ring. */
+.comp-matrix th.v{position:relative}
+.matrix-hit{position:absolute;inset:0;display:block;cursor:pointer;border-radius:6px}
+.matrix-hit:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:-2px}
+.matrix-hit:hover{background:rgba(16,39,66,.05)}
+.comp-matrix th.v .matrix-addr,.comp-matrix th.v .matrix-thumb{position:relative;z-index:1}
+@media print{.matrix-hit{display:none}}
 .is-on{background:rgba(16,39,66,.07)}
 th.v.is-on,.comp-stack-card.is-on{outline:2px solid var(--navy);outline-offset:2px;background:transparent}
 /* The toggle that puts the working away. */
 .is-plain tr[data-adj],.is-plain .comp-stack-line[data-adj]{display:none}
+/* The phone card's own expand: the conclusion is always on the card, the
+   working is one tap under it. Print never runs this script, but a reader who
+   prints the web document from the browser gets the whole card. */
+@media print{.comp-fold{display:block!important}}
+.comp-stack-grid.is-answer{margin-top:10px;font-weight:600}
+.comp-stack-grid.is-answer .k{font-weight:400}
+/* One row of controls, not four (tasteReview round two, §2.3): a segmented
+   pair and a select, side by side, wrapping only when they truly cannot fit. */
+.rr-controls.is-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.rr-seg{display:inline-flex;border:1px solid var(--ink12);border-radius:10px;overflow:hidden}
+.rr-seg .rr-btn{border:0;border-radius:0;padding:12px 14px}
+.rr-seg .rr-btn+.rr-btn{border-left:1px solid var(--ink12)}
+.rr-select{font:inherit;font-size:13px;color:var(--navy);background:transparent;border:1px solid var(--ink12);border-radius:10px;padding:12px 14px;min-height:44px;cursor:pointer}
+.rr-select:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:2px}
 /* Chapter 1's line draws itself once, and only for a reader who wants motion. */
 @media (prefers-reduced-motion:reduce){.tl-ask{stroke-dasharray:none!important;stroke-dashoffset:0!important}}
 `
@@ -303,18 +329,33 @@ try{
       li.appendChild(el('span','v',usd(r.p)))
       list.appendChild(li)
     })
+    // Inside a phone sale card the toggle opens the WHOLE working — the drawn
+    // price path, its dated history and every adjustment line — because the
+    // card's job on a phone is the conclusion and the audit trail is one tap
+    // under it (tasteReview round two, item 3: the document got longer, not
+    // shorter). Everywhere else it opens the dated list alone.
+    var fold=wrap.closest?wrap.closest('.comp-fold'):null
+    var openWord=fold?(fold.getAttribute('data-fold-label')||'How this sale was adjusted'):'Price history'
+    var shutWord='Hide '+openWord.charAt(0).toLowerCase()+openWord.slice(1)
     var toggle=el('button','pp-toggle')
     var chev=el('span','pp-chev');chev.setAttribute('aria-hidden','true')
-    var word=el('span','pp-word','Price history')
+    var word=el('span','pp-word',openWord)
     toggle.appendChild(chev);toggle.appendChild(word)
     toggle.type='button';toggle.setAttribute('aria-expanded','false')
     toggle.addEventListener('click',function(){
       var open=list.hidden
       list.hidden=!open
+      if(fold)fold.hidden=!open
       toggle.setAttribute('aria-expanded',open?'true':'false')
-      word.textContent=open?'Hide price history':'Price history'
+      word.textContent=open?shutWord:openWord
     })
-    wrap.appendChild(toggle);wrap.appendChild(list)
+    wrap.appendChild(list)
+    if(fold){
+      fold.hidden=true
+      fold.parentNode.insertBefore(toggle,fold)
+    }else{
+      wrap.insertBefore(toggle,list)
+    }
     // A tap on a dated cut in the drawing names it without opening the list.
     var cuts=[].slice.call(wrap.querySelectorAll('.pp-cut'))
     if(cuts.length){
@@ -325,6 +366,36 @@ try{
         })
       })
     }
+  })
+}catch(e){}
+
+/* ── 3b. any other folded block gets the same control ────────────────────── */
+/* TASTE.md bans a section whose primary content is more than two paragraphs of
+   prose with no figure, and names the remedy: "it sits under a disclosure".
+   Basis and limits ran eight paragraphs, 1,697px, at the end of a document
+   already too long on a phone (tasteReview round two, item 3). The four
+   paragraphs a reader USES stay on the page; the statutory block sits behind
+   this control, and the printed letter — which runs no script — carries all of
+   it either way. */
+try{
+  [].slice.call(document.querySelectorAll('.comp-fold[data-fold-label]')).forEach(function(fold){
+    var prev=fold.previousElementSibling
+    if(prev&&prev.classList&&prev.classList.contains('pp-toggle'))return
+    var openWord=fold.getAttribute('data-fold-label')||'More'
+    var shutWord='Hide '+openWord.charAt(0).toLowerCase()+openWord.slice(1)
+    var toggle=el('button','pp-toggle')
+    var chev=el('span','pp-chev');chev.setAttribute('aria-hidden','true')
+    var word=el('span','pp-word',openWord)
+    toggle.appendChild(chev);toggle.appendChild(word)
+    toggle.type='button';toggle.setAttribute('aria-expanded','false')
+    toggle.addEventListener('click',function(){
+      var open=fold.hidden
+      fold.hidden=!open
+      toggle.setAttribute('aria-expanded',open?'true':'false')
+      word.textContent=open?shutWord:openWord
+    })
+    fold.hidden=true
+    fold.parentNode.insertBefore(toggle,fold)
   })
 }catch(e){}
 
@@ -345,11 +416,24 @@ try{
       document.querySelector('th.v[data-comp="'+id+'"]')
     if(target&&target.scrollIntoView)target.scrollIntoView({block:'center',behavior:REDUCED?'auto':'smooth'})
   }
-  document.addEventListener('click',function(e){
-    var t=e.target&&e.target.closest?e.target.closest('[data-comp],[data-pin]'):null
+  function lightFrom(t){
     if(!t)return
     var fromPin=!!t.closest('.pin-map,.pin-map-wrap')
     light(t.getAttribute('data-comp')||t.getAttribute('data-pin'),fromPin)
+  }
+  document.addEventListener('click',function(e){
+    lightFrom(e.target&&e.target.closest?e.target.closest('[data-comp],[data-pin]'):null)
+  })
+  // Enter and Space on the column header's own control. A span with
+  // role="button" does not fire a click from the keyboard the way a <button>
+  // does, and the column end of the sale-to-pin pair was unreachable without a
+  // mouse (tasteReview round two, §4).
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' '&&e.key!=='Spacebar')return
+    var t=e.target&&e.target.closest?e.target.closest('.matrix-hit'):null
+    if(!t)return
+    e.preventDefault()
+    lightFrom(t)
   })
 }catch(e){}
 
@@ -361,11 +445,20 @@ try{
     var stack=worth.querySelector('.comp-stack')
     var anchor=worth.querySelector('.comp-matrix-wrap')||tables[0]
 
+    // ONE ROW, TWO CONTROLS. Raising the pills to 44px pushed this chapter's
+    // controls onto four rows at 375 — 208px of stacked buttons with "The
+    // sales:" and "Order:" orphaned beside wrapped groups, before the reader
+    // reached a single sale (tasteReview round two, §2.3). The toggle stays a
+    // segmented pair, because it is two states of one thing; the order becomes
+    // a select, because four mutually exclusive options is what a select is.
+    var box=controls(anchor,'')
+    box.className='rr-controls is-row'
+    var seg=el('div','rr-seg')
+    box.appendChild(seg)
     // The toggle is a class on the chapter, so it works whatever the grid was
     // chunked into. It hides the working and keeps the conclusion.
-    var box=controls(anchor,'The sales:')
-    button(box,'With the adjustments',true,function(){worth.classList.remove('is-plain')})
-    button(box,'Sale prices only',false,function(){worth.classList.add('is-plain')})
+    button(seg,'With the adjustments',true,function(){worth.classList.remove('is-plain')})
+    button(seg,'Sale prices only',false,function(){worth.classList.add('is-plain')})
 
     // The sort runs ACROSS every table, not within each one. It used to run
     // within: a wide grid splits into two or three tables so it fits the page,
@@ -374,7 +467,6 @@ try{
     // that did not work. The tables are a page-width mechanism, so they are no
     // longer headed by position ("Sales 4 through 6"), and a sale is free to
     // move between them.
-    var sortBox=controls(anchor,'Order:')
     var groups=tables.map(function(t){
       return {
         table:t,
@@ -442,10 +534,19 @@ try{
     // "As weighted" was a lie: the printed order is the sales newest first, and
     // the weights ran 31.9, 14.2, 15.1, 27.3, 11.6 down the row under a pill
     // claiming they were sorted by it.
-    button(sortBox,'As printed',true,function(){order(null,1)})
-    button(sortBox,'Most recent',false,function(){order('date',-1)})
-    button(sortBox,'Price today',false,function(){order('price',-1)})
-    button(sortBox,'Size',false,function(){order('size',-1)})
+    var ORDERS=[['As printed',null,1],['Most recent','date',-1],['Price today','price',-1],['Size','size',-1]]
+    var sel=el('select','rr-select')
+    sel.setAttribute('aria-label','Order the sales')
+    ORDERS.forEach(function(o,i){
+      var opt=el('option',null,o[0])
+      opt.value=String(i)
+      sel.appendChild(opt)
+    })
+    sel.addEventListener('change',function(){
+      var o=ORDERS[Number(sel.value)||0]
+      order(o[1],o[2])
+    })
+    box.appendChild(sel)
   }
 }catch(e){}
 

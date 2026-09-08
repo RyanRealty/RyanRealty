@@ -4,6 +4,7 @@ import {
   adjustCompAlongMarket,
   adjustedPriceRange,
   applyEngineRecommendedList,
+  buildTimeAdjustmentBasis,
   currentListAsk,
   estimateClosePrice,
   listPriceFromEngine,
@@ -88,7 +89,12 @@ function sale(over: Partial<SelectedPricingComp> = {}): SelectedPricingComp {
 
 describe('adjustCompAlongMarket', () => {
   it('lifts a sale that closed in a +3%/month run up to the as-of month', () => {
+    // The run starts before the sale's own month: the index endpoint is the
+    // median of the last three COMPLETE months, so a series that begins at the
+    // sale would be reading its own edge (R2d).
     const points = [
+      { month: '2020-11-01', ppsf: 283, n: 40 },
+      { month: '2020-12-01', ppsf: 291, n: 40 },
       { month: '2021-01-01', ppsf: 300, n: 40 },
       { month: '2021-02-01', ppsf: 309, n: 40 },
       { month: '2021-03-01', ppsf: 318, n: 40 },
@@ -104,8 +110,11 @@ describe('adjustCompAlongMarket', () => {
       asOf: '2021-05-15',
     })
     expect(path.regime).toBe('rising')
-    expect(adjusted.timeAdjustedPrice).toBeGreaterThan(550_000)
-    expect(adjusted.timeAdjustment).toBeGreaterThan(50_000)
+    // 300 at the sale's month to 318, the median of Feb/Mar/Apr.
+    expect(path.fromPpsf).toBe(300)
+    expect(path.toPpsf).toBe(318)
+    expect(adjusted.timeAdjustedPrice).toBeGreaterThan(525_000)
+    expect(adjusted.timeAdjustment).toBeGreaterThan(25_000)
   })
 
   it('leaves a flat-market sale near its close price', () => {
@@ -871,5 +880,69 @@ describe('time-adjustment sentence', () => {
     expect(line).toContain('Math.abs(yoy).toFixed(1)')
     expect(line).toContain('Math.abs(perMonth).toFixed(1)')
     expect(line).not.toMatch(/\$\{Math\.abs\(yoy\)\}/)
+  })
+})
+
+describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
+  // The real Redmond `pricing_market_index` rows, pulled 2026-09-08. September
+  // 2026 is the ten-sale partial month that produced the round-two defect.
+  const redmond = [
+    { month: '2025-06-01', ppsf: 312.16, n: 81 },
+    { month: '2025-07-01', ppsf: 300.15, n: 87 },
+    { month: '2025-08-01', ppsf: 309.57, n: 100 },
+    { month: '2025-09-01', ppsf: 310.75, n: 98 },
+    { month: '2025-10-01', ppsf: 314.71, n: 81 },
+    { month: '2025-11-01', ppsf: 320.66, n: 62 },
+    { month: '2025-12-01', ppsf: 321.94, n: 77 },
+    { month: '2026-01-01', ppsf: 316.99, n: 40 },
+    { month: '2026-02-01', ppsf: 324.63, n: 57 },
+    { month: '2026-03-01', ppsf: 320.4, n: 60 },
+    { month: '2026-04-01', ppsf: 332.63, n: 51 },
+    { month: '2026-05-01', ppsf: 327.59, n: 75 },
+    { month: '2026-06-01', ppsf: 314.63, n: 99 },
+    { month: '2026-07-01', ppsf: 322.08, n: 76 },
+    { month: '2026-08-01', ppsf: 325.7, n: 78 },
+    { month: '2026-09-01', ppsf: 294.44, n: 10 },
+  ]
+
+  it('names the rule the grid follows, with the move over the window to one decimal', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'redmond',
+      cityName: 'Redmond',
+      points: redmond,
+      asOf: '2026-09-07',
+      fetchedAt: '2026-09-08T00:00:00.000Z',
+    })
+    expect(out.basis).toBe('city-monthly-index-trailing-3')
+    expect(out.referenceMonths).toEqual(['2026-06-01', '2026-07-01', '2026-08-01'])
+    expect(out.sentence).toBe(
+      "Each sale is moved by the change in Redmond's median price a square foot between the month it closed and the last three complete months, a path that rose 3.6 percent over the last 12 months across 854 sales.",
+    )
+  })
+
+  it('does not restate itself, and prints no rate a reader could multiply out', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'redmond',
+      cityName: 'Redmond',
+      points: redmond,
+      asOf: '2026-09-07',
+    })
+    expect(out.sentence.split('. ').length).toBe(1)
+    expect(out.sentence).not.toMatch(/percent a month/)
+    expect(out.sentence).not.toMatch(/\d+\.\d\d/)
+  })
+
+  it('states the endpoint rule in the source trace, and leaves the partial month out', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'redmond',
+      cityName: 'Redmond',
+      points: redmond,
+      asOf: '2026-09-07',
+    })
+    expect(out.source.filter).toContain('the median of the last three complete months')
+    expect(out.source.filter).toContain('never the running month')
+    expect(out.source.filter).toContain('322.08')
+    expect(out.source.filter).not.toContain('294.44')
+    expect(out.n).toBe(854)
   })
 })

@@ -139,6 +139,27 @@ export { V3Proof } from './V3Proof.client'
 export type { V3ProofProps, V3ProofQuote, V3ProofFigure } from './V3Proof.client'
 
 /**
+ * Proof block (SITE-11): the brokerage's OWN closings as two linked dot
+ * strips against the market's median for the same window, with the record,
+ * the words, and the reach to a broker beside them. V3Proof is the reviews
+ * instrument; this is what our sales did. `proofBlockView()` turns a pulled
+ * `getProofBlock()` into these props — the primitive itself never computes.
+ */
+export { V3ProofBlock } from './V3ProofBlock.client'
+export { V3ProofStars } from './V3Proof.client'
+export { proofBlockView, packLanes, trackPctOf, ratioLabel, askDistanceLabel } from './V3ProofBlock.view'
+export type {
+  V3ProofBlockProps,
+  V3ProofBlockAttribution,
+  V3ProofMark,
+  V3ProofStrip,
+  V3ProofStripKey,
+  V3ProofQuoteView,
+  V3ProofReach,
+} from './V3ProofBlock.client'
+export type { ProofBlockViewInput } from './V3ProofBlock.view'
+
+/**
  * Ask: one screen, every field, one button. The contact form. The Sheet stays
  * the one-question-at-a-time pattern for a valuation.
  */
@@ -150,6 +171,12 @@ export { V3Ask } from './V3Ask.client'
  */
 export { V3PlaceValue } from './V3PlaceValue.client'
 export type { V3PlaceValueProps } from './V3PlaceValue.client'
+/**
+ * The returning ask (SITE-05, 2026-09-08): a corner plate on a wide window, the
+ * one bottom bar on a phone, shown only while the ask it points at is off
+ * screen. Its verdict tail is built by stickyAskVerdict() in lib/sticky-ask.ts.
+ */
+export { V3StickyAsk, type V3StickyAskProps, type V3StickyAskSurface } from './V3StickyAsk.client'
 
 /**
  * The place-page listing-alert capture (SITE-04, 2026-09-07): the first callout
