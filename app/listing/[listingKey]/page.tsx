@@ -10,6 +10,7 @@ import {
   resolveListingAgent,
   getCalculatorDefaults,
   getBoundaryGeoJSON,
+  getListingCutFacts,
 } from '@/lib/data'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -18,7 +19,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingPlaceTrail } from '@/lib/site/place-trail'
 import { listingAliasPlatLadder } from '@/lib/listing/listing-alias-plat-trail'
 import { listingShareSummary } from '@/lib/share-metadata'
-import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingDrop, publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { listingMlsAddressFull, listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
@@ -74,6 +75,9 @@ import { buildListingJsonLd } from './listing-json-ld'
 import {
   V3_ROOT_CLASS,
   V3_LISTING_CLASS,
+  V3ListingClose,
+  buildCloseView,
+  buildCloseSubject,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
@@ -218,7 +222,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const leftoverGrains = leftoverListingGrains(listing, marketGeo)
 
-  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, calcDefaults] =
+  const [relatedHomes, history, photos, floorPlans, videos, brokers, listingAgent, leftoverOverlays, leftoverPaceRows, openHouses, reviews, calcDefaults, cutFacts] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -271,6 +275,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getCalculatorDefaults(), null, 3000, 'listing:calcDefaults'),
+      // SITE-06: how a price cut behaves in THIS listing's city, re-pulled per
+      // city, pinned to a 12-month window. Null when nothing publishes honestly
+      // at that window and the close then renders its acts without a drawing.
+      withTimeoutFallback(
+        getListingCutFacts({ citySlug: listing.citySlug, cityLabel: listing.city }),
+        null,
+        3000,
+        'listing:cutFacts',
+      ),
     ])
 
   let leftoverHud: ReturnType<typeof leftoverHudKpis> | null = null
@@ -410,6 +423,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
     updatedAt: leftoverLayers?.headlines?.computedAt ?? leftoverLayers?.inventory?.computedAt ?? null,
   })
   const ctaTel = brokerTelDigits(ctaBroker?.phoneDirect ?? ctaBroker?.phoneFub)
+  // /book only knows three slugs (app/book/page.tsx BROKER_SLUGS). Map the
+  // routed broker's first name onto one; anything unexpected books with Matt,
+  // which is the same default /book applies to an unknown ?agent.
+  const ctaBrokerSlug = ((): 'matt' | 'rebecca' | 'paul' => {
+    const first = (ctaBroker?.fullName ?? '').trim().toLowerCase().split(/\s+/)[0]
+    if (first === 'rebecca') return 'rebecca'
+    if (first === 'paul') return 'paul'
+    return 'matt'
+  })()
 
   const hero = (
     <ListingHero
@@ -491,6 +513,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
     dialUrl: listingAtlas?.subjectParcel?.dialUrl ?? null,
   })
 
+  // SITE-06: where THIS house currently sits on the same axes the city's record
+  // is drawn on. Both facts come off the listing row. The cut goes through
+  // publishListingDrop, which refuses an OriginalListPrice the published history
+  // does not support; the day count is measured from OnMarketDate and is NOT
+  // `DaysOnMarket`, which is list-to-close and is banned as DOM (CLAUDE.md §7).
+  const closeSubject = buildCloseSubject({
+    addressLine: street,
+    drop: publishListingDrop({
+      listPrice: listing.listPrice,
+      originalListPrice: listing.originalListPrice,
+      historyPrices: history.map((row) => row.price ?? null),
+    }),
+    onMarketDate: listing.onMarketDate,
+  })
+
   const main = (
     <>
       <PriceCtaStrip
@@ -512,6 +549,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
             taxAnnualAmount={listing.taxAnnualAmount}
             hoaMonthly={listing.hoaMonthly}
             ratePct={calcDefaults?.mortgageRate ?? null}
+            listingKey={listing.listingKey}
           />
         </div>
       ) : null}
@@ -550,6 +588,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
           viewMoreHref={featuredViewAllHref}
         />
       ) : null}
+      {/* SITE-06 — THE ENDING. It sits after the similar-homes Ledger and before
+          the broker block on purpose: this is the page's climax (one claim, one
+          drawing, one decision) and "who listed it" is the signature under it.
+          Two asks side by side would be the stacked-section tell TASTE.md bans,
+          so the close is a CHOOSER — three doors, one panel. */}
+      <V3ListingClose
+        listingKey={listing.listingKey}
+        addressLine={street}
+        bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
+        paymentHref="#payment"
+        view={cutFacts ? buildCloseView(cutFacts, closeSubject) : null}
+      />
       {ctaBroker ? (
         <div id="listed" className="listing-who listing-who--flow">
           <ListingBrokerCTA

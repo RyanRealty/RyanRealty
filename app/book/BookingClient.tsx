@@ -25,7 +25,15 @@ import { bookAppointmentAction } from '@/app/actions/book-appointment'
 import type { Slot } from '@/lib/booking/slots'
 
 type BookableDay = { dateKey: string; label: string; slots: Slot[] }
-type Props = { days: BookableDay[]; brokerSlug: string; timeZone: string; available: boolean }
+/** SITE-06: the home this booking is about, resolved SERVER-side from ?listing. */
+export type BookingListingContext = { listingKey: string; addressLine: string; href: string }
+type Props = {
+  days: BookableDay[]
+  brokerSlug: string
+  timeZone: string
+  available: boolean
+  listing?: BookingListingContext | null
+}
 
 const TOPICS = [
   { value: 'buying', label: 'Buying a home' },
@@ -34,11 +42,13 @@ const TOPICS = [
   { value: 'other', label: 'Something else' },
 ] as const
 
-export default function BookingClient({ days, brokerSlug, timeZone, available }: Props) {
+export default function BookingClient({ days, brokerSlug, timeZone, available, listing }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [dayKey, setDayKey] = useState(days[0]?.dateKey ?? '')
   const [slotIso, setSlotIso] = useState('')
+  // A tour of a specific home is a buying conversation about that home, so the
+  // topic starts there and the note says which house before the visitor types.
   const [topic, setTopic] = useState<string>('buying')
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [smsConsent, setSmsConsent] = useState(false)
@@ -85,6 +95,9 @@ export default function BookingClient({ days, brokerSlug, timeZone, available }:
       const result = await bookAppointmentAction({
         ...form, topic, broker: brokerSlug, smsConsent,
         startIso: slot.startIso, endIso: slot.endIso,
+        // SITE-06: the house travels with the booking, so the broker's calendar
+        // entry says which one before they open the lead.
+        listingKey: listing?.listingKey,
       })
       if (result.ok) {
         setBooked({ when: `${day.label} at ${slot.label}` })
@@ -101,6 +114,15 @@ export default function BookingClient({ days, brokerSlug, timeZone, available }:
 
   return (
     <div className="space-y-8">
+      {listing ? (
+        <p className="text-sm text-muted-foreground">
+          About{' '}
+          <a className="font-medium text-foreground underline underline-offset-2" href={listing.href}>
+            {listing.addressLine}
+          </a>
+          . Your broker sees the home with the booking.
+        </p>
+      ) : null}
       <div>
         <Label className="mb-3 block">Pick a day</Label>
         <div className="flex flex-wrap gap-2">
