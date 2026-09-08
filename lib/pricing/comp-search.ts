@@ -65,6 +65,26 @@ function clean(s: string | null | undefined): string | null {
   return t.length > 0 ? t : null
 }
 
+/**
+ * MLS SUBDIVISION PLACEHOLDERS ARE NOT A PLACE.
+ *
+ * cma-65365-concorde carries `SubdivisionName = 'N/A'`, and so do five of its
+ * six sales, so the first cut of this sentence read "Five of the six sales are
+ * in N/A" — a grouping of homes that share the fact that nobody filled the
+ * field in. The pattern mirrors `public.pricing_norm_subdivision` (migration
+ * 20260814020000), which is what `subdivision_norm` and every subdivision cell
+ * in the pricing engine are already built on; this is the same rule at the
+ * reader's end of the pipe.
+ */
+const SUBDIVISION_PLACEHOLDER =
+  /^(n\.?\/?a\.?|none|no|null|other|unknown|tbd|not\s+(in\s+)?(a\s+)?(sub)?division|[-.*]+)$/i
+
+export function usableSubdivision(name: string | null | undefined): string | null {
+  const t = clean(name)
+  if (!t) return null
+  return SUBDIVISION_PLACEHOLDER.test(t) ? null : t
+}
+
 function isSubdivisionTier(tier: string): boolean {
   return tier.startsWith('subdivision-')
 }
@@ -81,6 +101,17 @@ export function rungLabel(tier: string, subdivision: string | null): string {
     return tier.endsWith('-wide') ? `${where}, any floorplan` : where
   }
   if (tier.startsWith('similar-sub')) return 'subdivisions that price like yours'
+  // The listings ladder (lib/cma/comp-tiers.ts) — the path a subject takes
+  // when the facts table cannot price it. 1617 NW 8th printed the bare tier
+  // name "neighborhood-6mo" at a seller until these landed.
+  if (tier.startsWith('neighborhood-')) return 'the neighborhood around your home'
+  if (tier.startsWith('competing-area')) return 'the neighboring market area'
+  if (tier.startsWith('citywide')) {
+    const miles = parseTierRadiusMiles(tier)
+    return miles != null ? `the wider city, within ${milesPhrase(miles)}` : 'the wider city'
+  }
+  if (tier.startsWith('rural-county')) return 'rural sales in the county'
+  if (tier === 'gla-bracket') return 'a sale on each side of your square footage'
   if (tier.startsWith('city-')) {
     const miles = parseTierRadiusMiles(tier)
     return miles != null ? `the wider city, within ${milesPhrase(miles)}` : 'the wider city'
@@ -119,7 +150,7 @@ export function buildCompSearch(input: {
   ladder: readonly CompSearchRungInput[]
   keptComps: readonly CompSearchKeptComp[]
 }): CompSearch | null {
-  const subdivision = clean(input.subdivision)
+  const subdivision = usableSubdivision(input.subdivision)
   const ran = input.ladder.filter((r) => r.ran && clean(r.tier))
   if (ran.length === 0) return null
 
@@ -140,22 +171,47 @@ export function buildCompSearch(input: {
 
   const keptBySubdivision: Record<string, number> = {}
   for (const c of input.keptComps) {
-    const name = clean(c.subdivision)
+    const name = usableSubdivision(c.subdivision)
     if (!name) continue
     keptBySubdivision[name] = (keptBySubdivision[name] ?? 0) + 1
   }
 
   const total = input.keptComps.length
-  const inSubdivision = subdivision ? (keptBySubdivision[subdivision] ?? 0) : 0
+  const inside = subdivision
+    ? input.keptComps.filter((c) => usableSubdivision(c.subdivision) === subdivision)
+    : []
+  const inSubdivision = inside.length
 
-  // WHICH RUNGS TO NAME. Prefer the rungs the printed sales actually came from.
-  // Where no sale carries its tier — a caller that has counts but no
-  // attribution — fall back to the rungs that contributed candidates, which is
-  // still a count, never a guess from the tier name.
-  const attributed = rungs.reduce((a, r) => a + r.kept, 0) > 0
-  const contributing = rungs.filter((r) => (attributed ? r.kept > 0 : r.added > 0))
-  const outside = contributing.filter((r) => !isSubdivisionTier(r.key) && r.key !== BROKER_TIER)
-  const outsideLabels = joinPhrases([...new Set(outside.map((r) => r.label))])
+  // ONE ARITHMETIC. The rungs named beside "two more were added from" are the
+  // rungs THOSE TWO SALES came from — resolved off the same array the count
+  // is, never off the tier list separately. Splitting the two is how the first
+  // cut of this sentence said "One more was added from" and then named three
+  // rungs.
+  //
+  // Where no sale carries its tier — a caller with counts but no attribution —
+  // fall back to the rungs that contributed candidates, which is still a
+  // count, never a guess from the tier name.
+  const labelFor = new Map(rungs.map((r) => [r.key, r.label]))
+  const outsideKeys = new Set(
+    input.keptComps
+      .filter((c) => !subdivision || usableSubdivision(c.subdivision) !== subdivision)
+      .map((c) => clean(c.selectionTier))
+      .filter((k): k is string => k != null && labelFor.has(k)),
+  )
+  const attributed = outsideKeys.size > 0
+  // Named in LADDER order — tightest rung first — not in whatever order the
+  // sales happen to sit in the grid.
+  const outsideLabels = joinPhrases([
+    ...new Set(
+      rungs
+        .filter((r) =>
+          attributed
+            ? outsideKeys.has(r.key)
+            : r.added > 0 && !isSubdivisionTier(r.key) && r.key !== BROKER_TIER,
+        )
+        .map((r) => r.label),
+    ),
+  ])
 
   const sentence = writeSentence({
     subdivision,

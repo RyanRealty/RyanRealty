@@ -11,7 +11,7 @@
  * that contradicts it.
  */
 import { describe, expect, it } from 'vitest'
-import { buildCompSearch, type CompSearchRungInput } from './comp-search'
+import { buildCompSearch, usableSubdivision, type CompSearchRungInput } from './comp-search'
 
 const rung = (over: Partial<CompSearchRungInput>): CompSearchRungInput => ({
   tier: 'subdivision-3mo',
@@ -152,6 +152,90 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     expect(s!.sentence).toContain('within 2 miles')
     expect(s!.sentence).not.toContain('undefined')
     expect(s!.keptBySubdivision).toEqual({})
+  })
+
+  /**
+   * Both of these came off the live dry run of the four round-four exemplars,
+   * after the first cut of this module shipped. They are the reason it counts
+   * the sales rather than the tiers.
+   */
+  it('an MLS placeholder is not a place (cma-65365-concorde)', () => {
+    const s = buildCompSearch({
+      subdivision: 'N/A',
+      ladder: [
+        rung({ tier: 'similar-sub-3mo', monthsBack: 3, compsAdded: 1 }),
+        rung({ tier: 'rural-10mi-9mo', monthsBack: 9, compsAdded: 1 }),
+        rung({ tier: 'rural-15mi-18mo', monthsBack: 18, compsAdded: 4 }),
+      ],
+      keptComps: [
+        { subdivision: 'N/A', selectionTier: 'similar-sub-3mo' },
+        { subdivision: 'N/A', selectionTier: 'rural-10mi-9mo' },
+        { subdivision: 'N/A', selectionTier: 'rural-15mi-18mo' },
+        { subdivision: 'N/A', selectionTier: 'rural-15mi-18mo' },
+        { subdivision: 'N/A', selectionTier: 'rural-15mi-18mo' },
+        { subdivision: 'CLAS', selectionTier: 'rural-15mi-18mo' },
+      ],
+    })
+    expect(s!.subdivision).toBeNull()
+    expect(s!.sentence).not.toContain('N/A')
+    expect(s!.keptBySubdivision['N/A']).toBeUndefined()
+    expect(s!.keptBySubdivision).toEqual({ CLAS: 1 })
+    expect(s!.sentence).toContain('The six sales come from')
+  })
+
+  it('every placeholder the pricing normalizer drops, this drops too', () => {
+    for (const v of ['N/A', 'n/a', 'NA', 'None', 'null', 'Other', 'Unknown', 'TBD', '--', 'not in a subdivision']) {
+      expect(usableSubdivision(v)).toBeNull()
+    }
+    expect(usableSubdivision('Diamond Bar Ranch')).toBe('Diamond Bar Ranch')
+    expect(usableSubdivision('Northwest Crossing')).toBe('Northwest Crossing')
+  })
+
+  it('names only the rungs the outside sales actually came from', () => {
+    // Three rungs contributed candidates but only ONE sale outside the
+    // subdivision survived. The sentence may name that sale's rung and no
+    // other, or the count and the list disagree in one line.
+    const s = buildCompSearch({
+      subdivision: 'Kenwood',
+      ladder: [
+        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 4 }),
+        rung({ tier: 'nearby-1mi-6mo', monthsBack: 6, compsAdded: 3 }),
+        rung({ tier: 'similar-sub-9mo', monthsBack: 9, compsAdded: 2 }),
+        rung({ tier: 'city-5mi-9mo', monthsBack: 9, compsAdded: 2 }),
+      ],
+      keptComps: [
+        { subdivision: 'Kenwood', selectionTier: 'subdivision-6mo' },
+        { subdivision: 'Kenwood', selectionTier: 'subdivision-6mo' },
+        { subdivision: 'Kenwood', selectionTier: 'subdivision-6mo' },
+        { subdivision: 'Awbrey', selectionTier: 'nearby-1mi-6mo' },
+      ],
+    })
+    expect(s!.sentence).toBe(
+      'Three of the four sales are in Kenwood. One more was added from within a mile at your size.',
+    )
+    expect(s!.sentence).not.toContain('subdivisions that price like yours')
+    expect(s!.sentence).not.toContain('the wider city')
+  })
+
+  it('speaks the listings ladder in the same language (1617 NW 8th)', () => {
+    const s = buildCompSearch({
+      subdivision: 'Kenwood',
+      ladder: [
+        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 2 }),
+        rung({ tier: 'neighborhood-6mo', monthsBack: 6, compsAdded: 3 }),
+      ],
+      keptComps: [
+        { subdivision: 'Kenwood', selectionTier: 'subdivision-6mo' },
+        { subdivision: 'Kenwood', selectionTier: 'subdivision-6mo' },
+        { subdivision: 'Awbrey Butte', selectionTier: 'neighborhood-6mo' },
+        { subdivision: 'Awbrey Butte', selectionTier: 'neighborhood-6mo' },
+        { subdivision: 'River West', selectionTier: 'neighborhood-6mo' },
+      ],
+    })
+    expect(s!.sentence).toContain('the neighborhood around your home')
+    // No tier name ever reaches a seller.
+    expect(s!.sentence).not.toMatch(/neighborhood-6mo|subdivision-6mo|-\d+mo/)
+    for (const r of s!.rungs) expect(r.label).not.toBe(r.key)
   })
 
   it('is null when no rung ran at all', () => {
