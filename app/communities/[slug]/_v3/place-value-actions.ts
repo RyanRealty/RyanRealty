@@ -31,10 +31,11 @@ import { createCmaRequest } from '@/lib/cma-request'
 import { sendPlaceValueConfirmation } from '@/lib/cma/request-emails'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
+import { slugify } from '@/lib/slug'
 import type {
   PlaceValueAnswerInput,
   PlaceValueAnswerResult,
-  PlaceValueFact,
   PlaceValueRequestInput,
   PlaceValueRequestResult,
 } from '@/lib/site/place-value'
@@ -99,9 +100,22 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
   const place = await resolvePlace(String(input.slug ?? ''))
   if (!place) return { ok: false, error: 'That community page is not one we publish figures for.' }
 
-  const [answer, comps] = await Promise.all([
+  // The city answer is the pace rule's CONTEXT MARK: a community's days to
+  // pending only means something beside the city it sits in. It is the same
+  // cached DAL read every city page makes, one grain up.
+  //
+  // Except when the community IS its own town. Sunriver's `city` is "Sunriver",
+  // so the city grain and the neighborhood grain name one place, and the rule
+  // drew "Sunriver 31" as context for Sunriver's own 28 — two marks, one place,
+  // read in the browser 2026-09-08. A context mark has to be somewhere else or
+  // it is not context, so this place gets the rule with its one mark.
+  const citySlug = slugify(place.city) === place.geoSlug ? null : slugify(place.city)
+  const [answer, comps, cityAnswer] = await Promise.all([
     getPlaceValueAnswer({ geoType: 'neighborhood', geoSlug: place.geoSlug }).catch(() => null),
     countCompsForAddress({ rawAddress: address, city: place.city }).catch(() => null),
+    citySlug
+      ? getPlaceValueAnswer({ geoType: 'city', geoSlug: citySlug }).catch(() => null)
+      : Promise.resolve(null),
   ])
 
   const verdict = answer?.verdict ?? null
@@ -115,33 +129,49 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
       ? `${place.name} is a ${verdict.label} right now.`
       : `Here is what we can tell you about ${place.name} right now.`
 
+  // THE PROSE IS ONLY WHAT THE DRAWINGS DO NOT SAY (site queue SITE-02b). The
+  // supply, pace and comparable-sales sentences moved onto the figures as their
+  // claims; keeping them here too made the answer say everything twice, which
+  // is the wall of text TASTE.md bans. Cash share has no drawing, so it stays a
+  // sentence.
   const body: string[] = []
-  if (verdict && mos != null) body.push(`${formatMonthsOfSupply(mos)} months of supply at the current pace of sales.`)
-  if (dtp != null) body.push(`Homes here go pending in a median ${Math.round(dtp)} days.`)
-  if (cash != null) body.push(`${(cash * 100).toFixed(0)}% of buyers paid cash over the last year.`)
-  if (comps?.subjectFound && compCount != null) {
-    const what = comps.subjectSummary ? ` (${comps.subjectSummary})` : ''
-    body.push(
-      `We found ${compCount} recent ${place.name} ${compCount === 1 ? 'sale' : 'sales'} comparable to your home${what}. The written valuation is built on ${compCount === 1 ? 'it' : 'them'}.`,
-    )
-  } else {
-    body.push(
-      `We could not match ${streetOf(address)} to a sales record on the first pass. The written valuation will, by hand.`,
-    )
-  }
+  if (cash != null) body.push(`${(cash * 100).toFixed(0)}% of buyers here paid cash over the last year.`)
   if (!answer?.hasFigures) {
     body.unshift(
       `${place.name} has had fewer recent sales than a fair buyer's or seller's verdict needs, so we are not printing one. The written valuation carries the comparable sales.`,
     )
   }
 
-  const facts: PlaceValueFact[] = []
-  if (verdict && mos != null) facts.push({ label: 'Months of supply', value: formatMonthsOfSupply(mos), note: verdict.label })
-  if (dtp != null) facts.push({ label: 'Days to pending', value: String(Math.round(dtp)), note: 'median, last 90 days' })
-  if (cash != null) facts.push({ label: 'Cash buyers', value: `${(cash * 100).toFixed(0)}%`, note: 'of closes, last 12 months' })
-  if (comps?.subjectFound && compCount != null) {
-    facts.push({ label: 'Comparable sales', value: String(compCount), note: `recent ${place.name} closes like yours` })
-  }
+  // THE DRAWINGS. One shaping for both address asks (lib/site/answer-figures),
+  // so the community page and /sell draw the same three figures in the same
+  // words. Each figure's source is the trace line getPlaceValueAnswer and the
+  // comp ladder already wrote for that figure (§0) — this action never invents
+  // one, and a figure whose source is missing is not drawn.
+  const asOfLabel = answer?.asOf ? formatDate(answer.asOf) : null
+  const supplyTrace = answer?.trace.find((line) => line.startsWith('months of supply')) ?? null
+  const paceTrace = answer?.trace.find((line) => line.startsWith('days to pending')) ?? null
+  const figures = buildAnswerFigures({
+    placeLabel: place.name,
+    street: streetOf(address),
+    monthsOfSupply: mos != null ? formatMonthsOfSupply(mos) : null,
+    verdictLabel: verdict?.label ?? null,
+    activeCount: answer?.activeCount ?? null,
+    salesPerMonth: salesPerMonthFrom(answer?.activeCount ?? null, mos),
+    daysToPending: dtp,
+    cityDaysToPending: citySlug ? (cityAnswer?.daysToPending ?? null) : null,
+    cityLabel: citySlug ? place.city : null,
+    compMarks: comps?.marks ?? [],
+    compCount,
+    subjectFound: Boolean(comps?.subjectFound),
+    subjectSummary: comps?.subjectSummary ?? null,
+    asOfLabel,
+    sources: {
+      supply: supplyTrace,
+      pace: paceTrace,
+      comps: comps?.trace ?? null,
+    },
+    unmatchedSentence: `We could not match ${streetOf(address)} to a sales record on the first pass.`,
+  })
 
   const stamp = answer?.asOf ? `; updated ${formatDate(answer.asOf)}` : ''
   const source =
@@ -153,7 +183,7 @@ export async function answerPlaceValue(input: PlaceValueAnswerInput): Promise<Pl
     address,
     headline,
     body,
-    facts,
+    figures,
     source,
     compCount,
     subjectFound: Boolean(comps?.subjectFound),
