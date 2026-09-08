@@ -54,6 +54,21 @@ set to this session's id, the same supabase-js client `scripts/seed-site-queue.t
 uses (the DAL in `lib/data/loop/work-graph.ts` carries `server-only` and does not
 load in a CLI). A claimed node is never served to another session.
 
+**Several sessions at once (Matt asked, 2026-09-07).** The claim is what keeps them
+apart, so make it optimistic: the update carries `.eq('state', 'open')` and you read
+the returned row; zero rows means another session took it between your read and
+your write, so move to the next eligible node without complaint. Before claiming,
+look at the other sessions' `in_progress` nodes (any `owner_session` that is not
+yours): if one of them touches the route family you are about to claim (the same
+page template, the same `parity.json`), take a different node, because two sessions
+editing one route's contract and `tasteReview` at once produce a merge fight and two
+evaluator scores for one page. Pushes race safely: `npm run push` rebases on an
+advanced `origin/main` and retries; a real conflict in a shared file
+(`components/site/v3/index.ts`, `package.json`, the handoff) is resolved by whoever
+lands second. Every session shares one account allowance, so more sessions reach a
+rate limit sooner; when one hits it, it schedules its wake for the reset and the
+others keep going.
+
 ### 3. Run the lanes
 One `Agent` per lane, `isolation: 'worktree'`, `run_in_background: true`. Each
 brief carries, verbatim: the node id and its objective, output, and accept; the
