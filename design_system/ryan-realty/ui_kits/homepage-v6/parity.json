@@ -204,44 +204,111 @@
   ],
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 77,
-    "beats": "Three named brokers with role, Oregon license and tap-to-call, text and book in one 390 screen at zero clicks, a reach path neither portal home offers, with the cutouts dissolving into cream on a shared shelf, under the owned Old Mill hero and over live price-cut and new-this-week shelves the portals hide behind filters.",
-    "evaluator": "separate Opus evaluator, SITE-M1 homepage pass, session 019RdEm6",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "Separate evaluator agent spawned by the SITE-12 homepage lane on 2026-09-08 (Agent tool, model claude-sonnet-5, a different model from the builder), handed the 24 captured PNGs below plus the lane dev server at http://localhost:3199/, and asked to score the same shots three times in one call against the TASTE.md v1-2026-09-08 five-criterion rubric. The builder never graded this page.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "right-now",
+        "sold",
+        "sell-tab",
+        "rails",
+        "featured",
+        "doors",
+        "brokers",
+        "places",
+        "proof",
+        "footer",
+        "brokers-390",
+        "brokers-390-before"
+      ]
+    },
     "shots": {
-      "desktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png",
+      "brokers390Before": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390-before.png",
       "brokers390": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390.png",
-      "brokers390Before": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390-before.png"
+      "brokersDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-desktop.png",
+      "brokersMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-mobile375.png",
+      "desktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png",
+      "doorsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/doors-desktop.png",
+      "doorsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/doors-mobile375.png",
+      "featuredDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/featured-desktop.png",
+      "featuredMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/featured-mobile375.png",
+      "footerDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/footer-desktop.png",
+      "footerMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/footer-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png",
+      "placesDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-desktop.png",
+      "placesMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-mobile375.png",
+      "proofDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/proof-desktop.png",
+      "proofMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/proof-mobile375.png",
+      "railsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/rails-desktop.png",
+      "railsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/rails-mobile375.png",
+      "rightNowDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/right-now-desktop.png",
+      "rightNowMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/right-now-mobile375.png",
+      "sellTabDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sell-tab-desktop.png",
+      "sellTabMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sell-tab-mobile375.png",
+      "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
+      "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "priorMark": {
-      "score": 88,
-      "evaluatedAt": "2026-09-06",
-      "evaluator": "Public Look",
-      "note": "Set by a different evaluator against shots that no longer exist; not comparable to this scale. On this evaluator's scale the SITE-M1 item moved the page 60 (round 1) to 74 (round 2) to 77 (round 3), all of the rise in the brokers section."
-    },
-    "subScores": {
-      "design": 25,
-      "originality": 21,
-      "interaction": 11,
+    "shotsHash": "sha256:3ee91b734665ccf0780c18e31dbb5779a2b48423bf1abc1cdd6c60120ffbb89b",
+    "scores": [
+      78,
+      82,
+      80
+    ],
+    "score": 80,
+    "breakdown": {
+      "design": 24,
+      "originality": 23,
+      "interaction": 12,
       "craft": 12,
-      "honesty": 8
+      "honesty": 9
     },
-    "fixedFromThisPass": [
-      "Brokers section (SITE-M1): compact table on the homepage only; three faces on a shared hairline shelf, name, role, OR license, Call / Text / Book rows on a subgrid, one 390 screen (was one broker per row, third below the fold).",
-      "Cutouts dissolve into cream on three sides (mask), no box or fill behind a portrait; role line and OUR BROKERS eyebrow restored; two-line name row keeps the license rows on one baseline; the phone number prints once per broker.",
-      "Save hearts on every rail card and the featured-community dots rendered as empty bordered squares (single-class selectors lost to .v3 .v3-btn); rescoped under .v3 so they render as drawn.",
-      "Record shots now render the Old Mill hero (the remote place hero does not load in the capture sandbox; served from the local canonical file) with the cookie banner dismissed."
+    "beats": "Zillow's and Redfin's homepages show a flat, static inventory count with no interaction. This page's #right-now band lets a visitor flip between active/under-contract/sold populations with one tap and zero JavaScript (verified in raw server HTML: three real radio inputs, no client script required), sees each population's own listings replotted on a live constellation map, a read timestamp, and a per-population source trace that changes text with the toggle -- a live, interrogable regional pulse neither portal's homepage offers. The Sell tab is now a genuinely working alternate path (real <form method=get action=/sell#get-value> with a named address field, confirmed server-rendered), which portals also gate behind a separate page. We still lose on #doors: Redfin's Buy/Sell/Rent tiles carry real illustration and photography where ours are plain line icons, a locked-spec gap that has now stood two rounds.",
+    "defects": [
+      {
+        "section": "#doors",
+        "severity": "taste",
+        "finding": "Still line pictograms (house/document/house outlines), not the illustrated Buy/Sell/Invest artwork the 2026-09-06 lock specifies. Unchanged from the prior pass -- this round's diff never touched V3Doors."
+      },
+      {
+        "section": "rails (Homes in Bend and nearby / Price cuts)",
+        "severity": "taste",
+        "finding": "Both rails render the identical form -- eyebrow-less heading, 4-card row, see-all button on the right -- so two (with a third sold/new rail, three) consecutive sections repeat one shape, the 'stacked-section' pattern the rubric names as a banned tell."
+      },
+      {
+        "section": "#featured-community",
+        "severity": "taste",
+        "finding": "Pager is still eleven unlabeled dots with no community names visible; a visitor cannot tell what community sits on slide 6 without clicking through blind."
+      },
+      {
+        "section": "footer (Markets column)",
+        "severity": "taste",
+        "finding": "Markets remains one long flat link list running well past the shorter Buy/Sell/Join and Company columns, with dead unused width to the right at 1440px. Correctly out of scope for this lane (shared across 118 pages) but still costs the page's craft score as shipped."
+      }
     ],
     "openRaise": [
-      "Footer skyline: object-fit cover in a fixed 10rem band over-scales at 1440 (ridgeline only); use object-fit contain on cream or a width-scaled band height so 1440 shows what 375 shows.",
-      "Rails: the same house (3027 Polarstar Avenue) leads both the nearby rail and the price-cuts rail; exclude keys used by a later row when building railRows.",
-      "Rails: three consecutive sections of one form (eyebrow, heading, cards, see-all); vary one row's form.",
-      "Footer: 30-row Markets column beside empty width; columns: 2 (3 at 1200 and up).",
-      "#places: twelve identical empty boxes, cities and resorts undifferentiated, Resorts and communities truncates at 375; two labelled runs with the live active count under each name.",
-      "#doors: Work with us has no supporting line; the doors are line icons, not the illustrations the 2026-09-06 lock specifies.",
-      "#hero: the Buy | Sell toggle selected state is ambiguous (filled Sell on a buyer-intent page).",
-      "#featured-community: eleven unnamed dots; community names as a scroll strip instead.",
-      "Cookie-banner lock (cannot cover the first house) is unproven: the banner was dismissed for the record shots."
-    ]
+      "#doors: replace the line icons with the illustrated Buy/Sell/Invest artwork the lock specifies -- would raise both originality and craft.",
+      "rails: vary the form of at least one carousel (e.g. a denser price-cut treatment or a map-anchored strip) so three consecutive sections don't repeat one shape.",
+      "#featured-community: label the pager with community names or a horizontal name strip instead of unlabeled dots.",
+      "footer: rebalance Markets into 2-3 sub-columns at 1200px+ so it doesn't run far longer than its neighbors beside empty width.",
+      "#right-now: the claim sentence stays the same buyer-framed inventory read regardless of hero Buy/Sell mode; consider whether it should echo the new Sell-mode framing for full consistency with the headline switch this round added."
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 77,
+      "evaluator": "separate Opus evaluator, SITE-M1 homepage pass, session 019RdEm6",
+      "note": "The SITE-M1 mark predates the instrument fields, so it carries no evaluatorModel, no rubricVersion and no shotsHash -- only what is recorded above exists. Its own priorMark was an 88 from \"Public Look\" against shots that no longer exist. Chain on the SITE-M1 evaluator scale: 60 -> 74 -> 77."
+    },
+    "rebaselineReason": "All three identity keys differ from the prior mark, because that mark predates them: evaluatorModel (the 77 came from an Opus evaluator in the SITE-M1 pass and recorded no model string; this mark is claude-sonnet-5), rubricVersion (the 77 recorded none; this mark is v1-2026-09-08), and shotsHash (the 77 recorded none, and it was given for a 4-file shot set -- desktop, mobile375, brokers-390, brokers-390-before -- where this mark is given for 24 files covering every section at both widths plus the sold and sell-tab states). The new 80 is numerically above the old 77, but a different evaluator on a different model against a six-times-larger shot set is a different instrument, so this is the first mark on the new instrument and the next pass must rise above 80."
   }
 }
