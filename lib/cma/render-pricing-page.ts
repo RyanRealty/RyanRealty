@@ -244,18 +244,27 @@ function listRangeSentence(pricing: CmaPricing, failedAsk: number | null): strin
  * from the same facts in the document's own voice.
  */
 /**
- * The map legend, written here rather than taken from `describeCompSearch`.
+ * THE CAPTION MAY ONLY NAME AN OUTLINE THE MAP ACTUALLY DREW (class F).
  *
- * `lib/pricing/search-story.ts` writes "The pins are the sales we kept", and
- * "kept" is banned seller copy (blueprint § Words). The pricing unit owns the
- * SEARCH, not the sentence a seller reads about it, so the legend is composed
- * from the same facts in the document's own voice.
+ * 19968 captioned an outline that contained neither the subject nor any sale.
+ * `boundaryShown` is decided in `buildCmaMapDataUri` by a point-in-polygon
+ * test against the marks on the tile (`lib/cma/render-place-polygon.ts`); when
+ * it says the outline was suppressed, this sentence goes with it.
+ *
+ * Three states, deliberately. `true` also drops the "when that boundary is on
+ * file" hedge — that clause exists only because the caption used to be written
+ * before anyone knew, and a sentence that hedges about something visible on
+ * the page reads as the document not having looked.
  */
-function mapLegend(subdivision: string | null | undefined): string {
+function mapLegend(
+  subdivision: string | null | undefined,
+  boundaryShown?: boolean,
+): string {
   const name = cleanText(subdivision)
-  return name
-    ? `The pins are the sales above. The outline is ${name}, when that boundary is on file.`
-    : 'The pins are the sales above.'
+  if (!name || boundaryShown === false) return 'The pins are the sales above.'
+  return boundaryShown === true
+    ? `The pins are the sales above. The outline is ${name}.`
+    : `The pins are the sales above. The outline is ${name}, when that boundary is on file.`
 }
 
 /**
@@ -484,7 +493,7 @@ export function pricingPage(input: {
   ${renderRejectedSalesHtml(p, input.comps)}
   ${
     pinMap
-      ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision))}</p>`
+      ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision, input.mapOverlay?.boundaryShown))}</p>`
       : ''
   }
 `,

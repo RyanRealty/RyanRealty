@@ -93,7 +93,7 @@ export async function immersiveFromRow(
       try {
         const map = await buildCmaMapDataUri(stored.subject, comps)
         mapDataUri = map?.dataUri ?? null
-        mapOverlay = map ? { view: map.view, pins: map.pins } : null
+        mapOverlay = map ? { view: map.view, pins: map.pins, boundaryShown: map.boundaryShown } : null
       } catch {
         mapDataUri = null
         mapOverlay = null
