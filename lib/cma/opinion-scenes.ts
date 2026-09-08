@@ -8,10 +8,10 @@ import { pricingPage, whatItsWorthHeading } from '@/lib/cma/render-pricing-page'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
   BASIS_AND_LIMITS_HEADING,
-  FAILED_ASK_BACKTEST_SOURCE,
   OPINION_CHAPTER_ORDER,
   competitionArgs,
   didNotSellArgs,
+  failedAskBacktestHtml,
   nextStepButtonsHtml,
   nextStepHeading,
   nextStepNoteHtml,
@@ -20,15 +20,16 @@ import {
   cmaDisclosureProseHtml,
   pricedRightBodyHtml,
   pricedRightHeading,
+  sellerNetKick,
   sellerNetPage,
   whatHappenedGraphicHtml,
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
+import { subjectAskContext } from '@/lib/cma/opinion-pages'
 import { DID_NOT_SELL_HEADING, didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
-import { escapeHtml, int } from '@/lib/cma/render-blocks'
+import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
-import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
 import { formatDate } from '@/lib/format/date'
 
 const esc = escapeHtml
@@ -54,6 +55,9 @@ function priceScene(a: OpinionSceneArgs): string {
     mapDataUri: a.mapDataUri,
     mapOverlay: a.mapOverlay,
     docLinks: a.docLinks,
+    renderArgs: a,
+    compTrace: a.compTrace,
+    askCtx: subjectAskContext(a),
     // The immersive prints the number as the chapter title, so the letter's
     // own heading block is suppressed and the lead line reprinted below it.
     omitLeadPrices: true,
@@ -91,19 +95,13 @@ function competitionScene(a: OpinionSceneArgs): string {
 function whatHappenedScene(a: OpinionSceneArgs): string {
   const audit = a.expiredAudit
   if (!audit || audit.findings.length === 0) return ''
-  const b = FAILED_ASK_BACKTEST
   return `
   <section class="sc sc-cream pack" id="what-happened">
     <div class="in wide">
       <div class="kick r">What happened</div>
-      <h2 class="h r">${esc(whatHappenedHeading(a.subject))}</h2>
+      <h2 class="h r">${esc(whatHappenedHeading(a))}</h2>
       <div class="r">${whatHappenedGraphicHtml(a)}</div>
-      <div class="stat3 r">
-        <div class="st"><div class="st-n">${int(b.pairs)}</div><div class="st-l">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
-        <div class="st"><div class="st-n">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the ask that failed is what the median one sold for</div></div>
-        <div class="st"><div class="st-n">${b.shareClosedAboveAskPct}%</div><div class="st-l">sold for more than that ask</div></div>
-      </div>
-      <p class="small r">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>
+      ${failedAskBacktestHtml(a, 'immersive')}
     </div>
   </section>`
 }
@@ -171,9 +169,16 @@ function wrapLetterBody(id: string, kick: string, body: string): string {
   </section>`
 }
 
+/**
+ * The eyebrow is a CLAIM (round-four class A). "What you keep" over a figure
+ * that has not subtracted the commission, title, escrow and the loan payoff is
+ * the document telling a seller they walk away with more than they do, so
+ * `sellerNetKick` hands back "Net at list" until every deduction is on the
+ * sheet.
+ */
 function sellerNetScene(a: OpinionSceneArgs): string {
   const page = sellerNetPage(a)
-  return page ? wrapLetterBody('net-at-list', 'What you keep', page.body) : ''
+  return page ? wrapLetterBody('net-at-list', sellerNetKick(a), page.body) : ''
 }
 
 function disclosureScene(a: OpinionSceneArgs): string {

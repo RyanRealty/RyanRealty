@@ -232,6 +232,28 @@ export function cmaSectionStyles(): string {
   table.kv.is-wide th { width: 26%; }
   table.kv.is-wide td.v { width: 22%; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
   table.kv.compare-board th.v, table.kv.compare-board td.v { width: 18%; text-align: right; }
+  /* The net at list is a LEDGER: a reader adds the column and lands on the
+     last row. Each deduction carries the source it came from on its own line
+     under the label, because a cost line with no source is exactly the figure
+     round four found headed "what you keep" (class A). */
+  table.kv.netsheet { font-size: 11px; margin-top: 8px; }
+  table.kv.netsheet th { width: 62%; color: var(--navy); font-weight: 500; padding: 6px 8px 6px 0; }
+  table.kv.netsheet td.v {
+    text-align: right;
+    font-weight: 600;
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    padding: 6px 0;
+  }
+  table.kv.netsheet .ln-src { display: block; font-size: 9px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+  table.kv.netsheet tr.is-net th,
+  table.kv.netsheet tr.is-net td.v {
+    border-top: 2px solid var(--navy);
+    border-bottom: 0;
+    font-weight: 700;
+    padding-top: 8px;
+  }
   /* The side-by-side matrix is chunked to at most four sales per table
      (lib/cma/comp-matrix.ts) and carries a colgroup. Fixed layout reads its
      widths from that colgroup, so the table is exactly the content box wide

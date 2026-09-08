@@ -1,0 +1,16 @@
+{
+  "subjectStatus": {
+    "standardStatus": "Active",
+    "isActiveWithOtherBrokerage": true,
+    "isWithdrawnNotExpired": false,
+    "listingAgentIsUs": false,
+    "note": "On the market today with another brokerage."
+  },
+  "pricing": {
+    "review": {
+      "severity": "review",
+      "verdict": "warn",
+      "rendererNotice": "This report is under broker review and is not final."
+    }
+  }
+}

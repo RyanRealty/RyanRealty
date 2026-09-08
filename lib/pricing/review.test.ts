@@ -7,7 +7,7 @@
  * surface at all.
  */
 import { describe, expect, it } from 'vitest'
-import { buildPricingReview, REVIEW_REASONS } from './review'
+import { RENDERER_NOTICE, buildPricingReview, confidenceForVerdict, REVIEW_REASONS } from './review'
 import type { CmaPricingClamp } from '@/lib/cma/types'
 
 const clamp: CmaPricingClamp = {
@@ -23,7 +23,13 @@ const clamp: CmaPricingClamp = {
 describe('buildPricingReview', () => {
   it('a clean build carries the block with the flag down and no reasons', () => {
     const r = buildPricingReview({ needsReview: false, reviewReason: null, auditVerdict: 'pass' })
-    expect(r).toEqual({ needsReview: false, reasons: [], auditVerdict: 'pass' })
+    expect(r).toEqual({
+      needsReview: false,
+      reasons: [],
+      auditVerdict: 'pass',
+      severity: 'none',
+      rendererNotice: null,
+    })
   })
 
   it('the document is never quieter than the queue', () => {
@@ -81,6 +87,30 @@ describe('buildPricingReview', () => {
     expect(r.reasons).toEqual([REVIEW_REASONS.failedAskCeiling])
   })
 
+  it('a fail verdict is blocked, everything else that needs a broker is review', () => {
+    expect(buildPricingReview({ needsReview: false, reviewReason: null, auditVerdict: 'fail' }).severity).toBe('blocked')
+    // The engine flag cannot talk a failed audit down to a softer word.
+    expect(buildPricingReview({ needsReview: true, reviewReason: null, auditVerdict: 'fail' }).severity).toBe('blocked')
+    for (const verdict of ['review', 'did-not-run'] as const) {
+      expect(buildPricingReview({ needsReview: false, reviewReason: null, auditVerdict: verdict }).severity).toBe('review')
+    }
+    expect(buildPricingReview({ needsReview: true, reviewReason: null, auditVerdict: 'pass' }).severity).toBe('review')
+    expect(buildPricingReview({ needsReview: false, reviewReason: null, auditVerdict: 'pass' }).severity).toBe('none')
+  })
+
+  it('carries one seller-safe sentence a letter or a PDF can print', () => {
+    const blocked = buildPricingReview({ needsReview: true, reviewReason: null, auditVerdict: 'fail' })
+    expect(blocked.rendererNotice).toBe(RENDERER_NOTICE.blocked)
+    const review = buildPricingReview({ needsReview: true, reviewReason: null, auditVerdict: 'pass' })
+    expect(review.rendererNotice).toBe(RENDERER_NOTICE.review)
+    expect(buildPricingReview({ needsReview: false, reviewReason: null, auditVerdict: 'pass' }).rendererNotice).toBeNull()
+    for (const notice of Object.values(RENDERER_NOTICE)) {
+      expect(notice).not.toMatch(/[—–;]/)
+      expect(notice).not.toMatch(/\b(comp|comps|audit|verdict|indefensible|dispersion)\b/i)
+      expect(notice.endsWith('.')).toBe(true)
+    }
+  })
+
   it('every reason is seller-safe prose', () => {
     for (const reason of Object.values(REVIEW_REASONS)) {
       expect(reason).not.toMatch(/[—–;]/)
@@ -110,5 +140,43 @@ describe('a flagged row cannot present as ready', () => {
     const { isSendableQueueState } = await import('@/lib/data/cma/unified-queue')
     expect(isSendableQueueState('flagged')).toBe(false)
     expect(isSendableQueueState('ready')).toBe(true)
+  })
+})
+
+
+/**
+ * Round four, class C: cma-19968 stamped confidence "High" in the same object
+ * that carried `verdict: 'fail'` and three critical findings. Confidence is a
+ * claim about how much the reader may lean on the number, and the refuter's
+ * verdict outranks the dispersion statistic that produced it.
+ */
+describe('confidenceForVerdict', () => {
+  it('a failed audit can never read High', () => {
+    expect(confidenceForVerdict('High', 'fail').confidence).toBe('Supportable')
+    expect(confidenceForVerdict('Moderate', 'fail').confidence).toBe('Supportable')
+    expect(confidenceForVerdict('Supportable', 'fail').confidence).toBe('Supportable')
+  })
+
+  it('a review or a missing audit holds High down to Moderate', () => {
+    expect(confidenceForVerdict('High', 'review').confidence).toBe('Moderate')
+    expect(confidenceForVerdict('High', 'did-not-run').confidence).toBe('Moderate')
+    expect(confidenceForVerdict('Moderate', 'review').confidence).toBe('Moderate')
+  })
+
+  it('a clean pass leaves the engine figure alone', () => {
+    expect(confidenceForVerdict('High', 'pass')).toEqual({ confidence: 'High', reason: null })
+    expect(confidenceForVerdict('High', null)).toEqual({ confidence: 'High', reason: null })
+  })
+
+  it('never silently downgrades: the reason names what moved it, seller-safe', () => {
+    const r = confidenceForVerdict('High', 'fail')
+    expect(r.reason).toBeTruthy()
+    expect(r.reason!).not.toMatch(/[—–;]/)
+    expect(r.reason!).not.toMatch(/indefensible|verdict|comp\b/i)
+  })
+
+  it('never raises a confidence the engine did not give', () => {
+    expect(confidenceForVerdict('Supportable', 'pass').confidence).toBe('Supportable')
+    expect(confidenceForVerdict('Moderate', 'did-not-run').confidence).toBe('Moderate')
   })
 })

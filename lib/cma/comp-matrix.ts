@@ -90,6 +90,62 @@ export function subjectListingFailed(subject: CmaSubject): boolean {
 }
 
 /**
+ * AN ASK IS ONLY AN ASK WHILE IT IS THIS LISTING'S ASK.
+ *
+ * Round-four class E, 19968 Terrace: the subject column printed "listed
+ * $140,000" from a listing cycle that ended in November 2004, undated, three
+ * times, beside a $461,000 recommendation. The DOM fix of 2026-09-07 put a
+ * ceiling on the ELAPSED figure and left the price itself ungated, so the
+ * document kept stating a twenty-two-year-old number in the present tense.
+ *
+ * Two gates, and either one alone kills the figure:
+ *
+ *   1. `expiredAudit.finalCycle` is null — the build looked for a listing
+ *      cycle to reason about and did not find one. A price with no cycle
+ *      behind it is a record, not an ask.
+ *   2. the last list date is more than twelve months old. The gap is not a
+ *      rounding matter: a seller reads "listed $140,000" as what their home is
+ *      on the market for today.
+ *
+ * A live listing (Active / Pending / Coming) keeps its ask whatever the audit
+ * says: that IS today's price, and the compliance carve-out depends on the
+ * document being able to state it.
+ */
+export const SUBJECT_ASK_MAX_AGE_DAYS = 366
+
+export type SubjectAskContext = {
+  /** The document's own date. Defaults to now. */
+  asOfIso?: string | null
+  /**
+   * False when `expiredAudit.finalCycle` is null. Undefined means the caller
+   * does not know, and only the date gate applies.
+   */
+  hasFinalCycle?: boolean | null
+}
+
+export function subjectAskIsCurrent(subject: CmaSubject, ctx?: SubjectAskContext): boolean {
+  const ask = subject.lastListPrice
+  if (ask == null || !(ask > 0)) return false
+  if (ON_MARKET.test(subject.standardStatus?.trim() ?? '')) return true
+  if (ctx?.hasFinalCycle === false) return false
+  const asOfRaw = ctx?.asOfIso?.trim() ? new Date(ctx.asOfIso) : null
+  const asOf = asOfRaw && !Number.isNaN(asOfRaw.getTime()) ? asOfRaw : undefined
+  const age = daysOnMarketFrom({ onMarketDate: subject.lastListDate, asOf })
+  // No date at all is not a pass. An undated price cannot be shown to be this
+  // listing's price, and the whole defect was an undated price.
+  if (age == null) return false
+  return age <= SUBJECT_ASK_MAX_AGE_DAYS
+}
+
+/** The ask the subject column may print, or null. */
+export function subjectPrintableAsk(
+  subject: CmaSubject,
+  ctx?: SubjectAskContext,
+): number | null {
+  return subjectAskIsCurrent(subject, ctx) ? subject.lastListPrice : null
+}
+
+/**
  * Most sales one table may hold. Five plus the subject is seven columns;
  * against the 7.3in content box that leaves 13.3% (about 93px) per value
  * column, which holds every value we print without wrapping a figure — checked
@@ -210,8 +266,11 @@ function bedsBaths(beds: number | null | undefined, baths: number | null | undef
   return b && ba ? `${b} / ${ba}` : (b ?? ba ?? '-')
 }
 
-function subjectCol(subject: CmaSubject): Col {
-  const list = subject.lastListPrice
+function subjectCol(subject: CmaSubject, askCtx?: SubjectAskContext): Col {
+  // Class E: an ask from a closed 2004 cycle is not "listed". When the gate
+  // refuses it the head keeps the size line, and the size and year rows below
+  // are unchanged — the column shows what the home IS, not what it once asked.
+  const list = subjectPrintableAsk(subject, askCtx)
   // Two short lines, not one long one joined by a dot: in a 93px column
   // "listed $460,000 · 1,440 sqft" wrapped to three lines with "sqft" alone
   // on the last.
@@ -542,13 +601,14 @@ function matrixStack(
   cols: readonly Col[],
   rows: ReadonlyArray<MatrixRow>,
   ctx?: TrackedDocLinkCtx | null,
+  askCtx?: SubjectAskContext,
 ): string {
   // THEIR OWN HOME, FIRST. The desktop grid leads with a "Your home" column;
   // the phone drawing dropped it entirely, so at 375 the price chapter held
   // five sales and the string "Your home" appeared nowhere — the seller could
   // not compare their house to the sales on the device they were reading on
   // (tasteReview item 1).
-  const yours = subjectStackCard(subject)
+  const yours = subjectStackCard(subject, askCtx)
   const cards = comps
     .map((c, i) => {
       const pin = String(i + 1)
@@ -609,14 +669,14 @@ function matrixStack(
 }
 
 /** The reader's own home as the first phone card: ask, size, beds, baths, year. */
-function subjectStackCard(subject: CmaSubject): string {
+function subjectStackCard(subject: CmaSubject, askCtx?: SubjectAskContext): string {
   const src = subject.photoUrl?.trim()
     ? (sparkPhotoAt(subject.photoUrl, '320x240') ?? subject.photoUrl)
     : null
   const img = src
     ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
     : ''
-  const ask = subject.lastListPrice
+  const ask = subjectPrintableAsk(subject, askCtx)
   const facts = [
     sizeCell(subject.sqft, subject.lotAcres) !== '-' ? sizeCell(subject.sqft, subject.lotAcres) : null,
     bedsBaths(subject.beds, subject.baths) !== '-' ? bedsBaths(subject.beds, subject.baths) : null,
@@ -647,10 +707,11 @@ export function renderCompMatrixHtml(
   lead = '',
   ctx?: TrackedDocLinkCtx | null,
   weights?: ReadonlyMap<string, CompWeight>,
+  askCtx?: SubjectAskContext,
 ): string {
   // Fail closed: a recommend needs >= MIN_CLOSED_SALES_FOR_MATRIX closed sales.
   if (comps.length < MIN_CLOSED_SALES_FOR_MATRIX) return ''
-  const subj = subjectCol(subject)
+  const subj = subjectCol(subject, askCtx)
   const compCols = comps.map((c, i) => compCol(c, i, ctx, weights))
   const folded = foldIdenticalRows([subj, ...compCols], ROWS)
   const groups = splitEvenly(compCols)
@@ -673,5 +734,5 @@ export function renderCompMatrixHtml(
   ${lead}
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
-  ${matrixStack(subject, comps, compCols, folded.rows, ctx)}`
+  ${matrixStack(subject, comps, compCols, folded.rows, ctx, askCtx)}`
 }

@@ -22,7 +22,12 @@
  * classified still raises the banner; it just does not leak the wording.
  */
 
-import type { CmaPricingClamp, CmaPricingReview, CmaPricingAuditVerdict } from '@/lib/cma/types'
+import type {
+  CmaPricingClamp,
+  CmaPricingReview,
+  CmaPricingAuditVerdict,
+  CmaPricingReviewSeverity,
+} from '@/lib/cma/types'
 
 /**
  * One sentence per cause. Seller-safe: no engine vocabulary, nothing that
@@ -39,6 +44,64 @@ export const REVIEW_REASONS = {
     'The independent review pass did not run on this build, so a broker reads it before this goes out.',
   other: 'A broker reviews this document before it is sent.',
 } as const
+
+/**
+ * THE ONE SENTENCE A LETTER OR A PDF PRINTS.
+ *
+ * Round four, class C: `pricing.review` reached only the served admin route,
+ * because using it meant reading four fields and knowing which combinations
+ * mattered. The letter and the PDF a broker actually sends carried no trace at
+ * all. These are seller-safe, already through the voice canon, and a renderer
+ * prints one verbatim rather than composing its own.
+ */
+export const RENDERER_NOTICE = {
+  blocked:
+    'This report is under broker review and is not final. Do not rely on the price in it until a broker has signed off.',
+  review: 'This report is under broker review and is not final.',
+} as const
+
+/**
+ * How loud the surface has to be, in one word.
+ *
+ * 'blocked' is reserved for an audit verdict of `fail`: the independent pass
+ * whose only job is to refute the analysis says it does not stand. Everything
+ * else that needs a person is 'review'. The engine's own flag can raise the
+ * severity and can never lower it.
+ */
+function severityFor(needsReview: boolean, verdict: CmaPricingAuditVerdict | null): CmaPricingReviewSeverity {
+  if (verdict === 'fail') return 'blocked'
+  return needsReview ? 'review' : 'none'
+}
+
+/**
+ * CONFIDENCE DERIVES FROM THE VERDICT (round four, class C).
+ *
+ * cma-19968 stamped confidence "High" in the same object that carried
+ * `verdict: 'fail'`, `needsReview: true` and three critical findings, because
+ * confidence is computed from the comparable set's price-per-square-foot
+ * dispersion and nothing downstream of the adversarial audit ever touched it.
+ * A tight set of sales the refuter rejects is still a tight set of sales; it
+ * is not a reason for a reader to lean on the number.
+ *
+ * The mapping only ever moves DOWN, and it names what moved it so the change
+ * is never silent.
+ */
+export function confidenceForVerdict(
+  confidence: 'High' | 'Moderate' | 'Supportable',
+  verdict: CmaPricingAuditVerdict | null | undefined,
+): { confidence: 'High' | 'Moderate' | 'Supportable'; reason: string | null } {
+  const rank = { High: 2, Moderate: 1, Supportable: 0 } as const
+  const ceiling: 'High' | 'Moderate' | 'Supportable' =
+    verdict === 'fail' ? 'Supportable' : verdict === 'review' || verdict === 'did-not-run' ? 'Moderate' : 'High'
+  if (rank[confidence] <= rank[ceiling]) return { confidence, reason: null }
+  return {
+    confidence: ceiling,
+    reason:
+      verdict === 'fail'
+        ? 'An independent review pass could not stand behind this price, so the confidence stated here is held at the lowest of the three.'
+        : 'An independent review pass left questions on this analysis, so the confidence stated here is held below the top of the three.',
+  }
+}
 
 /**
  * The banner block. `needsReview` is the engine's own flag, never re-derived:
@@ -59,7 +122,10 @@ export function buildPricingReview(args: {
   // flag first; this is the case where it did not.
   const needsReview =
     args.needsReview || verdict === 'fail' || verdict === 'review' || verdict === 'did-not-run'
-  if (!needsReview) return { needsReview: false, reasons: [], auditVerdict: verdict }
+  if (!needsReview) {
+    return { needsReview: false, reasons: [], auditVerdict: verdict, severity: 'none', rendererNotice: null }
+  }
+  const severity = severityFor(true, verdict)
 
   const raw = (args.reviewReason ?? '').toLowerCase()
   const reasons: string[] = []
@@ -79,5 +145,11 @@ export function buildPricingReview(args: {
   if (verdict === 'did-not-run') add(REVIEW_REASONS.auditMissing)
   if (reasons.length === 0) add(REVIEW_REASONS.other)
 
-  return { needsReview: true, reasons, auditVerdict: verdict }
+  return {
+    needsReview: true,
+    reasons,
+    auditVerdict: verdict,
+    severity,
+    rendererNotice: severity === 'blocked' ? RENDERER_NOTICE.blocked : RENDERER_NOTICE.review,
+  }
 }

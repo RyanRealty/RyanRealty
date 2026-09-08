@@ -27,6 +27,7 @@ import type {
   CmaPricingClamp,
   CmaPricingClampApplication,
   CmaPricingClampTier,
+  CmaSellerNet,
   CmaSubject,
 } from '@/lib/cma/types'
 import type { CmaMarketContext } from '@/lib/cma/types'
@@ -34,6 +35,7 @@ import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
+import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 
 /**
  * Where the seller's own ask sat against what homes like theirs sold for, in
@@ -129,6 +131,12 @@ export interface ExpiredAuditData {
   services: string[]
   netSheet: ExpiredNetSheet
   feeLine: string
+  /**
+   * The whole ask exposure: every price the final listing period wore, how
+   * long each ran, and which one ran the clock. Round four, class B — the
+   * story used to be computed from the last cut alone.
+   */
+  askExposure?: ExpiredAskExposure | null
   /**
    * Chapter 1's timeline. Optional because rows built before this contract
    * landed do not carry it — `resolveListingTimeline` degrades to the subject's
@@ -351,6 +359,187 @@ export function buildFinalCycle(args: {
         ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date`,
     },
   }
+}
+
+/**
+ * A resolved final cycle, plus the reason there is none when a cycle exists but
+ * may not be told as a story.
+ */
+export interface FinalCycleResolution {
+  cycle: ExpiredFinalCycle | null
+  /** Seller-safe. Null when nothing was suppressed. */
+  suppressedReason: string | null
+}
+
+/**
+ * A STALE CYCLE TELLS NO STORY (round four, class B).
+ *
+ * cma-19968's subject "listed" figure is a NOVEMBER 2004 ask of $140,000,
+ * printed undated three times beside a $461,000 recommendation. The listing
+ * period is real; the market that set it is twenty-one years gone, and every
+ * sentence built on it is a claim about a market that no longer exists. The
+ * recency window is the one this module already publishes for the failed-ask
+ * ceiling — past `FAILED_ASK_RECENCY_MONTHS` the market that rejected an ask
+ * is a different market — so the story uses the same line rather than a second
+ * one invented here.
+ *
+ * An off-market date that was never recorded is NOT staleness: absence is a
+ * fact about the record, not about the age of the listing, and §0 forbids
+ * turning one into the other.
+ *
+ * The PRICE ceiling is untouched. `applyFailedAskCap` has its own recency
+ * branch and deliberately holds a stale failure at the ask itself rather than
+ * below it; that is a pricing decision with a backtest behind it, and this is
+ * about what a chapter is allowed to narrate.
+ */
+export function resolveFinalCycle(args: {
+  cycle: BpoListingCycle | null | undefined
+  priceEvents?: ReadonlyArray<{ date: string; ask: number }>
+  listingKey?: string | null
+  fetchedAt?: string
+  asOf?: Date
+}): FinalCycleResolution {
+  const built = buildFinalCycle(args)
+  if (!built) return { cycle: null, suppressedReason: null }
+  const off = dayString(built.offMarketDate)
+  if (!off) return { cycle: built, suppressedReason: null }
+  const offMs = Date.parse(`${off}T00:00:00.000Z`)
+  if (Number.isNaN(offMs)) return { cycle: built, suppressedReason: null }
+  const months = ((args.asOf ?? new Date()).getTime() - offMs) / (30.44 * 24 * 3600 * 1000)
+  if (months <= FAILED_ASK_RECENCY_MONTHS) return { cycle: built, suppressedReason: null }
+  return {
+    cycle: null,
+    suppressedReason:
+      `The last listing period at this address came off the market on ${off}, more than ` +
+      `${FAILED_ASK_RECENCY_MONTHS} months ago. That is a different market, so this report does not ` +
+      `build a story on the price it asked.`,
+  }
+}
+
+/** One asking price, and the stretch of the listing period it ran. */
+export interface AskExposureSegment {
+  ask: number
+  /** YYYY-MM-DD the ask took effect. */
+  from: string
+  /** YYYY-MM-DD it was replaced, or the day the listing came off. */
+  to: string
+  /** Whole calendar days from `from` to `to`. */
+  days: number
+  /** This segment's days as a share of the whole period, 0 to 100. */
+  sharePct: number
+  /**
+   * `(ask - rangeHigh) / rangeHigh * 100`, SIGNED. Negative means the ask sat
+   * below the top of the range homes like this one sold in. Null when there is
+   * no usable range to measure against.
+   */
+  pctAboveRangeTop: number | null
+}
+
+/**
+ * WHAT THE LISTING ACTUALLY ASKED, AND FOR HOW LONG (round four, class B).
+ *
+ * The story used to run off `failedAskForStory`, which takes the LAST cut. On
+ * cma-2465-7th-redmond-97756 that is $460,000, held for 35 of 187 days, while
+ * $475,000 held the other 152 and was never named in prose. On
+ * cma-65365-concorde it is $1,500,000, while a $1,799,000 opening carried 227
+ * of 290 days and reached no surface at all. A price opinion that measures the
+ * gap on the ask that ran a fifth of the clock is measuring the wrong number.
+ *
+ * This puts the WHOLE exposure on `render_args` so a renderer can name the
+ * price that ran the clock, the price it finished at, and the distance from
+ * each to the top of the range, without deciding anything itself.
+ */
+export interface ExpiredAskExposure {
+  /** Oldest first. Never empty when the block is present. */
+  segments: AskExposureSegment[]
+  /** The ask that covered the most days. Ties go to the earlier segment. */
+  dominant: AskExposureSegment
+  /** The ask it came off the market at. */
+  final: AskExposureSegment
+  sentence: string
+}
+
+/** Whole calendar days between two YYYY-MM-DD days, or null. */
+function daysBetween(from: string, to: string): number | null {
+  const a = utcDay(from)
+  const b = utcDay(to)
+  if (a == null || b == null) return null
+  return Math.round((b - a) / 86_400_000)
+}
+
+function pct1(n: number): string {
+  return n.toFixed(1).replace(/\.0$/, '')
+}
+
+export function buildAskExposure(args: {
+  cycle: ExpiredFinalCycle | null | undefined
+  /** The bottom of the range homes like this one sold in. Carried for the renderer. */
+  rangeLow: number | null
+  /** The top of that range. `pctAboveRangeTop` is measured against it. */
+  rangeHigh: number | null
+}): ExpiredAskExposure | null {
+  const cycle = args.cycle
+  if (!cycle) return null
+  const listDate = dayString(cycle.listDate)
+  const offMarketDate = dayString(cycle.offMarketDate)
+  if (!listDate || !offMarketDate) return null
+  const opening = positiveAsk(cycle.initialAsk) ?? positiveAsk(cycle.finalAsk)
+  if (opening == null) return null
+
+  // A cut with no recorded date cannot start a segment: §0 forbids a date from
+  // convention, and `cutsDated` is exactly the flag that says whether the
+  // record holds one.
+  const steps: Array<{ date: string; ask: number }> = [{ date: listDate, ask: opening }]
+  if (cycle.cutsDated) {
+    for (const cut of cycle.cuts ?? []) {
+      const date = dayString(cut.date)
+      const ask = positiveAsk(cut.ask)
+      if (!date || ask == null) continue
+      if (date < listDate || date > offMarketDate) continue
+      steps.push({ date, ask })
+    }
+  }
+  steps.sort((a, b) => a.date.localeCompare(b.date))
+
+  const spans: Array<{ ask: number; from: string; to: string; days: number }> = []
+  for (let i = 0; i < steps.length; i += 1) {
+    const step = steps[i]!
+    const to = i + 1 < steps.length ? steps[i + 1]!.date : offMarketDate
+    const days = daysBetween(step.date, to)
+    if (days == null || days < 0) continue
+    // Two steps on one day collapse: the earlier price was never on the market.
+    if (days === 0 && i + 1 < steps.length) continue
+    spans.push({ ask: step.ask, from: step.date, to, days })
+  }
+  if (spans.length === 0) return null
+
+  const total = spans.reduce((sum, s) => sum + s.days, 0)
+  const high = args.rangeHigh != null && args.rangeHigh > 0 ? args.rangeHigh : null
+  const segments: AskExposureSegment[] = spans.map((s) => ({
+    ask: s.ask,
+    from: s.from,
+    to: s.to,
+    days: s.days,
+    sharePct: total > 0 ? (s.days / total) * 100 : 0,
+    pctAboveRangeTop: high != null ? ((s.ask - high) / high) * 100 : null,
+  }))
+
+  let dominant = segments[0]!
+  for (const seg of segments) if (seg.days > dominant.days) dominant = seg
+  const final = segments[segments.length - 1]!
+
+  const sentence =
+    segments.length === 1
+      ? `The listing asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days it was on the market.`
+      : `The listing asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
+          'en-US',
+        )} of its ${total.toLocaleString('en-US')} days, ${pct1(
+          dominant.sharePct,
+        )} percent of the time it was on the market. It came off at ${usd(final.ask)}, which it held for ${final.days.toLocaleString(
+          'en-US',
+        )}.`
+
+  return { segments, dominant, final, sentence }
 }
 
 /**
@@ -705,12 +894,35 @@ export const FAILED_ASK_CLAMP_SOURCE = `${FAILED_ASK_BACKTEST.pairs.toLocaleStri
 
 /**
  * Which share of the failed ask holds each printed tier, and how a seller
- * sentence names it. The high end is never held below the ask itself: a home
- * CAN sell for what it asked, 12.3 percent of these pairs did, and the top of
- * a range is where that belongs.
+ * sentence names it.
+ *
+ * ONE CEILING FOR THE WHOLE PRINTED LIST BAND (round four, class E).
+ * The high end used to have a ceiling of its own — the ask itself, on the
+ * reasoning that a home CAN sell for what it asked and 12.3 percent of these
+ * pairs did. What that produced on cma-65365-concorde was a document holding
+ * the recommendation to $1,473,000 and printing $1,500,000, the ask that had
+ * just failed, as the top of the same band: three list numbers on two screens,
+ * the highest of them the number the document had just said not to go back to.
+ * A sale price a home may still reach is a statement about VALUE and belongs
+ * in the worth range (`rangeRule`, the spread of the adjusted sale prices).
+ * The list band is what we recommend ASKING, and there is one ceiling on it.
+ *
+ * A stale failure (past FAILED_ASK_RECENCY_MONTHS) is still held at the ask
+ * itself rather than below it — that is a separate pricing decision with its
+ * own backtest — so on that branch all three ceilings are the ask and the band
+ * collapses to one number. `resolveFinalCycle` has already suppressed the
+ * stale ask from the prose, so no reader is shown a band topped by an ask the
+ * document told them failed.
  */
 function clampCeilings(ask: number, recent: boolean) {
   const round1k = (n: number) => Math.round(n / 1000) * 1000
+  const recommended = {
+    ratio: recent ? FAILED_ASK_BACKTEST.closeP75Ratio : 1,
+    value: recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask,
+    phrase: recent
+      ? 'the 75th percentile of what failed listings later sold for'
+      : (null as string | null),
+  }
   return {
     conservative: {
       ratio: recent ? FAILED_ASK_BACKTEST.closeMedianRatio : 1,
@@ -719,14 +931,9 @@ function clampCeilings(ask: number, recent: boolean) {
       // name and the sentence must not name one.
       phrase: recent ? 'the middle of what failed listings later sold for' : (null as string | null),
     },
-    recommended: {
-      ratio: recent ? FAILED_ASK_BACKTEST.closeP75Ratio : 1,
-      value: recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask,
-      phrase: recent
-        ? 'the 75th percentile of what failed listings later sold for'
-        : (null as string | null),
-    },
-    highEnd: { ratio: 1, value: ask, phrase: null as string | null },
+    recommended,
+    // The same ceiling, from the same measured share. Never the ask.
+    highEnd: { ...recommended },
   }
 }
 
@@ -780,6 +987,8 @@ export function applyFailedAskCap(
     reviewReason: string | null
     notes: string[]
     clamp?: CmaPricingClamp | null
+    /** Re-anchored here whenever the ceiling moves the list (round four, class A). */
+    sellerNet?: CmaSellerNet | null
   },
   args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
 ): FailedAskCapResult {
@@ -791,6 +1000,12 @@ export function applyFailedAskCap(
     (pricing.clamp?.applications ?? []).map((a) => [a.tier, a.before]),
   )
   pricing.clamp = null
+  // THE NET FOLLOWS THE LIST. This ceiling is the one thing on the build path
+  // that moves `recommended` after `attachSellerNet` has run, and it runs up
+  // to three times per build (lib/cma/build.ts steps 4, 4.45, 4.46). A seller
+  // net still anchored to the pre-ceiling price is round four's class A in a
+  // new place, so every exit from here re-anchors it.
+  reanchorSellerNet(pricing)
   if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
 
   let recent = false
@@ -806,7 +1021,9 @@ export function applyFailedAskCap(
   const ceilings = clampCeilings(ask, recent)
   const consCeil = ceilings.conservative.value
   const recCeil = ceilings.recommended.value
-  if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= ask) return none
+  const highCeil = ceilings.highEnd.value
+  if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= highCeil)
+    return none
 
   const uncapped = pricing.recommended
   // What the EVIDENCE supported, not what a previous application of this same
@@ -821,7 +1038,7 @@ export function applyFailedAskCap(
   }
   pricing.conservative = Math.min(pricing.conservative, consCeil)
   pricing.recommended = Math.min(pricing.recommended, recCeil)
-  pricing.highEnd = Math.min(pricing.highEnd, ask)
+  pricing.highEnd = Math.min(pricing.highEnd, highCeil)
   const applications: CmaPricingClampApplication[] = (
     ['conservative', 'recommended', 'highEnd'] as const
   )
@@ -878,6 +1095,7 @@ export function applyFailedAskCap(
     .join(' ')
   const askNote = `Your last listing asked ${usd(ask)} and did not sell.`
   if (!pricing.notes.includes(askNote)) pricing.notes.push(askNote)
+  reanchorSellerNet(pricing)
   return { applied: true, cappedTo: recCeil, uncappedRecommended: supported }
 }
 

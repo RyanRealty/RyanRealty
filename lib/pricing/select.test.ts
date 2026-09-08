@@ -85,6 +85,7 @@ describe('matchToCompSelection', () => {
       trace: [],
       reachedTarget: false,
       starved: true,
+      rungs: [],
     })
     expect(awbrey.diagnostics.market_area).toBe('Awbrey Butte')
     expect(awbrey.diagnostics.market_area_resolved).toBe(true)
@@ -98,6 +99,7 @@ describe('matchToCompSelection', () => {
       trace: [],
       reachedTarget: false,
       starved: true,
+      rungs: [],
     })
     expect(rural.diagnostics.market_area).toBeNull()
     expect(rural.diagnostics.market_area_resolved).toBe(false)
@@ -126,6 +128,7 @@ describe('matchToCompSelection', () => {
         trace: [],
         reachedTarget: false,
         starved: true,
+        rungs: [],
       },
       { customOrNew: true },
     )

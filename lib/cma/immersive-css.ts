@@ -472,6 +472,17 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .letter-body table.kv{width:100%;border-collapse:collapse;font-size:15px}
 .letter-body table.kv th{text-align:left;font-weight:500;opacity:.7;padding:8px 16px 8px 0;border-bottom:1px solid var(--ink12);width:38%}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
+/* The net-at-list ledger, on screen. Same rows the letter prints, at reading
+   size, with the money column right-aligned so the column adds up by eye. */
+.letter-body table.kv.netsheet th{width:62%;opacity:1;font-weight:500}
+.letter-body table.kv.netsheet td.v{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.letter-body table.kv.netsheet .ln-src{display:block;font-size:13px;opacity:.6;font-weight:400;margin-top:3px}
+.letter-body table.kv.netsheet tr.is-net th,
+.letter-body table.kv.netsheet tr.is-net td.v{border-top:2px solid var(--navy);border-bottom:0;font-weight:700;padding-top:12px}
+@media (max-width:700px){
+  .letter-body table.kv.netsheet,.letter-body table.kv.netsheet th{font-size:14px}
+  .letter-body table.kv.netsheet .ln-src{font-size:12px}
+}
 .letter-body .stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:24px 0}
 /* AFTER .letter-body .stat-strip, not before it. Sitting above that rule the
    phone override lost to it on equal specificity, and three money figures at

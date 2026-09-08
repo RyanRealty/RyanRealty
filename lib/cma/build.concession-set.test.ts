@@ -49,18 +49,23 @@ describe('seller-net concession set', () => {
 
   it('attaching from the kept set makes the denominator the matrix row count', () => {
     const p = pricing()
-    attachSellerNet(p, KEPT, 465_000)
+    attachSellerNet(p, KEPT)
     expect(p.sellerNet?.knownCount).toBe(KEPT.length)
     expect(p.sellerNet?.givenCount).toBe(2)
     expect(p.sellerNet?.medianWhenGiven).toBe(7_500)
-    expect(p.notes.some((n) => n.includes('2 of 5 comparable sales reported a concession'))).toBe(true)
+    // The denominator now rides on the concession LINE's own source, which the
+    // itemisation prints beside the dollar figure (round four, class A).
+    expect(p.sellerNet?.lines[0]?.source).toContain('5 comparable sales that reported the field')
+    expect(p.sellerNet?.lines[0]?.source).toContain('2 of them gave one')
   })
 
   it('the build attaches seller net from the priced (kept) comps, not the band set', () => {
     const call = src.match(/attachSellerNet\([^)]*\)/)
     expect(call, 'build.ts must call attachSellerNet').toBeTruthy()
     expect(call![0]).not.toMatch(/pricingSales/)
-    // `set` is the argument priceSet() prices and the matrix renders.
-    expect(call![0]).toMatch(/attachSellerNet\(\s*p,\s*set\s*,/)
+    // `set` is the argument priceSet() prices and the matrix renders. There is
+    // no third argument any more: the close-price anchor it used to take is
+    // round four's class A (lib/pricing/seller-net.ts).
+    expect(call![0]).toMatch(/attachSellerNet\(\s*p,\s*set\s*\)/)
   })
 })

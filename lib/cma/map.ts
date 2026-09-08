@@ -13,6 +13,7 @@ import { spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry } from '@/lib/cma/map-overlay'
 import { fitStaticMapView, type StaticMapView } from '@/lib/cma/static-map-projection'
 import { describeCompSearch } from '@/lib/pricing/search-story'
+import { mapPointsFor, polygonHoldsAnyPoint } from '@/lib/cma/render-place-polygon'
 import { us97IntersectsDisk } from '@/lib/pricing/highway-cross'
 import { slugify } from '@/lib/slug'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
@@ -28,6 +29,15 @@ export interface CmaMapResult {
   view: StaticMapView
   /** Every pin, at the coordinates the tile was drawn for, in grid order. */
   pins: CmaMapPin[]
+  /**
+   * Whether the subdivision outline was actually drawn.
+   *
+   * Round-four class F: 19968's polygon contained neither the subject nor any
+   * sale, under a caption that named it. The caption reads this rather than
+   * assuming a boundary was on file, so the drawing and the sentence about it
+   * can never disagree.
+   */
+  boundaryShown: boolean
 }
 
 /** A pin the DOCUMENT draws, not Google. `n` is null on the subject. */
@@ -135,9 +145,18 @@ export async function buildCmaMapDataUri(
   if (points.length < 1) return null
   const story = describeCompSearch({ subdivision: subject.subdivision, tiersUsed: opts.tiersUsed ?? [] })
   const paths: string[] = []
-  for (const ring of await subdivisionRings(subject.subdivision)) {
-    const path = pathParam('0x102742CC', '0x10274222', ring)
-    if (path) paths.push(path)
+  // THE OUTLINE HAS TO CONTAIN SOMETHING ON THE MAP (class F). An MLS
+  // subdivision NAME and a recorded plat SLUG are different keys, so
+  // `slugify(subject.subdivision)` can resolve to a plat that holds neither
+  // this home nor any of its sales — which is what 19968 drew. The check is
+  // the one a reader makes: is my house in that shape, or is one of the sales?
+  const rings = await subdivisionRings(subject.subdivision)
+  const boundaryShown = polygonHoldsAnyPoint(rings, mapPointsFor(subject, comps))
+  if (boundaryShown) {
+    for (const ring of rings) {
+      const path = pathParam('0x102742CC', '0x10274222', ring)
+      if (path) paths.push(path)
+    }
   }
   if (
     story.radiusMiles != null &&
@@ -179,6 +198,7 @@ export async function buildCmaMapDataUri(
         lat: p.lat,
         lng: p.lng,
       })),
+      boundaryShown,
     }
   } catch (e) {
     console.warn('[buildCmaMapDataUri]', e instanceof Error ? e.message : String(e))

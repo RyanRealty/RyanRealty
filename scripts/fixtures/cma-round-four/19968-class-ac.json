@@ -1,0 +1,21 @@
+{
+  "pricing": {
+    "review": {
+      "severity": "blocked",
+      "verdict": "fail",
+      "rendererNotice": "This report is under broker review and is not final. Do not rely on the price in it until a broker has signed off."
+    },
+    "sellerNet": {
+      "basis": "Commission is the rate in your listing agreement; title and escrow are the Deschutes County schedule.",
+      "list": 461000,
+      "lines": [
+        { "label": "Commission", "amount": 23050, "source": "Listing agreement, 5.0%" },
+        { "label": "Title and escrow", "amount": 3100, "source": "Deschutes County schedule" },
+        { "label": "Recording and property-tax proration", "amount": 1500, "source": "Deschutes County recording schedule" }
+      ],
+      "net": 433350,
+      "sentence": null,
+      "unknowns": ["what you still owe on the home"]
+    }
+  }
+}
