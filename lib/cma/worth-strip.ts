@@ -32,6 +32,18 @@ const ZONE = 'rgba(16,39,66,0.16)'
 /** The one word a hollow mark needs. Clamped to the frame like every label. */
 const ASIDE_LABEL = 'set aside'
 
+/**
+ * The hit band's height in SVG UNITS, not pixels.
+ *
+ * A 44-unit band on a 360-unit drawing rendered into a 335px column measures
+ * 41px — three short of the target it was built to hit (tasteReview round
+ * three, §2 item 4). The drawing is scaled to its column, so the unit has to
+ * carry the scale: 48 units is 44.7px at that width and more on anything
+ * wider. `scripts/cma-lookpass.ts` measures the rendered box and fails under
+ * 44, so this cannot silently drift back.
+ */
+const HIT_UNITS = 48
+
 export type WorthStripSale = {
   n: number
   address: string
@@ -239,7 +251,7 @@ export function worthStripSvg(
       <text x="${asideFit.x}" y="${asideLabelY.toFixed(1)}" text-anchor="${asideFit.anchor}" font-size="${(fs - 1).toFixed(1)}" fill="${MUTED}">${ASIDE_LABEL}</text>`
         : `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>`
       return `<g class="ws-dot${aside ? ' is-aside' : ''}" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <rect x="${(cx - hitWidth(i) / 2).toFixed(1)}" y="${(cy - 22).toFixed(1)}" width="${hitWidth(i).toFixed(1)}" height="44" fill="transparent"/>
+      <rect x="${(cx - hitWidth(i) / 2).toFixed(1)}" y="${(cy - HIT_UNITS / 2).toFixed(1)}" width="${hitWidth(i).toFixed(1)}" height="${HIT_UNITS}" fill="transparent"/>
       ${mark}
     </g>`
     })

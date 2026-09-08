@@ -401,8 +401,24 @@ async function checkTapTargets(
         // An inline link inside a sentence keeps the line box it lives in.
         if (node.tagName === 'A' && node.closest('p')) continue
         const r = node.getBoundingClientRect()
-        const floor = node.matches(dense) ? 24 : 44
+        // A DENSE-SERIES MARK IS A BAND, and a band is only an exemption in
+        // ONE dimension. Its short side is held to the dataviz floor of 24px
+        // and its LONG side to the full 44 — which is the claim the renderer
+        // makes and the measurement that caught it making it at 41px
+        // (tasteReview round three, §2 item 4).
+        const isDense = node.matches(dense)
+        const floor = isDense ? 24 : 44
         const side = Math.min(r.width, r.height)
+        if (isDense && Math.max(r.width, r.height) + 0.5 < 44) {
+          const name =
+            node.getAttribute('aria-label') ||
+            (node.textContent ?? '').trim().slice(0, 40) ||
+            node.className
+          out.push(
+            `${node.tagName.toLowerCase()}.${String(node.className).split(' ')[0]} "${name}" band is ${r.width.toFixed(0)}x${r.height.toFixed(0)}, its long side under 44px`,
+          )
+          continue
+        }
         if (side + 0.5 < floor) {
           const name =
             node.getAttribute('aria-label') ||
