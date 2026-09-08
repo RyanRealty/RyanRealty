@@ -6,9 +6,12 @@ import { describe, expect, it } from 'vitest'
 import {
   CHAPTER2_MIN_N,
   readAskOutcome,
+  readAskRealization,
   readOfferTiming,
   renderAskOutcomeHtml,
+  renderAskRealizationHtml,
   renderOfferTimingHtml,
+  subjectRealizationBucket,
 } from '@/lib/cma/market-area-chapters'
 import { askOutcomeBarsPhoneSvg, offerTimingCurvePhoneSvg } from '@/lib/cma/market-charts'
 import type { CmaMarketContext, CmaSubject } from '@/lib/cma/types'
@@ -154,8 +157,10 @@ describe('2b — the first price decides the days', () => {
     expect(html).toContain('214 listings')
     expect(html).toContain('median cut 4.1%')
     expect(html).toContain('Came off unsold · your home')
+    // Each clause names what the price DID, not whether it was right: the
+    // groups are defined by the cut, and the renderer does not get an opinion.
     expect(html).toContain(
-      'Homes that launched at the right price sold in a median of 9 days. Homes that had to cut took 58 and gave up a median 4.1 percent. Homes that never cut enough came off after a median 94 days.',
+      'Homes that sold without ever cutting their price took a median of 9 days. Homes that cut took 58 days, gave up a median 4.1 percent. Homes that came off unsold had been on the market a median 94 days.',
     )
   })
 
@@ -175,5 +180,121 @@ describe('2b — the first price decides the days', () => {
     const svg = askOutcomeBarsPhoneSvg(askOutcome as never, 'did-not-sell')
     expect(svg).toContain('viewBox="0 0 360')
     expect(textOutsideViewBox(svg)).toEqual([])
+  })
+})
+
+// ── 2b's centrepiece: what the first asking price realized ─────────────────
+// Research item 4: every published "% of list by weeks" table traces to a
+// secondary citation of NAR that no primary source confirms, so this one is
+// ours, computed on Central Oregon rows with a count per row.
+
+const realization = {
+  city: 'Redmond',
+  windowMonths: 12,
+  buckets: [
+    { weeks: '0-2', n: 260, medianPctOfOriginalAsk: 100, reason: null },
+    { weeks: '3-4', n: 96, medianPctOfOriginalAsk: 97, reason: null },
+    { weeks: '5-8', n: 112, medianPctOfOriginalAsk: 97.2, reason: null },
+    { weeks: '9-16', n: 115, medianPctOfOriginalAsk: 95.3, reason: null },
+    { weeks: '17+', n: 94, medianPctOfOriginalAsk: 92.1, reason: null },
+  ],
+}
+
+describe('2b — what the first asking price realized', () => {
+  it('prints every bucket with its own count and share', () => {
+    const html = renderAskRealizationHtml({
+      market: market({ originalAskRealization: realization }),
+      subject,
+    })
+    expect(html).toContain('What the first asking price actually realized')
+    expect(html).toContain('0 to 2')
+    expect(html).toContain('17 or more')
+    expect(html).toContain('100.0%')
+    expect(html).toContain('92.1%')
+    expect(html).toContain('260')
+    // A table, not a chart: five named rows carrying two units each.
+    expect(html).toContain('table class="kv realization"')
+    expect(html).not.toContain('<svg')
+  })
+
+  it('marks the row the seller\'s own days land in, without claiming they got an offer', () => {
+    const html = renderAskRealizationHtml({
+      market: market({ originalAskRealization: realization }),
+      subject,
+    })
+    expect(html).toContain('<tr class="is-mine">')
+    expect(html).toContain('your home ran 187 days and never got one')
+    expect(html).toContain('Your listing ran 187 days, which is the last row, and it never reached an offer at all.')
+  })
+
+  it('reads the first row against the last, both with their counts', () => {
+    const html = renderAskRealizationHtml({
+      market: market({ originalAskRealization: realization }),
+      subject,
+    })
+    expect(html).toContain(
+      'Homes that had an offer inside 2 weeks closed at a median 100.0 percent of the price they first asked, over 260 sales.',
+    )
+    expect(html).toContain('Homes that took 17 weeks or more closed at 92.1 percent, over 94.')
+  })
+
+  it('places the seller in the bucket their days fall in', () => {
+    expect(subjectRealizationBucket(realization.buckets, 10)).toBe('0-2')
+    expect(subjectRealizationBucket(realization.buckets, 25)).toBe('3-4')
+    expect(subjectRealizationBucket(realization.buckets, 60)).toBe('9-16')
+    expect(subjectRealizationBucket(realization.buckets, 187)).toBe('17+')
+    expect(subjectRealizationBucket(realization.buckets, null)).toBeNull()
+  })
+
+  it('refuses a table with fewer than three priced buckets', () => {
+    expect(
+      readAskRealization(
+        market({
+          originalAskRealization: {
+            ...realization,
+            buckets: realization.buckets.slice(0, 2),
+          },
+        }),
+      ),
+    ).toBeNull()
+    expect(readAskRealization(market({}))).toBeNull()
+    expect(readAskRealization(null)).toBeNull()
+  })
+
+  it('states the build\'s reason when the table was withheld', () => {
+    const html = renderAskRealizationHtml({
+      market: market({
+        originalAskRealization: {
+          ...realization,
+          buckets: [],
+          reason: 'Too few sales in Sisters carried both a days figure and a price pair.',
+        },
+      }),
+      subject,
+    })
+    expect(html).toContain('Too few sales in Sisters')
+  })
+})
+
+describe('the three bars carry what each group realized', () => {
+  it('prints the share of the first ask beside its own count', () => {
+    const html = renderAskOutcomeHtml({
+      market: market({
+        askOutcome: {
+          ...askOutcome,
+          groups: [
+            { ...askOutcome.groups[0], medianSoldToOriginalAskPct: 100, soldToOriginalAskN: 214 },
+            { ...askOutcome.groups[1], medianSoldToOriginalAskPct: 94.3, soldToOriginalAskN: 95 },
+            { ...askOutcome.groups[2], medianSoldToOriginalAskPct: null, soldToOriginalAskN: 0 },
+          ],
+        },
+      }),
+      subject,
+    })
+    expect(html).toContain('sold at 100.0% of the first ask, 214 sales')
+    expect(html).toContain('sold at 94.3% of the first ask, 95 sales')
+    // The group that never sold has no close to divide, so it carries none.
+    // Two groups × the wide layout and the phone layout.
+    expect((html.match(/of the first ask/g) ?? []).length).toBe(4)
   })
 })

@@ -386,3 +386,38 @@ describe('the seller document never says band, comp, subject, or tier', () => {
     })
   }
 })
+
+describe('the overpricing folklore never reaches a seller', () => {
+  // docs/research/cma-professional-practice-2026-09-07.md §4 went looking for
+  // the dataset behind each of these and found none. Chapter 2b makes the same
+  // argument from Central Oregon rows with a count and a source block, so the
+  // folklore has nothing left to do — and §0 outranks a persuasive sentence.
+  const banned: Array<[string, string]> = [
+    ['the pricing pyramid', 'The pricing pyramid says a home at market value reaches 60% of buyers.'],
+    ['buyer activity pyramid', 'Look at the buyer activity pyramid before you price.'],
+    ['first 30 days', 'The first 30 days on the market are the most important days you get.'],
+    ['most important 30 days', 'These are the most important 30 days on the market.'],
+    ['buyers assume', 'The longer it sits, buyers assume something is wrong with it.'],
+    ['showings to an offer', 'Expect ten showings to an offer in this price range.'],
+    ['showings per offer', 'The rule of thumb is 12 showings per offer.'],
+    ['15% net adjustment', 'Keep it under a 15% net adjustment to stay defensible.'],
+    ['adjustment caps', 'We respect the usual adjustment caps.'],
+  ]
+  for (const [label, sentence] of banned) {
+    it(`refuses "${label}"`, () => {
+      expect(findSellerBannedWords(`<p>${sentence}</p>`).length).toBeGreaterThan(0)
+    })
+  }
+
+  it('leaves ordinary English alone', () => {
+    // The patterns match the CLAIM, not the words: a date range, a verb, and a
+    // measured adjustment figure are all fine.
+    const fine = [
+      '<p>It sat 30 days before the first cut.</p>',
+      '<p>We are showing it Saturday.</p>',
+      '<p>The date adjustment moved this sale 4.2 percent.</p>',
+      '<p>Homes that took 17 or more weeks closed at 92.1 percent.</p>',
+    ]
+    for (const html of fine) expect(findSellerBannedWords(html)).toEqual([])
+  })
+})

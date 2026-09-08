@@ -117,14 +117,14 @@ function didNotSellScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
-/** Chapter 2b. Priced right sells. Priced high sits. Web twin of pricedRightPage. */
+/** Chapter 2b. What overpricing costs. Web twin of pricedRightPage. */
 function pricedRightScene(a: OpinionSceneArgs): string {
   const body = pricedRightBodyHtml(a)
   if (!body.trim()) return ''
   return `
   <section class="sc sc-cream pack" id="priced-right">
     <div class="in wide">
-      <div class="kick r">Time on market</div>
+      <div class="kick r">What it costs</div>
       <h2 class="h r">${esc(PRICED_RIGHT_HEADING)}</h2>
       <div class="r">${body}</div>
     </div>

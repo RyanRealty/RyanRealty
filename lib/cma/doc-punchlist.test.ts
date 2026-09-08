@@ -331,7 +331,7 @@ describe('chapter 2 — priced right sells, priced high sits', () => {
   // graphics from local data plus the unsold listings as short linked rows.
   it('argues the claim from local numbers, not a slogan', () => {
     const html = letter()
-    expect(html).toContain('Priced right sells. Priced high sits.')
+    expect(html).toContain('What overpricing costs.')
     expect(html).toContain('How fast homes like yours went')
     expect(html).toContain('The listings near you that did not sell.')
     // The ruler is gone from both documents.

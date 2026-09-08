@@ -640,16 +640,28 @@ export function renderAskOutcomeHtml(a: {
   const noCut = by('sold-no-cut')
   const cut = by('sold-after-cut')
   const dead = by('did-not-sell')
+  // Each clause names a figure drawn beside it. "Launched at the right price"
+  // and "never cut enough" were the renderer's opinion of three measured
+  // groups, and the groups are defined by what the price DID, not by whether
+  // it was right (§0 — narrative follows the data, never the other way).
+  const share = (g: AskOutcomeGroup | null): string =>
+    g?.medianSoldToOriginalAskPct != null && g.medianSoldToOriginalAskPct > 0
+      ? `, and closed at ${g.medianSoldToOriginalAskPct.toFixed(1)} percent of what they first asked`
+      : ''
   const reading = [
-    noCut ? `Homes that launched at the right price sold in a median of ${int(noCut.medianDays)} days.` : null,
-    cut
-      ? `Homes that had to cut took ${int(cut.medianDays)}${
-          cut.medianCutPct != null && cut.medianCutPct > 0
-            ? ` and gave up a median ${cut.medianCutPct.toFixed(1)} percent`
-            : ''
-        }.`
+    noCut
+      ? `Homes that sold without ever cutting their price took a median of ${int(noCut.medianDays)} days${share(noCut)}.`
       : null,
-    dead ? `Homes that never cut enough came off after a median ${int(dead.medianDays)} days.` : null,
+    cut
+      ? `Homes that cut took ${int(cut.medianDays)} days${
+          cut.medianCutPct != null && cut.medianCutPct > 0
+            ? `, gave up a median ${cut.medianCutPct.toFixed(1)} percent`
+            : ''
+        }${share(cut)}.`
+      : null,
+    dead
+      ? `Homes that came off unsold had been on the market a median ${int(dead.medianDays)} days.`
+      : null,
   ]
     .filter(Boolean)
     .join(' ')
@@ -685,3 +697,189 @@ function askOutcomeSourceLine(outcome: AskOutcome): string {
 }
 
 
+
+// ── Chapter 2b's centrepiece: what the original ask actually realized ───────
+// Research item 4. Every "% of list by weeks on market" table in circulation
+// traces to a secondary citation of NAR that no primary source confirms
+// (docs/research/cma-professional-practice-2026-09-07.md §4), so this one is
+// computed on Central Oregon rows at build and printed with its own count per
+// bucket. A table, not a chart: five named buckets carrying two units each is
+// what a table is for (.claude/skills/dataviz/SKILL.md step 1).
+
+/** `render_args.market.originalAskRealization`, validated. */
+export type AskRealizationBucket = {
+  weeks: string
+  n: number
+  medianPctOfOriginalAsk: number | null
+  reason: string | null
+}
+
+export type AskRealization = {
+  city: string
+  windowMonths: number
+  buckets: AskRealizationBucket[]
+}
+
+export function readAskRealization(
+  market: CmaMarketContext | null | undefined,
+): AskRealization | null {
+  const raw = (market as unknown as { originalAskRealization?: unknown } | null)
+    ?.originalAskRealization
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const city = typeof o.city === 'string' ? o.city.trim() : ''
+  if (!city || !Array.isArray(o.buckets)) return null
+  const buckets = o.buckets
+    .map((b) => {
+      const r = b as Record<string, unknown>
+      const weeks = typeof r.weeks === 'string' ? r.weeks.trim() : ''
+      const n = num(r.n)
+      if (!weeks || n == null) return null
+      const bucket: AskRealizationBucket = {
+        weeks,
+        n,
+        medianPctOfOriginalAsk: num(r.medianPctOfOriginalAsk),
+        reason: typeof r.reason === 'string' && r.reason.trim() ? r.reason.trim() : null,
+      }
+      return bucket
+    })
+    .filter((b): b is AskRealizationBucket => b != null)
+  // Two buckets is not a trend, and one is not a table.
+  if (buckets.filter((b) => b.medianPctOfOriginalAsk != null).length < 3) return null
+  return { city, windowMonths: num(o.windowMonths) ?? 12, buckets }
+}
+
+/**
+ * "0-2" → 0 and 2 weeks; "17+" → 17 and Infinity. The labels come off the
+ * build block, so the parse tolerates whatever shape it wrote rather than
+ * assuming one.
+ */
+function bucketRange(weeks: string): { lo: number; hi: number } | null {
+  const open = /^(\d+)\s*\+$/.exec(weeks)
+  if (open) return { lo: Number(open[1]), hi: Number.POSITIVE_INFINITY }
+  const span = /^(\d+)\s*[-–]\s*(\d+)$/.exec(weeks)
+  if (span) return { lo: Number(span[1]), hi: Number(span[2]) }
+  return null
+}
+
+/** Which bucket the seller's own days land in. Null when they carry none. */
+export function subjectRealizationBucket(
+  buckets: readonly AskRealizationBucket[],
+  subjectDays: number | null,
+): string | null {
+  if (subjectDays == null || !(subjectDays > 0)) return null
+  const weeks = subjectDays / 7
+  for (const b of buckets) {
+    const r = bucketRange(b.weeks)
+    if (r && weeks > r.lo - 1 && weeks <= r.hi) return b.weeks
+  }
+  return null
+}
+
+/**
+ * The table, with the seller's own weeks marked.
+ *
+ * The mark says what it is. A listing that came off without an offer does not
+ * BELONG in a bucket of homes that got one — the buckets measure weeks to an
+ * accepted offer — so the row it lands on is labelled "your home ran N days
+ * and never got one" rather than implying it realized that share.
+ */
+export function renderAskRealizationHtml(a: {
+  market: CmaMarketContext | null
+  subject: CmaSubject
+}): string {
+  const raw = (a.market as unknown as { originalAskRealization?: unknown } | null)
+    ?.originalAskRealization
+  const table = readAskRealization(a.market)
+  if (!table) {
+    const withheld = statWithheldReason(raw)
+    return withheld
+      ? `<h3 class="subhead">What the first asking price actually realized</h3>
+  <p class="chart-read">${esc(withheld)}</p>`
+      : ''
+  }
+  const subjectDays = subjectDomDays(a.subject)
+  const failed = subjectListingFailed(a.subject)
+  const mine = subjectRealizationBucket(table.buckets, subjectDays)
+  const rows = table.buckets
+    .map((b) => {
+      const isMine = mine != null && b.weeks === mine
+      const value =
+        b.medianPctOfOriginalAsk != null
+          ? `${b.medianPctOfOriginalAsk.toFixed(1)}%`
+          : (b.reason ?? '—')
+      return `<tr${isMine ? ' class="is-mine"' : ''}>
+      <th>${esc(weeksLabel(b.weeks))}${
+        isMine
+          ? `<span class="rz-mine">${esc(
+              failed && subjectDays != null
+                ? `your home ran ${int(subjectDays)} days and never got one`
+                : `your home`,
+            )}</span>`
+          : ''
+      }</th>
+      <td class="n">${int(b.n)}</td>
+      <td class="n">${esc(value)}</td>
+    </tr>`
+    })
+    .join('')
+  const period =
+    table.windowMonths === 12 ? 'the last 12 months' : `the last ${int(table.windowMonths)} months`
+  return `<h3 class="subhead">What the first asking price actually realized</h3>
+  <table class="kv realization">
+    <colgroup><col class="rz-weeks"/><col class="rz-n"/><col class="rz-share"/></colgroup>
+    <thead><tr><th>Weeks to an offer</th><th class="n">Sales</th><th class="n">Share of the first ask</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${realizationReading(table, mine, subjectDays, failed)}
+  <p class="small">${esc(
+    `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
+  )}</p>`
+}
+
+/** "0-2" → "0 to 2"; "17+" → "17 or more". */
+function weeksLabel(weeks: string): string {
+  const r = bucketRange(weeks)
+  if (!r) return weeks
+  return r.hi === Number.POSITIVE_INFINITY ? `${r.lo} or more` : `${r.lo} to ${r.hi}`
+}
+
+/**
+ * The reading under the table. Two measured facts and, when the seller's own
+ * listing sat past the last bucket, the one sentence that follows from them.
+ * No slogan, no prediction: every clause names a number printed above it.
+ */
+function realizationReading(
+  table: AskRealization,
+  mine: string | null,
+  subjectDays: number | null,
+  failed: boolean,
+): string {
+  const priced = table.buckets.filter(
+    (b): b is AskRealizationBucket & { medianPctOfOriginalAsk: number } =>
+      b.medianPctOfOriginalAsk != null,
+  )
+  if (priced.length < 2) return ''
+  const first = priced[0]!
+  const last = priced[priced.length - 1]!
+  const firstRange = bucketRange(first.weeks)
+  const lastRange = bucketRange(last.weeks)
+  const bits = [
+    `Homes that had an offer inside ${
+      firstRange && Number.isFinite(firstRange.hi) ? int(firstRange.hi) : weeksLabel(first.weeks)
+    } weeks closed at a median ${first.medianPctOfOriginalAsk.toFixed(
+      1,
+    )} percent of the price they first asked, over ${int(first.n)} sales.`,
+    `Homes that took ${
+      lastRange && !Number.isFinite(lastRange.hi)
+        ? `${int(lastRange.lo)} weeks or more`
+        : `${weeksLabel(last.weeks)} weeks`
+    } closed at ${last.medianPctOfOriginalAsk.toFixed(1)} percent, over ${int(last.n)}.`,
+  ]
+  if (mine != null && failed && subjectDays != null && subjectDays > 0) {
+    bits.push(
+      `Your listing ran ${int(subjectDays)} days, which is the last row, and it never reached an offer at all.`,
+    )
+  }
+  return `<p class="chart-read">${esc(bits.join(' '))}</p>`
+}

@@ -15,6 +15,7 @@ import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
   readOfferTiming,
   renderAskOutcomeHtml,
+  renderAskRealizationHtml,
   renderInventoryBoardHtml,
   renderDaysToOfferHtml,
   renderOfferTimingHtml,
@@ -215,22 +216,27 @@ export function whatHappenedHeading(subject: CmaSubject): string {
 }
 
 /**
- * Chapter 2. Priced right sells. Priced high sits.
+ * Chapter 2b. What overpricing costs.
  *
  * The one thing this document has to land, in the blueprint's own words: "we
  * need to illustrate that if homes are priced too high they sit and expire,
- * period." Local numbers, never a slogan.
+ * period", and Delta 1's "we also need to explain the dangers of overpricing
+ * clearly when we provide our numbers." Local numbers, never a slogan — the
+ * folklore this chapter could have reached for (the pricing pyramid, "the
+ * first 30 days", showings-to-offer ratios) has no dataset behind it and is
+ * banned outright in lib/cma/seller-text.ts.
  *
- * 2a is the cumulative offer-timing curve with the seller's own days marked
- * far past the shoulder; 2b is the three-bar first-price outcome with their
- * group marked; then the listings near them that asked and did not sell, as
- * short linked rows.
+ * Three exhibits, in the order the argument runs: the cumulative offer-timing
+ * curve with the seller's own days marked far past its shoulder; the three-bar
+ * first-price outcome with their group marked and what each sold group
+ * realized against its first ask; and the centrepiece, what the first asking
+ * price actually realized by weeks on market, with their own weeks marked.
  */
 export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
   const body = pricedRightBodyHtml(a)
   if (!body.trim()) return null
   return {
-    meta: `${esc(a.subject.streetAddress)} · Priced right sells`,
+    meta: `${esc(a.subject.streetAddress)} · What overpricing costs`,
     toc: PRICED_RIGHT_HEADING,
     body: `
   <h2 class="section">${esc(PRICED_RIGHT_HEADING)}</h2>
@@ -257,13 +263,15 @@ export function pricedRightBodyHtml(a: OpinionPageArgs): string {
   const daysStrip = timing
     ? ''
     : renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
-  // With no curve and no bars there is nothing local to argue from, so the
-  // chapter omits rather than printing a slogan.
-  if (!timing && !outcome && !daysStrip) return ''
+  const realization = renderAskRealizationHtml({ market: a.market, subject: a.subject })
+  // With no curve, no bars and no realization table there is nothing local to
+  // argue from, so the chapter omits rather than printing a slogan.
+  if (!timing && !outcome && !daysStrip && !realization) return ''
   return [
     timing,
     daysStrip ? `<h3 class="subhead">How fast homes like yours went</h3>${daysStrip}` : '',
     outcome,
+    realization,
   ]
     .filter(Boolean)
     .join('\n  ')
@@ -300,7 +308,12 @@ export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
   }
 }
 
-export const PRICED_RIGHT_HEADING = 'Priced right sells. Priced high sits.'
+/**
+ * Chapter 2b's title. Delta 1 names it "What overpricing costs" — the earlier
+ * "Priced right sells. Priced high sits." was the claim asserted as a slogan,
+ * and this chapter's job is to show what it costs in days and in dollars.
+ */
+export const PRICED_RIGHT_HEADING = 'What overpricing costs.'
 
 /**
  * Chapter 5. The city right now.

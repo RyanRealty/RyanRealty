@@ -725,10 +725,18 @@ export function askOutcomeBarsSvg(
   const phone = W <= 400
   const fs = phone ? 11 : 12.5
   const subFs = phone ? 10 : 11
-  const rowH = phone ? 56 : 52
+  // A group that realized a share of its first ask carries a THIRD line under
+  // its name, so every row grows rather than one row overlapping the next.
+  const hasShare = groups.some(
+    (g) => g.medianSoldToOriginalAskPct != null && g.medianSoldToOriginalAskPct > 0,
+  )
+  const rowH = hasShare ? (phone ? 70 : 66) : phone ? 56 : 52
   const top = 8
   const H = top + groups.length * rowH + 10
-  const gutter = phone ? 8 : 190
+  // The gutter holds the longest label the rows carry, not a fixed 190: the
+  // realized-share line ("sold at 94.3% of the first ask, 302 sales") is
+  // right-anchored in it, and a fixed gutter pushed it off the left edge.
+  const gutter = phone ? 8 : 250
   const plotL = phone ? 8 : gutter
   const longest = Math.max(...groups.map((g) => `${int(g.medianDays)} days`.length))
   const plotR = W - Math.min(Math.max(longest * fs * 0.62 + 14, 60), 150)
@@ -745,21 +753,36 @@ export function askOutcomeBarsSvg(
       ]
         .filter(Boolean)
         .join(' · ')
+      // What each sold group actually realized against the price it FIRST
+      // asked (research item 4), with the count it was measured over. It sits
+      // under the group's name, never on the bar: the bar's axis is days, and
+      // a second unit on it is a dual axis by another route.
+      const share =
+        g.medianSoldToOriginalAskPct != null && g.medianSoldToOriginalAskPct > 0
+          ? `sold at ${g.medianSoldToOriginalAskPct.toFixed(1)}% of the first ask${
+              g.soldToOriginalAskN != null && g.soldToOriginalAskN > 0
+                ? `, ${int(g.soldToOriginalAskN)} ${g.soldToOriginalAskN === 1 ? 'sale' : 'sales'}`
+                : ''
+            }`
+          : ''
       const stroke = mine ? TL_INK : TL_MUTED
       const weight = mine ? 9 : 6
       const bold = mine ? ' font-weight="600"' : ''
       if (phone) {
         const nameY = top + i * rowH + 12
         const countY = nameY + 14
-        const barY = countY + 13
+        const shareY = countY + 13
+        const barY = (share ? shareY : countY) + 14
         return `<text x="${plotL}" y="${nameY}"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
     <text x="${plotL}" y="${countY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
+    ${share ? `<text x="${plotL}" y="${shareY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(share)}</text>` : ''}
     <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
     <text x="${W - 6}" y="${barY + 4}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text>`
       }
       const mid = top + i * rowH + rowH / 2
-      return `<text x="${gutter - 14}" y="${(mid - 3).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
-    <text x="${gutter - 14}" y="${(mid + 13).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
+      return `<text x="${gutter - 14}" y="${(mid - (share ? 10 : 3)).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
+    <text x="${gutter - 14}" y="${(mid + (share ? 6 : 13)).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
+    ${share ? `<text x="${gutter - 14}" y="${(mid + 20).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(share)}</text>` : ''}
     <line x1="${plotL}" y1="${mid.toFixed(1)}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${mid.toFixed(1)}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
     <text x="${(Math.max(x(g.medianDays), plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text>`
     })

@@ -280,6 +280,18 @@ a.dns-addr:hover{border-bottom-color:var(--navy)}
 .dns-facts{font-size:13px;opacity:.65;margin-top:4px}
 .dns-read{font-size:15px;line-height:1.55;margin:8px 0 0}
 @media (max-width:700px){.dns-card{grid-template-columns:1fr;gap:12px}}
+/* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
+table.realization{width:100%;table-layout:fixed;border-collapse:collapse;margin:16px 0 8px;font-size:15px}
+table.realization col.rz-weeks{width:46%}
+table.realization col.rz-n{width:14%}
+table.realization col.rz-share{width:40%}
+table.realization th,table.realization td{padding:12px 10px;border-bottom:1px solid var(--ink12);text-align:left}
+table.realization thead th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.6}
+table.realization td.n,table.realization th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.realization tr.is-mine{font-weight:600}
+table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2px solid var(--navy)}
+.rz-mine{display:block;font-size:12px;font-weight:400;opacity:.65}
+@media (max-width:700px){table.realization{font-size:13px}table.realization th,table.realization td{padding:9px 4px}table.realization thead th{font-size:10px;letter-spacing:.06em}}
 /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
 .timing-phone,.outcome-phone{display:none}
 @media screen and (max-width:700px){.timing-wide,.outcome-wide{display:none}.timing-phone,.outcome-phone{display:block}}

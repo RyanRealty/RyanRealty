@@ -66,6 +66,49 @@ function decodeEntities(s: string): string {
  * - `comp` — "comparable sales" is what a licensed broker calls them in the
  *   ORS 696 disclosure and stays. The clipped trade word does not.
  */
+/**
+ * The overpricing folklore, banned outright.
+ *
+ * docs/research/cma-professional-practice-2026-09-07.md §4 went looking for the
+ * dataset behind each of these and found none. They are training-deck graphics
+ * and blog restatements with no original author, no sample, and in one case an
+ * explicit disclaimer from the body they are attributed to:
+ *
+ *  - the pricing / buyer-activity pyramid ("at market = 60% of buyers")
+ *  - "the first 30 days are the most important"
+ *  - "buyers assume something is wrong with it" — Taylor (1999) is a
+ *    theoretical signalling model, not a measurement of buyer behavior
+ *  - showings-to-offer ratios, whose published figures contradict each other
+ *  - 15% net / 25% gross adjustment caps, which Fannie Mae B4-1.3-09
+ *    (eff. 06/04/2025, VERIFIED) explicitly disclaims
+ *
+ * Chapter 2b makes the same argument from Central Oregon rows with a count and
+ * a source block beside every figure, which is why none of this is needed —
+ * and §0 outranks a persuasive sentence anyway. The patterns match the CLAIM,
+ * not the words: "30 days" in a date range and "showing" as a verb are fine.
+ */
+const OVERPRICING_FOLKLORE: ReadonlyArray<{ re: RegExp; label: string }> = [
+  { re: /\b(?:pricing|buyer(?:'s)?\s+activity)\s+pyramid\b/i, label: 'the pricing pyramid' },
+  {
+    re: /\bthe first (?:30|thirty) days\b[^.]{0,60}\b(?:most important|matter most|are critical|are the most)\b/i,
+    label: '"the first 30 days are the most important"',
+  },
+  {
+    re: /\b(?:most important|first)\s+(?:30|thirty)\s+days\s+(?:on|of)\s+the\s+market\b/i,
+    label: '"the most important 30 days on the market"',
+  },
+  {
+    re: /\bbuyers?\b[^.]{0,40}\bassume\b[^.]{0,40}\b(?:something|there)(?:'s| is)?\s*(?:is\s+)?wrong\b/i,
+    label: '"buyers assume something is wrong"',
+  },
+  { re: /\bshowings?\s+(?:per|to an?|before an?)\s+offer\b/i, label: 'showings-to-offer ratio' },
+  {
+    re: /\b(?:15|25)\s*(?:%|percent)\s+(?:net|gross)\s+adjustment\b/i,
+    label: 'the 15% / 25% adjustment cap',
+  },
+  { re: /\badjustment (?:cap|caps|limit|limits)\b/i, label: 'adjustment caps' },
+]
+
 export const SELLER_BANNED_WORDS: ReadonlyArray<{ re: RegExp; label: string }> = [
   { re: /\bbands?\b/i, label: 'band' },
   { re: /\bcomps?\b/i, label: 'comp' },
@@ -80,6 +123,7 @@ export const SELLER_BANNED_WORDS: ReadonlyArray<{ re: RegExp; label: string }> =
   { re: /\bdispersion\b/i, label: 'dispersion' },
   { re: /\bsupportable\b/i, label: 'supportable' },
   { re: /\bthe recommend\b(?!ed)/i, label: 'the recommend (noun)' },
+  ...OVERPRICING_FOLKLORE,
 ]
 
 export type SellerWordHit = { label: string; excerpt: string }

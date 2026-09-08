@@ -310,6 +310,17 @@ export function cmaSectionStyles(): string {
     border-bottom: 1px solid var(--navy-line);
   }
 
+  /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
+  table.realization { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
+  table.realization col.rz-weeks { width: 46%; }
+  table.realization col.rz-n { width: 14%; }
+  table.realization col.rz-share { width: 40%; }
+  table.realization th, table.realization td { padding: 6px 8px; border-bottom: 1px solid var(--navy-line); text-align: left; }
+  table.realization thead th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  table.realization td.n, table.realization th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.realization tr.is-mine { font-weight: 600; }
+  table.realization tr.is-mine th, table.realization tr.is-mine td { border-bottom-color: var(--navy); }
+  .rz-mine { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
   /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
   .timing-phone, .outcome-phone { display: none; }
   @media screen and (max-width: 700px) {
