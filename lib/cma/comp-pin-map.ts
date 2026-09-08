@@ -77,33 +77,52 @@ function pinButton(input: {
 }
 
 /**
- * Move a pin off one already placed at the same spot.
+ * Spread every knot of pins onto its own ring.
  *
- * Deterministic: the nth pin that collides steps around a ring at a fixed
- * angle, so the same document draws the same map every time. It moves the
- * MARK, never the underlying coordinate — the label still names the address
- * the row carries, and a reader can see that two sales sit at one address.
+ * Deterministic: a cluster's members are laid out at fixed angles around the
+ * point they share, so the same document draws the same map every time. It
+ * moves the MARK, never the underlying coordinate — the label still names the
+ * address the row carries, and a reader can see that two sales sit together.
  */
-function dodgePercent(
-  at: { xPct: number; yPct: number },
-  placed: readonly { x: number; y: number }[],
-): { xPct: number; yPct: number } {
-  // A pin is a 44px button carrying a ~26px dot on a map about 700px wide, so
-  // two pins inside ~3.4 percent of each other touch. Measured on the rendered
-  // maps, not guessed: pins 1, 2 and 4 on Diamond Bar Ranch overlapped into an
-  // unreadable cluster at 1.6.
-  const NEAR = 3.4
-  const R = 3.9
-  let x = at.xPct
-  let y = at.yPct
-  for (let step = 0; step < 8; step++) {
-    const clash = placed.some((p) => Math.abs(p.x - x) < NEAR && Math.abs(p.y - y) < NEAR)
-    if (!clash) break
-    const angle = (step * Math.PI) / 3
-    x = clamp(at.xPct + Math.cos(angle) * R * (1 + Math.floor(step / 6)), 1, 99)
-    y = clamp(at.yPct + Math.sin(angle) * R * (1 + Math.floor(step / 6)), 1, 99)
+function spreadClusters(
+  points: readonly ({ xPct: number; yPct: number } | null)[],
+): ({ xPct: number; yPct: number } | null)[] {
+  // A pin dot is a fixed 28px (22px on a phone) on a map that renders between
+  // about 340 and 1150 units wide, so "how far apart is far enough" cannot be
+  // one percentage. NEAR is the width at which pins on the widest render still
+  // touch; the ring is sized so the members of a cluster sit as far from each
+  // other as that ring allows, and NOBODY is left at the centre — a member on
+  // the point with the others around it is the pin that disappears.
+  const NEAR = 3.6
+  const out = points.map((p) => (p ? { xPct: p.xPct, yPct: p.yPct } : null))
+  const clusters: number[][] = []
+  points.forEach((p, i) => {
+    if (!p) return
+    const found = clusters.find((c) =>
+      c.some((j) => {
+        const q = points[j]!
+        return Math.abs(q.xPct - p.xPct) < NEAR && Math.abs(q.yPct - p.yPct) < NEAR
+      }),
+    )
+    if (found) found.push(i)
+    else clusters.push([i])
+  })
+  for (const c of clusters) {
+    if (c.length < 2) continue
+    const cx = c.reduce((sum, i) => sum + points[i]!.xPct, 0) / c.length
+    const cy = c.reduce((sum, i) => sum + points[i]!.yPct, 0) / c.length
+    // Two pins sit either side of the point; more open the ring so adjacent
+    // members stay a dot apart.
+    const r = c.length === 2 ? 2.4 : (NEAR * 0.62) / Math.sin(Math.PI / c.length)
+    c.forEach((i, k) => {
+      const angle = (2 * Math.PI * k) / c.length - Math.PI / 2
+      out[i] = {
+        xPct: clamp(cx + Math.cos(angle) * r, 2, 98),
+        yPct: clamp(cy + Math.sin(angle) * r, 3, 97),
+      }
+    })
   }
-  return { xPct: x, yPct: y }
+  return out
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -127,13 +146,13 @@ export function renderCompPinMapHtml(
     // carries as two rows with identical coordinates — landed one pin exactly
     // on top of the other, so sale 2 was not on the map at all. Coincident pins
     // are spread onto a small ring around the point they share.
-    const placed: { x: number; y: number }[] = []
+    const spread = spreadClusters(
+      overlay.pins.map((pin) => projectToImagePercent({ lat: pin.lat, lng: pin.lng }, overlay.view, 2)),
+    )
     const marks = overlay.pins
-      .map((pin) => {
-        const raw = projectToImagePercent({ lat: pin.lat, lng: pin.lng }, overlay.view, 2)
-        if (!raw) return ''
-        const at = dodgePercent(raw, placed)
-        placed.push({ x: at.xPct, y: at.yPct })
+      .map((pin, pi) => {
+        const at = spread[pi]
+        if (!at) return ''
         if (pin.n == null) {
           return pinButton({
             label: `Your home, ${subject.streetAddress}`,

@@ -169,7 +169,14 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .pin-dot{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cream);font:600 13px/1 Geist,system-ui,sans-serif;box-shadow:0 0 0 2px var(--cream),0 1px 6px rgba(16,39,66,.35)}
 /* Their own home is never buried under a sale pin. */
 .pin-hit.is-subject{z-index:2}
+/* Smaller dots on a phone: the map is a third the width there, so a cluster
+   ring that separates 28px dots on a desk screen cannot separate them at 375. */
+@media (max-width:700px){.pin-dot{width:22px;height:22px;font-size:11px}.pin-hit.is-subject .pin-dot{width:20px;height:20px;font-size:12px}}
 .pin-hit.is-subject .pin-dot{border-radius:2px;width:26px;height:26px;font-size:14px}
+/* Houses 10 metres apart cannot be pulled apart on a tile without pointing at
+   the wrong block, so occlusion is resolved by the interaction instead: the
+   pin a reader lit comes to the front, whatever it was sitting under. */
+.pin-hit.is-on,.pin-hit:focus-visible{z-index:3}
 .pin-hit.is-on .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 3px var(--navy)}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}
 .lot-tile{margin:0}

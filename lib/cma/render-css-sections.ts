@@ -329,6 +329,8 @@ export function cmaSectionStyles(): string {
     box-shadow: 0 0 0 2px var(--cream);
   }
   .pin-hit.is-subject { z-index: 2; }
+  /* The lit pin comes to the front, whatever it was sitting under. */
+  .pin-hit.is-on, .pin-hit:focus-visible { z-index: 3; }
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
