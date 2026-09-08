@@ -332,6 +332,24 @@ export async function getCmaMarketPulseRow(
   return (data ?? null) as CmaMarketPulseRow | null
 }
 
+/**
+ * WHAT THE MONTH LINE MEASURES (round four, class E).
+ *
+ * The document prints two city trends beside each other and they are not the
+ * same measurement. The date adjustment walks `pricing_market_index`, a median
+ * price a SQUARE FOOT over every closed PropertyType='A' sale with 300+ sqft
+ * — townhouses, condos and manufactured homes included (the MV has no
+ * product_class filter; `sale_pricing_facts_sfr` is the separate detached
+ * cut). The month line below walks `market_stats_cache` monthly, a median SALE
+ * PRICE over single-family sales only (`compute_and_cache_period_stats` filters
+ * PropertyType='A' AND property_sub_type='Single Family Residence', clipped to
+ * the city polygon). On Bend today the first peaked in May 2026 and the second
+ * bottomed in April, and a reader handed both without a label is right to call
+ * that a contradiction. The label rides with the figure so a renderer never has
+ * to name the measure itself.
+ */
+export const CMA_MARKET_TREND_MEASURE = 'median sale price, single-family homes'
+
 export type CmaMarketTrendRow = {
   period_start: string
   median_sale_price: number | null

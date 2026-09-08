@@ -20,6 +20,7 @@ import {
   getCmaMarketPulseRow,
   getCmaMarketStatsRow,
   getCmaMarketTrendRows,
+  CMA_MARKET_TREND_MEASURE,
   type CmaMarketPulseRow,
   type CmaMarketStatsRow,
   type CmaMarketTrendRow,
@@ -191,6 +192,7 @@ export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMark
     computedAt: stats?.computed_at ?? detached?.computedAt ?? null,
     pulseUpdatedAt: pulse?.updated_at ?? null,
     yearMart,
+    trendMeasure: CMA_MARKET_TREND_MEASURE,
     trend: trendRows.map((row) => ({
       periodStart: row.period_start,
       medianSalePrice: num(row.median_sale_price),

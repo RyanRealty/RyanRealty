@@ -165,6 +165,19 @@ export interface PricingTimeAdjustment {
    * month (R2d, 2026-09-08).
    */
   basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'none'
+  /**
+   * WHAT THIS BASIS MEASURES (round four, class E). The date adjustment and
+   * the market chapter's month line are two different city trends, and the
+   * document printed both without saying so: on Bend the index peaked in May
+   * 2026 while the median close bottomed in April, which reads as one number
+   * contradicting itself. `pricing_market_index` is a median price a SQUARE
+   * FOOT over every closed PropertyType='A' sale with 300+ sqft — the
+   * materialized view carries no product_class filter, so townhouses, condos
+   * and manufactured homes are in it. The year-over-year fallback is a median
+   * SALE PRICE over detached sales. Null on the basis that moved nothing.
+   * Pair it with CmaMarketContext.trendMeasure at the renderer.
+   */
+  measure: string | null
   /** The complete months the endpoint is the median of, oldest first. */
   referenceMonths?: string[]
   /**
@@ -234,6 +247,7 @@ export function buildTimeAdjustmentBasis(opts: {
       windowMonths,
       n: trend.n,
       basis: 'city-monthly-index-trailing-3',
+      measure: TIME_ADJUSTMENT_MEASURE_INDEX,
       referenceMonths: trend.referenceMonths,
       source: {
         table: 'pricing_market_index',
@@ -263,6 +277,7 @@ export function buildTimeAdjustmentBasis(opts: {
       windowMonths: 12,
       n: 0,
       basis: 'year-over-year',
+      measure: TIME_ADJUSTMENT_MEASURE_YOY,
       source: {
         table: 'market context (market_stats_cache / market_pulse_live)',
         filter: `Year-over-year median sale price change for this city, ${yoy}% over 12 months, spread evenly across the months`,
@@ -284,6 +299,7 @@ export function buildTimeAdjustmentBasis(opts: {
     windowMonths,
     n: 0,
     basis: 'none',
+    measure: null,
     source: {
       table: 'none',
       filter: 'No monthly index and no year-over-year figure for this city, so no sale was moved for its date.',
@@ -293,6 +309,14 @@ export function buildTimeAdjustmentBasis(opts: {
     sentence: 'There is no measured price path for this city, so no sale below was moved for when it sold.',
   }
 }
+
+/**
+ * The two measures a date adjustment can be built on, named for the reader.
+ * Neither is the market chapter's month line (CMA_MARKET_TREND_MEASURE), which
+ * is why both are stated rather than assumed.
+ */
+export const TIME_ADJUSTMENT_MEASURE_INDEX = 'median price a square foot, every home sale in the city'
+export const TIME_ADJUSTMENT_MEASURE_YOY = 'median sale price, detached homes'
 
 export type PricingRangeRuleName = 'trimmed-one-each-end' | 'min-max'
 

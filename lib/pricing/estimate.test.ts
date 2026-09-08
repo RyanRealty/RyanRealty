@@ -16,7 +16,10 @@ import {
   roundPriceUp,
   trimPpsfOutliers,
   usableSaleToAskRatio,
+  TIME_ADJUSTMENT_MEASURE_INDEX,
+  TIME_ADJUSTMENT_MEASURE_YOY,
 } from '@/lib/pricing/estimate'
+import { CMA_MARKET_TREND_MEASURE } from '@/lib/data/cma/builderReads'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CmaSubject } from '@/lib/cma/types'
 
@@ -1068,6 +1071,64 @@ describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
     expect(out.sentence.split('. ').length).toBe(3)
     expect(out.sentence).not.toMatch(/percent a month/)
     expect(out.sentence).not.toMatch(/\d+\.\d\d/)
+  })
+
+  /**
+   * TWO CITY TRENDS, TWO MEASURES (round four, class E). The date adjustment
+   * and the market chapter's month line both describe Redmond and disagree:
+   * the index peaked in April on price a square foot while the median close
+   * bottomed in the same month. Neither is wrong; they are different
+   * measurements, and each now says which.
+   */
+  it('names what the basis measures, and it is not the month line', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'redmond',
+      cityName: 'Redmond',
+      points: redmond,
+      asOf: '2026-09-07',
+    })
+    expect(out.measure).toBe(TIME_ADJUSTMENT_MEASURE_INDEX)
+    // pricing_market_index has no product_class filter, so the label may not
+    // claim single-family. Verified against the migration and the live table
+    // (townhouse / condominium / manufactured rows in Bend, 2026-09-08).
+    expect(out.measure).toContain('price a square foot')
+    expect(out.measure).not.toMatch(/single.family|detached/i)
+    expect(out.measure).not.toBe(CMA_MARKET_TREND_MEASURE)
+  })
+
+  it('the year-over-year fallback names its own, different measure', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'sisters',
+      cityName: 'Sisters',
+      points: [],
+      asOf: '2026-09-07',
+      yoyMedianPriceDeltaPct: -3.2,
+      indexUnavailableReason: 'no monthly index for this city',
+    })
+    expect(out.basis).toBe('year-over-year')
+    expect(out.measure).toBe(TIME_ADJUSTMENT_MEASURE_YOY)
+    expect(out.measure).toContain('median sale price')
+    expect(out.measure).not.toBe(TIME_ADJUSTMENT_MEASURE_INDEX)
+  })
+
+  it('a basis that moved nothing measures nothing', () => {
+    const out = buildTimeAdjustmentBasis({
+      citySlug: 'sisters',
+      cityName: 'Sisters',
+      points: [],
+      asOf: '2026-09-07',
+    })
+    expect(out.basis).toBe('none')
+    expect(out.measure).toBeNull()
+  })
+
+  it('the month line measures single-family sale prices, and says so', () => {
+    // compute_and_cache_period_stats filters PropertyType='A' AND
+    // property_sub_type='Single Family Residence' (read from the live function
+    // body, 2026-09-08). The index above does not.
+    expect(CMA_MARKET_TREND_MEASURE).toContain('single-family')
+    expect(CMA_MARKET_TREND_MEASURE).toContain('median sale price')
+    expect(CMA_MARKET_TREND_MEASURE).not.toContain('square foot')
   })
 
   it('states the endpoint rule in the source trace, and leaves the partial month out', () => {

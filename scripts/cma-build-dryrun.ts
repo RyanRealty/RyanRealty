@@ -106,6 +106,13 @@ type DryRun = {
   /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
   renderArgsPricingTimeAdjustment: unknown
   /**
+   * The two city trends the document prints, each named. Round four class E:
+   * the index peaked in a month the median close bottomed in, and neither
+   * carried a label saying they measure different things.
+   */
+  timeAdjustmentMeasure: string | null
+  marketTrendMeasure: string | null
+  /**
    * The "Adjusted for date" column the price grid prints, one row per sale,
    * beside the move the named index actually records over that sale's own
    * span. R2d (evaluator round two, 2026-09-08): the document printed a
@@ -215,6 +222,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsCompSearch: null, renderArgsPricingTimeAdjustment: null,
+    timeAdjustmentMeasure: null, marketTrendMeasure: null,
     renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
     renderArgsPricingReview: null, renderArgsPricingSellerNet: null, sellerNetAnchored: true,
     renderArgsExpiredAuditAskExposure: null, renderArgsSubjectStatus: null,
@@ -546,6 +554,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsCompSearch: compSearch,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
+    timeAdjustmentMeasure: pricing.timeAdjustment?.measure ?? null,
+    marketTrendMeasure: market?.trendMeasure ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
     renderArgsPricingReview: review,
@@ -667,6 +677,11 @@ async function main() {
       }
       for (const f of r.dateAdjustmentFailures) console.log(`     ✖ ${f}`)
     }
+    console.log(
+      `   two city trends, two measures · timeAdjustment.measure = ${
+        r.timeAdjustmentMeasure ?? 'none'
+      } · market.trendMeasure = ${r.marketTrendMeasure ?? 'none'}`,
+    )
     console.log('   render_args.pricing.timeAdjustment =')
     console.log(indent(r.renderArgsPricingTimeAdjustment))
     console.log('   render_args.pricing.clamp =')
