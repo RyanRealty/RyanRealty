@@ -4,6 +4,7 @@
  */
 
 import { getCmaAccessIdentity, getCmaRenderSourceBySlug, getCmaStoredHtmlBySlug } from '@/lib/data'
+import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
@@ -15,7 +16,25 @@ import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string; status: string } | null> {
   const source = await getCmaRenderSourceBySlug(slug)
   if (!source) return null
+  return resolveCmaPrintHtmlFromSource(source, slug)
+}
 
+/**
+ * The same render, from a row already in hand.
+ *
+ * Split out so `scripts/cma-lookpass.ts --overlay` can render the letter from
+ * a row whose `render_args` carries fields the stored one does not yet — the
+ * class A-D contract (`pricing.sellerNet`, `expiredAudit.askExposure`,
+ * `pricing.review`, `subjectStatus`) lands on the pricing side in this same
+ * cycle, and the only honest way to look at those chapters before it does is
+ * to render them from a fixture through the production function rather than
+ * to reason about them. READ-ONLY: nothing here writes, and the row handed in
+ * never reaches the database.
+ */
+export async function resolveCmaPrintHtmlFromSource(
+  source: CmaRenderSource,
+  slug: string,
+): Promise<{ html: string; status: string } | null> {
   if (source.render_args && typeof source.render_args === 'object') {
     const brokerRow = await getCmaBrokerBySlugOrEmail({ slug: source.broker_slug ?? 'matthew-ryan' })
     const broker: CmaBroker = {
