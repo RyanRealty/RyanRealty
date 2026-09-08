@@ -12,20 +12,34 @@
  * 4. Named slop tells (leftover HUD / PlaceFaceStrip on place openings, Atlas
  *    how-to caption) sit in taste-tells-baseline.json (shrink-only). New files
  *    may not grow the list. A score cannot outvote a tell.
+ * 5. A receipt evaluated on or after 2026-09-08 records the INSTRUMENT — the
+ *    evaluator and builder models, the rubric version, what was captured, a
+ *    hash over the shots, the three scorings behind the median, the named
+ *    defects, and what prior mark it was compared to. The rise rule then
+ *    compares like with like, and a prior mark from another instrument
+ *    re-baselines instead of stalling on a human (SITE-M1, 2026-09-08).
+ *    Contract + computations: scripts/lib/taste-receipt.mjs. Receipts already
+ *    dated on/after the cutoff when the rule landed sit in
+ *    taste-receipt-v2-baseline.json (shrink-only).
  *
- * Seed unreviewed with `--write-baseline`. Wired as ci:taste-canon.
+ * Seed unreviewed with `--write-baseline`, the v2 backlog with
+ * `--write-v2-baseline`. Wired as ci:taste-canon.
  */
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
+import { RECEIPT_V2_FROM, isV2Receipt, receiptV2Problems } from './lib/taste-receipt.mjs'
 
 const ROOT = process.cwd()
 const KITS = 'design_system/ryan-realty/ui_kits'
 const BASELINE = 'scripts/taste-review-baseline.json'
 const SHOTS_BASELINE = 'scripts/taste-review-shots-baseline.json'
 const TELLS_BASELINE = 'scripts/taste-tells-baseline.json'
+const V2_BASELINE = 'scripts/taste-receipt-v2-baseline.json'
 const CANON = 'design_system/public/TASTE.md'
 const POINTERS = ['CLAUDE.md', 'AGENTS.md', '.claude/skills/frontend-design/SKILL.md']
 const WRITE_BASELINE = process.argv.includes('--write-baseline')
+const WRITE_V2_BASELINE = process.argv.includes('--write-v2-baseline')
 
 const failures = []
 
@@ -81,9 +95,32 @@ const kitDirs = readdirSync(join(ROOT, KITS), { withFileTypes: true })
   .map((e) => `${KITS}/${e.name}/parity.json`)
   .filter((rel) => existsSync(join(ROOT, rel)))
 
+const rubricText = existsSync(join(ROOT, CANON)) ? readFileSync(join(ROOT, CANON), 'utf8') : ''
+
+/**
+ * The receipt this route carries at HEAD. A working-tree receipt that says
+ * "first" while a scored one is already committed is dodging the rise rule.
+ * No git (a fresh fixture, a shallow export) simply means no prior to compare.
+ */
+function committedReceipt(rel) {
+  try {
+    const out = execFileSync('git', ['show', `HEAD:${rel}`], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    const tr = JSON.parse(out)?.tasteReview
+    return tr && typeof tr === 'object' ? tr : null
+  } catch {
+    return null
+  }
+}
+
 const unreviewed = []
 const shotless = []
+const v2Broken = new Map()
 let complete = 0
+let v2Complete = 0
 for (const rel of kitDirs) {
   let d
   try {
@@ -104,6 +141,14 @@ for (const rel of kitDirs) {
     continue
   }
   complete += 1
+  if (!isV2Receipt(d.tasteReview)) continue
+  const problems = receiptV2Problems(d.tasteReview, {
+    root: ROOT,
+    rubricText,
+    headReceipt: committedReceipt(rel),
+  })
+  if (problems.length > 0) v2Broken.set(rel, problems)
+  else v2Complete += 1
 }
 
 if (WRITE_BASELINE) {
@@ -124,12 +169,30 @@ if (WRITE_BASELINE) {
   process.exit(0)
 }
 
+if (WRITE_V2_BASELINE) {
+  writeFileSync(
+    join(ROOT, V2_BASELINE),
+    JSON.stringify(
+      {
+        note:
+          `ci:taste-canon — SHRINK-ONLY. Receipts already dated on or after ${RECEIPT_V2_FROM} when the instrument fields landed, so they predate the rule. A route leaves by its next evaluator pass writing a full receipt (scripts/lib/taste-receipt.mjs); no route may be added.`,
+        generatedAt: new Date().toISOString(),
+        routes: [...v2Broken.keys()].sort(),
+      },
+      null,
+      2,
+    ) + '\n',
+  )
+  console.log(`taste-canon: v2 baseline written with ${v2Broken.size} legacy receipt(s).`)
+  process.exit(0)
+}
+
 const b = readJson(BASELINE, 'seed with --write-baseline')
 const baseline = Array.isArray(b?.routes) ? b.routes : []
 const baselineSet = new Set(baseline)
 for (const rel of unreviewed.filter((r) => !baselineSet.has(r))) {
   failures.push(
-    `${rel} has no tasteReview JSON. Record { evaluatedAt, score, beats, evaluator, shots: { desktop, mobile375 } } after a SEPARATE agent grades rendered 1440 and 375.`,
+    `${rel} has no tasteReview JSON. Record the receipt in ${CANON} ("The receipt") after a SEPARATE agent on a different model grades rendered 1440 and 375.`,
   )
 }
 
@@ -143,6 +206,19 @@ for (const rel of shotless.filter((r) => !shotSet.has(r))) {
   )
 }
 const shotStale = shotBase.filter((rel) => !shotless.includes(rel))
+
+const vb = readJson(V2_BASELINE, 'legacy receipts baseline — seed with --write-v2-baseline')
+const v2Base = Array.isArray(vb?.routes) ? vb.routes : []
+const v2Set = new Set(v2Base)
+for (const [rel, problems] of v2Broken) {
+  if (v2Set.has(rel)) continue
+  failures.push(
+    `${rel} tasteReview is dated ${RECEIPT_V2_FROM} or later and does not record its instrument:\n` +
+      problems.map((p) => `      - ${p}`).join('\n') +
+      `\n      Shape + computations: scripts/lib/taste-receipt.mjs · rule: ${CANON}.`,
+  )
+}
+const v2Stale = v2Base.filter((rel) => !v2Broken.has(rel))
 
 const TELL_FILES = [
   { rel: 'components/site/v3/V3Atlas.client.tsx', re: /Pinch or scroll to zoom/ },
@@ -177,8 +253,10 @@ if (failures.length > 0) {
 
 console.log(
   `taste-canon OK — pointers intact · ${complete} complete review(s) with PNGs · ` +
+    `${v2Complete} with a full instrument receipt (>= ${RECEIPT_V2_FROM}) · ` +
     `${unreviewed.length} unreviewed (baseline) · ${shotless.length} shotless (baseline) · ` +
-    `${dirty.length} known tell(s)` +
+    `${v2Broken.size} legacy receipt(s) (baseline) · ${dirty.length} known tell(s)` +
     (shotStale.length ? ` · remove from shots baseline: ${shotStale.join(', ')}` : '') +
+    (v2Stale.length ? ` · remove from v2 baseline: ${v2Stale.join(', ')}` : '') +
     (tellStale.length ? ` · remove from tells baseline: ${tellStale.join(', ')}` : ''),
 )

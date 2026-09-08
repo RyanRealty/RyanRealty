@@ -30,7 +30,12 @@ system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
   named there.
 - Every node's `accept` ends with the done rule: the separate evaluator's score for
   the page class, recorded in the route's `parity.json` `tasteReview`, must rise
-  above its previous mark. A page that still looks bad is a failed item.
+  above its previous mark. A page that still looks bad is a failed item. The mark
+  it must rise above is the previous mark **from the same instrument** — same
+  `evaluatorModel`, same `rubricVersion`, same `shotsHash`. If any of the three
+  differs, the item re-baselines itself (`comparedToPrior: "rebaselined"`) and the
+  next pass rises above the new mark. Nobody is asked to accept a lower number
+  than an incomparable one; `ci:taste-canon` computes the drift.
 - A commit touching `app/**` or `components/site/**` carries `Node: <id>` (G72). A
   new audit document is refused; findings append to a node.
 
@@ -108,7 +113,7 @@ It writes only `heartbeat_at` and only for the session that holds the node, so i
 neither revive someone else's claim nor read as progress. A session that cannot finish a
 node releases it (`open`, `owner_session` null) before it ends.
 
-### 3. Run the lanes
+### 3. Run the lanes — the evaluator scores BEFORE the push
 One `Agent` per lane, `isolation: 'worktree'`, `run_in_background: true`. Each
 brief carries, verbatim: the node id and its objective, output, and accept; the
 page class and the exact routes; the exclusive file set; the primitives to reuse
@@ -121,20 +126,58 @@ line keys, script-stat-source); the commit shape (`Node: <id>` trailer); and the
 push shape (`npm run gates:stamp`, then push its own branch, never `npm run push`
 from a worktree, memory `reference_npm_push_from_worktree_targets_main`).
 
-A lane is not finished until a SEPARATE evaluator agent (a different model from the
-builder) has scored the page class from the shots per `design_system/public/TASTE.md`
-and the score is above the previous `tasteReview`. If it is not, the lane redoes the
-work before it reports. The evaluator's remaining findings append to the node.
+**The taste pass runs inside the lane, against the lane's own dev server, before
+the branch is pushed.** The 2026-09-08 forensic audit of the queue's first day
+counted 17 of 37 item commits (45.9%) as evaluator rework — SITE-09 was 4 of its
+5 commits, SITE-M1 3 of 5 — because the scoring happened after the merge. A defect found before the push
+costs a fix. The same defect found after the merge costs a public commit, a
+re-capture of the whole page, and the 869-file unit suite. So the lane, in order:
 
-### 4. Land the round
-The orchestrator verifies every lane's claims itself (agents overstate), merges the
-lane branches into main in order, resolves the shared files, runs `npm run push`
-ONCE, `npm run deploy:verify` ONCE, opens each shipped page class on ryan-realty.com
-and exercises the change, then records evidence on each node: `done` with the READY
-SHA and what the environment showed, or `blocked` with `blocked_until` set to the
-re-open date when the accept test needs production time — the brief reopens it on
-that date by itself, and the next item starts anyway. Update
-each route's `parity.json` `tasteReview` with the evaluator's result and shots.
+1. Builds, and runs the builder ritual in `design_system/public/TASTE.md` with
+   its own eyes on the screenshots.
+2. Captures the shots from its own `next dev` into `ui_kits/<route>/shots/`,
+   at 375 and a desktop width, in every state the section has.
+3. Spawns the evaluator: a SEPARATE `Agent` on a DIFFERENT model from the
+   builder, given the shots and the local URL, scoring the same shots THREE
+   times in the one call per the rubric in TASTE.md.
+4. Acts on the named defects, re-captures, and re-scores. Repeat until the
+   median rises above the previous mark from the same instrument.
+5. Writes the full receipt into the route's `parity.json` `tasteReview`
+   (shape in TASTE.md, "The receipt"): `evaluatorModel`, `builderModel`,
+   `rubricVersion`, `shotSpec`, `shotsHash`
+   (`node scripts/lib/taste-receipt.mjs <parity.json>`), the three `scores` and
+   their median, the named `defects`, and `comparedToPrior` with `priorMark`.
+   `ci:taste-canon` recomputes the hash and the median and refuses a receipt
+   that claims a rise it did not make.
+6. Only then: `npm run gates:stamp`, commit with the `Node: <id>` trailer, push
+   its own branch, and report. The evaluator's remaining findings append to the
+   node.
+
+A lane whose score has not risen is not eligible to land. It redoes the work
+inside the lane; it does not push and ask the orchestrator to sort it out.
+
+### 4. Land the round — verify what the lane reported, do not re-score it
+The orchestrator verifies every lane's claims itself (agents overstate). The
+scoring already happened; this pass asks whether the thing that shipped is the
+thing that was scored:
+
+- `npm run -s ci:taste-canon` — the receipt's `shotsHash` must still match the
+  shots on disk, and its `comparedToPrior` must hold. A lane that re-captured
+  after scoring fails here.
+- Merge the lane branches into main in order, resolve the shared files, run
+  `npm run push` ONCE and `npm run deploy:verify` ONCE.
+- Open each shipped page class on ryan-realty.com at the `shotSpec` routes and
+  viewports, exercise the change, and compare against the lane's shots: the
+  sections in the shots are on the live page, and the defects the lane recorded
+  as fixed are gone. A mismatch is a finding on the node, not a new score.
+- Record evidence on each node: `done` with the READY SHA and what the
+  environment showed, or `blocked` with `blocked_until` set to the re-open date
+  when the accept test needs production time — the brief reopens it on that date
+  by itself, and the next item starts anyway.
+
+The orchestrator does not spawn its own evaluator for a page a lane already
+scored. Two marks on one page from two instruments is the problem the receipt
+was rebuilt to end.
 
 ### 5. Next round, immediately
 Boot again. Take the next eligible set. Sleeping between rounds is not a state this
@@ -166,6 +209,12 @@ line, and keep building the other lanes.
   node owes, or record it in the shrink-only baseline with the node id that owes the
   wiring. An item is not shipped until a visitor can reach it.
 - Mark a node done from a self-report. Evidence is what the environment showed.
+- Score a page after it has merged. The evaluator runs in the lane, on the lane's
+  dev server, before the push. A post-merge finding costs a public commit, a
+  re-capture and the full suite; the same finding cost a fix an hour earlier.
+- Ask Matt to accept a lower score than an incomparable prior mark. A prior mark
+  from a different model, rubric, or set of shots is not a baseline — re-baseline
+  it in the receipt and keep going.
 - Put a dollar figure on a public page for a typed address. Add a registration wall.
   Both are Matt's rulings.
 - Send anything to a real person (a lead, a client) without Matt's per-action yes.
