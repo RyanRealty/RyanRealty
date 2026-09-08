@@ -229,6 +229,26 @@ export interface CmaPricingClamp {
   sentence: string
 }
 
+/** The adversarial audit's outcome, as the document carries it. */
+export type CmaPricingAuditVerdict = 'pass' | 'review' | 'fail' | 'did-not-run'
+
+/**
+ * The review flag, on the document (tasteReview round three, §2 item 1).
+ *
+ * Two of four exemplars carried `needsReview: true` and rendered as finished
+ * opinions, one of them with the word "indefensible" in its own reviewReason
+ * and nowhere on the page. This is the block a renderer reads to show the
+ * broker a banner; `reasons` are rewritten in lib/pricing/review.ts so nothing
+ * a seller must not read can reach a surface a seller sees.
+ */
+export interface CmaPricingReview {
+  needsReview: boolean
+  /** Seller-safe. One sentence per cause, never the engine's own wording. */
+  reasons: string[]
+  /** Null on a build that recorded no audit at all. */
+  auditVerdict: CmaPricingAuditVerdict | null
+}
+
 /**
  * A printed sale the range rule set aside: it sat above or below every other
  * adjusted sale, so it is shown as evidence and carries none of the price.
@@ -329,6 +349,12 @@ export interface CmaPricing {
    * `min-max`, where nothing is set aside and nothing says it was.
    */
   setAside?: CmaSetAsideSale[] | null
+  /**
+   * Why a broker has to look before this is sent, in seller-safe language, and
+   * what the adversarial audit said. Present on every build; `needsReview` is
+   * false and `reasons` empty on a clean one.
+   */
+  review?: CmaPricingReview | null
   /**
    * Sales considered and not used, capped at eight, each with a reason
    * composed from the sale's own recorded facts. An appraisal shows what it

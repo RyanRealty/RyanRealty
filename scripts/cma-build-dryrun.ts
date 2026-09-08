@@ -126,6 +126,12 @@ type DryRun = {
   renderArgsPricingClamp: unknown
   /** render_args.pricing.setAside — the sales the range rule removed from the price. */
   renderArgsPricingSetAside: unknown
+  /** render_args.pricing.review — the flag a document must not be able to hide. */
+  renderArgsPricingReview: unknown
+  /** The state /admin/cmas renders for the STORED row today. */
+  queueStateStored: string | null
+  /** The state it would land in after this run, carrying the stored audit verdict. */
+  queueState: string | null
   /** render_args.pricing.rejected — considered and not used. */
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
@@ -181,6 +187,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
     renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
+    renderArgsPricingReview: null, queueState: null, queueStateStored: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
     dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
   }
@@ -366,6 +373,32 @@ async function dryRun(slug: string): Promise<DryRun> {
     return buildFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
   })()
 
+  // EXACTLY what lib/cma/build.ts step 4.6 writes. The dry run skips the LLM
+  // audit, so the verdict it can report is 'did-not-run'.
+  const { buildPricingReview } = await import('@/lib/pricing/review')
+  const { resolveCmaQueueState, readCmaAuditVerdict } = await import('@/lib/data/cma/unified-queue')
+  const storedSummary = (row.build_summary ?? null) as Parameters<typeof readCmaAuditVerdict>[0]
+  const storedAudit = readCmaAuditVerdict(storedSummary)
+  const storedNeedsReview = storedSummary?.needs_review === true
+  const queueStateWith = (needsReview: boolean) =>
+    resolveCmaQueueState({
+      status: String(row.status ?? 'draft'),
+      archivedAt: (row.archived_at as string | null) ?? null,
+      buildError: (row.build_error as string | null) ?? null,
+      hasDocument: true,
+      needsReview,
+      auditVerdict: storedAudit.verdict,
+      deliveredAt: (row.delivered_at as string | null) ?? null,
+      emailSentAt: (row.email_sent_at as string | null) ?? null,
+      queuedAt: (row.queued_at as string | null) ?? null,
+    })
+  const review = buildPricingReview({
+    needsReview: pricing.needsReview,
+    reviewReason: pricing.reviewReason,
+    clamp: pricing.clamp ?? null,
+    auditVerdict: storedAudit.verdict,
+  })
+
   const contract = evaluateAccuracyContract({
     comps: adjusted,
     pricing,
@@ -412,6 +445,12 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
+    renderArgsPricingReview: review,
+    // What /admin/cmas shows for the STORED row, and what it would show after
+    // this run. The dry run cannot re-run the LLM audit, so the second line
+    // carries the stored verdict beside THIS run's review flag.
+    queueStateStored: queueStateWith(storedNeedsReview),
+    queueState: queueStateWith(pricing.needsReview === true),
     renderArgsPricingRejected: rejected,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
@@ -454,7 +493,9 @@ async function main() {
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
       renderArgsPricingTimeAdjustment: null, renderArgsPricingClamp: null,
-      renderArgsPricingSetAside: null, renderArgsPricingRejected: null,
+      renderArgsPricingSetAside: null, renderArgsPricingReview: null, queueState: null,
+      queueStateStored: null,
+      renderArgsPricingRejected: null,
       renderArgsExpiredAuditFinalCycle: null,
       dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [],
       error: e instanceof Error ? e.message : String(e),
@@ -514,6 +555,11 @@ async function main() {
     console.log(indent(r.renderArgsPricingRangeRule))
     console.log('   render_args.pricing.setAside =')
     console.log(indent(r.renderArgsPricingSetAside))
+    console.log(
+      `   queue state · stored ${r.queueStateStored ?? 'n/a'} · after this run ${r.queueState ?? 'n/a'}`,
+    )
+    console.log('   render_args.pricing.review =')
+    console.log(indent(r.renderArgsPricingReview))
     console.log('   render_args.pricing.reconciliation =')
     console.log(indent(r.renderArgsPricingReconciliation))
     console.log('   render_args.market.originalAskRealization =')

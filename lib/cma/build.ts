@@ -27,6 +27,7 @@ import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
+import { buildPricingReview } from '@/lib/pricing/review'
 import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -748,6 +749,26 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .map((c) => c.detail)
           .join(' ')
     }
+
+    // 4.6. THE REVIEW FLAG, ON THE DOCUMENT (tasteReview round three, §2
+    // item 1). Two of the four exemplars carried needsReview and rendered as
+    // finished opinions — one with the word "indefensible" in its own
+    // reviewReason and nowhere on the page. Written AFTER the audit and the
+    // contract, so it carries everything that can raise the flag; the reasons
+    // are rewritten in lib/pricing/review.ts because render_args is read by
+    // the seller document as well as the admin view.
+    pricing.review = buildPricingReview({
+      needsReview: pricing.needsReview,
+      reviewReason: pricing.reviewReason,
+      clamp: pricing.clamp ?? null,
+      auditVerdict: audit
+        ? audit.verdict === 'pass'
+          ? 'pass'
+          : audit.verdict === 'fail'
+            ? 'fail'
+            : 'review'
+        : 'did-not-run',
+    })
 
     // 4.7. LAST-LISTING REVIEW (Matt 2026-08-05, superseding the 2026-07-14
     // separate audit doc): there is ONE CMA document. When the subject's most

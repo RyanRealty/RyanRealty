@@ -114,6 +114,20 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     expect(x.clamp!.applications.find((a) => a.tier === 'recommended')!.before).toBe(1973000)
   })
 
+  it('the review reason names the evidence, not the previous application of itself', () => {
+    const x = p({ conservative: 1390000, recommended: 1973000, highEnd: 1930000 })
+    applyFailedAskCap(x, { lastFailedListPrice: 1500000, offMarketDate: null })
+    applyFailedAskCap(x, { lastFailedListPrice: 1500000, offMarketDate: recentOff })
+    // "supported $1,500,000 against the $1,500,000 asking that just failed" is
+    // the first pass's own output described as evidence. It shipped on
+    // cma-65365-concorde and on cma-2465-7th-redmond-97756.
+    expect(x.reviewReason).toContain('supported $1,973,000 against the $1,500,000 asking that just failed')
+    expect(x.reviewReason).not.toContain('supported $1,500,000 against the $1,500,000')
+    expect(x.reviewReason!.match(/Comp evidence supported/g)).toHaveLength(1)
+    // And the seller-facing note is written once, not once per application.
+    expect(x.notes.filter((n) => n.includes('did not sell'))).toHaveLength(1)
+  })
+
   it('names the high end when only the high end moved', () => {
     // Below both quantile ceilings, above the ask itself.
     const x = p({ conservative: 400000, recommended: 460000, highEnd: 530000 })

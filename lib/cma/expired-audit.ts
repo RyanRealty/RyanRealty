@@ -847,16 +847,29 @@ export function applyFailedAskCap(
       }
     : null
   pricing.needsReview = true
+  // ONE SENTENCE PER APPLICATION, and it names the figure the EVIDENCE
+  // supported. The ceiling is applied twice on the build path, so writing
+  // `uncapped` — the value on entry — produced "Comp evidence supported
+  // $1,500,000 against the $1,500,000 asking that just failed" on the second
+  // pass, which is the first pass's own output described as evidence. The
+  // earlier sentence is replaced rather than appended for the same reason.
+  const supported = headline?.before ?? uncapped
+  const priorLine = /Comp evidence supported .*? asking that (?:just )?failed/
+  const carried = (pricing.reviewReason ?? '').replace(priorLine, '').replace(
+    / (?:List tiers clamped to the failed-ask backtest quantiles \([^)]*\)|The printed list sits at or below that ask)\.?/,
+    '',
+  )
   pricing.reviewReason = [
-    pricing.reviewReason,
+    carried.trim(),
     recent
-      ? `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`
-      : `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that failed to sell. The printed list sits at or below that ask.`,
+      ? `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`
+      : `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that failed to sell. The printed list sits at or below that ask.`,
   ]
     .filter(Boolean)
     .join(' ')
-  pricing.notes.push(`Your last listing asked ${usd(ask)} and did not sell.`)
-  return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
+  const askNote = `Your last listing asked ${usd(ask)} and did not sell.`
+  if (!pricing.notes.includes(askNote)) pricing.notes.push(askNote)
+  return { applied: true, cappedTo: recCeil, uncappedRecommended: supported }
 }
 
 /**
