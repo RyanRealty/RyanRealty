@@ -16,9 +16,10 @@
  * WHY IT IS NOT A KPI GRID. The banned form is "a number, a percentage, and
  * jargon" — a figure with nothing beside it saying what it means. Here the CLAIM
  * is the heading and the figures answer it; every reading carries a rule whose
- * length is that reading against the largest of them, so the shape of the market
- * lands before a numeral is read; and selecting a reading lights that population
- * on the map and publishes what it counts, in a sentence, with its window.
+ * length is that reading's share of the whole read, so the three fills tile one
+ * track and the composition of the market lands before a numeral is read; and
+ * selecting a reading lights that population on the map and publishes what it
+ * counts, in a sentence, with its window.
  *
  * NO JAVASCRIPT. The switch is a native radio group and CSS sibling state, so
  * the whole band — figures, marks, plot, definitions, doors — is in the server
@@ -46,8 +47,15 @@ export type V3PulseReading = {
   /** What the count is, in plain words: "homes for sale". Never a slug. */
   label: string
   /**
-   * This reading against the largest reading in the set, 0..1. It is the LENGTH
-   * of the rule, so the reader sees the ratio before reading a numeral.
+   * This reading's share of the WHOLE set, 0..1 — so the fills of all the
+   * readings together fill exactly one track, and the block is a part-to-whole
+   * and not a bar beside a full-width bar. It is the LENGTH of the rule, so the
+   * reader sees the composition before reading a numeral.
+   *
+   * Scaled against the largest reading instead, the biggest population is
+   * pinned at 1 by construction and its row does no design work (2026-09-08
+   * evaluator). The ratios between the rules are identical either way; what
+   * changes is that the track now means something — the whole read.
    */
   share: number
   /** What is counted and over what window, in one sentence a visitor reads. */

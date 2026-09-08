@@ -21,6 +21,13 @@
   padding: clamp(2rem, 4.5vw, 3.25rem) 0 clamp(2rem, 4vw, 3rem);
   background: var(--v3-surface);
   color: var(--v3-ink);
+  /* The band carries an id, so it is a scroll target, and the chrome is sticky:
+     without this an anchor scroll parks the claim's ascenders under the header
+     and "More" reads as "Wore" at 375 (2026-09-08 evaluator, right-now-mobile375).
+     Every sibling pattern that owns an id reserves the chrome the same way —
+     V3AlertsStrip's exact formula, because the height being cleared is the
+     chrome's, not a section rhythm. */
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 /* A band that follows the Stage closes the photograph with the navy rule the
@@ -162,8 +169,10 @@
   transition: color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-/* The magnitude, drawn. The track spans the reading column so three rules share
-   one baseline and the ratio between the counts is legible without arithmetic. */
+/* The composition, drawn. One track per reading, all of them the same width and
+   all scaled to the same whole, so the three fills together tile exactly one
+   track: the reader sees what share of the read each population is without
+   arithmetic, and no row is full-width by construction. */
 .v3-pulse__rule {
   grid-column: 1 / -1;
   display: block;

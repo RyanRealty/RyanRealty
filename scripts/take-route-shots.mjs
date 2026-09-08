@@ -47,6 +47,9 @@
  *                `a`          scroll to `#a` when it exists, else shoot the top
  *                `b=SEL`      scroll SEL into view, then shoot the viewport
  *                `c=SEL!click` scroll to SEL, click it, then shoot the viewport
+ *                `d=SEL@ANCHOR!click` click SEL, but frame ANCHOR — for a
+ *                             control that changes something above it (the
+ *                             homepage Sell tab and the hero headline it swaps)
  *   --out <dir>  write somewhere other than the route's shots/ directory
  *   --full       whole-page capture instead of the first viewport. Height-capped
  *                (see MAX_FULL_PAGE_HEIGHT) — a 16,000px stitch is the thing
@@ -98,6 +101,14 @@
  *     not taken halfway through a fade. `reducedMotion` stays
  *     'no-preference' on purpose — under 'reduce' some reveals never run and
  *     the page shoots empty.
+ * 11. The sticky chrome over a state shot. A `--states` capture used to park
+ *     the target 24px from the top of the viewport, under a 66px header, so
+ *     every state shot on this site showed a section with its first line
+ *     sliced. That is not what a visitor following the anchor sees, and it
+ *     cost the 2026-09-08 homepage pass a defect report against a page that
+ *     was correct. The scroll now reserves the target's own
+ *     `scroll-margin-top`, or the pinned chrome's height plus 24 when it
+ *     declares none.
  *
  * RUNNING A SERVER FOR IT. In a git worktree use `npx next dev --webpack`:
  * Turbopack refuses the symlinked `node_modules` a worktree gets. Any port is
@@ -167,7 +178,18 @@ export function parseStates(raw) {
       click = true
       selector = selector.slice(0, -'!click'.length).trim()
     }
-    states.push({ name, selector, click, selectorImplied: false })
+    // `SEL@ANCHOR` — click SEL, frame ANCHOR. A control and the thing it
+    // changes are usually not the same element: the homepage Sell tab sits at
+    // the foot of the hero, so framing the tab crops off the headline the tab
+    // just switched. Split on the LAST `@` so a selector holding one in an
+    // attribute value keeps it.
+    let anchor = null
+    const at = selector.lastIndexOf('@')
+    if (at > 0) {
+      anchor = selector.slice(at + 1).trim() || null
+      selector = selector.slice(0, at).trim()
+    }
+    states.push({ name, selector, anchor, click, selectorImplied: false })
   }
   return states
 }
@@ -536,29 +558,61 @@ async function main() {
       written.push({ file: baseFile, ...baseResult })
 
       for (const state of opts.states) {
-        const target = await page
-          .evaluate((sel) => {
-            const el = document.querySelector(sel)
-            if (!el) return null
-            return el.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop || 0)
-          }, state.selector)
-          .catch(() => null)
+        // TRAP 11 — the sticky chrome. Parking the target at y=24 puts its
+        // first line UNDER a 66px header, so a state shot shows a section whose
+        // heading is sliced and the evaluator reads a live defect the page does
+        // not have (2026-09-08: #right-now's claim read "Wore than one in five"
+        // in right-now-mobile375.png while an actual anchor scroll landed it
+        // 14px clear). Reserve what a real anchor scroll reserves: the
+        // element's own scroll-margin-top when it declares one — that IS the
+        // page's answer — else the height of whatever is pinned at the top of
+        // the viewport, plus the 24px this tool has always used. With no sticky
+        // chrome and no declared margin the number is 24, exactly as before.
+        const measure = (sel) =>
+          page
+            .evaluate((s) => {
+              const el = document.querySelector(s)
+              if (!el) return null
+              const top =
+                el.getBoundingClientRect().top +
+                (window.scrollY || document.documentElement.scrollTop || 0)
+              const declared = Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+              let chrome = 0
+              for (const node of document.elementsFromPoint(Math.round(window.innerWidth / 2), 4)) {
+                const cs = getComputedStyle(node)
+                if (cs.position !== 'sticky' && cs.position !== 'fixed') continue
+                const r = node.getBoundingClientRect()
+                if (r.top <= 2 && r.height > 0) chrome = Math.max(chrome, r.height)
+              }
+              return { top, reserve: declared > 0 ? declared : chrome + 24 }
+            }, sel)
+            .catch(() => null)
+
+        const frameSel = state.anchor ?? state.selector
+        const target = await measure(frameSel)
 
         if (target == null) {
           if (!state.selectorImplied) {
-            console.error(`  ${viewport.key}: state "${state.name}" — selector ${state.selector} not found`)
+            console.error(`  ${viewport.key}: state "${state.name}" — selector ${frameSel} not found`)
             failed = true
             continue
           }
           // A bare state name with no matching anchor shoots the top of the page.
         } else {
-          await wheelTo(page, Math.max(0, target - 24))
+          await wheelTo(page, Math.max(0, target.top - target.reserve))
           if (state.click) {
             await page.click(state.selector, { timeout: 5000 }).catch((err) => {
               console.error(`  ${viewport.key}: state "${state.name}" — click failed: ${err.message.split('\n')[0]}`)
               failed = true
             })
             await page.waitForTimeout(700)
+            // page.click scrolls its own target into view, and focusing a
+            // visually-hidden control can move the page again, so an explicit
+            // frame is re-applied after the click rather than before it.
+            if (state.anchor) {
+              const framed = await measure(state.anchor)
+              if (framed) await wheelTo(page, Math.max(0, framed.top - framed.reserve))
+            }
           }
         }
 

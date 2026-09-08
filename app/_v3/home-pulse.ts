@@ -15,11 +15,15 @@
  *
  * SECTION 0. Every figure here is a COUNT OF ROWS the DAL returned in this
  * render — no derivation from a prior deliverable, no remembered number. The
- * one derived figure, the under-contract share, is computed from those two
- * counts and its arithmetic is printed in the trace. Verified 2026-09-08
- * against `getAtlasTiles({ cities: [] })`: 5,751 rows read — 3,284 Active, 44
- * Active Under Contract, 868 Pending, 1,555 Closed inside the 90-day window, of
- * which 462 closed inside 30 days.
+ * two derived figures — the under-contract share in the claim and each rule's
+ * share of the whole read — are computed from those counts and their arithmetic
+ * is printed in the trace. Verified 2026-09-08 against
+ * `getAtlasTiles({ cities: [] })`: 5,751 rows read — 3,284 Active, 44 Active
+ * Under Contract, 868 Pending, 1,555 Closed inside the 90-day window, of which
+ * 462 closed inside 30 days. Re-read the same day at 8:25 AM off the running
+ * page: 3,282 for sale, 912 under contract (4,194 on market), 1,557 closes in
+ * the 90-day window, 464 of them inside 30 days. The feed moves during a day;
+ * these are two honest reads, not a correction.
  *
  * WHAT IT WILL NOT DO. If the read comes back with no dots at all, the band
  * does not render. A count of zero listings across Central Oregon is not a fact
@@ -107,6 +111,7 @@ export function pulseTrace(input: HomePulseInput): string {
     `For sale and under contract are listing_tile_mv rows with a recorded coordinate in the Central Oregon service-area cities: standard_status Active gives ${n(forSale)}, Pending and Active Under Contract together give ${n(pending)}, over ${n(onMarket)} on-market rows.`,
     `Sold is the listings table — StandardStatus Closed, ClosePrice at or above $1,000, a recorded coordinate, the same cities — read over the last ${ATLAS_HEAT_WINDOW_DAYS} days (${n(input.closedInWindow)} closes) and filtered to the ${ATLAS_PULSE_WINDOW_DAYS} days before the read, which is ${n(sold)}.`,
     `Under contract as a share of the market is ${n(pending)} ÷ ${n(onMarket)} = ${share}%.`,
+    `The rule under each count is that count over every listing in this read — ${n(forSale)} + ${n(pending)} + ${n(sold)} = ${n(forSale + pending + sold)} — so the three rules together fill one track.`,
     `Every listing in each count is plotted at its own coordinate; marks coincide where houses sit close together.`,
     `Coming Soon is never counted on a public surface.`,
   ].join(' ')
@@ -135,13 +140,19 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
   )
   const pathOf = (key: string) => field?.paths.find((p) => p.key === key)?.d
 
-  const largest = Math.max(forSale, pending, sold, 1)
+  // The denominator every rule is drawn against: every listing this read
+  // returned, in the three states below. It is also every mark in the drawing
+  // beside them, which is what makes the rule and the constellation one graphic
+  // rather than two. Scaled against the LARGEST reading instead, "listings for
+  // sale" is 1 by construction and its rule is permanently full width
+  // (2026-09-08 evaluator) — the ratios are the same, the whole is not.
+  const readTotal = Math.max(1, forSale + pending + sold)
   const readings: V3PulseReading[] = [
     {
       key: 'active',
       figure: n(forSale),
       label: 'listings for sale',
-      share: forSale / largest,
+      share: forSale / readTotal,
       definition:
         'Active listings of every property type the regional MLS carries — houses, condos, land, everything — across the Central Oregon cities and communities we cover.',
       path: pathOf('active'),
@@ -152,7 +163,7 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
       key: 'pending',
       figure: n(pending),
       label: 'under contract',
-      share: pending / largest,
+      share: pending / readTotal,
       definition:
         'Listings with an accepted offer that have not closed yet: pending and active under contract, read from the same feed at the same moment.',
       path: pathOf('pending'),
@@ -163,7 +174,7 @@ export function composeHomePulse(input: HomePulseInput): V3PulseProps | null {
       key: 'sold',
       figure: n(sold),
       label: `sold in the last ${ATLAS_PULSE_WINDOW_DAYS} days`,
-      share: sold / largest,
+      share: sold / readTotal,
       definition:
         'Sales that recorded a closing in the last 30 days, in the same cities. These are finished deals at the price they actually brought, not asking prices.',
       path: pathOf('sold'),

@@ -81,6 +81,29 @@
 }
 
 /* --------------------------------------------------------------------------
+   THE HEADLINE SWITCHES TOO (2026-09-08 evaluator).
+   The tabs used to change the form and leave the copy alone, so a visitor who
+   tapped Sell read "Homes for sale in Central Oregon" directly over their own
+   address field and a Value my home button. The Stage ships both pairs
+   (altEyebrow / altHeadline); this is the rule that picks one.
+
+   `:has()` rather than `~` for one structural reason: the radios live inside
+   the search, which V3Stage renders AFTER the copy, and a sibling combinator
+   only reaches forward. The selector is scoped to the copy block that contains
+   the switch, so it can match nothing else on the site. `:has()` is already the
+   mechanism in V3Sheet, V3Chrome and V3StickyAsk — no new dependency.
+   -------------------------------------------------------------------------- */
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-eyebrow:not(.v3-stage-eyebrow--alt),
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line:not(.v3-stage-line--alt) {
+  display: none;
+}
+
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-eyebrow--alt,
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line--alt {
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
    THE PANELS. Both render; the switch decides which one is on screen.
    -------------------------------------------------------------------------- */
 .v3 .home-hero-search__panel-form {

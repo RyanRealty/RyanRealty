@@ -176,7 +176,17 @@
       "RESOLVED 2026-09-06: Atlas, HomeExploreMap, town ledger, and market Instrument removed from home per Matt lock.",
       "RESOLVED 2026-09-08 (SITE-M1): brokers section compact at 390; separate evaluator 77 on its scale, see tasteReview.openRaise for the rest of the page.",
       "RESOLVED 2026-09-08 (SITE-12): the hero Buy | Sell toggle's selected state was ambiguous. Selection is now carried by fill AND ink AND weight, and the unselected word is muted on the navy face; the switch is a native radio group so both panels are in the server HTML and the tab works with scripting off.",
-      "RESOLVED 2026-09-08 (SITE-12): 'Central Oregon right now' was published inside the Homes dropdown only. It is now the #right-now band under the hero search, with its read time, and the menu no longer carries it (lib/site/chrome-live.ts)."
+      "RESOLVED 2026-09-08 (SITE-12): 'Central Oregon right now' was published inside the Homes dropdown only. It is now the #right-now band under the hero search, with its read time, and the menu no longer carries it (lib/site/chrome-live.ts).",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): #right-now had no scroll-margin-top, so an anchor scroll parked the claim's ascenders under the sticky chrome at 375. V3Pulse.css now reserves calc(var(--v3-chrome-h) + var(--v3-space-md)); measured after a real /#right-now navigation the section top lands at 80px against a chrome bottom of 66px.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): the hero H1 stayed buyer-framed in Sell mode. V3Stage takes altEyebrow/altHeadline, both pairs ship in the server HTML, and app/_v3/home-hero-search.css switches them with the same tabs that switch the panels. The page still ships exactly one h1, carrying the locked buyer line.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): the #right-now rules were scaled against the largest reading, so 'listings for sale' was full width by construction. Every rule is now that count over the whole read (3,281 + 912 + 465), so the three fills tile one track and none is pinned; the arithmetic is in the trace.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): one house led two rails (3027 Polarstar Avenue on nearby and on price cuts). homeRailRows builds the narrow shelves first and the lead shelf from what is left, so a listing leads exactly one rail on the live 3,000-tile pool.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): #doors 'Work with us' had no supporting line. It carries the live broker-roster count ('3 brokers who live and work here'), omitted rather than guessed when the roster read gives nothing.",
+      "RESOLVED 2026-09-08 (SITE-12 round 2): #places was twelve identical empty boxes with towns and resorts undifferentiated. Two labelled runs now — TOWNS - HOUSES FOR SALE with the live active_sfr_count per town (the same figure /cities publishes) and RESORTS AND COMMUNITIES with names only, because this page holds no per-resort read — each with its own index door.",
+      "OPEN: #doors are line pictograms, not the illustrations the 2026-09-06 lock names.",
+      "OPEN: V3Footer's skyline band (object-fit cover in a fixed 10rem band) over-scales at 1440, and the Markets column runs long beside empty width. Shared footer on 118 pages; not touched from a homepage lane.",
+      "OPEN: #featured-community shows eleven unnamed dots as its pager.",
+      "OPEN: three consecutive rails share one form (eyebrow, heading, cards, see-all)."
     ]
   },
   "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place chips, proof.",

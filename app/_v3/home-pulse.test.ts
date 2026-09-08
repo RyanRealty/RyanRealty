@@ -60,6 +60,8 @@ describe('pulseTrace', () => {
     expect(trace).toContain('4,196')
     expect(trace).toContain('1,555')
     expect(trace).toContain('912 ÷ 4,196 = 21.7%')
+    // The rules' own denominator, printed with its arithmetic.
+    expect(trace).toContain('3,284 + 912 + 462 = 4,658')
     expect(trace).toContain('Coming Soon is never counted')
   })
 })
@@ -76,11 +78,16 @@ describe('composeHomePulse', () => {
     ])
   })
 
-  it('scales every rule against the largest reading, so the shape is the ratio', () => {
+  it('scales every rule against the whole read, so the three fills tile one track', () => {
     const pulse = composeHomePulse(LIVE)!
-    expect(pulse.readings[0]!.share).toBe(1)
-    expect(pulse.readings[1]!.share).toBeCloseTo(912 / 3284, 6)
-    expect(pulse.readings[2]!.share).toBeCloseTo(462 / 3284, 6)
+    const whole = 3284 + 912 + 462
+    expect(pulse.readings[0]!.share).toBeCloseTo(3284 / whole, 6)
+    expect(pulse.readings[1]!.share).toBeCloseTo(912 / whole, 6)
+    expect(pulse.readings[2]!.share).toBeCloseTo(462 / whole, 6)
+    // The defect this replaced: the biggest reading was 1 by construction, so
+    // its rule was permanently full width and the row did no design work.
+    expect(pulse.readings[0]!.share).toBeLessThan(1)
+    expect(pulse.readings.reduce((s, r) => s + r.share, 0)).toBeCloseTo(1, 6)
   })
 
   it('plots each population as its own path in one shared frame', () => {
@@ -145,6 +152,14 @@ describe('the band is mounted on the homepage, under the hero search', () => {
 
   it('leaves the band out rather than printing a zero it cannot vouch for', () => {
     expect(PAGE).toContain('{pulse ? <V3Pulse')
+  })
+
+  // The band carries an id and the chrome is sticky, so it is a scroll target
+  // that must reserve the header. Without this the claim's ascenders are sliced
+  // at 375 and "More" reads as "Wore" (2026-09-08 evaluator).
+  it('reserves the sticky chrome when the band is the scroll target', () => {
+    const css = readFileSync(resolve('components/site/v3/V3Pulse.css'), 'utf8')
+    expect(css).toContain('scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md))')
   })
 
   // The move, stated as a test: the count lives on the page now, not in a menu.
