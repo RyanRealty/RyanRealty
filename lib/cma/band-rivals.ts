@@ -5,6 +5,7 @@
 
 import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 
 const esc = escapeHtml
@@ -363,15 +364,11 @@ function competitionBody(input: BandRivalsInput): string {
 export function competitionSourceLine(
   input: Pick<BandRivalsInput, 'city' | 'lo' | 'hi' | 'asOfIso'>,
 ): string {
-  const day = (input.asOfIso ?? '').slice(0, 10)
-  const when = /^\d{4}-\d{2}-\d{2}$/.test(day)
-    ? ` as of ${new Date(`${day}T12:00:00.000Z`).toLocaleString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC',
-      })}`
-    : ''
+  // formatDate, not a UTC slice. The slice takes the UTC day and every other
+  // date on the document takes the Pacific one, which is how the cover came to
+  // print two different dates for one timestamp (CLAUDE.md §0).
+  const formatted = input.asOfIso ? formatDate(input.asOfIso) : ''
+  const when = formatted && formatted !== '—' ? ` as of ${formatted}` : ''
   return `Homes for sale and under contract in ${input.city} between ${usd(input.lo)} and ${usd(
     input.hi,
   )}, from the Oregon Data Share MLS${when}.`

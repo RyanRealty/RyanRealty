@@ -1014,8 +1014,14 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     }
   })
 
-  it('sources the competition counts', () => {
-    expect(letter()).toContain('Homes for sale and under contract in Redmond between')
+  it('sources the competition counts, on the SAME date the byline prints', () => {
+    const html = letter()
+    expect(html).toContain('Homes for sale and under contract in Redmond between')
+    // generatedAtIso is 2026-09-06T00:00Z, which is Sep 5 in Central Oregon.
+    // Every date on the document reads the same clock (CLAUDE.md §0).
+    const byline = /Prepared ([A-Z][a-z]+ \d+, \d{4})/.exec(html)?.[1]
+    expect(byline).toBeTruthy()
+    expect(html).toContain(`from the Oregon Data Share MLS as of ${byline}.`)
   })
 
   it('snaps the curve readout to the six measured days', () => {
