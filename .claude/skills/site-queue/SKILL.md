@@ -54,10 +54,19 @@ shared files to watch are in `docs/plans/CROSS_AGENT_HANDOFF.md` ("Parallel lane
 Only nodes that draw the answer (SITE-03, SITE-06, SITE-07) wait on SITE-02b. Two
 nodes that touch the same route go in the same lane, in sequence.
 
-Claim each node before work starts: `state` open to `in_progress`, `owner_session`
-set to this session's id, the same supabase-js client `scripts/seed-site-queue.ts`
-uses (the DAL in `lib/data/loop/work-graph.ts` carries `server-only` and does not
-load in a CLI). A claimed node is never served to another session.
+**Claim with the tool, not by hand:**
+
+```bash
+npx tsx scripts/site-queue-status.ts --claim SITE-02,SITE-05 --owner <your-session-id>
+```
+
+That is the ONLY claim path, and it is where both caps live. Do not write the claim
+yourself with a raw client: `claimWorkNode` in `lib/data/loop/work-graph.ts` carries
+`server-only` and cannot load in a CLI, so a hand-written claim silently bypasses the
+caps (found 2026-09-08). The tool refuses a third worker and a third node per session,
+writes optimistically on `state = 'open'` so two sessions racing for one node cannot
+both win, and stamps the first heartbeat. A claimed node is never served to another
+session.
 
 **Several sessions at once (Matt asked, 2026-09-07).** The claim is what keeps them
 apart, so make it optimistic: the update carries `.eq('state', 'open')` and you read
@@ -75,8 +84,9 @@ rate limit sooner; when one hits it, it schedules its wake for the reset and the
 others keep going.
 
 **The fleet cap (Matt 2026-09-08).** At most **three workers** hold site claims at
-once and **two claims per session** — enforced in `claimWorkNode`, printed by the
-brief as `SITE FLEET FULL`, and named in `lib/data/loop/work-node.ts`
+once and **two claims per session** — enforced by `site-queue-status.ts --claim` (the
+CLI path every session uses) and by `claimWorkNode` (the server path), printed by the
+brief as `SITE FLEET FULL`, and named once in `lib/data/loop/work-node.ts`
 (`MAX_SITE_WORKERS`, `MAX_SITE_CLAIMS_PER_SESSION`). The reason is not politeness:
 every worker and the cloud routine spend ONE shared account allowance, and on
 2026-09-08 four concurrent lanes plus an hourly fire exhausted it at 09:13Z and
