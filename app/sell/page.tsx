@@ -343,6 +343,10 @@ export default async function SellPage() {
         {proofView ? (
           <V3ProofBlock
             {...proofView}
+            // Spelled out as well as carried in the view so the section is
+            // greppable from the route file — ci:page-purpose reads the
+            // contract's section list against this page's literal ids.
+            id="proof"
             // The quiet form (strips off) has no drawing to fill the left
             // column. sell-answer.css collapses the body to one column for
             // this instance only; the class goes away when the strips come on.

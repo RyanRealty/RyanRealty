@@ -21,7 +21,7 @@
     },
     {
       "name": "SellValueForm",
-      "section": "The ask. Address field is the spine: visible label, empty field, submit Value my home. No card title, no placeholder. Places autocomplete, partial-lead, CMA queue. pagePath='/sell' attribution. formId anchor #get-value. Capture contract unchanged.",
+      "section": "The ask. Address field is the spine: visible label, empty field, submit Value my home. No card title, no placeholder. Places autocomplete, partial-lead, CMA queue. pagePath='/sell' attribution. formId anchor #get-value. Capture contract unchanged. SITE-02: the ask is now four steps - address -> ANSWER -> contact -> timeframe -> success. The answer body is app/sell/_v3/SellAnswer.tsx, rendered by this form (so the ROUTE does not import it and this contract cannot name it; app/sell/_v3/sell-answer.test.ts is what holds the step in place). It draws months of supply as two bars, the pace and cash readings as sentences with a disclosure each, and the comparable-close count for the typed address. No dollar figure for a typed address (Matt). One component against one data type so the drawing can be swapped.",
       "blocking": true
     },
     {
@@ -47,11 +47,6 @@
     {
       "name": "V3Footer",
       "section": "Chrome. V3_FOOTER_COLUMNS. No button. Rendered OUTSIDE main.",
-      "blocking": true
-    },
-    {
-      "name": "SellAnswer",
-      "section": "SITE-02. The answer step, between the address and the contact ask. Months of supply DRAWN as two bars (homes for sale against a month of sales), the pace and cash-share readings as sentences with a disclosure each, and the comparable-close count the CMA ladder found for the typed address. No dollar figure for a typed address (Matt). One component file against SellAnswerData so the drawing can be replaced without touching the form.",
       "blocking": true
     },
     {
