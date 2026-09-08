@@ -11,6 +11,7 @@
  * A city with none of the three gets no drawing at all (`getListingCutFacts`
  * returns null and the page does not mount the reading).
  */
+import { formatCalendarDay } from '@/lib/format/date'
 import type { ListingCutFacts } from '@/lib/data/market-truth/getListingCutFacts'
 
 export type CloseReading = {
@@ -209,13 +210,11 @@ export function buildCloseView(facts: ListingCutFacts, subject: CloseSubject | n
   const lede =
     rest.length > 0 ? `${rest.join(', ').replace(/^./, (c) => c.toUpperCase())}.` : null
 
+  // formatCalendarDay carries the same noon-UTC trick this used to hand-roll:
+  // `new Date('2026-08-18')` is the prior Pacific evening. One helper, one
+  // rule, and ci:date-format stays green.
   const through = facts.completeThrough
-    ? new Date(`${facts.completeThrough}T12:00:00Z`).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'UTC',
-      })
+    ? formatCalendarDay(facts.completeThrough, { month: 'long', day: 'numeric', year: 'numeric' })
     : null
 
   return {
