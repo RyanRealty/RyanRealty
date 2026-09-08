@@ -89,6 +89,34 @@ function round1000(n: number): number {
   return Math.round(n / 1000) * 1000
 }
 
+/**
+ * THE PRICING UNIT. Below a million a home is priced to the thousand; above it
+ * to the five thousand. Nobody in this market writes an asking price, or reads
+ * a value range, to the dollar — and cma-65365-concorde shipped "worth
+ * $1,264,174 to $1,748,776", six digits of false precision on a figure whose
+ * inputs are six sales.
+ *
+ * The range is rounded ONCE, here, and every surface reads the rounded figure:
+ * the cover, `rangeRule.adjustedLow/High`, the sentence that explains the rule,
+ * and the list tiers derived from it. A renderer that rounds again for display
+ * is how two pages of the same document end up disagreeing.
+ */
+export function priceRoundingStep(n: number): number {
+  return Math.abs(n) >= 1_000_000 ? 5_000 : 1_000
+}
+
+/** The low end of a range never rounds up into the evidence. */
+export function roundPriceDown(n: number): number {
+  if (!Number.isFinite(n)) return n
+  return Math.floor(n / priceRoundingStep(n)) * priceRoundingStep(n)
+}
+
+/** The high end never rounds down out of it. */
+export function roundPriceUp(n: number): number {
+  if (!Number.isFinite(n)) return n
+  return Math.ceil(n / priceRoundingStep(n)) * priceRoundingStep(n)
+}
+
 /** At or above this many sales the range drops one at each end. */
 export const RANGE_TRIM_MIN_N = 6
 
@@ -475,9 +503,15 @@ export function listPriceFromEngine(opts: {
   const saleToAskSource: PricingRangeRule['saleToAskSource'] =
     fromIndex != null ? 'city-index' : fromMarket != null ? 'market-context' : fromSales != null ? 'these-sales' : 'none'
 
+  // Rounded ONCE, before anything is derived from it: the value range the cover
+  // prints, the sentence that explains it, and the list tiers all start here,
+  // so no two surfaces can round the same spread differently.
+  const rangeLow = range != null ? roundPriceDown(range.low) : null
+  const rangeHigh = range != null ? roundPriceUp(range.high) : null
+
   const recommendedList = mid != null ? listFromClose(mid, ratio) : null
-  let conservativeList = range != null ? listFromClose(range.low, ratio) : band != null ? listFromClose(band.low, ratio) : null
-  let highEndList = range != null ? listFromClose(range.high, ratio) : band != null ? listFromClose(band.high, ratio) : null
+  let conservativeList = rangeLow != null ? listFromClose(rangeLow, ratio) : band != null ? listFromClose(band.low, ratio) : null
+  let highEndList = rangeHigh != null ? listFromClose(rangeHigh, ratio) : band != null ? listFromClose(band.high, ratio) : null
   if (reconciled.source === 'comps' && recommendedList != null) {
     if (conservativeList != null && conservativeList > recommendedList) conservativeList = recommendedList
     if (highEndList != null && highEndList < recommendedList) highEndList = recommendedList
@@ -488,20 +522,20 @@ export function listPriceFromEngine(opts: {
       ? ` Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked, so each figure is carried to an asking price at that share.`
       : ' No local share of the original ask was available, so the asking prices are the adjusted sale prices themselves.'
   const rangeRule: PricingRangeRule | null =
-    range != null
+    range != null && rangeLow != null && rangeHigh != null
       ? {
           rule: range.rule,
           n: range.n,
           kept: range.kept,
-          adjustedLow: range.low,
-          adjustedHigh: range.high,
+          adjustedLow: rangeLow,
+          adjustedHigh: rangeHigh,
           saleToAskRatio: ratio,
           saleToAskSource,
           ratiosExcluded,
           sentence:
             range.rule === 'trimmed-one-each-end'
-              ? `The range is the spread of the ${range.n} sale prices adjusted for date and size, with the highest and the lowest set aside: $${range.low.toLocaleString('en-US')} to $${range.high.toLocaleString('en-US')}.${askStep}`
-              : `The range is the spread of all ${range.n} sale prices adjusted for date and size: $${range.low.toLocaleString('en-US')} to $${range.high.toLocaleString('en-US')}.${askStep}`,
+              ? `The range is the spread of the ${range.n} sale prices adjusted for date and size, with the highest and the lowest set aside: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`
+              : `The range is the spread of all ${range.n} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
         }
       : null
 
@@ -516,6 +550,19 @@ export function listPriceFromEngine(opts: {
     rangeRule,
     reconciledValue,
   }
+}
+
+/**
+ * The cover's value range, rounded at the pricing unit on every path out of
+ * `applyEngineRecommendedList` — including the two early returns, where a
+ * broker override or a missing engine list used to leave the raw figure from
+ * `lib/cma/pricing.ts` on the cover.
+ */
+function roundValueRange(pricing: CmaPricing): CmaPricing {
+  const low = Math.min(pricing.valueLow, pricing.valueHigh)
+  const high = Math.max(pricing.valueLow, pricing.valueHigh)
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high <= 0) return pricing
+  return { ...pricing, valueLow: roundPriceDown(low), valueHigh: roundPriceUp(high) }
 }
 
 function clipCoverToFailedAsk(pricing: CmaPricing, failedAsk: number | null | undefined): CmaPricing {
@@ -546,11 +593,11 @@ export function applyEngineRecommendedList(
   // number someone typed over it.
   if (engine.rangeRule !== undefined) pricing.rangeRule = engine.rangeRule
   if (opts.priceOverride != null && Number.isFinite(opts.priceOverride) && opts.priceOverride > 0) {
-    return clipCoverToFailedAsk({ ...pricing, predictedClose: close }, opts.failedAsk)
+    return clipCoverToFailedAsk(roundValueRange({ ...pricing, predictedClose: close }), opts.failedAsk)
   }
   const list = engine.recommendedList
   if (list == null || !Number.isFinite(list) || list <= 0) {
-    return close != null ? { ...pricing, predictedClose: close } : pricing
+    return roundValueRange(close != null ? { ...pricing, predictedClose: close } : pricing)
   }
   const conservative =
     engine.conservativeList != null && engine.conservativeList > 0 ? engine.conservativeList : list
@@ -581,8 +628,10 @@ export function applyEngineRecommendedList(
         recommended,
         conservative: bandLow,
         highEnd: bandHigh,
-        valueLow: bandLow,
-        valueHigh: bandHigh,
+        // Rounded OUTWARD, so the recommendation (the midpoint of the band it
+        // is drawn from) can never fall outside the range printed beside it.
+        valueLow: roundPriceDown(bandLow),
+        valueHigh: roundPriceUp(bandHigh),
         predictedClose: close,
         currentAsk: ask,
         askDerivedList: list,
@@ -598,8 +647,11 @@ export function applyEngineRecommendedList(
   // tiers below are that same evidence carried to an asking price, which is a
   // separate statement and is labelled as one. Where a caller has no adjusted
   // prices (a land subject prices per acre) the tiers stand in, as before.
-  const valueLow = engine.rangeRule?.adjustedLow ?? conservative
-  const valueHigh = engine.rangeRule?.adjustedHigh ?? highEnd
+  // rangeRule carries figures already rounded at the pricing unit; the tier
+  // fallback (a land subject prices per acre and has no adjusted sale prices)
+  // is rounded here, so both arrive at the cover on the same grid.
+  const valueLow = engine.rangeRule?.adjustedLow ?? roundPriceDown(conservative)
+  const valueHigh = engine.rangeRule?.adjustedHigh ?? roundPriceUp(highEnd)
   return clipCoverToFailedAsk(
     {
       ...pricing,

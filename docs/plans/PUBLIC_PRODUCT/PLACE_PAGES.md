@@ -71,7 +71,7 @@ Northwest Crossing is a searched place people treat as a neighborhood (schools, 
 ## Kill list (do these; do not debate)
 
 - Atlas claim: “N listings of every type for sale, N pending, N sold in the last 30 days. Pinch or scroll to zoom. Tap a place…”
-- KPI strip on the hero (679 / $950,000 / seller’s market / 3.9 / 23) as the first thing you read
+- KPI strip on the hero (679 / $950,000 / seller’s market / 3.9 / 23) as the first thing you read. An answer that appears only after the visitor types their own address (the opening ask, 2026-09-07) is not a strip: nothing prints until they act.
 - Teaching the map how to be used
 - Duplicate counts in three places
 - City still reused on a plat that has four homes
@@ -137,6 +137,7 @@ Do not open with a number hero. Do not put subdivisions after a long “about”
 | Order | Section | Why |
 |---|---|---|
 | 1 | Owned photo of **this** place + H1 + breadcrumb to the city | Belonging. Not “Tetherow homes for sale” as a city clone. |
+| 1b | **Value my home ask** on the photo (Matt 2026-09-07, site queue SITE-01) | One address field. The visitor types their address and sees this place’s verdict, days to pending, cash share, and comparable-sale count, sourced and dated, with no contact asked. Then email (required) and phone (optional) deliver the written valuation. Never a dollar figure on the page. Renders only where Market Truth publishes a figure for the place. |
 | 2 | What this place is | Acreage, golf, lodging, dining, pool/sport — official-site facts from `resort-communities.json`. No invented dues. |
 | 3 | Amenity grid | Dining, golf, fitness, trails, dog, pool — Caldera/Tetherow homepages live here. |
 | 4 | Houses for sale here | Our moat. tetherow.com has none. Priced rows, not “view listings” links. |
@@ -145,7 +146,7 @@ Do not open with a number hero. Do not put subdivisions after a long “about”
 | 7 | Membership / HOA / STR | Perks and hours when known. Never fabricated dollar cards. Published CC&Rs when R7 allows. |
 | 8 | One sold/pace answer | Once. |
 | 9 | Edges | Trails, Bachelor, Old Mill, vacation-rental vs residential **only when both exist**. Gate/office hours on gated places. |
-| 10 | Ask | Alerts for this community. |
+| 10 | Ask | Alerts for this community. The valuation ask lives in the opening (1b), not here. |
 
 A master-plan page that opens like Bend has already lost to tetherow.com.
 

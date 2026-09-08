@@ -143,6 +143,13 @@ export type { V3ProofProps, V3ProofQuote, V3ProofFigure } from './V3Proof.client
  * the one-question-at-a-time pattern for a valuation.
  */
 export { V3Ask } from './V3Ask.client'
+/**
+ * The place-page value ask (SITE-01, 2026-09-07): address in, verdict and pace out,
+ * then the email that delivers the written valuation. Built on V3Sheet; takes its two
+ * calls as props so the barrel stays free of app imports.
+ */
+export { V3PlaceValue } from './V3PlaceValue.client'
+export type { V3PlaceValueProps } from './V3PlaceValue.client'
 
 export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
 

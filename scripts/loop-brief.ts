@@ -20,7 +20,7 @@ import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/dat
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
-import { fleetNodePriority, isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
+import { fleetNodePriority, isStaleInProgress, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
@@ -112,6 +112,33 @@ async function main() {
   const nodes = (nodesRes.data ?? []) as NodeRow[]
   if (nodesRes.error) console.error('work graph UNREADABLE:', nodesRes.error.message)
 
+  // Stale claims release themselves. A node in_progress with no update for
+  // STALE_IN_PROGRESS_DAYS is stranded work (2026-09-07 derail forensics: the
+  // only public-ux punch node sat claimed and untouched from 08-19 while the
+  // brief printed "continue or release" and served something else). The claim
+  // is released here, before eligibility is computed, so the node is servable
+  // in this same boot. in_progress -> open is a legal transition and the DB
+  // trigger enforces it below us.
+  const released: NodeRow[] = []
+  for (const n of nodes) {
+    if (n.state !== 'in_progress') continue
+    if (!isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)) continue
+    // The brief keeps its own client on purpose (lib/data/loop/work-graph.ts
+    // carries server-only and cannot load in a CLI). Optimistic on state, so a
+    // sibling session that just continued the node is not knocked back to open.
+    const res = await sb
+      .from('loop_work_nodes')
+      .update({ state: 'open', owner_session: null, updated_at: new Date().toISOString() })
+      .eq('id', n.id)
+      .eq('state', 'in_progress')
+    if (res.error) {
+      console.error(`stale release failed for ${n.title}: ${res.error.message}`)
+      continue
+    }
+    n.state = 'open'
+    released.push(n)
+  }
+
   const doneIds = new Set(nodes.filter((n) => n.state === 'done').map((n) => n.id))
   const inProgress = nodes.filter((n) => n.state === 'in_progress')
   const blocked = nodes.filter((n) => n.state === 'blocked')
@@ -127,7 +154,38 @@ async function main() {
   // Learn-first: a domain with expired unlearned windows must close them
   // before any other class in that domain (the insert guard enforces it).
   const learnFirst = eligible.find((n) => strandedDomains.includes(n.domain))
-  const next = learnFirst ?? eligible[0] ?? null
+  // Site first (2026-09-07 derail forensics): when the public site changed in
+  // the last 14 days, the oldest open public-ux node is served ahead of every
+  // other domain, so a session that just touched app/** or components/site/**
+  // pulls the site queue instead of re-auditing it. The base query orders by
+  // created_at and the sort above is stable, so the first public-ux node in
+  // `eligible` is the oldest at its priority tier. A public-ux learn-first node
+  // still outranks it: closing an expired window is the insert guard's rule.
+  const siteChanged = (() => {
+    try {
+      return (
+        execFileSync('git', ['log', '--since=14.days', '--pretty=%h', '--', 'app', 'components/site'], {
+          encoding: 'utf8',
+          maxBuffer: 4 * 1024 * 1024,
+        }).trim().length > 0
+      )
+    } catch {
+      return false
+    }
+  })()
+  // The seeded site queue (version_gap SITE-*) outranks the fleet punch inbox:
+  // bot findings append to the queue's nodes; they do not replace the queue
+  // (SITE_PAGES_E2E.md "Site queue"). The inbox still serves when no SITE node
+  // is open.
+  const siteFirst = siteChanged
+    ? (eligible.find((n) => n.domain === 'public-ux' && (n.version_gap ?? '').startsWith('SITE-')) ??
+      eligible.find((n) => n.domain === 'public-ux') ??
+      null)
+    : null
+  // A served SITE node is public-ux work, so a stranded public-ux window is
+  // still being worked in its own domain; learn-first keeps precedence only
+  // for the other domains.
+  const next = siteFirst ?? learnFirst ?? eligible[0] ?? null
 
   const needsReauth = signals.social.tokens.filter((t) => t.status === 'needs-reauth')
   const deltaAgeMin = signals.sync.lastDeltaSyncAt
@@ -169,9 +227,14 @@ async function main() {
   push('')
   push('--- WORK GRAPH ---')
   push(`nodes: ${nodes.length} · open ${nodes.filter((n) => n.state === 'open').length} · in_progress ${inProgress.length} · blocked ${blocked.length} · done ${nodes.filter((n) => n.state === 'done').length}`)
+  for (const n of released) {
+    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${STALE_IN_PROGRESS_DAYS} days) — open again`)
+  }
   for (const n of inProgress) {
-    const stale = isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)
-    push(`  IN_PROGRESS ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — owner ${n.owner_session ?? '?'}${stale ? ' *** STALE — continue or release this node first' : ''}`)
+    push(`  IN_PROGRESS ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — owner ${n.owner_session ?? '?'}`)
+  }
+  if (siteFirst) {
+    push('  SITE FIRST: app/** or components/site/** changed in the last 14 days; serving the oldest open public-ux node')
   }
   for (const n of blocked) {
     push(`  BLOCKED ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — ${n.blocked_reason ?? 'no reason recorded'}`)
@@ -250,6 +313,26 @@ async function main() {
     for (const line of formatReconcileReport(reconcileShips({ commits, ledgerShas, nodeEvidence }), WINDOW_DAYS)) {
       push(line)
     }
+    // Site commits and their Node: trailers (G72). The report stays a report;
+    // the commit-msg hook is what refuses. This line is how the refusal is
+    // watched: it reads X/X once every site commit names its node.
+    const siteCommits = commits.filter((c) => {
+      try {
+        const files = execFileSync('git', ['show', '--pretty=format:', '--name-only', c.sha], { encoding: 'utf8' })
+        return files.split('\n').some((f) => f.startsWith('app/') || f.startsWith('components/site/'))
+      } catch {
+        return false
+      }
+    })
+    const withNode = siteCommits.filter((c) => {
+      try {
+        const body = execFileSync('git', ['show', '-s', '--pretty=format:%B', c.sha], { encoding: 'utf8' })
+        return /^Node:\s*\S/m.test(body)
+      } catch {
+        return false
+      }
+    })
+    push(`  site commits with a Node: trailer: ${withNode.length}/${siteCommits.length}`)
   } catch (err) {
     // Never let reconciliation stop the boot — a brief that refuses to print is
     // worse than one that admits it could not check.

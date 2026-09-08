@@ -21,6 +21,7 @@
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { checkNewAuditDocsNameNodes, newPlanDocPaths } from './lib/process-canon-audit-arm.mjs'
 
 const CANON = 'docs/DEVELOPMENT_PROCESS.md'
 
@@ -214,6 +215,19 @@ for (const skill of [
     fails.push(`${skill}: this skill is KILLED and must not exist. Delete the file — a refuse stub is still something an agent can find and read.`)
   }
 }
+
+// --- New audit/punch-list doc arm (G44 / G72 site queue mechanism) ---
+// The site queue (loop_work_nodes, domain public-ux — scripts/seed-site-queue.ts)
+// is the only site backlog. A new one-off "AUDIT/PUNCH/E2E"-shaped doc under
+// docs/plans/ is a rogue parallel backlog unless it names the queue nodes its
+// findings append to. Static only — no DB read here; the queue node ids just
+// have to be NAMED (a `Nodes: <uuid>[, <uuid>]` line), not verified to exist.
+// Logic lives in scripts/lib/process-canon-audit-arm.mjs (break-tests import
+// it directly — importing this file would run the whole gate and exit).
+const newDocsWithContent = newPlanDocPaths()
+  .filter((p) => p.endsWith('.md') && existsSync(p))
+  .map((p) => ({ path: p, content: readFileSync(p, 'utf8') }))
+for (const f of checkNewAuditDocsNameNodes(newDocsWithContent)) fails.push(f)
 
 console.log('Process-canon sync check (G44)')
 console.log('==============================')

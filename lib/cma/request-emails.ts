@@ -14,6 +14,9 @@ import { sendEmail } from '@/lib/resend'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
+import type { CrmBrokerSlug } from '@/lib/crm/constants'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -184,6 +187,93 @@ export async function sendLeadConfirmation(params: {
       brokerSlug: 'matt',
     })
   }
+}
+
+/**
+ * Same-minute confirmation for a valuation asked from a place page (SITE-01).
+ *
+ * Matt 2026-09-07: a confirmation to a visitor who just submitted their own request is
+ * a system message, not a broker send, so it goes the moment the request lands. It
+ * repeats what the page just showed them (verdict, pace, comparable count, each with
+ * its date) and promises the written document. No dollar figure: that is the document.
+ *
+ * Routed through sendGovernedEmail (G56): hard-stop, suppression, idempotency, then the
+ * assigned broker's Gmail with their signature appended. A visitor with no CRM person
+ * (both capture paths failed) gets no confirmation; the written valuation still goes
+ * through the CMA queue, and the caller logs which path this took.
+ */
+export async function sendPlaceValueConfirmation(params: {
+  personId: number | null
+  brokerCrmSlug: CrmBrokerSlug | null
+  leadEmail: string
+  leadName?: string | null
+  subjectAddress: string
+  placeName: string
+  verdictLabel: string | null
+  monthsOfSupply: number | null
+  daysToPending: number | null
+  /** 0..1 */
+  cashShare: number | null
+  compCount: number | null
+  asOfLabel: string | null
+  brokerName: string | null
+  bookHref: string
+}): Promise<{ ok: boolean; via: 'gmail' | 'skipped' | 'refused' | 'failed'; error?: string }> {
+  if (params.personId == null) return { ok: false, via: 'skipped', error: 'no crm person for the lead' }
+
+  const firstName = params.leadName?.trim().split(/\s+/)[0] || 'there'
+  const signName = params.brokerName?.trim() || 'Matt Ryan'
+  const brokerFirst = signName.split(/\s+/)[0]
+
+  const facts: string[] = []
+  if (params.verdictLabel && params.monthsOfSupply != null) {
+    facts.push(`${params.placeName} is a ${params.verdictLabel} right now, with ${formatMonthsOfSupply(params.monthsOfSupply)} months of supply.`)
+  }
+  if (params.daysToPending != null) {
+    facts.push(`Homes there go pending in a median ${Math.round(params.daysToPending)} days.`)
+  }
+  if (params.cashShare != null) {
+    facts.push(`${(params.cashShare * 100).toFixed(0)}% of buyers paid cash over the last year.`)
+  }
+  if (params.compCount != null) {
+    facts.push(
+      `We found ${params.compCount} recent ${params.placeName} ${params.compCount === 1 ? 'sale' : 'sales'} comparable to your home, and the written valuation is built on ${params.compCount === 1 ? 'it' : 'them'}.`,
+    )
+  }
+  const stamp = params.asOfLabel ? ` Market figures from the regional MLS, updated ${params.asOfLabel}.` : ''
+  const factsText = facts.length ? facts.join(' ') + stamp : `The written valuation will carry the comparable sales for ${params.placeName}.`
+
+  const subject = `Your ${params.subjectAddress} valuation is on its way`
+  const bodyText = [
+    `Hi ${firstName},`,
+    '',
+    `You asked what ${params.subjectAddress} would sell for. Here's what we can tell you right now, and the written valuation is on its way.`,
+    '',
+    factsText,
+    '',
+    `${brokerFirst} will send the full valuation, the number, the comparable sales, and what we'd list at, by the next business day. Want to talk it through sooner? Book a time: ${params.bookHref}`,
+    '',
+    `Reply to this email with anything we should know, like recent improvements or your timing.`,
+  ].join('\n')
+
+  const addressKey = params.subjectAddress.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const broker = params.brokerCrmSlug ?? 'matt'
+  const res = await sendGovernedEmail({
+    personId: params.personId,
+    purpose: 'place-page:valuation-confirmation',
+    idempotencyKey: `place-value:${addressKey}`,
+    initiator: { kind: 'system', broker, source: 'place-page' },
+    payload: {
+      rail: 'gmail',
+      to: [params.leadEmail],
+      subject,
+      bodyText,
+      withSignature: true,
+      track: { personId: params.personId, emailKey: `place-value:${params.personId}:${addressKey}`, label: subject, broker },
+    },
+  })
+  if (res.ok) return { ok: true, via: 'gmail' }
+  return { ok: false, via: res.stage === 'provider' ? 'failed' : 'refused', error: `${res.stage}: ${res.error}` }
 }
 
 function escapeHtml(s: string): string {

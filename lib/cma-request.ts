@@ -56,7 +56,7 @@ export type CreateCmaRequestInput = {
     condition?: string
   } | null
   /** Where the request came from. Default 'seller-lp'. */
-  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron' | 'crm-kickoff'
+  requestSource?: 'seller-lp' | 'expired-listing-cron' | 'fsbo-lp' | 'fsbo-cron' | 'crm-kickoff' | 'place-page'
   /** Doc-type LABEL for the cmas row. Since 2026-08-05 (Matt: one CMA) the
    *  content no longer varies by this — the last-listing review section is
    *  driven by listing history inside buildCma. 'expired-audit' remains a
@@ -124,7 +124,9 @@ export async function createCmaRequest(
           ? 'FSBO LP submission'
           : requestSource === 'crm-kickoff'
             ? 'Broker kick-off (CRM)'
-            : 'Seller LP submission'
+            : requestSource === 'place-page'
+              ? 'Place page valuation request'
+              : 'Seller LP submission'
     const broker = await resolveSigningBroker(input)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id
@@ -340,7 +342,9 @@ export async function createCmaRequest(
         generation_reason:
           requestSource === 'expired-listing-cron'
             ? `Expired-listing detection — CMA for ${rawAddress} to open outreach to ${leadName ?? 'the owner'}`
-            : `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
+            : requestSource === 'place-page'
+              ? `Place page valuation request — ${leadName ?? leadEmail} asked what ${rawAddress} would sell for`
+              : `Seller LP submission — ${leadName ?? leadEmail} requested a CMA for ${rawAddress}`,
         status: 'pending',
         // Legacy NOT-NULL fields inherited from the content_briefs view shape.
         // For CMA action rows these are best-effort descriptive labels — the
@@ -425,11 +429,12 @@ export async function createCmaRequest(
     // visitor conversions, and fabricating one corrupts ad attribution (§0).
     // Verified 2026-07-28: cron/rebuild paths had inflated GA4 to 90
     // valuation_requested/90d against ~10 real submissions.
-    if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp') void fireGa4Event({
+    // 2026-09-07: the place-page field (SITE-01) is a visitor submission too.
+    if (requestSource === 'seller-lp' || requestSource === 'fsbo-lp' || requestSource === 'place-page') void fireGa4Event({
       eventName: 'valuation_requested',
       eventParams: {
         cma_slug: slug,
-        lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : 'seller-home-value',
+        lp_variant: requestSource === 'fsbo-lp' ? 'fsbo' : requestSource === 'place-page' ? 'place-page' : 'seller-home-value',
         broker_slug: broker.slug,
         lead_classification: input.leadClassification ?? undefined,
         lead_type: 'seller',
