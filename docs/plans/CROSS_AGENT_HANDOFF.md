@@ -107,12 +107,14 @@ two lanes in worktrees; a separate Opus evaluator per page class.
   sentence, never a number. Display numeral only at counts ≥ 10 (`PLACE_ALERTS_FIGURE_MIN`);
   scope line reconciles figure and offer ("covers all of Bend, Awbrey Butte included"; the
   exact MLS subdivision set a community filter matches: Tetherow, Triple or Tetherow Resort).
-  Capture contract unchanged; `alert_create` carries `placement`. Evaluator on one scale:
-  city 57 → 64 (mark 67), neighborhood 48 → 58 (mark 58), community 54 → 65 (mark 59,
-  clears). What holds city and neighborhood down is outside the item and is on the node:
-  colliding chart year labels and a ragged golf grid on city; the `Awbrey Butte Homesite…`
-  chip wall on neighborhood. A last small round (desktop door affordance, neighborhood
-  double scope, clean record shots) follows on PR #200.
+  Capture contract unchanged; `alert_create` carries `placement`. Round three (4848a1a on
+  PR #200): door affordance at every width, the scope stated once, and a real logic gap
+  fixed (the sticky strip's IntersectionObserver missed jumps past the Atlas; a throttled
+  scroll read backs it now). Final separate-evaluator marks on one scale, no item defect
+  left: city 57 → 64 → 66 (recorded 67 by a different evaluator; the one-point shortfall
+  is the #market chart's overprinting year labels and the imageless golf grid, outside the
+  item), neighborhood 48 → 58 → 61 (clears 58), community 54 → 65 → 68 (clears 59).
+  Receipts in the three parity.json `tasteReview` blocks with the prior marks noted.
 - CI: `docs/ROUTE_INVENTORY.md` could not regenerate since `CANONICAL_ZIPS` moved
   (`scripts/index-routes.mjs` threw), so the /dashboard/marketing deletion never reached
   the route smoke and PR #200 went red on two 404s. Generator fixed, inventory regenerated
