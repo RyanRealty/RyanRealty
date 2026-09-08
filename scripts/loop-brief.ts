@@ -119,10 +119,18 @@ async function main() {
   // is released here, before eligibility is computed, so the node is servable
   // in this same boot. in_progress -> open is a legal transition and the DB
   // trigger enforces it below us.
+  // Site queue items (public-ux, SITE-*) move in hours, not days: a claim that
+  // has not been touched for SITE_STALE_HOURS is a session that ended without
+  // releasing (2026-09-08: four grinder claims and two local claims sat frozen
+  // for five hours while every hourly fire stopped at the guard).
+  const SITE_STALE_HOURS = 3
+  const isSiteNode = (n: NodeRow) => n.domain === 'public-ux' && String(n.version_gap ?? '').startsWith('SITE-')
+  const staleSite = (n: NodeRow) => now.getTime() - Date.parse(n.updated_at) > SITE_STALE_HOURS * 60 * 60 * 1000
   const released: NodeRow[] = []
   for (const n of nodes) {
     if (n.state !== 'in_progress') continue
-    if (!isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)) continue
+    const stale = isSiteNode(n) ? staleSite(n) : isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)
+    if (!stale) continue
     // The brief keeps its own client on purpose (lib/data/loop/work-graph.ts
     // carries server-only and cannot load in a CLI). Optimistic on state, so a
     // sibling session that just continued the node is not knocked back to open.
@@ -228,7 +236,7 @@ async function main() {
   push('--- WORK GRAPH ---')
   push(`nodes: ${nodes.length} · open ${nodes.filter((n) => n.state === 'open').length} · in_progress ${inProgress.length} · blocked ${blocked.length} · done ${nodes.filter((n) => n.state === 'done').length}`)
   for (const n of released) {
-    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${STALE_IN_PROGRESS_DAYS} days) — open again`)
+    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${isSiteNode(n) ? `${SITE_STALE_HOURS} hours` : `${STALE_IN_PROGRESS_DAYS} days`}) — open again`)
   }
   for (const n of inProgress) {
     push(`  IN_PROGRESS ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — owner ${n.owner_session ?? '?'}`)
