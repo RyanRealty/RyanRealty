@@ -107,6 +107,7 @@
 .v3 .v3-proofblock__track {
   --v3-proofblock-lane: 15px;
   --v3-proofblock-base: 34px;
+  --v3-proofblock-mark: 11px;
   --v3-proofblock-band-mid: 56px;
   --v3-proofblock-band-mark: 92px;
   position: relative;
@@ -210,8 +211,8 @@
 }
 
 .v3 .v3-proofblock__mark-dot {
-  width: var(--v3-chart-mark);
-  height: var(--v3-chart-mark);
+  width: var(--v3-proofblock-mark, var(--v3-chart-mark));
+  height: var(--v3-proofblock-mark, var(--v3-chart-mark));
   border-radius: var(--v3-radius-mark);
   background: var(--v3-navy);
   transition:

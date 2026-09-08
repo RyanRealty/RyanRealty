@@ -133,9 +133,27 @@ export type V3ProofBlockProps = {
   className?: string
 }
 
-const REACH_EVENT: Record<V3ProofReach['kind'], 'call_initiated' | 'text_initiated' | 'contact_agent_click'> = {
-  call: 'call_initiated',
-  text: 'text_initiated',
+/**
+ * What a reach click reports — and, as importantly, what it does NOT.
+ *
+ * `GlobalIntentTracker` is a delegated document-level listener mounted at app
+ * root that already fires `call_initiated` on ANY `tel:` anchor click and
+ * `text_initiated` on any `sms:` one, with the page path and the href. If this
+ * block fired those names too, every call and text from the proof block would
+ * be counted TWICE in GA4 — and the count of tel/sms clicks is precisely the
+ * metric SITE-11's accept test measures, so double-counting it would corrupt
+ * the number the item is judged by (verified live in a browser 2026-09-08: one
+ * click on Call produced two `call_initiated` pushes).
+ *
+ * So the canonical intent event stays the global tracker's, un-duplicated, and
+ * the section rides alongside it on `click_cta` carrying the attribution the
+ * global listener cannot know: which surface, which place, which section.
+ * `/book` is an internal link with no global listener, so it keeps its own
+ * `contact_agent_click` and duplicates nothing.
+ */
+const REACH_EVENT: Record<V3ProofReach['kind'], 'click_cta' | 'contact_agent_click'> = {
+  call: 'click_cta',
+  text: 'click_cta',
   book: 'contact_agent_click',
 }
 
