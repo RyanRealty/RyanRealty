@@ -29,6 +29,7 @@ export type EventName =
   | 'cma_downloaded'
   | 'cma_anchor_click'
   | 'valuation_requested'
+  | 'place_value_answer'
   | 'sign_up'
   | 'open_house_rsvp'
   | 'open_house_page_view'
