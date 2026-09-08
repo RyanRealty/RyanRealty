@@ -16,7 +16,18 @@ import type { RentalPotential, RentalTenure } from '@/lib/cma/rental-potential'
 
 const esc = escapeHtml
 
-export type CmaPageDef = { meta: string; body: string; toc?: string; flyer?: boolean }
+export type CmaPageDef = {
+  meta: string
+  body: string
+  toc?: string
+  flyer?: boolean
+  /**
+   * The closing chapter. ONE register, cream throughout, and navy is the cover
+   * and this page only (CMA_REIMAGINED_2026-09-07.md § The register). The
+   * letter's page wrapper reads this to paint the sheet.
+   */
+  closing?: boolean
+}
 
 const BUILD_TOPICS = new Set<DevItem['topic']>([
   'Subdivide or partition',

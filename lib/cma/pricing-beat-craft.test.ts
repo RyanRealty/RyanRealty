@@ -131,7 +131,7 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs & { broker: CmaB
 describe('pricing beat craft', () => {
   it('never titles THE LIST / This list; uses the recommend headline', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
-    expect(html).toContain('Our Recommended List Price for your home.')
+    expect(html).toContain('$563,000.')
     expect(html).not.toMatch(/>\s*THE LIST\s*</i)
     expect(html).not.toMatch(/>\s*The list\s*</)
     expect(html).not.toContain('This list')
@@ -142,12 +142,14 @@ describe('pricing beat craft', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
     expect(html).toContain('hero-payoff')
     expect(html).toContain('$563,000')
-    expect(html).toContain('List $522,000 to $575,000')
+    // The recommend is set in type above, so the line under it says what the
+    // home is worth — never the same figure twice in two sentences.
+    expect(html).toContain('Your home is worth $522,000 to $575,000 today.')
     expect(html).not.toContain('class="range-marks"')
     expect(html).not.toMatch(/class="rm-l">List low</)
     expect(html).not.toContain('id="answer"')
     // Lead sentence appears once (hero), not again under the photo beat.
-    const leadHits = html.match(/List \$522,000 to \$575,000\. Recommended list \$563,000\./g) ?? []
+    const leadHits = html.match(/Your home is worth \$522,000 to \$575,000 today\./g) ?? []
     expect(leadHits.length).toBe(1)
   })
 
@@ -171,13 +173,13 @@ describe('pricing beat craft', () => {
     expect(matrix).toContain('The sales that set this price')
     expect(matrix).toContain('comp-matrix')
     expect(matrix).toContain('Sale price')
-    expect(matrix).toContain('Bedrooms')
-    expect(matrix).toContain('Living sqft')
-    expect(matrix).toContain('Days on market')
-    expect(matrix).toContain('Listing history')
-    expect(matrix).toContain('data-fact="dom"')
-    expect(matrix).toContain('data-fact="listing-history"')
-    expect(matrix).toContain('Adjusted close')
+    expect(matrix).toContain('Sold for')
+    expect(matrix).toContain('Size')
+    expect(matrix).toContain('Days to offer')
+    expect(matrix).toContain('Sale price today')
+    expect(matrix).not.toContain('data-fact="dom"')
+    expect(matrix).not.toContain('data-fact="listing-history"')
+    expect(matrix).toContain('Sale price today')
     // Shared HTML still emits stack markup for the letter path; immersive CSS hides it.
     expect(matrix).toContain('comp-stack-card')
     expect(matrix).not.toContain('>Subject</span><span class="h c">Sale<')
@@ -187,7 +189,7 @@ describe('pricing beat craft', () => {
     expect(css).toMatch(/\.comp-stack\{display:none/)
     // F1: below 700px the matrix gives way to the cards. It collapsed the row
     // label column to one character per line at 375 until this landed.
-    expect(css).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap\{display:none\}\.comp-stack\{display:block\}\}/)
+    expect(css).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap,\.matrix-group-h\{display:none\}\.comp-stack\{display:block\}\}/)
 
     const scenes = assembleOpinionScenes({
       subject,
@@ -198,10 +200,12 @@ describe('pricing beat craft', () => {
       broker,
       generatedAtIso: '2026-09-07T00:00:00.000Z',
     })
-    expect(scenes).toContain('Our Recommended List Price for your home.')
+    expect(scenes).toContain('$563,000.')
     expect(scenes).toContain('comp-matrix')
     expect(scenes).toContain('The sales that set this price')
-    expect(scenes).not.toContain('The list')
+    // A HEADING reading "The list" — not any sentence containing those words,
+    // which chapter 2's own title now does ("The listings near you ...").
+    expect(scenes).not.toMatch(/>\s*The list\s*</)
     expect(scenes).not.toContain('class="range-marks"')
   })
 

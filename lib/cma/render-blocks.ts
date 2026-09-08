@@ -23,6 +23,16 @@ import { formatDate } from '@/lib/format/date'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
+import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+
+/**
+ * The link context for a copy of the document that was not built for a named
+ * recipient — a preview, a look-pass render, an admin read. Every link still
+ * goes to ryan-realty.com and still carries the source and medium; what it
+ * cannot carry is who is reading and which send it came out of, and an empty
+ * campaign is dropped rather than stamped with a guess.
+ */
+export const UNADDRESSED_DOC_LINKS: TrackedDocLinkCtx = { cmaSlug: '' }
 
 // ── formatting primitives ───────────────────────────────────────────────────
 
@@ -459,8 +469,11 @@ export function propertyDescription(subject: {
     .filter(Boolean)
     .join(', ')
   const facts = [
-    subject.beds != null ? `${int(subject.beds)} bedrooms` : null,
-    subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathrooms` : null,
+    // "1 bathrooms" shipped on the disclosure page of a real document.
+    subject.beds != null ? `${int(subject.beds)} bedroom${subject.beds === 1 ? '' : 's'}` : null,
+    subject.baths != null
+      ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathroom${subject.baths === 1 ? '' : 's'}`
+      : null,
     subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
     subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
     subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,

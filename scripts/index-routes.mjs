@@ -17,7 +17,7 @@
 //   npm run ci:routes -- --refresh   regenerate
 //   npm run ci:routes                check drift
 
-import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 
 const APP = resolve('app')
@@ -82,20 +82,22 @@ const BEND_NEIGHBORHOODS = (() => {
 // notFound guard). The old hardcoded copy here drifted (97734/Culver was
 // listed but the page never served it), so the crawl asserted a 404 route
 // as healthy inventory (2026-07-17 smoke full-crawl failure).
-// The Set literal moved from the page into app/zip/[zip]/_v3/zip-constants.ts
-// (the page imports it). Read whichever file defines it, so the inventory can
-// be regenerated again: it could not be from 2026-08-27 until 2026-09-08, and a
-// stale copy kept listing /dashboard/marketing (deleted d678c63) as healthy
-// inventory, which failed the smoke on the first PR that touched app/**.
+//
+// CANONICAL_ZIPS moved out of the page into app/zip/[zip]/_v3/zip-constants.ts
+// (the page now imports it), so the single-file regex threw on every run and
+// docs/ROUTE_INVENTORY.md went stale again: the 2026-09-07 deletion of the
+// /dashboard/marketing pages never reached the inventory, and the route smoke
+// kept asserting two 404s as healthy routes (PR #200 CI, 2026-09-08). Same
+// remedy as the city slugs above: search the candidates in order.
+const ZIP_SLUG_SOURCES = ['app/zip/[zip]/_v3/zip-constants.ts', 'app/zip/[zip]/page.tsx']
+
 const ZIP_CODES = (() => {
-  const candidates = ['app/zip/[zip]/_v3/zip-constants.ts', 'app/zip/[zip]/page.tsx']
-  for (const file of candidates) {
-    if (!existsSync(resolve(file))) continue
-    const src = readFileSync(resolve(file), 'utf8')
+  for (const candidate of ZIP_SLUG_SOURCES) {
+    const src = readFileSync(resolve(candidate), 'utf8')
     const block = src.match(/CANONICAL_ZIPS = new Set\(\[([\s\S]*?)\]\)/)?.[1]
     if (block) return [...block.matchAll(/'(\d{5})'/g)].map((m) => m[1])
   }
-  throw new Error(`none of ${candidates.join(', ')} defines CANONICAL_ZIPS as a Set literal`)
+  throw new Error(`none of ${ZIP_SLUG_SOURCES.join(', ')} defines CANONICAL_ZIPS as a Set literal`)
 })()
 
 // LP route slugs — these are existing app/lp/<slug>/page.tsx files.

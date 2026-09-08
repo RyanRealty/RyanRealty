@@ -211,7 +211,11 @@ describe.skipIf(!hasChrome)('CMA page safety', () => {
       }),
       'overstuffed',
     )
-    expect(report.pageCount).toBeGreaterThan(6)
+    // The floors moved down with CMA_REIMAGINED_2026-09-07.md, which cut four
+    // chapters off the document. What they prove is unchanged: the overstuffed
+    // case still spills onto several sheets, and expectClean above already
+    // asserted every one of them is inside the contract.
+    expect(report.pageCount).toBeGreaterThan(5)
   }, 120_000)
 
   it('a section long enough to spill gets a properly margined continuation sheet', async () => {
@@ -224,7 +228,7 @@ describe.skipIf(!hasChrome)('CMA page safety', () => {
       (_, i) => `Improvement note ${i + 1} describing work completed on the property in detail.`,
     ).join(' ')
     const report = await expectClean(args({ sellerImprovementsText: huge }), 'spilling-section')
-    expect(report.pageCount).toBeGreaterThan(4)
+    expect(report.pageCount).toBeGreaterThan(3)
   }, 120_000)
 
   it('.page never clips its own overflow', async () => {

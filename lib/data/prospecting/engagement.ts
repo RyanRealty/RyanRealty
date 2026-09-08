@@ -28,6 +28,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { cmaSlugBase } from '@/lib/cma/address-slug'
+import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
 import type { ProspectEngagement, ProspectKind } from './types'
 
 /** One doc's identity for a scoped engagement read. */
@@ -67,6 +68,17 @@ export interface DocEngagementDetail {
   reportViews: number
   firstViewAt: string | null
   lastViewAt: string | null
+  /**
+   * Views of ryan-realty.com pages this DOCUMENT sent them to. Every address,
+   * place and CTA a CMA prints goes through `trackedDocLink`, which stamps
+   * `utm_campaign=<slug>` — so a tap on a comp is a visit belonging to that
+   * document, not an anonymous listing view. This is the count of those.
+   */
+  siteViews: number
+  firstSiteViewAt: string | null
+  lastSiteViewAt: string | null
+  /** Newest-first paths of those pages, at most three — WHICH comps they opened. */
+  recentSitePaths: string[]
   /** SMS short-link taps (crm_timeline sms_click, scoped to this person). */
   linkTaps: number
   lastLinkTapAt: string | null
@@ -98,6 +110,10 @@ export const EMPTY_DOC_ENGAGEMENT_DETAIL: DocEngagementDetail = {
   reportViews: 0,
   firstViewAt: null,
   lastViewAt: null,
+  siteViews: 0,
+  firstSiteViewAt: null,
+  lastSiteViewAt: null,
+  recentSitePaths: [],
   linkTaps: 0,
   lastLinkTapAt: null,
   lastActivityAt: null,
@@ -114,6 +130,37 @@ function later(a: string | null, b: string | null): string | null {
   if (!a) return b
   if (!b) return a
   return a > b ? a : b
+}
+
+/**
+ * The event types that mean "they looked at a page". A listing detail page
+ * fires `listing_view`; everything else fires `page_view`. Both are arrivals.
+ */
+const CAMPAIGN_VIEW_EVENT_TYPES = ['page_view', 'listing_view'] as const
+
+/** Path only — a stored arrival URL carries the campaign query we do not display. */
+function pathOf(pageUrl: string): string {
+  try {
+    return new URL(pageUrl, 'https://ryan-realty.com').pathname || '/'
+  } catch {
+    return '/'
+  }
+}
+
+/**
+ * The three most recent distinct pages, newest first. Distinct because a
+ * seller who reloads one comp four times has opened one comp, and a broker
+ * reading "which comps did they look at" must not be told the same address
+ * three times while the other two are pushed off the end.
+ */
+function recentPaths(hits: Array<{ path: string; at: string | null }>): string[] {
+  const sorted = [...hits].sort((a, b) => ((b.at ?? '') < (a.at ?? '') ? -1 : (b.at ?? '') > (a.at ?? '') ? 1 : 0))
+  const out: string[] = []
+  for (const h of sorted) {
+    if (!out.includes(h.path)) out.push(h.path)
+    if (out.length === 3) break
+  }
+  return out
 }
 
 /** The four-counter projection the prospecting worklist card has always shown. */
@@ -271,16 +318,68 @@ async function computeEngagementDetail(
     }
   }
 
+  // Site pages arrived at FROM the document (2026-09-07). Every link a CMA
+  // prints goes through `trackedDocLink`, which stamps `utm_campaign=<slug>`,
+  // and the visitor tracker stores the arrival URL query — so the campaign tag
+  // is what makes a tap on a comp a visit belonging to THAT document instead of
+  // an anonymous listing view.
+  //
+  // No `page_category` filter here on purpose: these land on listing, place and
+  // market pages, each with its own category. The ilike is a substring match,
+  // so every row is re-parsed and exact-matched against the chunk before it
+  // counts — the same guard the `/cma/<slug>` pass above uses, and the reason a
+  // slug that is a prefix of another cannot borrow its taps.
+  //
+  // BOTH view kinds. The single most important destination in a CMA is a comp,
+  // and a listing page fires `listing_view`, not `page_view` (VisitTracker
+  // branches on the path). Verified live 2026-09-07: the tap on
+  // /homes-for-sale/bend/newport-gardens/1299-ogden-220225388 wrote
+  // event_type='listing_view', which a page_view-only filter drops on the
+  // floor — the comp taps would have been the ones this whole read exists for.
+  const siteBySlug = new Map<
+    string,
+    { count: number; first: string | null; last: string | null; hits: Array<{ path: string; at: string | null }> }
+  >()
+  for (let i = 0; i < slugs.length; i += 25) {
+    const chunk = slugs.slice(i, i + 25)
+    const orExpr = chunk.map((s) => `page_url.ilike.%utm_campaign=${s}%`).join(',')
+    const { data, error } = await sb
+      .from('visitor_events')
+      .select('page_url, event_at')
+      .in('event_type', CAMPAIGN_VIEW_EVENT_TYPES)
+      .or(orExpr)
+    if (error) {
+      console.error('[prospecting] engagement campaign visits read failed:', error.message)
+      continue
+    }
+    const chunkSet = new Set(chunk)
+    for (const v of data ?? []) {
+      const pageUrl = String(v.page_url ?? '')
+      const campaign = cmaCampaignFromUrl(pageUrl)
+      if (!campaign) continue
+      const slug = cmaSlugBase(campaign)
+      if (!chunkSet.has(slug)) continue
+      const agg = siteBySlug.get(slug) ?? { count: 0, first: null, last: null, hits: [] }
+      agg.count++
+      const at = (v.event_at as string | null) ?? null
+      agg.first = earlier(agg.first, at)
+      agg.last = later(agg.last, at)
+      agg.hits.push({ path: pathOf(pageUrl), at })
+      siteBySlug.set(slug, agg)
+    }
+  }
+
   const result: DocEngagementDetailMap = {}
   for (const k of keys) {
     const em = (k.slug ? emailAgg.get(k.slug) : undefined) ?? emptyEmailAgg()
     const views = k.slug ? viewsBySlug.get(k.slug) : undefined
+    const site = k.slug ? siteBySlug.get(k.slug) : undefined
     const sms = k.personId != null ? smsClicksByPid.get(k.personId) : undefined
     // Exceptions (bounce / unsubscribe) are deliberately NOT activity — a
     // bounce is the absence of a reader, and folding it in would make a dead
     // address look like a warm one on the row.
     let lastActivityAt: string | null = null
-    for (const at of [em.lastOpenAt, em.lastClickAt, views?.last ?? null, sms?.last ?? null]) {
+    for (const at of [em.lastOpenAt, em.lastClickAt, views?.last ?? null, site?.last ?? null, sms?.last ?? null]) {
       lastActivityAt = later(lastActivityAt, at)
     }
     result[k.id] = {
@@ -297,6 +396,10 @@ async function computeEngagementDetail(
       reportViews: views?.count ?? 0,
       firstViewAt: views?.first ?? null,
       lastViewAt: views?.last ?? null,
+      siteViews: site?.count ?? 0,
+      firstSiteViewAt: site?.first ?? null,
+      lastSiteViewAt: site?.last ?? null,
+      recentSitePaths: recentPaths(site?.hits ?? []),
       linkTaps: sms?.count ?? 0,
       lastLinkTapAt: sms?.last ?? null,
       lastActivityAt,

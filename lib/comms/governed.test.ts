@@ -31,6 +31,7 @@ const h = vi.hoisted(() => ({
   recordEmailEvent: vi.fn(),
   inserts: [] as Array<{ table: string; rows: unknown }>,
   fileCommsToVault: vi.fn(),
+  stampFirstBrokerActionIfEmpty: vi.fn(),
 }))
 
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: h.isSuppressed }))
@@ -50,6 +51,9 @@ vi.mock('@/lib/crm/twilio', () => ({
 vi.mock('@/lib/crm/twilio-conversations', () => ({ sendGroupMms: h.sendGroupMms }))
 vi.mock('@/lib/data/crm/shortLinks', () => ({ instrumentSmsLinks: h.instrumentSmsLinks }))
 vi.mock('@/lib/crm/record-message', () => ({ recordConversationMessage: h.recordConversationMessage }))
+vi.mock('@/lib/crm/first-broker-action', () => ({
+  stampFirstBrokerActionIfEmpty: h.stampFirstBrokerActionIfEmpty,
+}))
 vi.mock('@/lib/tc/file-comms-write', () => ({ fileCommsToVault: h.fileCommsToVault }))
 vi.mock('@/lib/crm/gmail', () => ({
   CRM_MAILBOXES: [
@@ -121,6 +125,7 @@ beforeEach(() => {
   // its own unit tests in lib/crm) — these tests assert WHEN it is consulted.
   h.withSendIdempotency.mockImplementation(async (_args: unknown, run: () => Promise<unknown>) => run())
   h.recordEmailEvent.mockResolvedValue({ ok: true, inserted: true, event: 'sent', personId: 7 })
+  h.stampFirstBrokerActionIfEmpty.mockResolvedValue(true)
 })
 
 describe('sendGovernedSms — guard order', () => {
@@ -210,7 +215,10 @@ describe('sendGovernedSms — guard order', () => {
       kind: 'sms_out',
       title: 'Text sent',
       body: 'attr:merged:hello',
-      payload: { twilioSid: 'SM123', to: '+15415551234', hasMedia: false },
+      payload: {
+        twilioSid: 'SM123', to: '+15415551234', hasMedia: false,
+        purpose: 'test', initiator: 'broker',
+      },
       broker: 'rebecca',
       source: 'app',
       dedupe_key: 'twilio:SM123:p42',
@@ -472,5 +480,131 @@ describe('sendGovernedGroupMms — one thread, same guards', () => {
         dedupeKey: 'sms-out:IM1',
       }),
     )
+  })
+})
+
+/**
+ * SITE-09: a system confirmation is not the broker answering.
+ *
+ * Both halves matter. The TIMELINE row must carry purpose + initiator, because
+ * the Gmail rail keeps source 'app' and the broker's slug for a system send and
+ * nothing else on the row can tell the two apart. And the FIRST-BROKER-ACTION
+ * stamp must not move, on either the direct call or the conversation
+ * shadow-write, or the SLA clock reads zero for every submit.
+ */
+describe('SITE-09 — system sends are stamped, and never count as the broker touching the lead', () => {
+  // The rails stamp first-broker-action as a fire-and-forget promise
+  // (`void import(...).then(...)`). Under full-suite load a stamp from an EARLIER
+  // test in this file can land during one of these, so every test here first
+  // lets pending promises settle, clears the mock, and then asserts only on the
+  // calls made for its own person id (2026-09-08: a rebecca sms_out stamp from
+  // the SMS-rail block leaked into the resend assertion once in three runs).
+  beforeEach(async () => {
+    await new Promise((r) => setTimeout(r, 25))
+    h.stampFirstBrokerActionIfEmpty.mockClear()
+  })
+  const stampCallsFor = (personId: number) =>
+    h.stampFirstBrokerActionIfEmpty.mock.calls.filter((c) => c[1] === personId).length
+
+  const systemGmail = {
+    personId: 9071,
+    purpose: 'contact:confirmation',
+    initiator: { kind: 'system' as const, broker: 'matt', source: 'contact-form' },
+    payload: {
+      rail: 'gmail' as const,
+      to: ['lead@example.com'],
+      subject: 'We got your note',
+      bodyText: 'Body',
+    },
+  }
+
+  function wireGmail() {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    h.sendCrmEmail.mockResolvedValue({ ok: true, gmailId: 'g1', plainBody: 'plain' })
+    h.recordConversationMessage.mockResolvedValue({ ok: true, conversationId: 'c1', messageId: 'm1', deduped: false })
+  }
+
+  it('gmail rail: the timeline payload carries purpose + initiator + source', async () => {
+    wireGmail()
+    await sendGovernedEmail(systemGmail)
+    const rows = h.inserts[0].rows as Array<Record<string, unknown>>
+    expect(rows[0].payload).toMatchObject({
+      purpose: 'contact:confirmation',
+      initiator: 'system',
+      initiatorSource: 'contact-form',
+    })
+    // The column itself is untouched — the inbox and the activity reports read it.
+    expect(rows[0].source).toBe('app')
+    expect(rows[0].broker).toBe('matt')
+  })
+
+  it('gmail rail: the shadow-write is told the initiator, so it cannot stamp either', async () => {
+    wireGmail()
+    await sendGovernedEmail(systemGmail)
+    expect(h.recordConversationMessage.mock.calls[0][0]).toMatchObject({ initiatorKind: 'system' })
+  })
+
+  it('a broker send still stamps first-broker-action; a system send does not (resend rail)', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    h.prepareDeliverableEmail.mockReturnValue({
+      subject: 'S', html: '<p>H</p>', text: 'T', headers: {}, report: { level: 'pass', issues: [] },
+    })
+    h.resendSendEmail.mockResolvedValue({ id: 're_1' })
+    h.recordConversationMessage.mockResolvedValue({ ok: true, conversationId: 'c1', messageId: 'm1', deduped: false })
+
+    await sendGovernedEmail({
+      personId: 9072,
+      purpose: 'alert:confirmation',
+      initiator: { kind: 'system', broker: 'matt', source: 'search-alert' },
+      payload: { rail: 'resend', to: 'lead@example.com', subject: 'S', html: '<p>H</p>' },
+    })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(stampCallsFor(9072)).toBe(0)
+    expect((h.inserts[0].rows as Record<string, unknown>).payload).toMatchObject({
+      purpose: 'alert:confirmation',
+      initiator: 'system',
+      initiatorSource: 'search-alert',
+    })
+
+    h.inserts.length = 0
+    await sendGovernedEmail({
+      personId: 9072,
+      purpose: 'crm:manual-email',
+      initiator: { kind: 'broker', broker: 'matt' },
+      payload: { rail: 'resend', to: 'lead@example.com', subject: 'S', html: '<p>H</p>' },
+    })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(stampCallsFor(9072)).toBe(1)
+  })
+
+  it('sms rail: a system text stamps nothing and carries its purpose', async () => {
+    passAllGuards()
+    wireHappySmsPath()
+    await sendGovernedSms({
+      personId: 42,
+      payload: { body: 'hello' },
+      purpose: 'alert:confirmation',
+      initiator: { kind: 'system', broker: 'matt', source: 'search-alert' },
+    })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(stampCallsFor(42)).toBe(0)
+    expect((h.inserts[0].rows as Record<string, unknown>).payload).toMatchObject({
+      purpose: 'alert:confirmation',
+      initiator: 'system',
+    })
+    expect(h.recordConversationMessage.mock.calls[0][0]).toMatchObject({ initiatorKind: 'system' })
+  })
+
+  it('sms rail: a broker text still stamps', async () => {
+    passAllGuards()
+    wireHappySmsPath()
+    await sendGovernedSms({
+      personId: 42,
+      payload: { body: 'hello' },
+      purpose: 'crm:manual-sms',
+      initiator: { kind: 'broker', broker: 'matt' },
+    })
+    await new Promise((r) => setTimeout(r, 0))
+    expect(stampCallsFor(42)).toBe(1)
   })
 })

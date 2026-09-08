@@ -13,7 +13,10 @@ import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { immersiveStylesheet } from './immersive-css'
+import { immersiveInteractionCss, immersiveInteractionScript } from './immersive-interactions'
+import { priceHistoryLineSvg, pricePathFromFinalCycle } from './price-path'
 import { cmaStylesheet } from './render-css'
+import { askOutcomeBarsSvg, askOutcomeDaysPhrase, niceAxis } from './market-charts'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 import type { CmaMarketArea } from './market-status'
 import type { ExpiredAuditData } from './expired-audit'
@@ -316,7 +319,7 @@ function immersive(over: Partial<RenderCmaArgs> = {}): string {
 
 /** Order-preserving list of the `<section class="page">` chapter headings. */
 function letterChapters(html: string): string[] {
-  return [...html.matchAll(/<h2 class="section">([\s\S]*?)<\/h2>/g)].map((m) =>
+  return [...html.matchAll(/<h2 class="section[^"]*">([\s\S]*?)<\/h2>/g)].map((m) =>
     m[1]!.replace(/<[^>]+>/g, '').trim(),
   )
 }
@@ -325,93 +328,74 @@ function immersiveScenes(html: string): string[] {
   return [...html.matchAll(/<section class="sc[^"]*" id="([a-z0-9-]+)"/g)].map((m) => m[1]!)
 }
 
-describe('P1 — one price ruler for sold and unsold', () => {
-  it('labels each plotted value once, not on both sides of the row', () => {
+describe('chapter 2 — priced right sells, priced high sits', () => {
+  // P1 built a price ruler of sold and unsold dots. Matt 2026-09-07: "the chart
+  // means nothing." CMA_REIMAGINED_2026-09-07.md chapter 2 replaces it with two
+  // graphics from local data plus the unsold listings as short linked rows.
+  it('argues the claim from local numbers, not a slogan', () => {
     const html = letter()
-    // The old lollipop printed the same figure as a row tick AND as an end
-    // label. $410K appearing twice inside the outcome graphic is that bug.
-    const svg = html.match(/<svg[^>]*aria-label="[^"]*sold and unsold[^"]*"[\s\S]*?<\/svg>/i)?.[0]
-    expect(svg, 'the sold/unsold graphic must render').toBeTruthy()
-    const labels = [...svg!.matchAll(/>\s*(\$[\d,.]+K?)\s*</g)].map((m) => m[1]!)
-    const dupes = labels.filter((v, i) => labels.indexOf(v) !== i)
-    expect(dupes, `duplicated labels in the band graphic: ${dupes.join(', ')}`).toEqual([])
-  })
-
-  it("labels the recommend and the seller's own last ask, and nothing else", () => {
-    const html = letter()
-    expect(html).toContain('Recommended $389K')
-    expect(html).toContain('Your last ask $460K')
+    expect(html).toContain('What overpricing costs.')
+    expect(html).toContain('How fast homes like yours went')
+    expect(html).toContain('The listings near you that did not sell.')
+    // The ruler is gone from both documents.
+    expect(html).not.toContain('ruler-wide')
+    expect(html).not.toContain('Recommended $389K')
     expect(html).not.toContain("Didn't sell")
+    expect(immersive()).not.toContain('ruler-wide')
   })
 
-  it('states the reading under the graphic', () => {
-    const html = letter()
-    expect(html).toContain('9 closed in this band, $410K to $460K.')
-    expect(html).toContain('2 asked and did not sell.')
-    expect(html).toContain('Your ask sat at the top of the band.')
-    // The kept sales, once brought to this house. Both ends already print in
-    // the matrix's Adjusted close row, so the sentence adds no new figure.
-    expect(html).toContain('Adjusted for size and date, homes like yours land at $372K to $399K.')
+  it('tells one story per unsold listing, never a matrix', () => {
+    const chapter = letter().split('The listings near you that did not sell.')[1]!.split('</section>')[0]!
+    expect(chapter).toContain('dns-card')
+    expect(chapter).toContain('class="price-path"')
+    expect(chapter).not.toContain('comp-matrix')
+    expect(chapter).toMatch(/<a class="dns-addr" href="https:\/\/ryan-realty\.com\/[^"]*utm_source=cma/)
   })
 })
 
-describe('P2 — the expired chapter is the why, so it comes first', () => {
-  it('puts Your last listing directly after How we got the price', () => {
+describe('chapter 1 — what happened comes FIRST, before the number', () => {
+  // CMA_REIMAGINED_2026-09-07.md moved it ahead of the price. P2 put it second,
+  // after How we got the price; the blueprint's reader gives the document
+  // ninety seconds and wants their own listing explained before anything else.
+  it('opens the document on what happened to their listing', () => {
     const chapters = letterChapters(letter())
-    const price = chapters.indexOf('How we got the price')
-    const last = chapters.findIndex((c) => /Your last listing/i.test(c))
-    const competition = chapters.findIndex((c) => /competing with/i.test(c))
-    expect(price).toBeGreaterThanOrEqual(0)
-    expect(last).toBe(price + 1)
-    expect(competition).toBeGreaterThan(last)
+    const happened = chapters.findIndex((c) => /and did not sell\./i.test(c))
+    const price = chapters.indexOf('$389,000.')
+    const competition = chapters.findIndex((c) => /compete with/i.test(c))
+    expect(happened).toBe(0)
+    expect(price).toBeGreaterThan(happened)
+    expect(competition).toBeGreaterThan(price)
   })
 
-  it('carries the price ruler and the failed-then-sold statistics', () => {
+  it('carries the failed-then-sold statistics', () => {
     const html = letter()
-    const start = html.indexOf('Your last listing')
+    const start = html.indexOf('and did not sell.')
     const end = html.indexOf('<section class="page"', start)
     const chapter = html.slice(start, end > 0 ? end : undefined)
-    expect(chapter).toContain('Your last ask $460K')
     expect(chapter).toContain('3,394')
     expect(chapter).toContain('94.2%')
     expect(chapter).toContain('12.3%')
   })
 
   it('does the same in the immersive, in the same place', () => {
-    const scenes = immersiveScenes(immersive())
-    const price = scenes.indexOf('how-we-got-the-price')
-    expect(scenes[price + 1]).toBe('your-last-listing')
-    expect(scenes.indexOf('competition')).toBeGreaterThan(price + 1)
+    const scenes = immersiveScenes(immersive()).filter((x) => x !== 'top')
+    expect(scenes[0]).toBe('what-happened')
+    expect(scenes.indexOf('what-its-worth')).toBeGreaterThan(0)
+    expect(scenes.indexOf('competition')).toBeGreaterThan(scenes.indexOf('what-its-worth'))
   })
 })
 
-describe('P3 — the market block never contradicts the number beside it', () => {
-  it('drops the 90-day band when the recommend sits outside it', () => {
+describe('the 90-day bed-count board is cut, so it cannot contradict the number', () => {
+  // P3 dropped the board when the recommend sat outside it. The blueprint cuts
+  // it outright: chapter 5 is four city figures, the median-close line and one
+  // sentence about the street. A board built on beds rather than living area
+  // describes a different product whatever the recommend is.
+  it('never prints the bed-count band', () => {
     const html = immersive()
     expect(html).not.toContain('$458,500')
-    expect(html).not.toContain('2 to 4 bedroom band')
-  })
-
-  it('keeps the band when the recommend sits inside it', () => {
-    const inBand = {
-      ...offProductSold90,
-      low: 370000,
-      median: 392000,
-      high: 405000,
-      bedsLabel: '3 bedroom',
-    }
-    const html = immersive({
-      extras: {
-        ...(args().extras as object),
-        marketArea: { ...marketArea, sold90: inBand },
-        sold90: inBand,
-      } as RenderCmaArgs['extras'],
-    })
-    expect(html).toContain('$392,000')
-  })
-
-  it('letter and immersive make the same call', () => {
-    expect(letter()).not.toContain('$458,500')
+    expect(html).not.toContain('bedroom band')
+    expect(html).not.toContain('id="sold-90"')
+    expect(html).not.toContain('closed in 90 days')
   })
 })
 
@@ -436,14 +420,15 @@ describe('P4 — how fast homes like yours went, not a month ledger', () => {
   })
 
   it('is in the immersive too', () => {
-    expect(immersiveScenes(immersive())).toContain('how-fast')
+    // Folded into chapter 2 — the days chart IS "priced high sits".
+    expect(immersiveScenes(immersive())).toContain('priced-right')
   })
 })
 
 describe('P5 — one statement each, once', () => {
   it('does not repeat the listing history line inside the competition chapter', () => {
     const html = letter()
-    const start = html.indexOf('competing with')
+    const start = html.indexOf('compete with')
     const chapter = html.slice(start, html.indexOf('<section class="page"', start))
     expect(chapter).not.toContain('Last on market Feb 2026')
   })
@@ -455,20 +440,25 @@ describe('P5 — one statement each, once', () => {
   })
 })
 
-describe('P6 — the land only when the lots differ', () => {
-  it('omits six identical rectangles and says the one fact instead', () => {
+describe('the land is cut, drawn or not', () => {
+  // P6 kept the chapter when the lots differed. CMA_REIMAGINED_2026-09-07.md
+  // cuts it outright: recorded lot outlines answer none of the three questions
+  // this document exists to answer.
+  it('draws no lot outlines even when the parcels differ', () => {
     const html = letter({
       parcels: {
         subject: { acres: 0.14, taxlot: '151303BD02800', rings: [[[0, 0], [1, 0], [1, 1], [0, 1]]] },
-        comps: comps.map((c) => ({
+        comps: comps.map((c, i) => ({
           listingKey: c.listingKey,
-          acres: c.lotAcres,
-          rings: [[[0, 0], [1, 0], [1, 1], [0, 1]]],
+          acres: (c.lotAcres ?? 0.14) * (1 + i),
+          rings: [[[0, 0], [1 + i, 0], [1 + i, 1], [0, 1]]],
         })),
       } as unknown as RenderCmaArgs['parcels'],
     })
-    expect(html).not.toContain('<h2 class="section">The land</h2>')
-    expect(html).toContain('Every kept sale sits on a 0.14 to 0.16 acre lot like this one.')
+    // Measure the document, not the stylesheet that still names the classes.
+    const body = html.split('</style>')[1]!
+    expect(body).not.toContain('<h2 class="section">The land</h2>')
+    expect(body).not.toContain('lot-strip')
   })
 })
 
@@ -485,17 +475,29 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // Measure the document, not the stylesheet that names the same classes.
     const html = letter().split('</style>')[1]!
     const lead = html.indexOf('The sales that set this price')
-    const matrix = html.indexOf('comp-matrix-wrap')
+    const matrix = html.indexOf('comp-matrix-wrap', lead)
     expect(lead).toBeGreaterThan(0)
     expect(matrix).toBeGreaterThan(lead)
-    expect(html).toMatch(/land at \$372,324 to \$398,788[\s\S]{0,120}\$389,000/)
+    // The recommend is the chapter TITLE now, so the lead stops at the range.
+    expect(html).toMatch(/land at \$372,324 to \$398,788/)
+    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('land at $372,324'))
   })
 
   it('explains the adjustment rows once', () => {
     const html = letter()
-    expect(html).toContain('Brought to today')
-    expect(html).toContain('Brought to your size')
-    expect(html).toMatch(/Brought to today moves each sale/i)
+    // Form 1004 order, line by line (research item 1): the three adjustments
+    // itemized, then the net, then the two percentages, then the price today.
+    expect(html).toContain('Adjusted for date')
+    expect(html).toContain('Adjusted for size')
+    // "Adjusted for style" prints only where a style adjustment was made: a
+    // row every column leaves empty is dropped rather than printed as dashes.
+    expect(html).toContain('Net adjustment')
+    expect(html).toContain('Every adjustment added up')
+    expect(html).toContain('Sale price today')
+    // The legend says what the labels cannot: which way a minus points. It no
+    // longer restates the arithmetic the rows spell out in order.
+    expect(html).toContain('A minus figure means that sale had something yours does not.')
+    expect(html).not.toMatch(/Sale price today is the sale price plus every adjustment above it/i)
   })
 })
 
@@ -524,7 +526,7 @@ describe('P10 — one chapter order, both documents', () => {
 describe('F1 — the immersive comps table on a phone', () => {
   it('hides the side-by-side matrix and shows the stack below 700px', () => {
     const css = immersiveStylesheet()
-    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[^}]*\.comp-matrix-wrap\s*\{\s*display:\s*none/)
+    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[^}]*\.comp-matrix-wrap,\s*\.matrix-group-h\s*\{\s*display:\s*none/)
     expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[\s\S]{0,200}\.comp-stack\s*\{\s*display:\s*block/)
   })
 })
@@ -627,7 +629,7 @@ function svgBoxes(svg: string): {
   texts: Array<{ x: number; y: number; size: number; anchor: string; text: string }>
 } {
   const vb = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg)
-  if (!vb) throw new Error('the ruler must carry a viewBox')
+  if (!vb) throw new Error('the graphic must carry a viewBox')
   const circles = [...svg.matchAll(/<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)"/g)].map(
     (m) => ({ cx: +m[1]!, cy: +m[2]!, r: +m[3]! }),
   )
@@ -645,10 +647,13 @@ function svgBoxes(svg: string): {
   return { W: +vb[1]!, H: +vb[2]!, circles, texts }
 }
 
-describe('F6 — the price ruler fits a phone', () => {
-  const phoneRuler = (html: string): string => {
-    const wrap = /<div class="szn ruler-phone">([\s\S]*?)<\/div>/.exec(html)
-    expect(wrap, 'both documents must carry a phone layout of the ruler').toBeTruthy()
+describe('the phone layouts keep every mark inside the frame', () => {
+  // F6's mechanism, re-pointed at the graphics that replaced the ruler: a wide
+  // chart in a pan box crops the punchline, so each one ships a drawn-to-fit
+  // layout and exactly one is ever visible.
+  const phoneSvg = (html: string, cls: string): string => {
+    const wrap = new RegExp(`<div class="szn ${cls}">([\\s\\S]*?)</div>`).exec(html)
+    expect(wrap, `both documents must carry the ${cls} layout`).toBeTruthy()
     return wrap![1]!
   }
 
@@ -656,91 +661,102 @@ describe('F6 — the price ruler fits a phone', () => {
     ['letter', letter],
     ['immersive', immersive],
   ] as const) {
-    it(`draws every sold dot and both ticks inside the viewBox on the ${name}`, () => {
-      const svg = phoneRuler(render())
+    it(`draws chapter 1's timeline inside the viewBox on the ${name}`, () => {
+      const svg = phoneSvg(render(), 'timeline-phone')
       const { W, H, circles, texts } = svgBoxes(svg)
       expect(W).toBeLessThanOrEqual(400)
-
-      // Nine closed sales and two unsold listings. None may be cropped.
-      expect(circles).toHaveLength(11)
       for (const c of circles) {
-        expect(c.cx - c.r, `a dot at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
-        expect(c.cx + c.r, `a dot at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
+        expect(c.cx - c.r, `a mark at ${c.cx} runs off the left edge`).toBeGreaterThanOrEqual(0)
+        expect(c.cx + c.r, `a mark at ${c.cx} runs off the right edge`).toBeLessThanOrEqual(W)
         expect(c.cy - c.r).toBeGreaterThanOrEqual(0)
         expect(c.cy + c.r).toBeLessThanOrEqual(H)
       }
-
-      // Both ticks carry their label, and the label sits inside the frame.
-      const labels = texts.map((t) => t.text)
-      expect(labels).toContain('Recommended $389K')
-      expect(labels).toContain('Your last ask $460K')
       for (const t of texts) {
         const w = t.text.length * t.size * 0.58
         const left = t.anchor === 'end' ? t.x - w : t.anchor === 'middle' ? t.x - w / 2 : t.x
         expect(left, `"${t.text}" runs off the left edge`).toBeGreaterThanOrEqual(-0.5)
         expect(left + w, `"${t.text}" runs off the right edge`).toBeLessThanOrEqual(W + 0.5)
-        expect(t.y).toBeLessThanOrEqual(H)
-      }
-
-      // Two tick lines, both inside the plot.
-      const lines = [...svg.matchAll(/<line x1="([\d.]+)"[^>]*x2="([\d.]+)"/g)]
-      for (const l of lines) {
-        expect(+l[1]!).toBeGreaterThanOrEqual(0)
-        expect(+l[2]!).toBeLessThanOrEqual(W)
+        expect(t.y, `"${t.text}" runs off the bottom`).toBeLessThanOrEqual(H)
       }
     })
   }
 
-  it('shows the phone layout only below 700px, and never on paper', () => {
+  it('shows a phone layout only below 700px, and never on paper', () => {
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
       const flat = css.replace(/\s+/g, ' ')
-      expect(flat).toMatch(/\.ruler-phone\s*\{\s*display:\s*none/)
-      expect(flat).toMatch(/@media screen and \(max-width:\s*700px\)[^}]*\{[^@]*\.ruler-wide\s*\{\s*display:\s*none/)
-      expect(flat).toMatch(/@media print[^@]*\.ruler-phone\s*\{\s*display:\s*none\s*!important/)
+      for (const cls of ['timeline', 'days']) {
+        expect(flat).toMatch(new RegExp(`\\.${cls}-phone\\s*\\{\\s*display:\\s*none`))
+        expect(flat).toMatch(
+          new RegExp(`@media screen and \\(max-width:\\s*700px\\)[^}]*\\{[^@]*\\.${cls}-wide\\s*\\{\\s*display:\\s*none`),
+        )
+        expect(flat).toMatch(new RegExp(`@media print[^@]*\\.${cls}-phone\\s*\\{\\s*display:\\s*none\\s*!important`))
+      }
     }
   })
 
-  it('keeps the wide ruler for the printed page', () => {
-    expect(letter()).toContain('<div class="szn is-hero ruler-wide">')
+  it('puts no chart in a pan box on a phone', () => {
+    // CMA_REIMAGINED_2026-09-07.md § The register: "Nothing on a phone ever
+    // sits inside a scroll box: every graphic has a phone drawing." The
+    // median-close line was the last one held at min-width in an overflow box,
+    // and it cropped six of its twelve months at 375.
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      const flat = css.replace(/\s+/g, ' ')
+      expect(flat).not.toMatch(/\.szn\.is-hero\s*\{\s*overflow-x:\s*auto/)
+      expect(flat).not.toMatch(/\.szn[^{]*svg\s*\{\s*min-width/)
+    }
+  })
+
+  it('keeps the wide layout for the printed page', () => {
+    expect(letter()).toContain('<div class="szn timeline-wide">')
   })
 })
 
-describe('F7 — this market is a stat row, not a stacked list', () => {
+describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KPI grid', () => {
   const marketBlock = (html: string): string => {
-    const start = html.indexOf('How fast this market is moving')
+    const start = html.indexOf('right now')
     expect(start, 'the market board must render').toBeGreaterThan(-1)
     const rest = html.slice(start)
     const end = rest.indexOf('</section>')
     return end > 0 ? rest.slice(0, end) : rest
   }
 
-  it('lays the four figures out as the stat row the document already uses', () => {
+  it('puts every figure inside a sentence instead of a percent tile', () => {
     const block = marketBlock(letter())
-    expect(block).toMatch(/<div class="stat-strip is-4">/)
+    // TASTE.md names the tell: "a row of percent tiles ... with no plain
+    // sentence saying what it means".
+    expect(block).not.toMatch(/<div class="stat-strip is-4">/)
     expect(block).not.toContain('class="stat3"')
-    const vals = [...block.matchAll(/<div class="val">([^<]*)<\/div>/g)].map((m) => m[1]!)
-    // Months of supply first, with its verdict word under it.
-    expect(vals).toEqual(['3.2', '97.8%', '21', '$475,000'])
-    expect(block).toMatch(/Seller(&#39;|')s market/)
+    expect(block).toContain('40 homes are for sale in Redmond right now')
+    expect(block).toMatch(/about 13 sell in a typical month/)
+    expect(block).toMatch(/3\.2 months to sell what is listed/)
+    expect(block).toMatch(/seller(&#39;|')s market territory/)
   })
 
-  it('names what each number actually is', () => {
+  it('names what each number actually is, in words', () => {
     const block = marketBlock(letter())
-    expect(block).toContain('months of supply')
     // market_stats_cache.median_dom medians listings.days_to_pending — the days
     // from going on market to going pending, not list-to-close.
-    expect(block).toContain('median days to an accepted offer')
+    expect(block).toContain('had an accepted offer inside 21 days')
     expect(block).not.toContain('median days on market')
     // saleToListRatio carries median_sale_to_original_list, not final list.
-    expect(block).toContain('sold price to original ask')
+    // No third sold-to-first-ask figure here: chapter 2b prints it per group
+    // off the 12-month local read and chapter 3's method prints the share the
+    // price was carried to. Three numbers for one claim is a §0 failure.
+    expect(block).not.toContain('percent of the price they first asked')
     expect(block).not.toContain('>sold to list<')
-    expect(block).toContain('median sold, every Redmond home')
   })
 
-  it('is the same row on the immersive', () => {
+  it('draws months of supply as two bars, whose ratio IS the published figure', () => {
+    const block = marketBlock(letter())
+    expect(block).toContain('class="szn mos-wide"')
+    expect(block).toContain('Homes for sale in Redmond right now')
+    expect(block).toContain('Homes that sell in a typical month')
+  })
+
+  it('is the same reading on the immersive', () => {
     const block = marketBlock(immersive())
-    expect(block).toMatch(/<div class="stat-strip is-4">/)
-    expect(block).toContain('median days to an accepted offer')
+    expect(block).toContain('had an accepted offer inside 21 days')
+    expect(block).toContain('class="szn mos-wide"')
   })
 
   it('has a row to lay out in, on both stylesheets, and folds on a phone', () => {
@@ -808,7 +824,7 @@ describe('the market median is a tick on the days chart', () => {
   it('reads the tick in the caption, between the kept sales and the subject', () => {
     const html = letter()
     expect(html).toMatch(
-      /Each kept sale had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
+      /Every sale below had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
     )
   })
 
@@ -820,7 +836,7 @@ describe('the market median is a tick on the days chart', () => {
     expect(svg).not.toContain('days-median')
     expect(svg).not.toContain('median 21 days')
     expect(html).not.toContain('median is 21')
-    expect(html).toContain('Each kept sale had an offer inside 51 days.')
+    expect(html).toContain('Every sale below had an offer inside 51 days.')
   })
 })
 
@@ -876,9 +892,13 @@ describe('no MLS placeholder reaches a seller-facing source line', () => {
     }
   }
 
-  it('falls the place clause back to the city that scoped the query', () => {
+  it('never prints an MLS placeholder as the place a figure came from', () => {
+    // The 90-day board that shipped "Closed 4 to 6 bedroom sales in N/A" is
+    // cut. The rule stands over the whole document: no placeholder reaches a
+    // seller-facing source line (clientSourceLine owns the mechanism).
     const html = letter(placeholderArgs('N/A'))
-    expect(html).toContain('Closed 4 to 6 bedroom sales in Redmond in the last 90 days.')
+    expect(html).not.toMatch(/\bin N\/A\b/)
+    expect(html).not.toMatch(/\bN\/A,/)
   })
 
   it('keeps a real subdivision exactly as the MLS states it', () => {
@@ -949,8 +969,401 @@ describe('F8 — the days-to-offer strip fits a phone', () => {
 
   it('leaves the wide strip exactly as it was for the printed page', () => {
     const html = letter()
-    expect(html).toContain('<div class="szn is-hero days-wide">')
-    const wide = /<div class="szn is-hero days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
+    expect(html).toContain('<div class="szn days-wide">')
+    const wide = /<div class="szn days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
     expect(wide).toContain('viewBox="0 0 720')
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 1: the document must not contradict itself and
+ * no control may publish a false status. Every assertion below is a defect a
+ * separate evaluator found by reading the rendered document.
+ */
+describe('tasteReview 1 — nothing in the document argues with itself', () => {
+  it('makes [hidden] beat every author display rule, so the competition filter really filters', () => {
+    // `.rival-grid{display:grid}` beat the UA `[hidden]{display:none}`, so
+    // choosing "Under contract" hid the "For sale now" heading and left all
+    // eight cards on screen under the surviving heading. Four for-sale homes
+    // were presented to the seller as under contract.
+    const css = immersiveStylesheet().replace(/\s+/g, ' ')
+    expect(css).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important/)
+    const gridRule = /\.rival-grid\s*\{\s*display:\s*grid/.test(css)
+    expect(gridRule).toBe(true)
+    expect(css.indexOf('[hidden]{display:none!important}')).toBeGreaterThan(-1)
+  })
+
+  it('nets at list off the concessions the grid prints, never against them', () => {
+    const paid = comps.map((c, i) => ({ ...c, concessions: [4000, 0, 0, 10000, 0][i] ?? 0 }))
+    const html = letter({ comps: paid, pricing: { ...pricing, sellerNet: { expectedConcessions: 0 } } as never })
+    expect(html).not.toContain('reported no seller concessions')
+    expect(html).toContain('the median across the 2 sales in the price chapter that reported one')
+  })
+
+  it('says so truthfully when every printed sale reported none', () => {
+    const none = comps.map((c) => ({ ...c, concessions: 0 }))
+    const html = letter({ comps: none })
+    expect(html).toContain('recorded what the seller paid reported none')
+  })
+
+  it('gives every sale ONE day count, and says which measure it is', () => {
+    const html = letter()
+    // 730 Quince: 1 day to an accepted offer, 25 days list to close. The card
+    // printed "1 day to offer" and the price path "25 days", unlabelled.
+    expect(html).toContain('offer in 1 day')
+    expect(html).not.toMatch(/sold \$457K · 25 days/)
+  })
+
+  it('sources the three regional relist figures on the screen that prints them', () => {
+    for (const html of [letter(), immersive()]) {
+      expect(html).toContain('These three figures are regional, not this city alone')
+      expect(html).toContain('matched pairs')
+    }
+  })
+
+  it('sources the competition counts, on the SAME date the byline prints', () => {
+    const html = letter()
+    expect(html).toContain('Homes for sale and under contract in Redmond between')
+    // generatedAtIso is 2026-09-06T00:00Z, which is Sep 5 in Central Oregon.
+    // Every date on the document reads the same clock (CLAUDE.md §0).
+    const byline = /Prepared ([A-Z][a-z]+ \d+, \d{4})/.exec(html)?.[1]
+    expect(byline).toBeTruthy()
+    expect(html).toContain(`from the Oregon Data Share MLS as of ${byline}.`)
+  })
+
+  it('snaps the curve readout to the six measured days', () => {
+    const script = immersive()
+    expect(script).not.toContain('Between two measured days, read off the line')
+    expect(script).toContain("hit.setAttribute('aria-valuetext'")
+  })
+
+  it('never labels the unsold bar as days to an accepted offer', () => {
+    expect(askOutcomeDaysPhrase({ key: 'did-not-sell', n: 375, medianDays: 118 })).toBe(
+      'median 118 days on market before it came off',
+    )
+    expect(askOutcomeDaysPhrase({ key: 'sold-no-cut', n: 375, medianDays: 9 })).toBe(
+      'median 9 days to an accepted offer',
+    )
+  })
+
+  it('leads the seller own unsold card with the SAME measure chapter 1 states', () => {
+    const html = letter()
+    const ch1 = /above the top of the range homes like yours sold in\./.exec(html)
+    expect(ch1).not.toBeNull()
+    // The sentence appears twice: chapter 1's reading and chapter 2's card.
+    expect(
+      (html.match(/above the top of the range homes like yours sold in\./g) ?? []).length,
+    ).toBeGreaterThanOrEqual(2)
+  })
+
+  it('reconciles the city median against this house before it shows the board', () => {
+    const html = letter()
+    expect(html).toContain('is every Redmond home, all sizes')
+    expect(html).toContain('Homes like yours')
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 2: the answer gets a picture, and the report
+ * chrome leaves the letter.
+ */
+describe('tasteReview 2 — the answer is drawn, and nothing floats over it', () => {
+  it('opens chapter 3 on a dot strip, before the method and the grid', () => {
+    for (const html of [letter(), immersive()]) {
+      const worth = html.slice(html.indexOf('The sales that set this price') - 12000)
+      expect(html).toContain('class="szn worth-wide"')
+      expect(html).toContain('class="szn worth-phone"')
+      expect(html).toContain('Where the sales put this home, and where we would list it')
+      // The strip sits ABOVE the method sentences and the grid.
+      const strip = html.indexOf('class="szn worth-wide"')
+      const grid = html.indexOf('table class="kv is-wide comp-matrix"')
+      expect(strip).toBeGreaterThan(-1)
+      expect(grid).toBeGreaterThan(strip)
+      expect(worth.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('states the method in at most three sentences and moves the weight sentence under the grid', () => {
+    const html = letter()
+    expect((html.match(/class="method-line"/g) ?? []).length).toBeLessThanOrEqual(3)
+  })
+
+  it('carries no fixed-position chrome anywhere on the seller document', () => {
+    const html = immersive()
+    expect(html).not.toContain('id="bar"')
+    expect(html).not.toContain('id="prog"')
+    expect(html).not.toMatch(/position\s*:\s*fixed/)
+    // Print report is a quiet link in the closing chapter, not a button pinned
+    // over every screen.
+    expect(html).toContain('class="print-out r"')
+    expect(html).toContain('data-rr-track="cma-print"')
+  })
+
+  it('draws its own tappable pins over the map tile', () => {
+    const html = letter({
+      mapOverlay: {
+        view: { centerLat: 44.2726, centerLng: -121.1745, zoom: 15, width: 640, height: 360 },
+        pins: [
+          { n: null, lat: 44.272, lng: -121.174 },
+          { n: 1, lat: 44.273, lng: -121.175 },
+        ],
+      },
+    } as never)
+    expect(html).toContain('class="pin-map-frame"')
+    expect(html).toContain('class="pin-hit is-subject"')
+    expect(html).toMatch(/<button type="button" class="pin-hit" data-comp="1" data-pin="1"/)
+    expect(html).toContain('aria-label="1. 730 Quince"')
+    // A cropped tile and a percentage-positioned pin cannot both be right.
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      expect(css.replace(/\s+/g, ' ')).toMatch(
+        /\.pin-map-frame \.pin-map ?\{[^}]*(max-height: ?none)/,
+      )
+    }
+  })
+
+  it('rebuilds chapter 5 with a rounded month axis so a flat market looks flat', () => {
+    // A 13 percent spread must not fill the plot: the axis floor is a round
+    // number, and the drawn band is never less than a quarter of the ceiling.
+    expect(niceAxis([461000, 530000])).toEqual({ floor: 400000, ceil: 540000 })
+    expect(niceAxis([100, 100]).ceil).toBe(100)
+    expect(niceAxis([100, 100]).floor).toBeLessThanOrEqual(75)
+  })
+
+  it('draws every outcome bar in full navy, and gives the reader group the weight', () => {
+    const svg = askOutcomeBarsSvg(
+      {
+        city: 'Redmond',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 375, medianDays: 9 },
+          { key: 'sold-after-cut', n: 180, medianDays: 58, medianCutPct: 4.1 },
+          { key: 'did-not-sell', n: 232, medianDays: 118 },
+        ],
+      },
+      null,
+    )
+    // Navy at 40 percent alpha over cream IS #97a0ac, and three separate
+    // readers called every tinted bar grey. Full navy on all three; the
+    // reader's own group carries twice the weight.
+    const bars = [...svg.matchAll(/stroke="([^"]+)" stroke-width="(\d+)"/g)]
+      .filter((m) => Number(m[2]) >= 5)
+      .map((m) => ({ colour: m[1]!, weight: Number(m[2]) }))
+    expect(bars).toHaveLength(3)
+    for (const b of bars) expect(b.colour).toBe('#102742')
+    const mine = askOutcomeBarsSvg(
+      {
+        city: 'Redmond',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 375, medianDays: 9 },
+          { key: 'sold-after-cut', n: 180, medianDays: 58 },
+          { key: 'did-not-sell', n: 232, medianDays: 118 },
+        ],
+      },
+      'did-not-sell',
+    )
+    expect(mine).toContain('Came off unsold · yours is in this group')
+    const weights = [...mine.matchAll(/stroke="#102742" stroke-width="(\d+)"/g)].map((m) => Number(m[1]))
+    expect(Math.max(...weights)).toBeGreaterThan(Math.min(...weights))
+  })
+
+  it('teaches no interaction in a caption', () => {
+    const html = immersive()
+    for (const caption of [
+      'Tap a price change to read its date',
+      'Tap a bar for the listings behind it',
+      'Tap a month for its median close',
+      'Drag along the curve, or use the arrow keys',
+    ]) {
+      expect(html, `instruction caption still shipping: ${caption}`).not.toContain(caption)
+    }
+    // The affordance is on the control instead.
+    expect(html).toContain('pp-chev')
+  })
+
+  it('answers a short mark AT the mark, not a chart height below it', () => {
+    const js = immersiveInteractionScript()
+    const css = immersiveInteractionCss()
+    // The evaluator on the timeline cut: "the answer appears 200px below the
+    // mark you tapped, so your eye leaves the graphic. Annotate the mark."
+    expect(js).toContain("var GROUPS=[['.tl-mark','',1],['.bar-row','',0],['.month-mark','',1],['.ws-dot','',1]]")
+    expect(js).toContain("g.setAttribute('class','rr-note')")
+    expect(js).toContain('if(g[2])note(svg,n,text)')
+    // The sentence still reaches a screen reader; it only leaves the flow.
+    expect(js).toContain("if(g[2])read.classList.add('is-sr')")
+    expect(css).toMatch(/\.rr-read\.is-sr\{[^}]*clip-path:inset\(50%\)/)
+    expect(css).toContain('.rr-note text{')
+  })
+
+  it('makes a bar tap say something the bar does not already print', () => {
+    const svg = askOutcomeBarsSvg(
+      {
+        city: 'Redmond',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 375, medianDays: 8 },
+          { key: 'sold-after-cut', n: 214, medianDays: 57 },
+          { key: 'did-not-sell', n: 232, medianDays: 117 },
+        ],
+      },
+      null,
+    )
+    // Every figure the readout carried was already drawn on the row, which is
+    // decoration. The gap between two bars is the one thing three bars on one
+    // axis are for, and it is nowhere on the chart.
+    expect(svg).toContain('49 days longer than the homes that sold without a price cut')
+    expect(svg).toContain('109 days longer than the homes that sold without a price cut')
+    expect(svg).toContain('109 days faster than the homes that came off unsold')
+  })
+
+  it('draws the sale number as the map pin it keys, never as a rank', () => {
+    const html = immersive()
+    // Sorting the grid reorders the columns; the pins keep their numbers,
+    // because a number here is an identity. Drawn as the pin's own badge it
+    // says so, and no caption has to.
+    expect(html).toContain('class="pin-badge"')
+    // In the SORTABLE grid and its cards. The number still reads as "1. 730
+    // Quince" inside the two charts that list the sales in a fixed order,
+    // where nothing reorders and a key before a name is just a key.
+    expect(html).not.toMatch(/class="matrix-addr"[^>]*>\s*\d+\./)
+    expect(html).not.toMatch(/class="comp-stack-addr"[^>]*>\s*\d+\./)
+    expect(immersiveStylesheet()).toContain('.pin-badge{')
+  })
+
+  it('gives the closing two real buttons that carry identity', () => {
+    const html = immersive()
+    expect(html).toContain('class="btn pri"')
+    expect(html).toContain('class="btn sec ghost"')
+    expect(html).toContain('class="sc sc-navy pack"')
+    expect(html).toContain('next-note')
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 3: survivable on a phone, and finish the close.
+ */
+describe('tasteReview 3 — the phone document, and the close', () => {
+  it('leads chapter 3 on a phone with their own home', () => {
+    const html = immersive()
+    const stack = html.slice(html.indexOf('class="comp-stack"'))
+    const first = stack.split('comp-stack-card')[1] ?? ''
+    expect(first).toContain('is-yours')
+    expect(first).toContain('Your home · 2465 7th')
+    expect(first).toContain('Listed $460,000')
+  })
+
+  it('draws every price path exactly once', () => {
+    const html = immersive()
+    expect(html).not.toContain('How each of these sales was priced')
+    // One sparkline per sale in the grid, one full drawing per phone card.
+    expect((html.match(/class="pp-spark"/g) ?? []).length).toBe(5)
+  })
+
+  it('gives every chart mark a real tap target, not a 7px dot', () => {
+    const html = immersive()
+    // The chapter 1 cut marker shipped as a 7x7px hit area.
+    expect(html).toMatch(/<g class="tl-mark"[^>]*>\s*<circle [^>]*r="24" fill="transparent"/)
+    // Every dated cut on a price path carries one too.
+    const withCut = priceHistoryLineSvg(
+      pricePathFromFinalCycle(
+        {
+          listDate: '2026-02-26',
+          initialAsk: 475000,
+          cuts: [{ date: '2026-07-28', ask: 460000 }],
+          cutsDated: true,
+          finalAsk: 460000,
+          offMarketDate: '2026-09-01',
+          status: 'withdrawn',
+          days: 187,
+        },
+        '2465 7th',
+      )!,
+    )
+    expect(withCut).toMatch(/<g class="pp-cut"[^>]*>\s*<circle [^>]*r="24" fill="transparent"/)
+  })
+
+  it('raises every block address link and pill to 44px on a phone', () => {
+    const css = immersiveStylesheet().replace(/\s+/g, ' ')
+    expect(css).toMatch(/a\.dns-addr[^{]*\{[^}]*min-height:\s*44px/)
+    expect(css).toMatch(/\.print-out a\s*\{[^}]*min-height:\s*44px/)
+    const controls = immersiveInteractionCss().replace(/\s+/g, ' ')
+    expect(controls).toMatch(/\.rr-btn\{[^}]*min-height:\s*44px/)
+    expect(controls).toMatch(/\.pp-toggle\{[^}]*min-height:\s*44px/)
+  })
+
+  it('announces the slider from the first render, and the bars as toggles', () => {
+    const script = immersiveInteractionScript()
+    expect(script).toContain("hit.setAttribute('aria-valuenow'")
+    expect(script).toContain("hit.setAttribute('aria-valuetext'")
+    // Set before any key press: put(...) runs once at the end of the block, and
+    // it PRINTS the reading too — a visible handle with a dashed rule and no
+    // label read to three separate reviewers as a hover state baked into the
+    // screenshot.
+    expect(script).toMatch(/put\(Math\.min\(3,pts\.length-1\)\)/)
+    expect(script).toContain("n.setAttribute('aria-pressed','false')")
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 4: break the eyebrow → title → figure →
+ * sentence → source repetition where the chapters allow it.
+ */
+describe('tasteReview 4 — chapter 2b is one composed spread', () => {
+  const withChapter2 = () =>
+    args({
+      market: {
+        ...(args().market as object),
+        offerTiming: {
+          city: 'Redmond',
+          windowMonths: 12,
+          n: 678,
+          medianDays: 26,
+          points: [
+            { days: 7, pct: 31.2 },
+            { days: 14, pct: 44.1 },
+            { days: 30, pct: 54.0 },
+            { days: 60, pct: 68.9 },
+            { days: 90, pct: 79.8 },
+            { days: 180, pct: 95.6 },
+          ],
+        },
+        askOutcome: {
+          city: 'Redmond',
+          windowMonths: 12,
+          groups: [
+            { key: 'sold-no-cut', n: 375, medianDays: 8, medianSoldToOriginalAskPct: 100 },
+            { key: 'sold-after-cut', n: 303, medianDays: 67, medianCutPct: 3.9 },
+            { key: 'did-not-sell', n: 232, medianDays: 118 },
+          ],
+        },
+      },
+    } as never)
+
+  it('puts the curve and the bars side by side, and stacks them on a phone', () => {
+    const html = renderCmaHtml(withChapter2()).html
+    expect(html).toContain('<div class="spread">')
+    expect((html.match(/class="spread-col"/g) ?? []).length).toBe(2)
+    const css = immersiveStylesheet().replace(/\s+/g, ' ')
+    expect(css).toMatch(/\.spread\{[^}]*grid-template-columns:\s*1fr 1fr/)
+    expect(css).toMatch(/max-width:\s*900px\)\{\.spread\{grid-template-columns:\s*1fr/)
+    // A ~520px column carries the drawn-to-fit layout, never the 720-unit one
+    // scaled into half a screen.
+    expect(css).toContain('.spread .timing-wide,.spread .outcome-wide{display:none}')
+  })
+
+  it('carries ONE source line for the whole chapter, not one per figure', () => {
+    const html = renderCmaHtml(withChapter2()).html
+    const chapter = html.slice(html.indexOf('What overpricing costs'))
+    const block = chapter.slice(0, chapter.indexOf('</section>'))
+    const sources = block.match(/from the Oregon Data Share MLS/g) ?? []
+    expect(sources).toHaveLength(1)
+    expect(block).toContain('Single-family listings in Redmond over the last 12 months')
+    expect(block).toContain('Each figure above counts the listings it draws')
+  })
+
+  it('keeps every figure inside its own frame in both layouts', () => {
+    const html = renderCmaHtml(withChapter2()).html
+    expect(html).toContain('The first price decides the days')
+    expect(html).toContain('When homes like yours get their offer')
   })
 })

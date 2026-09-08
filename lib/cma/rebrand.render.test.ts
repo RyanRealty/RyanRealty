@@ -201,7 +201,9 @@ describe('CMA re-brand preserves every figure (render-level, W10.3)', () => {
         // if any PRICE differed this diff would still be non-empty.
         .split('sms:+15417033095').join('sms:PHONE')
         .split('sms:+15415023436').join('sms:PHONE')
-        .replace(/\b(Call|Text|Email) (Matt|Paul)\b/g, '$1 BROKERFIRST')
+        .replace(/\b(Call|Text|Email|Talk with) (Matt|Paul)\b/g, '$1 BROKERFIRST')
+        // The closing carries the broker slug in every tracked link.
+        .replace(/agent=[a-z-]+/g, 'agent=BROKERSLUG')
     expect(strip(a.html)).toBe(strip(b.html))
   })
 })

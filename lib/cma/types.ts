@@ -83,6 +83,14 @@ export interface CmaComp {
   concessionsAmount?: number | null
   /** Spark Concessions YN. No + blank amount = $0. Yes + blank amount = unknown. */
   concessionsYn?: string | null
+  /**
+   * The seller concession as the grid prints it: a dollar amount when one was
+   * reported, 0 when the sale reported none, null when nothing was recorded.
+   * Resolved by `resolveConcessions`, the same function the seller-net caption
+   * reads, so the line and the caption cannot disagree (research brief
+   * 2026-09-07, item 8; D14).
+   */
+  concessions?: number | null
   /** ClosePrice minus resolved seller concessions. Null when concessions are unknown. */
   sellerNet?: number | null
   closeDate: string
@@ -166,6 +174,27 @@ export interface CmaMarketContext {
    * Absent when the mart row is missing. Never a zero fill.
    */
   yearMart?: CmaMartYearFigure | null
+  /**
+   * Chapter 2 of the seller document ("Priced right sells. Priced high sits"),
+   * computed at BUILD in lib/pricing/local-outcomes.ts and stored on
+   * `render_args`. Never derived in a renderer. Each carries its own `source`.
+   * Optional: absent on rows built before 2026-09-07.
+   */
+  offerTiming?: import('@/lib/pricing/local-outcomes').CmaOfferTiming | null
+  askOutcome?: import('@/lib/pricing/local-outcomes').CmaAskOutcome | null
+  /**
+   * Chapter 2b's centrepiece: the median share of the ORIGINAL asking price
+   * that sales realized, by how many weeks they took to find a buyer. Ours,
+   * over the city's own closed rows — it replaces the unsourceable industry
+   * table (research brief 2026-09-07 §4).
+   */
+  originalAskRealization?: import('@/lib/pricing/local-outcomes').CmaOriginalAskRealization | null
+  /**
+   * The city's own failed-then-sold pairs over 24 months. When `n` is under
+   * the minimum the block still ships with its reason, and the chapter falls
+   * back to the regional FAILED_ASK_BACKTEST figure, named as regional.
+   */
+  localFailedThenSold?: import('@/lib/pricing/failed-then-sold').CmaLocalFailedThenSold | null
 }
 
 export interface CmaPricing {
@@ -201,6 +230,34 @@ export interface CmaPricing {
   failedAsk?: number | null
   /** True when the printed list band was clipped to failedAsk. */
   failedAskCapped?: boolean
+  /**
+   * Which sale carried the price, and why — the appraisal reconciliation the
+   * document owed the reader (research brief 2026-09-07, item 2). Computed in
+   * lib/pricing/reconciliation.ts from the SAME weights the point value is
+   * built from, so the sentence and the number cannot disagree.
+   */
+  reconciliation?: import('@/lib/pricing/reconciliation').CmaReconciliation | null
+  /**
+   * How `valueLow`/`valueHigh` were produced — the rule over the printed
+   * adjusted sale prices, and the share of the original ask they were carried
+   * to an asking price by. D10: the range a seller reads must be derivable
+   * from the evidence beside it.
+   */
+  rangeRule?: import('@/lib/pricing/estimate').PricingRangeRule | null
+  /**
+   * The basis the date adjustment used — the local price path, its window, the
+   * sales behind it, and a sentence for the line beside the first adjusted
+   * sale. Fannie Mae B4-1.3-09 requires the technique be described; no chapter
+   * showed it before (research brief 2026-09-07, item 5).
+   */
+  timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
+  /**
+   * Sales considered and not used, capped at eight, each with a reason
+   * composed from the sale's own recorded facts. An appraisal shows what it
+   * set aside; ours asserted a radius and showed nothing (research brief
+   * 2026-09-07, item 10).
+   */
+  rejected?: import('@/lib/pricing/rejected').RejectedSale[] | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

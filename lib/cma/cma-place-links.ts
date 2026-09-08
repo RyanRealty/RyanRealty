@@ -12,7 +12,16 @@ import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { neighborhoodPagePath, slugify } from '@/lib/slug'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * The production origin, hard-coded on purpose — the same reason
+ * `CMA_DOC_ORIGIN` is (lib/cma/doc-links.ts). These URLs are printed into a
+ * document that lands in a stranger's inbox and outlives every deploy, and
+ * `NEXT_PUBLIC_SITE_URL` is the vercel.app preview host in every environment
+ * but production. A preview host baked into a sent document is a dead link
+ * forever. `first-contact.ts` sends one of these links in an SMS, where there
+ * is no doc-links normalizer downstream to catch it.
+ */
+const SITE_URL = 'https://ryan-realty.com'
 
 export type CmaPlaceLink = { label: string; href: string }
 

@@ -156,7 +156,7 @@ describe('print CMA cover — no confidence pills, community not ZIP', () => {
     }
   })
 
-  it('says closed MLS sales and names the community', () => {
+  it('names the sales and the market read in the basis block', () => {
     const { html } = renderCmaHtml({
       ...byronArgs({ needsReview: false, reviewReason: null }),
       market: {
@@ -180,26 +180,27 @@ describe('print CMA cover — no confidence pills, community not ZIP', () => {
         pulseUpdatedAt: '2026-08-14T20:00:00.000Z',
       },
     })
-    expect(html).toContain('closed MLS sales')
-    expect(html).toContain('Automated estimates are not used.')
-    expect(html).toContain('The market read is Caldera Springs.')
+    // The blueprint cover carries one sentence, so the provenance moved to
+    // the basis-and-limits block, where an appraisal states it.
+    expect(html).toContain('closed comparable sales from the Oregon Data Share MLS')
+    expect(html).toContain('verified market statistics for Caldera Springs')
     expect(html).not.toMatch(/not the ZIP/i)
   })
 })
 
 describe('print CMA cover — the recommendation never sits outside its own stated range', () => {
-  it('relabels "Supported range" to "Comp-supported range" and explains the cap when recommended is clamped outside it', () => {
+  it('names what the sales support and explains the cap when the recommend is clamped outside it', () => {
     const { html } = renderCmaHtml(byronArgs())
     expect(html).toContain('$609,000')
-    expect(html).toContain('Comp-supported range $620,000 to $635,000')
+    expect(html).toContain('The sales support $620,000 to $635,000')
     expect(html).not.toContain('>Supported range $620,000 to $635,000')
     expect(html).toMatch(/capped below this range/)
   })
 
   it('keeps the plain "Supported range" label with no cap note when the recommendation sits inside it', () => {
     const { html } = renderCmaHtml(byronArgs({ recommended: 630000, conservative: 620000, highEnd: 635000 }))
-    expect(html).toContain('List $620,000 to $635,000')
-    expect(html).not.toContain('Comp-supported range')
+    expect(html).toContain('List between $620,000 and $635,000')
+    expect(html).not.toContain('The sales support')
     expect(html).not.toMatch(/capped (below|above) this range/)
   })
 
@@ -217,6 +218,6 @@ describe('immersive CMA — same two contracts, same source data', () => {
     expect(html).not.toContain('Confidence: High')
     expect(html).not.toContain('Confidence: Moderate')
     expect(html).toMatch(/capped below this range/)
-    expect(html).toContain('The comp-supported range is $620,000 to $635,000')
+    expect(html).toContain('The sales support $620,000 to $635,000')
   })
 })

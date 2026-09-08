@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assembleOpinionPages, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
+import { assembleOpinionPages, concessionBasisLine, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject: CmaSubject = {
@@ -133,46 +133,43 @@ function args(): OpinionPageArgs {
 }
 
 describe('assembleOpinionPages format', () => {
-  it('puts house facts and legal on the subject page instead of empty follow-on sheets', () => {
-    const pages = assembleOpinionPages(args())
-    const tocs = pages.map((p) => p.toc)
-    expect(tocs).toContain('Home location')
-    expect(tocs).not.toContain('Property facts')
-    expect(tocs).not.toContain('Legal, owner, and flood')
-    const house = pages.find((p) => p.toc === 'Home location')
-    expect(house?.body).toContain('Garage')
-    expect(house?.body).toContain('2 spaces')
-    expect(house?.body).toContain('Parcel')
-    expect(house?.body).toContain('245217')
-    expect(house?.body).toContain('Detached house')
-    expect(house?.body).not.toContain('Single Family Residence')
-    expect(house?.body).not.toContain('pin-map')
+  it('carries only the blueprint chapters — no facts table, no lots, no permits', () => {
+    const tocs = assembleOpinionPages(args()).map((p) => p.toc)
+    // CUT by CMA_REIMAGINED_2026-09-07.md: they answer none of the three
+    // questions a seller opens a failed listing's report to answer.
+    for (const cut of [
+      'Home location',
+      'Property facts',
+      'Legal, owner, and flood',
+      'The land',
+      'Permits and ownership',
+      'Photos',
+    ]) {
+      expect(tocs, `${cut} is cut`).not.toContain(cut)
+    }
   })
 
-  it('does not put a subject-only map on Home location even when one is provided (C9)', () => {
+  it('keeps the ONE map on the price chapter (C9)', () => {
     const pages = assembleOpinionPages({
       ...args(),
       subjectMapDataUri: 'data:image/png;base64,subjmap',
       mapDataUri: 'data:image/png;base64,compsmap',
     })
-    const house = pages.find((p) => p.toc === 'Home location')
-    expect(house?.body).not.toContain('data:image/png;base64,subjmap')
-    expect(house?.body).not.toContain('pin-map')
-    expect(house?.body).not.toContain('The pin is this house.')
-    const price = pages.find((p) => p.toc === 'How we got the price')
+    const price = pages.find((p) => p.toc === '$429,000.')
     expect(price?.body).toContain('data:image/png;base64,compsmap')
     expect(price?.body).toContain('pin-map')
+    expect(pages.map((p) => p.body).join('')).not.toContain('data:image/png;base64,subjmap')
   })
 
-  it('puts competition next to the price, before the market chapters', () => {
+  it('puts competition next to the price, before the market chapter', () => {
     const tocs = assembleOpinionPages(args()).map((p) => p.toc)
-    const price = tocs.indexOf('How we got the price')
-    const competition = tocs.indexOf('Who you are competing with at this price')
+    const price = tocs.indexOf('$429,000.')
+    const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
     expect(price).toBeGreaterThanOrEqual(0)
     expect(competition).toBe(price + 1)
   })
 
-  it('draws sold vs unsold (expired peers) before live competition', () => {
+  it('draws sold vs unsold before the number and before live competition', () => {
     const pages = assembleOpinionPages({
       ...args(),
       extras: {
@@ -199,36 +196,46 @@ describe('assembleOpinionPages format', () => {
           closed: null,
           sold90: null,
           listingTrend: null,
-          outcomes: {
-            lo: 365000,
-            hi: 460000,
-            sold: [380000, 390000, 400000, 410000],
-            unsold: [430000, 450000, 460000],
-            list: 401000,
-            lastAsk: 460000,
-            soldShown: 4,
-            unsoldShown: 3,
-            soldTotal: 4,
-            unsoldTotal: 3,
-            label: 'Diamond Bar Ranch',
-            source: 'Closed = sale price. Expired, withdrawn, and canceled = last ask.',
-          },
+          expiredPeers: [
+            {
+              listingKey: 'U1',
+              address: '2527 5th',
+              listPrice: 430000,
+              status: 'Canceled',
+              daysOnMarket: 36,
+              onMarketDate: '2025-12-15',
+              photoUrl: null,
+              latitude: 44.29,
+              longitude: -121.16,
+              beds: 2,
+              baths: 1,
+              sqft: 789,
+              lotAcres: 0.14,
+              yearBuilt: 2008,
+              propertySubType: 'Single Family Residence',
+              originalListPrice: 430000,
+              listingHistoryLine: null,
+            },
+          ],
         },
       },
     })
     const tocs = pages.map((p) => p.toc)
-    const competition = tocs.indexOf('Who you are competing with at this price')
-    const outcomes = tocs.indexOf('Sold and unsold in this band')
-    expect(outcomes).toBeGreaterThanOrEqual(0)
-    expect(competition).toBeGreaterThan(outcomes)
-    const body = pages[outcomes]!.body
-    // P1: one price ruler. Sold are filled dots, unsold hollow, and only the
-    // recommend and the seller's own last ask carry a label.
-    expect(body).toContain('4 closed in this band')
-    expect(body).toContain('asked and did not sell')
+    const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
+    const price = tocs.indexOf('$429,000.')
+    // The listings that did not sell are their own chapter (Delta 1), and they
+    // sit BEFORE the number they explain. Competition follows the number.
+    const stories = tocs.indexOf('The listings near you that did not sell.')
+    expect(stories).toBeGreaterThanOrEqual(0)
+    expect(price).toBeGreaterThan(stories)
+    expect(competition).toBeGreaterThan(price)
+    const body = pages[stories]!.body
+    expect(body).toContain('2527 5th')
+    // One story each, never the price ruler of dots this replaced.
+    expect(body).toContain('dns-card')
     expect(body).not.toContain("Didn't sell")
-    expect(body).toContain('Recommended $')
-    expect(body).toContain('Closed = sale price')
+    expect(body).not.toContain('Recommended $')
+    expect(body).not.toContain('ruler-wide')
   })
 
   it('omits a citywide 90-day median that does not describe this house', () => {
@@ -271,5 +278,30 @@ describe('assembleOpinionPages format', () => {
       } as never,
     })
     expect(pages.map((p) => p.toc).join(' ')).not.toMatch(/closed sales, 2025/i)
+  })
+})
+
+describe('the net-at-list caption names the sales it was taken over', () => {
+  // Research item 8 / D14: chapter 6 quoted a concession figure with no basis
+  // anywhere on the page. Chapter 3's grid now prints a Seller concessions
+  // line per sale, so this caption counts THOSE rows — a reader can add the
+  // column up and land on the same median.
+  const withConcessions = (values: Array<number | null>): OpinionPageArgs => ({
+    ...args(),
+    comps: values.map((v, i) => ({ ...comp, listingKey: `K-${i}`, concessions: v })),
+  })
+
+  it('counts the sales that reported a figure and the sales that paid one', () => {
+    const line = concessionBasisLine(withConcessions([4000, 0, 10000, null, 0]), 7500)
+    expect(line).toContain('Net at list is the list price minus $7,500')
+    expect(line).toContain('the median across the 2 sales in the price chapter that reported one')
+    expect(line).toContain('the other 2 of the 4 that recorded the field reported none')
+  })
+
+  it('states the figure alone when no sale reported one', () => {
+    const line = concessionBasisLine(withConcessions([null, null]), 7500)
+    expect(line).toBe(
+      'Net at list is the list price minus $7,500, before commission and closing costs.',
+    )
   })
 })

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  attachCompConcessions,
   attachSellerNet,
   concessionNote,
   predictedSellerNet,
@@ -100,5 +101,33 @@ describe('attachSellerNet', () => {
     expect(pricing.sellerNet?.expectedConcessions).toBe(5_000)
     expect(pricing.sellerNet?.predictedSellerNet).toBe(695_000)
     expect(pricing.notes[0]).toMatch(/contract price/)
+  })
+})
+
+describe('attachCompConcessions — the grid line and the caption read one row', () => {
+  const rows = [
+    { listingKey: 'A', concessionsAmount: 10_000, concessionsYn: 'Yes', closeDate: '2026-05-01' },
+    { listingKey: 'B', concessionsAmount: null, concessionsYn: 'No', closeDate: '2026-04-01' },
+    // 2024+ with nothing recorded: measured as YN No (300/300), so it is a zero.
+    { listingKey: 'C', concessionsAmount: null, concessionsYn: null, closeDate: '2026-03-01' },
+    // 2022-2023 with nothing recorded stays unknown, and prints as unknown.
+    { listingKey: 'D', concessionsAmount: null, concessionsYn: null, closeDate: '2023-03-01' },
+  ]
+
+  it('resolves a printable value per sale, and null only when nothing was recorded', () => {
+    const out = attachCompConcessions(rows)
+    expect(out.map((r) => r.concessions)).toEqual([10_000, 0, 0, null])
+  })
+
+  it('agrees with the caption computed over the same rows', () => {
+    const out = attachCompConcessions(rows)
+    const summary = summarizeConcessions(rows)
+    expect(summary.knownCount).toBe(out.filter((r) => r.concessions != null).length)
+    expect(summary.givenCount).toBe(out.filter((r) => (r.concessions ?? 0) > 0).length)
+    expect(summary.medianWhenGiven).toBe(10_000)
+  })
+
+  it('leaves every other field on the sale alone', () => {
+    expect(attachCompConcessions(rows)[0].listingKey).toBe('A')
   })
 })

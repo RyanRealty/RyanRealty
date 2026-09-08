@@ -1,95 +1,124 @@
 /**
- * CMA pricing section. One list sentence, one list strip, then the
- * matcher rules and the sales brought to this house.
+ * Chapter 3. What your home is worth.
+ *
+ * docs/plans/CMA_REIMAGINED_2026-09-07.md: the number, the range under it, the
+ * sales that set it as ONE table with linked addresses, the map, and the search
+ * sentence. Nothing else. Every figure arrives from lib/pricing on
+ * `render_args`; nothing here computes one.
  */
 
-import { dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
-import { clientFacingNotes, listPriceLead } from '@/lib/cma/client-facing'
+import { cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
+import { currentAskLine } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import {
+  compWeightIndex,
+  renderPricingMethodHtml,
+  renderReconciliationHtml,
+  renderRejectedSalesHtml,
+} from '@/lib/cma/pricing-method'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
+import { worthStripHtml } from '@/lib/cma/worth-strip'
+import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 
 const esc = escapeHtml
 
-function saleToListPct(ratio: number | null | undefined): string | null {
-  if (ratio == null || !Number.isFinite(ratio) || ratio <= 0) return null
-  const pct = ratio <= 2 ? ratio * 100 : ratio
-  return dec(pct, 1)
-}
+const ON_MARKET = /^(active|pending|coming)/i
 
-
-
-function sellerNetBlock(p: CmaPricing): string {
-  const n = p.sellerNet
-  if (!n || n.knownCount === 0) return ''
-  return `
-  <h3 class="subhead">Close price and seller net</h3>
-  <p class="small">${n.givenCount} of ${n.knownCount} sales that set this price reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
+/** The chapter title IS the number. "$389,000." */
+export function whatItsWorthHeading(pricing: CmaPricing): string {
+  return `${usd(pricing.recommended)}.`
 }
 
 /**
- * The search story, as one sentence.
+ * The line under the number.
  *
- * P5, Matt 2026-09-07: this was a bulleted list whose other two items were
- * filler — "5 closed sales." restates a table the reader is about to look at,
- * and the sale-to-list percent is printed again two paragraphs down. One
- * statement each, once.
+ * On a home that is on the market right now the seller already has an ask, and
+ * the blueprint gives that case its own sentence: what it is listed at, and
+ * what the sales support. The two numbers sit beside each other with the gap
+ * visible; they are never blended (CmaPricing, SHOW BOTH, NEVER BLEND).
  */
-function searchStory(searchBody: string | null): string {
-  return searchBody ? `<p>${esc(searchBody)}</p>` : ''
+export function whatItsWorthLead(subject: CmaSubject, pricing: CmaPricing): string {
+  const range = `List between ${usd(pricing.conservative)} and ${usd(pricing.highEnd)}.`
+  // A home that is on the market already has an ask. The blueprint gives that
+  // case ONE line: what it is listed at, and what the sales support. The list
+  // range is not repeated after it — on most live subjects it is the same two
+  // numbers a second time.
+  if (ON_MARKET.test(subject.standardStatus ?? '') && subject.lastListPrice != null && subject.lastListPrice > 0) {
+    return `Listed at ${usd(subject.lastListPrice)}. The sales support ${usd(pricing.valueLow)} to ${usd(pricing.valueHigh)}.`
+  }
+  // A subject whose ASK is on the pricing row rather than its MLS status —
+  // an owner-supplied ask on an off-market home. The blueprint puts that line
+  // in this chapter too, beside the evidence, never blended into it. It used
+  // to sit on the cover, which the blueprint gives one sentence.
+  const ask = currentAskLine(pricing)
+  const display = pricingRangeDisplay(pricing)
+  const supported = display.outOfRange
+    ? `${range} The sales support ${usd(pricing.valueLow)} to ${usd(pricing.valueHigh)}.${
+        display.note ? ` ${display.note}` : ''
+      }`
+    : range
+  return ask ? `${supported} ${ask}` : supported
 }
 
 /**
- * The reading, above the table (P8). A twenty-row matrix needs a sentence
- * before the reader enters it.
+ * The map legend, written here rather than taken from `describeCompSearch`.
  *
- * Both ends of the range print in the matrix's own Adjusted close row, so this
- * introduces no figure the seller cannot check, and no figure is computed here
- * — the adjusted closes and the recommend both arrive from lib/pricing.
+ * `lib/pricing/search-story.ts` writes "The pins are the sales we kept", and
+ * "kept" is banned seller copy (blueprint § Words). The pricing unit owns the
+ * SEARCH, not the sentence a seller reads about it, so the legend is composed
+ * from the same facts in the document's own voice.
  */
-function matrixLead(input: {
-  comps: CmaAdjustedComp[]
-  pricing: CmaPricing
-}): string {
+function mapLegend(subdivision: string | null | undefined): string {
+  const name = cleanText(subdivision)
+  return name
+    ? `The pins are the sales above. The outline is ${name}, when that boundary is on file.`
+    : 'The pins are the sales above.'
+}
+
+/**
+ * The reading, above the table. A table needs a sentence before the reader
+ * enters it.
+ *
+ * Both ends of the range print in the table's own Sale price today row, so
+ * this introduces no figure the seller cannot check, and no figure is computed
+ * here — the adjusted sales and the recommend both arrive from lib/pricing.
+ */
+function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): string {
   const adj = adjustedCloseRange(input.comps)
   if (!adj || !adj.adjustments || !(input.pricing.recommended > 0)) return ''
   const n = input.comps.length
   return `<p class="chart-read">${esc(
-    `The ${n} closed ${n === 1 ? 'sale' : 'sales'} below set this number. Brought to your ${adj.adjustments}, they land at ${usd(adj.low)} to ${usd(adj.high)}. Recommended list ${usd(input.pricing.recommended)}.`,
+    `The ${n} closed ${n === 1 ? 'sale' : 'sales'} below set this number. Adjusted for ${adj.adjustments}, they land at ${usd(adj.low)} to ${usd(adj.high)}.`,
   )}</p>`
 }
 
 /**
- * How the number was reached, as facts the seller can check against the table
- * above it.
+ * The per-square-foot check, as one line the seller can run against the table.
  *
- * The predicted close used to print here as a dollar figure. The Sunstone
- * contract keeps expected sale / predicted close off the seller document — the
- * recommended list is the one price a seller reads — so the sentence carries
- * the rate and the market's sale-to-list instead, both of which the matrix and
- * the market chapter already stand behind.
+ * It used to read "these sales carry a median of $564 per square foot" — but
+ * the figure was `predictedClose / subject.sqft`, which is not a median of
+ * anything. On 1617 NW 8th it printed $564 under a chapter that had just said
+ * those same sales closed at $566 to $888 a foot: a median outside its own
+ * stated range (CLAUDE.md §0).
+ *
+ * The rate is now taken over the number this chapter is titled with, and the
+ * sentence names that basis. Predicted close stays off the seller document
+ * (the Sunstone contract, `client-facing.ts` `includeExpectedClose`), so a rate
+ * computed over it would be one the reader cannot reconcile to anything
+ * printed — the same defect in a quieter form.
  */
-function howTheListWasSet(input: {
-  subject: CmaSubject
-  market: CmaMarketContext | null
-  pricing: CmaPricing
-}): string {
+function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }): string {
   const sqft = input.subject.sqft
-  const close = input.pricing.predictedClose
-  if (sqft == null || !(sqft > 0) || close == null || !(close > 0)) return ''
-  const ppsf = usd(Math.round(close / sqft))
-  const bits = [
-    `Brought to today, these sales carry a median of ${ppsf} per square foot at ${int(sqft)} sq ft.`,
-  ]
-  const stl = saleToListPct(input.market?.saleToListRatio ?? null)
-  if (stl && input.market) {
-    bits.push(`Recent ${input.market.geoLabel} sales have been closing at ${stl} percent of list.`)
-  }
-  return `<p class="small">${bits.map((b) => esc(b)).join(' ')}</p>`
+  const price = input.pricing.recommended
+  if (sqft == null || !(sqft > 0) || price == null || !(price > 0)) return ''
+  return `<p class="small">${esc(
+    `At ${usd(price)} across ${int(sqft)} square feet, that is ${usd(Math.round(price / sqft))} per square foot.`,
+  )}</p>`
 }
 
 export function pricingPage(input: {
@@ -99,47 +128,69 @@ export function pricingPage(input: {
   pricing: CmaPricing
   tiersUsed?: string[]
   mapDataUri?: string | null
-  /** Immersive hero already printed recommend + range — skip the lead + 3-stat strip. */
+  mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
+  docLinks?: TrackedDocLinkCtx | null
+  /** Immersive hero already printed the number and the range — skip the lead. */
   omitLeadPrices?: boolean
 }): CmaPageDef {
   const p = input.pricing
   const s = input.subject
-  const range = pricingRangeDisplay(p)
-  const sqft = s.sqft && s.sqft > 0 ? s.sqft : null
-  const recPpsf = sqft ? usd(Math.round(p.recommended / sqft)) : null
-  const notes = clientFacingNotes(p.notes, p)
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
-  const pinMap = renderCompPinMapHtml(s, input.comps, input.mapDataUri ?? null)
+  const pinMap = renderCompPinMapHtml(
+    s,
+    input.comps,
+    input.mapDataUri ?? null,
+    'Map of the sales that set this price',
+    input.mapOverlay ?? null,
+  )
+  const heading = whatItsWorthHeading(p)
   const lead = input.omitLeadPrices
     ? ''
     : `
-  <h2 class="section">How we got the price</h2>
-  <p>${esc(listPriceLead(p, { perSqft: recPpsf }))}${
-    range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
-  }${range.note ? ` ${esc(range.note)}` : ''}</p>
-  <div class="stat-strip is-3">
-    <div class="stat"><div class="lbl">List low</div><div class="val">${usd(p.conservative)}</div></div>
-    <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(p.recommended)}</div></div>
-    <div class="stat"><div class="lbl">List high</div><div class="val">${usd(p.highEnd)}</div></div>
-  </div>`
-  const outOfRangeNote =
-    input.omitLeadPrices && range.outOfRange
-      ? `<p>The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.${range.note ? ` ${esc(range.note)}` : ''}</p>`
-      : input.omitLeadPrices && range.note
-        ? `<p>${esc(range.note)}</p>`
-        : ''
+  <h2 class="section is-answer">${esc(heading)}</h2>
+  <p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>`
+  // The method comes BEFORE the evidence for it (Delta 1): which sales, how
+  // each was adjusted, and how the range and the recommended list follow.
+  // Every one of those sentences is written by lib/pricing and stored on the
+  // row; nothing here composes one.
+  const method = renderPricingMethodHtml({ pricing: p, whichSales: search.body })
+  // The chapter's own conclusion, drawn, BEFORE the method that reached it and
+  // the grid that proves it (tasteReview item 2). One glance lands where five
+  // real sales put this house and where we would list it.
+  const strip = worthStripHtml({
+    sales: input.comps.map((c, i) => ({
+      n: i + 1,
+      address: c.address,
+      adjustedPrice: c.adjustedPrice,
+    })),
+    rangeLow: p.valueLow,
+    rangeHigh: p.valueHigh,
+    recommended: p.recommended,
+    lastAsk: s.lastListPrice != null && s.lastListPrice > 0 ? s.lastListPrice : null,
+  })
   return {
-    meta: `${esc(s.streetAddress)} · How we got the price`,
-    toc: 'How we got the price',
+    meta: `${esc(s.streetAddress)} · ${esc(heading)}`,
+    toc: heading,
     body: `
   ${lead}
-  ${outOfRangeNote}
-  ${searchStory(search.body)}
-  ${renderCompMatrixHtml(s, input.comps, matrixLead({ comps: input.comps, pricing: p }))}
-  ${howTheListWasSet({ subject: s, market: input.market, pricing: p })}
-  ${pinMap ? `<h3 class="subhead">Where those sales are</h3><div class="pin-map-wrap">${pinMap}</div>${search.legend ? `<p>${esc(search.legend)}</p>` : ''}` : ''}
-  ${sellerNetBlock(p)}
-  ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>` : ''}
+  ${strip}
+  ${method}
+  ${renderCompMatrixHtml(
+    s,
+    input.comps,
+    tableLead({ comps: input.comps, pricing: p }),
+    input.docLinks,
+    compWeightIndex(p),
+  )}
+  ${renderReconciliationHtml(p)}
+  ${perSquareFootLine({ subject: s, pricing: p })}
+  ${renderRejectedSalesHtml(p, input.comps)}
+  ${
+    pinMap
+      ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision))}</p>`
+      : ''
+  }
 `,
   }
 }

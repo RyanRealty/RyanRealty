@@ -51,7 +51,7 @@ type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string
 export const metadata: Metadata = {
   title: 'Contact · Call, text, or write',
   description:
-    'Call, text, or email Ryan Realty about buying or selling in Central Oregon. Local experts, and a broker gets back to you within one business day.',
+    'Call, text, or email Ryan Realty about buying or selling in Central Oregon. Local experts who answer you personally.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
   openGraph: {
     title: 'Contact · Ryan Realty',
@@ -139,10 +139,9 @@ export default async function ContactPage({ searchParams }: PageProps) {
       term: 'Office',
       body: `${BRAND.address.street}, ${BRAND.address.city}, ${BRAND.address.region} ${BRAND.address.postalCode}`,
     },
-    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
-    { label: `Text ${CONTACT.phoneDirect}`, href: `sms:${CONTACT.phoneDirectTel}` },
-    { label: `Email ${CONTACT.email.primary}`, href: `mailto:${CONTACT.email.primary}` },
-    { label: 'Schedule with a broker', href: '/book' },
+    // The four reaches (call, text, email, schedule) live ONCE, in V3Doors
+    // below. The separate evaluator (2026-09-08) read them here and again in
+    // the doors as two builders' sections stacked, not a page.
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
       : []),
@@ -203,7 +202,10 @@ export default async function ContactPage({ searchParams }: PageProps) {
             {
               kicker: v3Text('Email'),
               label: v3Text(CONTACT.email.primary),
-              fact: v3Text('A reply within one business day'),
+              // SITE-09: no duration on this door. The mailbox has no response
+              // clock on it — the form does — so it names where the mail lands
+              // instead of promising a time it cannot keep.
+              fact: v3Text("Straight to Matt's inbox"),
               href: `mailto:${CONTACT.email.primary}`,
             },
             {

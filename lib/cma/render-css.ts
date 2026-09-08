@@ -91,21 +91,16 @@ export function cmaStylesheet(siteUrl: string): string {
     .page.page-cover { padding: 0; }
     .cover-stage { min-height: 100svh; }
     .cover-title { font-size: 36px; }
-    .cover-mast { top: 0; left: 0; right: 0; padding: 20px 18px 48px; }
-    .page-cover .value-block { padding: 20px 18px 24px; }
-    .page-cover .cma-product-bar { display: none; }
-    .cover-specs {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .cover-presented {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .hero-caption { display: none; }
+    /* The presented line and the photo credit WRAP on a phone. They used to be
+       clipped to one line with an ellipsis, which cut "Prepared for" off the
+       client's own name. */
+    .cover-presented, .hero-caption { white-space: normal; }
   }
+
+  /* Two colours. A browser's default blue on a tracked address breaks the
+     palette on every chapter that links out, which is now all of them. */
+  .page a { color: var(--navy); }
+  .page-closing a { color: var(--cream); }
 
   .pg-header {
     display: flex;
@@ -177,120 +172,105 @@ export function cmaStylesheet(siteUrl: string): string {
     min-height: 9.9in;
     background: var(--navy);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
-  .cover-veil {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: linear-gradient(
-      180deg,
-      rgba(16, 39, 66, 0.98) 0%,
-      rgba(16, 39, 66, 0.9) 18%,
-      rgba(16, 39, 66, 0.55) 30%,
-      rgba(16, 39, 66, 0.1) 44%,
-      rgba(16, 39, 66, 0.88) 100%
-    );
-  }
-  .cover-mast {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+  /* Blueprint chapter 0: the photograph is the page, and ONE cream block sits
+     over it. Nothing is set on the photo itself, so the house needs no scrim
+     over it to stay legible under type — the veil and the navy masthead that
+     used to darken the whole frame are gone. */
+  .cover-plate {
+    position: relative;
     z-index: 2;
-    padding: 32px 36px 112px;
-    background: linear-gradient(
-      180deg,
-      rgba(16, 39, 66, 0.98) 0%,
-      rgba(16, 39, 66, 0.92) 42%,
-      rgba(16, 39, 66, 0.62) 74%,
-      rgba(16, 39, 66, 0) 100%
-    );
+    flex: 0 0 auto;
+    background: var(--cream);
+    color: var(--navy);
+    padding: 34px 40px 34px;
+    border-top: 1px solid var(--navy);
   }
   @media screen and (max-width: 700px) {
-    .cover-mast { padding: 20px 18px 48px; }
+    .cover-plate { padding: 22px 18px 22px; }
   }
   .cover-label {
     font-size: 11px;
     letter-spacing: 0.20em;
     text-transform: uppercase;
-    color: rgba(250, 248, 244, 0.78);
-    margin-bottom: 12px;
+    color: var(--navy);
+    opacity: 0.55;
+    margin-bottom: 14px;
   }
   .cover-title {
     font-family: 'Amboqia Boriango', Georgia, serif;
-    font-size: 52px;
+    font-size: clamp(38px, 8vw, 60px);
     line-height: 0.95;
-    color: var(--cream);
+    color: var(--navy);
     margin: 0 0 8px 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
   .cover-sub {
-    font-size: 16px;
-    color: rgba(250, 248, 244, 0.88);
+    font-size: 15px;
+    color: var(--navy);
+    opacity: 0.68;
     font-weight: 400;
     margin: 0;
   }
+  /* The one sentence. Geist, never the display face — Amboqia does not sit on
+     a number (.claude/skills/dataviz/SKILL.md). */
+  .cover-worth {
+    margin: 20px 0 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 19px;
+    line-height: 1.45;
+    color: var(--navy);
+    max-width: 34em;
+  }
+  @media screen and (max-width: 700px) {
+    .cover-worth { font-size: 16px; margin-top: 14px; padding-top: 14px; }
+  }
 
+  /* CONTAINED, not cropped. We cannot know from a URL whether an MLS photo
+     carries type, and 2465 7th's only photo is an agent-annotated aerial whose
+     landmark callouts ran off both edges under object-fit: cover. Nothing
+     inside a photo we publish gets cut. The immersive hero settled this the
+     same way on 2026-09-07 (F3); the letter kept cropping. */
   .hero-photo {
-    position: absolute;
-    left: 0;
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
-    height: 158%;
-    top: -30%;
     max-height: none;
-    object-fit: cover;
-    object-position: center 28%;
+    object-fit: contain;
+    object-position: center;
     border-radius: 0;
     background: var(--navy);
     margin: 0;
     display: block;
   }
+  /* On a phone the stage stops reserving a full screen. A contained 4:3 photo
+     at 375 is 281px tall, and inside a 100svh stage that left ~210px of empty
+     navy above it and ~220px below — over half the cover blank, with the photo
+     squeezed into a strip. The cover is the height of what is on it. */
+  @media screen and (max-width: 700px) {
+    .cover-stage { min-height: 0; }
+    .hero-photo { flex: 0 0 auto; height: auto; }
+  }
   .hero-caption {
-    font-size: 9px;
-    color: rgba(250, 248, 244, 0.52);
+    font-size: 9.5px;
+    color: var(--navy);
+    opacity: 0.5;
     letter-spacing: 0.06em;
-    margin: 10px 0 0 0;
+    margin: 8px 0 0 0;
   }
 
-  .page-cover .value-block {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    margin: 0;
-    background: linear-gradient(180deg, rgba(16, 39, 66, 0) 0%, rgba(16, 39, 66, 0.88) 18%, rgba(16, 39, 66, 0.96) 42%);
-    padding: 28px 36px 32px;
-    border-radius: 0;
-  }
-  .page-cover .vb-detail { display: none; }
-  /* The product bar is a cream slab with inline colors. On the photo cover that
-     reads as a white box over the house. Keep the facts, drop the slab. */
-  .page-cover .cma-product-bar {
-    background: transparent !important;
-    color: rgba(250, 248, 244, 0.86) !important;
-    border-top: 1px solid rgba(250, 248, 244, 0.28) !important;
-    margin: 12px 0 0;
-    padding: 10px 0 0;
-  }
-  .page-cover .cma-product-bar a { color: var(--cream); }
   .cma-product-bar { font-size: 11px; line-height: 1.45; }
   .product-bar-item { margin: 0 0 3px; }
   .product-bar-k { font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 9px; margin-right: 8px; opacity: 0.7; }
-  .page-cover .vb-range {
-    max-width: 36em;
-  }
-  .cover-specs {
+  .cover-presented {
     margin: 14px 0 0 0;
     font-size: 12px;
-    letter-spacing: 0.04em;
-    color: rgba(250, 248, 244, 0.78);
-  }
-  .cover-presented {
-    margin: 8px 0 0 0;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(250, 248, 244, 0.62);
+    color: var(--navy);
+    opacity: 0.62;
   }
 
   .value-block {
@@ -371,8 +351,15 @@ export function cmaStylesheet(siteUrl: string): string {
      two — a 78px column turns "median sold, every Redmond home" into a
      one-word-per-line column (F7). Screen only: the sheet is 816 wide. */
   @media screen and (max-width: 700px) {
-    .stat-strip, .stat-strip.is-3, .stat-strip.is-4 { grid-template-columns: repeat(2, 1fr); }
+    .stat-strip, .stat-strip.is-4 { grid-template-columns: repeat(2, 1fr); }
+    /* Three money figures across 375 wrap 2 + 1 and leave an empty cell with a
+       divider beside it. One column, three rows. */
+    .stat-strip.is-3 { grid-template-columns: 1fr; }
     .stat-strip .stat:nth-child(2n) { border-right: 0; }
+    .stat-strip.is-3 .stat { border-right: 0; }
+    /* A grid track will not shrink below its own min-content unless told to,
+       and three money figures at clamp(28px,3.6vw,44px) each need ~127px. */
+    .stat-strip .stat { min-width: 0; }
   }
   /* The verdict word, under the number it classifies. */
   .stat-strip .stat .lbl.vd { color: var(--navy); font-weight: 600; margin: 4px 0 0; }
@@ -564,7 +551,9 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--navy);
     line-height: 1;
     border-bottom: 1px solid var(--navy);
-    padding-bottom: 4px;
+    /* Caveat's descenders run well below its baseline; a 4px gap put the rule
+       straight through the "y" in Ryan. */
+    padding-bottom: 12px;
     margin-bottom: 8px;
     width: min(260px, 100%);
     max-width: 100%;
@@ -600,6 +589,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .cta-actions a.ghost { background: transparent; color: var(--navy); }
   .cta-reply-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .page-closing p.fine { margin-top: 20px; font-size: 9.5px; line-height: 1.6; }
   .signature-page .sig-license {
     margin-top: 12px;
     padding-top: 10px;
@@ -687,6 +677,48 @@ export function cmaStylesheet(siteUrl: string): string {
        visible; @page gives the spill a properly margined sheet. §0. */
     a { text-decoration: none; color: inherit; }
   }
+
+  /* ── The closing sheet ────────────────────────────────────────────────────
+     ONE register (CMA_REIMAGINED_2026-09-07.md § The register): cream
+     throughout, navy on the cover and this sheet only. Everything inside
+     inverts off the section, not off a per-element override, so a block moved
+     into the closing cannot arrive as navy-on-navy. */
+  .page-closing {
+    background: var(--navy);
+    color: var(--cream);
+  }
+  .page-closing h2.section { color: var(--cream); border-bottom-color: var(--cream); }
+  .page-closing h3.subhead,
+  .page-closing p,
+  .page-closing .cta-lead { color: var(--cream); }
+  .page-closing .small,
+  .page-closing .cta-reply-note,
+  .page-closing .fine { color: rgba(250, 248, 244, 0.72); }
+  .page-closing .pg-header { border-bottom-color: rgba(250, 248, 244, 0.28); }
+  .page-closing .pg-meta { color: rgba(250, 248, 244, 0.62); }
+  .page-closing .cta-actions a {
+    background: var(--cream);
+    color: var(--navy);
+    border-color: var(--cream);
+  }
+  .page-closing .cta-actions a.ghost {
+    background: transparent;
+    color: var(--cream);
+    border-color: rgba(250, 248, 244, 0.55);
+  }
+  .page-closing .signature-page { border-top-color: rgba(250, 248, 244, 0.28); }
+  .page-closing .signature-page .sig-name {
+    color: var(--cream);
+    border-bottom-color: rgba(250, 248, 244, 0.55);
+  }
+  .page-closing .signature-page .sig-printed,
+  .page-closing .signature-page .sig-title,
+  .page-closing .signature-page .sig-contact { color: var(--cream); }
+  .page-closing .signature-page .sig-license {
+    color: rgba(250, 248, 244, 0.62);
+    border-top-color: rgba(250, 248, 244, 0.28);
+  }
+
 `+ cmaSectionStyles() + `
   /* phone-safety: last wins — after section CSS so a later desk-sized rule
      cannot resurrect cover clip or the 512px signature letter width. */

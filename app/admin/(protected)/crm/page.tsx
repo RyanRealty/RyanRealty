@@ -66,6 +66,7 @@ import { getCrmNeighborhoodOptions } from '@/lib/data/crm/getCrmNeighborhoodOpti
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { VerdictLine } from '@/components/admin/v2'
 import '@/components/admin/v2/admin-v2.css'
+import ResponseClockPanel from '@/components/admin/crm/ResponseClockPanel'
 import ContactsSearch from './_components/ContactsSearch'
 import { MobilePeopleRoot } from '@/components/admin/shared/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/shared/people-list/PeopleSidebar'
@@ -99,6 +100,16 @@ type SearchParams = {
   page?: string; ptab?: string; pond?: string; neighborhood?: string
 }
 
+function ResponseClockFallback() {
+  return (
+    <div aria-busy style={{ padding: '8px 0' }}>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+        Reading the response clock.
+      </p>
+    </div>
+  )
+}
+
 function CrmListFallback() {
   return (
     <div aria-busy style={{ padding: '8px 0' }}>
@@ -114,6 +125,14 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
   const sp = await searchParams
   return (
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
+      {/* SITE-09 (Matt 2026-09-07): the response clock is the first thing on the
+          CRM, above the list, on every width. A site submit nobody has answered
+          is the most urgent thing in the book, and it was invisible until a
+          broker went looking. Streams on its own boundary so a slow 28-day read
+          never delays the people list. */}
+      <Suspense fallback={<ResponseClockFallback />}>
+        <ResponseClockPanel />
+      </Suspense>
       <Suspense fallback={<CrmListFallback />}>
         <CrmPeopleBody access={access} sp={sp} />
       </Suspense>

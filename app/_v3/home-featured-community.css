@@ -203,7 +203,7 @@
   list-style: none;
 }
 
-.home-featured-community__dot {
+.v3 .home-featured-community__dot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -231,7 +231,7 @@
   background: var(--v3-navy);
 }
 
-.home-featured-community__dot:focus-visible {
+.v3 .home-featured-community__dot:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--v3-focus);
 }

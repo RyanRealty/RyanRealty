@@ -12,6 +12,28 @@
  *
  * Usage:
  *   npx tsx scripts/cma-lookpass.ts <slug> [<slug> ...]
+ *   npx tsx scripts/cma-lookpass.ts --check <slug> [<slug> ...]
+ *   npx tsx scripts/cma-lookpass.ts --interact <slug> [<slug> ...]
+ *
+ * `--interact` drives every interaction the blueprint's Delta 2 asks for on
+ * the immersive document — the timeline draw and a tap on a cut, the curve
+ * scrub, a bar, a sale row and its pin, the adjusted-prices toggle, the sort,
+ * the competition filter, a price-history expand, a month on the market line —
+ * and screenshots the RESULT of each one at 1280 and 375, into
+ * out/cma-look/<slug>/interact-<width>/NN-<name>.png. A control that is not
+ * there, or a tap that changes nothing on the page, fails the run: an
+ * interaction nobody drove is an interaction nobody knows works.
+ *
+ * `--check` adds three MECHANICAL failures on top of the shots, so the three
+ * defects Matt found on 2026-09-07 cannot come back without the tool saying so
+ * (docs/plans/CMA_REIMAGINED_2026-09-07.md, Done means):
+ *
+ *   1. a banned word in the seller text of either document
+ *   2. a property address that is not inside a tracked ryan-realty.com link
+ *   3. a chart label outside its own viewBox at 375, measured in the browser
+ *      with getBBox() rather than estimated from a character count
+ *
+ * It exits non-zero on any of them.
  *
  * Per slug, writes to out/cma-look/<slug>/ (out/ is gitignored):
  *   letter.html, immersive.html          — the rendered HTML, as-is
@@ -135,6 +157,8 @@ async function screenshotDocument(opts: {
   width: number
   outDir: string
   extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
+  /** --check: collect chart labels that fall outside their own frame. */
+  svgFailures?: CheckFailure[]
 }): Promise<Shot[]> {
   const { browser, html, doc, width, outDir, extractChapters } = opts
   await fs.mkdir(outDir, { recursive: true })
@@ -166,6 +190,11 @@ async function screenshotDocument(opts: {
     // Fonts settle after the reveal class lands, so a heading measured for the
     // screenshot is measured in Amboqia, not in the fallback serif.
     await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve()))
+
+    if (opts.svgFailures && width <= 400) {
+      opts.svgFailures.push(...(await checkSvgTextInsideViewBox(page, doc)))
+      if (doc === 'immersive') opts.svgFailures.push(...(await checkTapTargets(page, doc)))
+    }
 
     const settledHtml = await page.content()
     const chapters = extractChapters(settledHtml)
@@ -203,6 +232,507 @@ async function screenshotDocument(opts: {
   }
 }
 
+/**
+ * ── --check ────────────────────────────────────────────────────────────────
+ * Three mechanical failures. Each one is a defect Matt found by opening the
+ * document, so each one now fails the tool instead of waiting for him.
+ */
+
+type CheckFailure = { doc: DocKind; rule: string; detail: string }
+
+/** 1. A banned word anywhere a seller reads (lib/cma/seller-text.ts). */
+function checkBannedWords(
+  doc: DocKind,
+  html: string,
+  findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>,
+): CheckFailure[] {
+  return findSellerBannedWords(html).map((hit) => ({
+    doc,
+    rule: `banned word "${hit.label}"`,
+    detail: `...${hit.excerpt}...`,
+  }))
+}
+
+/**
+ * 2. Every OTHER property's address is inside a tracked link.
+ *
+ * The addresses come from `render_args` rather than from a pattern over the
+ * prose: a regex for "a number then a street name" also matches a price, a
+ * date and a square-foot figure, and a check that cries wolf gets muted. The
+ * subject's own address is exempt — it is the title of the document, not a
+ * link out of it.
+ */
+function collectDocumentAddresses(renderArgs: Record<string, unknown> | null): {
+  subject: string | null
+  addresses: string[]
+} {
+  const a = (renderArgs ?? {}) as Record<string, any>
+  const out = new Set<string>()
+  const push = (v: unknown) => {
+    const t = String(v ?? '').trim()
+    if (t) out.add(t)
+  }
+  for (const c of a.comps ?? []) push(c?.address)
+  for (const r of a.extras?.band?.rivals ?? []) push(r?.address)
+  for (const p of a.extras?.marketArea?.expiredPeers ?? []) push(p?.address)
+  for (const n of a.subdivisionStory?.notableSales ?? []) push(n?.address)
+  const subject = String(a.subject?.streetAddress ?? '').trim() || null
+  if (subject) out.delete(subject)
+  return { subject, addresses: [...out] }
+}
+
+const TRACKED_HOST = 'https://ryan-realty.com/'
+
+function checkTrackedAddresses(doc: DocKind, html: string, addresses: readonly string[]): CheckFailure[] {
+  const fails: CheckFailure[] = []
+  // Every anchor whose href is a tracked ryan-realty.com link, with its text.
+  const tracked: string[] = []
+  for (const m of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    const href = m[1]!.replace(/&amp;/g, '&')
+    if (!href.startsWith(TRACKED_HOST)) continue
+    tracked.push(m[2]!.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+  }
+  const visible = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  for (const address of addresses) {
+    if (!visible.includes(address)) continue
+    if (tracked.some((t) => t.includes(address))) continue
+    fails.push({
+      doc,
+      rule: 'address is not a tracked link',
+      detail: `"${address}" appears in the document but is not inside an <a href="${TRACKED_HOST}...">`,
+    })
+  }
+  return fails
+}
+
+/**
+ * 3. No chart label outside its own frame at 375.
+ *
+ * Measured in the browser with getBBox(), which uses the real font metrics —
+ * every earlier version of this check estimated a text width from a character
+ * count and let a clipped label through.
+ */
+async function checkSvgTextInsideViewBox(
+  page: import('puppeteer-core').Page,
+  doc: DocKind,
+): Promise<CheckFailure[]> {
+  const bad = await page.evaluate(() => {
+    const out: string[] = []
+    for (const svg of Array.from(document.querySelectorAll('svg[viewBox]'))) {
+      const el = svg as SVGSVGElement
+      // Only what a reader can actually see: a hidden wide layout is allowed
+      // to be wider than the phone.
+      if (el.getClientRects().length === 0) continue
+      const vb = el.viewBox.baseVal
+      if (!vb || vb.width <= 0) continue
+      for (const node of Array.from(el.querySelectorAll('text'))) {
+        let b: DOMRect | null = null
+        try {
+          b = (node as SVGGraphicsElement).getBBox() as unknown as DOMRect
+        } catch {
+          continue
+        }
+        if (!b || (b.width === 0 && b.height === 0)) continue
+        const label = (node.textContent ?? '').trim()
+        const slack = 0.6
+        if (
+          b.x < vb.x - slack ||
+          b.y < vb.y - slack ||
+          b.x + b.width > vb.x + vb.width + slack ||
+          b.y + b.height > vb.y + vb.height + slack
+        ) {
+          out.push(
+            `"${label}" at ${b.x.toFixed(1)},${b.y.toFixed(1)} ${b.width.toFixed(1)}x${b.height.toFixed(1)} outside viewBox ${vb.width}x${vb.height} (${el.getAttribute('aria-label') ?? 'chart'})`,
+          )
+        }
+      }
+    }
+    return out
+  })
+  return bad.map((detail) => ({ doc, rule: 'chart label outside its viewBox at 375', detail }))
+}
+
+
+/**
+ * 4. Every control a reader taps is at least 44px at 375.
+ *
+ * tasteReview 2026-09-07: 65 interactive targets measured under 44px on a
+ * phone — every price-history button (74x33), every pill (36 tall), every
+ * address link (309x22), and the chapter 1 cut marker at 7x7px, which is the
+ * flagship interaction of the flagship graphic. Measured with
+ * getBoundingClientRect in the browser, never estimated.
+ *
+ * Two documented exemptions, and only two:
+ *
+ * - A DENSE SERIES mark. Twelve months across a 343px plot are 25px apart;
+ *   44px targets would overlap and steal each other's taps. The dataviz skill
+ *   sets the floor for a mark at 24px, and that is what these are held to.
+ * - An INLINE LINK inside a sentence. Growing it to 44px tall would break the
+ *   line box it sits in. That is the WCAG 2.5.8 inline exception, and it is
+ *   why the block address links (which own their own row) are not exempt.
+ */
+const TAP_TARGET_SELECTOR =
+  'button, [role="button"], [role="slider"], a[data-rr-track], .pp-cut, .tl-mark, .bar-row, .pin-hit'
+/**
+ * Marks in a dense series, held to the dataviz skill's 24px floor instead.
+ *
+ * Twelve months across a 343px plot are 25px apart, and five sale prices
+ * inside three percent of each other are closer than that. 44px targets there
+ * would overlap so completely that only the last mark could be reached, which
+ * is worse for a thumb than a 25px one. Both series have a 44px path to the
+ * same reading elsewhere in the chapter — the month line's figures are in the
+ * sentence above it, and every dot on the price strip is a row in the grid.
+ */
+const DENSE_SERIES_SELECTOR = '.month-mark, .ws-dot'
+
+async function checkTapTargets(
+  page: import('puppeteer-core').Page,
+  doc: DocKind,
+): Promise<CheckFailure[]> {
+  const bad = await page.evaluate(
+    (sel: string, dense: string) => {
+      const out: string[] = []
+      const seen = new Set<Element>()
+      for (const node of Array.from(document.querySelectorAll(`${sel}, ${dense}`))) {
+        if (seen.has(node)) continue
+        seen.add(node)
+        const rects = node.getClientRects()
+        if (rects.length === 0) continue
+        // An inline link inside a sentence keeps the line box it lives in.
+        if (node.tagName === 'A' && node.closest('p')) continue
+        const r = node.getBoundingClientRect()
+        const floor = node.matches(dense) ? 24 : 44
+        const side = Math.min(r.width, r.height)
+        if (side + 0.5 < floor) {
+          const name =
+            node.getAttribute('aria-label') ||
+            (node.textContent ?? '').trim().slice(0, 40) ||
+            node.className
+          out.push(
+            `${node.tagName.toLowerCase()}.${String(node.className).split(' ')[0]} "${name}" is ${r.width.toFixed(0)}x${r.height.toFixed(0)}, under ${floor}px`,
+          )
+        }
+      }
+      return out
+    },
+    TAP_TARGET_SELECTOR,
+    DENSE_SERIES_SELECTOR,
+  )
+  return bad.map((detail) => ({ doc, rule: 'tap target under 44px at 375', detail }))
+}
+
+/**
+ * ── --interact ─────────────────────────────────────────────────────────────
+ * Drive every interaction Delta 2 names on the web document, and shoot the
+ * result of each one.
+ *
+ * Each step names a selector to act on and, where it can, a witness: something
+ * about the page that MUST be different afterwards. A step whose control is
+ * missing, or whose witness did not move, is a failure — the same standard as
+ * the three mechanical checks above. A screenshot of a button nobody could
+ * press is how an interaction layer rots.
+ */
+type InteractStep = {
+  name: string
+  /**
+   * Whether this interaction APPLIES to this document, run in the page. A
+   * chapter an origin does not carry (an asked CMA has no failed listing to
+   * put on a timeline) is skipped; a chapter that IS there whose control was
+   * never built is a failure. Without this line the two are the same result
+   * and the check learns nothing.
+   */
+  when?: string
+  /** Skip silently when this chapter is not in this document. */
+  optional?: boolean
+  /** Run in the page; return a witness string, or null when the step cannot run. */
+  run: string
+  /** Element to frame the shot on. Falls back to the whole viewport. */
+  shot?: string
+}
+
+/**
+ * The answer a reader can SEE, in a chapter that has one.
+ *
+ * A mark whose answer is short is answered at the mark, inside the drawing,
+ * and its paragraph is left in the DOM as a screen-reader live region — which
+ * still has a client rect at 1x1. So the note is read first; only a chapter
+ * that answers in reading type under the figure falls through to the
+ * paragraph, and a paragraph taken out of the flow never counts as the
+ * visible answer.
+ */
+const READ_IN = (sel: string) => `(() => {
+  const notes = Array.from(document.querySelectorAll('${sel} .rr-note text'))
+    .filter((n) => n.getClientRects().length > 0)
+    .map((n) => (n.textContent || '').trim())
+    .filter(Boolean)
+  if (notes[0]) return notes[0]
+  const reads = Array.from(document.querySelectorAll('${sel} .rr-read'))
+    .filter((r) => r.getClientRects().length > 0 && !r.classList.contains('is-sr'))
+  const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
+  return said[0] || ''
+})()`
+
+/**
+ * Only controls a reader can SEE.
+ *
+ * Every chart on this document ships two layouts and hides one, so a bare
+ * querySelector hands back whichever comes first in the DOM — which at 1280
+ * inside the composed spread is the HIDDEN wide drawing. Driving that proves
+ * nothing about the document a reader is looking at.
+ */
+const VISIBLE = (sel: string) =>
+  `Array.from(document.querySelectorAll('${sel}')).filter((n) => n.getClientRects().length > 0)`
+
+const INTERACT_STEPS: InteractStep[] = [
+  {
+    name: 'timeline-cut',
+    // Only an expired origin carries chapter 1.
+    when: `!!document.getElementById('what-happened')`,
+    shot: '#what-happened',
+    run: `(() => {
+      const mark = ${VISIBLE('#what-happened .tl-mark')}
+      const target = mark[mark.length - 1]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      return ${READ_IN('#what-happened')}
+    })()`,
+  },
+  {
+    name: 'did-not-sell-history',
+    shot: '#did-not-sell',
+    run: `(() => {
+      const t = ${VISIBLE('#did-not-sell .pp-toggle')}[0]
+      if (!t) return null
+      t.click()
+      const list = document.querySelector('#did-not-sell .pp-list')
+      return list && !list.hidden ? 'expanded ' + list.children.length + ' dated rows' : ''
+    })()`,
+  },
+  {
+    name: 'curve-scrub',
+    shot: '#priced-right',
+    run: `(() => {
+      const hit = ${VISIBLE('#priced-right svg.curve-scrub .scrub-hit')}[0]
+      if (!hit) return null
+      for (let i = 0; i < 20; i++) {
+        hit.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, shiftKey: true }))
+      }
+      return ${READ_IN('#priced-right')}
+    })()`,
+  },
+  {
+    name: 'ask-outcome-bar',
+    shot: '#priced-right',
+    run: `(() => {
+      const bars = ${VISIBLE('#priced-right .bar-row')}
+      const target = bars[bars.length - 1]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const reads = ${VISIBLE('#priced-right .rr-read')}
+      const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
+      return said[said.length - 1] || ''
+    })()`,
+  },
+  {
+    name: 'sale-and-pin',
+    shot: '#what-its-worth',
+    run: `(() => {
+      const pin = document.querySelector('#what-its-worth .pin-map [data-pin], #what-its-worth .pin-map-wrap [data-pin]')
+      const row = document.querySelector('#what-its-worth th.v[data-comp="2"], #what-its-worth .comp-stack-card[data-comp="2"]')
+      const target = pin || row
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const lit = document.querySelectorAll('#what-its-worth .is-on')
+      return lit.length ? 'lit ' + lit.length + ' element(s)' : ''
+    })()`,
+  },
+  {
+    name: 'adjustments-off',
+    shot: '#what-its-worth',
+    run: `(() => {
+      const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
+      const b = btns.find((x) => /sale prices only/i.test(x.textContent || ''))
+      if (!b) return null
+      const before = document.querySelectorAll('#what-its-worth tr[data-adj]').length
+      b.click()
+      const hidden = Array.from(document.querySelectorAll('#what-its-worth tr[data-adj]'))
+        .filter((tr) => getComputedStyle(tr).display === 'none').length
+      return before > 0 && hidden === before ? 'hid ' + hidden + ' adjustment rows' : ''
+    })()`,
+  },
+  {
+    name: 'sort-by-price',
+    shot: '#what-its-worth',
+    run: `(() => {
+      const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
+      const plain = btns.find((x) => /with the adjustments/i.test(x.textContent || ''))
+      if (plain) plain.click()
+      const b = btns.find((x) => /price today/i.test(x.textContent || ''))
+      if (!b) return null
+      b.click()
+      // The sort runs ACROSS every table. A wide grid splits into two or three
+      // tables so it fits the page, and a within-table sort returned two
+      // descending runs — which a reader reads as a sort that did not work.
+      // So the columns must come back descending read left to right, table
+      // after table, and the cards must follow them.
+      const perTable = Array.from(document.querySelectorAll('#what-its-worth table.comp-matrix')).map((t) =>
+        Array.from(t.querySelectorAll('thead th.v'))
+          .map((th) => th.getAttribute('data-sort-price'))
+          .filter((v) => v != null)
+          .map(Number),
+      )
+      const keys = perTable.flat()
+      if (keys.length < 2) return ''
+      const sorted = keys.every((v, i) => i === 0 || keys[i - 1] >= v)
+      // The cards and the price paths move with the columns, or the chapter
+      // now disagrees with itself about which sale is which.
+      // Their own home is the first card and never sorts, the way it is the
+      // first column and never sorts.
+      const cards = Array.from(
+        document.querySelectorAll('#what-its-worth .comp-stack-card:not(.is-yours)'),
+      ).map((c) => Number(c.getAttribute('data-sort-price')))
+      const follows = (a) => a.length === 0 || a.join(',') === keys.join(',')
+      return sorted && follows(cards)
+        ? perTable.map((k) => k.join(' > ')).join('  |  ')
+        : ''
+    })()`,
+  },
+  {
+    name: 'competition-pending',
+    // Nothing to filter when every competitor is in one status.
+    when: `document.querySelectorAll('#competition .rival-grid').length > 1`,
+    shot: '#competition',
+    run: `(() => {
+      const btns = Array.from(document.querySelectorAll('#competition .rr-btn'))
+      const b = btns.find((x) => /under contract/i.test(x.textContent || ''))
+      if (!b) return null
+      b.click()
+      // NOT "a grid carries the hidden attribute" — the defect was that the
+      // attribute was set and the CSS ignored it, so four for-sale homes stayed
+      // on screen under the "Under contract" heading. Measure what a reader can
+      // actually see, and check its status.
+      const visible = Array.from(document.querySelectorAll('#competition .rival-card'))
+        .filter((c) => c.getClientRects().length > 0)
+      if (visible.length === 0) return ''
+      const wrong = visible.filter((c) => c.getAttribute('data-status') !== 'pending')
+      const heads = Array.from(document.querySelectorAll('#competition h3'))
+        .filter((h) => h.getClientRects().length > 0)
+        .map((h) => (h.textContent || '').trim())
+      if (wrong.length > 0) return ''
+      if (heads.some((h) => /for sale/i.test(h))) return ''
+      return 'showing ' + visible.length + ' under-contract card(s) under ' + heads.join(' + ')
+    })()`,
+  },
+  {
+    name: 'month-line',
+    optional: true,
+    shot: '#this-market',
+    run: `(() => {
+      const marks = ${VISIBLE('#this-market .month-mark')}
+      const target = marks[Math.floor(marks.length / 2)]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      return ${READ_IN('#this-market')}
+    })()`,
+  },
+]
+
+/**
+ * One pass over the immersive document at one width: reload, run every step in
+ * order, shoot each result. Motion is NOT reduced here — this is the pass that
+ * proves the interactions work for a reader who gets them.
+ */
+async function driveInteractions(opts: {
+  browser: import('puppeteer-core').Browser
+  html: string
+  width: number
+  outDir: string
+}): Promise<{ shots: Shot[]; failures: CheckFailure[] }> {
+  const { browser, html, width, outDir } = opts
+  await fs.mkdir(outDir, { recursive: true })
+  const page = await browser.newPage()
+  const shots: Shot[] = []
+  const failures: CheckFailure[] = []
+  try {
+    await page.setViewport({ width, height: 1400, deviceScaleFactor: 1 })
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await waitForImages(page)
+    // Every scene revealed and SETTLED, so a step never taps a control inside
+    // a hidden section and no shot catches a chapter mid-fade. The reveal is
+    // chapter entrance; it is not what this pass is driving. Killing the
+    // transitions also lands the timeline's draw on its finished state, which
+    // is what a reader sees a moment after it runs.
+    await page.evaluate(() => {
+      document.querySelectorAll('.sc').forEach((el) => el.classList.add('on'))
+      const style = document.createElement('style')
+      style.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }'
+      document.head.appendChild(style)
+    })
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 200)))
+    for (let i = 0; i < INTERACT_STEPS.length; i++) {
+      const step = INTERACT_STEPS[i]!
+      if (step.when) {
+        const applies = await page.evaluate(step.when).catch(() => false)
+        if (!applies) {
+          console.log(
+            `  [interact ${width}] ${pad(i + 1)} ${step.name.padEnd(24)} — not in this document`,
+          )
+          continue
+        }
+      }
+      let witness: string | null = null
+      try {
+        witness = (await page.evaluate(step.run)) as string | null
+      } catch (err) {
+        witness = ''
+        failures.push({
+          doc: 'immersive',
+          rule: `interaction "${step.name}" threw`,
+          detail: err instanceof Error ? err.message : String(err),
+        })
+      }
+      if (witness == null) {
+        if (!step.optional) {
+          failures.push({
+            doc: 'immersive',
+            rule: `interaction "${step.name}" has no control`,
+            detail: `nothing matched at ${width}px — the chapter is present but the control was never built`,
+          })
+        }
+        console.log(`  [interact ${width}] ${pad(i + 1)} ${step.name.padEnd(24)} — absent${step.optional ? ' (optional)' : ''}`)
+        continue
+      }
+      if (!witness) {
+        failures.push({
+          doc: 'immersive',
+          rule: `interaction "${step.name}" changed nothing`,
+          detail: `the control is there at ${width}px and driving it moved no witness on the page`,
+        })
+      }
+      const fileName = `${pad(i + 1)}-${step.name}.png`
+      const handle = step.shot ? await page.$(step.shot) : null
+      if (handle) await handle.screenshot({ path: path.join(outDir, fileName) as `${string}.png` })
+      else await page.screenshot({ path: path.join(outDir, fileName) as `${string}.png` })
+      shots.push({
+        doc: 'immersive',
+        width,
+        index: i + 1,
+        id: step.name,
+        heading: witness,
+        heightPx: 0,
+        svgCount: 0,
+        imgCount: 0,
+        tableCount: 0,
+        file: `${path.basename(outDir)}/${fileName}`,
+      })
+      console.log(`  [interact ${width}] ${pad(i + 1)} ${step.name.padEnd(24)} ${witness || '✗ no change'}`)
+    }
+    return { shots, failures }
+  } finally {
+    await page.close().catch(() => {})
+  }
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
@@ -213,6 +743,8 @@ async function writeContactSheet(outDir: string, slug: string, meta: Record<stri
     { label: 'Letter · 375px (mobile)', items: shots.filter((s) => s.doc === 'letter' && s.width === 375) },
     { label: 'Immersive · 1280px (desktop)', items: shots.filter((s) => s.doc === 'immersive' && s.width === 1280) },
     { label: 'Immersive · 375px (mobile)', items: shots.filter((s) => s.doc === 'immersive' && s.width === 375) },
+    { label: 'Interactions · 1280px — the RESULT of each one', items: shots.filter((s) => s.width === 1281) },
+    { label: 'Interactions · 375px — the RESULT of each one', items: shots.filter((s) => s.width === 376) },
   ]
   const body = groups
     .filter((g) => g.items.length > 0)
@@ -266,20 +798,28 @@ async function writeContactSheet(outDir: string, slug: string, meta: Record<stri
 async function processSlug(
   slug: string,
   browser: import('puppeteer-core').Browser,
+  check: boolean,
+  interact: boolean,
   deps: {
     getCmaAdminRowBySlug: (slug: string) => Promise<Record<string, unknown> | null>
     getCmaRenderSourceBySlug: (slug: string) => Promise<CmaRenderSource | null>
     getCmaStoredHtmlBySlug: (slug: string) => Promise<string | null>
     resolveCmaPrintHtml: (slug: string) => Promise<{ html: string; status: string } | null>
-    immersiveFromRow: (row: CmaRenderSource, origin: string, hydrateArea: boolean) => Promise<string | null>
+    immersiveFromRow: (
+      row: CmaRenderSource,
+      origin: string,
+      hydrateArea: boolean,
+      slug?: string,
+    ) => Promise<string | null>
     extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
+    findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>
   },
-): Promise<{ slug: string; ok: boolean; contactSheet?: string }> {
+): Promise<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> {
   console.log(`\n=== ${slug} ===`)
   const adminRow = await deps.getCmaAdminRowBySlug(slug)
   if (!adminRow) {
     console.error(`  no cmas row for slug "${slug}"`)
-    return { slug, ok: false }
+    return { slug, ok: false, failures: [] }
   }
   const meta = {
     slug,
@@ -298,6 +838,10 @@ async function processSlug(
   await fs.mkdir(outDir, { recursive: true })
 
   const allShots: Shot[] = []
+  const failures: CheckFailure[] = []
+  const { subject: subjectAddress, addresses } = collectDocumentAddresses(
+    (adminRow.render_args as Record<string, unknown> | null) ?? null,
+  )
 
   // Letter: resolveCmaPrintHtml is the exact function lib/cma-pdf.ts calls
   // for the PDF and the ?print=1 route falls back to — reusing it means a
@@ -313,6 +857,7 @@ async function processSlug(
         width,
         outDir: path.join(outDir, `letter-${width}`),
         extractChapters: deps.extractChapters,
+        svgFailures: check ? failures : undefined,
       })
       allShots.push(...shots)
       for (const s of shots) {
@@ -332,7 +877,11 @@ async function processSlug(
   let immersiveHtml: string | null = null
   const renderSource = await deps.getCmaRenderSourceBySlug(slug)
   if (renderSource) {
-    immersiveHtml = await deps.immersiveFromRow(renderSource, SITE_URL, false)
+    // The SLUG, so every tracked link in the evidence carries the identity the
+    // recipient's copy carries — `_pid`, `agent`, `utm_campaign`. Without it
+    // the shots showed a document whose CTAs were unattributable, which is
+    // exactly the defect the evaluator reported on chapter 7.
+    immersiveHtml = await deps.immersiveFromRow(renderSource, SITE_URL, false, slug)
   }
   if (!immersiveHtml) {
     immersiveHtml = await deps.getCmaStoredHtmlBySlug(slug)
@@ -348,6 +897,7 @@ async function processSlug(
         width,
         outDir: path.join(outDir, `immersive-${width}`),
         extractChapters: deps.extractChapters,
+        svgFailures: check ? failures : undefined,
       })
       allShots.push(...shots)
       for (const s of shots) {
@@ -360,16 +910,57 @@ async function processSlug(
     console.error(`  no immersive HTML for "${slug}" (render_args miss AND no stored html_content) — no immersive shots`)
   }
 
+  if (interact && immersiveHtml) {
+    for (const width of [1280, 375] as const) {
+      const run = await driveInteractions({
+        browser,
+        html: immersiveHtml,
+        width,
+        outDir: path.join(outDir, `interact-${width}`),
+      })
+      // The contact sheet groups by width, and 1280/375 are already taken by
+      // the chapter shots — stamp these one apart so they land in their own
+      // rows rather than mixing into the chapter grid.
+      allShots.push(...run.shots.map((s) => ({ ...s, width: width + 1 })))
+      failures.push(...run.failures)
+    }
+  }
+
+  if (check) {
+    for (const [doc, html] of [
+      ['letter', letter?.html ?? null],
+      ['immersive', immersiveHtml],
+    ] as const) {
+      if (!html) continue
+      failures.push(...checkBannedWords(doc, html, deps.findSellerBannedWords))
+      failures.push(...checkTrackedAddresses(doc, html, addresses))
+    }
+    if (failures.length === 0) {
+      console.log(
+        `  ✓ check: no banned word, ${addresses.length} address(es) tracked, every chart label inside its frame at 375`,
+      )
+    } else {
+      console.error(`  ✗ check: ${failures.length} failure(s)${subjectAddress ? ` on ${subjectAddress}` : ''}`)
+      for (const f of failures) console.error(`      [${f.doc}] ${f.rule}: ${f.detail}`)
+    }
+  }
+
   await writeContactSheet(outDir, slug, meta, allShots)
   const contactSheet = path.join(outDir, 'contact-sheet.html')
   console.log(`  contact sheet: ${contactSheet}`)
-  return { slug, ok: allShots.length > 0, contactSheet }
+  return { slug, ok: allShots.length > 0 && failures.length === 0, contactSheet, failures }
 }
 
 async function main(): Promise<void> {
-  const slugs = process.argv.slice(2).map((s) => s.trim().toLowerCase()).filter(Boolean)
+  const argv = process.argv.slice(2)
+  const check = argv.includes('--check')
+  const interact = argv.includes('--interact')
+  const slugs = argv
+    .filter((a) => !a.startsWith('--'))
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
   if (slugs.length === 0) {
-    console.error('usage: npx tsx scripts/cma-lookpass.ts <slug> [<slug> ...]')
+    console.error('usage: npx tsx scripts/cma-lookpass.ts [--check] [--interact] <slug> [<slug> ...]')
     process.exit(1)
   }
 
@@ -377,6 +968,7 @@ async function main(): Promise<void> {
   const { resolveCmaPrintHtml } = await import('@/lib/cma/print-html')
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
   const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
+  const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
   const puppeteerModule = await import('puppeteer-core')
   const puppeteer = puppeteerModule.default
 
@@ -396,16 +988,17 @@ async function main(): Promise<void> {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
 
-  const results: Array<{ slug: string; ok: boolean; contactSheet?: string }> = []
+  const results: Array<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> = []
   try {
     for (const slug of slugs) {
-      const result = await processSlug(slug, browser, {
+      const result = await processSlug(slug, browser, check, interact, {
         getCmaAdminRowBySlug,
         getCmaRenderSourceBySlug,
         getCmaStoredHtmlBySlug,
         resolveCmaPrintHtml,
         immersiveFromRow,
         extractChapters,
+        findSellerBannedWords,
       })
       results.push(result)
     }
@@ -415,7 +1008,10 @@ async function main(): Promise<void> {
 
   console.log('\n=== summary ===')
   for (const r of results) {
-    console.log(`  ${r.ok ? 'OK  ' : 'FAIL'} ${r.slug}${r.contactSheet ? ` — ${r.contactSheet}` : ''}`)
+    const failed = r.failures.length
+    console.log(
+      `  ${r.ok ? 'OK  ' : 'FAIL'} ${r.slug}${failed ? ` — ${failed} check failure(s)` : ''}${r.contactSheet ? ` — ${r.contactSheet}` : ''}`,
+    )
   }
   if (results.some((r) => !r.ok)) process.exit(1)
 }

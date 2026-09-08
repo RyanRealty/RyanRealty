@@ -26,6 +26,7 @@ import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 
 // ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
 /** Listing fee for every expired-listing engagement. */
@@ -86,11 +87,40 @@ export interface ExpiredNetSheet {
   assumptions: string[]
 }
 
+/**
+ * The final listing period, as a shape a renderer can draw.
+ *
+ * Contract from docs/plans/CMA_REIMAGINED_2026-09-07.md chapter 1, written at
+ * BUILD onto `render_args.expiredAudit.finalCycle`. Nothing derives it in a
+ * renderer: `lib/pricing` and the build own every figure on it.
+ */
+export interface ExpiredFinalCycle {
+  /** The day the final listing period opened. */
+  listDate: string | null
+  /** The ask it opened at. */
+  initialAsk: number | null
+  /** Every price change on that period, in order. Empty when it never cut. */
+  cuts: Array<{ date: string | null; ask: number }>
+  /** The day it came off. Null while it is still live. */
+  offMarketDate: string | null
+  /** Expired / Withdrawn / Canceled. */
+  status: string | null
+  /** List date to off-market date, whole days. */
+  days: number | null
+}
+
 export interface ExpiredAuditData {
   findings: ExpiredFailureFinding[]
   services: string[]
   netSheet: ExpiredNetSheet
   feeLine: string
+  /**
+   * Chapter 1's timeline. Optional because rows built before this contract
+   * landed do not carry it — `resolveListingTimeline` degrades to the subject's
+   * own list date, final ask and days on market when it is absent, and the
+   * chapter falls back to a sentence when even that is missing.
+   */
+  finalCycle?: ExpiredFinalCycle | null
 }
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
@@ -175,6 +205,137 @@ export function stampFinalCycleDom(
   if (!line) return null
   subject.listingHistoryLine = line.endsWith('.') ? line : `${line}.`
   return dom
+}
+
+// ── The final listing period, as a timeline ─────────────────────────────────
+
+/** One dated step in the ask. `ask` is the price AFTER the change. */
+export interface ExpiredFinalCycleCut {
+  /** YYYY-MM-DD, or null on the undated fallback below. */
+  date: string | null
+  ask: number
+}
+
+/**
+ * The subject's final listing period, drawn rather than described.
+ *
+ * Chapter 1 of the reimagined document is one picture: a time axis from list
+ * date to off-market date, the value range shaded across it, and the ask as a
+ * stepped line that never enters the range. This is that line's data.
+ *
+ * `cuts` is every DATED change to the ask, oldest first, from the
+ * price-change records (`price_history` + the MLS change log in
+ * `listing_history`). When the record holds no dated change but the two asks
+ * on the listing row differ, one undated step is emitted — `date: null`,
+ * `ask: finalAsk` — and `cutsDated` is false, so the renderer draws a flat
+ * line at the original ask rather than inventing a date for the step. §0: a
+ * date is a number, and a date from convention is a fabrication.
+ */
+export interface ExpiredFinalCycle {
+  /** YYYY-MM-DD the listing went on. */
+  listDate: string | null
+  /** The ask it opened at (`OriginalListPrice`). */
+  initialAsk: number | null
+  cuts: ExpiredFinalCycleCut[]
+  /** False when `cuts` was reconstructed from the two asks with no dated event. */
+  cutsDated: boolean
+  /** The ask it came off at (`ListPrice`). */
+  finalAsk: number | null
+  /** YYYY-MM-DD it came off the market. */
+  offMarketDate: string | null
+  /** Expired / Canceled / Withdrawn. */
+  status: string | null
+  /** List date to off-market date — `finalCycleDaysOnMarket`, one definition. */
+  days: number | null
+  /** §0 trace: where each field came from. */
+  source: { table: string; filter: string; fetchedAt: string; query: string }
+}
+
+function positiveAsk(value: unknown): number | null {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null
+}
+
+function dayString(value: string | null | undefined): string | null {
+  const s = String(value ?? '').trim().slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null
+}
+
+/**
+ * Build the timeline from the final cycle plus whatever dated price events the
+ * record holds. Pure — the caller does the reading (lib/pricing/local-outcomes
+ * -read.ts's sibling in the builder), so this stays unit-testable.
+ *
+ * Events outside the cycle's own window are dropped: a price change dated
+ * before the list date belongs to a prior attempt at the same address, and one
+ * after the off-market date is a post-withdrawal edit, not something the
+ * market saw.
+ */
+export function buildFinalCycle(args: {
+  cycle: BpoListingCycle | null | undefined
+  priceEvents?: ReadonlyArray<{ date: string; ask: number }>
+  listingKey?: string | null
+  fetchedAt?: string
+}): ExpiredFinalCycle | null {
+  const cycle = args.cycle
+  if (!cycle) return null
+  const listDate = dayString(cycle.listDate)
+  const offMarketDate = dayString(cycle.offMarketDate)
+  const initialAsk = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
+  const finalAsk = positiveAsk(cycle.finalListPrice)
+  const days = finalCycleDaysOnMarket(cycle)
+
+  const dated: ExpiredFinalCycleCut[] = []
+  const seen = new Set<string>()
+  for (const e of args.priceEvents ?? []) {
+    const date = dayString(e.date)
+    const ask = positiveAsk(e.ask)
+    if (!date || ask == null) continue
+    if (listDate && date < listDate) continue
+    if (offMarketDate && date > offMarketDate) continue
+    // The opening ask is the line's start, not a step in it.
+    if (initialAsk != null && ask === initialAsk && dated.length === 0) continue
+    const k = `${date}|${ask}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    dated.push({ date, ask })
+  }
+  dated.sort((a, b) => String(a.date).localeCompare(String(b.date)))
+
+  const cutsDated = dated.length > 0
+  const cuts: ExpiredFinalCycleCut[] = cutsDated
+    ? dated
+    : initialAsk != null && finalAsk != null && finalAsk !== initialAsk
+      ? [{ date: null, ask: finalAsk }]
+      : []
+
+  return {
+    listDate,
+    initialAsk,
+    cuts,
+    cutsDated,
+    finalAsk,
+    offMarketDate,
+    status: cycle.status ?? null,
+    days,
+    source: {
+      table: 'listings + price_history + listing_history',
+      filter:
+        `ListingKey='${args.listingKey ?? cycle.listingKey ?? ''}'. ` +
+        `listDate from listings."ListDate" (falling back to "OnMarketDate"), offMarketDate from listings.off_market_date ` +
+        `(falling back to status_change_timestamp), initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
+        `days = list date to off-market date in whole calendar days. ` +
+        (cutsDated
+          ? `${dated.length} dated ask change(s) inside the cycle window from price_history.new_price and the ` +
+            `listing_history 'ListPrice: A → B' change log.`
+          : `No dated ask change is recorded for this cycle, so the step carries no date.`),
+      fetchedAt: args.fetchedAt ?? new Date().toISOString(),
+      query:
+        `select "ListingKey", "StandardStatus", "ListDate", "OnMarketDate", off_market_date, status_change_timestamp, "OriginalListPrice", "ListPrice", "DaysOnMarket" from listings where "ListingKey" = '${args.listingKey ?? cycle.listingKey ?? ''}'` +
+        ` ;; select old_price, new_price, changed_at from price_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by changed_at` +
+        ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date`,
+    },
+  }
 }
 
 /**
@@ -577,4 +738,139 @@ export function applyFailedAskCap(
     .join(' ')
   pricing.notes.push(`Your last listing asked ${usd(ask)} and did not sell.`)
   return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
+}
+
+/**
+ * Chapter 1's timeline, resolved from the row.
+ *
+ * PREFERRED: `expiredAudit.finalCycle`, written at build from the MLS listing
+ * cycles, which carries every price change on the final period.
+ *
+ * DEGRADED: the subject's own fields. A row built before that contract landed
+ * carries `lastListDate`, `lastListPrice`, `standardStatus` and a days-on-market
+ * figure, which is a real one-segment listing period — a flat line at the ask
+ * it finished on, ending the day it came off. The blueprint already specifies a
+ * flat line for a period with no cut, so the degraded drawing is honest: it
+ * states less, never something false. It never invents a cut, and it never
+ * reads a price out of the prose history line.
+ *
+ * Returns null when there is no failed period to draw at all.
+ */
+export function resolveListingTimeline(input: {
+  subject: CmaSubject
+  expiredAudit?: ExpiredAuditData | null
+  rangeLow: number
+  rangeHigh: number
+  rangeLabel: string
+  /** The final cycle's days on market, resolved once for the whole document. */
+  domDays: number | null
+}): ListingTimelineInput | null {
+  const cycle = input.expiredAudit?.finalCycle ?? null
+  const s = input.subject
+  const listDate = (cycle?.listDate ?? s.lastListDate ?? '').trim()
+  if (!listDate) return null
+
+  const steps: ListingTimelineStep[] = []
+  if (cycle) {
+    if (cycle.initialAsk != null && cycle.initialAsk > 0) {
+      steps.push({ date: listDate, ask: cycle.initialAsk })
+    }
+    for (const cut of cycle.cuts ?? []) {
+      if (cut.ask > 0 && cut.date) steps.push({ date: cut.date, ask: cut.ask })
+    }
+  }
+  if (steps.length === 0 && s.lastListPrice != null && s.lastListPrice > 0) {
+    steps.push({ date: listDate, ask: s.lastListPrice })
+  }
+  if (steps.length === 0) return null
+
+  const offMarket = cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays)
+  const status = (cycle?.status ?? s.standardStatus ?? '').trim().toLowerCase() || null
+  return {
+    listDate,
+    offMarketDate: offMarket,
+    steps,
+    rangeLow: input.rangeLow,
+    rangeHigh: input.rangeHigh,
+    rangeLabel: input.rangeLabel,
+    status,
+    days: cycle?.days ?? input.domDays,
+    caption: 'Your asking price against what homes like yours sold for',
+  }
+}
+
+/** List date plus the days it ran. Null when either side is unknown. */
+function offMarketFromDays(listDate: string, days: number | null): string | null {
+  if (days == null || !Number.isFinite(days) || days < 0) return null
+  const start = utcDay(listDate)
+  if (start == null) return null
+  return new Date(start + days * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * The one sentence under the timeline. Every figure on it is already drawn
+ * above it, so the reader can check the sentence against the picture.
+ */
+export function listingTimelineReading(input: {
+  timeline: ListingTimelineInput
+  city: string
+  /**
+   * The city's median days to an ACCEPTED OFFER. Chapter 2 draws the same
+   * figure from `market.offerTiming.medianDays`, so the caller passes that one
+   * when the row carries it: two different medians for the same thing, one
+   * screen apart, is a §0 reconciliation failure whichever is right.
+   */
+  marketMedianDom: number | null
+}): string {
+  const t = input.timeline
+  const finalAsk = t.steps[t.steps.length - 1]?.ask ?? null
+  const low = Math.min(t.rangeLow, t.rangeHigh)
+  const high = Math.max(t.rangeLow, t.rangeHigh)
+  const bits: string[] = []
+  const against = askAgainstRangeSentence(finalAsk, low, high)
+  if (against) bits.push(against)
+  if (t.days != null && t.days > 0) bits.push(`It sat ${Math.round(t.days).toLocaleString('en-US')} days.`)
+  const place = input.city.trim()
+  if (input.marketMedianDom != null && input.marketMedianDom > 0 && place) {
+    // Name the measure. "The Redmond median is 26" leaves a reader to guess
+    // whether that is days to an offer, days to close, or something else —
+    // and the next chapter draws the same figure under its full name.
+    bits.push(
+      `The median home in ${place} has an accepted offer in ${Math.round(input.marketMedianDom)} days.`,
+    )
+  }
+  return bits.join(' ')
+}
+
+function pct1(ratio: number): string {
+  return (Math.abs(ratio) * 100).toFixed(1)
+}
+
+/**
+ * Where the seller's own ask sat against what homes like theirs sold for, in
+ * one sentence.
+ *
+ * ONE sentence, in ONE place, because two chapters say it. Chapter 1 read
+ * "the asking price was 15.3 percent above the top of the range"; chapter 2's
+ * card for the same listing read "that is at the top of what they closed at"
+ * on a dollars-a-foot measure. Both were true and, a minute apart, they
+ * cancelled. Chapter 2 now leads with this sentence and puts its own
+ * dollars-a-foot line after it.
+ */
+export function askAgainstRangeSentence(
+  ask: number | null,
+  rangeLow: number | null,
+  rangeHigh: number | null,
+): string {
+  if (ask == null || !(ask > 0) || rangeLow == null || rangeHigh == null) return ''
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > 0)) return ''
+  if (ask > high) {
+    return `The asking price was ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
+  }
+  if (ask < low) {
+    return `The asking price was ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
+  }
+  return 'The asking price sat inside the range homes like yours sold in.'
 }

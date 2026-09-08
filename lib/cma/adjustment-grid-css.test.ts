@@ -17,7 +17,7 @@ describe('adjustment grid stays inside the print box', () => {
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
     // Letter Open report: stack on screen — no wide multi-column table at 375.
     expect(css).toMatch(/\.comp-stack \{[^}]*display:\s*block/)
-    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{[^}]*display:\s*none/)
     // Immersive /view override: side-by-side sold matrix required on screen (pricing beat).
     expect(immersive).toMatch(/\.comp-matrix-wrap\{display:block/)
     expect(immersive).toMatch(/\.comp-stack\{display:none/)
@@ -31,7 +31,7 @@ describe('adjustment grid stays inside the print box', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     expect(css).toContain('.comp-stack')
     expect(css).toMatch(/\.comp-stack-card/)
-    expect(css).toMatch(/\.comp-matrix-wrap \{[^}]*display:\s*none/)
+    expect(css).toMatch(/\.comp-matrix-wrap, \.matrix-group-h \{[^}]*display:\s*none/)
     expect(css).not.toMatch(/@media screen and \(min-width: 701px\)[\s\S]*min-width:\s*44rem/)
   })
 

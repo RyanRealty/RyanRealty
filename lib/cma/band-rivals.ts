@@ -3,8 +3,10 @@
  * CmaBandPosition. This module names the houses and draws the list.
  */
 
-import { escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
-import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { formatDate } from '@/lib/format/date'
+import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 
 const esc = escapeHtml
 
@@ -147,20 +149,23 @@ export function rivalFactsLine(r: CmaBandRival): string | null {
   ])
 }
 
+/**
+ * The delta line against your home, in the blueprint's own words:
+ * "$28,250 above, 60 sqft larger, 7 years newer". The referent is the chapter
+ * title, which names the price.
+ */
 export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | null | undefined): string | null {
   if (!subject) return null
   const bits: string[] = []
   if (subject.recommendedList != null && subject.recommendedList > 0) {
     const d = Math.round(r.listPrice - subject.recommendedList)
-    if (d === 0) bits.push('same as this recommend')
-    else if (d > 0) bits.push(`${usd(d)} above this recommend`)
-    else bits.push(`${usd(-d)} below this recommend`)
+    if (d === 0) bits.push('the same price')
+    else bits.push(`${usd(Math.abs(d))} ${d > 0 ? 'above' : 'below'}`)
   }
   if (r.sqft != null && r.sqft > 0 && subject.sqft != null && subject.sqft > 0) {
     const d = Math.round(r.sqft - subject.sqft)
     if (d === 0) bits.push('same size')
-    else if (d > 0) bits.push(`${int(d)} sqft larger`)
-    else bits.push(`${int(-d)} sqft smaller`)
+    else bits.push(`${int(Math.abs(d))} sqft ${d > 0 ? 'larger' : 'smaller'}`)
   }
   if (r.beds != null && subject.beds != null && r.beds !== subject.beds) {
     const d = r.beds - subject.beds
@@ -169,127 +174,145 @@ export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | nu
   if (r.baths != null && subject.baths != null && r.baths !== subject.baths) {
     const d = r.baths - subject.baths
     const abs = Math.abs(d)
-    const label = abs === 1 ? 'bath' : 'baths'
-    bits.push(d > 0 ? `${abs % 1 === 0 ? int(abs) : abs.toFixed(1)} more ${label}` : `${abs % 1 === 0 ? int(abs) : abs.toFixed(1)} fewer ${label}`)
+    const n = abs % 1 === 0 ? int(abs) : abs.toFixed(1)
+    bits.push(`${n} ${d > 0 ? 'more' : 'fewer'} bath${abs === 1 ? '' : 's'}`)
   }
   if (r.yearBuilt != null && subject.yearBuilt != null) {
     const d = r.yearBuilt - subject.yearBuilt
-    if (d === 0) bits.push('same year')
-    else if (d > 0) bits.push(`${int(d)} year${Math.abs(d) === 1 ? '' : 's'} newer`)
-    else bits.push(`${int(-d)} year${Math.abs(d) === 1 ? '' : 's'} older`)
+    if (d !== 0) {
+      bits.push(`${int(Math.abs(d))} year${Math.abs(d) === 1 ? '' : 's'} ${d > 0 ? 'newer' : 'older'}`)
+    }
   }
   const mi = milesBetween(r, subject)
-  if (mi != null && mi >= 0.05) {
-    bits.push(mi >= 10 ? `${int(mi)} mi` : `${mi.toFixed(1)} mi`)
-  }
-  return bits.length ? bits.join(' · ') : null
+  if (mi != null && mi >= 0.05) bits.push(mi >= 10 ? `${int(mi)} mi away` : `${mi.toFixed(1)} mi away`)
+  return bits.length ? bits.join(', ') : null
 }
 
-function subjectFactsLine(s: CmaBandSubject): string | null {
-  return joinFacts([
-    s.beds != null ? `${int(s.beds)} bd` : null,
-    s.baths != null ? `${s.baths % 1 === 0 ? int(s.baths) : s.baths.toFixed(1)} ba` : null,
-    s.sqft != null && s.sqft > 0 ? `${int(s.sqft)} sqft` : null,
-    s.yearBuilt != null ? String(s.yearBuilt) : null,
-    s.lotAcres != null && s.lotAcres > 0 ? `${s.lotAcres.toFixed(2)} ac` : null,
+/** Photo, linked address, price, size, days on market, and the delta line. */
+function rivalCard(
+  r: CmaBandRival,
+  subject: CmaBandSubject | null | undefined,
+  ctx: TrackedDocLinkCtx | null | undefined,
+  city: string,
+): string {
+  const photo = sparkPhotoAt(r.photoUrl, '480x360')
+  const img = photo
+    ? `<img class="rival-ph" src="${esc(photo)}" alt="${esc(r.address)}" loading="eager" referrerpolicy="no-referrer"/>`
+    : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
+  const href = trackedDocLink(
+    'listing',
+    {
+      listingKey: r.listingKey,
+      streetNumber: /^\s*(\d+[A-Za-z]?)\s/.exec(r.address)?.[1] ?? null,
+      streetName: r.address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim() || null,
+      city,
+    },
+    ctx ?? UNADDRESSED_DOC_LINKS,
+  )
+  const facts = joinFacts([
+    r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
+    r.beds != null ? `${int(r.beds)} bd` : null,
+    r.baths != null ? `${r.baths % 1 === 0 ? int(r.baths) : r.baths.toFixed(1)} ba` : null,
+    r.daysOnMarket != null && r.daysOnMarket >= 0
+      ? `${int(r.daysOnMarket)} ${r.daysOnMarket === 1 ? 'day' : 'days'} on market`
+      : null,
   ])
-}
-
-function subjectRow(subject: CmaBandSubject | null | undefined): string {
-  if (!subject) return ''
-  const facts = subjectFactsLine(subject)
-  const photo = sparkPhotoAt(subject.photoUrl ?? null, '320x320')
-  const img = photo
-    ? `<img class="rival-ph" src="${esc(photo)}" alt="This home" />`
-    : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
-  const ask =
-    subject.recommendedList != null && subject.recommendedList > 0
-      ? `<div class="rival-ask">${usd(subject.recommendedList)}</div>`
-      : `<div class="rival-ask"></div>`
-  // P5: the subject's listing history belongs to Home location and, on an
-  // expired document, to Your last listing. Repeating it here as a third
-  // statement of the same fact is the duplication Matt called out 2026-09-07.
-  return `<article class="rival-row is-subject">
-    ${img}
-    <div class="rival-body">
-      <div class="rival-addr">This home</div>
-      ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
-      <div class="rival-meta">Recommended list</div>
-    </div>
-    ${ask}
-  </article>`
-}
-
-function rivalRow(r: CmaBandRival, subject: CmaBandSubject | null | undefined): string {
-  const photo = sparkPhotoAt(r.photoUrl, '320x320')
-  const img = photo
-    ? `<img class="rival-ph" src="${esc(photo)}" alt="${esc(r.address)}" />`
-    : `<div class="rival-ph is-empty" aria-hidden="true"></div>`
-  const facts = rivalFactsLine(r)
   const vs = rivalVsSubjectLine(r, subject)
-  const history =
-    (r.listingHistoryLine && r.listingHistoryLine.trim()) ||
-    buildListingHistoryLine({
+  // Delta 1: "Every active and pending row carries its price history line and
+  // days on market too, so the reader sees which competitors have already
+  // cut." The compact drawing, because a card in a four-up grid is narrower
+  // than the wide line at every viewport.
+  const path = priceHistoryLineCompactHtml(
+    pricePathFromListing({
+      address: r.address,
       listPrice: r.listPrice,
-      originalListPrice: r.originalListPrice,
-      status: r.status,
-      onMarketDate: r.onMarketDate,
+      originalListPrice: r.originalListPrice ?? null,
+      onMarketDate: r.onMarketDate ?? null,
       daysOnMarket: r.daysOnMarket,
-    })
-  const meta = joinFacts([history, vs])
-  return `<article class="rival-row">
+      status: r.status,
+    }),
+    `rival-${r.listingKey}`,
+  )
+  return `<article class="rival-card" data-rival="${esc(r.listingKey)}" data-status="${esc(
+    r.status.toLowerCase(),
+  )}">
     ${img}
     <div class="rival-body">
-      <div class="rival-addr">${esc(r.address)}</div>
+      <a class="rival-addr" href="${esc(href)}" data-rr-track="cma-competition">${esc(r.address)}</a>
+      <div class="rival-ask">${usd(r.listPrice)}</div>
       ${facts ? `<div class="rival-facts">${esc(facts)}</div>` : ''}
-      ${meta ? `<div class="rival-meta">${esc(meta)}</div>` : ''}
+      ${vs ? `<div class="rival-meta">${esc(vs)}</div>` : ''}
+      ${path}
     </div>
-    <div class="rival-ask">${usd(r.listPrice)}</div>
   </article>`
 }
 
-export function renderBandRivalsHtml(input: {
-  city: string
+/** "27 homes are for sale between $350,000 and $428,000. 14 are under contract." */
+export function competitionSentence(input: {
   lo: number
   hi: number
   activeCount: number
   pendingCount: number
-  rivals: readonly CmaBandRival[]
-  subject?: CmaBandSubject | null
+  shown: number
 }): string {
-  const actives = input.rivals.filter((r) => r.status === 'Active')
-  const pendings = input.rivals.filter((r) => r.status === 'Pending')
-  const rows = (list: readonly CmaBandRival[]) => list.map((r) => rivalRow(r, input.subject)).join('')
-  const activeLead =
-    actives.length > 0
-      ? `${int(input.activeCount)} home${input.activeCount === 1 ? '' : 's'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`
-      : `${int(input.activeCount)} home${input.activeCount === 1 ? '' : 's'} for sale in that band.`
-  const pendingLead =
+  const bits = [
+    `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`,
     input.pendingCount > 0
-      ? `${int(input.pendingCount)} under contract in the same band.`
-      : 'None under contract in this band right now.'
-  const shown =
-    actives.length + pendings.length < input.activeCount + input.pendingCount
-      ? ` Nearest ${int(actives.length + pendings.length)} shown.`
-      : ''
-  const subjectBlock = input.subject ? `<div class="rival-list">${subjectRow(input.subject)}</div>` : ''
-  return `
-  <h2 class="section">Who you are competing with at this price</h2>
-  <p>${esc(activeLead)} ${esc(pendingLead)}${esc(shown)}</p>
-  ${subjectBlock}
-  ${
-    actives.length > 0
-      ? `<h3 class="subhead">For sale now</h3><div class="rival-list">${rows(actives)}</div>`
-      : ''
+      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
+      : 'None are under contract right now.',
+  ]
+  if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
+    bits.push(`The nearest ${int(input.shown)} are below.`)
   }
-  ${
-    pendings.length > 0
-      ? `<h3 class="subhead">Under contract</h3><div class="rival-list">${rows(pendings)}</div>`
-      : ''
-  }`
+  return bits.join(' ')
 }
 
-export function renderBandRivalsSceneHtml(input: {
+/**
+ * Who among the homes below has already come down, and by how much.
+ *
+ * Delta 1: "Sentence: how many have cut, median cut." The figure is taken over
+ * the homes THIS CHAPTER PRINTS, not over the whole price range — each one
+ * draws its own opening ask and its ask today on the card, so a reader can add
+ * the set up and land on the same median. A home whose opening ask is not on
+ * the record is left out of both counts rather than assumed never to have cut.
+ */
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
+}
+
+export function competitorCutLine(rivals: readonly CmaBandRival[]): string | null {
+  const known = rivals.filter(
+    (r) =>
+      r.listPrice > 0 &&
+      r.originalListPrice != null &&
+      Number.isFinite(r.originalListPrice) &&
+      r.originalListPrice > 0,
+  )
+  if (known.length === 0) return null
+  const cuts = known
+    .filter((r) => r.originalListPrice! > r.listPrice)
+    .map((r) => ({
+      dollars: r.originalListPrice! - r.listPrice,
+      pct: ((r.originalListPrice! - r.listPrice) / r.originalListPrice!) * 100,
+    }))
+  const shown = known.length
+  if (cuts.length === 0) {
+    return shown === 1
+      ? 'The one home below has not come down from its opening price.'
+      : `None of the ${int(shown)} homes below has come down from its opening price.`
+  }
+  const cut = `a median cut of ${usd(Math.round(median(cuts.map((c) => c.dollars))))}, or ${median(
+    cuts.map((c) => c.pct),
+  ).toFixed(1)} percent`
+  if (shown === 1) return `The one home below has already come down, ${cut}.`
+  return `${int(cuts.length)} of the ${int(shown)} homes below ${
+    cuts.length === 1 ? 'has' : 'have'
+  } already come down, ${cut}.`
+}
+
+export type BandRivalsInput = {
   city: string
   lo: number
   hi: number
@@ -297,23 +320,73 @@ export function renderBandRivalsSceneHtml(input: {
   pendingCount: number
   rivals: readonly CmaBandRival[]
   subject?: CmaBandSubject | null
-}): string {
+  docLinks?: TrackedDocLinkCtx | null
+  /** The recommended list, which the chapter title names. */
+  recommendedList?: number | null
+  /** The day this document was prepared, for the counts' source line. */
+  asOfIso?: string | null
+}
+
+/** "Who you would compete with at $389,000" — the chapter title. */
+export function competitionHeading(recommendedList: number | null | undefined): string {
+  return recommendedList != null && recommendedList > 0
+    ? `Who you would compete with at ${usd(recommendedList)}`
+    : 'Who you would compete with at this price'
+}
+
+function competitionBody(input: BandRivalsInput): string {
   const actives = input.rivals.filter((r) => r.status === 'Active')
   const pendings = input.rivals.filter((r) => r.status === 'Pending')
-  const rows = (list: readonly CmaBandRival[]) => list.map((r) => rivalRow(r, input.subject)).join('')
-  const headline =
-    actives.length > 0
-      ? `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}`
-      : `Who you are competing with at this price`
+  const cards = (list: readonly CmaBandRival[]) =>
+    list.map((r) => rivalCard(r, input.subject, input.docLinks, input.city)).join('')
+  const sentence = competitionSentence({
+    lo: input.lo,
+    hi: input.hi,
+    activeCount: input.activeCount,
+    pendingCount: input.pendingCount,
+    shown: actives.length + pendings.length,
+  })
+  const cutLine = competitorCutLine(input.rivals)
+  return `<p>${esc(sentence)}</p>
+  ${cutLine ? `<p>${esc(cutLine)}</p>` : ''}
+  <p class="small">${esc(competitionSourceLine(input))}</p>
+  ${actives.length ? `<h3 class="subhead">For sale now</h3><div class="rival-grid">${cards(actives)}</div>` : ''}
+  ${pendings.length ? `<h3 class="subhead">Under contract</h3><div class="rival-grid">${cards(pendings)}</div>` : ''}`
+}
+
+/**
+ * The §0 trace for the two counts in the chapter's first sentence.
+ *
+ * "34 homes are for sale between $356,000 and $435,000. 13 are under contract."
+ * sat on the page with no geography, no status definition and no as-of date —
+ * three things a reader needs before they can check it.
+ */
+export function competitionSourceLine(
+  input: Pick<BandRivalsInput, 'city' | 'lo' | 'hi' | 'asOfIso'>,
+): string {
+  // formatDate, not a UTC slice. The slice takes the UTC day and every other
+  // date on the document takes the Pacific one, which is how the cover came to
+  // print two different dates for one timestamp (CLAUDE.md §0).
+  const formatted = input.asOfIso ? formatDate(input.asOfIso) : ''
+  const when = formatted && formatted !== '—' ? ` as of ${formatted}` : ''
+  return `Homes for sale and under contract in ${input.city} between ${usd(input.lo)} and ${usd(
+    input.hi,
+  )}, from the Oregon Data Share MLS${when}.`
+}
+
+export function renderBandRivalsHtml(input: BandRivalsInput): string {
   return `
-  <section class="sc sc-navy" id="competition">
+  <h2 class="section">${esc(competitionHeading(input.recommendedList ?? input.subject?.recommendedList))}</h2>
+  ${competitionBody(input)}`
+}
+
+export function renderBandRivalsSceneHtml(input: BandRivalsInput): string {
+  return `
+  <section class="sc sc-cream pack" id="competition">
     <div class="in wide">
       <div class="kick r">At this price</div>
-      <h2 class="h r">${esc(headline)}</h2>
-      <p class="lede r">${int(input.pendingCount)} under contract in the same band.</p>
-      ${input.subject ? `<div class="rival-list r">${subjectRow(input.subject)}</div>` : ''}
-      ${actives.length ? `<h3 class="sub r">For sale now</h3><div class="rival-list r">${rows(actives)}</div>` : ''}
-      ${pendings.length ? `<h3 class="sub r">Under contract</h3><div class="rival-list r">${rows(pendings)}</div>` : ''}
+      <h2 class="h r">${esc(competitionHeading(input.recommendedList ?? input.subject?.recommendedList))}</h2>
+      <div class="r">${competitionBody(input)}</div>
     </div>
   </section>`
 }

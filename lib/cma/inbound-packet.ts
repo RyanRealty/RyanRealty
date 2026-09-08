@@ -64,10 +64,26 @@ export function inboundValuationPreview(address: string | null): string {
   return `${named}: the number, then the sales that set it.`
 }
 
-export function inboundImmersiveHeroKick(streetAddress: string | null, generatedAtIso: string): string {
+/**
+ * The cover eyebrow. ONE DATE ON THE COVER, and it is the byline's.
+ *
+ * This printed a raw ISO slice — 2026-09-08 — five lines above a byline
+ * reading Sep 7, 2026. Both came from the same timestamp: the slice takes the
+ * UTC day and the byline takes the Pacific one, so a document prepared after
+ * 5pm Central Oregon time carried two different dates on its own cover
+ * (CLAUDE.md §0: a date is a number). Rather than print the same day twice in
+ * two registers, the eyebrow names the document and the house and stops; the
+ * byline under the title carries the date, formatted once.
+ *
+ * `generatedAtIso` stays on the signature so every caller keeps compiling and
+ * so the choice is visible here rather than at the call site.
+ */
+export function inboundImmersiveHeroKick(
+  streetAddress: string | null,
+  _generatedAtIso?: string,
+): string {
   const named = trim(streetAddress) ?? 'this home'
-  const day = generatedAtIso.slice(0, 10)
-  return `Price opinion · ${named} · ${day}`
+  return `Price opinion · ${named}`
 }
 
 export function inboundImmersiveTitle(streetAddress: string | null): string {

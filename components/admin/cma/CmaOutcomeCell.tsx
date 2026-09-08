@@ -12,6 +12,12 @@
  * `var(--a-danger)` is reserved for a bounce or an unsubscribe — the exception
  * accent, never decoration (design canon §3).
  *
+ * "Visited" now means the document OR anything it linked to: every address,
+ * place and CTA a CMA prints carries `utm_campaign=<slug>` through
+ * `trackedDocLink`, so a tap on a comp belongs to that document. When there are
+ * such pages the cell names them — which comps the seller opened is the part a
+ * broker acts on, and a bare "visited 4" does not say it.
+ *
  * Server component: no state, no data access. The page passes an already-read
  * CmaOutcome, so nothing here can move a number.
  */
@@ -35,6 +41,22 @@ type Stage = {
   count: number | null
   /** True once this stage has been reached. */
   done: boolean
+  /** Extra the stamp should say — the pages a visit actually landed on. */
+  detail?: string | null
+}
+
+/**
+ * A path as a broker reads it. The last segment of a listing URL is the
+ * address, which is the whole point of showing this: "they opened 1299 Ogden",
+ * not "they opened /homes-for-sale/bend/newport-gardens/1299-ogden-220225388".
+ */
+export function pageLabel(path: string): string {
+  const segments = path.split('/').filter(Boolean)
+  const last = segments[segments.length - 1] ?? ''
+  if (!last) return 'Home'
+  // Canonical listing segment: "1299-ogden-220225388". Drop the MLS tail.
+  const address = last.replace(/-(\d{6,})$/, '')
+  return address.replace(/-/g, ' ')
 }
 
 function stagesOf(o: CmaOutcome): Stage[] {
@@ -42,7 +64,17 @@ function stagesOf(o: CmaOutcome): Stage[] {
     { key: 'sent', label: 'sent', at: o.sentAt, count: null, done: o.sentAt != null },
     { key: 'opened', label: 'opened', at: o.firstOpenAt, count: o.opens, done: o.opens > 0 },
     { key: 'clicked', label: 'clicked', at: o.firstClickAt, count: o.clicks, done: o.clicks > 0 },
-    { key: 'visited', label: 'visited', at: o.firstVisitAt, count: o.visits, done: o.visits > 0 },
+    {
+      key: 'visited',
+      label: 'visited',
+      at: o.firstVisitAt,
+      count: o.visits,
+      done: o.visits > 0,
+      detail:
+        o.visitedPages.count > 0
+          ? `opened ${o.visitedPages.recent.map(pageLabel).join(', ')}`
+          : null,
+    },
     { key: 'replied', label: 'replied', at: o.repliedAt, count: null, done: o.repliedAt != null },
   ]
 }
@@ -52,7 +84,8 @@ function stampFor(s: Stage): string {
   if (!s.done) return `Not ${s.label} yet`
   const when = s.at ? formatDateTime(s.at) : 'time not recorded'
   const times = s.count != null && s.count > 1 ? ` · ${s.count}×` : ''
-  return `First ${s.label} ${when}${times}`
+  const detail = s.detail ? ` · ${s.detail}` : ''
+  return `First ${s.label} ${when}${times}${detail}`
 }
 
 /** Bounce and unsubscribe are the only things that turn this cell red. */
@@ -106,6 +139,11 @@ export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps
             </span>
           </div>
         ))}
+        {outcome.visitedPages.count > 0 ? (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Opened from the document: {outcome.visitedPages.recent.map(pageLabel).join(' · ')}
+          </p>
+        ) : null}
         {exceptions.length > 0 ? (
           <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
             This send {exceptions.join(' and ')}. Nothing more will reach this address until it is
@@ -151,6 +189,16 @@ export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps
           </span>
         </span>
       ))}
+      {outcome.visitedPages.count > 0 ? (
+        <span
+          title={`Opened from the document: ${outcome.visitedPages.recent.map(pageLabel).join(' · ')}`}
+          style={{ color: 'var(--a-text-2)' }}
+        >
+          {' · '}
+          {pageLabel(outcome.visitedPages.recent[0] ?? '')}
+          {outcome.visitedPages.recent.length > 1 ? ` +${outcome.visitedPages.recent.length - 1}` : ''}
+        </span>
+      ) : null}
       {exceptions.map((e) => (
         <span key={e} style={{ color: 'var(--a-danger)' }}>
           {' · '}

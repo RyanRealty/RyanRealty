@@ -74,20 +74,30 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
         // Storage-backed refs so the thread re-renders the sent media forever
         // (signed URLs above are only for Twilio's fetch window).
         ...(storedMedia.length ? { media: storedMedia } : {}),
+        // Who asked for this (SITE-09) — the stamp lib/crm/response-clock.ts
+        // reads to tell a broker's own text from an automated one.
+        purpose: req.purpose,
+        initiator: req.initiator.kind,
+        ...(req.initiator.source ? { initiatorSource: req.initiator.source } : {}),
       },
       broker: slug, source: req.timelineSource ?? 'app', dedupe_key: `twilio:${sent.sid}:p${req.personId}`,
     })
-    void import('@/lib/crm/first-broker-action')
-      .then(({ stampFirstBrokerActionIfEmpty }) =>
-        stampFirstBrokerActionIfEmpty(sb, req.personId, { kind: 'sms_out', broker: slug }),
-      )
-      .catch(() => {})
+    // Only a human's send is the broker's first action (SITE-09). An automated
+    // text used to set the stamp and start the SLA clock at zero.
+    if (req.initiator.kind === 'broker') {
+      void import('@/lib/crm/first-broker-action')
+        .then(({ stampFirstBrokerActionIfEmpty }) =>
+          stampFirstBrokerActionIfEmpty(sb, req.personId, { kind: 'sms_out', broker: slug }),
+        )
+        .catch(() => {})
+    }
     // Shadow-write into the conversation model (RC1). Non-fatal: the timeline
     // is still the source of truth until the inbox read path flips.
     try {
       await recordConversationMessage({
         sb, direction: 'out', channel: storedMedia.length ? 'mms' : 'sms', body: mergedBody,
         providerSid: sent.sid, sentBy: slug, primaryPersonId: req.personId, assignedBroker: slug,
+        initiatorKind: req.initiator.kind,
         media: storedMedia.length ? storedMedia : [],
         participants: [{ personId: req.personId, address: to, displayName: person.name ?? null }],
       })

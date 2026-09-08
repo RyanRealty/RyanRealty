@@ -305,6 +305,29 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
       }
     }
 
+    // ─── SITE-09: acknowledge the SUBMIT, never the report ──────────────────
+    // The CMA above still carries notifyLead:false — the owner never asked us
+    // for a valuation — but leaving the form with no reply at all is what this
+    // node is closing. Three sentences, no verdict, no figure. A system send
+    // (CLAUDE.md §1, Matt 2026-09-07), awaited so the serverless freeze cannot
+    // drop it, and non-blocking so it can never fail the submit.
+    if (fubPersonId && !hardStopped) {
+      try {
+        const { sendExpiredAcknowledgment } = await import('@/lib/comms/site-confirmations')
+        const ack = await sendExpiredAcknowledgment({
+          personId: fubPersonId,
+          leadEmail: email,
+          firstName: firstName ?? null,
+          address: address || null,
+        })
+        console.log(
+          `[response-clock] expired acknowledgment person ${fubPersonId}: ${ack.ok ? 'sent' : 'not sent'} (${ack.via}${ack.error ? ` — ${ack.error}` : ''})`,
+        )
+      } catch (e) {
+        console.warn('[response-clock] expired acknowledgment threw (non-blocking):', e)
+      }
+    }
+
     // ─── 5-min hot-lead call task (native crm_tasks) for ALL expired leads ──
     if (fubPersonId) {
       const who = [firstName, lastName].filter(Boolean).join(' ') || email

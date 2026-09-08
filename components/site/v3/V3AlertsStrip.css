@@ -1,0 +1,458 @@
+/* ===========================================================================
+   V3 ALERTS STRIP (site queue SITE-04)
+   Styles for V3AlertsStrip.client.tsx and nothing else. Every value resolves
+   from ./tokens.css, which the component imports and whose scope both mounts
+   open on themselves with V3_ROOT_CLASS. No raw color, no raw duration, no
+   elevation shadow.
+
+   Two mounts. The CALLOUT is a broadsheet subscription notice: the figure is
+   the headline, the sentence beside it is the claim, the field and the one
+   button sit to its right at a wide window and under it on a phone. The
+   STICKY REPEAT is the one navy strip on the page, fixed to the bottom edge,
+   one line, one field, one outline button, one close.
+   =========================================================================== */
+
+/* The callout ------------------------------------------------------------- */
+
+/* Compound guard (`.v3.v3-alerts`) for the reason every pattern stylesheet
+   carries one: see V3Quiet.css. */
+.v3.v3-alerts {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+  /* The chrome is sticky: a jump to #alerts lands under the mast otherwise. */
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* THE LOOK (Broadside): a section following content opens on the navy rule. */
+* + .v3.v3-alerts {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-alerts__grid {
+  display: grid;
+  gap: var(--v3-space-xl);
+}
+
+@media (min-width: 64rem) {
+  .v3-alerts__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
+    column-gap: var(--v3-space-3xl);
+    align-items: start;
+  }
+
+  /* A hairline between the claim and the ask: two jobs, one section. */
+  .v3-alerts__ask {
+    padding-left: var(--v3-space-xl);
+    border-left: var(--v3-rule-hairline);
+  }
+
+  /* After a send the confirmation carries its own navy rule (below), and two
+     parallel rules 36px apart is a second look; the hairline steps aside. */
+  .v3-alerts__ask--sent {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  /* Wide enough for the numeral to be the door; the ghost link is the phone's. */
+  .v3-alerts--figure .v3-alerts__browse {
+    display: none;
+  }
+}
+
+.v3-alerts__lead {
+  display: grid;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+}
+
+.v3.v3-alerts .v3-alerts__claim {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  text-wrap: balance;
+}
+
+/* The figure inside the claim: the register's numeral face at the lead size,
+   set on the same baseline as the sentence it belongs to. Tabular, so a
+   re-render with a new count does not reflow the line. */
+.v3-alerts__num {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num-lead);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+}
+
+/* The figure as a door (the Instrument idiom): nothing at rest, so the claim
+   is not an underlined number; the affordance arrives on hover and on focus,
+   with the display-size offset the token layer carries for a large figure. */
+.v3.v3-alerts .v3-alerts__num--door {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--v3-radius-sm);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-alerts .v3-alerts__num--door:hover,
+.v3.v3-alerts .v3-alerts__num--door:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset-display);
+}
+
+/* The line that makes the figure and the offer agree: which scope the alert
+   really sends. Body size, muted, held to the reading measure. */
+.v3-alerts__scope {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* The same door as the numeral, as a tap target under the claim. Auto width:
+   the section's full-width button rule is for the one ask, not for a link. */
+.v3-alerts__browse {
+  margin: 0;
+}
+
+.v3.v3-alerts .v3-alerts__browse .v3-btn {
+  width: auto;
+}
+
+.v3-alerts__ask {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.v3-alerts__promise {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3-alerts__form {
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.v3-alerts__row {
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+@media (min-width: 40rem) {
+  .v3-alerts__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+}
+
+.v3-alerts__field {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.v3-alerts__label {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* One control style, the same box V3Sheet and V3Ask draw. 44px target. */
+.v3-alerts__control {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-alerts__control::placeholder {
+  color: var(--v3-ink-muted);
+}
+
+.v3-alerts__control:hover {
+  border-color: var(--v3-ink-muted);
+}
+
+.v3-alerts__control:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+  border-color: var(--v3-navy);
+}
+
+/* Two colors: an invalid control states itself with weight, not a hue. */
+.v3-alerts__control[aria-invalid='true'] {
+  border-width: 2px;
+  border-color: var(--v3-navy);
+}
+
+/* The one button fills the row on a phone, sits beside the field above it. */
+.v3.v3-alerts .v3-btn {
+  width: 100%;
+}
+
+@media (min-width: 40rem) {
+  .v3.v3-alerts .v3-btn {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+.v3-alerts__problem {
+  margin: 0;
+  padding-left: var(--v3-space-xs);
+  border-left: 2px solid var(--v3-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+/* After a send: the confirmation carries the same navy rule the Sheet's echo
+   uses for carried context, because that is what it is. */
+.v3-alerts__sent {
+  display: grid;
+  gap: var(--v3-space-xs);
+  padding-left: var(--v3-space-sm);
+  border-left: 3px solid var(--v3-navy);
+  animation: v3-alerts-carry var(--v3-dur-enter) var(--v3-ease-out) both;
+}
+
+.v3-alerts__sent-heading {
+  margin: 0;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+  text-wrap: balance;
+}
+
+.v3-alerts__sent-body {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* The honeypot: off the screen, never off the page. Same rule as V3Sheet's. */
+.v3-alerts__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes v3-alerts-carry {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--v3-travel) * -0.6));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The sticky repeat ------------------------------------------------------- */
+
+/* Fixed to the bottom edge, under the chrome (100) and every overlay, over
+   the page. Off screen it is also invisible and inert, so it is never in the
+   tab order or the accessibility tree while hidden. The entrance is the one
+   motion this mount spends; under reduced motion the token layer collapses
+   the duration and the strip is simply there. */
+.v3.v3-alerts-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  padding: var(--v3-space-sm) var(--v3-gutter) calc(var(--v3-space-sm) + env(safe-area-inset-bottom, 0px));
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy);
+  border-top: 1px solid var(--v3-ink-on-navy-muted);
+  transform: translateY(100%);
+  visibility: hidden;
+  transition:
+    transform var(--v3-dur-enter) var(--v3-ease-out),
+    visibility 0s linear var(--v3-dur-enter);
+}
+
+.v3.v3-alerts-sticky--on {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform var(--v3-dur-enter) var(--v3-ease-out),
+    visibility 0s;
+}
+
+.v3-alerts-sticky__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'line dismiss'
+    'controls controls';
+  align-items: center;
+  gap: var(--v3-space-xs) var(--v3-space-sm);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+}
+
+@media (min-width: 64rem) {
+  .v3-alerts-sticky__inner {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: 'line controls dismiss';
+    column-gap: var(--v3-space-lg);
+  }
+}
+
+.v3-alerts-sticky__text {
+  grid-area: line;
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.v3-alerts-sticky__line {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-on-navy);
+  text-wrap: pretty;
+}
+
+/* The place name stays whole ("Awbrey Butte" never breaks across lines). */
+.v3-alerts-sticky__place {
+  white-space: nowrap;
+}
+
+/* The strip's own disclosure: one short muted line, so the repeat promises
+   nothing the callout does not. AA muted ink on navy (cream-60). */
+.v3-alerts-sticky__note {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-on-navy-muted);
+}
+
+.v3-alerts-sticky__num {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+  vertical-align: -0.08em;
+}
+
+.v3-alerts-sticky__controls {
+  grid-area: controls;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--v3-space-xs);
+  align-items: center;
+}
+
+@media (min-width: 64rem) {
+  .v3-alerts-sticky__controls {
+    grid-template-columns: 18rem auto;
+  }
+}
+
+/* The field on navy: cream box, navy ink, no edge (the strip is the edge). */
+.v3-alerts-sticky__control {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0.6rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-alerts-sticky__control::placeholder {
+  color: var(--v3-ink-muted);
+}
+
+.v3-alerts-sticky__control:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3-alerts-sticky__control[aria-invalid='true'] {
+  border-color: var(--v3-ink-on-navy);
+  border-width: 2px;
+}
+
+/* The one button on navy keeps its outline form; the strip is the only
+   filled thing here, so the page's one filled primary stays the page's. */
+.v3.v3-alerts-sticky .v3-btn {
+  white-space: nowrap;
+}
+
+.v3-alerts-sticky__dismiss {
+  grid-area: dismiss;
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  border-radius: var(--v3-radius-control);
+  background: transparent;
+  color: var(--v3-ink-on-navy);
+  cursor: pointer;
+}
+
+.v3-alerts-sticky__dismiss svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.v3-alerts-sticky__dismiss:hover {
+  color: var(--v3-white);
+}
+
+.v3-alerts-sticky__dismiss:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* The name a screen reader gets for the strip's field; the line above it is
+   the visible name for everyone else. */
+.v3-alerts-sticky__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

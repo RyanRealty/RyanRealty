@@ -1,0 +1,607 @@
+/**
+ * One listing's asking price over time, drawn as a stepped line.
+ *
+ * docs/plans/CMA_REIMAGINED_2026-09-07.md, Delta 1: "Pricing history is a
+ * primitive. ONE renderer, used for the subject, every sold sale, every unsold
+ * peer, and every competitor." The professional-practice brief (§3) found that
+ * no product in the category draws this — Redfin, Zillow, RPR, Cloud CMA,
+ * Altos and HouseCanary all present a single listing's history as a table of
+ * dated rows. It is the differentiator, not catch-up.
+ *
+ * WHAT IT MAY DRAW, AND WHAT IT MAY NOT.
+ *
+ * The line is built from what `render_args` actually carries for that listing,
+ * and the four sources carry different amounts:
+ *
+ *   the seller's own listing  `expiredAudit.finalCycle` — the opening ask, every
+ *                             DATED cut, the day it came off. The full story.
+ *   a competitor / an unsold  `originalListPrice` + `listPrice` + `onMarketDate`
+ *   peer                      — both asks and the day it went on, but no date
+ *                             for the change between them.
+ *   a closed sale             `listPrice` + `closePrice` + `closeDate` +
+ *                             `domTotal` — the ask it was under when it went
+ *                             under contract, and what it closed at.
+ *
+ * Where a change to the ask is recorded with no date, the line does NOT invent
+ * one: it runs flat at the opening ask and drops to the later ask as a DASHED
+ * segment at the end of the period, which is the drawing convention for "this
+ * happened, the record does not say when". §0 — a date from convention is a
+ * fabrication (CLAUDE.md §0, the invented-timelines rule), and the same rule is
+ * why `buildFinalCycle` carries `cutsDated` at all.
+ *
+ * Reading rules (.claude/skills/dataviz/SKILL.md): navy on cream, thin marks,
+ * direct labels only where the story is. The opening ask and the outcome always
+ * carry a number; the cuts in between carry one only while there are few enough
+ * that two labels cannot collide. Print cannot hover, so no value the reader
+ * needs is hidden behind an interaction.
+ */
+
+import { escapeHtml, int } from '@/lib/cma/render-blocks'
+
+const esc = escapeHtml
+
+const INK = '#102742'
+const MUTED = 'rgba(16,39,66,0.55)'
+const EDGE = 'rgba(16,39,66,0.22)'
+
+/** One dated change to the ask. `price` is the ask AFTER the change. */
+export type PricePathCut = { date: string; price: number }
+
+export type PricePathOutcome = 'sold' | 'off-market' | 'for-sale' | 'under-contract'
+
+/**
+ * One listing's price path, in the shape every builder below produces and the
+ * one drawing consumes. Nothing here is computed from a statistic; every field
+ * is a recorded figure off `render_args`.
+ */
+export type PricePath = {
+  /** YYYY-MM-DD the period opened. */
+  startDate: string
+  /** The ask it opened at. */
+  startPrice: number
+  /** Every DATED change to the ask, oldest first. */
+  cuts: PricePathCut[]
+  /**
+   * A change to the ask that the record holds with no date — drawn dashed at
+   * the end of the period rather than placed on a day nobody recorded.
+   */
+  undatedCutTo: number | null
+  /** YYYY-MM-DD it closed, came off, or (for a live listing) today. */
+  endDate: string
+  /** What it closed at. Null unless it sold. */
+  closePrice: number | null
+  outcome: PricePathOutcome
+  /** Days the period ran, or the days it waited for an offer. See `daysMeasure`. */
+  days: number | null
+  /**
+   * WHAT `days` COUNTS. A closed sale's row carries two day figures — the days
+   * it waited for an accepted offer (`days_to_pending`) and the days from list
+   * to close (`domTotal`) — and the document printed one on the sale card and
+   * the other, unlabelled, at the end of this line: "1 day to offer" forty
+   * pixels above "sold $457K · 25 days" for one sale (CLAUDE.md §7). One
+   * measure per line, and the label says which one it is.
+   */
+  daysMeasure: 'offer' | 'listed-to-closed' | 'on-market'
+  /** Read aloud, and the chart's own title. */
+  label: string
+}
+
+const OUTCOME_WORD: Record<PricePathOutcome, string> = {
+  sold: 'sold',
+  'off-market': 'came off',
+  'for-sale': 'for sale',
+  'under-contract': 'under contract',
+}
+
+function day(value: string | null | undefined): string | null {
+  const raw = String(value ?? '').trim()
+  if (!raw) return null
+  const d = raw.slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null
+}
+
+function utc(d: string): number {
+  return Date.parse(`${d}T00:00:00.000Z`)
+}
+
+function price(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null
+}
+
+function plusDays(d: string, days: number): string {
+  return new Date(utc(d) + days * 86_400_000).toISOString().slice(0, 10)
+}
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+/** $465K. Thousands, because a price path is read at a glance, not audited. */
+function shortUsd(n: number): string {
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000
+    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(2)}M`
+  }
+  return `$${Math.round(n / 1000)}K`
+}
+
+function monthDay(iso: string): string {
+  const d = new Date(`${iso}T12:00:00.000Z`)
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+// ── builders, one per shape `render_args` carries ───────────────────────────
+
+/**
+ * The seller's own failed listing, from the build contract. The only source
+ * that carries DATED cuts, which is why it is the only line that can step in
+ * the middle.
+ */
+export function pricePathFromFinalCycle(cycle: {
+  listDate: string | null
+  initialAsk: number | null
+  cuts: ReadonlyArray<{ date: string | null; ask: number }>
+  cutsDated: boolean
+  finalAsk: number | null
+  offMarketDate: string | null
+  status: string | null
+  days: number | null
+} | null | undefined, label: string): PricePath | null {
+  if (!cycle) return null
+  const startDate = day(cycle.listDate)
+  const startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
+  if (!startDate || startPrice == null) return null
+  const cuts: PricePathCut[] = cycle.cutsDated
+    ? cycle.cuts
+        .map((c) => ({ date: day(c.date), price: price(c.ask) }))
+        .filter((c): c is PricePathCut => c.date != null && c.price != null)
+    : []
+  const finalAsk = price(cycle.finalAsk)
+  const undatedCutTo =
+    !cycle.cutsDated && finalAsk != null && finalAsk !== startPrice ? finalAsk : null
+  const endDate =
+    day(cycle.offMarketDate) ??
+    (cycle.days != null && cycle.days >= 0 ? plusDays(startDate, cycle.days) : today())
+  return {
+    startDate,
+    startPrice,
+    cuts,
+    undatedCutTo,
+    endDate,
+    closePrice: null,
+    outcome: 'off-market',
+    days: cycle.days,
+    daysMeasure: 'on-market',
+    label,
+  }
+}
+
+/**
+ * A closed sale, as `render_args.comps` carries it.
+ *
+ * The row holds the ask it was under when it went under contract and what it
+ * closed at, not the ask it opened on — the build writes `listPrice`, and no
+ * original ask or price event reaches the renderer for a comparable sale. So
+ * the line runs flat at that ask and lands on the close, and the chapter says
+ * so rather than implying the ask never moved.
+ *
+ * The start of the period is the close date less the days it ran, which is
+ * arithmetic on two recorded figures, the same derivation `offMarketFromDays`
+ * already makes for the subject.
+ */
+export function pricePathFromSale(sale: {
+  address: string
+  listPrice?: number | null
+  closePrice?: number | null
+  closeDate?: string | null
+  domTotal?: number | null
+  daysToOffer?: number | null
+}): PricePath | null {
+  const closeDate = day(sale.closeDate)
+  const closePrice = price(sale.closePrice)
+  const ask = price(sale.listPrice) ?? closePrice
+  if (!closeDate || closePrice == null || ask == null) return null
+  const ran = sale.domTotal != null && sale.domTotal > 0 ? Math.round(sale.domTotal) : null
+  const startDate = plusDays(closeDate, -(ran ?? 30))
+  // ONE measure per sale, and it is the one the grid already labels: days to
+  // an accepted offer. The line still spans the listing period, and its two
+  // date labels say so; the end label names an event, and says which event it
+  // is naming. When the row carries no days-to-offer the line falls back to
+  // the period it drew and labels itself "listed to closed".
+  const toOffer =
+    sale.daysToOffer != null && Number.isFinite(sale.daysToOffer) && sale.daysToOffer >= 0
+      ? Math.round(sale.daysToOffer)
+      : null
+  return {
+    startDate,
+    startPrice: ask,
+    cuts: [],
+    undatedCutTo: null,
+    endDate: closeDate,
+    closePrice,
+    outcome: 'sold',
+    days: toOffer ?? ran,
+    daysMeasure: toOffer != null ? 'offer' : 'listed-to-closed',
+    label: sale.address,
+  }
+}
+
+/**
+ * A listing still on the market, or one that came off without selling — a
+ * competitor or an unsold peer. Both asks are on the row; the day the ask
+ * changed is not, so the drop is dashed.
+ */
+export function pricePathFromListing(listing: {
+  address: string
+  listPrice?: number | null
+  originalListPrice?: number | null
+  onMarketDate?: string | null
+  daysOnMarket?: number | null
+  status?: string | null
+}): PricePath | null {
+  const startDate = day(listing.onMarketDate)
+  const ask = price(listing.listPrice)
+  if (!startDate || ask == null) return null
+  const original = price(listing.originalListPrice) ?? ask
+  const status = (listing.status ?? '').trim().toLowerCase()
+  const outcome: PricePathOutcome = /^pending|contingent|under/.test(status)
+    ? 'under-contract'
+    : /^(expired|withdrawn|cancell?ed)/.test(status)
+      ? 'off-market'
+      : 'for-sale'
+  const days = listing.daysOnMarket != null && listing.daysOnMarket >= 0 ? Math.round(listing.daysOnMarket) : null
+  const endDate = days != null ? plusDays(startDate, days) : today()
+  return {
+    startDate,
+    startPrice: original,
+    cuts: [],
+    undatedCutTo: original !== ask ? ask : null,
+    endDate,
+    closePrice: null,
+    outcome,
+    days,
+    daysMeasure: 'on-market',
+    label: listing.address,
+  }
+}
+
+/**
+ * The dated events behind the drawing, in order, as JSON for the interactive
+ * layer. Delta 2: "Tap the price path to expand the full history as a dated
+ * list." The list is BUILT FROM THESE — the script never derives a date, a
+ * price, or an event that is not already on the row.
+ */
+export function pricePathEventsJson(path: PricePath): string {
+  const rows: Array<{ d: string; p: number; k: string }> = [
+    { d: path.startDate, p: path.startPrice, k: 'Asked' },
+    ...path.cuts.map((c) => ({ d: c.date, p: c.price, k: 'Changed to' })),
+  ]
+  if (path.undatedCutTo != null) rows.push({ d: '', p: path.undatedCutTo, k: 'Later asked' })
+  const end = path.closePrice
+  if (end != null) rows.push({ d: path.endDate, p: end, k: 'Sold' })
+  else if (path.outcome === 'off-market') rows.push({ d: path.endDate, p: finalAskOf(path), k: 'Came off at' })
+  return JSON.stringify(rows)
+}
+
+/** The final ask the path ends on, whatever route it took to get there. */
+export function finalAskOf(path: PricePath): number {
+  if (path.undatedCutTo != null) return path.undatedCutTo
+  return path.cuts.length > 0 ? path.cuts[path.cuts.length - 1]!.price : path.startPrice
+}
+
+/** How many times the ask came down over the period, as the record holds it. */
+export function cutCountOf(path: PricePath): number {
+  return path.cuts.filter((c, i) => c.price < (i === 0 ? path.startPrice : path.cuts[i - 1]!.price)).length +
+    (path.undatedCutTo != null && path.undatedCutTo < path.startPrice ? 1 : 0)
+}
+
+// ── the drawing ─────────────────────────────────────────────────────────────
+
+type Geometry = {
+  t0: number
+  t1: number
+  lo: number
+  hi: number
+  /** Every vertex of the ask line, in order, as [time, price]. */
+  steps: Array<{ t: number; price: number }>
+}
+
+function geometry(path: PricePath): Geometry | null {
+  const t0 = utc(path.startDate)
+  const t1raw = utc(path.endDate)
+  if (!Number.isFinite(t0) || !Number.isFinite(t1raw)) return null
+  const t1 = Math.max(t1raw, t0 + 86_400_000)
+  const steps = [
+    { t: t0, price: path.startPrice },
+    ...path.cuts
+      .map((c) => ({ t: utc(c.date), price: c.price }))
+      .filter((s) => Number.isFinite(s.t) && s.t >= t0 && s.t <= t1)
+      .sort((a, b) => a.t - b.t),
+  ]
+  const values = [
+    ...steps.map((s) => s.price),
+    ...(path.undatedCutTo != null ? [path.undatedCutTo] : []),
+    ...(path.closePrice != null ? [path.closePrice] : []),
+  ]
+  // A SHARED PROPORTIONAL DOMAIN, centred on the opening ask.
+  //
+  // Scaling each line to its own min and max made every drop the same height:
+  // a $25,000 cut and a $90,000 cut on two cards beside each other both fell
+  // about fifty pixels, so the vertical axis carried no information at all.
+  // The domain is now the opening ask plus and minus the largest move on this
+  // listing, with a floor of 12 percent — so a 2 percent cut draws a sixth of
+  // what a 12 percent cut draws, on every card in the document.
+  const start = path.startPrice
+  const move = Math.max(...values.map((v) => Math.abs(v - start)))
+  const half = Math.max(move * 1.18, start * 0.12)
+  return { t0, t1, lo: start - half, hi: start + half, steps }
+}
+
+export type PricePathLayout = {
+  width: number
+  height: number
+  fontSize: number
+  /**
+   * A slot whose own card already prints the ask today and the days on market
+   * in type large enough to read. The drawing carries the opening ask and the
+   * shape of the path and drops every label that would repeat the card — 320
+   * units of line with four labels inside 130px of card renders at six pixels,
+   * which is a decoration, not a figure.
+   */
+  minimal?: boolean
+  /** No type at all: the shape of the path, for a cell too narrow for a word. */
+  bare?: boolean
+}
+
+/** Reading width and paper. Wide enough for two labels and a status word. */
+export const PRICE_PATH_WIDE: PricePathLayout = { width: 560, height: 96, fontSize: 11.5 }
+/** A phone card. Drawn to fit — never the wide one inside a pan box. */
+export const PRICE_PATH_PHONE: PricePathLayout = { width: 320, height: 96, fontSize: 11 }
+/** A card in a grid: one label, the line, the drop. */
+export const PRICE_PATH_CARD: PricePathLayout = { width: 220, height: 46, fontSize: 11, minimal: true }
+/**
+ * A CELL in the adjustment grid: the shape of the path and nothing else.
+ *
+ * Every price path used to be drawn twice — once inside the sale card and
+ * again in a stacked "How each of these sales was priced" block under the grid
+ * (tasteReview item 3). One drawing, in the column it belongs to; a 93px cell
+ * holds a line and no type, so this layout carries no labels at all and the
+ * dated history lives on the phone card where there is room to read it.
+ */
+export const PRICE_PATH_SPARK: PricePathLayout = {
+  width: 120,
+  height: 34,
+  fontSize: 9,
+  minimal: true,
+  bare: true,
+}
+
+/**
+ * The whole primitive. One listing, one line, both layouts from one geometry
+ * so the phone drawing and the wide drawing can never disagree about where the
+ * ask sat.
+ *
+ * `id` stamps the cut marks so the interactive layer can name a cut on tap
+ * without re-deriving anything the drawing already knows.
+ */
+export function priceHistoryLineSvg(
+  path: PricePath,
+  layout: PricePathLayout = PRICE_PATH_WIDE,
+  id?: string,
+): string {
+  const g = geometry(path)
+  if (!g) return ''
+  const { width: W, height: H, fontSize: fs } = layout
+  const minimal = layout.minimal === true
+  // The opening-ask label sits above the first vertex, so the top of the band
+  // has to leave a line of type above it in EVERY layout — a minimal drawing
+  // that pulled the band up to 13 put "$435K" a pixel outside its own viewBox.
+  const top = layout.bare === true ? 6 : 20
+  const bottom = minimal ? H - 8 : H - 20
+  const left = 2
+  // The end label ("sold $457K · 25 days") owns the right margin. A long one
+  // ("under contract $419K · 326 days" on a 320-unit phone drawing) needs more
+  // margin than the drawing can give it, so the reserve is capped at half the
+  // width and the LABEL shrinks to fit inside what it got. Capping the reserve
+  // alone is what let four competitor labels run past their own viewBox and
+  // clip — the look-pass caught it with getBBox before it reached a reader.
+  const endText = minimal ? '' : priceHistoryEndLabel(path)
+  const need = endText.length * fs * 0.56 + 10
+  const reserve = minimal ? 6 : Math.min(Math.max(need, 60), W * 0.6)
+  // Nine is the floor. Eight rendered "came off $1.65M · 174 days on market"
+  // at seven pixels beside fifteen-pixel body type, the smallest text on the
+  // document.
+  const endFs = need > reserve ? Math.max(fs * (reserve / need), 9) : fs
+  const right = W - reserve
+  const x = (t: number) => left + ((right - left) * (t - g.t0)) / Math.max(g.t1 - g.t0, 1)
+  const y = (v: number) => bottom - ((bottom - top) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
+
+  // The stepped ask: horizontal at each ask, vertical at each dated cut.
+  const parts: string[] = []
+  for (let i = 0; i < g.steps.length; i++) {
+    const s = g.steps[i]!
+    const nextT = i + 1 < g.steps.length ? g.steps[i + 1]!.t : g.t1
+    parts.push(`${i === 0 ? 'M' : 'L'}${x(s.t).toFixed(1)},${y(s.price).toFixed(1)}`)
+    parts.push(`L${x(nextT).toFixed(1)},${y(s.price).toFixed(1)}`)
+  }
+  const askPath = parts.join(' ')
+  const lastAsk = g.steps[g.steps.length - 1]!.price
+
+  // Dated cuts get a mark. A label only while two of them cannot collide —
+  // the opening ask and the outcome always carry theirs. A cut that ended the
+  // period carries no label of its own either: the end mark right beside it is
+  // already printing that same figure, and two of one number three units apart
+  // reads as a collision.
+  const endValueForLabels = path.closePrice ?? finalAskOf(path)
+  const labelCuts = path.cuts.length <= 2
+  const cutMarks = path.cuts
+    .map((c, i) => {
+      const cx = x(utc(c.date))
+      const cy = y(c.price)
+      // The visible mark is 3.2 units; the TARGET is a transparent circle
+      // around it, because a 6px dot is not a tap (tasteReview item 3).
+      const attrs = `class="pp-cut" data-price="${c.price}" data-date="${esc(c.date)}"${
+        id ? ` data-path="${esc(id)}"` : ''
+      } tabindex="0" role="button" aria-label="${esc(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)}"`
+      const label =
+        labelCuts && c.price !== endValueForLabels
+          ? `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 13).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(shortUsd(c.price))}</text>`
+          : ''
+      return `<g ${attrs}><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="24" fill="transparent"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="${INK}"/></g>${label}`
+    })
+    .join('')
+
+  // A change the record holds with no date. Dashed, at the end of the period,
+  // never placed on a day nobody wrote down.
+  const undated =
+    path.undatedCutTo != null
+      ? `<line x1="${x(g.t1).toFixed(1)}" y1="${y(lastAsk).toFixed(1)}" x2="${x(g.t1).toFixed(1)}" y2="${y(path.undatedCutTo).toFixed(1)}" stroke="${INK}" stroke-width="2" stroke-dasharray="3 3"/>`
+      : ''
+
+  const endValue = path.closePrice ?? path.undatedCutTo ?? lastAsk
+  const endY = y(endValue)
+  const endX = x(g.t1)
+  // A close is a real dated event, so the drop to it is solid.
+  const closeDrop =
+    path.closePrice != null && path.closePrice !== lastAsk
+      ? `<line x1="${endX.toFixed(1)}" y1="${y(lastAsk).toFixed(1)}" x2="${endX.toFixed(1)}" y2="${endY.toFixed(1)}" stroke="${INK}" stroke-width="2"/>`
+      : ''
+
+  const bare = layout.bare === true
+  const openLabel = shortUsd(path.startPrice)
+  const startY = y(path.startPrice)
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" class="price-path" aria-label="${esc(
+    priceHistoryReading(path),
+  )}"${id ? ` data-path="${esc(id)}"` : ''}>
+  <line x1="${left}" y1="${(bottom + 6).toFixed(1)}" x2="${right.toFixed(1)}" y2="${(bottom + 6).toFixed(1)}" stroke="${EDGE}" stroke-width="0.75"/>
+  <path d="${askPath}" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="miter" stroke-linecap="butt"/>
+  ${undated}
+  ${closeDrop}
+  ${cutMarks}
+  <circle cx="${left + 1}" cy="${startY.toFixed(1)}" r="3.2" fill="${INK}"/>
+  ${
+    bare
+      ? ''
+      : `<text x="${left}" y="${(startY - 8).toFixed(1)}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(openLabel)}</text>`
+  }
+  <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="3.2" fill="none" stroke="${INK}" stroke-width="1.6"/>
+  ${
+    minimal
+      ? ''
+      : `<text x="${(endX + 8).toFixed(1)}" y="${(endY + 4).toFixed(1)}" font-size="${endFs.toFixed(
+          2,
+        )}" font-weight="600" fill="${INK}">${esc(endText)}</text>
+  <text x="${left}" y="${(H - 3).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.startDate))}</text>
+  ${
+    // A period whose two ends fall on the same day is not a duration. It
+    // printed "Mar 31" at both ends of a full-width line.
+    monthDay(path.endDate) === monthDay(path.startDate)
+      ? ''
+      : `<text x="${right.toFixed(1)}" y="${(H - 3).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.endDate))}</text>`
+  }`
+  }
+</svg>`
+}
+
+export function priceHistoryLinePhoneSvg(path: PricePath, id?: string): string {
+  return priceHistoryLineSvg(path, PRICE_PATH_PHONE, id)
+}
+
+/** "sold $457K · offer in 25 days" — the mark at the end names its own measure. */
+export function priceHistoryEndLabel(path: PricePath): string {
+  const value = path.closePrice ?? finalAskOf(path)
+  const word = OUTCOME_WORD[path.outcome]
+  return `${word} ${shortUsd(value)}${priceHistoryDaysClause(path, ' · ')}`
+}
+
+/**
+ * The days figure, with the measure said out loud. Never a bare "25 days":
+ * a reader cannot tell days-to-offer from days-on-market, and this document
+ * prints both, for the same sale, on the same screen.
+ */
+export function priceHistoryDaysClause(path: PricePath, lead = ''): string {
+  const d = path.days
+  if (d == null || !(d > 0)) return ''
+  const n = int(d)
+  const unit = d === 1 ? 'day' : 'days'
+  if (path.daysMeasure === 'offer') return `${lead}offer in ${n} ${unit}`
+  if (path.daysMeasure === 'listed-to-closed') return `${lead}listed to closed, ${n} ${unit}`
+  return `${lead}${n} ${unit} on market`
+}
+
+/**
+ * The line in words, for a screen reader and for anything that has to state
+ * the path in prose. Every figure in it is drawn above it.
+ */
+export function priceHistoryReading(path: PricePath): string {
+  const bits: string[] = [`${path.label}: asked ${shortUsd(path.startPrice)} on ${monthDay(path.startDate)}`]
+  for (const c of path.cuts) bits.push(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)
+  if (path.undatedCutTo != null) bits.push(`later asked ${shortUsd(path.undatedCutTo)}, date not recorded`)
+  const value = path.closePrice ?? finalAskOf(path)
+  const end =
+    path.outcome === 'sold'
+      ? `sold ${shortUsd(value)} on ${monthDay(path.endDate)}`
+      : path.outcome === 'off-market'
+        ? `came off ${monthDay(path.endDate)}`
+        : path.outcome === 'under-contract'
+          ? 'now under contract'
+          : 'still for sale'
+  bits.push(end)
+  const days = priceHistoryDaysClause(path)
+  if (days) bits.push(days)
+  return `${bits.join(', ')}.`
+}
+
+/**
+ * Both layouts of one path, wrapped so exactly one is ever visible — the wide
+ * drawing on paper and at reading width, the fitted one below 700px. Nothing
+ * on this document sits in a pan box on a phone (blueprint § The register).
+ */
+export function priceHistoryLineHtml(path: PricePath | null, id?: string): string {
+  if (!path) return ''
+  const wide = priceHistoryLineSvg(path, PRICE_PATH_WIDE, id)
+  if (!wide) return ''
+  const phone = priceHistoryLinePhoneSvg(path, id)
+  return `<div class="pp-wrap"${ppData(path, id)}><div class="pp pp-wide">${wide}</div><div class="pp pp-phone">${phone}</div></div>`
+}
+
+/**
+ * One path drawn once, at the fitted width, for a slot too narrow to carry the
+ * wide drawing at any viewport — a card in a four-up grid, where 560 units of
+ * line inside 260px of card scales the labels to five pixels. Same geometry,
+ * same figures, one layout instead of a pair.
+ */
+/**
+ * ONE cell of the grid: the path's shape, no type, no toggle.
+ *
+ * No `data-events`, deliberately — the interaction layer attaches its
+ * expand-to-dated-list to a `.pp-wrap[data-events]`, and a 44px toggle button
+ * inside a 93px column would be the tallest thing in the table. The dated list
+ * stays on the phone card, which is where a reader on a phone reads this
+ * chapter anyway.
+ */
+export function priceHistorySparkHtml(path: PricePath | null): string {
+  if (!path) return ''
+  const svg = priceHistoryLineSvg(path, PRICE_PATH_SPARK)
+  if (!svg) return ''
+  return `<span class="pp-spark" title="${esc(priceHistoryReading(path))}">${svg}</span>`
+}
+
+export function priceHistoryLineCompactHtml(path: PricePath | null, id?: string): string {
+  if (!path) return ''
+  const svg = priceHistoryLineSvg(path, PRICE_PATH_CARD, id)
+  if (!svg) return ''
+  // The reading stays on the wrapper: the drawing itself drops the labels the
+  // card already prints, so the words are what a screen reader gets.
+  return `<div class="pp-wrap is-compact" title="${esc(priceHistoryReading(path))}"${ppData(path, id)}><div class="pp">${svg}</div></div>`
+}
+
+/** What the interactive layer reads off a drawn path. Inert without script. */
+function ppData(path: PricePath, id?: string): string {
+  return ` data-events="${esc(pricePathEventsJson(path))}" data-reading="${esc(
+    priceHistoryReading(path),
+  )}"${id ? ` data-pp="${esc(id)}"` : ''}`
+}
