@@ -176,7 +176,56 @@ export function renderSold90Html(
  *   read, not sale to the final ask. A seller who cut twice reads "sold to
  *   list" as the last ask, which is a different and better-looking number.
  */
-export function renderInventoryBoardHtml(market: CmaMarketContext | null | undefined): string {
+/**
+ * ONE SENTENCE UNDER THE MONTH LINE, when the recommendation sits below every
+ * month drawn.
+ *
+ * tasteReview round three, §3: twelve monthly medians running $461K to $530K
+ * drawn under a $435,000 recommendation. Cutting the pooled city median took
+ * the number away and left the picture, and an expired owner reads the twelve
+ * months, not the caveat three hundred pixels above them. The line is every
+ * home in the city at every size; the recommendation is against sales of this
+ * home's own size and bed count, and that is the whole reconciliation.
+ *
+ * It prints ONLY when every drawn month is above the number — a line the
+ * recommendation sits inside needs no explaining.
+ */
+function monthLineAgainstPriceHtml(
+  trend: ReadonlyArray<{ medianSalePrice?: number | null }>,
+  place: string,
+  against?: { recommended: number | null; subject: CmaSubject } | null,
+): string {
+  const rec = against?.recommended ?? null
+  const s = against?.subject ?? null
+  if (!s || rec == null || !(rec > 0)) return ''
+  const months = trend
+    .map((t) => t.medianSalePrice)
+    .filter((v): v is number => v != null && Number.isFinite(v) && v > 0)
+  if (months.length < 6 || Math.min(...months) <= rec) return ''
+  const facts = [
+    s.beds != null && s.beds > 0 ? `${int(s.beds)} bed` : null,
+    s.baths != null && s.baths > 0 ? `${dec(s.baths, s.baths % 1 !== 0 ? 1 : 0)} bath` : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const size = s.sqft != null && s.sqft > 0 ? ` near ${int(s.sqft)} square feet` : ''
+  if (!facts && !size) return ''
+  return `<p class="chart-read">${escapeHtml(
+    `These are every home in ${place}, all sizes. Yours is priced against ${
+      facts ? `${facts} homes` : 'homes'
+    }${size}.`,
+  )}</p>`
+}
+
+export function renderInventoryBoardHtml(
+  market: CmaMarketContext | null | undefined,
+  /**
+   * What the document recommends, and the home it recommends it for. Optional
+   * because the other chapters that draw this board have no price beside it;
+   * when it IS passed, the month line says what it is a line of.
+   */
+  against?: { recommended: number | null; subject: CmaSubject } | null,
+): string {
   if (!market) return ''
   const place = cleanText(market.geoLabel) ?? 'this market'
   const mos = market.monthsOfSupply
@@ -187,7 +236,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
   const chartHtml = chart
     ? `<div class="szn median-wide" data-anim="chart">${chart}</div>${
         chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''
-      }${medianCloseCaption(trend)}`
+      }${medianCloseCaption(trend)}${monthLineAgainstPriceHtml(trend, place, against)}`
     : ''
 
   // The monthly pace the PUBLISHED months-of-supply figure was divided by.

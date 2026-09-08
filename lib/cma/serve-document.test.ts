@@ -176,6 +176,113 @@ describe('serveCmaDocument', () => {
   })
 })
 
+/**
+ * tasteReview round three, §2: a row whose own audit says "indefensible"
+ * rendered as a finished opinion on both surfaces. The broker's view now
+ * carries the gate; the client's link never does, admin session or not.
+ */
+describe('needs review — the broker gate', () => {
+  const readySlug = 'cma-2465-7th-redmond-97756'
+  const readyHead = { html_path: 'pending:x', status: 'delivered', broker_slug: 'matthew-ryan' }
+  const flagged = {
+    ...readyHead,
+    render_args: {
+      comps: [],
+      subject: { address: '2465 7th' },
+      pricing: {
+        review: {
+          needsReview: true,
+          reasons: ['The recommendation sits far above the machine-adjusted values of the three sales kept.'],
+          auditVerdict: 'A broker should confirm the comp selection before this goes to a client.',
+        },
+      },
+    },
+    build_summary: null,
+  }
+
+  beforeEach(() => {
+    getCmaServeHead.mockResolvedValue(readyHead)
+    getCmaStoredHtmlBySlug.mockResolvedValue(null)
+    getCmaRenderSourceBySlug.mockResolvedValue(flagged)
+  })
+
+  it('banners the admin view, at the top of the document', async () => {
+    const result = await serveCmaDocument({
+      slug: readySlug,
+      requestUrl: `https://ryan-realty.com/admin/cmas/${readySlug}/view`,
+      isAdmin: true,
+      viewerEmail: 'matt@ryan-realty.com',
+      skipRegisterGate: true,
+      adminReview: true,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.html).toContain('Needs review before it goes out:')
+    expect(result.html).toContain('A broker should confirm the comp selection')
+    expect(result.html.indexOf('cma-review-gate')).toBeLessThan(
+      result.html.indexOf('DRAFT CMA FROM RENDER_ARGS'),
+    )
+  })
+
+  it('never banners the public path, even with an admin session', async () => {
+    for (const isAdmin of [true, false]) {
+      const result = await serveCmaDocument({
+        slug: readySlug,
+        requestUrl: `https://ryan-realty.com/cma/${readySlug}`,
+        isAdmin,
+        viewerEmail: isAdmin ? 'matt@ryan-realty.com' : null,
+        skipRegisterGate: true,
+      })
+      expect(result.kind).toBe('html')
+      if (result.kind !== 'html') return
+      expect(result.html).not.toContain('Needs review before it goes out')
+      expect(result.html).not.toContain('indefensible')
+    }
+  })
+
+  it('stays quiet on the admin view when the row is clean', async () => {
+    getCmaRenderSourceBySlug.mockResolvedValue({
+      ...flagged,
+      render_args: { comps: [], subject: {}, pricing: { needsReview: false, reviewReason: null } },
+    })
+    const result = await serveCmaDocument({
+      slug: readySlug,
+      requestUrl: `https://ryan-realty.com/admin/cmas/${readySlug}/view`,
+      isAdmin: true,
+      viewerEmail: 'matt@ryan-realty.com',
+      skipRegisterGate: true,
+      adminReview: true,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.html).not.toContain('Needs review before it goes out')
+  })
+
+  it('reads the older needsReview / reviewReason pair on stored rows', async () => {
+    getCmaRenderSourceBySlug.mockResolvedValue({
+      ...flagged,
+      render_args: {
+        comps: [],
+        subject: {},
+        pricing: { needsReview: true, reviewReason: 'The comp set is too heterogeneous.' },
+      },
+    })
+    const result = await serveCmaDocument({
+      slug: readySlug,
+      requestUrl: `https://ryan-realty.com/admin/cmas/${readySlug}/view`,
+      isAdmin: true,
+      viewerEmail: 'matt@ryan-realty.com',
+      skipRegisterGate: true,
+      adminReview: true,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.html).toContain(
+      'Needs review before it goes out: The comp set is too heterogeneous.',
+    )
+  })
+})
+
 describe('D27 — a delivered CMA is frozen', () => {
   // The freeze is currently true only because both call sites happen to pass
   // false. That is one edit away from silently restating the market figures on a

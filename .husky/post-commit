@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# A site commit is a heartbeat for the node it names (G72's `Node:` trailer).
+# Silent and non-blocking by design: the commit is already written.
+node scripts/heartbeat-from-commit.mjs 2>/dev/null || true

@@ -178,14 +178,38 @@ describe('listingTimelineReading', () => {
     expect(reading).toContain('10.5 percent below the bottom of the range')
   })
 
-  it('says so when the ask sat inside the range', () => {
+  it('says so when the ask sat inside the range, and stops at what it can say', () => {
     const reading = listingTimelineReading({
       timeline: { ...base, steps: [{ date: '2026-02-26', ask: 390000 }] },
       city: 'Redmond',
       marketMedianDom: null,
     })
-    expect(reading).toContain('sat inside the range homes like yours sold in')
+    expect(reading).toContain('The asking price was inside the range homes like yours sold in')
+    expect(reading).toContain('It sat 187 days without an offer.')
+    expect(reading).toContain(
+      'At a price inside the range, 187 days without an offer points at something other than the number. We would walk the house before saying what.',
+    )
     expect(reading).not.toContain('accepted offer in')
+  })
+
+  it('does not argue overpricing when the ask was near the range', () => {
+    // The corrected engine's own case (tasteReview round three, §4.1): 3.8
+    // percent above the top is not a story about the number.
+    const reading = listingTimelineReading({
+      timeline: { ...base, steps: [{ date: '2026-02-26', ask: 405000 }] },
+      city: 'Redmond',
+      marketMedianDom: 26,
+    })
+    expect(reading).toContain('percent above the top of the range homes like yours sold in')
+    expect(reading).toContain('Half of the homes that sold in Redmond had an offer inside 26 days.')
+    expect(reading).toContain('At a price near the range, 187 days without an offer points at')
+    expect(reading).toContain('We would walk the house before saying what.')
+  })
+
+  it('keeps the overpricing reading past ten percent, and adds no cause', () => {
+    const reading = listingTimelineReading({ timeline: base, city: 'Redmond', marketMedianDom: 21 })
+    expect(reading).toContain('15.6 percent above the top of the range')
+    expect(reading).not.toContain('walk the house')
   })
 })
 

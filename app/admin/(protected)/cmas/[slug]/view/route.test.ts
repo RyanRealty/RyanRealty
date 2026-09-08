@@ -52,6 +52,8 @@ describe('GET /admin/cmas/[slug]/view', () => {
       isAdmin: true,
       viewerEmail: 'matt@ryan-realty.com',
       skipRegisterGate: true,
+      // The broker view is the ONLY caller that asks for the review gate.
+      adminReview: true,
     })
   })
 

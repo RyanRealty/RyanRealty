@@ -315,6 +315,15 @@ function contextFromKept(
  */
 export function buildRejectedSales(args: {
   candidates: readonly RejectedCandidate[]
+  /**
+   * Sales a deterministic rule removed, each carrying the reason that rule
+   * wrote. Taken VERBATIM and listed first: `rejectionReason` below can only
+   * recover a rule from a sale's own facts, and "an earlier sale of the same
+   * home" is not a fact about the sale, it is a fact about the SET. Routing
+   * these through the recovery ladder printed a size or age reason that was
+   * true and not why the sale was cut, or dropped the row entirely.
+   */
+  preRejected?: readonly { listingKey: string; address: string; reason: string }[]
   /** What the comparability review set aside, with its own stated reason. */
   excluded: readonly { listingKey: string; reason?: string | null }[]
   /** The sales the grid prints. Never listed here, whatever else says so. */
@@ -339,16 +348,31 @@ export function buildRejectedSales(args: {
   const seenKeys = new Set<string>()
   const seenAddresses = new Set<string>()
 
-  const take = (row: RejectedSale): boolean => {
+  const take = (row: RejectedSale, opts: { allowKeptAddress?: boolean } = {}): boolean => {
     const addr = addressKey(row.address)
     if (row.listingKey != null) {
       if (keptKeys.has(row.listingKey) || seenKeys.has(row.listingKey)) return false
     }
-    if (keptAddresses.has(addr) || seenAddresses.has(addr)) return false
+    // The kept-ADDRESS guard exists because one sale can reach here under a
+    // second key from a different query shape. A prior sale of a home the grid
+    // prints is the opposite case — same address, genuinely a different sale —
+    // and its whole reason for being listed is that the reader would otherwise
+    // wonder where the other close went. It carries a real key that is not in
+    // the kept set, which is the check that actually holds.
+    if (!opts.allowKeptAddress && keptAddresses.has(addr)) return false
+    if (seenAddresses.has(addr)) return false
     if (row.listingKey != null) seenKeys.add(row.listingKey)
     seenAddresses.add(addr)
     out.push(row)
     return true
+  }
+
+  for (const entry of args.preRejected ?? []) {
+    if (out.length >= limit) return out
+    take(
+      { listingKey: entry.listingKey, address: entry.address, reason: entry.reason },
+      { allowKeptAddress: true },
+    )
   }
 
   for (const entry of args.excluded) {

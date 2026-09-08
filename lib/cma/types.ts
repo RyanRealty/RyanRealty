@@ -197,6 +197,79 @@ export interface CmaMarketContext {
   localFailedThenSold?: import('@/lib/pricing/failed-then-sold').CmaLocalFailedThenSold | null
 }
 
+/** A printed list tier the failed-ask ceiling can move. */
+export type CmaPricingClampTier = 'conservative' | 'recommended' | 'highEnd'
+
+/** One tier the clamp moved, and how far. */
+export interface CmaPricingClampApplication {
+  tier: CmaPricingClampTier
+  /** What the evidence supported before ANY application of this ceiling. */
+  before: number
+  after: number
+  /** The share of the failed ask this tier was held to. */
+  ratio: number
+}
+
+export interface CmaPricingClamp {
+  /** The only clamp there is today. A second kind gets its own name here. */
+  kind: 'failed-ask'
+  /**
+   * The tier the sentence is written about: the recommended price when the
+   * clamp moved it, otherwise the highest tier that did move.
+   */
+  appliedTo: CmaPricingClampTier
+  /** `appliedTo`'s figures. The two numbers the sentence names. */
+  before: number
+  after: number
+  /** The measured share, and the corpus it was measured over. */
+  basis: { ratio: number; source: string }
+  /** Every tier the ceiling moved, so nothing is changed silently. */
+  applications: CmaPricingClampApplication[]
+  /** Seller language. Says what the sales supported, and why we do not print it. */
+  sentence: string
+}
+
+/** The adversarial audit's outcome, as the document carries it. */
+export type CmaPricingAuditVerdict = 'pass' | 'review' | 'fail' | 'did-not-run'
+
+/**
+ * The review flag, on the document (tasteReview round three, §2 item 1).
+ *
+ * Two of four exemplars carried `needsReview: true` and rendered as finished
+ * opinions, one of them with the word "indefensible" in its own reviewReason
+ * and nowhere on the page. This is the block a renderer reads to show the
+ * broker a banner; `reasons` are rewritten in lib/pricing/review.ts so nothing
+ * a seller must not read can reach a surface a seller sees.
+ */
+export interface CmaPricingReview {
+  needsReview: boolean
+  /** Seller-safe. One sentence per cause, never the engine's own wording. */
+  reasons: string[]
+  /** Null on a build that recorded no audit at all. */
+  auditVerdict: CmaPricingAuditVerdict | null
+}
+
+/**
+ * A printed sale the range rule set aside: it sat above or below every other
+ * adjusted sale, so it is shown as evidence and carries none of the price.
+ *
+ * "SET ASIDE" MEANS SET ASIDE (tasteReview round three, §2 item 1). Under
+ * `trimmed-one-each-end` the two extreme sales carried 38.4 percent of the
+ * recommended price on cma-65365-concorde and 22.3 percent on cma-19968 while
+ * the prose beside them told the reader they had been removed. They are now
+ * out of the weights and out of the printed price, and this is where they go.
+ */
+export interface CmaSetAsideSale {
+  listingKey: string
+  address: string
+  /** The adjusted price that put it at an end of the spread. */
+  adjustedPrice: number
+  /** Which end it sat at. */
+  end: 'high' | 'low'
+  /** The rule that set it aside, in the document's own words. */
+  reason: string
+}
+
 export interface CmaPricing {
   method1Low: number
   method1Mid: number
@@ -231,6 +304,23 @@ export interface CmaPricing {
   /** True when the printed list band was clipped to failedAsk. */
   failedAskCapped?: boolean
   /**
+   * THE PRICE MUST FOLLOW FROM THE PRINTED METHOD, OR THE DOCUMENT MUST PRINT
+   * WHAT OVERRODE IT (tasteReview round three, §2 item 1).
+   *
+   * cma-65365-concorde printed a reconciliation whose own weights carry to
+   * $1,972,665 and a recommended list of $1,473,000 — the failed ask
+   * $1,500,000 times the failed-then-sold p75, applied by `applyFailedAskCap`
+   * and named in `reviewReason`, which no reader sees. Half a million dollars
+   * of a $1.5M opinion sat between a stated method and a printed number with
+   * nothing on the page connecting them.
+   *
+   * This is that connection: what the evidence supported, what it was clamped
+   * to, the measured basis for the clamp, and one seller sentence saying so.
+   * Null whenever the clamp does not bind, so a renderer can print it whenever
+   * it is present and never has to decide.
+   */
+  clamp?: CmaPricingClamp | null
+  /**
    * Which sale carried the price, and why — the appraisal reconciliation the
    * document owed the reader (research brief 2026-09-07, item 2). Computed in
    * lib/pricing/reconciliation.ts from the SAME weights the point value is
@@ -251,6 +341,20 @@ export interface CmaPricing {
    * showed it before (research brief 2026-09-07, item 5).
    */
   timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
+  /**
+   * The sales the range rule set aside — the single highest and the single
+   * lowest adjusted price, once there are six of them. They are printed as
+   * evidence and carry NONE of the price: not a weight in
+   * `reconciliation.weights`, not a dollar in `recommended`. Empty under
+   * `min-max`, where nothing is set aside and nothing says it was.
+   */
+  setAside?: CmaSetAsideSale[] | null
+  /**
+   * Why a broker has to look before this is sent, in seller-safe language, and
+   * what the adversarial audit said. Present on every build; `needsReview` is
+   * false and `reasons` empty on a clean one.
+   */
+  review?: CmaPricingReview | null
   /**
    * Sales considered and not used, capped at eight, each with a reason
    * composed from the sale's own recorded facts. An appraisal shows what it

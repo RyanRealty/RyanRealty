@@ -228,10 +228,15 @@ describe('the page wires the two round-one primitives', () => {
 
   it('feeds the sticky the same months of supply the Instrument prints', () => {
     expect(page).toContain('applyDetachedOverlay(')
-    expect(page).toContain('stickyAskVerdict(bendPulse)')
+    expect(page).toContain('stickyAskVerdict(bendPulse')
     // /sell publishes Market Truth DETACHED, never the mixed-type live pulse
     // bucket — the rule lib/data/market-truth/getSellBendMarket.test.ts asserts.
     expect(page).toContain('getSellBendMarket')
+    // …and the tail's source line must name THAT read. The control shipped
+    // printing "Source: market_pulse_live" for a market_metric figure on
+    // 2026-09-08; the source is a caller argument now, so this page states it.
+    expect(page).toContain("stickyAskVerdict(bendPulse, 'market_metric, Bend detached (Market Truth)')")
+    expect(page).not.toContain('market_pulse_live')
   })
 
   it('ships the proof block with the outcome strips off until Matt rules', () => {

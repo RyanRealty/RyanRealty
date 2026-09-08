@@ -946,3 +946,301 @@ shots. Other exemplars: 19968 12,312 · 1617 NW 8th 14,283 · Concorde 17,638.
 
 Not touched, by instruction: `pricing.timeAdjustment.sentence` and the grid's
 date column render exactly as `lib/pricing` gives them (§3.A is R2d's).
+
+---
+
+## tasteReview — 2026-09-08 (round three)
+
+Evaluated: worktree `wt/cma-ship-20260907` at `45cd13af`, the integration tree carrying both
+round-two lanes. Evidence: a look-pass run in this tree over all four exemplars
+(`--check --interact`, exit 0, slug directories written 01:47–01:52 against rows built
+08:25–08:31Z, so the shots are the current engine), read chapter by chapter; plus the live
+document driven on a dev server on this tree at 1280x900 and 375x812, admin session,
+`/admin/cmas/cma-2465-7th-redmond-97756/view`. The date column was read against
+`cmas.render_args.pricing.timeAdjustment` on all four rows and recomputed against
+`pricing_market_index` directly. The recommended price was recomputed from
+`pricing.reconciliation.weights` on all four. Separate evaluator; did not build this.
+
+**Verdict: the blocking defect is fixed on the exemplar and is still live on the class.**
+Round two's §3.A is genuinely closed for 2465 7th — I recomputed every printed adjustment from
+the index and every one is exact. But the same recomputation on 65365 Concorde shows the
+printed method produces $1,973,000 and the document prints $1,473,000, and on two of the four
+documents the phrase "set aside" is true of the range and false of the price. A fix verified on
+one row is not a fix; the exemplar is the one row where the trimming rule never fires.
+
+### Scores
+
+| Chapter | R1 | R2 | R3 | The one thing |
+|---|---|---|---|---|
+| 0. Cover | 2 | 4 | 4 | Unchanged; the aerial is the only photo the MLS carries for 2465 and that is now documented, not a renderer choice |
+| 1. What happened | 4 | 5 | **4** | The axis is honest and I measured it — which is what exposes that the story is no longer true |
+| 2. Did not sell | 3 | 4 | 4 | Still one peer story, still 789 sqft against a 1,440 sqft home, still sharing the subject's own $/foot range |
+| 2b. What overpricing costs | 3 | 6 | 6 | Unchanged and still the best-evidenced chapter in the document |
+| 3. What it is worth | 3 | 4 | **6** on 2465, **3** on the class | The price is derivable to the dollar here and off by $500,000 on Concorde |
+| 4. Competition | 4 | 6 | 6 | Re-verified: the filter yields 4 and 4, disjoint, correct headings |
+| 5. Redmond right now | 2 | 5 | 5 | $532,311 is cut — and all twelve months drawn beneath still sit above the recommendation |
+| 6. Net at list | 1 | 6 | 6 | Holds |
+| 7. Basis and limits | 6 | 5 | **6** | The style-adjustment claim is gone; it now reads "for when it sold and for size" |
+| 8. Next step | 2 | 6 | 6 | Holds; both CTAs carry full identity |
+
+Whole document on TASTE.md's weighting: **design quality 5, originality 5, interaction 6,
+craft 5, honesty and function 4 — about 72 of 100**, against round two's 69 and round one's 41
+by the same arithmetic (30/30/15/15/10, each criterion out of 7). Craft moved on length and
+targets. Honesty moved one point, not two, because what was fixed was fixed on one document.
+
+### 1. §3.A — the date column, all four rows
+
+Read off the live grid and off `render_args`; identical, so the renderer is faithful. The
+"implied" column is what the sentence's own headline rate would produce.
+
+**2465 7th — sentence: "a path that rose 3.6 percent over the last 12 months across 854 sales."**
+
+| Sale | Closed | Months | Sold | Printed | Printed % | Index check | Follows? |
+|---|---|---|---|---|---|---|---|
+| 730 Quince | Jul 6, 2026 | 2.1 | $457,000 | $0 | 0.00% | 322.085 → 322.085 = 0.00% | yes |
+| 840 Quince | Apr 24, 2026 | 4.5 | $410,000 | −$6,888 | −1.68% | 327.59 → 322.085 = −1.68% | yes |
+| 1737 7th | Apr 24, 2026 | 4.5 | $460,000 | −$7,728 | −1.68% | 327.59 → 322.085 = −1.68% | yes |
+| 2485 7th | Feb 6, 2026 | 7.0 | $410,500 | +$2,135 | +0.52% | 320.405 → 322.085 = +0.52% | yes |
+| 735 Oak | Dec 15, 2025 | 8.8 | $450,000 | +$1,980 | +0.44% | 320.66 → 322.085 = +0.44% | yes |
+
+Every figure is exact against `pricing_market_index`, `city_slug='redmond'`, on the stated
+trailing-three smoothing with the stated endpoint. Round two's defect — an adjustment 6.4× its
+own basis — is gone. The window figure checks too: Sep 2025 smoothed 310.755 → 322.085 = +3.65%,
+printed 3.6, and the source block's "Level 310.75 to 322.08" matches.
+
+**It is not monotone in age, and no reversal is named.** The column runs 0.00 → −1.68 → +0.52
+→ +0.44 as the sales get older. It reverses twice. The reversal is real — April's smoothed
+index (327.59) sits above the endpoint (322.085) — but a reader is given one number, "rose 3.6
+percent," and then shown an April sale moved *down*. Nothing on the page can explain that. One
+clause would ("prices in this city peaked in the spring and have come back since").
+
+**The sentence describes the mechanism exactly on 2465 and misdescribes it on both Bend
+documents.** 19968 and 65365 Concorde both print "a path that fell 1.6 percent over the last 12
+months across 2,477 sales", and then move **five of seven** and **four of six** sales *up*. One
+Concorde sale is moved −4.33% — 2.7× the only number in the sentence. Both are exact against
+the Bend index (Jun 2026 smoothed 411.85 → 393.995 = −4.33%; Apr 386.62 → 393.995 = +1.91%), so
+the arithmetic is sound and the sentence is the thing that is wrong: it names an endpoint move
+and the column applies a path.
+
+**1617 NW 8th uses a different method, and nothing says so.** Its basis is `year-over-year`
+with `n: 0`, spread evenly across the months — smooth, monotone (−0.17 → −0.36 → −0.59 → −1.49
+→ −1.90) and honest. But it is a Bend document built four minutes after two other Bend
+documents that used `city-monthly-index-trailing-3` with n=2,477. Three Bend price opinions,
+two date-adjustment methods, no sentence distinguishing them. `buildTimeAdjustmentBasis` falls
+back when `marketIndexTrend` returns null; on the evidence here that fallback fired for a city
+whose index is populated.
+
+### 2. Round two's ranked items
+
+**Item 1 — make the price derivable, stop three chapters contradicting the answer. PARTIAL.**
+
+- *Date column:* **DONE on 2465, sentence still wrong on both Bend rows.* See §1.
+- *"Homes like yours" gets one meaning:* **DONE.** Ch1's zone reads "where homes like yours
+  sold, adjusted for date and size"; ch5 reads "sold for $410,000 to $460,000 before adjusting
+  for date and size"; ch2's per-foot line is marked "unadjusted". Three framings, three labels.
+- *$532,311:* **DONE — cut.** It is nowhere in the live document.
+- *Disclosure's style claim:* **DONE.** "moves each sale for when it sold and for size. It
+  moves none of them for condition."
+- **NOT DONE, and this is the round-three blocker: the price is derivable on 2465 and on
+  19968, and not on Concorde.** Recomputed from `pricing.reconciliation.weights`:
+  2465 weighted mean $426,571 ÷ 0.98 = **$435,276 → $435,000 printed** ✓;
+  19968 $428,278 ÷ 0.967 = **$442,893 → $443,000 printed** ✓;
+  Concorde $1,907,567 ÷ 0.967 = **$1,972,665 against $1,473,000 printed.** The printed number is
+  the failed ask × 0.982 ($1,500,000 × 0.982 = $1,473,000 exactly, the p75 of the failed-ask
+  backtest, named in `reviewReason` and printed nowhere). The document states a method in
+  chapter 3 and then prints a price that method does not produce, $500,000 away, on a $1.5M
+  opinion. This is round two's §3.A in a new place.
+- **NOT DONE: "set aside" is true of the range and false of the price.** Concorde prints "2
+  sales, at $1.07M and $2.95M were set aside" and "the highest and the lowest set aside". Those
+  two sales carry **38.4 percent** of the weight in the recommended price (Swalley 22.9, Odem
+  15.5) and are printed in the grid with full "Sale price today" values and weights and no mark.
+  19968: **22.3 percent.** A reader told a sale was set aside will not expect it to be the
+  second-heaviest sale in the answer. 2465 uses `min-max` and keeps all five, which is why the
+  exemplar shows none of this.
+- **NOT DONE, not raised before: two of the four documents carry `needsReview: true` and render
+  clean.** 19968's own `reviewReason` reads "the recommendation ... makes the recommendation
+  indefensible ... [critical] The $443,000 recommendation sits far above the machine-adjusted
+  values of the three comps the analysis actually kept". Concorde's reads "a broker should
+  confirm the comp selection before this goes to a client." Neither string, nor the word
+  confidence, nor any caveat appears anywhere in either rendered document. `grep -iE 'needs
+  review|confidence|Moderate|Supportable|indefensible|broker should confirm'` over both
+  `immersive.html` files returns zero. A document whose own audit says it is indefensible is
+  indistinguishable, to a reader and to Matt, from one that is clean.
+
+**Item 2 — say the range once, say why it is that wide. DONE.**
+Chapter 3 states it once: "The sales support $412,000 to $443,000. List between $420,000 and
+$452,000." Both list figures are derivable from the printed 98.0 percent share
+($412,000/0.98 = $420,408; $443,000/0.98 = $452,041) and the carrying sentence is printed. The
+three-statements-in-ten-lines is gone. The wide-range cause sentence ships on all three: 19968
+"because the five sales behind it still land $148,000 apart once each is moved to today, and
+that is after setting aside the two furthest"; Concorde and 1617 the same form.
+
+Two residuals. The cause sentence names a count the same chapter contradicts — 19968 says
+"the five sales behind it" over a strip captioned "7 sales" and a table lead reading "The seven
+closed sales below set this number"; Concorde says "the four sales behind it", strip "4 sales",
+table "The six closed sales below". And the ranges got wider, not narrower: 19968 went 29% →
+**45%** ($331,000–$479,000) and Concorde 33% → **39%** ($1,390,000–$1,930,000). A cause is now
+given, which is what was asked; the spread itself is worse.
+
+**Item 3 — the two strips off the exemplar, and the four dead links.**
+- *Dead links:* **DONE.** Chapter 5's four addresses resolve to
+  `/homes-for-sale/redmond/diamond-bar-ranch/730-quince-220222913?agent=…&_pid=538&…` and three
+  siblings — their own listing pages, full identity.
+- *Strips:* **PARTIAL.** 19968's set-aside sales are drawn hollow and the "asked $140K" ghost is
+  gone, and Concorde's axis is now the kept sales — both real. But 19968's strip still labels its
+  axis **$322K and $480K** while the range printed three lines above is **$331,000 to $479,000**,
+  and 1617's strip labels **$675K/$898K** against a stated worth of **$696,000–$926,000**. On
+  both, the two numbers a reader's eye lands on are not the two numbers the document says the
+  home is worth. And on Concorde at 1280 the "list $1.47M" and "asked $1.50M" labels collide at
+  the same x — 2 percent apart on a 39 percent axis — so the one mark that carries the
+  recommendation is illegible.
+
+**Item 4 — the phone. DONE, and it is the cleanest item in the round.**
+Measured live, not from the ledger: `document.documentElement.scrollHeight` at 375x812 is
+**15,832px, 19.5 screens**, against round two's 20,768 and round one's 19,987. First time the
+number has moved down. Chapter 3's controls are **two rows, not four** — the segmented pair at
+44px on one line and a 45px select under it. Sub-44px targets are **17 of 107 focusables**,
+down from 21 of 75, and all seventeen are chart marks (five strip dots, twelve month dots) at
+41px tall — three pixels short of the band R3d says it built, and nothing else. No horizontal
+overflow at either width.
+
+**Non-blocking item — the cover photo.** Accepted. `extras.photos.current` holds exactly one
+url on all four rows and `subject.photoUrl` is that url; the annotated aerial is the only
+photograph the MLS carries for 2465 7th. Correctly reclassified as a build-side limitation and
+documented on `heroForSubject`. The "PRICING REPORT" masthead is gone from the letter eyebrow;
+"Pricing report" survives only in `<title>` and the PDF filename, which is the file's name.
+
+### 3. Numbers, sources, explaining sentences, banned words — all four documents
+
+- **Concorde's recommended price does not follow from its printed method.** §2, item 1. Blocking.
+- **"Set aside" sales carry 38.4% (Concorde) and 22.3% (19968) of the price.** Blocking.
+- **Two documents render a `needsReview: true` verdict as a clean opinion.** Blocking.
+- **Chapter 5's month line sits entirely above the recommendation.** Twelve monthly medians,
+  $461K to $530K, drawn under a $435,000 recommendation. Cutting $532,311 removed the number
+  and left the picture. The chapter's opening sentence — "The five sales behind your price sold
+  for $410,000 to $460,000 before adjusting for date and size" — is the right instinct and does
+  not say the line is every size of home in the city. An expired owner will read the twelve
+  months, not the caveat.
+- **Chapter 5's raw top equals the failed ask.** "Homes like yours sold for $410,000 to
+  $460,000" — 1737 7th closed at exactly $460,000 on Apr 24 — sits four screens from chapter 1's
+  "The asking price was 3.8 percent above the top of the range homes like yours sold in." Both
+  true (adjusted versus raw, and both now labelled). Neither reconciles the other, and it is the
+  single most quotable pair in the document.
+- **19968 prints the same address twice** — "60924 Targee" at $455,000 (Jun 26) and "60924
+  Targee" at $287,500 (Mar 17), rows two and four of the same grid, no unit number, no note. A
+  reader sees one house selling twice at a $167,500 difference.
+- **Two figures for one idea, 1,500px apart.** Ch1: "94.2% of the ask that failed is what the
+  median one sold for", regional, sourced. Ch2: "153 Redmond listings that failed came back and
+  sold, at a median 95.7 percent of the ask that failed", local, sourced. Both labelled; still
+  two numbers for the reader to reconcile alone.
+- **Explaining the previous sentence:** round two's surviving line, "Each sale below is moved by
+  that path between the month it closed and today", is **gone**. Two remain, both in chapter 3:
+  "A minus figure means that sale would sell for something yours does not. A plus means yours
+  does" (under a grid whose rows are already in plain English), and "Every home here is a single
+  family residence. Every home here is 3 bd / 2 ba" as two consecutive sentences of one shape.
+- **Banned words: clean.** `band`, `comp`, `comps`, `subject`, `adjusted close`, `kept`, `set`,
+  `tier`, `ladder`, `dispersion`, `supportable` return nothing in the seller text of any of the
+  eight rendered documents. `band` appears five times in `letter.html` and once in
+  `immersive.html` and every hit is inside a CSS comment. Worth knowing: `render_args.listingPlan`
+  carries "51 homes like yours are for sale in this **band** now" and, on Concorde, "**N/A**
+  median close $499,450 across 500 sales" and "We market against **N/A**'s own closed sales" —
+  neither string reaches either seller document, so this is a loaded gun, not a wound.
+- **Every figure I checked carries a source.** The three chapter 1 regional figures, Diamond Bar
+  Ranch, the competition counts, the offer curve, the realization strip, the index. No unsourced
+  number found on 2465.
+
+### 4. Regressions from the round-two fixes
+
+1. **Chapter 1's story no longer matches its own data.** The corrected engine moved the value
+   range from $372,000–$399,000 to $412,000–$443,000, so a $460,000 ask that round two could call
+   "15.3 percent above the top" is now **3.8 percent** above it. The chapter still opens "It
+   asked $460,000 and did not sell", still draws the ask line above the zone, and still hands
+   off to a chapter titled "What overpricing costs". I measured the SVG: the axis is exactly
+   linear and shared (2.11 units per $1,000 on the ask line and on the zone, verified against the
+   viewBox), so the drawing is honest — and honest is what makes it a regression. The gap it
+   draws is small, the sentence beside it says 3.8 percent, and the document's whole first act
+   is an overpricing argument the numbers no longer carry. This is a consequence of a correct
+   fix, not a bug in it, and it is the reason the answer to §5 is still no.
+2. **Round two's §3.A fix was verified on the row where the trimming rule never fires.** 2465 is
+   `min-max`, keeps all five, and has no set-aside sales. Both defects in §2 item 1 live only on
+   `trimmed-one-each-end` documents. The lesson generalises past this fix.
+3. **1617 NW 8th's date basis diverged from its own city.** §1.
+4. **The wide ranges got wider** (19968 29%→45%, Concorde 33%→39%) while gaining the cause
+   sentence that was asked for.
+5. Not a regression, closed: the competition filter still tells the truth. Re-driven live at
+   1280 — "Under contract" yields 592 Redwood, 1641 3rd, 1297 3rd, 841 Negus and one heading;
+   "For sale" yields 2623 6th, 825 Poplar, 1509 8th, 645 7th and one heading. Disjoint, four and
+   four. The slider ships `aria-valuenow="60"` and `aria-valuetext="By day 60, 70.2 percent of
+   these sales had an accepted offer."` before any input. Row→pin is a real focusable overlay
+   now. Both CTAs carry `agent`, `_pid`, `utm_source`, `utm_medium`, `utm_campaign`.
+6. Cosmetic, new, minor: the rank badge sits inside the address anchor, so
+   `innerText` gives "31737 7th" and "42485 7th". The badge is `aria-hidden="true"` so screen
+   readers announce correctly and the screen reads correctly; only copy-paste and text
+   extraction see it.
+
+### 5. Would Matt send the 2465 document to that expired owner today?
+
+**No — and for the first time the reason is not arithmetic.** On 2465 alone the numbers now
+hold: I recomputed the price from the weights and it lands on $435,000; I recomputed all five
+date adjustments from the index and all five are exact; the words are clean; every one of the
+25 links carries identity; the phone document is 19.5 screens.
+
+What blocks it is that the corrected engine dissolved the document's argument. Blair Auld
+opens a letter headed "It asked $460,000 and did not sell", reads that the ask was 3.8 percent
+above the top of the range, scrolls past a chapter called "What overpricing costs", and four
+screens later reads that homes like hers sold for up to $460,000 — the exact number she asked.
+The honest conclusion available to her is "my price was about right and something else went
+wrong," and the document never offers what that something else was. A price opinion that argues
+a case its own numbers contradict is worse in front of a licensed broker's client than one that
+is merely ugly.
+
+Shortest ranked list to yes:
+
+**1. Rewrite chapter 1 and 2b for a home that was priced near the range.** The blueprint's
+chapter 1 assumed a large gap; the engine no longer produces one here. When the failed ask is
+inside or within a few percent of the range, the chapter's claim has to change to what the data
+supports — 187 days against a 26-day median at a price the market would have paid, which points
+at exposure, condition, or terms, not at the number. Say that, from data, or cut the chapter for
+this class of expired. The graphic is right either way; the sentence over it is not.
+
+**2. Make Concorde's price derivable and make "set aside" mean one thing.** Print the
+failed-ask clamp when it binds — the document currently states a method that yields $1,973,000
+and prints $1,473,000 with nothing between them. Then either drop the set-aside sales from the
+weights or stop calling them set aside; today they carry 38.4 percent of the answer while the
+prose tells the reader they were removed.
+
+**3. Surface `needsReview`.** Two of four documents carry an audit verdict, one of them the word
+"indefensible", and both render as finished opinions. A row flagged for review should not be
+able to produce a sendable document without a visible broker gate.
+
+**4. Fix the Bend sentence, the strip labels, and the divergent basis.** The Bend documents say
+a path fell 1.6 percent and then move most sales up; name the path, not the endpoint. Make each
+strip's axis labels the same two numbers the chapter says the home is worth. Give 1617 NW 8th
+the same index its city's other two documents use, or say why it cannot have it.
+
+**5. Then the residue.** 19968's duplicated address, the 4-vs-6-vs-7 sale counts inside one
+chapter, Concorde's colliding strip labels, chapter 5's month line sitting entirely above the
+recommendation, the last two explaining sentences, and the 41px chart marks.
+
+**Beats:** the two wins from round two hold and one is now stronger. Nothing published in
+Central Oregon puts a failed seller's own price path on the same axis as the sales that set
+their value — and I measured that axis this round and it is true to the dollar, which is more
+than the portals' charts survive. Chapter 2b's linear offer-timing curve and realization strip
+remain better evidence on what overpricing costs than any competitor page for this market. What
+it loses on is no longer craft. It is that the document has one story and its numbers now have
+another.
+
+**Evaluator:** separate agent, did not build this. **Shots read:**
+`out/cma-look/cma-2465-7th-redmond-97756/` (immersive-1280 and immersive-375 in full, letter and
+interact sets), plus the price chapters of `cma-65365-concorde/`, `cma-19968/`,
+`cma-1617-nw-8th/`. **Live:** dev server on this tree, 1280x900 and 375x812, the competition
+filter re-driven and its output read with visibility checks, the chapter 1 SVG measured against
+its viewBox, the price grid read against `render_args` and the price recomputed from
+`reconciliation.weights` on all four rows, every date adjustment recomputed against
+`pricing_market_index`.
+
+**Evidence hygiene:** clean. Each slug directory holds one recommended price
+(`05-435000.png`, `04-443000.png`, `05-1473000.png`, `04-811000.png`) and the look-pass exits 0
+on `--check --interact` for all four. The run used here was written after the rows were built,
+and the length figure quoted in §2 was measured in the live browser rather than taken from the
+ledger.

@@ -1,4 +1,76 @@
-# Current — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+# Current — 2026-09-08 (SITE-09 landed; SITE-12 and SITE-08 mid-round, preserved on branches)
+
+Owner: Claude (Opus 5), session 01NESdvn, main checkout at `3c529bb`. Branch
+`claude/run-loop-syxm1d` is synced to main (its 63 "unpushed" commits were all already on
+main; only the branch ref lagged).
+
+## SITE-09 is done and live — blocked on measurement, ledger row attached
+
+Shipped on main: `a4ea2600` (the response clock), `61f0061e` (/contact after the evaluator
+pass), `d03e15af` (the taste receipt), `3cad252e` + `4c3f3508` (handoff). Deploy
+`dpl_CSRRErGMqPRnZokfyFHHm5W6HvES` READY and aliased to ryan-realty.com. Node
+`d575d2eb-7514-4be7-8399-f0ebaa2f7dc7` is `blocked` with `blocked_until` 2026-10-06 and
+ledger row `3ad9bbd8-61a4-4904-af2d-deb2d6cf7b45`.
+
+**What it does.** A same-minute system confirmation on the three site submits that had none
+(/contact and every listing tour or question CTA, the guest saved-search and saved-home
+captures, the expired LP acknowledgment), all through `sendGovernedEmail` with a system
+initiator. Both governed email rails and the SMS rail now stamp `purpose` and `initiator`
+into the timeline payload, and only a broker initiator sets first-broker-action — so a
+system confirmation can no longer read as the broker answering, which is what made every
+prior speed-to-lead number fiction. `/api/cron/crm-response-clock` runs every five minutes,
+pages the assigned broker five minutes past a submit inside 8am–8pm Pacific, escalates to
+Matt at 24 hours wall clock, and clears the flag once a person answers. The Response clock
+panel sits at the top of `/admin/crm`.
+
+**The number that matters.** Baseline read fresh at landing against live Supabase with the
+shipped predicate: **9 of the last 10 site submits had no human touch at all.** The one
+counted touch is an unstamped /book invite predating the provenance stamp, so the panel
+prints the median as **"unproven"** rather than the flattering 2 seconds it would compute
+(§0: an unverifiable figure does not ship).
+
+**The evaluator earned its keep.** A separate Sonnet evaluator scored /contact 43 and caught
+a real §0 violation the builder missed: "within one business day" was removed from the page
+but still lived in the meta, og and twitter descriptions — the first thing Google and every
+shared link showed. Fixed and confirmed absent from production. Pass 2 scored 54 (first mark
+for the route; it leaves the unreviewed baseline).
+
+**Timer proven running**, not merely registered: Vercel runtime logs show
+`GET /api/cron/crm-response-clock` returning 200 on the five-minute schedule (13:20–13:55Z).
+
+## Round in flight: SITE-12 and SITE-08 — work is SAFE on remote branches
+
+Both claimed by `claude-opus5-01NESdvn-2026-09-08` through the enforced path
+(`site-queue-status.ts --claim`), heartbeated. Built by a workflow that runs the separate
+evaluator BEFORE any push — the fix for the audit's finding that 46% of item commits were
+evaluator rework after the code was already on main.
+
+| Item | Branch | PR | Commits | Prior mark to beat |
+|---|---|---|---|---|
+| SITE-12 homepage | `wt/site-12-home` | #204 draft | 2 (46 files) | homepage-v6 = 77 |
+| SITE-08 place Q&A | `wt/site-08-answers` | #205 draft | 3 (32 files) | neighborhood 58, community 59, subdivision none |
+
+**State at handoff:** both builds done, both pass-1 evaluations done, fixes applied, a
+regrade in flight. Nothing is merged and nothing is verified by the orchestrator yet. The
+draft PRs exist specifically so this cannot become the audit's "finished lane stranded with
+no PR" failure.
+
+**To resume:** the worktrees are at `.worktrees/site-12-home` and `.worktrees/site-08-answers`
+(gitignored, and gone if the container is reclaimed — the branches on origin are the durable
+copy). Re-verify each lane's claims yourself, land the taste receipts with their shots
+hashes, run `ci:taste-canon`, then one `ci:gates`, one push, one deploy check, a live
+exercise, and evidence on each node. If a score did not rise above its prior mark, the item
+is NOT done — do not write `comparedToPrior: "first"` to dodge the rise rule; the gate reads
+the receipt at HEAD and refuses it.
+
+## Do not
+
+- Commit a lane worktree's files from the main checkout while its agent is running. The
+  stop-hook flags them as "uncommitted changes in the repository"; they belong to the lane
+  and the lane commits them itself with its own `Node:` trailer.
+- Re-audit the site or write a punch-list doc. Append to a SITE node.
+
+# Previous — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
 
 Owner: Claude (Opus 5), session 3db16241, main checkout. `origin/main` at 1e61fa00.
 
