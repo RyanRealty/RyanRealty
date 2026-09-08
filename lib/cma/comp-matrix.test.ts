@@ -59,7 +59,11 @@ describe('renderCompMatrixHtml', () => {
     // The sale's number is the MAP PIN's badge, not an ordinal typed into the
     // address: sorting the grid reorders the columns, and "3. 947 6th" sitting
     // first read as a broken sort rather than as the key to pin 3.
-    expect(html).toContain('<span class="pin-badge" aria-hidden="true">1</span>947 6th')
+    // And it sits OUTSIDE the anchor, so innerText reads "947 6th" and a
+    // copy-paste carries no rank (tasteReview round three, §4 item 6).
+    expect(html).toMatch(
+      /<span class="pin-badge" aria-hidden="true">1<\/span><a class="matrix-addr"[^>]*>947 6th<\/a>/,
+    )
     expect(html).not.toContain('1. 947 6th')
     expect(html).toContain('data-comp="1"')
     expect(html).toContain('data-pin="subject"')
@@ -69,9 +73,10 @@ describe('renderCompMatrixHtml', () => {
     for (const row of ['Sold for', 'Sold', 'Size', 'Days to offer', 'Sale price today']) {
       expect(html, row).toContain(row)
     }
-    expect(html).toContain('Every home here is a single family residence.')
-    expect(html).toContain('Every home here is 3 bd / 1 ba.')
-    expect(html).toContain('Every home here was built in 1978.')
+    // ONE sentence, not one per folded row (tasteReview round three, §3).
+    expect(html).toContain(
+      'Every home here is a single family residence, 3 bd / 1 ba, built in 1978.',
+    )
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
     expect(html).toContain('Jun 25, 2026')
@@ -129,7 +134,9 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve.match(/<h4 class="subhead matrix-group-h">The sales that set this price, continued<\/h4>/g) ?? []).toHaveLength(2)
     expect(twelve).not.toMatch(/Sales \d+ through \d+/)
     // The defect this whole shape exists to prevent: sales falling off the page.
-    expect(twelve).toContain('<span class="pin-badge" aria-hidden="true">12</span>947 6th')
+    expect(twelve).toMatch(
+      /<span class="pin-badge" aria-hidden="true">12<\/span><a class="matrix-addr"[^>]*>947 6th<\/a>/,
+    )
     // Three table heads, plus the phone stack's own "Your home" card, which
     // the desktop grid had and the phone drawing did not (tasteReview item 1).
     expect(twelve.match(/Your home/g)).toHaveLength(4)
@@ -153,7 +160,7 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
     // Property type is identical across the table, so it folds into a
     // sentence above it rather than repeating one value six times.
-    expect(html).toContain('Every home here is a single family residence.')
+    expect(html).toContain('Every home here is a single family residence,')
   })
 
   it('does not print MLS N/A into the grid', () => {
@@ -381,5 +388,22 @@ describe('the adjustment grid, line by line', () => {
     expect(card).toContain('Net adjustment')
     expect(card).toContain('Sale price today')
     expect(card).toContain('class="price-path"')
+  })
+})
+
+/**
+ * tasteReview round three, §4 item 6: the badge sat inside the address anchor,
+ * so `innerText` gave "31737 7th" and "42485 7th". It stays aria-hidden; it is
+ * now also out of the anchor's text, in both the grid and the phone card.
+ */
+describe('the pin badge is not part of the address', () => {
+  it('keeps the badge outside every address anchor', () => {
+    const html = renderCompMatrixHtml(subject, padSales(comp))
+    for (const m of html.matchAll(/<a class="(?:matrix-addr|comp-stack-addr)"[^>]*>([\s\S]*?)<\/a>/g)) {
+      expect(m[1]).not.toContain('pin-badge')
+      // The anchor's whole text is the address — no leading pin number.
+      expect(m[1]).toMatch(/^(?:947 6th|10\d Pad St)$/)
+    }
+    expect(html).toContain('class="addr-row')
   })
 })

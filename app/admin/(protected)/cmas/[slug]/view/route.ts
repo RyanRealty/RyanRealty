@@ -33,6 +33,8 @@ export async function GET(
     isAdmin: true,
     viewerEmail: admin.email,
     skipRegisterGate: true,
+    // The broker's view is the only surface that shows the audit's own words.
+    adminReview: true,
   })
   if (result.kind === 'redirect') {
     return NextResponse.redirect(new URL(result.url, request.url), result.status)

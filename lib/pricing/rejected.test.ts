@@ -298,3 +298,55 @@ describe('buildRejectedSales', () => {
     expect(out.every((r) => r.listingKey != null)).toBe(true)
   })
 })
+
+describe('preRejected — a rule that is about the SET, not the sale', () => {
+  const kept = [
+    { listingKey: 'JUNE', address: '60924 Targee', sqft: 1394, yearBuilt: 1998, closeDate: '2026-06-26', closePrice: 455_000 },
+    { listingKey: 'A', address: '61111 Chuckanut', sqft: 1440, yearBuilt: 1996, closeDate: '2026-08-21', closePrice: 307_000 },
+  ]
+  const subject = { sqft: 1668, yearBuilt: 1997, baths: 2, propertySubType: 'Single Family Residence' }
+
+  it('lists the prior sale verbatim, beside the printed sale at the same address', () => {
+    const out = buildRejectedSales({
+      candidates: [],
+      preRejected: [
+        {
+          listingKey: 'MARCH',
+          address: '60924 Targee',
+          reason: 'an earlier sale of the same home, which sold again on 2026-06-26 and is already in this analysis',
+        },
+      ],
+      excluded: [],
+      kept,
+      subject,
+    })
+    expect(out).toHaveLength(1)
+    expect(out[0]!.listingKey).toBe('MARCH')
+    expect(out[0]!.reason).toContain('sold again on 2026-06-26')
+  })
+
+  it('still refuses a key the grid prints', () => {
+    const out = buildRejectedSales({
+      candidates: [],
+      preRejected: [{ listingKey: 'JUNE', address: '60924 Targee', reason: 'whatever' }],
+      excluded: [],
+      kept,
+      subject,
+    })
+    expect(out).toEqual([])
+  })
+
+  it('lists one row per address however many times the home sold', () => {
+    const out = buildRejectedSales({
+      candidates: [],
+      preRejected: [
+        { listingKey: 'MARCH', address: '60924 Targee', reason: 'r1' },
+        { listingKey: 'OLD', address: '60924 Targee', reason: 'r2' },
+      ],
+      excluded: [],
+      kept,
+      subject,
+    })
+    expect(out).toHaveLength(1)
+  })
+})

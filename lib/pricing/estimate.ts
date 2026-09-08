@@ -18,6 +18,7 @@ import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classe
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import {
+  describeIndexShape,
   describePath,
   INDEX_MIN_N,
   isCompleteMonth,
@@ -106,6 +107,16 @@ export function priceRoundingStep(n: number): number {
   return Math.abs(n) >= 1_000_000 ? 5_000 : 1_000
 }
 
+/**
+ * "five", not "5". A count under ten reads as a word in seller prose; above it
+ * the numeral is what a reader scans for.
+ */
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+export function countWord(n: number, capitalize = false): string {
+  const word = n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : String(n)
+  return capitalize ? word.charAt(0).toUpperCase() + word.slice(1) : word
+}
+
 /** The low end of a range never rounds up into the evidence. */
 export function roundPriceDown(n: number): number {
   if (!Number.isFinite(n)) return n
@@ -156,6 +167,19 @@ export interface PricingTimeAdjustment {
   basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'none'
   /** The complete months the endpoint is the median of, oldest first. */
   referenceMonths?: string[]
+  /**
+   * The shape of the window, derived from the same smoothed series every sale
+   * walks: where it peaked or troughed, how far it has come back, and which
+   * months move a sale up and which move it down. Absent on the fallback
+   * bases, which have no series to read.
+   */
+  shape?: import('@/lib/pricing/market-path').IndexShape
+  /**
+   * Why the monthly index was not used, on the `year-over-year` basis. The
+   * printed sentence carries it: three Bend documents were built minutes apart
+   * on two different bases and none of them said so.
+   */
+  indexUnavailableReason?: string | null
   source: {
     table: string
     filter: string
@@ -193,6 +217,8 @@ export function buildTimeAdjustmentBasis(opts: {
   yoyMedianPriceDeltaPct?: number | null
   fetchedAt?: string
   windowMonths?: number
+  /** Why the monthly index was not used, when it was not. Printed. */
+  indexUnavailableReason?: string | null
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
@@ -200,6 +226,7 @@ export function buildTimeAdjustmentBasis(opts: {
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
   if (trend.pctPerMonth != null) {
     const move = trend.pctOverWindow ?? 0
+    const shape = describeIndexShape({ points: opts.points, asOf: opts.asOf, windowMonths })
     const applied = `Each sale is moved by the change in ${city} median price a square foot between the month it closed and the last three complete months`
     return {
       pctPerMonth: trend.pctPerMonth,
@@ -214,8 +241,15 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `select month, n, median_ppsf, median_sale_to_original, median_days_to_offer from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
       },
-      sentence:
-        move === 0
+      shape,
+      // THE SENTENCE NAMES THE PATH, NOT THE ENDPOINT. It used to end on the
+      // first-to-last move — "a path that fell 1.6 percent" — and the grid
+      // beside it then moved five of seven sales UP, one by 4.33 percent.
+      // The second sentence is the shape of the same series, derived in
+      // describeIndexShape, never written by hand.
+      sentence: shape.clause
+        ? `${applied}. Over the last ${windowMonths} months that index ${shape.clause}. The index is built from ${trend.n.toLocaleString('en-US')} sales.`
+        : move === 0
           ? `${applied}, a path that held flat over the last ${windowMonths} months across ${trend.n.toLocaleString('en-US')} sales.`
           : `${applied}, a path that ${move > 0 ? 'rose' : 'fell'} ${Math.abs(move).toFixed(1)} percent over the last ${windowMonths} months across ${trend.n.toLocaleString('en-US')} sales.`,
     }
@@ -235,7 +269,13 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: 'getCmaMarketContext(subject) -> yoyMedianPriceDeltaPct',
       },
-      sentence: `Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy).toFixed(1)} percent against a year ago, about ${Math.abs(perMonth).toFixed(1)} percent a month. Each sale is moved by that rate for the months since it closed.`,
+      indexUnavailableReason: opts.indexUnavailableReason ?? 'no monthly index for this city',
+      // SAY WHICH METHOD, AND WHY. 1617 NW 8th fell to this basis four minutes
+      // after two other Bend documents used the monthly index, and nothing in
+      // any of the three said they were measured differently.
+      sentence: `There is no monthly price index behind this document, ${
+        opts.indexUnavailableReason ?? 'no monthly index for this city'
+      }, so each sale is moved by the year-over-year change instead. Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy).toFixed(1)} percent against a year ago, about ${Math.abs(perMonth).toFixed(1)} percent a month, and each sale is moved by that rate for the months since it closed.`,
     }
   }
   return {
@@ -277,24 +317,70 @@ export interface PricingRangeRule {
 }
 
 /**
- * D10, closed by construction: the range the seller reads is the spread of the
- * SAME adjusted sale prices the grid prints — six or more sales drop the
- * highest and the lowest, fewer keep every one — instead of p25/p75 of
- * time-adjusted $/sqft, which ignored the size and story adjustments the
- * document itemizes and on heterogeneous sets diverged from its own evidence
- * (Tumalo: band $1,241,000-$1,297,000 against ten printed values with median
- * $1,099,810).
+ * SET ASIDE MEANS SET ASIDE (tasteReview round three, §2 item 1).
+ *
+ * The range rule trimmed one sale at each end to draw the range and then
+ * the price was reconciled over ALL of them, so on cma-65365-concorde the two
+ * sales the document said had been set aside carried 38.4 percent of the
+ * recommended price, and on cma-19968 22.3 percent. A reader told a sale was
+ * removed will not expect it to be the second-heaviest sale in the answer.
+ *
+ * One rule, applied everywhere: at six or more priced sales the single highest
+ * and the single lowest adjusted price are set aside. They stay in the grid as
+ * evidence and they carry NOTHING — not a weight, not a dollar of the printed
+ * price, not an end of the range. This is the one place that decides which
+ * sales those are, so the range, the weights, the sentence and the count a
+ * reader can check cannot come apart.
+ *
+ * The kept and set-aside lists both keep the ORDER they were given: the grid
+ * renders in that order and a weight numbered three must be the sale numbered
+ * three.
  */
-export function adjustedPriceRange(
-  prices: readonly number[],
-): { low: number; high: number; rule: PricingRangeRuleName; n: number; kept: number } | null {
-  const vals = prices.filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
-  if (vals.length < PRICING_MIN_COMPS) return null
-  if (vals.length >= RANGE_TRIM_MIN_N) {
-    const kept = vals.slice(1, -1)
-    return { low: kept[0]!, high: kept[kept.length - 1]!, rule: 'trimmed-one-each-end', n: vals.length, kept: kept.length }
+export function partitionByRangeRule<T extends { adjustedPrice?: number | null }>(
+  sales: readonly T[],
+): { priced: T[]; kept: T[]; setAside: T[]; rule: PricingRangeRuleName | null } {
+  const priced = sales.filter(
+    (s): s is T & { adjustedPrice: number } =>
+      s.adjustedPrice != null && Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0,
+  )
+  if (priced.length < PRICING_MIN_COMPS) {
+    return { priced, kept: priced, setAside: [], rule: null }
   }
-  return { low: vals[0]!, high: vals[vals.length - 1]!, rule: 'min-max', n: vals.length, kept: vals.length }
+  if (priced.length < RANGE_TRIM_MIN_N) {
+    return { priced, kept: priced, setAside: [], rule: 'min-max' }
+  }
+  // Sort a COPY of the indices so ties resolve by position and the original
+  // order survives into both lists.
+  const order = priced.map((_, i) => i).sort((a, b) => priced[a]!.adjustedPrice - priced[b]!.adjustedPrice)
+  const aside = new Set([order[0]!, order[order.length - 1]!])
+  return {
+    priced,
+    kept: priced.filter((_, i) => !aside.has(i)),
+    setAside: priced.filter((_, i) => aside.has(i)),
+    rule: 'trimmed-one-each-end',
+  }
+}
+
+/**
+ * The printed range, off the partition: the spread of the KEPT sales. Under
+ * `trimmed-one-each-end` that is the same low and high the old sorted slice
+ * produced — the second-lowest and second-highest — reached the one way that
+ * cannot disagree with the weights.
+ */
+export function rangeFromPartition(part: {
+  priced: readonly { adjustedPrice?: number | null }[]
+  kept: readonly { adjustedPrice?: number | null }[]
+  rule: PricingRangeRuleName | null
+}): { low: number; high: number; rule: PricingRangeRuleName; n: number; kept: number } | null {
+  if (part.rule == null || part.kept.length === 0) return null
+  const vals = part.kept.map((k) => k.adjustedPrice ?? 0).sort((a, b) => a - b)
+  return {
+    low: vals[0]!,
+    high: vals[vals.length - 1]!,
+    rule: part.rule,
+    n: part.priced.length,
+    kept: part.kept.length,
+  }
 }
 
 /** A sale-to-ask ratio a list price may be divided by. */
@@ -418,7 +504,33 @@ export function adjustCompAlongMarket(opts: {
   points: MarketIndexPoint[]
   asOf: string
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
-  const sale = opts.sale
+  return adjustCmaCompAlongMarket({ ...opts, comp: pricingSaleToCmaComp(opts.sale) })
+}
+
+/**
+ * The same walk, off a comp the listings ladder produced.
+ *
+ * ONE CITY, ONE BASIS (tasteReview round three, §1). cma-1617-nw-8th is a Bend
+ * document built four minutes after two other Bend documents, and it fell to
+ * the year-over-year basis with `n: 0` while they walked the monthly index.
+ * The cause was not the city slug and not a missing index: the facts ladder
+ * returned under three sales, so `pickCompSource` sent it to the listings
+ * ladder, the build only loaded `pricing_market_index` on the facts path, and
+ * `usePath` additionally required every comp to carry a `sale_pricing_facts`
+ * row. A comp off the listings ladder has a close date, a close price and a
+ * living area, which is everything this walk needs — so it walks the same index
+ * its city's other documents walk, and the only thing it cannot contribute is
+ * the story class, which is a fact about the sale and not about the path.
+ */
+export function adjustCmaCompAlongMarket(opts: {
+  subject: CmaSubject
+  subjectStory: StoryClass
+  comp: CmaComp
+  saleStory: StoryClass
+  points: MarketIndexPoint[]
+  asOf: string
+}): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
+  const sale = opts.comp
   const path = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
   const timeAdjustedPrice = timeAdjustAlongPath(sale.closePrice, path)
   const timeAdjustment = timeAdjustedPrice - sale.closePrice
@@ -435,7 +547,7 @@ export function adjustCompAlongMarket(opts: {
   const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - sale.sqft) / subjectSqft) : 1
   const recency = 1 / (1 + monthsSinceClose / 12)
   const adjusted: CmaAdjustedComp = {
-    ...pricingSaleToCmaComp(sale),
+    ...sale,
     monthsSinceClose: +monthsSinceClose.toFixed(1),
     timeAdjustment,
     timeAdjustedPrice,
@@ -493,21 +605,20 @@ export function listPriceFromEngine(opts: {
   methodFallback?: number | null
 }): EngineListResult {
   const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
-  // The sales that carry a printed adjusted price. Land has no living area and
-  // prices per acre, so it stays on the $/sqft path it already used.
-  const pricedSales = opts.subjectSqft > 0
-    ? opts.adjusted.filter(
-        (a): a is EngineAdjustedSale & { adjustedPrice: number } =>
-          a.adjustedPrice != null && Number.isFinite(a.adjustedPrice) && a.adjustedPrice > 0,
-      )
-    : []
-  const range =
-    pricedSales.length >= PRICING_MIN_COMPS
-      ? adjustedPriceRange(pricedSales.map((a) => a.adjustedPrice))
-      : null
+  // The sales that carry a printed adjusted price, split by the ONE range rule
+  // (partitionByRangeRule). Land has no living area and prices per acre, so it
+  // stays on the $/sqft path it already used.
+  const part = opts.subjectSqft > 0
+    ? partitionByRangeRule(opts.adjusted)
+    : { priced: [], kept: [], setAside: [], rule: null as PricingRangeRuleName | null }
+  const range = rangeFromPartition(part)
+  // The price is reconciled over the KEPT sales only. A sale the document says
+  // was set aside carries none of it.
   const reconciledValue =
     range != null
-      ? weightedAdjustedPrice(pricedSales.map((a) => ({ adjustedPrice: a.adjustedPrice, weight: a.weight ?? 0 })))
+      ? weightedAdjustedPrice(
+          part.kept.map((a) => ({ adjustedPrice: a.adjustedPrice ?? 0, weight: a.weight ?? 0 })),
+        )
       : null
 
   const compsImpliedClose =
@@ -563,10 +674,19 @@ export function listPriceFromEngine(opts: {
           saleToAskRatio: ratio,
           saleToAskSource,
           ratiosExcluded,
+          // ONE COUNT. The sentence used to open on the number of sales the
+          // rule ran over (7) and then describe a spread of the five it kept,
+          // so the printed n, the strip's n and the sentence's n were three
+          // different claims about the same picture. It now names the sales
+          // that produced the range, and the ones that did not, separately.
           sentence:
             range.rule === 'trimmed-one-each-end'
-              ? `The range is the spread of the ${range.n} sale prices adjusted for date and size, with the highest and the lowest set aside: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`
-              : `The range is the spread of all ${range.n} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
+              ? `The range is the spread of the ${countWord(range.kept)} sale prices behind this price, adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}. ${
+                  range.n - range.kept === 1
+                    ? 'One more sale sat outside every one of them and was set aside'
+                    : `${countWord(range.n - range.kept, true)} more sales sat outside every one of them and were set aside`
+                }, so no single sale could set the range.${askStep}`
+              : `The range is the spread of all ${countWord(range.n)} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
         }
       : null
 
@@ -770,6 +890,12 @@ export function priceCmaSet(args: {
   }
   marketIndex: MarketIndexPoint[]
   asOf: string
+  /**
+   * Why `marketIndex` is empty, when it is. It reaches the printed sentence:
+   * a document on the year-over-year basis says which method it used and why,
+   * instead of looking identical to one built on the index (round three, §1).
+   */
+  indexUnavailableReason?: string | null
   /** Build path passes the shared `computePricing` so the valuation-engine gate stays honest. */
   computePricing?: typeof computePricing
 }): CmaPricing | null {
@@ -782,9 +908,27 @@ export function priceCmaSet(args: {
   if (!pricing) return null
   // Which sale carried the price. Attached BEFORE the engine cover so the
   // weights the document prints are the weights the value was built from.
+  //
+  // The range rule runs FIRST, and the sales it sets aside never reach the
+  // reconciliation: a sale the document says was removed carries none of the
+  // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
+  // same pure partition over the same array, so the printed weights and the
+  // printed number come from one set.
+  const part = partitionByRangeRule(args.adjusted)
   pricing.reconciliation = reconcileAdjustedSales({
-    sales: args.adjusted as unknown as ReconcilableSale[],
+    sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
+  })
+  pricing.setAside = part.setAside.map((sale) => {
+    const s = sale as unknown as CmaAdjustedComp
+    const high = part.setAside.length > 1 && s.adjustedPrice === Math.max(...part.setAside.map((x) => (x as unknown as CmaAdjustedComp).adjustedPrice))
+    return {
+      listingKey: s.listingKey,
+      address: s.address,
+      adjustedPrice: Math.round(s.adjustedPrice),
+      end: (high ? 'high' : 'low') as 'high' | 'low',
+      reason: `${high ? 'highest' : 'lowest'} of the adjusted sales, set aside so one sale cannot set the range`,
+    }
   })
   // What moved each sale for its date, stated where the document can print it.
   pricing.timeAdjustment = buildTimeAdjustmentBasis({
@@ -793,6 +937,7 @@ export function priceCmaSet(args: {
     points: args.marketIndex,
     asOf: args.asOf,
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
+    indexUnavailableReason: args.indexUnavailableReason ?? null,
   })
   return applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,

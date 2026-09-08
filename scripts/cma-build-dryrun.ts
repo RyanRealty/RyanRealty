@@ -122,6 +122,16 @@ type DryRun = {
   }>
   dateAdjustmentCheckOk: boolean
   dateAdjustmentFailures: string[]
+  /** render_args.pricing.clamp — what overrode the printed method, when it did. */
+  renderArgsPricingClamp: unknown
+  /** render_args.pricing.setAside — the sales the range rule removed from the price. */
+  renderArgsPricingSetAside: unknown
+  /** render_args.pricing.review — the flag a document must not be able to hide. */
+  renderArgsPricingReview: unknown
+  /** The state /admin/cmas renders for the STORED row today. */
+  queueStateStored: string | null
+  /** The state it would land in after this run, carrying the stored audit verdict. */
+  queueState: string | null
   /** render_args.pricing.rejected — considered and not used. */
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
@@ -151,7 +161,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
-  const { adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
+  const { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
   const { classifyStory } = await import('@/lib/pricing/classes')
   const { checkDateAdjustments } = await import('@/lib/pricing/market-path')
   const { getPricingMarketIndex } = await import('@/lib/data/pricing/facts')
@@ -161,7 +171,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { MIN_COMPS } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
-  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle } = await import('@/lib/cma/expired-audit')
+  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle, applyFailedAskCap } = await import('@/lib/cma/expired-audit')
   const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
   const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
   const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
@@ -176,6 +186,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
+    renderArgsPricingReview: null, queueState: null, queueStateStored: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
     dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
   }
@@ -239,39 +251,74 @@ async function dryRun(slug: string): Promise<DryRun> {
     selectCompsPreferringFacts(subject, {}),
     getCmaMarketContext(subject).catch(() => null),
   ])
+  // EXACTLY lib/cma/build.ts step 2.9: one home, one sale.
+  const { dropPriorSalesOfSameHome } = await import('@/lib/pricing/same-address')
+  const sameAddress = dropPriorSalesOfSameHome(selection.comps)
+  const priorSaleDrops = sameAddress.dropped
+  if (priorSaleDrops.length > 0) {
+    const droppedKeys = new Set(priorSaleDrops.map((d) => d.listingKey))
+    selection.comps = sameAddress.kept
+    if (selection.pricingSales) {
+      selection.pricingSales = selection.pricingSales.filter((s) => !droppedKeys.has(s.listingKey))
+    }
+  }
+
   const withSel = { ...head, pricingSource: selection.pricingSource, compCount: selection.comps.length }
   if (selection.comps.length < MIN_COMPS) {
     return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
   }
 
-  const marketIndex = selection.pricingSource === 'facts' ? await getPricingMarketIndex(citySlug(subject.city)) : []
+  // The index is a fact about the CITY, not about which ladder found the sales
+  // (lib/cma/build.ts step 4). This script mirrored the old facts-only load.
+  const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
   // EXACTLY the branch lib/cma/build.ts takes (step 4, `usePath`). Before
   // 2026-09-08 this script always took the year-over-year `adjustComps` path,
   // so its date adjustments were not the ones the document prints and the R2d
   // defect could not be seen here at all.
   const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
-  const usePath = marketIndex.length > 0 && selection.comps.every((c) => salesByKey.has(c.listingKey))
+  const usePath = marketIndex.length > 0
   const subjectStory = classifyStory(subject.levelsRaw, null)
   const adjusted = usePath
     ? selection.comps.map((c) => {
-        const sale = salesByKey.get(c.listingKey)!
-        return adjustCompAlongMarket({
-          subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
-        }).adjusted
+        const sale = salesByKey.get(c.listingKey)
+        return sale
+          ? adjustCompAlongMarket({
+              subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
+            }).adjusted
+          : adjustCmaCompAlongMarket({
+              subject, subjectStory, comp: c, saleStory: 'unknown', points: marketIndex, asOf,
+            }).adjusted
       })
     : adjustComps(subject, selection.comps, market)
   const pricing = priceCmaSet({
     subject, adjusted, market, input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
-    marketIndex, asOf, computePricing,
+    marketIndex, asOf,
+    indexUnavailableReason:
+      marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+    computePricing,
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
+
+  // EXACTLY the ceiling lib/cma/build.ts applies after priceSet (step 4, the
+  // `lastCycleFailed` branch). Without it this script printed the ask itself
+  // where the document prints the failed-then-sold p75 — $1,500,000 against
+  // $1,473,000 on cma-65365-concorde — so the one defect round three called
+  // blocking was invisible in the only tool that can see it without a build.
+  if (lastCycleFailed) {
+    const row0 = cycleRows[0] ?? {}
+    applyFailedAskCap(pricing, {
+      lastFailedListPrice: subject.lastListPrice,
+      offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+    })
+  }
 
   // The judge is skipped in a dry run, so the only rejections it can show are
   // the price-per-square-foot outlier trims the deterministic ladder made.
   const { buildRejectedSales } = await import('@/lib/pricing/rejected')
   const rejected = buildRejectedSales({
     candidates: selection.comps,
+    preRejected: priorSaleDrops,
     excluded: [],
     // The kept set is the full ladder result in a dry run, and it is what stops
     // a printed sale from also appearing as rejected.
@@ -348,6 +395,32 @@ async function dryRun(slug: string): Promise<DryRun> {
     return buildFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
   })()
 
+  // EXACTLY what lib/cma/build.ts step 4.6 writes. The dry run skips the LLM
+  // audit, so the verdict it can report is 'did-not-run'.
+  const { buildPricingReview } = await import('@/lib/pricing/review')
+  const { resolveCmaQueueState, readCmaAuditVerdict } = await import('@/lib/data/cma/unified-queue')
+  const storedSummary = (row.build_summary ?? null) as Parameters<typeof readCmaAuditVerdict>[0]
+  const storedAudit = readCmaAuditVerdict(storedSummary)
+  const storedNeedsReview = storedSummary?.needs_review === true
+  const queueStateWith = (needsReview: boolean) =>
+    resolveCmaQueueState({
+      status: String(row.status ?? 'draft'),
+      archivedAt: (row.archived_at as string | null) ?? null,
+      buildError: (row.build_error as string | null) ?? null,
+      hasDocument: true,
+      needsReview,
+      auditVerdict: storedAudit.verdict,
+      deliveredAt: (row.delivered_at as string | null) ?? null,
+      emailSentAt: (row.email_sent_at as string | null) ?? null,
+      queuedAt: (row.queued_at as string | null) ?? null,
+    })
+  const review = buildPricingReview({
+    needsReview: pricing.needsReview,
+    reviewReason: pricing.reviewReason,
+    clamp: pricing.clamp ?? null,
+    auditVerdict: storedAudit.verdict,
+  })
+
   const contract = evaluateAccuracyContract({
     comps: adjusted,
     pricing,
@@ -392,6 +465,14 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
+    renderArgsPricingClamp: pricing.clamp ?? null,
+    renderArgsPricingSetAside: pricing.setAside ?? null,
+    renderArgsPricingReview: review,
+    // What /admin/cmas shows for the STORED row, and what it would show after
+    // this run. The dry run cannot re-run the LLM audit, so the second line
+    // carries the stored verdict beside THIS run's review flag.
+    queueStateStored: queueStateWith(storedNeedsReview),
+    queueState: queueStateWith(pricing.needsReview === true),
     renderArgsPricingRejected: rejected,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
@@ -433,7 +514,10 @@ async function main() {
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
-      renderArgsPricingTimeAdjustment: null, renderArgsPricingRejected: null,
+      renderArgsPricingTimeAdjustment: null, renderArgsPricingClamp: null,
+      renderArgsPricingSetAside: null, renderArgsPricingReview: null, queueState: null,
+      queueStateStored: null,
+      renderArgsPricingRejected: null,
       renderArgsExpiredAuditFinalCycle: null,
       dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [],
       error: e instanceof Error ? e.message : String(e),
@@ -487,8 +571,17 @@ async function main() {
     }
     console.log('   render_args.pricing.timeAdjustment =')
     console.log(indent(r.renderArgsPricingTimeAdjustment))
+    console.log('   render_args.pricing.clamp =')
+    console.log(indent(r.renderArgsPricingClamp))
     console.log('   render_args.pricing.rangeRule =')
     console.log(indent(r.renderArgsPricingRangeRule))
+    console.log('   render_args.pricing.setAside =')
+    console.log(indent(r.renderArgsPricingSetAside))
+    console.log(
+      `   queue state · stored ${r.queueStateStored ?? 'n/a'} · after this run ${r.queueState ?? 'n/a'}`,
+    )
+    console.log('   render_args.pricing.review =')
+    console.log(indent(r.renderArgsPricingReview))
     console.log('   render_args.pricing.reconciliation =')
     console.log(indent(r.renderArgsPricingReconciliation))
     console.log('   render_args.market.originalAskRealization =')
