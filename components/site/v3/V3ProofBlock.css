@@ -63,10 +63,19 @@
   min-width: 0;
 }
 
+/* ONE graphic, two measures — not two charts that share a hover.
+   The separate evaluator (2026-09-08) read the strips as two parallel tracks
+   because a full-width hairline cut between them exactly like a section
+   break. The rule is gone; the pair now sits inside one field with a single
+   navy edge down its left, so the eye takes the two measures as one reading
+   of the same seven homes. */
+.v3 .v3-proofblock__strips {
+  padding-left: var(--v3-space-lg);
+  border-left: var(--v3-rule-weight-section) solid var(--v3-navy);
+}
+
 .v3 .v3-proofblock__strip + .v3-proofblock__strip {
   margin-top: var(--v3-space-2xl);
-  padding-top: var(--v3-space-xl);
-  border-top: var(--v3-rule-hairline);
 }
 
 .v3 .v3-proofblock__strip-claim {
@@ -387,6 +396,8 @@
 
 .v3 .v3-proofblock__figure {
   margin: 0 0 var(--v3-space-xl);
+  padding-top: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
 }
 
 .v3 .v3-proofblock__figure-value {
@@ -464,11 +475,24 @@
   color: var(--v3-ink);
 }
 
+.v3 .v3-proofblock__more {
+  margin-top: var(--v3-space-lg);
+}
+
+.v3 .v3-proofblock__more-label {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
 .v3 .v3-proofblock__picks {
   display: flex;
   flex-wrap: wrap;
   gap: var(--v3-space-2xs);
-  margin-top: var(--v3-space-md);
+  margin-top: var(--v3-space-2xs);
 }
 
 .v3 .v3-proofblock__pick {
@@ -486,10 +510,16 @@
     color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3 .v3-proofblock__pick.is-active,
 .v3 .v3-proofblock__pick:hover {
   background: var(--v3-wash);
   color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3 .v3-proofblock__pick.is-active {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
 }
 
 .v3 .v3-proofblock__pick:focus-visible {

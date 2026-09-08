@@ -333,7 +333,11 @@ function ReviewReader({
         </figcaption>
       </figure>
       {reviews.quotes.length > 1 ? (
-        <div className="v3-proofblock__picks" role="group" aria-label="More reviews">
+        <div className="v3-proofblock__more">
+          <p className="v3-proofblock__more-label" id={`${uid}-more`}>
+            More reviews
+          </p>
+          <div className="v3-proofblock__picks" role="group" aria-labelledby={`${uid}-more`}>
           {reviews.quotes.map((q) => (
             <button
               key={q.id}
@@ -345,9 +349,10 @@ function ReviewReader({
               onFocus={() => setPicked(q.id)}
               onClick={() => setPicked(q.id)}
             >
-              {q.author}
-            </button>
-          ))}
+                {q.author}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>
@@ -435,17 +440,19 @@ export function V3ProofBlock({
         <div className="v3-proofblock__drawing">
           {hasDrawing ? (
             <>
-              {strips.map((strip) => (
-                <Strip
-                  key={strip.key}
-                  strip={strip}
-                  marks={marks}
-                  active={active}
-                  onActivate={setActive}
-                  drawn={drawn}
-                  uid={uid}
-                />
-              ))}
+              <div className="v3-proofblock__strips">
+                {strips.map((strip) => (
+                  <Strip
+                    key={strip.key}
+                    strip={strip}
+                    marks={marks}
+                    active={active}
+                    onActivate={setActive}
+                    drawn={drawn}
+                    uid={uid}
+                  />
+                ))}
+              </div>
 
               <div className="v3-proofblock__reading" aria-live="polite">
                 {reading ? (

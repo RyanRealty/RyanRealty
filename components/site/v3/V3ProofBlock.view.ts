@@ -262,7 +262,7 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
     ? {
         value: String(block.record.homesSold),
         label: 'homes closed, listed by Ryan Realty',
-        aside: `${formatPrice(block.record.totalVolume)} in closed volume`,
+        aside: `All time · ${formatPrice(block.record.totalVolume)} in closed volume`,
       }
     : null
 
@@ -288,7 +288,7 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
 
   return {
     id,
-    eyebrow: 'The record',
+    eyebrow: `The record · last ${block.window.months} months`,
     heading: 'Every home we listed and closed',
     headingLevel: input.headingLevel ?? 2,
     claim:
