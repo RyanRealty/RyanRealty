@@ -306,14 +306,28 @@ two lanes in worktrees; a separate Opus evaluator per page class.
   sentence, never a number. Display numeral only at counts ≥ 10 (`PLACE_ALERTS_FIGURE_MIN`);
   scope line reconciles figure and offer ("covers all of Bend, Awbrey Butte included"; the
   exact MLS subdivision set a community filter matches: Tetherow, Triple or Tetherow Resort).
-  Capture contract unchanged; `alert_create` carries `placement`. Round three (4848a1a on
-  PR #200): door affordance at every width, the scope stated once, and a real logic gap
-  fixed (the sticky strip's IntersectionObserver missed jumps past the Atlas; a throttled
-  scroll read backs it now). Final separate-evaluator marks on one scale, no item defect
-  left: city 57 → 64 → 66 (recorded 67 by a different evaluator; the one-point shortfall
-  is the #market chart's overprinting year labels and the imageless golf grid, outside the
-  item), neighborhood 48 → 58 → 61 (clears 58), community 54 → 65 → 68 (clears 59).
-  Receipts in the three parity.json `tasteReview` blocks with the prior marks noted.
+  Capture contract unchanged; `alert_create` carries `placement`. Round three (4848a1a):
+  the door has an affordance at every width, the scope is stated once, and a real logic gap
+  closed (the sticky strip's IntersectionObserver never fires on a jump past the Atlas; a
+  throttled scroll read backs it now).
+
+  **The marks were rebaselined, not raised (2026-09-08).** Main landed the receipt contract
+  the same day: a tasteReview dated 2026-09-08 or later must record its instrument, and a
+  prior mark that differs on evaluatorModel, rubricVersion or shotsHash is not a baseline.
+  Every earlier place mark differs on all three, so these are first marks on this instrument:
+  city 78, neighborhood 72, community 65 (median of three scorings in one evaluator call,
+  claude-opus-5 against claude-fable-5-1 as builder, rubric v1-2026-09-08, hashed to eight
+  records from one capture run). Prior marks noted on each receipt.
+
+  **A degraded capture cost the city page 18 points before anyone noticed.** Every place
+  figure here comes from a read wrapped in a 3.5s timeout; a dev server compiling under load
+  blows through it and the page renders its honest withheld state ("Live counts are
+  unavailable right now", a callout with no figure). A scoring round was handed exactly that
+  on the phone records and reported the feature missing on mobile and the hero photograph
+  wrong. Both were capture artifacts. The tool now reloads up to three times and refuses to
+  write a record in that state (trap 12), and the healthy re-score moved city 60 to 78. If a
+  record ever looks broken, warm the route and re-capture before you believe it.
+
 - CI: `docs/ROUTE_INVENTORY.md` could not regenerate since `CANONICAL_ZIPS` moved
   (`scripts/index-routes.mjs` threw), so the /dashboard/marketing deletion never reached
   the route smoke and PR #200 went red on two 404s. Generator fixed, inventory regenerated

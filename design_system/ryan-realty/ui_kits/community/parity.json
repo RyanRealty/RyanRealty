@@ -232,44 +232,125 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 68,
-    "beats": "Names the exact MLS subdivision set an alert here covers, Tetherow, Triple or Tetherow Resort, instead of promising everything in Tetherow, leads with the sentence rather than a display numeral when only two houses came on the market, and pairs that with the hole-by-hole course routing and live inventory inside the community boundary; no competitor page was viewed in this pass, so no competitive win is certified.",
-    "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6",
+    "score": 65,
+    "scores": [
+      65,
+      67,
+      65
+    ],
+    "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 — three scorings of one capture run",
+    "evaluatorModel": "claude-opus-5",
+    "builderModel": "claude-fable-5-1",
+    "rubricVersion": "v1-2026-09-08",
+    "shotSpec": {
+      "routes": [
+        "/communities/tetherow"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "atlas",
+        "market (sticky alerts bar armed)",
+        "alerts-callout"
+      ],
+      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed so the real hero and listing photographs are in frame"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
+      "atlasDesktop": "design_system/ryan-realty/ui_kits/community/shots/atlas-desktop.png",
+      "atlasMobile375": "design_system/ryan-realty/ui_kits/community/shots/atlas-mobile375.png",
+      "marketDesktop": "design_system/ryan-realty/ui_kits/community/shots/market-desktop.png",
+      "marketMobile375": "design_system/ryan-realty/ui_kits/community/shots/market-mobile375.png",
       "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/community/shots/alerts-callout-desktop.png",
-      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/community/shots/alerts-callout-mobile375.png",
-      "alertsStickyDesktop": "design_system/ryan-realty/ui_kits/community/shots/alerts-sticky-desktop.png",
-      "alertsStickyMobile375": "design_system/ryan-realty/ui_kits/community/shots/alerts-sticky-mobile375.png"
+      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/community/shots/alerts-callout-mobile375.png"
     },
-    "priorMark": {
-      "score": 59,
-      "evaluatedAt": "2026-09-07",
-      "evaluator": "separate Fable 5.1 evaluator, SITE-01 place-value pass, community (design 19 / originality 16 / interaction 9 / craft 9 / honesty 6)",
-      "note": "Set by a different evaluator (SITE-01 pass) against shots since overwritten; not comparable to this scale. On this evaluator's scale the SITE-04 item moved the page 54 to 65 to 68."
-    },
+    "shotsHash": "sha256:68a96919a896729eb65c09b05a6200b34853a047843d37460121668a1b7c36a4",
+    "beats": "No competitor page was opened in this session; see the beats field content above — the honest position is that no comparative win can be claimed from this evidence, and only the page's own rendered capabilities (plat-geometry Atlas with type toggles and a price ceiling, a live 30-day count with its MLS alias disclosure and source trace, an on-page trace for the HOA figure) are defensible.",
     "subScores": {
-      "design": 22,
-      "originality": 18,
+      "design": 19,
+      "originality": 21,
       "interaction": 10,
       "craft": 8,
-      "honesty": 10
+      "honesty": 7
     },
-    "fixedFromThisPass": [
-      "Alerts (SITE-04): the email-only capture moved from the page bottom to the first callout after the opening with the real 30-day count (Market Truth new_listings_30d, detached, Source disclosure) as the promise; a sticky repeat past #atlas that hides over the callout and the footer, remembers a dismissal for the session, and disappears after a send; the same capture contract (submitSearchAlertSignup, honeypot, guest-watch residual, alert_create with placement).",
-      "The count is a door into the newest-first search at every width (numeral plus a ghost link); the sticky strip carries its own one-line disclosure; a display numeral only at counts of 10 or more, below that the sentence leads with the digit inline.",
-      "Record shots show the real production hero and thumbnails (blocked hosts relayed through curl in the capture; nothing fabricated), with the strip verified off before every full-page and callout frame; the strip's observer missed jumps past the Atlas and is now backed by a throttled scroll read."
+    "scoringNotes": "Three passes over the same eight PNGs, each entered from a different door so the second and third were not re-runs of the first. Pass 1 (65) walked the page section by section as a reader would: fold, callout, Atlas, price, ledger, sticky bar. Pass 2 (67) scored each criterion against \"what would a 90 look like on this axis, and how far short is this,\" ignoring the first decomposition. Pass 3 (65) started from the defect list, priced each defect, then added back credit for what a template would not have produced, and finally re-derived the five sub-scores directly rather than by arithmetic. What moved between passes: originality 21/22/21, on how much credit the hand-drawn plat Atlas earns against the fact that the page ships no chart at all; craft 8/9/8, on whether the H2 clipped under the sticky mast is charged to the page (missing scroll-margin) or excused as capture scroll — I charged it to the page in two of three passes because an in-page anchor would do the same thing; interaction 9/9/10, on whether three property-type toggles plus a price ceiling plus chip doors clears the floor or merely meets it. What did not move: design held at 19-20 in all three (identity is strong, composition is not), and honesty held at 7 in all three. Median 65; the five sub-scores are pass 3's decomposition and sum to 65.",
+    "evidenceLimits": "Static PNGs only, so nothing time-based or input-based was observable: no hover, focus ring, keyboard path, reduced-motion frame, chart draw-on, chip hover, map-pin tooltip, or the behaviour of the price slider and the three type toggles. I therefore could not verify whether the \"2\" in the callout headline is in fact a link (I judged only that it carries no visible affordance), whether the ~4px map pins have enlarged hit targets, or whether the chips reveal anything on hover. Interaction is scored on what a still can prove, which is that the controls exist and that two of the five visible sections are inert.\n\nOnly four states were captured, so sections between the Atlas and the price section are unseen. I did NOT see a Field or photo row of the 26 for-sale homes, and I am reporting that as unobserved rather than missing — the market-desktop shot shows a \"Subdivisions in Tetherow\" heading beginning below the ledger, so more of the page exists past these frames.\n\nOne record-hygiene note about the set itself, not the page: market-desktop.png is byte-identical to alerts-sticky-desktop.png (md5 6d93b311…), and market-mobile375.png to alerts-sticky-mobile375.png (b070c52e…). The two named states are one capture. That capture shows the armed bar, as the brief says, but it means the \"market\" state I scored shows the price section only in its withheld form — I never saw a market state with a figure or a chart in it, and cannot say whether one renders when the read succeeds.\n\nThe default and alerts-callout shots do carry the real hero photograph and real live figures (26 for sale, 4 pending, $1,925,000 / $999,750 / $1,513,000, 135 listings reporting dues), so this set is not the degraded read described in the brief. Contrast was measured, not eyeballed: Atlas muted labels compute to about 5.45:1 on cream and the sticky bar's disclosure line to about 6.26:1 on navy — both pass AA, and no contrast defect is claimed. No competitor page was opened.",
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "The prior mark differs on evaluatorModel, rubricVersion and shotsHash: it was set by separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 against whole-page stitches that no longer exist (all six place records were re-captured through the one capture tool on 2026-09-08, which is what ci:shot-weight now requires), under no recorded rubric version. A different instrument is not a baseline, so this is a rebaseline, not a rise.",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 68,
+      "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6"
+    },
+    "defects": [
+      {
+        "section": "#atlas — subdivision chip rail",
+        "finding": "Seven chips read only \"Tetherow\" (26, 4, 3, 3, 2, 1) on the Tetherow page, and three pairs are exact duplicates — \"Highlands Ridge 3\" twice, \"Tetherow 3\" twice, \"Outrider Overlook 1\" twice — with one truncated to \"Tetherow Vacation Home…\". These are unnormalized MLS SubdivisionName strings, the run carries no eyebrow saying what it enumerates, and the counts sum to 54 against the legend's \"26 for sale · 4 pending\", so the page's flagship data section reads as broken data in a shop whose §0 is absolute. Smallest fix: group by normalized name and sum, drop any chip whose name equals the place name, and add the enumeration eyebrow (\"Tetherow · Villages\") naming what the number counts."
+      },
+      {
+        "section": "#typical-price",
+        "finding": "The entire section is an H2, a hairline, the sentence \"Too few recent sales here to chart.\", a second hairline, then roughly 280px of empty cream broken only by a full-width navy section rule standing alone in the void. Withholding the figure is correct and legal; spending a titled section and a third of a desktop screen on the withholding is not, and this is the one question DATA_GRAPHICS says the master-plan grain must answer (\"what do they cost here\"). Smallest fix: when n is under the honesty floor, collapse to a single Quiet line beneath the Atlas and render no heading, no hairlines and no section rule."
+      },
+      {
+        "section": "#hero / value ask",
+        "finding": "The first viewport is an invitation rather than the answer: the H1 promises \"Tetherow homes for sale\" and the fold delivers an address form. At 375 the panel occupies y=275→705 of 812 (53% of the screen) and covers the Stage photograph, so the master-plan opening is neither a Stage nor a Field. Smallest fix: at 375 reduce the fold panel to its heading, the address field and \"Show me\" (move the two explainer sentences below the field), and place the full ask after the Atlas so the homes are the fold's payoff."
+      },
+      {
+        "section": "page-wide (data display)",
+        "finding": "No chart anywhere in the four captured states — the price question is withheld, the Atlas carries a legend but no plotted series, and \"Living in Tetherow\" is text. TASTE's trading-desk bar says every kept page ships one dense, hoverable instrument, and this page ships none. Smallest fix: with closes too thin for a strip, plot what the page already holds — the 26 actives and 4 pendings as a dot strip by asking price with per-mark hover rows — directly under the Atlas."
+      },
+      {
+        "section": "page-wide (alignment)",
+        "finding": "Two left spines are visible in a single viewport: headings, body and every content hairline sit at x=164/165, while the navy section rules and the sticky bar's text sit at x=144/145, and the Atlas heading hangs out at x=40 while its neighbouring section's eyebrow is at x=165. Measured on market-desktop.png: section rule 144→1295, content hairlines 164→1275. Smallest fix: draw the section rule and the sticky bar's inner content on the same measure as the content they introduce."
+      },
+      {
+        "section": "#atlas — map frame (desktop)",
+        "finding": "At 1440 the Tetherow boundary occupies about a quarter of the map frame's width (roughly x=750→1010 inside a frame running 340→1420), leaving the right half as empty cream; at that scale the 90-day sold-density shading the legend explains is invisible and the pins are ~4px dots. The 375 capture, fitted to the boundary, is markedly better and proves the object is good — the desktop framing is the bug. Smallest fix: fit the desktop map to the boundary bounds with the padding the mobile view already uses, and raise pin radius and density opacity at desktop zoom."
+      },
+      {
+        "section": "#alerts-callout",
+        "finding": "The count is meant to be the door into the newest-first search, but \"2\" carries no visible affordance in the headline — no underline, no rule, no weight or color change — so the door is undiscoverable, and the section leaves ~145px of empty cream below the SOURCE row against a right column that ends 140px higher. Smallest fix: underline the numeral at the button's rule weight, and bottom-align the two columns so the void closes."
+      },
+      {
+        "section": "#alerts-callout",
+        "finding": "The number has no comparator: \"2 houses came on the market in Tetherow in the last 30 days\" gives a reader no way to know whether 2 is quiet or busy, which is the whole question the sentence raises. Smallest fix: append the prior-30-day figure to the same sentence (\"…and 5 in the 30 days before that\"), traced in the SOURCE disclosure that is already there."
+      },
+      {
+        "section": "#living-in-tetherow",
+        "finding": "\"HOA (measured)\" as the row label, and \"$2,052 measured HOA a year\" in the hero subline, put an internal qualifier in front of a visitor — and it is unnecessary, because the row already carries a proper trace beside the value (\"median of the 135 current listings that report dues\"). Smallest fix: label the row \"HOA dues\" and the hero line \"HOA about $2,052 a year\", leaving the trace to do the qualifying."
+      },
+      {
+        "section": "#atlas heading",
+        "finding": "In both Atlas captures the H2 \"Tetherow right now\" is cut in half by the sticky mast, which is exactly what an in-page anchor or a skip link to this section will produce for a real visitor. Smallest fix: set scroll-margin-top equal to the mast height on every section that an anchor can target."
+      },
+      {
+        "section": "#sticky-alerts (375)",
+        "finding": "The armed bar is 142px tall on an 812 viewport (17.5%) and occludes the last ledger row — \"Ranked #57\" is cut in half by it — because the page reserves no space for the bar it arms. Smallest fix: add bottom padding to the page equal to the bar's height for as long as the bar is armed."
+      },
+      {
+        "section": "#living-in-tetherow (375)",
+        "finding": "The HOA trace wraps and is right-aligned, orphaning the single word \"DUES\" alone on its second line in tracked all-caps micro-type — an orphaned label at 375, which the craft row names explicitly. Smallest fix: left-align the trace under the value, or constrain it to the value column's measure so it breaks evenly."
+      },
+      {
+        "section": "#alerts-callout (source)",
+        "finding": "The trace is a default <details> element — an unstyled browser triangle and the bare internal word \"SOURCE\" — on a page that otherwise controls every mark it draws. Smallest fix: replace the native marker with the barrel's hairline chevron and label it \"Where this number comes from\"."
+      },
+      {
+        "section": "#hero (section rule)",
+        "finding": "The navy section rule is drawn across the bottom edge of the hero photograph at the 72rem measure, so it reads as a stray underline sitting on the image — nearly invisible where the photo is dark, conspicuous where it is light — rather than as the rule that opens the next section. Smallest fix: move the rule below the photograph onto the cream."
+      },
+      {
+        "section": "#alerts-callout vs #sticky-alerts",
+        "finding": "The same fact is worded two ways in one scroll: \"2 houses came on the market in Tetherow in the last 30 days\" in the callout and \"2 houses listed in Tetherow in the last 30 days\" in the armed bar, which makes a reader check whether they are two different figures. Smallest fix: render both from one string so the repeat is recognisably the same sentence."
+      }
     ],
-    "openRaise": [
-      "Draw the answer (SITE-02b, in progress): months of supply as the two-bar, comparable sales as a dot strip with a hover row per dot, days to pending as one mark on a 0 to 120 rule with the city median as context; one draw-on under 300ms.",
-      "Fold job: the H1 says 'homes for sale' over a seller ask; add one buyer door in the value card or give the buyer claim to the Atlas section.",
-      "#atlas: 'Tetherow' printed seven times with different counts, two chips with no count; dedupe by alias, withhold a chip whose count is unmeasured.",
-      "#subdivisions: a whole section for one row reading 'Triple Knot, none listed now'; omit when the registry yields one empty child.",
-      "#market: 'Too few recent sales here to chart' while PlaceTypeSlider prints $2,295,000 two sections above; reconcile.",
-      "#belonging: ~35 label/value rows in one section, six amenity headings holding one chip each, '1 PARAGRAPH' as a visitor-facing label.",
-      "#belonging distance ledger: the Redmond (RDM) bar runs the full measure and reads as a section rule; put the bars in a value column with a fixed track.",
-      "PlaceTypeSlider: ragged cards (1 / 3 / 2 sub-lines); '1 Lot' over '9 SOLD IN THE LAST 12 MONTHS'."
+    "bannedTells": [
+      "Raw MLS strings and methodology jargon in visitor-facing labels: seven chips reading only \"Tetherow\", \"Golf Homes At Tetherow\", plus \"HOA (measured)\" and \"$2,052 measured HOA a year\" in the hero",
+      "Scrolling list as the design: the Atlas subdivision rail runs 14+ chips past the bottom of the map frame with no mark, bar or encoding on any of them"
     ]
   }
 }

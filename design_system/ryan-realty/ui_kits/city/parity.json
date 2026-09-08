@@ -169,46 +169,139 @@
   ],
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 66,
-    "beats": "Puts Bend's 30-day new-listing count with its metric, window and exclusion rule in the first callout after the opening, and makes the figure a door into the newest-first search at every width; no competitor page was viewed in this pass, so no competitive win is certified.",
-    "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6",
+    "score": 78,
+    "scores": [
+      74,
+      81,
+      78
+    ],
+    "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 — three scorings of one capture run",
+    "evaluatorModel": "claude-opus-5",
+    "builderModel": "claude-fable-5-1",
+    "rubricVersion": "v1-2026-09-08",
+    "shotSpec": {
+      "routes": [
+        "/cities/bend"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "atlas",
+        "market (sticky alerts bar armed)",
+        "alerts-callout"
+      ],
+      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed so the real hero and listing photographs are in frame"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/city/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/city/shots/mobile375.png",
+      "atlasDesktop": "design_system/ryan-realty/ui_kits/city/shots/atlas-desktop.png",
+      "atlasMobile375": "design_system/ryan-realty/ui_kits/city/shots/atlas-mobile375.png",
+      "marketDesktop": "design_system/ryan-realty/ui_kits/city/shots/market-desktop.png",
+      "marketMobile375": "design_system/ryan-realty/ui_kits/city/shots/market-mobile375.png",
       "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-desktop.png",
-      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-mobile375.png",
-      "alertsStickyDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-sticky-desktop.png",
-      "alertsStickyMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-sticky-mobile375.png",
-      "alertsSentDesktop": "design_system/ryan-realty/ui_kits/city/shots/alerts-sent-desktop.png",
-      "alertsSentMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-sent-mobile375.png"
+      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/city/shots/alerts-callout-mobile375.png"
     },
-    "priorMark": {
-      "score": 67,
-      "evaluatedAt": "2026-09-06",
-      "evaluator": "separate grok-4.6 evaluator, place-pages pass, session 01a06fc0",
-      "note": "Set by a different evaluator against shots since overwritten; not comparable to this scale. On this evaluator's scale the SITE-04 item moved the page 57 to 64 to 66; the one-point shortfall against 67 is pre-existing work outside the item (below)."
-    },
+    "shotsHash": "sha256:2f1b9a4c9b5248aaebfa41ce2ba53e1f81a1daaef055d5c5397e4b5743b791c4",
+    "beats": "No competitor page was opened in this session — not the portals' Bend place page, not a Bend brokerage's city page, not the City of Bend's own site. I will not name a win against a page I did not look at. What is defensible from this page alone, judged against the rubric's floor description of portal place pages (\"they have the data and show it flat\"): the Atlas section is not flat — one frame carries a sold-density field, individual for-sale and pending marks, city and neighborhood boundary outlines, seven property-type toggles, a price ceiling slider, three live activity lines with prices, and fourteen named neighborhood doors with counts, all on the cream field in navy rather than a vendor basemap. The price section leads with a plain claim sentence (\"Median sale price $750K in Aug 2026, down 5.7% from Aug 2025\") and carries four years of monthly context plus a visible source trace and a figure-count disclosure. And the alerts callout states a real 30-day count as a sentence rather than a KPI tile. Depth, freshness, and a stated trace are the metrics I would expect this page to win on; interactivity I can only claim as far as visible affordances, since stills cannot prove a hover reveals a row.",
     "subScores": {
-      "design": 21,
-      "originality": 16,
+      "design": 24,
+      "originality": 24,
       "interaction": 11,
-      "craft": 9,
+      "craft": 10,
       "honesty": 9
     },
-    "fixedFromThisPass": [
-      "Alerts (SITE-04): the email-only capture moved from the page bottom to the first callout after the opening with the real 30-day count (Market Truth new_listings_30d, detached, Source disclosure) as the promise; a sticky repeat past #atlas that hides over the callout and the footer, remembers a dismissal for the session, and disappears after a send; the same capture contract (submitSearchAlertSignup, honeypot, guest-watch residual, alert_create with placement).",
-      "The count is a door into the newest-first search at every width (numeral plus a ghost link); the sticky strip carries its own one-line disclosure; a display numeral only at counts of 10 or more, below that the sentence leads with the digit inline.",
-      "Record shots show the real production hero and thumbnails (blocked hosts relayed through curl in the capture; nothing fabricated), with the strip verified off before every full-page and callout frame; the strip's observer missed jumps past the Atlas and is now backed by a throttled scroll read."
+    "scoringNotes": "Three genuinely separate reads of the same eight records, in the order made. Pass 1 (74) was a defect-led read: I came off the market shots first and the chart's problems dominated — four categorical series where the rubric caps at three, the 2023/2024/2025 end labels overprinting each other with the 2025 line struck through \"2024\", the same labels at roughly 6px on 375 — and I let that pull design and craft down together, since the price section is the one a reader is likeliest to screenshot. Pass 2 (81) was a composition-led read: I looked at the page as one object against the \"wall of text, scrolling lists, and boring\" baseline the rubric is written against, and the Atlas plus the sentence-shaped alerts callout are a large step past that; TASTE explicitly says a cramped Atlas or a rail stealing the field is a format bug on a good object, not a bad object, and most of what I had penalised in pass 1 is repairable format on genuinely good primitives. Craft stayed low but design and originality rose about two points each. Pass 3 (78) was a per-section read with the DATA_GRAPHICS slot table open, section by section, and it landed between the two: the Atlas is a serious instrument but it is a map of Bend with no place names anywhere on the field, which is a real reading failure and not only a format bug, and the desktop Atlas leaves roughly 1080x240 of empty cream beside its own chip column. What moved across all three passes was almost entirely design and originality (23-25 and 23-25); interaction (11-12), craft (9-10) and honesty (8-9) barely moved, because those three are pinned to things I can measure in the pixels rather than to how generous I feel about the composition. Median 78. The sub-scores returned are the pass-3 breakdown, which sums to the median.",
+    "evidenceLimits": "Eight static PNGs from one capture run, four states, two widths — no live page was opened and no code was read, by design. Consequences: (1) Hover, tooltip, crosshair, keyboard reading, draw-on entry, replay, reduced-motion, and focus rings are all unverifiable. Where DATA_GRAPHICS makes hover mandatory (\"number on hover\", \"hover / scrub / replay reveals the exact figure, the window, and n\") I scored the affordance visible in rest state, not the behavior — the price chart may well have a crosshair I cannot see, and I have marked that as a limit rather than asserting it is missing. (2) These four states are windows into a longer page. I did not see a Field of listing photos or rows, any child-community or master-plan doors below the Atlas, the footer, or any broker contact block in the page body; TASTE names \"a broker one tap away\" as one of our wins over portals and I can only say it is not in frame, not that it is absent from the page. Likewise the page's section count and full rhythm cannot be judged, so my design score covers the four sections captured and the transitions between them. (3) Contrast is eyeballed against the PUBLIC_UI §4 table, not computed from the source tokens; the one call I make (the sticky bar's cream-60 disclosure line reading below the table's 16px floor) is a size judgment off a 1440-wide capture and should be confirmed against the rendered font-size before it is treated as a fact. (4) market-mobile375.png and alerts-sticky-mobile375.png are byte-identical (same md5, 14089edb…), so the \"market\" and \"sticky\" mobile states are one frame, not two — I scored it once. (5) I checked whether the degraded-read state the brief describes is in these records: it is not. Every place figure renders (142, 728 for sale, 339 pending, 3.9 months, $750K, 33 figures, all fourteen chip counts), the hero photograph is the real Deschutes/Old Mill frame, and the alerts feature is present on both widths. Nothing I have called a defect is a capture artifact, with one flagged exception noted in the defects list: the clipped Atlas heading is caused by scrolling to an anchor, which is exactly what a reader does when they follow an in-page link, so I treat it as a page defect (a missing scroll-margin-top) rather than a capture one — if the section carries no in-page anchor a reader can reach, downgrade it.",
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "The prior mark differs on evaluatorModel, rubricVersion and shotsHash: it was set by separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 against whole-page stitches that no longer exist (all six place records were re-captured through the one capture tool on 2026-09-08, which is what ci:shot-weight now requires), under no recorded rubric version. A different instrument is not a baseline, so this is a rebaseline, not a rise.",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 66,
+      "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6"
+    },
+    "defects": [
+      {
+        "section": "#market — price chart series",
+        "finding": "Four categorical series (2023, 2024, 2025, 2026) where the rubric caps categorical at three and says fold or facet past that. Worse, the three context years are near-indistinguishable navy tints: in the legend the 2023/2024/2025 swatches differ by a step you cannot resolve, and in the plot the 2024 and 2025 lines are the same value to the eye, so the context is decorative rather than readable. Smallest fix: draw 2026 against one context year (2025) at a clearly separated tint and move the older years into small multiples behind the existing ALL 33 FIGURES disclosure."
+      },
+      {
+        "section": "#market — chart end labels",
+        "finding": "The right-edge series labels collide. At native resolution 2023, 2024 and 2025 are stacked with near-zero leading, the 2025 line passes straight through the word 2024, and the block sits outside the plot's right rule in the margin past the end of the axis baseline. This is the marquee data graphic on a data-first page and it has overprinted type on it. Smallest fix: run a minimum-gap collision pass on the end labels (nudge apart vertically, leader to the mark), or drop end labels entirely since the legend above already names all four years."
+      },
+      {
+        "section": "#market — chart at 375",
+        "finding": "On mobile the plot is roughly 280px wide carrying twelve months and four crossing series, and the same three end labels render at about 6px, stacked and touching the frame edge. The one graphic that answers 'what do they cost' is not readable at the width most visitors use. Smallest fix: below 480px render 2026 against a single context year, drop the end labels to the legend, and let the plot use the full column."
+      },
+      {
+        "section": "#atlas — map field",
+        "finding": "The map carries no place names at all. Every name is exiled to the left rail, so a reader looking at the density field cannot tell which dark mass is Awbrey Butte and which is Southeast Bend; the spatial reading — the whole reason this is a map and not a table — does not complete. TASTE's own description of the object to copy is 'cream field, navy marks, place names'. Smallest fix: label the major neighborhood boundaries on the field at desktop zoom, at the rail's label size, navy-70."
+      },
+      {
+        "section": "#atlas — desktop composition",
+        "finding": "The map frame stops roughly 235px above where the neighborhood chip column ends, so the bottom of the section is a ~1080x240 rectangle of empty cream beside a narrow 280px stack of chips, with more chips continuing below the fold. This is the 'leftover rail stealing the field' format bug the rubric names. Smallest fix: let the chip grid break out of the rail and flow full-width beneath the map once the map ends, or match the map's height to the rail."
+      },
+      {
+        "section": "#atlas — neighborhood doors",
+        "finding": "Fourteen-plus child doors are shrink-wrapped hairline boxes carrying a name and a bare numeral — no bar, no mark, no unit. Two failures at once: DATA_GRAPHICS asks the 'which part is moving' slot to be encoded bars or a ledger by sold count, and the numeral has no label, so '137' beside Summit West could be actives, sold, or pending. The shrink-wrapping also gives every box a different width, producing a ragged stair-step right edge down the whole column. Smallest fix: fixed two-column grid, one hairline bar per row scaled to the count, and name the unit once in the run's eyebrow."
+      },
+      {
+        "section": "#market — source trace",
+        "finding": "The always-visible four-line source paragraph carries two mutually contradictory filters under one chart — 'detached single-family houses inside the Bend city boundary' and, three lines later, 'Bend, all property types, calendar year 2025' — plus the full months-of-supply formula and thresholds, which this chart does not use, and a window (calendar 2025) that does not match a chart running through Aug 2026. A reader cannot tell which clause governs the $750K. Under §0 the trace must match the figure it sits beside. Smallest fix: render only this figure's own table, filter, window and n beneath the chart, and move the layer-wide methodology behind the ALL 33 FIGURES disclosure that already exists two lines above it."
+      },
+      {
+        "section": "#hero + #alerts-sticky — gutters",
+        "finding": "Three different left edges in one composition. The hero photograph bleeds to x=0, the navy rule beneath it starts at x=145 (the 72rem measure), the headline 'Bend real estate' starts at x=165, and when the sticky bar arms its content also starts at 145 — so the bar's '142' sits 20px left of the section content directly above it. The rule under a full-bleed photo reads as a floating fragment because it aligns with neither the photo nor the type. Smallest fix: one gutter token for content across hero, sections and the sticky bar, and either bleed the hero rule to the viewport or drop it."
+      },
+      {
+        "section": "#atlas — section heading anchor",
+        "finding": "'Bend right now' is sliced in half by the sticky mast when the section is scrolled to, at both 1440 and 375 — the heading's top sits behind the 4px navy mast rule and only the lower half of the letterforms shows. Any in-page link to this section lands a reader on a decapitated heading. Smallest fix: scroll-margin-top on the section anchor equal to header height plus mast rule."
+      },
+      {
+        "section": "#alerts-sticky — disclosure contrast",
+        "finding": "'Every new listing by email. Unsubscribe any time.' is set in cream-60 on navy at what reads well under 16px. PUBLIC_UI §4 computes cream-60 on navy at 5.99:1 and permits it for muted text only at ≥16px; below that it fails the page's own AA floor, and this is the one-line disclosure the feature's honesty depends on. Smallest fix: raise the line to cream-80, or set it at 16px."
+      },
+      {
+        "section": "#alerts-callout — the count as a door",
+        "finding": "The brief's premise is that the count itself is the door into the newest-first search, but in rest state the '142' is typographically identical to the rest of the Amboqia headline — no rule, no colour shift, no affordance — and the same destination is repeated by the outlined 'See the newest Bend listings' button directly beneath it. Either the door is invisible or it is redundant. Smallest fix: give the numeral the site's link treatment (hairline under, hover state) and cut the duplicate button, or leave the button and stop calling the numeral a door."
+      },
+      {
+        "section": "#alerts-callout — desktop composition",
+        "finding": "The right column (pitch, email label, field, button) ends about 220px above the left column's SOURCE line, and then a further ~170px of empty section pad runs before the Atlas heading — so the bottom-right quadrant of the callout is a void and the section ends on dead space rather than on a rule or an edge. Quiet is the register; an unbalanced hole is not the same thing. Smallest fix: set the two columns on a shared baseline and trim the trailing pad to the section rhythm token."
+      },
+      {
+        "section": "#alerts-callout + #market — disclosure primitives",
+        "finding": "Two different disclosure affordances on one page: a native '▶ SOURCE' triangle marker in the callout and a typographic 'ALL 33 FIGURES +' in the price section. Same job, two looks, one page — the consistency rule says one primitive with one variant. Smallest fix: one disclosure primitive from the v3 barrel, one marker, used in both places."
+      },
+      {
+        "section": "#atlas — mobile control placement",
+        "finding": "At 375 the property-type toggles, the price slider and the for-sale/pending counts all sit below a ~490px map, so a reader who changes a filter cannot see the field respond without scrolling back up — the interaction reveals nothing at the moment it is performed. Smallest fix: move the toggle row and the counts above the map below 768px, or keep the map sticky while the control column scrolls."
+      },
+      {
+        "section": "#atlas — double encoding of density",
+        "finding": "A blurred grid raster and several hundred individual dots encode the same quantity on top of each other, so neither is crisp: the raster reads as a smudge rather than the data-encoded cells the form is meant to be, and for-sale versus pending is a tint difference on small dots that does not survive at map scale. Smallest fix: pick one carrier — crisp cells with a hover row, or dots — and give pending a distinct mark shape rather than a tint."
+      },
+      {
+        "section": "#hero — place chip",
+        "finding": "The 'Bend' chip floats at top-left over unscrimmed sky, propped up by a text-shadow, and repeats the word that appears 400px below it in the headline 'Bend real estate'. It reads as leftover HUD on an otherwise composed Stage. Smallest fix: cut it — the headline names the place — or move it inside the bottom scrim as an eyebrow above the headline."
+      },
+      {
+        "section": "#atlas — property type toggles",
+        "finding": "Seven checkboxes wrap 3/2/2 on desktop and 3/3/1 at 375, each row a different length, leaving a ragged right edge and an orphaned single control on its own line at both widths. Smallest fix: a fixed grid (three columns desktop, two at 375) so the run reads as one block."
+      },
+      {
+        "section": "#alerts-sticky at 375",
+        "finding": "The armed bar takes about 135px of the 812px viewport (roughly 17%) and covers the running source text mid-sentence, and its close X sits inline at the end of the wrapped second line of the headline rather than at a corner, so it reads as punctuation on the sentence. Smallest fix: single-line the headline at 375 (drop 'in Bend', the page already says so), pin the X to the bar's top-right, and add scroll padding equal to the bar's height."
+      }
     ],
-    "openRaise": [
-      "#market: the 2023/2024/2025 series labels print on top of each other and overflow the plot edge (four series; the categorical cap is 3); fold to two series. The evaluator says this alone clears 67.",
-      "#market: a declining figure (down 5.7%) renders in navy; the data-exception ink exists for exactly this.",
-      "Golf and master-planned grid: 6 of 11 cards imageless with 200px column voids.",
-      "Activity ledger: 'Bend · N/A' prints as a visitor-facing subline; row 1 is a 285px hero card while rows 2+ are 60px rows.",
-      "#neighborhoods, #communities, #communities-ledger: three adjacent Ledgers (the stacked-section tell).",
-      "PlaceTypeSlider: the leftover HUD tile (a number, a price, '3.9 MONTHS', no sentence).",
-      "#atlas: the rail runs ~350px past the map's bottom edge, leaving dead cream beside it.",
-      "#open-houses: Amboqia time cells wrap and misalign; use Geist tabular."
+    "bannedTells": [
+      "Methodology jargon as visible body copy: the price section renders four lines of always-on source prose, including the full months-of-supply formula and its three thresholds, under a chart that does not use months of supply. TASTE bans methodology jargon in anything a visitor reads and says prose that is needed sits under a disclosure — one already exists two lines above it.",
+      "Scrolling list as the design (partial): the Atlas child doors are 14+ shrink-wrapped boxes carrying a bare numeral with no bar, mark, or unit — the encoding DATA_GRAPHICS asks for on the 'which part is moving' slot is absent.",
+      "Checked and NOT present, for the record: no leftover PlaceFaceStrip five-number HUD on the opening (the verdict is a caption, '3.9 months of homes on the market. A seller's market.', which is what the spec asks for); no Atlas 'pinch to zoom' how-to sentence; no purple gradient, card grid, frosted panel, emoji, or centered hero; no elevation shadows; no off-brand hue anywhere in frame.",
+      "Near-miss on the exception-ink rule: the section's own claim is a decline (down 5.7% YoY) and nothing in the section uses --rr-exception, which is the exact 'YoY in navy' case DATA_GRAPHICS lists among the live defects it replaces. Judgment call rather than a hard violation, since the drawn series is not itself the drawdown."
     ]
   }
 }

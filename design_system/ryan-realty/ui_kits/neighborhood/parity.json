@@ -198,44 +198,138 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 61,
-    "beats": "States Awbrey Butte's own 30-day count and, on the line directly beneath it, that the alert covers all of Bend with Awbrey Butte included, said once, in the one place the reader is already looking; no competitor page was viewed in this pass, so no competitive win is certified.",
-    "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6",
+    "score": 72,
+    "scores": [
+      73,
+      68,
+      72
+    ],
+    "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 — three scorings of one capture run",
+    "evaluatorModel": "claude-opus-5",
+    "builderModel": "claude-fable-5-1",
+    "rubricVersion": "v1-2026-09-08",
+    "shotSpec": {
+      "routes": [
+        "/cities/bend/awbrey-butte"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "atlas",
+        "market (sticky alerts bar armed)",
+        "alerts-callout"
+      ],
+      "capture": "scripts/take-route-shots.mjs, device scale 1, palette-quantized, consent banner and dev badge suppressed, image hosts relayed so the real hero and listing photographs are in frame"
+    },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/desktop.png",
       "mobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png",
+      "atlasDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/atlas-desktop.png",
+      "atlasMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/atlas-mobile375.png",
+      "marketDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/market-desktop.png",
+      "marketMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/market-mobile375.png",
       "alertsCalloutDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-callout-desktop.png",
-      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-callout-mobile375.png",
-      "alertsStickyDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-sticky-desktop.png",
-      "alertsStickyMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-sticky-mobile375.png"
+      "alertsCalloutMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/alerts-callout-mobile375.png"
     },
-    "priorMark": {
-      "score": 58,
-      "evaluatedAt": "2026-09-06",
-      "evaluator": "separate grok-4.6 evaluator, place-pages pass, session 01a06fc0",
-      "note": "Set by a different evaluator against shots since overwritten; not comparable to this scale. On this evaluator's scale the SITE-04 item moved the page 48 to 58 to 61."
-    },
+    "shotsHash": "sha256:89e3ed0372e8c763715126c8c919f3268c1c81908c2362d413cd3d6cc393e4b1",
+    "beats": "No competitor page was opened in this session — not the Compass/Redfin/Zillow Awbrey Butte pages, not any Bend brokerage neighborhood page, not a portal place page. I viewed only these eight PNGs, so any claim that this page \"beats\" a named page would be invented and I will not make one. What is defensible from our own page alone: (1) the Atlas is a boundary-accurate cartographic field with plat polygons shaded by 90-day sold density, live for-sale/pending marks, property-type toggles and a price filter — that is a depth-and-interaction claim we can make from the evidence, whereas a portal place page's map is a pin cloud with no plat geometry and no sold encoding; (2) the source line names the source, the segment definition, the boundary method, the withheld-figure policy and the fetch date, which is a freshness/honesty claim visible in the shot itself; (3) the place-alerts strip states its own scope against itself (\"the count is Awbrey Butte, the alert covers all of Bend\") — a disclosure that costs conversion, which is evidence of the standard, not of a win over anyone. None of the three is a measured win until someone actually opens the competing page and records it.",
     "subScores": {
-      "design": 17,
-      "originality": 15,
+      "design": 23,
+      "originality": 22,
       "interaction": 10,
       "craft": 9,
-      "honesty": 10
+      "honesty": 8
     },
-    "fixedFromThisPass": [
-      "Alerts (SITE-04): the email-only capture moved from the page bottom to the first callout after the opening with the real 30-day count (Market Truth new_listings_30d, detached, Source disclosure) as the promise; a sticky repeat past #atlas that hides over the callout and the footer, remembers a dismissal for the session, and disappears after a send; the same capture contract (submitSearchAlertSignup, honeypot, guest-watch residual, alert_create with placement).",
-      "The count is a door into the newest-first search at every width (numeral plus a ghost link); the sticky strip carries its own one-line disclosure; a display numeral only at counts of 10 or more, below that the sentence leads with the digit inline.",
-      "Record shots show the real production hero and thumbnails (blocked hosts relayed through curl in the capture; nothing fabricated), with the strip verified off before every full-page and callout frame; the strip's observer missed jumps past the Atlas and is now backed by a throttled scroll read."
+    "scoringNotes": "Three independent passes over the same eight PNGs, in the order made: 73, 68, 72. Median 72; the five sub-scores below sum to 72.\n\nPass 1 (73) was the first-impression read: the hero, the giant-numeral claim, and the near-full-bleed Atlas carried it. I scored design 24 / originality 22 / interaction 10 / craft 9 / honesty 8. The register lands — quiet, editorial, expensive, data-first, nothing SaaS anywhere in frame.\n\nPass 2 (68) fell five points because I stopped reading the page as pictures and started reading it as a visit. Two things moved: the second screen of a neighborhood page — whose job PLACE_PAGES states as \"what is selling here\" — is an email capture with a filled navy primary button visible in the first viewport, before one house has been shown, so I took design 24→22; and the measured contrast failures (breadcrumb, sticky-bar disclosure) plus the anchor-bisected Atlas heading moved craft 9→8 and interaction 10→9. Originality also slipped 22→21 once I noticed the plat doors — the one slot where DATA_GRAPHICS asks for encoded bars — shipped as an unencoded chip row.\n\nPass 3 (72) gave points back, deliberately, after re-reading the source line and the scope line at native resolution. The trace discipline here is above this shop's average and the \"a figure the layer withheld is absent, not estimated\" sentence is the right instinct written into visitor-facing copy; the Atlas is genuinely more instrument than map. I settled design 23 / originality 22 / interaction 10 / craft 9 / honesty 8. Craft stayed at 9 in every pass — the contrast, gutter, and anchor findings are measured, not impressions, and they are the class Matt described as \"a human opens it and it is gross.\"\n\nWhat never moved across the three passes: originality is the page's strongest axis and craft its weakest, and the gap between them is the finding. The numeral-inside-the-sentence and its sticky repeat are moves a template would not make; the things dragging the number down are almost all small, mechanical, and cheap to fix.",
+    "evidenceLimits": "Eight PNGs from one capture run, nothing else — I did not open the route, a dev server, the component source, or any competitor page, and I edited nothing.\n\nCoverage. The four states (default, atlas, market, alerts-callout) show roughly the top half of the page. Sections 2 (houses for sale in this boundary as a Field with photographs), 4 (schools), 5 (parks and trails), 6 (what's on this week), 7 (governing docs), 9 (guides) and the footer from the PLACE_PAGES neighborhood order appear in no shot. I neither credited nor faulted them; whole-page rhythm, the Atlas→Field pairing, and whether the page's search job completes are therefore judged only on what is in frame, and my design and originality sub-scores are scores of the visible half.\n\nStates never exercised. No hover, focus, keyboard, tooltip, crosshair, active-toggle, scrubbing, draw-on, reduced-motion or error state was captured. DATA_GRAPHICS makes hover non-optional on every graphic, and I could not confirm or deny it on either the Atlas or the chart — the interaction sub-score credits the affordances visible at rest (toggles, slider, zoom, chip scroller, two disclosures, the form, the dismiss) and withholds credit for reveals I could not see. Likewise the withheld/degraded read the brief describes (\"Live counts are unavailable right now\") is not in any of these eight shots, so my honesty sub-score credits the source line and the scope line, which I can see, and takes the empty-state behaviour on the brief's word rather than on evidence.\n\nMeasurement caveats. The PNGs are 8-bit palette-quantized, so my contrast figures are estimates taken from the brightest stroke pixels of antialiased small text and are lower bounds on the true ratio, not exact values. Two of them survive that caveat on other grounds: the breadcrumb's text and background differ by ~17 levels out of 255, which quantization cannot manufacture, and the sticky disclosure's ~11px glyph row violates the ≥16px floor regardless of its colour. The gutter, alignment and rule measurements (x=366/367 vs a 20px gutter; x=40 vs x=20; the 2px rule at x=144–1295) are geometric and unaffected by quantization.\n\nDuplicate records. market-desktop.png and alerts-sticky-desktop.png are byte-identical (md5 94d1c8da…), as are the two mobile files (e9a4e7e6…), so the armed sticky bar is judged from the market capture exactly as the brief describes — I am reporting the duplication as a fact about the record set, not as a page defect.",
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "The prior mark differs on evaluatorModel, rubricVersion and shotsHash: it was set by separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6 against whole-page stitches that no longer exist (all six place records were re-captured through the one capture tool on 2026-09-08, which is what ci:shot-weight now requires), under no recorded rubric version. A different instrument is not a baseline, so this is a rebaseline, not a rise.",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 61,
+      "evaluator": "separate Opus evaluator, SITE-04 place-alerts pass, session 019RdEm6"
+    },
+    "defects": [
+      {
+        "section": "#hero / breadcrumb",
+        "finding": "The breadcrumb sits on the photograph's brightest region with no scrim and is effectively invisible. Sampled at native resolution: the \"Bend\" glyph strokes are (164,165,157) against a sky of (181,182,172) — roughly 1.2:1; the white \"Awbrey Butte\" core pixels reach about 2.1:1. Both fail AA by a wide margin, and \"Bend\" is the parent door — the one navigational affordance PLACE_PAGES calls \"not optional chrome.\" Smallest fix: add the same top-edge scrim the title already has at the bottom (a short navy-to-transparent gradient behind the breadcrumb row), or move the breadcrumb off the photo onto the cream above it."
+      },
+      {
+        "section": "#alerts-callout (placement)",
+        "finding": "The ask arrives before the answer. On a neighborhood page whose job is \"what is selling here,\" the second screen is an email-capture form — a filled navy \"Email me each one\" button is inside the first 900px viewport — and the reader has seen a photograph and a place name, nothing else. PLACE_PAGES puts alerts at section 10; PUBLIC_UI §1 says the ask must be \"earned by the content above it.\" A photo and an H1 do not earn it. The 30-day count is real content and deserves to be high, but the form is not. Smallest fix: keep the numeral claim, the scope line and the \"See the newest\" door where they are, and collapse the email field + button behind that door (or repeat them below the Atlas) so the first ask follows the houses; the sticky bar already covers the reader who scrolls past."
+      },
+      {
+        "section": "#atlas (section heading)",
+        "finding": "\"Awbrey Butte right now\" is bisected horizontally by the sticky mast in BOTH the desktop and the 375 atlas states — the top ~45% of the Amboqia glyphs sits under the header's 4px navy rule, so the heading reads as a torn strip. This is the anchor-scroll signature: the section is jumped to without compensating for the site's own fixed chrome. Smallest fix: scroll-margin-top on the anchored section equal to the header height plus one space step."
+      },
+      {
+        "section": "#atlas (plat chips)",
+        "finding": "The \"which part is moving\" slot ships as four bordered chips with a bare, muted numeral — \"Awbrey Road Phase One 7\", \"Awbrey Village 6\" — and no encoding of any kind: no bar, no width, no mark. DATA_GRAPHICS names bars for exactly this slot and PLACE_PAGES §3 says \"encoded by what is moving.\" Worse, the numeral is unlabelled (7 for sale? 7 sold? in what window?) and it is set smaller and lighter than the plat name, so the label shouts and the datum whispers. Smallest fix: give each chip a full-width hairline bar scaled to its count, put the count in navy at the name's weight, and add one shared caption above the row naming the unit and window (\"homes sold, last 90 days\")."
+      },
+      {
+        "section": "#alerts-sticky (disclosure line)",
+        "finding": "The sticky bar's one-line disclosure (\"Every new listing by email. Unsubscribe any time.\") is muted cream on navy at roughly 12px — measured glyph row height 11px, brightest stroke pixels around 4.1–4.2:1 against the navy ground. PUBLIC_UI §4 states its own floor: muted text stops at cream-60 and only at ≥16px. This is below both the size floor and the AA threshold for small text, and it is the line that carries the consent promise. Smallest fix: raise the disclosure to the body size at full cream, or to cream-60 at ≥16px."
+      },
+      {
+        "section": "#market (chart, 375)",
+        "finding": "The chart breaks the page gutter at 375. The page's left gutter is 19–20px, but the \"NOV\" axis tick reaches x=366 and the \"2025\" direct label reaches x=367 — about 8px from the viewport edge and roughly 12px past where every other element on the page stops. The last tick and the last series label read as clipped. Smallest fix: reserve right padding in the plot for the widest direct label, or right-align the final tick inside the gutter instead of on it."
+      },
+      {
+        "section": "#atlas (density layer)",
+        "finding": "The sold-density fill is the weakest drawing on the page in two ways. Its ramp tops out at a mid grey (~#7d8b9c in the legend's darkest swatch), so \"more sales\" never reaches a value that reads against the plat outlines and the whole map looks washed. And at native resolution the fill renders as visible ~10px axis-aligned blocks with stair-stepped haloes around the polygon edges — a coarse raster layer sitting next to crisp vector hairlines, which reads as unfinished. Smallest fix: extend the ramp's top step to navy-70 or navy, and paint the density as a fill on the plat polygon geometry rather than as a rasterized/blurred layer."
+      },
+      {
+        "section": "#market (heading stack)",
+        "finding": "Four consecutive lines say the same thing and three of them name the neighborhood: eyebrow \"AWBREY BUTTE · TYPICAL PRICE\" → H2 \"Typical price in Awbrey Butte\" → sub-label \"MEDIAN SALE PRICE BY MONTH IN AWBREY BUTTE\" → claim \"Median sale price $1.2M in Jul 2026, down 20% from Jul 2025.\" The claim sentence already carries the metric, the place is already in the H2 and the breadcrumb, and the sub-label is the broker phrasing DATA_GRAPHICS says belongs on hover, not as a heading. Smallest fix: delete the sub-label row and keep eyebrow → H2 → claim."
+      },
+      {
+        "section": "#market (claim colour)",
+        "finding": "\"down 20% from Jul 2025\" is set entirely in navy. A −20% YoY is a real decline and is what the section is about, which is precisely the case --rr-exception exists for; DATA_GRAPHICS lists \"YoY −5.2% in navy\" by name under the live defects this spec replaces. Smallest fix: set the decline clause (and the 2026 series' terminal mark, if it is drawn) in --rr-exception, leaving the rest navy."
+      },
+      {
+        "section": "#market / #alerts-callout (disclosure idiom)",
+        "finding": "One page, two ways to hide the same object. The alerts callout collapses its trace behind \"▸ SOURCE\" using the browser's default details triangle — the only piece of unstyled default chrome anywhere in these eight shots — while the market section uses a bespoke \"ALL 2 FIGURES +\" and prints its source open beneath. TASTE's consistency rule: two sections doing the same job must be the same primitive, same variant. Smallest fix: pick one disclosure primitive (the \"+\" affix, since it is already designed), use it in both places, and replace the default marker."
+      },
+      {
+        "section": "#alerts-callout (desktop composition)",
+        "finding": "The desktop two-column split leaves a large L-shaped void. The right column ends at y≈275 while the left runs to y≈411 and the section pads to y≈560, so roughly 400×280px of empty cream sits under the form with nothing in it, and the hairline column rule stops short at y≈275 — the section reads bottom-heavy-left and unfinished at right. Smallest fix: move the SOURCE disclosure under the form column so both columns end together, or let the form column align to the claim's baseline rather than the eyebrow's."
+      },
+      {
+        "section": "#atlas (for-sale vs pending marks)",
+        "finding": "Two listing states are encoded on the map by tint alone, on a ~5px dot: the legend's \"74 for sale\" and \"25 pending\" swatches differ by a faint step of the same navy tint, and at map scale the two are indistinguishable — the reader cannot tell an active from a pending without the legend, and colour-blind or low-vision readers cannot at all. Smallest fix: encode state by shape (filled dot = active, open ring = pending, and the existing lighter dot for sold), which also survives the monochrome palette by design."
+      },
+      {
+        "section": "#atlas (activity ticker)",
+        "finding": "The three activity items flow inline and wrap into a ragged two-line block — two items on line one, one item alone on line two with roughly 550px of empty space to its right. It reads as reflowed text rather than a composed row, and it is the one element on the page that proves the data is live. Smallest fix: lay the three items on one row as equal columns (or one per line as a short ledger with the dot as the state mark), so the rag is a decision and not a wrap."
+      },
+      {
+        "section": "#atlas (alignment)",
+        "finding": "Inside one section, the text sits at x=40 and the map frame at x=20. Twenty pixels is too small to read as a deliberate bleed and large enough to read as a mistake: the heading, legend, filters, activity and chips all hang 20px inboard of the frame they describe. Smallest fix: put the map on the same inset as the section's text, or push the text out to the map's edge — either is fine, but one of them."
+      },
+      {
+        "section": "#hero (section rule)",
+        "finding": "A 2px navy rule spanning exactly the 72rem measure (x=144–1295) is drawn immediately under the full-bleed photograph's bottom edge, at rows 624–625, with the photo's dark tree line ending at row 623. Because the photo runs edge to edge and the rule does not, the result looks like a dark bar that stops 144px short on each side — a printing error, not a rule. Smallest fix: suppress the following section's opening rule when the preceding section is full-bleed media (the photo edge already closes the section), or run the rule full width."
+      },
+      {
+        "section": "#market (source line)",
+        "finding": "The trace is strong on substance and weak on two counts. It exposes an internal system name to a visitor — \"read through the Market Truth metric layer\" — which is exactly the internal-label tell TASTE bans; and it never states n for the median, deferring with \"every figure names its own window\" where DATA_GRAPHICS §8 asks for table + filter + window + n + fetched date. It is also set as a single paragraph across the full 72rem measure at ~13px, about 180 characters per line, where the file's prose measure is 44rem. Smallest fix: drop the internal layer name, append the window and n for the median figure, and set the paragraph at the 44rem measure."
+      },
+      {
+        "section": "#alerts-callout (the count as a door)",
+        "finding": "The brief describes the count itself as a door into the newest-first search, but at rest the \"15\" is rendered identically to the rest of the Amboqia sentence around it — no underline, no rule, no weight or colour change — so nothing tells the reader it is clickable, and the visible door is the separate ghost button below. Smallest fix: give the numeral a hairline underline at rest (thickening on hover/focus), so the door is discoverable without a hover; if it is not meant to be a link, remove the ambiguity and let the button be the only door."
+      },
+      {
+        "section": "#atlas / #alerts-sticky (375 controls and bar height)",
+        "finding": "Observation, not measurable from a still: at 375 the type checkboxes (~14px squares), the price-slider knob (~20px) and the map +/− buttons (~30px) are all drawn well under the 44px touch minimum PUBLIC_UI §2 sets — whether the hit area is padded beyond the visible mark cannot be seen in a screenshot, so this needs a check in the browser rather than a redraw. Separately, the sticky bar at 375 is ~155px tall (claim on two lines, disclosure, then field and button), roughly 19% of the viewport, and in the market state it covers the source trace. Smallest fix: verify the hit areas at 375; and collapse the sticky bar to a single row (numeral claim + button, disclosure revealed on focus) so it costs under 10% of the viewport."
+      }
     ],
-    "openRaise": [
-      "#atlas: the chip wall (~95 chips, 25+ reading 'Awbrey Butte Homesite…' phase variants) is the page's dominant visual event; group the variants under one label, cap the visible set, disclose the rest.",
-      "#atlas: ~1100px of empty left column beside the chip wall while the map ends far above it.",
-      "#homes: the Split leads with Rivers Edge Village homes under an Awbrey Butte H1, the chip reads 'PLACES: 2', and there is no count line.",
-      "Housing stock: 'Build years and HOA' is three prose statements with no drawing; the build-year distribution wants a dot strip.",
-      "#daily-life: 'SCHOOL' repeats as the left label on all three rows.",
-      "#market: the 2025 label overflows the plot edge; 'down 20%' in navy, not the exception ink.",
-      "#activity: one row rendered as a full-width hero card.",
-      "#open-houses: the city page's six rows verbatim, none in Awbrey Butte; nearest-first or omit."
+    "bannedTells": [
+      "Internal labels and methodology jargon in visitor-facing copy: the market source line reads \"read through the Market Truth metric layer\" (an internal system name), and the disclosure is labelled \"ALL 2 FIGURES +\" (machine-generated English).",
+      "Figures with no sentence beside them: the four plat chips carry a bare numeral (\"Awbrey Road Phase One 7\") with nothing saying what 7 counts — the KPI-tile failure in chip clothing.",
+      "NOT present, checked explicitly: no PlaceFaceStrip on the place opening; no Atlas \"pinch to zoom\" how-to sentence; no purple gradient, no Inter/Roboto, no icon card grid, no frosted glass, no shadow soup, no centered hero, no emoji headers, no counting-up numerals visible."
     ]
   }
 }

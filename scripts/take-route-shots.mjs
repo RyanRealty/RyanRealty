@@ -419,7 +419,32 @@ async function primeReveals(page) {
   return height
 }
 
-async function loadPage(page, url) {
+/**
+ * Trap 12 — a record must not quietly show the page's degraded read. Every
+ * place read here is wrapped in a 3.5-4s timeout fallback, and a dev server
+ * compiling under load blows straight through it: the page then renders its
+ * honest withheld state ("Live counts are unavailable right now", a callout
+ * with no figure) and the capture writes THAT as the record. It happened on
+ * 2026-09-08 to a whole mobile set, and the evaluator scored the withheld copy
+ * as the shipped design and marked the feature missing.
+ *
+ * The withheld state is a real state and worth capturing deliberately, so this
+ * does not ban it: it reloads, and only fails when the page will not come back.
+ * A degraded record is worse than no record, because a number gets written
+ * against it.
+ */
+const DEGRADED_SENTINELS = [
+  'Live counts are unavailable right now',
+  'counts are unavailable',
+  'could not be read right now',
+]
+
+async function degradedRead(page) {
+  const text = await page.evaluate(() => document.body.innerText || '').catch(() => '')
+  return DEGRADED_SENTINELS.find((s) => text.includes(s)) ?? null
+}
+
+async function loadPage(page, url, { attempt = 1 } = {}) {
   // Trap 6 — domcontentloaded plus an explicit settle, never networkidle.
   const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 })
   await waitFonts(page)
@@ -428,6 +453,21 @@ async function loadPage(page, url) {
   const height = await primeReveals(page)
   await waitImages(page)
   await page.waitForTimeout(600)
+
+  const degraded = await degradedRead(page)
+  if (degraded) {
+    if (attempt >= 3) {
+      throw new Error(
+        `the page is still serving its degraded read after ${attempt} loads ("${degraded}"). ` +
+          `Warm the route first (curl it with a browser user agent until it is fast) and re-run — ` +
+          `a record captured in this state understates the page and any score written against it is wrong.`,
+      )
+    }
+    console.log(`  reload     degraded read ("${degraded}") — attempt ${attempt + 1} of 3`)
+    await page.waitForTimeout(2500)
+    return loadPage(page, url, { attempt: attempt + 1 })
+  }
+
   return { status: response?.status() ?? 0, height }
 }
 
