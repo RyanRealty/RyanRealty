@@ -57,12 +57,37 @@
 }
 
 .sell-answer__bar {
+  /* A button, not a div: the drawing has to answer a keyboard the same way it
+     answers a pointer, and a title attribute does not reach one. */
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: 'label value' 'track track';
   align-items: baseline;
   column-gap: var(--v3-space-sm);
   row-gap: var(--v3-space-3xs);
+  inline-size: 100%;
+  min-block-size: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sell-answer__bar-reading {
+  margin: 0;
+  min-block-size: calc(var(--v3-space-lg) + var(--v3-space-xs));
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+/* The prompt is quieter than a reading, so an untouched drawing does not look
+   as though it is already answering something. */
+.sell-answer__bar-reading--idle {
+  color: var(--v3-ink-muted);
 }
 
 .sell-answer__bar-label {
@@ -99,6 +124,16 @@
    rather than as a second hue (PUBLIC_UI: navy on cream, tints for context). */
 .sell-answer__bar--pace .sell-answer__fill {
   background: var(--v3-ink-muted);
+}
+
+/* The interrogated bar. The mark itself answers — the track darkens under it,
+   nothing moves, nothing bounces (TASTE: interaction reveals, never decorates). */
+.sell-answer__bar--live .sell-answer__track {
+  background: color-mix(in srgb, var(--v3-ink) 16%, transparent);
+}
+
+.sell-answer__bar--live .sell-answer__bar-label {
+  color: var(--v3-ink);
 }
 
 @keyframes sell-answer-draw {

@@ -128,6 +128,25 @@ export function sellSupplyBars(
 }
 
 /**
+ * What a hover or a tap on one of the two bars reveals: the figure's own
+ * window, population and definition.
+ *
+ * TASTE.md: every data section has to reward a hover, tap or toggle with MORE
+ * DATA, and the dataviz rule is blunter still — "a chart the reader cannot
+ * interrogate is a picture of a chart". The bars are the section's drawing, so
+ * they answer when asked. Keyboard reaches the same reading, which is why the
+ * bars are buttons and not divs with a title attribute.
+ */
+export function sellBarReading(d: SellAnswerData, bar: 'forSale' | 'sold'): string | null {
+  if (bar === 'forSale') {
+    if (d.activeCount == null) return null
+    return `${d.activeCount.toLocaleString('en-US')} detached homes are listed and unsold in ${d.placeLabel} right now${d.asOfLabel ? `, counted ${d.asOfLabel}` : ''}. Attached homes, land and new-construction spec inventory are counted separately and are not in this figure.`
+  }
+  if (d.salesPerMonth == null) return null
+  return `About ${Math.round(d.salesPerMonth).toLocaleString('en-US')} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale ÷ months of supply recovers it exactly. Not a forecast — it is what the last six months did.`
+}
+
+/**
  * The readings beside the drawing. Each is a sentence with its figure inside,
  * and each carries the detail a hover reveals — never a bare number with a
  * jargon label, which is the "KPI grid" TASTE.md bans by name.

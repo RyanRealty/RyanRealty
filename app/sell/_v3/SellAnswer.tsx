@@ -27,16 +27,25 @@ import { cn } from '@/lib/utils'
 import {
   sellAnswerClaim,
   sellAnswerReadings,
+  sellBarReading,
   sellSupplyBars,
   sellSupplySentence,
   type SellAnswerData,
 } from './sell-answer'
 
+/** The two bars, in reading order. One template, two members. */
+const BARS = [
+  { key: 'forSale' as const, label: 'For sale now' },
+  { key: 'sold' as const, label: 'Under contract in a month' },
+]
+
 export function SellAnswer({ answer }: { answer: SellAnswerData }) {
   const [open, setOpen] = useState<string | null>(null)
+  const [bar, setBar] = useState<'forSale' | 'sold' | null>(null)
   const bars = sellSupplyBars(answer)
   const supply = sellSupplySentence(answer)
   const readings = sellAnswerReadings(answer)
+  const barReading = bar ? sellBarReading(answer, bar) : null
 
   return (
     <section className="sell-answer" aria-labelledby="sell-answer-claim">
@@ -53,31 +62,47 @@ export function SellAnswer({ answer }: { answer: SellAnswerData }) {
         <figure className="sell-answer__figure">
           <figcaption className="sell-answer__caption">{supply}</figcaption>
           <div className="sell-answer__bars">
-            <div className="sell-answer__bar">
-              <span className="sell-answer__bar-label">For sale now</span>
-              <span className="sell-answer__track">
-                <span
-                  className="sell-answer__fill"
-                  style={{ inlineSize: `${bars.forSale.pct}%` }}
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="sell-answer__bar-value">
-                {bars.forSale.count.toLocaleString('en-US')}
-              </span>
-            </div>
-            <div className="sell-answer__bar sell-answer__bar--pace">
-              <span className="sell-answer__bar-label">Under contract in a month</span>
-              <span className="sell-answer__track">
-                <span
-                  className="sell-answer__fill"
-                  style={{ inlineSize: `${bars.sold.pct}%` }}
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="sell-answer__bar-value">{bars.sold.count.toLocaleString('en-US')}</span>
-            </div>
+            {BARS.map((b) => (
+              <button
+                key={b.key}
+                type="button"
+                className={cn(
+                  'sell-answer__bar',
+                  b.key === 'sold' && 'sell-answer__bar--pace',
+                  bar === b.key && 'sell-answer__bar--live',
+                )}
+                aria-expanded={bar === b.key}
+                aria-controls="sell-answer-bar-reading"
+                onMouseEnter={() => setBar(b.key)}
+                onFocus={() => setBar(b.key)}
+                onMouseLeave={() => setBar((c) => (c === b.key ? null : c))}
+                onBlur={() => setBar((c) => (c === b.key ? null : c))}
+                onClick={() => setBar((c) => (c === b.key ? null : b.key))}
+              >
+                <span className="sell-answer__bar-label">{b.label}</span>
+                <span className="sell-answer__track">
+                  <span
+                    className="sell-answer__fill"
+                    style={{ inlineSize: `${bars[b.key].pct}%` }}
+                    aria-hidden="true"
+                  />
+                </span>
+                <span className="sell-answer__bar-value">
+                  {bars[b.key].count.toLocaleString('en-US')}
+                </span>
+              </button>
+            ))}
           </div>
+
+          {/* The drawing answers when it is asked: hover, tap or tab a bar and
+              it gives up its window, its population and its definition. */}
+          <p
+            id="sell-answer-bar-reading"
+            className={cn('sell-answer__bar-reading', !barReading && 'sell-answer__bar-reading--idle')}
+            aria-live="polite"
+          >
+            {barReading ?? 'Hover or tap a bar for the window and what it counts.'}
+          </p>
           {answer.verdictLabel && answer.monthsOfSupply ? (
             <p className="sell-answer__verdict">
               <span className="sell-answer__verdict-months">{answer.monthsOfSupply} months</span> of
