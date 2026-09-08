@@ -99,6 +99,29 @@ type DryRun = {
   renderArgsPricingRangeRule: unknown
   /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
   renderArgsPricingTimeAdjustment: unknown
+  /**
+   * The "Adjusted for date" column the price grid prints, one row per sale,
+   * beside the move the named index actually records over that sale's own
+   * span. R2d (evaluator round two, 2026-09-08): the document printed a
+   * −0.4%/month basis over a −5.25% year and a grid column reading −8.58% to
+   * −11.48%, because the index endpoint was the PARTIAL current month. These
+   * two columns must agree, and the check below is the guard that says so.
+   */
+  dateAdjustments: Array<{
+    address: string
+    closeDate: string
+    monthsOld: number
+    /** (adjustment / close price) — what the grid prints. */
+    printedPct: number
+    amount: number
+    /** The move the index records between that sale's month and the reference. */
+    indexImpliedPct: number | null
+    reversedWithinSpan: boolean
+    ok: boolean
+    reason: string | null
+  }>
+  dateAdjustmentCheckOk: boolean
+  dateAdjustmentFailures: string[]
   /** render_args.pricing.rejected — considered and not used. */
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
@@ -128,7 +151,9 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
-  const { priceCmaSet } = await import('@/lib/pricing/estimate')
+  const { adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
+  const { classifyStory } = await import('@/lib/pricing/classes')
+  const { checkDateAdjustments } = await import('@/lib/pricing/market-path')
   const { getPricingMarketIndex } = await import('@/lib/data/pricing/facts')
   const { citySlug } = await import('@/lib/pricing/classes')
   const { getCmaMarketContext } = await import('@/lib/cma/market')
@@ -151,7 +176,8 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
-    renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null, error: null,
+    renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
+    dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -219,7 +245,21 @@ async function dryRun(slug: string): Promise<DryRun> {
   }
 
   const marketIndex = selection.pricingSource === 'facts' ? await getPricingMarketIndex(citySlug(subject.city)) : []
-  const adjusted = adjustComps(subject, selection.comps, market)
+  // EXACTLY the branch lib/cma/build.ts takes (step 4, `usePath`). Before
+  // 2026-09-08 this script always took the year-over-year `adjustComps` path,
+  // so its date adjustments were not the ones the document prints and the R2d
+  // defect could not be seen here at all.
+  const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
+  const usePath = marketIndex.length > 0 && selection.comps.every((c) => salesByKey.has(c.listingKey))
+  const subjectStory = classifyStory(subject.levelsRaw, null)
+  const adjusted = usePath
+    ? selection.comps.map((c) => {
+        const sale = salesByKey.get(c.listingKey)!
+        return adjustCompAlongMarket({
+          subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
+        }).adjusted
+      })
+    : adjustComps(subject, selection.comps, market)
   const pricing = priceCmaSet({
     subject, adjusted, market, input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
@@ -252,6 +292,19 @@ async function dryRun(slug: string): Promise<DryRun> {
       latitude: subject.latitude,
       longitude: subject.longitude,
     },
+  })
+
+  // The date-adjustment guard (R2d). Runs on the same adjusted set the grid
+  // prints, against the same index the printed basis names.
+  const dateCheck = checkDateAdjustments({
+    points: marketIndex,
+    asOf,
+    sales: adjusted.map((c) => ({
+      label: c.address,
+      closeDate: c.closeDate,
+      closePrice: c.closePrice,
+      timeAdjustment: c.timeAdjustment,
+    })),
   })
 
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
@@ -342,6 +395,21 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingRejected: rejected,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
+    dateAdjustments: dateCheck.rows.map((r, i) => ({
+      address: r.label,
+      closeDate: r.closeDate,
+      monthsOld: r.monthsOld,
+      printedPct: r.printedPct,
+      // By POSITION: `checkDateAdjustments` keeps the order it was given, and
+      // two sales on one street can carry the same address label.
+      amount: adjusted[i]?.timeAdjustment ?? 0,
+      indexImpliedPct: r.indexImpliedPct,
+      reversedWithinSpan: r.reversedWithinSpan,
+      ok: r.ok,
+      reason: r.reason,
+    })),
+    dateAdjustmentCheckOk: dateCheck.ok,
+    dateAdjustmentFailures: dateCheck.failures,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
   }
 }
@@ -367,6 +435,7 @@ async function main() {
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
       renderArgsPricingTimeAdjustment: null, renderArgsPricingRejected: null,
       renderArgsExpiredAuditFinalCycle: null,
+      dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [],
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -402,6 +471,20 @@ async function main() {
     console.log(indent(r.renderArgsMarketAskOutcome))
     console.log('   render_args.pricing.rejected =')
     console.log(indent(r.renderArgsPricingRejected))
+    if (r.dateAdjustments.length) {
+      const pct = (n: number | null) => (n == null ? '    n/a' : `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`)
+      console.log(`   adjusted for date · ${r.dateAdjustmentCheckOk ? 'GUARD PASSES' : 'GUARD FAILS'}`)
+      console.log('     sale                       closed      months  index implies   printed        amount')
+      for (const d of r.dateAdjustments) {
+        console.log(
+          `     ${d.address.slice(0, 24).padEnd(24)}   ${d.closeDate}  ${String(d.monthsOld).padStart(5)}  ` +
+            `${pct(d.indexImpliedPct).padStart(13)}  ${pct(d.printedPct).padStart(8)}  ` +
+            `${(d.amount >= 0 ? '+$' : '-$') + Math.abs(d.amount).toLocaleString('en-US')}`.padStart(13) +
+            `${d.reason ? `  · ${d.reason}` : ''}`,
+        )
+      }
+      for (const f of r.dateAdjustmentFailures) console.log(`     ✖ ${f}`)
+    }
     console.log('   render_args.pricing.timeAdjustment =')
     console.log(indent(r.renderArgsPricingTimeAdjustment))
     console.log('   render_args.pricing.rangeRule =')

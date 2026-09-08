@@ -20,6 +20,7 @@ import type { SelectedPricingComp } from '@/lib/pricing/match'
 import {
   describePath,
   INDEX_MIN_N,
+  isCompleteMonth,
   marketIndexTrend,
   marketPath,
   timeAdjustAlongPath,
@@ -136,11 +137,25 @@ export const TIME_ADJUSTMENT_WINDOW_MONTHS = 12
 export interface PricingTimeAdjustment {
   /** Compound monthly change in the local price a square foot, percent. */
   pctPerMonth: number | null
+  /**
+   * The move across the whole window, percent. THIS is what the sentence
+   * prints: it is the size of the path each sale is walked along, and unlike a
+   * monthly rate a reader cannot multiply it out into a number the grid does
+   * not show.
+   */
+  pctOverWindow: number | null
   windowMonths: number
   /** Sales behind that rate. */
   n: number
-  /** Which basis the date adjustment actually used on this build. */
-  basis: 'city-monthly-index' | 'year-over-year' | 'none'
+  /**
+   * Which basis the date adjustment actually used on this build. The
+   * `-trailing-3` suffix is the rule, not a label: the endpoint is the median
+   * of the last three COMPLETE months of the city index, never the running
+   * month (R2d, 2026-09-08).
+   */
+  basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'none'
+  /** The complete months the endpoint is the median of, oldest first. */
+  referenceMonths?: string[]
   source: {
     table: string
     filter: string
@@ -160,35 +175,49 @@ export interface PricingTimeAdjustment {
  * facts path walks sale by sale, and — where there is no index — the
  * year-over-year median move the listings path spreads across the months.
  * Whichever one moved the numbers is the one printed.
+ *
+ * THE SENTENCE MUST DESCRIBE WHAT IS APPLIED (R2d, 2026-09-08). The round-two
+ * document printed "moved down 0.4 percent a month" beside a grid column that
+ * ran to −11.48 percent on a 4.5-month-old sale, because a monthly rate is not
+ * what any sale is moved by. What is applied is the change in the city's
+ * median price a square foot between the month the sale closed and the last
+ * three complete months, so that is what the sentence now says, ending on the
+ * size of the whole path rather than a rate a reader could multiply out.
  */
 export function buildTimeAdjustmentBasis(opts: {
   citySlug: string
   points: MarketIndexPoint[]
   asOf: string
+  /** For the sentence. Falls back to "this city" when the build has no name. */
+  cityName?: string | null
   yoyMedianPriceDeltaPct?: number | null
   fetchedAt?: string
   windowMonths?: number
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
+  const city = opts.cityName?.trim() ? `${opts.cityName.trim()}'s` : "this city's"
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
   if (trend.pctPerMonth != null) {
-    const direction = trend.pctPerMonth > 0 ? 'up' : trend.pctPerMonth < 0 ? 'down' : 'flat'
+    const move = trend.pctOverWindow ?? 0
+    const applied = `Each sale is moved by the change in ${city} median price a square foot between the month it closed and the last three complete months`
     return {
       pctPerMonth: trend.pctPerMonth,
+      pctOverWindow: trend.pctOverWindow,
       windowMonths,
       n: trend.n,
-      basis: 'city-monthly-index',
+      basis: 'city-monthly-index-trailing-3',
+      referenceMonths: trend.referenceMonths,
       source: {
         table: 'pricing_market_index',
-        filter: `city_slug='${opts.citySlug}', months ${trend.months} with at least ${INDEX_MIN_N} sales in the ${windowMonths} months to ${opts.asOf.slice(0, 10)}; median price a square foot ${trend.fromPpsf} to ${trend.toPpsf}${trend.capped ? '; the ±25% path cap bound this window' : ''}`,
+        filter: `city_slug='${opts.citySlug}', months ${trend.months} with at least ${INDEX_MIN_N} sales in the ${windowMonths} months to ${opts.asOf.slice(0, 10)}, complete months only. Each month reads as the median of the three-month window centred on it; the endpoint is the median of the last three complete months (${trend.referenceMonths.join(', ') || 'none'}), never the running month. Level ${trend.fromPpsf} to ${trend.toPpsf} $/sqft${trend.capped ? '; the ±25% path cap bound this window' : ''}`,
         fetchedAt,
         query: `select month, n, median_ppsf, median_sale_to_original, median_days_to_offer from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
       },
       sentence:
-        direction === 'flat'
-          ? `Prices a square foot in this city have been flat over the last ${windowMonths} months, across ${trend.n.toLocaleString('en-US')} sales, so each sale below moves very little for when it sold.`
-          : `Prices a square foot in this city have moved ${direction} ${Math.abs(trend.pctPerMonth)} percent a month over the last ${windowMonths} months, across ${trend.n.toLocaleString('en-US')} sales. Each sale below is moved by that path between the month it closed and today.`,
+        move === 0
+          ? `${applied}, a path that held flat over the last ${windowMonths} months across ${trend.n.toLocaleString('en-US')} sales.`
+          : `${applied}, a path that ${move > 0 ? 'rose' : 'fell'} ${Math.abs(move).toFixed(1)} percent over the last ${windowMonths} months across ${trend.n.toLocaleString('en-US')} sales.`,
     }
   }
   const yoy = opts.yoyMedianPriceDeltaPct
@@ -196,6 +225,7 @@ export function buildTimeAdjustmentBasis(opts: {
     const perMonth = Math.round((yoy / 12) * 10) / 10
     return {
       pctPerMonth: perMonth,
+      pctOverWindow: Math.round(yoy * 10) / 10,
       windowMonths: 12,
       n: 0,
       basis: 'year-over-year',
@@ -210,6 +240,7 @@ export function buildTimeAdjustmentBasis(opts: {
   }
   return {
     pctPerMonth: null,
+    pctOverWindow: null,
     windowMonths,
     n: 0,
     basis: 'none',
@@ -667,12 +698,19 @@ export function applyEngineRecommendedList(
   )
 }
 
+/**
+ * The index row the list step reads for sale-to-original and days-to-offer.
+ *
+ * COMPLETE MONTHS ONLY (R2d, 2026-09-08). This used to take the running month,
+ * so on 2026-09-07 the ratio the recommended list price is divided by came
+ * from Redmond's ten September sales rather than August's seventy-eight. Same
+ * partial-month fault as the date adjustment, on the other half of the price.
+ */
 function asOfIndexPoint(points: MarketIndexPoint[], asOf: string): MarketIndexPoint | null {
   if (points.length === 0) return null
-  const cutoff = asOf.slice(0, 7) + '-01'
   return (
     points
-      .filter((p) => p.n >= INDEX_MIN_N && p.month <= cutoff)
+      .filter((p) => p.n >= INDEX_MIN_N && isCompleteMonth(p.month, asOf))
       .sort((a, b) => b.month.localeCompare(a.month))[0] ?? null
   )
 }
@@ -751,6 +789,7 @@ export function priceCmaSet(args: {
   // What moved each sale for its date, stated where the document can print it.
   pricing.timeAdjustment = buildTimeAdjustmentBasis({
     citySlug: citySlug(args.subject.city),
+    cityName: args.subject.city,
     points: args.marketIndex,
     asOf: args.asOf,
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
