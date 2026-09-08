@@ -1004,7 +1004,9 @@ export function estimateClosePrice(opts: {
     methodFallback: pricing?.method3 ?? pricing?.method1Mid ?? null,
   })
   const predictedClose = engine.predictedClose
-  attachSellerNet(pricing, opts.comps, predictedClose)
+  // Anchored to `pricing.recommended`, never to the close estimate above it
+  // (round four, class A — lib/pricing/seller-net.ts).
+  attachSellerNet(pricing, opts.comps)
   if (pricing && predictedClose != null) {
     pricing.notes.unshift(
       engine.source === 'ask'

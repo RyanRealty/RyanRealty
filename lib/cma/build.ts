@@ -28,7 +28,7 @@ import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
-import { buildPricingReview } from '@/lib/pricing/review'
+import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -61,8 +61,10 @@ import {
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
-  buildFinalCycle,
+  buildAskExposure,
+  resolveFinalCycle,
   stampFinalCycleDom,
+  FAILED_ASK_RECENCY_MONTHS,
   feeLine,
   EXPIRED_LISTING_FEE_PCT,
   STANDARD_LISTING_FEE_PCT,
@@ -74,6 +76,7 @@ import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
+import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -288,6 +291,34 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
     }
 
+    // A STALE CYCLE TELLS NO STORY (round four, class B). cma-19968's newest
+    // MLS cycle is a listing that CLOSED in January 2005, so nothing above
+    // fires, and `rowToSubject` still hands the document a "Last ask $140,000
+    // (Nov 12, 2004)" line and a `lastListPrice` of $140,000 — printed undated
+    // three times beside a $461,000 recommendation. Past
+    // FAILED_ASK_RECENCY_MONTHS the market that set that ask is a different
+    // market, so the ask, its date and the history line are dropped and the
+    // reason is carried to the reader on `subjectStatus.note`.
+    //
+    // Scoped to the case where the last cycle did NOT fail: a stale FAILED ask
+    // still binds the price ceiling, which has its own recency branch and a
+    // backtest behind it (`applyFailedAskCap`).
+    let staleCycleReason: string | null = null
+    if (!lastCycleFailed) {
+      const lastAskDay = String(subject.lastListDate ?? '').slice(0, 10)
+      const askMs = /^\d{4}-\d{2}-\d{2}$/.test(lastAskDay) ? Date.parse(`${lastAskDay}T00:00:00.000Z`) : NaN
+      const monthsOld = Number.isNaN(askMs) ? null : (Date.now() - askMs) / (30.44 * 24 * 3600 * 1000)
+      if (monthsOld != null && monthsOld > FAILED_ASK_RECENCY_MONTHS) {
+        staleCycleReason =
+          `The last listing period at this address ran in ${lastAskDay.slice(0, 4)}, more than ` +
+          `${FAILED_ASK_RECENCY_MONTHS} months ago. That is a different market, so this report does not ` +
+          `build a story on the price it asked.`
+        subject.lastListPrice = null
+        subject.lastListDate = null
+        subject.listingHistoryLine = null
+      }
+    }
+
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
     // / septic from county + OWRD records — SKILL §3.5/§3.6) in parallel. Site
     // resolution is fail-open and never throws.
@@ -494,7 +525,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // that set this price", so it counts THAT set — the kept comps the reader
       // can count — not the wider band set the price path is fitted on
       // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
-      attachSellerNet(p, set, p?.predictedClose ?? p?.recommended ?? null)
+      attachSellerNet(p, set)
       if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
@@ -816,18 +847,33 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // contract, so it carries everything that can raise the flag; the reasons
     // are rewritten in lib/pricing/review.ts because render_args is read by
     // the seller document as well as the admin view.
+    const auditVerdict = audit
+      ? audit.verdict === 'pass'
+        ? ('pass' as const)
+        : audit.verdict === 'fail'
+          ? ('fail' as const)
+          : ('review' as const)
+      : ('did-not-run' as const)
     pricing.review = buildPricingReview({
       needsReview: pricing.needsReview,
       reviewReason: pricing.reviewReason,
       clamp: pricing.clamp ?? null,
-      auditVerdict: audit
-        ? audit.verdict === 'pass'
-          ? 'pass'
-          : audit.verdict === 'fail'
-            ? 'fail'
-            : 'review'
-        : 'did-not-run',
+      auditVerdict,
     })
+    // CONFIDENCE DERIVES FROM THE VERDICT (round four, class C). cma-19968 was
+    // `needsReview: true`, verdict `fail`, three critical findings, and stamped
+    // confidence "High" in the same object, because confidence is computed from
+    // the comparable set's dispersion and nothing downstream of the audit ever
+    // touched it. The mapping only moves it down, and it says so.
+    {
+      const held = confidenceForVerdict(pricing.confidence, auditVerdict)
+      if (held.confidence !== pricing.confidence) {
+        pricing.confidence = held.confidence
+        if (held.reason) {
+          pricing.confidenceReason = [pricing.confidenceReason, held.reason].filter(Boolean).join(' ')
+        }
+      }
+    }
 
     // 4.7. LAST-LISTING REVIEW (Matt 2026-08-05, superseding the 2026-07-14
     // separate audit doc): there is ONE CMA document. When the subject's most
@@ -852,6 +898,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         const priceEvents = finalCycle?.listingKey
           ? await getCmaListingPriceEvents(finalCycle.listingKey).catch(() => [])
           : []
+        // A cycle older than FAILED_ASK_RECENCY_MONTHS is nulled with a reason
+        // rather than narrated (round four, class B).
+        const resolvedCycle = resolveFinalCycle({
+          cycle: finalCycle,
+          priceEvents,
+          listingKey: finalCycle?.listingKey ?? subject.listingKey,
+        })
         expiredAudit = {
           findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
           services: buildServicesList(subject),
@@ -859,14 +912,32 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             expectedConcessions: pricing.sellerNet?.expectedConcessions ?? null,
           }),
           feeLine: feeLine(),
-          finalCycle: buildFinalCycle({
-            cycle: finalCycle,
-            priceEvents,
-            listingKey: finalCycle?.listingKey ?? subject.listingKey,
+          finalCycle: resolvedCycle.cycle,
+          // The WHOLE exposure, not the last cut (round four, class B). Measured
+          // against the top of the evidence range the cover prints, so the
+          // renderer never re-derives a gap from a different number.
+          askExposure: buildAskExposure({
+            cycle: resolvedCycle.cycle,
+            rangeLow: pricing.valueLow,
+            rangeHigh: pricing.valueHigh,
           }),
         }
+        if (resolvedCycle.suppressedReason) staleCycleReason = resolvedCycle.suppressedReason
       }
     }
+
+    // 4.72. The compliance carve-out (round four, class D). Read off the
+    // subject's own newest cycle: 1617 NW 8th is ACTIVE with another brokerage
+    // and the closing chapter solicited it; 2465 7th is Withdrawn rather than
+    // Expired, so a listing agreement may still be running. The renderer reads
+    // this to suppress a solicitation. It decides nothing about price.
+    const subjectStatus = buildSubjectStatus({
+      standardStatus: subject.standardStatus,
+      listAgentName: (cycleRows[0]?.['ListAgentName'] as string | null) ?? subject.listAgentName ?? null,
+      listAgentEmail: subject.listAgentEmail ?? null,
+      listOfficeName: (cycleRows[0]?.['ListOfficeName'] as string | null) ?? subject.listOfficeName ?? null,
+      suppressedReason: staleCycleReason,
+    })
 
     // 4.75. Report extras (Matt 2026-08-05): seasonality, price-band
     // competition, subdivision pulse, financing profile, photo bench. Runs
@@ -997,6 +1068,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       site,
       parcels,
       expiredAudit,
+      subjectStatus,
       development,
       rental,
       extras,
@@ -1148,7 +1220,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             status: expiredAudit.finalCycle.status,
             days: expiredAudit.finalCycle.days,
           }
-        : { source: 'none', note: 'The subject has no failed final listing cycle.' },
+        : {
+            source: 'none',
+            note: staleCycleReason ?? 'The subject has no failed final listing cycle.',
+          },
+      // §0 trace for the two blocks round four added. Every figure on them is
+      // derived from `final_cycle` above and the printed value range, so the
+      // trace records the derivation rather than a second query.
+      ask_exposure: expiredAudit?.askExposure
+        ? {
+            source: 'derived from final_cycle above and the printed value range',
+            segments: expiredAudit.askExposure.segments,
+            dominant_ask: expiredAudit.askExposure.dominant.ask,
+            final_ask: expiredAudit.askExposure.final.ask,
+          }
+        : { source: 'none', note: staleCycleReason ?? 'No dated listing period to measure exposure over.' },
+      subject_status: {
+        source: 'listings."StandardStatus", "ListAgentName", "ListOfficeName", list_agent_email on the subject cycle',
+        ...subjectStatus,
+      },
       market_context: market
         ? {
             sources: cmaMarketSources(market),
