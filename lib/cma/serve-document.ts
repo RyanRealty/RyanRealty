@@ -14,6 +14,7 @@ import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import { resolveCmaPrintHtml, resolveDocLinkCtx } from '@/lib/cma/print-html'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
+import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { canBrokerReviewCma, isCmaClientReady } from '@/lib/cma/draft-access'
 import { hydrateCmaMarketArea } from '@/lib/cma/market-area-hydrate'
@@ -83,12 +84,18 @@ export async function immersiveFromRow(
     // C9: render_args omits mapDataUri (~300KB). Rebuild the Google comps pin map
     // here so Open report / immersive shows subject + numbered sales once.
     let mapDataUri: string | null = stored.mapDataUri ?? null
+    // The overlay travels with the tile: it is the centre, zoom and pin
+    // coordinates the tile was actually drawn at, and without it chapter 3's
+    // map is a bitmap that cannot answer a tap (tasteReview item 2).
+    let mapOverlay: CompPinMapOverlay | null = null
     if (!mapDataUri) {
       try {
         const map = await buildCmaMapDataUri(stored.subject, comps)
         mapDataUri = map?.dataUri ?? null
+        mapOverlay = map ? { view: map.view, pins: map.pins } : null
       } catch {
         mapDataUri = null
+        mapOverlay = null
       }
     }
     const base = {
@@ -96,6 +103,7 @@ export async function immersiveFromRow(
       comps,
       broker,
       mapDataUri,
+      mapOverlay,
       subjectMapDataUri: null,
       // Identity for every tracked link in the document. Resolved here rather
       // than at build: it belongs to the delivery, not to the stored figures.

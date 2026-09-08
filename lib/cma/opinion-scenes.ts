@@ -15,6 +15,7 @@ import {
   didNotSellArgs,
   nextStepButtonsHtml,
   nextStepHeading,
+  nextStepNoteHtml,
   thisMarketBodyHtml,
   thisMarketHeading,
   cmaDisclosureProseHtml,
@@ -51,6 +52,7 @@ function priceScene(a: OpinionSceneArgs): string {
     pricing: a.pricing,
     tiersUsed: a.tiersUsed,
     mapDataUri: a.mapDataUri,
+    mapOverlay: a.mapOverlay,
     docLinks: a.docLinks,
     // The immersive prints the number as the chapter title, so the letter's
     // own heading block is suppressed and the lead line reprinted below it.
@@ -193,20 +195,26 @@ function nextScene(a: OpinionSceneArgs): string {
   const photo = br.photoUrl
     ? `<img class="br-img" src="${esc(br.photoUrl.startsWith('http') ? br.photoUrl : `${site}${br.photoUrl}`)}" alt="${esc(br.displayName)}"/>`
     : ''
+  // `pack`: the closing is CONTENT height, not viewport height. It was an
+  // 812-to-1400px navy panel holding about 300px of content floated right of
+  // centre — the last thing the seller sees and the only place the document
+  // asks for anything (tasteReview item 3).
   return `
-  <section class="sc sc-navy" id="next-step">
+  <section class="sc sc-navy pack" id="next-step">
     <div class="in next-in">
       ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${esc(nextStepHeading(a))}</h2>
         <div class="cta r">${nextStepButtonsHtml(a)}</div>
+        <div class="r">${nextStepNoteHtml(a)}</div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">${esc(
           `Prepared ${formatDate(a.generatedAtIso, { month: 'long', day: 'numeric', year: 'numeric' })} for ${
             a.clientName ?? a.client?.name ?? 'the owner'
           }. This is a pricing report. It is not an appraisal.`,
         )}</div>
+        <div class="print-out r"><a href="?print=1" data-rr-track="cma-print">Print this report</a></div>
       </div>
     </div>
   </section>`

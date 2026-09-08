@@ -291,6 +291,36 @@ export function cmaSectionStyles(): string {
      tall empty field, and even with one a half-page map pushes the sales table
      off the sheet a seller is reading. */
   .pin-map { max-height: 3.4in; object-fit: cover; }
+  /* The same DOM pins on paper. Print keeps them: they are the numbers the
+     grid above refers to, and a bitmap with no numbers on it is a decoration. */
+  .pin-map-frame { position: relative; margin: 8px 0 4px; line-height: 0; }
+  .pin-hit {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .pin-dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
   /* The seller's own listed price and size, under "Your home" in the head. */
@@ -368,6 +398,17 @@ export function cmaSectionStyles(): string {
     .median-wide { display: block !important; }
     .median-phone { display: none !important; }
   }
+  /* Months of supply as two bars, and chapter 3's dot strip. Same mechanism. */
+  .mos-phone, .worth-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .mos-wide, .worth-wide { display: none; }
+    .mos-phone, .worth-phone { display: block; }
+  }
+  @media print {
+    .mos-wide, .worth-wide { display: block !important; }
+    .mos-phone, .worth-phone { display: none !important; }
+  }
+  .next-note { font-size: 12px; line-height: 1.7; max-width: 62ch; margin: 12px 0 0; color: var(--navy); }
   /* Chapter 1's timeline. Same two-layout mechanism: the reading is the gap
      between a line and a zone, and a cropped right edge deletes the day it
      came off. Exactly one layout is ever visible. */

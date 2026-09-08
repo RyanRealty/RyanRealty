@@ -15,10 +15,12 @@ import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import {
   compWeightIndex,
   renderPricingMethodHtml,
+  renderReconciliationHtml,
   renderRejectedSalesHtml,
 } from '@/lib/cma/pricing-method'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
+import { worthStripHtml } from '@/lib/cma/worth-strip'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -112,6 +114,7 @@ export function pricingPage(input: {
   pricing: CmaPricing
   tiersUsed?: string[]
   mapDataUri?: string | null
+  mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
   docLinks?: TrackedDocLinkCtx | null
   /** Immersive hero already printed the number and the range — skip the lead. */
   omitLeadPrices?: boolean
@@ -119,7 +122,13 @@ export function pricingPage(input: {
   const p = input.pricing
   const s = input.subject
   const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
-  const pinMap = renderCompPinMapHtml(s, input.comps, input.mapDataUri ?? null, 'Map of the sales that set this price')
+  const pinMap = renderCompPinMapHtml(
+    s,
+    input.comps,
+    input.mapDataUri ?? null,
+    'Map of the sales that set this price',
+    input.mapOverlay ?? null,
+  )
   const heading = whatItsWorthHeading(p)
   const lead = input.omitLeadPrices
     ? ''
@@ -131,12 +140,27 @@ export function pricingPage(input: {
   // Every one of those sentences is written by lib/pricing and stored on the
   // row; nothing here composes one.
   const method = renderPricingMethodHtml({ pricing: p, whichSales: search.body })
+  // The chapter's own conclusion, drawn, BEFORE the method that reached it and
+  // the grid that proves it (tasteReview item 2). One glance lands where five
+  // real sales put this house and where we would list it.
+  const strip = worthStripHtml({
+    sales: input.comps.map((c, i) => ({
+      n: i + 1,
+      address: c.address,
+      adjustedPrice: c.adjustedPrice,
+    })),
+    rangeLow: p.valueLow,
+    rangeHigh: p.valueHigh,
+    recommended: p.recommended,
+    lastAsk: s.lastListPrice != null && s.lastListPrice > 0 ? s.lastListPrice : null,
+  })
   return {
     meta: `${esc(s.streetAddress)} · ${esc(heading)}`,
     toc: heading,
     body: `
   ${lead}
   ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>` : ''}
+  ${strip}
   ${method}
   ${renderCompMatrixHtml(
     s,
@@ -145,6 +169,7 @@ export function pricingPage(input: {
     input.docLinks,
     compWeightIndex(p),
   )}
+  ${renderReconciliationHtml(p)}
   ${perSquareFootLine({ subject: s, pricing: p })}
   ${renderRejectedSalesHtml(p, input.comps)}
   ${

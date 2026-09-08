@@ -34,7 +34,7 @@ export function immersiveInteractionCss(): string {
 @media print{.rr-controls,.rr-read,.pp-list,.pp-toggle{display:none!important}}
 .rr-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 10px}
 .rr-controls .rr-lbl{font-size:13px;opacity:.6;margin-right:2px}
-.rr-btn{font:inherit;font-size:13px;line-height:1;color:var(--navy);background:transparent;border:1px solid var(--ink12);border-radius:10px;padding:9px 14px;cursor:pointer;min-height:36px}
+.rr-btn{font:inherit;font-size:13px;line-height:1;color:var(--navy);background:transparent;border:1px solid var(--ink12);border-radius:10px;padding:12px 16px;cursor:pointer;min-height:44px}
 .rr-btn:hover{border-color:var(--navy)}
 .rr-btn:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:2px}
 .rr-btn[aria-pressed="true"]{background:var(--navy);color:var(--cream);border-color:var(--navy)}
@@ -42,11 +42,14 @@ export function immersiveInteractionCss(): string {
    reflow the section under the reader's thumb. */
 .rr-read{min-height:1.5em;margin:6px 0 0;font-size:15px;line-height:1.5;color:var(--navy)}
 .rr-read:empty::before{content:attr(data-hint);opacity:.5}
-/* Marks that answer a tap. */
-.tl-mark,.bar-row,.month-mark,.pp-cut{cursor:pointer}
-.tl-mark:focus-visible,.bar-row:focus-visible,.month-mark:focus-visible,.pp-cut:focus-visible{outline:3px solid rgba(16,39,66,.35)}
+/* Marks that answer a tap SAY SO, with a ring around the dot — the affordance
+   is the mark, never a sentence under the chart telling a reader to tap it. */
+.tl-mark,.bar-row,.month-mark,.pp-cut,.ws-dot{cursor:pointer}
+.tl-mark:focus-visible,.bar-row:focus-visible,.month-mark:focus-visible,.pp-cut:focus-visible,.ws-dot:focus-visible{outline:3px solid rgba(16,39,66,.35)}
+.tl-mark circle:last-of-type,.month-mark circle:last-of-type,.ws-dot circle:last-of-type{stroke:rgba(16,39,66,.16);stroke-width:5;paint-order:stroke}
+.tl-mark:hover circle:last-of-type,.month-mark:hover circle:last-of-type,.ws-dot:hover circle:last-of-type{stroke:rgba(16,39,66,.45)}
 .bar-row.is-read rect{fill:rgba(16,39,66,.06)}
-.tl-mark.is-read circle:last-of-type,.month-mark.is-read circle:last-of-type{r:6}
+.tl-mark.is-read circle:last-of-type,.month-mark.is-read circle:last-of-type,.ws-dot.is-read circle:last-of-type{r:6;stroke:var(--navy)}
 /* The marker carries opacity="0" on the element so the PRINT letter, which
    loads none of this, never draws a stray dashed line at day zero. A class
    beats a presentation attribute, so the scrub still appears here. */
@@ -54,8 +57,11 @@ export function immersiveInteractionCss(): string {
 .curve-scrub.is-scrubbing .scrub{opacity:1}
 .scrub-hit{cursor:ew-resize}
 /* The dated history behind a drawn price path. */
-.pp-toggle{font:inherit;font-size:13px;color:var(--navy);background:transparent;border:0;border-bottom:1px solid var(--ink12);padding:6px 0;cursor:pointer;min-height:32px}
+.pp-toggle{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;color:var(--navy);background:transparent;border:0;border-bottom:1px solid var(--ink12);padding:12px 0;cursor:pointer;min-height:44px}
 .pp-toggle:hover{border-bottom-color:var(--navy)}
+/* The control says it opens. No sentence under the chart has to. */
+.pp-chev{width:8px;height:8px;border-right:1.5px solid var(--navy);border-bottom:1.5px solid var(--navy);transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s ease-out}
+.pp-toggle[aria-expanded="true"] .pp-chev{transform:rotate(-135deg) translate(-2px,-2px)}
 .pp-list{list-style:none;margin:6px 0 2px;padding:0;font-size:14px}
 .pp-list li{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid var(--ink12)}
 .pp-list .k{opacity:.65}
@@ -120,20 +126,29 @@ function button(box,text,pressed,fn){
 
 /* ── 1. a mark that names itself: the timeline, the bars, the month line ──── */
 try{
-  var GROUPS=[
-    ['.tl-mark','Tap a price change to read its date.'],
-    ['.bar-row','Tap a bar for the listings behind it.'],
-    ['.month-mark','Tap a month for its median close.']
-  ]
+  // NO INSTRUCTION CAPTIONS. Four of them shipped, one under each figure,
+  // telling the reader to tap the mark, drag the curve, tap the bar, tap the
+  // month — the same tell as the Atlas pinch-to-zoom sentence TASTE.md bans.
+  // The affordance is on the control instead: a ring around every mark that
+  // answers a tap, a placed handle on the scrub, a chevron on the toggle.
+  var GROUPS=[['.tl-mark',''],['.bar-row',''],['.month-mark',''],['.ws-dot','']]
   GROUPS.forEach(function(g){
     var nodes=[].slice.call(document.querySelectorAll(g[0]))
     nodes.forEach(function(n){
       var svg=n.ownerSVGElement||n.closest('svg')
       if(!svg)return
       var read=readout(svg.parentNode&&svg.parentNode.classList.contains('fig')?svg.parentNode:svg,g[1])
+      // The bars and the marks are toggles, so they announce their state the
+      // way the pills do. They shipped with aria-pressed left null.
+      n.setAttribute('aria-pressed','false')
       function show(){
-        nodes.forEach(function(o){if(o.ownerSVGElement===svg)o.classList.remove('is-read')})
+        nodes.forEach(function(o){
+          if(o.ownerSVGElement!==svg)return
+          o.classList.remove('is-read')
+          o.setAttribute('aria-pressed','false')
+        })
         n.classList.add('is-read')
+        n.setAttribute('aria-pressed','true')
         read.textContent=n.getAttribute('data-read')||''
       }
       press(n,show)
@@ -204,7 +219,7 @@ try{
     // screen reader cannot read. The handle is placed, and both ARIA values
     // are set, from the first render; the live line stays empty until the
     // reader moves it, so nothing shouts at them on load.
-    put(Math.min(2,pts.length-1),false)
+    put(Math.min(3,pts.length-1),false)
   })
 }catch(e){}
 
@@ -221,13 +236,16 @@ try{
       li.appendChild(el('span','v',usd(r.p)))
       list.appendChild(li)
     })
-    var toggle=el('button','pp-toggle','Price history')
+    var toggle=el('button','pp-toggle')
+    var chev=el('span','pp-chev');chev.setAttribute('aria-hidden','true')
+    var word=el('span','pp-word','Price history')
+    toggle.appendChild(chev);toggle.appendChild(word)
     toggle.type='button';toggle.setAttribute('aria-expanded','false')
     toggle.addEventListener('click',function(){
       var open=list.hidden
       list.hidden=!open
       toggle.setAttribute('aria-expanded',open?'true':'false')
-      toggle.textContent=open?'Hide price history':'Price history'
+      word.textContent=open?'Hide price history':'Price history'
     })
     wrap.appendChild(toggle);wrap.appendChild(list)
     // A tap on a dated cut in the drawing names it without opening the list.

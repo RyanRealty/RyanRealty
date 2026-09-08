@@ -8,6 +8,7 @@ import {
   pricingMethodSentences,
   readRejectedSales,
   renderPricingMethodHtml,
+  renderReconciliationHtml,
   renderRejectedSalesHtml,
 } from '@/lib/cma/pricing-method'
 import type { CmaPricing } from '@/lib/cma/types'
@@ -52,7 +53,6 @@ describe('the method, stated before the evidence', () => {
       'There were not enough recent sales inside Diamond Bar Ranch, so we opened to 1 mile.',
       'Prices a square foot in this city have moved down 0.4 percent a month over the last 12 months, across 864 sales.',
       'The range is the spread of all 5 sale prices adjusted for date and size: $372,324 to $398,788.',
-      '840 Quince carries the most weight in this price at 28.8 percent.',
     ])
   })
 
@@ -65,9 +65,18 @@ describe('the method, stated before the evidence', () => {
     expect(renderPricingMethodHtml({ pricing: null })).toBe('')
   })
 
-  it('renders one paragraph per sentence', () => {
-    const html = renderPricingMethodHtml({ pricing })
+  it('renders one paragraph per sentence, and never more than three', () => {
+    const html = renderPricingMethodHtml({
+      pricing,
+      whichSales: 'There were not enough recent sales inside Diamond Bar Ranch, so we opened to 1 mile.',
+    })
     expect((html.match(/class="method-line"/g) ?? []).length).toBe(3)
+  })
+
+  it('moves the reconciliation sentence under the grid it reads', () => {
+    expect(renderPricingMethodHtml({ pricing })).not.toContain('carries the most weight')
+    expect(renderReconciliationHtml(pricing)).toContain('carries the most weight')
+    expect(renderReconciliationHtml(null)).toBe('')
   })
 })
 

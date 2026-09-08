@@ -78,14 +78,18 @@ export function compWeightIndex(
 }
 
 /**
- * The three method sentences, in the order the method runs.
+ * THREE method sentences, one idea each, in the order the method runs.
  *
  * 1. which sales — the search story the caller already composes
  * 2. how each was adjusted — `pricing.timeAdjustment.sentence`
  * 3. how the range and the recommended list follow — `pricing.rangeRule.sentence`
- *    then the reconciliation naming the sale that carried the most weight
  *
  * A missing sentence is dropped, never replaced with a renderer-written one.
+ *
+ * The reconciliation sentence — which sale carried the most weight — used to
+ * be a fourth line here, which made the chapter open on four stacked
+ * paragraphs before any display (tasteReview item 2: "a wall of text"). It
+ * belongs under the grid instead, beside the Weight row it explains.
  */
 export function pricingMethodSentences(input: {
   pricing: CmaPricing | null | undefined
@@ -93,10 +97,20 @@ export function pricingMethodSentences(input: {
 }): string[] {
   const timeAdjustment = str(block(input.pricing, 'timeAdjustment')?.sentence)
   const rangeRule = str(block(input.pricing, 'rangeRule')?.sentence)
-  const reconciliation = readReconciliation(input.pricing)?.sentence ?? null
-  return [str(input.whichSales), timeAdjustment, rangeRule, reconciliation].filter(
-    (s): s is string => s != null,
-  )
+  return [str(input.whichSales), timeAdjustment, rangeRule].filter((s): s is string => s != null)
+}
+
+/**
+ * The reconciliation sentence, printed under the grid it reads.
+ *
+ * Research item 2: an appraisal names the sale that carried the most weight
+ * and why. `lib/pricing` writes the sentence; this prints it beside the
+ * "Weight in this price" row so a reader can see the two together.
+ */
+export function renderReconciliationHtml(pricing: CmaPricing | null | undefined): string {
+  const sentence = readReconciliation(pricing)?.sentence ?? null
+  if (!sentence) return ''
+  return `<p class="small">${esc(sentence)} Weight is how much each sale moved the number, over the sales in this chapter.</p>`
 }
 
 export function renderPricingMethodHtml(input: {

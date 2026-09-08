@@ -8,6 +8,7 @@
  * resolveThisHomePlan still exists for admin/data. It does not render here.
  */
 
+import { formatDate } from '@/lib/format/date'
 import { formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
 import { buildServicesList } from '@/lib/cma/expired-audit'
 
@@ -64,10 +65,19 @@ export function inboundValuationPreview(address: string | null): string {
   return `${named}: the number, then the sales that set it.`
 }
 
+/**
+ * The cover eyebrow. ONE date on the cover, formatted the way the byline
+ * formats it.
+ *
+ * It printed a raw ISO slice — `2026-09-08` — five lines above a byline
+ * reading `Sep 7, 2026`. Both came from the same timestamp: the slice takes
+ * the UTC day and `formatDate` takes the Pacific one, so a document prepared
+ * after 5pm Central Oregon time carried two different dates on its cover
+ * (CLAUDE.md §0: a date is a number).
+ */
 export function inboundImmersiveHeroKick(streetAddress: string | null, generatedAtIso: string): string {
   const named = trim(streetAddress) ?? 'this home'
-  const day = generatedAtIso.slice(0, 10)
-  return `Price opinion · ${named} · ${day}`
+  return `Price opinion · ${named} · ${formatDate(generatedAtIso)}`
 }
 
 export function inboundImmersiveTitle(streetAddress: string | null): string {

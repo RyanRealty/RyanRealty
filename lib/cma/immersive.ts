@@ -51,8 +51,6 @@ ${immersiveInteractionCss()}
 </style>
 </head>
 <body>
-<div id="bar"><div class="bt">${esc(s.streetAddress)} · ${esc(s.city)}, OR</div><a href="?print=1">Print report</a><div id="prog"></div></div>
-
 <section class="sc hero on" id="top">
   ${heroImg}
   <div class="hero-scrim" aria-hidden="true"></div>
@@ -74,14 +72,12 @@ ${assembleOpinionScenes(a)}
 (function(){
   try{
     var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    var bar=document.getElementById('bar'),prog=document.getElementById('prog')
-    function onScroll(){
-      var max=document.documentElement.scrollHeight-window.innerHeight
-      var y=window.scrollY||0
-      bar.classList.toggle('on',y>window.innerHeight*0.7)
-      prog.style.width=(max>0?Math.min(100,y/max*100):0)+'%'
-    }
-    window.addEventListener('scroll',onScroll,{passive:true});onScroll()
+    // The pinned admin strip that used to live here is GONE (tasteReview item
+    // 2). It carried the address and a Print report button over every screen,
+    // and it was clipping the offer-timing curve's 100% axis label and
+    // covering a whole row of the adjustment grid on three of four documents.
+    // A seller's letter has no dashboard chrome, and nothing on this page is
+    // pinned to the viewport any more, so nothing can sit on a figure again.
     if(reduced||!('IntersectionObserver'in window))return
     document.documentElement.classList.add('anim')
     // Entrance reveal only. The count-up that used to run here animated §0

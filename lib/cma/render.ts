@@ -56,6 +56,12 @@ export interface RenderCmaArgs {
   broker: CmaBroker
   client: CmaClient
   mapDataUri: string | null
+  /**
+   * The centre, zoom and pin coordinates the map tile was drawn at, so the
+   * document can put its own tappable pins over it (tasteReview item 2).
+   * Resolved beside `mapDataUri` at SERVE, never stored on `render_args`.
+   */
+  mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
   /** Deprecated (C9). Letter ignores this — comps map is the single map. */
   subjectMapDataUri?: string | null
   generatedAtIso: string

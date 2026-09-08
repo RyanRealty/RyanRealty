@@ -57,6 +57,8 @@ export type OpinionPageArgs = {
   extras?: CmaExtras | null
   subdivisionStory?: SubdivisionStory | null
   mapDataUri: string | null
+  /** Centre, zoom and pin coordinates for the map's own DOM pins. */
+  mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
   /** Deprecated for letter render (C9). Ignored — comps map is the single map. */
   subjectMapDataUri?: string | null
   tiersUsed?: string[]
@@ -578,6 +580,7 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
     body: `
   <h2 class="section">${esc(nextStepHeading(a))}</h2>
   <div class="cta-actions">${nextStepButtonsHtml(a)}</div>
+  ${nextStepNoteHtml(a)}
   ${nextStepSignatureHtml(a)}`,
   }
 }
@@ -597,8 +600,30 @@ export function nextStepButtonsHtml(a: OpinionPageArgs): string {
   const first = a.broker?.displayName.split(/\s+/)[0] ?? 'us'
   const book = trackedDocLink('book', '', a.docLinks ?? UNADDRESSED_DOC_LINKS)
   const search = trackedDocLink('search', a.subject.city, a.docLinks ?? UNADDRESSED_DOC_LINKS)
-  return `<a href="${esc(book)}" data-rr-track="cma-book">Talk with ${esc(first)}</a>
-    <a class="ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+  // BUTTONS, not two 22px underlined text links (tasteReview item 3). Both
+  // carry `_pid`, `agent` and `utm_campaign` through trackedDocLink, so the
+  // one click that matters is attributable to the person and to this document.
+  return `<a class="btn pri" href="${esc(book)}" data-rr-track="cma-book">Talk with ${esc(first)}</a>
+    <a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+}
+
+/**
+ * The two lines beside the buttons. What happens if they tap, in plain words —
+ * the closing chapter was 300px of content floated into 1,400px of navy, and
+ * the only place the document asks for anything said nothing about what it was
+ * asking for.
+ */
+export function nextStepNoteHtml(a: OpinionPageArgs): string {
+  const place = cleanText(a.subject.city) ?? 'your area'
+  // "We", not the signing broker's first name: a re-brand replaces the
+  // signature block and must leave every figure and every sentence identical
+  // (W10.3), and VOICE.md says we outside the signed closing anyway.
+  return `<p class="next-note">${esc(
+    'Bring this report. We will walk the house, price it against these same sales, and tell you what would have to change to sell it. There is nothing to sign for that.',
+  )}</p>
+  <p class="next-note">${esc(
+    `If you would rather look first, the second link opens every home for sale in ${place} on our site.`,
+  )}</p>`
 }
 
 /** The signature, the licence, the date, and the one disclosure sentence. */
@@ -729,6 +754,7 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
         pricing: a.pricing,
         tiersUsed: a.tiersUsed,
         mapDataUri: a.mapDataUri,
+        mapOverlay: a.mapOverlay,
         docLinks: a.docLinks,
       }),
     competition: () => competitionPage(a),

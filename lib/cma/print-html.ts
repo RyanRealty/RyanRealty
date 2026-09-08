@@ -8,6 +8,7 @@ import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
+import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import type { CmaBroker } from '@/lib/cma/types'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 
@@ -30,12 +31,18 @@ export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string;
     const stored = source.render_args as unknown as RenderCmaArgs
     const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(source.build_summary))
     let mapDataUri: string | null = stored.mapDataUri ?? null
+    // The overlay travels with the tile: it is the centre, zoom and pin
+    // coordinates the tile was actually drawn at, and without it chapter 3's
+    // map is a bitmap that cannot answer a tap (tasteReview item 2).
+    let mapOverlay: CompPinMapOverlay | null = null
     if (!mapDataUri) {
       try {
         const map = await buildCmaMapDataUri(stored.subject, comps)
         mapDataUri = map?.dataUri ?? null
+        mapOverlay = map ? { view: map.view, pins: map.pins } : null
       } catch {
         mapDataUri = null
+        mapOverlay = null
       }
     }
     // C9: never rebuild/pass subject-only map — comps map is the single letter map.
@@ -44,6 +51,7 @@ export async function resolveCmaPrintHtml(slug: string): Promise<{ html: string;
       comps,
       broker,
       mapDataUri,
+      mapOverlay,
       subjectMapDataUri: null,
       docLinks: await resolveDocLinkCtx(slug, broker.slug),
     })

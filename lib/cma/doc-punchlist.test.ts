@@ -14,7 +14,7 @@ import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { immersiveStylesheet } from './immersive-css'
 import { cmaStylesheet } from './render-css'
-import { askOutcomeDaysPhrase } from './market-charts'
+import { askOutcomeBarsSvg, askOutcomeDaysPhrase, niceAxis } from './market-charts'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 import type { CmaMarketArea } from './market-status'
 import type { ExpiredAuditData } from './expired-audit'
@@ -705,7 +705,7 @@ describe('the phone layouts keep every mark inside the frame', () => {
   })
 })
 
-describe('F7 — this market is a stat row, not a stacked list', () => {
+describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KPI grid', () => {
   const marketBlock = (html: string): string => {
     const start = html.indexOf('right now')
     expect(start, 'the market board must render').toBeGreaterThan(-1)
@@ -714,33 +714,40 @@ describe('F7 — this market is a stat row, not a stacked list', () => {
     return end > 0 ? rest.slice(0, end) : rest
   }
 
-  it('lays the four figures out as the stat row the document already uses', () => {
+  it('puts every figure inside a sentence instead of a percent tile', () => {
     const block = marketBlock(letter())
-    expect(block).toMatch(/<div class="stat-strip is-4">/)
+    // TASTE.md names the tell: "a row of percent tiles ... with no plain
+    // sentence saying what it means".
+    expect(block).not.toMatch(/<div class="stat-strip is-4">/)
     expect(block).not.toContain('class="stat3"')
-    const vals = [...block.matchAll(/<div class="val">([^<]*)<\/div>/g)].map((m) => m[1]!)
-    // Months of supply first, with its verdict word under it.
-    expect(vals).toEqual(['3.2', '97.8%', '21', '$475,000'])
-    expect(block).toMatch(/Seller(&#39;|')s market/)
+    expect(block).toContain('40 homes are for sale in Redmond right now')
+    expect(block).toMatch(/about 13 sell in a typical month/)
+    expect(block).toMatch(/3\.2 months to sell what is listed/)
+    expect(block).toMatch(/seller(&#39;|')s market territory/)
   })
 
-  it('names what each number actually is', () => {
+  it('names what each number actually is, in words', () => {
     const block = marketBlock(letter())
-    expect(block).toContain('months of supply')
     // market_stats_cache.median_dom medians listings.days_to_pending — the days
     // from going on market to going pending, not list-to-close.
-    expect(block).toContain('median days to an accepted offer')
+    expect(block).toContain('had an accepted offer inside 21 days')
     expect(block).not.toContain('median days on market')
     // saleToListRatio carries median_sale_to_original_list, not final list.
-    expect(block).toContain('sold price to original ask')
+    expect(block).toContain('percent of the price they first asked')
     expect(block).not.toContain('>sold to list<')
-    expect(block).toContain('median sold, every Redmond home')
   })
 
-  it('is the same row on the immersive', () => {
+  it('draws months of supply as two bars, whose ratio IS the published figure', () => {
+    const block = marketBlock(letter())
+    expect(block).toContain('class="szn mos-wide"')
+    expect(block).toContain('Homes for sale in Redmond right now')
+    expect(block).toContain('Homes that sell in a typical month')
+  })
+
+  it('is the same reading on the immersive', () => {
     const block = marketBlock(immersive())
-    expect(block).toMatch(/<div class="stat-strip is-4">/)
-    expect(block).toContain('median days to an accepted offer')
+    expect(block).toContain('had an accepted offer inside 21 days')
+    expect(block).toContain('class="szn mos-wide"')
   })
 
   it('has a row to lay out in, on both stylesheets, and folds on a phone', () => {
@@ -1038,5 +1045,109 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     const html = letter()
     expect(html).toContain('is every Redmond home, all sizes')
     expect(html).toContain('Homes like yours')
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 2: the answer gets a picture, and the report
+ * chrome leaves the letter.
+ */
+describe('tasteReview 2 — the answer is drawn, and nothing floats over it', () => {
+  it('opens chapter 3 on a dot strip, before the method and the grid', () => {
+    for (const html of [letter(), immersive()]) {
+      const worth = html.slice(html.indexOf('The sales that set this price') - 12000)
+      expect(html).toContain('class="szn worth-wide"')
+      expect(html).toContain('class="szn worth-phone"')
+      expect(html).toContain('Where the sales put this home, and where we would list it')
+      // The strip sits ABOVE the method sentences and the grid.
+      const strip = html.indexOf('class="szn worth-wide"')
+      const grid = html.indexOf('table class="kv is-wide comp-matrix"')
+      expect(strip).toBeGreaterThan(-1)
+      expect(grid).toBeGreaterThan(strip)
+      expect(worth.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('states the method in at most three sentences and moves the weight sentence under the grid', () => {
+    const html = letter()
+    expect((html.match(/class="method-line"/g) ?? []).length).toBeLessThanOrEqual(3)
+  })
+
+  it('carries no fixed-position chrome anywhere on the seller document', () => {
+    const html = immersive()
+    expect(html).not.toContain('id="bar"')
+    expect(html).not.toContain('id="prog"')
+    expect(html).not.toMatch(/position\s*:\s*fixed/)
+    // Print report is a quiet link in the closing chapter, not a button pinned
+    // over every screen.
+    expect(html).toContain('class="print-out r"')
+    expect(html).toContain('data-rr-track="cma-print"')
+  })
+
+  it('draws its own tappable pins over the map tile', () => {
+    const html = letter({
+      mapOverlay: {
+        view: { centerLat: 44.2726, centerLng: -121.1745, zoom: 15, width: 640, height: 360 },
+        pins: [
+          { n: null, lat: 44.272, lng: -121.174 },
+          { n: 1, lat: 44.273, lng: -121.175 },
+        ],
+      },
+    } as never)
+    expect(html).toContain('class="pin-map-frame"')
+    expect(html).toContain('class="pin-hit is-subject"')
+    expect(html).toMatch(/<button type="button" class="pin-hit" data-comp="1" data-pin="1"/)
+    expect(html).toContain('aria-label="1. 730 Quince"')
+  })
+
+  it('rebuilds chapter 5 with a rounded month axis so a flat market looks flat', () => {
+    // A 13 percent spread must not fill the plot: the axis floor is a round
+    // number, and the drawn band is never less than a quarter of the ceiling.
+    expect(niceAxis([461000, 530000])).toEqual({ floor: 400000, ceil: 540000 })
+    expect(niceAxis([100, 100]).ceil).toBe(100)
+    expect(niceAxis([100, 100]).floor).toBeLessThanOrEqual(75)
+  })
+
+  it('gives the three outcome bars three distinct navy tints, never grey', () => {
+    const svg = askOutcomeBarsSvg(
+      {
+        city: 'Redmond',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 375, medianDays: 9 },
+          { key: 'sold-after-cut', n: 180, medianDays: 58, medianCutPct: 4.1 },
+          { key: 'did-not-sell', n: 232, medianDays: 118 },
+        ],
+      },
+      null,
+    )
+    const bars = [...svg.matchAll(/stroke="([^"]+)" stroke-width="(\d+)"/g)]
+      .filter((m) => Number(m[2]) >= 6)
+      .map((m) => m[1]!)
+    expect(bars).toHaveLength(3)
+    expect(new Set(bars).size).toBe(3)
+    for (const c of bars) expect(c).toMatch(/^(rgba\(16,39,66,[\d.]+\)|#102742)$/)
+  })
+
+  it('teaches no interaction in a caption', () => {
+    const html = immersive()
+    for (const caption of [
+      'Tap a price change to read its date',
+      'Tap a bar for the listings behind it',
+      'Tap a month for its median close',
+      'Drag along the curve, or use the arrow keys',
+    ]) {
+      expect(html, `instruction caption still shipping: ${caption}`).not.toContain(caption)
+    }
+    // The affordance is on the control instead.
+    expect(html).toContain('pp-chev')
+  })
+
+  it('gives the closing two real buttons that carry identity', () => {
+    const html = immersive()
+    expect(html).toContain('class="btn pri"')
+    expect(html).toContain('class="btn sec ghost"')
+    expect(html).toContain('class="sc sc-navy pack"')
+    expect(html).toContain('next-note')
   })
 })

@@ -37,11 +37,39 @@ function linePath(xs: number[], ys: number[]): string {
   return xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i]!.toFixed(1)}`).join(' ')
 }
 
-function scaleY(vals: number[], top: number, bottom: number): (v: number) => number {
-  const min = Math.min(...vals)
-  const max = Math.max(...vals)
-  const span = Math.max(max - min, 1)
-  return (v: number) => bottom - ((bottom - top) * (v - min)) / span
+/**
+ * A price axis with a ROUNDED floor, not the series minimum.
+ *
+ * tasteReview 2026-09-07: the y axis carried exactly two labels, the series min
+ * and max, so a 13 percent spread on a roughly flat market drew as a
+ * full-height rollercoaster. That is the same "the chart makes no sense"
+ * complaint Matt made in May, in a new costume, and the dataviz skill already
+ * names it: "prices do not grow from $0" — but nor do they fill the frame from
+ * their own smallest value.
+ *
+ * So the floor and ceiling are round numbers on a 1/2/5 step, and the drawn
+ * band is never less than a quarter of the ceiling. A flat market renders flat
+ * and a real move still fills the plot.
+ */
+export function niceAxis(values: readonly number[]): { floor: number; ceil: number } {
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const step = niceStep(Math.max(max - min, max * 0.05))
+  let floor = Math.floor(min / step) * step
+  const ceil = Math.ceil(max / step) * step
+  // A market that moved 3 percent must not draw like one that moved 40.
+  const minBand = ceil * 0.25
+  if (ceil - floor < minBand) floor = Math.floor((ceil - minBand) / step) * step
+  return { floor: Math.max(floor, 0), ceil }
+}
+
+/** 1, 2 or 5 times a power of ten — the steps a reader reads without thinking. */
+function niceStep(span: number): number {
+  const raw = Math.max(span, 1) / 4
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)))
+  const norm = raw / mag
+  const mult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10
+  return mult * mag
 }
 
 /**
@@ -68,11 +96,11 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
   const top = 28
   const bottom = H - 52
   const vals = priced.map((p) => p.medianSalePrice!)
-  const y = scaleY(vals, top, bottom)
+  const axis = niceAxis(vals)
+  const y = (v: number) => bottom - ((bottom - top) * (v - axis.floor)) / Math.max(axis.ceil - axis.floor, 1)
   const xs = priced.map((_, i) => left + ((right - left) * i) / Math.max(priced.length - 1, 1))
   const ys = vals.map(y)
   const path = linePath(xs, ys)
-  const area = `${path} L${xs[xs.length - 1]!.toFixed(1)},${bottom} L${xs[0]!.toFixed(1)},${bottom} Z`
   // Thin the month axis so two labels never overlap on a phone.
   let lastTickX = Number.NEGATIVE_INFINITY
   const dots = xs
@@ -97,9 +125,8 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
   const max = Math.max(...vals)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg month-line">
     <text x="0" y="14" font-size="${fs}" fill="#102742" opacity="0.7">Median close</text>
-    <text x="${left - 10}" y="${(y(max) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(max)}</text>
-    <text x="${left - 10}" y="${(y(min) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(min)}</text>
-    <path d="${area}" fill="#102742" fill-opacity="0.08"/>
+    <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.ceil)}</text>
+    <text x="${left - 10}" y="${(y(axis.floor) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.floor)}</text>
     <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
     ${dots}
@@ -109,6 +136,61 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
 
 export function medianCloseLinePhoneSvg(points: TrendPoint[]): string {
   return medianCloseLineSvg(points, { width: 360 })
+}
+
+/**
+ * Months of supply, as the two counts it is a ratio of.
+ *
+ * TASTE.md, verbatim: "MOS is two bars (homes for sale vs a month of sales),
+ * not a tile that says 3.9." The tile said 3.9 with the word "months of
+ * supply" under it and nothing a reader who does not sell houses could do with
+ * either.
+ *
+ * The monthly pace is NOT recomputed here. It is `activeCount / monthsOfSupply`
+ * — the denominator the published figure was divided by — so the two bars'
+ * ratio is exactly the months of supply printed beside them, and a reader can
+ * check it (CLAUDE.md §0, and check-market-formula.mjs owns the formula).
+ */
+export function monthsOfSupplyBarsSvg(input: {
+  activeCount: number
+  perMonth: number
+  place: string
+  width?: number
+}): string {
+  const { activeCount, perMonth } = input
+  if (!(activeCount > 0) || !(perMonth > 0)) return ''
+  const W = input.width ?? 720
+  const phone = W <= 400
+  const fs = phone ? 12 : 13.5
+  const rowH = phone ? 56 : 54
+  const top = 6
+  const H = top + rowH * 2 + 6
+  const plotL = 2
+  const longest = Math.max(String(Math.round(activeCount)).length, String(Math.round(perMonth)).length)
+  const plotR = W - Math.min(Math.max(longest * fs * 0.7 + 16, 44), 120)
+  const max = Math.max(activeCount, perMonth)
+  const x = (v: number) => plotL + ((plotR - plotL) * v) / Math.max(max, 1)
+  const bar = (i: number, value: number, label: string, tint: string, weight: number) => {
+    const labelY = top + i * rowH + 16
+    const barY = top + i * rowH + 32
+    return `<text x="${plotL}" y="${labelY}" font-size="${fs}" fill="${TL_INK}">${esc(label)}</text>
+    <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(value), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${tint}" stroke-width="${weight}" stroke-linecap="butt"/>
+    <text x="${W - 2}" y="${barY + 5}" text-anchor="end" font-size="${fs + 2}" font-weight="600" fill="${TL_INK}">${int(Math.round(value))}</text>`
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(
+    `${int(Math.round(activeCount))} homes for sale in ${input.place}, and about ${int(Math.round(perMonth))} sell in a typical month`,
+  )}" class="trend-svg mos-bars">
+    ${bar(0, activeCount, `Homes for sale in ${input.place} right now`, TL_INK, 14)}
+    ${bar(1, perMonth, 'Homes that sell in a typical month', 'rgba(16,39,66,0.46)', 14)}
+  </svg>`
+}
+
+export function monthsOfSupplyBarsPhoneSvg(input: {
+  activeCount: number
+  perMonth: number
+  place: string
+}): string {
+  return monthsOfSupplyBarsSvg({ ...input, width: 360 })
 }
 
 // ── The price ruler ─────────────────────────────────────────────────────────
@@ -739,6 +821,19 @@ const ASK_OUTCOME_LABEL: Record<AskOutcomeGroup['key'], string> = {
 }
 
 /**
+ * Three DISTINCT navy tints, so three bars on one axis read as three things.
+ *
+ * They were all one 0.55 tint, which the evaluator read as "two greys barely
+ * separable". Tints of the brand navy, never a second hue and never grey
+ * (dataviz skill: "context is navy tints"; §3: two-colour palette).
+ */
+const ASK_OUTCOME_TINT: Record<AskOutcomeGroup['key'], string> = {
+  'sold-no-cut': 'rgba(16,39,66,0.68)',
+  'sold-after-cut': 'rgba(16,39,66,0.44)',
+  'did-not-sell': 'rgba(16,39,66,0.26)',
+}
+
+/**
  * The first price decides the days.
  *
  * Three named rows on one days axis, the seller's own group in full navy and
@@ -812,8 +907,8 @@ export function askOutcomeBarsSvg(
       ]
         .filter(Boolean)
         .join(' · ')
-      const stroke = mine ? TL_INK : TL_MUTED
-      const weight = mine ? 9 : 6
+      const stroke = mine ? TL_INK : ASK_OUTCOME_TINT[g.key]
+      const weight = mine ? 10 : 7
       const bold = mine ? ' font-weight="600"' : ''
       const open = `<g class="bar-row" data-bar="${esc(g.key)}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}"><rect x="0" y="${(top + i * rowH).toFixed(1)}" width="${W}" height="${rowH}" fill="transparent"/>`
       if (phone) {

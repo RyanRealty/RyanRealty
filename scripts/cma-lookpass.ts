@@ -697,7 +697,12 @@ async function processSlug(
     getCmaRenderSourceBySlug: (slug: string) => Promise<CmaRenderSource | null>
     getCmaStoredHtmlBySlug: (slug: string) => Promise<string | null>
     resolveCmaPrintHtml: (slug: string) => Promise<{ html: string; status: string } | null>
-    immersiveFromRow: (row: CmaRenderSource, origin: string, hydrateArea: boolean) => Promise<string | null>
+    immersiveFromRow: (
+      row: CmaRenderSource,
+      origin: string,
+      hydrateArea: boolean,
+      slug?: string,
+    ) => Promise<string | null>
     extractChapters: (html: string) => Array<{ id: string; heading: string; svgCount: number; imgCount: number; tableCount: number }>
     findSellerBannedWords: (html: string) => Array<{ label: string; excerpt: string }>
   },
@@ -764,7 +769,11 @@ async function processSlug(
   let immersiveHtml: string | null = null
   const renderSource = await deps.getCmaRenderSourceBySlug(slug)
   if (renderSource) {
-    immersiveHtml = await deps.immersiveFromRow(renderSource, SITE_URL, false)
+    // The SLUG, so every tracked link in the evidence carries the identity the
+    // recipient's copy carries — `_pid`, `agent`, `utm_campaign`. Without it
+    // the shots showed a document whose CTAs were unattributable, which is
+    // exactly the defect the evaluator reported on chapter 7.
+    immersiveHtml = await deps.immersiveFromRow(renderSource, SITE_URL, false, slug)
   }
   if (!immersiveHtml) {
     immersiveHtml = await deps.getCmaStoredHtmlBySlug(slug)

@@ -8,6 +8,8 @@ import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months
 import {
   askOutcomeBarsPhoneSvg,
   askOutcomeBarsSvg,
+  monthsOfSupplyBarsPhoneSvg,
+  monthsOfSupplyBarsSvg,
   daysToOfferPhoneSvg,
   daysToOfferSvg,
   medianCloseLinePhoneSvg,
@@ -148,30 +150,34 @@ export function renderSold90Html(
 }
 
 /**
- * The market board. Every figure here is CITY grain, not this house's peers,
- * so the median-sold label says so — a seller reading "$532,311 median sold"
- * two scrolls under a $389,000 recommend has to be told which is which
- * (dataviz: name the grain the numbers actually are).
+ * The city, in four plain sentences and one drawing.
  *
- * F7, 2026-09-07: one stat row, the same one the failed-then-sold statistics
- * use, months of supply first with its verdict word under it. The letter had
- * no rule for the immersive's `.stat3` grid at all, so on paper and at
- * reading width the four figures printed as a stacked list — number, label,
- * number, label — under a 42px months-of-supply hero.
+ * tasteReview 2026-09-07: this was the banned KPI grid, verbatim — "3.9 /
+ * months of supply", "97.8% / sold price to original ask" — a number, a
+ * percentage and methodology jargon, with no sentence saying what any of it
+ * means, beside a $532,311 median that contradicted the recommendation three
+ * screens up. TASTE.md names both defects: "a row of percent tiles" and "MOS
+ * is two bars (homes for sale vs a month of sales), not a tile that says 3.9".
+ *
+ * So every figure now sits INSIDE a sentence a reader who does not sell houses
+ * can act on, months of supply is drawn as the two counts it is a ratio of,
+ * and the median-close line runs on a rounded axis so a flat market looks flat.
+ * The city median itself is reconciled against this house one paragraph above
+ * (`cityMedianReconciliationHtml`), which is where it belongs.
  *
  * Every label says what its number is, and two of them used to lie about it:
  *
  * - `medianDom` is `market_stats_cache.median_dom`, the median of
  *   `listings.days_to_pending` (on-market date to pending). It is the days a
  *   seller waited for an accepted offer, not "days on market", and CLAUDE.md
- *   §7 bans publishing a list-to-close figure under that name — so the label
- *   names the offer, which is what the column actually measures.
+ *   §7 bans publishing a list-to-close figure under that name.
  * - `saleToListRatio` carries `median_sale_to_original_list` from the pace
  *   read, not sale to the final ask. A seller who cut twice reads "sold to
  *   list" as the last ask, which is a different and better-looking number.
  */
 export function renderInventoryBoardHtml(market: CmaMarketContext | null | undefined): string {
   if (!market) return ''
+  const place = cleanText(market.geoLabel) ?? 'this market'
   const mos = market.monthsOfSupply
   const verdict = mos != null ? monthsOfSupplyVerdict(mos) : null
   const saleToList =
@@ -186,36 +192,60 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
         chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''
       }`
     : ''
-  const stats: Array<{ val: string; lbl: string; verdict?: string }> = []
-  if (mos != null) {
-    stats.push({
-      val: formatMonthsOfSupply(mos),
-      lbl: 'months of supply',
-      verdict: verdict?.label,
-    })
-  }
-  if (saleToList != null) stats.push({ val: `${saleToList}%`, lbl: 'sold price to original ask' })
-  if (market.medianDom != null) {
-    stats.push({ val: int(market.medianDom), lbl: 'median days to an accepted offer' })
-  }
-  if (market.medianSalePrice != null) {
-    stats.push({
-      val: usd(market.medianSalePrice),
-      lbl: `median sold, every ${market.geoLabel} home`,
-    })
-  }
-  if (stats.length === 0) return chartHtml
-  const cells = stats
-    .map(
-      (s) => `<div class="stat">
-      <div class="val">${esc(s.val)}</div>
-      <div class="lbl">${esc(s.lbl)}</div>
-      ${s.verdict ? `<div class="lbl vd">${esc(s.verdict)}</div>` : ''}
-    </div>`,
+
+  // The monthly pace the PUBLISHED months-of-supply figure was divided by.
+  // Never recomputed from a different denominator: the bars have to reproduce
+  // the number printed beside them (CLAUDE.md §0).
+  const active = market.activeCount
+  const perMonth =
+    mos != null && mos > 0 && active != null && active > 0 ? active / mos : null
+  const barsWide =
+    perMonth != null && active != null
+      ? monthsOfSupplyBarsSvg({ activeCount: active, perMonth, place })
+      : ''
+  const barsPhone =
+    perMonth != null && active != null
+      ? monthsOfSupplyBarsPhoneSvg({ activeCount: active, perMonth, place })
+      : ''
+  const barsHtml = barsWide
+    ? `<div class="szn mos-wide">${barsWide}</div>${
+        barsPhone ? `<div class="szn mos-phone">${barsPhone}</div>` : ''
+      }`
+    : ''
+
+  const sentences: string[] = []
+  if (mos != null && active != null && perMonth != null && verdict) {
+    sentences.push(
+      `${int(active)} homes are for sale in ${place} right now, and about ${int(
+        Math.round(perMonth),
+      )} sell in a typical month. At that pace it would take ${formatMonthsOfSupply(
+        mos,
+      )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
     )
-    .join('')
-  return `<div class="stat-strip is-${Math.min(stats.length, 4)}">${cells}</div>
-  ${chartHtml}`
+  } else if (mos != null && verdict) {
+    sentences.push(
+      `${place} carries ${formatMonthsOfSupply(mos)} months of supply, which is ${verdict.label.toLowerCase()} territory.`,
+    )
+  }
+  if (saleToList != null) {
+    sentences.push(
+      `Homes that sold here closed at ${saleToList} percent of the price they first asked, so the opening number is the one that decides what a seller keeps.`,
+    )
+  }
+  if (market.medianDom != null && market.medianDom > 0) {
+    sentences.push(
+      `Half of them had an accepted offer inside ${int(market.medianDom)} days; the other half waited longer.`,
+    )
+  }
+  if (chart) {
+    sentences.push(
+      `The line below is what a home in ${place} closed at, month by month, over the last year.`,
+    )
+  }
+  const prose = sentences.length
+    ? `<p class="chart-read">${esc(sentences.join(' '))}</p>`
+    : ''
+  return [prose, barsHtml, chartHtml].filter(Boolean).join('\n  ')
 }
 
 export function adjustedCloseRange(

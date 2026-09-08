@@ -635,9 +635,12 @@ describe('chapter order', () => {
     expect(html).not.toContain('sc-navy')
     expect(html).not.toContain('id="listing-trend"')
     expect(html).toContain('id="inventory"')
-    // F7: the board is one stat row, months of supply first with its verdict
-    // under it. The 42px hero over a stacked list is gone.
-    expect(html).toContain('<div class="stat-strip is-4">')
+    // tasteReview item 2: the KPI row is gone. Every figure sits inside a
+    // sentence, and months of supply is drawn as the two counts it is a ratio
+    // of (TASTE.md: "MOS is two bars ... not a tile that says 3.9").
+    expect(html).not.toContain('<div class="stat-strip is-4">')
+    expect(html).toContain('class="szn mos-wide"')
+    expect(html).toContain('sell in a typical month')
     expect(html).not.toContain('inv-hero')
     expect(html).not.toContain('photo-lead')
     expect(html).not.toMatch(/>0 days</)
@@ -657,8 +660,8 @@ describe('chapter order', () => {
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
     expect(html).toContain('id="inventory"')
-    expect(html).toMatch(/Seller(&#39;|')s market/)
-    expect(html).toContain('<div class="stat-strip is-4">')
-    expect(html).toContain('months of supply')
+    expect(html).toMatch(/seller(&#39;|')s market territory/)
+    expect(html).toContain('class="szn mos-wide"')
+    expect(html).toContain('homes are for sale in')
   })
 })

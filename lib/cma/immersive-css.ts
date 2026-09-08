@@ -37,11 +37,14 @@ img{max-width:100%;display:block}
 .hero-bed{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;filter:blur(34px) saturate(.75);opacity:.5;transform:scale(1.06)}
 .hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center top;opacity:.96;border-radius:0}
 .hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,39,66,.50) 0%,rgba(16,39,66,.16) 34%,rgba(16,39,66,.58) 62%,rgba(16,39,66,.94) 100%)}
-.hero .in{position:relative;z-index:2}
-.hero-kick{font-size:13px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:rgba(250,248,244,.82);margin-bottom:14px}
+/* A SCRIM UNDER THE WORDS, not only over the photo. 13px cream at 70 percent
+   on a sunlit lawn is not legible at any viewport, and the page-wide gradient
+   cannot know where the light part of a photo falls (tasteReview item 3). */
+.hero .in{position:relative;z-index:2;padding:26px 26px 30px;background:linear-gradient(180deg,rgba(16,39,66,0) 0%,rgba(16,39,66,.72) 26%,rgba(16,39,66,.9) 100%)}
+.hero-kick{font-size:13px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:rgba(250,248,244,.92);margin-bottom:14px}
 .hero-h{font-family:'Amboqia Boriango',Georgia,serif;font-weight:400;font-size:clamp(40px,8vw,92px);line-height:1.0;letter-spacing:-.01em;text-shadow:0 2px 24px rgba(16,39,66,.45)}
 .hero-sub{font-size:clamp(15px,2vw,19px);color:rgba(250,248,244,.9);margin-top:16px}
-.hero-for{font-size:14px;color:rgba(250,248,244,.7);margin-top:8px}
+.hero-for{font-size:14px;color:rgba(250,248,244,.86);margin-top:8px}
 .hero-payoff{margin-top:36px}
 .hero .ans-n{color:var(--cream);font-size:clamp(56px,11vw,120px);margin:4px 0 8px;text-shadow:0 2px 28px rgba(16,39,66,.7)}
 .hero .ans-l{color:rgba(250,248,244,.88)}
@@ -143,6 +146,15 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .rival-meta{font-size:13px;opacity:.7;margin-top:2px;line-height:1.35}
 .pin-map-wrap{margin:12px 0 20px}
 .pin-map{width:100%;height:auto;display:block;border:1px solid var(--ink12)}
+/* The tile is a bitmap; the pins are DOM over it, positioned from the centre
+   and zoom the tile was drawn at. That is what lets a pin be tapped, light its
+   row, and be a 44px target on a phone (tasteReview item 2). */
+.pin-map-frame{position:relative;margin:12px 0 6px;line-height:0}
+.pin-hit{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.pin-hit:focus-visible{outline:3px solid rgba(16,39,66,.45);outline-offset:0;border-radius:22px}
+.pin-dot{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cream);font:600 13px/1 Geist,system-ui,sans-serif;box-shadow:0 1px 6px rgba(16,39,66,.35)}
+.pin-hit.is-subject .pin-dot{border-radius:2px;width:26px;height:26px;font-size:14px}
+.pin-hit.is-on .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 3px var(--navy)}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}
 .lot-tile{margin:0}
 .lot-tile svg{width:100%;height:auto;display:block;border:1px solid var(--ink12);border-radius:10px}
@@ -200,21 +212,20 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .like-d{font-size:13.5px;opacity:.65;margin-top:8px}
 .cando-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:8px}
 .next-in{display:flex;gap:48px;align-items:flex-end}
-.br-img{width:min(300px,32vw);height:auto;flex:0 0 auto}
-.next-b{flex:1}
-.cta{display:flex;gap:14px;flex-wrap:wrap;margin:30px 0 22px}
-.btn{display:inline-block;padding:15px 28px;font-weight:600;font-size:15.5px;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}
+.br-img{width:min(320px,34vw);height:auto;flex:0 0 auto;align-self:flex-end}
+.next-b{flex:1;min-width:0}
+.next-note{font-size:16px;line-height:1.55;max-width:56ch;margin:0 0 12px;color:rgba(250,248,244,.88)}
+.sc-cream .next-note{color:var(--ink)}
+.print-out{margin-top:22px;font-size:13px}
+.print-out a{color:rgba(250,248,244,.7);text-decoration:underline;text-underline-offset:4px}
+.cta{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;margin:30px 0 22px}
+.btn{display:inline-block;padding:15px 28px;border:1.5px solid transparent;font-weight:600;font-size:15.5px;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease}
 .btn:hover{transform:translateY(-1px)}
 .btn.pri{background:var(--navy);color:var(--cream);box-shadow:0 12px 28px rgb(16 39 66 / .22)}
 .btn.sec{border:1.5px solid var(--navy);color:var(--navy)}
 .btn.ter{color:var(--ink70);text-decoration:underline;text-underline-offset:4px;padding-left:8px;padding-right:8px}
 .sig{font-size:14.5px;font-weight:600}
 .fine{font-size:12px;opacity:.55;margin-top:14px;max-width:640px;line-height:1.5}
-#bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;gap:16px;padding:12px 20px;background:rgba(250,248,244,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--ink12);transform:translateY(-110%);transition:transform .3s ease}
-#bar.on{transform:none}
-#bar .bt{font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#bar a{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;border:1px solid var(--ink12);padding:6px 14px}
-#prog{position:absolute;bottom:-1px;left:0;height:2px;background:var(--navy);width:0}
 html.anim .r{opacity:0;transform:translateY(22px)}
 html.anim .hero .r{opacity:1;transform:none}
 html.anim .on .r{opacity:1;transform:none;transition:opacity .55s ease-out,transform .55s ease-out}
@@ -235,6 +246,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .hero-bed,.hero-scrim,.hero .cue{display:none}
   .hero-img{position:static;width:100%;height:auto;object-fit:contain}
   .hero .in{position:static;padding:32px 18px 44px;background:var(--navy)}
+  .hero .in{background:var(--navy)}
   .hero-h{font-size:clamp(34px,11vw,54px)}
 }
 @media (max-width:860px){
@@ -269,6 +281,12 @@ table.comp-matrix .matrix-addr{display:block}
 .median-phone{display:none}
 @media screen and (max-width:700px){.median-wide{display:none}.median-phone{display:block}}
 @media print{.median-wide{display:block!important}.median-phone{display:none!important}}
+.mos-phone{display:none}
+@media screen and (max-width:700px){.mos-wide{display:none}.mos-phone{display:block}}
+@media print{.mos-wide{display:block!important}.mos-phone{display:none!important}}
+.worth-phone{display:none}
+@media screen and (max-width:700px){.worth-wide{display:none}.worth-phone{display:block}}
+@media print{.worth-wide{display:block!important}.worth-phone{display:none!important}}
 .pin-map{max-height:60vh;object-fit:cover}
 /* Chapter 3's lead line, under the number that is the chapter title. */
 .worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
@@ -392,7 +410,7 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 @media (max-width:560px){.stat2,.stat3,.stat4{grid-template-columns:1fr}.photo-set{grid-template-columns:1fr 1fr}.status-tiles{grid-template-columns:1fr}}
 @media print{
   .sc{min-height:0;padding:24px}
-  #bar,.cue{display:none}
+  .cue{display:none}
   .hero{color:var(--navy)}
 }
 `
