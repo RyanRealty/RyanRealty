@@ -866,6 +866,12 @@ async function processSlug(
   console.log(`  render_args present=${meta.has_render_args} html_content present=${meta.has_html_content}`)
 
   const outDir = path.join(OUT_ROOT, slug)
+  // Clear the slug before writing. Chapter file names carry the recommended
+  // price ("04-443000.png"), so a rebuild that moves the number leaves the old
+  // chapter beside the new one and the evidence shows two answers for one
+  // document. The round-two taste review caught exactly that. Rewriting in
+  // place is not enough; the stale name has to go.
+  await fs.rm(outDir, { recursive: true, force: true })
   await fs.mkdir(outDir, { recursive: true })
 
   const allShots: Shot[] = []

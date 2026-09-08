@@ -1,0 +1,722 @@
+/* ===========================================================================
+   V3ListingClose — the listing page's ending.
+
+   Every color, size, stroke and duration comes from ./tokens.css. No raw brand
+   value is declared here (ci:one-design-system rule 2, ci:public-v3 rule 2).
+
+   The composition is deliberately asymmetric and deliberately NOT three equal
+   tiles: a hundred dots take the wide left column as the subject, two thin
+   rules stack in a narrow right column as the context, and one readout runs
+   under the whole drawing. The acts sit beside it as a chooser — three doors,
+   one panel — so the page ends with a decision rather than a stack of forms.
+
+   Motion is the 200ms state-change rung only: a mark answering a hover, a
+   panel swapping. Nothing enters on scroll and nothing counts up.
+   =========================================================================== */
+
+.v3.v3-close {
+  margin: 0;
+  padding: var(--v3-section-pad) var(--v3-gutter) calc(var(--v3-section-pad) + var(--v3-sticky-bar-h));
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  /* Every breakpoint below asks how wide THE SECTION is, not how wide the
+     window is. The close sits inside the listing page's ~54rem main column at
+     1440, and viewport queries split that column into four nested sub-columns
+     of ~12rem: the drawing's labels orphaned ("first ask" alone on a line) and
+     the rails shrank to 9px marks nobody could read. A container query gets the
+     same layout right on this page, on a full-width page, and in a sidebar. */
+  container-type: inline-size;
+  container-name: v3close;
+}
+
+/* A section that FOLLOWS content opens on the section rule. */
+* + .v3.v3-close {
+  border-top: var(--v3-rule-section);
+}
+
+.v3 .v3-close__head {
+  max-width: var(--v3-measure);
+  margin: 0 auto var(--v3-space-xl);
+}
+
+.v3 .v3-close__head .v3-heading {
+  max-width: 34ch;
+}
+
+.v3 .v3-close__lede {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-close__body {
+  display: grid;
+  gap: var(--v3-space-2xl);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+}
+
+@container v3close (min-width: 62rem) {
+  .v3 .v3-close__body {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: var(--v3-space-3xl);
+    align-items: start;
+  }
+}
+
+/* -- The drawing ---------------------------------------------------------- */
+
+.v3 .v3-close__reading {
+  margin: 0;
+}
+
+.v3 .v3-close__marks {
+  display: grid;
+  gap: var(--v3-space-md);
+}
+
+/* The drawing: the hundred dots are the subject and keep their natural size;
+   the two rails share the rest and never go below a width a person can read a
+   position on. */
+@container v3close (min-width: 26rem) {
+  .v3 .v3-close__mark-of {
+    display: block;
+    margin-inline-start: 0;
+    margin-top: var(--v3-space-3xs);
+  }
+}
+
+@container v3close (min-width: 34rem) {
+  .v3 .v3-close__marks {
+    grid-template-columns: auto minmax(16rem, 1fr);
+    gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
+
+.v3 .v3-close__rails {
+  display: grid;
+  gap: var(--v3-space-md);
+  align-content: start;
+}
+
+.v3 .v3-close__mark {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.v3 .v3-close__mark:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-close__mark-label {
+  display: block;
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  margin-bottom: var(--v3-space-xs);
+}
+
+.v3 .v3-close__mark-value {
+  display: block;
+  margin-top: var(--v3-space-2xs);
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-close__mark-of {
+  display: inline;
+  margin-inline-start: var(--v3-space-2xs);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+/* A hundred homes. Circular because a dot is a data mark, not a box. */
+.v3 .v3-close__dots {
+  display: grid;
+  grid-template-columns: repeat(10, 0.6rem);
+  gap: 0.3rem;
+  width: max-content;
+}
+
+.v3 .v3-close__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: var(--v3-radius-mark);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v3-navy) 26%, transparent);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__dot.is-on {
+  background: var(--v3-navy-70);
+  box-shadow: none;
+}
+
+.v3 .v3-close__dots.is-active .v3-close__dot.is-on {
+  background: var(--v3-ink);
+}
+
+/* The cut, as two bars. See DepthRule's header for why it is not one rule. */
+.v3 .v3-close__bars {
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-close__bar-row {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--v3-space-sm);
+}
+
+.v3 .v3-close__bar-label {
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-close__bar-track {
+  display: flex;
+  height: 0.7rem;
+}
+
+.v3 .v3-close__bar-track--pace {
+  position: relative;
+}
+
+/* Thirty-day marks, so the filled run reads as a length of time and not just a
+   proportion of an unlabelled bar. */
+.v3 .v3-close__bar-tick {
+  position: absolute;
+  inset-block: -0.15rem;
+  width: 1px;
+  background: color-mix(in srgb, var(--v3-navy) 30%, transparent);
+}
+
+.v3 .v3-close__bar {
+  display: block;
+  height: 100%;
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__bar--full,
+.v3 .v3-close__bar--kept {
+  flex: 0 0 auto;
+  background: var(--v3-navy-70);
+}
+
+.v3 .v3-close__bar--full {
+  width: 100%;
+}
+
+.v3 .v3-close__bars.is-active .v3-close__bar--full,
+.v3 .v3-close__bars.is-active .v3-close__bar--kept {
+  background: var(--v3-ink);
+}
+
+/* This listing's own row on the same axis, drawn hollow so the city's record
+   stays the subject and the house reads as a mark placed on it. */
+.v3 .v3-close__bar--subject {
+  flex: 0 0 auto;
+  background: var(--v3-navy);
+}
+
+.v3 .v3-close__bar-row--subject .v3-close__bar-label {
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+/* The gap IS the cut: an outlined space where the price used to be. */
+.v3 .v3-close__bar-gap {
+  display: block;
+  height: 100%;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v3-navy) 40%, transparent);
+}
+
+.v3 .v3-close__rule {
+  position: relative;
+  display: block;
+  height: 0.75rem;
+}
+
+.v3 .v3-close__rule-track {
+  position: absolute;
+  inset-block-start: 0.3rem;
+  inset-inline: 0;
+  height: 1px;
+  background: var(--v3-edge);
+}
+
+.v3 .v3-close__rule-cut {
+  position: absolute;
+  inset-block-start: 0.15rem;
+  inset-inline-end: 0;
+  height: 0.35rem;
+  background: var(--v3-navy-70);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__rule.is-active .v3-close__rule-cut {
+  background: var(--v3-ink);
+}
+
+.v3 .v3-close__rule-tick {
+  position: absolute;
+  inset-block-start: 0;
+  width: 1px;
+  height: 0.6rem;
+  background: var(--v3-edge);
+}
+
+.v3 .v3-close__rule-mark {
+  position: absolute;
+  inset-block-start: 0.05rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-inline-start: -0.25rem;
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-navy-70);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__rule.is-active .v3-close__rule-mark {
+  background: var(--v3-ink);
+}
+
+/* The readout swaps text as the reader points at a mark, so its height is
+   RESERVED, not discovered. Without this the block grows by a line or two the
+   moment a reading appears, the source disclosure below it slides under the
+   cursor, and a click aimed at "Source" lands on nothing — reproduced at both
+   widths before this rule existed. The reserve fits the longest reading at the
+   narrower measure; the wider column needs less. */
+.v3 .v3-close__pace {
+  display: block;
+  padding-top: var(--v3-space-xs);
+}
+
+.v3 .v3-close__pace-line {
+  position: relative;
+  display: block;
+  height: 0.7rem;
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+.v3 .v3-close__pace-tick {
+  position: absolute;
+  inset-block-end: 0;
+  height: 0.35rem;
+  width: 1px;
+  background: var(--v3-edge);
+}
+
+/* The run in which half of them found a buyer. */
+.v3 .v3-close__pace-half {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  height: 0.3rem;
+  background: var(--v3-navy-70);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__pace.is-active .v3-close__pace-half {
+  background: var(--v3-ink);
+}
+
+/* Where this listing already is on the same line. */
+.v3 .v3-close__pace-own {
+  position: absolute;
+  inset-block: 0;
+  width: var(--v3-rule-weight-section);
+  margin-inline-start: calc(var(--v3-rule-weight-section) / -2);
+  background: var(--v3-navy);
+}
+
+.v3 .v3-close__pace-marks {
+  position: relative;
+  display: block;
+  height: 2.6rem;
+  margin-top: var(--v3-space-3xs);
+}
+
+.v3 .v3-close__pace-mark {
+  position: absolute;
+  inset-block-start: 0;
+  max-width: 9rem;
+  padding-inline-start: var(--v3-space-3xs);
+  border-inline-start: 1px solid var(--v3-edge);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+/* Past the middle of the line the label hangs to the left of its rule, so it
+   never runs off the right edge at 375. */
+.v3 .v3-close__pace-mark.is-late {
+  padding-inline: 0 var(--v3-space-3xs);
+  border-inline: none 1px solid var(--v3-edge);
+  text-align: right;
+}
+
+.v3 .v3-close__pace-mark--own.is-late {
+  border-inline-end-color: var(--v3-navy);
+}
+
+.v3 .v3-close__pace-mark--own {
+  inset-block-start: 1.3rem;
+  border-inline-start-color: var(--v3-navy);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-close__axis--bars,
+.v3 .v3-close__axis--pace {
+  margin-inline-start: calc(8.5rem + var(--v3-space-sm));
+}
+
+.v3 .v3-close__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-close__readout {
+  margin: var(--v3-space-lg) 0 0;
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+  /* Measured, not guessed: the tallest reading is 119px of text at 375 and
+     69px at the wide measure, plus this block's own padding. */
+  min-height: 8.5rem;
+}
+
+@container v3close (min-width: 34rem) {
+  .v3 .v3-close__readout {
+    min-height: 5.5rem;
+  }
+}
+
+.v3 .v3-close__readout-line {
+  display: block;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  max-width: var(--v3-measure-text);
+}
+
+.v3 .v3-close__readout-line--rest {
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-close__readout-n {
+  display: block;
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+/* The trace, visible without opening anything. The disclosure under it holds
+   the full per-figure rows (table, stat id, definition, n, complete_through). */
+.v3 .v3-close__window {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-close__source {
+  margin-top: var(--v3-space-2xs);
+}
+
+/* -- The acts ------------------------------------------------------------- */
+
+.v3 .v3-close__acts {
+  display: grid;
+  gap: 0;
+  align-content: start;
+}
+
+.v3 .v3-close__acts.is-wide {
+  max-width: var(--v3-measure-sheet);
+}
+
+.v3 .v3-close__tabs {
+  display: grid;
+  border-top: var(--v3-rule-hairline);
+}
+
+@container v3close (min-width: 34rem) {
+  /* Three doors across, one panel under them. Stacked, they read as three
+     more sections at the end of a page that just finished stacking sections. */
+  .v3 .v3-close__acts:not(.is-narrow) .v3-close__tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--v3-space-lg);
+  }
+}
+
+.v3 .v3-close__tab {
+  display: block;
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  border: 0;
+  border-bottom: var(--v3-rule-hairline);
+  background: none;
+  text-align: left;
+  color: var(--v3-ink-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__tab:hover {
+  color: var(--v3-ink);
+}
+
+.v3 .v3-close__tab:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(var(--v3-focus-offset) * -1);
+}
+
+.v3 .v3-close__tab.is-active {
+  color: var(--v3-ink);
+  border-bottom-color: var(--v3-navy);
+  border-bottom-width: var(--v3-rule-weight-section);
+}
+
+.v3 .v3-close__tab-label {
+  display: block;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+}
+
+/* The open door switches to the display face, at the SAME size. Switching size
+   as well changed how many lines the longest label took, which changed the row
+   height, which changed the page height when a reader picked a door — the
+   defect this section already fixed twice, arriving through the type ramp. */
+.v3 .v3-close__tab.is-active .v3-close__tab-label {
+  font-family: var(--v3-font-display);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+}
+
+/* The open door is marked by a notch under its own column, not by pushing the
+   panel sideways: offsetting the panel to the third column left the payment
+   form a third of the measure and clipped its email field — a real craft defect
+   traded for a layout idea. */
+.v3 .v3-close__tab.is-active {
+  position: relative;
+}
+
+.v3 .v3-close__tab.is-active::after {
+  content: '';
+  position: absolute;
+  inset-block-end: calc(var(--v3-rule-weight-section) * -1);
+  inset-inline-start: 0;
+  width: var(--v3-space-lg);
+  height: var(--v3-rule-weight-section);
+  background: var(--v3-navy);
+}
+
+.v3 .v3-close__tab-hint {
+  display: block;
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+/* Reserved, for the same reason the readout is: choosing a door must not
+   change how tall the page is. The three panels are different heights, and a
+   reader near the bottom of the page had the whole section jump when the
+   shorter one replaced the taller — the browser clamps the scroll offset to a
+   page that just got shorter. */
+.v3 .v3-close__panel {
+  padding-top: var(--v3-space-lg);
+  /* Measured: the tallest of the three panels is 279px at 375 and 268px at the
+     wide measure, plus this block's own padding, plus room for the one-line
+     error a failed submit adds. */
+  min-height: 21.5rem;
+}
+
+@container v3close (min-width: 34rem) {
+  .v3 .v3-close__panel {
+    min-height: 20rem;
+  }
+}
+
+.v3 .v3-close__panel-lede {
+  margin: 0 0 var(--v3-space-md);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  max-width: var(--v3-measure-text);
+}
+
+.v3 .v3-close__payment-figure {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-close__payment-unit {
+  color: var(--v3-ink);
+}
+
+.v3 .v3-close__payment-terms {
+  display: block;
+  margin-top: var(--v3-space-3xs);
+}
+
+.v3 .v3-close__form {
+  display: block;
+}
+
+.v3 .v3-close__field {
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+@media (min-width: 30rem) {
+  .v3 .v3-close__field {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: var(--v3-space-sm);
+  }
+
+  .v3 .v3-close__field label {
+    grid-column: 1 / -1;
+  }
+}
+
+.v3 .v3-close__field label {
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-close__field input {
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  border: var(--v3-panel-border);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font: inherit;
+  font-size: var(--v3-size-body);
+  width: 100%;
+}
+
+.v3 .v3-close__field input:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-close__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) var(--v3-space-lg);
+  border: 1px solid var(--v3-navy);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  font: inherit;
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-close__submit:hover {
+  background: var(--v3-pressed);
+  border-color: var(--v3-pressed);
+}
+
+.v3 .v3-close__submit:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-close__submit[disabled] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.v3 .v3-close__submit--link {
+  width: max-content;
+}
+
+/* The honeypot. Off-screen rather than display:none, because a bot that reads
+   computed styles skips a hidden field and fills a positioned one. */
+.v3 .v3-close__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-close__note {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  max-width: var(--v3-measure-text);
+}
+
+.v3 .v3-close__error {
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-exception);
+}
+
+.v3 .v3-close__done-line {
+  margin: 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-close__tour {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-close__dot,
+  .v3 .v3-close__rule-cut,
+  .v3 .v3-close__rule-mark,
+  .v3 .v3-close__tab,
+  .v3 .v3-close__submit {
+    transition: none;
+  }
+}

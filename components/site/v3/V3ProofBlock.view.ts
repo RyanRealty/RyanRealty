@@ -117,8 +117,19 @@ function daysLabel(days: number): string {
   return days === 1 ? '1 day' : `${Math.round(days)} days`
 }
 
-function traceText(block: ProofBlock): string {
+/**
+ * The disclosure text: one line per figure the section actually PUBLISHES.
+ *
+ * `showOutcomes` is a publishing decision, so it has to reach the trace too.
+ * With the strips off, the entries scoped to them source nothing on screen —
+ * and two of them are the market's own median days-to-contract and
+ * sale-to-first-ask, the exact figures our held comparison was drawn against.
+ * Publishing their provenance under a section that draws neither restates the
+ * comparison in prose. So the trace covers what is drawn, and nothing else.
+ */
+function traceText(block: ProofBlock, showOutcomes: boolean): string {
   return block.trace
+    .filter((t) => t.scope === 'always' || showOutcomes)
     .map(
       (t) =>
         `${t.figure} — ${t.source}; ${t.table}; ${t.filter}; ${t.window}; ${t.rows} rows; pulled ${t.fetchedAt}; ${t.query}`,
@@ -137,11 +148,18 @@ export type ProofBlockViewInput = {
    *
    * Default true — the block was built to draw them and every existing caller
    * keeps that behaviour. /sell passes FALSE because Matt has not ruled on
-   * publishing them yet: our closings currently read slower and lower than
-   * Bend's own median, and whether a seller-facing page leads with that is his
-   * call, not a builder's. With it off the block ships the record, the reviews
-   * and the reach, and the strips return by flipping one prop the day he says
-   * yes — not by rebuilding a section.
+   * publishing them: on 2026-09-08 our closings read slower and lower than
+   * Bend's own median (52 days to contract against 29; 93.7% of the first ask
+   * against 97.0%, n=7), and Matt's ruling that day was "hold those, we only
+   * want positive". So the strips do not publish, and the DEFAULT is off: a
+   * caller has to ask for them, rather than get them by forgetting a prop.
+   *
+   * This is a publishing decision, not a data one. Nothing here is softened or
+   * re-cut to look better — the figures stay exactly as `getProofBlock` reads
+   * them, the strips simply do not go on a seller-facing page. With them off
+   * the block ships the record, the reviews and the reach, and its heading and
+   * claim say only what it shows, so nothing is implied by omission.
+   * Recorded in docs/plans/PUBLIC_PRODUCT/decisions.md.
    */
   showOutcomes?: boolean
 }
@@ -160,7 +178,9 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
 
   /* ---- the two strips ---------------------------------------------------- */
 
-  const showOutcomes = input.showOutcomes ?? true
+  // Default OFF (Matt 2026-09-08, decisions.md): an unflattering comparison
+  // does not reach a seller-facing page by a caller's omission.
+  const showOutcomes = input.showOutcomes ?? false
   const drawable = o.publishable && showOutcomes ? o.rows : []
 
   const dayRows = drawable.map((r) => ({
@@ -338,7 +358,7 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
     reviews,
     reach: input.reach ?? [],
     attribution: input.attribution,
-    trace: traceText(block),
+    trace: traceText(block, showOutcomes),
     quiet: o.publishable ? null : o.quietReason,
   }
 }

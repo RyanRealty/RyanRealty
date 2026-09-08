@@ -466,6 +466,42 @@ export function yoyClaim(input: ClaimInput): string | undefined {
 }
 
 /**
+ * WHICH WAY THE LATEST FIGURE MOVED, decided exactly the way yoyClaim's own
+ * sentence decides it.
+ *
+ * The house rule is that `--rr-exception` is the only second hue and it means a
+ * real decline (CLAUDE.md section 3, TASTE.md "Chart craft"). Nothing could
+ * apply it before this existed: `emphasize` drew the subject series in full
+ * navy whichever way it had moved, so the city median chart said "down 5.7%
+ * from Aug 2025" in a sentence and drew that year in the same ink as a rise
+ * (verified in the browser on /cities/bend, 2026-09-08).
+ *
+ * It reuses `comparison`'s own reading of the two points — the point LABELS
+ * first, the raw values as the fallback, the same one-decimal rounding — so the
+ * ink and the sentence can never disagree at the boundary: a change the
+ * sentence calls "flat" is not a decline this calls red.
+ *
+ * Undefined when the window holds no comparison, which is not the same as flat.
+ */
+export function yoyDirection(input: ClaimInput): 'up' | 'down' | 'flat' | undefined {
+  const latest = latestOf(input.series)
+  if (!latest) return undefined
+  const prior = yoyPrior(input, latest)
+  if (!prior || !(prior.point.value > 0)) return undefined
+  const read = comparison(
+    latest.point.value,
+    prior.point.value,
+    input.unit,
+    'the prior period',
+    latest.point.label,
+    prior.point.label,
+  )
+  if (read.startsWith('down')) return 'down'
+  if (read.startsWith('up')) return 'up'
+  return 'flat'
+}
+
+/**
  * The claim for a chart that IS a window — "last three years", "since 1998",
  * a quarterly run. The comparison is the window's own first plotted point, so
  * the sentence says what the reader is looking at end to end:

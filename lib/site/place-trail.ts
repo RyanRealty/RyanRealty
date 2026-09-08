@@ -62,17 +62,27 @@ export function neighborhoodPageTrail(
   return trail
 }
 
-/** Community page: city landing → community name. No Home, no Communities index. */
+/**
+ * Community page: city landing → community name. No Home, no Communities index.
+ *
+ * A community that IS its own town gets ONE crumb. Sunriver's city is Sunriver,
+ * so the trail rendered "Sunriver / Sunriver" — a parent link and a current page
+ * with the same name, which tells a visitor nothing and reads as a rendering
+ * fault (seen on /communities/sunriver, 2026-09-08). `subdivisionPageTrail`
+ * already drops a repeated middle crumb through `samePlace`; this is the same
+ * rule one level up, and the crumb that survives is the CURRENT page rather than
+ * a link away from it.
+ */
 export function communityPageTrail(
   city: PlaceTrailNode | null | undefined,
   communityName: string,
 ): PlaceCrumb[] {
   const trail: PlaceCrumb[] = []
-  if (city) {
+  const name = communityName.trim()
+  if (city && !(name && samePlace(city, { label: name, slug: '' }))) {
     const href = cityHref(city.slug)
     if (href) pushUnique(trail, city.label, href)
   }
-  const name = communityName.trim()
   if (name) trail.push({ label: name })
   return trail
 }

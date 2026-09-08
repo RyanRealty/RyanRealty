@@ -23,13 +23,15 @@ describe('every site submit sends the visitor a same-minute confirmation', () =>
     expect(src).toContain(`${fn}(`)
   })
 
-  it('the listing-save capture confirms too, not only the saved search', () => {
+  it('every capture in the file confirms, not only the saved search', () => {
     const src = read('app/actions/search-alert-capture.ts')
-    // Both exported captures must reach the helper; one shared import is not
-    // proof that both call it.
-    expect(src.match(/sendAlertConfirmation\(/g) ?? []).toHaveLength(2)
+    // Every exported capture must reach the helper; one shared import is not
+    // proof that all of them call it. Three since SITE-06 added the single-home
+    // price watch: saved search, saved home, price watch.
+    expect(src.match(/sendAlertConfirmation\(/g) ?? []).toHaveLength(3)
     expect(src).toContain("kind: 'search'")
     expect(src).toContain("kind: 'listing'")
+    expect(src).toContain("kind: 'price-drop'")
   })
 
   it('the paths that already confirmed still do', () => {
@@ -71,7 +73,14 @@ describe('the confirmations are system sends, and say nothing they cannot back',
     // Four in the sender's plumbing (param, type, pass-through) plus one literal
     // per confirmation family: contact, search alert, listing save, expired.
     expect((code.match(/idempotencyKey:/g) ?? []).length).toBeGreaterThanOrEqual(4)
-    for (const prefix of ['contact:', 'alert-search:', 'alert-listing:', 'expired-ack:']) {
+    for (const prefix of [
+      'contact:',
+      'alert-search:',
+      'alert-listing:',
+      'alert-price-drop:',
+      'payment-estimate:',
+      'expired-ack:',
+    ]) {
       expect(code).toContain(prefix)
     }
   })
@@ -90,6 +99,32 @@ describe('the confirmations are system sends, and say nothing they cannot back',
     expect(listingBranch).not.toMatch(/listing alert/i)
     expect(listingBranch).not.toMatch(/one email/i)
     expect(listingBranch).not.toMatch(/when a (new )?home/i)
+  })
+
+  it('the price-watch variant promises exactly the row it creates, and no more', () => {
+    // submitListingPriceDropWatch writes a listing_alerts row whose events map
+    // has price_change ON and everything else OFF. So this branch may promise an
+    // email on a price change — and must not promise the new-listing feed the
+    // saved-SEARCH branch promises, because this row will never send one.
+    const branch = code.slice(
+      code.indexOf("if (params.kind === 'price-drop')"),
+      code.indexOf("if (params.kind === 'search')"),
+    )
+    expect(branch).toMatch(/watching the price/i)
+    expect(branch).toMatch(/stop it from any of them/i)
+    expect(branch).not.toMatch(/comes on the market/i)
+    expect(branch).not.toMatch(/matches/i)
+  })
+
+  it('the payment estimate promises ONE send and states its assumptions', () => {
+    // A one-time send of a figure the visitor built. No cadence to state and
+    // nothing to unsubscribe from — but the assumptions behind the number ride
+    // with it, because a payment with no rate, term and down payment is not a
+    // payment (§0).
+    const branch = code.slice(code.indexOf('export async function sendPaymentEstimate'))
+    expect(branch).toContain('assumptions')
+    expect(branch).toMatch(/estimate, not a quote/i)
+    expect(branch).not.toMatch(/each new|per new|every new/i)
   })
 
   it('the search-alert confirmation is sent only after the alert row persists', () => {

@@ -34,139 +34,14 @@
   text-wrap: balance;
 }
 
-/* ── the drawing: homes for sale against a month of sales ─────────────────── */
+/* ── the drawing ──────────────────────────────────────────────────────────── */
 
-.sell-answer__figure {
-  margin: 0;
-  display: grid;
-  gap: var(--v3-space-sm);
-  padding-block: var(--v3-space-sm);
-  border-block: var(--v3-rule-hairline);
-}
-
-.sell-answer__caption {
-  margin: 0;
-  font-size: var(--v3-size-body);
-  line-height: var(--v3-leading-body);
-  color: var(--v3-ink);
-}
-
-.sell-answer__bars {
-  display: grid;
-  gap: var(--v3-space-xs);
-}
-
-.sell-answer__bar {
-  /* A button, not a div: the drawing has to answer a keyboard the same way it
-     answers a pointer, and a title attribute does not reach one. */
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: 'label value' 'track track';
-  align-items: baseline;
-  column-gap: var(--v3-space-sm);
-  row-gap: var(--v3-space-3xs);
-  inline-size: 100%;
-  min-block-size: var(--v3-tap);
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.sell-answer__bar-reading {
-  margin: 0;
-  min-block-size: calc(var(--v3-space-lg) + var(--v3-space-xs));
-  font-size: var(--v3-size-source);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink);
-}
-
-/* The prompt is quieter than a reading, so an untouched drawing does not look
-   as though it is already answering something. */
-.sell-answer__bar-reading--idle {
-  color: var(--v3-ink-muted);
-}
-
-.sell-answer__bar-label {
-  grid-area: label;
-  font-size: var(--v3-size-body-sm);
-  color: var(--v3-ink-muted);
-}
-
-.sell-answer__bar-value {
-  grid-area: value;
-  font-family: var(--v3-font-num);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--v3-size-body-lg);
-  font-weight: var(--v3-weight-num);
-  color: var(--v3-ink);
-}
-
-.sell-answer__track {
-  grid-area: track;
-  display: block;
-  block-size: var(--v3-space-sm);
-  background: var(--v3-wash);
-}
-
-.sell-answer__fill {
-  display: block;
-  block-size: 100%;
-  background: var(--v3-ink);
-  transform-origin: left center;
-  animation: sell-answer-draw var(--v3-dur-rise) var(--v3-ease-out) both;
-}
-
-/* The pace bar is the context series, so it reads as a tint of the same ink
-   rather than as a second hue (PUBLIC_UI: navy on cream, tints for context). */
-.sell-answer__bar--pace .sell-answer__fill {
-  background: var(--v3-ink-muted);
-}
-
-/* The interrogated bar. The mark itself answers — the track darkens under it,
-   nothing moves, nothing bounces (TASTE: interaction reveals, never decorates). */
-.sell-answer__bar--live .sell-answer__track {
-  background: color-mix(in srgb, var(--v3-ink) 16%, transparent);
-}
-
-.sell-answer__bar--live .sell-answer__bar-label {
-  color: var(--v3-ink);
-}
-
-@keyframes sell-answer-draw {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-/* Reduced motion gets the same graphic, already complete. */
-@media (prefers-reduced-motion: reduce) {
-  .sell-answer__fill {
-    animation: none;
-  }
-}
-
-.sell-answer__verdict {
-  margin: 0;
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink-muted);
-}
-
-.sell-answer__verdict-months {
-  /* Body face, not the display face. --v3-font-num is Amboqia, which belongs on
-     a figure that stands alone (the bar values above); set inside a running
-     sentence at source size it read as a font-loading fault, not as emphasis. */
-  font-family: var(--v3-font-body);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--v3-weight-strong);
-  color: var(--v3-ink);
+/* The three figures are V3Drawing's now (site queue SITE-02b), so everything
+   that used to live here — the two percentage bars, their draw-on keyframes,
+   the cash meter and the comp ledger rows — is deleted rather than kept beside
+   it. One way to draw each figure, on every surface that answers an address. */
+.sell-answer__drawing {
+  margin-block-start: 0;
 }
 
 /* ── the readings ─────────────────────────────────────────────────────────── */
@@ -202,26 +77,6 @@
 .sell-answer__reading-label {
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink-muted);
-}
-
-.sell-answer__meter {
-  margin: var(--v3-space-3xs) 0 var(--v3-space-2xs);
-  block-size: var(--v3-space-xs);
-  background: var(--v3-wash);
-}
-
-.sell-answer__meter-fill {
-  display: block;
-  block-size: 100%;
-  background: var(--v3-ink);
-  transform-origin: left center;
-  animation: sell-answer-draw var(--v3-dur-rise) var(--v3-ease-out) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sell-answer__meter-fill {
-    animation: none;
-  }
 }
 
 .sell-answer__reading-sentence {
@@ -269,60 +124,6 @@
   margin-block-start: calc(var(--v3-space-3xs) * -1);
 }
 
-/* ── the comps: which homes the ladder matched ───────────────────────────────
-   A ledger of real rows, not a paragraph claiming a number. Every row is the
-   same template, so the run reads as one thing enumerated. */
-
-.sell-answer__comps {
-  margin: var(--v3-space-sm) 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: var(--v3-space-2xs);
-}
-
-.sell-answer__comp {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  column-gap: var(--v3-space-sm);
-  padding-block: var(--v3-space-2xs);
-  border-block-start: var(--v3-rule-hairline);
-  font-size: var(--v3-size-source);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink-muted);
-}
-
-.sell-answer__comp-street {
-  font-weight: var(--v3-weight-strong);
-  color: var(--v3-ink);
-}
-
-.sell-answer__comp-facts,
-.sell-answer__comp-when {
-  font-variant-numeric: tabular-nums;
-}
-
-.sell-answer__comp-where,
-.sell-answer__comp-when {
-  text-align: end;
-}
-
-.sell-answer__comp--more .sell-answer__comp-street {
-  font-weight: var(--v3-weight-body);
-  color: var(--v3-ink-muted);
-}
-
-@media (max-width: 30rem) {
-  .sell-answer__comp {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 0;
-  }
-
-  .sell-answer__comp-where,
-  .sell-answer__comp-when {
-    text-align: start;
-  }
-}
 
 /* ── the proof block in its QUIET form ────────────────────────────────────────
    V3ProofBlock lays its body out as drawing + rail. With the outcome strips

@@ -1320,3 +1320,41 @@ and break-tested.
    live facts from the destination pages' own sources); the broker phone is in the header bar at
    every width; HomeAlertSheet retired (one ask per page: the seller sheet). 317d7a12, verified
    READY in production.
+
+## 2026-09-08 — Our own outcome figures are held: we publish the positive proof (Matt, in-session)
+
+**The question put to him.** SITE-11 specifies a per-listing outcome table on the /sell proof
+block: sale-to-first-ask and days-to-contract for every Ryan Realty closing, drawn beside the
+Bend detached median for the same window. Built and measured, that comparison reads against us
+this window: median 52 days to contract against Bend's 29, and 93.7% of the first ask against
+97.0%, n=7 closings in the twelve months to 2026-09-08. Median close $755K against Bend's
+$760K, so it is not a price-band artifact. Whether a seller-facing page leads with that is a
+publishing decision, not a builder's.
+
+**Matt's ruling, verbatim: "Hold those we only want positive."**
+
+1. **The two comparison strips do not publish.** `showOutcomes` now DEFAULTS to false in
+   `proofBlockView` (`components/site/v3/V3ProofBlock.view.ts`), so a caller who omits the prop
+   cannot ship the comparison by accident; a test pins that default. /sell states it explicitly
+   with his ruling in the comment. The capability stays — this is held, not deleted — and one
+   prop returns it the day he says so.
+2. **The figures are untouched.** `getProofBlock` still reads and returns them exactly as the
+   database gives them, the int test still cross-checks every row against `market_fact_sale` to
+   eight decimals, and nothing is re-cut, re-windowed or softened to look better. This decides
+   WHAT WE PUBLISH, never what we measure or report internally. §0 is unaffected: a figure we
+   do not show is not a figure we misstate.
+3. **Nothing may be implied by omission.** With the strips off, the block's heading, eyebrow and
+   claim say only what it shows — the closed-sales record, the reviews, and the reach to a
+   broker. No sentence may compare us to the market while the comparison is withheld, and no
+   figure may be presented as a market comparison when it is not one.
+4. **The same rule binds every surface that would draw our own performance** against a market
+   benchmark: place pages, listing pages, email, print and social. Positive proof publishes;
+   an against-us comparison is Matt's call, per action, and the default is off.
+5. **The provenance follows the figure.** Found on live /sell after the strips came off: the
+   Source disclosure still carried their citations — Bend's own median days-to-contract (29) and
+   sale-to-first-ask (97.0%), beside a line saying we had computed ours on 7 closings. The
+   comparison was held on the page and restated in prose one summary open. A §0 trace lists the
+   figures we PUBLISH, so `ProofTrace` entries now carry a `scope` (`always` | `outcomes`) and
+   the view drops the outcome-scoped lines whenever it does not draw the strips. Any future hold
+   carries the same obligation: withhold the figure and its sourcing together, or the disclosure
+   publishes what the section declined to.

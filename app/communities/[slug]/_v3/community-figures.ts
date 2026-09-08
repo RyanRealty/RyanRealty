@@ -30,7 +30,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import type { PublishedPlaceHoa } from '@/lib/market/publish-place-hoa'
 
-export type CommunityFaqItem = { question: string; answer: string }
+export type CommunityFaqItem = { question: string; answer: string; source?: string | null }
 
 /**
  * D103 (2026-08-27). Two populations on this page share the word "single-family"
@@ -54,16 +54,43 @@ export function reconcileListedVsDetachedFaq(
   if (listedCount <= 0 || detachedCount == null || detachedCount <= 0 || listedCount === detachedCount) {
     return [...faqs]
   }
+  const note = listedVsDetachedNote({ placeName, listedCount, detachedCount })
+  if (!note) return [...faqs]
   return faqs.map((item) => {
     if (!item.question.startsWith('How many single-family homes are for sale')) return item
-    return {
-      ...item,
-      answer:
-        `${item.answer} The ${listedCount.toLocaleString('en-US')} homes listed for ${placeName} on this page ` +
-        `count every property type across its named subdivisions. This answer's ${detachedCount.toLocaleString('en-US')} ` +
-        `is the single-family subset the figures on this page measure.`,
-    }
+    // The prose path is one answer string, so the two lines join here; the
+    // figured path renders them as the two paragraphs they are.
+    return { ...item, answer: [item.answer, ...note].join(' ') }
   })
+}
+
+/**
+ * The reconciling sentence itself, so the prose FAQ path above and the figured
+ * answer path (lib/site/place-answers.ts, SITE-08) say it in ONE wording. Two
+ * copies of a sentence that explains why two counts differ is how a page ends
+ * up explaining it two different ways. Null when there is nothing to reconcile.
+ *
+ * TWO LINES, NOT ONE (SITE-08 pass 2). The first cut packed both counts into a
+ * single clause — "The 25 homes listed for Tetherow on this page count every
+ * property type across its named subdivisions. This answer's 17 is the
+ * single-family…" — and the evaluator read it exactly as it was built: two
+ * numbers fighting for the same sentence, on a section whose whole premise is
+ * claim first. Each count now gets its own short line, this answer's number
+ * first, because that is the one the reader just opened.
+ */
+export function listedVsDetachedNote(input: {
+  placeName: string
+  listedCount: number
+  detachedCount: number | null
+}): string[] | null {
+  const { placeName, listedCount, detachedCount } = input
+  if (listedCount <= 0 || detachedCount == null || detachedCount <= 0 || listedCount === detachedCount) {
+    return null
+  }
+  return [
+    `That ${detachedCount.toLocaleString('en-US')} is single-family only, which is the population every figure on this page measures.`,
+    `${placeName} also has ${listedCount.toLocaleString('en-US')} homes listed across its named subdivisions when every property type is counted.`,
+  ]
 }
 
 /**
@@ -90,6 +117,10 @@ export function reconcilePlaceHoaFaq(
       answer:
         `Yes. Annual HOA dues run $${hoa.annual.toLocaleString('en-US')}, the ${hoa.basis}. ` +
         `Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
+      // §0. This row publishes a dollar figure, so it owes the same visible
+      // trace the cited rows carry. It was the only number on the page with
+      // its basis in the prose and no source line (evaluator, 2026-09-08).
+      source: `regional MLS, the ${hoa.basis}`,
     }
   })
 }

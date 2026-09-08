@@ -235,6 +235,17 @@ export function listingDetailPath(
 }
 
 /**
+ * The always-valid key form of a listing URL: /homes-for-sale/listing/<id>.
+ * `listingDetailPath` degrades to exactly this when the address is incomplete,
+ * and app/listing/by-key redirects it to the pretty URL. Callers that hold a
+ * key and nothing else (a saved alert row, a booking link) use this rather
+ * than typing the path, so the fallback shape lives in one place.
+ */
+export function listingByKeyPath(publicId: string): string {
+  return `/homes-for-sale/listing/${encodeURIComponent(publicId)}`
+}
+
+/**
  * Canonical public detail href for a listing tile / pin. Always returns a
  * /homes-for-sale/... URL via listingDetailPath — never the raw /listing/<key>
  * alias. Pass whatever fields the caller has (camelCase tile shape); when
