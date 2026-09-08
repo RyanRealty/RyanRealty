@@ -461,6 +461,12 @@ export function cmaSectionStyles(): string {
   }
   /* The price-path primitive (blueprint, Delta 1). Two layouts of one line,
      exactly one visible, same mechanism as every other chart here. */
+  .street-sales { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  a.street-sale { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--navy-line); border-radius: 8px; color: inherit; text-decoration: none; font-size: 11px; }
+  a.street-sale .n { font-variant-numeric: tabular-nums; font-weight: 600; }
+  @media screen and (max-width: 700px) {
+    a.street-sale { min-height: 44px; padding: 10px 12px; font-size: 14px; }
+  }
   .pp-wrap { margin: 8px 0 4px; }
   .pp-wrap.is-compact { margin: 5px 0 0; }
   .rival-card .pp-wrap { margin: 5px 0 0; }

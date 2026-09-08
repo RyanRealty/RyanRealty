@@ -115,6 +115,8 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       nextTickX = xs[i]!
     }
   }
+  // The gap between two months, which is how wide a per-month target may be.
+  const hitSpan = xs.length > 1 ? Math.abs(xs[1]! - xs[0]!) : 44
   const dots = xs
     .map((x, i) => {
       const label = monthLabel(priced[i]!.periodStart)
@@ -132,14 +134,18 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       // Delta 2: "Hover or tap the month line: the value and the month." The
       // reading is the month and the figure already plotted at that point.
       const read = `${monthLabel(priced[i]!.periodStart)}: ${chartUsd(vals[i]!)} median close`
+      // A 28-unit CIRCLE is a 26px target at 375 (tasteReview round two, item
+      // 3). Twelve months across 345px cannot each carry a 44px-wide circle
+      // without the neighbour's target swallowing them, so the target is a
+      // BAND: as wide as the gap to the next month, and the full 44 units tall.
+      // The dimension that was failing is the one that grows.
+      const hitW = Math.max(Math.min(hitSpan, 44), 26)
       return `<g class="month-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="14" fill="transparent"/>
+      <rect x="${(x - hitW / 2).toFixed(1)}" y="${(ys[i]! - 22).toFixed(1)}" width="${hitW.toFixed(1)}" height="44" fill="transparent"/>
       <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>
     </g>${tick}`
     })
     .join('')
-  const min = Math.min(...vals)
-  const max = Math.max(...vals)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg month-line">
     <text x="0" y="14" font-size="${fs}" fill="#102742" opacity="0.7">Median close</text>
     <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.ceil)}</text>
@@ -147,8 +153,25 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
     <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
     ${dots}
-  </svg>
-  <p class="small">Median close by month. Range ${chartUsd(min)} to ${chartUsd(max)}.</p>`
+  </svg>`
+}
+
+/**
+ * The month line's own source line, emitted ONCE by the caller.
+ *
+ * It used to be appended inside `medianCloseLineSvg`, which the board calls
+ * twice — the wide drawing and the phone one — so the same sentence shipped
+ * twice in the DOM under two blocks reading one source (tasteReview round two,
+ * item 3).
+ */
+export function medianCloseCaption(points: TrendPoint[]): string {
+  const vals = points
+    .map((p) => p.medianSalePrice)
+    .filter((v): v is number => v != null && v > 0)
+  if (vals.length < 6) return ''
+  return `<p class="small">Median close by month. Range ${chartUsd(Math.min(...vals))} to ${chartUsd(
+    Math.max(...vals),
+  )}.</p>`
 }
 
 export function medianCloseLinePhoneSvg(points: TrendPoint[]): string {

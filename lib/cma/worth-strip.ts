@@ -174,6 +174,12 @@ export function worthStripSvg(
   // floor for a mark is 24px, the look-pass holds these to it, and every one
   // of these five prices is also a row in the grid below, which is the 44px
   // path to the same reading.
+  // THE TARGET IS A BAND, not a circle. Five sales inside three percent of
+  // each other cannot each carry a 44px circle — the neighbours' targets
+  // overlap and only the last dot is reachable, which is why this was 26 units
+  // wide. So the target grows in the dimension that was failing: as wide as
+  // the gap to the nearest neighbour, 44 units tall (tasteReview round two,
+  // item 3). Every one of these prices is also a 44px row in the grid below.
   const first = g.sales[0]!
   const last = g.sales[g.sales.length - 1]!
   // Sales priced within a whisker of each other STACK rather than merge. Three
@@ -193,6 +199,19 @@ export function worthStripSvg(
       lastInRow[r] = cxs[i]!
       rows[i] = r
     }
+  }
+  // THE TARGET IS A BAND, not a circle. Five sales inside three percent of
+  // each other cannot each carry a 44-unit circle — the neighbours' targets
+  // overlap and only the last dot is reachable, which is why this was 26 units
+  // across. So the target grows in the dimension that was failing: 44 units
+  // tall, and no wider than the gap to the nearest dot (tasteReview round two,
+  // item 3). Every one of these prices is also a 44px row in the grid below.
+  const hitWidth = (i: number): number => {
+    const near = Math.min(
+      i > 0 ? cxs[i]! - cxs[i - 1]! : Infinity,
+      i < cxs.length - 1 ? cxs[i + 1]! - cxs[i]! : Infinity,
+    )
+    return Math.max(Math.min(Number.isFinite(near) ? near : 44, 44), 26)
   }
   const topRow = Math.max(0, ...rows)
   // The stack has a ceiling: seven sales inside a whisker of each other would
@@ -222,7 +241,7 @@ export function worthStripSvg(
       <text x="${asideFit.x}" y="${asideLabelY.toFixed(1)}" text-anchor="${asideFit.anchor}" font-size="${(fs - 1).toFixed(1)}" fill="${MUTED}">${ASIDE_LABEL}</text>`
         : `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>`
       return `<g class="ws-dot${aside ? ' is-aside' : ''}" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="13" fill="transparent"/>
+      <rect x="${(cx - hitWidth(i) / 2).toFixed(1)}" y="${(cy - 22).toFixed(1)}" width="${hitWidth(i).toFixed(1)}" height="44" fill="transparent"/>
       ${mark}
     </g>`
     })

@@ -514,9 +514,14 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
         },
         a.docLinks ?? UNADDRESSED_DOC_LINKS,
       )
-      return `<a href="${esc(href)}" data-rr-track="cma-street-sale">${esc(n.address)}</a> ${usd(n.closePrice)}`
+      // 21px tall inline links were the last sub-44px targets on the phone
+      // (tasteReview round two, item 3). The address and its price travel as
+      // ONE tappable chip, which is also how they read.
+      return `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
+        n.address,
+      )} <span class="n">${usd(n.closePrice)}</span></a>`
     })
-    .join(', ')
+    .join('')
   const sub = (text: string) =>
     headingTag === 'h3' ? `<h3 class="subhead">${esc(text)}</h3>` : `<h3 class="sub r">${esc(text)}</h3>`
   // §0: the count is over a WINDOW, and the window was nowhere on the screen.
@@ -529,8 +534,9 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       : ''
   return `${sub(name)}
   <p>${int(f.totalSales)} homes have sold in ${esc(name)}${esc(span)}.${
-    links ? ` The most recent ${recent.length === 1 ? 'one' : recent.length === 4 ? 'four' : String(recent.length)}: ${links}.` : ''
+    links ? ` The most recent ${recent.length === 1 ? 'one' : countWord(recent.length)}:` : ''
   }</p>
+  ${links ? `<p class="street-sales">${links}</p>` : ''}
   <p class="small">${esc(
     `Closed single-family sales recorded in ${name}${span}, from the Oregon Data Share MLS.`,
   )}</p>`
@@ -625,18 +631,20 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
   )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
+  <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, ${esc(
+    adjustedForClause(a.comps),
+  )}, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
+  <div class="comp-fold" data-fold-label="The rest of the disclosure">
   <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
   <p><strong>Property description.</strong> ${propertyDescription(a.subject)}${
     formatClientMlsField(a.subject.viewDescription)
       ? ` View: ${esc(formatClientMlsField(a.subject.viewDescription)!)}.`
       : ''
   }</p>
-  <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, ${esc(
-    adjustedForClause(a.comps),
-  )}, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
   ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
   <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
-  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>`
+  <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
+  </div>`
 }
 
 /** What we would like them to do next. We, never I (VOICE.md). */

@@ -331,8 +331,11 @@ function storyCard(story: Story, range: { low: number; high: number } | null): s
       ${name}
       <div class="dns-ask">${story.ask != null ? `${usd(story.ask)} asked` : ''}</div>
       ${story.facts ? `<div class="dns-facts">${esc(story.facts)}</div>` : ''}
-      ${priceHistoryLineHtml(story.path, story.id)}
       ${reading ? `<p class="dns-read">${esc(reading)}</p>` : ''}
+      <div class="comp-fold" data-fold-label="How this price moved">${priceHistoryLineHtml(
+        story.path,
+        story.id,
+      )}</div>
     </div>
   </article>`
 }

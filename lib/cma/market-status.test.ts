@@ -478,7 +478,9 @@ describe('market charts', () => {
     expect(svg).toContain('<path')
     expect(svg).toContain('M')
     expect(svg).toContain('Median close')
-    expect(svg).not.toContain('<rect')
+    // No BAR. The only rects are the transparent 44-unit-tall tap bands behind
+    // each month's dot (tasteReview round two, item 3) — they carry no fill.
+    expect(svg).not.toMatch(/<rect(?![^>]*fill="transparent")/)
   })
 
   // The new-listing month ledger was deleted 2026-09-07 (P4, Matt): one to

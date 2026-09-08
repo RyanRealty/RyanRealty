@@ -110,6 +110,9 @@ img{max-width:100%;display:block}
 .comp-stack-n .v{font-size:22px;font-weight:600;line-height:1.1}
 .comp-stack-facts{font-size:14px;opacity:.78;margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
 .comp-stack-card .matrix-thumb{width:100%;max-width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:0 0 8px}
+/* A comp thumbnail on a phone is an identifier, not a hero: 16/10 at 375 is
+   193px of photo above 240px of facts, five times over. */
+@media (max-width:560px){.comp-stack-card .matrix-thumb{aspect-ratio:2/1}}
 @media print{.comp-stack{display:none!important}.comp-matrix-wrap,.matrix-group-h{display:block!important}.comp-matrix-wrap{overflow-x:visible}}
 table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
@@ -138,8 +141,22 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .rival-card .rival-meta{font-size:13px;margin-top:8px;line-height:1.4}
 @media (max-width:860px){.rival-grid{grid-template-columns:1fr 1fr}}
 /* Two competitor cards across 375px leaves 130px a card: an address on three
-   lines and a price path drawn at six pixels. One card, full width. */
-@media (max-width:560px){.rival-grid{grid-template-columns:1fr}}
+   lines and a price path drawn at six pixels. One card, full width — and on a
+   phone that card lies DOWN: eight homes at a full-width 4:3 photo each is
+   4,476px, six screens of scrolling list for one chapter (tasteReview round
+   two, item 3, and TASTE.md's ban on the scrolling list as the design). Same
+   markup, same filter, same data — the photo becomes a square thumbnail beside
+   the facts instead of a banner above them. */
+@media (max-width:560px){
+  .rival-grid{grid-template-columns:1fr;gap:10px}
+  .rival-card{display:grid;grid-template-columns:104px minmax(0,1fr);align-items:stretch}
+  .rival-card .rival-ph{width:104px;height:100%;min-height:104px;aspect-ratio:auto}
+  .rival-card .rival-ph.is-empty{min-height:104px}
+  .rival-card .rival-body{padding:10px 12px 12px}
+  .rival-card .rival-addr{font-size:14px;padding:8px 0;min-height:0}
+  .rival-card .rival-ask{font-size:19px;margin-top:4px}
+  .rival-card .rival-facts,.rival-card .rival-meta{font-size:12px;margin-top:4px}
+}
 .rival-list{margin-top:8px;border-top:1px solid var(--ink12)}
 .rival-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:start;padding:8px 0;border-bottom:1px solid var(--ink12)}
 .rival-row.is-subject{border-bottom:2px solid currentColor}
@@ -281,7 +298,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .next-in{flex-direction:column;align-items:flex-start}
   /* In a column the row's flex-end alignment pushes the portrait off the
      right edge of the panel and clips its shoulder. */
-  .br-img{align-self:flex-start;width:min(260px,60vw)}
+  .br-img{align-self:flex-start;width:min(180px,42vw)}
   .fin-l,.bench-l{width:120px}
   .sc{padding:72px 18px}
   .status-tiles{grid-template-columns:1fr 1fr}
@@ -482,6 +499,12 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
    inside a card owns its full width, so only its height had to grow. Inline
    links inside a sentence stay inline — that is what a sentence is. */
 .comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{display:block;min-height:44px;padding:11px 0;box-sizing:border-box}
+/* Chapter 5's recent sales: a row of tappable chips, not 21px inline links in
+   a paragraph (tasteReview round two, item 3). */
+.street-sales{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
+a.street-sale{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--ink12);border-radius:10px;color:inherit;text-decoration:none;font-size:15px}
+a.street-sale:hover{border-color:var(--navy)}
+a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
 .print-out a{display:inline-block;min-height:44px;padding:12px 0;box-sizing:border-box}
 @media print{.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{min-height:0;padding:0}}
 @media print{

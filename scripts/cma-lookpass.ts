@@ -567,9 +567,14 @@ const INTERACT_STEPS: InteractStep[] = [
       const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
       const plain = btns.find((x) => /with the adjustments/i.test(x.textContent || ''))
       if (plain) plain.click()
-      const b = btns.find((x) => /price today/i.test(x.textContent || ''))
-      if (!b) return null
-      b.click()
+      // The order is a select now, not a fourth row of pills (tasteReview
+      // round two, §2.3).
+      const sel = document.querySelector('#what-its-worth select.rr-select')
+      if (!sel) return null
+      const opt = Array.from(sel.options).find((o) => /price today/i.test(o.textContent || ''))
+      if (!opt) return null
+      sel.value = opt.value
+      sel.dispatchEvent(new Event('change', { bubbles: true }))
       // The sort runs ACROSS every table. A wide grid splits into two or three
       // tables so it fits the page, and a within-table sort returned two
       // descending runs — which a reader reads as a sort that did not work.

@@ -12,6 +12,7 @@ import {
   monthsOfSupplyBarsSvg,
   daysToOfferPhoneSvg,
   daysToOfferSvg,
+  medianCloseCaption,
   medianCloseLinePhoneSvg,
   medianCloseLineSvg,
   offerTimingCurvePhoneSvg,
@@ -186,7 +187,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
   const chartHtml = chart
     ? `<div class="szn median-wide" data-anim="chart">${chart}</div>${
         chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''
-      }`
+      }${medianCloseCaption(trend)}`
     : ''
 
   // The monthly pace the PUBLISHED months-of-supply figure was divided by.
