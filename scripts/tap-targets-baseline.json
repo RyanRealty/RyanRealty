@@ -3,7 +3,7 @@
   "generated_by": "check-tap-targets.mjs --write-baseline",
   "min_px": 44,
   "measured": {
-    "base": "http://127.0.0.1:3011",
+    "base": "http://127.0.0.1:3000",
     "routes": [
       "/",
       "/housing-market",
@@ -18,89 +18,7 @@
       "390x844",
       "1440x900"
     ],
-    "controls": 3266
+    "controls": 2358
   },
-  "violations": [
-    {
-      "signature": "div.v3-ask__consent button",
-      "min": "42x34",
-      "minW": 42,
-      "minH": 34,
-      "instances": 2,
-      "example": "(no name)",
-      "seen": [
-        "/contact @1440",
-        "/contact @390"
-      ]
-    },
-    {
-      "signature": "nav.v3-footer__legal a",
-      "min": "42x44",
-      "minW": 42,
-      "minH": 44,
-      "instances": 14,
-      "example": "DMCA",
-      "seen": [
-        "/ @1440",
-        "/ @390",
-        "/cities/bend @1440",
-        "/cities/bend @390",
-        "/communities @1440",
-        "/communities @390",
-        "/contact @1440",
-        "/contact @390",
-        "/housing-market @1440",
-        "/housing-market @390",
-        "/sell @1440",
-        "/sell @390",
-        "/team @1440",
-        "/team @390"
-      ]
-    },
-    {
-      "signature": "p.v3-proof__source a",
-      "min": "72.1x17",
-      "minW": 72.1,
-      "minH": 17,
-      "instances": 1,
-      "example": "Every review",
-      "seen": [
-        "/ @1440"
-      ]
-    },
-    {
-      "signature": "summary.v3-footer__column-title",
-      "min": "203.2x17.8",
-      "minW": 203.2,
-      "minH": 17.8,
-      "instances": 35,
-      "example": "Homes7",
-      "seen": [
-        "/ @1440",
-        "/cities/bend @1440",
-        "/communities @1440",
-        "/contact @1440",
-        "/housing-market @1440",
-        "/sell @1440",
-        "/team @1440"
-      ]
-    },
-    {
-      "signature": "ul.v3-footer__column-list a",
-      "min": "203.2x32",
-      "minW": 203.2,
-      "minH": 32,
-      "instances": 202,
-      "example": "Open houses",
-      "seen": [
-        "/ @1440",
-        "/cities/bend @1440",
-        "/communities @1440",
-        "/contact @1440",
-        "/housing-market @1440",
-        "/sell @1440",
-        "/team @1440"
-      ]
-    }
-  ]
+  "violations": []
 }

@@ -51,6 +51,9 @@
  *                             form, wait for the answer, then shoot. A states
  *                             argument containing `!type:` is separated by
  *                             SEMICOLONS, because an address carries commas.
+ *                `e=SEL@ANCHOR!click` click SEL, but frame ANCHOR — for a
+ *                             control that changes something above it (the
+ *                             homepage Sell tab and the hero headline it swaps)
  *   --await SEL  after a `!type:` submit, wait for SEL to be visible before the
  *                shot. Network-idle only says the fetches stopped; it does not
  *                say the answer painted, and without this the capture caught a
@@ -107,6 +110,14 @@
  *     not taken halfway through a fade. `reducedMotion` stays
  *     'no-preference' on purpose — under 'reduce' some reveals never run and
  *     the page shoots empty.
+ * 11. The sticky chrome over a state shot. A `--states` capture used to park
+ *     the target 24px from the top of the viewport, under a 66px header, so
+ *     every state shot on this site showed a section with its first line
+ *     sliced. That is not what a visitor following the anchor sees, and it
+ *     cost the 2026-09-08 homepage pass a defect report against a page that
+ *     was correct. The scroll now reserves the target's own
+ *     `scroll-margin-top`, or the pinned chrome's height plus 24 when it
+ *     declares none.
  *
  * RUNNING A SERVER FOR IT. In a git worktree use `npx next dev --webpack`:
  * Turbopack refuses the symlinked `node_modules` a worktree gets. Any port is
@@ -181,7 +192,7 @@ export function parseStates(raw) {
     .filter(Boolean)) {
     const eq = chunk.indexOf('=')
     if (eq === -1) {
-      states.push({ name: chunk, selector: `#${chunk}`, click: false, type: null, selectorImplied: true })
+      states.push({ name: chunk, selector: `#${chunk}`, anchor: null, click: false, type: null, selectorImplied: true })
       continue
     }
     const name = chunk.slice(0, eq).trim()
@@ -196,7 +207,19 @@ export function parseStates(raw) {
       click = true
       selector = selector.slice(0, -'!click'.length).trim()
     }
-    states.push({ name, selector, click, type, selectorImplied: false })
+    // `SEL@ANCHOR` — click SEL, frame ANCHOR. A control and the thing it
+    // changes are usually not the same element: the homepage Sell tab sits at
+    // the foot of the hero, so framing the tab crops off the headline the tab
+    // just switched. Split on the LAST `@` so a selector holding one in an
+    // attribute value keeps it. This runs AFTER the `!` suffix is stripped, so
+    // `SEL@ANCHOR!click` reaches here as `SEL@ANCHOR`.
+    let anchor = null
+    const at = selector.lastIndexOf('@')
+    if (at > 0) {
+      anchor = selector.slice(at + 1).trim() || null
+      selector = selector.slice(0, at).trim()
+    }
+    states.push({ name, selector, anchor, click, type, selectorImplied: false })
   }
   return states
 }
@@ -253,9 +276,83 @@ export function detectNaming(existingFiles, routeKey) {
 /** URL path from a parity.json `route` (`app/sell/page.tsx` -> `/sell`). */
 export function routePathFromParity(routeField) {
   if (typeof routeField !== 'string') return null
-  const trimmed = routeField.replace(/^app\//, '').replace(/\/page\.tsx?$/, '')
+  // The leading slash is OPTIONAL in the page-file match: the homepage's route
+  // is `app/page.tsx`, which trims to the bare `page.tsx`, and a `\/page\.tsx`
+  // pattern left it there — `homepage-v6` resolved to `/page.tsx` and every
+  // capture 404'd (SITE-12).
+  const trimmed = routeField.replace(/^app\//, '').replace(/(^|\/)page\.tsx?$/, '')
   if (/\[/.test(trimmed)) return null // dynamic segment — no single URL
   return `/${trimmed}`.replace(/\/+$/, '') || '/'
+}
+
+/**
+ * The Chromium to drive.
+ *
+ * Playwright resolves its own download by revision, so an image that ships ONE
+ * pinned Chromium (which the agent sandboxes do, at /opt/pw-browsers) fails the
+ * default launch with "Executable doesn't exist at chromium_headless_shell-<n>"
+ * and tells the caller to run `npx playwright install` — which those images
+ * deliberately forbid. Point at the pinned binary when there is one; fall back
+ * to Playwright's own resolution when there is not, so a normal dev machine is
+ * unaffected. PLAYWRIGHT_CHROMIUM_PATH overrides both.
+ */
+const CHROMIUM_EXECUTABLE = (() => {
+  const named = (process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '').trim()
+  if (named) return existsSync(named) ? named : undefined
+  const pinned = '/opt/pw-browsers/chromium'
+  return existsSync(pinned) ? pinned : undefined
+})()
+
+/**
+ * TRAP 10 — remote media the BROWSER cannot reach.
+ *
+ * A public page's hero can be a CDN URL (the place heroes are Supabase storage
+ * objects). In an egress-restricted sandbox the Node process reaches those
+ * hosts through the configured proxy and headless Chromium does not, so the
+ * capture comes back with a flat navy Stage and the evaluator grades a hole in
+ * the page rather than the page. That is a capture artifact and it has already
+ * cost one lane a receipt footnote.
+ *
+ * So: cross-origin image, media and font requests are fetched by NODE and
+ * fulfilled into the browser — the same bytes a visitor gets, not a stand-in.
+ * A fetch that fails hands the request straight back to the browser, so a
+ * machine with ordinary network access behaves exactly as before. One response
+ * cache per run, because six shots load the same hero six times.
+ *
+ * Set SHOT_NO_MEDIA_PROXY=1 to turn it off.
+ */
+const MEDIA_TYPES = new Set(['image', 'media', 'font'])
+const mediaCache = new Map()
+
+async function installRemoteMediaProxy(context, pageOrigin, stats) {
+  if (process.env.SHOT_NO_MEDIA_PROXY === '1') return
+  await context.route('**/*', async (route) => {
+    const request = route.request()
+    if (!MEDIA_TYPES.has(request.resourceType())) return route.continue()
+    let origin
+    try {
+      origin = new URL(request.url()).origin
+    } catch {
+      return route.continue()
+    }
+    if (origin === pageOrigin) return route.continue()
+    const key = request.url()
+    try {
+      if (!mediaCache.has(key)) {
+        const response = await fetch(key, { signal: AbortSignal.timeout(20_000) })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        mediaCache.set(key, {
+          body: Buffer.from(await response.arrayBuffer()),
+          contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+        })
+      }
+      const hit = mediaCache.get(key)
+      stats.served += 1
+      return route.fulfill({ status: 200, contentType: hit.contentType, body: hit.body })
+    } catch {
+      return route.continue()
+    }
+  })
 }
 
 export function resolveUrl(baseUrl, routeKey, readParity) {
@@ -485,7 +582,10 @@ async function main() {
   console.log(`  capture    ${opts.full ? `full page (height-capped at ${MAX_FULL_PAGE_HEIGHT}px)` : 'first viewport'} · scale 1 · palette-quantized`)
   console.log('')
 
-  const browser = await chromium.launch({ args: LAUNCH_ARGS })
+  const browser = await chromium.launch({
+    args: LAUNCH_ARGS,
+    ...(CHROMIUM_EXECUTABLE ? { executablePath: CHROMIUM_EXECUTABLE } : {}),
+  })
   const written = []
   let failed = false
 
@@ -498,6 +598,8 @@ async function main() {
         reducedMotion: 'no-preference', // trap 9 — 'reduce' leaves reveals unfired
       })
       await context.addInitScript(SUPPRESS_OVERLAYS)
+      const mediaStats = { served: 0 }
+      await installRemoteMediaProxy(context, new URL(url).origin, mediaStats)
       const page = await context.newPage()
       const consoleErrors = []
       page.on('console', (m) => {
@@ -529,29 +631,61 @@ async function main() {
       written.push({ file: baseFile, ...baseResult })
 
       for (const state of opts.states) {
-        const target = await page
-          .evaluate((sel) => {
-            const el = document.querySelector(sel)
-            if (!el) return null
-            return el.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop || 0)
-          }, state.selector)
-          .catch(() => null)
+        // TRAP 11 — the sticky chrome. Parking the target at y=24 puts its
+        // first line UNDER a 66px header, so a state shot shows a section whose
+        // heading is sliced and the evaluator reads a live defect the page does
+        // not have (2026-09-08: #right-now's claim read "Wore than one in five"
+        // in right-now-mobile375.png while an actual anchor scroll landed it
+        // 14px clear). Reserve what a real anchor scroll reserves: the
+        // element's own scroll-margin-top when it declares one — that IS the
+        // page's answer — else the height of whatever is pinned at the top of
+        // the viewport, plus the 24px this tool has always used. With no sticky
+        // chrome and no declared margin the number is 24, exactly as before.
+        const measure = (sel) =>
+          page
+            .evaluate((s) => {
+              const el = document.querySelector(s)
+              if (!el) return null
+              const top =
+                el.getBoundingClientRect().top +
+                (window.scrollY || document.documentElement.scrollTop || 0)
+              const declared = Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+              let chrome = 0
+              for (const node of document.elementsFromPoint(Math.round(window.innerWidth / 2), 4)) {
+                const cs = getComputedStyle(node)
+                if (cs.position !== 'sticky' && cs.position !== 'fixed') continue
+                const r = node.getBoundingClientRect()
+                if (r.top <= 2 && r.height > 0) chrome = Math.max(chrome, r.height)
+              }
+              return { top, reserve: declared > 0 ? declared : chrome + 24 }
+            }, sel)
+            .catch(() => null)
+
+        const frameSel = state.anchor ?? state.selector
+        const target = await measure(frameSel)
 
         if (target == null) {
           if (!state.selectorImplied) {
-            console.error(`  ${viewport.key}: state "${state.name}" — selector ${state.selector} not found`)
+            console.error(`  ${viewport.key}: state "${state.name}" — selector ${frameSel} not found`)
             failed = true
             continue
           }
           // A bare state name with no matching anchor shoots the top of the page.
         } else {
-          await wheelTo(page, Math.max(0, target - 24))
+          await wheelTo(page, Math.max(0, target.top - target.reserve))
           if (state.click) {
             await page.click(state.selector, { timeout: 5000 }).catch((err) => {
               console.error(`  ${viewport.key}: state "${state.name}" — click failed: ${err.message.split('\n')[0]}`)
               failed = true
             })
             await page.waitForTimeout(700)
+            // page.click scrolls its own target into view, and focusing a
+            // visually-hidden control can move the page again, so an explicit
+            // frame is re-applied after the click rather than before it.
+            if (state.anchor) {
+              const framed = await measure(state.anchor)
+              if (framed) await wheelTo(page, Math.max(0, framed.top - framed.reserve))
+            }
           }
           if (state.type != null) {
             // Fill, submit the owning form, and wait for the ANSWER — not for
@@ -624,6 +758,9 @@ async function main() {
         await wheelTo(page, 0)
       }
 
+      if (mediaStats.served > 0) {
+        console.log(`  ${viewport.key}: ${mediaStats.served} cross-origin asset(s) fetched by node (trap 10)`)
+      }
       if (consoleErrors.length) {
         console.log(`  ${viewport.key}: ${consoleErrors.length} console error(s) — ${consoleErrors[0]}`)
       }

@@ -11,9 +11,13 @@
  *    menu never blocks a page or prints a count it could not read (CLAUDE.md
  *    section 0: a stat that cannot be verified does not ship).
  *
- * Keys are the site-nav group keys the chrome projects (Buy, Areas, Market,
- * Sell), never the locked display words, so a rename in the lock cannot orphan
- * a fact.
+ * Keys are the site-nav group keys the chrome projects (Areas, Market, Sell),
+ * never the locked display words, so a rename in the lock cannot orphan a fact.
+ *
+ * There is no Buy group any more. "Central Oregon right now" moved out of the
+ * Homes dropdown and onto the homepage under the hero search (site queue
+ * SITE-12, app/_v3/home-pulse.ts + components/site/v3/V3Pulse.tsx), because a
+ * figure published in two places drifts in one of them.
  */
 import { unstable_cache } from 'next/cache'
 import { KB_TOP_NAV } from '@/lib/site-nav'
@@ -23,14 +27,16 @@ import { buildPlaceAtlas } from '@/lib/atlas/build-place-atlas'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatDateTime } from '@/lib/format/date'
-import { makeProjection, padBbox, type Bbox } from '@/lib/geo/project-svg'
 import type { V3ChromeLive, V3ChromeLiveGroup } from '@/components/site/v3/V3Chrome'
 
 export type ChromeLiveInputs = {
-  /** The whole-region population: counts of every type, and the on-market dots. */
+  /**
+   * The whole-region population. Only the sold count and the moment of the read
+   * are used now — the Sell group's "sold in the last 30 days" — because the
+   * on-market counts and the dot field left for the homepage band.
+   */
   atlas: {
     counts: { forSale: number; pending: number; sold: number }
-    dots: readonly { lat: number; lng: number; s: string }[]
     /** When the population was read, formatted: "Sep 2, 2026, 12:07 AM". */
     stamp: string
   } | null
@@ -50,10 +56,6 @@ export type ChromeLiveInputs = {
   } | null
 }
 
-/** The most dots the menu's field carries; the path stays under 8KB. */
-export const FIELD_DOT_CAP = 600
-const FIELD_WIDTH = 240
-
 function n(value: number): string {
   return value.toLocaleString('en-US')
 }
@@ -68,53 +70,15 @@ export function moneyShort(value: number): string {
   return `$${Math.round(value / 1000)}K`
 }
 
-function trimmedBbox(points: readonly { lat: number; lng: number }[]): Bbox | null {
-  if (points.length < 2) return null
-  const lats = points.map((p) => p.lat).sort((a, b) => a - b)
-  const lngs = points.map((p) => p.lng).sort((a, b) => a - b)
-  const q = (arr: number[], f: number) => arr[Math.min(arr.length - 1, Math.max(0, Math.floor(f * (arr.length - 1))))]!
-  const b = { minLat: q(lats, 0.01), maxLat: q(lats, 0.99), minLon: q(lngs, 0.01), maxLon: q(lngs, 0.99) }
-  if (b.maxLat <= b.minLat || b.maxLon <= b.minLon) return null
-  return b
-}
-
-/**
- * The dot field: the on-market listings as one path of zero-length strokes
- * (round caps make each a dot), in a 240-wide box. Strided to the cap so the
- * menu costs kilobytes, not the atlas's megabytes.
- */
-export function fieldFromDots(dots: readonly { lat: number; lng: number; s: string }[]): V3ChromeLiveGroup['field'] {
-  const on = dots.filter((d) => d.s !== 'sold' && Number.isFinite(d.lat) && Number.isFinite(d.lng))
-  const b = trimmedBbox(on)
-  if (!b) return undefined
-  const proj = makeProjection(padBbox(b, 0.04), FIELD_WIDTH)
-  const stride = Math.max(1, Math.ceil(on.length / FIELD_DOT_CAP))
-  const parts: string[] = []
-  for (let i = 0; i < on.length; i += stride) {
-    const [x, y] = proj.toXY(on[i]!.lng, on[i]!.lat)
-    if (x < 0 || y < 0 || x > proj.width || y > proj.height) continue
-    parts.push(`M${x.toFixed(0)} ${y.toFixed(0)}h0`)
-  }
-  if (parts.length === 0) return undefined
-  return { w: proj.width, h: proj.height, d: parts.join('') }
-}
-
 export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {
   const out: Record<string, V3ChromeLiveGroup> = {}
 
-  if (input.atlas) {
-    const { forSale, pending, sold } = input.atlas.counts
-    out.Buy = {
-      eyebrow: 'Central Oregon right now',
-      facts: [
-        { figure: n(forSale), label: forSale === 1 ? 'listing for sale' : 'listings for sale' },
-        { figure: n(pending), label: 'pending' },
-        { figure: n(sold), label: 'sold in 30 days' },
-      ],
-      field: fieldFromDots(input.atlas.dots),
-      note: `Read ${input.atlas.stamp}`,
-    }
-  }
+  // NO Buy GROUP. "Central Oregon right now" — the region's for-sale,
+  // under-contract and sold counts, and the dot field — moved out of the Homes
+  // dropdown and onto the homepage under the hero search (site queue SITE-12,
+  // app/_v3/home-pulse.ts). A figure published in two places drifts in one of
+  // them, so the menu no longer carries it. `input.atlas` stays: the Sell group
+  // still reads the sold count and the stamp from the same population.
 
   const values: Record<string, string> = {}
   for (const t of input.towns) if (t.count != null) values[t.href] = n(t.count)
@@ -197,7 +161,7 @@ async function readChromeLive(): Promise<ChromeLiveRead> {
   ])
   const countBySlug = new Map<string, number | null>()
   for (const snap of snapshots) countBySlug.set(slugify(snap.geoKey), snap.activeSfrCount)
-  const atlasIn = atlas && atlas.complete ? { counts: atlas.counts, dots: atlas.dots, stamp: atlas.stamp } : null
+  const atlasIn = atlas && atlas.complete ? { counts: atlas.counts, stamp: atlas.stamp } : null
   const live = composeChromeLive({
     atlas: atlasIn,
     towns: towns.map((t) => ({ href: t.href, count: countBySlug.get(t.slug) ?? null })),
@@ -248,7 +212,10 @@ const readChromeLiveCached = unstable_cache(
     if (!read.complete) throw new Error('chrome-live: incomplete read')
     return read.live
   },
-  ['chrome-live-v2'],
+  // v3: the Buy group left for the homepage band (SITE-12). The key moves with
+  // the SHAPE — Next's data cache outlives a deploy, so a stale entry under the
+  // old key would keep serving the strip from a menu that no longer builds it.
+  ['chrome-live-v3'],
   { revalidate: 900, tags: ['chrome-live'] },
 )
 
