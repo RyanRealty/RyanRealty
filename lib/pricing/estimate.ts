@@ -383,6 +383,32 @@ export function rangeFromPartition(part: {
   }
 }
 
+/**
+ * The set-aside sale immediately below the kept low, and the one immediately
+ * above the kept high. These are the two prices the printed range may never
+ * reach: the document names them as removed, so a reader must not find one of
+ * them sitting at an end of the range that removed it.
+ */
+export function nearestAsideBelow(
+  setAside: readonly { adjustedPrice?: number | null }[],
+  keptLow: number,
+): number | null {
+  const below = setAside
+    .map((s) => s.adjustedPrice)
+    .filter((n): n is number => n != null && Number.isFinite(n) && n < keptLow)
+  return below.length ? Math.max(...below) : null
+}
+
+export function nearestAsideAbove(
+  setAside: readonly { adjustedPrice?: number | null }[],
+  keptHigh: number,
+): number | null {
+  const above = setAside
+    .map((s) => s.adjustedPrice)
+    .filter((n): n is number => n != null && Number.isFinite(n) && n > keptHigh)
+  return above.length ? Math.min(...above) : null
+}
+
 /** A sale-to-ask ratio a list price may be divided by. */
 export function usableSaleToAskRatio(n: number | null | undefined): number | null {
   if (n == null || !Number.isFinite(n) || n <= 0) return null
@@ -648,8 +674,33 @@ export function listPriceFromEngine(opts: {
   // Rounded ONCE, before anything is derived from it: the value range the cover
   // prints, the sentence that explains it, and the list tiers all start here,
   // so no two surfaces can round the same spread differently.
-  const rangeLow = range != null ? roundPriceDown(range.low) : null
-  const rangeHigh = range != null ? roundPriceUp(range.high) : null
+  //
+  // AND NEVER ONTO A SALE THE DOCUMENT SET ASIDE (round four, class E). The
+  // ends round OUTWARD, which is the direction of the two sales the rule just
+  // removed, so on a close pair the printed end could land on — or past — the
+  // set-aside sale it was drawn to exclude. cma-19968 printed a $479,000 top
+  // against a set-aside sale at $479,614: $614 apart, and a reader who saw
+  // "set aside" beside the number at the top of the shading was right to call
+  // it a contradiction. Where outward rounding would reach the neighbour, the
+  // end rounds inward instead; it is still the kept sale's own price, moved to
+  // the grid the other way.
+  const asideBelow = range != null ? nearestAsideBelow(part.setAside, range.low) : null
+  const asideAbove = range != null ? nearestAsideAbove(part.setAside, range.high) : null
+  let rangeLow = range != null ? roundPriceDown(range.low) : null
+  let rangeHigh = range != null ? roundPriceUp(range.high) : null
+  if (range != null && rangeLow != null && asideBelow != null && rangeLow <= asideBelow) {
+    rangeLow = roundPriceUp(range.low)
+  }
+  if (range != null && rangeHigh != null && asideAbove != null && rangeHigh >= asideAbove) {
+    rangeHigh = roundPriceDown(range.high)
+  }
+  if (range != null && rangeLow != null && rangeHigh != null && rangeLow > rangeHigh) {
+    // Both kept extremes inside one rounding step, and both neighbours close
+    // enough to block the outward move. The exact adjusted prices are the one
+    // pair that is guaranteed ordered and inside the set-aside sales.
+    rangeLow = Math.round(range.low)
+    rangeHigh = Math.round(range.high)
+  }
 
   const recommendedList = mid != null ? listFromClose(mid, ratio) : null
   let conservativeList = rangeLow != null ? listFromClose(rangeLow, ratio) : band != null ? listFromClose(band.low, ratio) : null
@@ -674,17 +725,20 @@ export function listPriceFromEngine(opts: {
           saleToAskRatio: ratio,
           saleToAskSource,
           ratiosExcluded,
-          // ONE COUNT. The sentence used to open on the number of sales the
-          // rule ran over (7) and then describe a spread of the five it kept,
-          // so the printed n, the strip's n and the sentence's n were three
-          // different claims about the same picture. It now names the sales
-          // that produced the range, and the ones that did not, separately.
+          // BOTH COUNTS, BY NAME. The sentence used to open on the number of
+          // sales the rule ran over (7) and then describe a spread of the five
+          // it kept, so the printed n, the strip's n and the sentence's n were
+          // three different claims about the same picture. Then it named only
+          // the kept count and "two more", and chapter 5 of cma-19968 could
+          // still say six sales support a range four of them produced. It now
+          // states the kept count and the whole count in one arithmetic a
+          // reader can check: four of the six.
           sentence:
             range.rule === 'trimmed-one-each-end'
               ? `The range is the spread of the ${countWord(range.kept)} sale prices behind this price, adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}. ${
                   range.n - range.kept === 1
-                    ? 'One more sale sat outside every one of them and was set aside'
-                    : `${countWord(range.n - range.kept, true)} more sales sat outside every one of them and were set aside`
+                    ? `One of the ${countWord(range.n)} sales sat outside every one of them and was set aside`
+                    : `${countWord(range.n - range.kept, true)} of the ${countWord(range.n)} sales sat outside every one of them and were set aside`
                 }, so no single sale could set the range.${askStep}`
               : `The range is the spread of all ${countWord(range.n)} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
         }

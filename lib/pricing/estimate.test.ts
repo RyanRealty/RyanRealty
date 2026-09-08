@@ -718,9 +718,104 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     })
     const sentence = engine.rangeRule!.sentence
     expect(sentence).toContain('the four sale prices behind this price')
-    expect(sentence).toContain('Two more sales sat outside every one of them and were set aside')
+    // BOTH counts by name, in one arithmetic a reader can check (round four,
+    // class E): cma-19968's market chapter said six sales support a range the
+    // price chapter drew from four.
+    expect(sentence).toContain('Two of the six sales sat outside every one of them and were set aside')
     // The old sentence opened on six and then described a spread of four.
     expect(sentence).not.toContain('the 6 sale prices')
+  })
+
+  /**
+   * THE WORTH RANGE COMES FROM THE KEPT SET ONLY (round four, class E).
+   *
+   * cma-19968 printed a worth range topping at $479,000 with a $479,614 sale
+   * in `setAside` — $614 apart on a document that told the reader that sale
+   * had been removed. The ends are the kept extremes, and the outward rounding
+   * that puts them on the pricing grid may never reach the neighbour it was
+   * drawn to exclude.
+   */
+  describe('the range ends never reach a sale the document set aside', () => {
+    const ends = (prices: number[]) => {
+      const engine = listPriceFromEngine({
+        subjectSqft: 2000,
+        lastAsk: null,
+        adjusted: prices.map((p) => sale(p)),
+        saleToAskRatios: [],
+        asOfSaleToOriginal: 1,
+        qualitySet: false,
+      })
+      const part = partitionByRangeRule(prices.map((p) => sale(p)))
+      return {
+        low: engine.rangeRule!.adjustedLow,
+        high: engine.rangeRule!.adjustedHigh,
+        setAside: part.setAside.map((s) => s.adjustedPrice!),
+        kept: part.kept.map((s) => s.adjustedPrice!),
+      }
+    }
+
+    it('both ends are the min and max of the KEPT sales', () => {
+      const r = ends([331_304, 370_698, 458_723, 469_558, 478_079, 479_614])
+      expect(Math.min(...r.kept)).toBe(370_698)
+      expect(Math.max(...r.kept)).toBe(478_079)
+      expect(r.low).toBeLessThanOrEqual(370_698)
+      expect(r.high).toBeGreaterThanOrEqual(478_079)
+      // Nothing outside the kept spread by more than one rounding step.
+      expect(370_698 - r.low).toBeLessThan(1000)
+      expect(r.high - 478_079).toBeLessThan(1000)
+    })
+
+    it('cma-19968: no set-aside sale equals either end', () => {
+      const r = ends([331_304, 370_698, 458_723, 469_558, 478_079, 479_614])
+      for (const aside of r.setAside) {
+        expect(aside).not.toBe(r.low)
+        expect(aside).not.toBe(r.high)
+      }
+      expect(r.high).toBeLessThan(479_614)
+      expect(r.low).toBeGreaterThan(331_304)
+    })
+
+    it('rounds inward rather than onto a set-aside sale $200 away', () => {
+      // Outward rounding would take the high to $480,000, PAST the $479,200
+      // sale the rule just removed, and the low to $370,000, past $370,400.
+      const r = ends([370_400, 370_600, 458_723, 469_558, 479_100, 479_200])
+      expect(r.high).toBe(479_000)
+      expect(r.low).toBe(371_000)
+      expect(r.high).toBeLessThan(479_200)
+      expect(r.low).toBeGreaterThan(370_400)
+      for (const aside of r.setAside) {
+        expect(aside).not.toBe(r.low)
+        expect(aside).not.toBe(r.high)
+      }
+    })
+
+    it('the sentence names rangeRule.n and rangeRule.kept, both by name', () => {
+      const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight']
+      for (const prices of [
+        [400_000, 420_000, 440_000, 460_000, 480_000, 500_000],
+        [400_000, 415_000, 430_000, 445_000, 460_000, 480_000, 500_000],
+        [400_000, 450_000, 500_000],
+      ]) {
+        const engine = listPriceFromEngine({
+          subjectSqft: 2000,
+          lastAsk: null,
+          adjusted: prices.map((p) => sale(p)),
+          saleToAskRatios: [],
+          asOfSaleToOriginal: 1,
+          qualitySet: false,
+        })
+        const rule = engine.rangeRule!
+        expect(rule.sentence).toContain(words[rule.kept]!)
+        expect(rule.sentence).toContain(words[rule.n]!)
+      }
+    })
+
+    it('holds the order when both kept extremes sit inside one rounding step', () => {
+      const r = ends([420_100, 420_300, 420_400, 420_500, 420_600, 420_800])
+      expect(r.low).toBeLessThanOrEqual(r.high)
+      expect(r.low).toBeGreaterThan(420_100)
+      expect(r.high).toBeLessThan(420_800)
+    })
   })
 
   it('carries the value to an ask at the local share of the original ask', () => {
