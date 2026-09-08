@@ -349,6 +349,9 @@ export function cmaStylesheet(siteUrl: string): string {
     .stat-strip.is-3 { grid-template-columns: 1fr; }
     .stat-strip .stat:nth-child(2n) { border-right: 0; }
     .stat-strip.is-3 .stat { border-right: 0; }
+    /* A grid track will not shrink below its own min-content unless told to,
+       and three money figures at clamp(28px,3.6vw,44px) each need ~127px. */
+    .stat-strip .stat { min-width: 0; }
   }
   /* The verdict word, under the number it classifies. */
   .stat-strip .stat .lbl.vd { color: var(--navy); font-weight: 600; margin: 4px 0 0; }

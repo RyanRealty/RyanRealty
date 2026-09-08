@@ -367,7 +367,11 @@ table.realization thead th.rz-mark{white-space:normal}
 .rz-svg{width:100%;height:14px;display:block;overflow:visible}
 table.realization th,table.realization td{padding:12px 10px;border-bottom:1px solid var(--ink12);text-align:left}
 table.realization thead th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.6}
-table.realization td.n,table.realization th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.realization td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* The header WRAPS; only the figures stay on one line. "Share of the first ask"
+   held on one line in a 20% column pushed a fixed-layout table 74px past a 375
+   screen, and the whole document with it. */
+table.realization th.n{text-align:right;white-space:normal}
 table.realization tr.is-mine{font-weight:600}
 table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2px solid var(--navy)}
 .rz-mine{display:block;font-size:12px;font-weight:400;opacity:.65}
@@ -408,7 +412,7 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .stat-strip .stat .val{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(28px,3.6vw,44px);line-height:1;font-variant-numeric:tabular-nums}
 .stat-strip .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
 .stat-strip .stat .lbl.vd{font-weight:600;opacity:.95;margin-top:6px}
-@media (max-width:700px){.stat-strip,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}.stat-strip.is-3,.letter-body .stat-strip{grid-template-columns:1fr}}
+
 /* The closing scene is the only navy one, so its buttons invert there rather
    than carrying their own modifier class. */
 .sc-navy .btn.pri{background:var(--cream);color:var(--navy);box-shadow:0 12px 28px rgb(0 0 0 / .28)}
@@ -427,6 +431,16 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .letter-body table.kv th{text-align:left;font-weight:500;opacity:.7;padding:8px 16px 8px 0;border-bottom:1px solid var(--ink12);width:38%}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
 .letter-body .stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:24px 0}
+/* AFTER .letter-body .stat-strip, not before it. Sitting above that rule the
+   phone override lost to it on equal specificity, and three money figures at
+   clamp(28px,3.6vw,44px) cannot shrink below their own min-content — so the
+   strip ran 78px past a 375 viewport and gave the whole document a horizontal
+   scrollbar. Each cell also gets min-width:0 so a grid track can shrink at all. */
+@media (max-width:700px){
+  .stat-strip,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}
+  .stat-strip.is-3,.letter-body .stat-strip{grid-template-columns:1fr}
+  .stat-strip .stat{min-width:0}
+}
 .letter-body .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
 .letter-body .stat .val{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(28px,3.6vw,44px);line-height:1;font-variant-numeric:tabular-nums}
 .letter-body p{margin:0 0 14px;max-width:720px}
