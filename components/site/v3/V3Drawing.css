@@ -1,0 +1,454 @@
+/*
+ * V3 ANSWER — the drawn answer to a typed address.
+ *
+ * Reads components/site/v3/tokens.css and nothing else (ci:one-design-system).
+ * Navy on cream, hairline rules, tabular numerals, square corners; the one
+ * round thing on this surface is a data mark, which is a circle because it is a
+ * point and not a box.
+ *
+ * MOTION. One draw-on, transform and opacity only, inside --v3-drawing-draw
+ * (280ms, set by the component). The bars grow with scaleX so the animated
+ * property is a transform and the final width is still exact; the strip's
+ * baseline draws itself the same way and its marks rise and fade in. Under
+ * prefers-reduced-motion every transition is removed and the drawing is
+ * complete on the first frame.
+ */
+
+.v3 .v3-drawing {
+  display: flex;
+  flex-direction: column;
+  margin: var(--v3-space-lg) 0 0;
+}
+
+/* Each figure is a band, separated by a hairline. No cards, no shadows. */
+.v3 .v3-drawing__figure {
+  margin: 0;
+  padding: var(--v3-space-lg) 0;
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-drawing__figure:first-child {
+  border-top: 0;
+  padding-top: var(--v3-space-sm);
+}
+
+/* THE CLAIM. One plain sentence, then the drawing. Body size, not a label:
+   it is a sentence a person reads, not a field name. */
+.v3 .v3-drawing__claim {
+  margin: 0 0 var(--v3-space-md);
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+/* ONE LEAD FIGURE, TWO SUPPORTING ONES. Three claims at one size read as three
+   equal bands with no rhythm — the separate evaluator's finding, and TASTE.md's
+   craft rule asks for hierarchy by size AND weight. The first drawing is the
+   answer to the question the visitor asked; the two under it are what that
+   answer is made of, and they say so by being quieter. */
+.v3 .v3-drawing__figure:first-child .v3-drawing__claim {
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3 .v3-drawing__quiet {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* ── pair: two named counts on one shared scale ───────────────────────────── */
+
+.v3 .v3-drawing__pair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-drawing__barrow {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 30%) 1fr auto;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.v3 .v3-drawing__barrow:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-drawing__barname {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-drawing__bartrack {
+  position: relative;
+  display: block;
+  height: 1.25rem;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .v3-drawing__barfill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: block;
+  /* The measured width. The MOTION is the scale below, so the number the bar
+     draws is never mid-animation truth — it is the final width, revealed. */
+  inline-size: var(--v3-drawing-pct, 0%);
+  background: var(--v3-ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--v3-drawing-draw, 280ms) var(--v3-ease-out);
+}
+
+.v3 .v3-drawing.is-drawn .v3-drawing__barfill {
+  transform: scaleX(1);
+}
+
+/* The second count is the context in this comparison, so it takes the tint
+   rather than a second hue. Navy is still the only ink. */
+.v3 .v3-drawing__barrow:not(:first-child) .v3-drawing__barfill {
+  background: color-mix(in srgb, var(--v3-ink) 42%, transparent);
+}
+
+.v3 .v3-drawing__barrow.is-live .v3-drawing__bartrack {
+  border-bottom-color: var(--v3-ink);
+}
+
+.v3 .v3-drawing__barvalue {
+  min-inline-size: 3.5ch;
+  text-align: right;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+/* The verdict is the figure's caption, never a tile of its own. */
+.v3 .v3-drawing__verdict {
+  margin: var(--v3-space-sm) 0 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+/* ── strip and rule: marks on one shared axis ─────────────────────────────── */
+
+.v3 .v3-drawing__strip {
+  --v3-drawing-lane-step: 1.5rem;
+  display: block;
+}
+
+.v3 .v3-drawing__track {
+  position: relative;
+  /* One lane of headroom above the marks so the top row never clips. */
+  block-size: calc(var(--v3-drawing-lanes, 1) * var(--v3-drawing-lane-step) + 1.25rem);
+  margin-inline: 0.75rem;
+}
+
+.v3 .v3-drawing__baseline {
+  position: absolute;
+  inset-inline: -0.75rem;
+  bottom: 0.625rem;
+  block-size: var(--v3-rule-weight-hairline);
+  background: color-mix(in srgb, var(--v3-ink) 22%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--v3-drawing-draw, 280ms) var(--v3-ease-out);
+}
+
+.v3 .v3-drawing.is-drawn .v3-drawing__baseline {
+  transform: scaleX(1);
+}
+
+/* THE MARK. A 24px hit box over a 9px dot — larger than the mark, which is the
+   dataviz rule. It is not 44px because a distribution cannot space ten marks
+   44px apart on a 375 screen and still be a distribution; every mark is
+   keyboard reachable and gives the same reading, and the axis and the hidden
+   reading list carry the same values (WCAG 2.5.8 equivalent). */
+.v3 .v3-drawing__mark {
+  position: absolute;
+  inset-inline-start: var(--v3-drawing-x, 0%);
+  bottom: calc(0.625rem + var(--v3-drawing-lane, 0) * var(--v3-drawing-lane-step));
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin-inline-start: -0.75rem;
+  margin-block-end: -0.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--v3-drawing-draw, 280ms) var(--v3-ease-out),
+    transform var(--v3-drawing-draw, 280ms) var(--v3-ease-out);
+}
+
+.v3 .v3-drawing.is-drawn .v3-drawing__mark {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.v3 .v3-drawing__mark:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: 0;
+}
+
+.v3 .v3-drawing__dot {
+  inline-size: var(--v3-chart-mark);
+  block-size: var(--v3-chart-mark);
+  /* A data mark is a circle, not a box — the one exemption from radius 0. */
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-drawing__mark.is-live .v3-drawing__dot,
+.v3 .v3-drawing__mark:hover .v3-drawing__dot {
+  transform: scale(1.45);
+}
+
+/* On a distribution the mark's own name lives in the accessibility tree and in
+   the reading; a label on every dot is the unread chaos the dataviz skill bans.
+   On a RULE there is one mark, so it says what it is. */
+.v3 .v3-drawing__markname {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-drawing__strip--rule .v3-drawing__markname {
+  position: absolute;
+  inline-size: auto;
+  block-size: auto;
+  overflow: visible;
+  clip-path: none;
+  bottom: calc(100% + var(--v3-space-3xs));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 var(--v3-space-3xs);
+  background: var(--v3-surface);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-drawing__strip--rule .v3-drawing__dot {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+/* A rule carries ONE mark and that mark wears its reading above it, so the
+   track needs more headroom than a lane of dots does. At 375 the label sat
+   hard against the top of the figure (evaluator, 2026-09-08). */
+.v3 .v3-drawing__strip--rule {
+  --v3-drawing-lane-step: 2.25rem;
+}
+
+/* THE CONTEXT MARK. A hairline through the rule with its name beside it: the
+   city median the subject is read against. Tint, never a second hue. */
+.v3 .v3-drawing__context {
+  position: absolute;
+  inset-inline-start: var(--v3-drawing-x, 0%);
+  top: 0;
+  bottom: 0.625rem;
+  inline-size: var(--v3-rule-weight-hairline);
+  background: color-mix(in srgb, var(--v3-ink) 45%, transparent);
+}
+
+.v3 .v3-drawing__contextlabel {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  transform: translateX(var(--v3-space-3xs));
+  white-space: nowrap;
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink-muted);
+  background: var(--v3-surface);
+  padding: 0 var(--v3-space-3xs);
+}
+
+.v3 .v3-drawing__contextlabel--before {
+  transform: translateX(calc(-100% - var(--v3-space-3xs)));
+}
+
+.v3 .v3-drawing__axis {
+  position: relative;
+  block-size: 1.1rem;
+  margin-block-start: var(--v3-space-3xs);
+  margin-inline: 0.75rem;
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-drawing__axistick {
+  position: absolute;
+  inset-inline-start: var(--v3-drawing-x, 0%);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.v3 .v3-drawing__axisend {
+  position: absolute;
+  inset-inline-start: 0;
+  white-space: nowrap;
+}
+
+.v3 .v3-drawing__axisend--right {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+.v3 .v3-drawing__samplekey {
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink-muted);
+}
+
+/* ── the footer: what this mark says, and where the figure came from ──────── */
+
+/* One footer band per figure, the same height on each, so a reading appearing
+   under one drawing never pushes the next one down the page. */
+.v3 .v3-drawing__foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--v3-space-md);
+  min-block-size: 2.6em;
+  margin-block-start: var(--v3-space-sm);
+}
+
+.v3 .v3-drawing__reading {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-drawing__reading.is-idle {
+  color: var(--v3-ink-muted);
+}
+
+/* The reading list: for a screen reader, never on screen. */
+.v3 .v3-drawing__data {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.v3 .v3-drawing__source {
+  margin-block-start: 0;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* EXCEPTION INK. Only a figure the caller declared a real decline, drawdown or
+   breached threshold wears it (CLAUDE.md section 3). Never decoration. */
+.v3 .v3-drawing__figure.is-exception .v3-drawing__barfill,
+.v3 .v3-drawing__figure.is-exception .v3-drawing__dot {
+  background: var(--v3-exception);
+}
+
+.v3 .v3-drawing__figure.is-exception .v3-drawing__verdict,
+.v3 .v3-drawing__figure.is-exception .v3-drawing__strip--rule .v3-drawing__markname {
+  color: var(--v3-exception);
+}
+
+@media (max-width: 30rem) {
+  /* At 375 the reading needs the whole measure; the source drops under it and
+     the row sizes to its content, so the trace sits against the drawing rather
+     than under an empty band. */
+  .v3 .v3-drawing__foot {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--v3-space-3xs);
+    min-block-size: 0;
+  }
+
+  /* The axis reads at the narrow measure without crowding the rule above it. */
+  .v3 .v3-drawing__axis {
+    font-size: var(--v3-size-eyebrow);
+  }
+
+  .v3 .v3-drawing__source {
+    justify-self: start;
+  }
+
+  .v3 .v3-drawing__barrow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name value'
+      'track track';
+    row-gap: var(--v3-space-3xs);
+    min-height: var(--v3-tap);
+    padding-block: var(--v3-space-3xs);
+  }
+
+  .v3 .v3-drawing__barname {
+    grid-area: name;
+  }
+
+  .v3 .v3-drawing__barvalue {
+    grid-area: value;
+  }
+
+  .v3 .v3-drawing__bartrack {
+    grid-area: track;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-drawing__barfill,
+  .v3 .v3-drawing__baseline,
+  .v3 .v3-drawing__mark,
+  .v3 .v3-drawing__dot {
+    transition: none;
+  }
+
+  /* The same graphic, already complete. */
+  .v3 .v3-drawing__barfill,
+  .v3 .v3-drawing__baseline {
+    transform: scaleX(1);
+  }
+
+  .v3 .v3-drawing__mark {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

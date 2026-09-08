@@ -689,3 +689,229 @@ export function lineTicks(
     })
   return { y, x }
 }
+
+/* ==========================================================================
+   THE ANSWER GEOMETRIES (site queue SITE-02b)
+
+   Two shapes the four kinds above could not express, added because the place
+   answer had to be DRAWN rather than tiled:
+
+     - pair: two NAMED counts on ONE shared scale. `bars` draws one bar per
+       point of one series and `mix` draws one strip whose segments sum to a
+       whole; months of supply is neither. It is two independent counts — homes
+       for sale, and homes that go under contract in a month — read against
+       each other, which is what makes the division visible instead of printed.
+     - strip: N marks on ONE shared horizontal axis, stacked into lanes where
+       they collide. `range` draws one row per category; a distribution of
+       comparable closes is N marks on one axis, and a single mark against a
+       reference on a fixed rule (days to pending on 0 to 120) is the same
+       geometry with one point and a declared domain.
+
+   Both are PERCENT geometry, laid out in HTML for the same reason the range
+   plot is: a stretched viewBox draws circles as ellipses.
+   ========================================================================== */
+
+/** One named bar of a pair. Counts, not shares — the geometry does the ratio. */
+export type PairBarIn = {
+  /** What this bar counts, as a person says it ("For sale right now"). */
+  name: string
+  value: number
+  /** The count as the caller formatted it. */
+  label: string
+  /** The reading a hover or a tap reveals: window, population, definition. */
+  note?: string
+}
+
+export type PairPlotBar = {
+  name: string
+  label: string
+  note: string | null
+  /** Share of the LARGER bar, 0 to 100. */
+  pct: number
+  /** True on the bar that set the scale. */
+  leads: boolean
+  index: number
+}
+
+export type PairPlot = {
+  kind: 'pair'
+  bars: PairPlotBar[]
+  /** The larger count, as its own caller formatted it — the scale's ceiling. */
+  maxLabel: string
+}
+
+/**
+ * Two (or more) named counts on one shared scale.
+ *
+ * Widths are a share of the LARGEST bar, so the shorter one is read against the
+ * taller one rather than against an invented ceiling. Fewer than two usable
+ * bars returns null: a one-bar version of this drawing says nothing, because
+ * the drawing IS the comparison.
+ */
+export function buildPairPlot(bars: readonly PairBarIn[]): PairPlot | null {
+  const usable = bars.filter((b) => isFiniteNumber(b.value) && b.value >= 0)
+  if (usable.length < 2) return null
+  let max = 0
+  let maxLabel = usable[0]!.label
+  for (const b of usable) {
+    if (b.value > max) {
+      max = b.value
+      maxLabel = b.label
+    }
+  }
+  if (!(max > 0)) return null
+  return {
+    kind: 'pair',
+    bars: usable.map((b, index) => ({
+      name: b.name,
+      label: b.label,
+      note: b.note ?? null,
+      pct: (b.value / max) * 100,
+      leads: b.value === max,
+      index,
+    })),
+    maxLabel,
+  }
+}
+
+/** One mark on a strip. `at` is the x value; every string is caller-formatted. */
+export type StripPointIn = {
+  /** Stable id. Never an address — the caller decides what is safe to carry. */
+  id: string
+  /** X position in the axis' own units (a month index, square feet, days). */
+  at: number
+  /** How this point's x reads ("July 2026"). */
+  tick: string
+  /** The full reading a hover, tap or arrow key reveals. */
+  label: string
+}
+
+export type StripPlotPoint = {
+  id: string
+  /** Position along the track, 0 to 100. */
+  xPct: number
+  /** Collision lane. 0 is the baseline row; each step stacks one mark higher. */
+  lane: number
+  tick: string
+  label: string
+  index: number
+}
+
+export type StripPlot = {
+  kind: 'strip'
+  points: StripPlotPoint[]
+  /** How many lanes the marks needed. At least 1. */
+  lanes: number
+  /** The context mark (a city median, a subject's own size); null when outside the domain. */
+  ref: { xPct: number; label: string } | null
+  /** Axis labels the caller formatted, dropped when they fall outside the domain. */
+  ticks: { xPct: number; label: string }[]
+  xMinLabel: string
+  xMaxLabel: string
+}
+
+/**
+ * N marks on one shared horizontal axis.
+ *
+ * DOMAIN. A declared min/max wins — the days-to-pending rule is 0 to 120 days
+ * whatever the one mark on it reads, because a rule whose ends move with the
+ * subject is not a rule. Without one the domain is the data's own extent
+ * padded 6%, widened when every mark shares one x.
+ *
+ * LANES. Marks closer together than `laneGap` percent stack instead of
+ * overprinting: the reader has to be able to count them, and six closes in one
+ * month drawn as one dot is a lie about n. Greedy lowest-free-lane assignment
+ * in x order, which is the beeswarm the dataviz skill lists among the forms.
+ */
+export function buildStripPlot(
+  points: readonly StripPointIn[],
+  opts?: {
+    min?: number
+    max?: number
+    /** Percent of the track two marks must clear to share a lane. */
+    laneGap?: number
+    refValue?: number
+    refLabel?: string
+    ticks?: readonly PlotXTickIn[]
+  },
+): StripPlot | null {
+  const usable = points.filter((p) => isFiniteNumber(p.at))
+  if (usable.length < 1) return null
+
+  const declaredMin = opts?.min != null && isFiniteNumber(opts.min) ? opts.min : null
+  const declaredMax = opts?.max != null && isFiniteNumber(opts.max) ? opts.max : null
+
+  let dataMin = Infinity
+  let dataMax = -Infinity
+  let minLabel = usable[0]!.tick
+  let maxLabel = usable[0]!.tick
+  for (const p of usable) {
+    if (p.at < dataMin) {
+      dataMin = p.at
+      minLabel = p.tick
+    }
+    if (p.at > dataMax) {
+      dataMax = p.at
+      maxLabel = p.tick
+    }
+  }
+
+  let lo: number
+  let hi: number
+  if (declaredMin != null && declaredMax != null && declaredMax > declaredMin) {
+    lo = declaredMin
+    hi = declaredMax
+  } else {
+    const span = dataMax - dataMin
+    // One unit, not a fraction of the value, when every mark shares one x: on
+    // an axis whose zero is arbitrary (a month index, a year) a percentage of
+    // the absolute value is a domain thousands of units wide around one point.
+    const pad = span > 0 ? span * 0.06 : 1
+    lo = dataMin - pad
+    hi = dataMax + pad
+  }
+  const range = hi - lo || 1
+  const pct = (value: number) => Math.min(100, Math.max(0, ((value - lo) / range) * 100))
+
+  const laneGap = opts?.laneGap != null && isFiniteNumber(opts.laneGap) ? opts.laneGap : 5
+  const laneLastX: number[] = []
+  const ordered = [...usable]
+    .map((p, order) => ({ p, order }))
+    .sort((a, b) => a.p.at - b.p.at || a.order - b.order)
+
+  const plotted: StripPlotPoint[] = []
+  for (const { p, order } of ordered) {
+    const x = pct(p.at)
+    let lane = 0
+    while (lane < laneLastX.length && x - laneLastX[lane]! < laneGap) lane += 1
+    laneLastX[lane] = x
+    plotted.push({ id: p.id, xPct: x, lane, tick: p.tick, label: p.label, index: order })
+  }
+
+  const ticks = (opts?.ticks ?? [])
+    .filter((t) => isFiniteNumber(t.at) && t.at >= lo && t.at <= hi && t.label.trim().length > 0)
+    .map((t) => ({ xPct: pct(t.at), label: t.label }))
+
+  // Same rule as every other reference in this file: a mark the scale cannot
+  // place would draw at a false position, so it is dropped rather than pinned
+  // to an edge it does not belong on.
+  const ref =
+    opts?.refValue != null &&
+    isFiniteNumber(opts.refValue) &&
+    opts.refLabel != null &&
+    opts.refLabel.trim().length > 0 &&
+    opts.refValue >= lo &&
+    opts.refValue <= hi
+      ? { xPct: pct(opts.refValue), label: opts.refLabel }
+      : null
+
+  return {
+    kind: 'strip',
+    points: plotted,
+    lanes: Math.max(1, laneLastX.length),
+    ref,
+    ticks,
+    xMinLabel: minLabel,
+    xMaxLabel: maxLabel,
+  }
+}

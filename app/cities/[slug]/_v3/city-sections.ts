@@ -25,7 +25,6 @@
 
 import {
   v3Text,
-  V3_CHART_CATEGORY_SLOTS,
   type V3ChartPoint,
   type V3ChartProps,
   type V3ChartSeries,
@@ -35,7 +34,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { moneyTicks, monthTicks, yoyClaim } from '@/lib/charts/ticks'
+import { moneyTicks, monthTicks, yoyClaim, yoyDirection } from '@/lib/charts/ticks'
 import { formatPriceCompact, formatPriceExact } from '@/lib/format/money'
 import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
@@ -415,13 +414,27 @@ export function placeMedianChartCaption(placeName: string): string {
  * The claim, the gridlines, and the month axis all come out of lib/charts/ticks
  * — the same three helpers every other public chart now calls, so no two
  * surfaces can round the same series two ways.
+ *
+ * THREE YEARS, NOT FIVE (site queue SITE-02b, 2026-09-08). This asked for the
+ * atom's full categorical run, and TASTE.md and the dataviz skill both cap
+ * categorical series at three — "past that, fold or facet". On /cities/bend
+ * that cap was not a style preference: the extra years all end in December, so
+ * their direct end-labels landed on the same x and printed on top of each other
+ * (2023 over 2024 over 2025, measured in the browser). The atom now spaces
+ * labels that share a lane, and this folds to the three the reader can tell
+ * apart, so the fix holds from both ends.
+ *
+ * THE DECLINE WEARS THE EXCEPTION INK. `yoyDirection` reads the same two points
+ * the claim sentence reads, so a chart that says "down 5.7% from Aug 2025"
+ * cannot draw that year in the ink of a rise.
  */
+export const PLACE_MEDIAN_CHART_YEARS = 3
 export function placeMedianChart(
   years: readonly KbYearSeries[],
   caption: string,
 ): V3ChartProps | undefined {
   const overlay: V3ChartSeries[] = []
-  for (const year of years.slice(-V3_CHART_CATEGORY_SLOTS)) {
+  for (const year of years.slice(-PLACE_MEDIAN_CHART_YEARS)) {
     const points: V3ChartPoint[] = []
     for (const row of year.points) {
       const tick = MONTH_TICK[row.m - 1]
@@ -441,6 +454,10 @@ export function placeMedianChart(
   // comparison — the sentence shrinks rather than estimates.
   const claim = yoyClaim({ metric: 'Median sale price', unit: 'money', series: overlay })
   const yTicks = moneyTicks(overlay)
+  // A median that fell year over year IS the data exception the second hue is
+  // reserved for. Read off the same two points the sentence above compares, so
+  // the ink cannot contradict the claim.
+  const direction = yoyDirection({ metric: 'Median sale price', unit: 'money', series: overlay })
 
   return {
     caption: v3Text(caption),
@@ -448,6 +465,7 @@ export function placeMedianChart(
     series: overlay,
     overlay: 'yoy',
     emphasize: 'last',
+    ...(direction === 'down' ? { emphasisTone: 'exception' as const } : {}),
     ...(yTicks.length ? { yTicks } : {}),
     xTicks: monthTicks(MONTH_TICK),
   }

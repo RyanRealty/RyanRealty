@@ -57,6 +57,16 @@ export const KNOWN_UNWIRED = new Map([
   ['ci:data-access', 'G16 regenerates the schema snapshot from LIVE Supabase (needs DB creds); run via `npm run ci:data-access` locally + nightly, not the secret-less static ci:gates chain'],
   ['ci:resend-webhook', 'needs a Resend secret; off-chain nightly like G16 — run locally/nightly, never in the secret-less static chain'],
   ['ci:community-alias-cities', 'needs live Supabase (asserts registry mls_cities coverage vs actual MLS City spellings); runs inside the ci:data-access chain, same cadence as G16'],
+  // The runtime pair (2026-09-08). These do not ADD a check — they are the local
+  // way to run three gates that ALREADY run in .github/workflows/ci.yml
+  // (lint-and-build) against a started production server. They cannot join the
+  // static chain because that chain never builds or serves the app. A lane that
+  // only ran the static chain reported green and failed CI on ci:tap-targets
+  // twice in one hour on 2026-09-08 (escape 7196f7f8), because there was no
+  // local command; this is that command.
+  ['ci:runtime-gates', 'starts the production server once and runs the runtime gates CI already runs (route-smoke, page-payload, tap-targets); needs a built server, so it cannot live in the secret-less static chain — a public-page lane runs it before pushing, per .claude/skills/site-queue/SKILL.md'],
+  ['ci:route-smoke:start', 'alias of ci:runtime-gates, kept because check-tap-targets.mjs and ci.yml name it in their guidance'],
+  ['ci:tap-targets:start', 'alias of ci:runtime-gates, kept because check-tap-targets.mjs names it in its usage block'],
 ])
 
 /** Unique `ci:*` names from `ci:gates:chain` (`npm run ci:foo && …`). */

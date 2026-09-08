@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "City \u2192 neighborhood \u2192 community \u2192 plat \u2192 street.",
+      "section": "City → neighborhood → community → plat → street.",
       "blocking": true
     },
     {
@@ -112,6 +112,11 @@
     {
       "name": "V3Footer",
       "section": "Footer outside main. Carries the ODS slot; no button.",
+      "blocking": true
+    },
+    {
+      "name": "V3ListingClose",
+      "section": "THE ENDING (SITE-06). One section: the claim about how prices move in this city, a hundred dots for the share of homes that cut before they sold, a rule for how deep and a mark for how long, then the three acts as a chooser (watch the price, book a walk-through, email me this payment). Not four stacked forms.",
       "blocking": true
     }
   ],
@@ -217,14 +222,34 @@
     "note": "One derivation, one answer. ListingDetailShell emits none. BreadcrumbList JSON-LD is not emitted by V3Breadcrumb."
   },
   "capture": {
-    "action": "submitSearchAlertSignup",
-    "payload": "{ email, filters, company }",
-    "filters": "city, propertyType A, priceBandAroundListPrice, beds when present",
-    "field": "email",
-    "trap": "company, forwarded from answers.company",
-    "disclosure": "One email per new listing. Unsubscribe any time.",
-    "postSuccess": "rememberGuestWatch(buildGuestWatchFromPlace) then fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))",
-    "anchor": "#listing-like-alerts"
+    "searchAlert": {
+      "action": "submitSearchAlertSignup",
+      "payload": "{ email, filters, company }",
+      "filters": "city, propertyType A, priceBandAroundListPrice, beds when present",
+      "field": "email",
+      "trap": "company, forwarded from answers.company",
+      "disclosure": "One email per new listing. Unsubscribe any time.",
+      "postSuccess": "rememberGuestWatch(buildGuestWatchFromPlace) then fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))",
+      "anchor": "#listing-like-alerts"
+    },
+    "priceWatch": {
+      "action": "submitListingPriceDropWatch",
+      "payload": "{ email, listingKey, addressLine, company }",
+      "filters": "{ listingKey } only — runListingAlerts short-circuits on it and matches exactly this home",
+      "events": "price_change only; new / status_change / back_on_market / sold / open_house all off",
+      "field": "email",
+      "trap": "company, forwarded from the panel’s own trap state",
+      "disclosure": "One email per price change on this home. Nothing else, and you can unsubscribe any time.",
+      "confirmation": "sendAlertConfirmation kind 'price-drop' (its own copy; 'listing' would say the home is saved)",
+      "anchor": "#close"
+    },
+    "paymentEmail": {
+      "action": "submitListingPaymentEmail",
+      "payload": "{ email, listingKey, inputs: { price, downPct, ratePct, termYears, insuranceAnnual }, company }",
+      "recompute": "server-side computeMonthlyPitiBreakdown with the listing row's own tax and HOA; the browser's total is display only",
+      "send": "sendPaymentEstimate through sendGovernedEmail, initiator system, once, to the address just submitted",
+      "anchor": "#close"
+    }
   },
   "sectionOrder": [
     "ListingHero (price, beds, baths, sqft, street on the media)",
@@ -237,6 +262,7 @@
     "ListingTaxHistory #tax",
     "GoverningDocumentsBlock #plat",
     "ListingSimilarStrip",
+    "V3ListingClose #close (the ending: cut claim + drawing, then watch / tour / payment)",
     "ListingBrokerCTA #listed",
     "ListingAttribution",
     "MetadataBlock",
@@ -250,5 +276,58 @@
     "items": [
       "RESOLVED AS CLAIM-WRONG 2026-08-27: NeighborhoodMarketContext publishes the FINEST grain whose rows publish (neighborhood first, city fallback via leftoverListingGrains) and the heading names that grain. Subdivision-grain stats cannot ship honestly: subdivision monthly series are too sparse to chart and neighborhood sold attribution is a known text-join undercount. The page is truthful about its grain; the contract's flat subdivision-grain promise was the wrong side."
     ]
+  },
+  "tasteReview": {
+    "evaluatedAt": "2026-09-08",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "rubricVersion": "v1-2026-09-08",
+    "scores": [
+      87,
+      84,
+      88
+    ],
+    "comparedToPrior": "first",
+    "shotsHash": "sha256:a75daedd342203007d3e3f33bea3c82c6610a40d86530ebd25e9a2f480d77754",
+    "shotSpec": {
+      "routes": [
+        "/homes-for-sale/bend/60936-apollo-20260418225519255404000000"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "top",
+        "close"
+      ]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/mobile375.png",
+      "closeDesktop": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-desktop.png",
+      "closeMobile375": "design_system/ryan-realty/ui_kits/listing-detail/shots/close-mobile375.png"
+    },
+    "beats": "Zillow Showcase, this file's own named target: it shows a Zestimate and a calculator but never a share-of-homes-that-cut graphic on the listing itself, nor a three-way ending.",
+    "defects": [
+      {
+        "section": "days on market",
+        "finding": "FIXED in d845f4c1e. The header pill read 106 and the close section 110 on one scroll: the pill printed row.DaysOnMarket, banned as DOM because it is list-to-close. One shared definition now feeds both; verified at 110 and 110."
+      },
+      {
+        "section": "breadcrumb",
+        "finding": "Reads 'Bend / Easton / EASTON COMMERCIAL' on a single-family home. Not MLS data: the record says subdivision Easton, sub-type Single Family Residence. Our plat-alias resolution picked a commercial plat; boundaries holds five Easton plats, two sharing a document number. Pre-existing and outside this node."
+      },
+      {
+        "section": "closing three-act chooser",
+        "finding": "The shot cuts off before the three cards fully render, so the chooser's interactivity cannot be confirmed from the record. Recapture with the chooser in frame."
+      },
+      {
+        "section": "close-section broker card",
+        "finding": "A 5-star, 25-review block appears in the broker card here but not in the same card in the main listing view — one component, inconsistent trust content between states."
+      }
+    ],
+    "score": 87,
+    "evaluator": "separate Sonnet evaluator, SITE-06 listing-ending pass, three independent scorings of one shot set (87 / 84 / 88)"
   }
 }

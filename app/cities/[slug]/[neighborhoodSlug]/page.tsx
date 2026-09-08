@@ -60,6 +60,7 @@ import { neighborhoodPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { skippableRail, skippableRailResult } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   v3Text,
@@ -211,6 +212,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     placeDocuments,
     placeCharacter,
     indexCities,
+    cityPace,
   ] = await Promise.all([
     // Result variant: a timed-out boundary yields `{ pins: [] }`, which is
     // indistinguishable from a genuinely empty neighborhood. `.ok` keeps them
@@ -277,6 +279,17 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
       'nbh:character',
     ),
     withTimeoutFallback(getCityHeroUrlsBySlug(), {}, 3000, 'nbh:liveHeroes'),
+    // The parent city's same statistics, ONLY as the context mark on the
+    // answer scales (SITE-08). Never as a figure under this neighborhood's
+    // name: a city figure printed as a neighborhood's is the founding defect
+    // behind lib/market/publish-plat-figures.ts. Every sentence that uses one
+    // names the city out loud.
+    withTimeoutFallback(
+      getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
+      EMPTY_PUBLIC_PACE,
+      3000,
+      'nbh:cityPace',
+    ),
   ])
   const nbhMt = nbhOverlays.get(`neighborhood:${cityDetachedSlug(metricNeighborhoodSlug)}`)
   const hud = leftoverHudKpis({
@@ -380,6 +393,79 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
     refreshedAt: leftoverStamp,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
+
+  /* ── The cited Q&A (SITE-08) ────────────────────────────────────────────
+     One array feeds the visible rows AND the FAQPage JSON-LD, so the markup
+     cannot describe a sentence the page does not print. Every row carries the
+     ONE figure it is about, with its own trace.
+
+     TWO HONEST COUNTS, NAMED APART. The metric layer counts 49 Awbrey Butte
+     actives by primary place membership; the recorded polygon holds 60 in a
+     publicly active MLS status (measured 2026-09-08). The inventory answer
+     publishes the count this PAGE publishes — the one in its own Field — and
+     the verdict's trace names the 49 its own ratio was computed on, so the two
+     figures can never be read as one number disagreeing with itself (§0 rule 5). */
+  const nbhAnswerActive = inventoryOk ? inventory.activeCount : null
+  const metricKey = `neighborhood:${metricNeighborhoodSlug}`
+  const { answers: placeAnswers, traces: answerTraces, sourceKey: answerSourceKey } = buildPlaceAnswers({
+    placeName: neighborhood.name,
+    cityName,
+    figures: {
+      monthsOfSupply: hud.monthsSupply,
+      monthsOfSupplyActiveCount: hud.active,
+      activeCount: nbhAnswerActive,
+      activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes in a publicly active MLS status at the last sync`,
+      // SAY WHY THE TWO COUNTS DIFFER, IN THE ANSWER. Both traces were already
+      // correct and each named its own population, but the verdict row and the
+      // inventory row sit a few rows apart and both use the word "active" —
+      // 48 in one, 57 in the other on Awbrey Butte. A separate evaluator read
+      // that as an unreconciled contradiction (2026-09-08), and it was right
+      // that a reader has to be TOLD, not left to reconstruct it from two
+      // trace lines. §0 rule 5: reconcile the narrative to the data.
+      activeCountNotes:
+        nbhAnswerActive != null && hud.active != null && nbhAnswerActive !== hud.active
+          ? [
+              `The supply verdict above divides ${hud.active}, not this ${nbhAnswerActive}. That ratio counts the homes the market layer assigns to ${neighborhood.name} by place membership; this count is the homes inside its recorded boundary. Two honest counts of two populations, and neither is a correction of the other.`,
+            ]
+          : null,
+      closedCount:
+        publicPace.closedCount != null && publicPace.closedCount > 0
+          ? { count: publicPace.closedCount, windowLabel: 'over the past 12 months' }
+          : null,
+      daysToPending: hud.daysToPending,
+      cityDaysToPending: cityPace.daysToPending90d,
+      saleToOriginal: publicPace.saleToOriginal,
+      citySaleToOriginal: cityPace.saleToOriginal,
+      cashShare: publicPace.cashShare,
+      cityCashShare: cityPace.cashShare,
+      medianSalePrice:
+        publicPace.medianClose != null && publicPace.medianClose > 0
+          ? { price: publicPace.medianClose, windowLabel: 'over the past 12 months' }
+          : null,
+      medianListPrice: inventoryOk ? inventory.medianListPrice : null,
+      // The list median comes off the SAME boundary read as the active count,
+      // not off the metric layer, so it carries that read's clause and not the
+      // page's default one (§0: one trace per query).
+      medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes in a publicly active MLS status at the last sync`,
+    },
+    // READER'S WORDS IN THE SENTENCE, MACHINE HANDLE IN THE ATTRIBUTE. This
+    // clause used to open "market_metric ${metricKey} through the Market Truth
+    // layer" — a table name and a raw slug, read by every visitor, which a
+    // separate evaluator flagged on 2026-09-08 as the exact tell TASTE.md bans.
+    // §0 still needs the handle, so it goes to `sourceKey` and lands in the
+    // served HTML as data-source-key.
+    sourceTrace: `regional MLS, detached single-family homes inside the ${neighborhood.name} boundary`,
+    sourceKey: `market_metric:${metricKey}`,
+    asOfLabel,
+    // No SITE-01 address field on this route yet — the site's valuation spine
+    // is the same ask one step away, and it carries this page as its source.
+    valueAsk: { href: valuationHref(`/cities/${citySlug}/${neighborhoodSlug}`), onPage: false },
+    extra: faqs,
+  })
+  const answerFaqs = answersFaqItems(placeAnswers)
+  if (process.env.NODE_ENV !== 'production') {
+    for (const line of answerTraces) console.log(`[nbh:${neighborhoodSlug}] ${line}`)
+  }
 
   const browseHref = subdivisionListingsPath(cityName, neighborhood.name)
   const figures = neighborhoodFaceFigures(face.stats)
@@ -513,11 +599,11 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
   // FAQPage rides with the schemas (2026-08-27 audit: the visible FAQ rendered
   // with NO FAQPage emission, against this contract's own jsonLd requirement —
   // the items are the same faqs array V3Quiet renders, one source, two sinks).
-  if (faqs.length > 0) {
-    neighborhoodSchemas.push({
-      type: 'faqPage',
-      items: faqs.map((f) => ({ question: f.question, answer: f.answer })),
-    })
+  // SITE-08: the payload is derived FROM the rendered rows by answersFaqItems,
+  // not built beside them from a second array. Two sinks, one source; a schema
+  // that can drift from the visible text is the defect this replaces.
+  if (answerFaqs.length > 0) {
+    neighborhoodSchemas.push({ type: 'faqPage', items: answerFaqs })
   }
 
   // The read may not have completed: render the Atlas anyway, with its
@@ -702,9 +788,18 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
         {/* A question set belongs in the primitive built for question sets. */}
         <V3Answers
           id="faq"
-          eyebrow="Common questions"
-          heading={`Questions about ${neighborhood.name}`}
-          questions={faqs.map((item) => ({ question: item.question, body: item.answer }))}
+          eyebrow={`${neighborhood.name} · By the numbers`}
+          heading={`${neighborhood.name} questions, answered with the number`}
+          questions={placeAnswers}
+          sourceKey={answerSourceKey}
+          doors={[
+            ...(browseHref ? [{ label: `Every home for sale in ${neighborhood.name}`, href: browseHref }] : []),
+            { label: `${cityName} market report`, href: `/housing-market/${citySlug}` },
+            { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
+          ]}
+          note={`Each answer carries the one figure it is about and where that figure came from. Figures are read from the regional MLS through Oregon Data Share.${
+            asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
+          }`}
         />
 
         {/* Peer neighborhoods - the same designated-district set, minus this

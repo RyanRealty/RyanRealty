@@ -128,12 +128,15 @@ function takeCards(
   nowMs: number,
   openHouseLabels: Record<string, string>,
   limit = RAIL_CARD_CAP,
+  /** Keys a more specific shelf already claimed. A house leads one shelf. */
+  taken: ReadonlySet<string> = new Set(),
 ): HomeRailCard[] {
   const out: HomeRailCard[] = []
   const seen = new Set<string>()
   for (const tile of tiles) {
     if (out.length >= limit) break
     if (seen.has(tile.listingKey)) continue
+    if (taken.has(tile.listingKey)) continue
     const card = toCard(tile, nowMs, openHouseLabels)
     if (!card) continue
     seen.add(tile.listingKey)
@@ -165,15 +168,19 @@ export function homeRailRows(
   },
 ): HomeRailRow[] {
   const openHouseLabels = opts.openHouseLabels ?? {}
-  const bendArea = tiles.filter((t) => BEND_AREA.has((t.city ?? '').trim().toLowerCase()))
-  const localPool = bendArea.length >= 3 ? bendArea : tiles
-  const local = takeCards(localPool, opts.nowMs, openHouseLabels)
 
+  // ONE HOUSE, ONE SHELF (2026-09-08 evaluator: 3027 Polarstar Avenue led both
+  // the nearby rail and the price-cuts rail, so the page opened with the same
+  // photograph twice). The narrower claim wins the house: a price cut is a
+  // fact about that listing, "near Bend" is true of hundreds. So the specific
+  // shelves are built first and the local shelf is built from what is left —
+  // it draws from the whole active pool and loses nothing but the repeats.
   const cuts = takeCards(
     tiles.filter((t) => (t.priceDropCount ?? 0) > 0),
     opts.nowMs,
     openHouseLabels,
   )
+  const cutKeys = new Set(cuts.map((c) => c.listingKey))
 
   const fresh = takeCards(
     tiles.filter((t) => {
@@ -183,7 +190,20 @@ export function homeRailRows(
     }),
     opts.nowMs,
     openHouseLabels,
+    RAIL_CARD_CAP,
+    cutKeys,
   )
+
+  const claimed = new Set([...cutKeys, ...fresh.map((c) => c.listingKey)])
+  const bendArea = tiles.filter((t) => BEND_AREA.has((t.city ?? '').trim().toLowerCase()))
+  const localPool = bendArea.length >= 3 ? bendArea : tiles
+  const deduped = takeCards(localPool, opts.nowMs, openHouseLabels, RAIL_CARD_CAP, claimed)
+  // The lead shelf is the one that may not go missing. The live pool is 3,000
+  // tiles (HOME_TILE_FETCH) against at most 24 claimed keys, so the exclusion
+  // never bites there; on a pool small enough that it does, a repeated house
+  // beats no shelf at all, and the page says so by having one rail instead of
+  // three.
+  const local = deduped.length >= 3 ? deduped : takeCards(localPool, opts.nowMs, openHouseLabels)
 
   const rows: HomeRailRow[] = []
   if (local.length >= 3) {
@@ -208,17 +228,15 @@ export function homeRailRows(
   }
 
   if (fresh.length >= 3) {
-    // Avoid a near-duplicate of the local rail when the same newest set won both.
-    const localKeys = new Set(local.map((c) => c.listingKey))
-    const overlap = fresh.filter((c) => localKeys.has(c.listingKey)).length
-    if (overlap < fresh.length * 0.8 || rows.length === 0) {
-      rows.push({
-        id: 'homes-new',
-        heading: 'New this week',
-        seeAll: { href: opts.newHref, label: 'See new listings' },
-        cards: fresh,
-      })
-    }
+    // The old near-duplicate guard here (skip this row when 80% of it already
+    // led the local rail) is gone: the shelves are disjoint by construction
+    // now, so the overlap it measured is always zero.
+    rows.push({
+      id: 'homes-new',
+      heading: 'New this week',
+      seeAll: { href: opts.newHref, label: 'See new listings' },
+      cards: fresh,
+    })
   }
 
   // Always ship at least one rail when any photographed inventory exists.

@@ -108,6 +108,22 @@ export type {
 } from './V3Chart'
 
 /**
+ * THE DRAWN ANSWER. One primitive, three drawings: months of supply as two
+ * named counts on one scale, the comparable closes as a dot strip, days to
+ * pending as one mark on a declared rule with a context mark. Every figure
+ * carries its own section-0 source line, and the whole answer draws on once
+ * under 300ms. Geometry is lib/charts/plot.ts, the same file V3Chart uses.
+ */
+export { V3Drawing, V3_DRAWING_MIN_STRIP, V3_DRAWING_DRAW_MS } from './V3Drawing.client'
+
+export type {
+  V3DrawingProps,
+  V3DrawingFigure,
+  V3DrawingBar,
+  V3DrawingPoint,
+} from './V3Drawing.client'
+
+/**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
  * stay on the barrel (ci:public-ui). Grandfathered routes may still import
  * the flat components/site/MetadataBlock.
@@ -158,6 +174,21 @@ export type {
   V3ProofReach,
 } from './V3ProofBlock.client'
 export type { ProofBlockViewInput } from './V3ProofBlock.view'
+
+/**
+ * The listing page's ENDING (SITE-06, 2026-09-08). One section, claim first:
+ * how often a home in this city cut its price before it sold, how deep and how
+ * long it waited, drawn as a hundred dots and two rules — and beside it the
+ * three things a reader can do about the house in front of them (watch the
+ * price, book a walk-through, mail themselves the payment they just built).
+ * A chooser, not four stacked forms: TASTE.md bans that page.
+ * `buildCloseView()` turns a pulled `getListingCutFacts()` into the drawing;
+ * the primitive computes no figure of its own.
+ */
+export { V3ListingClose } from './V3ListingClose.client'
+export { buildCloseView, buildCloseSubject, homeLabel } from './V3ListingClose.view'
+export type { V3ListingCloseProps } from './V3ListingClose.client'
+export type { CloseView, CloseReading, CloseSubject, CloseSubjectInput } from './V3ListingClose.view'
 
 /**
  * Ask: one screen, every field, one button. The contact form. The Sheet stays
@@ -220,6 +251,18 @@ export type {
   V3InstrumentFigure,
   V3InstrumentFigures,
 } from './V3Instrument'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 7 — PULSE: the live read of a place, drawn                          */
+/*                                                                             */
+/* A gauge, not a section: the counts that are true right now, a mark per       */
+/* listing plotted where it sits, the moment of the read, and a native radio    */
+/* switch that lights one population — all of it server HTML, no JavaScript.    */
+/* -------------------------------------------------------------------------- */
+
+export { V3Pulse } from './V3Pulse'
+
+export type { V3PulseProps, V3PulseReading } from './V3Pulse'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 2 — FIELD: inventory as a spatial surface                           */
@@ -357,7 +400,15 @@ export type {
  */
 export { V3Answers, splitQuietItems } from './V3Answers'
 
-export type { V3AnswersProps, V3Answer, V3AnswersDoor } from './V3Answers'
+export type {
+  V3AnswersProps,
+  V3Answer,
+  V3AnswersDoor,
+  V3AnswerFigure,
+  V3AnswerMark,
+  V3AnswerScale,
+  V3AnswerTally,
+} from './V3Answers'
 
 /* -------------------------------------------------------------------------- */
 /* PLACE SECTIONS — compositions of the six, not a seventh                     */

@@ -8,6 +8,7 @@ import {
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 import { displaySubdivision } from '@/lib/slug'
+import { daysLiveOnMarket } from '@/lib/listing/days-live'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { ListingGuestSaveSheet } from '@/components/site/listing-detail/ListingGuestSaveSheet.client'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
@@ -42,6 +43,7 @@ type Props = {
     ListingDetail,
     | 'listingKey'
     | 'listNumber'
+    | 'onMarketDate'
     | 'listPrice'
     | 'closePrice'
     | 'closeDate'
@@ -136,6 +138,8 @@ export function PriceCtaStrip({
   textHref,
   className,
 }: Props) {
+  // See the pill below: one shared definition of days on market.
+  const daysLive = daysLiveOnMarket(listing.onMarketDate ?? null)
   const [saveState, setSaveState] = useState<SaveState>(initialSaved ? 'saved' : 'idle')
   const [guestSaveOpen, setGuestSaveOpen] = useState(false)
 
@@ -341,9 +345,13 @@ export function PriceCtaStrip({
               })}`
             : listing.status}
         </Pill>
-        {listing.dom != null ? (
+        {/* Days live from OnMarketDate, never `listing.dom` — that is the MLS
+            DaysOnMarket field, which is list-to-close and is banned as DOM
+            (CLAUDE.md §7). The close section counts the same way from the same
+            helper, so the two figures on this page cannot disagree. */}
+        {daysLive != null ? (
           <Pill kind="dom">
-            <TabularNumber value={listing.dom} /> days on market
+            <TabularNumber value={daysLive} /> days on market
           </Pill>
         ) : null}
         {shareKind ? <Pill kind="dom">{shareKind}</Pill> : null}

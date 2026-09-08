@@ -1,4 +1,343 @@
-# Current — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+# Current — 2026-09-08 (CMA reimagined: round four audit, WIP on two branches, and Matt's comp-containment rule)
+
+Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907`; WIP on `wt/cma-engine-20260907`
+(`910b2261`) and `wt/cma-doc-20260907` (`c7be141b`, which already merges the engine WIP).
+Blueprint + four evaluator rounds + the round-four audit: `docs/plans/CMA_REIMAGINED_2026-09-07.md`.
+Memory: `project_cma_funnel_mission`, `reference_partial_month_index_endpoint`,
+`feedback_cma_document_reimagined`, `feedback_cma_comp_containment` (new, below).
+
+**THE NEXT ENGINE ITEM, from Matt 2026-09-08 (his words):**
+"Whenever we're in a city, if the city has a neighborhood district or a community where there are
+subdivisions inside it, we want to always focus on that subdivision to try and get our comps. If we
+can't find it within that subdivision, we never leave the community boundary or the neighborhood
+boundary. We want to start by looking at the most adjacent subdivisions within the neighborhood or
+community, and continue to do that until we've exhausted everything before we would leave the
+neighborhood boundary. We would go back up to 12 months within that neighborhood or community
+boundary before we would ever leave it. … we had one in Old Bend, and then you got me a bunch of
+homes in Southwest Crossing, which are two entirely different homes and locations."
+- Today's ladder (`lib/pricing/ladder.ts`, per `CMA_STATE_OF_THE_WORLD.md`): subdivision 3/6/9 mo →
+  wide-GLA same subdivision → **1 mi radius** → 2 mi → similar subdivisions → city. The 1-mile
+  rung is what jumps Old Bend into Southwest Crossing.
+- The rule: subdivision to 12 months → adjacent subdivisions INSIDE the same neighborhood or
+  community (nearest shared boundary first, from the GIS mesh `resolveMarketArea` already uses)
+  to 12 months → only then any rung that crosses the boundary. Where a city has no neighborhood
+  layer (Redmond, La Pine) the rule degrades to subdivision → city, and the document's search
+  sentence must say which.
+- Data to confirm before coding: `boundaries` (3,213 subdivision rows), the 14 Bend neighborhoods
+  and 14 resort communities in `data/resort-communities.json`, and subdivision→neighborhood
+  membership (registry aliases assert membership; gated). Run the backtest N=600 before/after;
+  the hard cuts (product, baths, US-97, tier) still hold on every rung.
+- Renderer follow-through: the chapter-3 search sentence must state the rung actually used
+  (the round-four audit found it saying "not enough sales inside Diamond Bar Ranch" while three of
+  five comps WERE Diamond Bar Ranch).
+
+**State of main (`b9da5d2e` + this handoff).** The reimagined document, the corrected pricing
+(range from the printed adjusted sales, reconciliation weights, trailing-3 index with a guard,
+clamp printed when it binds, set-aside sales out of the weights, review flag on the row), tracked
+links on every address, the four-lane queue with Auto-send OFF everywhere. Production deploy
+verified. Nothing sends.
+
+**Round-four audit (in the plan doc): NOT SENDABLE. Blocking classes:**
+A. `pricing.sellerNet.predictedSellerNet` is wrong on every row and impossible on one (Concorde's
+   net exceeds its list). The chapter is headed "What you keep".
+B. The story reads the ask that did not run the clock (2465 held $475,000 for 152 of 187 days;
+   the document quotes the $460,000 gap). 19968 runs the overpricing story off a Nov 2004 ask.
+   1617 runs it at an owner asking BELOW the range.
+C. `pricing.review` reaches the admin route only; the letter and PDF a broker sends carry no
+   trace of a `fail` verdict.
+D. Compliance: 1617 NW 8th is ACTIVE with another brokerage and the closing solicits it; 2465 is
+   Withdrawn, not Expired.
+E/F. Counts that contradict inside one document; the Google default map; a strip mixing scales.
+
+**The WIP that addresses A–D (typechecks; 3,078 of 3,079 CMA+pricing tests pass):**
+- engine `910b2261`: itemised `pricing.sellerNet {basis:'list', list, lines[], net, sentence,
+  unknowns[]}` (commission is in `unknowns`, never silently zero), `expiredAudit.askExposure
+  {segments[], dominant, final, sentence}`, `pricing.review.severity` + `rendererNotice`,
+  `lib/pricing/subject-status.ts` → `subjectStatus {standardStatus, isActiveWithOtherBrokerage,
+  isWithdrawnNotExpired, listingAgentIsUs, note}`.
+- doc `c7be141b`: net chapter itemised with what is not included, chapter 1 reads
+  `askExposure.dominant`, review band on letter + immersive, `lib/cma/render-contract.ts`.
+- The one failing test (`lib/cma/opinion-spine.test.ts` "omits … seller net when those extras
+  are unknown"): the net chapter now renders its heading with no figure when `sellerNet` is
+  absent; the test expects the chapter omitted. Decide: omit when `sellerNet` is absent
+  entirely, print the sentence only when present without a derivable net. Then finish classes
+  E/F, rebuild the four exemplars (`scripts/_rebuild-cma.ts`), look-pass `--check --interact`
+  (it clears the slug first now), merge to ship, gates, push.
+
+**Process note.** The round-four audit workflow expanded to 631 agents on an uncapped
+findings→refuters fan-out and hit the session limit before its judge stage, twice. Cap findings
+per lens (top 5) and use two refuters. The findings were worth it; the sizing was not.
+
+**Unchanged open items:** subdivision-story and voice-reviewer still call the Anthropic API and
+fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback is Matt's call;
+`CmaLaneFunnel` not mounted; 8 `zz-test-rebrand-*` fixtures in production `cmas`; the cover
+photo is whatever single photo the MLS carries; the map is a monochrome Google tile.
+
+# Current — 2026-09-08 (round 4: SITE-08 and SITE-12 landed, and three false-pass traps closed)
+
+Owner: Claude (Opus 5), session 01NESdvn. **main is at `b9da5d2e6`**, Vercel
+`dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W` READY in production and live-checked on ryan-realty.com.
+Both nodes are blocked on measurement to 2026-10-08 with their evidence written
+(`f475834f` SITE-08, `28a55619-eff3-4763-aeaf-e7f3617a9cb3` SITE-12). 20 commits in one push.
+`ci:gates 165/165` · runtime gates green · 892 test files, 9,543 tests.
+
+**The part worth reading is that three separate things reported PASS while measuring the wrong
+thing.** Green output is not evidence unless you can say what it measured.
+
+1. **`ci:runtime-gates` — the command I shipped this morning so a lane could run the gates CI
+   runs — could never start.** It was `start-server-and-test`, whose waiter is axios-based; the
+   middleware bot screen's `BAD_BOT_RE` matches `axios`, so every probe came back 403 and it
+   retried to a mute "Timed out waiting for: http://127.0.0.1:3000". That is the identical
+   failure CI carried on every pull request from 2026-07-25 to 2026-08-02, already root-caused
+   in the header of `scripts/wait-for-server.mjs`. I shipped a gate command that reintroduced a
+   bug this repository had written down. `scripts/run-runtime-gates.sh` now uses CI's own
+   start/wait/run split and CI's own waiter.
+2. **A stale server answered for the new one, twice.** A `next start` from an earlier run held
+   port 3000; the new server died with `EADDRINUSE` into a log nobody read, and the waiter got
+   its 200 from the old process. A hand check then "verified" two just-built fixes against the
+   previous build. The runner now refuses a busy port, and it tries `lsof`, `fuser` AND `ss` —
+   because on this container `lsof -ti tcp:3000` printed nothing while `fuser` named the pid, so
+   an lsof-only guard would have waved through the exact case it exists to catch.
+3. **A `Node:` trailer named a uuid that is not a node,** and every write keyed on it updated
+   zero rows and reported success. G72 checks the trailer's shape, not that it resolves. The
+   first attempt to close SITE-12 wrote its evidence into nothing and printed "blocked"; it
+   surfaced only because the queue listing still showed the node in_progress. `post-commit` now
+   prints a loud line when the id resolves to no row. Two pushed commits (`7e2086647`,
+   `b70aafff4`) still carry the wrong id; history is not being rewritten for it, and the node's
+   evidence says so.
+
+Add to that the one this session had already hit: a lane read a tap-target pass from a `.next`
+whose BUILD_ID predated its own fix commit by 13 minutes. The runner refuses that too now.
+
+## What shipped
+
+**SITE-08 — cited Q&A with FAQPage schema on all three place grains.** One array
+(`lib/site/place-answers.ts`) feeds both the visible rows and the JSON-LD, so the markup cannot
+describe a sentence the page does not print. A separate claude-sonnet-5 evaluator scored the
+merged build twice, three scorings each, rubric `v1-2026-09-08`: round 1 neighborhood 82 /
+community 79 / subdivision 73, then after the fixes below and a recapture, **83 / 80 / 76**.
+
+Its findings, all verified against source and the served HTML before being believed:
+
+- **The visible §0 line was leaking the database.** All three grains opened "Source:
+  market_metric neighborhood:bend-awbrey-butte through the Market Truth layer" — a table name
+  and a raw slug, in body copy, the tell TASTE.md bans by name. §0 needs that handle auditable;
+  TASTE says a client should not have to read it. Both are right, so the field split:
+  `sourceTrace` is the sentence, `sourceKey` is the handle, emitted as `data-source-key` on the
+  `#faq` section. Greppable in the served HTML, out of the reader's way.
+- **"Ridge At Eagle Crest"** with a capital A, in the H1, the breadcrumb, the heading, all five
+  Q&A questions and the FAQPage JSON-LD Google reads. English title case now lives in one list
+  in `lib/market/publish-plat-display-name.ts` that both name paths use. It cannot rescue a
+  withheld MLS abbreviation, which is pinned by test.
+- **The prose rows wore the figure rows' clothes.** /communities/tetherow ran five aligned
+  tabular numerals down its right column and then two blanks. They carry a reference register
+  now, on an EXPLICIT flag — deriving it from "has no figure" muted the value ask, which is the
+  one row the section exists for.
+- **The HOA dollar figure had no source line** while every other figure did.
+- **Two "active" counts, no reconciliation.** Awbrey Butte published 48 as the supply
+  denominator and 57 as homes for sale a few rows apart, both traced correctly, neither
+  explained. `activeCountNotes` existed for exactly this and was unused.
+
+**SITE-12 — live counts under the homepage hero, Sell tab as real HTML.** Taste receipt 80. Its
+merge into main resolved three conflicts rather than picking a side; the one worth knowing is
+the Source-summary tap target, where main's fix and the lane's were independent and main's had
+silently removed the control's only affordance (any `display` other than `list-item` suppresses
+the native `::marker`). The merge keeps main's geometry and the lane's drawn caret.
+
+## Open, and named by the evaluator rather than by me
+
+- **Listing rows still print the raw MLS "Ridge At Eagle Crest"** under each address, so the
+  page's own name for itself and the listings under it disagree. Deferred deliberately: the same
+  string is a live search-filter key, so display and filter have to be separated first, and
+  `publishPlatDisplayName` returns null for MLS abbreviations, so a naive route would blank the
+  subdivision line on many tiles.
+- **The community `#belonging` block restates $2,052 with no source line,** and states "Founded
+  2008", "700 acres", "Course architect David McLay Kidd" and "Ranked #57 (Golf Digest)" with no
+  source of any kind. That block is SITE-01's surface.
+- **The subdivision hero prints a full §0 audit sentence as its first line of body copy** under
+  the H1; neither sibling grain does. A page-class question, raised not answered.
+- **The mobile sticky listings bar overlaps the answers section at 375px** on neighborhood and
+  community — SITE-04's surface, node `9339692e-a02e-4a31-a416-cf7ebcdc010a`.
+- **`ci:a11y` and `ci:lighthouse` have still never executed.** They sit in the same CI job as the
+  three runtime gates and are not in `ci:runtime-gates`, deliberately: adding a command for a
+  gate that does not run would be the same mistake as item 1 above.
+
+## Queue
+
+15 items · 2 done · 11 blocked on measurement · SITE-03 and SITE-07 held by other sessions
+(`claude-opus5-019RdEm6`, `cloud-grinder-2026-09-08-20`). **Nothing is open to claim.** The next
+session's work is whatever reopens, or whatever those two lanes hand back.
+
+---
+
+# Current — 2026-09-08 (round 3 landed, deploy verified, and the live check found two more §0 defects)
+
+Owner: Claude (Opus 5), session 01Aubwpa. **main is at `9efa2cf32`.** Round 3 is on main, gated,
+deployed, live-checked, and both nodes are blocked on measurement to 2026-10-06 with their
+evidence written (`89efe5a4` SITE-02b, `b2366127` SITE-06). 24 commits landed in one push
+(`ci:gates OK · 188/188 passed · 62.1s`); the live check then found two more defects, fixed and
+pushed in `22cbedee3` and `9efa2cf32`.
+
+**The live check is where the value was.** Everything below the "two §0 defects" heading was
+caught before ship. These two were only visible on production, and both were in the round's own
+new code. A round is not finished at green gates.
+
+**What shipped.**
+- **SITE-02b — the answer drawn.** `V3Drawing` plus `lib/charts/plot.ts` (+226) and `ticks.ts`:
+  two answer geometries, named counts on one scale and marks on one axis. Wired into the
+  community ask and the /sell answer. The city chart's falling year now wears the exception ink
+  and its year labels stop overprinting.
+- **SITE-06 — the listing page gets an ending.** `V3ListingClose` (waffle / bar / rule drawings
+  behind a three-act chooser) on `getListingCutFacts`.
+
+**Two §0 defects found and fixed on the way, both on live or soon-live pages.**
+1. **The pill published a banned field.** The price strip printed `listing.dom`, which is
+   `row.DaysOnMarket` — list-to-close, banned as DOM by §7 — while the close section computed
+   days from `onMarketDate`. Same page, 106 against 110. There is now one definition,
+   `lib/listing/days-live.ts`, and both read it.
+2. **The two bars did not divide back to the verdict beside them.** Sunriver drew 48 active and
+   a pace label of 8 under a caption reading 5.8 months / balanced; 48 / 8 is 6.0, a buyer's
+   market. `paceLabel` in `lib/site/answer-figures.ts` now keeps the whole number only when the
+   division still lands on the published months of supply, so Bend still reads 173 (671 / 173 =
+   3.9) and Sunriver reads 8.3. Pinned by `lib/site/answer-figures.test.ts`.
+
+Also landed: the Source disclosure and the 3D-tour control got real 44px tap targets (WCAG
+2.5.5); the close section's date goes through `formatCalendarDay` and its anchor is named where
+the page names it; and `scripts/take-route-shots.mjs` now hides the Next dev badge — it was
+sitting in the corner of every shot any evaluator has ever scored.
+
+**The two the live check caught, both in this round's own work.**
+1. **The held comparison was still published in its own Source disclosure** (`22cbedee3`). The
+   outcome strips were off, as Matt ruled. Their citations were not: the summary carried "Bend
+   detached median days to contract 29" and "median sale to original list 97.0%" directly under
+   "7 Ryan Realty closings in the window; sale-to-original-list on 7, days-to-contract on 6".
+   That is the comparison, in prose, one summary open — and withholding only our own half is
+   worse than either publishing or not. A §0 trace lists the figures we PUBLISH; it was
+   following the data instead of the page. `ProofTrace` entries now carry a `scope`
+   (`always` | `outcomes`) and the view drops the outcome-scoped lines when it does not draw the
+   strips. Clause 5 in `decisions.md` makes it general: a hold withholds the figure and its
+   sourcing together.
+2. **Days on market counted elapsed hours, not calendar days** (`9efa2cf32`). Production
+   published "26 days on market" beside a citation reading "OnMarketDate 2026-08-12" — count
+   from that date and you get 27. `OnMarketDate` is a timestamptz (this home: 20:11:48+00,
+   1:11pm local), so dividing elapsed milliseconds by 86,400,000 reached 27 only after 1:11pm
+   each day. Confirmed against the source row with an audit query: by epoch 26, by calendar date
+   27. It is calendar days now, in `America/Los_Angeles` through the repo's `zonedDateKey`, with
+   a bare `YYYY-MM-DD` taken as written rather than zoned. The citation says which count it is,
+   so the figure is checkable from the line beside it.
+
+**Taste receipts, honestly.** Three under the tightened instrument contract, evaluator
+`claude-sonnet-5`, rubric `v1-2026-09-08`: listing-detail **87** (`first`), sell **71**,
+community **60** — both `rebaselined`, not `rose`. The priors differ on evaluator model and
+rubric, so a rise cannot be claimed across them; these are the new baseline to beat.
+
+**MATT RULED 2026-09-08, verbatim: "Hold those we only want positive."** The proof block's two
+outcome strips (our sale-to-first-ask and days-to-contract against the Bend median: 52 days
+against 29, 93.7% against 97.0%, n=7) DO NOT PUBLISH. `showOutcomes` defaults to false so no
+caller ships the comparison by omission; a test pins it. The figures are untouched — this
+decides what we publish, never what we measure. The same rule binds any surface that would draw
+our own performance against a market benchmark. Locked in
+`docs/plans/PUBLIC_PRODUCT/decisions.md` (2026-09-08).
+
+**Open findings, none blocking, all recorded on the nodes.**
+- **The `EASTON COMMERCIAL` breadcrumb** — our plat-alias resolution puts a commercial plat on a
+  single-family listing. `boundaries` holds five Easton plats, two sharing plat doc
+  `Plld20220219`. This is the one worth taking next; it is wrong in front of a buyer.
+- The answer sheet's right ~40% is empty at 1440.
+- The comps dot strip has no axis at rest.
+- A hero broken-image glyph traced to this sandbox's proxy, not to the site — an `onError`
+  fallback is still worth adding.
+
+**Queue.** SITE-02b and SITE-06 are blocked-on-measurement, reopening 2026-10-06, with the rest
+of the shipped set; their nodes carry the full evidence including the live-check findings.
+SITE-03 and SITE-07 are held by `cloud-grinder-2026-09-08-16`, SITE-08 and SITE-12 by
+`claude-opus5-01NESdvn`. Nothing is open and unheld, so the next round starts by checking those
+four heartbeats before claiming anything.
+
+**Local traps that cost time this session, so the next lane skips them.** Stop every dev server
+by PID before `npm run ci:gates` or `ci:commit-compiles` is OOM-killed and prints `Killed` as its
+only error — and resolve the PIDs with `ps | awk` first, because `pkill -f "next dev"` matches
+your own shell's command line and kills the session. `npm run deploy:verify` has no Vercel token
+in a cloud container; verify through the Vercel MCP tools instead
+(project `prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA`, team `team_zwYQPapH0CpleD7RzJ7WctGO`).
+
+---
+
+## Prior — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+
+## Prior — 2026-09-08 (SITE-09 landed; SITE-12 and SITE-08 mid-round, preserved on branches)
+
+Owner: Claude (Opus 5), session 01NESdvn, main checkout at `3c529bb`. Branch
+`claude/run-loop-syxm1d` is synced to main (its 63 "unpushed" commits were all already on
+main; only the branch ref lagged).
+
+## SITE-09 is done and live — blocked on measurement, ledger row attached
+
+Shipped on main: `a4ea2600` (the response clock), `61f0061e` (/contact after the evaluator
+pass), `d03e15af` (the taste receipt), `3cad252e` + `4c3f3508` (handoff). Deploy
+`dpl_CSRRErGMqPRnZokfyFHHm5W6HvES` READY and aliased to ryan-realty.com. Node
+`d575d2eb-7514-4be7-8399-f0ebaa2f7dc7` is `blocked` with `blocked_until` 2026-10-06 and
+ledger row `3ad9bbd8-61a4-4904-af2d-deb2d6cf7b45`.
+
+**What it does.** A same-minute system confirmation on the three site submits that had none
+(/contact and every listing tour or question CTA, the guest saved-search and saved-home
+captures, the expired LP acknowledgment), all through `sendGovernedEmail` with a system
+initiator. Both governed email rails and the SMS rail now stamp `purpose` and `initiator`
+into the timeline payload, and only a broker initiator sets first-broker-action — so a
+system confirmation can no longer read as the broker answering, which is what made every
+prior speed-to-lead number fiction. `/api/cron/crm-response-clock` runs every five minutes,
+pages the assigned broker five minutes past a submit inside 8am–8pm Pacific, escalates to
+Matt at 24 hours wall clock, and clears the flag once a person answers. The Response clock
+panel sits at the top of `/admin/crm`.
+
+**The number that matters.** Baseline read fresh at landing against live Supabase with the
+shipped predicate: **9 of the last 10 site submits had no human touch at all.** The one
+counted touch is an unstamped /book invite predating the provenance stamp, so the panel
+prints the median as **"unproven"** rather than the flattering 2 seconds it would compute
+(§0: an unverifiable figure does not ship).
+
+**The evaluator earned its keep.** A separate Sonnet evaluator scored /contact 43 and caught
+a real §0 violation the builder missed: "within one business day" was removed from the page
+but still lived in the meta, og and twitter descriptions — the first thing Google and every
+shared link showed. Fixed and confirmed absent from production. Pass 2 scored 54 (first mark
+for the route; it leaves the unreviewed baseline).
+
+**Timer proven running**, not merely registered: Vercel runtime logs show
+`GET /api/cron/crm-response-clock` returning 200 on the five-minute schedule (13:20–13:55Z).
+
+## Round in flight: SITE-12 and SITE-08 — work is SAFE on remote branches
+
+Both claimed by `claude-opus5-01NESdvn-2026-09-08` through the enforced path
+(`site-queue-status.ts --claim`), heartbeated. Built by a workflow that runs the separate
+evaluator BEFORE any push — the fix for the audit's finding that 46% of item commits were
+evaluator rework after the code was already on main.
+
+| Item | Branch | PR | Commits | Prior mark to beat |
+|---|---|---|---|---|
+| SITE-12 homepage | `wt/site-12-home` | #204 draft | 2 (46 files) | homepage-v6 = 77 |
+| SITE-08 place Q&A | `wt/site-08-answers` | #205 draft | 3 (32 files) | neighborhood 58, community 59, subdivision none |
+
+**State at handoff:** both builds done, both pass-1 evaluations done, fixes applied, a
+regrade in flight. Nothing is merged and nothing is verified by the orchestrator yet. The
+draft PRs exist specifically so this cannot become the audit's "finished lane stranded with
+no PR" failure.
+
+**To resume:** the worktrees are at `.worktrees/site-12-home` and `.worktrees/site-08-answers`
+(gitignored, and gone if the container is reclaimed — the branches on origin are the durable
+copy). Re-verify each lane's claims yourself, land the taste receipts with their shots
+hashes, run `ci:taste-canon`, then one `ci:gates`, one push, one deploy check, a live
+exercise, and evidence on each node. If a score did not rise above its prior mark, the item
+is NOT done — do not write `comparedToPrior: "first"` to dodge the rise rule; the gate reads
+the receipt at HEAD and refuses it.
+
+## Do not
+
+- Commit a lane worktree's files from the main checkout while its agent is running. The
+  stop-hook flags them as "uncommitted changes in the repository"; they belong to the lane
+  and the lane commits them itself with its own `Node:` trailer.
+- Re-audit the site or write a punch-list doc. Append to a SITE node.
+
+# Previous — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
 
 Owner: Claude (Opus 5), session 3db16241, main checkout. `origin/main` at 1e61fa00.
 

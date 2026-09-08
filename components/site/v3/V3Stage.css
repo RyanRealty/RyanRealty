@@ -183,6 +183,14 @@
   max-width: var(--v3-measure-text);
 }
 
+/* THE OTHER MODE'S COPY. Present in the server HTML, off screen until the slot's
+   own switch reveals it (app/_v3/home-hero-search.css). The default here is the
+   buyer pair, so a Stage that ships alt copy and no switch is still correct. */
+.v3 .v3-stage-eyebrow--alt,
+.v3 .v3-stage-line--alt {
+  display: none;
+}
+
 /* ---------------------------------------------------------------------------
    2. THE ONE ACTION, ON MEDIA
    The Stage is the only pattern whose control sits on footage we do not

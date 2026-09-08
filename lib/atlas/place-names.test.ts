@@ -5,7 +5,10 @@ describe('atlasRegionName', () => {
   it('strips every recorder residue class the evaluator quoted', () => {
     const cases: [string, string][] = [
       ['Trailhead Cottages 247-23-000715-tp', 'Trailhead Cottages'],
-      ['North Forty At Tetherow (also In Section 2)', 'North Forty At Tetherow'],
+      // Casing changed 2026-09-08: publishPlatDisplayName now applies English
+      // title case, so an interior connector stays lower. This case is here for
+      // the residue strip ("(also In Section 2)"), and it still strips it.
+      ['North Forty At Tetherow (also In Section 2)', 'North Forty at Tetherow'],
       ['Daly Estates Aff Cor See Cs06506', 'Daly Estates'],
       ['Acapella Pz 20-0027 , Pz 20-0028', 'Acapella'],
       ['Westgate Pz-20-0726', 'Westgate'],

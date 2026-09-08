@@ -64,7 +64,8 @@ function liveBlock(over: Partial<ProofBlock> = {}): ProofBlock {
       computedAt: '2026-09-08T00:21:24.953Z',
     },
     trace: [
-      { figure: '5.0 average from 25 Google reviews', source: 'GBP', table: 'public.reviews', filter: "source='google'", window: 'all', rows: 25, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getReviews()' },
+      { scope: 'always', figure: '5.0 average from 25 Google reviews', source: 'GBP', table: 'public.reviews', filter: "source='google'", window: 'all', rows: 25, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getReviews()' },
+      { scope: 'outcomes', figure: 'Bend detached median days to contract 29', source: 'Market Truth cell', table: 'public.market_metric', filter: "stat_id = 'median_days_to_contract'", window: '12 months', rows: 1994, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getMetrics()' },
     ],
     ...over,
   }
@@ -131,7 +132,7 @@ describe('labels', () => {
 
 describe('proofBlockView', () => {
   it('places every closing that carries a figure, and only those', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.marks).toHaveLength(7)
     // Every closing has a ratio; the retroactive entry has no day count, so it
     // is absent from the days track and present on the ratio track.
@@ -144,7 +145,7 @@ describe('proofBlockView', () => {
   })
 
   it('puts both medians on their own tracks, in the same window', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     const days = view.strips.find((s) => s.key === 'days')!
     const ratio = view.strips.find((s) => s.key === 'ratio')!
     expect(days.context).toEqual({ pct: expect.any(Number), label: '29 days', name: 'Bend median' })
@@ -156,7 +157,7 @@ describe('proofBlockView', () => {
   })
 
   it('anchors the ratio track on the first asking price rather than on zero dollars', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     const ratio = view.strips.find((s) => s.key === 'ratio')!
     expect(ratio.anchor).not.toBeNull()
     expect(ratio.anchor!.label).toBe('sold at the first ask')
@@ -169,7 +170,7 @@ describe('proofBlockView', () => {
   })
 
   it('claims the medians in plain sentences and never leads with a percentage', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.heading).not.toMatch(/%/)
     expect(view.claim).not.toMatch(/%/)
     const days = view.strips.find((s) => s.key === 'days')!
@@ -181,7 +182,7 @@ describe('proofBlockView', () => {
   })
 
   it('states the count and the window, and explains what is missing', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.countLine).toContain('7 closings')
     expect(view.countLine).toContain('Bend and Redmond')
     const days = view.strips.find((s) => s.key === 'days')!
@@ -190,7 +191,7 @@ describe('proofBlockView', () => {
   })
 
   it('carries the record, the words, and the full trace', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.record).toEqual({
       value: '17',
       label: 'homes closed, listed by Ryan Realty',
@@ -201,6 +202,22 @@ describe('proofBlockView', () => {
     // Quotes are never trimmed.
     expect(view.reviews?.quotes[0]?.text).toContain('more difficult than I had anticipated')
     expect(view.trace).toContain('public.reviews')
+    // The strips are drawn here, so their sourcing belongs in the disclosure.
+    expect(view.trace).toContain('median days to contract 29')
+  })
+
+  // Matt 2026-09-08, decisions.md: with the two outcome strips held, the
+  // disclosure must not publish their sourcing either. Live /sell shipped the
+  // Bend median days-to-contract (29) and sale-to-first-ask (97.0%) inside the
+  // Source summary of a section that draws neither, beside a line saying we
+  // had computed ours — the held comparison, in prose, one click away.
+  it('drops the outcome sourcing from the disclosure when the strips are held', () => {
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    expect(view.strips).toHaveLength(0)
+    expect(view.trace).toContain('public.reviews')
+    expect(view.trace).not.toContain('median days to contract')
+    expect(view.trace).not.toContain('market_metric')
+    expect(view.trace).not.toContain('sale_to_orig_list')
   })
 
   it('goes quiet, keeping the rest, when the window is too thin to chart', () => {
@@ -230,10 +247,24 @@ describe('proofBlockView', () => {
     const view = proofBlockView({
       block: { ...liveBlock(), context: null },
       attribution: ATTRIBUTION,
+      showOutcomes: true,
     })!
     const days = view.strips.find((s) => s.key === 'days')!
     expect(days.context).toBeNull()
     expect(days.claim).toBe('Half of them went under contract inside 52 days.')
+  })
+
+  // Matt 2026-09-08, "hold those, we only want positive": the comparison strips
+  // do not reach a seller-facing page, and a caller who forgets the prop must
+  // not get them by accident. Recorded in docs/plans/PUBLIC_PRODUCT/decisions.md.
+  it('withholds the outcome strips unless the caller asks for them', () => {
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    expect(view.strips).toHaveLength(0)
+    expect(view.marks).toHaveLength(0)
+    // The positive proof still ships, and the section says only what it shows.
+    expect(view.record).not.toBeNull()
+    expect(view.reviews).not.toBeNull()
+    expect(view.heading).not.toMatch(/against|versus|compared/i)
   })
 
   it('renders nothing at all when the block carries nothing', () => {

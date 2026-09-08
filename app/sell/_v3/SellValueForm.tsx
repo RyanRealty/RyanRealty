@@ -27,7 +27,7 @@
  * and the CMA request metadata, so a submit the sticky control sent can be
  * counted in GA4 and audited in the row it created.
  */
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -119,6 +119,30 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [bookLane, setBookLane] = useState(false)
 
   const addressFieldId = `${formId}-address`
+
+  /**
+   * The address the visitor already typed somewhere else.
+   *
+   * SITE-12: the homepage hero's Sell panel is a real GET form pointed at
+   * /sell#get-value, so a submit — with or without JavaScript — arrives here
+   * carrying `?address=`. Retyping the address you just typed is the kind of
+   * defect that reads as two products, so the field opens filled and the
+   * visitor's next act is the button, not the keyboard.
+   *
+   * Read in an effect, never in the render body: `window.location` is not
+   * available to the server render, and a render-time read is the hydration
+   * mismatch G37 exists to catch. The first paint is the empty field the server
+   * sent, which is also what a visitor with no query string sees.
+   */
+  useEffect(() => {
+    let from = ''
+    try {
+      from = new URLSearchParams(window.location.search).get('address')?.trim() ?? ''
+    } catch {
+      // no URL access (a sandboxed embed) — the field just opens empty
+    }
+    if (from.length >= 5) setAddress((current) => (current ? current : from))
+  }, [])
 
   function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

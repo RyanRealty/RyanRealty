@@ -10,7 +10,9 @@ import {
   getFiltersSummary,
   getFilterNameFallback,
   buildSearchUrlFromFilters,
+  watchedListingKey,
 } from '@/lib/search-filters'
+import { listingByKeyPath } from '@/lib/slug'
 import { sendEvent } from '@/lib/crm/send-event'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
@@ -367,6 +369,206 @@ export async function submitListingSaveCapture(input: {
       lp_variant: 'listing-save',
       lead_type: 'buyer',
       value: 0,
+    })
+  } catch {
+    // best-effort
+  }
+
+  return { ok: true }
+}
+
+/**
+ * "Tell me if this price drops" — the single-home price watch (SITE-06).
+ *
+ * ── WHAT WAS MISSING, AND THE SMALLEST HONEST MECHANISM THAT FIXED IT ───────
+ * Before 2026-09-08 a visitor could not subscribe to ONE house. `listing_alerts`
+ * is keyed by (email, filters_hash) over a saved-SEARCH filter set, and that set
+ * had no exact-listing predicate, so `normalizeSavedSearchFilters` dropped a
+ * listing key silently and `hasNarrowingFilter` then refused the signup. The
+ * typed-event column (`events`) could isolate price_change, but only the
+ * admin-only updateListingAlertEngineSettings could write it, so every publicly
+ * created row took the same default toggles.
+ *
+ * Three small changes, no new table and no second engine:
+ *   1. `listingKey` joined the saved-filter allowlist (lib/search-filters.ts);
+ *      `watchedListingKey()` is the one reader of it.
+ *   2. `runListingAlerts` SHORT-CIRCUITS on it: a row carrying a listingKey is
+ *      matched by `getListingsByKeys([key])`, never by the search matcher —
+ *      which has no exact-key predicate and would otherwise have dropped the
+ *      only narrowing key and matched the whole feed. That guard is the reason
+ *      the key is safe to store beside search criteria.
+ *   3. `upsertListingAlert` accepts an `events` override for a NEW row, so this
+ *      one is born with price_change on and everything else off. An existing
+ *      row's stored toggles still win, so re-submitting never clobbers a choice
+ *      the subscriber or a broker already made.
+ *
+ * The result is a row that is its own type in the only way that matters: it
+ * fires on one event, on one house, and it is `filters->>'listingKey'` away
+ * from every other row in the table.
+ *
+ * Same hardening as the two captures above: honeypot, per-IP limit that fails
+ * closed in production, email validation, native dedup, compliance-gated
+ * tagging, browser stitch, and a same-minute system confirmation (CLAUDE.md §1).
+ */
+export async function submitListingPriceDropWatch(input: {
+  email: string
+  listingKey: string
+  /** Street line for the row name + the broker task; the server caps it. */
+  addressLine?: string
+  /** Honeypot, a hidden field humans never fill. */
+  company?: string
+  /** VisitTracker session id. READ on the client, never minted here. */
+  sessionId?: string
+}): Promise<SearchAlertResult> {
+  if (typeof input.company === 'string' && input.company.trim() !== '') {
+    return { ok: true }
+  }
+
+  const isProd = process.env.NODE_ENV === 'production'
+  try {
+    const limiter = getAuthLimiter()
+    if (!limiter) {
+      if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
+    } else {
+      const h = await headers()
+      const ip =
+        h.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        h.get('x-real-ip') ||
+        h.get('cf-connecting-ip') ||
+        '127.0.0.1'
+      const { success } = await limiter.limit(`search-alert:${ip}`)
+      if (!success) return { ok: false, error: 'Too many requests. Please try again in a minute.' }
+    }
+  } catch {
+    if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
+  }
+
+  const email = (input.email ?? '').trim().toLowerCase()
+  if (email.length > 254 || !EMAIL_RE.test(email)) {
+    return { ok: false, error: 'Please enter a valid email address.' }
+  }
+  const listingKey = (input.listingKey ?? '').trim()
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(listingKey)) {
+    return { ok: false, error: 'That listing could not be identified. Try again from the listing page.' }
+  }
+  const addressLine = (input.addressLine ?? '').trim().slice(0, 120)
+  const homeLabel = addressLine || 'this home'
+
+  const normalized = normalizeSavedSearchFilters({ listingKey })
+  // Belt AND braces: if the allowlist ever loses the key, refuse rather than
+  // write a row whose filters would match everything.
+  if (watchedListingKey(normalized) !== listingKey) {
+    return { ok: false, error: 'We could not set up your alert. Please try again.' }
+  }
+  const filtersHash = getSavedSearchHash(normalized)
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const listingUrl = `${base}${listingByKeyPath(listingKey)}`
+
+  let crmPersonId: number | null = null
+  try {
+    const attributed = await readAttributedAgentServer()
+    const result = await sendEvent({
+      type: 'Saved Property Search',
+      person: { emails: [{ value: email }] },
+      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      system: 'Ryan Realty Website',
+      sourceUrl: listingUrl,
+      message: `Watching the price on ${homeLabel} (listingKey ${listingKey})`,
+      brokerAttribution: attributed ? { brokerSlug: attributed.broker } : undefined,
+    })
+    crmPersonId = result.ok ? nativeCrmPersonId(result.personId) : null
+    if (crmPersonId) {
+      try {
+        await canonicallyTagLead({
+          fubPersonId: crmPersonId,
+          audience: 'buyer',
+          source: 'idx-registration',
+          tier: 'warm',
+          originContext: {
+            source: 'listing-price-watch',
+            sourceLabel: 'Price-drop watch (guest)',
+            landingPage: listingUrl,
+            audience: 'buyer',
+            tier: 'warm',
+            want: `Price changes on ${homeLabel} (listingKey ${listingKey})`,
+          },
+        })
+        await createNativeTask({
+          personId: crmPersonId,
+          name: `Watching the price: ${homeLabel} (${listingKey})`,
+          type: 'Follow Up',
+          dueInMinutes: 5,
+        })
+        const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
+        await autoEnrollByPersonId(crmPersonId).catch((e: unknown) =>
+          console.warn('[price-watch] instant auto-enroll failed:', e),
+        )
+      } catch {
+        // Best-effort. Tag/task blip must not skip the browser stitch.
+      }
+      try {
+        const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+        await stitchFormSubmitIdentity({
+          personId: crmPersonId,
+          email,
+          rrVid,
+          sessionId: input.sessionId,
+        })
+      } catch {
+        // Best-effort. Identifying the browser must never fail the signup.
+      }
+    }
+  } catch {
+    // Best-effort. Never block the durable persistence.
+  }
+
+  const persisted = await upsertListingAlert({
+    email,
+    filters: normalized,
+    filtersHash,
+    name: homeLabel,
+    crmPersonId,
+    fubPersonId: crmPersonId,
+    // The whole point: this row fires on ONE event. Everything else is off, so
+    // a price watch never quietly becomes a general feed about the house.
+    events: {
+      new: false,
+      price_change: true,
+      status_change: false,
+      back_on_market: false,
+      sold: false,
+      open_house: false,
+    },
+  })
+  if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
+
+  // The visitor's same-minute confirmation. A system send, not a broker send
+  // (CLAUDE.md §1). AFTER the upsert, because the copy says the watch is on and
+  // that sentence must not go out before the row that makes it true.
+  if (crmPersonId) {
+    try {
+      const { sendAlertConfirmation } = await import('@/lib/comms/site-confirmations')
+      const ack = await sendAlertConfirmation({
+        personId: crmPersonId,
+        leadEmail: email,
+        kind: 'price-drop',
+        criteriaSummary: addressLine || null,
+        listingUrl,
+      })
+      console.log(
+        `[response-clock] price-watch confirmation person ${crmPersonId}: ${ack.ok ? 'sent' : 'not sent'} (${ack.via}${ack.error ? ` — ${ack.error}` : ''})`,
+      )
+    } catch (e) {
+      console.warn('[response-clock] price-watch confirmation threw (non-blocking):', e)
+    }
+  }
+
+  try {
+    await fireLeadGenerated({
+      lp_variant: 'listing-price-watch',
+      lead_type: 'buyer',
+      value: 0,
+      fub_person_id: crmPersonId ?? undefined,
     })
   } catch {
     // best-effort
