@@ -54,16 +54,34 @@ export function reconcileListedVsDetachedFaq(
   if (listedCount <= 0 || detachedCount == null || detachedCount <= 0 || listedCount === detachedCount) {
     return [...faqs]
   }
+  const note = listedVsDetachedNote({ placeName, listedCount, detachedCount })
+  if (!note) return [...faqs]
   return faqs.map((item) => {
     if (!item.question.startsWith('How many single-family homes are for sale')) return item
-    return {
-      ...item,
-      answer:
-        `${item.answer} The ${listedCount.toLocaleString('en-US')} homes listed for ${placeName} on this page ` +
-        `count every property type across its named subdivisions. This answer's ${detachedCount.toLocaleString('en-US')} ` +
-        `is the single-family subset the figures on this page measure.`,
-    }
+    return { ...item, answer: `${item.answer} ${note}` }
   })
+}
+
+/**
+ * The reconciling sentence itself, so the prose FAQ path above and the figured
+ * answer path (lib/site/place-answers.ts, SITE-08) say it in ONE wording. Two
+ * copies of a sentence that explains why two counts differ is how a page ends
+ * up explaining it two different ways. Null when there is nothing to reconcile.
+ */
+export function listedVsDetachedNote(input: {
+  placeName: string
+  listedCount: number
+  detachedCount: number | null
+}): string | null {
+  const { placeName, listedCount, detachedCount } = input
+  if (listedCount <= 0 || detachedCount == null || detachedCount <= 0 || listedCount === detachedCount) {
+    return null
+  }
+  return (
+    `The ${listedCount.toLocaleString('en-US')} homes listed for ${placeName} on this page ` +
+    `count every property type across its named subdivisions. This answer's ${detachedCount.toLocaleString('en-US')} ` +
+    `is the single-family subset the figures on this page measure.`
+  )
 }
 
 /**

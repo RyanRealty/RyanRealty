@@ -1,0 +1,130 @@
+import { describe, it, expect } from 'vitest'
+import {
+  answerScaleGeometry,
+  answerTallyCount,
+  TALLY_MAX,
+  type V3AnswerScale,
+} from './V3Answers.marks'
+
+const mos = (at: number): V3AnswerScale => ({
+  kind: 'scale',
+  min: 0,
+  max: 12,
+  at,
+  minLabel: '0 months',
+  maxLabel: '12 months',
+  bands: [
+    { to: 4, label: "seller's" },
+    { to: 6, label: 'balanced' },
+    { to: 12, label: "buyer's" },
+  ],
+})
+
+describe('answerScaleGeometry', () => {
+  it('places the mark by proportion, not by band', () => {
+    expect(answerScaleGeometry(mos(4.9))?.atPct).toBeCloseTo(40.833, 3)
+    expect(answerScaleGeometry(mos(0))?.atPct).toBe(0)
+    expect(answerScaleGeometry(mos(12))?.atPct).toBe(100)
+  })
+
+  it('tiles the bands with no gap and no overlap', () => {
+    const bands = answerScaleGeometry(mos(4.9))?.bands ?? []
+    expect(bands).toHaveLength(3)
+    // Each band starts where the previous one ended, and together they fill the
+    // rule: a gap would draw a verdict boundary the thresholds do not have.
+    let cursor = 0
+    for (const band of bands) {
+      expect(band.fromPct).toBeCloseTo(cursor, 6)
+      cursor += band.widthPct
+    }
+    expect(cursor).toBeCloseTo(100, 6)
+    expect(bands.map((b) => Math.round(b.widthPct * 100) / 100)).toEqual([33.33, 16.67, 50])
+  })
+
+  it('lights the band lib/market/classify.ts would name, at every boundary', () => {
+    // Upper bound inclusive, matching marketVerdict: 4.0 is a seller's market,
+    // 6.0 is a buyer's. The drawn verdict and the printed word cannot disagree.
+    const active = (at: number) =>
+      answerScaleGeometry(mos(at))?.bands.find((b) => b.active)?.label
+    expect(active(0)).toBe("seller's")
+    expect(active(3.9)).toBe("seller's")
+    expect(active(4)).toBe("seller's")
+    expect(active(4.02)).toBe('balanced')
+    expect(active(5.97)).toBe('balanced')
+    expect(active(6)).toBe('balanced')
+    expect(active(6.01)).toBe("buyer's")
+    expect(active(12)).toBe("buyer's")
+  })
+
+  it('refuses a value outside its own domain rather than pinning it to an end', () => {
+    // A dot on the end of a rule reads as "at the end of the rule". 130 days on
+    // a 0-120 rule is not 120 days, so the row ships its sentence alone.
+    expect(answerScaleGeometry({ ...mos(4.9), at: 12.5 })).toBeNull()
+    expect(answerScaleGeometry({ ...mos(4.9), at: -1 })).toBeNull()
+  })
+
+  it('refuses a broken domain or a non-finite value', () => {
+    expect(answerScaleGeometry({ ...mos(4.9), min: 12, max: 12 })).toBeNull()
+    expect(answerScaleGeometry({ ...mos(4.9), min: 12, max: 0 })).toBeNull()
+    expect(answerScaleGeometry({ ...mos(Number.NaN) })).toBeNull()
+  })
+
+  it('refuses bands that do not ascend or do not finish at the domain max', () => {
+    expect(
+      answerScaleGeometry({ ...mos(4.9), bands: [{ to: 6, label: 'a' }, { to: 4, label: 'b' }] }),
+    ).toBeNull()
+    expect(answerScaleGeometry({ ...mos(4.9), bands: [{ to: 4, label: 'a' }] })).toBeNull()
+    expect(answerScaleGeometry({ ...mos(4.9), bands: [{ to: 4, label: '  ' }, { to: 12, label: 'b' }] })).toBeNull()
+  })
+
+  it('places a context mark and refuses one outside the domain', () => {
+    const withCtx = answerScaleGeometry({
+      kind: 'scale',
+      min: 0,
+      max: 120,
+      at: 29,
+      minLabel: '0 days',
+      maxLabel: '120 days',
+      context: { at: 23, label: 'Bend 23' },
+    })
+    expect(withCtx?.contextPct).toBeCloseTo((23 / 120) * 100, 6)
+    expect(
+      answerScaleGeometry({
+        kind: 'scale',
+        min: 85,
+        max: 105,
+        at: 95,
+        minLabel: '85%',
+        maxLabel: '105%',
+        context: { at: 130, label: 'nope' },
+      }),
+    ).toBeNull()
+  })
+
+  it('draws a bandless rule', () => {
+    const g = answerScaleGeometry({
+      kind: 'scale',
+      min: 0,
+      max: 100,
+      at: 39.2,
+      minLabel: '0%',
+      maxLabel: '100%',
+    })
+    expect(g?.bands).toEqual([])
+    expect(g?.atPct).toBeCloseTo(39.2, 6)
+    expect(g?.contextPct).toBeNull()
+  })
+})
+
+describe('answerTallyCount', () => {
+  it('draws one mark per home', () => {
+    expect(answerTallyCount({ kind: 'tally', count: 60, unitLabel: 'home' })).toBe(60)
+    expect(answerTallyCount({ kind: 'tally', count: 1, unitLabel: 'home' })).toBe(1)
+  })
+
+  it('refuses a count nobody can read as a count, and an empty one', () => {
+    expect(answerTallyCount({ kind: 'tally', count: TALLY_MAX + 1, unitLabel: 'home' })).toBeNull()
+    expect(answerTallyCount({ kind: 'tally', count: 0, unitLabel: 'home' })).toBeNull()
+    expect(answerTallyCount({ kind: 'tally', count: Number.NaN, unitLabel: 'home' })).toBeNull()
+  })
+})

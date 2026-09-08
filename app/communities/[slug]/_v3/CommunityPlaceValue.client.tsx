@@ -17,7 +17,17 @@ type Props = {
 export function CommunityPlaceValue({ slug, placeName }: Props) {
   return (
     <div className="place-opening__ask">
-      <V3PlaceValue slug={slug} placeName={placeName} answer={answerPlaceValue} request={requestPlaceValuation} />
+      {/* #value is the hash the closing answer set links to (SITE-08): the last
+          question a reader opens is "what is my home worth", and its one action
+          scrolls back to the field that answers it. The id lives on the
+          primitive so the anchor cannot drift from the control. */}
+      <V3PlaceValue
+        id="value"
+        slug={slug}
+        placeName={placeName}
+        answer={answerPlaceValue}
+        request={requestPlaceValuation}
+      />
     </div>
   )
 }

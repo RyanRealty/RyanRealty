@@ -135,6 +135,8 @@ import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { subdivisionPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDate } from '@/lib/format/date'
@@ -149,6 +151,7 @@ import {
   V3Heading,
   V3Instrument,
   V3Ledger,
+  V3Answers,
   V3PlaceCharacter,
   V3SectionTracker,
   V3SourceLine,
@@ -644,6 +647,68 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const platGuideSchema = areaGuideVideoSchema(displayName, `/subdivisions/${slug}`, areaGuideVideo)
   if (platGuideSchema) schemas.push(platGuideSchema)
 
+  /* ── The cited Q&A, and this route's FIRST FAQPage (SITE-08) ─────────────
+     The plat node answered nothing in a reader's own words: it drew a map, a
+     list, a market band and a year table, and left every question a person
+     types unanswered and unindexed. This closes it with the same primitive the
+     neighborhood and community grains use, on the same figures this page is
+     ALLOWED to publish and no others.
+
+     WHAT THE PLAT GRAIN MAY SAY, AND WHY THE SET IS SHORT. REGISTRY §4:
+     a subdivision publishes counts and individual sales, never a price
+     statistic — 515 of 680 Bend plats never reach ten detached sales in 36
+     months, and the yearly series is an MLS SubdivisionName join rather than
+     place membership. So a closed median, a year-over-year of it, and a
+     sale-to-list ratio (a ratio of two prices, on the same thin join) all stay
+     off. Months of supply stays off too: lib/market/geo-grain-trust.ts refuses
+     this grain's closed attribution, so the verdict question is ASKED and
+     answered with the refusal and the count behind it, which is the honest
+     version. What publishes: the live list median of the plat's own actives,
+     days on market from the plat's own cache row, the active count, and the
+     yearly closed counts the sales-history Ledger already prints.
+
+     THE LATEST COMPLETE YEAR, not the running one. The current calendar year is
+     a partial window and comparing it to a full one is not a year (the same
+     rule subdivisionSalesChart applies to its own current-year bar). */
+  const nowYear = new Date().getUTCFullYear()
+  const lastCompleteYear = salesHistory
+    .filter((row) => row.year < nowYear && row.closedCount > 0)
+    .sort((a, b) => b.year - a.year)[0]
+  const { answers: platAnswers, traces: platAnswerTraces } = buildPlaceAnswers({
+    placeName: displayName,
+    cityName: placeCity,
+    figures: {
+      // Withheld at this grain, deliberately and visibly (see the note above).
+      monthsOfSupply: null,
+      saleToOriginal: null,
+      cashShare: null,
+      daysToPending: null,
+      medianSalePrice: null,
+      activeCount,
+      activeCountTrace: homesLedgerTrace(platScope),
+      closedCount: lastCompleteYear
+        ? { count: lastCompleteYear.closedCount, windowLabel: `in ${lastCompleteYear.year}` }
+        : null,
+      daysOnMarket:
+        subdivisionStats?.medianDaysOnMarket != null && subdivisionStats.medianDaysOnMarket > 0
+          ? {
+              days: subdivisionStats.medianDaysOnMarket,
+              windowLabel: statsPeriodLabel ? statsPeriodLabel.toLowerCase() : 'year to date',
+            }
+          : null,
+      medianListPrice: platFigures.medianListPrice,
+    },
+    sourceTrace: platStatsTrace(displayName, cityName, statsPeriodLabel || PERIOD_LABEL.ytd),
+    asOfLabel: subdivisionStats?.refreshedAt ? formatDate(subdivisionStats.refreshedAt) : null,
+    valueAsk: { href: valuationHref(`/subdivisions/${slug}`), onPage: false },
+  })
+  const platFaqs = answersFaqItems(platAnswers)
+  // Derived FROM the rendered rows, never beside them.
+  if (platFaqs.length > 0) schemas.push({ type: 'faqPage', items: platFaqs })
+  if (process.env.NODE_ENV !== 'production') {
+    for (const line of platAnswerTraces) console.log(`[plat:${slug}] ${line}`)
+  }
+
   const inventorySource = homesLedgerTrace(platScope)
   const splitCity = placeCity ?? undefined
   const splitSubdivision = registryMatch?.canonicalName ?? displayName
@@ -804,6 +869,28 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
 
         {/* Pattern 3, Ledger — recorded instruments, every row a door. */}
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
+
+        {/* Pattern 8, Answers — the questions a person types about this plat,
+            each carrying the one figure it is about and that figure's own
+            trace, and the same array feeding this route's FAQPage JSON-LD.
+            Closes the page after a Ledger, so no two adjacent sections share a
+            pattern. */}
+        <V3Answers
+          id="faq"
+          eyebrow={`${displayName} · By the numbers`}
+          heading={`${displayName} questions, answered with the number`}
+          questions={platAnswers}
+          doors={[
+            ...(browseHref ? [{ label: `Every home for sale in ${displayName}`, href: browseHref }] : []),
+            ...(resortSlug
+              ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
+              : citySlug
+                ? [{ label: `${cityName} overview`, href: `/cities/${citySlug}` }]
+                : []),
+            { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
+          ]}
+          note={`Each answer carries the one figure it is about and where that figure came from. A statistic this plat is too small to state honestly is left out rather than estimated.`}
+        />
 
         {/* Pattern 1 again, as ONE enumeration: a section per other property
             type the plat holds. The registry withholds price and months of
