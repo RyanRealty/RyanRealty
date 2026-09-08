@@ -1,3 +1,100 @@
+# Current — 2026-09-08 (round 4: SITE-08 and SITE-12 landed, and three false-pass traps closed)
+
+Owner: Claude (Opus 5), session 01NESdvn. **main is at `b9da5d2e6`**, Vercel
+`dpl_q2yrS6o3G1fHfPwmNpeqpeHxLG7W` READY in production and live-checked on ryan-realty.com.
+Both nodes are blocked on measurement to 2026-10-08 with their evidence written
+(`f475834f` SITE-08, `28a55619-eff3-4763-aeaf-e7f3617a9cb3` SITE-12). 20 commits in one push.
+`ci:gates 165/165` · runtime gates green · 892 test files, 9,543 tests.
+
+**The part worth reading is that three separate things reported PASS while measuring the wrong
+thing.** Green output is not evidence unless you can say what it measured.
+
+1. **`ci:runtime-gates` — the command I shipped this morning so a lane could run the gates CI
+   runs — could never start.** It was `start-server-and-test`, whose waiter is axios-based; the
+   middleware bot screen's `BAD_BOT_RE` matches `axios`, so every probe came back 403 and it
+   retried to a mute "Timed out waiting for: http://127.0.0.1:3000". That is the identical
+   failure CI carried on every pull request from 2026-07-25 to 2026-08-02, already root-caused
+   in the header of `scripts/wait-for-server.mjs`. I shipped a gate command that reintroduced a
+   bug this repository had written down. `scripts/run-runtime-gates.sh` now uses CI's own
+   start/wait/run split and CI's own waiter.
+2. **A stale server answered for the new one, twice.** A `next start` from an earlier run held
+   port 3000; the new server died with `EADDRINUSE` into a log nobody read, and the waiter got
+   its 200 from the old process. A hand check then "verified" two just-built fixes against the
+   previous build. The runner now refuses a busy port, and it tries `lsof`, `fuser` AND `ss` —
+   because on this container `lsof -ti tcp:3000` printed nothing while `fuser` named the pid, so
+   an lsof-only guard would have waved through the exact case it exists to catch.
+3. **A `Node:` trailer named a uuid that is not a node,** and every write keyed on it updated
+   zero rows and reported success. G72 checks the trailer's shape, not that it resolves. The
+   first attempt to close SITE-12 wrote its evidence into nothing and printed "blocked"; it
+   surfaced only because the queue listing still showed the node in_progress. `post-commit` now
+   prints a loud line when the id resolves to no row. Two pushed commits (`7e2086647`,
+   `b70aafff4`) still carry the wrong id; history is not being rewritten for it, and the node's
+   evidence says so.
+
+Add to that the one this session had already hit: a lane read a tap-target pass from a `.next`
+whose BUILD_ID predated its own fix commit by 13 minutes. The runner refuses that too now.
+
+## What shipped
+
+**SITE-08 — cited Q&A with FAQPage schema on all three place grains.** One array
+(`lib/site/place-answers.ts`) feeds both the visible rows and the JSON-LD, so the markup cannot
+describe a sentence the page does not print. A separate claude-sonnet-5 evaluator scored the
+merged build twice, three scorings each, rubric `v1-2026-09-08`: round 1 neighborhood 82 /
+community 79 / subdivision 73, then after the fixes below and a recapture, **83 / 80 / 76**.
+
+Its findings, all verified against source and the served HTML before being believed:
+
+- **The visible §0 line was leaking the database.** All three grains opened "Source:
+  market_metric neighborhood:bend-awbrey-butte through the Market Truth layer" — a table name
+  and a raw slug, in body copy, the tell TASTE.md bans by name. §0 needs that handle auditable;
+  TASTE says a client should not have to read it. Both are right, so the field split:
+  `sourceTrace` is the sentence, `sourceKey` is the handle, emitted as `data-source-key` on the
+  `#faq` section. Greppable in the served HTML, out of the reader's way.
+- **"Ridge At Eagle Crest"** with a capital A, in the H1, the breadcrumb, the heading, all five
+  Q&A questions and the FAQPage JSON-LD Google reads. English title case now lives in one list
+  in `lib/market/publish-plat-display-name.ts` that both name paths use. It cannot rescue a
+  withheld MLS abbreviation, which is pinned by test.
+- **The prose rows wore the figure rows' clothes.** /communities/tetherow ran five aligned
+  tabular numerals down its right column and then two blanks. They carry a reference register
+  now, on an EXPLICIT flag — deriving it from "has no figure" muted the value ask, which is the
+  one row the section exists for.
+- **The HOA dollar figure had no source line** while every other figure did.
+- **Two "active" counts, no reconciliation.** Awbrey Butte published 48 as the supply
+  denominator and 57 as homes for sale a few rows apart, both traced correctly, neither
+  explained. `activeCountNotes` existed for exactly this and was unused.
+
+**SITE-12 — live counts under the homepage hero, Sell tab as real HTML.** Taste receipt 80. Its
+merge into main resolved three conflicts rather than picking a side; the one worth knowing is
+the Source-summary tap target, where main's fix and the lane's were independent and main's had
+silently removed the control's only affordance (any `display` other than `list-item` suppresses
+the native `::marker`). The merge keeps main's geometry and the lane's drawn caret.
+
+## Open, and named by the evaluator rather than by me
+
+- **Listing rows still print the raw MLS "Ridge At Eagle Crest"** under each address, so the
+  page's own name for itself and the listings under it disagree. Deferred deliberately: the same
+  string is a live search-filter key, so display and filter have to be separated first, and
+  `publishPlatDisplayName` returns null for MLS abbreviations, so a naive route would blank the
+  subdivision line on many tiles.
+- **The community `#belonging` block restates $2,052 with no source line,** and states "Founded
+  2008", "700 acres", "Course architect David McLay Kidd" and "Ranked #57 (Golf Digest)" with no
+  source of any kind. That block is SITE-01's surface.
+- **The subdivision hero prints a full §0 audit sentence as its first line of body copy** under
+  the H1; neither sibling grain does. A page-class question, raised not answered.
+- **The mobile sticky listings bar overlaps the answers section at 375px** on neighborhood and
+  community — SITE-04's surface, node `9339692e-a02e-4a31-a416-cf7ebcdc010a`.
+- **`ci:a11y` and `ci:lighthouse` have still never executed.** They sit in the same CI job as the
+  three runtime gates and are not in `ci:runtime-gates`, deliberately: adding a command for a
+  gate that does not run would be the same mistake as item 1 above.
+
+## Queue
+
+15 items · 2 done · 11 blocked on measurement · SITE-03 and SITE-07 held by other sessions
+(`claude-opus5-019RdEm6`, `cloud-grinder-2026-09-08-20`). **Nothing is open to claim.** The next
+session's work is whatever reopens, or whatever those two lanes hand back.
+
+---
+
 # Current — 2026-09-08 (round 3 landed, deploy verified, and the live check found two more §0 defects)
 
 Owner: Claude (Opus 5), session 01Aubwpa. **main is at `9efa2cf32`.** Round 3 is on main, gated,
