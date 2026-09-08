@@ -35,6 +35,11 @@ commit-msg hook; `Node: none (<reason>)` is the recorded escape). A new audit do
 - Search Console truth (scripts/_gsc-place-pages.mjs): `/communities/*` 4,516 impressions
   and 24 clicks in 28 days; `/cities/bend/*` 17 and 0. Item 1 targets communities first.
 
+**Matt's one word (2026-09-07: "I want the go to run until done"):** `/loop /site-queue`.
+The skill `.claude/skills/site-queue/SKILL.md` runs rounds of up to four lanes until no
+open SITE node is eligible, wakes itself between rounds, and stops only on an empty queue.
+"go" in a session with that skill loaded means the same thing.
+
 **Parallel lanes (Matt 2026-09-07: "do more items in parallel").** The queue is not
 serial. Only SITE-03, SITE-06, SITE-07 depend on SITE-02b (they render its drawings);
 every other item is independent. Run lanes as separate agents in their own worktrees
