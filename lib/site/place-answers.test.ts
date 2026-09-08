@@ -370,3 +370,38 @@ describe('per-figure traces — one trace per query, never borrowed', () => {
     expect(answers.find((a) => a.id === 'answer-pace')?.source).toContain('updated September 2026')
   })
 })
+
+describe('the reader\'s sentence and the machine handle are separate fields', () => {
+  it('passes sourceKey straight through, so V3Answers can emit it as data-source-key', () => {
+    const out = buildPlaceAnswers({
+      ...base,
+      sourceKey: 'market_metric:neighborhood:bend-awbrey-butte',
+    })
+    expect(out.sourceKey).toBe('market_metric:neighborhood:bend-awbrey-butte')
+  })
+
+  it('reports no key when the caller has none, rather than inventing one', () => {
+    expect(buildPlaceAnswers({ ...base }).sourceKey).toBeNull()
+  })
+
+  it('gives an extra row its own source line and counts it as a published trace', () => {
+    const out = buildPlaceAnswers({
+      ...base,
+      extra: [
+        {
+          question: 'Does Tetherow have an HOA?',
+          answer: 'Yes. Annual HOA dues run $2,052, the median of the 135 current listings that report dues.',
+          source: 'regional MLS, the median of the 135 current listings that report dues',
+        },
+        { question: 'What school district serves Tetherow?', answer: 'Bend-La Pine Schools.' },
+      ],
+    })
+    const hoa = out.answers.find((a) => a.question.endsWith('have an HOA?'))
+    const school = out.answers.find((a) => a.question.startsWith('What school district'))
+    expect(hoa?.source).toBe('regional MLS, the median of the 135 current listings that report dues')
+    // A prose row with no figure and no number owes no trace, and must not be
+    // given an empty one — an empty source line reads as a missing source.
+    expect(school?.source).toBeUndefined()
+    expect(out.traces).toContain('regional MLS, the median of the 135 current listings that report dues')
+  })
+})

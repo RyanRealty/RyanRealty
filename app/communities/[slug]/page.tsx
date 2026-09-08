@@ -601,14 +601,14 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
      the same sentence SITE-01 put on the address answer, rather than dropped.
      A place page that skips the question a seller came to ask has not answered
      it; it has hidden that it cannot. */
-  const { answers: placeAnswers, traces: answerTraces } = buildPlaceAnswers({
+  const { answers: placeAnswers, traces: answerTraces, sourceKey: answerSourceKey } = buildPlaceAnswers({
     placeName: publicName,
     cityName,
     figures: {
       monthsOfSupply: hud.monthsSupply,
       monthsOfSupplyActiveCount: hud.active,
       activeCount: hud.active,
-      activeCountTrace: `market_metric neighborhood:${cityDetachedSlug(neighborhoodSlug)}, detached single-family homes with primary membership of ${publicName}, active at the last sync`,
+      activeCountTrace: `regional MLS, detached single-family homes whose primary membership is ${publicName}, active at the last sync`,
       activeCountNotes: listedVsDetachedNote({
         placeName: publicName,
         listedCount,
@@ -630,7 +630,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           : null,
       medianListPrice: hud.medianList,
     },
-    sourceTrace: `market_metric neighborhood:${cityDetachedSlug(neighborhoodSlug)} through the Market Truth layer, detached single-family homes assigned to ${publicName} by place membership`,
+    // Same split as the neighborhood grain: the sentence a visitor reads names
+    // the feed and the population, the table and key ride in data-source-key.
+    sourceTrace: `regional MLS, detached single-family homes assigned to ${publicName}`,
+    sourceKey: `market_metric:neighborhood:${cityDetachedSlug(neighborhoodSlug)}`,
     asOfLabel,
     // SITE-01's address ask IS on this page, at the top of the opening.
     valueAsk: { href: '#value', onPage: true },
@@ -943,6 +946,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           eyebrow={`${publicName} · By the numbers`}
           heading={`${publicName} questions, answered with the number`}
           questions={placeAnswers}
+          sourceKey={answerSourceKey}
           doors={[
             { label: `See ${publicName} houses`, href: '#homes' },
             ...exploreItems.flatMap((item) =>

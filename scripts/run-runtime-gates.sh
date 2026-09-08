@@ -44,8 +44,42 @@ if [ "$BUILD_AT" -gt 0 ] && [ "$HEAD_AT" -gt 0 ] && [ "$BUILD_AT" -lt "$HEAD_AT"
   exit 1
 fi
 
+# THE PORT MUST BE FREE, AND THIS IS NOT PEDANTRY. A stale `next start` from an
+# earlier run held 3000 on 2026-09-08; the new server died with EADDRINUSE into a
+# log nobody read, the waiter got its 200 from the OLD process, and the gates —
+# and a hand curl checking two just-built fixes — measured the previous build and
+# reported it as the new one. A gate that silently grades someone else's server
+# is worse than a gate that fails.
+# THREE DETECTORS, BECAUSE ONE IS NOT ENOUGH. On this container `lsof -ti
+# tcp:3000` printed nothing while `fuser -n tcp 3000` printed the pid that was
+# holding it, so an lsof-only guard would have waved through the exact case it
+# exists to catch — twice, which is how this line got written.
+port_holders() {
+  lsof -ti "tcp:${PORT}" 2>/dev/null && return 0
+  fuser -n tcp "${PORT}" 2>/dev/null | tr -s ' ' '\n' | grep -E '^[0-9]+$' && return 0
+  ss -ltnp 2>/dev/null | grep ":${PORT} " | grep -oE 'pid=[0-9]+' | cut -d= -f2
+}
+
+HOLDERS=$(port_holders | sort -u | tr '\n' ' ' | sed 's/ *$//')
+if [ -n "$HOLDERS" ]; then
+  echo "runtime-gates: port ${PORT} is already in use by pid(s): ${HOLDERS}" >&2
+  echo "  Whatever answers there is NOT the build in this tree, and measuring it" >&2
+  echo "  would report another server's result as this one's. Stop it, or set PORT." >&2
+  for p in $HOLDERS; do ps -o pid,cmd -p "$p" --no-headers >&2 || true; done
+  exit 1
+fi
+
 npm run start:ci > "$LOG" 2>&1 &
 SERVER_PID=$!
+
+# And it must actually be OUR server that came up. Without this, a race that
+# loses the bind still reaches the waiter, which happily 200s off the winner.
+sleep 2
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+  echo "runtime-gates: the server exited before it could serve. Log:" >&2
+  cat "$LOG" >&2 || true
+  exit 1
+fi
 
 stop_server() {
   kill "$SERVER_PID" 2>/dev/null || true
@@ -53,7 +87,7 @@ stop_server() {
   # leaves the port held. Kill by PORT rather than by process group: a negative
   # pid signals this shell's own group too, which on a CI runner takes the
   # runner down (.github/workflows/ci.yml records that outage).
-  PORT_PIDS=$(lsof -ti "tcp:${PORT}" 2>/dev/null || true)
+  PORT_PIDS=$(port_holders 2>/dev/null | sort -u | tr '\n' ' ')
   [ -n "$PORT_PIDS" ] && kill $PORT_PIDS 2>/dev/null || true
   wait "$SERVER_PID" 2>/dev/null || true
 }

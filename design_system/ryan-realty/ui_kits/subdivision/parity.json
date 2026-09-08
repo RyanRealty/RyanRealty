@@ -141,7 +141,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 cited-Q&A pass, session 01NESdvn — three scorings of one shot set, median reported",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -163,38 +163,50 @@
       "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:7c616fee8b37b0b72d7e41556fad6cc249829f1fa7d93c6792150d73294b1ed6",
+    "shotsHash": "sha256:b2fe0b7ea8f60f6cca620f65f32b5e6873cf3c7505d12513ab8419eca1193b0a",
     "scores": [
-      84,
-      80,
-      82
+      73,
+      76,
+      78
     ],
-    "score": 82,
+    "score": 76,
     "breakdown": {
-      "design": 25,
-      "originality": 26,
-      "interaction": 10,
+      "design": 20,
+      "originality": 24,
+      "interaction": 12,
       "craft": 12,
-      "honesty": 9
+      "honesty": 8
     },
-    "beats": "Redfin/Zillow's page for the same plat — which for a 26-closing-a-year subdivision usually does not exist at all, folded into the parent city — and Eagle Crest's own resort site, which publishes no sale-to-list, no days-on-market and no year-over-year closed comparison. We win on depth a portal cannot show at this grain and on methodological candour. We lose on the resort's own lifestyle photography.",
+    "beats": "Zillow's/Realtor.com's subdivision aggregation page for Ridge at Eagle Crest on honesty and depth: a year-over-year closed-sales tally comparison (26 vs 21), an explicit refusal to print a verdict or a median close price at a sample this thin, versus the portals' raw listing grid with no market reasoning at all.",
     "defects": [
       {
-        "section": "answers count",
+        "section": "#overview (hero)",
         "severity": "taste",
-        "finding": "5 of the 5-8 target rows ship — the floor of the range and the thinnest of the three grains — so despite the strongest per-row craft a reader gets fewer things to interrogate than on neighborhood or community."
+        "finding": "Verified in the served HTML: the hero renders `<V3SourceLine source={inventorySource} onMedia .../>` directly under the H1 — a full §0 audit sentence ('Source: live MLS through Oregon Data Share, active single-family listings under the Ridge at Eagle Crest name in Redmond.') sits as the first line of body copy over the photo, ahead of the actual descriptive caption ('Eagle Crest, the resort Ridge at Eagle Crest sits inside.'). Neither sibling route in the same page class does this: /communities/tetherow carries the equivalent trace in a `title` tooltip attribute (invisible until hover), and /cities/bend/awbrey-butte shows no source line in its hero at all. This is a page-class inconsistency and a register violation — a data-provenance sentence, not a hook, is the first thing a visitor reads under the headline."
       },
       {
-        "section": "dual dot-strip instrument",
+        "section": "#faq",
+        "severity": "honesty",
+        "finding": "Unlike the neighborhood and community routes, this route's buildPlaceAnswers call sets no `sourceKey`, so the #faq section has no `data-source-key` attribute in the served HTML (confirmed by grep — zero matches, versus one match each on the other two routes). The machine-audit handle §0 asks for exists on 2 of 3 place grains and not this one."
+      },
+      {
+        "section": "listing rows",
         "severity": "taste",
-        "finding": "Per-year hover behaviour surfacing an individual sale's date or price is not evidenced by the still, the same unconfirmed-interaction gap as the other two grains."
+        "finding": "Confirmed as flagged: individual listing rows below the fold still print the MLS-cased 'Ridge At Eagle Crest' (capital At) in their city/subdivision line and in the map-tile filter payload, while the H1, breadcrumb, headings, all five Q&A questions and the FAQPage JSON-LD correctly read 'Ridge at Eagle Crest.' Deliberately deferred per a live search-filter-key dependency, but it is still a visible casing mismatch between the page's own name for itself and the listings it shows under that name."
       }
     ],
     "openRaise": [
-      "answers list — push toward 6-8 rows on plats with enough data rather than settling at the 5-row floor",
-      "plat map module below the hero — encode recency or price into the dots so it becomes an instrument, not an outline",
-      "dual dot-strip — confirm or add a hover tooltip naming the sale behind an individual dot"
+      "Was the hero V3SourceLine placement a deliberate call for the plat grain, or should it move behind a title tooltip like the community route to match the class?",
+      "Should platStatsTrace's sourceTrace also populate a sourceKey so all three place grains expose the same audit handle?"
     ],
-    "comparedToPrior": "first"
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 82,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:7c616fee8b37b0b72d7e41556fad6cc249829f1fa7d93c6792150d73294b1ed6"
+    },
+    "rebaselineReason": "The prior 82 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
   }
 }

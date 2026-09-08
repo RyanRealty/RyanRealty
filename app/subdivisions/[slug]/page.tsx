@@ -400,7 +400,12 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const platScope: PlatScope = hasBoundary
     ? { kind: 'boundary', displayName }
     : registryMatch
-      ? { kind: 'registry', subdivisionName: registryMatch.canonicalName, city: registryMatch.city }
+      ? // The PUBLISHED name, not the raw MLS alias. The alias capitalises every
+        // word, so the traces under the figures read "Ridge At Eagle Crest" while
+        // the H1 above them read "Ridge at Eagle Crest" — one place, two spellings,
+        // on one page (evaluator, 2026-09-08). The trace still names the MLS
+        // SUBDIVISION NAME as the membership rule; only its casing is the page's.
+        { kind: 'registry', subdivisionName: displayName, city: registryMatch.city }
       : { kind: 'pins', displayName }
 
   // Split listings are the counted plat inventory, not a viewport fetch.
@@ -703,7 +708,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
      query under the same drawing would be two populations wearing one form. */
   const priorCompleteYear =
     lastCompleteYear && completeYears[1]?.year === lastCompleteYear.year - 1 ? completeYears[1] : null
-  const { answers: platAnswers, traces: platAnswerTraces } = buildPlaceAnswers({
+  const { answers: platAnswers, traces: platAnswerTraces, sourceKey: platSourceKey } = buildPlaceAnswers({
     placeName: displayName,
     cityName: placeCity,
     figures: {
@@ -740,6 +745,14 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
       medianListPriceTrace: platInventoryTrace(platScope),
     },
     sourceTrace: platStatsTrace(displayName, cityName, statsPeriodLabel || PERIOD_LABEL.ytd),
+    // The audit handle, so all three place grains expose one (evaluator,
+    // 2026-09-08: two of three did). It names the PLAT rather than a table,
+    // and deliberately so — this section's figures come from three different
+    // queries (the sales-history RPC, the statistics cache, the live counted
+    // set), each of which carries its own trace on its own row. One table name
+    // here would claim a single source for a section that has three; the plat
+    // key is the one handle all three queries share.
+    sourceKey: `subdivision:${slug}`,
     asOfLabel: subdivisionStats?.refreshedAt ? formatDate(subdivisionStats.refreshedAt) : null,
     valueAsk: { href: valuationHref(`/subdivisions/${slug}`), onPage: false },
   })
@@ -922,6 +935,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
           eyebrow={`${displayName} · By the numbers`}
           heading={`${displayName} questions, answered with the number`}
           questions={platAnswers}
+          sourceKey={platSourceKey}
           doors={[
             ...(browseHref ? [{ label: `Every home for sale in ${displayName}`, href: browseHref }] : []),
             ...(resortSlug

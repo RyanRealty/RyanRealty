@@ -204,7 +204,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 cited-Q&A pass, session 01NESdvn — three scorings of one shot set, median reported",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -226,49 +226,45 @@
       "answersDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:2de587c0a54b7b8cf291721cfc5f785bac34bcacea504fdf6d663670245953cd",
+    "shotsHash": "sha256:36e5120fa2e58adca3803aba49d7ee245fd88480064552af874138171aeef40e",
     "scores": [
-      80,
-      75,
-      78
+      81,
+      83,
+      85
     ],
-    "score": 78,
+    "score": 83,
     "breakdown": {
-      "design": 24,
+      "design": 25,
       "originality": 23,
-      "interaction": 10,
+      "interaction": 13,
       "craft": 13,
-      "honesty": 8
+      "honesty": 9
     },
-    "beats": "Zillow/Redfin's Awbrey Butte neighborhood guide, which prints a generic Hot/Warm badge with no math shown. We win on a computed, dated months-of-supply instrument with labeled bands, a marker, and a full plain-English source trace under it. We lose on Zillow's photo density and school-rating tiles sitting inside the same section — ours is figure-and-text only here.",
+    "beats": "Redfin's/Zillow's Awbrey Butte neighborhood page on interactivity (a scrubbable months-of-supply scale with bands and a crosshair vs. their static 'competitive' badge) and on transparency (every figure carries its own plain-English §0 trace, theirs carry none).",
     "defects": [
       {
-        "section": "mobile sticky bar",
-        "severity": "functional",
-        "finding": "The 15-houses-listed bar covers roughly a third of the 375px viewport in answers-mobile375, cutting off the MoS explainer sentence and everything below it until a visitor taps the X."
-      },
-      {
-        "section": "answers list, row 6+",
-        "severity": "honesty",
-        "finding": "The sticky bar overlaps the section before a 6th row is fully visible, so total question count and the value-link row cannot be confirmed from these captures for this route, though the shared module always appends it last."
-      },
-      {
-        "section": "MoS gauge marker",
+        "section": "#alerts",
         "severity": "taste",
-        "finding": "The marker on the months-of-supply track is a plain filled dot with no visible handle, focus ring or drag affordance, so the claimed scrub/arrow-key interaction is not evidenced by the still."
+        "finding": "The navy sticky new-listings/email bar is pinned to the bottom of the viewport in both the desktop and mobile captures and physically overlaps the last visible answer row ('How many buyers pay cash in Awbrey Butte?' / its figure), so it reads as an intrusive cookie-banner competing with the page rather than a composed closing section."
+      },
+      {
+        "section": "#faq answer-inventory / answer-verdict",
+        "severity": "honesty",
+        "finding": "The verdict row's own trace states months of supply is computed on '48 listings this layer counts as active,' while a few rows down the inventory row publishes '57' as 'homes for sale' with a differently-scoped trace (recorded boundary, publicly active MLS status). Both traces are individually accurate, but nothing on the page acknowledges the two different active counts sit a few rows apart under the same word 'active' — the `activeCountNotes` field lib/site/place-answers.ts built for exactly this reconciliation is not populated on this route."
       }
     ],
     "openRaise": [
-      "answers footer — auto-collapse or shrink the new-listings bar on this section so the last rows are reachable at 375px without a dismiss tap",
-      "MoS gauge — give the marker a visible handle or hover tooltip so the interactive affordance reads in a screenshot, not only in behaviour",
-      "answers list — capture an open-state shot for a second row so the promised per-figure drawing is verifiable beyond the first"
+      "Should activeCountNotes carry a one-line reconciliation for the 48-vs-57 active-count split, the same pattern the module's own code comments call out by name for this exact neighborhood?",
+      "Should the sticky alerts bar auto-collapse or dock lower once a reader has the FAQ section's last row in view, so it stops covering the answer sheet at both viewports?"
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-06",
-      "score": 58
+      "evaluatedAt": "2026-09-08",
+      "score": 78,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:2de587c0a54b7b8cf291721cfc5f785bac34bcacea504fdf6d663670245953cd"
     },
-    "rebaselineReason": "The prior 58 carries no evaluatorModel, no rubricVersion and no shotsHash — it was scored by a different model against shots that have since been recaptured, so it is not the same instrument. Recorded as a rebaseline, not a rise, even though 78 is above it.",
-    "captureCaveat": "desktop.png and mobile375.png show the opening without its hero PHOTOGRAPH: a cold-cache Next-optimizer re-encode of a remote MLS image had not finished when the camera fired. Not scored as a page defect. The section this item built is in answers-desktop.png / answers-mobile375.png, which render complete."
+    "rebaselineReason": "The prior 78 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
   }
 }

@@ -30,7 +30,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import type { PublishedPlaceHoa } from '@/lib/market/publish-place-hoa'
 
-export type CommunityFaqItem = { question: string; answer: string }
+export type CommunityFaqItem = { question: string; answer: string; source?: string | null }
 
 /**
  * D103 (2026-08-27). Two populations on this page share the word "single-family"
@@ -117,6 +117,10 @@ export function reconcilePlaceHoaFaq(
       answer:
         `Yes. Annual HOA dues run $${hoa.annual.toLocaleString('en-US')}, the ${hoa.basis}. ` +
         `Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
+      // §0. This row publishes a dollar figure, so it owes the same visible
+      // trace the cited rows carry. It was the only number on the page with
+      // its basis in the prose and no source line (evaluator, 2026-09-08).
+      source: `regional MLS, the ${hoa.basis}`,
     }
   })
 }

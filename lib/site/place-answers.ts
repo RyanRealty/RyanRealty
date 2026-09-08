@@ -47,6 +47,8 @@ export type PlaceAnswersResult = {
   answers: V3Answer[]
   /** One line per published figure, in the §0 report form. */
   traces: string[]
+  /** The machine handle from the input, passed straight to V3Answers. */
+  sourceKey?: string | null
 }
 
 export type PlaceAnswersFigures = {
@@ -131,12 +133,28 @@ export type PlaceAnswersInput = {
   populationLabel?: string
   figures: PlaceAnswersFigures
   /**
-   * The population clause every trace on this page opens with: the table, the
-   * key and the membership rule. Example: "market_metric
-   * neighborhood:bend-awbrey-butte, detached single-family homes assigned to
-   * the recorded boundary".
+   * The population clause every trace on this page opens with, IN THE READER'S
+   * WORDS: the feed, the population, and the membership rule. Example:
+   * "regional MLS, detached single-family homes inside the Awbrey Butte
+   * boundary".
+   *
+   * NOT the table and not the key. A separate taste evaluator on 2026-09-08
+   * read the live trace on all three place grains as "market_metric
+   * neighborhood:bend-awbrey-butte through the Market Truth layer" and called
+   * it by name: the "raw slugs, internal labels, methodology jargon" tell
+   * design_system/public/TASTE.md bans. §0 still needs the machine handle to be
+   * auditable, so it moved to `sourceKey` below — in the served HTML, out of
+   * the body copy. A trace a client cannot read is not a trace they can check.
    */
   sourceTrace: string
+  /**
+   * The machine handle behind `sourceTrace`: table plus key, e.g.
+   * "market_metric:neighborhood:bend-awbrey-butte". Rendered as
+   * `data-source-key` on the answers section, so §0's "name the source" stays
+   * greppable in the served HTML and auditable by a reviewer, while the
+   * sentence a visitor reads stays a sentence.
+   */
+  sourceKey?: string | null
   /** "September 2026". Appended to every trace as the stamp §0 requires. */
   asOfLabel?: string | null
   /**
@@ -151,7 +169,14 @@ export type PlaceAnswersInput = {
    * closing ask, and any whose question this module already answered is
    * DROPPED rather than shown twice with two different sentences.
    */
-  extra?: readonly { question: string; answer: string }[]
+  /**
+   * Prose rows appended after the cited ones. `source` is optional because most
+   * are prose (HOA rules, the school district); a row that DOES publish a figure
+   * in its sentence owes the same §0 trace every cited row carries, and gets one
+   * here rather than being the only number on the page with no source line
+   * (evaluator, /communities/tetherow HOA dues, 2026-09-08).
+   */
+  extra?: readonly { question: string; answer: string; source?: string | null }[]
 }
 
 /** A share as the site publishes shares: one decimal, never a bare integer. */
@@ -586,7 +611,18 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       const key = question.toLowerCase()
       if (asked.has(key)) continue
       asked.add(key)
-      answers.push({ question, body: answer })
+      const extraSource = item?.source?.trim()
+      // `reference: true` is set HERE and nowhere else. These are the rows the
+      // page appends in prose after the cited ones; the value ask below is also
+      // figure-less and must NOT wear this, because it is the row the section
+      // exists for.
+      answers.push({
+        question,
+        body: answer,
+        reference: true,
+        ...(extraSource ? { source: extraSource } : {}),
+      })
+      if (extraSource) traces.push(extraSource)
     }
   }
 
@@ -616,7 +652,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
     ...(basis ? { source: traceWith(basis.trace, `closed sales ${basis.windowLabel}`) } : {}),
   })
 
-  return { answers, traces }
+  return { answers, traces, sourceKey: input.sourceKey ?? null }
 }
 
 /**

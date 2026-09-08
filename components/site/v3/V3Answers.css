@@ -120,6 +120,25 @@
   scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap));
 }
 
+/* THE REFERENCE ROW. A question this section answers in prose because there is
+   no figure to answer it with — HOA rules, the school district — sitting after
+   the cited rows. It keeps the same hairline and the same target, and drops the
+   display face for the reading face at muted ink, so the closed sheet reads as
+   "five answers with figures, then two answers without" instead of as two
+   figures that failed to arrive. No invented figure, no second heading, no
+   disclosure to hide it behind. */
+.v3.v3-answers .v3-answers__item--reference .v3-answers__q-text {
+  font-family: var(--v3-font-sans);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: normal;
+  color: var(--v3-ink-muted);
+}
+
+.v3.v3-answers .v3-answers__item--reference .v3-answers__mark {
+  color: var(--v3-ink-muted);
+}
+
 /* The question is the control, and the ANSWER RIDES ON IT. Narrow: question on
    one line, its figure under it, the +/- centred at the right across both. Wide:
    question, figure, +/- on one line, so a closed section reads down its right

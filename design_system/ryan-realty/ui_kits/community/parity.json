@@ -233,7 +233,7 @@
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
     "rubricVersion": "v1-2026-09-08",
-    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 cited-Q&A pass, session 01NESdvn — three scorings of one shot set, median reported",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 round 2 — scored the MERGED build after the round-1 defects were fixed and the pages recaptured; three scorings of one shot set, median reported",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5",
     "shotSpec": {
@@ -255,49 +255,45 @@
       "answersDesktop": "design_system/ryan-realty/ui_kits/community/shots/answers-desktop.png",
       "answersMobile375": "design_system/ryan-realty/ui_kits/community/shots/answers-mobile375.png"
     },
-    "shotsHash": "sha256:1190c1436a67ff05c2e13297504297c385a6698f73c35cd4b7a4b4b3759d8b87",
+    "shotsHash": "sha256:b5c7e39e1680040d9f5243a052e84fd1cd320fa68ea345b5ad5a200d47c1510c",
     "scores": [
-      79,
-      74,
-      77
+      78,
+      80,
+      83
     ],
-    "score": 77,
+    "score": 80,
     "breakdown": {
-      "design": 22,
+      "design": 25,
       "originality": 24,
-      "interaction": 10,
+      "interaction": 13,
       "craft": 12,
-      "honesty": 9
+      "honesty": 6
     },
-    "beats": "Tetherow's own resort site's real-estate page. We win decisively on honesty: when sample size is too thin for a fair buyer's/seller's call the page says so in plain language and shows the 24-closed-sale dot tally instead of forcing a verdict — no resort or portal page does that. We lose on Tetherow.com's amenity photography that this figure-first section does not attempt.",
+    "beats": "Tetherow's own resort site (tetherow.com) on data ownership: live closed-sale evidence, a sourced HOA figure, and an address-in/valuation-out tool one tap from the hero, versus the resort's lifestyle-only copy with no pricing data at all.",
     "defects": [
       {
-        "section": "answers list, HOA / school-district rows",
-        "severity": "taste",
-        "finding": "The community route passes market-faq.ts prose rows as extra into buildPlaceAnswers, so they render with the same hairline-row chrome as the cited figure rows with no figure — indistinguishable from a plain FAQ accordion, the exact tell this split exists to prevent."
+        "section": "#belonging",
+        "severity": "honesty",
+        "finding": "The claimed fix ('the HOA dollar figure now carries its own §0 source line, like every other figure') only reached the FAQ's HOA row. The identical $2,052/year HOA figure is restated in the 'Living in Tetherow' fact list (#belonging) with a bare population clause ('median of the 135 current listings that report dues') and no 'Source:' line at all — verified: the whole #belonging block contains zero v3-source elements. The same section also states 'Founded 2008', '700 acres', 'Course architect David McLay Kidd', and 'Ranked #57 (Golf Digest)' with no source of any kind, named or linked, for any of them."
       },
       {
-        "section": "mobile sticky bar",
-        "severity": "functional",
-        "finding": "Same obstruction as neighborhood — the listings bar covers close to 40% of the 375px viewport, truncating the withheld-verdict explanation mid-sentence."
-      },
-      {
-        "section": "dot-tally instrument",
+        "section": "#faq (doors fold)",
         "severity": "taste",
-        "finding": "One undifferentiated row of 24 dots gives no per-dot hover cue in the still, so whether an individual sale is interrogable cannot be confirmed; it reads closer to a count illustration than a chart."
+        "finding": "41 outbound doors fold behind one 'Where to go next' disclosure. Correct pattern for the volume, but once opened it is still one flat, uncategorized list of 41 hairline rows (governing documents, golf, sibling resorts, generic site links all interleaved) — the exact 'table wearing hairlines' shape TASTE bans, just deferred behind a click instead of removed."
       }
     ],
     "openRaise": [
-      "answers list, trailing rows — give the market-faq-sourced HOA/school rows their own quieter row style, or move them under a disclosure, so a figure-less row never wears the figure-row's clothes",
-      "mobile sticky bar — same fix as neighborhood",
-      "dot-tally row — add a faint reference tally (the wider Bend rate) so the honesty device reads as a comparison, not just a count"
+      "Does the Belonging fact list need the same closing §0 note pattern #character already carries (one shared population/feed sentence for the whole block), given it restates a figure the FAQ just sourced individually?",
+      "Worth grouping the 41 folded doors by type (documents / golf / nearby resorts / site) now that the count is verified at 41, rather than one flat alphabetical-by-source list?"
     ],
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-07",
-      "score": 59
+      "evaluatedAt": "2026-09-08",
+      "score": 77,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:1190c1436a67ff05c2e13297504297c385a6698f73c35cd4b7a4b4b3759d8b87"
     },
-    "rebaselineReason": "The prior 59 carries no evaluatorModel, no rubricVersion and no shotsHash — it was scored by a different model against shots that have since been recaptured, so it is not the same instrument. Recorded as a rebaseline, not a rise, even though 77 is above it.",
-    "captureCaveat": "desktop.png and mobile375.png show the opening without its hero PHOTOGRAPH: a cold-cache Next-optimizer re-encode of a remote MLS image had not finished when the camera fired. Not scored as a page defect. The section this item built is in answers-desktop.png / answers-mobile375.png, which render complete."
+    "rebaselineReason": "The prior 77 was scored on a different shotsHash — shots of the pre-fix build, before the source lines were rewritten, the plat name recased and the reference rows split. Same evaluatorModel and same rubricVersion, but a different artifact, so this is a rebaseline and not a rise. Round 1 marks for the record: neighborhood 82, community 79, subdivision 73."
   }
 }

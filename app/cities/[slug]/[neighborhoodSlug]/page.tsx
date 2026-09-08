@@ -407,7 +407,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
      figures can never be read as one number disagreeing with itself (§0 rule 5). */
   const nbhAnswerActive = inventoryOk ? inventory.activeCount : null
   const metricKey = `neighborhood:${metricNeighborhoodSlug}`
-  const { answers: placeAnswers, traces: answerTraces } = buildPlaceAnswers({
+  const { answers: placeAnswers, traces: answerTraces, sourceKey: answerSourceKey } = buildPlaceAnswers({
     placeName: neighborhood.name,
     cityName,
     figures: {
@@ -415,6 +415,19 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
       monthsOfSupplyActiveCount: hud.active,
       activeCount: nbhAnswerActive,
       activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes in a publicly active MLS status at the last sync`,
+      // SAY WHY THE TWO COUNTS DIFFER, IN THE ANSWER. Both traces were already
+      // correct and each named its own population, but the verdict row and the
+      // inventory row sit a few rows apart and both use the word "active" —
+      // 48 in one, 57 in the other on Awbrey Butte. A separate evaluator read
+      // that as an unreconciled contradiction (2026-09-08), and it was right
+      // that a reader has to be TOLD, not left to reconstruct it from two
+      // trace lines. §0 rule 5: reconcile the narrative to the data.
+      activeCountNotes:
+        nbhAnswerActive != null && hud.active != null && nbhAnswerActive !== hud.active
+          ? [
+              `The supply verdict above divides ${hud.active}, not this ${nbhAnswerActive}. That ratio counts the homes the market layer assigns to ${neighborhood.name} by place membership; this count is the homes inside its recorded boundary. Two honest counts of two populations, and neither is a correction of the other.`,
+            ]
+          : null,
       closedCount:
         publicPace.closedCount != null && publicPace.closedCount > 0
           ? { count: publicPace.closedCount, windowLabel: 'over the past 12 months' }
@@ -435,7 +448,14 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
       // page's default one (§0: one trace per query).
       medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes in a publicly active MLS status at the last sync`,
     },
-    sourceTrace: `market_metric ${metricKey} through the Market Truth layer, detached single-family homes assigned to ${neighborhood.name} by place membership`,
+    // READER'S WORDS IN THE SENTENCE, MACHINE HANDLE IN THE ATTRIBUTE. This
+    // clause used to open "market_metric ${metricKey} through the Market Truth
+    // layer" — a table name and a raw slug, read by every visitor, which a
+    // separate evaluator flagged on 2026-09-08 as the exact tell TASTE.md bans.
+    // §0 still needs the handle, so it goes to `sourceKey` and lands in the
+    // served HTML as data-source-key.
+    sourceTrace: `regional MLS, detached single-family homes inside the ${neighborhood.name} boundary`,
+    sourceKey: `market_metric:${metricKey}`,
     asOfLabel,
     // No SITE-01 address field on this route yet — the site's valuation spine
     // is the same ask one step away, and it carries this page as its source.
@@ -771,6 +791,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
           eyebrow={`${neighborhood.name} · By the numbers`}
           heading={`${neighborhood.name} questions, answered with the number`}
           questions={placeAnswers}
+          sourceKey={answerSourceKey}
           doors={[
             ...(browseHref ? [{ label: `Every home for sale in ${neighborhood.name}`, href: browseHref }] : []),
             { label: `${cityName} market report`, href: `/housing-market/${citySlug}` },

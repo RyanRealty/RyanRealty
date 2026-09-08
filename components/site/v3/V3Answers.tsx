@@ -104,6 +104,18 @@ export type V3Answer = {
   source?: string
   /** ONE next step for this answer. Not an outbound door — those are `doors`. */
   action?: { label: string; href: string }
+  /**
+   * A prose row appended after the cited ones (HOA rules, the school district).
+   * It renders in the reading face rather than the display face, so a sheet
+   * whose right column runs five tabular figures and then stops does not read
+   * as two figures that failed to load.
+   *
+   * EXPLICIT, not inferred from "has no figure". The value ask is also
+   * figure-less and is the OPPOSITE of quiet — it is the row the section is
+   * for. Deriving this from the absence of a figure muted it (caught on
+   * /communities/tetherow, 2026-09-08).
+   */
+  reference?: boolean
 }
 
 /** An outbound edge, same shape as a Quiet door row. */
@@ -126,6 +138,15 @@ export type V3AnswersProps = {
   doors?: readonly V3AnswersDoor[]
   /** One quiet line under the left rail: a caveat, a basis. Plain text. */
   note?: string
+  /**
+   * The machine handle behind the rows' source lines — table plus key, e.g.
+   * "market_metric:neighborhood:bend-awbrey-butte". Emitted as
+   * `data-source-key` on the section rather than written into the visible
+   * trace, so §0's "name the source" stays greppable in the served HTML while
+   * the sentence a visitor reads stays free of raw slugs and table names
+   * (TASTE.md, 2026-09-08 evaluator finding on all three place grains).
+   */
+  sourceKey?: string | null
   /**
    * What the folded door set is called, when there are enough doors to fold.
    * Defaults to "Where to go next" — a promise about destinations, not about
@@ -207,6 +228,7 @@ type RenderableAnswer = {
   figure?: V3AnswerFigure
   source?: string
   action?: { label: string; href: string }
+  reference: boolean
 }
 
 /**
@@ -241,6 +263,7 @@ function toRenderable(questions: readonly V3Answer[]): RenderableAnswer[] {
       id: text(item.id),
       figure: toFigure(item.figure),
       source: text(item.source),
+      reference: item.reference === true,
       ...(actionLabel && actionHref ? { action: { label: actionLabel, href: actionHref } } : {}),
     })
   }
@@ -284,6 +307,7 @@ export function V3Answers({
   questions,
   doors,
   note,
+  sourceKey,
   doorsLabel,
   className,
 }: V3AnswersProps) {
@@ -313,6 +337,7 @@ export function V3Answers({
       id={id}
       className={cn(V3_ROOT_CLASS, 'v3-answers', className)}
       aria-labelledby={headingId}
+      data-source-key={sourceKey?.trim() || undefined}
     >
       <div className="v3-answers__grid">
         {/* THE RAIL IS ONE COLUMN, AND IT STAYS PUT. The title, the basis
@@ -398,7 +423,21 @@ export function V3Answers({
         {rows.length > 0 ? (
           <ul className="v3-answers__list">
             {rows.map((row, index) => (
-              <li key={row.id ?? `q-${index}`} id={row.id} className="v3-answers__item">
+              <li
+                key={row.id ?? `q-${index}`}
+                id={row.id}
+                /* A ROW WITH NO FIGURE IS A DIFFERENT KIND OF ROW, AND IT SAYS SO.
+                   The place grains append prose-only rows from
+                   lib/site/market-faq.ts (HOA, school district) after the cited
+                   ones. Wearing the identical chrome, the sheet's right column
+                   ran five aligned tabular numerals and then two blanks, which
+                   reads as figures that failed to load — two separate evaluators
+                   called it on /communities/tetherow (2026-09-08). A reference
+                   row now carries the reading face instead of the display face,
+                   so the eye sorts the two registers without a fake figure being
+                   invented to fill the gap. */
+                className={cn('v3-answers__item', row.reference && 'v3-answers__item--reference')}
+              >
                 {/* NO `name` HERE, AND IT IS NOT AN OVERSIGHT. Grouping the rows
                     into a browser-native exclusive accordion (`name={...}`) made
                     the row that ships open close itself after hydration, in 2 of
