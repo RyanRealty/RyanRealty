@@ -23,6 +23,8 @@ import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
 import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
+import { getListingDetail } from '@/lib/data'
+import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
 import { isSlotStillFree } from '@/lib/data/crm/bookingAvailability'
 import { formatDate } from '@/lib/format/date'
 import { DEFAULT_SLOT_POLICY } from '@/lib/booking/slots'
@@ -55,6 +57,12 @@ const BookingInput = z.object({
   /** TCPA/A2P marketing-text consent. Governs texts only — a booking is kept
    *  either way, because the visitor asked for the meeting itself. */
   smsConsent: z.boolean().optional().default(false),
+  /**
+   * SITE-06: the listing a tour was booked from. A KEY, never an address —
+   * the address is resolved from the row below, so a crafted link cannot write
+   * its own text onto a broker's calendar.
+   */
+  listingKey: z.string().trim().regex(/^[A-Za-z0-9_-]{4,64}$/).optional(),
 })
 
 export type BookingResult =
@@ -146,7 +154,16 @@ async function finishBooking(args: {
   const settings = await getCrmCompanySettings()
   const timeZone = settings.time_zone || 'America/Los_Angeles'
   const topic = TOPIC_LABEL[input.topic] ?? 'Consultation'
-  const title = `${topic} — ${input.name}`
+
+  // SITE-06: resolve the home from its key so the calendar entry names a real
+  // address off the listing row rather than anything the client sent.
+  const listing = input.listingKey
+    ? await getListingDetail(input.listingKey).catch(() => null)
+    : null
+  const listingLine = listing
+    ? listingMlsStreetLine(listing) || `Listing ${listing.listNumber ?? listing.listingKey}`
+    : null
+  const title = listingLine ? `Tour — ${listingLine} — ${input.name}` : `${topic} — ${input.name}`
 
   const sb = createServiceClient()
   const { data, error } = await sb
@@ -160,6 +177,7 @@ async function finishBooking(args: {
       location: 'Phone or video — broker will confirm',
       description: [
         `Booked from the website by ${input.name} (${input.email}${input.phone ? `, ${input.phone}` : ''}).`,
+        listingLine ? `Home: ${listingLine} (${listing?.listingKey})` : null,
         input.note ? `They said: ${input.note}` : null,
       ].filter(Boolean).join('\n'),
       person_id: personId,
@@ -184,10 +202,16 @@ async function finishBooking(args: {
   // Tag the lead so the CRM shows why they are here, best-effort.
   await enrichNativeLead({
     personId,
-    tags: ['source:website-booking', `booking:${input.topic}`],
+    tags: [
+      'source:website-booking',
+      `booking:${input.topic}`,
+      ...(listing ? ['booking:listing-tour'] : []),
+    ],
     originNote: {
-      title: 'Booked an appointment',
-      body: `${topic} — ${whenLabel} (${timeZone}). Booked from the website.`,
+      title: listingLine ? 'Booked a tour' : 'Booked an appointment',
+      body: listingLine
+        ? `Tour of ${listingLine} (listingKey ${listing?.listingKey}) — ${whenLabel} (${timeZone}). Booked from the listing page.`
+        : `${topic} — ${whenLabel} (${timeZone}). Booked from the website.`,
     },
   }).catch((e) => console.warn('[bookAppointmentAction enrich]', e))
 
@@ -223,7 +247,7 @@ async function finishBooking(args: {
     personId,
     kind: `appointment-booked:${appointmentId}`,
     body: [
-      `${input.name} booked ${whenLabel} (${topic})`,
+      `${input.name} booked ${whenLabel} (${listingLine ? `tour of ${listingLine}` : topic})`,
       `View lead: ${BROKER_ALERT_ORIGIN}/admin/people/${personId}`,
     ].join('\n'),
   }).catch((e) => console.warn('[bookAppointmentAction alert]', e))

@@ -149,6 +149,32 @@ async function alertExplicitlyOptedOut(
  * subscriber chose in /account — so the upsert writes a frequency only when
  * there is nothing to preserve.
  */
+/**
+ * The row's stored typed-event toggles, so an upsert never clobbers a choice
+ * the subscriber or a broker already made. Same rule as the frequency read
+ * above, and for the same reason: `upsert` REPLACES, so any column this insert
+ * names has to defer to what is already there.
+ *
+ * Reads `select('*')` (ROW_COLS) on purpose — see that constant: naming a
+ * column added by migration 20260729235500 fails the whole read on a database
+ * that has not applied it, which would silence every alert.
+ */
+async function existingAlertEvents(
+  supabase: ReturnType<typeof createServiceClient>,
+  email: string,
+  filtersHash: string,
+): Promise<Record<string, unknown> | null> {
+  const { data } = await supabase
+    .from(TABLE)
+    .select(ROW_COLS)
+    .eq('email', email)
+    .eq('filters_hash', filtersHash)
+    .limit(1)
+    .maybeSingle()
+  const events = (data as { events?: Record<string, unknown> | null } | null)?.events
+  return events && typeof events === 'object' && !Array.isArray(events) ? events : null
+}
+
 async function existingAlertFrequency(
   supabase: ReturnType<typeof createServiceClient>,
   email: string,
@@ -182,6 +208,15 @@ export type ListingAlertInput = {
    * row's stored cadence always wins over this.
    */
   frequency?: SavedSearchFrequency
+  /**
+   * Typed-event toggles for a NEW row (listing_alerts.events). Added 2026-09-08
+   * for SITE-06: until then the only writer was the admin-only
+   * updateListingAlertEngineSettings, so every publicly-created row took the
+   * column default (new + price_change + status_change) and a "tell me if THIS
+   * price drops" subscription could not be its own row. An existing row's
+   * stored toggles always win, exactly like the cadence above.
+   */
+  events?: Record<string, boolean>
 }
 
 /**
@@ -203,9 +238,13 @@ export async function upsertListingAlert(
   // Resurrection guard: an existing explicit opt-out stays muted on re-save.
   const optedOut = await alertExplicitlyOptedOut(supabase, email, input.filtersHash)
   const storedFrequency = await existingAlertFrequency(supabase, email, input.filtersHash)
+  const storedEvents = input.events
+    ? await existingAlertEvents(supabase, email, input.filtersHash)
+    : null
   const { data, error } = await supabase.from(TABLE).upsert(
     {
       email,
+      ...(input.events ? { events: storedEvents ?? input.events } : {}),
       filters: input.filters,
       filters_hash: input.filtersHash,
       name: input.name,

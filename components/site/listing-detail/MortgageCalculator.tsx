@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Price } from '@/components/site/primitives'
 import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
+import { publishPayment } from '@/lib/listing/payment-bus'
 import {
   computeMonthlyPitiBreakdown,
   DEFAULT_PITI_DOWN_PAYMENT_PCT,
@@ -24,6 +25,12 @@ type Props = {
   taxAnnualAmount?: number | null
   hoaMonthly?: number | null
   className?: string
+  /**
+   * SITE-06. When set, every change here is published on the payment bus so the
+   * page's close can offer to email THIS payment. Omitted (the tools pages,
+   * tests) the calculator behaves exactly as before and publishes nothing.
+   */
+  listingKey?: string | null
   /**
    * Seed rate in PERCENT (6.67 = 6.67%), resolved server-side from
    * getCalculatorDefaults() — which reads the ingested 30-yr series, not a
@@ -52,7 +59,7 @@ function parsePercent(raw: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-export function MortgageCalculator({ listPrice, taxAnnualAmount, className, ratePct, hoaMonthly }: Props) {
+export function MortgageCalculator({ listPrice, taxAnnualAmount, className, ratePct, hoaMonthly, listingKey }: Props) {
   const seedRatePct =
     typeof ratePct === 'number' && Number.isFinite(ratePct) && ratePct > 0
       ? ratePct
@@ -100,6 +107,24 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className, rate
       piti: breakdown?.total ?? 0,
     }
   }, [priceInput, downPctInput, rateInput, termInput, insuranceInput, taxAnnualAmount, hoaMonthly])
+
+  // Publish the visitor's own inputs for the close's "email me this payment"
+  // (SITE-06). Display total only — the server recomputes the whole payment from
+  // the listing's own tax and HOA before anything is emailed (CLAUDE.md section 0).
+  useEffect(() => {
+    if (!listingKey) return
+    const price = parseCurrency(priceInput)
+    if (!(price > 0)) return
+    publishPayment({
+      listingKey,
+      price,
+      downPct: parsePercent(downPctInput),
+      ratePct: parsePercent(rateInput),
+      termYears: Math.max(1, Math.round(parsePercent(termInput))),
+      insuranceAnnual: insuranceInput.trim() !== '' ? parseCurrency(insuranceInput) : null,
+      total: Math.round(result.piti),
+    })
+  }, [listingKey, priceInput, downPctInput, rateInput, termInput, insuranceInput, result.piti])
 
   const insuranceSeedPerYear = Math.round(parseCurrency(priceInput) * DEFAULT_PITI_INSURANCE_RATE)
   const insurancePctLabel = Math.round(DEFAULT_PITI_INSURANCE_RATE * 1e4) / 100

@@ -26,7 +26,7 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "City \u2192 neighborhood \u2192 community \u2192 plat \u2192 street.",
+      "section": "City → neighborhood → community → plat → street.",
       "blocking": true
     },
     {
@@ -112,6 +112,11 @@
     {
       "name": "V3Footer",
       "section": "Footer outside main. Carries the ODS slot; no button.",
+      "blocking": true
+    },
+    {
+      "name": "V3ListingClose",
+      "section": "THE ENDING (SITE-06). One section: the claim about how prices move in this city, a hundred dots for the share of homes that cut before they sold, a rule for how deep and a mark for how long, then the three acts as a chooser (watch the price, book a walk-through, email me this payment). Not four stacked forms.",
       "blocking": true
     }
   ],
@@ -217,14 +222,34 @@
     "note": "One derivation, one answer. ListingDetailShell emits none. BreadcrumbList JSON-LD is not emitted by V3Breadcrumb."
   },
   "capture": {
-    "action": "submitSearchAlertSignup",
-    "payload": "{ email, filters, company }",
-    "filters": "city, propertyType A, priceBandAroundListPrice, beds when present",
-    "field": "email",
-    "trap": "company, forwarded from answers.company",
-    "disclosure": "One email per new listing. Unsubscribe any time.",
-    "postSuccess": "rememberGuestWatch(buildGuestWatchFromPlace) then fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))",
-    "anchor": "#listing-like-alerts"
+    "searchAlert": {
+      "action": "submitSearchAlertSignup",
+      "payload": "{ email, filters, company }",
+      "filters": "city, propertyType A, priceBandAroundListPrice, beds when present",
+      "field": "email",
+      "trap": "company, forwarded from answers.company",
+      "disclosure": "One email per new listing. Unsubscribe any time.",
+      "postSuccess": "rememberGuestWatch(buildGuestWatchFromPlace) then fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))",
+      "anchor": "#listing-like-alerts"
+    },
+    "priceWatch": {
+      "action": "submitListingPriceDropWatch",
+      "payload": "{ email, listingKey, addressLine, company }",
+      "filters": "{ listingKey } only — runListingAlerts short-circuits on it and matches exactly this home",
+      "events": "price_change only; new / status_change / back_on_market / sold / open_house all off",
+      "field": "email",
+      "trap": "company, forwarded from the panel’s own trap state",
+      "disclosure": "One email per price change on this home. Nothing else, and you can unsubscribe any time.",
+      "confirmation": "sendAlertConfirmation kind 'price-drop' (its own copy; 'listing' would say the home is saved)",
+      "anchor": "#close"
+    },
+    "paymentEmail": {
+      "action": "submitListingPaymentEmail",
+      "payload": "{ email, listingKey, inputs: { price, downPct, ratePct, termYears, insuranceAnnual }, company }",
+      "recompute": "server-side computeMonthlyPitiBreakdown with the listing row's own tax and HOA; the browser's total is display only",
+      "send": "sendPaymentEstimate through sendGovernedEmail, initiator system, once, to the address just submitted",
+      "anchor": "#close"
+    }
   },
   "sectionOrder": [
     "ListingHero (price, beds, baths, sqft, street on the media)",
@@ -237,6 +262,7 @@
     "ListingTaxHistory #tax",
     "GoverningDocumentsBlock #plat",
     "ListingSimilarStrip",
+    "V3ListingClose #close (the ending: cut claim + drawing, then watch / tour / payment)",
     "ListingBrokerCTA #listed",
     "ListingAttribution",
     "MetadataBlock",

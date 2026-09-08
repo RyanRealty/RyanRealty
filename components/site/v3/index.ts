@@ -176,6 +176,21 @@ export type {
 export type { ProofBlockViewInput } from './V3ProofBlock.view'
 
 /**
+ * The listing page's ENDING (SITE-06, 2026-09-08). One section, claim first:
+ * how often a home in this city cut its price before it sold, how deep and how
+ * long it waited, drawn as a hundred dots and two rules — and beside it the
+ * three things a reader can do about the house in front of them (watch the
+ * price, book a walk-through, mail themselves the payment they just built).
+ * A chooser, not four stacked forms: TASTE.md bans that page.
+ * `buildCloseView()` turns a pulled `getListingCutFacts()` into the drawing;
+ * the primitive computes no figure of its own.
+ */
+export { V3ListingClose } from './V3ListingClose.client'
+export { buildCloseView, buildCloseSubject, homeLabel } from './V3ListingClose.view'
+export type { V3ListingCloseProps } from './V3ListingClose.client'
+export type { CloseView, CloseReading, CloseSubject, CloseSubjectInput } from './V3ListingClose.view'
+
+/**
  * Ask: one screen, every field, one button. The contact form. The Sheet stays
  * the one-question-at-a-time pattern for a valuation.
  */
