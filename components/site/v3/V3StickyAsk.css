@@ -85,12 +85,18 @@ body:has([data-cookie-notice='bar']) .v3-sticky-ask {
   line-height: var(--v3-leading-control);
 }
 
-/* The verdict, quiet. Muted cream on navy is 5.99:1 — AA at this size. */
+/* The verdict, quiet.
+   NOT --v3-ink-on-navy-muted: that token is cream-60, and PUBLIC_UI §4 admits
+   cream-60 only as "muted text only, ≥16px". This tail sets at --v3-size-source
+   (12.5px), under that floor, so it takes a 72% mix instead — ~8:1 on navy,
+   which clears AAA for normal text at any size. The house rule is stricter than
+   WCAG here and the house rule is the one that binds. */
 .v3-sticky-ask__tail {
   grid-area: tail;
   display: flex;
+  align-items: baseline;
   min-width: 0;
-  color: var(--v3-ink-on-navy-muted);
+  color: color-mix(in srgb, var(--v3-ink-on-navy) 72%, transparent);
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-note);
   font-variant-numeric: tabular-nums;
@@ -108,9 +114,14 @@ body:has([data-cookie-notice='bar']) .v3-sticky-ask {
   margin: 0 0.42em;
 }
 
-/* The one figure. It reads as the figure, not as more caption. */
+/* THE FIGURE. This is the data the control exists to carry, so it is set a step
+   up in size and weight and at full cream, and the flex row aligns on the
+   baseline so the larger figure still sits on the line. At one uniform size the
+   whole tail read as caption and the number disappeared into it. */
 .v3-sticky-ask__mos {
   color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
 }
 
 .v3-sticky-ask__arrow {
@@ -167,18 +178,24 @@ body:has([data-cookie-notice='bar']) .v3-sticky-ask {
 
 /* ---- The narrowest phone -------------------------------------------------- */
 
-/* The place page already told the visitor where they are, so at 400px and under
-   the place name is the part that goes, not the verdict or the read date. The
-   full reading stays in the link's accessible name and in the tail's title. */
+/* At 400px and under something in the tail has to go. It is the DATE STAMP,
+   never the place name.
+   The first build dropped the place, on the reasoning that the page already
+   says where you are. That is true on /cities/bend and false on
+   /cities/bend/northwest-crossing, where a fixed bar reading "seller's market ·
+   3.9 months" states a figure whose subject a scrolling visitor cannot see — an
+   unattributed number, which is the §0 hazard. Dropping the stamp leaves the
+   figure correctly attributed and still dated: the full reading, stamp
+   included, stays in the link's accessible name and in the tail's title. */
 @media (max-width: 25rem) {
-  .v3-sticky-ask__tail > .v3-sticky-ask__place {
+  .v3-sticky-ask__tail > .v3-sticky-ask__read {
     display: none;
   }
   /* Both selectors carry the tail class, so this one wins on class count and
-     the hidden place name does not leave a leading separator behind. Written
-     the short way first, it lost to `.__tail > span + span::before` and the
-     phone shipped "· seller's market · 3.9 months". */
-  .v3-sticky-ask__tail > .v3-sticky-ask__place + span::before {
+     the hidden span leaves no dangling separator behind. Written the short way
+     first, it lost to `.__tail > span + span::before` and the phone shipped
+     "· seller's market · 3.9 months" with a leading middot. */
+  .v3-sticky-ask__tail > .v3-sticky-ask__read::before {
     content: none;
   }
 }
@@ -191,7 +208,13 @@ body:has([data-cookie-notice='bar']) .v3-sticky-ask {
        every site ships; a block seated on the two edges is a printed corner
        slug, and it is the shape that belongs to this register. */
     right: auto;
-    max-width: min(34rem, calc(100vw - var(--v3-space-2xl)));
+    /* The cap has to clear the CONTENT, not just look modest. At 34rem the
+       wider padding and the larger label left the tail about 250px, and every
+       span in it ellipsised — "Be… · seller's m… · 3.9 mo… · as of S…", a
+       control whose whole job is carrying a reading, carrying none of it.
+       The plate sizes to its content and this only stops it spanning a wide
+       window. */
+    max-width: min(48rem, calc(100vw - var(--v3-space-2xl)));
   }
 
   .v3-sticky-ask__go {
@@ -199,10 +222,21 @@ body:has([data-cookie-notice='bar']) .v3-sticky-ask {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: 'label tail arrow';
     column-gap: var(--v3-space-md);
-    /* The same bar height as the phone, so the control is one object across
-       the breakpoint rather than a squat plate on the wide window. */
-    min-height: var(--v3-sticky-bar-h);
-    padding: var(--v3-space-sm) var(--v3-space-lg);
+    /* The phone's bar height is the FLOOR here, not the target. A wide window
+       has the room, and this plate carries a live market reading — at 56px it
+       was a status strip a visitor's eye skipped. The padding takes it to ~72px
+       so the ask and its figure both get to be read. It is still one plate in
+       one corner, not a banner: the register's presence comes from the flush
+       edges and the ink, and the scale just stops undercutting them.
+       The height is stated, not left to the padding: on one row the content is
+       only ~21px tall, so padding alone lost to the 56px floor and the plate
+       did not grow at all. */
+    min-height: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
+    padding: var(--v3-space-md) var(--v3-space-xl);
+  }
+
+  .v3-sticky-ask__label {
+    font-size: var(--v3-size-body-lg);
   }
 
   /* The hairline between the ask and its reading — the register's rule weight,
@@ -214,6 +248,6 @@ body:has([data-cookie-notice='bar']) .v3-sticky-ask {
   }
 
   .v3-sticky-ask__dismiss {
-    min-height: var(--v3-sticky-bar-h);
+    min-height: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
   }
 }

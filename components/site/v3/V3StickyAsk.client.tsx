@@ -238,7 +238,7 @@ export function V3StickyAsk({
             <span className="v3-sticky-ask__place">{place}</span>
             <span>{verdict.label}</span>
             <span className="v3-sticky-ask__mos">{verdict.monthsOfSupply} months</span>
-            <span className="v3-sticky-ask__read">read {verdict.readAt}</span>
+            <span className="v3-sticky-ask__read">as of {verdict.readAt}</span>
           </span>
         ) : null}
         <span className="v3-sticky-ask__arrow" aria-hidden="true">

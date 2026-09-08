@@ -76,14 +76,14 @@ export function stickyAskVerdict(pulse: StickyAskPulse | null | undefined): Stic
 
 /**
  * The one line of quiet type beside the ask:
- *   "Bend · seller's market · 3.9 months · read Sep 7"
+ *   "Bend · seller's market · 3.9 months · as of Sep 7"
  * Assembly only — every part arrived formatted. Returns null with no verdict,
  * and the control then prints the label alone.
  */
 export function stickyAskTail(place: string, verdict: StickyAskVerdict | null | undefined): string | null {
   const name = place.trim()
   if (!verdict || !name) return null
-  return `${name} · ${verdict.label} · ${verdict.monthsOfSupply} months · read ${verdict.readAt}`
+  return `${name} · ${verdict.label} · ${verdict.monthsOfSupply} months · as of ${verdict.readAt}`
 }
 
 /**

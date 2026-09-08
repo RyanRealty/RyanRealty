@@ -65,7 +65,7 @@ describe('stickyAskTail', () => {
   const verdict = stickyAskVerdict({ monthsOfSupply: 3.9, refreshedAt: REFRESHED })
 
   it('reads as one plain line', () => {
-    expect(stickyAskTail('Bend', verdict)).toBe("Bend · seller's market · 3.9 months · read Sep 7")
+    expect(stickyAskTail('Bend', verdict)).toBe("Bend · seller's market · 3.9 months · as of Sep 7")
   })
 
   it('is null with no verdict, so the control prints the ask alone', () => {
