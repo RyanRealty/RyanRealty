@@ -403,6 +403,10 @@ export function cmaSectionStyles(): string {
     .median-phone { display: none !important; }
   }
   /* Months of supply as two bars, and chapter 3's dot strip. Same mechanism. */
+  /* On paper the spread is one column: two 720-unit charts side by side in a
+     7.3in box put their axis type at seven points. Same story, paginated. */
+  .spread { display: block; }
+  .spread-col { min-width: 0; }
   .mos-phone, .worth-phone { display: none; }
   @media screen and (max-width: 700px) {
     .mos-wide, .worth-wide { display: none; }

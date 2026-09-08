@@ -605,17 +605,56 @@ function chapter2SourceLine(city: string, windowMonths: number, n: number | null
   return `${count}Single-family sales in ${city} over ${period}, from the Oregon Data Share MLS.`
 }
 
+/**
+ * ONE source line for chapter 2b's three graphics.
+ *
+ * They all read the same city over the same window from the same MLS, and
+ * each printed its own trace, so the chapter shipped as eyebrow → heading →
+ * figure → sentence → source, three times inside itself. That is the
+ * stacked-section shape TASTE.md names as our tell. The counts still say what
+ * each of them is, because two of these groups are closed sales and one is
+ * listings that came off without one.
+ */
+export function chapter2bSourceLine(a: {
+  market: CmaMarketContext | null
+}): string {
+  const timing = readOfferTiming(a.market)
+  const outcome = readAskOutcome(a.market)
+  const table = readAskRealization(a.market)
+  const city = timing?.city ?? outcome?.city ?? table?.city ?? null
+  if (!city) return ''
+  const windowMonths = timing?.windowMonths ?? outcome?.windowMonths ?? table?.windowMonths ?? 12
+  const period = windowMonths === 12 ? 'the last 12 months' : `the last ${int(windowMonths)} months`
+  const sold =
+    outcome?.groups.filter((g) => g.key !== 'did-not-sell').reduce((sum, g) => sum + g.n, 0) ??
+    timing?.n ??
+    null
+  const failed = outcome?.groups.find((g) => g.key === 'did-not-sell')?.n ?? null
+  const counts = [
+    sold != null && sold > 0 ? `${int(sold)} closed single-family ${sold === 1 ? 'sale' : 'sales'}` : null,
+    failed != null && failed > 0 ? `${int(failed)} listings that came off without one` : null,
+  ]
+    .filter(Boolean)
+    .join(' and ')
+  const table_note = table
+    ? ' Each row of the table is the median close over the price that listing first asked, across the sales in that row.'
+    : ''
+  return `${counts ? `${counts}. ` : ''}${city} over ${period}, from the Oregon Data Share MLS.${table_note}`
+}
+
 /** 2a. When homes like yours get their offer. */
 export function renderOfferTimingHtml(a: {
   market: CmaMarketContext | null
   subject: CmaSubject
+  /** Inside the composed spread: no heading of its own, no source line. */
+  bare?: boolean
 }): string {
   const raw = (a.market as unknown as { offerTiming?: unknown } | null)?.offerTiming
   const timing = readOfferTiming(a.market)
   if (!timing) {
     const withheld = statWithheldReason(raw)
     return withheld
-      ? `<h3 class="subhead">When homes like yours get their offer</h3>
+      ? `${a.bare ? '' : '<h3 class="subhead">When homes like yours get their offer</h3>'}
   <p class="chart-read">${esc(withheld)}</p>`
       : ''
   }
@@ -645,13 +684,15 @@ export function renderOfferTimingHtml(a: {
   <div class="szn timing-wide">${wide}</div>
   ${phone ? `<div class="szn timing-phone">${phone}</div>` : ''}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
-  <p class="small">${esc(chapter2SourceLine(timing.city, timing.windowMonths, timing.n))}</p>`
+  ${a.bare ? '' : `<p class="small">${esc(chapter2SourceLine(timing.city, timing.windowMonths, timing.n))}</p>`}`
 }
 
 /** 2b. The first price decides the days. */
 export function renderAskOutcomeHtml(a: {
   market: CmaMarketContext | null
   subject: CmaSubject
+  /** Inside the composed spread: no source line of its own. */
+  bare?: boolean
 }): string {
   const raw = (a.market as unknown as { askOutcome?: unknown } | null)?.askOutcome
   const outcome = readAskOutcome(a.market)
@@ -699,7 +740,7 @@ export function renderAskOutcomeHtml(a: {
   <div class="szn outcome-wide">${wide}</div>
   ${phone ? `<div class="szn outcome-phone">${phone}</div>` : ''}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
-  <p class="small">${esc(askOutcomeSourceLine(outcome))}</p>`
+  ${a.bare ? '' : `<p class="small">${esc(askOutcomeSourceLine(outcome))}</p>`}`
 }
 
 /**
@@ -817,6 +858,8 @@ export function subjectRealizationBucket(
 export function renderAskRealizationHtml(a: {
   market: CmaMarketContext | null
   subject: CmaSubject
+  /** Inside the composed spread: no source line of its own. */
+  bare?: boolean
 }): string {
   const raw = (a.market as unknown as { originalAskRealization?: unknown } | null)
     ?.originalAskRealization
@@ -862,9 +905,13 @@ export function renderAskRealizationHtml(a: {
     <tbody>${rows}</tbody>
   </table>
   ${realizationReading(table, mine, subjectDays, failed)}
-  <p class="small">${esc(
-    `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
-  )}</p>`
+  ${
+    a.bare
+      ? ''
+      : `<p class="small">${esc(
+          `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
+        )}</p>`
+  }`
 }
 
 /** "0-2" → "0 to 2"; "17+" → "17 or more". */

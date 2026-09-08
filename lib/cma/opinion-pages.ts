@@ -14,6 +14,7 @@ import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { UNADDRESSED_DOC_LINKS, cleanText, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
+  chapter2bSourceLine,
   readOfferTiming,
   renderAskOutcomeHtml,
   renderAskRealizationHtml,
@@ -336,22 +337,37 @@ export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
  * instead of two, sourced the same way, and it makes the same point.
  */
 export function pricedRightBodyHtml(a: OpinionPageArgs): string {
-  const timing = renderOfferTimingHtml({ market: a.market, subject: a.subject })
-  const outcome = renderAskOutcomeHtml({ market: a.market, subject: a.subject })
+  const timing = renderOfferTimingHtml({ market: a.market, subject: a.subject, bare: true })
+  const outcome = renderAskOutcomeHtml({ market: a.market, subject: a.subject, bare: true })
   // The days strip stands in for 2a when the 12-month curve is not on the row.
   const daysStrip = timing
     ? ''
     : renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
-  const realization = renderAskRealizationHtml({ market: a.market, subject: a.subject })
+  const realization = renderAskRealizationHtml({ market: a.market, subject: a.subject, bare: true })
   // With no curve, no bars and no realization table there is nothing local to
   // argue from, so the chapter omits rather than printing a slogan.
   if (!timing && !outcome && !daysStrip && !realization) return ''
-  return [
-    timing,
-    daysStrip ? `<h3 class="subhead">How fast homes like yours went</h3>${daysStrip}` : '',
-    outcome,
-    realization,
-  ]
+  // ONE COMPOSED SPREAD, not three stacked sections.
+  //
+  // tasteReview 2026-09-07: "chapters 1, 2, 2b, 3 and 5 all run eyebrow →
+  // Amboqia heading → figure → sentence → source, and chapter 2b repeats that
+  // shape three times inside itself. That is the stacked-section page the file
+  // names as a tell." The two graphics that answer the same question — when
+  // does a buyer arrive, and what does the first price do to that — sit side
+  // by side on a screen and stack on a phone; the realization table, which is
+  // the chapter's conclusion, runs full width under them; and the whole
+  // chapter carries ONE source line, because all three read the same city over
+  // the same window from the same MLS.
+  const left = timing || (daysStrip ? `<h3 class="subhead">How fast homes like yours went</h3>${daysStrip}` : '')
+  const spread =
+    left && outcome
+      ? `<div class="spread">
+    <div class="spread-col">${left}</div>
+    <div class="spread-col">${outcome}</div>
+  </div>`
+      : [left, outcome].filter(Boolean).join('\n  ')
+  const source = chapter2bSourceLine({ market: a.market })
+  return [spread, realization, source ? `<p class="small">${esc(source)}</p>` : '']
     .filter(Boolean)
     .join('\n  ')
 }

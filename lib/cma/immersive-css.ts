@@ -354,6 +354,18 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .timing-phone,.outcome-phone{display:none}
 @media screen and (max-width:700px){.timing-wide,.outcome-wide{display:none}.timing-phone,.outcome-phone{display:block}}
 @media print{.timing-wide,.outcome-wide{display:block!important}.timing-phone,.outcome-phone{display:none!important}}
+/* ONE COMPOSED SPREAD (tasteReview item 4). The two graphics that answer the
+   same question sit side by side on a screen and stack on a phone, under one
+   title with one source line. A column is ~520px, so it carries the drawn-to-
+   fit layout at every width — the 720-unit one scaled into half a screen puts
+   its axis type at nine pixels. */
+.spread{display:grid;grid-template-columns:1fr 1fr;gap:14px 44px;align-items:start;margin:8px 0 4px}
+.spread-col{min-width:0}
+.spread .timing-wide,.spread .outcome-wide{display:none}
+.spread .timing-phone,.spread .outcome-phone{display:block}
+.spread h3.subhead{margin-top:14px}
+@media (max-width:900px){.spread{grid-template-columns:1fr;gap:4px}}
+@media print{.spread{display:block}.spread .timing-wide,.spread .outcome-wide{display:block!important}.spread .timing-phone,.spread .outcome-phone{display:none!important}}
 /* Chapter 1's timeline. Same two-layout mechanism (see render-css-sections). */
 .timeline-phone{display:none}
 @media screen and (max-width:700px){.timeline-wide{display:none}.timeline-phone{display:block}}

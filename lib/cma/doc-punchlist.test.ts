@@ -1192,7 +1192,7 @@ describe('tasteReview 3 — the phone document, and the close', () => {
           days: 187,
         },
         '2465 7th',
-      ),
+      )!,
     )
     expect(withCut).toMatch(/<g class="pp-cut"[^>]*>\s*<circle [^>]*r="24" fill="transparent"/)
   })
@@ -1213,5 +1213,68 @@ describe('tasteReview 3 — the phone document, and the close', () => {
     // Set before any key press: put(...) runs once at the end of the block.
     expect(script).toMatch(/put\(Math\.min\(3,pts\.length-1\),false\)/)
     expect(script).toContain("n.setAttribute('aria-pressed','false')")
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 4: break the eyebrow → title → figure →
+ * sentence → source repetition where the chapters allow it.
+ */
+describe('tasteReview 4 — chapter 2b is one composed spread', () => {
+  const withChapter2 = () =>
+    args({
+      market: {
+        ...(args().market as object),
+        offerTiming: {
+          city: 'Redmond',
+          windowMonths: 12,
+          n: 678,
+          medianDays: 26,
+          points: [
+            { days: 7, pct: 31.2 },
+            { days: 14, pct: 44.1 },
+            { days: 30, pct: 54.0 },
+            { days: 60, pct: 68.9 },
+            { days: 90, pct: 79.8 },
+            { days: 180, pct: 95.6 },
+          ],
+        },
+        askOutcome: {
+          city: 'Redmond',
+          windowMonths: 12,
+          groups: [
+            { key: 'sold-no-cut', n: 375, medianDays: 8, medianSoldToOriginalAskPct: 100 },
+            { key: 'sold-after-cut', n: 303, medianDays: 67, medianCutPct: 3.9 },
+            { key: 'did-not-sell', n: 232, medianDays: 118 },
+          ],
+        },
+      },
+    } as never)
+
+  it('puts the curve and the bars side by side, and stacks them on a phone', () => {
+    const html = renderCmaHtml(withChapter2()).html
+    expect(html).toContain('<div class="spread">')
+    expect((html.match(/class="spread-col"/g) ?? []).length).toBe(2)
+    const css = immersiveStylesheet().replace(/\s+/g, ' ')
+    expect(css).toMatch(/\.spread\{[^}]*grid-template-columns:\s*1fr 1fr/)
+    expect(css).toMatch(/max-width:\s*900px\)\{\.spread\{grid-template-columns:\s*1fr/)
+    // A ~520px column carries the drawn-to-fit layout, never the 720-unit one
+    // scaled into half a screen.
+    expect(css).toContain('.spread .timing-wide,.spread .outcome-wide{display:none}')
+  })
+
+  it('carries ONE source line for the whole chapter, not one per figure', () => {
+    const html = renderCmaHtml(withChapter2()).html
+    const chapter = html.slice(html.indexOf('What overpricing costs'))
+    const block = chapter.slice(0, chapter.indexOf('</section>'))
+    const sources = block.match(/from the Oregon Data Share MLS/g) ?? []
+    expect(sources).toHaveLength(1)
+    expect(block).toContain('678 closed single-family sales and 232 listings that came off without one')
+  })
+
+  it('keeps every figure inside its own frame in both layouts', () => {
+    const html = renderCmaHtml(withChapter2()).html
+    expect(html).toContain('The first price decides the days')
+    expect(html).toContain('When homes like yours get their offer')
   })
 })

@@ -803,7 +803,7 @@ export function offerTimingCurveSvg(
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
     <path d="${path}" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}
-    <text x="${endFit.x}" y="${(y(last.pct) + 18).toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(endLabel)}</text>
+    <text x="${endFit.x}" y="${(y(last.pct) + 27).toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(endLabel)}</text>
     ${ticks}
     <text x="${plotR}" y="${(H - 6).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">days to an accepted offer</text>
     <g class="scrub" aria-hidden="true" opacity="0">
@@ -920,11 +920,18 @@ export function askOutcomeBarsSvg(
         const countY = nameY + 14
         const shareY = countY + 13
         const barY = (share ? shareY : countY) + 14
+        // The value rides the END OF ITS OWN BAR. Parked at the right edge it
+        // sat 300px from an 8-day stub, with the three values at three
+        // different x positions for one series (tasteReview item 2).
+        const end = Math.max(x(g.medianDays), plotL + 1)
+        const value = `${int(g.medianDays)} days`
+        const valueW = value.length * fs * 0.62
+        const past = end + 8 + valueW > W - 2
         return `${open}<text x="${plotL}" y="${nameY}"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
     <text x="${plotL}" y="${countY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
     ${share ? `<text x="${plotL}" y="${shareY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(share)}</text>` : ''}
-    <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
-    <text x="${W - 6}" y="${barY + 4}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text></g>`
+    <line x1="${plotL}" y1="${barY}" x2="${end.toFixed(1)}" y2="${barY}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
+    <text x="${(past ? end - 8 : end + 8).toFixed(1)}" y="${barY + 4}"${past ? ' text-anchor="end"' : ''}${bold} font-size="${fs}" fill="${TL_INK}">${esc(value)}</text></g>`
       }
       const mid = top + i * rowH + rowH / 2
       return `${open}<text x="${gutter - 14}" y="${(mid - (share ? 10 : 3)).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
