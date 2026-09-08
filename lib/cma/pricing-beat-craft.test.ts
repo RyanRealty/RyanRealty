@@ -201,7 +201,9 @@ describe('pricing beat craft', () => {
     expect(scenes).toContain('$563,000.')
     expect(scenes).toContain('comp-matrix')
     expect(scenes).toContain('The sales that set this price')
-    expect(scenes).not.toContain('The list')
+    // A HEADING reading "The list" — not any sentence containing those words,
+    // which chapter 2's own title now does ("The listings near you ...").
+    expect(scenes).not.toMatch(/>\s*The list\s*</)
     expect(scenes).not.toContain('class="range-marks"')
   })
 

@@ -262,12 +262,24 @@ table.comp-matrix .matrix-addr{display:block}
 .worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
 table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
-/* Chapter 2's unsold listings: short linked rows, never a matrix. */
-ul.unsold-list{list-style:none;margin:10px 0 14px;padding:0;border-top:1px solid var(--ink12)}
-li.unsold-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 16px;padding:11px 0;border-bottom:1px solid var(--ink12)}
-li.unsold-row a{font-size:16px;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--ink12)}
-li.unsold-row .unsold-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
-li.unsold-row .unsold-meta{grid-column:1 / -1;font-size:13px;opacity:.65}
+/* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */
+.pp-wrap{margin:10px 0 4px}
+.pp svg{width:100%;height:auto;display:block}
+.pp-phone{display:none}
+@media screen and (max-width:700px){.pp-wide{display:none}.pp-phone{display:block}}
+@media print{.pp-wide{display:block!important}.pp-phone{display:none!important}}
+/* Chapter 2: one story per listing that did not sell. */
+.dns-set{display:grid;gap:26px;margin:22px 0 10px}
+.dns-card{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px;padding-top:22px;border-top:1px solid var(--ink12)}
+.dns-card.is-yours{border-top:2px solid var(--navy)}
+.dns-photo{width:100%;aspect-ratio:4 / 3;object-fit:cover;display:block}
+.dns-photo.is-empty{background:rgba(16,39,66,.06)}
+.dns-addr{display:block;font-size:18px;font-weight:600;color:var(--navy);text-decoration:none;border-bottom:1px solid var(--ink12)}
+a.dns-addr:hover{border-bottom-color:var(--navy)}
+.dns-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:24px;font-variant-numeric:tabular-nums;margin-top:6px}
+.dns-facts{font-size:13px;opacity:.65;margin-top:4px}
+.dns-read{font-size:15px;line-height:1.55;margin:8px 0 0}
+@media (max-width:700px){.dns-card{grid-template-columns:1fr;gap:12px}}
 /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
 .timing-phone,.outcome-phone{display:none}
 @media screen and (max-width:700px){.timing-wide,.outcome-wide{display:none}.timing-phone,.outcome-phone{display:block}}

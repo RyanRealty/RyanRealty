@@ -10,6 +10,7 @@ import {
   OPINION_CHAPTER_ORDER,
   PRICED_RIGHT_HEADING,
   competitionArgs,
+  didNotSellArgs,
   nextStepButtonsHtml,
   nextStepHeading,
   thisMarketBodyHtml,
@@ -21,6 +22,7 @@ import {
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
+import { DID_NOT_SELL_HEADING, didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
@@ -101,7 +103,21 @@ function whatHappenedScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
-/** Chapter 2. Priced right sells. Priced high sits. Web twin of pricedRightPage. */
+/** Chapter 2. The listings near you that did not sell. Web twin of didNotSellPage. */
+function didNotSellScene(a: OpinionSceneArgs): string {
+  const body = didNotSellBodyHtml(didNotSellArgs(a))
+  if (!body.trim()) return ''
+  return `
+  <section class="sc sc-cream pack" id="did-not-sell">
+    <div class="in wide">
+      <div class="kick r">Near you</div>
+      <h2 class="h r">${esc(DID_NOT_SELL_HEADING)}</h2>
+      <div class="r">${body}</div>
+    </div>
+  </section>`
+}
+
+/** Chapter 2b. Priced right sells. Priced high sits. Web twin of pricedRightPage. */
 function pricedRightScene(a: OpinionSceneArgs): string {
   const body = pricedRightBodyHtml(a)
   if (!body.trim()) return ''
@@ -199,6 +215,7 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   // there is a defect the doc-punchlist test fails on.
   const build: Record<OpinionChapterId, () => string> = {
     'what-happened': () => whatHappenedScene(a),
+    'did-not-sell': () => didNotSellScene(a),
     'priced-right': () => pricedRightScene(a),
     'what-its-worth': () => priceScene(a),
     competition: () => competitionScene(a),

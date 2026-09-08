@@ -333,7 +333,7 @@ describe('chapter 2 — priced right sells, priced high sits', () => {
     const html = letter()
     expect(html).toContain('Priced right sells. Priced high sits.')
     expect(html).toContain('How fast homes like yours went')
-    expect(html).toContain('Near you, these asked and did not sell')
+    expect(html).toContain('The listings near you that did not sell.')
     // The ruler is gone from both documents.
     expect(html).not.toContain('ruler-wide')
     expect(html).not.toContain('Recommended $389K')
@@ -341,11 +341,12 @@ describe('chapter 2 — priced right sells, priced high sits', () => {
     expect(immersive()).not.toContain('ruler-wide')
   })
 
-  it('lists the unsold listings as linked rows, never a matrix', () => {
-    const chapter = letter().split('Near you, these asked and did not sell')[1]!.split('</section>')[0]!
-    expect(chapter).toContain('unsold-list')
+  it('tells one story per unsold listing, never a matrix', () => {
+    const chapter = letter().split('The listings near you that did not sell.')[1]!.split('</section>')[0]!
+    expect(chapter).toContain('dns-card')
+    expect(chapter).toContain('class="price-path"')
     expect(chapter).not.toContain('comp-matrix')
-    expect(chapter).toMatch(/<a href="https:\/\/ryan-realty\.com\/homes-for-sale\/[^"]*utm_source=cma/)
+    expect(chapter).toMatch(/<a class="dns-addr" href="https:\/\/ryan-realty\.com\/[^"]*utm_source=cma/)
   })
 })
 

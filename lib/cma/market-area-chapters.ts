@@ -2,7 +2,7 @@
  * Web + print chapters for market-area density. Our look. Our number.
  */
 
-import { UNADDRESSED_DOC_LINKS, cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
+import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
@@ -19,11 +19,9 @@ import {
   type DaysRow,
   type OfferTiming,
 } from '@/lib/cma/market-charts'
-import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
-import type { CmaExpiredPeer, CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
+import type { CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 
@@ -686,60 +684,4 @@ function askOutcomeSourceLine(outcome: AskOutcome): string {
   return `${counts ? `${counts}. ` : ''}${outcome.city} over ${period}, from the Oregon Data Share MLS.`
 }
 
-/**
- * "Near you, these asked and did not sell."
- *
- * Short linked rows, never a matrix. The twelve-row side-by-side table this
- * replaces asked a reader to compare a bathroom count across five listings
- * that all share one fact: they did not sell. Address, ask, days, how it came
- * off — and the address is a tracked link into the site.
- */
-export function renderUnsoldPeerRowsHtml(
-  subject: CmaSubject,
-  peers: readonly CmaExpiredPeer[] | null | undefined,
-  ctx?: TrackedDocLinkCtx | null,
-): string {
-  if (!peers || peers.length === 0) return ''
-  const named = collapseExpiredPeerCycles(
-    peers.filter((p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, subject)),
-  )
-  if (named.length === 0) return ''
-  const rows = named
-    .slice(0, 6)
-    .map((p) => {
-      const href = trackedDocLink(
-        'listing',
-        {
-          listingKey: p.listingKey ?? null,
-          streetNumber: streetNumberOf(p.address),
-          streetName: streetNameOf(p.address),
-          city: subject.city,
-          subdivisionName: subject.subdivision,
-        },
-        ctx ?? UNADDRESSED_DOC_LINKS,
-      )
-      const status = cleanText(p.status)?.toLowerCase() ?? null
-      const facts = [
-        p.daysOnMarket != null && p.daysOnMarket > 0 ? `${int(p.daysOnMarket)} days` : null,
-        status ? `came off ${status}` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-      return `<li class="unsold-row"><a href="${esc(href)}" data-rr-track="cma-unsold-peer">${esc(p.address)}</a><span class="unsold-ask">${usd(p.listPrice)}</span>${
-        facts ? `<span class="unsold-meta">${esc(facts)}</span>` : ''
-      }</li>`
-    })
-    .join('')
-  return `<h3 class="subhead">Near you, these asked and did not sell</h3>
-  <ul class="unsold-list">${rows}</ul>`
-}
 
-/** "730 Quince" -> "730". MLS addresses on this row are already street-only. */
-function streetNumberOf(address: string): string | null {
-  return /^\s*(\d+[A-Za-z]?)\s/.exec(address)?.[1] ?? null
-}
-
-function streetNameOf(address: string): string | null {
-  const rest = address.replace(/^\s*\d+[A-Za-z]?\s+/, '').trim()
-  return rest || null
-}

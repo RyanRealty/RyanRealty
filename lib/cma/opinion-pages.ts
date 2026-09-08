@@ -18,8 +18,12 @@ import {
   renderInventoryBoardHtml,
   renderDaysToOfferHtml,
   renderOfferTimingHtml,
-  renderUnsoldPeerRowsHtml,
 } from '@/lib/cma/market-area-chapters'
+import {
+  DID_NOT_SELL_HEADING,
+  didNotSellBodyHtml,
+  type DidNotSellArgs,
+} from '@/lib/cma/did-not-sell'
 import {
   FAILED_ASK_BACKTEST,
   listingTimelineReading,
@@ -253,22 +257,47 @@ export function pricedRightBodyHtml(a: OpinionPageArgs): string {
   const daysStrip = timing
     ? ''
     : renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
-  const peers = renderUnsoldPeerRowsHtml(
-    a.subject,
-    a.extras?.marketArea?.expiredPeers,
-    a.docLinks ?? null,
-  )
-  // With no curve, no bars and no named unsold listing there is nothing local
-  // to argue from, so the chapter omits rather than printing a slogan.
-  if (!timing && !outcome && !daysStrip && !peers) return ''
+  // With no curve and no bars there is nothing local to argue from, so the
+  // chapter omits rather than printing a slogan.
+  if (!timing && !outcome && !daysStrip) return ''
   return [
     timing,
     daysStrip ? `<h3 class="subhead">How fast homes like yours went</h3>${daysStrip}` : '',
     outcome,
-    peers,
   ]
     .filter(Boolean)
     .join('\n  ')
+}
+
+/**
+ * Chapter 2. The listings near you that did not sell.
+ *
+ * The unsold listings left chapter 2b as six linked rows and came back as
+ * STORIES (blueprint, Delta 1): each one a card with its photo, its whole
+ * price path drawn, and one sentence putting its final ask against what homes
+ * like it actually closed at. The seller's own listing leads the set.
+ */
+export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
+  return {
+    subject: a.subject,
+    comps: a.comps,
+    market: a.market,
+    peers: a.extras?.marketArea?.expiredPeers,
+    finalCycle: a.expiredAudit?.finalCycle ?? null,
+    docLinks: a.docLinks ?? null,
+  }
+}
+
+export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
+  const body = didNotSellBodyHtml(didNotSellArgs(a))
+  if (!body.trim()) return null
+  return {
+    meta: `${esc(a.subject.streetAddress)} · Did not sell`,
+    toc: DID_NOT_SELL_HEADING,
+    body: `
+  <h2 class="section">${esc(DID_NOT_SELL_HEADING)}</h2>
+  ${body}`,
+  }
 }
 
 export const PRICED_RIGHT_HEADING = 'Priced right sells. Priced high sits.'
@@ -503,6 +532,7 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
  */
 export const OPINION_CHAPTER_ORDER = [
   'what-happened',
+  'did-not-sell',
   'priced-right',
   'what-its-worth',
   'competition',
@@ -518,6 +548,7 @@ export type OpinionChapterId = (typeof OPINION_CHAPTER_ORDER)[number]
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const build: Record<OpinionChapterId, () => CmaPageDef | null> = {
     'what-happened': () => whatHappenedPage(a),
+    'did-not-sell': () => didNotSellPage(a),
     'priced-right': () => pricedRightPage(a),
     'what-its-worth': () =>
       pricingPage({

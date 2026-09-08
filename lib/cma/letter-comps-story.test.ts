@@ -4,9 +4,9 @@
  * DOM + listing history on each home. No “you overpriced.”
  */
 import { describe, expect, it } from 'vitest'
+import { didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
 import { renderBandRivalsHtml } from '@/lib/cma/band-rivals'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import { renderUnsoldPeerRowsHtml } from '@/lib/cma/market-area-chapters'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -244,13 +244,19 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
   })
 
   it('the unsold listings name homes and show what happened without saying overpriced', () => {
-    const html = renderUnsoldPeerRowsHtml(subject, [peer])
-    expect(html).toContain('Near you, these asked and did not sell')
+    const html = didNotSellBodyHtml({
+      subject,
+      comps: fiveSales(sold),
+      market: null,
+      peers: [peer],
+      finalCycle: null,
+    })
     expect(html).toContain('88 Wren')
-    // Short linked rows, never a matrix (CMA_REIMAGINED_2026-09-07.md ch.2).
+    // One story per listing, never a matrix (CMA_REIMAGINED_2026-09-07.md ch.2,
+    // Delta 1). The price path replaces the row of facts.
     expect(html).not.toContain('comp-matrix')
-    expect(html).toContain('$519,000')
-    expect(html).toContain('97 days · came off expired')
+    expect(html).toContain('$519,000 asked')
+    expect(html).toContain('came off $519K · 97 days')
     expect(html.toLowerCase()).not.toContain('overprice')
   })
 
@@ -301,7 +307,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     // chapter 2's evidence that priced high sits, so they come BEFORE the
     // number they explain, and competition follows the number.
     const salesIdx = bodies.indexOf('The sales that set this price')
-    const expiredIdx = bodies.indexOf('Near you, these asked and did not sell')
+    const expiredIdx = bodies.indexOf('The listings near you that did not sell.')
     const compIdx = bodies.indexOf('Who you would compete with at')
     expect(expiredIdx).toBeGreaterThan(-1)
     expect(salesIdx).toBeGreaterThan(expiredIdx)
@@ -320,7 +326,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
       mapDataUri: null,
     })
     expect(html).toContain('The sales that set this price')
-    expect(html).toContain('Near you, these asked and did not sell')
+    expect(html).toContain('The listings near you that did not sell.')
     expect(html).toContain('id="competition"')
     expect(html).toContain('days on market')
     expect(html.toLowerCase()).not.toContain('overprice')

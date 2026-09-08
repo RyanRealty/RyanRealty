@@ -310,22 +310,6 @@ export function cmaSectionStyles(): string {
     border-bottom: 1px solid var(--navy-line);
   }
 
-  /* Chapter 2's unsold listings: short linked rows, never a matrix.
-     Address, ask, days, how it came off. */
-  ul.unsold-list { list-style: none; margin: 6px 0 10px; padding: 0; border-top: 1px solid var(--navy-line); }
-  li.unsold-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2px 12px;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--navy-line);
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-  li.unsold-row a { font-size: 11.5px; font-weight: 600; color: var(--navy); text-decoration: none; border-bottom: 1px solid var(--navy-line); }
-  li.unsold-row .unsold-ask { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
-  li.unsold-row .unsold-meta { grid-column: 1 / -1; font-size: 10px; color: var(--muted); }
-
   /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
   .timing-phone, .outcome-phone { display: none; }
   @media screen and (max-width: 700px) {
@@ -373,6 +357,39 @@ export function cmaSectionStyles(): string {
   @media print {
     .days-wide { display: block !important; }
     .days-phone { display: none !important; }
+  }
+  /* The price-path primitive (blueprint, Delta 1). Two layouts of one line,
+     exactly one visible, same mechanism as every other chart here. */
+  .pp-wrap { margin: 8px 0 4px; }
+  .pp svg { width: 100%; height: auto; display: block; }
+  .pp-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .pp-wide { display: none; }
+    .pp-phone { display: block; }
+  }
+  @media print {
+    .pp-wide { display: block !important; }
+    .pp-phone { display: none !important; }
+  }
+  /* Chapter 2: one story per listing that did not sell, never a matrix. */
+  .dns-set { display: grid; gap: 14px; margin: 12px 0 8px; }
+  .dns-card {
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--navy-line);
+    break-inside: avoid;
+  }
+  .dns-card.is-yours { border-top-width: 2px; }
+  .dns-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+  .dns-photo.is-empty { background: rgba(16, 39, 66, 0.06); }
+  .dns-addr { display: block; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .dns-ask { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .dns-facts { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dns-read { font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
+  @media screen and (max-width: 700px) {
+    .dns-card { grid-template-columns: 1fr; }
   }
   @media screen {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }

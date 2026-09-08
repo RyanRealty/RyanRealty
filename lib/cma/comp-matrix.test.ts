@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
-import { renderUnsoldPeerRowsHtml } from '@/lib/cma/market-area-chapters'
-import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -263,96 +261,4 @@ describe('the rows the blueprint cuts', () => {
     // Days to offer stays, because that is the days figure chapter 2 argues on.
     expect(html).toContain('Days to offer')
   })
-})
-
-describe('the unsold listings near you', () => {
-  const peer = {
-    listingKey: 'E1',
-    address: '88 Wren',
-    listPrice: 519000,
-    originalListPrice: 549000,
-    status: 'Expired',
-    daysOnMarket: 97,
-    onMarketDate: '2026-01-15',
-    photoUrl: null,
-    listingHistoryLine: 'Asked $549,000, cut to $519,000, came off expired · 97 days on market',
-    beds: 3,
-    baths: 2,
-    sqft: 1420,
-    yearBuilt: 1997,
-    lotAcres: 0.22,
-    propertySubType: 'Single Family Residence',
-    latitude: 43.705,
-    longitude: -121.501,
-  } as CmaExpiredPeer
-
-  it('lists the unsold listings as short linked rows, never a matrix', () => {
-    // CMA_REIMAGINED_2026-09-07.md chapter 2: "The unsold peers as small linked
-    // rows (address, ask, days, came off), never a matrix." The twelve-row
-    // side-by-side table asked a reader to compare a bathroom count across
-    // listings that share one fact — they did not sell.
-    const html = renderUnsoldPeerRowsHtml(subject, [peer], {
-      brokerSlug: 'matthew-ryan',
-      personId: 538,
-      cmaSlug: 'cma-x',
-    })
-    expect(html).toContain('Near you, these asked and did not sell')
-    expect(html).not.toContain('comp-matrix')
-    expect(html).not.toContain('comp-stack-card')
-    expect(html).toContain('88 Wren')
-    expect(html).toContain('$519,000')
-    expect(html).toContain('97 days')
-    expect(html).toContain('came off expired')
-    // Every address is a tracked link back into the site.
-    expect(html).toMatch(/<a href="https:\/\/ryan-realty\.com\/homes-for-sale\/[^"]*_pid=538[^"]*"[^>]*>88 Wren<\/a>/)
-    expect(html.toLowerCase()).not.toContain('overprice')
-  })
-
-  it('excludes the subject listing from the rows (U1)', () => {
-    const subjectAsPeer = {
-      ...peer,
-      listingKey: 'SUBJ-1',
-      address: subject.streetAddress,
-      listPrice: 575000,
-    }
-    const html = renderUnsoldPeerRowsHtml(
-      { ...subject, listingKey: 'SUBJ-1', streetAddress: '648 Douglas' },
-      [subjectAsPeer, peer],
-    )
-    expect(html).toContain('88 Wren')
-    expect(html).not.toContain('648 Douglas')
-  })
-
-  it('collapses same-address cycles into one row (U2)', () => {
-    const jan = {
-      ...peer,
-      listingKey: 'W-JAN',
-      address: '15935 Woodchip',
-      listPrice: 475000,
-      onMarketDate: '2026-01-10',
-      listingHistoryLine: 'Listed Jan 10, 2026 at $475,000, came off expired · 80 days on market',
-      daysOnMarket: 80,
-    }
-    const jun = { ...jan, listingKey: 'W-JUN', listPrice: 450000, onMarketDate: '2026-06-01', daysOnMarket: 40 }
-    const html = renderUnsoldPeerRowsHtml(subject, [jan, jun])
-    expect(html.match(/15935 Woodchip/g)?.length).toBe(1)
-  })
-
-  it('prints the days each one sat and how it came off (U3)', () => {
-    const html = renderUnsoldPeerRowsHtml(subject, [peer])
-    expect(html).toContain('97 days · came off expired')
-  })
-
-  it('soft-fails when no peers — omit section, invent nothing', () => {
-    expect(renderUnsoldPeerRowsHtml(subject, null)).toBe('')
-    expect(renderUnsoldPeerRowsHtml(subject, [])).toBe('')
-    expect(renderUnsoldPeerRowsHtml(subject, [{ ...peer, address: '', listPrice: 0 }])).toBe('')
-  })
-
-  it('soft-fails when no peers — omit section, invent nothing', () => {
-    expect(renderUnsoldPeerRowsHtml(subject, null)).toBe('')
-    expect(renderUnsoldPeerRowsHtml(subject, [])).toBe('')
-    expect(renderUnsoldPeerRowsHtml(subject, [{ ...peer, address: '', listPrice: 0 }])).toBe('')
-  })
-
 })

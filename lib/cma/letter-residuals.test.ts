@@ -308,7 +308,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
       excludedOutliers: [],
     })
     const body = pages.map((p) => p.body).join('\n')
-    expect(body).toContain('Near you, these asked and did not sell')
+    expect(body).toContain('The listings near you that did not sell.')
     expect(body).toContain('88 Wren')
     expect(body.toLowerCase()).not.toContain('overprice')
   })
@@ -344,7 +344,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     // chapter 2's evidence that priced high sits, so they come BEFORE the
     // number they explain, and competition follows the number.
     const salesAt = html.indexOf('The sales that set this price')
-    const peersAt = html.indexOf('Near you, these asked and did not sell')
+    const peersAt = html.indexOf('The listings near you that did not sell.')
     const competitionAt = html.indexOf('id="competition"')
     expect(peersAt).toBeGreaterThan(0)
     expect(salesAt).toBeGreaterThan(peersAt)

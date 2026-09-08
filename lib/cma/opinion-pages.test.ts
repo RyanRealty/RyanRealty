@@ -222,14 +222,17 @@ describe('assembleOpinionPages format', () => {
     })
     const tocs = pages.map((p) => p.toc)
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
-    // Chapter 2 now carries the unsold story, and it sits BEFORE the number.
-    const outcomes = tocs.indexOf('Priced right sells. Priced high sits.')
-    expect(outcomes).toBeGreaterThanOrEqual(0)
-    expect(competition).toBeGreaterThan(outcomes)
-    const body = pages[outcomes]!.body
-    // Chapter 2 argues the claim from local numbers, not from a ruler of dots.
-    expect(body).toContain('Near you, these asked and did not sell')
+    const price = tocs.indexOf('$429,000.')
+    // The listings that did not sell are their own chapter (Delta 1), and they
+    // sit BEFORE the number they explain. Competition follows the number.
+    const stories = tocs.indexOf('The listings near you that did not sell.')
+    expect(stories).toBeGreaterThanOrEqual(0)
+    expect(price).toBeGreaterThan(stories)
+    expect(competition).toBeGreaterThan(price)
+    const body = pages[stories]!.body
     expect(body).toContain('2527 5th')
+    // One story each, never the price ruler of dots this replaced.
+    expect(body).toContain('dns-card')
     expect(body).not.toContain("Didn't sell")
     expect(body).not.toContain('Recommended $')
     expect(body).not.toContain('ruler-wide')
