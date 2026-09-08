@@ -7,6 +7,7 @@ import { renderBandRivalsSceneHtml } from '@/lib/cma/band-rivals'
 import { pricingPage, whatItsWorthHeading } from '@/lib/cma/render-pricing-page'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
+  BASIS_AND_LIMITS_HEADING,
   OPINION_CHAPTER_ORDER,
   PRICED_RIGHT_HEADING,
   competitionArgs,
@@ -176,8 +177,8 @@ function disclosureScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="disclosure">
     <div class="in wide">
-      <div class="kick r">Disclosure</div>
-      <h2 class="h r">Disclosure</h2>
+      <div class="kick r">Where this came from</div>
+      <h2 class="h r">${esc(BASIS_AND_LIMITS_HEADING)}</h2>
       <div class="r letter-body">${cmaDisclosureProseHtml(a)}</div>
     </div>
   </section>`

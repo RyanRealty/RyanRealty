@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cmaCityHref,
   cmaSubdivisionHref,
   primaryCmaPlaceLink,
   resolveCmaPlaceLinks,
@@ -50,5 +51,23 @@ describe('MLS sentinels', () => {
   it('does not link N/A subdivision names', () => {
     expect(resolveCmaPlaceLinks({ city: 'Bend', subdivisionName: 'N/A' }).map((l) => l.label)).toEqual(['Bend'])
     expect(cmaSubdivisionHref('N/A')).toBeNull()
+  })
+})
+
+describe('the origin these links are printed on', () => {
+  // The same rule CMA_DOC_ORIGIN encodes: a document outlives the deploy that
+  // made it, and NEXT_PUBLIC_SITE_URL is a vercel.app preview host everywhere
+  // but production.
+  it('is production, whatever the environment says', () => {
+    const before = process.env.NEXT_PUBLIC_SITE_URL
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://ryan-realty-git-preview.vercel.app'
+    try {
+      const link = cmaCityHref('Redmond') ?? ''
+      expect(link).toContain('https://ryan-realty.com/')
+      expect(link).not.toContain('vercel.app')
+    } finally {
+      if (before == null) delete process.env.NEXT_PUBLIC_SITE_URL
+      else process.env.NEXT_PUBLIC_SITE_URL = before
+    }
   })
 })

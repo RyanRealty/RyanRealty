@@ -289,11 +289,17 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('pin-map-wrap')
     expect(html).toContain('12 Pine')
     expect(html).toContain('data-comp="1"')
-    expect(html).toContain('<h2 class="section">Disclosure</h2>')
+    expect(html).toContain('<h2 class="section">Basis and limits</h2>')
+    // Research item 9: the block states its effective date, what was and was
+    // not looked at, and that condition was not adjusted for.
+    expect(html).toContain('Effective date.')
+    expect(html).toContain('What was looked at.')
+    expect(html).toContain('Condition was not adjusted for.')
+    expect(html).toContain('Nobody walked through the inside of your home')
     expect(html).not.toMatch(BANNED)
     const recAt = html.indexOf('$475,000')
     const salesAt = html.indexOf('$475,000.')
-    const discAt = html.indexOf('<h2 class="section">Disclosure</h2>')
+    const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
     expect(recAt).toBeGreaterThan(0)
     expect(salesAt).toBeGreaterThan(recAt)
     expect(discAt).toBeGreaterThan(salesAt)
@@ -374,11 +380,11 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('sales that set this price')
     expect(html).not.toMatch(BANNED)
     // Blueprint order: what happened, priced right, what it is worth,
-    // competition, this market, net at list, disclosure, next step.
+    // competition, this market, net at list, basis and limits, next step.
     const priceAt = html.indexOf('$475,000.')
     const marketAt = html.indexOf(' right now</h2>')
     const netAt = html.indexOf('<h2 class="section">Net at list</h2>')
-    const discAt = html.indexOf('<h2 class="section">Disclosure</h2>')
+    const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
     const nextAt = html.indexOf('Talk with Matt')
     expect(priceAt).toBeGreaterThan(0)
     expect(marketAt).toBeGreaterThan(priceAt)

@@ -400,29 +400,55 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
   }</p>`
 }
 
-/** ORS 696 / OAR 863-015-0190 disclosure and signature. Both documents (P10). */
+/**
+ * Basis and limits, then the ORS 696 / OAR 863-015-0190 disclosure and the
+ * signature. Both documents (P10).
+ */
 export function disclosurePage(a: OpinionPageArgs): CmaPageDef | null {
   const b = a.broker
   if (!b) return null
   return {
-    meta: `${esc(a.subject.streetAddress)} · Disclosure · ${esc(b.displayName)}`,
-    toc: 'Disclosure',
+    meta: `${esc(a.subject.streetAddress)} · Basis and limits · ${esc(b.displayName)}`,
+    toc: BASIS_AND_LIMITS_HEADING,
     body: `
-  <h2 class="section">Disclosure</h2>
+  <h2 class="section">${esc(BASIS_AND_LIMITS_HEADING)}</h2>
   ${cmaDisclosureProseHtml(a)}`,
   }
 }
 
-/** The disclosure paragraphs alone, so the immersive scene prints the same words. */
+/** The chapter title, in one place so the letter and the scene cannot drift. */
+export const BASIS_AND_LIMITS_HEADING = 'Basis and limits'
+
+/**
+ * The disclosure paragraphs alone, so the immersive scene prints the same words.
+ *
+ * Research item 9: an appraisal states its effective date, what it is and is
+ * not, what was and was not inspected, and where it did not adjust. Ours stated
+ * the legal minimum and nothing a reader could use. The three paragraphs that
+ * open this block are the ones the brief named, and the last of them is the
+ * gap `CMA_STATE_OF_THE_WORLD.md` calls the widest in the category: the grid
+ * adjusts for date, size and style, and for nothing else, because the record
+ * carries nothing else.
+ */
 export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   const b = a.broker
   const name = b?.displayName ?? 'the preparing broker'
+  // Named only where it was actually read. A recorded lot or an assessor
+  // record is on the row for some homes and not for others (§0).
+  const record =
+    a.parcels || a.site
+      ? ', together with the county assessor record and the recorded lot'
+      : ''
   return `
+  <p><strong>Effective date.</strong> This opinion is effective ${esc(
+    dateLong(a.generatedAtIso),
+  )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
+  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it — the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
+  <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale for when it sold, for size, and for style. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
   <p><strong>Purpose and intent.</strong> This document is a competitive market analysis prepared by a licensed Oregon real estate broker to assist the owner of ${esc(a.subject.streetAddress)}, ${esc(a.subject.city)}, Oregon in evaluating a potential listing price. It is provided in accordance with ORS chapter 696 and OAR 863-015-0190.</p>
   <p><strong>Property description.</strong> ${propertyDescription(a.subject)}</p>
   <p><strong>Basis for the value.</strong> The value range rests on ${a.comps.length} closed comparable sales from the Oregon Data Share MLS, adjusted for market conditions and size, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}. The term value as used in this analysis means the estimated worth of or price for the property. It does not mean or imply a value arrived at by any method of appraisal.</p>
   ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
-  <p><strong>Limiting conditions.</strong> Interior condition was not inspected. Figures are accurate as of the pull date on this report and market conditions change continuously. Seller-reported facts, where used, are labeled as such and should be independently confirmed.</p>
   <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>`
 }
