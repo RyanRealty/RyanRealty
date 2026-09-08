@@ -284,6 +284,43 @@ describe('the two builders answer one question set, not two', () => {
   })
 })
 
+/* SITE-08 pass 2. The plat grain is the only one that publishes a per-year
+   closed count, so it is the only one whose count row can be drawn as two runs
+   of marks — this year against the year before, from the same read. */
+describe('the closed-sales drawing', () => {
+  const platClosed = (priorWindow: { count: number; label: string } | null) =>
+    buildPlaceAnswers({
+      ...base,
+      placeName: 'Ridge At Eagle Crest',
+      figures: { closedCount: { count: 26, windowLabel: 'in 2025', priorWindow } },
+    }).answers.find((a) => a.id === 'answer-verdict')?.figure?.mark
+
+  it('draws the year before as a second run, named', () => {
+    const mark = platClosed({ count: 31, label: 'in 2024' })
+    expect(mark).toMatchObject({
+      kind: 'tally',
+      count: 26,
+      runLabel: 'in 2025',
+      context: { count: 31, label: 'in 2024' },
+    })
+  })
+
+  it('drops a prior run it cannot draw rather than half-drawing it', () => {
+    expect(platClosed(null)).not.toHaveProperty('context')
+    expect(platClosed({ count: 0, label: 'in 2024' })).not.toHaveProperty('context')
+    expect(platClosed({ count: 31, label: '   ' })).not.toHaveProperty('context')
+  })
+
+  it('leaves a grain with no prior window as one run', () => {
+    const mark = buildPlaceAnswers({
+      ...base,
+      figures: { closedCount: { count: 120, windowLabel: 'over the past 12 months' } },
+    }).answers.find((a) => a.id === 'answer-verdict')?.figure?.mark
+    expect(mark).toMatchObject({ kind: 'tally', count: 120 })
+    expect(mark).not.toHaveProperty('context')
+  })
+})
+
 describe('per-figure traces — one trace per query, never borrowed', () => {
   it('lets a figure from another population name its own source', () => {
     // The plat case: the days-on-market figure is the statistics-cache row (the

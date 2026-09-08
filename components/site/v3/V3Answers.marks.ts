@@ -31,6 +31,18 @@
  * if it were the end of the rule, which is a lie about the number.
  */
 
+/**
+ * How a value read OFF the rule is written out, so a position under the
+ * reader's pointer prints in the same units the figure printed in. Nothing
+ * here invents a number: it formats a coordinate the reader chose.
+ */
+export type V3AnswerScaleFormat = {
+  /** Appended verbatim: "%", " days", " months". */
+  unit?: string
+  /** Fixed decimals. Default 0. */
+  decimals?: number
+}
+
 /** One value on a labeled rule, optionally banded and optionally compared. */
 export type V3AnswerScale = {
   kind: 'scale'
@@ -50,6 +62,13 @@ export type V3AnswerScale = {
   /** A second named value on the same rule: the parent city, the asking price. */
   context?: { at: number; label: string }
   /**
+   * What the SUBJECT mark is called when the reader lands on it — the place
+   * name, almost always. Without it the readout can only say the number.
+   */
+  subjectLabel?: string
+  /** How a scrubbed position prints. */
+  format?: V3AnswerScaleFormat
+  /**
    * True only when the value IS the exception the answer is about — a decline,
    * a drawdown, a breached threshold (CLAUDE.md §3). Never decoration.
    */
@@ -62,6 +81,25 @@ export type V3AnswerTally = {
   count: number
   /** What ONE mark is, in the reader's words: "home for sale", "closed sale". */
   unitLabel: string
+  /**
+   * The same thing counted. English does not pluralise "home for sale" by
+   * adding an s to the end, and the readout says the plural far more often
+   * than the singular, so it is named rather than derived.
+   */
+  unitPlural?: string
+  /**
+   * What this run of marks is, when there is a second one under it. Omitted
+   * for a lone count, where the question above already named the window.
+   */
+  runLabel?: string
+  /**
+   * A SECOND run of marks, the same thing counted over a different window, so
+   * the reader compares two counts by looking at two lengths instead of
+   * subtracting two numerals. It must come from the same query as the subject
+   * — the plat grain's yearly closed counts are one RPC over two years — or it
+   * is two populations pretending to be a comparison (§0).
+   */
+  context?: { count: number; label: string }
 }
 
 export type V3AnswerMark = V3AnswerScale | V3AnswerTally
@@ -152,4 +190,114 @@ export function answerTallyCount(tally: V3AnswerTally): number | null {
   const count = Math.round(tally.count)
   if (count < 1 || count > TALLY_MAX) return null
   return count
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   READING THE RULE (site queue SITE-08, second pass).
+
+   The first cut drew one static mark and stopped. TASTE.md's chart-craft bar
+   is explicit that this is the floor and not the ceiling: "a crosshair and
+   tooltip on every line, a per-mark tooltip on every bar, dot, and cell, hit
+   targets larger than the mark. A chart the reader cannot interrogate is a
+   picture of a chart." The evaluator's second pass named the same thing on all
+   three place grains.
+
+   So the rule becomes an INSTRUMENT the reader runs along. Everything it can
+   say is either a figure this page already published (the subject, the named
+   context) or a coordinate the reader themselves chose — never a new claim
+   about the market, which is why the readout below can only ever print a
+   position and the name of the band it fell in. §0 is not weakened by letting
+   someone point at a ruler.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/** What sits under the reader's pointer. */
+export type ScaleReading = {
+  /** The value at that position, after snapping to a named mark. */
+  value: number
+  /** Where the crosshair draws, 0..100. */
+  atPct: number
+  /**
+   * The published figure the reader landed on, when they are close enough to
+   * one for the pointer to mean it. Free positions read as `null` and are
+   * written out as what they are: a place on the scale, not a statistic.
+   */
+  named: 'subject' | 'context' | null
+  /** The name of that figure — the place, the parent city, "the asking price". */
+  namedLabel: string | null
+  /** The band the position falls in, when the rule is banded. */
+  band: string | null
+}
+
+/**
+ * How close (in percent of the rule) the pointer has to be before it means a
+ * published mark rather than a free coordinate. Two marks are never closer
+ * than this to each other in practice, and if they were, the subject wins.
+ */
+export const SNAP_PCT = 4
+
+/** A position on the rule, written out in the figure's own units. */
+export function formatScaleValue(value: number, format?: V3AnswerScaleFormat): string {
+  if (!finite(value)) return ''
+  const decimals = format?.decimals ?? 0
+  const safe = decimals >= 0 && decimals <= 3 ? decimals : 0
+  return `${value.toFixed(safe)}${format?.unit ?? ''}`
+}
+
+/**
+ * What the rule says at `fraction` along it (0 at min, 1 at max), or null when
+ * the scale cannot be drawn at all — the same refusal `answerScaleGeometry`
+ * makes, so a rule that draws can always be read and one that cannot never
+ * gets a readout to disagree with it.
+ */
+export function answerScaleReadAt(scale: V3AnswerScale, fraction: number): ScaleReading | null {
+  const geometry = answerScaleGeometry(scale)
+  if (!geometry) return null
+  if (!finite(fraction)) return null
+  const clamped = fraction < 0 ? 0 : fraction > 1 ? 1 : fraction
+  const atPct = clamped * 100
+
+  // Snap to a published mark before anything else: the reader pointing at the
+  // dot means the dot, and a readout that said "94.8%" while the dot says
+  // 95.0% would be the drawing arguing with the sentence beside it.
+  if (Math.abs(atPct - geometry.atPct) <= SNAP_PCT) {
+    return {
+      value: scale.at,
+      atPct: geometry.atPct,
+      named: 'subject',
+      namedLabel: scale.subjectLabel?.trim() || null,
+      band: bandAt(geometry, geometry.atPct),
+    }
+  }
+  if (geometry.contextPct != null && scale.context && Math.abs(atPct - geometry.contextPct) <= SNAP_PCT) {
+    return {
+      value: scale.context.at,
+      atPct: geometry.contextPct,
+      named: 'context',
+      namedLabel: scale.context.label.trim() || null,
+      band: bandAt(geometry, geometry.contextPct),
+    }
+  }
+
+  const value = scale.min + (scale.max - scale.min) * clamped
+  return { value, atPct, named: null, namedLabel: null, band: bandAt(geometry, atPct) }
+}
+
+function bandAt(geometry: ScaleGeometry, atPct: number): string | null {
+  for (const band of geometry.bands) {
+    if (atPct >= band.fromPct - Number.EPSILON && atPct <= band.fromPct + band.widthPct) return band.label
+  }
+  return geometry.bands[0]?.label ?? null
+}
+
+/**
+ * The tally's grouping. Every fifth mark carries the gap that makes a run of
+ * dots a COUNT rather than a dotted rule — the stylesheet has had the rule for
+ * this since the first cut and nothing ever set the class, so 360 identical
+ * marks shipped on /cities/bend/awbrey-butte (measured 2026-09-08).
+ * A trailing group end is not drawn: a gap after the last mark is a gap to
+ * nothing.
+ */
+export function isTallyGroupEnd(index: number, count: number): boolean {
+  if (!Number.isInteger(index) || index < 0) return false
+  return (index + 1) % 5 === 0 && index + 1 !== count
 }

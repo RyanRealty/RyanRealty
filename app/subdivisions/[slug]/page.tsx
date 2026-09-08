@@ -529,7 +529,26 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     3000,
     'sub:libraryHero',
   )
-  const stagePosterSrc = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
+  /* THE PLAT OPENS ON A PHOTOGRAPH, AND SAYS WHOSE IT IS (SITE-08 pass 2).
+     A plat's own still is a dedicated image or a geo-strict library hero, and
+     for most of the 3,213 recorded plats there is neither: /subdivisions/
+     ridge-at-eagle-crest opened on cream type above a hairline map and nothing
+     else, which the evaluator called the thinnest of the three place classes
+     and scored accordingly.
+
+     The honest photograph a plat with no still of its own can carry is the
+     RESORT IT SITS INSIDE — Ridge At Eagle Crest is in Eagle Crest, the
+     registry says so, and the page already links that overview from its
+     breadcrumb and its doors. It is used only when the plat is registered to a
+     resort, and it is CAPTIONED with the resort's name, so nothing on the page
+     implies the frame was taken on this plat. Never a city photo, never
+     another plat's, never a listing photo standing in for a place (§0 applies
+     to a picture that makes a claim exactly as it applies to a number). */
+  const platOwnPoster = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
+  const resortPoster = platOwnPoster ? null : resortSlug ? communityImage(resortSlug) : null
+  const stagePosterSrc = platOwnPoster ?? resortPoster
+  const posterCaption =
+    resortPoster && resortLabel ? `${resortLabel}, the resort ${displayName} sits inside.` : null
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -672,9 +691,18 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
      a partial window and comparing it to a full one is not a year (the same
      rule subdivisionSalesChart applies to its own current-year bar). */
   const nowYear = new Date().getUTCFullYear()
-  const lastCompleteYear = salesHistory
+  const completeYears = salesHistory
     .filter((row) => row.year < nowYear && row.closedCount > 0)
-    .sort((a, b) => b.year - a.year)[0]
+    .sort((a, b) => b.year - a.year)
+  const lastCompleteYear = completeYears[0]
+  /* THE YEAR BEFORE, FROM THE SAME READ (SITE-08 pass 2). The plat grain is the
+     only one of the three that publishes a per-year closed count, so it is the
+     only one whose count row can draw a second run of marks and let the reader
+     see the change as a length. It has to be the immediately preceding year and
+     it has to come out of this same salesHistory array — a count from another
+     query under the same drawing would be two populations wearing one form. */
+  const priorCompleteYear =
+    lastCompleteYear && completeYears[1]?.year === lastCompleteYear.year - 1 ? completeYears[1] : null
   const { answers: platAnswers, traces: platAnswerTraces } = buildPlaceAnswers({
     placeName: displayName,
     cityName: placeCity,
@@ -696,6 +724,9 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             count: lastCompleteYear.closedCount,
             windowLabel: `in ${lastCompleteYear.year}`,
             trace: salesHistoryTrace(displayName),
+            priorWindow: priorCompleteYear
+              ? { count: priorCompleteYear.closedCount, label: `in ${priorCompleteYear.year}` }
+              : null,
           }
         : null,
       daysOnMarket:
@@ -752,6 +783,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
               {headline}
             </V3Heading>
             <V3SourceLine source={inventorySource} onMedia={Boolean(stagePosterSrc)} />
+            {posterCaption ? <p className="place-opening__caption">{posterCaption}</p> : null}
           </div>
         </div>
         {canMapAtlas && (

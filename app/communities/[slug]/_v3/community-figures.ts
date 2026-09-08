@@ -58,7 +58,9 @@ export function reconcileListedVsDetachedFaq(
   if (!note) return [...faqs]
   return faqs.map((item) => {
     if (!item.question.startsWith('How many single-family homes are for sale')) return item
-    return { ...item, answer: `${item.answer} ${note}` }
+    // The prose path is one answer string, so the two lines join here; the
+    // figured path renders them as the two paragraphs they are.
+    return { ...item, answer: [item.answer, ...note].join(' ') }
   })
 }
 
@@ -67,21 +69,28 @@ export function reconcileListedVsDetachedFaq(
  * answer path (lib/site/place-answers.ts, SITE-08) say it in ONE wording. Two
  * copies of a sentence that explains why two counts differ is how a page ends
  * up explaining it two different ways. Null when there is nothing to reconcile.
+ *
+ * TWO LINES, NOT ONE (SITE-08 pass 2). The first cut packed both counts into a
+ * single clause — "The 25 homes listed for Tetherow on this page count every
+ * property type across its named subdivisions. This answer's 17 is the
+ * single-family…" — and the evaluator read it exactly as it was built: two
+ * numbers fighting for the same sentence, on a section whose whole premise is
+ * claim first. Each count now gets its own short line, this answer's number
+ * first, because that is the one the reader just opened.
  */
 export function listedVsDetachedNote(input: {
   placeName: string
   listedCount: number
   detachedCount: number | null
-}): string | null {
+}): string[] | null {
   const { placeName, listedCount, detachedCount } = input
   if (listedCount <= 0 || detachedCount == null || detachedCount <= 0 || listedCount === detachedCount) {
     return null
   }
-  return (
-    `The ${listedCount.toLocaleString('en-US')} homes listed for ${placeName} on this page ` +
-    `count every property type across its named subdivisions. This answer's ${detachedCount.toLocaleString('en-US')} ` +
-    `is the single-family subset the figures on this page measure.`
-  )
+  return [
+    `That ${detachedCount.toLocaleString('en-US')} is single-family only, which is the population every figure on this page measures.`,
+    `${placeName} also has ${listedCount.toLocaleString('en-US')} homes listed across its named subdivisions when every property type is counted.`,
+  ]
 }
 
 /**

@@ -37,7 +37,7 @@
  * per page makes two places with the same figure look different, and two places
  * with different figures look the same.
  */
-import type { V3Answer } from '@/components/site/v3'
+import type { V3Answer, V3AnswerTally } from '@/components/site/v3'
 import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
@@ -68,12 +68,14 @@ export type PlaceAnswersFigures = {
   /** The population clause for that count, when it is not the metric layer's. */
   activeCountTrace?: string | null
   /**
-   * One extra sentence on the inventory answer, for a place where the page
-   * shows a second, wider count somewhere else and the reader deserves to be
-   * told why the two differ rather than left to spot it (the community grain's
-   * every-property-type Field beside its single-family figures).
+   * Extra lines on the inventory answer, for a place where the page shows a
+   * second, wider count somewhere else and the reader deserves to be told why
+   * the two differ rather than left to spot it (the community grain's
+   * every-property-type Field beside its single-family figures). ONE SENTENCE
+   * PER LINE: each becomes its own paragraph, because a reconciliation that
+   * packs two counts into one clause is the thing it was written to prevent.
    */
-  activeCountNote?: string | null
+  activeCountNotes?: readonly string[] | null
   /**
    * Closed sales, with the window they cover in the reader's words.
    *
@@ -88,7 +90,18 @@ export type PlaceAnswersFigures = {
    * list price" under a sentence reading "closed single-family sales … a
    * closed-price statistic at plat grain is withheld".
    */
-  closedCount?: { count: number; windowLabel: string; trace?: string | null } | null
+  closedCount?: {
+    count: number
+    windowLabel: string
+    trace?: string | null
+    /**
+     * The SAME count over the window before it, drawn as a second run of marks
+     * under the first (SITE-08 pass 2). Only from the same query as `count` —
+     * the plat grain's yearly closed counts are one sales-history RPC read
+     * twice — or it is two populations pretending to be a comparison.
+     */
+    priorWindow?: { count: number; label: string } | null
+  } | null
   /** Median list-to-pending days. NOT active-inventory age (ci:days-to-pending-source). */
   daysToPending?: number | null
   /** The same statistic for the parent city, drawn as the context mark. */
@@ -152,6 +165,50 @@ function finite(value: number | null | undefined): value is number {
 
 function positive(value: number | null | undefined): value is number {
   return finite(value) && value > 0
+}
+
+/** The comparison run's own §0 line, when there is one. */
+function priorTrace(
+  prior: { count: number; label: string } | null | undefined,
+  trace: string,
+): string[] {
+  if (!prior || !positive(prior.count) || !prior.label.trim()) return []
+  return [`${prior.count} closed sales ${prior.label.trim()} (the comparison run) — ${trace}`]
+}
+
+/**
+ * The window before, as a sentence, when the caller published one. Same query,
+ * same population, so it reads as one series and not as a second statistic.
+ */
+function priorSentence(
+  prior: { count: number; label: string } | null | undefined,
+  homes: string,
+): string[] {
+  if (!prior || !positive(prior.count) || !prior.label.trim()) return []
+  return [`${prior.count.toLocaleString('en-US')} ${homes} closed ${prior.label.trim()}.`]
+}
+
+/**
+ * The closed-sales drawing. One mark per sale, and — where the caller has the
+ * SAME count over the window before, from the same query — a second run under
+ * it so the reader compares two lengths rather than subtracting two numerals.
+ * The prior run is dropped rather than half-drawn when it is not a positive
+ * count or has no window name to sit under.
+ */
+function closedTally(
+  count: number,
+  windowLabel: string,
+  prior: { count: number; label: string } | null | undefined,
+): V3AnswerTally {
+  const priorOk = prior && positive(prior.count) && prior.label.trim().length > 0
+  return {
+    kind: 'tally',
+    count,
+    unitLabel: 'closed sale',
+    unitPlural: 'closed sales',
+    runLabel: windowLabel,
+    ...(priorOk ? { context: { count: prior.count, label: prior.label.trim() } } : {}),
+  }
 }
 
 /**
@@ -226,6 +283,8 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
           at: raw,
           minLabel: '0 months',
           maxLabel: '12 months',
+          subjectLabel: place,
+          format: { unit: ' months', decimals: 1 },
           bands: [
             { to: 4, label: "seller's" },
             { to: 6, label: 'balanced' },
@@ -257,17 +316,27 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       body: [
         `${place} has had fewer sales we can attribute to it on its own than a fair buyer's or seller's verdict needs, so we are not printing one.`,
         `${count.toLocaleString('en-US')} ${homes} closed in ${place} ${windowLabel}${city ? `, and ${city} as a whole is the wider reading we do stand behind` : ''}. Ask us and we will read the comparable sales for your street instead.`,
+        // The drawing carries the window before as a second run of marks, so
+        // the sentence carries it too — the FAQPage payload is derived from
+        // these lines, and a schema that omits what the page shows is the
+        // drift this module exists to prevent.
+        ...priorSentence(f.closedCount.priorWindow, homes),
       ],
       figure: {
         value: count.toLocaleString('en-US'),
         label: `closed sales ${windowLabel}`,
-        mark: { kind: 'tally', count, unitLabel: 'closed sale' },
+        mark: closedTally(count, windowLabel, f.closedCount.priorWindow),
       },
       source: traceWith(f.closedCount.trace, `closed sales ${windowLabel}`),
     })
     traces.push(
       `${count} closed sales ${windowLabel} (no verdict published at this grain) — ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`,
     )
+    // The comparison run is a published figure too, so it gets its own line in
+    // the §0 report rather than riding along inside the subject's.
+    for (const line of priorTrace(f.closedCount.priorWindow, traceWith(f.closedCount.trace, 'closed sales, grouped by calendar year'))) {
+      traces.push(line)
+    }
     // The count is answered here, so the prose builder's version of the same
     // question does not get a second row further down.
     ask(`How many homes sold in ${place} in the last year?`)
@@ -347,6 +416,8 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
           at: days,
           minLabel: '0 days',
           maxLabel: '120 days',
+          subjectLabel: place,
+          format: { unit: ' days', decimals: 0 },
           ...(cityDays != null && city ? { context: { at: cityDays, label: `${city} ${cityDays}` } } : {}),
         },
       },
@@ -365,7 +436,16 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       figure: {
         value: `${days} days`,
         label: 'median days on market',
-        mark: { kind: 'scale', min: 0, max: 120, at: days, minLabel: '0 days', maxLabel: '120 days' },
+        mark: {
+          kind: 'scale',
+          min: 0,
+          max: 120,
+          at: days,
+          minLabel: '0 days',
+          maxLabel: '120 days',
+          subjectLabel: place,
+          format: { unit: ' days', decimals: 0 },
+        },
       },
       source: traceWith(f.daysOnMarket.trace, `median days on market ${f.daysOnMarket.windowLabel}`),
     })
@@ -400,6 +480,8 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
           at: pct,
           minLabel: '85%',
           maxLabel: '105%',
+          subjectLabel: place,
+          format: { unit: '%', decimals: 1 },
           context: { at: 100, label: 'the asking price' },
         },
       },
@@ -435,6 +517,8 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
           at: pct,
           minLabel: '0%',
           maxLabel: '100%',
+          subjectLabel: place,
+          format: { unit: '%', decimals: 0 },
           ...(cityPct != null && city ? { context: { at: cityPct, label: `${city} ${cityPct.toFixed(0)}%` } } : {}),
         },
       },
@@ -455,12 +539,12 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       question: `How many ${homes} are for sale in ${place}?`,
       body: [
         `${n.toLocaleString('en-US')} ${homes} are on the market in ${place} right now.`,
-        ...(f.activeCountNote?.trim() ? [f.activeCountNote.trim()] : []),
+        ...(f.activeCountNotes ?? []).map((line) => line.trim()).filter((line) => line.length > 0),
       ],
       figure: {
         value: n.toLocaleString('en-US'),
         label: n === 1 ? 'home for sale' : 'homes for sale',
-        mark: { kind: 'tally', count: n, unitLabel: 'home for sale' },
+        mark: { kind: 'tally', count: n, unitLabel: 'home for sale', unitPlural: 'homes for sale' },
       },
       source: inventoryTrace,
     })
@@ -475,15 +559,21 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
     answers.push({
       id: 'answer-sales',
       question: `How many homes sold in ${place} in the last year?`,
-      body: [`${count.toLocaleString('en-US')} ${homes} closed in ${place} ${windowLabel}.`],
+      body: [
+        `${count.toLocaleString('en-US')} ${homes} closed in ${place} ${windowLabel}.`,
+        ...priorSentence(f.closedCount.priorWindow, homes),
+      ],
       figure: {
         value: count.toLocaleString('en-US'),
         label: `closed sales ${windowLabel}`,
-        mark: { kind: 'tally', count, unitLabel: 'closed sale' },
+        mark: closedTally(count, windowLabel, f.closedCount.priorWindow),
       },
       source: traceWith(f.closedCount.trace, `closed sales ${windowLabel}`),
     })
     traces.push(`${count} closed sales ${windowLabel} — ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`)
+    for (const line of priorTrace(f.closedCount.priorWindow, traceWith(f.closedCount.trace, 'closed sales, grouped by calendar year'))) {
+      traces.push(line)
+    }
   }
 
   // ── The questions with no figure, after the ones that have one ───────────

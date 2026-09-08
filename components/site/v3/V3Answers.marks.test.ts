@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
   answerScaleGeometry,
+  answerScaleReadAt,
   answerTallyCount,
+  formatScaleValue,
+  isTallyGroupEnd,
+  SNAP_PCT,
   TALLY_MAX,
   type V3AnswerScale,
 } from './V3Answers.marks'
@@ -126,5 +130,91 @@ describe('answerTallyCount', () => {
     expect(answerTallyCount({ kind: 'tally', count: TALLY_MAX + 1, unitLabel: 'home' })).toBeNull()
     expect(answerTallyCount({ kind: 'tally', count: 0, unitLabel: 'home' })).toBeNull()
     expect(answerTallyCount({ kind: 'tally', count: Number.NaN, unitLabel: 'home' })).toBeNull()
+  })
+})
+
+/* ── Reading the rule (SITE-08 pass 2) ─────────────────────────────────────
+   The crosshair may only ever say two things: a figure this page published,
+   or a coordinate the reader chose. These lock that down. */
+
+const saleToList: V3AnswerScale = {
+  kind: 'scale',
+  min: 85,
+  max: 105,
+  at: 95,
+  minLabel: '85%',
+  maxLabel: '105%',
+  subjectLabel: 'Awbrey Butte',
+  format: { unit: '%', decimals: 1 },
+  context: { at: 100, label: 'the asking price' },
+}
+
+describe('answerScaleReadAt', () => {
+  it('snaps to the published subject rather than reading a coordinate beside it', () => {
+    // The subject sits at 50% of this rule. A pointer a hair off it means it.
+    const read = answerScaleReadAt(saleToList, 0.5 + (SNAP_PCT - 1) / 100)
+    expect(read?.named).toBe('subject')
+    expect(read?.value).toBe(95)
+    expect(read?.namedLabel).toBe('Awbrey Butte')
+    expect(read?.atPct).toBeCloseTo(50, 6)
+  })
+
+  it('snaps to the named context mark', () => {
+    const read = answerScaleReadAt(saleToList, 0.75)
+    expect(read?.named).toBe('context')
+    expect(read?.value).toBe(100)
+    expect(read?.namedLabel).toBe('the asking price')
+  })
+
+  it('reads a free position as a position, with no name attached to it', () => {
+    const read = answerScaleReadAt(saleToList, 0.2)
+    expect(read?.named).toBeNull()
+    expect(read?.namedLabel).toBeNull()
+    expect(read?.value).toBeCloseTo(89, 6)
+  })
+
+  it('clamps to the ends instead of running off the domain', () => {
+    expect(answerScaleReadAt(saleToList, -3)?.value).toBe(85)
+    expect(answerScaleReadAt(saleToList, 9)?.value).toBe(105)
+  })
+
+  it('names the band the pointer is in, which is not always the band the value is in', () => {
+    // 4.9 months lands in "balanced"; the pointer at the far right is in
+    // "buyer's". The difference is the reason to run a pointer down the rule.
+    expect(answerScaleReadAt(mos(4.9), 0.9)?.band).toBe("buyer's")
+    expect(answerScaleReadAt(mos(4.9), 0.408)?.band).toBe('balanced')
+    expect(answerScaleReadAt(mos(4.9), 0)?.band).toBe("seller's")
+  })
+
+  it('refuses to read a rule that cannot be drawn', () => {
+    expect(answerScaleReadAt({ ...saleToList, at: 200 }, 0.5)).toBeNull()
+    expect(answerScaleReadAt(saleToList, Number.NaN)).toBeNull()
+  })
+})
+
+describe('formatScaleValue', () => {
+  it('writes a position in the units the figure printed in', () => {
+    expect(formatScaleValue(95.04, { unit: '%', decimals: 1 })).toBe('95.0%')
+    expect(formatScaleValue(29.6, { unit: ' days', decimals: 0 })).toBe('30 days')
+    expect(formatScaleValue(4.86, { unit: ' months', decimals: 1 })).toBe('4.9 months')
+  })
+
+  it('survives a missing format and a nonsense one', () => {
+    expect(formatScaleValue(60)).toBe('60')
+    expect(formatScaleValue(60, { decimals: -2 })).toBe('60')
+    expect(formatScaleValue(Number.NaN, { unit: '%' })).toBe('')
+  })
+})
+
+describe('isTallyGroupEnd', () => {
+  it('breaks the run every fifth mark, which is what makes it a tally', () => {
+    expect(isTallyGroupEnd(4, 60)).toBe(true)
+    expect(isTallyGroupEnd(9, 60)).toBe(true)
+    expect(isTallyGroupEnd(3, 60)).toBe(false)
+  })
+
+  it('never hangs a gap off the last mark', () => {
+    expect(isTallyGroupEnd(59, 60)).toBe(false)
+    expect(isTallyGroupEnd(4, 5)).toBe(false)
   })
 })

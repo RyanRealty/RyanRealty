@@ -609,7 +609,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       monthsOfSupplyActiveCount: hud.active,
       activeCount: hud.active,
       activeCountTrace: `market_metric neighborhood:${cityDetachedSlug(neighborhoodSlug)}, detached single-family homes with primary membership of ${publicName}, active at the last sync`,
-      activeCountNote: listedVsDetachedNote({
+      activeCountNotes: listedVsDetachedNote({
         placeName: publicName,
         listedCount,
         detachedCount: hud.active,

@@ -21,8 +21,10 @@
  *
  * INDEXABLE ANYWAY. `details` keeps every answer in the served HTML — a
  * crawler reads a closed disclosure exactly as it reads an open paragraph, and
- * the caller's FAQPage JSON-LD describes the same strings. Nothing is hidden
- * behind script, and the section works with JavaScript off.
+ * the caller's FAQPage JSON-LD describes the same strings. Every sentence,
+ * every trace and every mark is emitted by the SERVER render, including the
+ * drawing's client component, so the section reads with scripting off; what
+ * hydration adds is the crosshair and the count-through, and nothing else.
  *
  * THE FORM. Two columns on a wide window: the heading and the outbound doors
  * hold the left rail, the questions hold the right. One column at 390, in
@@ -37,13 +39,17 @@
  *     39%, 120 sales down one edge — instead of as a list of things to open.
  *     TASTE ritual question 2 ("is the first read instant?") is answered by the
  *     shut section, not by the opened one.
- *   - OPEN, the figure is DRAWN before the sentence: a value on a banded rule,
- *     or one mark per home. Geometry and its refusals live in
- *     ./V3Answers.marks.ts; a figure that cannot be drawn honestly opens onto
- *     its sentence alone rather than onto a mark in the wrong place.
- * The drawing is aria-hidden because everything in it is already visible text
- * in the same row (the value, the band names, the ends, the context label), so
- * a screen reader gets the reading rather than a second copy of it.
+ *   - OPEN, the figure is DRAWN before the sentence, and the drawing is an
+ *     instrument rather than a picture: the rule takes a crosshair the reader
+ *     scrubs with a pointer or the arrow keys, the tally counts through under
+ *     the pointer, and both carry a readout. Geometry and its refusals live in
+ *     ./V3Answers.marks.ts, the interrogation in ./answer-mark.client.tsx; a
+ *     figure that cannot be drawn honestly opens onto its sentence alone
+ *     rather than onto a mark in the wrong place.
+ * Each drawing is ONE role="img" whose label reads the whole thing as a
+ * sentence, and its positioned spans and its readout are aria-hidden, so a
+ * screen reader gets one clean reading rather than a second copy of text that
+ * is already in the row.
  *
  * A row may also carry ONE `action`. The last question on a place page is where
  * the reader wants to do something about the answer, and the doors in the left
@@ -55,6 +61,8 @@
  *  - No raw color and no hardcoded motion: every value resolves through
  *    ./tokens.css in ./V3Answers.css, and the mark's motion reads
  *    --v3-dur-state, which reduced motion collapses.
+ *  - The one client file is the drawing, and it holds no data of its own: it
+ *    is handed geometry the server already resolved.
  *  - Names are enforced at RENDER, the discipline V3Quiet states: a question
  *    with no text, an answer with no body, or a door with no label or href is
  *    dropped rather than shipped nameless, and a block with nothing left
@@ -64,7 +72,8 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3Eyebrow, V3Figure, V3Heading, V3SourceLine, V3_ROOT_CLASS } from './atoms'
-import { answerScaleGeometry, answerTallyCount, type V3AnswerMark } from './V3Answers.marks'
+import { AnswerMarkDrawing } from './answer-mark.client'
+import type { V3AnswerMark } from './V3Answers.marks'
 import './tokens.css'
 import './V3Answers.css'
 
@@ -239,62 +248,15 @@ function toRenderable(questions: readonly V3Answer[]): RenderableAnswer[] {
 }
 
 /**
- * The drawing, or nothing. Every value it needs is already printed as text in
- * the same row, so the element is decorative to assistive tech by construction
- * — `aria-hidden` here removes a duplicate reading, it does not hide content.
+ * The drawing, or nothing.
+ *
+ * Geometry and its refusals live in ./V3Answers.marks.ts; the rendering, the
+ * crosshair, the scrub and the count-through live in ./answer-mark.client.tsx,
+ * because TASTE.md's chart bar is that a data drawing has to be interrogable
+ * and a server component cannot hold a pointer. The server still renders the
+ * complete drawing — the client file adds handlers on hydration and nothing
+ * else, so the row works shut, open, and with scripting off.
  */
-function AnswerMark({ mark }: { mark: V3AnswerMark }) {
-  if (mark.kind === 'tally') {
-    const count = answerTallyCount(mark)
-    if (count == null) return null
-    return (
-      <div className="v3-answers__tally" aria-hidden="true">
-        {Array.from({ length: count }, (_, i) => (
-          <span className="v3-answers__tally-dot" key={i} />
-        ))}
-      </div>
-    )
-  }
-
-  const geometry = answerScaleGeometry(mark)
-  if (!geometry) return null
-  const { atPct, contextPct, bands } = geometry
-  return (
-    <div
-      className={cn('v3-answers__scale', mark.exception && 'v3-answers__scale--exception')}
-      aria-hidden="true"
-    >
-      {bands.length > 0 ? (
-        <div className="v3-answers__scale-bands">
-          {bands.map((band) => (
-            <span
-              key={band.label}
-              className={cn(
-                'v3-answers__scale-band',
-                band.active && 'v3-answers__scale-band--is',
-              )}
-              style={{ left: `${band.fromPct}%`, width: `${band.widthPct}%` }}
-            >
-              <span className="v3-answers__scale-band-label">{band.label}</span>
-            </span>
-          ))}
-        </div>
-      ) : null}
-      <div className="v3-answers__scale-rule">
-        {contextPct != null && mark.context ? (
-          <span className="v3-answers__scale-context" style={{ left: `${contextPct}%` }}>
-            <span className="v3-answers__scale-context-label">{mark.context.label}</span>
-          </span>
-        ) : null}
-        <span className="v3-answers__scale-at" style={{ left: `${atPct}%` }} />
-      </div>
-      <div className="v3-answers__scale-ends">
-        <span>{mark.minLabel}</span>
-        <span>{mark.maxLabel}</span>
-      </div>
-    </div>
-  )
-}
 
 function toDoors(doors: readonly V3AnswersDoor[] | undefined): V3AnswersDoor[] {
   if (!doors) return []
@@ -466,7 +428,7 @@ export function V3Answers({
                     <span aria-hidden="true" className="v3-answers__mark" />
                   </summary>
                   <div className="v3-answers__a">
-                    {row.figure?.mark ? <AnswerMark mark={row.figure.mark} /> : null}
+                    {row.figure?.mark ? <AnswerMarkDrawing mark={row.figure.mark} /> : null}
                     {row.body.map((line, lineIndex) => (
                       <p className="v3-answers__para" key={lineIndex}>
                         {line}
