@@ -2,7 +2,7 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "status": "zillow-shaped-home-2026-09-06",
-  "note": "Homepage on the components/site/v3 barrel. Expanded Home lock (Matt 2026-09-06 after Zillow+Redfin compare): full-bleed Search hero, stacked Zillow-style house carousels, illustrated Buy/Sell/Invest doors, Talk to a broker, Browse places chips, V3Proof, denser V3Footer (Markets/Company/Contact). No Atlas, no HomeExploreMap, no town ledger, no market essay on home. index.html is the retired KB mockup, kept as history, not the visual target.",
+  "note": "Homepage on the components/site/v3 barrel. Expanded Home lock (Matt 2026-09-06 after Zillow+Redfin compare): full-bleed Search hero (both Buy and Sell panels server-rendered, switched in CSS), the #right-now live band under it, stacked Zillow-style house carousels, illustrated Buy/Sell/Invest doors, Talk to a broker, Browse places chips, V3Proof, denser V3Footer (Markets/Company/Contact). No Atlas, no HomeExploreMap, no town ledger, no market essay on home. index.html is the retired KB mockup, kept as history, not the visual target.",
   "removedComponents": [
     {
       "name": "KbHero",
@@ -93,6 +93,11 @@
       "blocking": true
     },
     {
+      "name": "V3Pulse",
+      "section": "#right-now -- the live read under the hero search (SITE-12): the region's for-sale / under-contract / sold-in-30 counts as a claim plus three magnitude rules, every listing plotted at its own coordinate, a native radio switch that lights one population with no JavaScript, the moment of the read, and the section 0 trace. Moved off the Homes dropdown, which no longer publishes it.",
+      "blocking": true
+    },
+    {
       "name": "HomeHomesRails",
       "section": "Stacked Zillow-style house carousels (local Bend-area actives + honest price-cut / new rows when data exists). SplitCardMedia cards with badges/save.",
       "blocking": true
@@ -169,13 +174,16 @@
       "RESOLVED: phone-first one-off Field cards and Ledger overrides removed. Barrel SplitCardMedia cards on rails.",
       "RESOLVED: overlapping rail. Stacked carousels replace the lonely Field grid.",
       "RESOLVED 2026-09-06: Atlas, HomeExploreMap, town ledger, and market Instrument removed from home per Matt lock.",
-      "RESOLVED 2026-09-08 (SITE-M1): brokers section compact at 390; separate evaluator 77 on its scale, see tasteReview.openRaise for the rest of the page."
+      "RESOLVED 2026-09-08 (SITE-M1): brokers section compact at 390; separate evaluator 77 on its scale, see tasteReview.openRaise for the rest of the page.",
+      "RESOLVED 2026-09-08 (SITE-12): the hero Buy | Sell toggle's selected state was ambiguous. Selection is now carried by fill AND ink AND weight, and the unselected word is muted on the navy face; the switch is a native radio group so both panels are in the server HTML and the tab works with scripting off.",
+      "RESOLVED 2026-09-08 (SITE-12): 'Central Oregon right now' was published inside the Homes dropdown only. It is now the #right-now band under the hero search, with its read time, and the menu no longer carries it (lib/site/chrome-live.ts)."
     ]
   },
   "competitiveTarget": "Beat Zillow and Redfin on a clean local brokerage door: brand H1, working search, stacked photographed house carousels with real card face, illustrated Buy/Sell/Invest, brokers, place chips, proof.",
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- full-bleed owned flyover, H1 Homes for sale in Central Oregon, HomeHeroSearch",
+    "V3Pulse #right-now -- Central Oregon right now: live counts, the listing constellation, the read stamp",
     "HomeHomesRails -- stacked house carousels (local actives + honest price-cut / new rows when data exists)",
     "HomeFeaturedCommunity #featured-community -- featured resort / community slides with live figures",
     "V3Doors #doors -- illustrated Buy / Sell / Work with us, Sell = Sell a home",

@@ -222,6 +222,18 @@ export type {
 } from './V3Instrument'
 
 /* -------------------------------------------------------------------------- */
+/* Pattern 7 — PULSE: the live read of a place, drawn                          */
+/*                                                                             */
+/* A gauge, not a section: the counts that are true right now, a mark per       */
+/* listing plotted where it sits, the moment of the read, and a native radio    */
+/* switch that lights one population — all of it server HTML, no JavaScript.    */
+/* -------------------------------------------------------------------------- */
+
+export { V3Pulse } from './V3Pulse'
+
+export type { V3PulseProps, V3PulseReading } from './V3Pulse'
+
+/* -------------------------------------------------------------------------- */
 /* Pattern 2 — FIELD: inventory as a spatial surface                           */
 /* -------------------------------------------------------------------------- */
 

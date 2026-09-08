@@ -15,8 +15,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3SectionTracker,
   V3Proof,
+  V3Pulse,
 } from '@/components/site/v3'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
+import { loadHomePulse } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
@@ -90,7 +92,7 @@ const RESORT_DOORS = [
 ] as const
 
 export default async function Home() {
-  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides] =
+  const [cities, tiles, brokers, openHouseLabels, reviewSummary, featuredCommunitySlides, pulse] =
     await Promise.all([
       getCitiesForIndex().catch(() => []),
       getListingTiles({ status: 'active', limit: HOME_TILE_FETCH, sort: 'newest' }).catch(() => []),
@@ -100,6 +102,12 @@ export default async function Home() {
       loadHomeFeaturedCommunitySlides().catch((err) => {
         console.error('[home] featured community loader failed', err)
         return []
+      }),
+      // The same cached region population the chrome already read. SITE-12
+      // moved "Central Oregon right now" out of the Homes dropdown to here.
+      loadHomePulse().catch((err) => {
+        console.error('[home] live pulse loader failed', err)
+        return null
       }),
     ])
 
@@ -189,6 +197,11 @@ export default async function Home() {
         >
           <HomeHeroSearch valuationHref={valuationHref('/')} />
         </V3Stage>
+
+        {/* The live read, under the search. Absent — never zeroed — when the
+            listing read gives nothing: a count of no listings across Central
+            Oregon is a fact about the read, not about the market (section 0). */}
+        {pulse ? <V3Pulse {...pulse} id="right-now" /> : null}
 
         <HomeHomesRails
           rows={railRows}

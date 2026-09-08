@@ -222,9 +222,83 @@ export function detectNaming(existingFiles, routeKey) {
 /** URL path from a parity.json `route` (`app/sell/page.tsx` -> `/sell`). */
 export function routePathFromParity(routeField) {
   if (typeof routeField !== 'string') return null
-  const trimmed = routeField.replace(/^app\//, '').replace(/\/page\.tsx?$/, '')
+  // The leading slash is OPTIONAL in the page-file match: the homepage's route
+  // is `app/page.tsx`, which trims to the bare `page.tsx`, and a `\/page\.tsx`
+  // pattern left it there — `homepage-v6` resolved to `/page.tsx` and every
+  // capture 404'd (SITE-12).
+  const trimmed = routeField.replace(/^app\//, '').replace(/(^|\/)page\.tsx?$/, '')
   if (/\[/.test(trimmed)) return null // dynamic segment — no single URL
   return `/${trimmed}`.replace(/\/+$/, '') || '/'
+}
+
+/**
+ * The Chromium to drive.
+ *
+ * Playwright resolves its own download by revision, so an image that ships ONE
+ * pinned Chromium (which the agent sandboxes do, at /opt/pw-browsers) fails the
+ * default launch with "Executable doesn't exist at chromium_headless_shell-<n>"
+ * and tells the caller to run `npx playwright install` — which those images
+ * deliberately forbid. Point at the pinned binary when there is one; fall back
+ * to Playwright's own resolution when there is not, so a normal dev machine is
+ * unaffected. PLAYWRIGHT_CHROMIUM_PATH overrides both.
+ */
+const CHROMIUM_EXECUTABLE = (() => {
+  const named = (process.env.PLAYWRIGHT_CHROMIUM_PATH ?? '').trim()
+  if (named) return existsSync(named) ? named : undefined
+  const pinned = '/opt/pw-browsers/chromium'
+  return existsSync(pinned) ? pinned : undefined
+})()
+
+/**
+ * TRAP 10 — remote media the BROWSER cannot reach.
+ *
+ * A public page's hero can be a CDN URL (the place heroes are Supabase storage
+ * objects). In an egress-restricted sandbox the Node process reaches those
+ * hosts through the configured proxy and headless Chromium does not, so the
+ * capture comes back with a flat navy Stage and the evaluator grades a hole in
+ * the page rather than the page. That is a capture artifact and it has already
+ * cost one lane a receipt footnote.
+ *
+ * So: cross-origin image, media and font requests are fetched by NODE and
+ * fulfilled into the browser — the same bytes a visitor gets, not a stand-in.
+ * A fetch that fails hands the request straight back to the browser, so a
+ * machine with ordinary network access behaves exactly as before. One response
+ * cache per run, because six shots load the same hero six times.
+ *
+ * Set SHOT_NO_MEDIA_PROXY=1 to turn it off.
+ */
+const MEDIA_TYPES = new Set(['image', 'media', 'font'])
+const mediaCache = new Map()
+
+async function installRemoteMediaProxy(context, pageOrigin, stats) {
+  if (process.env.SHOT_NO_MEDIA_PROXY === '1') return
+  await context.route('**/*', async (route) => {
+    const request = route.request()
+    if (!MEDIA_TYPES.has(request.resourceType())) return route.continue()
+    let origin
+    try {
+      origin = new URL(request.url()).origin
+    } catch {
+      return route.continue()
+    }
+    if (origin === pageOrigin) return route.continue()
+    const key = request.url()
+    try {
+      if (!mediaCache.has(key)) {
+        const response = await fetch(key, { signal: AbortSignal.timeout(20_000) })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        mediaCache.set(key, {
+          body: Buffer.from(await response.arrayBuffer()),
+          contentType: response.headers.get('content-type') ?? 'application/octet-stream',
+        })
+      }
+      const hit = mediaCache.get(key)
+      stats.served += 1
+      return route.fulfill({ status: 200, contentType: hit.contentType, body: hit.body })
+    } catch {
+      return route.continue()
+    }
+  })
 }
 
 export function resolveUrl(baseUrl, routeKey, readParity) {
@@ -413,7 +487,10 @@ async function main() {
   console.log(`  capture    ${opts.full ? `full page (height-capped at ${MAX_FULL_PAGE_HEIGHT}px)` : 'first viewport'} · scale 1 · palette-quantized`)
   console.log('')
 
-  const browser = await chromium.launch({ args: LAUNCH_ARGS })
+  const browser = await chromium.launch({
+    args: LAUNCH_ARGS,
+    ...(CHROMIUM_EXECUTABLE ? { executablePath: CHROMIUM_EXECUTABLE } : {}),
+  })
   const written = []
   let failed = false
 
@@ -426,6 +503,8 @@ async function main() {
         reducedMotion: 'no-preference', // trap 9 — 'reduce' leaves reveals unfired
       })
       await context.addInitScript(SUPPRESS_OVERLAYS)
+      const mediaStats = { served: 0 }
+      await installRemoteMediaProxy(context, new URL(url).origin, mediaStats)
       const page = await context.newPage()
       const consoleErrors = []
       page.on('console', (m) => {
@@ -489,6 +568,9 @@ async function main() {
         await wheelTo(page, 0)
       }
 
+      if (mediaStats.served > 0) {
+        console.log(`  ${viewport.key}: ${mediaStats.served} cross-origin asset(s) fetched by node (trap 10)`)
+      }
       if (consoleErrors.length) {
         console.log(`  ${viewport.key}: ${consoleErrors.length} console error(s) — ${consoleErrors[0]}`)
       }
