@@ -147,7 +147,9 @@ export default async function SellPage() {
   const bendPulse = bend
     ? applyDetachedOverlay({ monthsOfSupply: null as number | null, refreshedAt: '' }, bend)
     : null
-  const sellVerdict = stickyAskVerdict(bendPulse)
+  // The source the tail names is the read this page actually made: Market
+  // Truth detached figures off market_metric, never the pulse table.
+  const sellVerdict = stickyAskVerdict(bendPulse, 'market_metric, Bend detached (Market Truth)')
 
   // SITE-11. The reach strip carries the broker this page routes the lead to —
   // the attributed agent when an ad sent them, Matt otherwise — and its number
