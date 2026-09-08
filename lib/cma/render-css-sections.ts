@@ -344,6 +344,10 @@ export function cmaSectionStyles(): string {
   .method { margin: 6px 0 10px; }
   .method-line { font-size: 11.5px; line-height: 1.55; margin: 0 0 5px; }
   /* Each sale's own price path, numbered to the columns above it. */
+  .pp-spark { display: block; width: 100%; min-width: 0; }
+  .pp-spark svg { width: 100%; height: auto; display: block; }
+  table.comp-matrix td.is-draw { padding: 4px 6px; vertical-align: middle; }
+  .comp-stack-card.is-yours { border-color: var(--navy); border-width: 2px; }
   .sale-paths { margin: 10px 0 4px; break-inside: avoid; }
   .sale-path { margin: 0 0 4px; break-inside: avoid; }
   /* The line is a strip, not a figure: capped so five of them do not become a

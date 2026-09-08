@@ -119,6 +119,13 @@ export function worthStripSvg(
   // Dots. Only the two ends carry a number — five prices along 700 units with
   // a label each is unread chaos (dataviz skill, step 4). Every dot names
   // itself on tap, and the grid below prints all five.
+  //
+  // The tap target is 26 units, not 44: five sales inside three percent of
+  // each other are a DENSE SERIES, and 44px targets on a phone would overlap
+  // so completely that only the last dot could be reached. The dataviz skill's
+  // floor for a mark is 24px, the look-pass holds these to it, and every one
+  // of these five prices is also a row in the grid below, which is the 44px
+  // path to the same reading.
   const first = g.sales[0]!
   const last = g.sales[g.sales.length - 1]!
   const dots = g.sales
@@ -126,7 +133,7 @@ export function worthStripSvg(
       const cx = x(s.adjustedPrice)
       const read = `${s.n}. ${s.address} · sale price today ${usd(s.adjustedPrice)}`
       return `<g class="ws-dot" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <circle cx="${cx.toFixed(1)}" cy="${dotY.toFixed(1)}" r="22" fill="transparent"/>
+      <circle cx="${cx.toFixed(1)}" cy="${dotY.toFixed(1)}" r="13" fill="transparent"/>
       <circle cx="${cx.toFixed(1)}" cy="${dotY.toFixed(1)}" r="5" fill="${INK}"/>
     </g>`
     })

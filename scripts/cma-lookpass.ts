@@ -193,6 +193,7 @@ async function screenshotDocument(opts: {
 
     if (opts.svgFailures && width <= 400) {
       opts.svgFailures.push(...(await checkSvgTextInsideViewBox(page, doc)))
+      if (doc === 'immersive') opts.svgFailures.push(...(await checkTapTargets(page, doc)))
     }
 
     const settledHtml = await page.content()
@@ -353,6 +354,74 @@ async function checkSvgTextInsideViewBox(
 
 
 /**
+ * 4. Every control a reader taps is at least 44px at 375.
+ *
+ * tasteReview 2026-09-07: 65 interactive targets measured under 44px on a
+ * phone — every price-history button (74x33), every pill (36 tall), every
+ * address link (309x22), and the chapter 1 cut marker at 7x7px, which is the
+ * flagship interaction of the flagship graphic. Measured with
+ * getBoundingClientRect in the browser, never estimated.
+ *
+ * Two documented exemptions, and only two:
+ *
+ * - A DENSE SERIES mark. Twelve months across a 343px plot are 25px apart;
+ *   44px targets would overlap and steal each other's taps. The dataviz skill
+ *   sets the floor for a mark at 24px, and that is what these are held to.
+ * - An INLINE LINK inside a sentence. Growing it to 44px tall would break the
+ *   line box it sits in. That is the WCAG 2.5.8 inline exception, and it is
+ *   why the block address links (which own their own row) are not exempt.
+ */
+const TAP_TARGET_SELECTOR =
+  'button, [role="button"], [role="slider"], a[data-rr-track], .pp-cut, .tl-mark, .bar-row, .pin-hit'
+/**
+ * Marks in a dense series, held to the dataviz skill's 24px floor instead.
+ *
+ * Twelve months across a 343px plot are 25px apart, and five sale prices
+ * inside three percent of each other are closer than that. 44px targets there
+ * would overlap so completely that only the last mark could be reached, which
+ * is worse for a thumb than a 25px one. Both series have a 44px path to the
+ * same reading elsewhere in the chapter — the month line's figures are in the
+ * sentence above it, and every dot on the price strip is a row in the grid.
+ */
+const DENSE_SERIES_SELECTOR = '.month-mark, .ws-dot'
+
+async function checkTapTargets(
+  page: import('puppeteer-core').Page,
+  doc: DocKind,
+): Promise<CheckFailure[]> {
+  const bad = await page.evaluate(
+    (sel: string, dense: string) => {
+      const out: string[] = []
+      const seen = new Set<Element>()
+      for (const node of Array.from(document.querySelectorAll(`${sel}, ${dense}`))) {
+        if (seen.has(node)) continue
+        seen.add(node)
+        const rects = node.getClientRects()
+        if (rects.length === 0) continue
+        // An inline link inside a sentence keeps the line box it lives in.
+        if (node.tagName === 'A' && node.closest('p')) continue
+        const r = node.getBoundingClientRect()
+        const floor = node.matches(dense) ? 24 : 44
+        const side = Math.min(r.width, r.height)
+        if (side + 0.5 < floor) {
+          const name =
+            node.getAttribute('aria-label') ||
+            (node.textContent ?? '').trim().slice(0, 40) ||
+            node.className
+          out.push(
+            `${node.tagName.toLowerCase()}.${String(node.className).split(' ')[0]} "${name}" is ${r.width.toFixed(0)}x${r.height.toFixed(0)}, under ${floor}px`,
+          )
+        }
+      }
+      return out
+    },
+    TAP_TARGET_SELECTOR,
+    DENSE_SERIES_SELECTOR,
+  )
+  return bad.map((detail) => ({ doc, rule: 'tap target under 44px at 375', detail }))
+}
+
+/**
  * ── --interact ─────────────────────────────────────────────────────────────
  * Drive every interaction Delta 2 names on the web document, and shoot the
  * result of each one.
@@ -490,12 +559,13 @@ const INTERACT_STEPS: InteractStep[] = [
       const sorted = perTable.every((k) => k.every((v, i) => i === 0 || k[i - 1] >= v))
       // The cards and the price paths move with the columns, or the chapter
       // now disagrees with itself about which sale is which.
-      const cards = Array.from(document.querySelectorAll('#what-its-worth .comp-stack-card'))
-        .map((c) => Number(c.getAttribute('data-sort-price')))
-      const paths = Array.from(document.querySelectorAll('#what-its-worth .sale-path'))
-        .map((c) => Number(c.getAttribute('data-sort-price')))
+      // Their own home is the first card and never sorts, the way it is the
+      // first column and never sorts.
+      const cards = Array.from(
+        document.querySelectorAll('#what-its-worth .comp-stack-card:not(.is-yours)'),
+      ).map((c) => Number(c.getAttribute('data-sort-price')))
       const follows = (a) => a.length === 0 || a.join(',') === keys.join(',')
-      return sorted && follows(cards) && follows(paths)
+      return sorted && follows(cards)
         ? perTable.map((k) => k.join(' > ')).join('  |  ')
         : ''
     })()`,
@@ -510,9 +580,20 @@ const INTERACT_STEPS: InteractStep[] = [
       const b = btns.find((x) => /under contract/i.test(x.textContent || ''))
       if (!b) return null
       b.click()
-      const shown = Array.from(document.querySelectorAll('#competition .rival-grid')).filter((g) => !g.hidden)
-      const hidden = Array.from(document.querySelectorAll('#competition .rival-grid')).filter((g) => g.hidden)
-      return hidden.length > 0 && shown.length > 0 ? 'showing ' + shown.length + ' of ' + (shown.length + hidden.length) + ' groups' : ''
+      // NOT "a grid carries the hidden attribute" — the defect was that the
+      // attribute was set and the CSS ignored it, so four for-sale homes stayed
+      // on screen under the "Under contract" heading. Measure what a reader can
+      // actually see, and check its status.
+      const visible = Array.from(document.querySelectorAll('#competition .rival-card'))
+        .filter((c) => c.getClientRects().length > 0)
+      if (visible.length === 0) return ''
+      const wrong = visible.filter((c) => c.getAttribute('data-status') !== 'pending')
+      const heads = Array.from(document.querySelectorAll('#competition h3'))
+        .filter((h) => h.getClientRects().length > 0)
+        .map((h) => (h.textContent || '').trim())
+      if (wrong.length > 0) return ''
+      if (heads.some((h) => /for sale/i.test(h))) return ''
+      return 'showing ' + visible.length + ' under-contract card(s) under ' + heads.join(' + ')
     })()`,
   },
   {

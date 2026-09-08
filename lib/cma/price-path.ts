@@ -344,6 +344,8 @@ export type PricePathLayout = {
    * which is a decoration, not a figure.
    */
   minimal?: boolean
+  /** No type at all: the shape of the path, for a cell too narrow for a word. */
+  bare?: boolean
 }
 
 /** Reading width and paper. Wide enough for two labels and a status word. */
@@ -352,6 +354,22 @@ export const PRICE_PATH_WIDE: PricePathLayout = { width: 560, height: 96, fontSi
 export const PRICE_PATH_PHONE: PricePathLayout = { width: 320, height: 92, fontSize: 10.5 }
 /** A card in a grid: one label, the line, the drop. */
 export const PRICE_PATH_CARD: PricePathLayout = { width: 220, height: 46, fontSize: 11, minimal: true }
+/**
+ * A CELL in the adjustment grid: the shape of the path and nothing else.
+ *
+ * Every price path used to be drawn twice — once inside the sale card and
+ * again in a stacked "How each of these sales was priced" block under the grid
+ * (tasteReview item 3). One drawing, in the column it belongs to; a 93px cell
+ * holds a line and no type, so this layout carries no labels at all and the
+ * dated history lives on the phone card where there is room to read it.
+ */
+export const PRICE_PATH_SPARK: PricePathLayout = {
+  width: 120,
+  height: 34,
+  fontSize: 9,
+  minimal: true,
+  bare: true,
+}
 
 /**
  * The whole primitive. One listing, one line, both layouts from one geometry
@@ -373,7 +391,7 @@ export function priceHistoryLineSvg(
   // The opening-ask label sits above the first vertex, so the top of the band
   // has to leave a line of type above it in EVERY layout — a minimal drawing
   // that pulled the band up to 13 put "$435K" a pixel outside its own viewBox.
-  const top = 20
+  const top = layout.bare === true ? 6 : 20
   const bottom = minimal ? H - 8 : H - 20
   const left = 2
   // The end label ("sold $457K · 25 days") owns the right margin. A long one
@@ -412,6 +430,8 @@ export function priceHistoryLineSvg(
     .map((c, i) => {
       const cx = x(utc(c.date))
       const cy = y(c.price)
+      // The visible mark is 3.2 units; the TARGET is a transparent circle
+      // around it, because a 6px dot is not a tap (tasteReview item 3).
       const attrs = `class="pp-cut" data-price="${c.price}" data-date="${esc(c.date)}"${
         id ? ` data-path="${esc(id)}"` : ''
       } tabindex="0" role="button" aria-label="${esc(`cut to ${shortUsd(c.price)} on ${monthDay(c.date)}`)}"`
@@ -419,7 +439,7 @@ export function priceHistoryLineSvg(
         labelCuts && c.price !== endValueForLabels
           ? `<text x="${(cx + 5).toFixed(1)}" y="${(cy + 13).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(shortUsd(c.price))}</text>`
           : ''
-      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="${INK}" ${attrs}/>${label}`
+      return `<g ${attrs}><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="24" fill="transparent"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.2" fill="${INK}"/></g>${label}`
     })
     .join('')
 
@@ -439,6 +459,7 @@ export function priceHistoryLineSvg(
       ? `<line x1="${endX.toFixed(1)}" y1="${y(lastAsk).toFixed(1)}" x2="${endX.toFixed(1)}" y2="${endY.toFixed(1)}" stroke="${INK}" stroke-width="2"/>`
       : ''
 
+  const bare = layout.bare === true
   const openLabel = shortUsd(path.startPrice)
   const startY = y(path.startPrice)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" class="price-path" aria-label="${esc(
@@ -450,7 +471,11 @@ export function priceHistoryLineSvg(
   ${closeDrop}
   ${cutMarks}
   <circle cx="${left + 1}" cy="${startY.toFixed(1)}" r="3.2" fill="${INK}"/>
-  <text x="${left}" y="${(startY - 8).toFixed(1)}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(openLabel)}</text>
+  ${
+    bare
+      ? ''
+      : `<text x="${left}" y="${(startY - 8).toFixed(1)}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(openLabel)}</text>`
+  }
   <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="3.2" fill="none" stroke="${INK}" stroke-width="1.6"/>
   ${
     minimal
@@ -532,6 +557,22 @@ export function priceHistoryLineHtml(path: PricePath | null, id?: string): strin
  * line inside 260px of card scales the labels to five pixels. Same geometry,
  * same figures, one layout instead of a pair.
  */
+/**
+ * ONE cell of the grid: the path's shape, no type, no toggle.
+ *
+ * No `data-events`, deliberately — the interaction layer attaches its
+ * expand-to-dated-list to a `.pp-wrap[data-events]`, and a 44px toggle button
+ * inside a 93px column would be the tallest thing in the table. The dated list
+ * stays on the phone card, which is where a reader on a phone reads this
+ * chapter anyway.
+ */
+export function priceHistorySparkHtml(path: PricePath | null): string {
+  if (!path) return ''
+  const svg = priceHistoryLineSvg(path, PRICE_PATH_SPARK)
+  if (!svg) return ''
+  return `<span class="pp-spark" title="${esc(priceHistoryReading(path))}">${svg}</span>`
+}
+
 export function priceHistoryLineCompactHtml(path: PricePath | null, id?: string): string {
   if (!path) return ''
   const svg = priceHistoryLineSvg(path, PRICE_PATH_CARD, id)

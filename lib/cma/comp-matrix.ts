@@ -27,7 +27,7 @@ import {
   usd,
   usdSigned,
 } from '@/lib/cma/render-blocks'
-import { priceHistoryLineHtml, pricePathFromSale } from '@/lib/cma/price-path'
+import { priceHistoryLineHtml, priceHistorySparkHtml, pricePathFromSale } from '@/lib/cma/price-path'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -150,6 +150,8 @@ type MatrixRow = {
   fact?: 'dom' | 'listing-history'
   rule?: boolean
   grid?: boolean
+  /** The cell holds a drawing, not a figure. Printed as written, never escaped. */
+  html?: boolean
 }
 
 const ROWS: ReadonlyArray<MatrixRow> = [
@@ -160,6 +162,7 @@ const ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Days to offer', figure: true },
   { label: 'Sold for', figure: true },
   { label: 'Sold', figure: true },
+  { label: 'Price history', figure: false, html: true },
   { label: 'Seller concessions', figure: true, grid: true },
   { label: 'Adjusted for date', figure: true, grid: true },
   { label: 'Adjusted for size', figure: true, grid: true },
@@ -258,6 +261,10 @@ function compCol(
       comp.daysToOffer != null ? `${int(comp.daysToOffer)} ${comp.daysToOffer === 1 ? 'day' : 'days'}` : '-',
       usd(comp.closePrice),
       comp.closeDate ? dateLong(comp.closeDate) : '-',
+      // Delta 1's price-path primitive, drawn ONCE, in the column it belongs
+      // to. It used to be drawn twice: inside the phone card and again in a
+      // stacked block under the grid (tasteReview item 3).
+      priceHistorySparkHtml(pricePathFromSale(comp)) || '-',
       concessionCell(comp),
       signedCell(comp.timeAdjustment),
       signedCell(comp.sizeAdjustment),
@@ -441,8 +448,10 @@ function matrixTable(
       const tds = cols
         .map((c, ci) => {
           const val = c.cells[i] ?? '-'
-          const diff = ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
-          return `<td class="v${row.figure ? ' n' : ''}${diff ? ' is-diff' : ''}">${esc(val)}</td>`
+          const diff =
+            row.html !== true && ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
+          const body = row.html === true ? val : esc(val)
+          return `<td class="v${row.figure ? ' n' : ''}${row.html === true ? ' is-draw' : ''}${diff ? ' is-diff' : ''}">${body}</td>`
         })
         .join('')
       const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
@@ -470,11 +479,18 @@ function matrixTable(
  * (blueprint chapter 3). A seven-column table is a desktop object.
  */
 function matrixStack(
+  subject: CmaSubject,
   comps: readonly CmaAdjustedComp[],
   cols: readonly Col[],
   rows: ReadonlyArray<MatrixRow>,
   ctx?: TrackedDocLinkCtx | null,
 ): string {
+  // THEIR OWN HOME, FIRST. The desktop grid leads with a "Your home" column;
+  // the phone drawing dropped it entirely, so at 375 the price chapter held
+  // five sales and the string "Your home" appeared nowhere — the seller could
+  // not compare their house to the sales on the device they were reading on
+  // (tasteReview item 1).
+  const yours = subjectStackCard(subject)
   const cards = comps
     .map((c, i) => {
       const pin = String(i + 1)
@@ -521,35 +537,30 @@ function matrixStack(
       )}<div class="comp-stack-grid">${lines}</div></article>`
     })
     .join('')
-  return `<div class="comp-stack" aria-label="The sales that set this price, one card each">${cards}</div>`
+  return `<div class="comp-stack" aria-label="The sales that set this price, one card each">${yours}${cards}</div>`
 }
 
-/**
- * How each sale was priced over its own listing period.
- *
- * On a column-per-sale table there is no row wide enough to draw a line in —
- * 93px of column would scale the labels to three pixels — so the paths sit in
- * their own block under the grid, numbered to the columns above them. The
- * phone card carries its own line inside the card, where there is width.
- */
-function pricePathsHtml(comps: readonly CmaAdjustedComp[]): string {
-  const rows = comps
-    .map((c, i) => {
-      const path = pricePathFromSale(c)
-      if (!path) return ''
-      return `<div class="sale-path" data-comp="${i + 1}" data-pin="${i + 1}"${sortKeys(c)}>
-      <div class="sale-path-name">${esc(`${i + 1}. ${c.address}`)}</div>
-      ${priceHistoryLineHtml(path, `sale-${i + 1}`)}
-    </div>`
-    })
+/** The reader's own home as the first phone card: ask, size, beds, baths, year. */
+function subjectStackCard(subject: CmaSubject): string {
+  const src = subject.photoUrl?.trim()
+    ? (sparkPhotoAt(subject.photoUrl, '320x240') ?? subject.photoUrl)
+    : null
+  const img = src
+    ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
+    : ''
+  const ask = subject.lastListPrice
+  const facts = [
+    sizeCell(subject.sqft, subject.lotAcres) !== '-' ? sizeCell(subject.sqft, subject.lotAcres) : null,
+    bedsBaths(subject.beds, subject.baths) !== '-' ? bedsBaths(subject.beds, subject.baths) : null,
+    subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
+  ]
     .filter(Boolean)
-    .join('')
-  if (!rows) return ''
-  return `<div class="sale-paths">
-    <h4 class="sale-paths-h">How each of these sales was priced</h4>
-    ${rows}
-    <p class="small">Each line runs from the price that sale was asking to what it closed at. Where the record holds no dated price change, the line is flat.</p>
-  </div>`
+    .join(' · ')
+  return `<article class="comp-stack-card is-yours" data-comp="subject" data-pin="subject">${img}<span class="comp-stack-addr">Your home · ${esc(
+    subject.streetAddress,
+  )}</span><div class="comp-stack-sold">${
+    ask != null && ask > 0 ? `Listed ${usd(ask)}` : 'Not on the market'
+  }</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}</article>`
 }
 
 /** The one line that says what "Sale price today" is. */
@@ -583,7 +594,6 @@ export function renderCompMatrixHtml(
   ${lead}
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
-  ${matrixStack(comps, compCols, folded.rows, ctx)}
-  <p class="small">${esc(SALE_PRICE_TODAY_LEGEND)}</p>
-  ${pricePathsHtml(comps)}`
+  ${matrixStack(subject, comps, compCols, folded.rows, ctx)}
+  <p class="small">${esc(SALE_PRICE_TODAY_LEGEND)}</p>`
 }

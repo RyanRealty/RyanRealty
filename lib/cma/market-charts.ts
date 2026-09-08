@@ -116,7 +116,7 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       // reading is the month and the figure already plotted at that point.
       const read = `${monthLabel(priced[i]!.periodStart)}: ${chartUsd(vals[i]!)} median close`
       return `<g class="month-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="12" fill="transparent"/>
+      <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="14" fill="transparent"/>
       <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>
     </g>${tick}`
     })
@@ -628,8 +628,12 @@ function timelineBody(o: {
       // composed here, from the same two recorded figures the mark is drawn
       // from; the script prints it and derives nothing.
       const read = `${i === 0 ? 'Asked' : 'Cut to'} ${label} on ${monthDay(s.date)}`
+      // 24 units of invisible target. On the 360-unit phone drawing that is
+      // 45px on a 375 screen; the visible mark stays 3.5. It shipped at 7x7px
+      // — the flagship interaction of the flagship graphic, unhittable on a
+      // phone (tasteReview item 3).
       return `<g class="tl-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="10" fill="transparent"/>
+    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="24" fill="transparent"/>
     <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${TL_INK}"/>
     <text x="${lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>
     </g>`

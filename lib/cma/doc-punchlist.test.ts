@@ -13,6 +13,8 @@ import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { immersiveStylesheet } from './immersive-css'
+import { immersiveInteractionCss, immersiveInteractionScript } from './immersive-interactions'
+import { priceHistoryLineSvg, pricePathFromFinalCycle } from './price-path'
 import { cmaStylesheet } from './render-css'
 import { askOutcomeBarsSvg, askOutcomeDaysPhrase, niceAxis } from './market-charts'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -1149,5 +1151,67 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toContain('class="btn sec ghost"')
     expect(html).toContain('class="sc sc-navy pack"')
     expect(html).toContain('next-note')
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 3: survivable on a phone, and finish the close.
+ */
+describe('tasteReview 3 — the phone document, and the close', () => {
+  it('leads chapter 3 on a phone with their own home', () => {
+    const html = immersive()
+    const stack = html.slice(html.indexOf('class="comp-stack"'))
+    const first = stack.split('comp-stack-card')[1] ?? ''
+    expect(first).toContain('is-yours')
+    expect(first).toContain('Your home · 2465 7th')
+    expect(first).toContain('Listed $460,000')
+  })
+
+  it('draws every price path exactly once', () => {
+    const html = immersive()
+    expect(html).not.toContain('How each of these sales was priced')
+    // One sparkline per sale in the grid, one full drawing per phone card.
+    expect((html.match(/class="pp-spark"/g) ?? []).length).toBe(5)
+  })
+
+  it('gives every chart mark a real tap target, not a 7px dot', () => {
+    const html = immersive()
+    // The chapter 1 cut marker shipped as a 7x7px hit area.
+    expect(html).toMatch(/<g class="tl-mark"[^>]*>\s*<circle [^>]*r="24" fill="transparent"/)
+    // Every dated cut on a price path carries one too.
+    const withCut = priceHistoryLineSvg(
+      pricePathFromFinalCycle(
+        {
+          listDate: '2026-02-26',
+          initialAsk: 475000,
+          cuts: [{ date: '2026-07-28', ask: 460000 }],
+          cutsDated: true,
+          finalAsk: 460000,
+          offMarketDate: '2026-09-01',
+          status: 'withdrawn',
+          days: 187,
+        },
+        '2465 7th',
+      ),
+    )
+    expect(withCut).toMatch(/<g class="pp-cut"[^>]*>\s*<circle [^>]*r="24" fill="transparent"/)
+  })
+
+  it('raises every block address link and pill to 44px on a phone', () => {
+    const css = immersiveStylesheet().replace(/\s+/g, ' ')
+    expect(css).toMatch(/a\.dns-addr[^{]*\{[^}]*min-height:\s*44px/)
+    expect(css).toMatch(/\.print-out a\s*\{[^}]*min-height:\s*44px/)
+    const controls = immersiveInteractionCss().replace(/\s+/g, ' ')
+    expect(controls).toMatch(/\.rr-btn\{[^}]*min-height:\s*44px/)
+    expect(controls).toMatch(/\.pp-toggle\{[^}]*min-height:\s*44px/)
+  })
+
+  it('announces the slider from the first render, and the bars as toggles', () => {
+    const script = immersiveInteractionScript()
+    expect(script).toContain("hit.setAttribute('aria-valuenow'")
+    expect(script).toContain("hit.setAttribute('aria-valuetext'")
+    // Set before any key press: put(...) runs once at the end of the block.
+    expect(script).toMatch(/put\(Math\.min\(3,pts\.length-1\),false\)/)
+    expect(script).toContain("n.setAttribute('aria-pressed','false')")
   })
 })

@@ -124,7 +124,9 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve).toContain('<h4 class="subhead">Sales 9 through 12</h4>')
     // The defect this whole shape exists to prevent: sales falling off the page.
     expect(twelve).toContain('12. 947 6th')
-    expect(twelve.match(/Your home/g)).toHaveLength(3)
+    // Three table heads, plus the phone stack's own "Your home" card, which
+    // the desktop grid had and the phone drawing did not (tasteReview item 1).
+    expect(twelve.match(/Your home/g)).toHaveLength(4)
     expect(twelve.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
 
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
@@ -351,17 +353,25 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('17.0%')
   })
 
-  it('draws each sale its own price path, numbered to the column above it', () => {
+  it('draws each sale its price path ONCE, as a column of the grid', () => {
     const html = renderCompMatrixHtml(subj, five(sale))
-    expect(html).toContain('How each of these sales was priced')
+    // The stacked "How each of these sales was priced" block is gone: every
+    // path was drawn twice, once in the card and once again under the grid
+    // (tasteReview item 3).
+    expect(html).not.toContain('How each of these sales was priced')
+    expect(html).toContain('Price history')
+    expect(html).toContain('class="pp-spark"')
     expect(html).toContain('class="price-path"')
-    expect(html).toContain('1. 100 Quince')
-    expect(html).toContain('sold $457K')
+    // The cell holds a drawing, not an escaped string.
+    expect(html).toContain('<td class="v is-draw"><span class="pp-spark"')
   })
 
-  it('gives the phone card the same lines as the column', () => {
+  it('leads the phone stack with their own home, then the sales', () => {
     const html = renderCompMatrixHtml(subj, five(sale))
-    const card = html.split('comp-stack-card')[1] ?? ''
+    const first = html.split('comp-stack-card')[1] ?? ''
+    expect(first).toContain('is-yours')
+    expect(first).toContain('Your home · 2465 7th')
+    const card = html.split('comp-stack-card')[2] ?? ''
     expect(card).toContain('Net adjustment')
     expect(card).toContain('Sale price today')
     expect(card).toContain('class="price-path"')

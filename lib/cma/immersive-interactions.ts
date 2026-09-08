@@ -68,7 +68,7 @@ export function immersiveInteractionCss(): string {
 .pp-list .v{font-variant-numeric:tabular-nums;font-weight:600}
 /* A sale, its pin and its price path light together. */
 .is-on{background:rgba(16,39,66,.07)}
-th.v.is-on,.comp-stack-card.is-on,.sale-path.is-on{outline:2px solid var(--navy);outline-offset:2px;background:transparent}
+th.v.is-on,.comp-stack-card.is-on{outline:2px solid var(--navy);outline-offset:2px;background:transparent}
 /* The toggle that puts the working away. */
 .is-plain tr[data-adj],.is-plain .comp-stack-line[data-adj]{display:none}
 /* Chapter 1's line draws itself once, and only for a reader who wants motion. */
@@ -292,7 +292,6 @@ try{
   var tables=worth?[].slice.call(worth.querySelectorAll('table.comp-matrix')):[]
   if(worth&&tables.length){
     var stack=worth.querySelector('.comp-stack')
-    var paths=worth.querySelector('.sale-paths')
     var anchor=worth.querySelector('.comp-matrix-wrap')||tables[0]
 
     // The toggle is a class on the chapter, so it works whatever the grid was
@@ -344,8 +343,7 @@ try{
         })
         global.forEach(function(pin){if(byPin[pin])container.appendChild(byPin[pin])})
       }
-      reflow(stack,'.comp-stack-card')
-      reflow(paths,'.sale-path')
+      reflow(stack,'.comp-stack-card:not(.is-yours)')
     }
     button(sortBox,'As weighted',true,function(){order(null,1)})
     button(sortBox,'Most recent',false,function(){order('date',-1)})

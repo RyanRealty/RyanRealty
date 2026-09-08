@@ -318,13 +318,15 @@ a.dns-addr:hover{border-bottom-color:var(--navy)}
 /* Chapter 3's method, stated before the evidence for it. */
 .method{margin:10px 0 20px;max-width:70ch}
 .method-line{font-size:16px;line-height:1.6;margin:0 0 10px}
-/* Each sale's own price path, numbered to the columns above it. */
-.sale-paths{margin:22px 0 8px}
-.sale-path{margin:0 0 10px}
-.sale-paths .pp svg{max-width:620px}
-.sale-paths .pp-wrap{margin:4px 0 0}
-.sale-path-name{font-size:15px;font-weight:600}
+/* The price path as ONE cell of the grid: the shape, no type, no toggle. It
+   used to be drawn twice, once in the phone card and again in a stacked block
+   under the grid (tasteReview item 3). */
+.pp-spark{display:block;width:100%;min-width:0}
+.pp-spark svg{width:100%;height:auto;display:block}
+table.comp-matrix td.is-draw{padding:6px 8px;vertical-align:middle}
 .sale-paths-h{font-size:19px;font-weight:600;margin:18px 0 10px}
+/* Their own home leads the phone stack. */
+.comp-stack-card.is-yours{border-color:var(--navy);border-width:2px}
 /* Considered and not used. */
 ul.rejected-list{list-style:none;margin:6px 0 12px;padding:0}
 ul.rejected-list li{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 18px;padding:10px 0;border-bottom:1px solid var(--ink12);font-size:15px}
@@ -408,6 +410,13 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .facts-block ul{margin:0 0 16px 18px}
 .facts-block li{margin:6px 0}
 @media (max-width:560px){.stat2,.stat3,.stat4{grid-template-columns:1fr}.photo-set{grid-template-columns:1fr 1fr}.status-tiles{grid-template-columns:1fr}}
+/* TAP TARGETS (tasteReview item 3). 65 controls measured under 44px at 375,
+   starting with the address links a seller taps to open a sale. A block link
+   inside a card owns its full width, so only its height had to grow. Inline
+   links inside a sentence stay inline — that is what a sentence is. */
+.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{display:block;min-height:44px;padding:11px 0;box-sizing:border-box}
+.print-out a{display:inline-block;min-height:44px;padding:12px 0;box-sizing:border-box}
+@media print{.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{min-height:0;padding:0}}
 @media print{
   .sc{min-height:0;padding:24px}
   .cue{display:none}
