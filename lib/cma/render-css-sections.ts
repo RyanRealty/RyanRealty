@@ -665,10 +665,12 @@ export function cmaSectionStyles(): string {
      on market, and one delta line against your home. */
   /* Four across at four or more; fewer cards fill the row rather than leaving
      empty tracks beside them. */
-  .rival-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 8px 0 14px; }
+  /* A card has a top width. Two cards stretched across 816 turned a thumbnail
+     into a 540px photo and the price path's type with it. */
+  .rival-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 200px)); justify-content: center; gap: 10px; margin: 8px 0 14px; }
   /* Wide only: a :has() rule outscores the plain media overrides below it. */
   @media screen and (min-width: 701px) {
-    .rival-grid:has(> :nth-child(4)) { grid-template-columns: repeat(4, 1fr); }
+    .rival-grid:has(> :nth-child(4)) { grid-template-columns: repeat(4, 1fr); justify-content: stretch; }
   }
   .rival-card {
     border: 1px solid var(--navy-line);
