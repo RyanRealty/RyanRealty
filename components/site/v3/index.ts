@@ -108,6 +108,22 @@ export type {
 } from './V3Chart'
 
 /**
+ * THE DRAWN ANSWER. One primitive, three drawings: months of supply as two
+ * named counts on one scale, the comparable closes as a dot strip, days to
+ * pending as one mark on a declared rule with a context mark. Every figure
+ * carries its own section-0 source line, and the whole answer draws on once
+ * under 300ms. Geometry is lib/charts/plot.ts, the same file V3Chart uses.
+ */
+export { V3Drawing, V3_DRAWING_MIN_STRIP, V3_DRAWING_DRAW_MS } from './V3Drawing.client'
+
+export type {
+  V3DrawingProps,
+  V3DrawingFigure,
+  V3DrawingBar,
+  V3DrawingPoint,
+} from './V3Drawing.client'
+
+/**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
  * stay on the barrel (ci:public-ui). Grandfathered routes may still import
  * the flat components/site/MetadataBlock.
