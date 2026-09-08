@@ -53,6 +53,14 @@ export interface CmaSubject {
   levelsRaw?: unknown
   /** MLS NewConstructionYN. Null means the feed did not say. */
   newConstructionYn?: boolean | null
+  /**
+   * Who holds the subject's newest listing cycle. Read for the compliance
+   * carve-out (CmaSubjectStatus): a document may not solicit a listing that is
+   * live with another brokerage. Optional so existing fixtures keep compiling.
+   */
+  listAgentName?: string | null
+  listAgentEmail?: string | null
+  listOfficeName?: string | null
 }
 
 export interface CmaComp {
@@ -247,6 +255,100 @@ export interface CmaPricingReview {
   reasons: string[]
   /** Null on a build that recorded no audit at all. */
   auditVerdict: CmaPricingAuditVerdict | null
+  /**
+   * How loud the surface has to be, in one word a renderer can branch on.
+   *
+   * Round four, class C: `pricing.review` was legible only to the admin route,
+   * because reading it meant reading four fields and knowing which
+   * combinations matter. A letter and a PDF each re-derived that and got it
+   * wrong. 'blocked' is an audit verdict of `fail` — the analysis's own
+   * refuter says it does not stand. 'review' is everything else that needs a
+   * broker. 'none' is a clean build.
+   */
+  severity: CmaPricingReviewSeverity
+  /**
+   * The one sentence a letter or a PDF prints, seller-safe, or null when the
+   * build is clean. A renderer must not compose its own: this is the wording
+   * that has been through the voice canon.
+   */
+  rendererNotice: string | null
+}
+
+export type CmaPricingReviewSeverity = 'none' | 'review' | 'blocked'
+
+/**
+ * A line on the seller-net itemisation. `amount` is a COST, always positive,
+ * always subtracted. `source` traces it to the data that produced it.
+ */
+export interface CmaSellerNetLine {
+  label: string
+  amount: number
+  source: string
+}
+
+/**
+ * WHAT THE SELLER KEEPS, itemised, from the price we recommend they list at.
+ *
+ * Round four, class A. The block this replaces carried one figure,
+ * `predictedSellerNet`, computed as `predictedClose - expectedConcessions`.
+ * `predictedClose` is the ENGINE's close estimate, which on a listed subject
+ * is the seller's own ask times 0.98 and on a capped expired is whatever the
+ * comps wanted before the ceiling — neither of them the price the chapter
+ * prints beside it. So the four exemplars published a net of $1,707,603
+ * against a $1,473,000 list, $616,000 against $816,000, $426,575 against
+ * $435,000 and $436,008 against $461,000. One of them was a net ABOVE the
+ * price, under a chapter headed "What you keep".
+ *
+ * The replacement is anchored and derivable: it starts at the recommended
+ * LIST price, subtracts only costs this row can defend from data, and NAMES
+ * every cost it does not include in `unknowns` so no figure implies a
+ * completeness it does not have. Commission is in `unknowns` unless a caller
+ * supplies it from a signed fact; it is never silently zero.
+ */
+export interface CmaSellerNet {
+  /** Always the list. A close estimate is a different number and is not used here. */
+  basis: 'list'
+  /** `pricing.recommended` at the moment the block was written. */
+  list: number
+  /** Costs, in print order. Empty when nothing on the row is defensible. */
+  lines: CmaSellerNetLine[]
+  /** `list` minus every line. Can never exceed `list`. */
+  net: number
+  /** Seller-safe, states the arithmetic and stops. */
+  sentence: string
+  /** What is NOT in `net`. Never empty. */
+  unknowns: string[]
+  /**
+   * The concession summary the lines were derived from, kept as the trace and
+   * read by the net sheet and the grid caption.
+   */
+  expectedConcessions: number | null
+  knownCount: number
+  givenCount: number
+  medianWhenGiven: number | null
+  rate: number | null
+}
+
+/**
+ * Compliance flags read off the SUBJECT listing, so a renderer can suppress a
+ * solicitation without re-reading the MLS.
+ *
+ * Round four, class D: 1617 NW 8th is an ACTIVE listing held by another
+ * brokerage and the closing chapter solicited it; 2465 7th is Withdrawn, not
+ * Expired, so the owner may still be under a listing agreement. Neither
+ * document carried a carve-out because nothing on `render_args` said so.
+ */
+export interface CmaSubjectStatus {
+  /** The MLS StandardStatus of the subject's newest listing cycle. */
+  standardStatus: string | null
+  /** Active or Pending, and the listing agent is not ours. Do not solicit. */
+  isActiveWithOtherBrokerage: boolean
+  /** Withdrawn or Canceled rather than Expired: a listing agreement may still run. */
+  isWithdrawnNotExpired: boolean
+  /** The listing agent on that cycle is Ryan Realty. */
+  listingAgentIsUs: boolean
+  /** Why the flags read the way they do, or a stale-cycle suppression. Null when there is nothing to say. */
+  note: string | null
 }
 
 /**
@@ -374,17 +476,11 @@ export interface CmaPricing {
   improvementsValueAdd: number | null
   notes: string[]
   /**
-   * ClosePrice is the contract price. Seller net from that price subtracts
-   * seller concessions only (commission and title are a separate net sheet).
+   * What the seller keeps from the RECOMMENDED LIST, itemised, with everything
+   * not included named. See CmaSellerNet — this replaced a single unanchored
+   * figure that could exceed the price it was printed beside.
    */
-  sellerNet?: {
-    expectedConcessions: number | null
-    predictedSellerNet: number | null
-    knownCount: number
-    givenCount: number
-    medianWhenGiven: number | null
-    rate: number | null
-  }
+  sellerNet?: CmaSellerNet | null
 }
 
 export interface CmaBroker {

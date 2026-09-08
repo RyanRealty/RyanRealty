@@ -62,6 +62,10 @@ const LISTING_CMA_COLUMNS = [
   'status_change_timestamp',
   'ListAgentName',
   'list_agent_email',
+  // The office on the row. The compliance carve-out
+  // (lib/pricing/subject-status.ts) needs to know whether a live listing is
+  // ours, and `list_agent_email` is not populated on every row.
+  'ListOfficeName',
   'photos_count',
   // Association fields — consumed by lib/cma/development.ts to state whether an
   // HOA exists and what it charges. Never used to characterise unread CC&Rs.

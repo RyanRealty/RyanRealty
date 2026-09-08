@@ -230,6 +230,12 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     lastListPrice: listPrice,
     lastListDate: listDate,
     listingHistoryLine: historyLine,
+    // Who holds this listing. Read only by the compliance carve-out
+    // (lib/pricing/subject-status.ts): a report may not solicit an owner whose
+    // home is live with another brokerage.
+    listAgentName: str(row['ListAgentName']),
+    listAgentEmail: str(row['list_agent_email']),
+    listOfficeName: str(row['ListOfficeName']),
     associationYn: bool(row['association_yn']),
     associationFee: num(row['association_fee']),
     associationFeeFrequency: str(row['association_fee_frequency']),
