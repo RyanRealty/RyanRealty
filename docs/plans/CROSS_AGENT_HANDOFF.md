@@ -1,3 +1,44 @@
+# Current — 2026-09-08 PM (round four closed: A–F shipped, the contract fails closed on type)
+
+Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907` → main. Blueprint, four
+evaluator rounds, and the round-four audit: `docs/plans/CMA_REIMAGINED_2026-09-07.md`.
+
+**Shipped this pass (all on main, deploy verified, 2465 rebuilt on the shipped code):**
+- A. `pricing.sellerNet` itemised: list, each cost line with its source, net ≤ list, and a
+  sentence naming what is NOT included (commission is never silently zero). The sentence now
+  states the count when the median across reporting sales is $0 while some gave one.
+- B. `expiredAudit.askExposure`: chapter 1 reads the ask that ran the clock ("It asked
+  $475,000 for 152 days, then $460,000 for 35", 7.2 percent above the range top). A stale
+  cycle (>12 months) never feeds the story; an owner asking below the range never gets the
+  overpricing story. An ask above the sales that sat is the overpricing story; only an ask
+  inside or below the range earns "points at something other than the number."
+- C. `pricing.review.severity` + `rendererNotice`: a review band on the letter AND the
+  immersive, not only the admin route.
+- D. `subjectStatus`: an active listing with another brokerage gets no solicitation and the
+  non-solicitation sentence; a Withdrawn subject carries the non-interference sentence.
+- E. One list ceiling (every tier ≤ `clamp.after`, never the failed ask); the worth range is
+  the kept set only (a set-aside sale can never be an axis end); `render_args.compSearch`
+  drives a search sentence the grid cannot refute; kept-set n is one number everywhere;
+  measures labelled (index = every home sale in the city per $/sqft, month line =
+  single-family sale price); no stale "listed $140,000".
+- F. One scale on the worth strip; a place polygon that holds neither subject nor sale is
+  suppressed.
+- Contract: `product-type-match` fails CLOSED when the subject's type is unstored (review,
+  not a pass). Matt 2026-09-08: apples to apples only, on every rung.
+
+**Matt's two rules from today (memory `feedback_cma_comp_containment`):** comps never leave
+the neighborhood or community boundary until it is exhausted to 12 months (subdivision →
+adjacent subdivisions inside the boundary → then out); same property type on every rung. The
+ladder change is the next engine item and is NOT built yet — see the previous block for the
+tier order and the data to confirm first.
+
+**Still open:** the cover photo is whatever single MLS photo the row carries; the map is a
+Google tile with our pins; subdivision-story and voice-reviewer still call the Anthropic API
+and fail open; inbound EMAIL replies do not advance the CRM; D21 price-tier fallback is Matt's
+call; `CmaLaneFunnel` not mounted; 8 `zz-test-rebrand-*` fixtures in production `cmas`;
+`lib/cma-request.int.test.ts` is flaky under the parallel full suite (shared DB). Every ready
+row still needs a rebuild on this engine before any send; all lane switches are OFF.
+
 # Current — 2026-09-08 (site queue round two seeded from Search Console; two policy questions on Matt; the cloud fleet can take a screenshot)
 
 Owner: Claude (Fable 5.1), session 3db16241, main checkout. Three commits on this program today:
