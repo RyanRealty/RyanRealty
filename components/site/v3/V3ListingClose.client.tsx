@@ -55,6 +55,14 @@ export type V3ListingCloseProps = {
   /** Null when no figure for this city published honestly at 12 months. */
   view: CloseView | null
   headingLevel?: 1 | 2
+  /**
+   * The section's anchor. Defaults to 'close' — the id the listing page's
+   * parity contract names — but the CALLER passes it, so the anchor a reader
+   * of page.tsx is looking for is written where they look. ci:page-purpose
+   * reads the call site, and a contract that says #close while the id hides
+   * inside the component is a contract nobody can check from the page.
+   */
+  id?: string
   className?: string
 }
 
@@ -202,6 +210,7 @@ export function V3ListingClose({
   paymentHref,
   view,
   headingLevel = 2,
+  id = 'close',
   className,
 }: V3ListingCloseProps) {
   const uid = useId().replace(/:/g, '')
@@ -219,7 +228,7 @@ export function V3ListingClose({
 
   return (
     <section
-      id="close"
+      id={id}
       aria-labelledby={`${uid}-heading`}
       className={cn(V3_ROOT_CLASS, 'v3-close', className)}
     >

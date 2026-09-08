@@ -594,6 +594,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           Two asks side by side would be the stacked-section tell TASTE.md bans,
           so the close is a CHOOSER — three doors, one panel. */}
       <V3ListingClose
+        id="close"
         listingKey={listing.listingKey}
         addressLine={street}
         bookHref={`/book?agent=${encodeURIComponent(ctaBrokerSlug)}&listing=${encodeURIComponent(listing.listingKey)}`}
