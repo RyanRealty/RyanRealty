@@ -120,7 +120,14 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       const label = monthLabel(priced[i]!.periodStart)
       let tick = ''
       if (tickAt.has(i)) {
-        tick = `<text x="${x.toFixed(1)}" y="${bottom + 22}" text-anchor="middle" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
+        // The newest month's mark sits ON the right edge of the plot, so a
+        // centred label runs half its width past the frame — "Aug" printed
+        // 1.1px outside the viewBox at 375 on all four documents. The tick at
+        // either end anchors to the edge instead of hanging over it.
+        const halfW = label.length * fs * 0.58
+        const anchor = x + halfW > W - 2 ? 'end' : x - halfW < 2 ? 'start' : 'middle'
+        const tx = anchor === 'end' ? W - 2 : anchor === 'start' ? 2 : x
+        tick = `<text x="${tx.toFixed(1)}" y="${bottom + 22}" text-anchor="${anchor}" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
       }
       // Delta 2: "Hover or tap the month line: the value and the month." The
       // reading is the month and the figure already plotted at that point.
