@@ -1244,3 +1244,58 @@ its viewBox, the price grid read against `render_args` and the price recomputed 
 on `--check --interact` for all four. The run used here was written after the rows were built,
 and the length figure quoted in §2 was measured in the live browser rather than taken from the
 ledger.
+
+
+## Round four audit — 2026-09-08 (24 lenses x 4 documents, adversarially refuted)
+
+Method: six lenses (arithmetic, consistency, story, craft, words, phone) over all four rebuilt
+exemplars, each finding put to independent refuters. 202 findings raised, 54 of them blocking.
+The run exhausted the session before the judge stage, so there is no synthesised score; the
+findings below are the ones that matter, verified against `render_args` and the MLS.
+
+**NOT SENDABLE. The blocking classes, ranked by danger:**
+
+**A. The net-proceeds figure is wrong on every row, and one is impossible.**
+`pricing.sellerNet.predictedSellerNet` against the recommended list: Concorde $1,707,603 on a
+$1,473,000 list (a net ABOVE the price), 1617 NW 8th $616,000 on $816,000 (a $200,000 gap with
+`rate: 0`), 2465 $426,575 on $435,000, 19968 $436,008 on $461,000. The chapter is headed
+"What you keep". A licensed broker telling a homeowner what they keep, wrongly, is the worst
+defect in the document. Either itemise it (list, commission, concessions, closing costs, each
+from data) or cut the chapter until it is right.
+
+**B. The story is computed from an ask that did not run the clock.**
+2465 held $475,000 for 152 of its 187 days and $460,000 for 35. The document quotes the 3.8
+percent gap of the FINAL ask and concludes "points at something other than the number"; at the
+price that ran 81 percent of the clock the gap is 7.2 percent, and $475,000 is never named in
+prose. `failedAskForStory` deliberately takes the last cut. Same class elsewhere: 19968 runs
+the overpricing story off a **November 2004** ask of $140,000, printed undated three times
+beside a $461,000 recommendation; 1617 NW 8th runs the overpricing story at a seller asking
+10 percent BELOW the bottom of the range; Concorde's 290 days covered a $1,799,000 opening cut
+three times, none of it in the document.
+
+**C. A row whose own audit says "not defensible" renders as a finished opinion.**
+`pricing.review` and the admin banner cover the served admin route only. The letter and the PDF
+a broker actually sends carry no trace. 19968 is `needsReview: true`, verdict `fail`, three
+critical findings, and stamps confidence "High" in the same object.
+
+**D. Compliance.** 1617 NW 8th is an ACTIVE listing with another brokerage and the closing
+chapter solicits it. 2465 is Withdrawn, not expired, so the owner may still be under a listing
+agreement. Neither document carries a carve-out.
+
+**E. Numbers that contradict other numbers in the same document.** 2465: chapter 3 says there
+were not enough recent Diamond Bar Ranch sales while three of five comps ARE Diamond Bar Ranch,
+chapter 5 prints four DBR sales from the last ten weeks, and the MLS holds twelve in the window.
+Concorde: three different list ceilings on two screens, the highest being the ask that failed.
+19968: the market chapter says six sales support $370,000-$479,000 while the price chapter says
+four and puts the other two outside it; $479,000, the top of the stated worth range, is the sale
+the document says it set aside. 1617: $816,000 is the midpoint of the printed range, not the
+weighted reconciliation the chapter says produced it, and three sales carrying 60.4 percent of
+the printed weight move the number by $0.
+
+**F. Craft.** The map is still a Google default and its polygon on 19968 contains neither the
+subject nor any sale. The value strip plots sale-price dots inside a band labelled with list
+prices, so the lowest sale renders outside the shading captioned "what your home is worth".
+
+**Method note for the next round: cap the fan-out.** This run spawned 631 agents on an
+uncapped findings-to-refuters expansion and exhausted the session. Cap findings per lens and
+use two refuters, not three.
