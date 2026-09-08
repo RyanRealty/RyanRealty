@@ -33,15 +33,14 @@ shipped by `getIndexableSubdivisions`; the residue is recrawl latency); a /citie
 navigational query for the venue's own site); a stale-price bug on MLS 220219174 (it is Active; the
 '2202' prefix is a sequence, not a year).
 
-**Waiting on Matt, verbatim from the nodes' `blocked_reason`:**
-- SITE-32: do off-market listing URLs (Closed, Expired, Canceled, Withdrawn) stay indexed as
-  similar-homes landings per MASTER_SPEC:1942, or go noindex per data-architecture-plan:1095?
-  They earn 24-42% of all organic clicks today. And should Closed detail pages showing ClosePrice
-  be treated as a VOW-only sold surface under ODS A.4 (G54)?
-- SITE-33: 4,190 of 7,506 listing URLs in the sitemap are Southern Oregon. The referral tier gives
-  those CITIES an honest page and a noindex rule; the LISTINGS under them render like Bend homes.
-  Honesty block plus noindex (follow), leave as is, or drop from the sitemap while still serving?
-  And does /oregon/[city] (55 pages, 1 click in 90 days) stay indexed?
+**Ruled by Matt 2026-09-08 (asked, answered, written onto the nodes, which are now open):**
+- SITE-32: off-market listing URLs stay INDEXED with the honest state. MASTER_SPEC:1942 wins;
+  data-architecture-plan:1095's noindex text is the losing text and gets deleted by the lane.
+  Closed pages showing ClosePrice are not treated as a VOW-only sold surface under ODS A.4 for
+  indexing. Gate pins index,follow; SITE-21 is what those URLs serve.
+- SITE-33: the listing tier gets the honesty block and noindex with follow preserved; pages
+  still serve; the /oregon referral pages' inventory links keep resolving; /oregon/[city] stays
+  indexed per W12.4. SITE-33 now waits on SITE-25 (pageMetadata cannot emit noindex,follow yet).
 
 **Fleet state.** Environment RYANREALTY_CLOUD: network access Full, variables populated, Setup
 script `CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh || true` (set through Matt's Chrome at
