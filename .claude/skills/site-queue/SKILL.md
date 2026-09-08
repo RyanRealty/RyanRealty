@@ -74,6 +74,13 @@ The rest of what differs, none of it optional:
 - **Deleting:** name each file, `rm <file>`. A repo hook refuses recursive and
   glob deletes, and it matches the literal text of your command — so it also fires on a
   command that merely quotes one.
+- **Git locks:** never run any command that names `.git/index.lock`, not even `rm -f`
+  ahead of a checkout. The cloud platform raises a sensitive-file permission prompt on that
+  path that no unattended session can answer; two fires parked for hours on exactly that
+  on 2026-09-08, the second holding two nearly finished items. The sandbox is
+  single-session, so a stale lock does not happen here. If git ever reports one, wait ten
+  seconds and retry; if it persists, release your claims and end. CLAUDE.md §8's
+  "proactively clear git locks" is a local-machine rule.
 - **Sends:** never message a real person (CLAUDE.md §1). A test submit uses an address
   whose local part contains `fleet-test`, which the CRM suppresses by design.
 - **Push:** `npm run push` runs a full `next build`. On a 16 GB cloud box that can
