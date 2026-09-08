@@ -35,7 +35,9 @@ describe('compact reach rows', () => {
       ariaLabel: `Call ${BROKERS.matt.nameShort}`,
     })
     expect(rows[1].href).toBe(`sms:${aboutPhoneE164(BROKERS.matt.phone)}`)
-    expect(rows[1].detail).toBe(BROKERS.matt.phone)
+    // The digits print once, on Call; Text says so instead of repeating them.
+    expect(rows[1].detail).toBe('Same number')
+    expect(rows.filter((r) => r.detail === BROKERS.matt.phone)).toHaveLength(1)
     expect(rows[2]).toEqual({
       kind: 'book',
       href: '/book?agent=matt',
@@ -108,9 +110,12 @@ describe('compact css', () => {
     expect(COMPACT_CSS).toMatch(/\.about-faces__reach--book \{\s*grid-row: 7/)
   })
 
-  it('reserves two name lines and fades the flat bottom of the cutout, with no box or fill', () => {
+  it('reserves two name lines and fades the cutout on three sides, with no box or fill', () => {
     expect(COMPACT_CSS).toMatch(/\.about-faces__name \{[\s\S]*?min-height: max\(var\(--v3-tap\), calc\(2\.2em \+ var\(--v3-space-xs\)\)\)/)
-    expect(COMPACT_CSS).toMatch(/\.about-faces--compact \.about-faces__photo \{[\s\S]*?mask-image: linear-gradient\(to bottom, var\(--v3-navy\) 88%, transparent 100%\)/)
+    const photo = COMPACT_CSS.slice(COMPACT_CSS.indexOf('.about-faces--compact .about-faces__photo {'))
+    expect(photo).toMatch(/mask-image:\s*linear-gradient\(to bottom, var\(--v3-navy\) 88%, transparent 100%\),\s*linear-gradient\(to right, transparent 0%, var\(--v3-navy\) 10%, var\(--v3-navy\) 90%, transparent 100%\)/)
+    expect(photo).toMatch(/mask-composite: intersect/)
+    expect(photo).toMatch(/-webkit-mask-composite: source-in/)
     expect(COMPACT_CSS).not.toMatch(/\.about-faces--compact \.about-faces__photo(-link)? \{[^}]*(background|border:|box-shadow)/)
   })
 

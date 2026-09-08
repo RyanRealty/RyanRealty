@@ -64,8 +64,9 @@ export type AboutReachRow = {
   label: string
   /**
    * Shown beside the label from 48rem up, where a tel: link is not a tap: the
-   * broker's own number for Call and Text, what /book offers for Book. Never an
-   * invented number: null when the roster has no display phone.
+   * broker's own number on Call, "Same number" on Text (the digits print once,
+   * so two identical rows never read as a data error), what /book offers on
+   * Book. Never an invented number: null when the roster has no display phone.
    */
   detail: string | null
   ariaLabel: string
@@ -92,7 +93,7 @@ export function aboutCompactReach(
       kind: 'text',
       href: `sms:${person.tel}`,
       label: 'Text',
-      detail: person.phoneDisplay,
+      detail: person.phoneDisplay ? 'Same number' : null,
       ariaLabel: `Text ${person.name}`,
     })
   }

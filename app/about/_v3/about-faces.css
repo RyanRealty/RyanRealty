@@ -348,12 +348,21 @@
   aspect-ratio: 2 / 3;
 }
 
-/* The cutouts are cut flat at the bottom of the PNG. Free-standing on cream
-   that edge reads as a crop, so the last 12% fades to nothing and the shelf
-   hairline finishes the figure. Alpha mask only: no box, no fill. */
+/* The cutouts are cut flat where the PNG ends: the bottom of the torso, and
+   for two of the three the shoulders at the left and right edges too. Free-
+   standing on cream those edges read as a crop, so the figure fades out on
+   three sides (the last 12% at the bottom, the outer 10% at each side) and
+   the shelf hairline finishes it. Two gradients intersected: alpha mask
+   only, no box, no fill. */
 .about-faces--compact .about-faces__photo {
-  -webkit-mask-image: linear-gradient(to bottom, var(--v3-navy) 88%, transparent 100%);
-  mask-image: linear-gradient(to bottom, var(--v3-navy) 88%, transparent 100%);
+  -webkit-mask-image:
+    linear-gradient(to bottom, var(--v3-navy) 88%, transparent 100%),
+    linear-gradient(to right, transparent 0%, var(--v3-navy) 10%, var(--v3-navy) 90%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, var(--v3-navy) 88%, transparent 100%),
+    linear-gradient(to right, transparent 0%, var(--v3-navy) 10%, var(--v3-navy) 90%, transparent 100%);
+  mask-composite: intersect;
 }
 
 /* The shelf is the name row's top rule. Two lines are reserved (2.2em is two
