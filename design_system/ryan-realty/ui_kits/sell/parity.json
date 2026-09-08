@@ -135,26 +135,62 @@
   },
   "tasteReview": {
     "evaluatedAt": "2026-09-08",
-    "score": 83,
-    "beats": "Zillow's What's My Home Worth on transparency: Zillow gates its estimate behind registration and shows no market context or comparable sales before the wall, while /sell shows the place's verdict drawn as supply against pace, the days-to-contract and cash-buyer readings, and the actual comparable closes the CMA ladder matched to the typed address (street, plat, distance, size, close month) with a How-we-count-this door on every figure, all before it asks for an email.",
-    "evaluator": "separate session claude-sonnet-4-5 (session_018CCJHLi9Sx3ZRVMsP3p7nB), verdict on branch wt/sell-round2-taste2; first pass by session_01XCFVQbDHr3VmCSr9Mh6PU3 on branch wt/sell-round2-taste scored 63 and its twelve defects were acted on before this re-score",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "rubricVersion": "v1-2026-09-08",
+    "scores": [
+      71,
+      70,
+      74
+    ],
+    "comparedToPrior": "rebaselined",
+    "priorMark": {
+      "evaluatedAt": "2026-09-08",
+      "score": 83,
+      "evaluatorModel": "claude-sonnet-4-5",
+      "rubricVersion": "v0-pre-receipt-contract"
+    },
+    "shotsHash": "sha256:6b0a53d86235e4679506af6957d7940d18885747928e130ae6d22261d4cbd57a",
+    "shotSpec": {
+      "routes": [
+        "/sell"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "top",
+        "answer"
+      ]
+    },
     "shots": {
-      "desktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-1440.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/answer-375.png"
+      "desktop": "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/sell/shots/sell-375.png",
+      "answerDesktop": "design_system/ryan-realty/ui_kits/sell/shots/answer-1440.png",
+      "answerMobile375": "design_system/ryan-realty/ui_kits/sell/shots/answer-375.png"
     },
-    "subScores": {
-      "designQuality": "25/30",
-      "originality": "24/30",
-      "interaction": "11/15",
-      "craft": "14/15",
-      "honestyAndFunction": "9/10"
-    },
-    "firstMark": "/sell had no prior tasteReview. 63 on the first pass, 83 on the re-score after the defect list was worked; the 83 is the mark that ships.",
-    "openFindings": [
-      "The Bend Instrument's figure row reads as a KPI grid to the evaluator ($949,000 / 671 / 3.9). It is the shared V3Instrument pattern and it does carry a plain-sentence note beside the figures, so this is a finding against that primitive's usage across the site rather than against this node.",
-      "The success state is prose only, with no visual moment marking that something completed.",
-      "The proof block's READ ANOTHER review switcher rotates testimonials without revealing more data.",
-      "The comps ledger has no visual encoding (no map, no distance marks) — it is rows."
-    ]
+    "beats": "Redfin and Zillow's home-value pages: we show the comparable sold address, size and month behind the supply and pace figures, where a Zestimate is one number with no sourced comps.",
+    "defects": [
+      {
+        "section": "receipt identity",
+        "finding": "REBASELINE, not a fall from 83. That mark was scored against a different rendering under the same shot filenames; this round's drawing swap overwrote them, so the shotsHash differs and 83 is not the same instrument."
+      },
+      {
+        "section": "hero Stage background",
+        "finding": "Same broken-image glyph as the community class — the sandbox proxy, not the live site. Add the onError fallback."
+      },
+      {
+        "section": "answer sheet at 1440",
+        "finding": "The right ~40% of the viewport stays flat navy for the full scrollable length of the answer, an empty gutter rather than a composed layout."
+      },
+      {
+        "section": "comps dot strip",
+        "finding": "Dots vary in vertical position with no axis, scale or legend in the default state, so the encoded value is not readable without a hover. The first read is not instant."
+      }
+    ],
+    "score": 71,
+    "evaluator": "separate Sonnet evaluator, SITE-02b drawing pass, three independent scorings of one shot set (71 / 70 / 74)",
+    "rebaselineReason": "The 83 differs on evaluatorModel (claude-sonnet-4-5, not claude-sonnet-5), rubricVersion (v0-pre-receipt-contract) and shotsHash (none recorded, and this round's drawing swap overwrote answer-1440.png and answer-375.png under the same filenames). Not a fall from 83 — a first mark on a different instrument."
   }
 }
