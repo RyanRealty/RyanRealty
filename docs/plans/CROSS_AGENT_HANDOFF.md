@@ -1,3 +1,67 @@
+# Current — 2026-09-08 (site queue round two seeded from Search Console; two policy questions on Matt; the cloud fleet can take a screenshot)
+
+Owner: Claude (Fable 5.1), session 3db16241, main checkout. Three commits on this program today:
+`e09771ea` (a cloud lane installs the browser its taste pass needs; `tsx` declared), `a5dbf484`
+(a measurement window no longer freezes its page; the cloud setup script recorded), and this one
+(round two seeded, `scripts/_gsc-by-class.mjs` promoted, this block).
+
+**The queue is 29 items: 12 open, 2 in progress (SITE-03, SITE-07), 13 blocked (11 on dated
+windows that reopen 2026-10-05..08, 2 on Matt), 2 done.** Next served: SITE-20. Ids and the
+round-two note are in `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` ("Site queue"). `loop status`
+prints all of it, including the two questions.
+
+**Round two, SITE-20..33, and what it is not.** Source: Search Console 2026-06-08..2026-09-05
+(`node scripts/_gsc-by-class.mjs`: 129,817 impressions, 1,368 clicks, 1.05% CTR), four lenses and
+twenty-two adversarial verifications (workflow `wf_71474111-a25`), every code fact re-read, every
+live claim re-curled with a browser UA. Every traffic-causation claim died against this site's own
+query data: the class CTR gap is rank on head terms (/subdivisions earns 57 of its 71 clicks at
+positions 1-10 on uncontested plat names; /cities sits at 19-45 on "homes for sale in redmond"),
+and cross-class position comparison is uninformative in any weighting. So round two claims no click
+it cannot prove. It is correctness on a licensed broker's public site (Closed listings publish the
+list price in the snippet, the share card and the JSON-LD, 1,282 of 1,708 compared rows; off-market
+pages compute a mortgage on the old price and invite a tour; "Oll Homes for Sale" as a place name;
+Grants Pass open houses under a Central Oregon title), consolidation (2,330 listings indexed at more
+than one self-canonical URL; resort sub-plats scoring zero closed sales forever because the count is
+a text join at resort grain), origin cost (every place page and the blog are fully dynamic), and
+eleven missing community guides. Each node carries file:line, the figures, and a mechanical accept
+test the verifier rewrote so it cannot pass for the wrong reason.
+
+**Refuted and NOT seeded, so nobody re-finds them:** a registry-alias noindex for plats (already
+shipped by `getIndexableSubdivisions`; the residue is recrawl latency); a /cities out-of-area gate
+(middleware already 308s to /oregon); cannibalization, entity-dilution and crawl-budget mechanisms
+(no measurement exists on this site); the greenwood-playhouse snippet (every impression is a quoted
+navigational query for the venue's own site); a stale-price bug on MLS 220219174 (it is Active; the
+'2202' prefix is a sequence, not a year).
+
+**Waiting on Matt, verbatim from the nodes' `blocked_reason`:**
+- SITE-32: do off-market listing URLs (Closed, Expired, Canceled, Withdrawn) stay indexed as
+  similar-homes landings per MASTER_SPEC:1942, or go noindex per data-architecture-plan:1095?
+  They earn 24-42% of all organic clicks today. And should Closed detail pages showing ClosePrice
+  be treated as a VOW-only sold surface under ODS A.4 (G54)?
+- SITE-33: 4,190 of 7,506 listing URLs in the sitemap are Southern Oregon. The referral tier gives
+  those CITIES an honest page and a noindex rule; the LISTINGS under them render like Bend homes.
+  Honesty block plus noindex (follow), leave as is, or drop from the sitemap while still serving?
+  And does /oregon/[city] (55 pages, 1 click in 90 days) stay indexed?
+
+**Fleet state.** Environment RYANREALTY_CLOUD: network access Full, variables populated, Setup
+script `CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh || true` (set through Matt's Chrome at
+22:10Z with his ok, reopened and verified persisted; the editor is under the environment chip on the
+composer, not under Settings). Routine `trig_01JTHasiFzPRDnkTiPzodMPV`: every four hours, back on
+Fable 5.1 at Matt's call, next fire 2026-09-09 00:05Z; 4 of 13 fires today succeeded, the rest died
+on the Fable weekly limit (reset 19:00Z) and one 08:30Z fire is still parked on a `.git/index.lock`
+permission prompt under the old prompt, holding no node. The skill now carries "If you are a cloud
+session" (browser first, --webpack, curl UA, scratchpad/, per-file deletes, the 16 GB build ceiling)
+and "A measurement window does not freeze the page" (Matt: quality passes allowed, window keeps
+running, recorded on the same node, `blocked_until` untouched).
+
+**Do not.** Re-audit the site or write a new audit document (append to a node). Claim a click from
+a metadata change. Noindex anything on the listing route before SITE-32 is ruled. Set
+`dynamicParams = false` on /housing-market or /open-houses (each 404s legitimate pages named on the
+nodes). Call `permanentRedirect` from the by-address page body (blank 200 under loading.tsx; the
+file documents it). Gate on `PUBLIC_ACTIVE_STATUSES` for off-market behaviour (it excludes Pending).
+
+---
+
 # Current — 2026-09-08 (CMA reimagined: round four audit, WIP on two branches, and Matt's comp-containment rule)
 
 Owner: Claude (Fable). Integration branch `wt/cma-ship-20260907`; WIP on `wt/cma-engine-20260907`
