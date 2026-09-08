@@ -679,6 +679,7 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
           geoSlug={slug}
           newCount30d={publicPace.newCount30d}
           updatedAt={leftoverStamp}
+          browseHref={homesForSalePath(cityName)}
         />
 
         {(

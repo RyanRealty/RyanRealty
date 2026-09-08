@@ -41,7 +41,7 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
-import { placeAlertsCopy } from '@/lib/site/place-alerts'
+import { newestFirstHref, placeAlertsCopy } from '@/lib/site/place-alerts'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
@@ -58,9 +58,19 @@ type Props = {
   newCount30d: number | null
   /** The page's Market Truth stamp, the same one its market figures carry. */
   updatedAt: string | null
+  /** The browse path this page already links for the neighborhood; the strip adds the newest sort. */
+  browseHref: string
 }
 
-export function NeighborhoodAlertsStrip({ id, cityName, neighborhoodName, geoSlug, newCount30d, updatedAt }: Props) {
+export function NeighborhoodAlertsStrip({
+  id,
+  cityName,
+  neighborhoodName,
+  geoSlug,
+  newCount30d,
+  updatedAt,
+  browseHref,
+}: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
       const result = await submitSearchAlertSignup({
@@ -96,7 +106,9 @@ export function NeighborhoodAlertsStrip({ id, cityName, neighborhoodName, geoSlu
     <V3AlertsStrip
       {...copy}
       id={id}
+      href={newestFirstHref(browseHref)}
       promise={`Every new listing in ${copy.scopePhrase}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
+      stickyNote="Every new listing by email. Unsubscribe any time."
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="primary"

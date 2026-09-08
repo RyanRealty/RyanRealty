@@ -41,7 +41,7 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
-import { placeAlertsCopy } from '@/lib/site/place-alerts'
+import { newestFirstHref, placeAlertsCopy } from '@/lib/site/place-alerts'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
@@ -58,9 +58,29 @@ type Props = {
   newCount30d: number | null
   /** The page's Market Truth stamp, the same one its market figures carry. */
   updatedAt: string | null
+  /** The browse path this page already links for the community; the strip adds the newest sort. */
+  browseHref: string
+  /**
+   * The MLS subdivision names the alert really matches: the registry alias set
+   * the search expands `subdivision` into (app/actions/search.ts
+   * toSearchAllFilter -> getSubdivisionMatchNames), matched exactly and
+   * case-insensitively on subdivision_lower (lib/data/listings/searchListingsAll.ts).
+   * Tetherow: Tetherow, Triple, Tetherow Resort. Computed on the server page.
+   */
+  matchNames: readonly string[]
 }
 
-export function CommunityAlertsStrip({ id, communityName, city, subdivision, geoSlug, newCount30d, updatedAt }: Props) {
+export function CommunityAlertsStrip({
+  id,
+  communityName,
+  city,
+  subdivision,
+  geoSlug,
+  newCount30d,
+  updatedAt,
+  browseHref,
+  matchNames,
+}: Props) {
   const submit = useCallback<V3AlertsSubmit>(
     async (input) => {
       const filters: Record<string, string> = {
@@ -88,19 +108,23 @@ export function CommunityAlertsStrip({ id, communityName, city, subdivision, geo
     [city, communityName, subdivision],
   )
 
+  // With no subdivision the filter is the whole city, and the promise says so.
   const copy = placeAlertsCopy({
     placeName: communityName,
-    scopeName: communityName,
+    scopeName: subdivision ? communityName : city,
     newCount30d,
     geoType: 'neighborhood',
     geoSlug,
+    matchNames: subdivision ? matchNames : [],
   })
 
   return (
     <V3AlertsStrip
       {...copy}
       id={id}
+      href={newestFirstHref(browseHref)}
       promise={`Every new listing in ${copy.scopePhrase}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
+      stickyNote="Every new listing by email. Unsubscribe any time."
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="ghost"

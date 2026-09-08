@@ -552,6 +552,7 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
           geoSlug={metricNeighborhoodSlug}
           newCount30d={publicPace.newCount30d}
           updatedAt={leftoverStamp}
+          browseHref={browseHref}
         />
 
         {(

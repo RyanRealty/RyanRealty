@@ -51,6 +51,7 @@ import { getDistrictForCity } from '@/data/co-schools'
 import { getPlaceLinks } from '@/lib/place-links'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
+import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { getPlaceDocuments } from '@/lib/data/places/getPlaceDocuments'
 import { getPlaceCharacter } from '@/lib/data/places/getPlaceCharacter'
 import { EMPTY_PUBLIC_PACE, getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
@@ -697,6 +698,8 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
           geoSlug={neighborhoodSlug}
           newCount30d={publicPace.newCount30d}
           updatedAt={leftoverStamp}
+          browseHref={browseHref}
+          matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
         />
 
         {(

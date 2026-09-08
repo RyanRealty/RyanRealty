@@ -7,14 +7,21 @@
  *
  *   (a) THE FIRST CALLOUT, directly after a place opening: the promise as a
  *       sentence whose figure is real ("148 houses came on the market in Bend
- *       in the last 30 days"), one email field, one button, the standing
- *       disclosure beside them. The count arrives preformatted; this file
- *       formats nothing (components/site/v3/index.ts).
+ *       in the last 30 days"), a scope line when the alert sends wider than the
+ *       figure counts, one email field, one button, the standing disclosure
+ *       beside them. The count arrives preformatted and only when it earns a
+ *       display numeral; this file formats nothing (components/site/v3/index.ts).
+ *       With `href` the numeral is a door to the newest-first search (Instrument
+ *       door idiom: nothing at rest, underline on hover and focus) and a ghost
+ *       link under the claim carries the same door where the numeral is not
+ *       a comfortable target or is absent.
  *   (b) THE STICKY REPEAT, a fixed strip that shows once the visitor has
  *       scrolled past the section named by `stickyAfter` (the Atlas), and
  *       hides again while the callout or the footer is on screen, for the
  *       session after a dismissal, and for good after a successful subscribe.
- *       The rules are pure functions in V3AlertsStrip.logic.ts.
+ *       It carries its own one-line disclosure (`stickyNote`) so the repeat
+ *       promises nothing the callout does not. The rules are pure functions in
+ *       V3AlertsStrip.logic.ts.
  *
  * The capture is the caller's. `onSubmit` receives the email, the honeypot's
  * own value under the trap's name, and which of the two mounts sent it, and
@@ -32,6 +39,7 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading, V3SourceDisclosure } from './atoms'
 import {
@@ -59,17 +67,28 @@ export type V3AlertsSubmit = (input: {
   placement: V3AlertsPlacement
 }) => Promise<V3AlertsResult>
 
+/** The strip's one line in parts, so the place name never breaks across lines. */
+export type V3AlertsStickyClaim = { before: string; place: string; after: string }
+
 export type V3AlertsStripProps = {
   /** The section id. Defaults to `alerts`; the sticky's dismissal is scoped to it. */
   id?: string
   /** The context line over the claim ("New listings · Bend"). */
   eyebrow: string
-  /** The 30-day figure, preformatted by the caller. Null renders the claim alone. */
+  /** The display numeral, preformatted by the caller, or null to lead with the sentence. */
   count: string | null
   /** The sentence after the figure, or the whole claim when there is no figure. */
   claim: string
-  /** The short form for the strip's one line, after the figure. */
-  stickyClaim: string
+  /** One line under the claim that reconciles the figure with the offer, or null. */
+  scopeLine?: string | null
+  /** The newest-first search for this place. Makes the numeral a door and adds the ghost link. */
+  href?: string
+  /** The ghost link's label ("See the newest Bend listings"). Required with `href`. */
+  browseLabel?: string
+  /** The strip's one line, in parts, after the figure. */
+  stickyClaim: V3AlertsStickyClaim
+  /** The strip's one-line disclosure: frequency and unsubscribe, short. */
+  stickyNote?: string
   /** The standing disclosure: how often, what else, how to stop. */
   promise: string
   submitLabel: string
@@ -105,7 +124,11 @@ export function V3AlertsStrip({
   eyebrow,
   count,
   claim,
+  scopeLine,
+  href,
+  browseLabel,
   stickyClaim,
+  stickyNote,
   promise,
   submitLabel,
   emailLabel = 'Email',
@@ -239,9 +262,11 @@ export function V3AlertsStrip({
   )
 
   const sending = status === 'sending'
+  const isSent = status === 'sent'
   const invalid = status === 'failed' && problem !== ''
   const problemId = `${uid}-problem`
   const on = stickyVisible(sticky, status)
+  const door = href && href.trim() ? href.trim() : null
 
   const trapField = (formId: string) =>
     trap ? (
@@ -259,27 +284,45 @@ export function V3AlertsStrip({
       </div>
     ) : null
 
+  const numeral = count ? (
+    door ? (
+      <Link href={door} className="v3-alerts__num v3-alerts__num--door">
+        {count}
+      </Link>
+    ) : (
+      <span className="v3-alerts__num">{count}</span>
+    )
+  ) : null
+
   return (
     <>
       <section
         id={id}
         ref={sectionRef}
-        className={cn(V3_ROOT_CLASS, 'v3-alerts', className)}
+        className={cn(V3_ROOT_CLASS, 'v3-alerts', count && 'v3-alerts--figure', className)}
         aria-labelledby={headingId}
       >
         <div className="v3-alerts__grid">
           <div className="v3-alerts__lead">
             <V3Eyebrow>{eyebrow}</V3Eyebrow>
             <V3Heading level={2} size="field" id={headingId} className="v3-alerts__claim">
-              {count ? <span className="v3-alerts__num">{count}</span> : null}
+              {numeral}
               {count ? ' ' : null}
               <span className="v3-alerts__claim-text">{claim}</span>
             </V3Heading>
+            {scopeLine ? <p className="v3-alerts__scope">{scopeLine}</p> : null}
+            {door && browseLabel ? (
+              <p className="v3-alerts__browse">
+                <V3Button href={door} variant="ghost">
+                  {browseLabel}
+                </V3Button>
+              </p>
+            ) : null}
             {source ? <V3SourceDisclosure source={source} updatedAt={updatedAt} /> : null}
           </div>
 
-          <div className="v3-alerts__ask">
-            {status === 'sent' ? (
+          <div className={cn('v3-alerts__ask', isSent && 'v3-alerts__ask--sent')}>
+            {isSent ? (
               <div className="v3-alerts__sent" role="status">
                 <p className="v3-alerts__sent-heading">{sent.heading}</p>
                 <p className="v3-alerts__sent-body">{sent.body}</p>
@@ -332,11 +375,15 @@ export function V3AlertsStrip({
         inert={!on}
       >
         <form className="v3-alerts-sticky__inner" onSubmit={onStickySubmit} noValidate aria-busy={sending}>
-          <p className="v3-alerts-sticky__line">
-            {count ? <span className="v3-alerts-sticky__num">{count}</span> : null}
-            {count ? ' ' : null}
-            {stickyClaim}
-          </p>
+          <div className="v3-alerts-sticky__text">
+            <p className="v3-alerts-sticky__line">
+              {count ? <span className="v3-alerts-sticky__num">{count}</span> : null}
+              {count ? ' ' : null}
+              {stickyClaim.before} <span className="v3-alerts-sticky__place">{stickyClaim.place}</span>{' '}
+              {stickyClaim.after}
+            </p>
+            {stickyNote ? <p className="v3-alerts-sticky__note">{stickyNote}</p> : null}
+          </div>
           <div className="v3-alerts-sticky__controls">
             <label htmlFor={`${uid}-sticky-email`} className="v3-alerts-sticky__sr">
               {emailLabel}
