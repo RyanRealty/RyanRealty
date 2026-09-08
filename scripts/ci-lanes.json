@@ -84,6 +84,7 @@
     "ci:publish-subdivision-closed-price",
     "ci:row-cap",
     "ci:server-type-reexport",
+    "ci:site-primitive-wired",
     "ci:sms-consent",
     "ci:stage-truth",
     "ci:streamed-redirect",
