@@ -668,7 +668,12 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     expect(engine.rangeRule?.saleToAskSource).toBe('city-index')
   })
 
-  it('lets the weights move the point, not the range', () => {
+  it('a sale the range rule set aside cannot move the point, whatever its weight', () => {
+    // tasteReview round three, §2 item 1. The $400,000 sale is the lowest of
+    // the six and carries nine times the weight of any other. Before this rule
+    // it pulled the printed price to $421,429 while the document told the
+    // reader it had been set aside. It now carries nothing: the point is the
+    // weighted value of the four that remain.
     const engine = listPriceFromEngine({
       subjectSqft: 2000,
       lastAsk: null,
@@ -685,8 +690,34 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       qualitySet: false,
     })
     expect(engine.rangeRule?.adjustedLow).toBe(420_000)
-    expect(engine.reconciledValue).toBe(421_429)
-    expect(engine.recommendedList).toBe(421_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(480_000)
+    expect(engine.rangeRule?.n).toBe(6)
+    expect(engine.rangeRule?.kept).toBe(4)
+    expect(engine.reconciledValue).toBe(450_000)
+    expect(engine.recommendedList).toBe(450_000)
+  })
+
+  it('the range sentence names the sales behind the price and the ones set aside', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 2000,
+      lastAsk: null,
+      adjusted: [
+        sale(400_000),
+        sale(420_000),
+        sale(440_000),
+        sale(460_000),
+        sale(480_000),
+        sale(500_000),
+      ],
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 1,
+      qualitySet: false,
+    })
+    const sentence = engine.rangeRule!.sentence
+    expect(sentence).toContain('the four sale prices behind this price')
+    expect(sentence).toContain('Two more sales sat outside every one of them and were set aside')
+    // The old sentence opened on six and then described a spread of four.
+    expect(sentence).not.toContain('the 6 sale prices')
   })
 
   it('carries the value to an ask at the local share of the original ask', () => {

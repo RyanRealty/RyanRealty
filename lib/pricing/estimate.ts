@@ -106,6 +106,16 @@ export function priceRoundingStep(n: number): number {
   return Math.abs(n) >= 1_000_000 ? 5_000 : 1_000
 }
 
+/**
+ * "five", not "5". A count under ten reads as a word in seller prose; above it
+ * the numeral is what a reader scans for.
+ */
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+export function countWord(n: number, capitalize = false): string {
+  const word = n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : String(n)
+  return capitalize ? word.charAt(0).toUpperCase() + word.slice(1) : word
+}
+
 /** The low end of a range never rounds up into the evidence. */
 export function roundPriceDown(n: number): number {
   if (!Number.isFinite(n)) return n
@@ -295,6 +305,73 @@ export function adjustedPriceRange(
     return { low: kept[0]!, high: kept[kept.length - 1]!, rule: 'trimmed-one-each-end', n: vals.length, kept: kept.length }
   }
   return { low: vals[0]!, high: vals[vals.length - 1]!, rule: 'min-max', n: vals.length, kept: vals.length }
+}
+
+/**
+ * SET ASIDE MEANS SET ASIDE (tasteReview round three, §2 item 1).
+ *
+ * `adjustedPriceRange` trimmed one sale at each end to draw the range and then
+ * the price was reconciled over ALL of them, so on cma-65365-concorde the two
+ * sales the document said had been set aside carried 38.4 percent of the
+ * recommended price, and on cma-19968 22.3 percent. A reader told a sale was
+ * removed will not expect it to be the second-heaviest sale in the answer.
+ *
+ * One rule, applied everywhere: at six or more priced sales the single highest
+ * and the single lowest adjusted price are set aside. They stay in the grid as
+ * evidence and they carry NOTHING — not a weight, not a dollar of the printed
+ * price, not an end of the range. This is the one place that decides which
+ * sales those are, so the range, the weights, the sentence and the count a
+ * reader can check cannot come apart.
+ *
+ * The kept and set-aside lists both keep the ORDER they were given: the grid
+ * renders in that order and a weight numbered three must be the sale numbered
+ * three.
+ */
+export function partitionByRangeRule<T extends { adjustedPrice?: number | null }>(
+  sales: readonly T[],
+): { priced: T[]; kept: T[]; setAside: T[]; rule: PricingRangeRuleName | null } {
+  const priced = sales.filter(
+    (s): s is T & { adjustedPrice: number } =>
+      s.adjustedPrice != null && Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0,
+  )
+  if (priced.length < PRICING_MIN_COMPS) {
+    return { priced, kept: priced, setAside: [], rule: null }
+  }
+  if (priced.length < RANGE_TRIM_MIN_N) {
+    return { priced, kept: priced, setAside: [], rule: 'min-max' }
+  }
+  // Sort a COPY of the indices so ties resolve by position and the original
+  // order survives into both lists.
+  const order = priced.map((_, i) => i).sort((a, b) => priced[a]!.adjustedPrice - priced[b]!.adjustedPrice)
+  const aside = new Set([order[0]!, order[order.length - 1]!])
+  return {
+    priced,
+    kept: priced.filter((_, i) => !aside.has(i)),
+    setAside: priced.filter((_, i) => aside.has(i)),
+    rule: 'trimmed-one-each-end',
+  }
+}
+
+/**
+ * The printed range, off the partition: the spread of the KEPT sales. Under
+ * `trimmed-one-each-end` that is the same low and high the old sorted slice
+ * produced — the second-lowest and second-highest — reached the one way that
+ * cannot disagree with the weights.
+ */
+export function rangeFromPartition(part: {
+  priced: readonly { adjustedPrice?: number | null }[]
+  kept: readonly { adjustedPrice?: number | null }[]
+  rule: PricingRangeRuleName | null
+}): { low: number; high: number; rule: PricingRangeRuleName; n: number; kept: number } | null {
+  if (part.rule == null || part.kept.length === 0) return null
+  const vals = part.kept.map((k) => k.adjustedPrice ?? 0).sort((a, b) => a - b)
+  return {
+    low: vals[0]!,
+    high: vals[vals.length - 1]!,
+    rule: part.rule,
+    n: part.priced.length,
+    kept: part.kept.length,
+  }
 }
 
 /** A sale-to-ask ratio a list price may be divided by. */
@@ -493,21 +570,20 @@ export function listPriceFromEngine(opts: {
   methodFallback?: number | null
 }): EngineListResult {
   const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
-  // The sales that carry a printed adjusted price. Land has no living area and
-  // prices per acre, so it stays on the $/sqft path it already used.
-  const pricedSales = opts.subjectSqft > 0
-    ? opts.adjusted.filter(
-        (a): a is EngineAdjustedSale & { adjustedPrice: number } =>
-          a.adjustedPrice != null && Number.isFinite(a.adjustedPrice) && a.adjustedPrice > 0,
-      )
-    : []
-  const range =
-    pricedSales.length >= PRICING_MIN_COMPS
-      ? adjustedPriceRange(pricedSales.map((a) => a.adjustedPrice))
-      : null
+  // The sales that carry a printed adjusted price, split by the ONE range rule
+  // (partitionByRangeRule). Land has no living area and prices per acre, so it
+  // stays on the $/sqft path it already used.
+  const part = opts.subjectSqft > 0
+    ? partitionByRangeRule(opts.adjusted)
+    : { priced: [], kept: [], setAside: [], rule: null as PricingRangeRuleName | null }
+  const range = rangeFromPartition(part)
+  // The price is reconciled over the KEPT sales only. A sale the document says
+  // was set aside carries none of it.
   const reconciledValue =
     range != null
-      ? weightedAdjustedPrice(pricedSales.map((a) => ({ adjustedPrice: a.adjustedPrice, weight: a.weight ?? 0 })))
+      ? weightedAdjustedPrice(
+          part.kept.map((a) => ({ adjustedPrice: a.adjustedPrice ?? 0, weight: a.weight ?? 0 })),
+        )
       : null
 
   const compsImpliedClose =
@@ -563,10 +639,19 @@ export function listPriceFromEngine(opts: {
           saleToAskRatio: ratio,
           saleToAskSource,
           ratiosExcluded,
+          // ONE COUNT. The sentence used to open on the number of sales the
+          // rule ran over (7) and then describe a spread of the five it kept,
+          // so the printed n, the strip's n and the sentence's n were three
+          // different claims about the same picture. It now names the sales
+          // that produced the range, and the ones that did not, separately.
           sentence:
             range.rule === 'trimmed-one-each-end'
-              ? `The range is the spread of the ${range.n} sale prices adjusted for date and size, with the highest and the lowest set aside: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`
-              : `The range is the spread of all ${range.n} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
+              ? `The range is the spread of the ${countWord(range.kept)} sale prices behind this price, adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}. ${
+                  range.n - range.kept === 1
+                    ? 'One more sale sat outside every one of them and was set aside'
+                    : `${countWord(range.n - range.kept, true)} more sales sat outside every one of them and were set aside`
+                }, so no single sale could set the range.${askStep}`
+              : `The range is the spread of all ${countWord(range.n)} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
         }
       : null
 
@@ -782,9 +867,27 @@ export function priceCmaSet(args: {
   if (!pricing) return null
   // Which sale carried the price. Attached BEFORE the engine cover so the
   // weights the document prints are the weights the value was built from.
+  //
+  // The range rule runs FIRST, and the sales it sets aside never reach the
+  // reconciliation: a sale the document says was removed carries none of the
+  // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
+  // same pure partition over the same array, so the printed weights and the
+  // printed number come from one set.
+  const part = partitionByRangeRule(args.adjusted)
   pricing.reconciliation = reconcileAdjustedSales({
-    sales: args.adjusted as unknown as ReconcilableSale[],
+    sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
+  })
+  pricing.setAside = part.setAside.map((sale) => {
+    const s = sale as unknown as CmaAdjustedComp
+    const high = part.setAside.length > 1 && s.adjustedPrice === Math.max(...part.setAside.map((x) => (x as unknown as CmaAdjustedComp).adjustedPrice))
+    return {
+      listingKey: s.listingKey,
+      address: s.address,
+      adjustedPrice: Math.round(s.adjustedPrice),
+      end: (high ? 'high' : 'low') as 'high' | 'low',
+      reason: `${high ? 'highest' : 'lowest'} of the adjusted sales, set aside so one sale cannot set the range`,
+    }
   })
   // What moved each sale for its date, stated where the document can print it.
   pricing.timeAdjustment = buildTimeAdjustmentBasis({

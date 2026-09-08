@@ -229,6 +229,27 @@ export interface CmaPricingClamp {
   sentence: string
 }
 
+/**
+ * A printed sale the range rule set aside: it sat above or below every other
+ * adjusted sale, so it is shown as evidence and carries none of the price.
+ *
+ * "SET ASIDE" MEANS SET ASIDE (tasteReview round three, §2 item 1). Under
+ * `trimmed-one-each-end` the two extreme sales carried 38.4 percent of the
+ * recommended price on cma-65365-concorde and 22.3 percent on cma-19968 while
+ * the prose beside them told the reader they had been removed. They are now
+ * out of the weights and out of the printed price, and this is where they go.
+ */
+export interface CmaSetAsideSale {
+  listingKey: string
+  address: string
+  /** The adjusted price that put it at an end of the spread. */
+  adjustedPrice: number
+  /** Which end it sat at. */
+  end: 'high' | 'low'
+  /** The rule that set it aside, in the document's own words. */
+  reason: string
+}
+
 export interface CmaPricing {
   method1Low: number
   method1Mid: number
@@ -300,6 +321,14 @@ export interface CmaPricing {
    * showed it before (research brief 2026-09-07, item 5).
    */
   timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
+  /**
+   * The sales the range rule set aside — the single highest and the single
+   * lowest adjusted price, once there are six of them. They are printed as
+   * evidence and carry NONE of the price: not a weight in
+   * `reconciliation.weights`, not a dollar in `recommended`. Empty under
+   * `min-max`, where nothing is set aside and nothing says it was.
+   */
+  setAside?: CmaSetAsideSale[] | null
   /**
    * Sales considered and not used, capped at eight, each with a reason
    * composed from the sale's own recorded facts. An appraisal shows what it

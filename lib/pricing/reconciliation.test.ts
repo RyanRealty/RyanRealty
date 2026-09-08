@@ -104,7 +104,7 @@ describe('reconcileAdjustedSales', () => {
     expect(a.reason).not.toContain('closest in size to yours')
     expect(a.reason).not.toContain('the most recent sale')
     expect(b.reason).toContain('the most recent sale')
-    expect(b.reason).toContain('the smallest adjustment of any sale here')
+    expect(b.reason).toContain('the smallest adjustment of the sales behind this price')
     expect(b.reason).toContain('700 square feet larger than yours')
   })
 
@@ -134,5 +134,68 @@ describe('reconcileAdjustedSales', () => {
     })
     const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
     expect(readsLikeSellerProse(prose)).toBe(true)
+  })
+})
+
+describe('set aside means set aside (tasteReview round three, §2 item 1)', () => {
+  // Seven sales, the shape of cma-19968: the highest and the lowest carried
+  // 22.3 percent of the price while the prose said they had been removed.
+  const seven = [
+    sale({ listingKey: 'LOW', address: '61111 Chuckanut', adjustedPrice: 331_304, weight: 0.9 }),
+    sale({ listingKey: 'HIGH', address: '19760 Mahogany', adjustedPrice: 479_614, weight: 0.9 }),
+    sale({ listingKey: 'C', adjustedPrice: 478_079, weight: 0.8 }),
+    sale({ listingKey: 'D', adjustedPrice: 458_723, weight: 0.8 }),
+    sale({ listingKey: 'E', adjustedPrice: 321_786, weight: 0.8 }),
+    sale({ listingKey: 'F', adjustedPrice: 370_698, weight: 0.8 }),
+    sale({ listingKey: 'G', adjustedPrice: 469_558, weight: 0.8 }),
+  ]
+
+  it('partitions the single highest and single lowest out at six or more sales', async () => {
+    const { partitionByRangeRule } = await import('./estimate')
+    const part = partitionByRangeRule(seven)
+    expect(part.rule).toBe('trimmed-one-each-end')
+    expect(part.setAside.map((s) => s.listingKey).sort()).toEqual(['E', 'HIGH'])
+    expect(part.kept).toHaveLength(5)
+    expect(part.kept.map((s) => s.listingKey)).not.toContain('E')
+  })
+
+  it('sets nothing aside under six sales', async () => {
+    const { partitionByRangeRule } = await import('./estimate')
+    const part = partitionByRangeRule(seven.slice(0, 5))
+    expect(part.rule).toBe('min-max')
+    expect(part.setAside).toEqual([])
+    expect(part.kept).toHaveLength(5)
+  })
+
+  it('keeps the order it was given, so the grid and the weights line up', async () => {
+    const { partitionByRangeRule } = await import('./estimate')
+    const part = partitionByRangeRule(seven)
+    expect(part.kept.map((s) => s.listingKey)).toEqual(['LOW', 'C', 'D', 'F', 'G'])
+  })
+
+  it('a sale that was set aside carries no weight in the reconciliation', async () => {
+    const { partitionByRangeRule } = await import('./estimate')
+    const part = partitionByRangeRule(seven)
+    const out = reconcileAdjustedSales({ sales: part.kept, subjectSqft: 1_668 })
+    expect(out.weights).toHaveLength(5)
+    expect(out.weights.map((w) => w.listingKey)).not.toContain('HIGH')
+    expect(out.weights.map((w) => w.listingKey)).not.toContain('E')
+    expect(out.weights.reduce((s, w) => s + w.weight, 0)).toBeCloseTo(100, 1)
+  })
+
+  it('the sentence names the same count as the weights it is written over', async () => {
+    const { partitionByRangeRule } = await import('./estimate')
+    const part = partitionByRangeRule(seven)
+    const out = reconcileAdjustedSales({ sales: part.kept, subjectSqft: 1_668 })
+    expect(out.sentence).toContain('the five sales behind this price')
+    expect(out.sentence!.toLowerCase()).not.toContain(' set ')
+  })
+
+  it('a superlative is claimed over the sales that set the price, not "any sale here"', async () => {
+    const { partitionByRangeRule } = await import('./estimate')
+    const part = partitionByRangeRule(seven)
+    const out = reconcileAdjustedSales({ sales: part.kept, subjectSqft: 1_668 })
+    const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
+    expect(prose).not.toContain('any sale here')
   })
 })

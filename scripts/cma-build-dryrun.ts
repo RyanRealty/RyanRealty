@@ -124,6 +124,8 @@ type DryRun = {
   dateAdjustmentFailures: string[]
   /** render_args.pricing.clamp — what overrode the printed method, when it did. */
   renderArgsPricingClamp: unknown
+  /** render_args.pricing.setAside — the sales the range rule removed from the price. */
+  renderArgsPricingSetAside: unknown
   /** render_args.pricing.rejected — considered and not used. */
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
@@ -178,7 +180,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
-    renderArgsPricingClamp: null,
+    renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
     dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
   }
@@ -409,6 +411,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
+    renderArgsPricingSetAside: pricing.setAside ?? null,
     renderArgsPricingRejected: rejected,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
@@ -451,7 +454,7 @@ async function main() {
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
       renderArgsPricingTimeAdjustment: null, renderArgsPricingClamp: null,
-      renderArgsPricingRejected: null,
+      renderArgsPricingSetAside: null, renderArgsPricingRejected: null,
       renderArgsExpiredAuditFinalCycle: null,
       dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [],
       error: e instanceof Error ? e.message : String(e),
@@ -509,6 +512,8 @@ async function main() {
     console.log(indent(r.renderArgsPricingClamp))
     console.log('   render_args.pricing.rangeRule =')
     console.log(indent(r.renderArgsPricingRangeRule))
+    console.log('   render_args.pricing.setAside =')
+    console.log(indent(r.renderArgsPricingSetAside))
     console.log('   render_args.pricing.reconciliation =')
     console.log(indent(r.renderArgsPricingReconciliation))
     console.log('   render_args.market.originalAskRealization =')
