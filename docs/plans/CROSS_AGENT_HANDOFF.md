@@ -1,8 +1,8 @@
 # Current — 2026-09-08 (SITE-09 response clock landed; the site queue runs in four sessions at once)
 
 Owner: Claude (Fable 5.1), cloud session 01NESdvn, branch `claude/run-loop-syxm1d` landed on
-`origin/main`. Lane commits: 152afb5 (the response clock), ba72503 (/contact after the
-evaluator), bf97310 (the taste receipt + test hardening). Node
+`origin/main`. Lane commits (rebased onto the CMA mission, PR #201): a4ea260 (the response clock), 61f0061
+(/contact after the evaluator), d03e15a (the taste receipt + test hardening). Node
 `d575d2eb-7514-4be7-8399-f0ebaa2f7dc7` (SITE-09) set `blocked` on MEASUREMENT with the
 READY SHA in its `blocked_reason`; re-open 2026-10-06.
 
