@@ -294,6 +294,21 @@ const SUPPRESS_OVERLAYS = () => {
   } catch {}
 }
 
+/**
+ * Trap 10 — the Next dev-tools badge. Every shot in this repo is taken against
+ * `next dev`, and Next paints its own indicator in the bottom-left corner, on
+ * top of the page. On the listing page it landed squarely over the label of the
+ * first act in the close section, so a taste evaluator reading the shot saw a
+ * control obscured by chrome that does not exist in production and would have
+ * marked the page down for it. It is a capture artifact, so the capture tool
+ * removes it: `nextjs-portal` is the custom element Next mounts the overlay in.
+ */
+const HIDE_DEV_CHROME = `
+  nextjs-portal, [data-nextjs-toast], #__next-build-watcher, [data-next-badge-root] {
+    display: none !important;
+  }
+`
+
 async function dismissOverlays(page) {
   for (const name of ['Maybe later', 'Accept All', 'Accept all', 'Essential only', 'Got it']) {
     try {
@@ -306,6 +321,7 @@ async function dismissOverlays(page) {
 /** Trap 5 — webfonts reflow every heading after first paint. */
 async function waitFonts(page) {
   await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve())).catch(() => {})
+  await page.addStyleTag({ content: HIDE_DEV_CHROME }).catch(() => {})
 }
 
 /** Trap 4 — next/image swaps the real file in after hydration. */
