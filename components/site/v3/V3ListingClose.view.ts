@@ -12,6 +12,7 @@
  * returns null and the page does not mount the reading).
  */
 import { formatCalendarDay } from '@/lib/format/date'
+import { daysLiveOnMarket } from '@/lib/listing/days-live'
 import type { ListingCutFacts } from '@/lib/data/market-truth/getListingCutFacts'
 
 export type CloseReading = {
@@ -97,12 +98,9 @@ export function buildCloseSubject(input: CloseSubjectInput): CloseSubject | null
     input.drop && input.drop.original > 0 ? input.drop.drop / input.drop.original : null
   const cutLabel = cutDepth == null ? null : `${Math.round(cutDepth * 1000) / 10}%`
 
-  let daysLive: number | null = null
-  const onMarket = input.onMarketDate ? Date.parse(input.onMarketDate) : NaN
-  if (Number.isFinite(onMarket)) {
-    const days = Math.floor((now.getTime() - onMarket) / 86_400_000)
-    if (days >= 0 && days < 4000) daysLive = days
-  }
+  // One definition, shared with the header pill (lib/listing/days-live.ts), so
+  // the page cannot print two different day counts for the same house.
+  const daysLive = daysLiveOnMarket(input.onMarketDate, now)
 
   if (cutDepth == null && daysLive == null) return null
 
