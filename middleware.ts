@@ -346,8 +346,15 @@ function resolveGeoCityRedirect(pathname: string): string | null {
     slug = slug.toLowerCase()
     // A preset is a filter across the whole service area, never a place.
     if (isPresetSlug(slug)) return null
-    if (!CENTRAL_OREGON_CITY_SLUGS.has(slug)) return `/oregon/${encodeURIComponent(slug)}`
-    return null
+    if (CENTRAL_OREGON_CITY_SLUGS.has(slug)) return null
+    // A Central Oregon community (tetherow, brasada-ranch, bend-northwest-crossing)
+    // is in market but is not a city: /homes-for-sale/tetherow served a phantom
+    // "Homes for Sale in tetherow" search before this rule, and /oregon/tetherow
+    // would answer "City not found". Its place page is the honest destination.
+    if (RESORT_COMMUNITY_SLUGS.has(slug) || isCentralOregonCommunitySlug(slug)) {
+      return `/communities/${encodeURIComponent(slug)}`
+    }
+    return `/oregon/${encodeURIComponent(slug)}`
   }
   return null
 }
