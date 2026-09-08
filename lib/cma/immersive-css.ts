@@ -325,7 +325,11 @@ table.comp-matrix .matrix-addr{display:block}
    pin, not a rank, and drawn as the pin it cannot be misread as one after the
    grid is sorted. */
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
-.comp-stack-addr .pin-badge{margin-right:8px}
+.addr-row{display:flex;align-items:center;justify-content:center}
+.addr-row .matrix-addr{min-width:0}
+.addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
+.addr-row.is-card .pin-badge{margin-right:0}
+.addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
 /* NO PAN BOX: every chart ships a 360-unit phone layout. */

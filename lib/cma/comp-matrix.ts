@@ -470,11 +470,16 @@ function matrixTable(
       const img = src
         ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
         : ''
+      // THE BADGE SITS OUTSIDE THE ANCHOR'S TEXT. Inside it, `innerText` read
+      // "31737 7th" and a copy-paste or a text extraction carried the pin
+      // number into the address (tasteReview round three, §4 item 6). It is
+      // aria-hidden either way; this puts it out of the text as well, and the
+      // row it draws keeps the badge beside the address.
       const name = c.href
-        ? `<a class="matrix-addr" href="${esc(c.href)}" data-rr-track="cma-sale">${pinBadge(c.pin)}${esc(
-            c.label,
-          )}</a>`
-        : `<span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span>`
+        ? `<span class="addr-row">${pinBadge(c.pin)}<a class="matrix-addr" href="${esc(
+            c.href,
+          )}" data-rr-track="cma-sale">${esc(c.label)}</a></span>`
+        : `<span class="addr-row"><span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span></span>`
       // ROW → PIN IS A CONTROL, so it says so. The pin on the map is a real
       // <button>; this end of the same pair was a bare <th> with no role, no
       // tabindex and no cursor, so one direction of a two-way interaction was
@@ -591,9 +596,9 @@ function matrixStack(
       const fold = `<div class="comp-fold">${priceHistoryLineHtml(pricePathFromSale(c), `sale-${pin}`)}${
         working ? `<div class="comp-stack-grid">${working}</div>` : ''
       }</div>`
-      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<a class="comp-stack-addr" href="${esc(
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<span class="addr-row is-card">${pinBadge(pin)}<a class="comp-stack-addr" href="${esc(
         compHref(c, ctx),
-      )}" data-rr-track="cma-sale">${pinBadge(pin)}${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
+      )}" data-rr-track="cma-sale">${esc(c.address)}</a></span><div class="comp-stack-sold">Sold ${esc(
         dateLong(c.closeDate),
       )} · ${usd(c.closePrice)}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${
         conclusion ? `<div class="comp-stack-grid is-answer">${conclusion}</div>` : ''
