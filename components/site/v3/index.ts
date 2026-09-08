@@ -150,6 +150,12 @@ export { V3Ask } from './V3Ask.client'
  */
 export { V3PlaceValue } from './V3PlaceValue.client'
 export type { V3PlaceValueProps } from './V3PlaceValue.client'
+/**
+ * The returning ask (SITE-05, 2026-09-08): a corner plate on a wide window, the
+ * one bottom bar on a phone, shown only while the ask it points at is off
+ * screen. Its verdict tail is built by stickyAskVerdict() in lib/sticky-ask.ts.
+ */
+export { V3StickyAsk, type V3StickyAskProps, type V3StickyAskSurface } from './V3StickyAsk.client'
 
 /**
  * The place-page listing-alert capture (SITE-04, 2026-09-07): the first callout

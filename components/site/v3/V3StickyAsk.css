@@ -1,0 +1,253 @@
+/* V3StickyAsk — the returning ask. A navy plate in the corner on a wide window,
+   the one bottom bar on a phone. Broadside register: radius 0, no elevation
+   shadow, contrast doing the work an outline would do in a softer system.
+
+   THE BOTTOM EDGE IS CLAIMED. While shown, the component publishes its measured
+   height on the document root as --rr-sticky-bottom. Anything else that wants to
+   sit at the bottom of one of these pages — SITE-04's repeating alerts strip is
+   the first — docks above it with `bottom: var(--rr-sticky-bottom, 0px)` or
+   takes the top edge instead. Two elements at `bottom: 0` is how a phone loses
+   its primary action underneath a strip nobody tested against it. */
+
+.v3-sticky-ask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Same layer as the listing bar, and deliberately under the chrome (100) and
+     its open menu (120): a nav panel covers this, never the other way round. */
+  z-index: 80;
+  display: flex;
+  align-items: stretch;
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Hidden is the SSR state and the resting state. visibility (not display)
+     because it takes the control out of the tab order while keeping the box
+     measurable, and because it is the only one of the two that transitions. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--v3-travel));
+  transition:
+    opacity var(--v3-dur-enter) var(--v3-ease-out),
+    transform var(--v3-dur-enter) var(--v3-ease-out),
+    visibility 0s linear var(--v3-dur-enter);
+}
+
+.v3-sticky-ask[data-shown='true'] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity var(--v3-dur-enter) var(--v3-ease-out),
+    transform var(--v3-dur-enter) var(--v3-ease-out),
+    visibility 0s;
+}
+
+/* Reduced motion gets the same control, already arrived. */
+@media (prefers-reduced-motion: reduce) {
+  .v3-sticky-ask {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* PAGE_INVENTORY precedent, from the listing bar: a cookie bar may not cover
+   the ask. Same variable, same fallback, so the two behave identically. */
+body:has([data-cookie-notice='bar']) .v3-sticky-ask {
+  bottom: var(--v3-cookie-bar-h, 5.5rem);
+}
+
+/* ---- The ask ------------------------------------------------------------- */
+
+.v3-sticky-ask__go {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label arrow'
+    'tail  arrow';
+  align-items: center;
+  column-gap: var(--v3-space-sm);
+  min-height: var(--v3-sticky-bar-h);
+  padding: var(--v3-space-2xs) var(--v3-space-md);
+  color: inherit;
+  text-decoration: none;
+}
+
+.v3-sticky-ask__label {
+  grid-area: label;
+  font-size: var(--v3-size-nav);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+}
+
+/* The verdict, quiet.
+   NOT --v3-ink-on-navy-muted: that token is cream-60, and PUBLIC_UI §4 admits
+   cream-60 only as "muted text only, ≥16px". This tail sets at --v3-size-source
+   (12.5px), under that floor, so it takes a 72% mix instead — ~8:1 on navy,
+   which clears AAA for normal text at any size. The house rule is stricter than
+   WCAG here and the house rule is the one that binds. */
+.v3-sticky-ask__tail {
+  grid-area: tail;
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  color: color-mix(in srgb, var(--v3-ink-on-navy) 72%, transparent);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.v3-sticky-ask__tail > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v3-sticky-ask__tail > span + span::before {
+  content: '\00b7';
+  margin: 0 0.42em;
+}
+
+/* THE FIGURE. This is the data the control exists to carry, so it is set a step
+   up in size and weight and at full cream, and the flex row aligns on the
+   baseline so the larger figure still sits on the line. At one uniform size the
+   whole tail read as caption and the number disappeared into it. */
+.v3-sticky-ask__mos {
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+}
+
+.v3-sticky-ask__arrow {
+  grid-area: arrow;
+  align-self: center;
+  font-size: var(--v3-size-nav);
+  color: var(--v3-ink-on-navy-muted);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* Travel along the reading direction, which is where the link goes. Not a
+   bounce, not a scale — the arrow moves the way the visitor is about to. */
+.v3-sticky-ask__go:hover .v3-sticky-ask__arrow {
+  transform: translateX(var(--v3-space-3xs));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3-sticky-ask__arrow,
+  .v3-sticky-ask__go:hover .v3-sticky-ask__arrow {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ---- Dismiss ------------------------------------------------------------- */
+
+.v3-sticky-ask__dismiss {
+  flex: 0 0 auto;
+  width: var(--v3-tap);
+  min-height: var(--v3-sticky-bar-h);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--v3-ink-on-navy-muted);
+  font-family: inherit;
+  font-size: var(--v3-size-body-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-sticky-ask__dismiss:hover {
+  color: var(--v3-ink-on-navy);
+}
+
+/* Warm stone, per PUBLIC_UI §2 — never navy on navy. */
+.v3-sticky-ask__go:focus-visible,
+.v3-sticky-ask__dismiss:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(var(--v3-focus-offset) * -1);
+}
+
+/* ---- The narrowest phone -------------------------------------------------- */
+
+/* At 400px and under something in the tail has to go. It is the DATE STAMP,
+   never the place name.
+   The first build dropped the place, on the reasoning that the page already
+   says where you are. That is true on /cities/bend and false on
+   /cities/bend/northwest-crossing, where a fixed bar reading "seller's market ·
+   3.9 months" states a figure whose subject a scrolling visitor cannot see — an
+   unattributed number, which is the §0 hazard. Dropping the stamp leaves the
+   figure correctly attributed and still dated: the full reading, stamp
+   included, stays in the link's accessible name and in the tail's title. */
+@media (max-width: 25rem) {
+  .v3-sticky-ask__tail > .v3-sticky-ask__read {
+    display: none;
+  }
+  /* Both selectors carry the tail class, so this one wins on class count and
+     the hidden span leaves no dangling separator behind. Written the short way
+     first, it lost to `.__tail > span + span::before` and the phone shipped
+     "· seller's market · 3.9 months" with a leading middot. */
+  .v3-sticky-ask__tail > .v3-sticky-ask__read::before {
+    content: none;
+  }
+}
+
+/* ---- Wide window: the corner plate ---------------------------------------- */
+
+@media (min-width: 64rem) {
+  .v3-sticky-ask {
+    /* Flush into the corner. A floating capsule with a margin is the toast
+       every site ships; a block seated on the two edges is a printed corner
+       slug, and it is the shape that belongs to this register. */
+    right: auto;
+    /* The cap has to clear the CONTENT, not just look modest. At 34rem the
+       wider padding and the larger label left the tail about 250px, and every
+       span in it ellipsised — "Be… · seller's m… · 3.9 mo… · as of S…", a
+       control whose whole job is carrying a reading, carrying none of it.
+       The plate sizes to its content and this only stops it spanning a wide
+       window. */
+    max-width: min(48rem, calc(100vw - var(--v3-space-2xl)));
+  }
+
+  .v3-sticky-ask__go {
+    /* One line on a wide window: the ask, then the reading, then the arrow. */
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'label tail arrow';
+    column-gap: var(--v3-space-md);
+    /* The phone's bar height is the FLOOR here, not the target. A wide window
+       has the room, and this plate carries a live market reading — at 56px it
+       was a status strip a visitor's eye skipped. The padding takes it to ~72px
+       so the ask and its figure both get to be read. It is still one plate in
+       one corner, not a banner: the register's presence comes from the flush
+       edges and the ink, and the scale just stops undercutting them.
+       The height is stated, not left to the padding: on one row the content is
+       only ~21px tall, so padding alone lost to the 56px floor and the plate
+       did not grow at all. */
+    min-height: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
+    padding: var(--v3-space-md) var(--v3-space-xl);
+  }
+
+  .v3-sticky-ask__label {
+    font-size: var(--v3-size-body-lg);
+  }
+
+  /* The hairline between the ask and its reading — the register's rule weight,
+     drawn in cream because this plate is inverted. */
+  .v3-sticky-ask__tail {
+    padding-left: var(--v3-space-md);
+    border-left: var(--v3-rule-weight-hairline) solid
+      color-mix(in srgb, var(--v3-ink-on-navy) 28%, transparent);
+  }
+
+  .v3-sticky-ask__dismiss {
+    min-height: calc(var(--v3-sticky-bar-h) + var(--v3-space-md));
+  }
+}
