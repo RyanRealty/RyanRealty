@@ -1295,8 +1295,11 @@ describe('tasteReview 3 — the phone document, and the close', () => {
     const script = immersiveInteractionScript()
     expect(script).toContain("hit.setAttribute('aria-valuenow'")
     expect(script).toContain("hit.setAttribute('aria-valuetext'")
-    // Set before any key press: put(...) runs once at the end of the block.
-    expect(script).toMatch(/put\(Math\.min\(3,pts\.length-1\),false\)/)
+    // Set before any key press: put(...) runs once at the end of the block, and
+    // it PRINTS the reading too — a visible handle with a dashed rule and no
+    // label read to three separate reviewers as a hover state baked into the
+    // screenshot.
+    expect(script).toMatch(/put\(Math\.min\(3,pts\.length-1\)\)/)
     expect(script).toContain("n.setAttribute('aria-pressed','false')")
   })
 })

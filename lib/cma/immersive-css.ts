@@ -120,7 +120,11 @@ h3.subhead{font-size:17px;font-weight:600;margin:26px 0 8px}
 h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:20px 0 6px}
 .sc a{color:var(--navy)}
 .sc-navy a{color:var(--cream)}
-.rival-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:14px 0 8px}
+/* Four across when there are four or more. With two, four fixed tracks left
+   two narrow cards stranded at the left of a 1280 screen with 900px of empty
+   cream beside them; auto-fit collapses the tracks nobody is using. */
+.rival-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin:14px 0 8px}
+.rival-grid:has(> :nth-child(4)){grid-template-columns:repeat(4,1fr)}
 .rival-card{background:var(--cream);border:1px solid var(--ink12);overflow:hidden}
 .rival-card .rival-ph{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--navy)}
 .rival-card .rival-ph.is-empty{min-height:0}

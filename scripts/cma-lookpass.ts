@@ -570,10 +570,11 @@ const INTERACT_STEPS: InteractStep[] = [
       const b = btns.find((x) => /price today/i.test(x.textContent || ''))
       if (!b) return null
       b.click()
-      // The sort runs WITHIN each table: a table headed "Sales 4 through 6"
-      // would be lying if a sale moved between tables. So each table must come
-      // back descending on its own, and the cards must follow the tables read
-      // left to right.
+      // The sort runs ACROSS every table. A wide grid splits into two or three
+      // tables so it fits the page, and a within-table sort returned two
+      // descending runs — which a reader reads as a sort that did not work.
+      // So the columns must come back descending read left to right, table
+      // after table, and the cards must follow them.
       const perTable = Array.from(document.querySelectorAll('#what-its-worth table.comp-matrix')).map((t) =>
         Array.from(t.querySelectorAll('thead th.v'))
           .map((th) => th.getAttribute('data-sort-price'))
@@ -582,7 +583,7 @@ const INTERACT_STEPS: InteractStep[] = [
       )
       const keys = perTable.flat()
       if (keys.length < 2) return ''
-      const sorted = perTable.every((k) => k.every((v, i) => i === 0 || k[i - 1] >= v))
+      const sorted = keys.every((v, i) => i === 0 || keys[i - 1] >= v)
       // The cards and the price paths move with the columns, or the chapter
       // now disagrees with itself about which sale is which.
       // Their own home is the first card and never sorts, the way it is the

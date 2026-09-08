@@ -128,19 +128,45 @@ export function worthStripSvg(
   // path to the same reading.
   const first = g.sales[0]!
   const last = g.sales[g.sales.length - 1]!
+  // Sales priced within a whisker of each other STACK rather than merge. Three
+  // sales inside $2,000 drew one solid blob at 375 and the reader lost two of
+  // them; a dot that steps up a row is still on the same price, and the axis
+  // is horizontal so the row it sits in carries no meaning of its own.
+  const cxs = g.sales.map((s) => x(s.adjustedPrice))
+  const rows: number[] = new Array(cxs.length).fill(0)
+  {
+    // Packed left to right, so a row's last dot is always the nearest one in
+    // it: the first row with 11 units of clearance takes the dot.
+    const lastInRow: number[] = []
+    const order = cxs.map((_, i) => i).sort((a, b) => cxs[a]! - cxs[b]!)
+    for (const i of order) {
+      let r = 0
+      while (r < lastInRow.length && cxs[i]! - lastInRow[r]! < 11) r++
+      lastInRow[r] = cxs[i]!
+      rows[i] = r
+    }
+  }
+  const topRow = Math.max(0, ...rows)
+  // The stack has a ceiling: seven sales inside a whisker of each other would
+  // otherwise climb straight out of the frame. The step tightens instead.
+  const step = topRow > 0 ? Math.min(13, (dotY - 34) / topRow) : 13
   const dots = g.sales
-    .map((s) => {
-      const cx = x(s.adjustedPrice)
+    .map((s, i) => {
+      const cx = cxs[i]!
+      const cy = dotY - rows[i]! * step
       const read = `${s.n}. ${s.address} · sale price today ${usd(s.adjustedPrice)}`
       return `<g class="ws-dot" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <circle cx="${cx.toFixed(1)}" cy="${dotY.toFixed(1)}" r="13" fill="transparent"/>
-      <circle cx="${cx.toFixed(1)}" cy="${dotY.toFixed(1)}" r="5" fill="${INK}"/>
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="13" fill="transparent"/>
+      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>
     </g>`
     })
     .join('\n    ')
+  // Above the TALLEST stack, never above row zero: a label that clears one dot
+  // and sits on the next one is the collision it was moved to avoid.
+  const labelY = dotY - topRow * step - 12
   const endLabel = (v: number, anchorLeft: boolean) => {
     const f = fit(x(v), shortUsd(v), fs, W)
-    return `<text x="${anchorLeft ? f.x : f.x}" y="${(dotY - 12).toFixed(1)}" text-anchor="${f.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(shortUsd(v))}</text>`
+    return `<text x="${anchorLeft ? f.x : f.x}" y="${labelY.toFixed(1)}" text-anchor="${f.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(shortUsd(v))}</text>`
   }
 
   // The two vertical marks label themselves on ONE line under the axis. They

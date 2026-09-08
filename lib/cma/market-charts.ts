@@ -825,7 +825,7 @@ export function offerTimingCurveSvg(
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
     <path d="${path}" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     ${dots}
-    <text x="${endFit.x}" y="${(y(last.pct) + 27).toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(endLabel)}</text>
+    <text class="curve-end" x="${endFit.x}" y="${(y(last.pct) + 27).toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(endLabel)}</text>
     ${ticks}
     <text x="${plotR}" y="${(H - 6).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">days to an accepted offer</text>
     <g class="scrub" aria-hidden="true" opacity="0">

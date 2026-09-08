@@ -61,6 +61,11 @@ export function immersiveInteractionCss(): string {
    loads none of this, never draws a stray dashed line at day zero. A class
    beats a presentation attribute, so the scrub still appears here. */
 .scrub{opacity:0;transition:opacity .2s ease-out}
+/* The endpoint label sits under the last point, which is where the scrub lands
+   when a reader drags to the end — the marker's dashed rule ran straight
+   through "by day 180". While the reader is scrubbing, the scrub's own reading
+   is the label, so the static one steps aside. */
+.curve-scrub.is-scrubbing .curve-end{opacity:0}
 .curve-scrub.is-scrubbing .scrub{opacity:1}
 .scrub-hit{cursor:ew-resize}
 /* The dated history behind a drawn price path. */
@@ -275,10 +280,13 @@ try{
       else if(e.key==='End'){e.preventDefault();put(pts.length-1)}
     })
     // A slider that announces nothing until the first key press is a slider a
-    // screen reader cannot read. The handle is placed, and both ARIA values
-    // are set, from the first render; the live line stays empty until the
-    // reader moves it, so nothing shouts at them on load.
-    put(Math.min(3,pts.length-1),false)
+    // screen reader cannot read, so the handle is placed and both ARIA values
+    // are set from the first render. It also PRINTS its reading from the first
+    // render: three separate readers looked at the resting handle and its
+    // dashed rule and reported "a large dot at day 60 with no label — reads as
+    // a leftover hover state baked into the screenshot". A visible mark on a
+    // chart says what it is.
+    put(Math.min(3,pts.length-1))
   })
 }catch(e){}
 
@@ -359,40 +367,67 @@ try{
     button(box,'With the adjustments',true,function(){worth.classList.remove('is-plain')})
     button(box,'Sale prices only',false,function(){worth.classList.add('is-plain')})
 
-    // The sort runs WITHIN each table, never across them: a table is headed
-    // "Sales 4 through 6", and moving a sale between tables would make that
-    // heading false. The cards and the price paths take the same permutation
-    // in the same order, so all three readings of the chapter agree.
+    // The sort runs ACROSS every table, not within each one. It used to run
+    // within: a wide grid splits into two or three tables so it fits the page,
+    // and "Price today" then returned $2.65M, $1.75M, $1.49M | $1.73M, $1.26M,
+    // $970K — six sales in two descending runs, which a reader reads as a sort
+    // that did not work. The tables are a page-width mechanism, so they are no
+    // longer headed by position ("Sales 4 through 6"), and a sale is free to
+    // move between them.
     var sortBox=controls(anchor,'Order:')
     var groups=tables.map(function(t){
       return {
         table:t,
         head:t.querySelector('thead tr'),
-        heads:[].slice.call(t.querySelectorAll('thead th.v'))
+        // How many SALE columns this table holds. The shape stays put; only
+        // which sale sits in each slot changes.
+        size:t.querySelectorAll('thead th.v').length-1
       }
     })
+    // The order the document was printed in, kept so the reader can get back
+    // to it. Restoring "the original" by leaving the DOM alone stopped working
+    // the moment the sort could move a column between tables.
+    var printed=[]
+    groups.forEach(function(g){
+      [].slice.call(g.table.querySelectorAll('thead th.v')).slice(1).forEach(function(h){
+        printed.push(h.getAttribute('data-comp'))
+      })
+    })
     function order(key,dir){
-      var global=[]
+      // Every sale column in the chapter, with the cell it owns in each row.
+      // Captured BEFORE anything moves: the references have to outlive the
+      // reshuffle.
+      var items=[]
       groups.forEach(function(g){
-        // Column 0 is the reader's own home, in every table, and never moves.
-        var idx=g.heads.map(function(h,i){return i}).slice(1)
-        if(key){
-          idx.sort(function(a,b){
-            var va=g.heads[a].getAttribute('data-sort-'+key),vb=g.heads[b].getAttribute('data-sort-'+key)
-            if(va==null&&vb==null)return 0
-            if(va==null)return 1
-            if(vb==null)return -1
-            if(key==='date')return dir*(va<vb?-1:va>vb?1:0)
-            return dir*(Number(va)-Number(vb))
-          })
-        }
-        var perm=[0].concat(idx)
-        perm.forEach(function(i){g.head.appendChild(g.heads[i])})
-        ;[].slice.call(g.table.querySelectorAll('tbody tr')).forEach(function(tr){
-          var tds=[].slice.call(tr.querySelectorAll('td'))
-          perm.forEach(function(i){if(tds[i])tr.appendChild(tds[i])})
+        var heads=[].slice.call(g.table.querySelectorAll('thead th.v'))
+        var rows=[].slice.call(g.table.querySelectorAll('tbody tr'))
+        heads.forEach(function(h,i){
+          // Column 0 is the reader's own home, in every table, and never moves.
+          if(i===0)return
+          items.push({head:h,cells:rows.map(function(tr){return tr.querySelectorAll('td')[i]})})
         })
-        idx.forEach(function(i){global.push(g.heads[i].getAttribute('data-comp'))})
+      })
+      items.sort(function(a,b){
+        if(!key){
+          return printed.indexOf(a.head.getAttribute('data-comp'))-printed.indexOf(b.head.getAttribute('data-comp'))
+        }
+        var va=a.head.getAttribute('data-sort-'+key),vb=b.head.getAttribute('data-sort-'+key)
+        if(va==null&&vb==null)return 0
+        if(va==null)return 1
+        if(vb==null)return -1
+        if(key==='date')return dir*(va<vb?-1:va>vb?1:0)
+        return dir*(Number(va)-Number(vb))
+      })
+      var at=0,global=[]
+      groups.forEach(function(g){
+        var rows=[].slice.call(g.table.querySelectorAll('tbody tr'))
+        for(var k=0;k<g.size;k++){
+          var it=items[at++]
+          if(!it)break
+          g.head.appendChild(it.head)
+          rows.forEach(function(tr,ri){if(it.cells[ri])tr.appendChild(it.cells[ri])})
+          global.push(it.head.getAttribute('data-comp'))
+        }
       })
       function reflow(container,sel){
         if(!container)return
@@ -404,7 +439,10 @@ try{
       }
       reflow(stack,'.comp-stack-card:not(.is-yours)')
     }
-    button(sortBox,'As weighted',true,function(){order(null,1)})
+    // "As weighted" was a lie: the printed order is the sales newest first, and
+    // the weights ran 31.9, 14.2, 15.1, 27.3, 11.6 down the row under a pill
+    // claiming they were sorted by it.
+    button(sortBox,'As printed',true,function(){order(null,1)})
     button(sortBox,'Most recent',false,function(){order('date',-1)})
     button(sortBox,'Price today',false,function(){order('price',-1)})
     button(sortBox,'Size',false,function(){order('size',-1)})

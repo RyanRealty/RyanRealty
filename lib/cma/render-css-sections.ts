@@ -657,7 +657,10 @@ export function cmaSectionStyles(): string {
 
   /* Chapter 4: cards, four and four. Photo, linked address, price, size, days
      on market, and one delta line against your home. */
-  .rival-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 8px 0 14px; }
+  /* Four across at four or more; fewer cards fill the row rather than leaving
+     empty tracks beside them. */
+  .rival-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 8px 0 14px; }
+  .rival-grid:has(> :nth-child(4)) { grid-template-columns: repeat(4, 1fr); }
   .rival-card {
     border: 1px solid var(--navy-line);
     background: var(--cream);

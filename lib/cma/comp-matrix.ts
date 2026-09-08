@@ -430,10 +430,16 @@ function splitEvenly(cols: Col[]): Col[][] {
   return groups
 }
 
-function groupHeading(startIndex: number, size: number): string {
-  const first = startIndex + 1
-  const last = startIndex + size
-  return size === 1 ? `Sale ${first}` : `Sales ${first} through ${last}`
+/**
+ * A continuation label, never a range of positions.
+ *
+ * It used to read "Sales 4 through 6", which forced the sort to run inside
+ * each table so the heading stayed true — and a reader who asked for price
+ * order got two descending runs instead of one. The split is a page-width
+ * mechanism, so the heading says only that the grid carries on.
+ */
+function groupHeading(startIndex: number): string {
+  return startIndex === 0 ? '' : 'The sales that set this price, continued'
 }
 
 function matrixTable(
@@ -615,13 +621,13 @@ export function renderCompMatrixHtml(
   let seen = 0
   const tables = groups
     .map((group) => {
-      const heading =
-        // `matrix-group-h`: the heading belongs to the TABLE, so it goes when
-        // the table does. At 375 both headings rendered back to back with
-        // nothing between them and then all the cards under the second one.
-        groups.length > 1
-          ? `<h4 class="subhead matrix-group-h">${esc(groupHeading(seen, group.length))}</h4>`
-          : ''
+      // `matrix-group-h`: the heading belongs to the TABLE, so it goes when
+      // the table does. At 375 both headings rendered back to back with
+      // nothing between them and then all the cards under the second one.
+      const headingText = groups.length > 1 ? groupHeading(seen) : ''
+      const heading = headingText
+        ? `<h4 class="subhead matrix-group-h">${esc(headingText)}</h4>`
+        : ''
       seen += group.length
       return `${heading}${matrixTable([subj, ...group], folded.rows)}`
     })

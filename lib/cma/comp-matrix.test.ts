@@ -123,9 +123,11 @@ describe('renderCompMatrixHtml', () => {
   it('captions each table with the sales it holds, and loses none of them', () => {
     const twelve = renderCompMatrixHtml(subject, Array.from({ length: 12 }, () => comp))
     expect(twelve.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(3)
-    expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 1 through 4</h4>')
-    expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 5 through 8</h4>')
-    expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 9 through 12</h4>')
+    // A CONTINUATION label, never a range of positions. "Sales 5 through 8"
+    // forced the sort to run inside each table so the heading stayed true, and
+    // a reader who asked for price order then got two descending runs.
+    expect(twelve.match(/<h4 class="subhead matrix-group-h">The sales that set this price, continued<\/h4>/g) ?? []).toHaveLength(2)
+    expect(twelve).not.toMatch(/Sales \d+ through \d+/)
     // The defect this whole shape exists to prevent: sales falling off the page.
     expect(twelve).toContain('<span class="pin-badge" aria-hidden="true">12</span>947 6th')
     // Three table heads, plus the phone stack's own "Your home" card, which
@@ -134,8 +136,8 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
 
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
-    expect(thirteen).toContain('<h4 class="subhead matrix-group-h">Sales 1 through 5</h4>')
-    expect(thirteen).toContain('<h4 class="subhead matrix-group-h">Sales 10 through 13</h4>')
+    expect(thirteen.match(/matrix-group-h/g) ?? []).toHaveLength(2)
+    expect(thirteen).not.toMatch(/Sales \d+ through \d+/)
   })
 
   it('pins every column width so no cell can push the table past the margin', () => {

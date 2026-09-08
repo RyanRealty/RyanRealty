@@ -247,6 +247,14 @@ export function cmaStylesheet(siteUrl: string): string {
     margin: 0;
     display: block;
   }
+  /* On a phone the stage stops reserving a full screen. A contained 4:3 photo
+     at 375 is 281px tall, and inside a 100svh stage that left ~210px of empty
+     navy above it and ~220px below — over half the cover blank, with the photo
+     squeezed into a strip. The cover is the height of what is on it. */
+  @media screen and (max-width: 700px) {
+    .cover-stage { min-height: 0; }
+    .hero-photo { flex: 0 0 auto; height: auto; }
+  }
   .hero-caption {
     font-size: 9.5px;
     color: var(--navy);
