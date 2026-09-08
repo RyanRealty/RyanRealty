@@ -75,7 +75,16 @@ describe('public mix / feature floors', () => {
     expect(cities).toMatch(/getPublicDetachedMix/)
     expect(zip).toMatch(/getPublicDetachedMix/)
     expect(comm).not.toMatch(/getPublicDetachedMix/)
-    expect(nbh).not.toMatch(/getPublicDetachedMix/)
+    // THE NEIGHBORHOOD PAGE READS THE MIX AGAIN as of SITE-07 (2026-09-08), and
+    // the rule this line encodes is intact: the ban was on reading the mix ONLY
+    // TO DISCARD IT, which is what the homepage was doing. This page PUBLISHES
+    // it — `V3PlaceAffordability` draws the financing mix as its own figure
+    // ("How people actually paid for a house in Awbrey Butte", 56.7%
+    // conventional / 39.2% cash, read 2026-09-08) and uses the cash share to
+    // decide which mode the calculator opens on. A read whose figures reach a
+    // reader with their trace is exactly what this stat is for.
+    expect(nbh).toMatch(/getPublicDetachedMix/)
+    expect(nbh).toMatch(/V3PlaceAffordability/)
     // v3 homepage (2026-08-27): the mix cells print as Instrument figures
     // through the same shared builder the ZIP and city pages use.
     expect(home).not.toMatch(/buildPublicMixFigures/)

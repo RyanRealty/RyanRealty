@@ -55,6 +55,9 @@ import {
   dropCurrentMonth,
 } from '@/lib/data/market-truth/public-monthly'
 import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
+import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
+import { DEFAULT_DISPLAY_RATE } from '@/lib/mortgage'
+import { publishPlaceAffordability } from '@/lib/place/publish-place-affordability'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
@@ -92,6 +95,7 @@ import {
   V3Instrument,
   V3Ledger,
   V3Answers,
+  V3PlaceAffordability,
   V3Quiet,
   V3SectionTracker,
   type V3InstrumentFigure,
@@ -358,7 +362,15 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
   // The approved area-guide clip - a guides-Ledger door on this node (the
   // pattern set holds no mid-page media slot here); it plays full-bleed on the
   // community Stage. Null when the geo has none, and the row is then absent.
-  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video')
+  // SITE-07: the 30-yr rate is READ, never assumed. market_history_weekly
+  // (national/us, mortgage_rate_30yr) is written every Monday from Freddie Mac
+  // PMMS, so the calculator can publish a rate with its own week stamp. A null
+  // here is not a zero and not a default dressed as a measurement: the section
+  // then says the rate is an assumption the visitor sets.
+  const [areaGuideVideo, liveRate] = await Promise.all([
+    withTimeoutFallback(getAreaGuideVideo(slug), null, 3000, 'area-guide-video'),
+    withTimeoutFallback(getLiveMortgageRate(), null, 2500, 'city:mortgageRate'),
+  ])
   const libraryHero = await withTimeoutFallback(cityLibraryHero(slug), null, 3000, 'city:libraryHero')
   const stagePosterSrc = cityStagePoster(indexCities[slug], libraryHero)
   const typeCovers = await withTimeoutFallback(
@@ -467,6 +479,23 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
 
   const marketHeadline = `Typical price in ${cityName}`
   const verdictCaption = cityVerdictCaption({ mos: mosRaw, verdict: face.verdict })
+
+  // SITE-07: the affordability instrument, opened at the SAME median this
+  // page's market section prints (hud.medianList), so the calculator can never
+  // disagree with the figure above it.
+  const affordability = publishPlaceAffordability({
+    placeName: cityName,
+    placeSlug: slug,
+    grain: 'city',
+    medianListPrice: hud.medianList,
+    activeCount: hud.active,
+    computedAt: leftoverStamp,
+    browseHref: homesForSalePath(cityName),
+    rate: liveRate,
+    fallbackRatePct: DEFAULT_DISPLAY_RATE,
+    mix: publicMix,
+    cashShare: publicPace.cashShare,
+  })
 
   const closedN = leftoverClosedCount(hud, chartMonths.months)
   const medianChart = placeMedianChart(
@@ -793,6 +822,13 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             items={marketAbsenceItems(cityName, true)}
           />
         )}
+
+        {/* SITE-07: the two-way affordability instrument. It sits after the
+            typical-price Instrument on purpose — the reader has just been told
+            what this market costs, and this is where they answer back with
+            their own number. Its own pattern, so neither neighbour repeats a
+            pattern (Instrument above, Quiet below). */}
+        {affordability ? <V3PlaceAffordability id="afford" {...affordability} /> : null}
 
         {aboutItems.length > 0 ? (
           <V3Quiet

@@ -210,6 +210,33 @@ export type { V3PlaceValueProps } from './V3PlaceValue.client'
 export { V3StickyAsk, type V3StickyAskProps, type V3StickyAskSurface } from './V3StickyAsk.client'
 
 /**
+ * The place-page affordability instrument (SITE-07, 2026-09-08): a payment and a
+ * price that each solve the other, opened at this place's published median ask,
+ * ending in the search at the ceiling it solved. The rate is a measured figure
+ * when market_history_weekly has one and a labelled assumption when it does not;
+ * the local financing mix is drawn as a fact about closed sales and never turned
+ * into a down payment. Math in lib/finance/affordability.ts, sentences and drawn
+ * figures in V3PlaceAffordability.view.ts, props built by
+ * lib/place/publish-place-affordability.ts.
+ */
+export { V3PlaceAffordability, V3_AFFORD_TRACK_DEBOUNCE_MS } from './V3PlaceAffordability.client'
+export type {
+  V3PlaceAffordabilityProps,
+  V3PlaceAffordabilityRate,
+} from './V3PlaceAffordability.client'
+export {
+  affordabilityClaim,
+  affordabilityAnswerLine,
+  affordabilitySearchLabel,
+  affordabilityFigures,
+} from './V3PlaceAffordability.view'
+export type {
+  AffordabilityMode,
+  AffordabilityMixSlice,
+  AffordabilityViewInput,
+} from './V3PlaceAffordability.view'
+
+/**
  * The place-page listing-alert capture (SITE-04, 2026-09-07): the first callout
  * after a place opening, with the real 30-day count as its promise, and the
  * sticky repeat that shows once the visitor is past the Atlas. One component,

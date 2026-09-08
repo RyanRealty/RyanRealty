@@ -25,6 +25,10 @@ import {
 } from '@/lib/data/market-truth/public-monthly'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import { getPublicPlaceSegments } from '@/lib/data/market-truth/public-segments'
+import { EMPTY_PUBLIC_MIX, getPublicDetachedMix } from '@/lib/data/market-truth/public-mix'
+import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
+import { DEFAULT_DISPLAY_RATE } from '@/lib/mortgage'
+import { publishPlaceAffordability } from '@/lib/place/publish-place-affordability'
 import { resolveNeighborhoodMetricSlug } from '@/lib/data/market-truth/neighborhood-metric-slug'
 import {
   getAreaGuideVideo,
@@ -74,6 +78,7 @@ import {
   V3PlaceCharacter,
   V3PlaceDocuments,
   V3Answers,
+  V3PlaceAffordability,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
@@ -521,8 +526,40 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
   const activityEyebrow = useActScoped ? `Live · ${neighborhood.name}` : `Live · ${cityName}`
   const [firstAct, ...restAct] = activityRows(activityItems)
 
-  // Per-neighborhood area-guide clip (EXACT geo match; null for most).
-  const areaGuideVideo = await withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video')
+  // Per-neighborhood area-guide clip (EXACT geo match; null for most). SITE-07
+  // rides along: the detached financing mix for this neighborhood, and the
+  // 30-yr rate READ from market_history_weekly (Freddie Mac PMMS, written every
+  // Monday) so the calculator publishes a dated rate rather than an assumption
+  // dressed as one. A null rate is not a zero — the section then says the
+  // number is the visitor's own.
+  const [areaGuideVideo, publicMix, liveRate] = await Promise.all([
+    withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video'),
+    withTimeoutFallback(
+      getPublicDetachedMix({ geoType: 'neighborhood', geoSlug: metricNeighborhoodSlug }),
+      EMPTY_PUBLIC_MIX,
+      3000,
+      'nbh:publicMix',
+    ),
+    withTimeoutFallback(getLiveMortgageRate(), null, 2500, 'nbh:mortgageRate'),
+  ])
+
+  // SITE-07: opened at the SAME median this page publishes on its face
+  // (getNeighborhoodPublicInventory), over the population that median was
+  // actually taken across — pricedCount, never activeCount, which counts
+  // listings the median never saw.
+  const affordability = publishPlaceAffordability({
+    placeName: neighborhood.name,
+    placeSlug: `${citySlug}/${neighborhoodSlug}`,
+    grain: 'neighborhood',
+    medianListPrice: inventoryOk ? inventory.medianListPrice : null,
+    activeCount: inventoryOk ? inventory.pricedCount : null,
+    computedAt: null,
+    browseHref,
+    rate: liveRate,
+    fallbackRatePct: DEFAULT_DISPLAY_RATE,
+    mix: publicMix,
+    cashShare: publicPace.cashShare,
+  })
   const placeNameNeedle = neighborhood.name.toLowerCase()
   const articlePosts = buildArticlePosts(
     blogPosts.filter((post) => post.title.toLowerCase().includes(placeNameNeedle)),
@@ -710,6 +747,11 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             items={tooFewSalesItems()}
           />
         ) : null}
+
+        {/* SITE-07: the two-way affordability instrument, after the
+            typical-price Instrument and before daily life. Its own pattern, so
+            neither neighbour repeats one. */}
+        {affordability ? <V3PlaceAffordability id="afford" {...affordability} /> : null}
 
         {firstDaily ? (
           <V3Ledger
