@@ -137,5 +137,64 @@
     "SubdivisionExploreTail, and with it KbExploreTowns and KbSell",
     "The parent-market band and fetchSubdivMarketExtras (another geography under this heading — 3f34bf65, 2026-08-16)",
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-08",
+    "rubricVersion": "v1-2026-09-08",
+    "evaluator": "separate claude-sonnet-5 evaluator, SITE-08 cited-Q&A pass, session 01NESdvn — three scorings of one shot set, median reported",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5",
+    "shotSpec": {
+      "routes": [
+        "/subdivisions/ridge-at-eagle-crest"
+      ],
+      "viewports": [
+        1440,
+        375
+      ],
+      "states": [
+        "default",
+        "answers-first-row-open"
+      ]
+    },
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
+      "answersDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-desktop.png",
+      "answersMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/answers-mobile375.png"
+    },
+    "shotsHash": "sha256:7c616fee8b37b0b72d7e41556fad6cc249829f1fa7d93c6792150d73294b1ed6",
+    "scores": [
+      84,
+      80,
+      82
+    ],
+    "score": 82,
+    "breakdown": {
+      "design": 25,
+      "originality": 26,
+      "interaction": 10,
+      "craft": 12,
+      "honesty": 9
+    },
+    "beats": "Redfin/Zillow's page for the same plat — which for a 26-closing-a-year subdivision usually does not exist at all, folded into the parent city — and Eagle Crest's own resort site, which publishes no sale-to-list, no days-on-market and no year-over-year closed comparison. We win on depth a portal cannot show at this grain and on methodological candour. We lose on the resort's own lifestyle photography.",
+    "defects": [
+      {
+        "section": "answers count",
+        "severity": "taste",
+        "finding": "5 of the 5-8 target rows ship — the floor of the range and the thinnest of the three grains — so despite the strongest per-row craft a reader gets fewer things to interrogate than on neighborhood or community."
+      },
+      {
+        "section": "dual dot-strip instrument",
+        "severity": "taste",
+        "finding": "Per-year hover behaviour surfacing an individual sale's date or price is not evidenced by the still, the same unconfirmed-interaction gap as the other two grains."
+      }
+    ],
+    "openRaise": [
+      "answers list — push toward 6-8 rows on plats with enough data rather than settling at the 5-row floor",
+      "plat map module below the hero — encode recency or price into the dots so it becomes an instrument, not an outline",
+      "dual dot-strip — confirm or add a hover tooltip naming the sale behind an individual dot"
+    ],
+    "comparedToPrior": "first"
+  }
 }
