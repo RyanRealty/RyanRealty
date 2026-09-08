@@ -76,10 +76,17 @@ describe('compact markup', () => {
     expect(compact).toContain('about-faces--compact')
     expect(compact).toContain('alt={person.name}')
     expect(compact).toContain('className="about-faces__name"')
+    expect(compact).toContain('<p className="about-faces__role">{person.title}</p>')
     expect(compact).toContain('OR #{person.license}')
     expect(compact).toContain('aboutCompactReach(person)')
     expect(compact).toContain('`about-faces__reach--${row.kind}`')
     expect(compact).toContain('teamPath()')
+  })
+
+  it('opens on the same eyebrow primitive as the other homepage sections', () => {
+    const compact = FACES.slice(FACES.indexOf('if (size === "compact")'), FACES.indexOf('if (size === "portrait")'))
+    expect(compact).toContain('<V3Eyebrow>Our brokers</V3Eyebrow>')
+    expect(compact).toContain('className="about-faces__head-row"')
   })
 })
 
@@ -92,9 +99,19 @@ describe('compact css', () => {
   })
 
   it('places every row by kind so a missing row cannot shift the others', () => {
-    expect(COMPACT_CSS).toMatch(/\.about-faces__reach--call \{\s*grid-row: 4/)
-    expect(COMPACT_CSS).toMatch(/\.about-faces__reach--text \{\s*grid-row: 5/)
-    expect(COMPACT_CSS).toMatch(/\.about-faces__reach--book \{\s*grid-row: 6/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__item \{[\s\S]*?grid-row: span 7/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__name \{\s*grid-row: 2/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__role \{\s*grid-row: 3/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__license \{\s*grid-row: 4/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__reach--call \{\s*grid-row: 5/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__reach--text \{\s*grid-row: 6/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces__reach--book \{\s*grid-row: 7/)
+  })
+
+  it('reserves two name lines and fades the flat bottom of the cutout, with no box or fill', () => {
+    expect(COMPACT_CSS).toMatch(/\.about-faces__name \{[\s\S]*?min-height: max\(var\(--v3-tap\), calc\(2\.2em \+ var\(--v3-space-xs\)\)\)/)
+    expect(COMPACT_CSS).toMatch(/\.about-faces--compact \.about-faces__photo \{[\s\S]*?mask-image: linear-gradient\(to bottom, var\(--v3-navy\) 88%, transparent 100%\)/)
+    expect(COMPACT_CSS).not.toMatch(/\.about-faces--compact \.about-faces__photo(-link)? \{[^}]*(background|border:|box-shadow)/)
   })
 
   it('keeps tap height on every row and the door, tabular numerals on the number', () => {

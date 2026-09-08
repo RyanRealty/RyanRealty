@@ -14,7 +14,7 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { V3_ROOT_CLASS, V3Button, V3Heading } from "@/components/site/v3"
+import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site/v3"
 import { teamPath } from "@/lib/slug"
 import type { AboutFace } from "./about-faces"
 import { aboutCompactReach } from "./about-faces"
@@ -156,12 +156,15 @@ export function AboutFaces({
         aria-labelledby="faces-heading"
       >
         <div className="about-faces__head">
-          <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
-            {heading}
-          </V3Heading>
-          <V3Button variant="text" href={teamPath()} className="about-faces__door">
-            Meet the team
-          </V3Button>
+          <V3Eyebrow>Our brokers</V3Eyebrow>
+          <div className="about-faces__head-row">
+            <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
+              {heading}
+            </V3Heading>
+            <V3Button variant="text" href={teamPath()} className="about-faces__door">
+              Meet the team
+            </V3Button>
+          </div>
         </div>
         <ul className="about-faces__grid">
           {shown.map((person, index) => (
@@ -183,6 +186,7 @@ export function AboutFaces({
               <Link href={person.href} className="about-faces__name">
                 {person.name}
               </Link>
+              {person.title ? <p className="about-faces__role">{person.title}</p> : null}
               {person.license ? (
                 <p className="about-faces__license">OR #{person.license}</p>
               ) : null}
