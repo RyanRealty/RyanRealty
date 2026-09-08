@@ -131,7 +131,7 @@ describe('labels', () => {
 
 describe('proofBlockView', () => {
   it('places every closing that carries a figure, and only those', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.marks).toHaveLength(7)
     // Every closing has a ratio; the retroactive entry has no day count, so it
     // is absent from the days track and present on the ratio track.
@@ -144,7 +144,7 @@ describe('proofBlockView', () => {
   })
 
   it('puts both medians on their own tracks, in the same window', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     const days = view.strips.find((s) => s.key === 'days')!
     const ratio = view.strips.find((s) => s.key === 'ratio')!
     expect(days.context).toEqual({ pct: expect.any(Number), label: '29 days', name: 'Bend median' })
@@ -156,7 +156,7 @@ describe('proofBlockView', () => {
   })
 
   it('anchors the ratio track on the first asking price rather than on zero dollars', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     const ratio = view.strips.find((s) => s.key === 'ratio')!
     expect(ratio.anchor).not.toBeNull()
     expect(ratio.anchor!.label).toBe('sold at the first ask')
@@ -169,7 +169,7 @@ describe('proofBlockView', () => {
   })
 
   it('claims the medians in plain sentences and never leads with a percentage', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.heading).not.toMatch(/%/)
     expect(view.claim).not.toMatch(/%/)
     const days = view.strips.find((s) => s.key === 'days')!
@@ -181,7 +181,7 @@ describe('proofBlockView', () => {
   })
 
   it('states the count and the window, and explains what is missing', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.countLine).toContain('7 closings')
     expect(view.countLine).toContain('Bend and Redmond')
     const days = view.strips.find((s) => s.key === 'days')!
@@ -190,7 +190,7 @@ describe('proofBlockView', () => {
   })
 
   it('carries the record, the words, and the full trace', () => {
-    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION, showOutcomes: true })!
     expect(view.record).toEqual({
       value: '17',
       label: 'homes closed, listed by Ryan Realty',
@@ -230,10 +230,24 @@ describe('proofBlockView', () => {
     const view = proofBlockView({
       block: { ...liveBlock(), context: null },
       attribution: ATTRIBUTION,
+      showOutcomes: true,
     })!
     const days = view.strips.find((s) => s.key === 'days')!
     expect(days.context).toBeNull()
     expect(days.claim).toBe('Half of them went under contract inside 52 days.')
+  })
+
+  // Matt 2026-09-08, "hold those, we only want positive": the comparison strips
+  // do not reach a seller-facing page, and a caller who forgets the prop must
+  // not get them by accident. Recorded in docs/plans/PUBLIC_PRODUCT/decisions.md.
+  it('withholds the outcome strips unless the caller asks for them', () => {
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    expect(view.strips).toHaveLength(0)
+    expect(view.marks).toHaveLength(0)
+    // The positive proof still ships, and the section says only what it shows.
+    expect(view.record).not.toBeNull()
+    expect(view.reviews).not.toBeNull()
+    expect(view.heading).not.toMatch(/against|versus|compared/i)
   })
 
   it('renders nothing at all when the block carries nothing', () => {
