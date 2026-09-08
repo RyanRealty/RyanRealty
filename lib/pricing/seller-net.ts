@@ -38,6 +38,35 @@ export function resolveConcessions(opts: {
   return null
 }
 
+/**
+ * Stamp the resolved seller concession on every sale the document prints.
+ *
+ * The grid needs a per-sale concessions line — it is the FIRST value
+ * adjustment on Form 1004 and ours printed none (research brief 2026-09-07,
+ * item 8) — and the seller-net caption under the grid has to be reading the
+ * same rows, or the document contradicts itself. Both now resolve through
+ * `resolveConcessions`: a dollar amount when one was reported, 0 when the sale
+ * reported none, and null when nothing was recorded at all.
+ *
+ * Verified over the rows the engine prices on, 2026-09-07: on closed detached
+ * sales in the last 12 months, `concessions_amount` is populated on 47.3% of
+ * Redmond (321/678) and 43.9% of Bend (917/2,087) — but `concessions_yn` is
+ * populated on ~100%, so after resolution every one of those rows carries a
+ * printable value and none reads "not reported".
+ */
+export function attachCompConcessions<
+  T extends { concessionsAmount?: number | null; concessionsYn?: string | null; closeDate?: string | null },
+>(comps: readonly T[]): Array<T & { concessions: number | null }> {
+  return comps.map((c) => ({
+    ...c,
+    concessions: resolveConcessions({
+      amount: c.concessionsAmount,
+      yn: c.concessionsYn,
+      closeDate: c.closeDate,
+    }),
+  }))
+}
+
 export function sellerNetFromPrice(closePrice: number, concessions: number | null): number | null {
   if (!(closePrice > 0) || concessions == null) return null
   return Math.round(closePrice - concessions)

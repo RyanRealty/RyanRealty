@@ -177,23 +177,29 @@ describe('the single-doc fold', () => {
 
   it('renders the last-listing review, never the retired audit pages', () => {
     const { html } = renderCmaHtml(withReview)
-    expect(html).toContain('Your last listing')
-    expect(html).toContain('Your home came off the market without selling')
+    // Heading depends on whether the row carries the failed ask, so assert
+    // the chapter's own content instead.
+    expect(html).toMatch(/did not sell|without selling/)
+    expect(html).toContain('3,394')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toContain('Estimated Seller Net Sheet')
     expect(html).not.toContain('SERVICES_SENTINEL')
     expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
-  it('names THIS home on the cover as a price opinion', () => {
+  it('names THIS home on the cover, once', () => {
     const { html } = renderCmaHtml(args({}))
-    expect(html).toContain('A price opinion for 123 Test Way.')
+    // The address is the cover title. It used to be followed by "A price
+    // opinion for 123 Test Way." — a sentence whose whole job was to restate
+    // the two lines above it.
+    expect(html).toContain('class="cover-title">123 Test Way')
+    expect(html).not.toContain('A price opinion for 123 Test Way.')
     expect(html).not.toContain('How we would market')
     expect(html).not.toContain('listing video')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
-    const priceAt = html.indexOf('How we got the price')
+    const priceAt = html.indexOf('$715,000.')
     expect(coverAt).toBeGreaterThan(0)
     expect(priceAt).toBeGreaterThan(coverAt)
   })
@@ -337,8 +343,8 @@ describe('report extras pages (when-to-list + competition)', () => {
   it('names band rivals and drops seasonality, cash mix, and photo-bench pages', () => {
     const { html } = renderCmaHtml(args({}, { extras }))
     expect(html).not.toContain('When to List')
-    expect(html).toContain('Who you are competing with at this price')
-    expect(html).toContain('14 homes for sale')
+    expect(html).toContain('Who you would compete with at')
+    expect(html).toContain('14 homes are for sale')
     expect(html).not.toContain('31.5% closed in cash')
     expect(html).not.toContain('median of 40 photos')
     expect(html).not.toMatch(/Supabase|seasonality fixture|band fixture|financing fixture/)
@@ -348,7 +354,7 @@ describe('report extras pages (when-to-list + competition)', () => {
     const { html } = renderCmaHtml(args({}))
     expect(html).not.toContain('When to List')
     expect(html).not.toContain('Your Competition')
-    expect(html).not.toContain('Who you are competing with at this price')
+    expect(html).not.toContain('Who you would compete with at')
   })
 
   it('a lone financing block does not invent a competition chapter', () => {
@@ -389,14 +395,15 @@ describe('the subdivision story (print page + immersive scene)', () => {
     photoSalesReviewed: 1,
   }
 
-  it('renders the story page with the year table, prose, and source', () => {
+  it('gives the subdivision no chapter of its own', () => {
+    // CUT by CMA_REIMAGINED_2026-09-07.md. A ten-year table and four prose
+    // cards about the street is not one of the three things this document
+    // exists to answer. It survives as ONE line inside chapter 5.
     const { html } = renderCmaHtml(args({}, { subdivisionStory: story }))
-    expect(html).toContain('<h2 class="section">Stone Creek')
-    expect(html).toContain('<td>2024</td><td>15</td><td>$590,000</td>')
-    expect(html).toContain('A street that sells on consistency')
-    expect(html).toContain('as large or larger than 72%')
-    expect(html).toContain('$705,000')
-    expect(html).not.toContain('story fixture')
+    expect(html).not.toContain('<h2 class="section">Stone Creek')
+    expect(html).not.toContain('<td>2024</td><td>15</td><td>$590,000</td>')
+    expect(html).not.toContain('A street that sells on consistency')
+    expect(html).not.toContain('as large or larger than 72%')
     expect(html).not.toContain('claude-sonnet-4-5')
   })
 

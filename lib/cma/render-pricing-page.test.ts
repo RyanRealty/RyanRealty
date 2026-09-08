@@ -58,9 +58,9 @@ describe('pricingPage', () => {
       pricing,
       tiersUsed: ['subdivision-3mo'],
     })
-    expect(page.toc).toBe('How we got the price')
+    expect(page.toc).toBe('$655,000.')
     const html = page.body
-    expect(html).toContain('How we got the price')
+    expect(html).toContain('$655,000.')
     // P5, Matt 2026-09-07: the search story is one sentence, not a bulleted
     // heading whose other items restate the table below it.
     expect(html).not.toContain('What we searched')
@@ -75,21 +75,26 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/Confidence:/)
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
-    expect(html).toContain('1,631 sq ft')
-    // The Sunstone contract keeps predicted close off the seller document.
-    // The rate and the market's sale-to-list carry the method instead.
+    expect(html).toContain('across 1,631 square feet')
+    // The Sunstone contract keeps predicted close off the seller document, so
+    // the per-foot rate is taken over the recommended list — the one number
+    // this chapter is titled with — and the sentence names that basis.
     expect(html).not.toContain('$640,000')
-    expect(html).toContain('$392 per square foot')
-    expect(html).toContain('closing at 98.9 percent of list')
+    expect(html).toContain('At $655,000 across 1,631 square feet, that is $402 per square foot.')
+    // The sale-to-list figure moved to chapter 5 (This market), where the
+    // rest of the city's numbers live.
+    expect(html).not.toContain('closing at 98.9 percent of list')
     expect(html).not.toContain('Marker key')
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
-    expect(html).toContain('Adjusted close')
-    expect(html).toContain('Recommended list')
-    expect(html).toContain('List low')
-    expect(html).toContain('List high')
-    expect(html).toContain('List $639,000 to $669,000. Recommended list $655,000')
+    expect(html).toContain('Sale price today')
+    expect(html).toContain('List between $639,000 and $669,000.')
+    // The three-stat strip is gone: the number IS the chapter title and the
+    // range is the line under it (CMA_REIMAGINED_2026-09-07.md chapter 3).
+    expect(html).not.toContain('List low')
+    expect(html).not.toContain('List high')
+    expect(html).toContain('List between $639,000 and $669,000.')
     expect(html).toContain('per square foot')
     expect(html).not.toContain('Expected close $640,000.')
     expect(html).not.toContain('The three checks')
@@ -109,6 +114,6 @@ describe('pricingPage — no "as your house"', () => {
   it('does not say as your house', () => {
     expect(page(subject).body).not.toMatch(/as your house/i)
     expect(page(land).body).not.toMatch(/as your house/i)
-    expect(page(land).toc).toBe('How we got the price')
+    expect(page(land).toc).toBe('$655,000.')
   })
 })

@@ -41,11 +41,11 @@ describe('extractChapters', () => {
   <h1 class="hero-h">123 Test Way</h1>
 </section>
 <section class="sc sc-cream" id="how-we-got-the-price">
-  <h2 class="h r">Our Recommended List Price for your home.</h2>
+  <h2 class="h r">$389,000.</h2>
 </section>`
     const chapters = extractChapters(html)
     expect(chapters.map((c) => c.id)).toEqual(['top', 'how-we-got-the-price'])
-    expect(chapters[1].heading).toBe('Our Recommended List Price for your home.')
+    expect(chapters[1].heading).toBe('$389,000.')
   })
 
   it('does not split on a section nested inside another section', () => {

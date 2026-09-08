@@ -251,7 +251,9 @@ export function cmaSectionStyles(): string {
   .comp-matrix-wrap { display: block; margin: 8px 0 14px; overflow-x: auto; }
   @media screen and (max-width: 700px) {
     .comp-stack { display: block; }
-    .comp-matrix-wrap { display: none; }
+    /* The group heading belongs to the table, so it goes when the table does.
+       Both headings rendered back to back at 375 with nothing between them. */
+    .comp-matrix-wrap, .matrix-group-h { display: none; }
   }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
@@ -274,27 +276,177 @@ export function cmaSectionStyles(): string {
   @media print {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }
+    .matrix-group-h { display: block !important; }
+  }
+  /* Chapter 3's title IS the number, so it is set as the answer rather than as
+     a section label. Every other chapter title is a sentence and keeps the
+     tracked-caps register. */
+  h2.section.is-answer {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+    padding-bottom: 10px;
+  }
+  /* The map is an exhibit, not a page. Without a basemap the fallback SVG is a
+     tall empty field, and even with one a half-page map pushes the sales table
+     off the sheet a seller is reading. */
+  .pin-map { max-height: 3.4in; object-fit: cover; }
+  /* The same DOM pins on paper. Print keeps them: they are the numbers the
+     grid above refers to, and a bitmap with no numbers on it is a decoration. */
+  /* A cropped tile and a percentage-positioned pin cannot both be right. */
+  .pin-map-frame { position: relative; margin: 8px 0 4px; line-height: 0; }
+  .pin-map-frame .pin-map { max-height: none; object-fit: fill; aspect-ratio: 16 / 9; }
+  .pin-hit {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .pin-dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    /* A cream ring, so two pins that still touch after the dodge read as two.
+       Opening a bigger gap would move a pin off the house it names. */
+    box-shadow: 0 0 0 2px var(--cream);
+  }
+  .pin-hit.is-subject { z-index: 2; }
+  /* The lit pin comes to the front, whatever it was sitting under. */
+  .pin-hit.is-on, .pin-hit:focus-visible { z-index: 3; }
+  .pin-hit.is-subject .pin-dot { border-radius: 2px; }
+  /* Chapter 3's lead line, under the number that is the chapter title. */
+  .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
+  /* The seller's own listed price and size, under "Your home" in the head. */
+  table.comp-matrix .matrix-sub {
+    display: block;
+    margin-top: 3px;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  table.comp-matrix a.matrix-addr,
+  .comp-stack-card a.comp-stack-addr {
+    display: block;
+    color: var(--navy);
+    text-decoration: none;
+    border-bottom: 1px solid var(--navy-line);
+  }
+
+  /* Chapter 3's method, stated before the evidence for it. */
+  .method { margin: 6px 0 10px; }
+  .method-line { font-size: 11.5px; line-height: 1.55; margin: 0 0 5px; }
+  /* Each sale's own price path, numbered to the columns above it. */
+  .pp-spark { display: block; width: 100%; min-width: 0; }
+  .pp-spark svg { width: 100%; height: auto; display: block; }
+  table.comp-matrix td.is-draw { padding: 4px 6px; vertical-align: middle; }
+  .comp-stack-card.is-yours { border-color: var(--navy); border-width: 2px; }
+  .sale-paths { margin: 10px 0 4px; break-inside: avoid; }
+  .sale-path { margin: 0 0 4px; break-inside: avoid; }
+  /* The line is a strip, not a figure: capped so five of them do not become a
+     page of their own under the grid they belong to. */
+  .sale-paths .pp svg { max-width: 460px; }
+  .sale-paths .pp-wrap { margin: 2px 0 0; }
+  .sale-path-name { font-size: 11px; font-weight: 600; color: var(--navy); }
+  .sale-paths-h { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; margin: 10px 0 6px; }
+  /* Considered and not used. */
+  ul.rejected-list { list-style: none; margin: 4px 0 8px; padding: 0; }
+  ul.rejected-list li { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; padding: 4px 0; border-bottom: 1px solid var(--navy-line); font-size: 11px; }
+  ul.rejected-list .rj-addr { font-weight: 600; }
+  ul.rejected-list .rj-why { color: var(--muted); }
+  /* The phone card carries the same grid lines as the column. */
+  .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; }
+  .comp-stack-line { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+  .comp-stack-line .k { color: var(--muted); }
+  .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+  /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
+  table.realization { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
+  table.realization col.rz-weeks { width: 38%; }
+  table.realization col.rz-n { width: 12%; }
+  table.realization col.rz-mark { width: 30%; }
+  table.realization col.rz-share { width: 20%; }
+  /* The mark column carries the encoding; the header names the scale once. */
+  table.realization .rz-mark { text-align: left; padding-right: 10px; }
+  table.realization thead th.rz-mark { white-space: normal; }
+  .rz-svg { width: 100%; height: 12px; display: block; overflow: visible; }
+  table.realization th, table.realization td { padding: 6px 8px; border-bottom: 1px solid var(--navy-line); text-align: left; }
+  table.realization thead th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  table.realization td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* The header wraps; only the FIGURES stay on one line. "SHARE OF THE FIRST
+     ASK" on one line ran past the right edge of a 375 page. */
+  table.realization th.n { text-align: right; white-space: normal; }
+  table.realization tr.is-mine { font-weight: 600; }
+  table.realization tr.is-mine th, table.realization tr.is-mine td { border-bottom-color: var(--navy); }
+  .rz-mine { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
+  /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
+  .timing-phone, .outcome-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .timing-wide, .outcome-wide { display: none; }
+    .timing-phone, .outcome-phone { display: block; }
+  }
+  @media print {
+    .timing-wide, .outcome-wide { display: block !important; }
+    .timing-phone, .outcome-phone { display: none !important; }
   }
   /* The one sentence that reads a graphic or a table for the seller. */
   .chart-read { font-size: 12.5px; line-height: 1.5; margin: 8px 0 4px; color: var(--navy); }
-  /* On a phone a 720-unit chart scales its own type to six pixels. It pans in
-     its own box instead. SCREEN ONLY — a scroll box on paper is a clipper, and
-     that is what silently removed comps from a delivered PDF. */
+  /* NO PAN BOX. Every chart on this document ships a 360-unit phone layout,
+     so nothing a seller reads sits in a scroll box (blueprint § The register).
+     The pan box cropped six of the twelve months off the median-close line at
+     375, which is how it was found. */
+  .median-phone { display: none; }
   @media screen and (max-width: 700px) {
-    .szn.is-hero { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .szn.is-hero svg { min-width: 620px; }
-  }
-  /* The price ruler is the one graphic panning destroys: its whole reading is
-     where two ticks sit inside a band, and a cropped end deletes half of it.
-     It ships in two layouts and exactly one is ever visible (F6). */
-  .ruler-phone { display: none; }
-  @media screen and (max-width: 700px) {
-    .ruler-wide { display: none; }
-    .ruler-phone { display: block; }
+    .median-wide { display: none; }
+    .median-phone { display: block; }
   }
   @media print {
-    .ruler-wide { display: block !important; }
-    .ruler-phone { display: none !important; }
+    .median-wide { display: block !important; }
+    .median-phone { display: none !important; }
+  }
+  /* Months of supply as two bars, and chapter 3's dot strip. Same mechanism. */
+  /* On paper the spread is one column: two 720-unit charts side by side in a
+     7.3in box put their axis type at seven points. Same story, paginated. */
+  .spread { display: block; }
+  .spread-col { min-width: 0; }
+  .mos-phone, .worth-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .mos-wide, .worth-wide { display: none; }
+    .mos-phone, .worth-phone { display: block; }
+  }
+  @media print {
+    .mos-wide, .worth-wide { display: block !important; }
+    .mos-phone, .worth-phone { display: none !important; }
+  }
+  .next-note { font-size: 12px; line-height: 1.7; max-width: 62ch; margin: 12px 0 0; color: var(--navy); }
+  /* Chapter 1's timeline. Same two-layout mechanism: the reading is the gap
+     between a line and a zone, and a cropped right edge deletes the day it
+     came off. Exactly one layout is ever visible. */
+  .timeline-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .timeline-wide { display: none; }
+    .timeline-phone { display: block; }
+  }
+  @media print {
+    .timeline-wide { display: block !important; }
+    .timeline-phone { display: none !important; }
   }
   /* Same mechanism for the days-to-offer strip (F8): panning put the subject's
      own bar label, the punchline, outside the visible width on a phone. */
@@ -307,14 +459,56 @@ export function cmaSectionStyles(): string {
     .days-wide { display: block !important; }
     .days-phone { display: none !important; }
   }
+  /* The price-path primitive (blueprint, Delta 1). Two layouts of one line,
+     exactly one visible, same mechanism as every other chart here. */
+  .pp-wrap { margin: 8px 0 4px; }
+  .pp-wrap.is-compact { margin: 5px 0 0; }
+  .rival-card .pp-wrap { margin: 5px 0 0; }
+  .pp svg { width: 100%; height: auto; display: block; }
+  .pp-phone { display: none; }
+  @media screen and (max-width: 700px) {
+    .pp-wide { display: none; }
+    .pp-phone { display: block; }
+  }
+  @media print {
+    .pp-wide { display: block !important; }
+    .pp-phone { display: none !important; }
+    /* A card in a four-up grid is narrower than the wide line at every
+       viewport, so the compact drawing is the only one it carries. */
+    .pp-wrap.is-compact .pp { display: block !important; }
+  }
+  /* Chapter 2: one story per listing that did not sell, never a matrix. */
+  .dns-set { display: grid; gap: 14px; margin: 12px 0 8px; }
+  .dns-card {
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--navy-line);
+    break-inside: avoid;
+  }
+  .dns-card.is-yours { border-top-width: 2px; }
+  .dns-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+  .dns-photo.is-empty { background: rgba(16, 39, 66, 0.06); }
+  .dns-addr { display: block; font-size: 13px; font-weight: 600; color: var(--navy); }
+  .dns-ask { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .dns-facts { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .dns-read { font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
+  @media screen and (max-width: 700px) {
+    .dns-card { grid-template-columns: 1fr; }
+  }
   @media screen {
     table.comp-table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
-  table.comp-matrix thead th.v { vertical-align: bottom; text-align: center; }
+  /* TOP, not bottom: the subject head carries one line the sale heads do not. */
+  table.comp-matrix thead th.v { vertical-align: top; text-align: center; }
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
   table.comp-matrix .matrix-addr { display: block; }
+  /* The map's pin, at reading size: the number is the key to the pin, not a
+     rank. print-color-adjust is exact on * in the sheet, so it prints filled. */
+  .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
     white-space: normal;
@@ -328,6 +522,7 @@ export function cmaSectionStyles(): string {
   table.comp-matrix td.n { white-space: nowrap; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
   table.comp-matrix td.is-diff { font-weight: 600; }
+  table.comp-matrix tr.is-total th, table.comp-matrix tr.is-total td { border-top: 1px solid var(--navy); font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
   .szn svg { width: 100%; height: auto; display: block; margin: 6px 0 2px; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
@@ -464,6 +659,47 @@ export function cmaSectionStyles(): string {
     line-height: 1.45;
     color: var(--navy);
     margin: 0 0 6px 0;
+  }
+
+  /* Chapter 4: cards, four and four. Photo, linked address, price, size, days
+     on market, and one delta line against your home. */
+  /* Four across at four or more; fewer cards fill the row rather than leaving
+     empty tracks beside them. */
+  /* A card has a top width. Two cards stretched across 816 turned a thumbnail
+     into a 540px photo and the price path's type with it. */
+  .rival-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 200px)); justify-content: center; gap: 10px; margin: 8px 0 14px; }
+  /* Wide only: a :has() rule outscores the plain media overrides below it. */
+  @media screen and (min-width: 701px) {
+    .rival-grid:has(> :nth-child(4)) { grid-template-columns: repeat(4, 1fr); justify-content: stretch; }
+  }
+  .rival-card {
+    border: 1px solid var(--navy-line);
+    background: var(--cream);
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rival-card .rival-ph { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--navy-fill); }
+  .rival-card .rival-ph.is-empty { min-height: 0; }
+  .rival-card .rival-body { padding: 7px 9px 9px; min-width: 0; }
+  .rival-card .rival-addr {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--navy);
+    text-decoration: none;
+    border-bottom: 1px solid var(--navy-line);
+    line-height: 1.25;
+  }
+  .rival-card .rival-ask { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .rival-card .rival-facts { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .rival-card .rival-meta { font-size: 9px; color: var(--navy); margin-top: 4px; line-height: 1.35; }
+  @media screen and (max-width: 700px) {
+    .rival-grid { grid-template-columns: 1fr 1fr; }
+  }
+  /* Two cards across 375px leaves 130px a card. One card, full width. */
+  @media screen and (max-width: 480px) {
+    .rival-grid { grid-template-columns: 1fr; }
   }
 
   .rival-list { margin: 4px 0 12px; border-top: 1px solid var(--navy-line); }

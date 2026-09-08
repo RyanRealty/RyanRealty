@@ -56,9 +56,12 @@ type DryRun = {
   customOrNew: boolean | null
   pricingSource: string | null
   compCount: number
-  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number }>
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null }>
   recommended: number | null
+  /** The list tiers: conservative and high end. */
   range: [number | null, number | null]
+  /** What the home is worth: the spread of the printed adjusted sale prices. */
+  valueRange: [number | null, number | null]
   confidence: string | null
   compPpsfCv: number | null
   needsReview: boolean
@@ -80,7 +83,35 @@ type DryRun = {
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
+  /**
+   * The three chapter-1/chapter-2 blocks EXACTLY as buildCma hangs them on
+   * `render_args` — `render_args.market.offerTiming`,
+   * `render_args.market.askOutcome`, `render_args.expiredAudit.finalCycle`.
+   * Computed here through the same functions the build calls, so the dry run
+   * shows the shipped shape without writing a row.
+   */
+  renderArgsMarketOfferTiming: unknown
+  renderArgsMarketAskOutcome: unknown
+  renderArgsMarketOriginalAskRealization: unknown
+  /** render_args.pricing.reconciliation — which sale carried the price. */
+  renderArgsPricingReconciliation: unknown
+  /** render_args.pricing.rangeRule — how the low and high were produced. */
+  renderArgsPricingRangeRule: unknown
+  /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
+  renderArgsPricingTimeAdjustment: unknown
+  /** render_args.pricing.rejected — considered and not used. */
+  renderArgsPricingRejected: unknown
+  renderArgsMarketLocalFailedThenSold: unknown
+  renderArgsExpiredAuditFinalCycle: unknown
   error: string | null
+}
+
+/** JSON, indented under the dry-run's own two-space report gutter. */
+function indent(value: unknown): string {
+  return JSON.stringify(value, null, 2)
+    .split('\n')
+    .map((l) => `     ${l}`)
+    .join('\n')
 }
 
 /** Exactly what lib/cma/comp-matrix.ts subjectDomDays reads off the subject. */
@@ -105,16 +136,22 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { MIN_COMPS } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
-  const { buildFailureFindings, stampFinalCycleDom } = await import('@/lib/cma/expired-audit')
-  const { attachSellerNet } = await import('@/lib/pricing/seller-net')
+  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle } = await import('@/lib/cma/expired-audit')
+  const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
+  const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
+  const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
 
   const base: DryRun = {
     slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null,
     subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
-    recommended: null, range: [null, null], confidence: null, compPpsfCv: null,
+    recommended: null, range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null,
     needsReview: false, reviewReason: null, hardFailures: [],
     matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
-    concessionSentenceTrimmed: null, error: null,
+    concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
+    renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
+    renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
+    renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -190,6 +227,33 @@ async function dryRun(slug: string): Promise<DryRun> {
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
 
+  // The judge is skipped in a dry run, so the only rejections it can show are
+  // the price-per-square-foot outlier trims the deterministic ladder made.
+  const { buildRejectedSales } = await import('@/lib/pricing/rejected')
+  const rejected = buildRejectedSales({
+    candidates: selection.comps,
+    excluded: [],
+    // The kept set is the full ladder result in a dry run, and it is what stops
+    // a printed sale from also appearing as rejected.
+    kept: selection.comps.map((c) => ({
+      listingKey: c.listingKey,
+      address: c.address,
+      sqft: c.sqft,
+      yearBuilt: c.yearBuilt,
+      closeDate: c.closeDate,
+      closePrice: c.closePrice,
+    })),
+    outliers: selection.excludedOutliers,
+    subject: {
+      sqft: subject.sqft,
+      yearBuilt: subject.yearBuilt,
+      baths: subject.baths,
+      propertySubType: subject.propertySubType,
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+    },
+  })
+
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps, pricing.predictedClose ?? pricing.recommended ?? null)
   const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
@@ -215,6 +279,22 @@ async function dryRun(slug: string): Promise<DryRun> {
     return domFromHistoryLine(f?.fact ?? null)
   })()
 
+  // The three blocks buildCma hangs on render_args, computed through the same
+  // functions the build calls (lib/cma/build.ts steps 4.7 and 4.755).
+  const localOutcomes = await buildCmaLocalOutcomes({ city: subject.city }).catch(() => ({
+    offerTiming: null,
+    askOutcome: null,
+    originalAskRealization: null,
+    localFailedThenSold: null,
+  }))
+  const finalCycleBlock = await (async () => {
+    if (!lastCycleFailed) return null
+    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+    const cycle = history.currentCycle
+    const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
+    return buildFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
+  })()
+
   const contract = evaluateAccuracyContract({
     comps: adjusted,
     pricing,
@@ -234,12 +314,15 @@ async function dryRun(slug: string): Promise<DryRun> {
     ...withSel,
     stage: hardFailures.length ? 'contract' : 'complete',
     ok: hardFailures.length === 0,
-    comps: adjusted.map((c) => ({
+    // Concessions resolved exactly as buildCma stamps them on render_args.
+    comps: attachCompConcessions(adjusted).map((c) => ({
       key: c.listingKey, address: c.address, baths: c.baths, sqft: c.sqft,
       closePrice: Math.round(c.closePrice), closeDate: c.closeDate, adjusted: Math.round(c.adjustedPrice),
+      concessions: c.concessions,
     })),
     recommended: pricing.recommended,
     range: [pricing.conservative, pricing.highEnd],
+    valueRange: [pricing.valueLow, pricing.valueHigh],
     confidence: pricing.confidence,
     compPpsfCv: pricing.compPpsfCv ?? null,
     needsReview: pricing.needsReview === true,
@@ -250,6 +333,15 @@ async function dryRun(slug: string): Promise<DryRun> {
     keptCompCount: adjusted.length,
     concessionSentence,
     concessionSentenceTrimmed,
+    renderArgsMarketOfferTiming: localOutcomes.offerTiming,
+    renderArgsMarketAskOutcome: localOutcomes.askOutcome,
+    renderArgsMarketOriginalAskRealization: localOutcomes.originalAskRealization,
+    renderArgsPricingReconciliation: pricing.reconciliation ?? null,
+    renderArgsPricingRangeRule: pricing.rangeRule ?? null,
+    renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
+    renderArgsPricingRejected: rejected,
+    renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
+    renderArgsExpiredAuditFinalCycle: finalCycleBlock,
     error: hardFailures.length ? `Accuracy contract failed: ${hardFailures.join(' | ')}` : null,
   }
 }
@@ -267,9 +359,14 @@ async function main() {
     const r = await dryRun(slug).catch((e): DryRun => ({
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
-      range: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
+      range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
       hardFailures: [], matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0,
       concessionSentence: null, concessionSentenceTrimmed: null,
+      renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
+      renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
+      renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
+      renderArgsPricingTimeAdjustment: null, renderArgsPricingRejected: null,
+      renderArgsExpiredAuditFinalCycle: null,
       error: e instanceof Error ? e.message : String(e),
     }))
     out.push(r)
@@ -277,12 +374,14 @@ async function main() {
     console.log(`\n── ${r.slug} — ${r.address ?? '(unresolved)'}, ${r.city ?? '?'}`)
     console.log(`   ${r.ok ? 'WOULD BUILD' : `WOULD FAIL at ${r.stage}`} · subject ${r.subjectBaths ?? '?'} bath / ${r.subjectSqft ?? '?'} sqft · custom-or-new ${r.customOrNew} · source ${r.pricingSource ?? 'n/a'}`)
     if (r.recommended != null) {
-      console.log(`   recommended $${r.recommended.toLocaleString()} (range $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
+      console.log(`   recommended $${r.recommended.toLocaleString()} (list tiers $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
+      console.log(`   worth $${r.valueRange[0]?.toLocaleString()}–$${r.valueRange[1]?.toLocaleString()} (the printed adjusted sale prices)`)
     }
     if (r.comps.length) {
       console.log(`   comps (${r.comps.length}):`)
       for (const c of r.comps) {
-        console.log(`     ${c.address} · ${c.baths ?? '?'}ba · ${c.sqft}sf · closed $${c.closePrice.toLocaleString()} ${c.closeDate} → adj $${c.adjusted.toLocaleString()}`)
+        const conc = c.concessions == null ? 'concessions not reported' : c.concessions > 0 ? `concessions $${c.concessions.toLocaleString()}` : 'no concession'
+        console.log(`     ${c.address} · ${c.baths ?? '?'}ba · ${c.sqft}sf · closed $${c.closePrice.toLocaleString()} ${c.closeDate} · ${conc} → adj $${c.adjusted.toLocaleString()}`)
       }
     }
     if (r.matrixSubjectDom != null || r.reviewSubjectDom != null) {
@@ -297,6 +396,24 @@ async function main() {
       console.log(`   concessions · kept comps ${r.keptCompCount} · "${r.concessionSentence}" · ${denom === r.keptCompCount ? 'SAME SET' : 'DIFFERENT SET'}`)
       if (r.concessionSentenceTrimmed) console.log(`   concessions · 5-comp kept set · "${r.concessionSentenceTrimmed}"`)
     }
+    console.log('   render_args.market.offerTiming =')
+    console.log(indent(r.renderArgsMarketOfferTiming))
+    console.log('   render_args.market.askOutcome =')
+    console.log(indent(r.renderArgsMarketAskOutcome))
+    console.log('   render_args.pricing.rejected =')
+    console.log(indent(r.renderArgsPricingRejected))
+    console.log('   render_args.pricing.timeAdjustment =')
+    console.log(indent(r.renderArgsPricingTimeAdjustment))
+    console.log('   render_args.pricing.rangeRule =')
+    console.log(indent(r.renderArgsPricingRangeRule))
+    console.log('   render_args.pricing.reconciliation =')
+    console.log(indent(r.renderArgsPricingReconciliation))
+    console.log('   render_args.market.originalAskRealization =')
+    console.log(indent(r.renderArgsMarketOriginalAskRealization))
+    console.log('   render_args.market.localFailedThenSold =')
+    console.log(indent(r.renderArgsMarketLocalFailedThenSold))
+    console.log('   render_args.expiredAudit.finalCycle =')
+    console.log(indent(r.renderArgsExpiredAuditFinalCycle))
     if (r.error) console.log(`   ✖ ${r.error}`)
   }
   if (asJson) console.log(JSON.stringify(out, null, 2))

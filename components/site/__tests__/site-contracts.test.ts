@@ -563,7 +563,7 @@ describe('design directive contracts', () => {
     const v3 = readSrc('components/site/v3/V3Chart.tsx')
     const admin = readSrc('components/admin/v2/AChart.tsx')
     const adminWrap = readSrc('app/admin/(protected)/analytics/_components/charts.tsx')
-    const cma = readSrc('lib/cma/opinion-pages.ts')
+    const cma = readSrc('lib/cma/market-charts.ts')
     expect(plot).toMatch(/export function buildLinePlot/)
     expect(plot).toMatch(/export function buildBarPlot/)
     expect(plot).toMatch(/export function buildMixPlot/)
@@ -573,8 +573,13 @@ describe('design directive contracts', () => {
     expect(admin).toMatch(/from '@\/lib\/charts\/plot'/)
     expect(admin).not.toMatch(/from ['"]recharts['"]/)
     expect(adminWrap).not.toMatch(/from ['"]recharts['"]/)
-    expect(cma).toMatch(/from '@\/lib\/charts\/plot'/)
-    expect(cma).toMatch(/from '@\/lib\/charts\/print-svg'/)
+    // The CMA's own document charts live in lib/cma/market-charts.ts. The
+    // seller document's chapters were rebuilt to
+    // docs/plans/CMA_REIMAGINED_2026-09-07.md, which took the year sparkline
+    // out of opinion-pages.ts; the invariant is unchanged — no second kit, and
+    // no curve builder inventing values between two measured points.
+    expect(cma).not.toMatch(/from ['"]recharts['"]/)
+    expect(cma).not.toMatch(/curveCardinal|curveCatmullRom|curveBasis|bezierCurveTo/)
     expect(readSrc('lib/cma/comps-price-chart.ts')).toMatch(/from '@\/lib\/charts\/print-svg'/)
     const live = [
       'components/market/MarketCoreCharts.tsx',
@@ -592,7 +597,10 @@ describe('design directive contracts', () => {
     expect(readSrc('app/admin/(protected)/reports/custom/CustomReportBuilder.tsx')).toMatch(/ReportTimeSeriesChart/)
     expect(readSrc('app/admin/(protected)/financials/page.tsx')).toMatch(/<AChart/)
     expect(readSrc('lib/cma/opinion-scenes.ts')).toMatch(/from '@\/lib\/cma\/render-pricing-page'/)
-    expect(readSrc('lib/cma/seasonality-chart.ts')).toMatch(/from '@\/lib\/charts\/plot'/)
+    // The CMA's seasonality chart was the third skin over lib/charts/plot. Its
+    // chapter is cut, so the file is gone; V3Chart and AChart above are the
+    // surviving screen skins and lib/charts/print-svg is the print one.
+    expect(readSrc('lib/charts/print-svg.ts')).toMatch(/from '\.\/plot'/)
     const rechartsHits = [...walkTs('app'), ...walkTs('components')].filter((file) =>
       /from ['"]recharts['"]/.test(readFileSync(file, 'utf8')),
     )

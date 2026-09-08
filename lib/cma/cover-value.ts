@@ -48,6 +48,34 @@ export function currentAskLine(p: CmaPricing): string | null {
   return `On the market today at ${usd(ask)}, inside the supported range.`
 }
 
+/**
+ * The one line the cover carries (blueprint chapter 0):
+ * "Your home is worth $372,000 to $399,000 today. We recommend listing at
+ * $394,000."
+ *
+ * `valueLow`/`valueHigh` are what the sales say the home is WORTH; `recommended`
+ * is the ask that reaches it. The cover had neither sentence — it printed
+ * "List $380,000 to $407,000. Recommended list $394,000." beside a
+ * $394,000 already set in 72px type, which is one number twice and the word
+ * "worth" nowhere.
+ *
+ * A figure that is not on the row is not written around: a row with no worth
+ * range prints the recommend alone, and one with neither prints nothing.
+ */
+export function coverWorthSentence(p: CmaPricing, opts?: { omitAsk?: boolean }): string {
+  const lo = Math.min(p.valueLow ?? 0, p.valueHigh ?? 0)
+  const hi = Math.max(p.valueLow ?? 0, p.valueHigh ?? 0)
+  const worth =
+    lo > 0 && hi > 0
+      ? lo === hi
+        ? `Your home is worth ${usd(lo)} today.`
+        : `Your home is worth ${usd(lo)} to ${usd(hi)} today.`
+      : ''
+  const ask =
+    opts?.omitAsk !== true && p.recommended > 0 ? `We recommend listing at ${usd(p.recommended)}.` : ''
+  return [worth, ask].filter(Boolean).join(' ')
+}
+
 export function coverValueBlockHtml(a: CoverArgs): string {
   const p = a.pricing
   const range = pricingRangeDisplay(p)
@@ -60,7 +88,7 @@ export function coverValueBlockHtml(a: CoverArgs): string {
       </div>
     </div>
     <div class="vb-range">${esc(listPriceLead(p, { includeExpectedClose: false }))}${
-      range.outOfRange ? ` ${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
+      range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
     }</div>
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
@@ -69,11 +97,14 @@ export function coverValueBlockHtml(a: CoverArgs): string {
 
 export function immersiveHeroNumberHtml(a: CoverArgs): string {
   const p = a.pricing
+  // The recommend is set in type right above, so the sentence under it says
+  // what the home is WORTH and stops — never the same figure a second time.
+  const worth = coverWorthSentence(p, { omitAsk: true })
   return `
     <div class="hero-payoff">
       <div class="ans-l r">Recommended list</div>
       <div class="ans-n r">${usd(p.recommended)}</div>
-      <div class="hero-list r">${esc(listPriceLead(p, { includeExpectedClose: false }))}</div>
+      ${worth ? `<div class="hero-list r">${esc(worth)}</div>` : ''}
     </div>`
 }
 
@@ -86,7 +117,7 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
   const bits = [
     currentAskLine(p),
-    range.outOfRange ? `The comp-supported range is ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
+    range.outOfRange ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
     range.note,
     story.body,
   ].filter((b): b is string => Boolean(b && String(b).trim()))

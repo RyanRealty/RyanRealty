@@ -23,7 +23,6 @@ import {
   zoningExplainerBlock,
 } from './render-blocks'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
-import { seasonalityPage } from './opinion-pages'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 
 const subject: CmaSubject = {
@@ -202,10 +201,12 @@ describe('capability blocks return nothing when their data is absent', () => {
         askDerivedList: 774_000,
       },
     })
+    // The ask line sits in the price chapter now, beside the evidence — the
+    // blueprint cover carries one sentence and no second number.
     expect(html).toContain('On the market today at $765,000')
     expect(html).toContain('above the top of the supported range')
     // The recommendation printed is the comp-derived number, not the ask.
-    expect(html).toContain('class="vb-price">$594,000')
+    expect(html).toContain('We recommend listing at $594,000.')
   })
 
   it('an off-market subject prints no ask line', () => {
@@ -217,8 +218,10 @@ describe('capability blocks return nothing when their data is absent', () => {
     const { html } = renderCmaHtml(bareArgs)
     expect(html).not.toContain('>Contents<')
     expect(html).not.toContain('class="toc"')
-    expect(html).toContain('class="vb-price">$715,000')
-    expect(html).toContain('Recommended list')
+    expect(html).toContain('We recommend listing at $715,000.')
+    // The cover carries the recommend inside its one sentence, never as a
+    // labelled figure a reader meets again as chapter 3's own title.
+    expect(html).not.toContain('Recommended list')
   })
 })
 
@@ -241,9 +244,9 @@ describe('render helpers', () => {
     expect(chunk([], 3)).toEqual([])
   })
 
-  it('prints the comp proximity, which is the answer to "why these comps"', () => {
+  it('cuts the distance row — the map answers where the sales are', () => {
     const { html } = renderCmaHtml(bareArgs)
-    expect(html).toContain('1.75 miles NW')
+    expect(html).not.toContain('1.75 miles NW')
   })
 })
 
@@ -284,49 +287,9 @@ describe('use-of-property and pricing pages in the assembled document', () => {
     })
     expect(html).not.toContain('What this property can do')
     expect(html).not.toContain('class="zm-code">R-2')
-    expect(html).toContain('How we got the price')
+    expect(html).toContain('$715,000.')
     // P5: the search story is prose now, not a "What we searched" bullet list.
     expect(html).toContain('The sales that set this price')
     expect(html).not.toContain('What You Can Do With This Property')
-  })
-})
-
-describe('when-to-list chapter', () => {
-  // buildCmaExtras() has always computed `seasonality`; the price-opinion-spine
-  // refactor (9a73b6f1) removed the only renderer and nothing replaced it, so
-  // the document silently stopped answering when a seller should go to market.
-  const months = Array.from({ length: 12 }, (_, i) => ({
-    month: i + 1,
-    monthName: ['January','February','March','April','May','June','July','August','September','October','November','December'][i]!,
-    closedCount: 20,
-    medianDaysToPending: 30 + i,
-  }))
-  const seasonality = {
-    byMonth: months,
-    fastestMonths: ['January'],
-    slowestMonths: ['December'],
-    yearsCovered: 3,
-    totalClosed: 240,
-    source: 'Closed single-family sales in Bend, 2023 through 2026.',
-  }
-
-  it('draws the chart and carries its own source line', () => {
-    const page = seasonalityPage({ ...bareArgs, extras: { seasonality } } as never)
-    expect(page).not.toBeNull()
-    expect(page!.toc).toBe('When homes in Bend sell fastest')
-    expect(page!.body).toContain('When homes in Bend sell fastest')
-    expect(page!.body).toContain('<svg')
-    expect(page!.body).toContain('<path')
-    expect(page!.body).toContain('3 years and 240 closed sales in Bend')
-    expect(page!.body).toContain('The shortest waits land in January.')
-    expect(page!.body).not.toContain('When homes here sell fastest')
-    // Every figure on a client page traces to a named source (CLAUDE.md §0).
-    expect(page!.body).toContain('Closed single-family sales in Bend, 2023 through 2026.')
-  })
-
-  it('says nothing rather than implying a shape from too few months', () => {
-    const thin = { ...seasonality, byMonth: months.map((m, i) => (i < 5 ? m : { ...m, medianDaysToPending: null })) }
-    expect(seasonalityPage({ ...bareArgs, extras: { seasonality: thin } } as never)).toBeNull()
-    expect(seasonalityPage({ ...bareArgs, extras: null } as never)).toBeNull()
   })
 })
