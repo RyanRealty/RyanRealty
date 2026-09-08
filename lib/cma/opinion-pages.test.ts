@@ -299,14 +299,17 @@ describe('assembleOpinionPages format', () => {
  */
 const NET_SHEET = {
   basis: 'Commission is the rate in your listing agreement; title and escrow are the Deschutes County schedule.',
-  list: 475000,
+  // AT THE LIST THIS DOCUMENT RECOMMENDS. A sheet priced above the chapter's
+  // own list ceiling is refused outright now (class E, one list ceiling per
+  // document) — asserted in its own case below.
+  list: 429000,
   lines: [
-    { label: 'Commission', amount: 23750, source: 'Listing agreement, 5.0%' },
+    { label: 'Commission', amount: 21450, source: 'Listing agreement, 5.0%' },
     { label: 'Title and escrow', amount: 3100, source: 'Deschutes County schedule' },
     { label: 'Loan payoff', amount: 210000, source: 'Payoff quote you provided' },
   ],
-  net: 238150,
-  sentence: 'At $475,000 you would walk away with about $238,150.',
+  net: 194450,
+  sentence: 'At $429,000 you would walk away with about $194,450.',
   unknowns: [],
 }
 
@@ -318,13 +321,13 @@ describe('net at list itemises, or prints no figure at all', () => {
   it('prints the list, every cost line with its source, and the net', () => {
     const html = sellerNetBodyHtml(withNet(NET_SHEET))
     expect(html).toContain('List price')
-    expect(html).toContain('$475,000')
+    expect(html).toContain('$429,000')
     expect(html).toContain('Commission')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Deschutes County schedule')
     expect(html).toContain('Payoff quote you provided')
-    expect(html).toContain('$238,150')
-    expect(html).toContain('What you keep at $475,000')
+    expect(html).toContain('$194,450')
+    expect(html).toContain('What you keep at $429,000')
   })
 
   it('names what is not in the net and refuses the phrase when something is missing', () => {

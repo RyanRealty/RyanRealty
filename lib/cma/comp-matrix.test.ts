@@ -14,7 +14,11 @@ const subject = {
   yearBuilt: 1978,
   garageSpaces: 1,
   lastListPrice: 445000,
-  lastListDate: '2021-07-01',
+  // Inside twelve months of the fixtures' own render date. An ask older than
+  // that is no longer this listing's ask and the head refuses to call it
+  // "listed" (round-four class E, 19968 Terrace) — asserted below.
+  lastListDate: '2026-07-01',
+  standardStatus: 'Active',
 } as CmaSubject
 
 const comp = {

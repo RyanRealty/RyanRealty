@@ -69,6 +69,13 @@ export interface RenderCmaArgs {
   generatedAtIso: string
   subjectTrace: string
   compTrace: string[]
+  /**
+   * The pricing side's own account of the comp search — the rungs it walked,
+   * how many kept sales each supplied, and its sentence. Absent on every row
+   * built before it landed; chapter 3 then derives the sentence from
+   * `compTrace` and the printed sales (round-four class E).
+   */
+  compSearch?: unknown
   excludedOutliers: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
   sellerImprovementsText?: string | null
   site?: CmaSiteData | null

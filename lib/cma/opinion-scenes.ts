@@ -26,6 +26,7 @@ import {
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
+import { subjectAskContext } from '@/lib/cma/opinion-pages'
 import { DID_NOT_SELL_HEADING, didNotSellBodyHtml } from '@/lib/cma/did-not-sell'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
@@ -54,6 +55,9 @@ function priceScene(a: OpinionSceneArgs): string {
     mapDataUri: a.mapDataUri,
     mapOverlay: a.mapOverlay,
     docLinks: a.docLinks,
+    renderArgs: a,
+    compTrace: a.compTrace,
+    askCtx: subjectAskContext(a),
     // The immersive prints the number as the chapter title, so the letter's
     // own heading block is suppressed and the lead line reprinted below it.
     omitLeadPrices: true,

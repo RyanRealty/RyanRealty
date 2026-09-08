@@ -23,6 +23,7 @@ import {
   type OfferTiming,
 } from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import { readTrendMeasure } from '@/lib/cma/render-contract'
 import type { CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -298,8 +299,18 @@ export function renderInventoryBoardHtml(
     )
   }
   if (chart) {
+    // IT NAMES WHAT IT MEASURES (round-four class E). Chapter 3's index clause
+    // says the market peaked in April; this line draws April as the low month.
+    // Both are true of different series — a price-a-square-foot index and the
+    // middle sale price of every home in the city — and the two sentences read
+    // as a contradiction until each says which it is. `market.trend.measure`
+    // is the pricing side's own phrase; without it the renderer states the
+    // same fact in its own plain words rather than leaving the line unnamed.
+    const measure = readTrendMeasure(market)
     sentences.push(
-      `The line below is what a home in ${place} closed at, month by month, over the last year.`,
+      measure
+        ? `The line below is ${measure} in ${place}, month by month, over the last year.`
+        : `The line below is the middle sale price in ${place}, month by month, over the last year.`,
     )
   }
   const prose = sentences.length

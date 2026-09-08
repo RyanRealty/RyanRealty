@@ -264,3 +264,149 @@ export function readSubjectStatus(args: unknown): CmaSubjectStatus | null {
     note: str(candidate.note),
   }
 }
+
+// ── One list ceiling per document ───────────────────────────────────────────
+
+export type ListClamp = {
+  /** The list the clamp allows. Null when the row carries no figure. */
+  after: number | null
+  /** False only when the row says outright that the clamp did not bind. */
+  binds: boolean
+}
+
+/** `pricing.clamp`, or null. Shape only; the arithmetic is lib/pricing's. */
+export function readListClamp(pricing: unknown): ListClamp | null {
+  const c = obj(obj(pricing)?.clamp)
+  if (!c) return null
+  const binds = c.bound !== false && c.binds !== false && c.applied !== false
+  return { after: num(c.after), binds }
+}
+
+/**
+ * THE ONE NUMBER THIS DOCUMENT MAY NAME AS THE TOP OF THE LIST.
+ *
+ * Round-four class E: Concorde printed three different list ceilings on two
+ * screens, and the highest of them was the ask that had just failed. The
+ * chapter that states the list range, the net chapter's list, and the closing
+ * are three chances to print a fourth; every one of them resolves the ceiling
+ * here instead.
+ *
+ * `highEnd` is the method's own top. When the failed-ask clamp binds, the
+ * price the document recommends cannot go above what the clamp allows — so
+ * the ceiling is the lower of the two, and nothing downstream may print above
+ * it. Null when the row carries neither.
+ */
+export function listCeiling(pricing: unknown): number | null {
+  const hi = num(obj(pricing)?.highEnd)
+  const clamp = readListClamp(pricing)
+  const after = clamp?.binds ? clamp.after : null
+  if (hi == null) return after != null && after > 0 ? after : null
+  if (after == null || !(after > 0)) return hi > 0 ? hi : null
+  return Math.min(hi, after)
+}
+
+// ── How the comps were found ────────────────────────────────────────────────
+
+export type CompSearchRung = {
+  key: string | null
+  label: string | null
+  window: string | null
+  added: number | null
+  kept: number | null
+}
+
+export type CompSearch = {
+  subdivision: string | null
+  rungs: CompSearchRung[]
+  /** Kept sales per subdivision name, as the pricing side counted them. */
+  keptBySubdivision: Record<string, number>
+  /** The pricing side's own sentence. When present it is what prints. */
+  sentence: string | null
+}
+
+/**
+ * `render_args.compSearch`, or null.
+ *
+ * Round-four class E: chapter 3 told 2465's seller there were not enough
+ * recent Diamond Bar Ranch sales while three of its five sales are Diamond Bar
+ * Ranch. `lib/pricing/search-story.ts` composes that clause from the TIER
+ * LADDER alone — any rung outside the subdivision makes it claim a shortage —
+ * and the ladder does not know what the kept set turned out to be. This reader
+ * takes the pricing side's own account when the row carries one; the renderer
+ * derives the sentence from the kept comps when it does not.
+ */
+export function readCompSearch(args: unknown): CompSearch | null {
+  const cs = obj(obj(args)?.compSearch)
+  if (!cs) return null
+  const rungs: CompSearchRung[] = Array.isArray(cs.rungs)
+    ? cs.rungs
+        .map((raw) => obj(raw))
+        .filter((r): r is Record<string, unknown> => r != null)
+        .map((r) => ({
+          key: str(r.key),
+          label: str(r.label),
+          window: str(r.window),
+          added: num(r.added),
+          kept: num(r.kept),
+        }))
+    : []
+  const bySub: Record<string, number> = {}
+  const raw = obj(cs.keptBySubdivision)
+  if (raw) {
+    for (const [k, v] of Object.entries(raw)) {
+      const n = num(v)
+      const name = k.trim()
+      if (name && n != null && n >= 0) bySub[name] = n
+    }
+  }
+  return {
+    subdivision: str(cs.subdivision),
+    rungs,
+    keptBySubdivision: bySub,
+    sentence: str(cs.sentence),
+  }
+}
+
+// ── What a figure measures ──────────────────────────────────────────────────
+
+/**
+ * `<block>.measure` — the short phrase naming what a figure is a figure OF.
+ *
+ * Round-four class E: chapter 3's index clause said the market "peaked in
+ * April" and chapter 5's month line said April was the low month. Both are
+ * true and they measure different things. A reader meeting them four screens
+ * apart reads one document contradicting itself, so each names its measure in
+ * the same breath as its month.
+ */
+export function readMeasure(block: unknown): string | null {
+  return str(obj(block)?.measure)
+}
+
+/**
+ * What the month line is a line OF.
+ *
+ * `market.trend` is an array today, so the pricing side may hang the phrase on
+ * the array itself or beside it as `market.trendMeasure`. Both are read; a row
+ * carrying neither prints the renderer's own plain naming of the same series.
+ */
+export function readTrendMeasure(market: unknown): string | null {
+  const m = obj(market)
+  if (!m) return null
+  const onArray = (m.trend as { measure?: unknown } | null | undefined)?.measure
+  return str(onArray) ?? readMeasure(m.trend) ?? str(m.trendMeasure)
+}
+
+/**
+ * `pricing.rangeRule.kept` — how many sales the pricing side says the range is
+ * the spread of, or null.
+ *
+ * ONE n PER CHAPTER (round-four class E). 19968 printed six, four and two for
+ * one set inside two chapters. The cover's range-cause sentence already reads
+ * this field; the chapter lead, the strip caption and the market chapter's
+ * "sales behind your price" now resolve to the same number, so a reader who
+ * counts cannot find a second answer.
+ */
+export function readRangeRuleKept(pricing: unknown): number | null {
+  const n = num(obj(obj(pricing)?.rangeRule)?.kept)
+  return n != null && n >= 0 ? Math.round(n) : null
+}

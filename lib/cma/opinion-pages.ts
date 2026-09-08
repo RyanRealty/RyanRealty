@@ -29,8 +29,15 @@ import {
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
 import { listingTimelinePhoneSvg, listingTimelineSvg } from '@/lib/cma/market-charts'
-import { subjectDomDays } from '@/lib/cma/comp-matrix'
-import { pricingPage, worthRangeRounded } from '@/lib/cma/render-pricing-page'
+import { subjectDomDays, type SubjectAskContext } from '@/lib/cma/comp-matrix'
+import {
+  failedSubjectAsk,
+  keptSaleCount,
+  listRangeBounds,
+  pricingPage,
+  worthRangeRounded,
+} from '@/lib/cma/render-pricing-page'
+import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -76,6 +83,15 @@ export type OpinionPageArgs = {
   /** Deprecated for letter render (C9). Ignored — comps map is the single map. */
   subjectMapDataUri?: string | null
   tiersUsed?: string[]
+  /** The rungs the selector actually walked. Chapter 3's "why these sales". */
+  compTrace?: readonly string[] | null
+  /**
+   * `render_args.compSearch` — the pricing side's own account of the search,
+   * including how many kept sales each rung supplied. Absent on every row
+   * built before it landed; the renderer then derives the sentence from
+   * `compTrace` and the printed sales (class E).
+   */
+  compSearch?: unknown
   generatedAtIso: string
   /** Carried on render_args; nothing on the seller document prints it. */
   excludedOutliers?: Array<{ address: string; closePrice: number; ppsf: number; reason: string }>
@@ -117,6 +133,27 @@ export type OpinionPageArgs = {
 
 
 
+
+/**
+ * WHETHER THE SUBJECT'S STORED ASK IS STILL THIS LISTING'S ASK.
+ *
+ * One resolution for the whole document (class E): the subject column's head,
+ * its phone card, the strip's dashed failed-ask line and the list range's
+ * ceiling all mean the same event. `finalCycle` being null is the build saying
+ * it found no listing cycle to reason about, and a price with no cycle behind
+ * it is a record, not an ask — 19968 Terrace printed $140,000 from a November
+ * 2004 cycle, undated, three times, beside a $461,000 recommendation.
+ *
+ * `hasFinalCycle` stays undefined when the row carries no expired audit at
+ * all: that is a document about a home nobody claims failed, and only the date
+ * gate applies.
+ */
+export function subjectAskContext(a: OpinionPageArgs): SubjectAskContext {
+  return {
+    asOfIso: a.generatedAtIso,
+    hasFinalCycle: a.expiredAudit ? a.expiredAudit.finalCycle != null : undefined,
+  }
+}
 
 /**
  * "commission, title, escrow, or your loan payoff" — an OR list, because each
@@ -164,7 +201,20 @@ const NET_AT_LIST_REQUIRES = [
  * up, and refuses a net above the list outright.
  */
 export function sellerNetSheetForDoc(a: OpinionPageArgs): SellerNetSheet | null {
-  return readSellerNetSheet(a.pricing)
+  const sheet = readSellerNetSheet(a.pricing)
+  if (!sheet) return null
+  // ONE LIST CEILING PER DOCUMENT (class E). This chapter's whole column hangs
+  // off one list price, printed twice — the head row and the net row — so a
+  // sheet priced above the ceiling chapter 3 states would be the document's
+  // highest number, in the chapter a seller reads for what they walk away
+  // with. A sheet at the ask that already failed is the same defect wearing
+  // the failed price. Neither is repaired here: the arithmetic belongs to
+  // lib/pricing, so the chapter prints no figure and says what a net needs.
+  const bounds = listRangeBounds(a.pricing, failedSubjectAsk(a.subject, subjectAskContext(a)))
+  if (bounds && sheet.list > bounds.high) return null
+  const failed = failedSubjectAsk(a.subject, subjectAskContext(a))
+  if (failed != null && failed > 0 && sheet.list >= failed) return null
+  return sheet
 }
 
 /** True only when every deduction is on the sheet. Gates the phrase itself. */
@@ -645,7 +695,15 @@ export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub')
  * the unadjusted one, and each says which it is.
  */
 export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
-  const closes = a.comps
+  // THE KEPT SET, AND THE SAME n THE PRICE CHAPTER PRINTS (round-four class E).
+  // This said "The six sales behind your price sold for $370,000 to $479,000"
+  // while chapter 3 two screens earlier said four sales set the number and
+  // named the other two as set aside — and $479,000, the top of this raw
+  // range, WAS one of the two. A range whose top is a sale the document
+  // disowned is not the range behind the price.
+  const aside = setAsideCompIndexes(a.pricing, a.comps)
+  const kept = a.comps.filter((_, i) => !aside.has(i))
+  const closes = kept
     .map((c) => c.closePrice)
     .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
   if (closes.length < 2) return ''
@@ -663,7 +721,7 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
         : `; adjusted, they support ${usd(worth.low)} to ${usd(worth.high)}`
       : ''
   return `<p class="chart-read">${esc(
-    `The ${countWord(closes.length)} sales behind your price sold for ${usd(
+    `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales behind your price sold for ${usd(
       Math.min(...closes),
     )} to ${usd(Math.max(...closes))} before adjusting for date and size${adjusted}.`,
   )}</p>`
@@ -1075,6 +1133,9 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
         mapDataUri: a.mapDataUri,
         mapOverlay: a.mapOverlay,
         docLinks: a.docLinks,
+        renderArgs: a,
+        compTrace: a.compTrace,
+        askCtx: subjectAskContext(a),
       }),
     competition: () => competitionPage(a),
     'this-market': () => thisMarketPage(a),
