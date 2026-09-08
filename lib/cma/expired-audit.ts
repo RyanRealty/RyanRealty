@@ -22,11 +22,26 @@
  *     are labeled estimates. Math is computed here, penny-exact, and traced.
  */
 
-import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type {
+  CmaPricing,
+  CmaPricingClamp,
+  CmaPricingClampApplication,
+  CmaPricingClampTier,
+  CmaSubject,
+} from '@/lib/cma/types'
 import type { CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
+import { askStoryReading } from '@/lib/cma/ask-story'
+
+/**
+ * Where the seller's own ask sat against what homes like theirs sold for, in
+ * one sentence. It lives in `lib/cma/ask-story.ts` now, beside the class that
+ * decides which story may be told around it, and is re-exported here because
+ * chapter 2's peer cards import it from this module.
+ */
+export { askAgainstRangeSentence } from '@/lib/cma/ask-story'
 
 // ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
 /** Listing fee for every expired-listing engagement. */
@@ -679,6 +694,69 @@ export interface FailedAskCapResult {
 }
 
 /**
+ * The corpus behind every ratio this ceiling applies, in one string a document
+ * can print beside the number. Regional, and said so.
+ */
+export const FAILED_ASK_CLAMP_SOURCE = `${FAILED_ASK_BACKTEST.pairs.toLocaleString(
+  'en-US',
+)} Central Oregon listings that came off the market unsold and later closed, matched by address, measured ${
+  FAILED_ASK_BACKTEST.runstamp
+} (docs/research/cma-backtest-${FAILED_ASK_BACKTEST.runstamp}.json)`
+
+/**
+ * Which share of the failed ask holds each printed tier, and how a seller
+ * sentence names it. The high end is never held below the ask itself: a home
+ * CAN sell for what it asked, 12.3 percent of these pairs did, and the top of
+ * a range is where that belongs.
+ */
+function clampCeilings(ask: number, recent: boolean) {
+  const round1k = (n: number) => Math.round(n / 1000) * 1000
+  return {
+    conservative: {
+      ratio: recent ? FAILED_ASK_BACKTEST.closeMedianRatio : 1,
+      value: recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeMedianRatio * ask)) : ask,
+      // A stale failure is held at the ask itself, so there is no percentile to
+      // name and the sentence must not name one.
+      phrase: recent ? 'the middle of what failed listings later sold for' : (null as string | null),
+    },
+    recommended: {
+      ratio: recent ? FAILED_ASK_BACKTEST.closeP75Ratio : 1,
+      value: recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask,
+      phrase: recent
+        ? 'the 75th percentile of what failed listings later sold for'
+        : (null as string | null),
+    },
+    highEnd: { ratio: 1, value: ask, phrase: null as string | null },
+  }
+}
+
+/** "$1,973,000". Whole dollars, no cents, no abbreviation. */
+function clampUsd(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`
+}
+
+/**
+ * The sentence the document prints where the clamp binds. It names the number
+ * the evidence produced, the number that already failed, and the number we
+ * will print instead — so a reader who follows the method to one answer is
+ * never handed a different one with nothing in between.
+ */
+function clampSentence(args: {
+  supported: number
+  ask: number
+  printed: number
+  phrase: string | null
+}): string {
+  const head = `The sales alone would support listing at ${clampUsd(args.supported)}.`
+  const why = args.phrase
+    ? `${clampUsd(args.printed)}, which is ${args.phrase} across ${FAILED_ASK_BACKTEST.pairs.toLocaleString(
+        'en-US',
+      )} Central Oregon pairs.`
+    : `${clampUsd(args.printed)}.`
+  return `${head} Because ${clampUsd(args.ask)} already failed to sell, we do not recommend going above ${why}`
+}
+
+/**
  * A CMA must never recommend listing ABOVE a price the market just rejected
  * (Matt 2026-08-05: 33% of expired-prospect docs did — up to +36% — because
  * the comp engine carried zero weight for the subject's own failed market
@@ -701,11 +779,18 @@ export function applyFailedAskCap(
     needsReview: boolean
     reviewReason: string | null
     notes: string[]
+    clamp?: CmaPricingClamp | null
   },
   args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
 ): FailedAskCapResult {
   const none: FailedAskCapResult = { applied: false, cappedTo: null, uncappedRecommended: null }
   const ask = args.lastFailedListPrice
+  // A clamp that does not bind is null, never absent: a renderer prints the
+  // field when it is there and must not have to tell undefined from "no".
+  const priorBefore = new Map<CmaPricingClampTier, number>(
+    (pricing.clamp?.applications ?? []).map((a) => [a.tier, a.before]),
+  )
+  pricing.clamp = null
   if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
 
   let recent = false
@@ -718,26 +803,82 @@ export function applyFailedAskCap(
     }
   }
 
-  const round1k = (n: number) => Math.round(n / 1000) * 1000
-  const consCeil = recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeMedianRatio * ask)) : ask
-  const recCeil = recent ? Math.min(ask, round1k(FAILED_ASK_BACKTEST.closeP75Ratio * ask)) : ask
+  const ceilings = clampCeilings(ask, recent)
+  const consCeil = ceilings.conservative.value
+  const recCeil = ceilings.recommended.value
   if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= ask) return none
 
   const uncapped = pricing.recommended
+  // What the EVIDENCE supported, not what a previous application of this same
+  // ceiling left behind: `lib/pricing/estimate.ts` clips to the bare ask before
+  // `lib/cma/build.ts` re-applies with the real off-market date, and a reader
+  // must be told the whole distance once rather than half of it twice.
+  const baseline = (tier: CmaPricingClampTier, current: number) => priorBefore.get(tier) ?? current
+  const baselines = {
+    conservative: baseline('conservative', pricing.conservative),
+    recommended: baseline('recommended', pricing.recommended),
+    highEnd: baseline('highEnd', pricing.highEnd),
+  }
   pricing.conservative = Math.min(pricing.conservative, consCeil)
   pricing.recommended = Math.min(pricing.recommended, recCeil)
   pricing.highEnd = Math.min(pricing.highEnd, ask)
+  const applications: CmaPricingClampApplication[] = (
+    ['conservative', 'recommended', 'highEnd'] as const
+  )
+    .filter((tier) => pricing[tier] !== baselines[tier])
+    .map((tier) => ({
+      tier,
+      before: baselines[tier],
+      after: pricing[tier],
+      ratio: ceilings[tier].ratio,
+    }))
+  // The sentence is about the tier a seller reads as "the price". When the
+  // ceiling left that one alone it is about the highest tier that did move.
+  const headline =
+    applications.find((a) => a.tier === 'recommended') ??
+    applications.find((a) => a.tier === 'highEnd') ??
+    applications[0] ??
+    null
+  pricing.clamp = headline
+    ? {
+        kind: 'failed-ask',
+        appliedTo: headline.tier,
+        before: headline.before,
+        after: headline.after,
+        basis: { ratio: headline.ratio, source: FAILED_ASK_CLAMP_SOURCE },
+        applications,
+        sentence: clampSentence({
+          supported: headline.before,
+          ask,
+          printed: headline.after,
+          phrase: ceilings[headline.tier].phrase,
+        }),
+      }
+    : null
   pricing.needsReview = true
+  // ONE SENTENCE PER APPLICATION, and it names the figure the EVIDENCE
+  // supported. The ceiling is applied twice on the build path, so writing
+  // `uncapped` — the value on entry — produced "Comp evidence supported
+  // $1,500,000 against the $1,500,000 asking that just failed" on the second
+  // pass, which is the first pass's own output described as evidence. The
+  // earlier sentence is replaced rather than appended for the same reason.
+  const supported = headline?.before ?? uncapped
+  const priorLine = /Comp evidence supported .*? asking that (?:just )?failed/
+  const carried = (pricing.reviewReason ?? '').replace(priorLine, '').replace(
+    / (?:List tiers clamped to the failed-ask backtest quantiles \([^)]*\)|The printed list sits at or below that ask)\.?/,
+    '',
+  )
   pricing.reviewReason = [
-    pricing.reviewReason,
+    carried.trim(),
     recent
-      ? `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`
-      : `Comp evidence supported ${usd(uncapped)} against the ${usd(ask)} asking that failed to sell. The printed list sits at or below that ask.`,
+      ? `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`
+      : `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that failed to sell. The printed list sits at or below that ask.`,
   ]
     .filter(Boolean)
     .join(' ')
-  pricing.notes.push(`Your last listing asked ${usd(ask)} and did not sell.`)
-  return { applied: true, cappedTo: recCeil, uncappedRecommended: uncapped }
+  const askNote = `Your last listing asked ${usd(ask)} and did not sell.`
+  if (!pricing.notes.includes(askNote)) pricing.notes.push(askNote)
+  return { applied: true, cappedTo: recCeil, uncappedRecommended: supported }
 }
 
 /**
@@ -824,53 +965,19 @@ export function listingTimelineReading(input: {
 }): string {
   const t = input.timeline
   const finalAsk = t.steps[t.steps.length - 1]?.ask ?? null
-  const low = Math.min(t.rangeLow, t.rangeHigh)
-  const high = Math.max(t.rangeLow, t.rangeHigh)
-  const bits: string[] = []
-  const against = askAgainstRangeSentence(finalAsk, low, high)
-  if (against) bits.push(against)
-  if (t.days != null && t.days > 0) bits.push(`It sat ${Math.round(t.days).toLocaleString('en-US')} days.`)
-  const place = input.city.trim()
-  if (input.marketMedianDom != null && input.marketMedianDom > 0 && place) {
-    // Name the measure. "The Redmond median is 26" leaves a reader to guess
-    // whether that is days to an offer, days to close, or something else —
-    // and the next chapter draws the same figure under its full name.
-    bits.push(
-      `The median home in ${place} has an accepted offer in ${Math.round(input.marketMedianDom)} days.`,
-    )
-  }
-  return bits.join(' ')
+  // WHICH STORY THE NUMBERS CARRY, not the one the chapter was written for.
+  // The sentences, the measure they name, and whether the chapter is allowed
+  // to hand off to an overpricing argument are all decided by the gap between
+  // that ask and the top of the range (lib/cma/ask-story.ts, and tasteReview
+  // round three §4.1, where a corrected engine left this chapter arguing a
+  // case its own drawing no longer made).
+  return askStoryReading({
+    ask: finalAsk,
+    rangeLow: t.rangeLow,
+    rangeHigh: t.rangeHigh,
+    days: t.days,
+    city: input.city,
+    marketMedianDom: input.marketMedianDom,
+  })
 }
 
-function pct1(ratio: number): string {
-  return (Math.abs(ratio) * 100).toFixed(1)
-}
-
-/**
- * Where the seller's own ask sat against what homes like theirs sold for, in
- * one sentence.
- *
- * ONE sentence, in ONE place, because two chapters say it. Chapter 1 read
- * "the asking price was 15.3 percent above the top of the range"; chapter 2's
- * card for the same listing read "that is at the top of what they closed at"
- * on a dollars-a-foot measure. Both were true and, a minute apart, they
- * cancelled. Chapter 2 now leads with this sentence and puts its own
- * dollars-a-foot line after it.
- */
-export function askAgainstRangeSentence(
-  ask: number | null,
-  rangeLow: number | null,
-  rangeHigh: number | null,
-): string {
-  if (ask == null || !(ask > 0) || rangeLow == null || rangeHigh == null) return ''
-  const low = Math.min(rangeLow, rangeHigh)
-  const high = Math.max(rangeLow, rangeHigh)
-  if (!(low > 0) || !(high > 0)) return ''
-  if (ask > high) {
-    return `The asking price was ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
-  }
-  if (ask < low) {
-    return `The asking price was ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
-  }
-  return 'The asking price sat inside the range homes like yours sold in.'
-}

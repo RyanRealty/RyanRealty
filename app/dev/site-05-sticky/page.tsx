@@ -92,7 +92,7 @@ const FILLER = [
 
 export default async function Page() {
   const pulse = await getMarketPulse({ geoType: 'city', geoSlug: 'bend' })
-  const verdict = stickyAskVerdict(pulse)
+  const verdict = stickyAskVerdict(pulse, 'market_pulse_live')
 
   // The §0 trace, printed to the dev server log beside the shots.
   console.log('[site-05] market_pulse_live bend:', {

@@ -3,16 +3,13 @@
   "generated_by": "check-shot-weight.mjs --write-baseline",
   "cap_bytes": 1048576,
   "files": {
-    "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png": 3994260,
-    "design_system/ryan-realty/ui_kits/sell/shots/sell-1440.png": 1583714,
-    "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png": 1525105,
-    "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png": 1478031,
-    "design_system/ryan-realty/ui_kits/contact/shots/desktop.png": 1469576,
-    "design_system/ryan-realty/ui_kits/sell/shots/expired-listings-1440.png": 1431225,
-    "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png": 1291281,
-    "design_system/ryan-realty/ui_kits/listing-detail/shots/desktop.png": 1256313,
-    "design_system/ryan-realty/ui_kits/sell/shots/for-sale-by-owner-1440.png": 1223744,
     "design_system/ryan-realty/ui_kits/_shared/shots/site-11/1440.png": 1137215,
-    "design_system/ryan-realty/ui_kits/community/shots/answer-desktop.png": 1070606
+    "design_system/ryan-realty/ui_kits/contact/shots/desktop.png": 1469576,
+    "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png": 1478031,
+    "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png": 1525105,
+    "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png": 3994260,
+    "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png": 1291281,
+    "design_system/ryan-realty/ui_kits/sell/shots/expired-listings-1440.png": 1431225,
+    "design_system/ryan-realty/ui_kits/sell/shots/for-sale-by-owner-1440.png": 1223744
   }
 }

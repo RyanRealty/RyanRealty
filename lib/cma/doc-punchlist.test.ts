@@ -494,16 +494,19 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // Form 1004 order, line by line (research item 1): the three adjustments
     // itemized, then the net, then the two percentages, then the price today.
     expect(html).toContain('Adjusted for date')
-    expect(html).toContain('Adjusted for size')
+    // The row label carries what the sign means, so no sentence has to.
+    expect(html).toContain('Adjusted for size (theirs vs yours)')
     // "Adjusted for style" prints only where a style adjustment was made: a
     // row every column leaves empty is dropped rather than printed as dashes.
     expect(html).toContain('Net adjustment')
     expect(html).toContain('Every adjustment added up')
     expect(html).toContain('Sale price today')
-    // The legend says what the labels cannot: which way a minus points. It no
-    // longer restates the arithmetic the rows spell out in order.
-    expect(html).toContain('A minus figure means that sale had something yours does not.')
+    // Both explaining sentences are gone: the labels carry the sign, and the
+    // identity rows fold into ONE sentence (tasteReview round three, §3).
+    expect(html).not.toContain('A minus figure means')
+    expect(html).not.toContain('A plus means yours')
     expect(html).not.toMatch(/Sale price today is the sale price plus every adjustment above it/i)
+    expect(html).not.toMatch(/Every home here is [^.]+\. Every home here is/)
   })
 })
 
@@ -1070,7 +1073,11 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     // 5 states the RAW close prices and says so; the pooled city median that
     // sat above every month drawn under it is gone.
     expect(html).toContain('where homes like yours sold, adjusted for date and size')
-    expect(html).toMatch(/sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size\./)
+    // tasteReview round three, §3: the raw top of that sentence IS the ask
+    // chapter 1 says failed, so the adjusted pair rides in the same breath.
+    expect(html).toMatch(
+      /sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size; adjusted, they support \$[\d,]+ to \$[\d,]+\./,
+    )
     expect(html).not.toContain('is every Redmond home, all sizes')
     expect(html).not.toContain('532,311')
   })
@@ -1378,5 +1385,103 @@ describe('tasteReview 4 — chapter 2b is one composed spread', () => {
     const html = renderCmaHtml(withChapter2()).html
     expect(html).toContain('The first price decides the days')
     expect(html).toContain('When homes like yours get their offer')
+  })
+})
+
+/**
+ * tasteReview round three, §4.1 and §5.1 — the story chapter 1 tells is chosen
+ * by the gap between the ask that failed and the top of the range, not written
+ * into the chapter.
+ *
+ * The corrected pricing engine moved 2465 7th's ask from 15.3 percent above
+ * the top of the range to 3.8 percent above it, and the document went on
+ * arguing overpricing under a chapter titled "What overpricing costs" — while
+ * chapter 5, four screens later, printed a raw top equal to the ask that
+ * failed. Every assertion here is against the RENDERED document, in both
+ * renderers, because the defect was only ever visible there.
+ */
+describe('chapter 1 — the story the numbers carry', () => {
+  /** The final cycle, so the reading has days to talk about. */
+  const cycle = {
+    findings: (expiredAudit as unknown as { findings: unknown[] }).findings,
+    finalCycle: {
+      listDate: '2026-02-26',
+      initialAsk: 475000,
+      cuts: [{ date: '2026-05-14', ask: 460000 }],
+      offMarketDate: '2026-09-01',
+      status: 'Withdrawn',
+      days: 187,
+    },
+  } as unknown as ExpiredAuditData
+
+  /** The same fixture with the value range moved, which is what moves the gap. */
+  function withRange(valueLow: number, valueHigh: number): Partial<RenderCmaArgs> {
+    return {
+      expiredAudit: cycle,
+      pricing: {
+        ...(pricing as unknown as Record<string, unknown>),
+        valueLow,
+        valueHigh,
+        conservative: valueLow,
+        highEnd: valueHigh,
+        recommended: Math.round((valueLow + valueHigh) / 2),
+      },
+    } as unknown as Partial<RenderCmaArgs>
+  }
+
+  const WALK =
+    'days without an offer points at something other than the number. We would walk the house before saying what.'
+
+  it('keeps the overpricing story when the ask was more than 10 percent above the range', () => {
+    for (const html of [letter(withRange(380000, 398000)), immersive(withRange(380000, 398000))]) {
+      expect(html).toContain('15.6 percent above the top of the range homes like yours sold in.')
+      expect(html).toContain('It sat 187 days.')
+      expect(html).toContain('What overpricing costs.')
+      expect(html).not.toContain(WALK)
+    }
+  })
+
+  it('states the facts and stops when the ask was near the range', () => {
+    for (const html of [letter(withRange(420000, 445000)), immersive(withRange(420000, 445000))]) {
+      expect(html).toContain('3.4 percent above the top of the range homes like yours sold in.')
+      expect(html).toContain('It sat 187 days without an offer.')
+      expect(html).toContain('Half of the homes that sold in Redmond had an offer inside 21 days.')
+      expect(html).toContain(`At a price near the range, 187 ${WALK}`)
+      // The title is the claim, so the title changes. The exhibits under it
+      // measure the city, not this listing, so they do not.
+      expect(html).toContain('What price and time look like in Redmond.')
+      expect(html).not.toContain('What overpricing costs.')
+      expect(html).toContain('The listings near you that did not sell.')
+    }
+  })
+
+  it('says the ask was inside the range when it was, and still asks the question', () => {
+    for (const html of [letter(withRange(440000, 470000)), immersive(withRange(440000, 470000))]) {
+      expect(html).toContain('The asking price was inside the range homes like yours sold in.')
+      expect(html).toContain('It sat 187 days without an offer.')
+      expect(html).toContain(`At a price inside the range, 187 ${WALK}`)
+      expect(html).toContain('What price and time look like in Redmond.')
+      expect(html).not.toContain('What overpricing costs.')
+    }
+  })
+
+  it('names no cause it cannot measure, in any of the three', () => {
+    for (const range of [
+      [380000, 398000],
+      [420000, 445000],
+      [440000, 470000],
+    ] as const) {
+      const html = letter(withRange(range[0], range[1]))
+      // Condition, photography, access and terms are nowhere on the row.
+      expect(html).not.toMatch(/because (?:the|it|your) (?:condition|photos|home was)/i)
+      expect(html).not.toContain('something was wrong with')
+    }
+  })
+
+  it('reconciles chapter 5 raw closes to the adjusted pair in one breath', () => {
+    const html = letter(withRange(420000, 445000))
+    expect(html).toMatch(
+      /sold for \$410,000 to \$460,000 before adjusting for date and size; adjusted, they support \$420,000 to \$445,000\./,
+    )
   })
 })

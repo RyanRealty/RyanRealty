@@ -702,6 +702,20 @@
 .v3 .v3-chart__mark--ctx3,
 .v3 .v3-chart__mark--ctx4 { stroke: var(--v3-ink-muted); }
 
+/* THE DECLINING SUBJECT SERIES. `emphasisTone="exception"` is the only thing
+   that puts the second hue on a line, and it means a real decline — the
+   caller's ruling, read off the same two points the claim sentence reads. The
+   figure keeps its emphasis weight; only the ink changes, so the chart still
+   reads as one subject against its context and not as two palettes. */
+.v3 .v3-chart__line--exc {
+  stroke: var(--v3-exception);
+  stroke-width: var(--v3-chart-stroke);
+}
+
+.v3 .v3-chart__mark--exc { stroke: var(--v3-exception); }
+
+.v3 .v3-chart__key--exc .v3-chart__swatch { border-top-style: solid; border-top-color: var(--v3-exception); }
+
 .v3 .v3-chart__key--em .v3-chart__swatch { border-top-style: solid; border-top-color: var(--v3-ink); }
 .v3 .v3-chart__key--ctx1 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 48%, transparent); }
 .v3 .v3-chart__key--ctx2 .v3-chart__swatch { border-top-style: solid; border-top-color: color-mix(in srgb, var(--v3-ink) 34%, transparent); }

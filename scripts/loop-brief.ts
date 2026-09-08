@@ -405,6 +405,61 @@ async function main() {
       }
     })
     push(`  site commits with a Node: trailer: ${withNode.length}/${siteCommits.length}`)
+
+    // STRANDED LANE WORK. A lane builds on its own branch and lands it at the end
+    // of a round. If the session dies first, the branch survives on the remote and
+    // NOBODY KNOWS: on 2026-09-08 an hour of finished, evaluator-scored /sell work
+    // (wt/sell-round2, nine commits, score 63 -> 83) sat unmerged with no pull
+    // request until a forensic audit found it, and the next fire was about to
+    // rebuild all four of its items from main. Discovery must not be forensic.
+    //
+    // The rule: a remote lane branch ahead of origin/main whose commits name a
+    // SITE node. Loud when nobody holds that node, because then nobody is coming
+    // to land it.
+    const laneBranches = execFileSync('git', ['for-each-ref', '--format=%(refname:short)%09%(committerdate:unix)', 'refs/remotes/origin/wt/', 'refs/remotes/origin/site/'], {
+      encoding: 'utf8',
+      maxBuffer: 2 * 1024 * 1024,
+    })
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [ref, ts] = line.split('\t')
+        return { ref: ref ?? '', ageMin: Math.round((now.getTime() / 1000 - Number(ts ?? 0)) / 60) }
+      })
+
+    const stranded: string[] = []
+    for (const b of laneBranches) {
+      let ahead = 0
+      let bodies = ''
+      try {
+        ahead = Number(execFileSync('git', ['rev-list', '--count', `origin/main..${b.ref}`], { encoding: 'utf8' }).trim())
+        if (!ahead) continue
+        // AHEAD IS NOT UNLANDED. A lane branch keeps its own commits after its
+        // CONTENT reaches main by another route (a merge that carried the same
+        // change, a rebase, a cherry-pick). wt/sell-round2-taste2 was 1 ahead and
+        // its verdict was already on main under a different SHA. Crying wolf on a
+        // spent branch is how a warning gets ignored, so the diff decides.
+        const diff = execFileSync('git', ['diff', '--name-only', `origin/main...${b.ref}`], {
+          encoding: 'utf8',
+          maxBuffer: 4 * 1024 * 1024,
+        }).trim()
+        if (!diff) continue
+        bodies = execFileSync('git', ['log', `origin/main..${b.ref}`, '--format=%B'], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 })
+      } catch {
+        continue
+      }
+      const ids = [...new Set([...bodies.matchAll(/^Node:\s*([0-9a-f-]{36})\s*$/gim)].map((m) => m[1]))]
+      if (!ids.length) continue
+      for (const id of ids) {
+        const node = nodes.find((n) => n.id === id)
+        if (!node) continue
+        const held = node.state === 'in_progress'
+        const label = `${b.ref} (+${ahead}, ${b.ageMin < 120 ? `${b.ageMin}m` : `${Math.round(b.ageMin / 60)}h`} old) carries ${node.version_gap ?? id.slice(0, 8)} [${node.state}]`
+        stranded.push(held ? `  lane in flight: ${label}` : `  *** STRANDED: ${label} — nobody holds this node, so nobody is coming to land this branch`)
+      }
+    }
+    for (const line of stranded.sort()) push(line)
+    if (!stranded.length) push('  no unlanded lane branches')
   } catch (err) {
     // Never let reconciliation stop the boot — a brief that refuses to print is
     // worse than one that admits it could not check.

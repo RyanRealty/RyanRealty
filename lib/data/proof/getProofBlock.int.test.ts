@@ -145,6 +145,9 @@ describe('getProofBlock (live)', () => {
     // failure section 0 exists to catch.
     expect(block.trace.length).toBeGreaterThan(0)
     for (const t of block.trace) {
+      // The scope decides whether the view may publish this line at all, so an
+      // untagged entry would silently reach a disclosure it does not belong in.
+      expect(['always', 'outcomes']).toContain(t.scope)
       expect(t.figure.length).toBeGreaterThan(0)
       expect(t.table.length).toBeGreaterThan(0)
       expect(t.filter.length).toBeGreaterThan(0)

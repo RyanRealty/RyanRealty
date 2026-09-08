@@ -1,4 +1,142 @@
-# Current — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+# Current — 2026-09-08 (round 3 landed on main: the answer draws, the listing page ends, two §0 defects fixed)
+
+Owner: Claude (Opus 5), session 01Aubwpa. **main is at `c26a68d3e`.** Round 3 is on main, gated,
+and its evidence is written to both nodes (`89efe5a4` SITE-02b, `b2366127` SITE-06). 24 commits
+landed in one push: `ci:gates OK · 188/188 passed · 62.1s`.
+
+**What shipped.**
+- **SITE-02b — the answer drawn.** `V3Drawing` plus `lib/charts/plot.ts` (+226) and `ticks.ts`:
+  two answer geometries, named counts on one scale and marks on one axis. Wired into the
+  community ask and the /sell answer. The city chart's falling year now wears the exception ink
+  and its year labels stop overprinting.
+- **SITE-06 — the listing page gets an ending.** `V3ListingClose` (waffle / bar / rule drawings
+  behind a three-act chooser) on `getListingCutFacts`.
+
+**Two §0 defects found and fixed on the way, both on live or soon-live pages.**
+1. **The pill published a banned field.** The price strip printed `listing.dom`, which is
+   `row.DaysOnMarket` — list-to-close, banned as DOM by §7 — while the close section computed
+   days from `onMarketDate`. Same page, 106 against 110. There is now one definition,
+   `lib/listing/days-live.ts`, and both read it.
+2. **The two bars did not divide back to the verdict beside them.** Sunriver drew 48 active and
+   a pace label of 8 under a caption reading 5.8 months / balanced; 48 / 8 is 6.0, a buyer's
+   market. `paceLabel` in `lib/site/answer-figures.ts` now keeps the whole number only when the
+   division still lands on the published months of supply, so Bend still reads 173 (671 / 173 =
+   3.9) and Sunriver reads 8.3. Pinned by `lib/site/answer-figures.test.ts`.
+
+Also landed: the Source disclosure and the 3D-tour control got real 44px tap targets (WCAG
+2.5.5); the close section's date goes through `formatCalendarDay` and its anchor is named where
+the page names it; and `scripts/take-route-shots.mjs` now hides the Next dev badge — it was
+sitting in the corner of every shot any evaluator has ever scored.
+
+**Taste receipts, honestly.** Three under the tightened instrument contract, evaluator
+`claude-sonnet-5`, rubric `v1-2026-09-08`: listing-detail **87** (`first`), sell **71**,
+community **60** — both `rebaselined`, not `rose`. The priors differ on evaluator model and
+rubric, so a rise cannot be claimed across them; these are the new baseline to beat.
+
+**MATT RULED 2026-09-08, verbatim: "Hold those we only want positive."** The proof block's two
+outcome strips (our sale-to-first-ask and days-to-contract against the Bend median: 52 days
+against 29, 93.7% against 97.0%, n=7) DO NOT PUBLISH. `showOutcomes` defaults to false so no
+caller ships the comparison by omission; a test pins it. The figures are untouched — this
+decides what we publish, never what we measure. The same rule binds any surface that would draw
+our own performance against a market benchmark. Locked in
+`docs/plans/PUBLIC_PRODUCT/decisions.md` (2026-09-08).
+
+**Open findings, none blocking, all recorded on the nodes.**
+- **The `EASTON COMMERCIAL` breadcrumb** — our plat-alias resolution puts a commercial plat on a
+  single-family listing. `boundaries` holds five Easton plats, two sharing plat doc
+  `Plld20220219`. This is the one worth taking next; it is wrong in front of a buyer.
+- The answer sheet's right ~40% is empty at 1440.
+- The comps dot strip has no axis at rest.
+- A hero broken-image glyph traced to this sandbox's proxy, not to the site — an `onError`
+  fallback is still worth adding.
+
+**Queue.** SITE-03, SITE-07, SITE-08, SITE-12 are open or held by other sessions. SITE-02b and
+SITE-06 move to blocked-on-measurement (reopen 2026-10-06) with the rest of the shipped set.
+
+**Local traps that cost time this session, so the next lane skips them.** Stop every dev server
+by PID before `npm run ci:gates` or `ci:commit-compiles` is OOM-killed and prints `Killed` as its
+only error — and resolve the PIDs with `ps | awk` first, because `pkill -f "next dev"` matches
+your own shell's command line and kills the session. `npm run deploy:verify` has no Vercel token
+in a cloud container; verify through the Vercel MCP tools instead
+(project `prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA`, team `team_zwYQPapH0CpleD7RzJ7WctGO`).
+
+---
+
+## Prior — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+
+## Prior — 2026-09-08 (SITE-09 landed; SITE-12 and SITE-08 mid-round, preserved on branches)
+
+Owner: Claude (Opus 5), session 01NESdvn, main checkout at `3c529bb`. Branch
+`claude/run-loop-syxm1d` is synced to main (its 63 "unpushed" commits were all already on
+main; only the branch ref lagged).
+
+## SITE-09 is done and live — blocked on measurement, ledger row attached
+
+Shipped on main: `a4ea2600` (the response clock), `61f0061e` (/contact after the evaluator
+pass), `d03e15af` (the taste receipt), `3cad252e` + `4c3f3508` (handoff). Deploy
+`dpl_CSRRErGMqPRnZokfyFHHm5W6HvES` READY and aliased to ryan-realty.com. Node
+`d575d2eb-7514-4be7-8399-f0ebaa2f7dc7` is `blocked` with `blocked_until` 2026-10-06 and
+ledger row `3ad9bbd8-61a4-4904-af2d-deb2d6cf7b45`.
+
+**What it does.** A same-minute system confirmation on the three site submits that had none
+(/contact and every listing tour or question CTA, the guest saved-search and saved-home
+captures, the expired LP acknowledgment), all through `sendGovernedEmail` with a system
+initiator. Both governed email rails and the SMS rail now stamp `purpose` and `initiator`
+into the timeline payload, and only a broker initiator sets first-broker-action — so a
+system confirmation can no longer read as the broker answering, which is what made every
+prior speed-to-lead number fiction. `/api/cron/crm-response-clock` runs every five minutes,
+pages the assigned broker five minutes past a submit inside 8am–8pm Pacific, escalates to
+Matt at 24 hours wall clock, and clears the flag once a person answers. The Response clock
+panel sits at the top of `/admin/crm`.
+
+**The number that matters.** Baseline read fresh at landing against live Supabase with the
+shipped predicate: **9 of the last 10 site submits had no human touch at all.** The one
+counted touch is an unstamped /book invite predating the provenance stamp, so the panel
+prints the median as **"unproven"** rather than the flattering 2 seconds it would compute
+(§0: an unverifiable figure does not ship).
+
+**The evaluator earned its keep.** A separate Sonnet evaluator scored /contact 43 and caught
+a real §0 violation the builder missed: "within one business day" was removed from the page
+but still lived in the meta, og and twitter descriptions — the first thing Google and every
+shared link showed. Fixed and confirmed absent from production. Pass 2 scored 54 (first mark
+for the route; it leaves the unreviewed baseline).
+
+**Timer proven running**, not merely registered: Vercel runtime logs show
+`GET /api/cron/crm-response-clock` returning 200 on the five-minute schedule (13:20–13:55Z).
+
+## Round in flight: SITE-12 and SITE-08 — work is SAFE on remote branches
+
+Both claimed by `claude-opus5-01NESdvn-2026-09-08` through the enforced path
+(`site-queue-status.ts --claim`), heartbeated. Built by a workflow that runs the separate
+evaluator BEFORE any push — the fix for the audit's finding that 46% of item commits were
+evaluator rework after the code was already on main.
+
+| Item | Branch | PR | Commits | Prior mark to beat |
+|---|---|---|---|---|
+| SITE-12 homepage | `wt/site-12-home` | #204 draft | 2 (46 files) | homepage-v6 = 77 |
+| SITE-08 place Q&A | `wt/site-08-answers` | #205 draft | 3 (32 files) | neighborhood 58, community 59, subdivision none |
+
+**State at handoff:** both builds done, both pass-1 evaluations done, fixes applied, a
+regrade in flight. Nothing is merged and nothing is verified by the orchestrator yet. The
+draft PRs exist specifically so this cannot become the audit's "finished lane stranded with
+no PR" failure.
+
+**To resume:** the worktrees are at `.worktrees/site-12-home` and `.worktrees/site-08-answers`
+(gitignored, and gone if the container is reclaimed — the branches on origin are the durable
+copy). Re-verify each lane's claims yourself, land the taste receipts with their shots
+hashes, run `ci:taste-canon`, then one `ci:gates`, one push, one deploy check, a live
+exercise, and evidence on each node. If a score did not rise above its prior mark, the item
+is NOT done — do not write `comparedToPrior: "first"` to dodge the rise rule; the gate reads
+the receipt at HEAD and refuses it.
+
+## Do not
+
+- Commit a lane worktree's files from the main checkout while its agent is running. The
+  stop-hook flags them as "uncommitted changes in the repository"; they belong to the lane
+  and the lane commits them itself with its own `Node:` trailer.
+- Re-audit the site or write a punch-list doc. Append to a SITE node.
+
+# Previous — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
 
 Owner: Claude (Opus 5), session 3db16241, main checkout. `origin/main` at 1e61fa00.
 

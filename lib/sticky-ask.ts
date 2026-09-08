@@ -34,11 +34,28 @@ export type StickyAskVerdict = {
   label: string
   /** From formatMonthsOfSupply() — boundary-safe digits, e.g. "3.9". */
   monthsOfSupply: string
-  /** The day the pulse row was refreshed, formatted for display, e.g. "Sep 7". */
+  /** The day the row was refreshed, formatted for display, e.g. "Sep 7". */
   readAt: string
+  /**
+   * The table or series the figure actually came from, for the §0 trace. The
+   * CALLER states it, because the same control is fed from two different reads:
+   * a place page hands it a `market_pulse_live` row through getMarketPulse,
+   * while /sell hands it Market Truth DETACHED figures off `market_metric`
+   * (app/sell/page.tsx never reads the pulse table at all — that is the rule
+   * that stops /sell publishing the mixed-type bucket as the detached market).
+   * Hardcoding one of them named the wrong table on the other, which shipped:
+   * production /sell printed "Source: market_pulse_live" for a `market_metric`
+   * figure on 2026-09-08. A source line that names a table the number did not
+   * come from is the §0 failure, not a wording nit.
+   */
+  source: string
 }
 
-/** The row shape this reads: market_pulse_live, as getMarketPulse() returns it. */
+/**
+ * The row shape this reads: a months-of-supply figure and the day it was read.
+ * `getMarketPulse` returns one directly; /sell shapes one out of Market Truth
+ * with `applyDetachedOverlay`. Either way the caller names its own source.
+ */
 export type StickyAskPulse = {
   monthsOfSupply: number | null | undefined
   refreshedAt: string | null | undefined
@@ -50,8 +67,14 @@ export type StickyAskPulse = {
  * figure, or a row with no refresh stamp, ships the control with NO tail rather
  * than an invented or stale one. The caller passes the null straight through.
  */
-export function stickyAskVerdict(pulse: StickyAskPulse | null | undefined): StickyAskVerdict | null {
+export function stickyAskVerdict(
+  pulse: StickyAskPulse | null | undefined,
+  source: string,
+): StickyAskVerdict | null {
   if (!pulse) return null
+  // No source, no trace, no publish (§0): a figure whose origin the caller
+  // cannot name does not reach a public surface.
+  if (!source.trim()) return null
   const mos = pulse.monthsOfSupply
   if (mos == null || !Number.isFinite(mos)) return null
 
@@ -71,6 +94,7 @@ export function stickyAskVerdict(pulse: StickyAskPulse | null | undefined): Stic
     label: verdict.label,
     monthsOfSupply: formatMonthsOfSupply(mos),
     readAt,
+    source: source.trim(),
   }
 }
 
@@ -95,7 +119,7 @@ export function stickyAskTail(place: string, verdict: StickyAskVerdict | null | 
  */
 export function stickyAskSourceLine(verdict: StickyAskVerdict | null | undefined): string | null {
   if (!verdict) return null
-  return `Source: market_pulse_live, months of supply ${verdict.monthsOfSupply}, read ${verdict.readAt}.`
+  return `Source: ${verdict.source}, months of supply ${verdict.monthsOfSupply}, read ${verdict.readAt}.`
 }
 
 /** Everything the control knows about whether it belongs on screen. */

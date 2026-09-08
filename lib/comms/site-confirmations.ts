@@ -155,13 +155,51 @@ export async function sendAlertConfirmation(params: {
   personId: number | null
   leadEmail: string
   firstName?: string | null
-  kind: 'search' | 'listing'
-  /** Search: the filters in plain words. Listing: the street line. */
+  kind: 'search' | 'listing' | 'price-drop'
+  /** Search: the filters in plain words. Listing / price-drop: the street line. */
   criteriaSummary?: string | null
+  /** price-drop only: the canonical URL of the home being watched. */
+  listingUrl?: string | null
 }): Promise<SiteConfirmationResult> {
   if (params.personId == null) return { ok: false, via: 'skipped', error: 'no crm person for the lead' }
   const signer = await resolveSigner(params.personId)
   const what = params.criteriaSummary?.trim()
+
+  // SITE-06. A price-drop watch is a THIRD promise and it gets its own words.
+  // The saved-home copy ("we have that home saved") would misdescribe it: this
+  // row exists to email on one event, on one house, and the visitor should be
+  // able to read back exactly what they signed up for.
+  if (params.kind === 'price-drop') {
+    // Named watched, not home: the saved-HOME branch below owns the line
+    // that begins const home, and the contract test anchors its
+    // promises-no-feed slice on that exact line.
+    const watched = what || 'that home'
+    const bodyText = [
+      greet(params.firstName),
+      '',
+      `We are watching the price on ${watched}.`,
+      '',
+      'If the seller changes it, you get one email about that change. Nothing else, and you can stop it from any of them.',
+      params.listingUrl ? `\nThe home: ${params.listingUrl}` : null,
+      '',
+      `${signer.firstName} can tell you what comparable homes actually closed at, and whether this one is priced to sit. Pick a time whenever you want one: ${signer.bookHref}`,
+      '',
+      'Reply here if you want us to watch anything else.',
+    ]
+      .filter((line) => line !== null)
+      .join('\n')
+
+    return send({
+      personId: params.personId,
+      to: params.leadEmail,
+      purpose: 'alert:confirmation',
+      idempotencyKey: `alert-price-drop:${params.personId}:${watched.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`,
+      source: 'listing-price-watch',
+      broker: signer.crmSlug,
+      subject: `Watching the price on ${watched}`,
+      bodyText,
+    })
+  }
 
   if (params.kind === 'search') {
     const bodyText = [
@@ -211,6 +249,65 @@ export async function sendAlertConfirmation(params: {
     source: 'listing-save',
     broker: signer.crmSlug,
     subject: `${home} is saved`,
+    bodyText,
+  })
+}
+
+/**
+ * "Email me this payment" (SITE-06).
+ *
+ * A ONE-TIME send of a figure the visitor just built with their own hands on
+ * the listing page's calculator. It is a system confirmation of their own
+ * request (CLAUDE.md section 1) and it makes no promise of a second email, so
+ * there is no cadence and no subscription to unsubscribe from.
+ *
+ * SECTION 0: every number in `lines` is recomputed SERVER-SIDE by the caller
+ * from computeMonthlyPitiBreakdown before it reaches here — the browser's
+ * arithmetic never becomes an emailed figure — and the assumption sentence
+ * ships with it, because a payment with no stated rate, term and down payment
+ * is not a payment.
+ */
+export async function sendPaymentEstimate(params: {
+  personId: number | null
+  leadEmail: string
+  firstName?: string | null
+  /** The street line of the home. */
+  address: string
+  /** Canonical URL of the home. */
+  listingUrl: string
+  /** "$4,182 per month" — the total, already formatted. */
+  totalLine: string
+  /** The breakdown, one "label: value" string per line, already formatted. */
+  lines: string[]
+  /** "20% down, 6.67% over 30 years" — what the figure assumes. */
+  assumptions: string
+}): Promise<SiteConfirmationResult> {
+  if (params.personId == null) return { ok: false, via: 'skipped', error: 'no crm person for the lead' }
+  const signer = await resolveSigner(params.personId)
+
+  const bodyText = [
+    greet(params.firstName),
+    '',
+    `Here is the payment you worked out for ${params.address}.`,
+    '',
+    params.totalLine,
+    ...params.lines,
+    '',
+    `That assumes ${params.assumptions}. It is an estimate, not a quote — a lender writes the real one, and taxes and insurance move.`,
+    '',
+    `The home: ${params.listingUrl}`,
+    '',
+    `${signer.firstName} can tell you what this house is likely to actually sell for before you talk to a lender about it. Pick a time: ${signer.bookHref}`,
+  ].join('\n')
+
+  return send({
+    personId: params.personId,
+    to: params.leadEmail,
+    purpose: 'payment:estimate',
+    idempotencyKey: `payment-estimate:${params.personId}:${params.address.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}:${params.totalLine.replace(/[^0-9]/g, '')}`,
+    source: 'listing-payment',
+    broker: signer.crmSlug,
+    subject: `Your payment estimate for ${params.address}`,
     bodyText,
   })
 }

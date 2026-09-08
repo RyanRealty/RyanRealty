@@ -147,7 +147,9 @@ export default async function SellPage() {
   const bendPulse = bend
     ? applyDetachedOverlay({ monthsOfSupply: null as number | null, refreshedAt: '' }, bend)
     : null
-  const sellVerdict = stickyAskVerdict(bendPulse)
+  // The source the tail names is the read this page actually made: Market
+  // Truth detached figures off market_metric, never the pulse table.
+  const sellVerdict = stickyAskVerdict(bendPulse, 'market_metric, Bend detached (Market Truth)')
 
   // SITE-11. The reach strip carries the broker this page routes the lead to —
   // the attributed agent when an ad sent them, Matt otherwise — and its number
@@ -185,10 +187,13 @@ export default async function SellPage() {
       ]
     : []
 
-  // MATT HAS NOT RULED on publishing the two outcome strips: our closings read
-  // slower and lower than Bend's own median this window, and whether a seller
-  // page leads with that is his call. showOutcomes:false ships the record, the
-  // reviews and the reach now; the strips return by flipping this one prop.
+  // MATT RULED 2026-09-08: "hold those, we only want positive". The two outcome
+  // strips compare our closings to Bend's median, and this window they read
+  // slower and lower (52 days to contract against 29; 93.7% of the first ask
+  // against 97.0%, n=7), so they do not go on a seller-facing page. The block
+  // ships the record, the reviews and the reach, and says only what it shows.
+  // The figures themselves are untouched — this is what we publish, not what we
+  // measured. Recorded in docs/plans/PUBLIC_PRODUCT/decisions.md.
   const proofView = proof
     ? proofBlockView({
         block: proof,

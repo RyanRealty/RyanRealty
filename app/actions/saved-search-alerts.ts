@@ -4,8 +4,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import { getAreaIdsFromFilters, resolveAreasToShapeSet } from '@/lib/alerts/area-resolve'
 import { getAreasByIds, type SearchShapes } from '@/lib/data'
-import type { ListingTileRow } from '@/app/actions/listings'
-import { hasNarrowingFilter } from '@/lib/search-filters'
+import { getListingsByKeys, type ListingTileRow } from '@/app/actions/listings'
+import { hasNarrowingFilter, watchedListingKey } from '@/lib/search-filters'
 import {
   getActiveListingAlertsDue,
   getListingAlertsByIds,
@@ -226,7 +226,16 @@ export async function runListingAlerts(options?: {
         }
         areaShapes = resolved
       }
-      const results = await getCachedSearchListings(filters, 1, 15, areaShapes)
+      // SITE-06 single-home watch. `listingKey` names ONE house, so it never
+      // reaches the search matcher: `savedFiltersToAdvanced` has no exact-key
+      // predicate, so handing this filter set to getCachedSearchListings would
+      // silently drop the only narrowing key and match the whole feed. The
+      // short-circuit is the guard, and it is why the key is safe to store in
+      // the same jsonb column as the search criteria.
+      const watchKey = watchedListingKey(filters)
+      const results = watchKey
+        ? { listings: await getListingsByKeys([watchKey]) }
+        : await getCachedSearchListings(filters, 1, 15, areaShapes)
       // Hidden homes ("Hide homes I don't want to see"): excluded from the
       // matched set BEFORE the event diff below, so a hidden home never fires
       // an event, never lands in an email, and never enters the notified

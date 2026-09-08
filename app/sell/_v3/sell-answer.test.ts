@@ -10,12 +10,11 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import {
   sellAnswerClaim,
   sellAnswerHasSubstance,
   sellAnswerReadings,
-  sellSupplyBars,
-  sellSupplySentence,
   type SellAnswerData,
 } from './sell-answer'
 import { splitSellAddress } from './sell-answer'
@@ -44,19 +43,48 @@ const BEND: SellAnswerData = {
   compCount: 6,
   subjectFound: true,
   subjectSummary: '4 bed, 3 bath, 2,410 sq ft, built 2006',
-  comps: [
-    {
-      id: 'k1',
-      street: '2515 NW Crossing Dr',
-      where: 'NorthWest Crossing',
-      facts: '4 bed · 3 bath · 2,388 sq ft · built 2005',
-      when: 'Closed July 2026',
-      proximity: '0.4 miles NW',
-    },
-  ],
+  figures: [],
   asOfLabel: 'Sep 8, 2026',
   trace: ['months of supply 3.9 (seller’s market) — market_metric city:bend'],
 }
+
+/**
+ * Six comparable closes, address-free and price-free, as the ladder hands them
+ * over. Six is the floor the strip draws at (V3_DRAWING_MIN_STRIP), so this is
+ * the smallest honest distribution.
+ */
+const MARKS = [
+  { id: 'k1', closeDate: '2026-07-14', sqft: 2388, beds: 4, baths: 3, proximity: '0.4 miles NW' },
+  { id: 'k2', closeDate: '2026-07-02', sqft: 2510, beds: 4, baths: 3, proximity: '0.6 miles N' },
+  { id: 'k3', closeDate: '2026-06-19', sqft: 2295, beds: 3, baths: 2, proximity: '0.3 miles W' },
+  { id: 'k4', closeDate: '2026-05-30', sqft: 2440, beds: 4, baths: 3, proximity: null },
+  { id: 'k5', closeDate: '2026-04-11', sqft: 2360, beds: 4, baths: 2, proximity: '1.1 miles S' },
+  { id: 'k6', closeDate: '2026-03-27', sqft: 2470, beds: 4, baths: 3, proximity: '0.8 miles E' },
+]
+
+const FIGURES = () =>
+  buildAnswerFigures({
+    placeLabel: 'Bend',
+    street: '2732 NW Ordway Ave',
+    monthsOfSupply: '3.9',
+    verdictLabel: "seller's market",
+    activeCount: 671,
+    salesPerMonth: salesPerMonthFrom(671, 3.88610038610039),
+    daysToPending: 23,
+    cityDaysToPending: null,
+    cityLabel: null,
+    compMarks: MARKS,
+    compCount: MARKS.length,
+    subjectFound: true,
+    subjectSummary: '4 bed, 3 bath, 2,410 sq ft, built 2006',
+    asOfLabel: 'Sep 8, 2026',
+    sources: {
+      supply: 'months of supply 3.9 — market_metric city:bend',
+      pace: 'days to pending 23 — market_metric city:bend',
+      comps: 'comparable closes 6 — Ryan Realty CMA comp ladder',
+    },
+    unmatchedSentence: 'We could not match it on the first pass. A broker does that by hand.',
+  })
 
 describe('the answer says something, in a sentence, with no price', () => {
   it('leads with the verdict as a claim', () => {
@@ -71,7 +99,14 @@ describe('the answer says something, in a sentence, with no price', () => {
   it('never prints a dollar figure anywhere in the body it renders', () => {
     const rendered = [
       sellAnswerClaim(BEND),
-      sellSupplySentence(BEND) ?? '',
+      ...FIGURES().flatMap((f) => [
+        f.claim,
+        f.caption,
+        f.verdict ?? '',
+        f.emptyReason ?? '',
+        ...(f.bars ?? []).flatMap((b) => [b.name, b.label, b.note ?? '']),
+        ...(f.points ?? []).flatMap((p) => [p.tick, p.label]),
+      ]),
       ...sellAnswerReadings(BEND).flatMap((r) => [r.value, r.label, r.sentence, r.detail]),
     ].join(' ')
     expect(rendered).not.toMatch(/\$/)
@@ -80,36 +115,209 @@ describe('the answer says something, in a sentence, with no price', () => {
   })
 })
 
+/*
+ * SITE-02b moved the three drawn figures out of this module and into
+ * lib/site/answer-figures.ts, which is the ONE shaping the community ask and
+ * /sell both call — so the assertions that used to run against sellSupplyBars /
+ * sellSupplySentence / sellBarReading (all three deleted with the hand-rolled
+ * bars they fed) now run against buildAnswerFigures. The RULES they check did
+ * not change: the pace recovery is still exact, the shorter bar is still read
+ * against the taller one, one missing side still draws nothing, and the months
+ * figure is still printed exactly as the server formatted it.
+ */
 describe('months of supply is drawn, not asserted', () => {
+  const supply = () => FIGURES().find((f) => f.key === 'supply')
+
   it('recovers the monthly pace exactly: active / MOS is the six-month close pace', () => {
     // market_metric 2026-09-08: active 671, MOS 3.88610038610039 over sample_n
     // 1036 closes in six months. 1036 / 6 = 172.67, and 671 / 3.886 = 172.67.
-    const bars = sellSupplyBars(BEND)
-    expect(bars).not.toBeNull()
-    expect(bars?.sold.count).toBe(173)
+    expect(Math.round(salesPerMonthFrom(671, 3.88610038610039) ?? 0)).toBe(173)
     expect(Math.round((1036 / 6) * 100) / 100).toBe(172.67)
+    // The bar's VALUE is the true pace, so the bar's length is proportional to
+    // the real number; the LABEL is what the reader reads, and it rounds only
+    // when the rounded division still lands on the published months of supply
+    // (671 / 173 = 3.9, so 173 here). Sunriver on the same day proved why the
+    // two differ: 48 against 8.28 printed as 8, and 48 / 8 is 6.0 — a buyer's
+    // market under a caption that said balanced. lib/site/answer-figures.ts.
+    const bars = supply()?.bars ?? []
+    expect(bars.map((b) => b.name)).toEqual(['For sale right now', 'Under contract in a month'])
+    expect(bars[0]?.value).toBe(671)
+    expect(bars[1]?.value).toBeCloseTo(172.67, 1)
+    expect(bars.map((b) => b.label)).toEqual(['671', '173'])
+    expect((671 / Number(bars[1]?.label)).toFixed(1)).toBe('3.9')
   })
 
-  it('scales the shorter bar against the taller one, never an invented ceiling', () => {
-    const bars = sellSupplyBars(BEND)
-    expect(bars?.forSale.pct).toBe(100)
-    expect(bars?.sold.pct).toBeCloseTo((173 / 671) * 100, 1)
+  it('draws two named counts on one scale, never one bar and never a tile', () => {
+    const bars = supply()?.bars ?? []
+    expect(bars).toHaveLength(2)
+    expect(bars[0]?.name).toBe('For sale right now')
+    expect(bars[1]?.name).toBe('Under contract in a month')
+    // The verdict is the figure's CAPTION, which is the whole point of drawing
+    // it: no tile anywhere says "3.9" on its own.
+    expect(supply()?.verdict).toBe(
+      "That is 3.9 months of homes on the market, which is a seller's market.",
+    )
   })
 
   it('draws nothing when either side is missing', () => {
-    expect(sellSupplyBars({ ...BEND, activeCount: null })).toBeNull()
-    expect(sellSupplyBars({ ...BEND, salesPerMonth: null })).toBeNull()
+    const noActive = buildAnswerFigures({
+      placeLabel: 'Bend',
+      street: 'x',
+      monthsOfSupply: '3.9',
+      verdictLabel: "seller's market",
+      activeCount: null,
+      salesPerMonth: 173,
+      daysToPending: null,
+      cityDaysToPending: null,
+      cityLabel: null,
+      compMarks: [],
+      compCount: null,
+      subjectFound: false,
+      subjectSummary: null,
+      asOfLabel: null,
+      sources: { supply: 'trace' },
+      unmatchedSentence: 'no match',
+    })
+    expect(noActive.find((f) => f.key === 'supply')).toBeUndefined()
+    expect(salesPerMonthFrom(671, null)).toBeNull()
+    expect(salesPerMonthFrom(671, 0)).toBeNull()
   })
 
   it('prints the months figure exactly as the server formatted it (G68)', () => {
-    expect(sellSupplySentence(BEND)).toContain('3.9 months')
+    expect(supply()?.verdict).toContain('3.9 months')
     // Nothing in the answer path rounds or reclassifies the figure itself.
-    for (const src of [body, read('app/sell/_v3/sell-answer.ts')]) {
+    for (const src of [
+      body,
+      read('app/sell/_v3/sell-answer.ts'),
+      read('lib/site/answer-figures.ts'),
+    ]) {
       expect(src).not.toMatch(/monthsOfSupply[A-Za-z0-9_$.?]*\.toFixed\(/)
       // The classifier is imported and called on the SERVER only. Neither the
-      // shaping module nor the rendered body may reach for it.
+      // shaping modules nor the rendered body may reach for it.
       expect(src).not.toMatch(/from ['"]@\/lib\/market\/classify['"]/)
       expect(src).not.toMatch(/from ['"]@\/lib\/format\/months-of-supply['"]/)
+    }
+  })
+})
+
+describe('the pace and the comparable sales are drawings, not rows', () => {
+  it('puts days to pending on a 0-to-120 rule with the city median as context', () => {
+    const withCity = buildAnswerFigures({
+      placeLabel: 'NorthWest Crossing',
+      street: '2732 NW Ordway Ave',
+      monthsOfSupply: null,
+      verdictLabel: null,
+      activeCount: null,
+      salesPerMonth: null,
+      daysToPending: 23,
+      cityDaysToPending: 31,
+      cityLabel: 'Bend',
+      compMarks: [],
+      compCount: null,
+      subjectFound: false,
+      subjectSummary: null,
+      asOfLabel: null,
+      sources: { pace: 'days to pending 23 — market_metric neighborhood:northwest-crossing' },
+      unmatchedSentence: 'no match',
+    })
+    const pace = withCity.find((f) => f.key === 'pace')
+    expect(pace?.draw).toBe('rule')
+    expect(pace?.axis).toEqual({
+      min: 0,
+      max: 120,
+      ticks: [
+        { at: 0, label: '0' },
+        { at: 30, label: '30' },
+        { at: 60, label: '60' },
+        { at: 90, label: '90' },
+        { at: 120, label: '120 days' },
+      ],
+    })
+    expect(pace?.context).toEqual({ value: 31, label: 'Bend 31' })
+    expect(pace?.points?.[0]?.at).toBe(23)
+  })
+
+  it('grows the rule rather than pinning a slower market to its end', () => {
+    const slow = buildAnswerFigures({
+      placeLabel: 'Brasada Ranch',
+      street: 'x',
+      monthsOfSupply: null,
+      verdictLabel: null,
+      activeCount: null,
+      salesPerMonth: null,
+      daysToPending: 148,
+      cityDaysToPending: null,
+      cityLabel: null,
+      compMarks: [],
+      compCount: null,
+      subjectFound: false,
+      subjectSummary: null,
+      asOfLabel: null,
+      sources: { pace: 'trace' },
+      unmatchedSentence: 'no match',
+    })
+    expect(slow.find((f) => f.key === 'pace')?.axis?.max).toBe(150)
+  })
+
+  it('plots every comparable close by its month, with no address and no price', () => {
+    const comps = FIGURES().find((f) => f.key === 'comps')
+    expect(comps?.draw).toBe('strip')
+    expect(comps?.points).toHaveLength(6)
+    // Oldest first: March 2026 on the left.
+    expect(comps?.points?.[0]?.tick).toBe('March 2026')
+    // The two July closes share one x, which is the point of a strip: they
+    // stack in lanes instead of overprinting each other.
+    expect(comps?.points?.slice(4).map((p) => p.tick)).toEqual(['July 2026', 'July 2026'])
+    expect(comps?.points?.map((p) => p.label).join(' ')).toContain('2,388 sq ft')
+    for (const point of comps?.points ?? []) {
+      expect(point.label).not.toMatch(/\$/)
+      // No street line reaches a mark: the ladder's rows arrive as
+      // PlaceCompMark, which has no address field to render.
+      expect(point.label).not.toMatch(/\b(Ave|Dr|Ln|St|Rd|Loop|Ct)\b/)
+    }
+  })
+
+  it('says so plainly when the address did not match a sales record', () => {
+    const unmatched = buildAnswerFigures({
+      placeLabel: 'Bend',
+      street: '2732 NW Ordway Ave',
+      monthsOfSupply: null,
+      verdictLabel: null,
+      activeCount: null,
+      salesPerMonth: null,
+      daysToPending: null,
+      cityDaysToPending: null,
+      cityLabel: null,
+      compMarks: [],
+      compCount: null,
+      subjectFound: false,
+      subjectSummary: null,
+      asOfLabel: null,
+      sources: { comps: 'comparable closes unmatched — the address did not resolve' },
+      unmatchedSentence: 'Nothing in the sales record matches 2732 NW Ordway Ave on the first pass.',
+    })
+    const comps = unmatched.find((f) => f.key === 'comps')
+    expect(comps?.claim).toContain('Nothing in the sales record matches')
+    // The claim says what happened; the quiet line says what happens next. It
+    // used to repeat the claim word for word under itself (browser, 2026-09-08).
+    expect(comps?.emptyReason).toContain('by hand')
+    expect(comps?.emptyReason).not.toContain('Nothing in the sales record')
+    expect(comps?.points).toHaveLength(0)
+  })
+
+  it('every drawn figure carries its own section-0 source', () => {
+    for (const figure of FIGURES()) {
+      expect(figure.source.trim().length).toBeGreaterThan(10)
+      expect(figure.claim.trim().length).toBeGreaterThan(10)
+    }
+  })
+
+  it('speaks with one voice across the three claims', () => {
+    // "We already found 8 recent sales" beside "48 homes are for sale" was a
+    // voice shift the separate evaluator called jarring on both surfaces
+    // (2026-09-08). Every claim states the fact; none of them says "we".
+    for (const figure of FIGURES()) {
+      expect(figure.claim).not.toMatch(/\b[Ww]e\b/)
     }
   })
 })
@@ -123,11 +331,10 @@ describe('the readings are sentences, not a KPI grid', () => {
     }
   })
 
-  it('says so plainly when the address did not match a sales record', () => {
-    const unmatched = sellAnswerReadings({ ...BEND, subjectFound: false, compCount: null })
-    const comps = unmatched.find((r) => r.key === 'comps')
-    expect(comps?.sentence).toContain('could not match')
-    expect(comps?.sentence).toContain('by hand')
+  it('keeps only the figures that have no drawing of their own', () => {
+    // Pace and the comparable-sales count are DRAWN now (SITE-02b). A figure
+    // said twice on one screen is the repetition TASTE.md calls a wall of text.
+    expect(sellAnswerReadings(BEND).map((r) => r.key)).toEqual(['cash'])
   })
 
   it('has substance only when a figure actually published', () => {
@@ -228,10 +435,15 @@ describe('the page wires the two round-one primitives', () => {
 
   it('feeds the sticky the same months of supply the Instrument prints', () => {
     expect(page).toContain('applyDetachedOverlay(')
-    expect(page).toContain('stickyAskVerdict(bendPulse)')
+    expect(page).toContain('stickyAskVerdict(bendPulse')
     // /sell publishes Market Truth DETACHED, never the mixed-type live pulse
     // bucket — the rule lib/data/market-truth/getSellBendMarket.test.ts asserts.
     expect(page).toContain('getSellBendMarket')
+    // …and the tail's source line must name THAT read. The control shipped
+    // printing "Source: market_pulse_live" for a market_metric figure on
+    // 2026-09-08; the source is a caller argument now, so this page states it.
+    expect(page).toContain("stickyAskVerdict(bendPulse, 'market_metric, Bend detached (Market Truth)')")
+    expect(page).not.toContain('market_pulse_live')
   })
 
   it('ships the proof block with the outcome strips off until Matt rules', () => {

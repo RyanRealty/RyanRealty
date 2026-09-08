@@ -309,9 +309,9 @@
     visibility 0s;
 }
 
-/* THE RESTING PHONE ROW: the sentence, the one control, the close. The field
-   and the disclosure are not in it (below) — they arrive when the visitor asks
-   for them, which is what keeps this under a tenth of an 812px viewport. */
+/* THE DEFAULT ROW: the sentence, the controls, the close, side by side. The
+   phone overrides this to a stack further down — three columns inside 375px
+   gives the sentence a gutter and the button less room than its own label. */
 .v3-alerts-sticky__inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -346,25 +346,88 @@
   }
 }
 
-/* Below that, the ask is closed until it is asked for. Two rules, one state:
-   the field and the line that discloses what the field signs you up for arrive
-   together, so the promise is on screen whenever the control is. */
+/* Below that, the FIELD is closed until it is asked for — but nothing else is.
+   The first attempt at this put the sentence, the button and the close in one
+   375px row and hid the disclosure with the field, and the evaluator measured
+   what that costs: the sentence squeezed into a 145px column, a button clamped
+   to 7.5rem with the glyphs of its own label running 4px past the border on
+   both sides, and a bar that asked for an email while showing neither the scope
+   nor the unsubscribe. Smaller, and worse.
+   So the phone stacks instead: the sentence gets the measure, the disclosure
+   stays on screen because it is the promise the button is collecting against,
+   and the control takes its own full-width row where its label fits. That runs
+   taller than a single row and shorter than the row-plus-field it replaced. */
 @media (max-width: 47.99rem) {
-  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__control,
-  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__note {
+  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'line dismiss'
+      'controls controls';
+  }
+
+  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__control {
     display: none;
   }
 
   .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__controls {
-    grid-template-columns: auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  /* The label wraps rather than pushing the sentence into a gutter-wide column;
-     the control keeps its 44px box either way. */
+  /* The control sizes to the row, never the row to the control: a max-width on
+     a button whose label is set by the caller is a guess about someone else's
+     words. */
   .v3.v3-alerts-sticky .v3-btn {
     white-space: normal;
-    max-width: 7.5rem;
+    width: 100%;
+    min-height: var(--v3-tap);
     padding-inline: var(--v3-space-sm);
+  }
+
+  /* A persistent bar earns its height. Stacked and honest, the first build of
+     this ran 194px of an 812 screen (24%) because the shared sentence wraps to
+     four lines at the body size and the numeral is set at a display clamp. The
+     sentence is the caller's and the note is the promise, so neither is cut:
+     the leading tightens, the numeral comes down to the sentence's own scale,
+     and the rows sit closer. The note holds 1rem, because cream-60 on navy is
+     only legible at 16px and up (PUBLIC_UI section 4) and it is the line that
+     carries the scope and the unsubscribe.
+     These carry the .v3 prefix deliberately: the base rules for the same
+     elements sit further down this file, so an unprefixed override at equal
+     specificity would lose on source order. */
+  .v3.v3-alerts-sticky .v3-alerts-sticky__line,
+  .v3.v3-alerts-sticky .v3-alerts-sticky__note {
+    line-height: var(--v3-leading-control);
+  }
+
+  .v3.v3-alerts-sticky .v3-alerts-sticky__line {
+    font-size: var(--v3-size-body-sm);
+  }
+
+  /* The note goes to FULL cream here, and that is what lets it come down in
+     size. Muted cream is legible on navy only at 16px and up, so a muted note
+     had to be set larger than the claim above it — the secondary line ended up
+     the biggest type in the bar, which is the hierarchy upside down. Full cream
+     is 14.8:1 at any size, so the promise can sit under the claim where it
+     belongs and give a wrapped line back at the same time. */
+  .v3.v3-alerts-sticky .v3-alerts-sticky__note {
+    color: var(--v3-ink-on-navy);
+    font-size: var(--v3-size-body-sm);
+  }
+
+  /* The close belongs in the corner. Centred against the whole text block it
+     sat inside the note's line box, cutting its measure by the width of the
+     glyph plus its gap and buying a fourth wrapped line — the height came back
+     by moving one control. */
+  .v3.v3-alerts-sticky .v3-alerts-sticky__dismiss {
+    align-self: start;
+  }
+
+  .v3.v3-alerts-sticky .v3-alerts-sticky__num {
+    font-size: 1.5rem;
+  }
+
+  .v3.v3-alerts-sticky .v3-alerts-sticky__inner {
+    gap: var(--v3-space-2xs) var(--v3-space-sm);
   }
 }
 

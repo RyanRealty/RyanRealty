@@ -941,6 +941,17 @@
   border-top: 0;
 }
 
+/* SITE-06 — THE ENDING. The rule above strips every barrel section's own band
+   inside this column, which is right for a Quiet or a Ledger sitting mid page:
+   one cream column, hairlines, no stack of full-bleed bands. The close is the
+   page's LAST word and has to read as one object, so it takes back the section
+   rule and a little more air above it — and nothing else. It is still a block
+   in the column, not a band across the viewport. */
+.listing-detail-main > .v3.v3-close {
+  padding: var(--v3-space-xl) 0 var(--v3-space-lg);
+  border-top: var(--v3-rule-section);
+}
+
 .listing-detail-main .sec-head {
   padding-top: 0;
 }

@@ -1,5 +1,5 @@
 import type { AdvancedListingsFilters } from '@/app/actions/listings'
-import { homesForSalePath, listingsBrowsePath } from '@/lib/slug'
+import { homesForSalePath, listingsBrowsePath, listingByKeyPath } from '@/lib/slug'
 import { hrefForNeighborhoodSlug, labelForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { SEARCH_FIELDS, ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 
@@ -8,6 +8,11 @@ export type SavedSearchFilters = Record<string, unknown>
 type Primitive = string | number | boolean
 
 const LEGACY_FILTER_KEYS = [
+  // SITE-06: the ONE key that pins a saved alert to a single home. Everything
+  // else in this list narrows a SET; this names a house. The alert engine
+  // short-circuits on it (app/actions/saved-search-alerts.ts) and never hands
+  // it to the search matcher, so it can only ever match one listing.
+  'listingKey',
   'city',
   'subdivision',
   'neighborhoodSlug',
@@ -67,6 +72,7 @@ const REGISTRY_TEXT_KEYS = new Set(
 const LEGACY_ARRAY_KEYS = new Set(['cities', 'viewContainsAny', 'areaIds'])
 
 const LEGACY_STRING_KEYS = new Set([
+  'listingKey',
   'city', 'subdivision', 'neighborhoodSlug', 'postalCode', 'propertyType',
   'propertySubType', 'statusFilter', 'keywords', 'viewContains', 'sort', 'view', 'poly',
 ])
@@ -354,6 +360,10 @@ export function savedFiltersToAdvanced(filters: SavedSearchFilters): AdvancedLis
 
 export function buildSearchUrlFromFilters(filters: SavedSearchFilters): string {
   const normalized = normalizeSavedSearchFilters(filters)
+  // SITE-06: a single-home watch links to the home, not to a search that
+  // would carry `?listingKey=` as a param no search surface reads.
+  const watchKey = asTrimmedString(normalized.listingKey)
+  if (watchKey) return listingByKeyPath(watchKey)
   const city = asTrimmedString(normalized.city)
   const subdivision = asTrimmedString(normalized.subdivision)
   const neighborhoodSlug = asTrimmedString(normalized.neighborhoodSlug)
@@ -391,6 +401,9 @@ export function buildSearchUrlFromFilters(filters: SavedSearchFilters): string {
 
 export function getFiltersSummary(filters: SavedSearchFilters): string {
   const normalized = normalizeSavedSearchFilters(filters)
+  // A single-home watch has no criteria to summarize; it has a house. The row's
+  // own `name` carries the street line, so this stays plain and true.
+  if (asTrimmedString(normalized.listingKey)) return 'One home you asked us to watch'
   const parts: string[] = []
   const beds = asNumber(normalized.beds)
   const baths = asNumber(normalized.baths)
@@ -421,6 +434,7 @@ export function getFiltersSummary(filters: SavedSearchFilters): string {
 
 export function getFilterNameFallback(filters: SavedSearchFilters): string {
   const normalized = normalizeSavedSearchFilters(filters)
+  if (asTrimmedString(normalized.listingKey)) return 'One home you asked us to watch'
   const city = asTrimmedString(normalized.city)
   const subdivision = asTrimmedString(normalized.subdivision)
   const neighborhoodSlug = asTrimmedString(normalized.neighborhoodSlug)
@@ -444,6 +458,19 @@ export function getFilterNameFallback(filters: SavedSearchFilters): string {
 const NON_NARROWING_KEYS = new Set([
   'view', 'sort', 'poly', 'statusFilter', 'includeClosed',
 ])
+
+/**
+ * The single home a saved-alert row watches, or null for an ordinary search.
+ *
+ * SITE-06. The one filter key that names a HOUSE rather than narrowing a set.
+ * Every consumer asks through this function so "is this a single-home watch?"
+ * has one answer: the alert engine short-circuits on it, the URL builder links
+ * to the home, and the summary says so in English.
+ */
+export function watchedListingKey(filters: SavedSearchFilters): string | null {
+  const normalized = normalizeSavedSearchFilters(filters)
+  return asTrimmedString(normalized.listingKey) ?? null
+}
 
 /**
  * True when the normalized filters carry at least one predicate that actually

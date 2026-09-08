@@ -217,9 +217,16 @@ export type V3SheetCompareRow = {
 }
 
 /**
- * Structured step content. Closed on purpose: these three shapes are what section 3's
+ * Structured step content. Closed on purpose: these shapes are what section 3's
  * comparison and plan-detail jobs need, and a closed set is what keeps a migration from
  * reaching outside the barrel or reshaping its content to fit a form.
+ *
+ * `drawing` was added 2026-09-08 (site queue SITE-02b) and is the one member that carries
+ * a node rather than data. A step that ANSWERS — the place-value ask, once the visitor has
+ * typed an address — has to put a drawing between its prose and its forward action, and the
+ * data shapes above cannot express one. The rule the closed set protects is unchanged: the
+ * node must be a barrel primitive (V3Drawing, V3Chart), never a page's own markup, so this
+ * is not a door out of the register.
  */
 export type V3SheetBlock =
   | {
@@ -233,6 +240,17 @@ export type V3SheetBlock =
       kind: 'facts'
       label?: string
       items: readonly V3SheetFact[]
+    }
+  | {
+      /**
+       * A drawing, rendered between the step's prose and its forward action. The node is a
+       * barrel primitive — V3Drawing for a drawn answer, V3Chart for a series — never a
+       * caller's own markup.
+       */
+      kind: 'drawing'
+      /** Names the drawing for a screen reader when it needs naming above the primitive. */
+      label?: string
+      node: ReactNode
     }
   | {
       /** A comparison. Two or three columns. More does not fit 390. */
@@ -437,6 +455,11 @@ type ReadyBlock =
       items: string[]
     }
   | {
+      kind: 'drawing'
+      label?: string
+      node: ReactNode
+    }
+  | {
       kind: 'facts'
       label?: string
       items: V3SheetFact[]
@@ -598,6 +621,14 @@ function normalizeBlocks(
       const items = (block.items ?? []).map((item) => (item ?? '').trim()).filter(Boolean)
       if (items.length === 0) continue
       out.push({ kind: 'points', label: text(block.label), items })
+      continue
+    }
+
+    if (block.kind === 'drawing') {
+      // A drawing with nothing in it is not a block. Everything else about the
+      // node is the primitive's own contract, not the sheet's.
+      if (block.node == null || block.node === false) continue
+      out.push({ kind: 'drawing', label: text(block.label), node: block.node })
       continue
     }
 
@@ -877,6 +908,19 @@ type BlockViewProps = {
 
 function BlockView({ block, idSeed }: BlockViewProps) {
   const labelId = `${idSeed}-label`
+
+  if (block.kind === 'drawing') {
+    return (
+      <div className="v3-sheet-block v3-sheet-block--drawing">
+        {block.label ? (
+          <p className="v3-sheet-block-label" id={labelId}>
+            {block.label}
+          </p>
+        ) : null}
+        {block.node}
+      </div>
+    )
+  }
 
   if (block.kind === 'points') {
     return (

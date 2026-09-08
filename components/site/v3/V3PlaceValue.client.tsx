@@ -20,6 +20,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from './V3Sheet'
+import { V3Drawing } from './V3Drawing.client'
 import { V3Button } from './atoms'
 import { readRrSessionId, trackEvent } from '@/lib/tracking'
 import type {
@@ -162,14 +163,14 @@ export function V3PlaceValue({ slug, placeName, answer, request, id, className }
         // not match a record: the echo is off on this sheet, so this is the
         // one place the typed address comes back to the visitor.
         children: [`For ${got.address}.`, ...got.body],
-        blocks: got.facts.length
-          ? [
-              {
-                kind: 'facts',
-                label: `${placeName} right now`,
-                items: got.facts.map((f) => ({ label: f.label, value: f.value, ...(f.note ? { note: f.note } : {}) })),
-              },
-            ]
+        // THE ANSWER IS DRAWN (site queue SITE-02b). This was a `facts` block —
+        // a definition list of "Months of supply 3.9" pairs — and the separate
+        // evaluator scored the page 59 with that named as the defect: "a
+        // label/value ledger rather than a drawing". V3Drawing draws the three
+        // figures instead, each with its own source line, and each one answers
+        // a hover, a tap and the keyboard with the window behind it.
+        blocks: got.figures.length
+          ? [{ kind: 'drawing', node: <V3Drawing figures={got.figures} label={`${placeName} right now`} /> }]
           : undefined,
         source: got.source,
         advanceLabel: 'Send me the written valuation',

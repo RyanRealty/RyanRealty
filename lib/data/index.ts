@@ -414,6 +414,12 @@ export type {
 } from '@/lib/data/proof/getProofBlock'
 export type { ProofOutcomeRow, ProofOutcomes } from '@/lib/data/proof/outcomes'
 
+// Listing close (SITE-06): how often a home in THIS city cut before it sold,
+// how deep, and how long it waited for a contract. Market Truth cells pinned
+// to a 12-month window, each figure carrying its own trace.
+export { getListingCutFacts, CUT_FACTS_WINDOW_MONTHS } from '@/lib/data/market-truth/getListingCutFacts'
+export type { ListingCutFacts, ListingCutFigure } from '@/lib/data/market-truth/getListingCutFacts'
+
 // Engagement counts (per-listing view/like/save/share)
 export {
   getEngagementCountsBatch,
