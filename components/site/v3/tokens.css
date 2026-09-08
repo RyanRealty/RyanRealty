@@ -669,15 +669,50 @@
   margin: 0;
 }
 
+/* THE SUMMARY IS THE CONTROL, SO IT CARRIES THE 44px FLOOR (ci:tap-targets,
+   WCAG 2.5.5/2.5.8). It was a 70x18 line of small caps: a word a thumb has to
+   hit exactly. It centres itself in a tap-height box, so the mark on the page
+   is the same word and only the hit area grows. Same shape the two other
+   Source disclosures in this system already use — V3Atlas.css
+   .v3-atlas__source-summary and V3ChartCard.css .v3-chartcard__source-summary
+   — including their drawn caret, because a flex box generates no ::marker and
+   a disclosure with no affordance reads as a label. */
 .v3 .v3-source-disclosure__summary,
 .v3.v3-source-disclosure .v3-source-disclosure__summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
   cursor: pointer;
   width: fit-content;
+  list-style: none;
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
   color: var(--v3-ink-muted);
+}
+
+.v3 .v3-source-disclosure__summary::-webkit-details-marker,
+.v3.v3-source-disclosure .v3-source-disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .v3-source-disclosure__summary::before,
+.v3.v3-source-disclosure .v3-source-disclosure__summary::before {
+  content: '';
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-right: var(--v3-space-2xs);
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-source-disclosure[open] .v3-source-disclosure__summary::before,
+.v3.v3-source-disclosure[open] .v3-source-disclosure__summary::before {
+  transform: rotate(45deg);
 }
 
 .v3 .v3-source-disclosure[open] .v3-source-disclosure__summary,
