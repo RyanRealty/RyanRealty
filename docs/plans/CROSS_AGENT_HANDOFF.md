@@ -1,50 +1,64 @@
-# Current — 2026-09-08 (round 3 interrupted by a container restart; everything recovered, nothing on main yet)
+# Current — 2026-09-08 (round 3 landed on main: the answer draws, the listing page ends, two §0 defects fixed)
 
-Owner: Claude (Opus 5), session 01Aubwpa. **Read this before touching SITE-02b or SITE-06.**
+Owner: Claude (Opus 5), session 01Aubwpa. **main is at `c26a68d3e`.** Round 3 is on main, gated,
+and its evidence is written to both nodes (`89efe5a4` SITE-02b, `b2366127` SITE-06). 24 commits
+landed in one push: `ci:gates OK · 188/188 passed · 62.1s`.
 
-**What happened.** A round of two lanes (SITE-02b the drawing primitive, SITE-06 the listing
-ending) was running in workflow worktrees when the container restarted. The workflow died. Both
-lanes' work survived on disk and is now committed and pushed; the SITE-06 lane had committed
-NOTHING, so its whole change set was recovered out of the worktree by hand.
+**What shipped.**
+- **SITE-02b — the answer drawn.** `V3Drawing` plus `lib/charts/plot.ts` (+226) and `ticks.ts`:
+  two answer geometries, named counts on one scale and marks on one axis. Wired into the
+  community ask and the /sell answer. The city chart's falling year now wears the exception ink
+  and its year labels stop overprinting.
+- **SITE-06 — the listing page gets an ending.** `V3ListingClose` (waffle / bar / rule drawings
+  behind a three-act chooser) on `getListingCutFacts`.
 
-**Where the work is.** Integration branch `origin/claude/run-loop-pcp7q3` at **0df89ac08** —
-main plus the proof ruling plus both lanes merged clean (the only merge fix was re-seeding
-`scripts/shot-weight-baseline.json`, because the lane re-shot listing-detail/desktop.png at
-275,173 bytes and the shrink-only list had to drop it). Lane branches also on origin:
-`wt/site-02b-drawing` (062157fd2), `wt/site-06-listing-ending` (387a6b6bf),
-`wt/site-02b-eval` (its evaluator's branch).
+**Two §0 defects found and fixed on the way, both on live or soon-live pages.**
+1. **The pill published a banned field.** The price strip printed `listing.dom`, which is
+   `row.DaysOnMarket` — list-to-close, banned as DOM by §7 — while the close section computed
+   days from `onMarketDate`. Same page, 106 against 110. There is now one definition,
+   `lib/listing/days-live.ts`, and both read it.
+2. **The two bars did not divide back to the verdict beside them.** Sunriver drew 48 active and
+   a pace label of 8 under a caption reading 5.8 months / balanced; 48 / 8 is 6.0, a buyer's
+   market. `paceLabel` in `lib/site/answer-figures.ts` now keeps the whole number only when the
+   division still lands on the published months of supply, so Bend still reads 173 (671 / 173 =
+   3.9) and Sunriver reads 8.3. Pinned by `lib/site/answer-figures.test.ts`.
 
-**NOT DONE, and this is the important part.** Nothing from round 3 is on main, and I did NOT
-verify either lane. The gate chain has not run on 0df89ac08, no evaluator score has been read
-or recorded, and no `tasteReview` receipt exists for either page class. Treat both lanes as
-unproven work in a safe place, not as finished items.
+Also landed: the Source disclosure and the 3D-tour control got real 44px tap targets (WCAG
+2.5.5); the close section's date goes through `formatCalendarDay` and its anchor is named where
+the page names it; and `scripts/take-route-shots.mjs` now hides the Next dev badge — it was
+sitting in the corner of every shot any evaluator has ever scored.
 
-**SITE-06 needs an adversarial read before it is trusted**: the lane edited a GATE
-(`scripts/check-alert-capture-disclosure.mjs`) and the governed-send path
-(`lib/comms/site-confirmations.ts`). A payment email to a visitor is a system confirmation only
-if that visitor just asked for it (CLAUDE.md §1); read that diff before running anything.
-
-**Landed on main earlier in this session:** the §0 fix where the sticky ask published
-`Source: market_pulse_live` for a `market_metric` figure (4fb0ccb07, verified live), and
-before that the round-1 primitives and their /sell wiring.
+**Taste receipts, honestly.** Three under the tightened instrument contract, evaluator
+`claude-sonnet-5`, rubric `v1-2026-09-08`: listing-detail **87** (`first`), sell **71**,
+community **60** — both `rebaselined`, not `rose`. The priors differ on evaluator model and
+rubric, so a rise cannot be claimed across them; these are the new baseline to beat.
 
 **MATT RULED 2026-09-08, verbatim: "Hold those we only want positive."** The proof block's two
 outcome strips (our sale-to-first-ask and days-to-contract against the Bend median: 52 days
-against 29, 93.7% against 97.0%, n=7) DO NOT PUBLISH. `showOutcomes` now defaults to false so
-no caller ships the comparison by omission; a test pins it. The figures themselves are
-untouched — this decides what we publish, never what we measure — and with the strips off the
-section says only what it shows, so nothing is implied by omission. The same rule binds any
-surface that would draw our own performance against a market benchmark. Locked in
-`docs/plans/PUBLIC_PRODUCT/decisions.md` (2026-09-08) and shipped in faa5606cc.
+against 29, 93.7% against 97.0%, n=7) DO NOT PUBLISH. `showOutcomes` defaults to false so no
+caller ships the comparison by omission; a test pins it. The figures are untouched — this
+decides what we publish, never what we measure. The same rule binds any surface that would draw
+our own performance against a market benchmark. Locked in
+`docs/plans/PUBLIC_PRODUCT/decisions.md` (2026-09-08).
 
-**Next session, in this order:** (1) `git checkout claude/run-loop-pcp7q3`, read the SITE-06
-gate and comms diffs adversarially; (2) `npm run test:unit` and one `npm run ci:gates` on
-0df89ac08 — stop every dev server first or `ci:commit-compiles` is OOM-killed and prints
-"Killed" as its only error; (3) a separate evaluator per page class (community, sell,
-listing-detail) with the shots the lanes already took, recording each receipt in that route's
-`parity.json`; (4) fix what it names; (5) merge to main, one push, one deploy verify, evidence
-on both nodes. The nodes carry the same instructions and are heartbeated — release them
-(`site-queue-status.ts --claim` is the only claim path) if you will not finish them.
+**Open findings, none blocking, all recorded on the nodes.**
+- **The `EASTON COMMERCIAL` breadcrumb** — our plat-alias resolution puts a commercial plat on a
+  single-family listing. `boundaries` holds five Easton plats, two sharing plat doc
+  `Plld20220219`. This is the one worth taking next; it is wrong in front of a buyer.
+- The answer sheet's right ~40% is empty at 1440.
+- The comps dot strip has no axis at rest.
+- A hero broken-image glyph traced to this sandbox's proxy, not to the site — an `onError`
+  fallback is still worth adding.
+
+**Queue.** SITE-03, SITE-07, SITE-08, SITE-12 are open or held by other sessions. SITE-02b and
+SITE-06 move to blocked-on-measurement (reopen 2026-10-06) with the rest of the shipped set.
+
+**Local traps that cost time this session, so the next lane skips them.** Stop every dev server
+by PID before `npm run ci:gates` or `ci:commit-compiles` is OOM-killed and prints `Killed` as its
+only error — and resolve the PIDs with `ps | awk` first, because `pkill -f "next dev"` matches
+your own shell's command line and kills the session. `npm run deploy:verify` has no Vercel token
+in a cloud container; verify through the Vercel MCP tools instead
+(project `prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA`, team `team_zwYQPapH0CpleD7RzJ7WctGO`).
 
 ---
 
