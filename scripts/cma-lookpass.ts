@@ -450,12 +450,24 @@ type InteractStep = {
   shot?: string
 }
 
-/** The first live line in a chapter that has something in it. */
+/** The first live line in a chapter that has something in it, ON SCREEN. */
 const READ_IN = (sel: string) => `(() => {
   const reads = Array.from(document.querySelectorAll('${sel} .rr-read'))
+    .filter((r) => r.getClientRects().length > 0)
   const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
   return said[0] || ''
 })()`
+
+/**
+ * Only controls a reader can SEE.
+ *
+ * Every chart on this document ships two layouts and hides one, so a bare
+ * querySelector hands back whichever comes first in the DOM — which at 1280
+ * inside the composed spread is the HIDDEN wide drawing. Driving that proves
+ * nothing about the document a reader is looking at.
+ */
+const VISIBLE = (sel: string) =>
+  `Array.from(document.querySelectorAll('${sel}')).filter((n) => n.getClientRects().length > 0)`
 
 const INTERACT_STEPS: InteractStep[] = [
   {
@@ -464,7 +476,7 @@ const INTERACT_STEPS: InteractStep[] = [
     when: `!!document.getElementById('what-happened')`,
     shot: '#what-happened',
     run: `(() => {
-      const mark = document.querySelectorAll('#what-happened .tl-mark')
+      const mark = ${VISIBLE('#what-happened .tl-mark')}
       const target = mark[mark.length - 1]
       if (!target) return null
       target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -475,7 +487,7 @@ const INTERACT_STEPS: InteractStep[] = [
     name: 'did-not-sell-history',
     shot: '#did-not-sell',
     run: `(() => {
-      const t = document.querySelector('#did-not-sell .pp-toggle')
+      const t = ${VISIBLE('#did-not-sell .pp-toggle')}[0]
       if (!t) return null
       t.click()
       const list = document.querySelector('#did-not-sell .pp-list')
@@ -486,7 +498,7 @@ const INTERACT_STEPS: InteractStep[] = [
     name: 'curve-scrub',
     shot: '#priced-right',
     run: `(() => {
-      const hit = document.querySelector('#priced-right svg.curve-scrub .scrub-hit')
+      const hit = ${VISIBLE('#priced-right svg.curve-scrub .scrub-hit')}[0]
       if (!hit) return null
       for (let i = 0; i < 20; i++) {
         hit.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, shiftKey: true }))
@@ -498,11 +510,11 @@ const INTERACT_STEPS: InteractStep[] = [
     name: 'ask-outcome-bar',
     shot: '#priced-right',
     run: `(() => {
-      const bars = document.querySelectorAll('#priced-right .bar-row')
+      const bars = ${VISIBLE('#priced-right .bar-row')}
       const target = bars[bars.length - 1]
       if (!target) return null
       target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      const reads = Array.from(document.querySelectorAll('#priced-right .rr-read'))
+      const reads = ${VISIBLE('#priced-right .rr-read')}
       const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
       return said[said.length - 1] || ''
     })()`,
@@ -601,7 +613,7 @@ const INTERACT_STEPS: InteractStep[] = [
     optional: true,
     shot: '#this-market',
     run: `(() => {
-      const marks = document.querySelectorAll('#this-market .month-mark')
+      const marks = ${VISIBLE('#this-market .month-mark')}
       const target = marks[Math.floor(marks.length / 2)]
       if (!target) return null
       target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
