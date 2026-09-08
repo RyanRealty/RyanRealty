@@ -37,6 +37,27 @@ import type {
   GovernedResendPayload,
 } from './types'
 
+/**
+ * The provenance stamp every timeline row this layer writes carries (SITE-09).
+ *
+ * `purpose` + `initiator` are what let a reader tell a system confirmation from
+ * a broker's own reply. Both rails write outbound rows that look identical
+ * otherwise: the Gmail rail keeps `source:'app'` and the acting broker's slug
+ * even for a system initiator, because the inbox and the activity reports read
+ * that column. Consumers: lib/crm/response-clock.ts (isHumanTouch).
+ */
+export function initiatorStamp(req: GovernedEmailRequest): {
+  purpose: string
+  initiator: 'broker' | 'system'
+  initiatorSource?: string
+} {
+  return {
+    purpose: req.purpose,
+    initiator: req.initiator.kind,
+    ...(req.initiator.source ? { initiatorSource: req.initiator.source } : {}),
+  }
+}
+
 async function recordSentEvents(
   req: GovernedEmailRequest,
   providerId: string | undefined,
@@ -132,6 +153,12 @@ async function sendViaGmail(
     // Storage-backed refs so the thread renders the sent files forever
     // (served by /api/admin/crm/attachment).
     ...(payload.attachmentRefs?.length ? { attachments: payload.attachmentRefs } : {}),
+    // WHO ASKED FOR THIS (SITE-09). The `source` column stays 'app' on this
+    // rail — the inbox, the per-broker activity reports and the lead-source
+    // reports all read it, and only `.neq('source','sequence')` — so the stamp
+    // that separates a system confirmation from a broker actually writing back
+    // lives in the payload. lib/crm/response-clock.ts is the reader.
+    ...initiatorStamp(req),
   }
   const sb = createServiceClient()
   await sb.from('crm_timeline').insert(
@@ -148,7 +175,7 @@ async function sendViaGmail(
     await recordConversationMessage({
       sb, direction: 'out', channel: 'email', body: sent.plainBody, subject: payload.subject,
       providerSid: sent.gmailId, sentBy: mailbox.slug, primaryPersonId: req.personId,
-      assignedBroker: mailbox.slug,
+      assignedBroker: mailbox.slug, initiatorKind: req.initiator.kind,
       participants: [
         { personId: req.personId, address: payload.to[0] ?? payload.primaryAddress ?? String(req.personId) },
       ],
@@ -205,24 +232,29 @@ async function sendViaResend(
   await sb.from('crm_timeline').insert({
     person_id: req.personId, kind: 'email_out',
     title: payload.timelineTitle ?? payload.subject, body: prepared.text,
-    payload: { resendId: res.id, to: payload.to, purpose: req.purpose },
+    payload: { resendId: res.id, to: payload.to, ...initiatorStamp(req) },
     broker: req.initiator.broker ?? null,
     source: req.initiator.kind === 'system' ? 'automation' : 'app',
     dedupe_key: `resend:${res.id}:p${req.personId}`,
   })
-  void import('@/lib/crm/first-broker-action')
-    .then(({ stampFirstBrokerActionIfEmpty }) =>
-      stampFirstBrokerActionIfEmpty(sb, req.personId, {
-        kind: 'email_out',
-        broker: req.initiator.broker ?? null,
-      }),
-    )
-    .catch(() => {})
+  // FIRST BROKER ACTION IS A HUMAN'S (SITE-09, Matt 2026-09-07). This stamp used
+  // to fire for ANY initiator, so a same-minute system confirmation became the
+  // broker's first touch and every speed-to-lead read off it was fiction.
+  if (req.initiator.kind === 'broker') {
+    void import('@/lib/crm/first-broker-action')
+      .then(({ stampFirstBrokerActionIfEmpty }) =>
+        stampFirstBrokerActionIfEmpty(sb, req.personId, {
+          kind: 'email_out',
+          broker: req.initiator.broker ?? null,
+        }),
+      )
+      .catch(() => {})
+  }
   try {
     await recordConversationMessage({
       sb, direction: 'out', channel: 'email', body: prepared.text, subject: payload.subject,
       providerSid: res.id, sentBy: req.initiator.broker ?? null, primaryPersonId: req.personId,
-      assignedBroker: req.initiator.broker ?? null,
+      assignedBroker: req.initiator.broker ?? null, initiatorKind: req.initiator.kind,
       participants: [{ personId: req.personId, address: payload.to }],
     })
   } catch (e) { console.warn('[comms] conversation shadow-write (resend email) failed', e) }

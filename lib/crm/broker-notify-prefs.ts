@@ -51,6 +51,11 @@ export function categoryForAlertKind(kind: string): BrokerAlertCategory {
   const k = String(kind ?? '').trim().toLowerCase()
   if (!k) return 'other'
   if (k === 'new-lead' || k.startsWith('new-lead:')) return 'new_lead'
+  // The response clock (SITE-09). A site submit nobody has answered is the same
+  // urgency as the lead arriving — same switch, deliberately, so a broker who
+  // wants new-lead texts is not asked to opt into a second thing to find out one
+  // went unanswered.
+  if (k === 'untouched-5m' || k === 'untouched-24h') return 'new_lead'
   // A human answered. Given a category on purpose rather than left in 'other',
   // per the rule above — but it maps to the new_lead switch because a contact
   // who replies is the same urgency as a new lead, and Matt asked to be told.

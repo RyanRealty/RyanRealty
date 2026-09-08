@@ -50,6 +50,10 @@
       "schedule": "6,21,36,51 * * * *"
     },
     {
+      "path": "/api/cron/crm-response-clock",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/crm-scheduled-sends",
       "schedule": "*/5 * * * *"
     },

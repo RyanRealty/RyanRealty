@@ -349,6 +349,18 @@ export async function autoEnrollByPersonId(
       // phone, and none of the inquiry tags a form submission applies. This is
       // someone browsing, NOT a lead who asked for anything.
       const isSiteSignin = isSiteDomainSource && !highIntent && !hasPhone
+      // D8 deep link (SITE-09): a seller who typed an address into a valuation
+      // form wants a number, so the broker's text opens the CMA kick-off sheet
+      // pre-filled instead of a bare lead page. Only the valuation doors —
+      // /sell + the seller LP (source:seller-lp / list-now-lp) and the place
+      // pages (source:place-page). A seller from any other door gets the plain
+      // link, because there is no address to kick off from.
+      const VALUATION_SOURCES = ['seller-lp', 'list-now-lp', 'place-page']
+      const cmaIntent: 'cma' | undefined =
+        tags.includes('audience:seller') &&
+        (VALUATION_SOURCES.includes(sourceStr) || tags.some((t) => VALUATION_SOURCES.includes(t.replace(/^source:/, ''))))
+          ? 'cma'
+          : undefined
       if (isSiteSignin) {
         body = [
           `Website sign-in (browsing), low intent.`,
@@ -377,7 +389,7 @@ export async function autoEnrollByPersonId(
           preview
             ? `First ${preview.channel === 'sms' ? 'text' : 'email'} sending now: "${preview.body}"`
             : `Enrolled in "${result.sequence}". First touch sending now.`,
-          `Open the lead: ryan-realty.com/admin/people/${p.id}`,
+          `Open the lead: ryan-realty.com/admin/people/${p.id}${cmaIntent ? `?intent=${cmaIntent}` : ''}`,
         ].join('\n')
       } else {
         body = newLeadAlertBody({
@@ -386,6 +398,7 @@ export async function autoEnrollByPersonId(
           stage: p.stage,
           personId: p.id,
           detail: null,
+          ...(cmaIntent ? { intent: cmaIntent } : {}),
         })
       }
       await queueBrokerAlert({

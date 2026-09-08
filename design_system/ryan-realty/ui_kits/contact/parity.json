@@ -82,5 +82,77 @@
     "V3Ledger #office -- the brokers who answer",
     "V3Answers #faq -- before you write",
     "V3Footer"
-  ]
+  ],
+  "tasteReview": {
+    "evaluatedAt": "2026-09-08",
+    "score": 54,
+    "beats": "Cascade Sotheby's Bend contact page on personal accountability: three named, licensed brokers with OR license numbers, direct phone and email, and honest copy ('answer you personally') with zero unverified SLA claims (curl: zero 'business day' hits on /contact and the ?listingKey= tour variant). Still loses to Zillow's contact-agent flow on measured response time: Zillow surfaces a data-backed 'usually responds in X'; this page says nothing quantified about speed, which is honest but not yet the differentiator. The false claim was subtracted, not replaced with a true, sourced one.",
+    "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 2, contact page class (pass 1: 43, same model, same day)",
+    "shots": {
+      "desktop": "design_system/ryan-realty/ui_kits/contact/shots/desktop.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/contact/shots/mobile375.png",
+      "tourDesktop": "design_system/ryan-realty/ui_kits/contact/shots/tour-desktop.png",
+      "sentDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-desktop.png",
+      "sentMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-mobile375.png",
+      "sentFocusDesktop": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-desktop.png",
+      "sentFocusMobile375": "design_system/ryan-realty/ui_kits/contact/shots/sent-focus-mobile375.png",
+      "adminCrmDesktop": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-desktop.png",
+      "adminCrmMobile375": "design_system/ryan-realty/ui_kits/contact/shots/admin-crm-mobile375.png"
+    },
+    "breakdown": {
+      "design": 17,
+      "originality": 12,
+      "interaction": 7,
+      "craft": 11,
+      "honesty": 7
+    },
+    "firstPass": {
+      "evaluatedAt": "2026-09-08",
+      "score": 43,
+      "breakdown": {
+        "design": 14,
+        "originality": 10,
+        "interaction": 6,
+        "craft": 10,
+        "honesty": 3
+      },
+      "evaluator": "separate Sonnet evaluator, SITE-09 response-clock pass 1, contact page class"
+    },
+    "fixedFromThisPass": [
+      "Honesty: meta/og/twitter description no longer promises a reply within one business day; verified live on /contact and the tour variant, zero hits in the rendered HTML.",
+      "Taste: call/text/email/schedule appear once, in the doors row; the hero carries the intro line, the office address, and the listing door on the tour variant.",
+      "Taste: the sent state echoes the submission ('Sent: Buying') and offers two next actions (pick a time, send another message) instead of one bare door.",
+      "Craft: the SMS consent checkbox measures 44 by 44 at 375 in the DOM; the pass-1 finding was withdrawn."
+    ],
+    "openRaise": [
+      "Page composition: hero, form, brokers and FAQ still run as four consecutive eyebrow, heading, rows, hairline sections (the stacked-section tell); fold the brokers band into the hero/doors area or give one section a different form.",
+      "Response clock on the page: replace the removed SLA with a sourced figure once the rails have stamped enough rows ('brokers typically reply in N minutes, from the last N inquiries', with the section-0 trace from getResponseClockReport); today the median is unproven, so nothing ships.",
+      "Brokers roster: a flat hairline row; give it visual weight (larger headshots, a specialty line).",
+      "FAQ: a plain three-item accordion; a stronger form or a disclosure beside a display.",
+      "Full-page desktop capture shows the broker avatars as gray boxes while the viewport crop shows the photos: a lazy-load capture artifact to confirm on first paint."
+    ],
+    "defects": [
+      {
+        "section": "Page composition",
+        "severity": "taste",
+        "finding": "Hero, form, brokers and FAQ repeat the same eyebrow-heading-rows-hairline shape end to end."
+      },
+      {
+        "section": "Brokers roster",
+        "severity": "taste",
+        "finding": "Flat list row per broker with no visual encoding beyond hairlines."
+      },
+      {
+        "section": "FAQ",
+        "severity": "taste",
+        "finding": "Plain three-item accordion with no figure, image or interaction beyond expand/collapse."
+      },
+      {
+        "section": "Response-clock claim",
+        "severity": "copy",
+        "finding": "The false SLA was removed but no sourced response-time figure replaces it yet."
+      }
+    ],
+    "note": "SITE-09 (response clock). /contact had no prior tasteReview (unreviewed baseline); pass 1 set the first mark and pass 2 graded the fixes. Admin panel shots are the CRM flag surface for the same node, not a public page."
+  }
 }

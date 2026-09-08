@@ -34,6 +34,8 @@ describe('categoryForAlertKind', () => {
     ['cma-ready:some-slug', 'cma_ready'],
     ['task-reminder:2026-08-25', 'task_due'],
     ['deal:stage-change', 'deal_activity'],
+    ['untouched-5m', 'new_lead'],
+    ['untouched-24h', 'new_lead'],
   ] as const)('maps %s -> %s', (kind, expected) => {
     expect(categoryForAlertKind(kind)).toBe(expected)
   })

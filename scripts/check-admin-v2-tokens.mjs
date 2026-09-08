@@ -573,6 +573,10 @@ const SCAN_DIRS = [
   'components/admin/prospecting/ProspectSendDialog.client.tsx',
   'components/admin/prospecting/format.ts',
   'components/admin/push/BrokerPushOptIn.tsx',
+  // SITE-09 (2026-09-08): the response clock, mounted at the top of the scanned
+  // crm/page.tsx. Pure v2 — primitives from the barrel, colour only via
+  // var(--a-*) — so scoping it here is the sanctioned move Rule 3 asks for.
+  'components/admin/crm/ResponseClockPanel.tsx',
   'components/admin/shared/mobile/MobileCalendarTab.tsx',
   'components/admin/shared/mobile/MobileCommsTab.tsx',
   'components/admin/shared/people-list/PeopleListView.tsx',

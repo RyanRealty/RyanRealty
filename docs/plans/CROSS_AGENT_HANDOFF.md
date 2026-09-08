@@ -49,6 +49,88 @@ beautiful, interactive and engaging."
 
 # Current — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
 
+# Current — 2026-09-08 (SITE-09 response clock landed; the site queue runs in four sessions at once)
+
+Owner: Claude (Fable 5.1), cloud session 01NESdvn, branch `claude/run-loop-syxm1d` landed on
+`origin/main`. Lane commits (rebased onto the CMA mission, PR #201): a4ea260 (the response clock), 61f0061
+(/contact after the evaluator), d03e15a (the taste receipt + test hardening). Node
+`d575d2eb-7514-4be7-8399-f0ebaa2f7dc7` (SITE-09) set `blocked` on MEASUREMENT with the
+READY SHA in its `blocked_reason`; re-open 2026-10-06.
+
+**Matt (2026-09-08): "Run loop" then "Go".** Four sessions ran the site queue at once: the
+hourly grinder held SITE-02, 02b, 08, 12; session 019RdEm6 took SITE-04 + M1; session 01Aubwpa
+took SITE-05 + 11 (lane branch `wt/site-05-sticky`); this session took SITE-09, the one open
+node whose routes none of the others touched. The optimistic claim (`.eq('state','open')`)
+kept them apart without a word exchanged.
+
+**Shipped (SITE-09)**
+- Same-minute system confirmation on the three site submits that had none: /contact (every
+  listing tour and question CTA lands there), the guest saved-search and saved-home captures,
+  and the expired LP (an acknowledgment of the submit, never the report). All through
+  `sendGovernedEmail` with `initiator.kind:'system'` (`lib/comms/site-confirmations.ts`);
+  a contract test pins each action to its helper and keeps the place-page and /sell
+  confirmations in place.
+- The rails now stamp `purpose` + `initiator` into every timeline row they write (Gmail,
+  Resend, SMS) and only a broker initiator sets first-broker-action. Before this, the
+  same-minute confirmation was the broker's "first touch" and speed-to-lead read as fiction.
+  New-lead texts for seller valuation asks deep-link `?intent=cma`.
+- The timer: `/api/cron/crm-response-clock` every five minutes, `?dry=1` computes without
+  writing. One human-touch definition in `lib/crm/response-clock.ts` (pure, 49 tests): kind in
+  call/voicemail/sms_out/mms_out/email_out, source not a machine rail, a named broker, no
+  system stamp. Five minutes past the submit inside 8am to 8pm Pacific (next 8am otherwise) pages
+  the assigned broker (`untouched-5m`, category new_lead, so Rebecca and Paul's SMS-off pref
+  routes it push_only); 24h wall clock escalates to Matt (`untouched-24h`); a touch after a
+  flag clears it. Every write keyed, so overlapping runs converge.
+- The admin flag: `getResponseClockReport` (same population, same predicate as the cron)
+  feeds a Response clock panel at the top of `/admin/crm`: who is waiting now, the 28-day
+  median to a human in business hours (withheld as "unproven" while every counted touch
+  predates the stamp), submits counted, answered by a person, untouched past 24h, each with
+  its section-0 source line.
+- /contact: the sent state says what happens now, echoes what was sent, and offers the /book
+  door plus "Send another message" (V3Ask gained optional `detail`/`again`); the four
+  reaches live once (doors), the meta description and the FAQ no longer promise a business
+  day. Baseline shots at 1440/375 plus the tour variant, the sent state and the admin panel
+  under `ui_kits/contact/shots/`.
+
+**Verified** on the worktree dev server against production rows: a fleet-test contact submit
+reached the governed rail and was refused by the fleet suppression as designed; the new-lead
+alert dedupe key was already on the timeline; the cron dry run returned ok with 0 scanned
+(only fleet-test submits in the 26h window, excluded by design) in 230ms; the panel rendered
+the 28-day read. Unit suite 848 files green at each commit; path-aware ci:gates 200 ok.
+
+**Baseline (section 0 trace, getResponseClockReport, 2026-09-08):** crm_people created in the
+28 days to 2026-09-08 with source or source:* tag in the site-submit list: 10; 9 created 8am to
+8pm Pacific; 1 touched by a person (an unstamped /book invite, so the median is unproven); 9
+untouched past 24h. Site-submit volume is thin (contact-form 4, idx-registration 3, seller-lp 2,
+place-page 1 fleet test), so the accept window may not prove the median; function and the
+evaluator carry the item per the 2026-09-07 rule.
+
+**Evaluator (separate Sonnet, two passes):** /contact 43 then 54, first marks for the route;
+it left the unreviewed taste baseline (15 to 14). Open raises are on the review: the
+stacked-section composition, the flat broker roster, the plain FAQ, and the item's own name:
+once stamped rows fill the window, surface the sourced response time on the page.
+
+**Learn:** the stranded public-ux ledger window (look-walk-baselines, 2026-08-16) was closed
+(8/8 routes graded at 390+1280, CMA graded, actual_delta 1, win), which unfreezes the domain;
+SITE-09's own ledger row is `response-clock` (28 days, baseline_value null on purpose).
+
+**Next (the queue)**
+1. SITE-10 (selling timeframe after the answer) waits for SITE-02's /sell answer to land; it
+   builds on that step. SITE-03, 06, 07 wait on SITE-02b. Take whichever lands first.
+2. 2026-10-05: re-open SITE-01 (place-page cmas rows by rr_vid + Search Console clicks).
+   2026-10-06: re-open SITE-09 (median under 300s over in-hours site submits with stamped
+   touches; zero rows past 24h untouched).
+3. The /contact open raises belong to the page-class owner, not to a new audit.
+
+**Do not**
+- Re-audit the site or write a punch-list doc; append to a SITE node instead.
+- Put a dollar figure on a public page for a typed address (Matt: hold it for the CMA).
+- Add a registration wall (Matt: no wall, email-only asks).
+- Promise a visitor a duration ("within one business day", "within five minutes"): a
+  duration is a number, and the only sourced one lives on the admin panel.
+
+## Prior — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
+
 Owner: Claude (Fable 5.1), session 3db16241, main checkout. Landed on `origin/main`:
 c5ecb045 (G-FRESH event dates), e1d77374 (the site queue mechanism), b3c34e88 (SITE-01).
 

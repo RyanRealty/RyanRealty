@@ -228,3 +228,34 @@
     text-underline-offset: var(--v3-underline-offset);
   }
 }
+
+/* The sent state: what was sent, echoed in one quiet line; then the next real
+   step as the same primary control the form used, and a second, quieter way
+   back into the form. A confirmation that only thanks the reader is a dead end. */
+.v3-ask__done-detail {
+  margin: var(--v3-space-xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3-ask__done-door {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  margin: var(--v3-space-md) 0 0;
+}
+
+.v3-ask__done-again {
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-xs);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+  cursor: pointer;
+}
