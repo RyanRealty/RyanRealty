@@ -3,14 +3,21 @@
  * reach (Call / Text / Email / Schedule). Portrait puts Oregon license,
  * readable phone/email, and the same CTA strip above the fold.
  *
- * roster: /team (H1), /about and homepage (H2).
+ * roster: /team (H1), /about (H2).
  * portrait: /team/[slug] at card-photo scale, not AboutFaces poster size.
+ * compact: the homepage (H2). One table, not three cards: the three cutouts
+ *   stand on a shared hairline shelf as the column heads, and every row
+ *   beneath (name, Oregon license, Call, Text, Book) aligns across the three
+ *   columns by subgrid. At 390 the whole thing sits in one screen (SITE-M1,
+ *   Matt 2026-09-07). Email and Schedule stay on the roster and the portrait.
  */
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { V3_ROOT_CLASS, V3Heading } from "@/components/site/v3"
+import { V3_ROOT_CLASS, V3Button, V3Eyebrow, V3Heading } from "@/components/site/v3"
+import { teamPath } from "@/lib/slug"
 import type { AboutFace } from "./about-faces"
+import { aboutCompactReach } from "./about-faces"
 import "./about-faces.css"
 
 function IconPhone() {
@@ -126,7 +133,13 @@ export function AboutFaces({
    * portrait never takes --lead or --solo: that pair is the poster.
    */
   headingLevel?: 1 | 2
-  size?: "roster" | "portrait"
+  /**
+   * roster: the /team and /about cards. portrait: one broker, /team/[slug].
+   * compact: the homepage table, three faces + names + licenses + Call /
+   * Text / Book in one 390 screen. Compact ignores `reach`: its rows ARE the
+   * reach, and there is no Email or Schedule chip to switch off.
+   */
+  size?: "roster" | "portrait" | "compact"
   /** Call / Text / Email / Schedule buttons on the face row, including portrait. */
   reach?: boolean
 }) {
@@ -134,6 +147,81 @@ export function AboutFaces({
   if (!first) return null
   const shown = [first, ...rest]
   const lead = headingLevel === 1 && size === "roster"
+
+  if (size === "compact") {
+    return (
+      <section
+        id="faces"
+        className={cn(V3_ROOT_CLASS, "about-faces", "about-faces--compact")}
+        aria-labelledby="faces-heading"
+      >
+        <div className="about-faces__head">
+          <V3Eyebrow>Our brokers</V3Eyebrow>
+          <div className="about-faces__head-row">
+            <V3Heading level={headingLevel} id="faces-heading" className="about-faces__heading">
+              {heading}
+            </V3Heading>
+            <V3Button variant="text" href={teamPath()} className="about-faces__door">
+              Meet the team
+            </V3Button>
+          </div>
+        </div>
+        <ul className="about-faces__grid">
+          {shown.map((person, index) => (
+            <li key={person.href} className="about-faces__item">
+              <Link href={person.href} className="about-faces__photo-link">
+                {/* Plain img: owned public/ file, same reason V3Stage states. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="about-faces__photo"
+                  src={person.src}
+                  alt={person.name}
+                  width={800}
+                  height={1200}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  fetchPriority={index === 0 ? "high" : undefined}
+                  decoding="async"
+                />
+              </Link>
+              <Link href={person.href} className="about-faces__name">
+                {person.name}
+              </Link>
+              {person.title ? <p className="about-faces__role">{person.title}</p> : null}
+              {person.license ? (
+                <p className="about-faces__license">OR #{person.license}</p>
+              ) : null}
+              {aboutCompactReach(person).map((row) =>
+                row.kind === "book" ? (
+                  <Link
+                    key={row.kind}
+                    href={row.href}
+                    className={cn("about-faces__reach", `about-faces__reach--${row.kind}`)}
+                    aria-label={row.ariaLabel}
+                  >
+                    <IconCalendar />
+                    <span className="about-faces__reach-label">{row.label}</span>
+                    {row.detail ? <span className="about-faces__reach-detail">{row.detail}</span> : null}
+                  </Link>
+                ) : (
+                  <a
+                    key={row.kind}
+                    href={row.href}
+                    className={cn("about-faces__reach", `about-faces__reach--${row.kind}`)}
+                    aria-label={row.ariaLabel}
+                  >
+                    {row.kind === "call" ? <IconPhone /> : <IconMessage />}
+                    <span className="about-faces__reach-label">{row.label}</span>
+                    {row.detail ? <span className="about-faces__reach-detail">{row.detail}</span> : null}
+                  </a>
+                ),
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
   const reachLinks = (person: AboutFace) =>
     reach ? (
       <div className="about-faces__reach-row" id={size === "portrait" ? "contact-broker" : undefined}>

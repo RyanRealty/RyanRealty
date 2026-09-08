@@ -200,7 +200,7 @@ export default async function Home() {
         <V3Doors id="doors" name={v3Text('Buy, sell, or work with us')} doors={doors} />
 
         {faces.length > 0 ? (
-          <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} />
+          <AboutFaces people={faces} heading="Talk to a broker" headingLevel={2} size="compact" />
         ) : null}
 
         <HomeBrowsePlaces id="places" doors={placeDoors} />
