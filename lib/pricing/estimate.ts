@@ -205,7 +205,7 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: 'getCmaMarketContext(subject) -> yoyMedianPriceDeltaPct',
       },
-      sentence: `Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy)} percent against a year ago, about ${Math.abs(perMonth)} percent a month, and each sale below is moved by that rate for the months since it closed.`,
+      sentence: `Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy).toFixed(1)} percent against a year ago, about ${Math.abs(perMonth).toFixed(1)} percent a month. Each sale is moved by that rate for the months since it closed.`,
     }
   }
   return {

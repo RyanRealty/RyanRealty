@@ -863,3 +863,13 @@ describe('the range is rounded once, at the pricing unit', () => {
     expect(out.valueHigh).toBe(875_000)
   })
 })
+
+describe('time-adjustment sentence', () => {
+  it('prints the year-over-year and monthly rates to one decimal, never a raw float', async () => {
+    const src = await import('node:fs').then((fs) => fs.readFileSync(new URL('./estimate.ts', import.meta.url), 'utf8'))
+    const line = src.split('\n').find((l) => l.includes('percent against a year ago')) ?? ''
+    expect(line).toContain('Math.abs(yoy).toFixed(1)')
+    expect(line).toContain('Math.abs(perMonth).toFixed(1)')
+    expect(line).not.toMatch(/\$\{Math\.abs\(yoy\)\}/)
+  })
+})
