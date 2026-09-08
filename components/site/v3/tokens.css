@@ -669,10 +669,18 @@
   margin: 0;
 }
 
+/* The summary IS the toggle, so its own box has to be a 44px target: one small
+   uppercase word is 18px tall, which ci:tap-targets measured on /cities/bend
+   and refused (2026-09-08, the alerts callout put the first disclosure on a
+   crawled route). min-block-size keeps the marker (display stays list-item, so
+   a flex box cannot eat the triangle) and align-content centres the word in
+   the taller box where the browser supports it. */
 .v3 .v3-source-disclosure__summary,
 .v3.v3-source-disclosure .v3-source-disclosure__summary {
   cursor: pointer;
   width: fit-content;
+  min-block-size: var(--v3-tap);
+  align-content: center;
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
   letter-spacing: var(--v3-track-label);
