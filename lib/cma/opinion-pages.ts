@@ -491,7 +491,13 @@ export function thisMarketHeading(a: Pick<OpinionPageArgs, 'subject' | 'market'>
 /** Shared by the letter chapter and its immersive twin. */
 export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): string {
   const reconcile = cityMedianReconciliationHtml(a)
-  const board = renderInventoryBoardHtml(a.market)
+  // The month line is drawn from a pooled city read at every size; the number
+  // this document recommends is not. When the whole line sits above it, the
+  // board says so in one sentence (tasteReview round three, §3).
+  const board = renderInventoryBoardHtml(a.market, {
+    recommended: a.pricing.recommended,
+    subject: a.subject,
+  })
   const street = subdivisionLineHtml(a, headingTag)
   return [reconcile, board, street].filter(Boolean).join('\n  ')
 }
