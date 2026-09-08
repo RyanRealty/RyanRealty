@@ -58,7 +58,15 @@
   color: var(--v3-ink-muted);
 }
 
+/* The run's index door. It sits in a head of type, so it stays an underlined
+   word rather than a second chip — but it is a control a thumb has to hit, so
+   it carries the same 44px floor the chips below it do (ci:tap-targets, WCAG
+   2.5.5). The box grows; the underlined word does not move relative to the run
+   name, because the head aligns on the baseline they share. */
 .v3 .home-browse-places__all {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
   font-size: var(--v3-size-body-sm);
   color: var(--v3-ink);
   text-decoration: underline;
