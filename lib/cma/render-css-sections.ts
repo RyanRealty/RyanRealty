@@ -334,6 +334,7 @@ export function cmaSectionStyles(): string {
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
+  .worth-lead-note { font-size: 13px; line-height: 1.5; margin: 0 0 12px; border-left: 2px solid var(--navy); padding-left: 9px; }
   /* The seller's own listed price and size, under "Your home" in the head. */
   table.comp-matrix .matrix-sub {
     display: block;
@@ -512,6 +513,11 @@ export function cmaSectionStyles(): string {
   table.comp-matrix thead th.v { vertical-align: top; text-align: center; }
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
   table.comp-matrix .matrix-addr { display: block; }
+  .addr-row { display: flex; align-items: center; justify-content: center; }
+  .addr-row .matrix-addr { min-width: 0; }
+  .addr-row.is-card { justify-content: flex-start; gap: 5px; margin: 0 0 6px; }
+  .addr-row.is-card .pin-badge { margin-right: 0; }
+  .addr-row.is-card .comp-stack-addr { margin: 0; flex: 1 1 auto; min-width: 0; }
   /* The map's pin, at reading size: the number is the key to the pin, not a
      rank. print-color-adjust is exact on * in the sheet, so it prints filled. */
   .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }

@@ -140,8 +140,12 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       // BAND: as wide as the gap to the next month, and the full 44 units tall.
       // The dimension that was failing is the one that grows.
       const hitW = Math.max(Math.min(hitSpan, 44), 26)
+      // UNITS, NOT PIXELS. 44 units on a 360-unit drawing in a 335px column
+      // measured 41px (tasteReview round three, §2 item 4); 48 clears 44 at
+      // that width and the look-pass measures the rendered box.
+      const hitH = 48
       return `<g class="month-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <rect x="${(x - hitW / 2).toFixed(1)}" y="${(ys[i]! - 22).toFixed(1)}" width="${hitW.toFixed(1)}" height="44" fill="transparent"/>
+      <rect x="${(x - hitW / 2).toFixed(1)}" y="${(ys[i]! - hitH / 2).toFixed(1)}" width="${hitW.toFixed(1)}" height="${hitH}" fill="transparent"/>
       <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>
     </g>${tick}`
     })

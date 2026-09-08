@@ -325,7 +325,11 @@ table.comp-matrix .matrix-addr{display:block}
    pin, not a rank, and drawn as the pin it cannot be misread as one after the
    grid is sorted. */
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
-.comp-stack-addr .pin-badge{margin-right:8px}
+.addr-row{display:flex;align-items:center;justify-content:center}
+.addr-row .matrix-addr{min-width:0}
+.addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
+.addr-row.is-card .pin-badge{margin-right:0}
+.addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
 /* NO PAN BOX: every chart ships a 360-unit phone layout. */
@@ -341,6 +345,8 @@ table.comp-matrix .matrix-addr{display:block}
 .pin-map{max-height:60vh;object-fit:cover}
 /* Chapter 3's lead line, under the number that is the chapter title. */
 .worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
+.worth-lead+.worth-lead-note{margin-top:-18px}
+.worth-lead-note{font-size:clamp(15px,1.8vw,17px);max-width:640px;margin:0 0 26px;border-left:2px solid var(--navy);padding-left:12px}
 table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */
