@@ -78,6 +78,70 @@ SITE-09's own ledger row is `response-clock` (28 days, baseline_value null on pu
 - Promise a visitor a duration ("within one business day", "within five minutes"): a
   duration is a number, and the only sourced one lives on the admin panel.
 
+## Landed — 2026-09-08 (session 019RdEm6: SITE-M1 done, SITE-04 built and live, evaluator marks re-baselined, round 2 claimed)
+
+Owner: Claude (Fable 5.1), session 019RdEm6, branch `claude/run-loop-w8f3ep` (PR #200, draft).
+The session is pinned to that branch; session 3db16241 merged its head 968b0e4 into `main`
+(bdf60cf0 → 7ac7ecc, 08:33 UTC), deploy READY, and recorded both nodes. Live check 08:40 UTC:
+the compact brokers table is on `/`, the alerts strip renders on /cities/bend, /cities/bend/
+awbrey-butte and /communities/tetherow ("2 houses came on the market in Tetherow" inline).
+
+**Matt's word this session: "Go" (twice).** `/site-queue` with `ScheduleWakeup` self-pacing;
+two lanes in worktrees; a separate Opus evaluator per page class.
+
+**Shipped**
+- SITE-M1 (node 64fe8b08, `done`): `AboutFaces size="compact"` on the homepage only. At
+  390x844 the section is 520px: eyebrow, heading + Meet the team, three faces on a shared
+  shelf, name, role, OR license, Call / Text / Book rows, all in the first screen
+  (`ui_kits/homepage-v6/shots/brokers-390.png`, before shot beside it). Also fixed: save
+  hearts and carousel dots rendered as bordered squares (selector specificity), the footer
+  skyline crop, the hero missing from record shots. Evaluator 60 → 74 → 77 on one scale.
+  **Matt 2026-09-08 08:35 UTC: 77 is the new homepage mark; the 88 is retired** (different
+  evaluator, deleted shots).
+- SITE-04 (node 9339692e, `blocked` on MEASUREMENT, re-open 2026-10-06): `V3AlertsStrip`
+  barrel primitive (callout after the opening with the real 30-day count; sticky repeat past
+  #atlas, dismissible, off over the footer, gone after a send) on city, neighborhood,
+  community. Count = Market Truth `new_listings_30d` (city:bend 148, awbrey-butte 15,
+  tetherow 2 on 2026-09-08, detached, period_end 2026-09-06) with a Source disclosure. No
+  price-cut count exists in any cache (two query shapes), so the price-drop promise is a
+  sentence, never a number. Display numeral only at counts ≥ 10 (`PLACE_ALERTS_FIGURE_MIN`);
+  scope line reconciles figure and offer ("covers all of Bend, Awbrey Butte included"; the
+  exact MLS subdivision set a community filter matches: Tetherow, Triple or Tetherow Resort).
+  Capture contract unchanged; `alert_create` carries `placement`. Evaluator on one scale:
+  city 57 → 64 (mark 67), neighborhood 48 → 58 (mark 58), community 54 → 65 (mark 59,
+  clears). What holds city and neighborhood down is outside the item and is on the node:
+  colliding chart year labels and a ragged golf grid on city; the `Awbrey Butte Homesite…`
+  chip wall on neighborhood. A last small round (desktop door affordance, neighborhood
+  double scope, clean record shots) follows on PR #200.
+- CI: `docs/ROUTE_INVENTORY.md` could not regenerate since `CANONICAL_ZIPS` moved
+  (`scripts/index-routes.mjs` threw), so the /dashboard/marketing deletion never reached
+  the route smoke and PR #200 went red on two 404s. Generator fixed, inventory regenerated
+  (7ac7ecc on main). `ci:routes` is not in the gate chain.
+
+**SITE-04 measurement baseline (28 days before ship, read 2026-09-08 07:35Z, operational):**
+place-page sessions 1,335 distinct (`visitor_events` page_view: city 527, neighborhood 231,
+community 636); `listing_alerts` rows from real visitors 2, neither from a place-page filter
+shape (21 of 23 rows were fleet-test or staff). Baseline rate 0 per 100 place-page sessions.
+Price-drop rows cannot be reported separately without an `events` override on the capture
+action (Matt's call, on the node).
+
+**Rules learned (apply, do not re-litigate)**
+- Evaluator marks are not comparable across evaluators; record the new number with the
+  prior mark noted; the rise rule is judged on one scale within the item (Matt, above).
+- Record shots must show the page: the sandbox browser cannot load the Supabase storage
+  hero or the Spark photo CDN; relay those hosts through curl in the capture. Never a
+  fabricated image.
+- Lane agents idle on background waiters; brief them to run everything in the foreground.
+- Two Fable lanes plus an evaluator hit the account rate limit in ~35 minutes; the skill's
+  "schedule the wake for the reset" rule held.
+
+**Round 2 (claimed 08:41 UTC by this session):** SITE-12 (homepage hero: live counts under
+the search, server-rendered Sell tab) and SITE-02b (the answer drawn: months-of-supply bars,
+comparable-sale dots, days-to-pending rule; every later item depends on it). Both were released
+from the grinder by the 3-hour idle rule. SITE-02b's evaluator pass is on the community page,
+which session 01Aubwpa's SITE-11 also touches: whoever lands second re-scores that class.
+
+
 ## Prior — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
 
 Owner: Claude (Fable 5.1), session 3db16241, main checkout. Landed on `origin/main`:
