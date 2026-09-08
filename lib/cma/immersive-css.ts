@@ -163,7 +163,12 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .pin-map-frame .pin-map{max-height:none;object-fit:fill;aspect-ratio:16/9}
 .pin-hit{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 .pin-hit:focus-visible{outline:3px solid rgba(16,39,66,.45);outline-offset:0;border-radius:22px}
-.pin-dot{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cream);font:600 13px/1 Geist,system-ui,sans-serif;box-shadow:0 1px 6px rgba(16,39,66,.35)}
+/* A cream ring, so two pins that still touch after the dodge read as two pins
+   rather than one blob. The dodge cannot open a bigger gap without moving a
+   pin off the house it names, which is the worse error. */
+.pin-dot{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cream);font:600 13px/1 Geist,system-ui,sans-serif;box-shadow:0 0 0 2px var(--cream),0 1px 6px rgba(16,39,66,.35)}
+/* Their own home is never buried under a sale pin. */
+.pin-hit.is-subject{z-index:2}
 .pin-hit.is-subject .pin-dot{border-radius:2px;width:26px;height:26px;font-size:14px}
 .pin-hit.is-on .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 3px var(--navy)}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}

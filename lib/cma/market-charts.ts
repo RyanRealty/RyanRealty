@@ -675,10 +675,10 @@ function timelineBody(o: {
   const zoneLabelY = zoneTall ? (zoneTop + zoneBottom) / 2 + fs * 0.36 : Math.max(zoneTop - 6, top - 12)
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
-    <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.16"/>
+    <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.13"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
-    <text x="${plotL}" y="${zoneLabelY.toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(input.rangeLabel)}</text>
+    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${fs}" fill="${TL_INK}">${esc(input.rangeLabel)}</text>
     <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
     <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>

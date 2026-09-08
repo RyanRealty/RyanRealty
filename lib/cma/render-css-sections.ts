@@ -324,7 +324,11 @@ export function cmaSectionStyles(): string {
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
+    /* A cream ring, so two pins that still touch after the dodge read as two.
+       Opening a bigger gap would move a pin off the house it names. */
+    box-shadow: 0 0 0 2px var(--cream);
   }
+  .pin-hit.is-subject { z-index: 2; }
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
