@@ -99,6 +99,14 @@ commit-msg hook; `Node: none (<reason>)` is the recorded escape). A new audit do
 `docs/plans` must name the nodes it appends to. Do not write a new site audit. Pull the node.
 
 **Shipped**
+- 2026-09-08 08:37 UTC (session 3db16241): PR #200 merged to main at 7ac7ecc0 through the
+  gated push and verified live: SITE-04 alerts strip on neighborhood and community pages,
+  SITE-M1 homepage brokers on phones (Matt accepted 77 as the new homepage mark; SITE-M1 done,
+  SITE-04 blocked on its 28-day measurement to 2026-10-06). SITE-09 recorded as shipped and
+  measuring from its commits (a4ea2600). Five stale claims released at Matt's word (02, 02b,
+  08, 12 from the paused first grinder fire; 04 re-claimed for the merge). The brief now
+  releases site claims idle more than 3 hours; the grinder's guard is per item, never a
+  global stop.
 - SITE-00 done. SITE-01 shipped and set `blocked` on MEASUREMENT (not a person): every
   `/communities/[slug]` opens with the address ask (`CommunityPlaceValue` → barrel
   `V3PlaceValue`), answer = verdict + days to pending + cash share + comparable-close count
