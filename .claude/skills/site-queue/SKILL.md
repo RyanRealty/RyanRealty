@@ -1,6 +1,6 @@
 ---
 name: site-queue
-description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "/site-queue", "go", "run the site queue", "keep going until the site is done", or when a /loop firing carries this protocol.
+description: Run the site queue until it is empty. Pull every eligible SITE node from the work graph, build them in parallel lanes across their page classes, a separate evaluator whose score must rise, the gates, one push and one deploy verify per round, a live check, evidence on each node, then the next round without stopping. Use when Matt says "run loop", "run the loop", "/site-queue", "go", "run the site queue", "keep going until the site is done", or when a /loop firing carries this protocol. While any SITE-* node is open this skill owns "run loop"; the growth loop resumes it when the site queue is empty.
 ---
 
 # /site-queue — the site is done when this queue is empty
@@ -9,7 +9,7 @@ Matt, 2026-09-07: "I want the go to run until done, not do a loop and stop." Thi
 skill is that. One firing keeps taking items until nothing eligible is left. The
 only reasons it pauses are written below, and none of them is "finished an item."
 
-**Matt's one word.** `/loop /site-queue` runs this protocol and keeps the session
+**Matt's words.** "run loop" (plain text) runs this protocol in the current session until its context is spent, then writes the handoff; the hourly cloud routine "Site queue grinder" continues from the graph, so nothing waits. `/loop /site-queue` runs this protocol and keeps the session
 waking itself (dynamic pacing, `ScheduleWakeup`) until the queue is empty, at which
 point the loop stops itself. `/site-queue` alone runs one grind until the context is
 nearly spent, then writes the handoff and spawns a fresh session to continue. "go"
