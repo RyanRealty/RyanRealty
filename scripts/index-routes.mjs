@@ -17,7 +17,7 @@
 //   npm run ci:routes -- --refresh   regenerate
 //   npm run ci:routes                check drift
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 
 const APP = resolve('app')
@@ -82,11 +82,20 @@ const BEND_NEIGHBORHOODS = (() => {
 // notFound guard). The old hardcoded copy here drifted (97734/Culver was
 // listed but the page never served it), so the crawl asserted a 404 route
 // as healthy inventory (2026-07-17 smoke full-crawl failure).
+// The Set literal moved from the page into app/zip/[zip]/_v3/zip-constants.ts
+// (the page imports it). Read whichever file defines it, so the inventory can
+// be regenerated again: it could not be from 2026-08-27 until 2026-09-08, and a
+// stale copy kept listing /dashboard/marketing (deleted d678c63) as healthy
+// inventory, which failed the smoke on the first PR that touched app/**.
 const ZIP_CODES = (() => {
-  const src = readFileSync(resolve('app/zip/[zip]/page.tsx'), 'utf8')
-  const block = src.match(/CANONICAL_ZIPS = new Set\(\[([\s\S]*?)\]\)/)?.[1]
-  if (!block) throw new Error('app/zip/[zip]/page.tsx no longer defines CANONICAL_ZIPS as a Set literal')
-  return [...block.matchAll(/'(\d{5})'/g)].map((m) => m[1])
+  const candidates = ['app/zip/[zip]/_v3/zip-constants.ts', 'app/zip/[zip]/page.tsx']
+  for (const file of candidates) {
+    if (!existsSync(resolve(file))) continue
+    const src = readFileSync(resolve(file), 'utf8')
+    const block = src.match(/CANONICAL_ZIPS = new Set\(\[([\s\S]*?)\]\)/)?.[1]
+    if (block) return [...block.matchAll(/'(\d{5})'/g)].map((m) => m[1])
+  }
+  throw new Error(`none of ${candidates.join(', ')} defines CANONICAL_ZIPS as a Set literal`)
 })()
 
 // LP route slugs — these are existing app/lp/<slug>/page.tsx files.
