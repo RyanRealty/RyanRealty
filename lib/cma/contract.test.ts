@@ -33,7 +33,7 @@ function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
     baths: 2,
     sqft: 2000,
     lotAcres: 0.25,
-    propertySubType: null,
+    propertySubType: 'Single Family Residence',
     yearBuilt: 2005,
     garageSpaces: 2,
     photoUrl: null,
@@ -62,7 +62,7 @@ function comp(overrides: Partial<CmaComp> = {}): CmaComp {
     baths: 2,
     sqft: 2000,
     lotAcres: 0.25,
-    propertySubType: null,
+    propertySubType: 'Single Family Residence',
     yearBuilt: 2004,
     photoUrl: null,
     publicRemarks: null,
@@ -107,6 +107,7 @@ describe('evaluateAccuracyContract', () => {
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({
+      subjectSubType: 'Single Family Residence',
       audit: cleanAudit(),
       comps: adjusted,
       pricing,

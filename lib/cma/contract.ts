@@ -141,11 +141,14 @@ export function evaluateAccuracyContract(args: {
   const crossType = comps.find((c) => !productTypeCompatible(subjectSubType ?? null, c.propertySubType))
   checks.push({
     id: 'product-type-match',
-    severity: 'hard',
-    pass: subjectSubType == null || !crossType,
+    // Apples to apples only (Matt 2026-09-08). A cross-type sale is a hard
+    // refusal. A subject whose own type was never stored cannot be checked,
+    // and an unchecked type is not a pass: it forces a broker's read.
+    severity: subjectSubType == null ? 'review' : 'hard',
+    pass: subjectSubType != null && !crossType,
     detail:
       subjectSubType == null
-        ? 'Subject property type was not stored. Product-type gate skipped.'
+        ? 'Subject property type was not stored, so the sales could not be matched to it by type.'
         : crossType
           ? `Comp ${crossType.address} is ${crossType.propertySubType ?? 'an unknown type'} and cannot price a ${subjectSubType}.`
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
