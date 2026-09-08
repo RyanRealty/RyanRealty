@@ -69,9 +69,10 @@ describe('renderCompMatrixHtml', () => {
     for (const row of ['Sold for', 'Sold', 'Size', 'Days to offer', 'Sale price today']) {
       expect(html, row).toContain(row)
     }
-    expect(html).toContain('Every home here is a single family residence.')
-    expect(html).toContain('Every home here is 3 bd / 1 ba.')
-    expect(html).toContain('Every home here was built in 1978.')
+    // ONE sentence, not one per folded row (tasteReview round three, §3).
+    expect(html).toContain(
+      'Every home here is a single family residence, 3 bd / 1 ba, built in 1978.',
+    )
     expect(html).toContain('$495,000')
     expect(html).toContain('$465,744')
     expect(html).toContain('Jun 25, 2026')
@@ -153,7 +154,7 @@ describe('renderCompMatrixHtml', () => {
     expect(html).toMatch(/<td class="v n[^"]*">\$495,000<\/td>/)
     // Property type is identical across the table, so it folds into a
     // sentence above it rather than repeating one value six times.
-    expect(html).toContain('Every home here is a single family residence.')
+    expect(html).toContain('Every home here is a single family residence,')
   })
 
   it('does not print MLS N/A into the grid', () => {

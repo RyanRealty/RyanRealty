@@ -494,16 +494,19 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // Form 1004 order, line by line (research item 1): the three adjustments
     // itemized, then the net, then the two percentages, then the price today.
     expect(html).toContain('Adjusted for date')
-    expect(html).toContain('Adjusted for size')
+    // The row label carries what the sign means, so no sentence has to.
+    expect(html).toContain('Adjusted for size (theirs vs yours)')
     // "Adjusted for style" prints only where a style adjustment was made: a
     // row every column leaves empty is dropped rather than printed as dashes.
     expect(html).toContain('Net adjustment')
     expect(html).toContain('Every adjustment added up')
     expect(html).toContain('Sale price today')
-    // The legend says what the labels cannot: which way a minus points. It no
-    // longer restates the arithmetic the rows spell out in order.
-    expect(html).toContain('A minus figure means that sale had something yours does not.')
+    // Both explaining sentences are gone: the labels carry the sign, and the
+    // identity rows fold into ONE sentence (tasteReview round three, §3).
+    expect(html).not.toContain('A minus figure means')
+    expect(html).not.toContain('A plus means yours')
     expect(html).not.toMatch(/Sale price today is the sale price plus every adjustment above it/i)
+    expect(html).not.toMatch(/Every home here is [^.]+\. Every home here is/)
   })
 })
 
