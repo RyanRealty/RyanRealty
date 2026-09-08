@@ -244,9 +244,7 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
     sentences.push(
       // "Half of them" sat after a sentence whose subject is the homes FOR
       // SALE; this median is over the homes that sold.
-      `Half of the homes that sold had an accepted offer inside ${int(
-        offerMedian,
-      )} days; the other half waited longer.`,
+      `Half of the homes that sold had an accepted offer inside ${int(offerMedian)} days.`,
     )
   }
   if (chart) {
