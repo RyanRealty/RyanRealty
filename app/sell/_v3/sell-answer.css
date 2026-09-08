@@ -1,0 +1,435 @@
+/* The /sell answer body (SITE-02). Tokens only — every color, rule, size and
+   duration below resolves through components/site/v3/tokens.css, so changing
+   a token moves this surface with the other 118 pages (ci:one-design-system).
+   No elevation shadow, no raw brand value, no second radius rhythm. */
+
+.sell-answer {
+  display: grid;
+  gap: var(--v3-space-md);
+  text-align: start;
+}
+
+.sell-answer__eyebrow {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__stamp {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.sell-answer__claim {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: var(--v3-leading-heading);
+  letter-spacing: var(--v3-track-display);
+  color: var(--v3-ink);
+  text-wrap: balance;
+}
+
+/* ── the drawing: homes for sale against a month of sales ─────────────────── */
+
+.sell-answer__figure {
+  margin: 0;
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding-block: var(--v3-space-sm);
+  border-block: var(--v3-rule-hairline);
+}
+
+.sell-answer__caption {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.sell-answer__bars {
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+.sell-answer__bar {
+  /* A button, not a div: the drawing has to answer a keyboard the same way it
+     answers a pointer, and a title attribute does not reach one. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label value' 'track track';
+  align-items: baseline;
+  column-gap: var(--v3-space-sm);
+  row-gap: var(--v3-space-3xs);
+  inline-size: 100%;
+  min-block-size: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sell-answer__bar-reading {
+  margin: 0;
+  min-block-size: calc(var(--v3-space-lg) + var(--v3-space-xs));
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+/* The prompt is quieter than a reading, so an untouched drawing does not look
+   as though it is already answering something. */
+.sell-answer__bar-reading--idle {
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__bar-label {
+  grid-area: label;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__bar-value {
+  grid-area: value;
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+
+.sell-answer__track {
+  grid-area: track;
+  display: block;
+  block-size: var(--v3-space-sm);
+  background: var(--v3-wash);
+}
+
+.sell-answer__fill {
+  display: block;
+  block-size: 100%;
+  background: var(--v3-ink);
+  transform-origin: left center;
+  animation: sell-answer-draw var(--v3-dur-rise) var(--v3-ease-out) both;
+}
+
+/* The pace bar is the context series, so it reads as a tint of the same ink
+   rather than as a second hue (PUBLIC_UI: navy on cream, tints for context). */
+.sell-answer__bar--pace .sell-answer__fill {
+  background: var(--v3-ink-muted);
+}
+
+/* The interrogated bar. The mark itself answers — the track darkens under it,
+   nothing moves, nothing bounces (TASTE: interaction reveals, never decorates). */
+.sell-answer__bar--live .sell-answer__track {
+  background: color-mix(in srgb, var(--v3-ink) 16%, transparent);
+}
+
+.sell-answer__bar--live .sell-answer__bar-label {
+  color: var(--v3-ink);
+}
+
+@keyframes sell-answer-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Reduced motion gets the same graphic, already complete. */
+@media (prefers-reduced-motion: reduce) {
+  .sell-answer__fill {
+    animation: none;
+  }
+}
+
+.sell-answer__verdict {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__verdict-months {
+  /* Body face, not the display face. --v3-font-num is Amboqia, which belongs on
+     a figure that stands alone (the bar values above); set inside a running
+     sentence at source size it read as a font-loading fault, not as emphasis. */
+  font-family: var(--v3-font-body);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+/* ── the readings ─────────────────────────────────────────────────────────── */
+
+.sell-answer__readings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--v3-space-sm);
+}
+
+.sell-answer__reading + .sell-answer__reading {
+  padding-block-start: var(--v3-space-sm);
+  border-block-start: var(--v3-rule-hairline);
+}
+
+.sell-answer__reading-line {
+  margin: 0 0 var(--v3-space-3xs);
+  display: flex;
+  align-items: baseline;
+  gap: var(--v3-space-xs);
+}
+
+.sell-answer__reading-value {
+  font-family: var(--v3-font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  color: var(--v3-ink);
+}
+
+.sell-answer__reading-label {
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__meter {
+  margin: var(--v3-space-3xs) 0 var(--v3-space-2xs);
+  block-size: var(--v3-space-xs);
+  background: var(--v3-wash);
+}
+
+.sell-answer__meter-fill {
+  display: block;
+  block-size: 100%;
+  background: var(--v3-ink);
+  transform-origin: left center;
+  animation: sell-answer-draw var(--v3-dur-rise) var(--v3-ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sell-answer__meter-fill {
+    animation: none;
+  }
+}
+
+.sell-answer__reading-sentence {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.sell-answer__more {
+  margin-block-start: var(--v3-space-3xs);
+  min-block-size: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.sell-answer__more:hover {
+  color: var(--v3-ink);
+}
+
+.sell-answer__detail {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__detail--closed {
+  display: none;
+}
+
+.sell-answer__door {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+}
+
+.sell-answer__source {
+  margin-block-start: calc(var(--v3-space-3xs) * -1);
+}
+
+/* ── the comps: which homes the ladder matched ───────────────────────────────
+   A ledger of real rows, not a paragraph claiming a number. Every row is the
+   same template, so the run reads as one thing enumerated. */
+
+.sell-answer__comps {
+  margin: var(--v3-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--v3-space-2xs);
+}
+
+.sell-answer__comp {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  column-gap: var(--v3-space-sm);
+  padding-block: var(--v3-space-2xs);
+  border-block-start: var(--v3-rule-hairline);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.sell-answer__comp-street {
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+.sell-answer__comp-facts,
+.sell-answer__comp-when {
+  font-variant-numeric: tabular-nums;
+}
+
+.sell-answer__comp-where,
+.sell-answer__comp-when {
+  text-align: end;
+}
+
+.sell-answer__comp--more .sell-answer__comp-street {
+  font-weight: var(--v3-weight-body);
+  color: var(--v3-ink-muted);
+}
+
+@media (max-width: 30rem) {
+  .sell-answer__comp {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .sell-answer__comp-where,
+  .sell-answer__comp-when {
+    text-align: start;
+  }
+}
+
+/* ── the proof block in its QUIET form ────────────────────────────────────────
+   V3ProofBlock lays its body out as drawing + rail. With the outcome strips
+   off (Matt has not ruled on publishing them) the drawing column holds one
+   sentence, and at 1440 that left two thirds of the section as empty cream
+   beside the rail — verified in the browser, 2026-09-08.
+
+   This is layout for one instance, not a second look: no color, no radius, no
+   type, no motion, only the column count and the order. The primitive and its
+   stylesheet are untouched, and the rule disappears the day the strips turn on
+   because the page stops passing the class. */
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.v3.v3-proofblock.sell-proof--quiet .v3-proofblock__drawing {
+  order: -1;
+}
+
+@media (min-width: 62rem) {
+  .v3.v3-proofblock.sell-proof--quiet .v3-proofblock__rail {
+    /* Three things sit in the rail — the record, the reviews, the reach. Given
+       the full measure they read as a row instead of a stack in a gutter. */
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr) minmax(0, 0.9fr);
+    gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
+
+/* The proof block's §0 trace when the drawing (and with it the block's own
+   trace line) is off. Aligned to the same measure the section uses so it reads
+   as part of it rather than as a stray line under it. */
+.sell-proof-trace {
+  max-inline-size: var(--v3-measure);
+  margin: calc(var(--v3-space-xl) * -1) auto var(--v3-space-2xl);
+  padding-inline: var(--v3-space-md);
+}
+
+/* ── the timeframe, as a scale ───────────────────────────────────────────────
+   Three identical containers were the tell (evaluator, 2026-09-08): a template
+   shape standing in for a decision that is not equal-weighted. The horizon
+   custom property (0 = now, 1 = someday) drives the mark's size and the row's
+   ink, so the three read as one continuum and the nearest option is visibly
+   the nearest. Tap target stays 44px on every row. */
+
+.sell-when {
+  margin: var(--v3-space-lg) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  border-block-start: var(--v3-rule-hairline);
+}
+
+.sell-when__opt {
+  inline-size: 100%;
+  min-block-size: var(--v3-tap);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--v3-space-sm);
+  padding-block: var(--v3-space-sm);
+  border: 0;
+  border-block-end: var(--v3-rule-hairline);
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.sell-when__opt:hover,
+.sell-when__opt:focus-visible,
+.sell-when__opt--picked {
+  background: var(--v3-wash);
+}
+
+/* The mark IS the horizon: a full disc for now, a thin ring for someday. */
+.sell-when__mark {
+  grid-row: 1 / span 2;
+  align-self: center;
+  inline-size: var(--v3-space-sm);
+  block-size: var(--v3-space-sm);
+  border: 1px solid var(--v3-ink);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-ink);
+  opacity: calc(1 - (var(--sell-when-horizon) * 0.75));
+}
+
+.sell-when__label {
+  font-family: var(--v3-font-body);
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+.sell-when__when {
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+  text-align: end;
+}
+
+.sell-when__sub {
+  grid-column: 2 / -1;
+  margin-block-start: var(--v3-space-3xs);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
