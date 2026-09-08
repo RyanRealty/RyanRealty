@@ -54,6 +54,10 @@ export function immersiveInteractionCss(): string {
 .tl-mark,.bar-row,.month-mark,.pp-cut,.ws-dot{cursor:pointer}
 .tl-mark:focus-visible,.bar-row:focus-visible,.month-mark:focus-visible,.pp-cut:focus-visible,.ws-dot:focus-visible{outline:3px solid rgba(16,39,66,.35)}
 .tl-mark circle:last-of-type,.month-mark circle:last-of-type,.ws-dot circle:last-of-type{stroke:rgba(16,39,66,.16);stroke-width:5;paint-order:stroke}
+/* A SET-ASIDE sale is hollow, and stays hollow: the soft focus ring above is
+   a :last-of-type rule, and CSS beats the element's own stroke attribute, so
+   the hollow mark rendered as a washed-out blob until this took it back. */
+.ws-dot circle.ws-aside{stroke:var(--navy);stroke-width:1.75;paint-order:normal}
 .tl-mark:hover circle:last-of-type,.month-mark:hover circle:last-of-type,.ws-dot:hover circle:last-of-type{stroke:rgba(16,39,66,.45)}
 .bar-row.is-read rect{fill:rgba(16,39,66,.06)}
 .tl-mark.is-read circle:last-of-type,.month-mark.is-read circle:last-of-type,.ws-dot.is-read circle:last-of-type{r:6;stroke:var(--navy)}
@@ -78,7 +82,15 @@ export function immersiveInteractionCss(): string {
 .pp-list li{display:flex;justify-content:space-between;gap:16px;padding:5px 0;border-bottom:1px solid var(--ink12)}
 .pp-list .k{opacity:.65}
 .pp-list .v{font-variant-numeric:tabular-nums;font-weight:600}
-/* A sale, its pin and its price path light together. */
+/* A sale, its pin and its price path light together. The COLUMN end of that
+   pair is a control too: an overlay inside the header cell, so the <th> keeps
+   its header semantics and the reader gets a 44px target and a focus ring. */
+.comp-matrix th.v{position:relative}
+.matrix-hit{position:absolute;inset:0;display:block;cursor:pointer;border-radius:6px}
+.matrix-hit:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:-2px}
+.matrix-hit:hover{background:rgba(16,39,66,.05)}
+.comp-matrix th.v .matrix-addr,.comp-matrix th.v .matrix-thumb{position:relative;z-index:1}
+@media print{.matrix-hit{display:none}}
 .is-on{background:rgba(16,39,66,.07)}
 th.v.is-on,.comp-stack-card.is-on{outline:2px solid var(--navy);outline-offset:2px;background:transparent}
 /* The toggle that puts the working away. */
@@ -345,11 +357,24 @@ try{
       document.querySelector('th.v[data-comp="'+id+'"]')
     if(target&&target.scrollIntoView)target.scrollIntoView({block:'center',behavior:REDUCED?'auto':'smooth'})
   }
-  document.addEventListener('click',function(e){
-    var t=e.target&&e.target.closest?e.target.closest('[data-comp],[data-pin]'):null
+  function lightFrom(t){
     if(!t)return
     var fromPin=!!t.closest('.pin-map,.pin-map-wrap')
     light(t.getAttribute('data-comp')||t.getAttribute('data-pin'),fromPin)
+  }
+  document.addEventListener('click',function(e){
+    lightFrom(e.target&&e.target.closest?e.target.closest('[data-comp],[data-pin]'):null)
+  })
+  // Enter and Space on the column header's own control. A span with
+  // role="button" does not fire a click from the keyboard the way a <button>
+  // does, and the column end of the sale-to-pin pair was unreachable without a
+  // mouse (tasteReview round two, §4).
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter'&&e.key!==' '&&e.key!=='Spacebar')return
+    var t=e.target&&e.target.closest?e.target.closest('.matrix-hit'):null
+    if(!t)return
+    e.preventDefault()
+    lightFrom(t)
   })
 }catch(e){}
 

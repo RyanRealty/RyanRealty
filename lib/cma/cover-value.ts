@@ -3,7 +3,7 @@
  * and list range only. Expected sale stays off the cover.
  */
 
-import { escapeHtml, usd } from '@/lib/cma/render-blocks'
+import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { listPriceLead } from '@/lib/cma/client-facing'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
@@ -76,6 +76,43 @@ export function coverWorthSentence(p: CmaPricing, opts?: { omitAsk?: boolean }):
   return [worth, ask].filter(Boolean).join(' ')
 }
 
+/**
+ * Why a value range is a quarter of the price wide, when it is.
+ *
+ * tasteReview round two, §3.E: three of the four documents open on a 28 to 33
+ * percent spread with nothing saying why — a $1.47M opinion carrying a
+ * $490,000 spread reads as a shrug. Every figure in the sentence is on
+ * `pricing.rangeRule`, which lib/pricing wrote: how many sales it had, how far
+ * apart the adjusted sales landed, and how many it set aside at each end.
+ * Nothing here computes a valuation.
+ */
+export const WIDE_RANGE_THRESHOLD = 0.15
+export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined): string {
+  if (!pricing) return ''
+  const lo = Math.min(pricing.valueLow, pricing.valueHigh)
+  const hi = Math.max(pricing.valueLow, pricing.valueHigh)
+  if (!(lo > 0) || !(hi > 0) || hi / lo - 1 <= WIDE_RANGE_THRESHOLD) return ''
+  const rule = (pricing as unknown as { rangeRule?: Record<string, unknown> | null }).rangeRule
+  if (!rule || typeof rule !== 'object') return ''
+  const num = (v: unknown): number | null => {
+    const n = typeof v === 'number' ? v : Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  const n = num(rule.n)
+  const kept = num(rule.kept)
+  if (n == null || kept == null || !(kept > 0)) return ''
+  const setAside = Math.max(n - kept, 0)
+  const spread = `That range is wide because the ${countWord(kept)} sales behind it still land ${usd(
+    Math.round(hi - lo),
+  )} apart once each is moved to today`
+  return setAside > 0
+    ? `${spread}, and that is after setting aside the ${
+        setAside === 1 ? 'furthest one' : `${countWord(setAside)} furthest`
+      }.`
+    : `${spread}.`
+}
+
+
 export function coverValueBlockHtml(a: CoverArgs): string {
   const p = a.pricing
   const range = pricingRangeDisplay(p)
@@ -100,11 +137,14 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
   // The recommend is set in type right above, so the sentence under it says
   // what the home is WORTH and stops — never the same figure a second time.
   const worth = coverWorthSentence(p, { omitAsk: true })
+  // A quarter-of-the-price range meets the reader here first (§3.E).
+  const cause = rangeSpreadCauseSentence(p)
   return `
     <div class="hero-payoff">
       <div class="ans-l r">Recommended list</div>
       <div class="ans-n r">${usd(p.recommended)}</div>
       ${worth ? `<div class="hero-list r">${esc(worth)}</div>` : ''}
+      ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
     </div>`
 }
 
@@ -119,6 +159,9 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
     currentAskLine(p),
     range.outOfRange ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
     range.note,
+    // A 28-to-33 percent spread on the opening screen with nothing saying why
+    // (tasteReview round two, §3.E). One sentence, off `pricing.rangeRule`.
+    rangeSpreadCauseSentence(p),
     story.body,
   ].filter((b): b is string => Boolean(b && String(b).trim()))
   if (bits.length === 0) return ''

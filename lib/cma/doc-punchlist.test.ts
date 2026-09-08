@@ -478,9 +478,15 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     const matrix = html.indexOf('comp-matrix-wrap', lead)
     expect(lead).toBeGreaterThan(0)
     expect(matrix).toBeGreaterThan(lead)
-    // The recommend is the chapter TITLE now, so the lead stops at the range.
-    expect(html).toMatch(/land at \$372,324 to \$398,788/)
-    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('land at $372,324'))
+    // ONE STATEMENT OF THE RANGE, in the chapter's lead, off
+    // pricing.valueLow/valueHigh — the same pair the cover prints. The table's
+    // lead used to restate the span of the adjusted sales to the dollar, which
+    // on a trimmed range was the UNTRIMMED pair and a second answer
+    // (tasteReview round two, §3.F).
+    expect(html).toMatch(/The sales support \$380,000 to \$398,000\./)
+    expect(html).not.toMatch(/land at \$372,324 to \$398,788/)
+    expect(html).toMatch(/closed sales below set this number, each moved for/)
+    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('The sales support $380,000'))
   })
 
   it('explains the adjustment rows once', () => {
@@ -1046,20 +1052,27 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     )
   })
 
-  it('leads the seller own unsold card with the SAME measure chapter 1 states', () => {
+  it('states where the ask sat against the range ONCE, in chapter 1', () => {
     const html = letter()
-    const ch1 = /above the top of the range homes like yours sold in\./.exec(html)
-    expect(ch1).not.toBeNull()
-    // The sentence appears twice: chapter 1's reading and chapter 2's card.
+    // tasteReview round two, §3.C: printing it in chapter 1 AND on chapter 2's
+    // subject card put "15.3 percent above the top" and "at the top of what
+    // they closed at" four lines apart in one paragraph. One verdict, one
+    // place; the dollars-a-foot reading stays on the card.
     expect(
       (html.match(/above the top of the range homes like yours sold in\./g) ?? []).length,
-    ).toBeGreaterThanOrEqual(2)
+    ).toBe(1)
+    expect(html).toContain('a foot, unadjusted.')
   })
 
-  it('reconciles the city median against this house before it shows the board', () => {
+  it('gives "homes like yours" one meaning and drops the unsourced city median', () => {
     const html = letter()
-    expect(html).toContain('is every Redmond home, all sizes')
-    expect(html).toContain('Homes like yours')
+    // §3.B / §3.D. Chapter 1's zone is the ADJUSTED range and says so; chapter
+    // 5 states the RAW close prices and says so; the pooled city median that
+    // sat above every month drawn under it is gone.
+    expect(html).toContain('where homes like yours sold, adjusted for date and size')
+    expect(html).toMatch(/sales behind your price sold for \$[\d,]+ to \$[\d,]+ before adjusting for date and size\./)
+    expect(html).not.toContain('is every Redmond home, all sizes')
+    expect(html).not.toContain('532,311')
   })
 })
 

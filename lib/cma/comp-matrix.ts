@@ -465,7 +465,20 @@ function matrixTable(
             c.label,
           )}</a>`
         : `<span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span>`
-      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${img}${name}${
+      // ROW → PIN IS A CONTROL, so it says so. The pin on the map is a real
+      // <button>; this end of the same pair was a bare <th> with no role, no
+      // tabindex and no cursor, so one direction of a two-way interaction was
+      // neither discoverable nor keyboard-reachable (tasteReview round two,
+      // §4). `role="button"` on the <th> would take the header semantics away
+      // from the column, so the affordance goes on an inner element and the
+      // <th> keeps being a header.
+      const control =
+        c.key === 'subject'
+          ? ''
+          : `<span class="matrix-hit" role="button" tabindex="0" aria-label="${esc(
+              `Show ${c.label} on the map`,
+            )}" data-comp="${esc(pin)}" data-pin="${esc(pin)}"></span>`
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${control}${img}${name}${
         // `sub` is composed here, from figures already escaped by usd()/int(),
         // and carries one <br/> of our own — never reader input.
         c.sub ? `<span class="matrix-sub">${c.sub}</span>` : ''

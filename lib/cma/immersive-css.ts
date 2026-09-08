@@ -49,6 +49,7 @@ img{max-width:100%;display:block}
 .hero .ans-n{color:var(--cream);font-size:clamp(56px,11vw,120px);margin:4px 0 8px;text-shadow:0 2px 28px rgba(16,39,66,.7)}
 .hero .ans-l{color:rgba(250,248,244,.88)}
 .hero-list{font-size:clamp(15px,2vw,18px);color:rgba(250,248,244,.9);margin-top:6px;max-width:640px}
+.hero-why{font-size:clamp(12px,1.5vw,14px);color:rgba(250,248,244,.72);margin-top:6px;max-width:640px}
 .cue{position:absolute;left:50%;bottom:28px;z-index:2;width:16px;height:16px;border-right:2px solid rgba(250,248,244,.8);border-bottom:2px solid rgba(250,248,244,.8);transform:translateX(-50%) rotate(45deg);border-radius:0}
 .ans-n{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(64px,13vw,150px);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0 10px}
 .ans-l{font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.65}

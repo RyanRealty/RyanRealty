@@ -199,8 +199,12 @@ describe('print CMA cover — the recommendation never sits outside its own stat
 
   it('keeps the plain "Supported range" label with no cap note when the recommendation sits inside it', () => {
     const { html } = renderCmaHtml(byronArgs({ recommended: 630000, conservative: 620000, highEnd: 635000 }))
-    expect(html).toContain('List between $620,000 and $635,000')
-    expect(html).not.toContain('The sales support')
+    // The list range and the supported range are the same pair here, so the
+    // chapter states it once and keeps the instruction (tasteReview round two,
+    // §1 Words: three statements of one range inside ten lines).
+    expect(html).toContain('The sales support $620,000 to $635,000.')
+    expect(html).toContain('List in that range.')
+    expect(html).not.toContain('List between $620,000 and $635,000')
     expect(html).not.toMatch(/capped (below|above) this range/)
   })
 

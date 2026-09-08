@@ -669,6 +669,16 @@ async function driveInteractions(opts: {
       document.head.appendChild(style)
     })
     await page.evaluate(() => new Promise((r) => setTimeout(r, 200)))
+    // How long the document actually is, measured rather than estimated.
+    // tasteReview round two, item 3: "25.6 screens is longer than round one" —
+    // a length claim in a review has to come off the same run as the shots, so
+    // the run prints it.
+    const scrollHeight = (await page.evaluate(
+      () => document.documentElement.scrollHeight,
+    )) as number
+    console.log(
+      `  [interact ${width}] document scrollHeight = ${scrollHeight}px (${(scrollHeight / 812).toFixed(1)} screens at 812)`,
+    )
     for (let i = 0; i < INTERACT_STEPS.length; i++) {
       const step = INTERACT_STEPS[i]!
       if (step.when) {

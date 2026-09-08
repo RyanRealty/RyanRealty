@@ -172,9 +172,14 @@ export function askAgainstSoldSentence(input: {
           : position <= 1 / 3
             ? 'A foot at a time, that is at the bottom of what they closed at.'
             : 'A foot at a time, that is in the middle of what they closed at.'
+  // "unadjusted" is the whole point of the word: chapter 1's shaded zone is
+  // the range adjusted for date and size, and this line is the same homes at
+  // their own sale price over their own feet. One phrase, "homes like yours",
+  // was carrying both readings (tasteReview round two, §3.B), so each printed
+  // range now says which of the two it is where the reader meets it.
   return `Asked ${usd(ask)} for ${int(sqft)} sqft, ${usd(ppsf)} a foot. Homes like it closed at ${usd(
     range.low,
-  )} to ${usd(range.high)} a foot. ${where}`
+  )} to ${usd(range.high)} a foot, unadjusted. ${where}`
 }
 
 type Story = {
@@ -225,6 +230,12 @@ export type DidNotSellArgs = {
   /** What homes like this one sold for. Chapter 1 measures the ask against it. */
   rangeLow?: number | null
   rangeHigh?: number | null
+  /**
+   * True when chapter 1 renders in this document and already states where the
+   * ask sat against that range. The subject card then carries the
+   * dollars-a-foot reading alone.
+   */
+  askVerdictInChapterOne?: boolean
 }
 
 /**
@@ -256,9 +267,16 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
       facts: factsLine(s),
       path,
       isSubject: true,
-      // The SAME measure chapter 1 states, in the same words, on the same
-      // ask — so the two chapters cannot cancel each other a minute apart.
-      lead: askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null),
+      // ONE VERDICT ON THE ASK, IN ONE PLACE. Chapter 1 draws the ask against
+      // the adjusted range and states the percentage under the drawing; this
+      // card states the dollars-a-foot reading. Printing both here put "15.3
+      // percent above the top" and "at the top of what they closed at" four
+      // lines apart in one paragraph — two answers to what a reader hears as
+      // one question (tasteReview round two, §3.C). The sentence is kept only
+      // when chapter 1 is not in this document to carry it.
+      lead: a.askVerdictInChapterOne
+        ? ''
+        : askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null),
     })
   }
   const peers = collapseExpiredPeerCycles(

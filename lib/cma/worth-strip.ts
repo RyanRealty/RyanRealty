@@ -29,13 +29,28 @@ const MUTED = 'rgba(16,39,66,0.55)'
 const EDGE = 'rgba(16,39,66,0.22)'
 const ZONE = 'rgba(16,39,66,0.16)'
 
+/** The one word a hollow mark needs. Clamped to the frame like every label. */
+const ASIDE_LABEL = 'set aside'
+
+export type WorthStripSale = {
+  n: number
+  address: string
+  adjustedPrice: number
+  /**
+   * True when `pricing.rangeRule` set this sale aside — the highest and the
+   * lowest, under `trimmed-one-each-end`. It is still one of the sales the
+   * grid prints; it is not one of the sales the RANGE is the spread of.
+   */
+  setAside?: boolean
+}
+
 export type WorthStripInput = {
   /** One dot per printed sale, in the grid's own order. */
-  sales: Array<{ n: number; address: string; adjustedPrice: number }>
+  sales: WorthStripSale[]
   rangeLow: number
   rangeHigh: number
   recommended: number
-  /** The ask that failed, on an expired origin. Null otherwise. */
+  /** The ask that FAILED, on a listing that came off unsold. Null otherwise. */
   lastAsk: number | null
 }
 
@@ -58,19 +73,37 @@ type Geometry = {
   hi: number
   low: number
   high: number
-  sales: Array<{ n: number; address: string; adjustedPrice: number }>
+  /** Drawn as filled dots: every kept sale, plus any set-aside one on the axis. */
+  sales: WorthStripSale[]
+  /** Set aside AND off the axis — named in the caption, never drawn. */
+  offAxis: WorthStripSale[]
 }
 
+/**
+ * THE AXIS IS THE KEPT SALES, THE LIST LINE AND THE FAILED ASK. Nothing else
+ * sets its width.
+ *
+ * tasteReview round two, §3.G: on 65365 Concorde the two sales the prose says
+ * were set aside ($971K and $2.65M) set the width of the whole drawing and
+ * carried the only two dollar labels on it, so the first read of the graphic
+ * was "worth somewhere between $971K and $2.65M" — over a range of $1.26M to
+ * $1.75M that went unlabelled. On 19968 a $140,000 figure from an old listing
+ * sat at the far left with every dot clustered $296K to $441K, and 40 percent
+ * of the strip was empty. A set-aside sale is drawn hollow, with its own small
+ * label, ONLY when it lands inside that axis; otherwise the caption names it
+ * and the drawing keeps its scale.
+ */
 export function worthStripGeometry(input: WorthStripInput): Geometry | null {
-  const sales = input.sales
+  const all = input.sales
     .filter((s) => Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0)
     .sort((a, b) => a.adjustedPrice - b.adjustedPrice)
-  if (sales.length < 2) return null
+  const kept = all.filter((s) => s.setAside !== true)
+  if (kept.length < 2) return null
   const low = Math.min(input.rangeLow, input.rangeHigh)
   const high = Math.max(input.rangeLow, input.rangeHigh)
   if (!(low > 0) || !(high > 0) || !(input.recommended > 0)) return null
   const values = [
-    ...sales.map((s) => s.adjustedPrice),
+    ...kept.map((s) => s.adjustedPrice),
     low,
     high,
     input.recommended,
@@ -79,7 +112,22 @@ export function worthStripGeometry(input: WorthStripInput): Geometry | null {
   const min = Math.min(...values)
   const max = Math.max(...values)
   const pad = Math.max((max - min) * 0.12, Math.max(max * 0.01, 1))
-  return { lo: min - pad, hi: max + pad, low, high, sales }
+  const lo = min - pad
+  const hi = max + pad
+  const setAside = all.filter((s) => s.setAside === true)
+  const inside = setAside.filter((s) => s.adjustedPrice >= lo && s.adjustedPrice <= hi)
+  const offAxis = setAside.filter((s) => s.adjustedPrice < lo || s.adjustedPrice > hi)
+  const sales = [...kept, ...inside].sort((a, b) => a.adjustedPrice - b.adjustedPrice)
+  return { lo, hi, low, high, sales, offAxis }
+}
+
+/** "One sale at $2.65M was set aside." Only when one was, and it is off-axis. */
+function setAsideNote(g: Geometry): string {
+  if (g.offAxis.length === 0) return ''
+  const prices = g.offAxis.map((s) => shortUsd(s.adjustedPrice))
+  if (prices.length === 1) return `One sale at ${prices[0]} was set aside.`
+  const list = `${prices.slice(0, -1).join(', ')} and ${prices[prices.length - 1]}`
+  return `${prices.length} sales, at ${list}, were set aside.`
 }
 
 /**
@@ -150,20 +198,35 @@ export function worthStripSvg(
   // The stack has a ceiling: seven sales inside a whisker of each other would
   // otherwise climb straight out of the frame. The step tightens instead.
   const step = topRow > 0 ? Math.min(13, (dotY - 34) / topRow) : 13
+  // Above the TALLEST stack, never above row zero: a label that clears one dot
+  // and sits on the next one is the collision it was moved to avoid.
+  const labelY = dotY - topRow * step - 12
+  // "set aside" gets its own row ABOVE the two price labels. Beside the dot it
+  // landed on the end price label whenever the set-aside sale was near an end,
+  // which on 19968 it is by construction.
+  const asideLabelY = labelY - (fs + 2)
   const dots = g.sales
     .map((s, i) => {
       const cx = cxs[i]!
       const cy = dotY - rows[i]! * step
-      const read = `${s.n}. ${s.address} · sale price today ${usd(s.adjustedPrice)}`
-      return `<g class="ws-dot" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
+      const aside = s.setAside === true
+      const read = `${s.n}. ${s.address} · sale price today ${usd(s.adjustedPrice)}${
+        aside ? ' · set aside from the range' : ''
+      }`
+      // A COUNTED SALE AND A SET-ASIDE ONE ARE NOT THE SAME MARK. The set-aside
+      // one is hollow and carries its own small label, so a reader never counts
+      // a sale the range was not the spread of (tasteReview round two, §3.G).
+      const asideFit = fit(cx, ASIDE_LABEL, fs - 1, W)
+      const mark = aside
+        ? `<circle class="ws-aside" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="none" stroke="${INK}" stroke-width="1.5"/>
+      <text x="${asideFit.x}" y="${asideLabelY.toFixed(1)}" text-anchor="${asideFit.anchor}" font-size="${(fs - 1).toFixed(1)}" fill="${MUTED}">${ASIDE_LABEL}</text>`
+        : `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>`
+      return `<g class="ws-dot${aside ? ' is-aside' : ''}" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
       <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="13" fill="transparent"/>
-      <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>
+      ${mark}
     </g>`
     })
     .join('\n    ')
-  // Above the TALLEST stack, never above row zero: a label that clears one dot
-  // and sits on the next one is the collision it was moved to avoid.
-  const labelY = dotY - topRow * step - 12
   const endLabel = (v: number, anchorLeft: boolean) => {
     const f = fit(x(v), shortUsd(v), fs, W)
     return `<text x="${anchorLeft ? f.x : f.x}" y="${labelY.toFixed(1)}" text-anchor="${f.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(shortUsd(v))}</text>`
@@ -209,14 +272,24 @@ export function worthStripPhoneSvg(input: WorthStripInput): string {
   return worthStripSvg(input, WORTH_STRIP_PHONE)
 }
 
-/** The reading under the strip. Every figure in it is drawn above it. */
+/**
+ * The reading under the strip. It says what the MARKS are and stops.
+ *
+ * tasteReview round two, §1 Words: this sentence printed the span of the
+ * adjusted sales to the dollar, which was the chapter's third statement of a
+ * range inside ten lines, and then repeated "The shading is what your home is
+ * worth" verbatim from the caption drawn 20px above it. The range is stated
+ * once, in the chapter's lead; the caption is on the drawing, where print can
+ * read it; and this line does the one job neither of those does, which is to
+ * say what a dot is.
+ */
 export function worthStripReading(input: WorthStripInput): string {
   const g = worthStripGeometry(input)
   if (!g) return ''
-  const n = g.sales.length
-  return `${int(n)} closed ${n === 1 ? 'sale' : 'sales'}, each moved to what it would sell for today, land between ${usd(
-    g.sales[0]!.adjustedPrice,
-  )} and ${usd(g.sales[n - 1]!.adjustedPrice)}. The shading is what your home is worth. The line is where we would list it.`
+  const aside = setAsideNote(g)
+  return `Each dot is one sale, moved to what it would sell for today. The line is where we would list it.${
+    aside ? ` ${aside}` : ''
+  }`
 }
 
 /**

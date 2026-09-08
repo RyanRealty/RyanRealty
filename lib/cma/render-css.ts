@@ -226,8 +226,19 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--navy);
     max-width: 34em;
   }
+  /* Why the range is that wide, when it is. Quieter than the sentence above,
+     same measure, so the cover reads as one block and not two. */
+  .cover-why {
+    margin: 8px 0 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--navy);
+    opacity: .72;
+    max-width: 34em;
+  }
   @media screen and (max-width: 700px) {
     .cover-worth { font-size: 16px; margin-top: 14px; padding-top: 14px; }
+    .cover-why { font-size: 13px; }
   }
 
   /* CONTAINED, not cropped. We cannot know from a URL whether an MLS photo

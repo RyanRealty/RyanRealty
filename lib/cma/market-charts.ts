@@ -673,12 +673,24 @@ function timelineBody(o: {
   // struck through its x-height on all four documents.
   const zoneTall = zoneBottom - zoneTop >= fs + 8
   const zoneLabelY = zoneTall ? (zoneTop + zoneBottom) / 2 + fs * 0.36 : Math.max(zoneTop - 6, top - 12)
+  // The zone label NAMES which range this is — the adjusted one — and that is
+  // a longer string than the plot is wide on a phone. It shrinks to fit rather
+  // than running off the right edge; the look-pass measures every label's own
+  // box against the viewBox, so an unfitted label fails the run.
+  // Measured against the FRAME's right edge, not the plot's: the label starts
+  // at plotL + 6 and the viewBox ends at W. 0.62em a character is what Geist
+  // actually measures at these sizes — 0.55 fitted on paper and overflowed by
+  // 3.4 units in the browser, which the phone-frame test caught.
+  const zoneLabelFs = Math.max(
+    8,
+    Math.min(fs, (W - plotL - 8) / Math.max(input.rangeLabel.length * 0.62, 1)),
+  ).toFixed(1)
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
     <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.13"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
-    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${fs}" fill="${TL_INK}">${esc(input.rangeLabel)}</text>
+    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${esc(input.rangeLabel)}</text>
     <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
     <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>

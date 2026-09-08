@@ -30,7 +30,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
-import { coverWorthSentence } from '@/lib/cma/cover-value'
+import { coverWorthSentence, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
@@ -193,6 +193,9 @@ function coverPage(a: RenderCmaArgs): PageDef {
     `by ${a.broker.displayName}, Ryan Realty`,
   ].join(' ')
   const worth = coverWorthSentence(a.pricing)
+  // A quarter-of-the-price range meets the reader on the cover first, and it
+  // said nothing about why it was that wide (tasteReview round two, §3.E).
+  const why = rangeSpreadCauseSentence(a.pricing)
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
@@ -204,6 +207,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
       <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}</div>
       ${worth ? `<p class="cover-worth">${esc(worth)}</p>` : ''}
+      ${why ? `<p class="cover-why">${esc(why)}</p>` : ''}
       <p class="cover-presented">${esc(`${prepared} · ${dateLong(a.generatedAtIso)}`)}</p>
       ${hero.stale ? `<p class="hero-caption">${esc(hero.caption)}</p>` : ''}
     </div>
