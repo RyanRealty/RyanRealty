@@ -27,6 +27,15 @@ import type { CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
+import { askStoryReading } from '@/lib/cma/ask-story'
+
+/**
+ * Where the seller's own ask sat against what homes like theirs sold for, in
+ * one sentence. It lives in `lib/cma/ask-story.ts` now, beside the class that
+ * decides which story may be told around it, and is re-exported here because
+ * chapter 2's peer cards import it from this module.
+ */
+export { askAgainstRangeSentence } from '@/lib/cma/ask-story'
 
 // ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
 /** Listing fee for every expired-listing engagement. */
@@ -824,53 +833,19 @@ export function listingTimelineReading(input: {
 }): string {
   const t = input.timeline
   const finalAsk = t.steps[t.steps.length - 1]?.ask ?? null
-  const low = Math.min(t.rangeLow, t.rangeHigh)
-  const high = Math.max(t.rangeLow, t.rangeHigh)
-  const bits: string[] = []
-  const against = askAgainstRangeSentence(finalAsk, low, high)
-  if (against) bits.push(against)
-  if (t.days != null && t.days > 0) bits.push(`It sat ${Math.round(t.days).toLocaleString('en-US')} days.`)
-  const place = input.city.trim()
-  if (input.marketMedianDom != null && input.marketMedianDom > 0 && place) {
-    // Name the measure. "The Redmond median is 26" leaves a reader to guess
-    // whether that is days to an offer, days to close, or something else —
-    // and the next chapter draws the same figure under its full name.
-    bits.push(
-      `The median home in ${place} has an accepted offer in ${Math.round(input.marketMedianDom)} days.`,
-    )
-  }
-  return bits.join(' ')
+  // WHICH STORY THE NUMBERS CARRY, not the one the chapter was written for.
+  // The sentences, the measure they name, and whether the chapter is allowed
+  // to hand off to an overpricing argument are all decided by the gap between
+  // that ask and the top of the range (lib/cma/ask-story.ts, and tasteReview
+  // round three §4.1, where a corrected engine left this chapter arguing a
+  // case its own drawing no longer made).
+  return askStoryReading({
+    ask: finalAsk,
+    rangeLow: t.rangeLow,
+    rangeHigh: t.rangeHigh,
+    days: t.days,
+    city: input.city,
+    marketMedianDom: input.marketMedianDom,
+  })
 }
 
-function pct1(ratio: number): string {
-  return (Math.abs(ratio) * 100).toFixed(1)
-}
-
-/**
- * Where the seller's own ask sat against what homes like theirs sold for, in
- * one sentence.
- *
- * ONE sentence, in ONE place, because two chapters say it. Chapter 1 read
- * "the asking price was 15.3 percent above the top of the range"; chapter 2's
- * card for the same listing read "that is at the top of what they closed at"
- * on a dollars-a-foot measure. Both were true and, a minute apart, they
- * cancelled. Chapter 2 now leads with this sentence and puts its own
- * dollars-a-foot line after it.
- */
-export function askAgainstRangeSentence(
-  ask: number | null,
-  rangeLow: number | null,
-  rangeHigh: number | null,
-): string {
-  if (ask == null || !(ask > 0) || rangeLow == null || rangeHigh == null) return ''
-  const low = Math.min(rangeLow, rangeHigh)
-  const high = Math.max(rangeLow, rangeHigh)
-  if (!(low > 0) || !(high > 0)) return ''
-  if (ask > high) {
-    return `The asking price was ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
-  }
-  if (ask < low) {
-    return `The asking price was ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
-  }
-  return 'The asking price sat inside the range homes like yours sold in.'
-}

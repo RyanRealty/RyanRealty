@@ -35,7 +35,7 @@ import {
 import { listingTimelinePhoneSvg, listingTimelineSvg } from '@/lib/cma/market-charts'
 import { subjectDomDays } from '@/lib/cma/comp-matrix'
 import { sellerNetFromPrice } from '@/lib/pricing/seller-net'
-import { pricingPage } from '@/lib/cma/render-pricing-page'
+import { pricingPage, worthRangeRounded } from '@/lib/cma/render-pricing-page'
 import type { CmaBroker, CmaClient } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
@@ -47,6 +47,12 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import {
+  PRICED_RIGHT_HEADING_OVERPRICED,
+  askGapClass,
+  pricedRightHeadingFor,
+  type AskGapClass,
+} from '@/lib/cma/ask-story'
 
 const esc = escapeHtml
 
@@ -320,13 +326,48 @@ export function whatHappenedHeading(subject: CmaSubject): string {
 export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
   const body = pricedRightBodyHtml(a)
   if (!body.trim()) return null
+  const heading = pricedRightHeading(a)
   return {
-    meta: `${esc(a.subject.streetAddress)} · What overpricing costs`,
-    toc: PRICED_RIGHT_HEADING,
+    meta: `${esc(a.subject.streetAddress)} · ${esc(heading.replace(/\.$/, ''))}`,
+    toc: heading,
     body: `
-  <h2 class="section">${esc(PRICED_RIGHT_HEADING)}</h2>
+  <h2 class="section">${esc(heading)}</h2>
   ${body}`,
   }
+}
+
+/**
+ * THE ASK THAT FAILED, resolved the way chapter 1's drawing resolves it — the
+ * last step of the final listing period, which is the cut the seller came off
+ * the market at, not the price they opened on.
+ *
+ * Null when there is no failed listing: on an asked origin there is no chapter
+ * 1 and no ask of the seller's own for anything to be measured against.
+ */
+export function failedAskForStory(a: OpinionPageArgs): number | null {
+  if ((a.expiredAudit?.findings.length ?? 0) === 0) return null
+  const cycle = a.expiredAudit?.finalCycle ?? null
+  const lastCut = [...(cycle?.cuts ?? [])].reverse().find((c) => c.ask > 0)?.ask ?? null
+  const ask = lastCut ?? cycle?.initialAsk ?? a.subject.lastListPrice ?? null
+  return ask != null && ask > 0 ? ask : null
+}
+
+/** Which of the three chapter-1 stories this document is in. */
+export function storyClassFor(a: OpinionPageArgs): AskGapClass | null {
+  return askGapClass(failedAskForStory(a), a.pricing.valueLow, a.pricing.valueHigh)
+}
+
+/**
+ * Chapter 2b's title.
+ *
+ * "What overpricing costs" is a claim about THIS listing, and the document may
+ * only make it when the gap carries it (tasteReview round three, §5.1). When
+ * the ask sat near or inside the range the same exhibits are still the right
+ * evidence — they measure the city, not this seller — so the chapter keeps
+ * every graphic and takes a title that describes what it draws.
+ */
+export function pricedRightHeading(a: OpinionPageArgs): string {
+  return pricedRightHeadingFor(storyClassFor(a), cleanText(a.market?.geoLabel) ?? a.subject.city ?? '')
 }
 
 /**
@@ -413,11 +454,13 @@ export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * Chapter 2b's title. Delta 1 names it "What overpricing costs" — the earlier
- * "Priced right sells. Priced high sits." was the claim asserted as a slogan,
- * and this chapter's job is to show what it costs in days and in dollars.
+ * Chapter 2b's title when the gap says overpricing. Delta 1 names it "What
+ * overpricing costs" — the earlier "Priced right sells. Priced high sits." was
+ * the claim asserted as a slogan, and this chapter's job is to show what it
+ * costs in days and in dollars. `pricedRightHeading(a)` picks between this and
+ * the descriptive title; nothing else should read this constant.
  */
-export const PRICED_RIGHT_HEADING = 'What overpricing costs.'
+export const PRICED_RIGHT_HEADING = PRICED_RIGHT_HEADING_OVERPRICED
 
 /**
  * Chapter 5. The city right now.
@@ -476,10 +519,23 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
     .map((c) => c.closePrice)
     .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
   if (closes.length < 2) return ''
+  // RECONCILED IN THE SAME BREATH. The raw top of this sentence IS the ask
+  // chapter 1 says failed — 1737 7th closed at exactly $460,000 — and the two
+  // sat four screens apart with nothing joining them, which is the most
+  // quotable pair in the document (tasteReview round three, §3). The adjusted
+  // pair is the one the chapter of the answer states, rounded the same way, so
+  // a reader meets both halves of "homes like yours" in one line.
+  const worth = worthRangeRounded(a.pricing)
+  const adjusted =
+    worth.low > 0 && worth.high > 0
+      ? worth.low === worth.high
+        ? `; adjusted, they support ${usd(worth.low)}`
+        : `; adjusted, they support ${usd(worth.low)} to ${usd(worth.high)}`
+      : ''
   return `<p class="chart-read">${esc(
     `The ${countWord(closes.length)} sales behind your price sold for ${usd(
       Math.min(...closes),
-    )} to ${usd(Math.max(...closes))} before adjusting for date and size.`,
+    )} to ${usd(Math.max(...closes))} before adjusting for date and size${adjusted}.`,
   )}</p>`
 }
 

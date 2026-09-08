@@ -74,6 +74,22 @@ function round1k(n: number): number {
   return Math.round(n / 1000) * 1000
 }
 
+/**
+ * The pair the chapter states as worth, rounded once, here.
+ *
+ * Exported because chapter 5 reconciles its raw close prices to this pair in
+ * the same breath (tasteReview round three, §3: "homes like yours sold for up
+ * to $460,000" sat four screens from chapter 1's gap sentence with nothing
+ * joining them), and the strip's axis labels are these two numbers. Three
+ * places, one rounding.
+ */
+export function worthRangeRounded(pricing: CmaPricing): { low: number; high: number } {
+  return {
+    low: round1k(Math.min(pricing.valueLow, pricing.valueHigh)),
+    high: round1k(Math.max(pricing.valueLow, pricing.valueHigh)),
+  }
+}
+
 /** "The sales support $372,000 to $399,000." — the ONE statement of the range. */
 function worthRangeSentence(pricing: CmaPricing): string {
   const lo = round1k(Math.min(pricing.valueLow, pricing.valueHigh))
