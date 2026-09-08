@@ -25,6 +25,7 @@
  * never an en-dash.
  */
 
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
@@ -42,6 +43,8 @@ import SalesReportCharts from '@/components/reports/SalesReportCharts'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
@@ -57,7 +60,18 @@ import {
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+/**
+ * THE canonical path for this report, and the only one. `canonicalLiveUrl` used
+ * to sit beside it pointing at /housing-market/reports/sales/<city>/<period> —
+ * a route that has never existed — and fed both the BreadcrumbList last item
+ * and the Dataset `url`. One <link rel=canonical> was correct the whole time,
+ * so the defect was malformed structured data, not a canonical conflict: every
+ * machine reading the JSON-LD was sent to a 404. Metadata and JSON-LD now read
+ * the same builder, so they cannot drift again.
+ */
+function salesReportPath(cityName: string, periodSlug: SalesPeriodSlug): string {
+  return `/reports/sales/${encodeURIComponent(cityEntityKey(cityName))}/${periodSlug}`
+}
 
 function resolveCityFromSlug(slug: string): string | null {
   const decoded = decodeURIComponent(slug).trim().toLowerCase()
@@ -108,34 +122,103 @@ function listingRows(items: ReportListing[]): V3LedgerFigureRow[] {
 
 type PageProps = { params: Promise<{ city: string; period: string }> }
 
+function median(values: number[]): number | null {
+  if (values.length === 0) return null
+  const s = [...values].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
+}
+
+/**
+ * ONE read for the metadata and the body. `getMarketReportDataForLocation`
+ * (app/actions/market-reports.ts) is not cached — only the reports-index cards
+ * are — so a description that quotes the page's own figures would otherwise buy
+ * them with a second round trip against a different window (getDateRangeForPeriod
+ * reads the clock). React cache() memoizes per request across generateMetadata
+ * and the render, so the window, the row set, and every figure below are the
+ * same measurement in the <head> and in the <main>. §0: the snippet's numbers
+ * are the page's numbers, not a second computation of them.
+ */
+const loadSalesReport = cache(async (cityName: string, periodSlug: SalesPeriodSlug) => {
+  const { start, end } = getDateRangeForPeriod(periodSlug)
+  const { closed, pending } = await getMarketReportDataForLocation(cityName, start, end)
+  const medianPrice = median(
+    closed.map((c) => c.price).filter((p): p is number => p != null && Number.isFinite(p)),
+  )
+  const medianDom = median(
+    closed
+      .map((c) => c.days_on_market)
+      .filter((d): d is number => d != null && Number.isFinite(d)),
+  )
+  return {
+    start,
+    end,
+    closed,
+    pending,
+    medianPrice,
+    medianDom,
+    // timeZone UTC on purpose. getDateRangeForPeriod builds the window on UTC
+    // boundaries (Date.UTC(y, 0, 1) for `last-year`), so the default Pacific
+    // render walked the opening day back one: calendar 2025 printed as
+    // "Dec 31, 2024 to Dec 31, 2025" in the eyebrow, in the Ledger source line
+    // and in the PDF period label. The window is UTC, so it is stated in UTC.
+    dateRangeStr: `${formatDate(start, { timeZone: 'UTC' })} to ${formatDate(end, { timeZone: 'UTC' })}`,
+  }
+})
+
+/**
+ * The snippet carries the report's own figures. The old one was a template with
+ * no number in it at all, on a page whose whole subject is three of them.
+ * Clauses are appended while they fit MAX_DESC (155) so a long city name drops
+ * the trailing clause instead of handing shareDescription an ellipsis.
+ */
+function salesDescription(input: {
+  cityName: string
+  dateRangeStr: string
+  closedCount: number
+  medianPrice: number | null
+  medianDom: number | null
+}): string {
+  const head = `${input.cityName} home sales, ${input.dateRangeStr}: ${input.closedCount.toLocaleString('en-US')} closed`
+  const tail: string[] = []
+  if (input.medianPrice != null) tail.push(`${formatPriceExact(input.medianPrice)} median sale price`)
+  if (input.medianDom != null) tail.push(`${input.medianDom} days on market median`)
+  let out = tail.length ? `${head}, ${tail.join(', ')}.` : `${head}.`
+  const source = ' Every closed row, from Oregon Data Share.'
+  if (out.length + source.length <= 155) out += source
+  while (out.length > 155 && tail.length > 0) {
+    tail.pop()
+    out = tail.length ? `${head}, ${tail.join(', ')}.` : `${head}.`
+  }
+  return out
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { city: citySlug, period } = await params
   const cityName = resolveCityFromSlug(citySlug)
   const periodSlug = period as SalesPeriodSlug
   if (!cityName || !SALES_PERIODS.includes(periodSlug)) {
-    return { title: 'Report Not Found | Ryan Realty' }
+    return pageMetadata({
+      title: 'Report not found',
+      description: 'We do not publish a sales report for this city and period.',
+      path: `/reports/sales/${encodeURIComponent(citySlug)}/${encodeURIComponent(period)}`,
+      noindex: true,
+    })
   }
   const periodLabel = getPeriodLabel(periodSlug)
-  const title = `${cityName}: ${periodLabel} | Ryan Realty`
-  const description = `Sales report for ${cityName}: ${periodLabel}. Closed and pending sales with prices, days on market, and property types.`
-  const canonical = `${siteUrl}/reports/sales/${encodeURIComponent(cityEntityKey(cityName))}/${periodSlug}`
-  return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: {
-      title,
-      description,
-      url: canonical,
-      type: 'article',
-      siteName: 'Ryan Realty',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-    },
-  }
+  const { closed, medianPrice, medianDom, dateRangeStr } = await loadSalesReport(cityName, periodSlug)
+  return pageMetadata({
+    title: `${cityName} home sales: ${periodLabel}`,
+    description: salesDescription({
+      cityName,
+      dateRangeStr,
+      closedCount: closed.length,
+      medianPrice,
+      medianDom,
+    }),
+    path: salesReportPath(cityName, periodSlug),
+    ogType: 'article',
+  })
 }
 
 export default async function SalesReportPage({ params }: PageProps) {
@@ -147,29 +230,9 @@ export default async function SalesReportPage({ params }: PageProps) {
   await Promise.all([getSession(), getPersonIdFromCookie()])
   const periodLabel = getPeriodLabel(periodSlug)
 
-  const { start, end } = getDateRangeForPeriod(periodSlug)
-  const { closed, pending } = await getMarketReportDataForLocation(cityName, start, end)
+  const { start, end, closed, pending, medianPrice, medianDom, dateRangeStr } =
+    await loadSalesReport(cityName, periodSlug)
 
-  const prices = closed.map((c) => c.price).filter((p): p is number => p != null && Number.isFinite(p))
-  const doms = closed.map((c) => c.days_on_market).filter((d): d is number => d != null && Number.isFinite(d))
-  const medianPrice =
-    prices.length > 0
-      ? (() => {
-          const s = [...prices].sort((a, b) => a - b)
-          const m = Math.floor(s.length / 2)
-          return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
-        })()
-      : null
-  const medianDom =
-    doms.length > 0
-      ? (() => {
-          const s = [...doms].sort((a, b) => a - b)
-          const m = Math.floor(s.length / 2)
-          return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
-        })()
-      : null
-
-  const dateRangeStr = `${formatDate(start)} to ${formatDate(end)}`
   const pdfHref = `/api/pdf/report?geoName=${encodeURIComponent(cityName)}&period=${encodeURIComponent(`${periodLabel} / ${dateRangeStr}`)}`
   const cityPath = `/housing-market/${encodeURIComponent(cityEntityKey(cityName))}`
 
@@ -193,7 +256,7 @@ export default async function SalesReportPage({ params }: PageProps) {
     datasetVariables.push({ name: 'Median days on market', value: medianDom, unitText: 'days' })
   }
 
-  const canonicalLiveUrl = `${siteUrl}/housing-market/reports/sales/${encodeURIComponent(cityEntityKey(cityName))}/${periodSlug}`
+  const canonical = `${getCanonicalSiteUrl()}${salesReportPath(cityName, periodSlug)}`
 
   const figures: V3InstrumentFigure[] = [
     {
@@ -242,7 +305,7 @@ export default async function SalesReportPage({ params }: PageProps) {
                 { name: 'Home', url: '/' },
                 { name: 'Market reports', url: '/housing-market/reports' },
                 { name: cityName, url: cityPath },
-                { name: periodLabel, url: canonicalLiveUrl },
+                { name: periodLabel, url: canonical },
               ],
             },
             {
@@ -252,7 +315,7 @@ export default async function SalesReportPage({ params }: PageProps) {
                 `Closed and pending residential home sales for ${cityName}, Oregon. ` +
                 `Includes sale count, median sale price, and median days on market. ` +
                 `Sourced from Oregon Data Share via Ryan Realty.`,
-              url: canonicalLiveUrl,
+              url: canonical,
               temporalCoverage: `${start.toISOString().slice(0, 10)}/${end.toISOString().slice(0, 10)}`,
               spatialCoverageName: `${cityName}, OR`,
               variableMeasured: datasetVariables,
