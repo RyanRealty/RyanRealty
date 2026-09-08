@@ -1,4 +1,52 @@
-# Current — 2026-09-08 (the CMA, reimagined: landed at 6a4aff75)
+# Current — 2026-09-08 (the queue's first day, audited: what it cost and what changed)
+
+Owner: Claude (Opus 5), session 3db16241, main checkout. `origin/main` at 1e61fa00.
+
+**A read-only forensic pass over the first 16 hours** (9 agents: git, cloud fires, work
+graph, liveness, design; 3 improvement lenses; a judge) found the queue works and wasted
+~13-15 lane-hours on five causes. Five items are live and the taste bar moved where it was
+measured (/sell 63 to 83, homepage set at 77). The waste: the hourly cloud routine was
+alive 9.2h and landed zero commits (11 fires, 6 killed on arrival by the shared account
+allowance, one parked 3.7h on a permission prompt nobody could answer); an hour of
+finished evaluator-scored /sell work sat stranded on `wt/sell-round2` with no PR; 46% of
+item commits were evaluator rework AFTER the code was on main; the queue was servable to
+nobody for 2h28m; and 106 MB of screenshot PNG went into permanent history in one window.
+
+**The single structural finding: one shared account allowance.** Four concurrent lanes plus
+an hourly fire exhausted it at 09:13:38Z and killed every worker in the same minute,
+freezing 7 nodes. Adding lanes buys nothing until the cost per item drops.
+
+**Shipped in response (Matt's four decisions, 2026-09-08):**
+- **Cut the drawing dependency.** SITE-03/06/07 no longer wait on SITE-02b — their own
+  accept tests never mentioned a drawing; it was a scheduling artifact. Six items servable.
+- **Three lanes, hard cap.** `MAX_SITE_WORKERS` 3 and `MAX_SITE_CLAIMS_PER_SESSION` 2,
+  enforced in `claimWorkNode`, printed by the brief as `SITE FLEET FULL`.
+- **Build and measure split by mechanism, not by a new row.** `blocked_until` (new column)
+  carries the re-open date; the brief moves `blocked` to `open` when it passes and prints
+  `REOPENED`. All seven shipped-and-measuring items now carry their date. A `blocked` node
+  with NO date is blocked on a person and must state the question.
+- **Unwired primitives are refused.** `ci:site-primitive-wired` (G73) fails a
+  `components/site/v3` component whose only importers are under `app/dev/**`.
+- **Liveness, not idleness.** New `heartbeat_at`: a claim is alive because its owner says
+  so. `touchWorkNode` / `site-queue-status.ts --touch <gaps> --owner <session>`. The
+  release is now optimistic on the owner too, so a live lane is never preempted. This was
+  required: the 3-hour timer shipped this morning WITHOUT a heartbeat, which armed live
+  lanes for wrongful release.
+- **`deploy:verify` stopped lying.** `waitMs` was const at the 45-second skip window, so
+  every site round exited 2 on a BUILDING deploy and a real production ERROR looked
+  identical to a flake. Same SHA now reports READY in 148s (1e61fa00).
+- **Cloud routine to 4-hourly** while the allowance is exhausted (reset 19:00Z).
+- **Recovered work:** `wt/sell-round2` merged as 1409fe74 — SITE-02, 05, 10, 11, gates
+  154/154, live on /sell. The next fire would have rebuilt it blind.
+- **A record I wrote was wrong:** SITE-04 cited merge SHAs never on main. Corrected on the
+  node; the identical patches did land (1f60f8d7, 7ac7ecc0) so the work is live.
+
+**Still open from the audit, in rank order:** move the evaluator BEFORE the push and pin
+what the rise rule compares (the same commit scored 82/81/75/88 — variance wider than the
+effect); one shot tool plus a PNG weight gate; a warmed cloud image (57.7s of `npm ci` per
+fire) and a quota-aware sentinel instead of a fixed cron.
+
+## Prior — Current — 2026-09-08 (the CMA, reimagined: landed at 6a4aff75)
 
 Owner: Claude (Fable). Same worktrees as the funnel mission; integration branch
 `wt/cma-ship-20260907` → main `6a4aff75`. Blueprint of record with three dated deltas and the
