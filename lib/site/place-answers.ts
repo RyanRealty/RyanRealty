@@ -74,14 +74,27 @@ export type PlaceAnswersFigures = {
    * every-property-type Field beside its single-family figures).
    */
   activeCountNote?: string | null
-  /** Closed sales, with the window they cover in the reader's words. */
-  closedCount?: { count: number; windowLabel: string } | null
+  /**
+   * Closed sales, with the window they cover in the reader's words.
+   *
+   * `trace` overrides the page's population clause for THIS figure, and every
+   * object figure below carries the same escape for the same reason: a plat
+   * page reads four populations that are not interchangeable (§0, and
+   * app/subdivisions/[slug]/_v3/subdivision-traces.ts spells out why). Its
+   * yearly closed counts come from the sales-history RPC, its days on market
+   * from the statistics cache, and its list median from the live counted set —
+   * one clause covering all three would be false for two of them, which is
+   * exactly what the first build of this section shipped: "$785,000 median
+   * list price" under a sentence reading "closed single-family sales … a
+   * closed-price statistic at plat grain is withheld".
+   */
+  closedCount?: { count: number; windowLabel: string; trace?: string | null } | null
   /** Median list-to-pending days. NOT active-inventory age (ci:days-to-pending-source). */
   daysToPending?: number | null
   /** The same statistic for the parent city, drawn as the context mark. */
   cityDaysToPending?: number | null
   /** Median days on market — a different population, used only where no to-pending figure exists. */
-  daysOnMarket?: { days: number; windowLabel: string } | null
+  daysOnMarket?: { days: number; windowLabel: string; trace?: string | null } | null
   /** Median close as a share of the ORIGINAL list price, 0..1. */
   saleToOriginal?: number | null
   citySaleToOriginal?: number | null
@@ -89,9 +102,11 @@ export type PlaceAnswersFigures = {
   cashShare?: number | null
   cityCashShare?: number | null
   /** Median closed price with the window it covers. */
-  medianSalePrice?: { price: number; windowLabel: string } | null
+  medianSalePrice?: { price: number; windowLabel: string; trace?: string | null } | null
   /** Median list price of the homes currently for sale. */
   medianListPrice?: number | null
+  /** The population clause for THAT median, when it is a different set. */
+  medianListPriceTrace?: string | null
 }
 
 export type PlaceAnswersInput = {
@@ -156,6 +171,19 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
   // read "…is withheld., closed sales in 2025" (live on /subdivisions/*).
   const population = input.sourceTrace.trim().replace(/\.+$/, '')
   const trace = (window: string): string => `${population}, ${window}${stamp}`
+  /**
+   * A figure whose population is not the page's default names its own, AND ITS
+   * OWN FRESHNESS. An override is a complete clause: the page stamp is not
+   * appended to it, because a stamp is a fact about one query. The plat's
+   * `asOfLabel` is its statistics-cache `refreshed_at`, and appending that to
+   * the yearly closed count (a different RPC) and to the live list median (a
+   * live read) dated three figures by a fourth's clock — §0, "one trace per
+   * query, one stamp per trace". A caller that wants a date on an override
+   * writes it into the override. The trailing stop is stripped either way, so
+   * a clause written as a sentence does not read "…in Redmond., updated Sep 8".
+   */
+  const traceWith = (override: string | null | undefined, window: string): string =>
+    override?.trim() ? override.trim().replace(/\.+$/, '') : trace(window)
   /**
    * Questions this builder has ALREADY answered, so `extra` cannot reintroduce
    * one under a slightly different sentence. It also holds the questions a
@@ -235,9 +263,11 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
         label: `closed sales ${windowLabel}`,
         mark: { kind: 'tally', count, unitLabel: 'closed sale' },
       },
-      source: trace(`closed sales ${windowLabel}`),
+      source: traceWith(f.closedCount.trace, `closed sales ${windowLabel}`),
     })
-    traces.push(`${count} closed sales ${windowLabel} (no verdict published at this grain) — ${trace(`closed sales ${windowLabel}`)}`)
+    traces.push(
+      `${count} closed sales ${windowLabel} (no verdict published at this grain) — ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`,
+    )
     // The count is answered here, so the prose builder's version of the same
     // question does not get a second row further down.
     ask(`How many homes sold in ${place} in the last year?`)
@@ -273,10 +303,20 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       // No drawing: a single price has no honest scale of its own, and the
       // question of where it sits against the asking price is its own row below.
       figure: { value: figureValue, label: figureLabel },
-      source: trace(sale ? `median closed price ${sale.windowLabel}` : 'median list price of the homes now for sale'),
+      source: sale
+        ? traceWith(sale.trace, `median closed price ${sale.windowLabel}`)
+        : traceWith(f.medianListPriceTrace, 'median list price of the homes now for sale'),
     })
-    if (sale) traces.push(`${formatPriceExact(sale.price)} median sale price — ${trace(`median closed price ${sale.windowLabel}`)}`)
-    if (list) traces.push(`${formatPriceExact(list)} median list price — ${trace('median list price of the homes now for sale')}`)
+    if (sale) {
+      traces.push(
+        `${formatPriceExact(sale.price)} median sale price — ${traceWith(sale.trace, `median closed price ${sale.windowLabel}`)}`,
+      )
+    }
+    if (list) {
+      traces.push(
+        `${formatPriceExact(list)} median list price — ${traceWith(f.medianListPriceTrace, 'median list price of the homes now for sale')}`,
+      )
+    }
   }
 
   // ── How fast ──────────────────────────────────────────────────────────────
@@ -327,9 +367,11 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
         label: 'median days on market',
         mark: { kind: 'scale', min: 0, max: 120, at: days, minLabel: '0 days', maxLabel: '120 days' },
       },
-      source: trace(`median days on market ${f.daysOnMarket.windowLabel}`),
+      source: traceWith(f.daysOnMarket.trace, `median days on market ${f.daysOnMarket.windowLabel}`),
     })
-    traces.push(`${days} median days on market — ${trace(`median days on market ${f.daysOnMarket.windowLabel}`)}`)
+    traces.push(
+      `${days} median days on market — ${traceWith(f.daysOnMarket.trace, `median days on market ${f.daysOnMarket.windowLabel}`)}`,
+    )
   }
 
   // ── What they close at against the ask ───────────────────────────────────
@@ -407,9 +449,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
     // The count the PAGE publishes, worded exactly as lib/site/market-faq.ts
     // words it, so the two builders answer one question and the merge below
     // drops the duplicate instead of shipping the same question twice.
-    const inventoryTrace = f.activeCountTrace?.trim()
-      ? `${f.activeCountTrace.trim()}${stamp}`
-      : trace('active listings at the last sync')
+    const inventoryTrace = traceWith(f.activeCountTrace, 'active listings at the last sync')
     answers.push({
       id: 'answer-inventory',
       question: `How many ${homes} are for sale in ${place}?`,
@@ -441,9 +481,9 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
         label: `closed sales ${windowLabel}`,
         mark: { kind: 'tally', count, unitLabel: 'closed sale' },
       },
-      source: trace(`closed sales ${windowLabel}`),
+      source: traceWith(f.closedCount.trace, `closed sales ${windowLabel}`),
     })
-    traces.push(`${count} closed sales ${windowLabel} — ${trace(`closed sales ${windowLabel}`)}`)
+    traces.push(`${count} closed sales ${windowLabel} — ${traceWith(f.closedCount.trace, `closed sales ${windowLabel}`)}`)
   }
 
   // ── The questions with no figure, after the ones that have one ───────────
@@ -483,7 +523,7 @@ export function buildPlaceAnswers(input: PlaceAnswersInput): PlaceAnswersResult 
       label: input.valueAsk.onPage ? `Value my ${place} home` : 'Start a valuation',
       href: input.valueAsk.href,
     },
-    ...(basis ? { source: trace(`closed sales ${basis.windowLabel}`) } : {}),
+    ...(basis ? { source: traceWith(basis.trace, `closed sales ${basis.windowLabel}`) } : {}),
   })
 
   return { answers, traces }

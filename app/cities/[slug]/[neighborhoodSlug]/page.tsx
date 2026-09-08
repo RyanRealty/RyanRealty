@@ -430,6 +430,10 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
           ? { price: publicPace.medianClose, windowLabel: 'over the past 12 months' }
           : null,
       medianListPrice: inventoryOk ? inventory.medianListPrice : null,
+      // The list median comes off the SAME boundary read as the active count,
+      // not off the metric layer, so it carries that read's clause and not the
+      // page's default one (§0: one trace per query).
+      medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes in a publicly active MLS status at the last sync`,
     },
     sourceTrace: `market_metric ${metricKey} through the Market Truth layer, detached single-family homes assigned to ${neighborhood.name} by place membership`,
     asOfLabel,

@@ -185,6 +185,7 @@ import {
   platCountsTrace,
   platInventoryTrace,
   platStatsTrace,
+  salesHistoryTrace,
   type PlatScope,
 } from './_v3/subdivision-traces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -684,10 +685,18 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
       cashShare: null,
       daysToPending: null,
       medianSalePrice: null,
+      // FOUR POPULATIONS, FOUR TRACES (_v3/subdivision-traces.ts). The default
+      // clause below covers the statistics-cache row only; the yearly counts
+      // and the live list median name their own, because one clause covering
+      // all three is false for two of them.
       activeCount,
       activeCountTrace: homesLedgerTrace(platScope),
       closedCount: lastCompleteYear
-        ? { count: lastCompleteYear.closedCount, windowLabel: `in ${lastCompleteYear.year}` }
+        ? {
+            count: lastCompleteYear.closedCount,
+            windowLabel: `in ${lastCompleteYear.year}`,
+            trace: salesHistoryTrace(displayName),
+          }
         : null,
       daysOnMarket:
         subdivisionStats?.medianDaysOnMarket != null && subdivisionStats.medianDaysOnMarket > 0
@@ -697,6 +706,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
             }
           : null,
       medianListPrice: platFigures.medianListPrice,
+      medianListPriceTrace: platInventoryTrace(platScope),
     },
     sourceTrace: platStatsTrace(displayName, cityName, statsPeriodLabel || PERIOD_LABEL.ytd),
     asOfLabel: subdivisionStats?.refreshedAt ? formatDate(subdivisionStats.refreshedAt) : null,

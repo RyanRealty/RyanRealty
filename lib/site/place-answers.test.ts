@@ -58,14 +58,17 @@ describe('buildPlaceAnswers — §0: a null figure is a missing question, never 
     expect(q).toEqual(['What is my Awbrey Butte home worth?'])
   })
 
-  it('carries a trace with the stamp on every figured answer', () => {
+  it('carries a trace on every figured answer, stamped by the query that owns it', () => {
     const { answers } = buildPlaceAnswers(awbrey)
     const figured = answers.filter((a) => a.figure)
     expect(figured.length).toBeGreaterThanOrEqual(5)
-    for (const answer of figured) {
-      expect(answer.source).toBeTruthy()
-      expect(answer.source).toContain('updated September 2026')
+    for (const answer of figured) expect(answer.source).toBeTruthy()
+    // The metric-layer figures carry the metric layer's compute date; the two
+    // boundary-read figures carry that read's own clause and no borrowed date.
+    for (const id of ['answer-verdict', 'answer-pace', 'answer-ask', 'answer-cash', 'answer-sales']) {
+      expect(answers.find((a) => a.id === id)?.source).toContain('updated September 2026')
     }
+    expect(answers.find((a) => a.id === 'answer-inventory')?.source).not.toContain('updated')
   })
 
   it('does not double the stop when the caller ends its clause with one', () => {
@@ -278,5 +281,55 @@ describe('the two builders answer one question set, not two', () => {
     expect([...seen.values()].filter((n) => n > 1)).toEqual([])
     // And the unfigured one still arrives.
     expect(answers.some((a) => a.question === 'Does Awbrey Butte have an HOA?')).toBe(true)
+  })
+})
+
+describe('per-figure traces — one trace per query, never borrowed', () => {
+  it('lets a figure from another population name its own source', () => {
+    // The plat case: the days-on-market figure is the statistics-cache row (the
+    // page default), the yearly closed count is the sales-history RPC, and the
+    // list median is the live counted set. One clause for all three shipped
+    // "$785,000 median list price" under "closed single-family sales … a
+    // closed-price statistic at plat grain is withheld".
+    const { answers } = buildPlaceAnswers({
+      ...base,
+      placeName: 'Ridge At Eagle Crest',
+      sourceTrace: 'the subdivision statistics cache, closed single-family sales, year to date.',
+      figures: {
+        closedCount: { count: 26, windowLabel: 'in 2025', trace: 'the yearly closed-sale RPC, counts only.' },
+        daysOnMarket: { days: 27, windowLabel: 'year to date' },
+        medianListPrice: 785000,
+        medianListPriceTrace: 'the list prices of the active single-family listings on this plat.',
+        activeCount: 15,
+        activeCountTrace: 'active single-family listings under this plat name in Redmond.',
+      },
+    })
+    const source = (id: string) => answers.find((a) => a.id === id)?.source ?? ''
+    expect(source('answer-verdict')).toContain('yearly closed-sale RPC')
+    expect(source('answer-price')).toContain('list prices of the active single-family listings')
+    expect(source('answer-price')).not.toContain('closed single-family sales')
+    expect(source('answer-inventory')).toContain('active single-family listings under this plat name')
+    // The page default still covers the figure it actually describes.
+    expect(source('answer-pace')).toContain('subdivision statistics cache')
+  })
+
+  it('does not date an override with the page stamp, and trims its trailing stop', () => {
+    // The plat's asOfLabel is its statistics-cache refreshed_at. Stamping the
+    // live inventory read with it dates one query by another's clock.
+    const { answers } = buildPlaceAnswers({
+      ...base,
+      figures: { activeCount: 15, activeCountTrace: 'listings under this plat name in Redmond.' },
+    })
+    expect(answers.find((a) => a.id === 'answer-inventory')?.source).toBe(
+      'listings under this plat name in Redmond',
+    )
+  })
+
+  it('still stamps every figure the page default DOES describe', () => {
+    const { answers } = buildPlaceAnswers({
+      ...base,
+      figures: { daysOnMarket: { days: 27, windowLabel: 'year to date' } },
+    })
+    expect(answers.find((a) => a.id === 'answer-pace')?.source).toContain('updated September 2026')
   })
 })
