@@ -1212,6 +1212,12 @@
       "scripts/lib/taste-receipt.mjs",
       "scripts/taste-receipt-v2-baseline.json"
     ],
+    "ci:title-brand-once": [
+      "app/**/page.tsx",
+      "app/**/layout.tsx",
+      "lib/site/page-metadata.ts",
+      "scripts/title-brand-once-baseline.json"
+    ],
     "ci:tool-discipline": [
       "lib/**",
       "scripts/**"
