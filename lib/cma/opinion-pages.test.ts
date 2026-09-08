@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assembleOpinionPages, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
+import { assembleOpinionPages, concessionBasisLine, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject: CmaSubject = {
@@ -278,5 +278,30 @@ describe('assembleOpinionPages format', () => {
       } as never,
     })
     expect(pages.map((p) => p.toc).join(' ')).not.toMatch(/closed sales, 2025/i)
+  })
+})
+
+describe('the net-at-list caption names the sales it was taken over', () => {
+  // Research item 8 / D14: chapter 6 quoted a concession figure with no basis
+  // anywhere on the page. Chapter 3's grid now prints a Seller concessions
+  // line per sale, so this caption counts THOSE rows — a reader can add the
+  // column up and land on the same median.
+  const withConcessions = (values: Array<number | null>): OpinionPageArgs => ({
+    ...args(),
+    comps: values.map((v, i) => ({ ...comp, listingKey: `K-${i}`, concessions: v })),
+  })
+
+  it('counts the sales that reported a figure and the sales that paid one', () => {
+    const line = concessionBasisLine(withConcessions([4000, 0, 10000, null, 0]), 7500)
+    expect(line).toContain('Net at list is the list price minus $7,500')
+    expect(line).toContain('the median across the 4 sales in the price chapter that reported')
+    expect(line).toContain('2 of which paid something')
+  })
+
+  it('states the figure alone when no sale reported one', () => {
+    const line = concessionBasisLine(withConcessions([null, null]), 7500)
+    expect(line).toBe(
+      'Net at list is the list price minus $7,500, before commission and closing costs.',
+    )
   })
 })

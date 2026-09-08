@@ -11,6 +11,11 @@ import { cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import {
+  compWeightIndex,
+  renderPricingMethodHtml,
+  renderRejectedSalesHtml,
+} from '@/lib/cma/pricing-method'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
@@ -114,20 +119,32 @@ export function pricingPage(input: {
     : `
   <h2 class="section is-answer">${esc(heading)}</h2>
   <p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>`
+  // The method comes BEFORE the evidence for it (Delta 1): which sales, how
+  // each was adjusted, and how the range and the recommended list follow.
+  // Every one of those sentences is written by lib/pricing and stored on the
+  // row; nothing here composes one.
+  const method = renderPricingMethodHtml({ pricing: p, whichSales: search.body })
   return {
     meta: `${esc(s.streetAddress)} · ${esc(heading)}`,
     toc: heading,
     body: `
   ${lead}
   ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>` : ''}
-  ${renderCompMatrixHtml(s, input.comps, tableLead({ comps: input.comps, pricing: p }), input.docLinks)}
+  ${method}
+  ${renderCompMatrixHtml(
+    s,
+    input.comps,
+    tableLead({ comps: input.comps, pricing: p }),
+    input.docLinks,
+    compWeightIndex(p),
+  )}
   ${perSquareFootLine({ subject: s, pricing: p })}
+  ${renderRejectedSalesHtml(p)}
   ${
     pinMap
       ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision))}</p>`
       : ''
   }
-  ${search.body ? `<p>${esc(search.body)}</p>` : ''}
 `,
   }
 }

@@ -94,6 +94,27 @@ export type OpinionPageArgs = {
 
 
 
+/**
+ * Where the concession figure came from, over the rows that produced it.
+ *
+ * Research item 8, and D14 behind it: the net sheet quoted a concession figure
+ * with no basis anywhere on the page. Chapter 3's grid now prints a Seller
+ * concessions line per sale, so this caption names those same sales and counts
+ * them — a reader can add the column up and land on the same median.
+ */
+export function concessionBasisLine(a: OpinionPageArgs, concession: number): string {
+  const reported = a.comps.filter((c) => {
+    const v = c.concessions ?? c.concessionsAmount ?? null
+    return v != null && Number.isFinite(v) && v > 0
+  }).length
+  const known = a.comps.filter((c) => (c.concessions ?? c.concessionsAmount ?? null) != null).length
+  const basis =
+    known > 0
+      ? ` That figure is the median across the ${int(known)} ${known === 1 ? 'sale' : 'sales'} in the price chapter that reported what the seller paid, ${int(reported)} of which paid something.`
+      : ''
+  return `Net at list is the list price minus ${usd(concession)}, before commission and closing costs.${basis}`
+}
+
 export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
   const n = a.pricing.sellerNet
   if (!n || n.expectedConcessions == null) return null
@@ -117,11 +138,7 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
     ${rec != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.recommended)}</div><div class="val">${usd(rec)}</div></div>` : ''}
     ${high != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.highEnd)}</div><div class="val">${usd(high)}</div></div>` : ''}
   </div>
-  <p class="small">${esc(
-    `Net at list is the list price minus ${usd(concession)}, before commission and closing costs. That figure is the median concession across the sales printed above${
-      n.knownCount > 0 ? `, ${n.givenCount} of ${n.knownCount} of which reported one` : ''
-    }.`,
-  )}</p>`
+  <p class="small">${esc(concessionBasisLine(a, concession))}</p>`
   }`,
   }
 }

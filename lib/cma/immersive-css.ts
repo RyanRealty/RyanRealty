@@ -104,6 +104,7 @@ table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px sol
 table.comp-matrix td.n{white-space:nowrap}
 table.comp-matrix thead th:first-child,table.comp-matrix tbody th{text-align:left}
 table.comp-matrix td.is-diff{font-weight:600}
+table.comp-matrix tr.is-total th,table.comp-matrix tr.is-total td{border-top:1px solid var(--navy);font-weight:600}
 h3.subhead{font-size:17px;font-weight:600;margin:26px 0 8px}
 h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:20px 0 6px}
 .sc a{color:var(--navy)}
@@ -280,6 +281,27 @@ a.dns-addr:hover{border-bottom-color:var(--navy)}
 .dns-facts{font-size:13px;opacity:.65;margin-top:4px}
 .dns-read{font-size:15px;line-height:1.55;margin:8px 0 0}
 @media (max-width:700px){.dns-card{grid-template-columns:1fr;gap:12px}}
+/* Chapter 3's method, stated before the evidence for it. */
+.method{margin:10px 0 20px;max-width:70ch}
+.method-line{font-size:16px;line-height:1.6;margin:0 0 10px}
+/* Each sale's own price path, numbered to the columns above it. */
+.sale-paths{margin:22px 0 8px}
+.sale-path{margin:0 0 10px}
+.sale-paths .pp svg{max-width:620px}
+.sale-paths .pp-wrap{margin:4px 0 0}
+.sale-path-name{font-size:15px;font-weight:600}
+.sale-paths-h{font-size:19px;font-weight:600;margin:18px 0 10px}
+/* Considered and not used. */
+ul.rejected-list{list-style:none;margin:6px 0 12px;padding:0}
+ul.rejected-list li{display:grid;grid-template-columns:200px minmax(0,1fr);gap:4px 18px;padding:10px 0;border-bottom:1px solid var(--ink12);font-size:15px}
+ul.rejected-list .rj-addr{font-weight:600}
+ul.rejected-list .rj-why{opacity:.7}
+@media (max-width:700px){ul.rejected-list li{grid-template-columns:1fr;gap:2px}}
+/* The phone card carries the same grid lines as the column. */
+.comp-stack-grid{display:grid;gap:4px;margin-top:10px}
+.comp-stack-line{display:flex;justify-content:space-between;gap:14px;font-size:14px}
+.comp-stack-line .k{opacity:.6}
+.comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600}
 /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
 table.realization{width:100%;table-layout:fixed;border-collapse:collapse;margin:16px 0 8px;font-size:15px}
 table.realization col.rz-weeks{width:46%}

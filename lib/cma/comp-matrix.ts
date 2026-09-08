@@ -16,7 +16,18 @@
  * rather than a function of how long an address happens to be.
  */
 
-import { UNADDRESSED_DOC_LINKS, cleanText, dateLong, dec, escapeHtml, int, sparkPhotoAt, usd } from '@/lib/cma/render-blocks'
+import {
+  UNADDRESSED_DOC_LINKS,
+  cleanText,
+  dateLong,
+  dec,
+  escapeHtml,
+  int,
+  sparkPhotoAt,
+  usd,
+  usdSigned,
+} from '@/lib/cma/render-blocks'
+import { priceHistoryLineHtml, pricePathFromSale } from '@/lib/cma/price-path'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -127,15 +138,35 @@ type Col = {
  * times is the wall of text. Any row identical across the whole table folds
  * into one sentence above it.
  */
-const ROWS: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'listing-history' }> = [
+/**
+ * One line of the table. `rule` draws the total's rule above it; `grid` marks
+ * a line of the adjustment grid, which the phone card repeats verbatim.
+ */
+type MatrixRow = {
+  label: string
+  figure: boolean
+  fact?: 'dom' | 'listing-history'
+  rule?: boolean
+  grid?: boolean
+}
+
+const ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Property type', figure: false },
-  { label: 'Sold for', figure: true },
-  { label: 'Sold', figure: true },
   { label: 'Size', figure: true },
   { label: 'Beds and baths', figure: true },
   { label: 'Year built', figure: true },
   { label: 'Days to offer', figure: true },
-  { label: 'Sale price today', figure: true },
+  { label: 'Sold for', figure: true },
+  { label: 'Sold', figure: true },
+  { label: 'Seller concessions', figure: true, grid: true },
+  { label: 'Adjusted for date', figure: true, grid: true },
+  { label: 'Adjusted for size', figure: true, grid: true },
+  { label: 'Adjusted for style', figure: true, grid: true },
+  { label: 'Net adjustment', figure: true, grid: true },
+  { label: 'Net, as a share of the sale', figure: true, grid: true },
+  { label: 'Every adjustment added up', figure: true, grid: true },
+  { label: 'Sale price today', figure: true, rule: true, grid: true },
+  { label: 'Weight in this price', figure: true, grid: true },
 ]
 
 const ACRES_TO_SQFT = 43560
@@ -175,20 +206,39 @@ function subjectCol(subject: CmaSubject): Col {
     photoUrl: subject.photoUrl?.trim() || null,
     cells: [
       dash(subject.propertySubType),
-      // Never a price under "Sold for" on a home that has not sold. The ask
-      // rides in the column head, where it is labelled as an ask.
-      '-',
-      '-',
       sizeCell(subject.sqft, subject.lotAcres),
       bedsBaths(subject.beds, subject.baths),
       subject.yearBuilt != null ? String(subject.yearBuilt) : '-',
-      '-',
-      '-',
+      // Nothing under any of the sale rows on a home that has not sold. The
+      // ask rides in the column head, where it is labelled as an ask.
+      ...Array<string>(ROWS.length - 4).fill('-'),
     ],
   }
 }
 
-function compCol(comp: CmaAdjustedComp, index: number, ctx?: TrackedDocLinkCtx | null): Col {
+/**
+ * One sale's column, line by line, in Form 1004 order.
+ *
+ * Research item 1 (docs/research/cma-professional-practice-2026-09-07.md):
+ * "print the adjustment grid line by line per sale — sale price, concessions,
+ * date/time, size, story, net adj $, net adj %, gross adj % — instead of a
+ * single arrow." The document collapsed three itemized adjustments the engine
+ * already computes into one number and printed nothing a reader could check.
+ *
+ * Nothing here computes a valuation. The three adjustment figures and the
+ * adjusted price all arrive on `render_args`; the net total and the two
+ * percentages are arithmetic over those same printed figures, which is the
+ * point of showing them — a reader can add the column up.
+ */
+function compCol(
+  comp: CmaAdjustedComp,
+  index: number,
+  ctx?: TrackedDocLinkCtx | null,
+  weights?: ReadonlyMap<string, CompWeight>,
+): Col {
+  const adj = adjustmentLines(comp)
+  const weight = weights?.get(comp.listingKey ?? '') ?? null
+  const gross = weight?.grossAdjustmentPct ?? adj.grossPct
   return {
     key: `c${index + 1}`,
     label: `${index + 1}. ${comp.address}`,
@@ -197,15 +247,62 @@ function compCol(comp: CmaAdjustedComp, index: number, ctx?: TrackedDocLinkCtx |
     photoUrl: comp.photoUrl?.trim() || null,
     cells: [
       dash(comp.propertySubType),
-      usd(comp.closePrice),
-      comp.closeDate ? dateLong(comp.closeDate) : '-',
       sizeCell(comp.sqft, comp.lotAcres),
       bedsBaths(comp.beds, comp.baths),
       comp.yearBuilt != null ? String(comp.yearBuilt) : '-',
       comp.daysToOffer != null ? `${int(comp.daysToOffer)} ${comp.daysToOffer === 1 ? 'day' : 'days'}` : '-',
+      usd(comp.closePrice),
+      comp.closeDate ? dateLong(comp.closeDate) : '-',
+      concessionCell(comp),
+      signedCell(comp.timeAdjustment),
+      signedCell(comp.sizeAdjustment),
+      signedCell(comp.storyAdjustment),
+      adj.net != null ? usdSigned(adj.net) : '-',
+      adj.netPct != null ? `${adj.netPct > 0 ? '+' : adj.netPct < 0 ? '−' : ''}${Math.abs(adj.netPct).toFixed(1)}%` : '-',
+      gross != null ? `${gross.toFixed(1)}%` : '-',
       usd(comp.adjustedPrice),
+      weight?.weight != null ? `${weight.weight.toFixed(1)}%` : '-',
     ],
   }
+}
+
+/** `pricing.reconciliation.weights[]`, keyed by listing. */
+export type CompWeight = { weight: number | null; grossAdjustmentPct: number | null }
+
+/**
+ * The net total and the two percentages, over the same figures the grid prints
+ * above them. A sale with no recorded adjustment carries none of these rather
+ * than a row of zeros.
+ */
+function adjustmentLines(comp: CmaAdjustedComp): {
+  net: number | null
+  netPct: number | null
+  grossPct: number | null
+} {
+  const parts = [comp.timeAdjustment, comp.sizeAdjustment, comp.storyAdjustment].filter(
+    (v): v is number => v != null && Number.isFinite(v),
+  )
+  if (parts.length === 0) return { net: null, netPct: null, grossPct: null }
+  const close = comp.closePrice
+  const net = parts.reduce((sum, v) => sum + v, 0)
+  const gross = parts.reduce((sum, v) => sum + Math.abs(v), 0)
+  if (close == null || !(close > 0)) return { net, netPct: null, grossPct: null }
+  return { net, netPct: (net / close) * 100, grossPct: (gross / close) * 100 }
+}
+
+/**
+ * The 1004's FIRST value adjustment, and the one this document printed nowhere
+ * (research item 8) while the net sheet quoted two concession figures with no
+ * basis on the page.
+ */
+function concessionCell(comp: CmaAdjustedComp): string {
+  const c = comp.concessions ?? comp.concessionsAmount ?? null
+  if (c == null || !Number.isFinite(c)) return '-'
+  return c > 0 ? usd(c) : 'none'
+}
+
+function signedCell(v: number | null | undefined): string {
+  return v == null || !Number.isFinite(v) ? '-' : usdSigned(v)
 }
 
 /** Every address in this chapter is a tracked link into the site. */
@@ -242,14 +339,18 @@ const SHARED_PHRASE: Record<string, (v: string) => string> = {
 
 function foldIdenticalRows(
   cols: readonly Col[],
-  rows: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'listing-history' }>,
+  rows: ReadonlyArray<MatrixRow>,
 ): { rows: typeof rows; sentence: string } {
   const kept: Array<(typeof rows)[number]> = []
   const shared: string[] = []
   const keptIndexes: number[] = []
   rows.forEach((row, i) => {
     const values = cols.map((c) => c.cells[i] ?? '-').filter((v) => v !== '-')
+    // A row every column left empty is not a comparison. Nor is a row of
+    // zeros: "Adjusted for style, $0, $0, $0, $0, $0" is five cells saying
+    // that no style adjustment was made, which the legend already covers.
     if (values.length === 0) return
+    if (values.every((v) => v === '$0')) return
     const phrase = SHARED_PHRASE[row.label]
     const same = phrase != null && values.length >= 2 && values.every((v) => v === values[0])
     if (same) {
@@ -288,7 +389,7 @@ function groupHeading(startIndex: number, size: number): string {
 
 function matrixTable(
   cols: Col[],
-  rows: ReadonlyArray<{ label: string; figure: boolean; fact?: 'dom' | 'listing-history' }>,
+  rows: ReadonlyArray<MatrixRow>,
 ): string {
   // Fixed layout reads its widths from the colgroup, so the table is exactly
   // 100% of the content box no matter what any cell holds.
@@ -314,7 +415,6 @@ function matrixTable(
     .join('')}</tr>`
   const body = rows
     .map((row, i) => {
-      if (cols.every((c) => (c.cells[i] ?? '-') === '-')) return ''
       const subjectVal = cols[0]!.cells[i] ?? '-'
       const tds = cols
         .map((c, ci) => {
@@ -324,7 +424,9 @@ function matrixTable(
         })
         .join('')
       const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
-      return `<tr${factAttr}><th>${esc(row.label)}</th>${tds}</tr>`
+      // The conclusion of the grid gets a rule above it, the way a total does.
+      const cls = row.rule ? ' class="is-total"' : ''
+      return `<tr${factAttr}${cls}><th>${esc(row.label)}</th>${tds}</tr>`
     })
     .join('')
   return `
@@ -343,6 +445,8 @@ function matrixTable(
  */
 function matrixStack(
   comps: readonly CmaAdjustedComp[],
+  cols: readonly Col[],
+  rows: ReadonlyArray<MatrixRow>,
   ctx?: TrackedDocLinkCtx | null,
 ): string {
   const cards = comps
@@ -360,32 +464,76 @@ function matrixStack(
       ]
         .filter(Boolean)
         .join(' · ')
+      // The card carries the SAME lines as the column, in the same order, off
+      // the SAME columns the table read — a seven-column table is a desktop
+      // object, the grid behind it is not (research item 1: "on the phone, one
+      // card per sale with the same lines"). Reading the folded columns is
+      // what keeps a row the table dropped from surviving on the phone.
+      const col = cols[i]
+      const lines = rows
+        .map((row, ri) => ({ label: row.label, grid: row.grid === true, value: col?.cells[ri] ?? '-' }))
+        .filter((line) => line.grid && line.value !== '-')
+        .map(
+          (line) =>
+            `<div class="comp-stack-line"><span class="k">${esc(line.label)}</span><span class="v n">${esc(line.value)}</span></div>`,
+        )
+        .join('')
       return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<a class="comp-stack-addr" href="${esc(
         compHref(c, ctx),
       )}" data-rr-track="cma-sale">${esc(pin)}. ${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
         dateLong(c.closeDate),
-      )} · ${usd(c.closePrice)}</div><div class="comp-stack-nums"><span class="comp-stack-n"><span class="k">Sale price today</span><span class="v n">${usd(
-        c.adjustedPrice,
-      )}</span></span></div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}</article>`
+      )} · ${usd(c.closePrice)}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${priceHistoryLineHtml(
+        pricePathFromSale(c),
+        `sale-${pin}`,
+      )}<div class="comp-stack-grid">${lines}</div></article>`
     })
     .join('')
   return `<div class="comp-stack" aria-label="The sales that set this price, one card each">${cards}</div>`
 }
 
+/**
+ * How each sale was priced over its own listing period.
+ *
+ * On a column-per-sale table there is no row wide enough to draw a line in —
+ * 93px of column would scale the labels to three pixels — so the paths sit in
+ * their own block under the grid, numbered to the columns above them. The
+ * phone card carries its own line inside the card, where there is width.
+ */
+function pricePathsHtml(comps: readonly CmaAdjustedComp[]): string {
+  const rows = comps
+    .map((c, i) => {
+      const path = pricePathFromSale(c)
+      if (!path) return ''
+      return `<div class="sale-path" data-comp="${i + 1}" data-pin="${i + 1}">
+      <div class="sale-path-name">${esc(`${i + 1}. ${c.address}`)}</div>
+      ${priceHistoryLineHtml(path, `sale-${i + 1}`)}
+    </div>`
+    })
+    .filter(Boolean)
+    .join('')
+  if (!rows) return ''
+  return `<div class="sale-paths">
+    <h4 class="sale-paths-h">How each of these sales was priced</h4>
+    ${rows}
+    <p class="small">Each line runs from the price that sale was asking to what it closed at. Where the record holds no dated price change, the line is flat.</p>
+  </div>`
+}
+
 /** The one line that says what "Sale price today" is. */
 const SALE_PRICE_TODAY_LEGEND =
-  'Sale price today moves each sale for when it sold and how big it is.'
+  'Sale price today is the sale price plus every adjustment above it. A minus figure means that sale had something yours does not. A plus means yours has it.'
 
 export function renderCompMatrixHtml(
   subject: CmaSubject,
   comps: readonly CmaAdjustedComp[],
   lead = '',
   ctx?: TrackedDocLinkCtx | null,
+  weights?: ReadonlyMap<string, CompWeight>,
 ): string {
   // Fail closed: a recommend needs >= MIN_CLOSED_SALES_FOR_MATRIX closed sales.
   if (comps.length < MIN_CLOSED_SALES_FOR_MATRIX) return ''
   const subj = subjectCol(subject)
-  const compCols = comps.map((c, i) => compCol(c, i, ctx))
+  const compCols = comps.map((c, i) => compCol(c, i, ctx, weights))
   const folded = foldIdenticalRows([subj, ...compCols], ROWS)
   const groups = splitEvenly(compCols)
   let seen = 0
@@ -402,6 +550,7 @@ export function renderCompMatrixHtml(
   ${lead}
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
-  ${matrixStack(comps, ctx)}
-  <p class="small">${esc(SALE_PRICE_TODAY_LEGEND)}</p>`
+  ${matrixStack(comps, compCols, folded.rows, ctx)}
+  <p class="small">${esc(SALE_PRICE_TODAY_LEGEND)}</p>
+  ${pricePathsHtml(comps)}`
 }

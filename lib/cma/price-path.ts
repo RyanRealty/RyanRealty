@@ -204,7 +204,11 @@ export function pricePathFromSale(sale: {
     endDate: closeDate,
     closePrice,
     outcome: 'sold',
-    days: sale.daysToOffer ?? ran,
+    // The label at the end of the line names the period the LINE DRAWS, which
+    // is the days the listing ran — not the days to an offer. A line spanning
+    // Jun 11 to Jul 6 that ends "sold $457K · 1 day" contradicts its own axis.
+    // Days to offer is its own labelled row in the grid above.
+    days: ran ?? sale.daysToOffer ?? null,
     label: sale.address,
   }
 }

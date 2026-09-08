@@ -262,3 +262,108 @@ describe('the rows the blueprint cuts', () => {
     expect(html).toContain('Days to offer')
   })
 })
+
+describe('the adjustment grid, line by line', () => {
+  // Research item 1 (docs/research/cma-professional-practice-2026-09-07.md):
+  // Form 1004 prints each adjustment on its own labelled line with a signed
+  // dollar amount, then the net, the net %, the gross %, and the adjusted
+  // price. This document collapsed three itemized adjustments the engine
+  // already computes into one arrow.
+  const sale = {
+    listingKey: 'K-730',
+    address: '730 Quince',
+    city: 'Redmond',
+    closePrice: 457000,
+    closeDate: '2026-07-06',
+    listPrice: 465000,
+    sqft: 1665,
+    beds: 3,
+    baths: 2,
+    yearBuilt: 2005,
+    daysToOffer: 1,
+    domTotal: 25,
+    concessions: 0,
+    timeAdjustment: -39211,
+    sizeAdjustment: -28229,
+    storyAdjustment: 0,
+    adjustedPrice: 389560,
+    propertySubType: 'Single Family Residence',
+    photoUrl: null,
+  } as unknown as CmaAdjustedComp
+
+  const five = (base: CmaAdjustedComp) =>
+    Array.from({ length: 5 }, (_, i) => ({
+      ...base,
+      listingKey: `K-${i}`,
+      address: `${100 + i} Quince`,
+    })) as CmaAdjustedComp[]
+
+  const subj = {
+    streetAddress: '2465 7th',
+    city: 'Redmond',
+    sqft: 1440,
+    beds: 3,
+    baths: 2,
+    yearBuilt: 2004,
+    lastListPrice: 460000,
+    propertySubType: 'Single Family Residence',
+  } as unknown as CmaSubject
+
+  it('itemizes date, size and the net, both as dollars and as a share', () => {
+    const html = renderCompMatrixHtml(subj, five(sale))
+    expect(html).toContain('Adjusted for date')
+    expect(html).toContain('−$39,211')
+    expect(html).toContain('Adjusted for size')
+    expect(html).toContain('−$28,229')
+    expect(html).toContain('Net adjustment')
+    expect(html).toContain('−$67,440')
+    expect(html).toContain('−14.8%')
+    expect(html).toContain('Every adjustment added up')
+    expect(html).toContain('14.8%')
+    expect(html).toContain('Sale price today')
+    expect(html).toContain('$389,560')
+  })
+
+  it('prints the concession line the 1004 puts first among the value adjustments', () => {
+    const withConcession = five(sale).map((c, i) => (i === 0 ? { ...c, concessions: 4000 } : c))
+    const html = renderCompMatrixHtml(subj, withConcession)
+    expect(html).toContain('Seller concessions')
+    expect(html).toContain('$4,000')
+    expect(html).toContain('none')
+  })
+
+  it('drops an adjustment row nobody adjusted rather than printing five zeros', () => {
+    const html = renderCompMatrixHtml(subj, five(sale))
+    expect(html).not.toContain('Adjusted for style')
+  })
+
+  it('prints the weight per sale when the reconciliation carries one', () => {
+    const html = renderCompMatrixHtml(
+      subj,
+      five(sale),
+      '',
+      null,
+      new Map([['K-0', { weight: 28.8, grossAdjustmentPct: 17 }]]),
+    )
+    expect(html).toContain('Weight in this price')
+    expect(html).toContain('28.8%')
+    // The stored gross wins over the one derived from the printed lines.
+    expect(html).toContain('17.0%')
+  })
+
+  it('draws each sale its own price path, numbered to the column above it', () => {
+    const html = renderCompMatrixHtml(subj, five(sale))
+    expect(html).toContain('How each of these sales was priced')
+    expect(html).toContain('class="price-path"')
+    expect(html).toContain('1. 100 Quince')
+    expect(html).toContain('sold $457K')
+  })
+
+  it('gives the phone card the same lines as the column', () => {
+    const html = renderCompMatrixHtml(subj, five(sale))
+    const card = html.split('comp-stack-card')[1] ?? ''
+    expect(card).toContain('Net adjustment')
+    expect(card).toContain('Sale price today')
+    expect(card).toContain('class="price-path"')
+  })
+})

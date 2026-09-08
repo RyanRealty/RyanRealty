@@ -128,7 +128,10 @@ describe('print CMA layout', () => {
     expect(page.body).toContain('pin-map')
     expect(page.body).toContain('data:image/png;base64,aaa')
     expect(page.body).not.toContain('class="map-img"')
-    expect(page.body).not.toContain('<svg')
+    // The chapter carries drawn price paths now, so "no SVG" is the wrong
+    // shape for this check: what it guards is a SECOND map.
+    expect((page.body.match(/pin-map/g) ?? []).length).toBeGreaterThan(0)
+    expect(page.body).not.toContain('static-map')
     expect(page.body).toContain('comp-matrix')
     expect(page.body).toContain('The sales that set this price')
     expect(page.body).not.toContain('Sale price / sqft')

@@ -310,6 +310,28 @@ export function cmaSectionStyles(): string {
     border-bottom: 1px solid var(--navy-line);
   }
 
+  /* Chapter 3's method, stated before the evidence for it. */
+  .method { margin: 6px 0 10px; }
+  .method-line { font-size: 11.5px; line-height: 1.55; margin: 0 0 5px; }
+  /* Each sale's own price path, numbered to the columns above it. */
+  .sale-paths { margin: 10px 0 4px; break-inside: avoid; }
+  .sale-path { margin: 0 0 4px; break-inside: avoid; }
+  /* The line is a strip, not a figure: capped so five of them do not become a
+     page of their own under the grid they belong to. */
+  .sale-paths .pp svg { max-width: 460px; }
+  .sale-paths .pp-wrap { margin: 2px 0 0; }
+  .sale-path-name { font-size: 11px; font-weight: 600; color: var(--navy); }
+  .sale-paths-h { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; margin: 10px 0 6px; }
+  /* Considered and not used. */
+  ul.rejected-list { list-style: none; margin: 4px 0 8px; padding: 0; }
+  ul.rejected-list li { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; padding: 4px 0; border-bottom: 1px solid var(--navy-line); font-size: 11px; }
+  ul.rejected-list .rj-addr { font-weight: 600; }
+  ul.rejected-list .rj-why { color: var(--muted); }
+  /* The phone card carries the same grid lines as the column. */
+  .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; }
+  .comp-stack-line { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; }
+  .comp-stack-line .k { color: var(--muted); }
+  .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; }
   /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
   table.realization { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
   table.realization col.rz-weeks { width: 46%; }
@@ -423,6 +445,7 @@ export function cmaSectionStyles(): string {
   table.comp-matrix td.n { white-space: nowrap; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }
   table.comp-matrix td.is-diff { font-weight: 600; }
+  table.comp-matrix tr.is-total th, table.comp-matrix tr.is-total td { border-top: 1px solid var(--navy); font-weight: 600; }
   .trend-svg { width: 100%; height: auto; display: block; }
   .szn svg { width: 100%; height: auto; display: block; margin: 6px 0 2px; }
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }

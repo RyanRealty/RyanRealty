@@ -482,9 +482,15 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
 
   it('explains the adjustment rows once', () => {
     const html = letter()
+    // Form 1004 order, line by line (research item 1): the three adjustments
+    // itemized, then the net, then the two percentages, then the price today.
     expect(html).toContain('Adjusted for date')
     expect(html).toContain('Adjusted for size')
-    expect(html).toMatch(/Sale price today moves each sale for when it sold and how big it is/i)
+    // "Adjusted for style" prints only where a style adjustment was made: a
+    // row every column leaves empty is dropped rather than printed as dashes.
+    expect(html).toContain('Net adjustment')
+    expect(html).toContain('Every adjustment added up')
+    expect(html).toMatch(/Sale price today is the sale price plus every adjustment above it/i)
   })
 })
 

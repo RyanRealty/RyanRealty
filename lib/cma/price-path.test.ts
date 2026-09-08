@@ -105,7 +105,9 @@ describe('pricePathFromSale', () => {
     expect(p.startPrice).toBe(465000)
     expect(p.closePrice).toBe(457000)
     expect(p.outcome).toBe('sold')
-    expect(priceHistoryEndLabel(p)).toBe('sold $457K · 1 day')
+    // The label names the period the line draws — 25 days from Jun 11 to
+    // Jul 6 — never the 1 day to an offer, which is its own row in the grid.
+    expect(priceHistoryEndLabel(p)).toBe('sold $457K · 25 days')
   })
 
   it('draws the close as a SOLID drop — a close date is a recorded date', () => {
