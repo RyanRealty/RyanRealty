@@ -32,6 +32,18 @@ const ZONE = 'rgba(16,39,66,0.16)'
 /** The one word a hollow mark needs. Clamped to the frame like every label. */
 const ASIDE_LABEL = 'set aside'
 
+/**
+ * The hit band's height in SVG UNITS, not pixels.
+ *
+ * A 44-unit band on a 360-unit drawing rendered into a 335px column measures
+ * 41px — three short of the target it was built to hit (tasteReview round
+ * three, §2 item 4). The drawing is scaled to its column, so the unit has to
+ * carry the scale: 48 units is 44.7px at that width and more on anything
+ * wider. `scripts/cma-lookpass.ts` measures the rendered box and fails under
+ * 44, so this cannot silently drift back.
+ */
+const HIT_UNITS = 48
+
 export type WorthStripSale = {
   n: number
   address: string
@@ -180,8 +192,6 @@ export function worthStripSvg(
   // wide. So the target grows in the dimension that was failing: as wide as
   // the gap to the nearest neighbour, 44 units tall (tasteReview round two,
   // item 3). Every one of these prices is also a 44px row in the grid below.
-  const first = g.sales[0]!
-  const last = g.sales[g.sales.length - 1]!
   // Sales priced within a whisker of each other STACK rather than merge. Three
   // sales inside $2,000 drew one solid blob at 375 and the reader lost two of
   // them; a dot that steps up a row is still on the same price, and the axis
@@ -241,15 +251,33 @@ export function worthStripSvg(
       <text x="${asideFit.x}" y="${asideLabelY.toFixed(1)}" text-anchor="${asideFit.anchor}" font-size="${(fs - 1).toFixed(1)}" fill="${MUTED}">${ASIDE_LABEL}</text>`
         : `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="${INK}"/>`
       return `<g class="ws-dot${aside ? ' is-aside' : ''}" data-comp="${s.n}" data-pin="${s.n}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
-      <rect x="${(cx - hitWidth(i) / 2).toFixed(1)}" y="${(cy - 22).toFixed(1)}" width="${hitWidth(i).toFixed(1)}" height="44" fill="transparent"/>
+      <rect x="${(cx - hitWidth(i) / 2).toFixed(1)}" y="${(cy - HIT_UNITS / 2).toFixed(1)}" width="${hitWidth(i).toFixed(1)}" height="${HIT_UNITS}" fill="transparent"/>
       ${mark}
     </g>`
     })
     .join('\n    ')
-  const endLabel = (v: number, anchorLeft: boolean) => {
-    const f = fit(x(v), shortUsd(v), fs, W)
-    return `<text x="${anchorLeft ? f.x : f.x}" y="${labelY.toFixed(1)}" text-anchor="${f.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(shortUsd(v))}</text>`
+  // THE AXIS LABELS ARE THE TWO NUMBERS THE CHAPTER SAYS THE HOME IS WORTH.
+  //
+  // They used to be the outermost DOTS, so 19968 labelled $322K and $480K over
+  // a chapter that had just said $331,000 to $479,000, and 1617 NW 8th
+  // $675K/$898K against $696,000–$926,000 (tasteReview round three, §2 item
+  // 3). The two numbers a reader's eye lands on were not the two numbers the
+  // document states. They are now the ends of the shaded zone, which is what
+  // they sit over.
+  const endLabel = (v: number, side: 'low' | 'high', pushOut: boolean) => {
+    const label = shortUsd(v)
+    const f = fit(x(v), label, fs, W)
+    // When the zone is narrow the pair would print through each other, so they
+    // step OUTWARD rather than onto a second line: a range label that leaves
+    // the end it belongs to has stopped labelling anything.
+    const anchor = pushOut ? (side === 'low' ? 'end' : 'start') : f.anchor
+    const cx = pushOut ? Math.min(Math.max(x(v), 1), W - 1).toFixed(1) : f.x
+    return `<text x="${cx}" y="${labelY.toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(label)}</text>`
   }
+  // Their own boxes, to decide whether they collide at all.
+  const zoneLabelsCollide =
+    Math.abs(x(g.high) - x(g.low)) <
+    (shortUsd(g.low).length + shortUsd(g.high).length) * fs * 0.58 * 0.5 + 6
 
   // The two vertical marks label themselves on ONE line under the axis. They
   // used to sit on two lines five units apart with the zone caption between
@@ -263,13 +291,36 @@ export function worthStripSvg(
   const askFit = ask != null ? fit(askX, askLabel, fs, W) : null
   const markY = zoneBottom + 16
   // A second line only when the two labels' own boxes would collide.
+  // THE TWO MARKS' OWN BOXES, after anchoring, not their centres.
+  //
+  // On Concorde "list $1.47M" and "asked $1.50M" print 2 percent apart on a 39
+  // percent axis, and the one mark carrying the recommendation was illegible
+  // (tasteReview round three, §2 item 3). A centre-distance test misses the
+  // case where `fit` has already clamped one of them to the frame, so the
+  // boxes themselves are compared and the SECOND label drops a line.
   const wide = (t: string) => t.length * fs * 0.58
-  const askDrops =
-    ask != null && Math.abs(askX - recX) < (wide(recLabel) + wide(askLabel)) / 2 + 8
+  const box = (
+    f: { x: string; anchor: 'start' | 'middle' | 'end' },
+    t: string,
+  ): [number, number] => {
+    const at = Number(f.x)
+    const w = wide(t)
+    if (f.anchor === 'start') return [at, at + w]
+    if (f.anchor === 'end') return [at - w, at]
+    return [at - w / 2, at + w / 2]
+  }
+  const askDrops = (() => {
+    if (ask == null || !askFit) return false
+    const [a0, a1] = box(askFit, askLabel)
+    const [r0, r1] = box(recFit, recLabel)
+    return a0 < r1 + 6 && r0 < a1 + 6
+  })()
   const askY = askDrops ? markY + fs + 4 : markY
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Where the sales put this home, and where we would list it" class="trend-svg worth-strip">
-    <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">Sale price today, ${int(g.sales.length)} sales</text>
+    <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">Sale price today, ${int(
+      g.sales.filter((s) => s.setAside !== true).length,
+    )} sales</text>
     <rect x="${x(g.low).toFixed(1)}" y="${zoneTop.toFixed(1)}" width="${Math.max(x(g.high) - x(g.low), 2).toFixed(1)}" height="${(zoneBottom - zoneTop).toFixed(1)}" fill="${ZONE}" stroke="${INK}" stroke-opacity="0.45" stroke-width="1"/>
     <line x1="${left}" y1="${zoneBottom.toFixed(1)}" x2="${right}" y2="${zoneBottom.toFixed(1)}" stroke="${EDGE}" stroke-width="0.75"/>
     ${
@@ -281,8 +332,8 @@ export function worthStripSvg(
     <line x1="${recX.toFixed(1)}" y1="${(zoneTop - 30).toFixed(1)}" x2="${recX.toFixed(1)}" y2="${zoneBottom.toFixed(1)}" stroke="${INK}" stroke-width="2"/>
     <text x="${recFit.x}" y="${markY.toFixed(1)}" text-anchor="${recFit.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(recLabel)}</text>
     ${dots}
-    ${endLabel(first.adjustedPrice, true)}
-    ${last.adjustedPrice !== first.adjustedPrice ? endLabel(last.adjustedPrice, false) : ''}
+    ${endLabel(g.low, 'low', zoneLabelsCollide)}
+    ${g.high !== g.low ? endLabel(g.high, 'high', zoneLabelsCollide) : ''}
     <text x="${left}" y="${(H - 4).toFixed(1)}" font-size="${fs}" fill="${INK}">The shading is what your home is worth</text>
   </svg>`
 }

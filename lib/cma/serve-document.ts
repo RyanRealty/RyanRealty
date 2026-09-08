@@ -29,6 +29,7 @@ import {
 } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
+import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
 
 export const CMA_DOC_HEADERS = {
   'Content-Type': 'text/html',
@@ -128,13 +129,34 @@ function storedHtmlResult(html: string, origin: string): CmaServeResult {
   return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
 }
 
-export async function serveCmaDocument(opts: {
+export type CmaServeOpts = {
   slug: string
   requestUrl: string
   isAdmin: boolean
   viewerEmail: string | null
   skipRegisterGate?: boolean
-}): Promise<CmaServeResult> {
+  /**
+   * THE BROKER'S OWN VIEW, `/admin/cmas/[slug]/view`, and only that.
+   *
+   * A row whose audit says it needs review renders a navy gate at the top of
+   * the document here (tasteReview round three, §2). It is deliberately NOT
+   * keyed on `isAdmin`: /cma/[slug] passes isAdmin true whenever the person
+   * opening the client's own link holds an admin session, and the audit's
+   * words — "indefensible" — are not written for the seller.
+   */
+  adminReview?: boolean
+}
+
+export async function serveCmaDocument(opts: CmaServeOpts): Promise<CmaServeResult> {
+  const result = await serveCmaDocumentResult(opts)
+  if (!opts.adminReview || result.kind !== 'html') return result
+  const source = await getCmaRenderSourceBySlug(opts.slug.trim().toLowerCase())
+  const pricing = (source?.render_args as { pricing?: unknown } | null)?.pricing ?? null
+  const banner = adminReviewBannerHtml(pricing)
+  return banner ? { ...result, html: injectAdminReviewBanner(result.html, banner) } : result
+}
+
+async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResult> {
   const safeSlug = opts.slug.trim().toLowerCase()
   if (!/^[a-z0-9-]{3,80}$/.test(safeSlug)) {
     return { kind: 'json', status: 400, body: { error: 'Invalid slug' } }

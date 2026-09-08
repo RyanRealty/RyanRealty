@@ -180,8 +180,8 @@ const ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Price history', figure: false, html: true },
   { label: 'Seller concessions', figure: true, grid: true },
   { label: 'Adjusted for date', figure: true, grid: true },
-  { label: 'Adjusted for size', figure: true, grid: true },
-  { label: 'Adjusted for style', figure: true, grid: true },
+  { label: 'Adjusted for size (theirs vs yours)', figure: true, grid: true },
+  { label: 'Adjusted for style (theirs vs yours)', figure: true, grid: true },
   { label: 'Net adjustment', figure: true, grid: true },
   { label: 'Net, as a share of the sale', figure: true, grid: true },
   { label: 'Every adjustment added up', figure: true, grid: true },
@@ -379,11 +379,18 @@ function compHref(comp: CmaAdjustedComp, ctx?: TrackedDocLinkCtx | null): string
  * legitimately share a price, and folding that row would delete the most
  * important line in the document to save four words.
  */
+/**
+ * ONE SENTENCE, not one per row.
+ *
+ * "Every home here is a single family residence. Every home here is 3 bd / 2
+ * ba." was two consecutive sentences of one shape (tasteReview round three,
+ * §3). Each row contributes a CLAUSE and the clauses compose one sentence.
+ */
 const SHARED_PHRASE: Record<string, (v: string) => string> = {
-  'Property type': (v) => `Every home here is a ${v.toLowerCase()}.`,
-  'Beds and baths': (v) => `Every home here is ${v}.`,
-  'Year built': (v) => `Every home here was built in ${v}.`,
-  Size: (v) => `Every home here is ${v}.`,
+  'Property type': (v) => `a ${v.toLowerCase()}`,
+  'Beds and baths': (v) => v,
+  'Year built': (v) => `built in ${v}`,
+  Size: (v) => v,
 }
 
 function foldIdenticalRows(
@@ -413,7 +420,10 @@ function foldIdenticalRows(
   for (const col of cols as Col[]) {
     col.cells = keptIndexes.map((i) => col.cells[i] ?? '-')
   }
-  return { rows: kept, sentence: shared.join(' ') }
+  return {
+    rows: kept,
+    sentence: shared.length > 0 ? `Every home here is ${shared.join(', ')}.` : '',
+  }
 }
 
 function splitEvenly(cols: Col[]): Col[][] {
@@ -460,11 +470,16 @@ function matrixTable(
       const img = src
         ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
         : ''
+      // THE BADGE SITS OUTSIDE THE ANCHOR'S TEXT. Inside it, `innerText` read
+      // "31737 7th" and a copy-paste or a text extraction carried the pin
+      // number into the address (tasteReview round three, §4 item 6). It is
+      // aria-hidden either way; this puts it out of the text as well, and the
+      // row it draws keeps the badge beside the address.
       const name = c.href
-        ? `<a class="matrix-addr" href="${esc(c.href)}" data-rr-track="cma-sale">${pinBadge(c.pin)}${esc(
-            c.label,
-          )}</a>`
-        : `<span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span>`
+        ? `<span class="addr-row">${pinBadge(c.pin)}<a class="matrix-addr" href="${esc(
+            c.href,
+          )}" data-rr-track="cma-sale">${esc(c.label)}</a></span>`
+        : `<span class="addr-row"><span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span></span>`
       // ROW → PIN IS A CONTROL, so it says so. The pin on the map is a real
       // <button>; this end of the same pair was a bare <th> with no role, no
       // tabindex and no cursor, so one direction of a two-way interaction was
@@ -581,9 +596,9 @@ function matrixStack(
       const fold = `<div class="comp-fold">${priceHistoryLineHtml(pricePathFromSale(c), `sale-${pin}`)}${
         working ? `<div class="comp-stack-grid">${working}</div>` : ''
       }</div>`
-      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<a class="comp-stack-addr" href="${esc(
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<span class="addr-row is-card">${pinBadge(pin)}<a class="comp-stack-addr" href="${esc(
         compHref(c, ctx),
-      )}" data-rr-track="cma-sale">${pinBadge(pin)}${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
+      )}" data-rr-track="cma-sale">${esc(c.address)}</a></span><div class="comp-stack-sold">Sold ${esc(
         dateLong(c.closeDate),
       )} · ${usd(c.closePrice)}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${
         conclusion ? `<div class="comp-stack-grid is-answer">${conclusion}</div>` : ''
@@ -616,17 +631,15 @@ function subjectStackCard(subject: CmaSubject): string {
   }</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}</article>`
 }
 
-/**
- * The one line the grid cannot say in its row labels: what the SIGN means.
+/*
+ * WHAT THE SIGN MEANS IS IN THE ROW LABEL NOW.
  *
- * It used to open "Sale price today is the sale price plus every adjustment
- * above it", which is the arithmetic the rows already spell out in order —
- * a sentence whose job was to explain the sentence before it (VOICE.md, and
- * the taste review's Words list). What a reader cannot work out from the
- * labels is which way a minus points, so that is all this says.
+ * "A minus figure means that sale had something yours does not. A plus means
+ * yours has it." was a sentence under a grid whose rows are already plain
+ * English — the last of the explaining sentences (tasteReview round three,
+ * §3). The two rows that carry a sign say what they compare: "Adjusted for
+ * size (theirs vs yours)".
  */
-const SALE_PRICE_TODAY_LEGEND =
-  'A minus figure means that sale had something yours does not. A plus means yours has it.'
 
 export function renderCompMatrixHtml(
   subject: CmaSubject,
@@ -660,6 +673,5 @@ export function renderCompMatrixHtml(
   ${lead}
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
-  ${matrixStack(subject, comps, compCols, folded.rows, ctx)}
-  <p class="small">${esc(SALE_PRICE_TODAY_LEGEND)}</p>`
+  ${matrixStack(subject, comps, compCols, folded.rows, ctx)}`
 }

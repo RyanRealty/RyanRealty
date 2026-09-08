@@ -10,7 +10,6 @@ import {
   BASIS_AND_LIMITS_HEADING,
   FAILED_ASK_BACKTEST_SOURCE,
   OPINION_CHAPTER_ORDER,
-  PRICED_RIGHT_HEADING,
   competitionArgs,
   didNotSellArgs,
   nextStepButtonsHtml,
@@ -20,6 +19,7 @@ import {
   thisMarketHeading,
   cmaDisclosureProseHtml,
   pricedRightBodyHtml,
+  pricedRightHeading,
   sellerNetPage,
   whatHappenedGraphicHtml,
   whatHappenedHeading,
@@ -130,7 +130,7 @@ function pricedRightScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="priced-right">
     <div class="in wide">
       <div class="kick r">What it costs</div>
-      <h2 class="h r">${esc(PRICED_RIGHT_HEADING)}</h2>
+      <h2 class="h r">${esc(pricedRightHeading(a))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`
