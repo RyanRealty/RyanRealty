@@ -24,7 +24,11 @@ import type { KbYearSeries } from '@/lib/kb/year-series'
 function year(y: number, base: number): KbYearSeries {
   return {
     year: y,
-    points: Array.from({ length: 12 }, (_, i) => ({ m: i + 1, value: base + i * 1_000 })),
+    points: Array.from({ length: 12 }, (_, i) => ({
+      m: i + 1,
+      value: base + i * 1_000,
+      soldCount: 40 + i,
+    })),
   }
 }
 
@@ -48,7 +52,9 @@ describe('placeMedianChart folds to the categorical cap', () => {
   it('mounts nothing rather than an empty frame', () => {
     expect(placeMedianChart([], CAPTION)).toBeUndefined()
     // A year with one plottable month is not a line.
-    expect(placeMedianChart([{ year: 2026, points: [{ m: 1, value: 700_000 }] }], CAPTION)).toBeUndefined()
+    expect(
+      placeMedianChart([{ year: 2026, points: [{ m: 1, value: 700_000, soldCount: 40 }] }], CAPTION),
+    ).toBeUndefined()
   })
 })
 
