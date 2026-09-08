@@ -36,6 +36,9 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   const inquiryType = formData.get('inquiryType')?.toString()?.trim() ?? 'General Inquiry'
   const message = formData.get('message')?.toString()?.trim() ?? ''
   const sessionId = formData.get('sessionId')?.toString()?.trim() ?? ''
+  // The listing CTAs land here as ?intent=tour; the client forwards it so the
+  // confirmation says "your tour request" rather than "your note" (SITE-09).
+  const isTour = formData.get('intent')?.toString()?.trim() === 'tour'
   // A2P/TCPA fail-closed: SMS only when the consent box was actively checked.
   const smsConsent = formData.get('smsConsent') === 'yes'
 
@@ -182,10 +185,32 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           },
         })
         // Instant CRM mirror + auto-enroll (kills the 30-min delta-cron lag).
+        // Queues the broker's new-lead text in the same pass — the drain route
+        // runs every minute, so the broker has it on their phone right away.
         const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
         await autoEnrollByPersonId(capturedPersonId, { smsConsent }).catch((e: unknown) =>
           console.warn('[contact-form] instant auto-enroll failed:', e),
         )
+        // SITE-09: the visitor's own same-minute confirmation. A system send
+        // (CLAUDE.md §1), so no approval gate; runs AFTER autoEnroll so the
+        // signing broker is resolved from an assigned person. A failure here can
+        // never fail the submit — the CRM row and the broker alert already exist.
+        try {
+          const { sendContactConfirmation } = await import('@/lib/comms/site-confirmations')
+          const ack = await sendContactConfirmation({
+            personId: capturedPersonId,
+            leadEmail: email,
+            firstName: name.split(/\s+/)[0] || null,
+            inquiryType,
+            listingLabel: listingLabel || null,
+            isTour,
+          })
+          console.log(
+            `[response-clock] contact confirmation person ${capturedPersonId}: ${ack.ok ? 'sent' : 'not sent'} (${ack.via}${ack.error ? ` — ${ack.error}` : ''})`,
+          )
+        } catch (e) {
+          console.warn('[response-clock] contact confirmation threw (non-blocking):', e)
+        }
         }
         // Stitch this visitor to the CRM person via rr_vid always; a valid
         // session id also backfills visitor_sessions. Session-only writes

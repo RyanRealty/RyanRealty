@@ -228,3 +228,9 @@
     text-underline-offset: var(--v3-underline-offset);
   }
 }
+
+/* The sent state's one door. A confirmation that only thanks the reader is a
+   dead end; the next real step gets the same primary control the form used. */
+.v3-ask__done-door {
+  margin: var(--v3-space-md) 0 0;
+}

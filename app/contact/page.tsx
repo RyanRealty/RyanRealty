@@ -203,7 +203,10 @@ export default async function ContactPage({ searchParams }: PageProps) {
             {
               kicker: v3Text('Email'),
               label: v3Text(CONTACT.email.primary),
-              fact: v3Text('A reply within one business day'),
+              // SITE-09: no duration on this door. The mailbox has no response
+              // clock on it — the form does — so it names where the mail lands
+              // instead of promising a time it cannot keep.
+              fact: v3Text("Straight to Matt's inbox"),
               href: `mailto:${CONTACT.email.primary}`,
             },
             {

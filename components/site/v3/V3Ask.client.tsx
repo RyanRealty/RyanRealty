@@ -41,7 +41,15 @@ export type V3AskField = {
   hint?: string
 }
 
-export type V3AskResult = { ok: true; heading: string; body?: string } | { ok: false; message: string }
+/**
+ * What the caller prints when the send lands. `door` is the one thing the
+ * visitor can DO next — a sent state that only says "thank you" is a dead end,
+ * and the contact page's next step (book a time) was one the page already
+ * offered above the form and stopped offering the moment it mattered most.
+ */
+export type V3AskResult =
+  | { ok: true; heading: string; body?: string; door?: { href: string; label: string } }
+  | { ok: false; message: string }
 
 export type V3AskProps = {
   id: string
@@ -109,6 +117,11 @@ export function V3Ask({
           result.body ? <p className="v3-ask__lede">{result.body}</p> : null
         ) : lede ? (
           <p className="v3-ask__lede">{lede}</p>
+        ) : null}
+        {status === 'sent' && result?.ok && result.door ? (
+          <p className="v3-ask__done-door">
+            <V3Button href={result.door.href}>{result.door.label}</V3Button>
+          </p>
         ) : null}
       </div>
 

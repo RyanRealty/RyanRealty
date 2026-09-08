@@ -151,6 +151,10 @@ export async function submitSearchAlertSignup(input: {
         // Instant sequence enroll (funnel audit 2026-09-01): the 15-minute
         // crm-auto-enroll sweep remains the catch-all, but a hot signup should
         // not wait on it — same direct call the contact form makes.
+        // canonicallyTagLead has already applied audience:buyer, so this passes
+        // autoEnrollByPersonId's high-intent test and the assigned broker gets
+        // the new-lead text on the same request (verified 2026-09-08,
+        // lib/crm/enroll.ts — a bare site sign-in is what that test excludes).
         const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')
         await autoEnrollByPersonId(nativeId).catch((e: unknown) =>
           console.warn('[search-alert] instant auto-enroll failed:', e),
@@ -187,6 +191,29 @@ export async function submitSearchAlertSignup(input: {
     fubPersonId,
   })
   if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
+
+  // 6b. SITE-09: the visitor's same-minute confirmation. A system send, not a
+  //     broker send (CLAUDE.md §1, Matt 2026-09-07), so no approval gate. It
+  //     runs AFTER the upsert on purpose: the copy says the alert is on, and
+  //     that sentence must not go out before the row that makes it true. The
+  //     broker's own new-lead text was queued above by autoEnrollByPersonId.
+  //     Non-blocking — a mail failure never fails a signup that persisted.
+  if (crmPersonId) {
+    try {
+      const { sendAlertConfirmation } = await import('@/lib/comms/site-confirmations')
+      const ack = await sendAlertConfirmation({
+        personId: crmPersonId,
+        leadEmail: email,
+        kind: 'search',
+        criteriaSummary: summary || name,
+      })
+      console.log(
+        `[response-clock] search-alert confirmation person ${crmPersonId}: ${ack.ok ? 'sent' : 'not sent'} (${ack.via}${ack.error ? ` — ${ack.error}` : ''})`,
+      )
+    } catch (e) {
+      console.warn('[response-clock] search-alert confirmation threw (non-blocking):', e)
+    }
+  }
 
   // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).
   try {
@@ -299,6 +326,23 @@ export async function submitListingSaveCapture(input: {
         await autoEnrollByPersonId(nativeId).catch((e: unknown) =>
           console.warn('[listing-save] instant auto-enroll failed:', e),
         )
+        // SITE-09: same-minute confirmation. This capture writes NO alert row —
+        // the saved-home state stays behind sign-in — so the copy promises a
+        // broker, never a feed.
+        try {
+          const { sendAlertConfirmation } = await import('@/lib/comms/site-confirmations')
+          const ack = await sendAlertConfirmation({
+            personId: nativeId,
+            leadEmail: email,
+            kind: 'listing',
+            criteriaSummary: addressLine || null,
+          })
+          console.log(
+            `[response-clock] listing-save confirmation person ${nativeId}: ${ack.ok ? 'sent' : 'not sent'} (${ack.via}${ack.error ? ` — ${ack.error}` : ''})`,
+          )
+        } catch (e) {
+          console.warn('[response-clock] listing-save confirmation threw (non-blocking):', e)
+        }
       } catch {
         // Best-effort. Tag/task blip must not skip the browser stitch.
       }

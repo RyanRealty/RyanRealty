@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-08T02:15:25.342Z
+**Generated:** 2026-09-08T04:00:18.698Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2009,6 +2009,16 @@ Companion files:
 **Tables:** `crm_timeline`
 
 **Selected columns:** `broker`
+
+---
+
+### `lib/data/crm/getResponseClockReport.ts`
+
+**Exports:** `getResponseClockReport`
+
+**Cache keys:** `crm-response-clock-v1`
+
+**Cache tags:** `'crm-response-clock', 'crm-reporting'`
 
 ---
 

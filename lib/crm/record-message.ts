@@ -63,6 +63,13 @@ export type RecordMessageInput = {
   assignedBroker?: string | null
   /** conversation subject line (group friendlyName / email subject) */
   conversationSubject?: string | null
+  /**
+   * Who asked for the send (SITE-09). 'system' suppresses the
+   * first-broker-action stamp below: a same-minute confirmation the pipeline
+   * mailed is not the broker answering. Defaults to 'broker' so every existing
+   * caller behaves exactly as before. The governed rails pass req.initiator.kind.
+   */
+  initiatorKind?: 'broker' | 'system'
 }
 
 export type RecordMessageResult =
@@ -240,8 +247,11 @@ export async function recordConversationMessage(input: RecordMessageInput): Prom
       if (isUniqueViolation(error)) return { ok: true, conversationId: conv.conversationId, messageId: null, deduped: true }
       return { ok: false, error: error.message }
     }
-    // P12 measurement: first outbound human-touch stamps person.custom.
-    if (input.direction === 'out' && input.primaryPersonId) {
+    // P12 measurement: first outbound HUMAN touch stamps person.custom. A system
+    // initiator does not qualify (SITE-09) — otherwise the site's own
+    // confirmation email set the stamp seconds after the submit and every
+    // speed-to-lead read off it was fiction.
+    if (input.direction === 'out' && input.primaryPersonId && input.initiatorKind !== 'system') {
       const kind =
         input.channel === 'sms' || input.channel === 'mms'
           ? input.channel === 'mms'

@@ -20,11 +20,11 @@ export const CONTACT_FAQ_ITEMS = [
   {
     question: 'How do I schedule a showing?',
     answer:
-      'Send the form on this page, or call or text the office. A broker gets back to you within one business day to set a time that works for you.',
+      'Send the form on this page, or call or text the office. The form reaches a broker the same minute, and they will call or text you to set a time that works.',
   },
   {
     question: 'How quickly will I hear back after contacting Ryan Realty?',
     answer:
-      'Within one business day, and usually sooner. If it is urgent, call or text and you will reach us faster.',
+      'The form on this page reaches a broker the same minute you send it, and a confirmation lands in your inbox. If it is urgent, call or text and you will reach us fastest.',
   },
 ] as const

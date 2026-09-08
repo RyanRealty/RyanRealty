@@ -43,6 +43,12 @@ vi.mock('@/lib/lead-tracking', () => ({
   fireLeadGenerated: (...args: unknown[]) => h.fireLeadGenerated(...args),
 }))
 
+// SITE-09: the same-minute confirmation is a governed send; never reach the rail
+// (or Supabase, through the signing-broker resolver) from a unit test.
+vi.mock('@/lib/comms/site-confirmations', () => ({
+  sendAlertConfirmation: vi.fn().mockResolvedValue({ ok: false, via: 'skipped', error: 'unit test' }),
+}))
+
 vi.mock('@/lib/visitor-backfill', () => ({
   stitchFormSubmitIdentity: (...args: unknown[]) => h.stitchFormSubmitIdentity(...args),
 }))

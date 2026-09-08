@@ -106,6 +106,9 @@ export function ContactAsk({
       const rrSession = readRrSessionId() // hydration-safe: event/effect storage only
       if (rrSession) formData.set('sessionId', rrSession)
       if (listingKey) formData.set('listingKey', listingKey)
+      // The server writes the confirmation from this: "your tour request" reads
+      // wrong on a plain question, and the reverse reads worse.
+      if (intent) formData.set('intent', intent)
       const result = await submitContactForm(formData)
       if (!result.success) {
         return { ok: false, message: result.error || 'The message did not send. Call or text instead, or try again.' }
@@ -114,15 +117,22 @@ export function ContactAsk({
         window.fbq('track', 'Lead', { content_name: formData.get('inquiryType') }, { eventID: result.eventId })
       }
       trackEvent('generate_lead', { source: 'contact_page', inquiry: formData.get('inquiryType') })
+      // SITE-09: the sent state says what is happening RIGHT NOW, not what we
+      // will get around to. Both halves are real: the server queues the broker's
+      // text in this same request (the alert drain runs every minute) and sends
+      // the visitor's confirmation from the assigned broker's mailbox. No
+      // duration promise — "one business day" was the old line and it undersold
+      // a response clock that runs in minutes.
       return {
         ok: true,
         heading: isTour ? 'Tour request received' : 'Message received',
         body: isTour
-          ? publishTourConfirmation(listingSummary)
-          : 'Thank you. A broker will get back to you within one business day. If it is urgent, call or text and we will answer sooner.',
+          ? `${publishTourConfirmation(listingSummary)} A confirmation is on its way to your inbox.`
+          : 'A broker gets this now and answers you personally. A confirmation is on its way to your inbox.',
+        door: { href: '/book', label: 'Or pick a time now' },
       }
     },
-    [defaultInquiryType, isTour, listingKey, listingSummary, smsConsent],
+    [defaultInquiryType, intent, isTour, listingKey, listingSummary, smsConsent],
   )
 
   return (
