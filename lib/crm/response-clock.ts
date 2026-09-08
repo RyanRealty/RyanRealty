@@ -260,8 +260,9 @@ export function responseDueAt(createdAt: Date | string): Date {
   const grace = RESPONSE_GRACE_MINUTES * MINUTE_MS
   if (inBusinessHours(created)) return new Date(created.getTime() + grace)
 
-  let { year, month, day, hour } = wallPartsInMarket(created)
-  if (hour >= BUSINESS_END_HOUR) {
+  const parts = wallPartsInMarket(created)
+  let { year, month, day } = parts
+  if (parts.hour >= BUSINESS_END_HOUR) {
     // Tomorrow's 8am. Step a day from local NOON so a DST shift cannot land the
     // arithmetic on the previous or next calendar date.
     const noon = marketWallTimeToInstant(year, month, day, 12)
