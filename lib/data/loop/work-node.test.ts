@@ -84,6 +84,22 @@ describe('stale in_progress detection (stranded work surfaces on the packet)', (
       isStaleInProgress({ state: 'open' as const, updatedAt: '2026-08-01T00:00:00Z' }, new Date('2026-08-15T00:00:00Z')),
     ).toBe(false)
   })
+
+  // Site queue claims go stale in hours (2026-09-08: a rate-limited cloud
+  // grinder held four SITE nodes it could never finish, and the day window
+  // would have parked them for three days).
+  it('releases a public-ux claim idle past SITE_CLAIM_IDLE_HOURS, not days', () => {
+    const claimedAt = '2026-09-08T03:15:00Z'
+    const node = { state: 'in_progress' as const, updatedAt: claimedAt, domain: 'public-ux' }
+    expect(isStaleInProgress(node, new Date('2026-09-08T15:14:00Z'))).toBe(false)
+    expect(isStaleInProgress(node, new Date('2026-09-08T15:16:00Z'))).toBe(true)
+  })
+
+  it('keeps the day window for every other domain', () => {
+    const node = { state: 'in_progress' as const, updatedAt: '2026-09-08T03:15:00Z', domain: 'leads' }
+    expect(isStaleInProgress(node, new Date('2026-09-09T03:15:00Z'))).toBe(false)
+    expect(isStaleInProgress(node, new Date('2026-09-11T03:16:00Z'))).toBe(true)
+  })
 })
 
 describe('orphan auto-release (dead cloud sessions never hold the floor)', () => {

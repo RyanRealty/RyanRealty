@@ -20,7 +20,7 @@ import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/dat
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
-import { fleetNodePriority, isStaleInProgress, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
+import { fleetNodePriority, isStaleInProgress, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
@@ -122,7 +122,7 @@ async function main() {
   const released: NodeRow[] = []
   for (const n of nodes) {
     if (n.state !== 'in_progress') continue
-    if (!isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)) continue
+    if (!isStaleInProgress({ state: n.state, updatedAt: n.updated_at, domain: n.domain }, now)) continue
     // The brief keeps its own client on purpose (lib/data/loop/work-graph.ts
     // carries server-only and cannot load in a CLI). Optimistic on state, so a
     // sibling session that just continued the node is not knocked back to open.
@@ -228,7 +228,7 @@ async function main() {
   push('--- WORK GRAPH ---')
   push(`nodes: ${nodes.length} · open ${nodes.filter((n) => n.state === 'open').length} · in_progress ${inProgress.length} · blocked ${blocked.length} · done ${nodes.filter((n) => n.state === 'done').length}`)
   for (const n of released) {
-    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${STALE_IN_PROGRESS_DAYS} days) — open again`)
+    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${n.domain === 'public-ux' ? `${SITE_CLAIM_IDLE_HOURS} hours` : `${STALE_IN_PROGRESS_DAYS} days`}) — open again`)
   }
   for (const n of inProgress) {
     push(`  IN_PROGRESS ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — owner ${n.owner_session ?? '?'}`)

@@ -69,6 +69,15 @@ lands second. Every session shares one account allowance, so more sessions reach
 rate limit sooner; when one hits it, it schedules its wake for the reset and the
 others keep going.
 
+**Heartbeat, or lose the claim (2026-09-08).** A `public-ux` claim untouched for
+`SITE_CLAIM_IDLE_HOURS` (12, `lib/data/loop/work-node.ts`) is released by the next boot's
+brief; the day-long window stays for every other domain. The sentinel's orphan release
+only knows Cursor agents, so a Claude cloud session killed mid-round (a rate limit at
+03:15 held four SITE nodes for what would have been three days) leaves nothing else to
+free them. A live session touches `updated_at` on every node it holds when a lane
+reports and at each round boundary (a plain update, same state, same owner); a session
+that cannot finish a node releases it (`open`, `owner_session` null) before it ends.
+
 ### 3. Run the lanes
 One `Agent` per lane, `isolation: 'worktree'`, `run_in_background: true`. Each
 brief carries, verbatim: the node id and its objective, output, and accept; the
