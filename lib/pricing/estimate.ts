@@ -18,6 +18,7 @@ import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classe
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import {
+  describeIndexShape,
   describePath,
   INDEX_MIN_N,
   isCompleteMonth,
@@ -166,6 +167,19 @@ export interface PricingTimeAdjustment {
   basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'none'
   /** The complete months the endpoint is the median of, oldest first. */
   referenceMonths?: string[]
+  /**
+   * The shape of the window, derived from the same smoothed series every sale
+   * walks: where it peaked or troughed, how far it has come back, and which
+   * months move a sale up and which move it down. Absent on the fallback
+   * bases, which have no series to read.
+   */
+  shape?: import('@/lib/pricing/market-path').IndexShape
+  /**
+   * Why the monthly index was not used, on the `year-over-year` basis. The
+   * printed sentence carries it: three Bend documents were built minutes apart
+   * on two different bases and none of them said so.
+   */
+  indexUnavailableReason?: string | null
   source: {
     table: string
     filter: string
@@ -203,6 +217,8 @@ export function buildTimeAdjustmentBasis(opts: {
   yoyMedianPriceDeltaPct?: number | null
   fetchedAt?: string
   windowMonths?: number
+  /** Why the monthly index was not used, when it was not. Printed. */
+  indexUnavailableReason?: string | null
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
@@ -210,6 +226,7 @@ export function buildTimeAdjustmentBasis(opts: {
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
   if (trend.pctPerMonth != null) {
     const move = trend.pctOverWindow ?? 0
+    const shape = describeIndexShape({ points: opts.points, asOf: opts.asOf, windowMonths })
     const applied = `Each sale is moved by the change in ${city} median price a square foot between the month it closed and the last three complete months`
     return {
       pctPerMonth: trend.pctPerMonth,
@@ -224,8 +241,15 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `select month, n, median_ppsf, median_sale_to_original, median_days_to_offer from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
       },
-      sentence:
-        move === 0
+      shape,
+      // THE SENTENCE NAMES THE PATH, NOT THE ENDPOINT. It used to end on the
+      // first-to-last move — "a path that fell 1.6 percent" — and the grid
+      // beside it then moved five of seven sales UP, one by 4.33 percent.
+      // The second sentence is the shape of the same series, derived in
+      // describeIndexShape, never written by hand.
+      sentence: shape.clause
+        ? `${applied}. Over the last ${windowMonths} months that index ${shape.clause}. The index is built from ${trend.n.toLocaleString('en-US')} sales.`
+        : move === 0
           ? `${applied}, a path that held flat over the last ${windowMonths} months across ${trend.n.toLocaleString('en-US')} sales.`
           : `${applied}, a path that ${move > 0 ? 'rose' : 'fell'} ${Math.abs(move).toFixed(1)} percent over the last ${windowMonths} months across ${trend.n.toLocaleString('en-US')} sales.`,
     }
@@ -245,7 +269,13 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: 'getCmaMarketContext(subject) -> yoyMedianPriceDeltaPct',
       },
-      sentence: `Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy).toFixed(1)} percent against a year ago, about ${Math.abs(perMonth).toFixed(1)} percent a month. Each sale is moved by that rate for the months since it closed.`,
+      indexUnavailableReason: opts.indexUnavailableReason ?? 'no monthly index for this city',
+      // SAY WHICH METHOD, AND WHY. 1617 NW 8th fell to this basis four minutes
+      // after two other Bend documents used the monthly index, and nothing in
+      // any of the three said they were measured differently.
+      sentence: `There is no monthly price index behind this document, ${
+        opts.indexUnavailableReason ?? 'no monthly index for this city'
+      }, so each sale is moved by the year-over-year change instead. Median sale prices in this city are ${yoy > 0 ? 'up' : 'down'} ${Math.abs(yoy).toFixed(1)} percent against a year ago, about ${Math.abs(perMonth).toFixed(1)} percent a month, and each sale is moved by that rate for the months since it closed.`,
     }
   }
   return {
@@ -495,7 +525,33 @@ export function adjustCompAlongMarket(opts: {
   points: MarketIndexPoint[]
   asOf: string
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
-  const sale = opts.sale
+  return adjustCmaCompAlongMarket({ ...opts, comp: pricingSaleToCmaComp(opts.sale) })
+}
+
+/**
+ * The same walk, off a comp the listings ladder produced.
+ *
+ * ONE CITY, ONE BASIS (tasteReview round three, §1). cma-1617-nw-8th is a Bend
+ * document built four minutes after two other Bend documents, and it fell to
+ * the year-over-year basis with `n: 0` while they walked the monthly index.
+ * The cause was not the city slug and not a missing index: the facts ladder
+ * returned under three sales, so `pickCompSource` sent it to the listings
+ * ladder, the build only loaded `pricing_market_index` on the facts path, and
+ * `usePath` additionally required every comp to carry a `sale_pricing_facts`
+ * row. A comp off the listings ladder has a close date, a close price and a
+ * living area, which is everything this walk needs — so it walks the same index
+ * its city's other documents walk, and the only thing it cannot contribute is
+ * the story class, which is a fact about the sale and not about the path.
+ */
+export function adjustCmaCompAlongMarket(opts: {
+  subject: CmaSubject
+  subjectStory: StoryClass
+  comp: CmaComp
+  saleStory: StoryClass
+  points: MarketIndexPoint[]
+  asOf: string
+}): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
+  const sale = opts.comp
   const path = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
   const timeAdjustedPrice = timeAdjustAlongPath(sale.closePrice, path)
   const timeAdjustment = timeAdjustedPrice - sale.closePrice
@@ -512,7 +568,7 @@ export function adjustCompAlongMarket(opts: {
   const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - sale.sqft) / subjectSqft) : 1
   const recency = 1 / (1 + monthsSinceClose / 12)
   const adjusted: CmaAdjustedComp = {
-    ...pricingSaleToCmaComp(sale),
+    ...sale,
     monthsSinceClose: +monthsSinceClose.toFixed(1),
     timeAdjustment,
     timeAdjustedPrice,
@@ -855,6 +911,12 @@ export function priceCmaSet(args: {
   }
   marketIndex: MarketIndexPoint[]
   asOf: string
+  /**
+   * Why `marketIndex` is empty, when it is. It reaches the printed sentence:
+   * a document on the year-over-year basis says which method it used and why,
+   * instead of looking identical to one built on the index (round three, §1).
+   */
+  indexUnavailableReason?: string | null
   /** Build path passes the shared `computePricing` so the valuation-engine gate stays honest. */
   computePricing?: typeof computePricing
 }): CmaPricing | null {
@@ -896,6 +958,7 @@ export function priceCmaSet(args: {
     points: args.marketIndex,
     asOf: args.asOf,
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
+    indexUnavailableReason: args.indexUnavailableReason ?? null,
   })
   return applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,

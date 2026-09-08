@@ -946,9 +946,15 @@ describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
     })
     expect(out.basis).toBe('city-monthly-index-trailing-3')
     expect(out.referenceMonths).toEqual(['2026-06-01', '2026-07-01', '2026-08-01'])
+    // THE PATH, NOT THE ENDPOINT (round three, §1). The old sentence ended on
+    // "rose 3.6 percent" and the column beside it ran 0.00, then -1.68, then
+    // +0.52 as the sales got older, with nothing on the page able to say why.
     expect(out.sentence).toBe(
-      "Each sale is moved by the change in Redmond's median price a square foot between the month it closed and the last three complete months, a path that rose 3.6 percent over the last 12 months across 854 sales.",
+      "Each sale is moved by the change in Redmond's median price a square foot between the month it closed and the last three complete months. Over the last 12 months that index rose to a peak in April 2026 and has come back 1.7 percent since, so sales that closed from March 2026 to May 2026 move down and older sales move up. The index is built from 854 sales.",
     )
+    // The shape rides along as data, so a renderer never re-derives it.
+    expect(out.shape?.extremeMonth).toBe('2026-04-01')
+    expect(out.shape?.turned).toBe(true)
   })
 
   it('does not restate itself, and prints no rate a reader could multiply out', () => {
@@ -958,7 +964,10 @@ describe('the time-adjustment basis says exactly what is applied (R2d)', () => {
       points: redmond,
       asOf: '2026-09-07',
     })
-    expect(out.sentence.split('. ').length).toBe(1)
+    // Three sentences, each a different fact: what is applied, the shape of the
+    // path it is applied along, and how many sales are behind it. None of them
+    // explains the one before.
+    expect(out.sentence.split('. ').length).toBe(3)
     expect(out.sentence).not.toMatch(/percent a month/)
     expect(out.sentence).not.toMatch(/\d+\.\d\d/)
   })

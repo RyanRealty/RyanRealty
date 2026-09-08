@@ -25,7 +25,7 @@ import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
-import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
+import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { buildPricingReview } from '@/lib/pricing/review'
 import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
@@ -393,9 +393,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // the Method 3 reconciliation weights: strong = full weight, weak = half
     // (bracketing only). Excludes were dropped before the math above.
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
-    const marketIndex = selection.pricingSource === 'facts'
-      ? await getPricingMarketIndex(citySlug(subject.city))
-      : []
+    // ONE CITY, ONE BASIS (tasteReview round three, §1). This used to load the
+    // index only on the facts path, so cma-1617-nw-8th — a Bend subject the
+    // facts ladder starved, sent to the listings ladder by pickCompSource —
+    // fell to the year-over-year basis with n:0 four minutes after two other
+    // Bend documents walked the monthly index, and nothing in any of the three
+    // said they were measured differently. The index is a fact about the CITY,
+    // not about which ladder found the sales.
+    const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
     const asOf = new Date().toISOString().slice(0, 10)
     // The SELECTOR's classification, computed once with the same asOf year
     // lib/pricing/match.ts uses. Everything downstream that has to grade a comp
@@ -413,25 +418,51 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const subjectStory = classifyStory(subject.levelsRaw, null)
     const priceSet = (set: typeof selection.comps) => {
       const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
-      const usePath = marketIndex.length > 0 && set.every((c) => salesByKey.has(c.listingKey))
+      // Walk the index whenever the city HAS one. A sale that carries a
+      // sale_pricing_facts row also carries its story class; one off the
+      // listings ladder does not, and a missing story class costs a ±13.5%
+      // adjustment on that one sale — it does not change which path the
+      // document is measured along.
+      const usePath = marketIndex.length > 0
       const adj = (usePath
         ? set.map((c) => {
-            const sale = salesByKey.get(c.listingKey)!
-            return adjustCompAlongMarket({
-              subject,
-              subjectStory,
-              sale,
-              saleStory: sale.storyClass,
-              points: marketIndex,
-              asOf,
-            }).adjusted
+            const sale = salesByKey.get(c.listingKey)
+            return sale
+              ? adjustCompAlongMarket({
+                  subject,
+                  subjectStory,
+                  sale,
+                  saleStory: sale.storyClass,
+                  points: marketIndex,
+                  asOf,
+                }).adjusted
+              : adjustCmaCompAlongMarket({
+                  subject,
+                  subjectStory,
+                  comp: c,
+                  saleStory: 'unknown',
+                  points: marketIndex,
+                  asOf,
+                }).adjusted
           })
         : adjustComps(subject, set, market)
       ).map((c) => {
         const tier = tierByKey.get(c.listingKey)
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
-      const p = priceCmaSet({ subject, adjusted: adj, market, input, site, selection, marketIndex, asOf, computePricing })
+      const p = priceCmaSet({
+        subject,
+        adjusted: adj,
+        market,
+        input,
+        site,
+        selection,
+        marketIndex,
+        asOf,
+        indexUnavailableReason:
+          marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+        computePricing,
+      })
       // The concession sentence prints under the matrix and names "the sales
       // that set this price", so it counts THAT set — the kept comps the reader
       // can count — not the wider band set the price path is fitted on

@@ -161,7 +161,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
-  const { adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
+  const { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
   const { classifyStory } = await import('@/lib/pricing/classes')
   const { checkDateAdjustments } = await import('@/lib/pricing/market-path')
   const { getPricingMarketIndex } = await import('@/lib/data/pricing/facts')
@@ -256,26 +256,35 @@ async function dryRun(slug: string): Promise<DryRun> {
     return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
   }
 
-  const marketIndex = selection.pricingSource === 'facts' ? await getPricingMarketIndex(citySlug(subject.city)) : []
+  // The index is a fact about the CITY, not about which ladder found the sales
+  // (lib/cma/build.ts step 4). This script mirrored the old facts-only load.
+  const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
   // EXACTLY the branch lib/cma/build.ts takes (step 4, `usePath`). Before
   // 2026-09-08 this script always took the year-over-year `adjustComps` path,
   // so its date adjustments were not the ones the document prints and the R2d
   // defect could not be seen here at all.
   const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
-  const usePath = marketIndex.length > 0 && selection.comps.every((c) => salesByKey.has(c.listingKey))
+  const usePath = marketIndex.length > 0
   const subjectStory = classifyStory(subject.levelsRaw, null)
   const adjusted = usePath
     ? selection.comps.map((c) => {
-        const sale = salesByKey.get(c.listingKey)!
-        return adjustCompAlongMarket({
-          subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
-        }).adjusted
+        const sale = salesByKey.get(c.listingKey)
+        return sale
+          ? adjustCompAlongMarket({
+              subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
+            }).adjusted
+          : adjustCmaCompAlongMarket({
+              subject, subjectStory, comp: c, saleStory: 'unknown', points: marketIndex, asOf,
+            }).adjusted
       })
     : adjustComps(subject, selection.comps, market)
   const pricing = priceCmaSet({
     subject, adjusted, market, input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
-    marketIndex, asOf, computePricing,
+    marketIndex, asOf,
+    indexUnavailableReason:
+      marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+    computePricing,
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
 
