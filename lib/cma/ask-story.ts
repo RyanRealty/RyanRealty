@@ -112,9 +112,15 @@ function atThatPrice(cls: AskGapClass): string {
  */
 export function walkTheHouseSentence(cls: AskGapClass, days: number | null): string {
   if (days == null || !(days > 0)) return ''
-  return `${atThatPrice(cls)}, ${Math.round(days).toLocaleString(
-    'en-US',
-  )} days without an offer points at something other than the number. We would walk the house before saying what.`
+  const d = Math.round(days).toLocaleString('en-US')
+  // An ask above what the sales support that then sat is the overpricing story
+  // the data carries (Matt 2026-09-07: "if you overprice you will sit or not
+  // sell"). Only a price inside or below the range earns the sentence that
+  // points away from the number.
+  if (cls === 'near-above') {
+    return `That ask was above what the sales support, and it went ${d} days without an offer. We would walk the house before saying more.`
+  }
+  return `${atThatPrice(cls)}, ${d} days without an offer points at something other than the number. We would walk the house before saying what.`
 }
 
 /** "It sat 187 days." — and, off the overpricing story, what it sat without. */

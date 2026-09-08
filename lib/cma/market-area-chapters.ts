@@ -212,7 +212,7 @@ function monthLineAgainstPriceHtml(
   const size = s.sqft != null && s.sqft > 0 ? ` near ${int(s.sqft)} square feet` : ''
   if (!facts && !size) return ''
   return `<p class="chart-read">${escapeHtml(
-    `These are every home in ${place}, all sizes. Yours is priced against ${
+    `This line is the middle sale price of single-family homes in ${place}, all sizes. Yours is priced against ${
       facts ? `${facts} homes` : 'homes'
     }${size}.`,
   )}</p>`

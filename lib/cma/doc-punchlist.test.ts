@@ -1509,7 +1509,8 @@ describe('chapter 1 — the story the numbers carry', () => {
       expect(html).toContain('3.4 percent above the top of the range homes like yours sold in.')
       expect(html).toContain('It sat 187 days without an offer.')
       expect(html).toContain('Half of the homes that sold in Redmond had an offer inside 21 days.')
-      expect(html).toContain(`At a price near the range, 187 ${WALK}`)
+      expect(html).toContain('That ask was above what the sales support, and it went 187 days without an offer. We would walk the house before saying more.')
+      expect(html).not.toContain(WALK)
       // The title is the claim, so the title changes. The exhibits under it
       // measure the city, not this listing, so they do not.
       expect(html).toContain('What price and time look like in Redmond.')
