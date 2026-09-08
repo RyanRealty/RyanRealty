@@ -1,8 +1,14 @@
-# Current — 2026-09-08 (round 3 landed on main: the answer draws, the listing page ends, two §0 defects fixed)
+# Current — 2026-09-08 (round 3 landed, deploy verified, and the live check found two more §0 defects)
 
-Owner: Claude (Opus 5), session 01Aubwpa. **main is at `c26a68d3e`.** Round 3 is on main, gated,
-and its evidence is written to both nodes (`89efe5a4` SITE-02b, `b2366127` SITE-06). 24 commits
-landed in one push: `ci:gates OK · 188/188 passed · 62.1s`.
+Owner: Claude (Opus 5), session 01Aubwpa. **main is at `9efa2cf32`.** Round 3 is on main, gated,
+deployed, live-checked, and both nodes are blocked on measurement to 2026-10-06 with their
+evidence written (`89efe5a4` SITE-02b, `b2366127` SITE-06). 24 commits landed in one push
+(`ci:gates OK · 188/188 passed · 62.1s`); the live check then found two more defects, fixed and
+pushed in `22cbedee3` and `9efa2cf32`.
+
+**The live check is where the value was.** Everything below the "two §0 defects" heading was
+caught before ship. These two were only visible on production, and both were in the round's own
+new code. A round is not finished at green gates.
 
 **What shipped.**
 - **SITE-02b — the answer drawn.** `V3Drawing` plus `lib/charts/plot.ts` (+226) and `ticks.ts`:
@@ -28,6 +34,26 @@ Also landed: the Source disclosure and the 3D-tour control got real 44px tap tar
 the page names it; and `scripts/take-route-shots.mjs` now hides the Next dev badge — it was
 sitting in the corner of every shot any evaluator has ever scored.
 
+**The two the live check caught, both in this round's own work.**
+1. **The held comparison was still published in its own Source disclosure** (`22cbedee3`). The
+   outcome strips were off, as Matt ruled. Their citations were not: the summary carried "Bend
+   detached median days to contract 29" and "median sale to original list 97.0%" directly under
+   "7 Ryan Realty closings in the window; sale-to-original-list on 7, days-to-contract on 6".
+   That is the comparison, in prose, one summary open — and withholding only our own half is
+   worse than either publishing or not. A §0 trace lists the figures we PUBLISH; it was
+   following the data instead of the page. `ProofTrace` entries now carry a `scope`
+   (`always` | `outcomes`) and the view drops the outcome-scoped lines when it does not draw the
+   strips. Clause 5 in `decisions.md` makes it general: a hold withholds the figure and its
+   sourcing together.
+2. **Days on market counted elapsed hours, not calendar days** (`9efa2cf32`). Production
+   published "26 days on market" beside a citation reading "OnMarketDate 2026-08-12" — count
+   from that date and you get 27. `OnMarketDate` is a timestamptz (this home: 20:11:48+00,
+   1:11pm local), so dividing elapsed milliseconds by 86,400,000 reached 27 only after 1:11pm
+   each day. Confirmed against the source row with an audit query: by epoch 26, by calendar date
+   27. It is calendar days now, in `America/Los_Angeles` through the repo's `zonedDateKey`, with
+   a bare `YYYY-MM-DD` taken as written rather than zoned. The citation says which count it is,
+   so the figure is checkable from the line beside it.
+
 **Taste receipts, honestly.** Three under the tightened instrument contract, evaluator
 `claude-sonnet-5`, rubric `v1-2026-09-08`: listing-detail **87** (`first`), sell **71**,
 community **60** — both `rebaselined`, not `rose`. The priors differ on evaluator model and
@@ -50,8 +76,11 @@ our own performance against a market benchmark. Locked in
 - A hero broken-image glyph traced to this sandbox's proxy, not to the site — an `onError`
   fallback is still worth adding.
 
-**Queue.** SITE-03, SITE-07, SITE-08, SITE-12 are open or held by other sessions. SITE-02b and
-SITE-06 move to blocked-on-measurement (reopen 2026-10-06) with the rest of the shipped set.
+**Queue.** SITE-02b and SITE-06 are blocked-on-measurement, reopening 2026-10-06, with the rest
+of the shipped set; their nodes carry the full evidence including the live-check findings.
+SITE-03 and SITE-07 are held by `cloud-grinder-2026-09-08-16`, SITE-08 and SITE-12 by
+`claude-opus5-01NESdvn`. Nothing is open and unheld, so the next round starts by checking those
+four heartbeats before claiming anything.
 
 **Local traps that cost time this session, so the next lane skips them.** Stop every dev server
 by PID before `npm run ci:gates` or `ci:commit-compiles` is OOM-killed and prints `Killed` as its
