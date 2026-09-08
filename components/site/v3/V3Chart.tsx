@@ -169,6 +169,17 @@ export type V3ChartProps = {
    * the five-hue run.
    */
   emphasize?: 'first' | 'last'
+  /**
+   * The ink the EMPHASIZED series wears. 'exception' is the only thing on this
+   * atom that draws --rr-exception on a line, and it means what the design
+   * system says it means: a real decline, drawdown or breached threshold
+   * (CLAUDE.md section 3). The atom cannot decide this for itself — only the
+   * caller knows which direction is bad for the metric being plotted — so it
+   * takes the ruling and never guesses. Callers on a year overlay get the
+   * answer from `yoyDirection` (lib/charts/ticks), which reads the same two
+   * points the claim sentence reads, so the ink and the sentence agree.
+   */
+  emphasisTone?: 'ink' | 'exception'
   /** The crosshair-and-reading layer. On for lines unless turned off. */
   hover?: boolean
   /**
@@ -255,6 +266,53 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
 }
 
 /**
+ * Direct end-labels on a year overlay, moved apart so they can be read.
+ *
+ * THE BUG THIS FIXES. Every COMPLETE year's last plotted point is December, so
+ * every complete year's label was placed at the same clamped x with a fixed 3
+ * unit lift off its own line. On /cities/bend that put 2023, 2024 and 2025
+ * inside 18 rendered pixels of each other and printed them on top of one
+ * another — measured in the browser, 2026-09-08: two overlapping pairs.
+ *
+ * THE RULE. Labels that share an x lane are stacked at LABEL_GAP apart in the
+ * order their lines end, top to bottom, and the stack is nudged (not squashed)
+ * until it fits inside the frame. Compressed only when the frame genuinely
+ * cannot hold the stack, which is the case the caller should have foldeed or
+ * faceted before it got here (TASTE.md caps categorical series at three).
+ */
+const LABEL_GAP = 12
+const LABEL_LANE = 22
+
+function placeEndLabels(
+  raw: readonly { x: number; y: number; name: string }[],
+  vbH: number,
+): { x: number; y: number; name: string }[] {
+  const top = 12
+  const bottom = vbH - 4
+  const placed = raw.map((r) => ({ ...r }))
+  const lanes = new Map<number, typeof placed>()
+  for (const label of placed) {
+    const lane = Math.round(label.x / LABEL_LANE)
+    const bucket = lanes.get(lane) ?? []
+    bucket.push(label)
+    lanes.set(lane, bucket)
+  }
+  for (const bucket of lanes.values()) {
+    if (bucket.length < 2) continue
+    bucket.sort((a, b) => a.y - b.y)
+    const gap = Math.min(LABEL_GAP, (bottom - top) / (bucket.length - 1))
+    // Keep the group centred on where the lines actually end, then space it.
+    const middle = bucket.reduce((sum, l) => sum + l.y, 0) / bucket.length
+    let start = middle - (gap * (bucket.length - 1)) / 2
+    start = Math.max(top, Math.min(start, bottom - gap * (bucket.length - 1)))
+    bucket.forEach((label, i) => {
+      label.y = start + i * gap
+    })
+  }
+  return placed
+}
+
+/**
  * The one way a sample size is written on a chart, so a reader meets the same
  * form on the city page, the district page, and the plat page. Deliberately
  * module-private: callers hand the atom NUMBERS and the atom does the writing,
@@ -320,6 +378,7 @@ export function V3Chart({
   yTicks,
   xTicks,
   emphasize,
+  emphasisTone,
   hover,
   sampleKey,
   rangeKeyLabel,
@@ -387,10 +446,16 @@ export function V3Chart({
      one series, tints by distance for the rest. Otherwise the yoy hue run or
      the two-context ladder. */
   const rankFrom = (i: number) => (emphasisIndex == null ? 0 : Math.min(Math.abs(i - emphasisIndex), 4))
+  /* The emphasized series' own ink. Navy unless the caller ruled the figure a
+     real decline, which is the one case the design system gives a second hue
+     to. Before this branch existed the emphasis path returned navy whatever the
+     series had done, so a chart whose claim read "down 5.7% from Aug 2025" drew
+     that year exactly like a rise. */
+  const emInk = emphasisTone === 'exception' ? '--exc' : '--em'
   const lineClass = (i: number) =>
     emphasisIndex != null
       ? i === emphasisIndex
-        ? 'v3-chart__line--em'
+        ? `v3-chart__line${emInk}`
         : `v3-chart__line--ctx${rankFrom(i)}`
       : yoy
         ? `v3-chart__line--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
@@ -398,7 +463,7 @@ export function V3Chart({
   const markClass = (i: number) =>
     emphasisIndex != null
       ? i === emphasisIndex
-        ? 'v3-chart__mark--em'
+        ? `v3-chart__mark${emInk}`
         : `v3-chart__mark--ctx${rankFrom(i)}`
       : yoy
         ? `v3-chart__line--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
@@ -406,7 +471,7 @@ export function V3Chart({
   const keyClass = (i: number) =>
     emphasisIndex != null
       ? i === emphasisIndex
-        ? 'v3-chart__key--em'
+        ? `v3-chart__key${emInk}`
         : `v3-chart__key--ctx${rankFrom(i)}`
       : yoy
         ? `v3-chart__key--cat${Math.min(i, V3_CHART_CATEGORY_SLOTS - 1)}`
@@ -601,20 +666,24 @@ export function V3Chart({
                 />
               ))}
               {yoy
-                ? plot.lines.map((line, i) => {
-                    const last = [...line.points].reverse().find((p) => p.plot)
-                    if (!last) return null
-                    return (
-                      <text
-                        key={`lbl-${i}-${line.name}`}
-                        className="v3-chart__line-label"
-                        x={Math.min(312, last.x + 3)}
-                        y={Math.max(12, last.y - 3)}
-                      >
-                        {line.name}
-                      </text>
-                    )
-                  })
+                ? placeEndLabels(
+                    plot.lines.flatMap((line) => {
+                      const last = [...line.points].reverse().find((p) => p.plot)
+                      return last
+                        ? [{ x: Math.min(312, last.x + 3), y: Math.max(12, last.y - 3), name: line.name }]
+                        : []
+                    }),
+                    plot.vbH,
+                  ).map((label, i) => (
+                    <text
+                      key={`lbl-${i}-${label.name}`}
+                      className="v3-chart__line-label"
+                      x={label.x}
+                      y={label.y}
+                    >
+                      {label.name}
+                    </text>
+                  ))
                 : null}
               {marks || emphasisIndex != null
                 ? plot.lines.map((line, i) =>
