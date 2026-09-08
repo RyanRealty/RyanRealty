@@ -326,10 +326,18 @@ function geometry(path: PricePath): Geometry | null {
     ...(path.undatedCutTo != null ? [path.undatedCutTo] : []),
     ...(path.closePrice != null ? [path.closePrice] : []),
   ]
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const pad = Math.max((max - min) * 0.3, Math.max(max * 0.012, 1))
-  return { t0, t1, lo: min - pad, hi: max + pad, steps }
+  // A SHARED PROPORTIONAL DOMAIN, centred on the opening ask.
+  //
+  // Scaling each line to its own min and max made every drop the same height:
+  // a $25,000 cut and a $90,000 cut on two cards beside each other both fell
+  // about fifty pixels, so the vertical axis carried no information at all.
+  // The domain is now the opening ask plus and minus the largest move on this
+  // listing, with a floor of 12 percent — so a 2 percent cut draws a sixth of
+  // what a 12 percent cut draws, on every card in the document.
+  const start = path.startPrice
+  const move = Math.max(...values.map((v) => Math.abs(v - start)))
+  const half = Math.max(move * 1.18, start * 0.12)
+  return { t0, t1, lo: start - half, hi: start + half, steps }
 }
 
 export type PricePathLayout = {
@@ -351,7 +359,7 @@ export type PricePathLayout = {
 /** Reading width and paper. Wide enough for two labels and a status word. */
 export const PRICE_PATH_WIDE: PricePathLayout = { width: 560, height: 96, fontSize: 11.5 }
 /** A phone card. Drawn to fit — never the wide one inside a pan box. */
-export const PRICE_PATH_PHONE: PricePathLayout = { width: 320, height: 92, fontSize: 10.5 }
+export const PRICE_PATH_PHONE: PricePathLayout = { width: 320, height: 96, fontSize: 11 }
 /** A card in a grid: one label, the line, the drop. */
 export const PRICE_PATH_CARD: PricePathLayout = { width: 220, height: 46, fontSize: 11, minimal: true }
 /**
@@ -402,8 +410,11 @@ export function priceHistoryLineSvg(
   // clip — the look-pass caught it with getBBox before it reached a reader.
   const endText = minimal ? '' : priceHistoryEndLabel(path)
   const need = endText.length * fs * 0.56 + 10
-  const reserve = minimal ? 6 : Math.min(Math.max(need, 60), W * 0.52)
-  const endFs = need > reserve ? Math.max(fs * (reserve / need), 8) : fs
+  const reserve = minimal ? 6 : Math.min(Math.max(need, 60), W * 0.6)
+  // Nine is the floor. Eight rendered "came off $1.65M · 174 days on market"
+  // at seven pixels beside fifteen-pixel body type, the smallest text on the
+  // document.
+  const endFs = need > reserve ? Math.max(fs * (reserve / need), 9) : fs
   const right = W - reserve
   const x = (t: number) => left + ((right - left) * (t - g.t0)) / Math.max(g.t1 - g.t0, 1)
   const y = (v: number) => bottom - ((bottom - top) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
@@ -484,7 +495,13 @@ export function priceHistoryLineSvg(
           2,
         )}" font-weight="600" fill="${INK}">${esc(endText)}</text>
   <text x="${left}" y="${(H - 3).toFixed(1)}" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.startDate))}</text>
-  <text x="${right.toFixed(1)}" y="${(H - 3).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.endDate))}</text>`
+  ${
+    // A period whose two ends fall on the same day is not a duration. It
+    // printed "Mar 31" at both ends of a full-width line.
+    monthDay(path.endDate) === monthDay(path.startDate)
+      ? ''
+      : `<text x="${right.toFixed(1)}" y="${(H - 3).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${MUTED}">${esc(monthDay(path.endDate))}</text>`
+  }`
   }
 </svg>`
 }

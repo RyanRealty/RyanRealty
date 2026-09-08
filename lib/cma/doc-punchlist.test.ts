@@ -522,7 +522,7 @@ describe('P10 — one chapter order, both documents', () => {
 describe('F1 — the immersive comps table on a phone', () => {
   it('hides the side-by-side matrix and shows the stack below 700px', () => {
     const css = immersiveStylesheet()
-    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[^}]*\.comp-matrix-wrap\s*\{\s*display:\s*none/)
+    expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[^}]*\.comp-matrix-wrap,\s*\.matrix-group-h\s*\{\s*display:\s*none/)
     expect(css).toMatch(/@media screen and \(max-width:\s*700px\)\s*\{[\s\S]{0,200}\.comp-stack\s*\{\s*display:\s*block/)
   })
 })
@@ -735,7 +735,10 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     expect(block).toContain('had an accepted offer inside 21 days')
     expect(block).not.toContain('median days on market')
     // saleToListRatio carries median_sale_to_original_list, not final list.
-    expect(block).toContain('percent of the price they first asked')
+    // No third sold-to-first-ask figure here: chapter 2b prints it per group
+    // off the 12-month local read and chapter 3's method prints the share the
+    // price was carried to. Three numbers for one claim is a §0 failure.
+    expect(block).not.toContain('percent of the price they first asked')
     expect(block).not.toContain('>sold to list<')
   })
 
@@ -1122,7 +1125,7 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(niceAxis([100, 100]).floor).toBeLessThanOrEqual(75)
   })
 
-  it('gives the three outcome bars three distinct navy tints, never grey', () => {
+  it('draws every outcome bar in full navy, and gives the reader group the weight', () => {
     const svg = askOutcomeBarsSvg(
       {
         city: 'Redmond',
@@ -1135,12 +1138,29 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
       },
       null,
     )
+    // Navy at 40 percent alpha over cream IS #97a0ac, and three separate
+    // readers called every tinted bar grey. Full navy on all three; the
+    // reader's own group carries twice the weight.
     const bars = [...svg.matchAll(/stroke="([^"]+)" stroke-width="(\d+)"/g)]
-      .filter((m) => Number(m[2]) >= 6)
-      .map((m) => m[1]!)
+      .filter((m) => Number(m[2]) >= 5)
+      .map((m) => ({ colour: m[1]!, weight: Number(m[2]) }))
     expect(bars).toHaveLength(3)
-    expect(new Set(bars).size).toBe(3)
-    for (const c of bars) expect(c).toMatch(/^(rgba\(16,39,66,[\d.]+\)|#102742)$/)
+    for (const b of bars) expect(b.colour).toBe('#102742')
+    const mine = askOutcomeBarsSvg(
+      {
+        city: 'Redmond',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 375, medianDays: 9 },
+          { key: 'sold-after-cut', n: 180, medianDays: 58 },
+          { key: 'did-not-sell', n: 232, medianDays: 118 },
+        ],
+      },
+      'did-not-sell',
+    )
+    expect(mine).toContain('Came off unsold · yours is in this group')
+    const weights = [...mine.matchAll(/stroke="#102742" stroke-width="(\d+)"/g)].map((m) => Number(m[1]))
+    expect(Math.max(...weights)).toBeGreaterThan(Math.min(...weights))
   })
 
   it('teaches no interaction in a caption', () => {
@@ -1281,7 +1301,8 @@ describe('tasteReview 4 — chapter 2b is one composed spread', () => {
     const block = chapter.slice(0, chapter.indexOf('</section>'))
     const sources = block.match(/from the Oregon Data Share MLS/g) ?? []
     expect(sources).toHaveLength(1)
-    expect(block).toContain('678 closed single-family sales and 232 listings that came off without one')
+    expect(block).toContain('Single-family listings in Redmond over the last 12 months')
+    expect(block).toContain('Each figure above counts the listings it draws')
   })
 
   it('keeps every figure inside its own frame in both layouts', () => {

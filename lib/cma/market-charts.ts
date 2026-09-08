@@ -102,14 +102,24 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
   const ys = vals.map(y)
   const path = linePath(xs, ys)
   // Thin the month axis so two labels never overlap on a phone.
-  let lastTickX = Number.NEGATIVE_INFINITY
+  // Thin the month axis from the RIGHT, so the newest month always carries a
+  // label. Thinning left-to-right dropped it, and the line then ran to an
+  // unnamed point past the last tick.
+  const tickAt = new Set<number>()
+  let nextTickX = Number.POSITIVE_INFINITY
+  for (let i = xs.length - 1; i >= 0; i--) {
+    const label = monthLabel(priced[i]!.periodStart)
+    const halfW = label.length * fs * 0.58
+    if (nextTickX - xs[i]! >= halfW * 2 + 3) {
+      tickAt.add(i)
+      nextTickX = xs[i]!
+    }
+  }
   const dots = xs
     .map((x, i) => {
       const label = monthLabel(priced[i]!.periodStart)
-      const halfW = label.length * fs * 0.58
       let tick = ''
-      if (x - lastTickX >= halfW * 2 + 3) {
-        lastTickX = x
+      if (tickAt.has(i)) {
         tick = `<text x="${x.toFixed(1)}" y="${bottom + 22}" text-anchor="middle" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
       }
       // Delta 2: "Hover or tap the month line: the value and the month." The
@@ -181,7 +191,7 @@ export function monthsOfSupplyBarsSvg(input: {
     `${int(Math.round(activeCount))} homes for sale in ${input.place}, and about ${int(Math.round(perMonth))} sell in a typical month`,
   )}" class="trend-svg mos-bars">
     ${bar(0, activeCount, `Homes for sale in ${input.place} right now`, TL_INK, 14)}
-    ${bar(1, perMonth, 'Homes that sell in a typical month', 'rgba(16,39,66,0.46)', 14)}
+    ${bar(1, perMonth, 'Homes that sell in a typical month', TL_INK, 14)}
   </svg>`
 }
 
@@ -651,10 +661,14 @@ function timelineBody(o: {
   const endLabelY = endBelow ? endY + 20 : endY - 12
   const startDay = monthDay(input.listDate)
   const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
-  const zoneLabelY = Math.max(zoneTop - 6, top - 12)
+  // INSIDE the shaded zone. Above it, the caption sat exactly where the ask
+  // line runs on a listing that asked near the top of the range, and the line
+  // struck through its x-height on all four documents.
+  const zoneTall = zoneBottom - zoneTop >= fs + 8
+  const zoneLabelY = zoneTall ? (zoneTop + zoneBottom) / 2 + fs * 0.36 : Math.max(zoneTop - 6, top - 12)
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
-    <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.11"/>
+    <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.16"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <text x="${plotL}" y="${zoneLabelY.toFixed(1)}" font-size="${fs}" fill="${TL_MUTED}">${esc(input.rangeLabel)}</text>
@@ -744,13 +758,14 @@ export function offerTimingCurveSvg(
     .join('')
   // Thin the day axis so two ticks never overlap. Day 7 and day 14 sit ~11
   // units apart on a phone, which prints "714".
-  let lastTickX = Number.NEGATIVE_INFINITY
-  const ticks = points
+  let nextTickX = Number.POSITIVE_INFINITY
+  const ticks = [...points]
+    .reverse()
     .map((p) => {
       const tx = x(p.days)
       const halfW = String(p.days).length * fs * 0.58
-      if (tx - lastTickX < halfW * 2 + 4) return ''
-      lastTickX = tx
+      if (nextTickX - tx < halfW * 2 + 4) return ''
+      nextTickX = tx
       // The last tick sits ON the right edge of the plot, so centred it runs
       // half a label past the frame — "180" clipped at 375 on every Bend row.
       // It anchors to the edge instead of hanging over it.
@@ -761,14 +776,14 @@ export function offerTimingCurveSvg(
     })
     .join('')
 
-  // The endpoint label sits to the LEFT of its dot, under the flat tail of the
-  // curve. Anywhere above or right of it collides with the seller's own mark,
-  // which lands beside the last point whenever they sat past six months.
   const last = points[points.length - 1]!
   // One decimal, because the sentence under the curve states the same figure
   // and 95.6 rounded to 96 makes the two disagree on the page.
   const endLabel = `${last.pct.toFixed(1)}% by day ${last.days}`
-  const endFit = { x: (x(last.days) - 8).toFixed(1), anchor: 'end' as const }
+  // Centred UNDER its own dot, clamped into the frame. Trailing left from the
+  // dot, a long label ended up sitting against the day-90 mark and read as
+  // labelling that one instead.
+  const endFit = fitText(x(last.days), endLabel, fs, W)
 
   const median = timing.medianDays
   const medianMark =
@@ -825,17 +840,20 @@ const ASK_OUTCOME_LABEL: Record<AskOutcomeGroup['key'], string> = {
 }
 
 /**
- * Three DISTINCT navy tints, so three bars on one axis read as three things.
+ * WEIGHT, not tint.
  *
- * They were all one 0.55 tint, which the evaluator read as "two greys barely
- * separable". Tints of the brand navy, never a second hue and never grey
- * (dataviz skill: "context is navy tints"; §3: two-colour palette).
+ * These bars were one 0.55 navy tint, then three tints. Three separate readers
+ * called every one of them grey, and they were right about what a reader sees:
+ * navy at 40 percent alpha over cream IS #97a0ac. A tint is the design
+ * system's context colour for a mark beside a full-navy one, not a way to tell
+ * three marks apart.
+ *
+ * So all three bars are full navy and the SUBJECT'S group is twice the weight
+ * of the others. Every bar is on-palette, the reader's own group is the one
+ * that reads first, and the three groups are told apart by the names beside
+ * them, which is what the names are for.
  */
-const ASK_OUTCOME_TINT: Record<AskOutcomeGroup['key'], string> = {
-  'sold-no-cut': 'rgba(16,39,66,0.68)',
-  'sold-after-cut': 'rgba(16,39,66,0.44)',
-  'did-not-sell': 'rgba(16,39,66,0.26)',
-}
+const ASK_OUTCOME_WEIGHT = { mine: 14, other: 7 }
 
 /**
  * The first price decides the days.
@@ -876,7 +894,10 @@ export function askOutcomeBarsSvg(
   const rows = groups
     .map((g, i) => {
       const mine = g.key === subjectGroup
-      const name = `${ASK_OUTCOME_LABEL[g.key]}${mine ? ' · your home' : ''}`
+      // "· your home" beside a 117-day median, on a document that says "yours
+      // went 290 days", reads as a claim about their listing. It is a claim
+      // about which GROUP their listing is in.
+      const name = `${ASK_OUTCOME_LABEL[g.key]}${mine ? ' · yours is in this group' : ''}`
       const count = [
         `${int(g.n)} ${g.n === 1 ? 'listing' : 'listings'}`,
         g.medianCutPct != null && g.medianCutPct > 0 ? `median cut ${g.medianCutPct.toFixed(1)}%` : null,
@@ -911,8 +932,8 @@ export function askOutcomeBarsSvg(
       ]
         .filter(Boolean)
         .join(' · ')
-      const stroke = mine ? TL_INK : ASK_OUTCOME_TINT[g.key]
-      const weight = mine ? 10 : 7
+      const stroke = TL_INK
+      const weight = mine ? ASK_OUTCOME_WEIGHT.mine : ASK_OUTCOME_WEIGHT.other
       const bold = mine ? ' font-weight="600"' : ''
       const open = `<g class="bar-row" data-bar="${esc(g.key)}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}"><rect x="0" y="${(top + i * rowH).toFixed(1)}" width="${W}" height="${rowH}" fill="transparent"/>`
       if (phone) {

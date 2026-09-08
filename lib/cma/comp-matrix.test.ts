@@ -55,7 +55,7 @@ describe('renderCompMatrixHtml', () => {
     // The seller's column is headed "Your home", with their ask and size under
     // it — never a price in a "Sold for" cell on a home that has not sold.
     expect(html).toContain('Your home')
-    expect(html).toContain('listed $445,000 · 1,056 sqft')
+    expect(html).toContain('listed $445,000<br/>1,056 sqft')
     expect(html).toContain('1. 947 6th')
     expect(html).toContain('data-comp="1"')
     expect(html).toContain('data-pin="subject"')
@@ -119,9 +119,9 @@ describe('renderCompMatrixHtml', () => {
   it('captions each table with the sales it holds, and loses none of them', () => {
     const twelve = renderCompMatrixHtml(subject, Array.from({ length: 12 }, () => comp))
     expect(twelve.match(/<table class="kv is-wide comp-matrix">/g)).toHaveLength(3)
-    expect(twelve).toContain('<h4 class="subhead">Sales 1 through 4</h4>')
-    expect(twelve).toContain('<h4 class="subhead">Sales 5 through 8</h4>')
-    expect(twelve).toContain('<h4 class="subhead">Sales 9 through 12</h4>')
+    expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 1 through 4</h4>')
+    expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 5 through 8</h4>')
+    expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 9 through 12</h4>')
     // The defect this whole shape exists to prevent: sales falling off the page.
     expect(twelve).toContain('12. 947 6th')
     // Three table heads, plus the phone stack's own "Your home" card, which
@@ -130,8 +130,8 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve.replace(/&[a-z]+;/g, '')).not.toMatch(/[—;]/)
 
     const thirteen = renderCompMatrixHtml(subject, Array.from({ length: 13 }, () => comp))
-    expect(thirteen).toContain('<h4 class="subhead">Sales 1 through 5</h4>')
-    expect(thirteen).toContain('<h4 class="subhead">Sales 10 through 13</h4>')
+    expect(thirteen).toContain('<h4 class="subhead matrix-group-h">Sales 1 through 5</h4>')
+    expect(thirteen).toContain('<h4 class="subhead matrix-group-h">Sales 10 through 13</h4>')
   })
 
   it('pins every column width so no cell can push the table past the margin', () => {

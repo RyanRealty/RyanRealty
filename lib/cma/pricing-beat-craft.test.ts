@@ -189,7 +189,7 @@ describe('pricing beat craft', () => {
     expect(css).toMatch(/\.comp-stack\{display:none/)
     // F1: below 700px the matrix gives way to the cards. It collapsed the row
     // label column to one character per line at 375 until this landed.
-    expect(css).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap\{display:none\}\.comp-stack\{display:block\}\}/)
+    expect(css).toMatch(/@media screen and \(max-width:700px\)\{\.comp-matrix-wrap,\.matrix-group-h\{display:none\}\.comp-stack\{display:block\}\}/)
 
     const scenes = assembleOpinionScenes({
       subject,

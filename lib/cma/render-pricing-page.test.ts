@@ -75,11 +75,12 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/Confidence:/)
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
-    expect(html).toContain('1,631 sq ft')
-    // The Sunstone contract keeps predicted close off the seller document.
-    // The rate and the market's sale-to-list carry the method instead.
+    expect(html).toContain('across 1,631 square feet')
+    // The Sunstone contract keeps predicted close off the seller document, so
+    // the per-foot rate is taken over the recommended list — the one number
+    // this chapter is titled with — and the sentence names that basis.
     expect(html).not.toContain('$640,000')
-    expect(html).toContain('$392 per square foot')
+    expect(html).toContain('At $655,000 across 1,631 square feet, that is $402 per square foot.')
     // The sale-to-list figure moved to chapter 5 (This market), where the
     // rest of the city's numbers live.
     expect(html).not.toContain('closing at 98.9 percent of list')

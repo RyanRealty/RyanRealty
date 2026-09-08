@@ -251,7 +251,9 @@ export function cmaSectionStyles(): string {
   .comp-matrix-wrap { display: block; margin: 8px 0 14px; overflow-x: auto; }
   @media screen and (max-width: 700px) {
     .comp-stack { display: block; }
-    .comp-matrix-wrap { display: none; }
+    /* The group heading belongs to the table, so it goes when the table does.
+       Both headings rendered back to back at 375 with nothing between them. */
+    .comp-matrix-wrap, .matrix-group-h { display: none; }
   }
   .comp-stack-card {
     border: 1px solid var(--navy-line);
@@ -274,6 +276,7 @@ export function cmaSectionStyles(): string {
   @media print {
     .comp-stack { display: none !important; }
     .comp-matrix-wrap { display: block !important; overflow-x: visible; }
+    .matrix-group-h { display: block !important; }
   }
   /* Chapter 3's title IS the number, so it is set as the answer rather than as
      a section label. Every other chapter title is a sentence and keeps the
@@ -375,7 +378,10 @@ export function cmaSectionStyles(): string {
   table.realization col.rz-share { width: 40%; }
   table.realization th, table.realization td { padding: 6px 8px; border-bottom: 1px solid var(--navy-line); text-align: left; }
   table.realization thead th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-  table.realization td.n, table.realization th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.realization td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* The header wraps; only the FIGURES stay on one line. "SHARE OF THE FIRST
+     ASK" on one line ran past the right edge of a 375 page. */
+  table.realization th.n { text-align: right; white-space: normal; }
   table.realization tr.is-mine { font-weight: 600; }
   table.realization tr.is-mine th, table.realization tr.is-mine td { border-bottom-color: var(--navy); }
   .rz-mine { display: block; font-size: 10px; font-weight: 400; color: var(--muted); }
@@ -485,7 +491,8 @@ export function cmaSectionStyles(): string {
   }
   table.comp-matrix { table-layout: fixed; width: 100%; font-size: 10.5px; }
   table.kv.is-wide.comp-matrix th, table.kv.is-wide.comp-matrix td { width: auto; }
-  table.comp-matrix thead th.v { vertical-align: bottom; text-align: center; }
+  /* TOP, not bottom: the subject head carries one line the sale heads do not. */
+  table.comp-matrix thead th.v { vertical-align: top; text-align: center; }
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
   table.comp-matrix .matrix-addr { display: block; }
   table.comp-matrix th, table.comp-matrix td {

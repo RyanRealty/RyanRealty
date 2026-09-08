@@ -111,7 +111,7 @@ describe('2a — when homes like yours get their offer', () => {
     // The shares the curve DRAWS, in the order it draws them — never a rounded
     // fraction fitted to a point ("nine in ten inside 60" over a 90.0 pct).
     expect(html).toContain(
-      'Half of the homes that sold in Redmond had an offer inside 12 days. 95.0 percent had one inside 90 days. By day 180, 99.0 percent did. Yours went 187 days without one.',
+      'Half of the 188 homes that sold in Redmond had an offer inside 12 days. 95.0 percent had one inside 90 days. By day 180, 99.0 percent did. Yours went 187 days without one.',
     )
     // Every figure traces to a named source, at seller grain (CLAUDE.md §0).
     expect(html).toContain('188 closed sales. Single-family sales in Redmond over the last 12 months')
@@ -156,7 +156,7 @@ describe('2b — the first price decides the days', () => {
     expect(html).toContain('Sold without a price cut')
     expect(html).toContain('214 listings')
     expect(html).toContain('median cut 4.1%')
-    expect(html).toContain('Came off unsold · your home')
+    expect(html).toContain('Came off unsold · yours is in this group')
     // Each clause names what the price DID, not whether it was right: the
     // groups are defined by the cut, and the renderer does not get an opinion.
     expect(html).toContain(

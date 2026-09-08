@@ -469,8 +469,11 @@ export function propertyDescription(subject: {
     .filter(Boolean)
     .join(', ')
   const facts = [
-    subject.beds != null ? `${int(subject.beds)} bedrooms` : null,
-    subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathrooms` : null,
+    // "1 bathrooms" shipped on the disclosure page of a real document.
+    subject.beds != null ? `${int(subject.beds)} bedroom${subject.beds === 1 ? '' : 's'}` : null,
+    subject.baths != null
+      ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathroom${subject.baths === 1 ? '' : 's'}`
+      : null,
     subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
     subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
     subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,

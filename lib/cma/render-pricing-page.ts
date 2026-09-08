@@ -97,13 +97,27 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
   )}</p>`
 }
 
-/** The per-square-foot check, as one line the seller can run against the table. */
+/**
+ * The per-square-foot check, as one line the seller can run against the table.
+ *
+ * It used to read "these sales carry a median of $564 per square foot" — but
+ * the figure was `predictedClose / subject.sqft`, which is not a median of
+ * anything. On 1617 NW 8th it printed $564 under a chapter that had just said
+ * those same sales closed at $566 to $888 a foot: a median outside its own
+ * stated range (CLAUDE.md §0).
+ *
+ * The rate is now taken over the number this chapter is titled with, and the
+ * sentence names that basis. Predicted close stays off the seller document
+ * (the Sunstone contract, `client-facing.ts` `includeExpectedClose`), so a rate
+ * computed over it would be one the reader cannot reconcile to anything
+ * printed — the same defect in a quieter form.
+ */
 function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }): string {
   const sqft = input.subject.sqft
-  const close = input.pricing.predictedClose
-  if (sqft == null || !(sqft > 0) || close == null || !(close > 0)) return ''
+  const price = input.pricing.recommended
+  if (sqft == null || !(sqft > 0) || price == null || !(price > 0)) return ''
   return `<p class="small">${esc(
-    `Adjusted for date and size, these sales carry a median of ${usd(Math.round(close / sqft))} per square foot at ${int(sqft)} sq ft.`,
+    `At ${usd(price)} across ${int(sqft)} square feet, that is ${usd(Math.round(price / sqft))} per square foot.`,
   )}</p>`
 }
 

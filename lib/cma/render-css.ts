@@ -343,8 +343,12 @@ export function cmaStylesheet(siteUrl: string): string {
      two — a 78px column turns "median sold, every Redmond home" into a
      one-word-per-line column (F7). Screen only: the sheet is 816 wide. */
   @media screen and (max-width: 700px) {
-    .stat-strip, .stat-strip.is-3, .stat-strip.is-4 { grid-template-columns: repeat(2, 1fr); }
+    .stat-strip, .stat-strip.is-4 { grid-template-columns: repeat(2, 1fr); }
+    /* Three money figures across 375 wrap 2 + 1 and leave an empty cell with a
+       divider beside it. One column, three rows. */
+    .stat-strip.is-3 { grid-template-columns: 1fr; }
     .stat-strip .stat:nth-child(2n) { border-right: 0; }
+    .stat-strip.is-3 .stat { border-right: 0; }
   }
   /* The verdict word, under the number it classifies. */
   .stat-strip .stat .lbl.vd { color: var(--navy); font-weight: 600; margin: 4px 0 0; }
@@ -536,7 +540,9 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--navy);
     line-height: 1;
     border-bottom: 1px solid var(--navy);
-    padding-bottom: 4px;
+    /* Caveat's descenders run well below its baseline; a 4px gap put the rule
+       straight through the "y" in Ryan. */
+    padding-bottom: 12px;
     margin-bottom: 8px;
     width: min(260px, 100%);
     max-width: 100%;

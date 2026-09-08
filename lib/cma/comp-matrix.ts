@@ -197,12 +197,15 @@ function bedsBaths(beds: number | null | undefined, baths: number | null | undef
 
 function subjectCol(subject: CmaSubject): Col {
   const list = subject.lastListPrice
+  // Two short lines, not one long one joined by a dot: in a 93px column
+  // "listed $460,000 · 1,440 sqft" wrapped to three lines with "sqft" alone
+  // on the last.
   const sub = [
     list != null && list > 0 ? `listed ${usd(list)}` : null,
     subject.sqft != null && subject.sqft > 0 ? `${int(subject.sqft)} sqft` : null,
   ]
     .filter(Boolean)
-    .join(' · ')
+    .join('<br/>')
   return {
     key: 'subject',
     label: 'Your home',
@@ -438,7 +441,9 @@ function matrixTable(
         ? `<a class="matrix-addr" href="${esc(c.href)}" data-rr-track="cma-sale">${esc(c.label)}</a>`
         : `<span class="matrix-addr">${esc(c.label)}</span>`
       return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${img}${name}${
-        c.sub ? `<span class="matrix-sub">${esc(c.sub)}</span>` : ''
+        // `sub` is composed here, from figures already escaped by usd()/int(),
+        // and carries one <br/> of our own — never reader input.
+        c.sub ? `<span class="matrix-sub">${c.sub}</span>` : ''
       }</th>`
     })
     .join('')}</tr>`
@@ -584,7 +589,12 @@ export function renderCompMatrixHtml(
   const tables = groups
     .map((group) => {
       const heading =
-        groups.length > 1 ? `<h4 class="subhead">${esc(groupHeading(seen, group.length))}</h4>` : ''
+        // `matrix-group-h`: the heading belongs to the TABLE, so it goes when
+        // the table does. At 375 both headings rendered back to back with
+        // nothing between them and then all the cards under the second one.
+        groups.length > 1
+          ? `<h4 class="subhead matrix-group-h">${esc(groupHeading(seen, group.length))}</h4>`
+          : ''
       seen += group.length
       return `${heading}${matrixTable([subj, ...group], folded.rows)}`
     })

@@ -27,7 +27,7 @@ const esc = escapeHtml
 const INK = '#102742'
 const MUTED = 'rgba(16,39,66,0.55)'
 const EDGE = 'rgba(16,39,66,0.22)'
-const ZONE = 'rgba(16,39,66,0.11)'
+const ZONE = 'rgba(16,39,66,0.16)'
 
 export type WorthStripInput = {
   /** One dot per printed sale, in the grid's own order. */
@@ -41,8 +41,8 @@ export type WorthStripInput = {
 
 export type WorthStripLayout = { width: number; height: number; fontSize: number }
 
-export const WORTH_STRIP_WIDE: WorthStripLayout = { width: 720, height: 168, fontSize: 12 }
-export const WORTH_STRIP_PHONE: WorthStripLayout = { width: 360, height: 190, fontSize: 10.5 }
+export const WORTH_STRIP_WIDE: WorthStripLayout = { width: 720, height: 182, fontSize: 12 }
+export const WORTH_STRIP_PHONE: WorthStripLayout = { width: 360, height: 206, fontSize: 11 }
 
 /** $475K. A price axis is read at a glance, not audited — the grid audits it. */
 function shortUsd(n: number): string {
@@ -111,8 +111,8 @@ export function worthStripSvg(
   const right = W - 10
   // The shaded strip sits low in the frame; the marks that name themselves sit above
   // it, and the axis numbers under it. Three rows, no collisions.
-  const zoneTop = H - 74
-  const zoneBottom = H - 46
+  const zoneTop = H - 92
+  const zoneBottom = H - 64
   const dotY = zoneTop - 16
   const x = (v: number) => left + ((right - left) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
 
@@ -143,16 +143,22 @@ export function worthStripSvg(
     return `<text x="${anchorLeft ? f.x : f.x}" y="${(dotY - 12).toFixed(1)}" text-anchor="${f.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(shortUsd(v))}</text>`
   }
 
-  // The recommended list: a full-height rule through the strip, labelled under
-  // the axis where nothing else sits.
+  // The two vertical marks label themselves on ONE line under the axis. They
+  // used to sit on two lines five units apart with the zone caption between
+  // them, and "asked $1.50M" printed straight through "what it is worth".
   const recX = x(input.recommended)
   const recLabel = `list ${shortUsd(input.recommended)}`
   const recFit = fit(recX, recLabel, fs, W)
-  // The ask that failed. Hollow, because it is not a price anything sold at.
   const ask = input.lastAsk != null && input.lastAsk > 0 ? input.lastAsk : null
   const askX = ask != null ? x(ask) : 0
   const askLabel = ask != null ? `asked ${shortUsd(ask)}` : ''
   const askFit = ask != null ? fit(askX, askLabel, fs, W) : null
+  const markY = zoneBottom + 16
+  // A second line only when the two labels' own boxes would collide.
+  const wide = (t: string) => t.length * fs * 0.58
+  const askDrops =
+    ask != null && Math.abs(askX - recX) < (wide(recLabel) + wide(askLabel)) / 2 + 8
+  const askY = askDrops ? markY + fs + 4 : markY
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Where the sales put this home, and where we would list it" class="trend-svg worth-strip">
     <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">Sale price today, ${int(g.sales.length)} sales</text>
@@ -161,15 +167,15 @@ export function worthStripSvg(
     ${
       ask != null
         ? `<line x1="${askX.toFixed(1)}" y1="${(zoneTop - 30).toFixed(1)}" x2="${askX.toFixed(1)}" y2="${zoneBottom.toFixed(1)}" stroke="${MUTED}" stroke-width="1.25" stroke-dasharray="3 3"/>
-    <text x="${askFit!.x}" y="${(H - 26).toFixed(1)}" text-anchor="${askFit!.anchor}" font-size="${fs}" fill="${MUTED}">${esc(askLabel)}</text>`
+    <text x="${askFit!.x}" y="${askY.toFixed(1)}" text-anchor="${askFit!.anchor}" font-size="${fs}" fill="${MUTED}">${esc(askLabel)}</text>`
         : ''
     }
     <line x1="${recX.toFixed(1)}" y1="${(zoneTop - 30).toFixed(1)}" x2="${recX.toFixed(1)}" y2="${zoneBottom.toFixed(1)}" stroke="${INK}" stroke-width="2"/>
-    <text x="${recFit.x}" y="${(H - 8).toFixed(1)}" text-anchor="${recFit.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(recLabel)}</text>
+    <text x="${recFit.x}" y="${markY.toFixed(1)}" text-anchor="${recFit.anchor}" font-size="${fs}" font-weight="600" fill="${INK}">${esc(recLabel)}</text>
     ${dots}
     ${endLabel(first.adjustedPrice, true)}
     ${last.adjustedPrice !== first.adjustedPrice ? endLabel(last.adjustedPrice, false) : ''}
-    <text x="${x(g.low).toFixed(1)}" y="${(zoneBottom + 15).toFixed(1)}" font-size="${fs}" fill="${MUTED}">what it is worth</text>
+    <text x="${left}" y="${(H - 4).toFixed(1)}" font-size="${fs}" fill="${MUTED}">The shading is what your home is worth</text>
   </svg>`
 }
 

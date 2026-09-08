@@ -99,7 +99,7 @@ img{max-width:100%;display:block}
    stacked cards — the same data, one sale at a time. Never both. */
 .comp-matrix-wrap{display:block;margin:18px 0 8px;overflow-x:auto;max-width:100%}
 .comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
-@media screen and (max-width:700px){.comp-matrix-wrap{display:none}.comp-stack{display:block}}
+@media screen and (max-width:700px){.comp-matrix-wrap,.matrix-group-h{display:none}.comp-stack{display:block}}
 .comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
 .comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
@@ -109,7 +109,7 @@ img{max-width:100%;display:block}
 .comp-stack-n .v{font-size:22px;font-weight:600;line-height:1.1}
 .comp-stack-facts{font-size:14px;opacity:.78;margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
 .comp-stack-card .matrix-thumb{width:100%;max-width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:0 0 8px}
-@media print{.comp-stack{display:none!important}.comp-matrix-wrap{display:block!important;overflow-x:visible}}
+@media print{.comp-stack{display:none!important}.comp-matrix-wrap,.matrix-group-h{display:block!important}.comp-matrix-wrap{overflow-x:visible}}
 table.comp-matrix{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right;white-space:normal;overflow-wrap:anywhere}
 table.comp-matrix td.n{white-space:nowrap}
@@ -217,7 +217,7 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .like-d{font-size:13.5px;opacity:.65;margin-top:8px}
 .cando-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:8px}
 .next-in{display:flex;gap:48px;align-items:flex-end}
-.br-img{width:min(320px,34vw);height:auto;flex:0 0 auto;align-self:flex-end}
+.br-img{width:min(320px,34vw);height:auto;flex:0 0 auto;align-self:flex-end;max-width:100%}
 .next-b{flex:1;min-width:0}
 .next-note{font-size:16px;line-height:1.55;max-width:56ch;margin:0 0 12px;color:rgba(250,248,244,.88)}
 .sc-cream .next-note{color:var(--ink)}
@@ -260,6 +260,9 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .nb-grid{grid-template-columns:1fr 1fr}
   .yr{height:220px}
   .next-in{flex-direction:column;align-items:flex-start}
+  /* In a column the row's flex-end alignment pushes the portrait off the
+     right edge of the panel and clips its shoulder. */
+  .br-img{align-self:flex-start;width:min(260px,60vw)}
   .fin-l,.bench-l{width:120px}
   .sc{padding:72px 18px}
   .status-tiles{grid-template-columns:1fr 1fr}
@@ -277,7 +280,9 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 .inv-hero{margin:8px 0 28px}
 .inv-verdict{display:block;margin-top:18px;font-size:15px;font-weight:600;letter-spacing:.04em}
 .szn.is-hero{margin-top:36px}
-table.comp-matrix thead th.v{vertical-align:bottom;text-align:center}
+/* TOP, not bottom. The subject head carries one line the sale heads do not,
+   so bottom alignment staircased six photos to six different heights. */
+table.comp-matrix thead th.v{vertical-align:top;text-align:center}
 table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;margin:0 0 8px}
 table.comp-matrix .matrix-addr{display:block}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
@@ -354,7 +359,7 @@ table.realization td.n,table.realization th.n{text-align:right;font-variant-nume
 table.realization tr.is-mine{font-weight:600}
 table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2px solid var(--navy)}
 .rz-mine{display:block;font-size:12px;font-weight:400;opacity:.65}
-@media (max-width:700px){table.realization{font-size:13px}table.realization th,table.realization td{padding:9px 4px}table.realization thead th{font-size:10px;letter-spacing:.06em}}
+@media (max-width:700px){table.realization{font-size:13px}table.realization th,table.realization td{padding:9px 4px}table.realization thead th{font-size:10px;letter-spacing:.06em;white-space:normal}}
 /* Chapter 2's two graphics, same two-layout mechanism as the timeline. */
 .timing-phone,.outcome-phone{display:none}
 @media screen and (max-width:700px){.timing-wide,.outcome-wide{display:none}.timing-phone,.outcome-phone{display:block}}
@@ -391,7 +396,7 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 .stat-strip .stat .val{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(28px,3.6vw,44px);line-height:1;font-variant-numeric:tabular-nums}
 .stat-strip .stat .lbl{font-size:13px;opacity:.7;margin-top:8px;line-height:1.4}
 .stat-strip .stat .lbl.vd{font-weight:600;opacity:.95;margin-top:6px}
-@media (max-width:700px){.stat-strip,.stat-strip.is-3,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:700px){.stat-strip,.stat-strip.is-4{grid-template-columns:repeat(2,1fr)}.stat-strip.is-3,.letter-body .stat-strip{grid-template-columns:1fr}}
 /* The closing scene is the only navy one, so its buttons invert there rather
    than carrying their own modifier class. */
 .sc-navy .btn.pri{background:var(--cream);color:var(--navy);box-shadow:0 12px 28px rgb(0 0 0 / .28)}

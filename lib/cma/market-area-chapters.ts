@@ -180,10 +180,6 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
   const place = cleanText(market.geoLabel) ?? 'this market'
   const mos = market.monthsOfSupply
   const verdict = mos != null ? monthsOfSupplyVerdict(mos) : null
-  const saleToList =
-    market.saleToListRatio != null
-      ? dec(market.saleToListRatio <= 2 ? market.saleToListRatio * 100 : market.saleToListRatio, 1)
-      : null
   const trend = market.trend ?? []
   const chart = medianCloseLineSvg(trend)
   const chartPhone = medianCloseLinePhoneSvg(trend)
@@ -227,14 +223,21 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
       `${place} carries ${formatMonthsOfSupply(mos)} months of supply, which is ${verdict.label.toLowerCase()} territory.`,
     )
   }
-  if (saleToList != null) {
+  // NO THIRD SOLD-TO-FIRST-ASK FIGURE. `saleToListRatio` is the pace read's
+  // median_sale_to_original_list; chapter 2b prints the same idea per group
+  // off the 12-month local read, and chapter 3's method prints the share the
+  // price itself was carried to. On 19968 those were 97.0 and 93.5 percent,
+  // both captioned "of the price they first asked", four screens apart. The
+  // two that are load-bearing stay; this one goes (CLAUDE.md §0).
+  // The SAME median chapter 2b draws, when the row carries it. Two figures for
+  // "half had an offer inside N days" — 25 off the 12-month single-family read
+  // and 26 off market_stats_cache — printed three screens apart is a §0
+  // failure whichever is right, and only the offer-timing block ships with a
+  // source trace beside it.
+  const offerMedian = readOfferTiming(market)?.medianDays ?? market.medianDom
+  if (offerMedian != null && offerMedian > 0) {
     sentences.push(
-      `Homes that sold here closed at ${saleToList} percent of the price they first asked, so the opening number is the one that decides what a seller keeps.`,
-    )
-  }
-  if (market.medianDom != null && market.medianDom > 0) {
-    sentences.push(
-      `Half of them had an accepted offer inside ${int(market.medianDom)} days; the other half waited longer.`,
+      `Half of them had an accepted offer inside ${int(offerMedian)} days; the other half waited longer.`,
     )
   }
   if (chart) {
@@ -625,21 +628,17 @@ export function chapter2bSourceLine(a: {
   if (!city) return ''
   const windowMonths = timing?.windowMonths ?? outcome?.windowMonths ?? table?.windowMonths ?? 12
   const period = windowMonths === 12 ? 'the last 12 months' : `the last ${int(windowMonths)} months`
-  const sold =
-    outcome?.groups.filter((g) => g.key !== 'did-not-sell').reduce((sum, g) => sum + g.n, 0) ??
-    timing?.n ??
-    null
-  const failed = outcome?.groups.find((g) => g.key === 'did-not-sell')?.n ?? null
-  const counts = [
-    sold != null && sold > 0 ? `${int(sold)} closed single-family ${sold === 1 ? 'sale' : 'sales'}` : null,
-    failed != null && failed > 0 ? `${int(failed)} listings that came off without one` : null,
-  ]
-    .filter(Boolean)
-    .join(' and ')
-  const table_note = table
+  // NO AGGREGATE COUNT. The three figures are measured over three different
+  // sets — sales with a recorded time to offer, sales grouped by what the
+  // first price did, and sales bucketed by weeks — so one total under all
+  // three invites a reader to add the table up and find it does not match
+  // (2,079 against 2,087 on 19968). Every figure prints its own count where it
+  // is drawn: the bars carry "375 listings" per row, the table carries a Sales
+  // column, and the curve names its own in its reading.
+  const tableNote = table
     ? ' Each row of the table is the median close over the price that listing first asked, across the sales in that row.'
     : ''
-  return `${counts ? `${counts}. ` : ''}${city} over ${period}, from the Oregon Data Share MLS.${table_note}`
+  return `Single-family listings in ${city} over ${period}, from the Oregon Data Share MLS. Each figure above counts the listings it draws.${tableNote}`
 }
 
 /** 2a. When homes like yours get their offer. */
@@ -670,7 +669,9 @@ export function renderOfferTimingHtml(a: {
   const last = timing.points[timing.points.length - 1] ?? null
   const reading = [
     timing.medianDays != null && timing.medianDays > 0
-      ? `Half of the homes that sold in ${timing.city} had an offer inside ${int(timing.medianDays)} days.`
+      ? `Half of the ${int(timing.n)} homes that sold in ${timing.city} had an offer inside ${int(
+          timing.medianDays,
+        )} days.`
       : null,
     ninety ? `${ninety.pct.toFixed(1)} percent had one inside 90 days.` : null,
     last && (!ninety || last.days !== ninety.days)
