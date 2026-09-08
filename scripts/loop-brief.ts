@@ -20,7 +20,7 @@ import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/dat
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
-import { fleetNodePriority, isStaleInProgress, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
+import { fleetNodePriority, isSiteClaim, isStaleInProgress, SITE_CLAIM_IDLE_HOURS, STALE_IN_PROGRESS_DAYS, type WorkNodeState } from '../lib/data/loop/work-node'
 import { execFileSync } from 'node:child_process'
 import { reconcileShips, formatReconcileReport } from '../lib/data/loop/ship-reconcile'
 import { classifyFeed, formatSilentZeroReport } from '../lib/data/loop/silent-zero'
@@ -119,18 +119,13 @@ async function main() {
   // is released here, before eligibility is computed, so the node is servable
   // in this same boot. in_progress -> open is a legal transition and the DB
   // trigger enforces it below us.
-  // Site queue items (public-ux, SITE-*) move in hours, not days: a claim that
-  // has not been touched for SITE_STALE_HOURS is a session that ended without
-  // releasing (2026-09-08: four grinder claims and two local claims sat frozen
-  // for five hours while every hourly fire stopped at the guard).
-  const SITE_STALE_HOURS = 3
-  const isSiteNode = (n: NodeRow) => n.domain === 'public-ux' && String(n.version_gap ?? '').startsWith('SITE-')
-  const staleSite = (n: NodeRow) => now.getTime() - Date.parse(n.updated_at) > SITE_STALE_HOURS * 60 * 60 * 1000
+  // Site queue items (public-ux, SITE-*) move in hours, not days; the window
+  // and the rule live in lib/data/loop/work-node.ts (SITE_CLAIM_IDLE_HOURS,
+  // isSiteClaim, isStaleInProgress) so the brief, the tests and the skill agree.
   const released: NodeRow[] = []
   for (const n of nodes) {
     if (n.state !== 'in_progress') continue
-    const stale = isSiteNode(n) ? staleSite(n) : isStaleInProgress({ state: n.state, updatedAt: n.updated_at }, now)
-    if (!stale) continue
+    if (!isStaleInProgress({ state: n.state, updatedAt: n.updated_at, domain: n.domain, versionGap: n.version_gap }, now)) continue
     // The brief keeps its own client on purpose (lib/data/loop/work-graph.ts
     // carries server-only and cannot load in a CLI). Optimistic on state, so a
     // sibling session that just continued the node is not knocked back to open.
@@ -236,7 +231,7 @@ async function main() {
   push('--- WORK GRAPH ---')
   push(`nodes: ${nodes.length} · open ${nodes.filter((n) => n.state === 'open').length} · in_progress ${inProgress.length} · blocked ${blocked.length} · done ${nodes.filter((n) => n.state === 'done').length}`)
   for (const n of released) {
-    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${isSiteNode(n) ? `${SITE_STALE_HOURS} hours` : `${STALE_IN_PROGRESS_DAYS} days`}) — open again`)
+    push(`  RELEASED stale claim on ${n.version_gap ?? '-'} [${n.domain}] ${n.title} (owner ${n.owner_session ?? '?'}, idle > ${isSiteClaim({ domain: n.domain, versionGap: n.version_gap }) ? `${SITE_CLAIM_IDLE_HOURS} hours` : `${STALE_IN_PROGRESS_DAYS} days`}) — open again`)
   }
   for (const n of inProgress) {
     push(`  IN_PROGRESS ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — owner ${n.owner_session ?? '?'}`)

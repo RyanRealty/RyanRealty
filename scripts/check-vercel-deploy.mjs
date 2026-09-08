@@ -35,6 +35,9 @@ import { resolve } from 'path'
 import { execSync } from 'child_process'
 import { homedir } from 'os'
 import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product-diff.mjs'
+// The live probe speaks the shared CI user agent: the middleware bot screen
+// 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
+import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
   DEFAULT_SKIP_WAIT_MS,
@@ -403,7 +406,7 @@ async function main() {
           const live = await fetch('https://ryan-realty.com/', {
             method: 'GET',
             redirect: 'follow',
-            headers: { 'user-agent': 'RyanRealty-deploy-verify' },
+            headers: { 'user-agent': CI_PROBE_USER_AGENT },
             signal: AbortSignal.timeout(20_000),
           })
           out(`ryan-realty.com GET ${live.status}`)

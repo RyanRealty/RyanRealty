@@ -77,13 +77,33 @@ export function fleetNodePriority(title: string): number {
 /** A node in_progress with no update for this many days is stranded work. */
 export const STALE_IN_PROGRESS_DAYS = 3
 
+/**
+ * Site queue claims (domain public-ux, version_gap SITE-*) go stale in HOURS,
+ * not days. Sessions are disposable and several run at once (Matt 2026-09-07);
+ * a cloud session killed mid-round by a rate limit leaves its claim
+ * in_progress, and the sentinel's orphan release only knows Cursor agents.
+ * Observed 2026-09-08: four grinder claims and two local claims sat frozen for
+ * five hours while every hourly fire stopped at the guard. The window matches
+ * the grinder's own concurrency guard (3 hours), so a live lane must heartbeat
+ * the node it holds (the site-queue skill's rule) or lose it.
+ */
+export const SITE_CLAIM_IDLE_HOURS = 3
+
+/** A site queue claim: the public-ux domain AND a SITE-* version gap. */
+export function isSiteClaim(node: { domain?: string | null; versionGap?: string | null }): boolean {
+  return node.domain === 'public-ux' && String(node.versionGap ?? '').startsWith('SITE-')
+}
+
 export function isStaleInProgress(
-  node: { state: WorkNodeState; updatedAt: string },
+  node: { state: WorkNodeState; updatedAt: string; domain?: string | null; versionGap?: string | null },
   now: Date = new Date(),
 ): boolean {
   if (node.state !== 'in_progress') return false
   const ageMs = now.getTime() - Date.parse(node.updatedAt)
-  return ageMs > STALE_IN_PROGRESS_DAYS * 24 * 60 * 60 * 1000
+  const limitMs = isSiteClaim(node)
+    ? SITE_CLAIM_IDLE_HOURS * 60 * 60 * 1000
+    : STALE_IN_PROGRESS_DAYS * 24 * 60 * 60 * 1000
+  return ageMs > limitMs
 }
 
 // ── Orphan auto-release (pre-arm item 3, ARMING-RUNBOOK Step 1) ──────────────

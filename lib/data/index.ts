@@ -401,6 +401,19 @@ export type { BrokerSaleTile, BrokerSaleSide } from '@/lib/data/brokers/getBroke
 export { getReviews } from '@/lib/data/reviews/getReviews'
 export type { Review, ReviewsSummary } from '@/lib/data/reviews/getReviews'
 
+// Proof block (SITE-11): reviews + the closed-sales line + per-closing outcomes
+// against the place's published detached medians, every figure with its trace.
+export { getProofBlock } from '@/lib/data/proof/getProofBlock'
+export type {
+  ProofBlock,
+  ProofContext,
+  ProofQuote,
+  ProofRecord,
+  ProofReviews,
+  ProofTrace,
+} from '@/lib/data/proof/getProofBlock'
+export type { ProofOutcomeRow, ProofOutcomes } from '@/lib/data/proof/outcomes'
+
 // Engagement counts (per-listing view/like/save/share)
 export {
   getEngagementCountsBatch,

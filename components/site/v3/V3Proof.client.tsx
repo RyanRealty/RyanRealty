@@ -569,3 +569,10 @@ export function V3Proof({
     </section>
   )
 }
+
+/**
+ * The live 1-5 star mark, shared with V3ProofBlock so the two proof surfaces
+ * cannot grow two different stars. Additive only: no existing caller's render
+ * changes, and `Marks` keeps its name inside this file.
+ */
+export { Marks as V3ProofStars }

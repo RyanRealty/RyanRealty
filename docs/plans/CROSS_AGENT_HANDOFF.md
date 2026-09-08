@@ -51,6 +51,106 @@ beautiful, interactive and engaging."
 
 # Current — 2026-09-08 (SITE-09 response clock landed; the site queue runs in four sessions at once)
 
+# Current — 2026-09-08 (round 1 of session 01Aubwpa: SITE-05 and SITE-11 built unwired; five base defects fixed; PR #199)
+
+Owner: Claude (Fable 5.1), cloud session 01Aubwpa (Matt: "Run loop", then "Go"), branch
+`claude/run-loop-pcp7q3`, draft PR #199, landed on `origin/main` through `npm run push`.
+Lane branches on origin: `wt/site-05-sticky` (af3680e..4297e1d, merged 42cfec3) and
+`wt/site-11-proof` (91a13a5..7cb70d9, merged 25bdefa). Nodes SITE-05
+(`547c080a-a47d-4ddd-902b-3d902945dce5`) and SITE-11 (`6c98f6ba-3627-4e28-ba06-7271e17f3b7c`)
+stay `in_progress` with this round's evidence appended: both primitives are built, tested and
+shipped but NOT wired, because every route they wire into (/sell under SITE-02, the city
+template under SITE-04, the neighborhood/community templates under SITE-08) was held by
+another session for the whole round (the skill's route-family rule). The rise gate cannot be
+read until they sit on a route with a `parity.json`.
+
+**Shipped, SITE-05 (lane C, separate Sonnet evaluator 87/100, all three must-fix defects
+fixed).** `V3StickyAsk` (`components/site/v3/V3StickyAsk.client.tsx` + CSS): desktop
+bottom-left plate, phone bottom bar modeled on the listing bar's geometry, shows only after the
+sentinel (hero or on-page ask) has scrolled above the viewport, RETIRES while the target ask is
+in view (so the page never shows two asks; the chrome decision of 2026-08-12 holds), session
+dismiss, `--rr-sticky-bottom` published on `:root` while shown so any other sticky element
+(SITE-04's strip) docks above it. The verdict tail is built once by `stickyAskVerdict()` in
+`lib/sticky-ask.ts` from `marketVerdict` + `formatMonthsOfSupply` (G68), with a §0 source line
+in the accessible name and title; null pulse means no tail, never invented. Attribution
+contract `lib/ask-source.ts`: the control stamps `markAskSource('sticky')`, the form reads once
+with `readAskSource()`, `withAskSource()` merges **`ask_source`** (never `source`, which
+/sell's `generate_lead` already uses for `seller_lp`). **The SITE-05 accept metric is therefore
+`ask_source='sticky'`.** 54 tests; 18/18 Playwright state assertions at 1440 and 375 (shots
+under `ui_kits/_shared/shots/site-05/`). Dev preview `/dev/site-05-sticky` kept for the wiring
+round (middleware refuses /dev outside development).
+
+**Shipped, SITE-11 (lane B, four separate Sonnet passes 82 → 81 → 75/88, the last two on one
+commit; NOT risen, by the rule).** `getProofBlock` (`lib/data/proof/`, exported from
+`@/lib/data`) and `V3ProofBlock` (+ `proofBlockView`, `V3ProofStars` shared with `V3Proof`).
+§0 trace printed fresh 2026-09-08T07:14Z: reviews 5.0 from 25 (`public.reviews`, google, not
+hidden); closed-sales line 17 homes · $13,384,034 (`listings`, `ListOfficeName ILIKE '%ryan
+realty%'`, Closed, ClosePrice not null, list side, all time); 7 closings in `CloseDate
+2025-09-08..2026-09-08`, sale-to-original-list on 7 (median 93.7%), days-to-contract on 6
+(median 52; one retroactive entry dropped by the market's own definition); Bend detached
+medians from `public.market_metric` (`mt-v1`, same 12-month window): 97.0% (n=2,081) and 29
+days (n=1,994). Every row agrees with `market_fact_sale` to 8 decimals, as a live int test.
+The uncached read went from 23.5s to 109ms by driving off `idx_listings_close_date`. A live
+double-count was fixed: `GlobalIntentTracker` already emits `call_initiated`/`text_initiated`
+on every tel:/sms: anchor, so the block rides on `click_cta {surface, place, source, reach}`.
+Shots under `ui_kits/_shared/shots/site-11/`; dev preview `/dev/site-11-proof`. The evaluator's
+round-3 doc was removed from `docs/plans` (findings live on the node, 477a9b9).
+
+**ASK MATT (one line, blocks only the outcome strips):** the last twelve months of our own
+listings read slower and lower than Bend's detached median (52 vs 29 days; 93.7% vs 97.0%
+of the first ask; our median close $755K against Bend's $760K, so not a price-band artifact).
+Publish that strip under the /sell form as the node specifies, or hold it and wire only the
+record, the reviews and the broker cards? Until he answers, the wiring lane ships the block
+without the two strips (`proofBlockView` already renders the quiet form).
+
+**Base defects fixed in this round (none in the lanes' diffs; each stopped PR #199's CI):**
+- Site queue claims went stale in 3 days; a rate-limited cloud grinder held four SITE nodes
+  for five hours. Two sessions fixed it the same hour; the merge keeps main's 3-hour value
+  (2b59be7) inside this branch's tested helper (`SITE_CLAIM_IDLE_HOURS`, `isSiteClaim`,
+  `isStaleInProgress` in `lib/data/loop/work-node.ts`). The skill gains the heartbeat rule: a
+  live session touches `updated_at` on every node it holds when a lane reports, at each round
+  boundary, and at least every two hours while a lane builds.
+- `docs/ROUTE_INVENTORY.md` could not regenerate since 2026-08-27 (the ZIP set moved) and
+  still listed the deleted `/dashboard/marketing` pages; the route smoke 404'd on them. Two
+  sessions fixed it the same hour; main's copy (7ac7ecc) wins, inventory regenerated.
+- The pull-request smoke step had no Playwright browser, so `ci:tap-targets` failed every PR
+  since 990e86c: the e2e job's install line now precedes the smoke (efb01d7).
+- With a browser, `ci:tap-targets` failed the homepage on the 3D-tour badge (142x20): the
+  control is now a transparent 44px hit box with the same 20px badge painted inside (521abdc).
+- `ci:probe-ua` failed `scripts/check-vercel-deploy.mjs`: its live probe now sends
+  `CI_PROBE_USER_AGENT` (512e2c7).
+
+**Verified before the push:** unit suite 870 files green on the merged tree; path-aware
+`ci:gates` 92/92 (`ci:commit-compiles` needs the dev servers stopped or tsc is OOM-killed
+and prints "Killed" as its first error); `ci:tap-targets` 16/16 pairs against the dev server
+with a scratch headless shell (`PLAYWRIGHT_BROWSERS_PATH=out/pw`, the container's shell is a
+different build than the pinned Playwright wants); `ci:probe-ua` passed. GA4 and cmas
+baselines for SITE-05 (`out/_baseline_site05.txt`, also on the node): /sell 248 sessions and
+1 `generate_lead` in 2026-08-11..09-07; `seller-lp` cmas rows 6 with email in each of the
+last two 28-day windows.
+
+**Next (round 2, the /sell route family is one lane):** SITE-02 is open again (the grinder's
+claims released). Whoever takes /sell wires SITE-05 and SITE-11 in the same lane, in this
+order: the SITE-02 answer step; `V3StickyAsk` per the contract (Stage `id="sell-hero"`,
+`href="#get-value"`, `targetId="get-value"`, `focusId="get-value-address"`, mounted as a direct
+child of `<main>`, and `SellValueForm` reads `readAskSource()` into the `generate_lead` payload
+and the cmas request metadata); `V3ProofBlock` via `proofBlockView` under the form with
+`reach` from the routed broker (`aboutFaceFromBroker`, never a phone literal). Then the city
+template (SITE-04's alerts strip must dock above `--rr-sticky-bottom` on phones) and the
+community page (`CommunityPlaceValue` needs an `id` pass-through; its address field needs a
+stable id before `focusId` works). One evaluator per page class; the score must rise.
+Evaluator noise is real (75 and 88 on one commit): rotate the model and keep the prior
+receipt's evaluator when re-scoring the same class.
+
+**Do not**
+- Wire the outcome strips on a public route before Matt answers the line above.
+- Re-emit `call_initiated`/`text_initiated` from a primitive; the global tracker owns them.
+- Put a second element at `bottom: 0` on a page carrying `V3StickyAsk`.
+
+---
+
+## Prior — 2026-09-08 (SITE-09 response clock landed; the site queue runs in four sessions at once)
+
 Owner: Claude (Fable 5.1), cloud session 01NESdvn, branch `claude/run-loop-syxm1d` landed on
 `origin/main`. Lane commits (rebased onto the CMA mission, PR #201): a4ea260 (the response clock), 61f0061
 (/contact after the evaluator), d03e15a (the taste receipt + test hardening). Node
