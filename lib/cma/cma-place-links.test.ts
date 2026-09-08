@@ -60,7 +60,7 @@ describe('the origin these links are printed on', () => {
   // but production.
   it('is production, whatever the environment says', () => {
     const before = process.env.NEXT_PUBLIC_SITE_URL
-    process.env.NEXT_PUBLIC_SITE_URL = 'https://ryan-realty-git-preview.vercel.app'
+    process.env.NEXT_PUBLIC_SITE_URL = 'https://preview.example.test'
     try {
       const link = cmaCityHref('Redmond') ?? ''
       expect(link).toContain('https://ryan-realty.com/')
