@@ -463,3 +463,154 @@ export function checkDateAdjustments(opts: {
 
   return { ok: failures.length === 0, rows, failures }
 }
+
+// ── The SHAPE of the window, for the sentence beside the grid ───────────────
+
+/**
+ * THE SENTENCE MUST NAME THE PATH, NOT THE ENDPOINT (tasteReview round three,
+ * §1). Both Bend documents printed "a path that fell 1.6 percent over the last
+ * 12 months" and then moved five of seven and four of six sales UP, one of them
+ * by 4.33 percent — 2.7 times the only number in the sentence. Redmond printed
+ * "rose 3.6 percent" over a column that ran 0.00 → −1.68 → +0.52 → +0.44 as the
+ * sales got older. The arithmetic was exact in every case. What was wrong was
+ * the sentence: it stated a first-to-last move and the column applies a path.
+ *
+ * This reads the shape off the SAME smoothed, complete-months series every sale
+ * is walked along, so the words cannot be hand-written and cannot drift: where
+ * the level peaked or troughed inside the window, how far it has come back
+ * since, and which months sit above the endpoint (their sales move down) and
+ * which below (their sales move up).
+ */
+export type IndexShape = {
+  /** True when the smoothed level both rose and fell inside the window. */
+  turned: boolean
+  /** Which extreme sits inside the window, when one does. */
+  extreme: 'peak' | 'trough' | null
+  /** The month of that extreme, YYYY-MM-01. Null when the series is monotone. */
+  extremeMonth: string | null
+  /** Endpoint against the extreme, percent. Negative after a peak. */
+  sinceExtremePct: number | null
+  /** Total move across the window, percent. */
+  overWindowPct: number | null
+  /** Window months whose level sits ABOVE the endpoint. Their sales move down. */
+  movesDown: string[]
+  /** Window months whose level sits BELOW the endpoint. Their sales move up. */
+  movesUp: string[]
+  /** One clause, ready to follow "Over the last N months that index". Empty when the index cannot say. */
+  clause: string
+}
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+/** "April 2026" from "2026-04-01". */
+export function monthLabel(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  const name = MONTH_NAMES[(m ?? 1) - 1] ?? month
+  return `${name} ${y ?? ''}`.trim()
+}
+
+/** True when `months` is an unbroken run of the window's own months. */
+function contiguous(all: string[], subset: string[]): boolean {
+  if (subset.length <= 1) return true
+  const first = all.indexOf(subset[0]!)
+  return subset.every((m, i) => all[first + i] === m)
+}
+
+export function describeIndexShape(opts: {
+  points: MarketIndexPoint[]
+  asOf: string
+  windowMonths: number
+}): IndexShape {
+  const none: IndexShape = {
+    turned: false,
+    extreme: null,
+    extremeMonth: null,
+    sinceExtremePct: null,
+    overWindowPct: null,
+    movesDown: [],
+    movesUp: [],
+    clause: '',
+  }
+  const asOf = opts.asOf.slice(0, 10)
+  const from = new Date(asOf + 'T00:00:00Z')
+  from.setUTCMonth(from.getUTCMonth() - opts.windowMonths)
+  const levels = indexLevelsAsOf(opts.points, asOf).filter(
+    (p) => p.month >= monthKey(from.toISOString().slice(0, 10)) && p.month <= monthKey(asOf),
+  )
+  if (levels.length < 2) return none
+
+  const endpoint = levels[levels.length - 1]!.ppsf
+  const start = levels[0]!.ppsf
+  if (!(endpoint > 0) || !(start > 0)) return none
+  const overWindowPct = Math.round((endpoint / start - 1) * 1000) / 10
+
+  // A month "moves down" when its level is above the endpoint by more than a
+  // rounding hair, so a flat series does not produce a claim about direction.
+  const EPS = 0.0005
+  const months = levels.map((p) => p.month)
+  const movesDown = levels.filter((p) => p.ppsf / endpoint - 1 > EPS).map((p) => p.month)
+  const movesUp = levels.filter((p) => 1 - p.ppsf / endpoint > EPS).map((p) => p.month)
+
+  let up = false
+  let down = false
+  for (let i = 1; i < levels.length; i++) {
+    const prev = levels[i - 1]!.ppsf
+    const step = (levels[i]!.ppsf - prev) / (prev || 1)
+    if (step > EPS) up = true
+    if (step < -EPS) down = true
+  }
+  const turned = up && down
+
+  // The extreme is the highest or lowest level INSIDE the window, and it only
+  // counts as one when it is not the endpoint itself: a series that finishes at
+  // its own peak has not come back from anything.
+  const interior = levels.slice(0, -1)
+  const highest = interior.reduce((a, b) => (b.ppsf > a.ppsf ? b : a), interior[0]!)
+  const lowest = interior.reduce((a, b) => (b.ppsf < a.ppsf ? b : a), interior[0]!)
+  const peaked = turned && highest.ppsf > endpoint
+  const troughed = turned && lowest.ppsf < endpoint && !peaked
+  const extreme: IndexShape['extreme'] = peaked ? 'peak' : troughed ? 'trough' : null
+  const extremePoint = peaked ? highest : troughed ? lowest : null
+  const sinceExtremePct =
+    extremePoint != null ? Math.round((endpoint / extremePoint.ppsf - 1) * 1000) / 10 : null
+
+  const head =
+    extremePoint != null && extreme != null
+      ? `${extreme === 'peak' ? 'rose to a peak' : 'fell to a low'} in ${monthLabel(
+          extremePoint.month,
+        )} and has ${extreme === 'peak' ? 'come back' : 'recovered'} ${Math.abs(
+          sinceExtremePct ?? 0,
+        ).toFixed(1)} percent since`
+      : overWindowPct === 0
+        ? 'held flat'
+        : `${overWindowPct > 0 ? 'rose' : 'fell'} ${Math.abs(overWindowPct).toFixed(
+            1,
+          )} percent with no reversal`
+
+  let tail = ''
+  if (movesDown.length > 0 && movesUp.length > 0) {
+    tail = contiguous(months, movesDown)
+      ? `, so sales that closed from ${monthLabel(movesDown[0]!)} to ${monthLabel(
+          movesDown[movesDown.length - 1]!,
+        )} move down and older sales move up`
+      : ', so sales that closed when it was higher move down and the rest move up'
+  } else if (movesDown.length > 0) {
+    tail = ', so every sale below moves down'
+  } else if (movesUp.length > 0) {
+    tail = ', so every sale below moves up'
+  }
+
+  return {
+    turned,
+    extreme,
+    extremeMonth: extremePoint?.month ?? null,
+    sinceExtremePct,
+    overWindowPct,
+    movesDown,
+    movesUp,
+    clause: `${head}${tail}`,
+  }
+}

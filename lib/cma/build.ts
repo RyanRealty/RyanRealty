@@ -25,8 +25,10 @@ import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
-import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
+import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
+import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
+import { buildPricingReview } from '@/lib/pricing/review'
 import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -320,6 +322,32 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
+    // 2.9. ONE HOME, ONE SALE (tasteReview round three, §3). cma-19968's grid
+    // printed "60924 Targee" twice, $455,000 in June and $287,500 in March,
+    // rows two and four of one table with no unit number and no note — two
+    // ListingKeys at one address, same 1,394 square feet, three months apart.
+    // One home bought and resold. Weighting both counted that house twice and
+    // priced the subject partly off what the flipper paid.
+    //
+    // Applied HERE, before the judge and before the comp floor, because both
+    // ladders converge on `selection` and the drop must be the same whichever
+    // one found the sales. The dropped rows print under "considered and not
+    // used" with the rule that cut them.
+    const sameAddress = dropPriorSalesOfSameHome(selection.comps)
+    const priorSaleDrops = sameAddress.dropped
+    if (priorSaleDrops.length > 0) {
+      const droppedKeys = new Set(priorSaleDrops.map((d) => d.listingKey))
+      selection.comps = sameAddress.kept
+      if (selection.pricingSales) {
+        selection.pricingSales = selection.pricingSales.filter((s) => !droppedKeys.has(s.listingKey))
+      }
+      selection.trace.push(
+        `One home, one sale: ${priorSaleDrops.length} sale(s) were an earlier close at an address already in the set (${priorSaleDrops
+          .map((d) => d.address)
+          .join(', ')}) and were dropped so no home is counted twice.`,
+      )
+    }
+
     if (selection.comps.length < MIN_COMPS) {
       // ONE broker-readable sentence on the row. Until 2026-09-07 this stored
       // the diagnosis plus the entire tier-by-tier search trace — up to 2,000
@@ -392,9 +420,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // the Method 3 reconciliation weights: strong = full weight, weak = half
     // (bracketing only). Excludes were dropped before the math above.
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
-    const marketIndex = selection.pricingSource === 'facts'
-      ? await getPricingMarketIndex(citySlug(subject.city))
-      : []
+    // ONE CITY, ONE BASIS (tasteReview round three, §1). This used to load the
+    // index only on the facts path, so cma-1617-nw-8th — a Bend subject the
+    // facts ladder starved, sent to the listings ladder by pickCompSource —
+    // fell to the year-over-year basis with n:0 four minutes after two other
+    // Bend documents walked the monthly index, and nothing in any of the three
+    // said they were measured differently. The index is a fact about the CITY,
+    // not about which ladder found the sales.
+    const marketIndex = await getPricingMarketIndex(citySlug(subject.city))
     const asOf = new Date().toISOString().slice(0, 10)
     // The SELECTOR's classification, computed once with the same asOf year
     // lib/pricing/match.ts uses. Everything downstream that has to grade a comp
@@ -412,25 +445,51 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const subjectStory = classifyStory(subject.levelsRaw, null)
     const priceSet = (set: typeof selection.comps) => {
       const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
-      const usePath = marketIndex.length > 0 && set.every((c) => salesByKey.has(c.listingKey))
+      // Walk the index whenever the city HAS one. A sale that carries a
+      // sale_pricing_facts row also carries its story class; one off the
+      // listings ladder does not, and a missing story class costs a ±13.5%
+      // adjustment on that one sale — it does not change which path the
+      // document is measured along.
+      const usePath = marketIndex.length > 0
       const adj = (usePath
         ? set.map((c) => {
-            const sale = salesByKey.get(c.listingKey)!
-            return adjustCompAlongMarket({
-              subject,
-              subjectStory,
-              sale,
-              saleStory: sale.storyClass,
-              points: marketIndex,
-              asOf,
-            }).adjusted
+            const sale = salesByKey.get(c.listingKey)
+            return sale
+              ? adjustCompAlongMarket({
+                  subject,
+                  subjectStory,
+                  sale,
+                  saleStory: sale.storyClass,
+                  points: marketIndex,
+                  asOf,
+                }).adjusted
+              : adjustCmaCompAlongMarket({
+                  subject,
+                  subjectStory,
+                  comp: c,
+                  saleStory: 'unknown',
+                  points: marketIndex,
+                  asOf,
+                }).adjusted
           })
         : adjustComps(subject, set, market)
       ).map((c) => {
         const tier = tierByKey.get(c.listingKey)
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
-      const p = priceCmaSet({ subject, adjusted: adj, market, input, site, selection, marketIndex, asOf, computePricing })
+      const p = priceCmaSet({
+        subject,
+        adjusted: adj,
+        market,
+        input,
+        site,
+        selection,
+        marketIndex,
+        asOf,
+        indexUnavailableReason:
+          marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
+        computePricing,
+      })
       // The concession sentence prints under the matrix and names "the sales
       // that set this price", so it counts THAT set — the kept comps the reader
       // can count — not the wider band set the price path is fitted on
@@ -455,6 +514,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         // (cma-65365-concorde, 2026-09-07: five of six).
         p.rejected = buildRejectedSales({
           candidates: selection.comps,
+          preRejected: priorSaleDrops,
           excluded: excludedForAudit(),
           kept: set.map((c) => ({
             listingKey: c.listingKey,
@@ -748,6 +808,26 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .map((c) => c.detail)
           .join(' ')
     }
+
+    // 4.6. THE REVIEW FLAG, ON THE DOCUMENT (tasteReview round three, §2
+    // item 1). Two of the four exemplars carried needsReview and rendered as
+    // finished opinions — one with the word "indefensible" in its own
+    // reviewReason and nowhere on the page. Written AFTER the audit and the
+    // contract, so it carries everything that can raise the flag; the reasons
+    // are rewritten in lib/pricing/review.ts because render_args is read by
+    // the seller document as well as the admin view.
+    pricing.review = buildPricingReview({
+      needsReview: pricing.needsReview,
+      reviewReason: pricing.reviewReason,
+      clamp: pricing.clamp ?? null,
+      auditVerdict: audit
+        ? audit.verdict === 'pass'
+          ? 'pass'
+          : audit.verdict === 'fail'
+            ? 'fail'
+            : 'review'
+        : 'did-not-run',
+    })
 
     // 4.7. LAST-LISTING REVIEW (Matt 2026-08-05, superseding the 2026-07-14
     // separate audit doc): there is ONE CMA document. When the subject's most

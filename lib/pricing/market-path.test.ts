@@ -299,3 +299,44 @@ describe('marketIndexTrend — the basis a document prints', () => {
     expect(out.n).toBe(0)
   })
 })
+
+describe('describeIndexShape — the path, not the endpoint', () => {
+  it('names the peak month and the direction since, off the smoothed series', async () => {
+    const { describeIndexShape } = await import('@/lib/pricing/market-path')
+    // Redmond, as of 2026-09-07: the smoothed series runs up to April 2026 and
+    // comes back. Round two printed "rose 3.6 percent" and then moved an April
+    // sale DOWN, with nothing on the page able to explain it.
+    const shape = describeIndexShape({ points: REDMOND, asOf: AS_OF, windowMonths: 12 })
+    expect(shape.turned).toBe(true)
+    expect(shape.extreme).toBe('peak')
+    expect(shape.extremeMonth).toBe('2026-04-01')
+    expect(shape.sinceExtremePct).toBeLessThan(0)
+    expect(shape.movesDown.length).toBeGreaterThan(0)
+    expect(shape.movesUp.length).toBeGreaterThan(0)
+    expect(shape.clause).toContain('rose to a peak in April 2026')
+    expect(shape.clause).toContain('come back')
+  })
+
+  it('a monotone climb names no peak and says so', async () => {
+    const { describeIndexShape } = await import('@/lib/pricing/market-path')
+    const points = Array.from({ length: 24 }, (_, i) => ({
+      month: `${2025 + Math.floor((i + 1) / 12)}-${String(((i + 1) % 12) + 1).padStart(2, '0')}-01`,
+      ppsf: +(300 * 1.01 ** i).toFixed(2),
+      n: 30,
+    }))
+    const shape = describeIndexShape({ points, asOf: '2027-01-01', windowMonths: 12 })
+    expect(shape.turned).toBe(false)
+    expect(shape.extremeMonth).toBeNull()
+    expect(shape.clause).toContain('rose 10.5 percent with no reversal')
+    // Every month in the window sits below the endpoint, so every sale moves up.
+    expect(shape.movesDown).toEqual([])
+    expect(shape.clause).toContain('every sale below moves up')
+  })
+
+  it('says nothing when the index cannot speak', async () => {
+    const { describeIndexShape } = await import('@/lib/pricing/market-path')
+    const shape = describeIndexShape({ points: [{ month: '2026-01-01', ppsf: 300, n: 2 }], asOf: '2026-09-01', windowMonths: 12 })
+    expect(shape.clause).toBe('')
+    expect(shape.turned).toBe(false)
+  })
+})

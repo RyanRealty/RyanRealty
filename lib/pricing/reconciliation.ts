@@ -92,6 +92,12 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10
 }
 
+/** "five", not "5", under ten. Mirrors lib/pricing/estimate.ts `countWord`. */
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
+function countWord(n: number): string {
+  return n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : String(n)
+}
+
 /** Total adjustment movement as a share of the sale price. */
 export function grossAdjustmentPct(sale: ReconcilableSale): number {
   if (!(sale.closePrice > 0)) return 0
@@ -163,7 +169,7 @@ export function reconcileAdjustedSales(args: {
       leads.push('closest in size to yours')
     }
     if (s.monthsSinceClose === mostRecent) leads.push('the most recent sale')
-    if (gross === smallestGross) leads.push('the smallest adjustment of any sale here')
+    if (gross === smallestGross) leads.push('the smallest adjustment of the sales behind this price')
     return {
       listingKey: s.listingKey,
       address: s.address,
@@ -183,10 +189,16 @@ export function reconcileAdjustedSales(args: {
     sizePhrase(leaderSale, args.subjectSqft),
     recencyPhrase(leaderSale),
     ...(leader.grossAdjustmentPct === smallestGross && usable.length > 1
-      ? ['it needed the smallest adjustment of any sale here']
+      ? ['it needed the smallest adjustment of any of them']
       : [movementPhrase(leader.grossAdjustmentPct)]),
   ]
-  const sentence = `${leader.address} carries the most weight in this price at ${leader.weight} percent: it is ${why[0]}, it ${why[1]}, and ${why[2]}.`
+  // ONE COUNT (tasteReview round three, §2 item 1). The sentence states how
+  // many sales are behind the price, and it is the same number as the weights
+  // below it — because the sales set aside by the range rule never reach this
+  // function at all.
+  const sentence = `${leader.address} carries the most weight of the ${countWord(
+    usable.length,
+  )} sales behind this price, at ${leader.weight} percent: it is ${why[0]}, it ${why[1]}, and ${why[2]}.`
 
   return { weights, mostWeighted: leader.listingKey, weightedPrice, sentence }
 }
