@@ -135,6 +135,8 @@ import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
 import { publishPlaceFace } from '@/lib/market/publish-place-face'
 import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { subdivisionPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDate } from '@/lib/format/date'
@@ -149,6 +151,7 @@ import {
   V3Heading,
   V3Instrument,
   V3Ledger,
+  V3Answers,
   V3PlaceCharacter,
   V3SectionTracker,
   V3SourceLine,
@@ -182,6 +185,7 @@ import {
   platCountsTrace,
   platInventoryTrace,
   platStatsTrace,
+  salesHistoryTrace,
   type PlatScope,
 } from './_v3/subdivision-traces'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
@@ -396,7 +400,12 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const platScope: PlatScope = hasBoundary
     ? { kind: 'boundary', displayName }
     : registryMatch
-      ? { kind: 'registry', subdivisionName: registryMatch.canonicalName, city: registryMatch.city }
+      ? // The PUBLISHED name, not the raw MLS alias. The alias capitalises every
+        // word, so the traces under the figures read "Ridge At Eagle Crest" while
+        // the H1 above them read "Ridge at Eagle Crest" — one place, two spellings,
+        // on one page (evaluator, 2026-09-08). The trace still names the MLS
+        // SUBDIVISION NAME as the membership rule; only its casing is the page's.
+        { kind: 'registry', subdivisionName: displayName, city: registryMatch.city }
       : { kind: 'pins', displayName }
 
   // Split listings are the counted plat inventory, not a viewport fetch.
@@ -525,7 +534,26 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
     3000,
     'sub:libraryHero',
   )
-  const stagePosterSrc = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
+  /* THE PLAT OPENS ON A PHOTOGRAPH, AND SAYS WHOSE IT IS (SITE-08 pass 2).
+     A plat's own still is a dedicated image or a geo-strict library hero, and
+     for most of the 3,213 recorded plats there is neither: /subdivisions/
+     ridge-at-eagle-crest opened on cream type above a hairline map and nothing
+     else, which the evaluator called the thinnest of the three place classes
+     and scored accordingly.
+
+     The honest photograph a plat with no still of its own can carry is the
+     RESORT IT SITS INSIDE — Ridge At Eagle Crest is in Eagle Crest, the
+     registry says so, and the page already links that overview from its
+     breadcrumb and its doors. It is used only when the plat is registered to a
+     resort, and it is CAPTIONED with the resort's name, so nothing on the page
+     implies the frame was taken on this plat. Never a city photo, never
+     another plat's, never a listing photo standing in for a place (§0 applies
+     to a picture that makes a claim exactly as it applies to a number). */
+  const platOwnPoster = cityStagePoster(communityImage(slug), platLibraryHeroUrl)
+  const resortPoster = platOwnPoster ? null : resortSlug ? communityImage(resortSlug) : null
+  const stagePosterSrc = platOwnPoster ?? resortPoster
+  const posterCaption =
+    resortPoster && resortLabel ? `${resortLabel}, the resort ${displayName} sits inside.` : null
 
   // THE DOOR BEHIND THE FIGURE, PUBLISHED NOT ASSEMBLED. publishPlaceBrowseHref
   // returns null for anything that resolves to the unfiltered regional index, so
@@ -644,6 +672,97 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
   const platGuideSchema = areaGuideVideoSchema(displayName, `/subdivisions/${slug}`, areaGuideVideo)
   if (platGuideSchema) schemas.push(platGuideSchema)
 
+  /* ── The cited Q&A, and this route's FIRST FAQPage (SITE-08) ─────────────
+     The plat node answered nothing in a reader's own words: it drew a map, a
+     list, a market band and a year table, and left every question a person
+     types unanswered and unindexed. This closes it with the same primitive the
+     neighborhood and community grains use, on the same figures this page is
+     ALLOWED to publish and no others.
+
+     WHAT THE PLAT GRAIN MAY SAY, AND WHY THE SET IS SHORT. REGISTRY §4:
+     a subdivision publishes counts and individual sales, never a price
+     statistic — 515 of 680 Bend plats never reach ten detached sales in 36
+     months, and the yearly series is an MLS SubdivisionName join rather than
+     place membership. So a closed median, a year-over-year of it, and a
+     sale-to-list ratio (a ratio of two prices, on the same thin join) all stay
+     off. Months of supply stays off too: lib/market/geo-grain-trust.ts refuses
+     this grain's closed attribution, so the verdict question is ASKED and
+     answered with the refusal and the count behind it, which is the honest
+     version. What publishes: the live list median of the plat's own actives,
+     days on market from the plat's own cache row, the active count, and the
+     yearly closed counts the sales-history Ledger already prints.
+
+     THE LATEST COMPLETE YEAR, not the running one. The current calendar year is
+     a partial window and comparing it to a full one is not a year (the same
+     rule subdivisionSalesChart applies to its own current-year bar). */
+  const nowYear = new Date().getUTCFullYear()
+  const completeYears = salesHistory
+    .filter((row) => row.year < nowYear && row.closedCount > 0)
+    .sort((a, b) => b.year - a.year)
+  const lastCompleteYear = completeYears[0]
+  /* THE YEAR BEFORE, FROM THE SAME READ (SITE-08 pass 2). The plat grain is the
+     only one of the three that publishes a per-year closed count, so it is the
+     only one whose count row can draw a second run of marks and let the reader
+     see the change as a length. It has to be the immediately preceding year and
+     it has to come out of this same salesHistory array — a count from another
+     query under the same drawing would be two populations wearing one form. */
+  const priorCompleteYear =
+    lastCompleteYear && completeYears[1]?.year === lastCompleteYear.year - 1 ? completeYears[1] : null
+  const { answers: platAnswers, traces: platAnswerTraces, sourceKey: platSourceKey } = buildPlaceAnswers({
+    placeName: displayName,
+    cityName: placeCity,
+    figures: {
+      // Withheld at this grain, deliberately and visibly (see the note above).
+      monthsOfSupply: null,
+      saleToOriginal: null,
+      cashShare: null,
+      daysToPending: null,
+      medianSalePrice: null,
+      // FOUR POPULATIONS, FOUR TRACES (_v3/subdivision-traces.ts). The default
+      // clause below covers the statistics-cache row only; the yearly counts
+      // and the live list median name their own, because one clause covering
+      // all three is false for two of them.
+      activeCount,
+      activeCountTrace: homesLedgerTrace(platScope),
+      closedCount: lastCompleteYear
+        ? {
+            count: lastCompleteYear.closedCount,
+            windowLabel: `in ${lastCompleteYear.year}`,
+            trace: salesHistoryTrace(displayName),
+            priorWindow: priorCompleteYear
+              ? { count: priorCompleteYear.closedCount, label: `in ${priorCompleteYear.year}` }
+              : null,
+          }
+        : null,
+      daysOnMarket:
+        subdivisionStats?.medianDaysOnMarket != null && subdivisionStats.medianDaysOnMarket > 0
+          ? {
+              days: subdivisionStats.medianDaysOnMarket,
+              windowLabel: statsPeriodLabel ? statsPeriodLabel.toLowerCase() : 'year to date',
+            }
+          : null,
+      medianListPrice: platFigures.medianListPrice,
+      medianListPriceTrace: platInventoryTrace(platScope),
+    },
+    sourceTrace: platStatsTrace(displayName, cityName, statsPeriodLabel || PERIOD_LABEL.ytd),
+    // The audit handle, so all three place grains expose one (evaluator,
+    // 2026-09-08: two of three did). It names the PLAT rather than a table,
+    // and deliberately so — this section's figures come from three different
+    // queries (the sales-history RPC, the statistics cache, the live counted
+    // set), each of which carries its own trace on its own row. One table name
+    // here would claim a single source for a section that has three; the plat
+    // key is the one handle all three queries share.
+    sourceKey: `subdivision:${slug}`,
+    asOfLabel: subdivisionStats?.refreshedAt ? formatDate(subdivisionStats.refreshedAt) : null,
+    valueAsk: { href: valuationHref(`/subdivisions/${slug}`), onPage: false },
+  })
+  const platFaqs = answersFaqItems(platAnswers)
+  // Derived FROM the rendered rows, never beside them.
+  if (platFaqs.length > 0) schemas.push({ type: 'faqPage', items: platFaqs })
+  if (process.env.NODE_ENV !== 'production') {
+    for (const line of platAnswerTraces) console.log(`[plat:${slug}] ${line}`)
+  }
+
   const inventorySource = homesLedgerTrace(platScope)
   const splitCity = placeCity ?? undefined
   const splitSubdivision = registryMatch?.canonicalName ?? displayName
@@ -677,6 +796,7 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
               {headline}
             </V3Heading>
             <V3SourceLine source={inventorySource} onMedia={Boolean(stagePosterSrc)} />
+            {posterCaption ? <p className="place-opening__caption">{posterCaption}</p> : null}
           </div>
         </div>
         {canMapAtlas && (
@@ -804,6 +924,29 @@ export default async function SubdivisionPage({ params, searchParams }: Props) {
 
         {/* Pattern 3, Ledger — recorded instruments, every row a door. */}
         <SubdivisionDocuments displayName={displayName} documents={placeDocuments} />
+
+        {/* Pattern 8, Answers — the questions a person types about this plat,
+            each carrying the one figure it is about and that figure's own
+            trace, and the same array feeding this route's FAQPage JSON-LD.
+            Closes the page after a Ledger, so no two adjacent sections share a
+            pattern. */}
+        <V3Answers
+          id="faq"
+          eyebrow={`${displayName} · By the numbers`}
+          heading={`${displayName} questions, answered with the number`}
+          questions={platAnswers}
+          sourceKey={platSourceKey}
+          doors={[
+            ...(browseHref ? [{ label: `Every home for sale in ${displayName}`, href: browseHref }] : []),
+            ...(resortSlug
+              ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
+              : citySlug
+                ? [{ label: `${cityName} overview`, href: `/cities/${citySlug}` }]
+                : []),
+            { label: 'How we get our numbers', href: '/how-we-get-our-numbers' },
+          ]}
+          note={`Each answer carries the one figure it is about and where that figure came from. A statistic this plat is too small to state honestly is left out rather than estimated.`}
+        />
 
         {/* Pattern 1 again, as ONE enumeration: a section per other property
             type the plat holds. The registry withholds price and months of

@@ -40,12 +40,13 @@ import { getStrictLimiter } from '@/lib/rate-limit'
 import { getPlaceValueAnswer, type PlaceValueAnswer } from '@/lib/data/places/getPlaceValueAnswer'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
-import { formatMonthYear } from '@/lib/format/date'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { slugify } from '@/lib/slug'
-import { splitSellAddress, type SellAnswerData, type SellComp } from './sell-answer'
+import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
+import type { PlaceCompMark } from '@/lib/cma/place-comps'
+import { splitSellAddress, type SellAnswerData } from './sell-answer'
 
 export type SellAnswerInput = {
   address: string
@@ -144,21 +145,6 @@ function grainCandidates(input: {
   return out
 }
 
-/**
- * Homes that go under contract in a typical month — the denominator months of
- * supply divides by, recovered from the two figures Market Truth published.
- *
- * MOS = active / (closed in six months / 6), so active / MOS IS that monthly
- * pace, exactly, not a second estimate of it. Recovering it is what lets the
- * page DRAW months of supply as two bars instead of printing "3.9" and making
- * the reader do the division (DATA_GRAPHICS.md). The trace says so.
- */
-function salesPerMonthFrom(activeCount: number | null, mos: number | null): number | null {
-  if (activeCount == null || mos == null || !Number.isFinite(mos) || mos <= 0) return null
-  const pace = activeCount / mos
-  return Number.isFinite(pace) ? pace : null
-}
-
 export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswerResult> {
   // Honeypot: a bot gets the same shape as a bad address, and no database read.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
@@ -237,22 +223,18 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
   const compRows = selection?.comps ?? []
   const compCount = subject ? compRows.length : null
 
-  // The comps themselves, WITHOUT prices (Matt's ruling), so the count above is
-  // checkable rather than asserted. Four is enough to show the ladder's reach
-  // without turning the answer into a table.
-  const comps: SellComp[] = compRows.slice(0, 4).map((c) => ({
+  // EVERY comp the ladder kept, as a DRAWABLE mark (site queue SITE-02b): no
+  // address and no price, which is what lets the answer plot them instead of
+  // listing four of them by street. The strip needs each comp's own position,
+  // so the raw close date and finished size travel here rather than being
+  // flattened into a sentence at this step. Matt's no-price ruling is enforced
+  // by the type: PlaceCompMark has no price field to fill in.
+  const compMarks: PlaceCompMark[] = compRows.map((c) => ({
     id: c.listingKey,
-    street: c.address.split(',')[0]?.trim() || c.address,
-    where: c.subdivision?.trim() || c.city,
-    facts: [
-      c.beds != null ? `${c.beds} bed` : null,
-      c.baths != null ? `${c.baths} bath` : null,
-      c.sqft ? `${Math.round(c.sqft).toLocaleString('en-US')} sq ft` : null,
-      c.yearBuilt != null ? `built ${c.yearBuilt}` : null,
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    when: `Closed ${formatMonthYear(c.closeDate)}`,
+    closeDate: c.closeDate,
+    sqft: c.sqft,
+    beds: c.beds,
+    baths: c.baths,
     proximity: c.proximity?.trim() || null,
   }))
 
@@ -281,6 +263,46 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     trace.push(`comparable closes unmatched — ${resolved?.trace ?? 'the address did not resolve to a property record'}`)
   }
 
+  // THE PACE RULE'S CONTEXT MARK. The city grain was already pulled above as a
+  // fallback candidate, so the city median costs nothing more; it is only
+  // context when the answer is about a SMALLER place than the city, because a
+  // city median drawn against itself is the same mark twice.
+  const cityPull = pulls.find((p) => p.candidate.geoType === 'city')
+  const cityIsSubject = picked.geoType === 'city'
+  const asOfLabel = answer?.asOf ? formatDate(answer.asOf) : null
+
+  const figures = buildAnswerFigures({
+    placeLabel: picked.label,
+    street,
+    monthsOfSupply: mos != null ? formatMonthsOfSupply(mos) : null,
+    verdictLabel: answer?.verdict?.label ?? null,
+    activeCount,
+    salesPerMonth,
+    daysToPending: answer?.daysToPending ?? null,
+    cityDaysToPending: cityIsSubject ? null : (cityPull?.answer?.daysToPending ?? null),
+    cityLabel: cityIsSubject ? null : (cityPull?.candidate.label ?? null),
+    compMarks,
+    compCount,
+    subjectFound: Boolean(subject),
+    subjectSummary,
+    asOfLabel,
+    sources: {
+      // Each figure's own trace line, as getPlaceValueAnswer wrote it. The
+      // supply figure additionally names how the monthly pace was recovered,
+      // because the drawing shows that number and §0 says a drawn number
+      // carries the derivation that produced it.
+      supply: [
+        answer?.trace.find((line) => line.startsWith('months of supply')),
+        trace.find((line) => line.startsWith('homes under contract in a typical month')),
+      ]
+        .filter(Boolean)
+        .join(' · ') || null,
+      pace: answer?.trace.find((line) => line.startsWith('days to pending')) ?? null,
+      comps: trace.find((line) => line.startsWith('comparable closes')) ?? null,
+    },
+    unmatchedSentence: `Nothing in the sales record matches ${street} on the first pass.`,
+  })
+
   const data: SellAnswerData = {
     address,
     street,
@@ -296,8 +318,8 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     compCount,
     subjectFound: Boolean(subject),
     subjectSummary,
-    comps,
-    asOfLabel: answer?.asOf ? formatDate(answer.asOf) : null,
+    figures,
+    asOfLabel,
     trace,
   }
 

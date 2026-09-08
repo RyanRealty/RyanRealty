@@ -4,6 +4,7 @@
 import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
+import { getListingDetail } from '@/lib/data'
 import { getBrokerBusyIntervals } from '@/lib/data/crm/bookingAvailability'
 import {
   generateDaySlots,
@@ -11,6 +12,8 @@ import {
   type Slot,
 } from '@/lib/booking/slots'
 import { formatDate } from '@/lib/format/date'
+import { listingMlsStreetLine } from '@/lib/listing/publish-street-line'
+import { listingByKeyPath } from '@/lib/slug'
 import {
   V3Footer,
   V3Quiet,
@@ -49,11 +52,27 @@ type BookableDay = { dateKey: string; label: string; slots: Slot[] }
 export default async function BookPage({
   searchParams,
 }: {
-  searchParams: Promise<{ agent?: string }>
+  searchParams: Promise<{ agent?: string; listing?: string }>
 }) {
   const params = await searchParams
   const requested = String(params.agent ?? '').trim().toLowerCase()
   const brokerSlug = (BROKER_SLUGS as readonly string[]).includes(requested) ? requested : 'matt'
+
+  // SITE-06: a tour booked from a listing page carries the house with it.
+  // The KEY comes from the query string; the ADDRESS is read back off the
+  // listing row, never taken from the URL — a booking that printed whatever
+  // text a link put in ?address= would let anyone put words on our calendar
+  // and in the broker's alert.
+  const requestedListing = String(params.listing ?? '').trim()
+  const listingKey = /^[A-Za-z0-9_-]{4,64}$/.test(requestedListing) ? requestedListing : null
+  const listing = listingKey ? await getListingDetail(listingKey).catch(() => null) : null
+  const listingContext = listing
+    ? {
+        listingKey: listing.listingKey,
+        addressLine: listingMlsStreetLine(listing) || `Listing ${listing.listNumber ?? listing.listingKey}`,
+        href: listingByKeyPath(listing.listingKey),
+      }
+    : null
 
   const settings = await getCrmCompanySettings()
   const timeZone = settings.time_zone || 'America/Los_Angeles'
@@ -110,7 +129,9 @@ export default async function BookPage({
         items={[
           {
             kind: 'prose',
-            body: 'Pick a time that works. A licensed Oregon broker will be on the other end, not a call center.',
+            body: listingContext
+              ? `Pick a time to walk through ${listingContext.addressLine}. A licensed Oregon broker will meet you there, not a call center.`
+              : 'Pick a time that works. A licensed Oregon broker will be on the other end, not a call center.',
           },
         ]}
       />
@@ -121,6 +142,7 @@ export default async function BookPage({
           brokerSlug={brokerSlug}
           timeZone={timeZone}
           available={available}
+          listing={listingContext}
         />
       </section>
 

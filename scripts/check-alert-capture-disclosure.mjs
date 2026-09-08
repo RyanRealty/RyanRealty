@@ -37,8 +37,17 @@ import { walkFiles } from './lib/walk.mjs'
 
 const SELF = 'scripts/check-alert-capture-disclosure.mjs'
 
-/** The action that creates a recurring email subscription from a public form. */
-const CAPTURE_ACTION = /submitSearchAlertSignup/
+/**
+ * The actions that create a recurring email subscription from a public form.
+ *
+ * SITE-06 (2026-09-08) added the second one. Until then this was the single
+ * literal `submitSearchAlertSignup`, which meant a capture under any other name
+ * was not checked AT ALL — a gate that reads as "every alert capture discloses"
+ * while covering one function. Any new subscription-creating action goes in
+ * this alternation on the day it is written; the requirements below do not
+ * change, because the visitor's four things do not change.
+ */
+const CAPTURE_ACTION = /submitSearchAlertSignup|submitListingPriceDropWatch/
 
 /**
  * Comments out, LINE comments before BLOCK comments. The reverse order is a real

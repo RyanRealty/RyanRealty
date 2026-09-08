@@ -12,6 +12,7 @@
 
 import { slugify } from '@/lib/slug'
 import resortCommunitiesData from '@/data/resort-communities.json'
+import { titleCasePlaceName } from '@/lib/market/publish-plat-display-name'
 
 export interface RegistryMatch {
   canonicalName: string   // the literal alias text, e.g. "Sunrise Village"
@@ -51,7 +52,18 @@ export function resolveRegistryAlias(slug: string): RegistryMatch | null {
   return null
 }
 
-/** Title-case a slug for display when no registry match is found. */
+/**
+ * Title-case a slug for display when no registry match is found.
+ *
+ * The connector-word list lives in lib/market/publish-plat-display-name.ts,
+ * because the registry path and this fallback path must not disagree about how
+ * a plat name is spelled. /subdivisions/ridge-at-eagle-crest published "Ridge
+ * At Eagle Crest" from BOTH before 2026-09-08.
+ */
 export function slugToTitle(slug: string): string {
-  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const words = slug.split('-').filter(Boolean)
+  if (words.length === 0) return ''
+  return titleCasePlaceName(
+    words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
+  )
 }

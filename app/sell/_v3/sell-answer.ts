@@ -22,40 +22,12 @@
  * the same raw value. Nothing in this file does arithmetic on that figure.
  */
 
-/**
- * One comparable close, as the answer is allowed to show it.
- *
- * NO PRICE. Matt's ruling stands: a typed address on a public page gets no
- * dollar figure, and a comp's close price is a dollar figure. What the visitor
- * gets is the thing a bare count could not give them — WHICH homes the ladder
- * matched to theirs, how alike they are, and when they sold — so the count is
- * checkable instead of asserted. The prices are in the written valuation.
- */
-export type SellComp = {
-  id: string
-  /** Street line only. "2515 NW Crossing Dr". */
-  street: string
-  /** "NorthWest Crossing" or the city when the plat is not published. */
-  where: string
-  /** "4 bed · 3 bath · 2,410 sq ft · built 2006" — whichever of those exist. */
-  facts: string
-  /** "Closed July 2026". */
-  when: string
-  /** "0.4 miles NW" when the ladder reported it. */
-  proximity: string | null
-}
+import type { AnswerFigure } from '@/lib/site/answer-figures'
 
 /** One reading in the answer: a plain sentence with its figure inside it. */
 export type SellAnswerReading = {
-  /**
-   * A share this reading can DRAW, 0..100, or null when the figure is not a
-   * share of anything. The evaluator (2026-09-08) called out that two adjacent
-   * readings wore the same shape — number, label, sentence — so the one that
-   * IS a proportion draws itself as one instead of borrowing the other's form.
-   */
-  meterPct?: number | null
   /** Stable key for React and for the tests. */
-  key: 'pace' | 'cash' | 'comps'
+  key: 'cash'
   /** The short label a person scans. Never jargon. */
   label: string
   /** The figure, formatted upstream. */
@@ -100,8 +72,15 @@ export type SellAnswerData = {
   subjectFound: boolean
   /** "4 bed, 3 bath, 2,410 sq ft, built 2006" when the subject carries facts. */
   subjectSummary: string | null
-  /** The comparable closes themselves, so the count is checkable. Never priced. */
-  comps: SellComp[]
+  /**
+   * THE DRAWN ANSWER (site queue SITE-02b): supply as two bars, pace as one
+   * mark on a rule, the comparable closes as a dot strip. Shaped on the server
+   * by buildAnswerFigures, the same call the community ask makes, so both
+   * surfaces draw one answer in one set of words. This replaced the hand-rolled
+   * percentage bars, the cash meter and the scrolling comp ledger the /sell
+   * evaluator logged as "no visual encoding — it is rows".
+   */
+  figures: AnswerFigure[]
   /** The day the market figures were computed, formatted. */
   asOfLabel: string | null
   /** One line per figure: what it is, where it came from, when (§0). */
@@ -127,79 +106,18 @@ export function sellAnswerClaim(d: SellAnswerData): string {
 }
 
 /**
- * The sentence under the claim: what the verdict MEANS, in the words a person
- * uses. "3.9 months of supply" is the jargon; "the homes for sale would take
- * about four months to sell at the current pace" is the reading.
- */
-export function sellSupplySentence(d: SellAnswerData): string | null {
-  if (!d.monthsOfSupply || d.activeCount == null || d.salesPerMonth == null) return null
-  const sold = Math.round(d.salesPerMonth)
-  return `${d.activeCount.toLocaleString('en-US')} detached homes are for sale in ${d.placeLabel}, and about ${sold.toLocaleString('en-US')} of them go under contract in a typical month. That is ${d.monthsOfSupply} months of homes on the market.`
-}
-
-/**
- * The two bars: homes for sale against a month of sales. This IS months of
- * supply — DATA_GRAPHICS.md's standing objection to a tile that says "3.9" is
- * that a tile makes the reader do the division. The bars do it for them.
+ * The readings BESIDE the drawings — the figures that have no drawing of their
+ * own.
  *
- * Widths are a share of the LARGER bar, so the shorter one is read against the
- * taller one rather than against an invented ceiling. Null when either side is
- * missing: a one-bar version of this drawing says nothing.
- */
-export function sellSupplyBars(
-  d: SellAnswerData,
-): { forSale: { count: number; pct: number }; sold: { count: number; pct: number } } | null {
-  if (d.activeCount == null || d.salesPerMonth == null) return null
-  const sold = Math.round(d.salesPerMonth)
-  const max = Math.max(d.activeCount, sold)
-  if (!Number.isFinite(max) || max <= 0) return null
-  return {
-    forSale: { count: d.activeCount, pct: (d.activeCount / max) * 100 },
-    sold: { count: sold, pct: (sold / max) * 100 },
-  }
-}
-
-/**
- * What a hover or a tap on one of the two bars reveals: the figure's own
- * window, population and definition.
- *
- * TASTE.md: every data section has to reward a hover, tap or toggle with MORE
- * DATA, and the dataviz rule is blunter still — "a chart the reader cannot
- * interrogate is a picture of a chart". The bars are the section's drawing, so
- * they answer when asked. Keyboard reaches the same reading, which is why the
- * bars are buttons and not divs with a title attribute.
- */
-export function sellBarReading(d: SellAnswerData, bar: 'forSale' | 'sold'): string | null {
-  if (bar === 'forSale') {
-    if (d.activeCount == null) return null
-    return `${d.activeCount.toLocaleString('en-US')} detached homes are listed and unsold in ${d.placeLabel} right now${d.asOfLabel ? `, counted ${d.asOfLabel}` : ''}. Attached homes, land and new-construction spec inventory are counted separately and are not in this figure.`
-  }
-  if (d.salesPerMonth == null) return null
-  return `About ${Math.round(d.salesPerMonth).toLocaleString('en-US')} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale ÷ months of supply recovers it exactly. Not a forecast — it is what the last six months did.`
-}
-
-/**
- * The readings beside the drawing. Each is a sentence with its figure inside,
- * and each carries the detail a hover reveals — never a bare number with a
- * jargon label, which is the "KPI grid" TASTE.md bans by name.
- *
- * Order is deliberate: pace, then who is buying, then the comps we already hold
- * for THIS address. The last one is the reason to keep going.
+ * This used to carry three: pace, cash, and the comparable-sales count. Two of
+ * them are now DRAWN (site queue SITE-02b) — pace as one mark on a 0-to-120-day
+ * rule, the comps as a dot strip — and a figure said twice on one screen is the
+ * repetition TASTE.md calls a wall of text. Cash share is a share of a whole
+ * with nothing to plot it against, so it stays a sentence with its definition
+ * behind it, which is the opposite of the KPI grid: a number no one explains.
  */
 export function sellAnswerReadings(d: SellAnswerData): SellAnswerReading[] {
   const out: SellAnswerReading[] = []
-
-  if (d.daysToPending != null) {
-    const days = Math.round(d.daysToPending)
-    out.push({
-      key: 'pace',
-      label: 'How fast they sell',
-      value: `${days} days`,
-      sentence: `Half the homes that sold in ${d.placeLabel} were under contract inside ${days} days of being listed.`,
-      detail:
-        'Median days from the listing date to a signed contract, detached homes, trailing 90 days. Not days on market, which keeps counting until closing.',
-    })
-  }
 
   if (d.cashSharePct != null) {
     const cash = Math.round(d.cashSharePct)
@@ -207,32 +125,8 @@ export function sellAnswerReadings(d: SellAnswerData): SellAnswerReading[] {
       key: 'cash',
       label: 'Who is buying',
       value: `${cash}%`,
-      meterPct: cash,
       sentence: `${cash}% of ${d.placeLabel} buyers paid cash over the last year.`,
       detail: 'Share of closed detached sales recorded as a cash purchase, trailing 12 months.',
-    })
-  }
-
-  if (d.subjectFound && d.compCount != null && d.compCount > 0) {
-    out.push({
-      key: 'comps',
-      label: 'Comparable sales we already found',
-      value: String(d.compCount),
-      sentence: `Close enough to ${d.street} to price it${d.subjectSummary ? `, which the record reads as ${d.subjectSummary}` : ''}.`,
-      detail:
-        'The same comparable-sales ladder the written valuation runs: MLS history for the address first, county assessor facts second, then closed sales matched on size, age, and distance.',
-    })
-  } else {
-    out.push({
-      key: 'comps',
-      label: 'Comparable sales',
-      // Not an em dash: a lone rule beside a sentence reads as a rendering
-      // fault, and "not yet" is what is actually true — a broker matches it by
-      // hand for the written valuation.
-      value: 'Not yet',
-      sentence: `We could not match ${d.street} to a sales record on the first pass. A broker does that part by hand for the written valuation.`,
-      detail:
-        'The automatic pass looks for the address in MLS history and in county assessor records. New construction, a recent split, and an address the county spells differently all miss it.',
     })
   }
 

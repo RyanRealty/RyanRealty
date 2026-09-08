@@ -1,0 +1,345 @@
+/* ===========================================================================
+   PATTERN 7: PULSE — the live read of a place, drawn.
+   Styles for V3Pulse.tsx and nothing else. Every colour, size, rule weight and
+   duration resolves from ./tokens.css; this file declares no raw value.
+
+   The band is a GAUGE, not a section: no eyebrow, no card, no fill. Its whole
+   visual weight is a claim in the display face, three figures on one baseline
+   with a rule each, and a constellation of the listings themselves. What makes
+   it feel like this shop is that the marks ARE the inventory — one stroke per
+   listing, plotted where the house is.
+
+   THE SWITCH IS CSS. A native radio group sits first inside .v3-pulse__inner
+   and every state below is carried by the plain `~` sibling combinator, which
+   has no support floor worth naming. No :has(), no JavaScript, no hydration:
+   the band is complete in the server HTML.
+   =========================================================================== */
+
+/* Compound guard (same reason as every pattern — see V3Quiet.css): the surface
+   class and the pattern class together, so a page-level rule cannot outrank it. */
+.v3.v3-pulse {
+  padding: clamp(2rem, 4.5vw, 3.25rem) 0 clamp(2rem, 4vw, 3rem);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  /* The band carries an id, so it is a scroll target, and the chrome is sticky:
+     without this an anchor scroll parks the claim's ascenders under the header
+     and "More" reads as "Wore" at 375 (2026-09-08 evaluator, right-now-mobile375).
+     Every sibling pattern that owns an id reserves the chrome the same way —
+     V3AlertsStrip's exact formula, because the height being cleared is the
+     chrome's, not a section rhythm. */
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* A band that follows the Stage closes the photograph with the navy rule the
+   Broadside register uses between sections. */
+* + .v3.v3-pulse {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-pulse__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+}
+
+/* --------------------------------------------------------------------------
+   THE SWITCH
+   Visually hidden and still focusable. Never display:none — that would take
+   the group off the tab order and out of the accessibility tree.
+   -------------------------------------------------------------------------- */
+.v3 .v3-pulse__radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   THE CLAIM
+   The sentence first, figures second (TASTE.md). Held to the reading measure so
+   it is a claim and not a banner.
+   -------------------------------------------------------------------------- */
+.v3 .v3-pulse__claim {
+  max-width: var(--v3-measure-text);
+  margin: 0 0 clamp(1.5rem, 3vw, 2.25rem);
+}
+
+/* --------------------------------------------------------------------------
+   THE BODY: readings on one baseline, the plot in the margin.
+   -------------------------------------------------------------------------- */
+/* At 390 the three parts stack in reading order: the figures, the drawing they
+   plot, then the words about whichever one is lit. On a wide screen the drawing
+   moves into the margin and spans both rows, so the readings and the foot fill
+   the column beside it instead of leaving a hole under three short rows. */
+.v3-pulse__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'readings'
+    'plot'
+    'foot';
+  gap: clamp(1.5rem, 4vw, 2.25rem);
+  align-items: start;
+}
+
+@media (min-width: 48rem) {
+  .v3-pulse__body {
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    /* The readings take whatever height the drawing leaves. Three generous rows
+       beside a tall constellation, instead of three short ones and a hole. */
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+      'readings plot'
+      'foot plot';
+    column-gap: clamp(2rem, 5vw, 3.5rem);
+    row-gap: clamp(1.25rem, 3vw, 1.75rem);
+  }
+
+  .v3-pulse__readings {
+    align-self: stretch;
+  }
+}
+
+.v3-pulse__readings {
+  grid-area: readings;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* No divider rules. The magnitude track under each figure IS the divider — it
+   runs the full column in the hairline tone and fills navy to the reading's
+   share, so one mark does both jobs and the block keeps one horizontal per row
+   instead of two. */
+.v3-pulse__reading {
+  display: flex;
+}
+
+/* Each row takes an equal share of the column, so three readings beside a tall
+   drawing read as a generous ledger rather than three lines and a void. */
+@media (min-width: 48rem) {
+  .v3-pulse__reading {
+    flex: 1 1 0;
+  }
+}
+
+/* One reading. Figure and words on one line, the rule under both, and the whole
+   row is the control — a 44px floor without a button anywhere in sight. */
+.v3-pulse__pick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: baseline;
+  /* The rule belongs to the figure above it, so the pair stays together and the
+     row's spare height goes around them, never between them. */
+  align-content: center;
+  gap: 0 var(--v3-space-sm);
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) var(--v3-space-2xs);
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-pulse__pick:hover {
+  background: var(--v3-wash);
+}
+
+.v3-pulse__figure {
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  font-size: var(--v3-size-num);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-display);
+  color: var(--v3-ink-muted);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-pulse__name {
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The composition, drawn. One track per reading, all of them the same width and
+   all scaled to the same whole, so the three fills together tile exactly one
+   track: the reader sees what share of the read each population is without
+   arithmetic, and no row is full-width by construction. */
+.v3-pulse__rule {
+  grid-column: 1 / -1;
+  display: block;
+  height: var(--v3-rule-weight-section);
+  margin-top: var(--v3-space-2xs);
+  background: var(--v3-hairline);
+}
+
+.v3-pulse__rule-fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--v3-pulse-share, 0) * 100%);
+  /* Context weight for a reading that is not lit — light enough that the lit
+     one is unmistakable, dark enough to read its own length. */
+  background: color-mix(in srgb, var(--v3-navy) 38%, transparent);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* --------------------------------------------------------------------------
+   THE PLOT: one stroke per listing, in the shared frame.
+   -------------------------------------------------------------------------- */
+.v3-pulse__plot {
+  grid-area: plot;
+  margin: 0;
+  justify-self: start;
+}
+
+@media (min-width: 48rem) {
+  .v3-pulse__plot {
+    justify-self: stretch;
+    align-self: start;
+  }
+}
+
+.v3-pulse__caption {
+  margin-top: var(--v3-space-2xs);
+  font-size: var(--v3-size-source);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-pulse__map {
+  display: block;
+  width: 12rem;
+  height: auto;
+  max-width: 100%;
+  overflow: visible;
+}
+
+@media (min-width: 48rem) {
+  .v3-pulse__map {
+    width: 100%;
+  }
+}
+
+.v3-pulse__dots {
+  fill: none;
+  stroke: var(--v3-navy);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  opacity: 0.11;
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    stroke-width var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* --------------------------------------------------------------------------
+   THE FOOT: the read stamp, the definition of the lit population, the trace.
+   -------------------------------------------------------------------------- */
+.v3-pulse__foot {
+  grid-area: foot;
+  align-self: start;
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-pulse__note {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-pulse__def {
+  display: none;
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-pulse__go {
+  color: var(--v3-ink);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+  white-space: nowrap;
+}
+
+.v3 .v3-pulse__source {
+  margin-top: var(--v3-space-xs);
+}
+
+/* --------------------------------------------------------------------------
+   SELECTED STATE, one block per reading index. Four is the band's cap
+   (MAX_READINGS in V3Pulse.tsx); past four this is a table, not a gauge.
+   -------------------------------------------------------------------------- */
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__reading--1 .v3-pulse__figure,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__reading--2 .v3-pulse__figure,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__reading--3 .v3-pulse__figure,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__reading--4 .v3-pulse__figure,
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__reading--1 .v3-pulse__name,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__reading--2 .v3-pulse__name,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__reading--3 .v3-pulse__name,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__reading--4 .v3-pulse__name {
+  color: var(--v3-ink);
+}
+
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__reading--1 .v3-pulse__rule-fill,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__reading--2 .v3-pulse__rule-fill,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__reading--3 .v3-pulse__rule-fill,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__reading--4 .v3-pulse__rule-fill {
+  background: var(--v3-navy);
+}
+
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__dots--1,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__dots--2,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__dots--3,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__dots--4 {
+  opacity: 1;
+  stroke-width: 2.6px;
+}
+
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__def--1,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__def--2,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__def--3,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__def--4 {
+  display: block;
+}
+
+/* The lit row keeps a navy edge so the selection survives a greyscale print and
+   a colour-blind reader: state is never carried by colour alone. */
+.v3-pulse__radio--1:checked ~ .v3-pulse__body .v3-pulse__reading--1,
+.v3-pulse__radio--2:checked ~ .v3-pulse__body .v3-pulse__reading--2,
+.v3-pulse__radio--3:checked ~ .v3-pulse__body .v3-pulse__reading--3,
+.v3-pulse__radio--4:checked ~ .v3-pulse__body .v3-pulse__reading--4 {
+  box-shadow: inset 3px 0 0 0 var(--v3-navy);
+}
+
+/* Keyboard: the ring lands on the row the hidden radio names, never nowhere. */
+.v3-pulse__radio--1:focus-visible ~ .v3-pulse__body .v3-pulse__reading--1 .v3-pulse__pick,
+.v3-pulse__radio--2:focus-visible ~ .v3-pulse__body .v3-pulse__reading--2 .v3-pulse__pick,
+.v3-pulse__radio--3:focus-visible ~ .v3-pulse__body .v3-pulse__reading--3 .v3-pulse__pick,
+.v3-pulse__radio--4:focus-visible ~ .v3-pulse__body .v3-pulse__reading--4 .v3-pulse__pick {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(var(--v3-focus-offset) * -1);
+}
+
+/* Reduced motion: the same band, already in its state. Nothing to complete. */
+@media (prefers-reduced-motion: reduce) {
+  .v3-pulse__figure,
+  .v3-pulse__name,
+  .v3-pulse__rule-fill,
+  .v3-pulse__dots,
+  .v3-pulse__pick {
+    transition: none;
+  }
+}

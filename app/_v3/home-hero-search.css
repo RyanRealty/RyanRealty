@@ -1,11 +1,31 @@
 /* Homepage search. Scoped to the v3 root so it paints the same inside the
    Stage (on-media). Cream face, navy ink, 2px navy edge. Tokens only. 44px targets.
-   Buy | Sell tabs match the Redfin/Zillow hero pattern. */
+   Buy | Sell tabs match the Redfin/Zillow hero pattern.
+
+   THE SWITCH IS CSS (SITE-12). Two radios sit first inside .home-hero-search and
+   the `~` sibling combinator carries their state to the tab labels and to the two
+   panels, so both panels are in the server HTML and the switch works with
+   scripting off. Nothing here depends on a React state value. */
 .v3 .home-hero-search {
   position: relative;
   width: 100%;
   max-width: var(--v3-measure-text);
   color: var(--v3-ink);
+}
+
+/* The radios themselves: hidden to the eye, present to the keyboard and to the
+   accessibility tree. Never display:none — that would take them off the tab
+   order and leave the switch reachable by pointer only. */
+.v3 .home-hero-search__mode {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .v3 .home-hero-search__tabs {
@@ -21,6 +41,9 @@
 }
 
 .v3 .home-hero-search__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   appearance: none;
   -webkit-appearance: none;
   min-height: var(--v3-tap);
@@ -29,22 +52,69 @@
   padding: 0 var(--v3-space-md);
   border: 0;
   background: transparent;
-  color: var(--v3-ink-on-navy);
+  /* The unselected word is muted on the navy face, so "selected" is carried by
+     weight and fill together and never by fill alone (the 2026-09-08 evaluator
+     read a filled Sell as the page's own state, not as a chosen mode). */
+  color: var(--v3-ink-on-navy-muted);
   font-family: var(--v3-font-body);
   font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-medium);
+  font-weight: var(--v3-weight-body);
   line-height: var(--v3-leading-control);
   cursor: pointer;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.v3 .home-hero-search__tab--on {
+/* SELECTED. Cream face, navy ink, heavier word: three signals, so the state
+   survives a greyscale render and a colour-blind reader. */
+.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__tabs .home-hero-search__tab--buy,
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__tabs .home-hero-search__tab--sell {
   background: var(--v3-surface);
   color: var(--v3-ink);
+  font-weight: var(--v3-weight-strong);
 }
 
+.v3 .home-hero-search__mode:focus-visible ~ .home-hero-search__tabs {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* --------------------------------------------------------------------------
+   THE HEADLINE SWITCHES TOO (2026-09-08 evaluator).
+   The tabs used to change the form and leave the copy alone, so a visitor who
+   tapped Sell read "Homes for sale in Central Oregon" directly over their own
+   address field and a Value my home button. The Stage ships both pairs
+   (altEyebrow / altHeadline); this is the rule that picks one.
+
+   `:has()` rather than `~` for one structural reason: the radios live inside
+   the search, which V3Stage renders AFTER the copy, and a sibling combinator
+   only reaches forward. The selector is scoped to the copy block that contains
+   the switch, so it can match nothing else on the site. `:has()` is already the
+   mechanism in V3Sheet, V3Chrome and V3StickyAsk — no new dependency.
+   -------------------------------------------------------------------------- */
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-eyebrow:not(.v3-stage-eyebrow--alt),
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line:not(.v3-stage-line--alt) {
+  display: none;
+}
+
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-eyebrow--alt,
+.v3 .v3-stage-copy:has(.home-hero-search__mode--sell:checked) .v3-stage-line--alt {
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   THE PANELS. Both render; the switch decides which one is on screen.
+   -------------------------------------------------------------------------- */
 .v3 .home-hero-search__panel-form {
   position: relative;
   width: 100%;
+  display: none;
+}
+
+.v3 .home-hero-search__mode--buy:checked ~ .home-hero-search__panel-form--buy,
+.v3 .home-hero-search__mode--sell:checked ~ .home-hero-search__panel-form--sell {
+  display: block;
 }
 
 .v3 .home-hero-search__label {
@@ -65,6 +135,13 @@
   width: 100%;
 }
 
+/* AddressAutocomplete wraps its input in a positioning div (it reserves room
+   for the Places suggestion list). That div is the flex child here. */
+.v3 .home-hero-search__address {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .v3 .home-hero-search__input,
 .v3 .home-hero-search__go {
   appearance: none;
@@ -82,6 +159,7 @@
 
 .v3 .home-hero-search__input {
   flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   padding: 0 var(--v3-space-sm);
 }
@@ -99,10 +177,30 @@
   background: var(--v3-ink);
   color: var(--v3-ink-on-navy);
   border-color: var(--v3-surface);
+  cursor: pointer;
 }
 
 .v3 .home-hero-search__go:hover {
   background: var(--v3-pressed);
+}
+
+/* Under about 416px the field and the ask cannot share a line without clipping
+   the placeholder — "Enter your home add…" at 375. The ask drops below and
+   takes the width, which is also the biggest tap target on the page. */
+@media (max-width: 26rem) {
+  .v3 .home-hero-search__row {
+    flex-wrap: wrap;
+  }
+
+  .v3 .home-hero-search__address,
+  .v3 .home-hero-search__input {
+    flex: 1 1 100%;
+  }
+
+  .v3 .home-hero-search__go {
+    flex: 1 1 100%;
+    width: 100%;
+  }
 }
 
 .v3 .home-hero-search__panel {
@@ -117,4 +215,10 @@
   border-radius: var(--v3-radius-control);
   background: var(--v3-surface);
   color: var(--v3-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .home-hero-search__tab {
+    transition: none;
+  }
 }

@@ -69,6 +69,33 @@ describe('homeRailRows', () => {
     expect(rows.some((r) => r.heading === 'Homes for You')).toBe(false)
   })
 
+  // 2026-09-08 evaluator: 3027 Polarstar Avenue led both the nearby rail and the
+  // price-cuts rail, so the page opened with the same photograph twice. On a
+  // real pool (HOME_TILE_FETCH is 3,000) every house now leads exactly one shelf.
+  it('never shows one house on two shelves', () => {
+    const tiles = Array.from({ length: 40 }, (_, i) =>
+      tile({
+        listingKey: `k${i}`,
+        city: 'Bend',
+        streetNumber: String(300 + i),
+        priceDropCount: i % 4 === 0 ? 1 : 0,
+        // Only the first eight are inside the seven-day window.
+        onMarketDate: new Date(Date.now() - (i < 8 ? 1 : 40) * 86_400_000).toISOString(),
+      }),
+    )
+    const rows = homeRailRows(tiles, hrefs)
+    expect(rows.map((r) => r.heading)).toEqual([
+      'Homes in Bend and nearby',
+      'Price cuts',
+      'New this week',
+    ])
+    const keys = rows.flatMap((r) => r.cards.map((c: HomeRailCard) => c.listingKey))
+    expect(new Set(keys).size).toBe(keys.length)
+    // The narrower claim keeps the house: a cut listing stays on Price cuts.
+    const cutRow = rows.find((r) => r.heading === 'Price cuts')!
+    expect(cutRow.cards.every((c) => Number(c.listingKey.slice(1)) % 4 === 0)).toBe(true)
+  })
+
   it('omits photoless or priceless tiles', () => {
     const tiles = [
       tile({ listingKey: 'a', photoUrl: null }),

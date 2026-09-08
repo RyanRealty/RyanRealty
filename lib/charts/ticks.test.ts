@@ -11,6 +11,7 @@ import {
   percentTicks,
   seriesClaim,
   spacedTicks,
+  yoyDirection,
   type ClaimSeries,
   windowClaim,
   yearTicks,
@@ -474,5 +475,40 @@ describe('the comparison is computed from the printed figures (R12)', () => {
     })
     expect(claim).toContain('$666K')
     expect(claim).toContain('down 3.3% from Aug 2025')
+  })
+})
+
+
+/*
+ * WHICH WAY THE FIGURE MOVED (site queue SITE-02b). `--rr-exception` is the
+ * only second hue and it means a real decline; nothing could apply it to a line
+ * before this existed, so the /cities/bend median chart said "down 5.7% from
+ * Aug 2025" and drew that year in the same navy as a rise.
+ */
+describe('yoyDirection', () => {
+  const year = (name: string, values: [number, number][]): ClaimSeries => ({
+    name,
+    points: values.map(([at, value]) => ({ value, tick: MONTH_TICKS[at - 1] ?? String(at), label: '', at })),
+  })
+
+  it('calls a fall down and a rise up, from the same two points the claim compares', () => {
+    const down = [year('2025', [[7, 800_000], [8, 795_000]]), year('2026', [[7, 760_000], [8, 750_000]])]
+    expect(yoyDirection({ metric: 'Median sale price', unit: 'money', series: down })).toBe('down')
+
+    const up = [year('2025', [[7, 700_000], [8, 700_000]]), year('2026', [[7, 740_000], [8, 750_000]])]
+    expect(yoyDirection({ metric: 'Median sale price', unit: 'money', series: up })).toBe('up')
+  })
+
+  it('agrees with the sentence at the boundary: what reads flat is never a decline', () => {
+    // A change the claim rounds to 0.0% must not draw in the exception ink.
+    const hair = [year('2025', [[8, 750_000]]), year('2026', [[8, 749_990]])]
+    const input = { metric: 'Median sale price', unit: 'money' as const, series: hair }
+    expect(seriesClaim(input)).toContain('flat')
+    expect(yoyDirection(input)).toBe('flat')
+  })
+
+  it('is undefined when the window holds no comparison, which is not flat', () => {
+    const alone = [year('2026', [[8, 750_000]])]
+    expect(yoyDirection({ metric: 'Median sale price', unit: 'money', series: alone })).toBeUndefined()
   })
 })

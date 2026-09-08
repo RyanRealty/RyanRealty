@@ -38,9 +38,15 @@ function renderHistory() {
 describe('subdivision yearly history grain', () => {
   it('labels the rows as MLS plat-name closed counts, not recorded plat', () => {
     const html = renderHistory()
-    expect(html).toContain('MLS plat name')
-    expect(html).toMatch(/single-family name join/i)
-    expect(html).toMatch(/not recorded-plat membership/i)
+    // THE CLAIM, NOT THE WORDING. This rule is "the trace says these counts are
+    // matched by the MLS subdivision NAME and not by the recorded plat
+    // boundary". It used to be spelled "a single-family name join and not
+    // recorded-plat membership"; a taste evaluator called "name join" what it
+    // is — a database join type in copy a home buyer reads (2026-09-08). The
+    // sentence is now plain English and asserts the same two halves.
+    expect(html).toMatch(/MLS subdivision name/i)
+    expect(html).toMatch(/matched by that name/i)
+    expect(html).toMatch(/not by the recorded plat boundary/i)
     expect(html).toContain('>2024<')
     expect(html).toMatch(/closings/i)
   })

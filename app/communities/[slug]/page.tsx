@@ -72,6 +72,7 @@ import { communityPageTrail } from '@/lib/site/place-trail'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { skippableRail } from '@/lib/build-phase'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
+import { answersFaqItems, buildPlaceAnswers } from '@/lib/site/place-answers'
 import { zonedDateKey, formatDate } from '@/lib/format/date'
 import {
   V3_ROOT_CLASS,
@@ -114,6 +115,7 @@ import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-m
 import {
   buildExploreEdges,
   communityDocumentItems,
+  listedVsDetachedNote,
   reconcileListedVsDetachedFaq,
   reconcilePlaceHoaFaq,
 } from './_v3/community-figures'
@@ -235,6 +237,7 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     richContent,
     cityPriceHist,
     publicPace,
+    cityPace,
     publicSegments,
     leftoverCityMonthly,
     leftoverNeighborhoodMonthly,
@@ -263,6 +266,16 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
       3000,
       'comm:publicPace',
     ),
+    // The parent city's same statistics, ONLY as the context mark on the answer
+    // scales (SITE-08). Never a figure under this community's name.
+    citySlug
+      ? withTimeoutFallback(
+          getPublicDetachedPace({ geoType: 'city', geoSlug: citySlug }),
+          EMPTY_PUBLIC_PACE,
+          3000,
+          'comm:cityPace',
+        )
+      : Promise.resolve(EMPTY_PUBLIC_PACE),
     withTimeoutFallback(
       getPublicPlaceSegments({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }),
       [],
@@ -577,6 +590,60 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     resolvedHoa,
   )
 
+  /* ── The cited Q&A (SITE-08) ────────────────────────────────────────────
+     One array feeds the visible rows AND the FAQPage JSON-LD (answersFaqItems),
+     so the markup cannot describe a sentence the page does not print.
+
+     THE VERDICT IS WITHHELD HERE ON PURPOSE. publishMonthsOfSupply refuses this
+     grain's supply ratio (lib/market/geo-grain-trust.ts: a community's actives
+     and its closes are attributed by two different writers), so hud.monthsSupply
+     is null and the question is still ASKED — answered with the closed count and
+     the same sentence SITE-01 put on the address answer, rather than dropped.
+     A place page that skips the question a seller came to ask has not answered
+     it; it has hidden that it cannot. */
+  const { answers: placeAnswers, traces: answerTraces, sourceKey: answerSourceKey } = buildPlaceAnswers({
+    placeName: publicName,
+    cityName,
+    figures: {
+      monthsOfSupply: hud.monthsSupply,
+      monthsOfSupplyActiveCount: hud.active,
+      activeCount: hud.active,
+      activeCountTrace: `regional MLS, detached single-family homes whose primary membership is ${publicName}, active at the last sync`,
+      activeCountNotes: listedVsDetachedNote({
+        placeName: publicName,
+        listedCount,
+        detachedCount: hud.active,
+      }),
+      closedCount:
+        publicPace.closedCount != null && publicPace.closedCount > 0
+          ? { count: publicPace.closedCount, windowLabel: 'over the past 12 months' }
+          : null,
+      daysToPending: hud.daysToPending,
+      cityDaysToPending: cityPace.daysToPending90d,
+      saleToOriginal: publicPace.saleToOriginal,
+      citySaleToOriginal: cityPace.saleToOriginal,
+      cashShare: publicPace.cashShare,
+      cityCashShare: cityPace.cashShare,
+      medianSalePrice:
+        publicPace.medianClose != null && publicPace.medianClose > 0
+          ? { price: publicPace.medianClose, windowLabel: 'over the past 12 months' }
+          : null,
+      medianListPrice: hud.medianList,
+    },
+    // Same split as the neighborhood grain: the sentence a visitor reads names
+    // the feed and the population, the table and key ride in data-source-key.
+    sourceTrace: `regional MLS, detached single-family homes assigned to ${publicName}`,
+    sourceKey: `market_metric:neighborhood:${cityDetachedSlug(neighborhoodSlug)}`,
+    asOfLabel,
+    // SITE-01's address ask IS on this page, at the top of the opening.
+    valueAsk: { href: '#value', onPage: true },
+    extra: pageFaqs,
+  })
+  const answerFaqs = answersFaqItems(placeAnswers)
+  if (process.env.NODE_ENV !== 'production') {
+    for (const line of answerTraces) console.log(`[comm:${slug}] ${line}`)
+  }
+
   const seoAbout = getCommunitySeoAbout(slug)
   const aboutParagraphs: string[] =
     seoAbout ??
@@ -635,7 +702,10 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
     datasetVariables,
     asOfIso,
     asOfLabel,
-    faqs: pageFaqs,
+    // SITE-08: the FAQPage payload is DERIVED from the rendered rows, not built
+    // beside them from a second array, so the markup can never describe a
+    // sentence the page does not print.
+    faqs: answerFaqs,
   })
   const communityGuideSchema = areaGuideVideoSchema(publicName, `/communities/${slug}`, areaGuideVideo)
   if (communityGuideSchema) communitySchemas.push(communityGuideSchema)
@@ -873,16 +943,17 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
         */}
         <V3Answers
           id="faq"
-          eyebrow="Common questions"
-          heading={`${publicName} real estate questions`}
-          questions={pageFaqs.map((faq) => ({ question: faq.question, body: faq.answer }))}
+          eyebrow={`${publicName} · By the numbers`}
+          heading={`${publicName} questions, answered with the number`}
+          questions={placeAnswers}
+          sourceKey={answerSourceKey}
           doors={[
             { label: `See ${publicName} houses`, href: '#homes' },
             ...exploreItems.flatMap((item) =>
               'href' in item && item.href ? [{ label: item.label, href: item.href }] : [],
             ),
           ]}
-          note={`Market figures on this page come from the regional MLS through Oregon Data Share.${
+          note={`Each answer carries the one figure it is about and where that figure came from. Market figures on this page come from the regional MLS through Oregon Data Share.${
             asOfLabel ? ` Market data updated ${asOfLabel}.` : ''
           }`}
         />

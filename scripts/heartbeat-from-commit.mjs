@@ -65,6 +65,43 @@ async function main() {
     const rows = await res.json()
     if (Array.isArray(rows) && rows.length) {
       console.log(`heartbeat: ${rows[0].version_gap ?? id.slice(0, 8)} (this commit is proof of life)`)
+      return
+    }
+
+    /**
+     * NO ROWS. Two very different reasons, and the silence covered both.
+     *
+     * Benign: the node exists but is not in_progress — a commit landing after
+     * the node was blocked on its measurement window. Nothing to say.
+     *
+     * NOT benign: the trailer names a uuid that is not a node at all. G72
+     * checks the trailer's SHAPE, not that it resolves, so a wrong uuid passes
+     * the gate, and then every write keyed on it — the heartbeat here, the
+     * evidence at the end of the round — updates zero rows and reports success.
+     * That happened on 2026-09-08: two commits carried
+     * 28a55619-8b9f-4de0-9f10-b5d1dd0d3a7d for a node whose real id ends
+     * -eff3-4763-aeaf-e7f3617a9cb3, and the mistake surfaced only because the
+     * queue listing still showed the node in_progress after it had supposedly
+     * been closed.
+     *
+     * So: one extra request, only on the already-rare zero-row path, and a loud
+     * line when the id resolves to nothing. Still non-blocking — the commit is
+     * written and a post-commit hook must never look like a failed commit — but
+     * a person watching their own commit scroll past now sees it.
+     */
+    const check = await fetch(`${url}/rest/v1/loop_work_nodes?id=eq.${id}&select=id`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(4000),
+    })
+    if (!check.ok) return
+    const found = await check.json()
+    if (Array.isArray(found) && found.length === 0) {
+      console.warn(
+        `\n  !! Node: ${id} is not a row in loop_work_nodes.\n` +
+          `     This commit names a node that does not exist, so nothing keyed on that id —\n` +
+          `     the heartbeat, and the evidence written at the end of the round — will land.\n` +
+          `     Check the id with: npx tsx scripts/site-queue-status.ts\n`,
+      )
     }
   } catch {
     // A hook that fails loudly on a network blip trains people to skip hooks.

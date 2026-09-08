@@ -118,6 +118,18 @@ export type V3StageProps = {
   /** The context line above the headline. One line, never a sentence. */
   eyebrow?: string
   /**
+   * The copy for the Stage's OTHER mode, when the slot carries a switch (the
+   * homepage Buy | Sell tabs). Both lines ship in the server HTML; the slot's
+   * own stylesheet decides which pair is on screen, exactly as it already does
+   * for the two panels. Rendered as a paragraph, never a second h1 — one page,
+   * one heading, and the section keeps naming itself with the real one.
+   *
+   * Pass both or neither: an alternate headline with the original eyebrow above
+   * it is the mismatch this prop exists to remove.
+   */
+  altHeadline?: string
+  altEyebrow?: string
+  /**
    * 1 when the Stage opens the page and carries its answer (the Sell opening),
    * 2 when it sits inside a page that already has its h1. Defaults to 2.
    */
@@ -186,6 +198,8 @@ export function V3Stage<H extends string, L extends string>({
   action,
   overlayStrength = 'standard',
   eyebrow,
+  altHeadline,
+  altEyebrow,
   headingLevel = 2,
   height = 'standard',
   children,
@@ -198,6 +212,12 @@ export function V3Stage<H extends string, L extends string>({
   const headingId = useId()
   const motionAllowed = useMotionAllowed()
   const showVideo = Boolean(videoSrc) && motionAllowed
+  /* Both or neither: a switched eyebrow over an unswitched line is the exact
+     mismatch the prop pair exists to remove. */
+  const altCopy =
+    altHeadline != null && altHeadline.trim() && altEyebrow != null && altEyebrow.trim()
+      ? { headline: altHeadline, eyebrow: altEyebrow }
+      : null
 
   assertNamed(headline, action?.label)
 
@@ -247,7 +267,16 @@ export function V3Stage<H extends string, L extends string>({
       <div className="v3-stage-scrim" aria-hidden="true" />
 
       <div className="v3-stage-copy">
-        {eyebrow ? <V3Eyebrow onMedia>{eyebrow}</V3Eyebrow> : null}
+        {eyebrow ? (
+          <V3Eyebrow onMedia className="v3-stage-eyebrow">
+            {eyebrow}
+          </V3Eyebrow>
+        ) : null}
+        {altCopy ? (
+          <V3Eyebrow onMedia className="v3-stage-eyebrow v3-stage-eyebrow--alt">
+            {altCopy.eyebrow}
+          </V3Eyebrow>
+        ) : null}
         <V3Heading
           level={headingLevel}
           id={headingId}
@@ -256,6 +285,23 @@ export function V3Stage<H extends string, L extends string>({
         >
           {headline}
         </V3Heading>
+        {/* The other mode's line. A paragraph wearing the heading's face, not a
+            second heading: the page keeps one h1, and the section keeps naming
+            itself with it even while the switch has this line on screen —
+            aria-labelledby resolves a directly referenced hidden element. */}
+        {altCopy ? (
+          <p
+            className={cn(
+              'v3-heading',
+              headingLevel === 1 ? 'v3-heading--1' : 'v3-heading--2',
+              'v3-heading--on-media',
+              'v3-stage-line',
+              'v3-stage-line--alt',
+            )}
+          >
+            {altCopy.headline}
+          </p>
+        ) : null}
         {children}
         {action ? (
           <V3Button href={action.href} variant={action.variant ?? 'primary'} onMedia>

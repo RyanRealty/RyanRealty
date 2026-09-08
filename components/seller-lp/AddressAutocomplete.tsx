@@ -27,11 +27,20 @@ import { cn } from '@/lib/utils'
 
 type Props = {
   id?: string
+  /**
+   * The form-control name. Required for a form that must submit WITHOUT
+   * JavaScript — a nameless input is not in the submission (SITE-12: the
+   * homepage hero's Sell panel is a real GET form). Omitted where the submit
+   * is a server action reading React state (/sell).
+   */
+  name?: string
   value: string
   onChange: (value: string) => void
   onPlaceSelected?: (place: { formattedAddress: string; lat?: number; lng?: number }) => void
   placeholder?: string
   className?: string
+  /** Classes for the positioning wrapper, so a caller can place it in a row. */
+  wrapperClassName?: string
   autoFocus?: boolean
   invalid?: boolean
 }
@@ -41,11 +50,13 @@ const BEND = { lat: 44.0582, lng: -121.3153 }
 
 export default function AddressAutocomplete({
   id,
+  name,
   value,
   onChange,
   onPlaceSelected,
   placeholder,
   className,
+  wrapperClassName,
   autoFocus,
   invalid,
 }: Props) {
@@ -129,7 +140,7 @@ export default function AddressAutocomplete({
   return (
     <div
       ref={wrapRef}
-      className={cn(suggesting && 'pb-48')}
+      className={cn(wrapperClassName, suggesting && 'pb-48')}
       onFocusCapture={() => {
         if (value.trim()) setSuggesting(true)
       }}
@@ -139,6 +150,7 @@ export default function AddressAutocomplete({
     >
       <Input
         id={id}
+        name={name}
         type="text"
         autoComplete="off"
         value={value}
