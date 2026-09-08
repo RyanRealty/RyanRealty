@@ -33,11 +33,15 @@ import type { Metadata } from 'next'
 import {
   getBrokerageListings,
   getBrokerageTrackRecord,
-  getReviews,
+  getBrokers,
+  getProofBlock,
   getSellBendMarket,
   getSurfaceImage,
 } from '@/lib/data'
-import { toReviewQuotes } from '@/lib/reviews/review-quotes'
+import { applyDetachedOverlay } from '@/lib/data/market-truth/getSellBendMarket'
+import { stickyAskVerdict } from '@/lib/sticky-ask'
+import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
+import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { getPublicDetachedPace, publicPaceItems } from '@/lib/data/market-truth/public-pace'
 import { getPublicPlaceSegments, publicSegmentItems } from '@/lib/data/market-truth/public-segments'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -55,12 +59,15 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Ledger,
-  V3Proof,
+  V3ProofBlock,
   V3Quiet,
   V3Sheet,
   V3Stage,
+  V3StickyAsk,
   V3SectionTracker,
+  proofBlockView,
   type V3InstrumentFigure,
+  type V3ProofReach,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -99,20 +106,98 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SellPage() {
-  const [bend, heroSrc, trackRecord, publicPace, publicSegments, reviewSummary, listings] =
-    await Promise.all([
-      getSellBendMarket(),
-      getSurfaceImage('hero', {
-        geoTags: ['central-oregon'],
-        seed: ROUTE_PATH,
-        fallback: SELL_POSTER,
-      }),
-      getBrokerageTrackRecord(),
-      getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
-      getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
-      getReviews(6).catch(() => null),
-      getBrokerageListings().catch(() => []),
-    ])
+  const [
+    bend,
+    heroSrc,
+    trackRecord,
+    publicPace,
+    publicSegments,
+    listings,
+    proof,
+    brokers,
+    attributed,
+  ] = await Promise.all([
+    getSellBendMarket(),
+    getSurfaceImage('hero', {
+      geoTags: ['central-oregon'],
+      seed: ROUTE_PATH,
+      fallback: SELL_POSTER,
+    }),
+    getBrokerageTrackRecord(),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }),
+    getPublicPlaceSegments({ geoType: 'city', geoSlug: 'bend' }),
+    getBrokerageListings().catch(() => []),
+    getProofBlock({ geoType: 'city', geoSlug: 'bend', geoLabel: 'Bend' }).catch(() => null),
+    getBrokers().catch(() => []),
+    readAttributedAgentServer().catch(() => null),
+  ])
+
+  // SITE-05. The sticky control's tail must print the SAME months of supply the
+  // Instrument below prints, or the page contradicts itself while both are on
+  // screen (§0).
+  //
+  // So it is fed from getSellBendMarket — the one read this page already makes
+  // — shaped into the pulse row stickyAskVerdict expects by applyDetachedOverlay,
+  // the helper that exists to put Market Truth DETACHED figures onto a pulse-
+  // shaped row. This page never reads the live pulse table at all: that is the
+  // rule that stops /sell publishing the mixed-type bucket (488 active / 3.54
+  // months) as if it were the detached market, and it is asserted in
+  // lib/data/market-truth/getSellBendMarket.test.ts.
+  const bendPulse = bend
+    ? applyDetachedOverlay({ monthsOfSupply: null as number | null, refreshedAt: '' }, bend)
+    : null
+  const sellVerdict = stickyAskVerdict(bendPulse)
+
+  // SITE-11. The reach strip carries the broker this page routes the lead to —
+  // the attributed agent when an ad sent them, Matt otherwise — and its number
+  // comes off the live roster through the DAL, never a literal (G38).
+  const routedSlug = attributed?.broker ?? 'matt'
+  const routedFace: AboutFace | null =
+    brokers
+      .map((b) => aboutFaceFromBroker(b))
+      .find((face): face is AboutFace => face !== null && face.href.endsWith(`/${routedSlug}`)) ??
+    brokers.map((b) => aboutFaceFromBroker(b)).find((face): face is AboutFace => face !== null) ??
+    null
+  const reach: V3ProofReach[] = routedFace
+    ? [
+        ...(routedFace.tel
+          ? ([
+              {
+                key: 'call',
+                kind: 'call',
+                href: `tel:${routedFace.tel}`,
+                label: `Call ${routedFace.name}`,
+              },
+              {
+                key: 'text',
+                kind: 'text',
+                href: `sms:${routedFace.tel}`,
+                label: `Text ${routedFace.name}`,
+              },
+            ] as V3ProofReach[])
+          : []),
+        ...(routedFace.bookHref
+          ? ([
+              { key: 'book', kind: 'book', href: routedFace.bookHref, label: 'Book a call' },
+            ] as V3ProofReach[])
+          : []),
+      ]
+    : []
+
+  // MATT HAS NOT RULED on publishing the two outcome strips: our closings read
+  // slower and lower than Bend's own median this window, and whether a seller
+  // page leads with that is his call. showOutcomes:false ships the record, the
+  // reviews and the reach now; the strips return by flipping this one prop.
+  const proofView = proof
+    ? proofBlockView({
+        block: proof,
+        id: 'proof',
+        headingLevel: 2,
+        attribution: { surface: 'sell', place: 'bend', source: 'proof_block' },
+        reach,
+        showOutcomes: false,
+      })
+    : null
 
   const bendFigures: V3InstrumentFigure[] = []
   if (bend?.medianListPrice != null) {
@@ -159,12 +244,9 @@ export default async function SellPage() {
   const listingRows = sellListingRows(listings)
   const [firstListing, ...restListings] = listingRows
 
-  const reviewQuotes = reviewSummary ? toReviewQuotes(reviewSummary.reviews).slice(0, 4) : []
-  const reviewCount =
-    reviewSummary && reviewSummary.count > 0 ? reviewSummary.count : reviewQuotes.length
-  const reviewAverage =
-    reviewSummary && reviewSummary.count > 0 ? reviewSummary.averageRating : 5
-  const newestReview = reviewQuotes.find((q) => q.date)?.date ?? null
+  // The reviews arrive inside the proof block now (getProofBlock reads the same
+  // Google reviews getReviews did), so the page no longer pulls them twice.
+  const proofReviewCount = proof?.reviews?.count ?? 0
 
   const quietItems: V3QuietItem[] = FAQ_ITEMS.map((item) => ({
     kind: 'prose' as const,
@@ -184,6 +266,9 @@ export default async function SellPage() {
 
   quietItems.push(
     { label: 'Value my home', href: FORM_ANCHOR },
+    ...(proofReviewCount > 0
+      ? [{ label: `All ${proofReviewCount} Google reviews`, href: '/reviews' }]
+      : [{ label: 'Google reviews', href: '/reviews' }]),
     { label: 'Written valuation page', href: valuationPath() },
     { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
     { label: 'The 3% listing plan', href: '#listing-plan' },
@@ -241,6 +326,7 @@ export default async function SellPage() {
         />
 
         <V3Stage
+          id="sell-hero"
           headingLevel={1}
           height="tall"
           className="sell-stage-poster"
@@ -253,6 +339,16 @@ export default async function SellPage() {
             <SellValueForm pagePath={ROUTE_PATH} />
           </SellCapture>
         </V3Stage>
+
+        {proofView ? (
+          <V3ProofBlock
+            {...proofView}
+            // The quiet form (strips off) has no drawing to fill the left
+            // column. sell-answer.css collapses the body to one column for
+            // this instance only; the class goes away when the strips come on.
+            className={proofView.strips.length === 0 ? 'sell-proof--quiet' : undefined}
+          />
+        ) : null}
 
         {bend && firstBendFigure ? (
           <V3Instrument
@@ -312,35 +408,12 @@ export default async function SellPage() {
           showProgress={false}
         />
 
-        {reviewQuotes.length > 0 ? (
-          <V3Proof
-            id="reviews"
-            eyebrow="Ryan Realty · Google"
-            headline={`${reviewCount} Google reviews`}
-            headingLevel={2}
-            claim={`${reviewAverage.toFixed(1)} of 5 across ${reviewCount} reviews. The newest four, in full, as written.`}
-            figures={[
-              { value: String(reviewCount), label: 'Google reviews' },
-              { value: reviewAverage.toFixed(1), label: 'average of 5' },
-              ...(newestReview
-                ? [
-                    {
-                      value: formatDate(newestReview, {
-                        month: 'short',
-                        day: undefined,
-                        year: 'numeric',
-                      }),
-                      label: 'newest',
-                    },
-                  ]
-                : []),
-            ]}
-            quotes={reviewQuotes}
-            source={{ label: 'Every review', href: '/reviews' }}
-            record={false}
-          />
-        ) : null}
-
+        {/* The reviews used to have their own V3Proof band here. V3ProofBlock
+            now carries them, in full and as written, directly under the ask —
+            which is where proof does its work on a seller page. Two reviews
+            sections on one page is the "second way to show the same thing"
+            TASTE.md calls how one site becomes two, so this one is gone rather
+            than duplicated. The reviews door lives on in the Quiet block. */}
         {firstListing ? (
           <V3Ledger
             id="our-listings"
@@ -367,6 +440,23 @@ export default async function SellPage() {
           id="selling-questions"
           heading="Selling questions"
           items={quietItems}
+        />
+
+        {/* SITE-05. A direct child of main, never inside a hidden ancestor: the
+            control watches #sell-hero and #get-value with IntersectionObserver,
+            and an observer inside a display:none subtree reports nothing. It
+            appears once the hero is fully past and retires whenever the address
+            field it points at is on screen, so the page never carries three
+            asks at once (PUBLIC_UI §1). */}
+        <V3StickyAsk
+          href={FORM_ANCHOR}
+          label="Value my home"
+          verdict={sellVerdict}
+          place="Bend"
+          surface="sell"
+          sentinelId="sell-hero"
+          targetId="get-value"
+          focusId="get-value-address"
         />
       </main>
 

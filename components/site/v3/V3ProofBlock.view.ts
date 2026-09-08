@@ -132,6 +132,18 @@ export type ProofBlockViewInput = {
   headingLevel?: 1 | 2
   attribution: V3ProofBlockAttribution
   reach?: readonly V3ProofReach[]
+  /**
+   * Draw the two outcome strips (days to contract, sale against the first ask).
+   *
+   * Default true — the block was built to draw them and every existing caller
+   * keeps that behaviour. /sell passes FALSE because Matt has not ruled on
+   * publishing them yet: our closings currently read slower and lower than
+   * Bend's own median, and whether a seller-facing page leads with that is his
+   * call, not a builder's. With it off the block ships the record, the reviews
+   * and the reach, and the strips return by flipping one prop the day he says
+   * yes — not by rebuilding a section.
+   */
+  showOutcomes?: boolean
 }
 
 /**
@@ -148,7 +160,8 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
 
   /* ---- the two strips ---------------------------------------------------- */
 
-  const drawable = o.publishable ? o.rows : []
+  const showOutcomes = input.showOutcomes ?? true
+  const drawable = o.publishable && showOutcomes ? o.rows : []
 
   const dayRows = drawable.map((r) => ({
     tick: r.id,
@@ -291,8 +304,12 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
     eyebrow: `The record · last ${block.window.months} months`,
     heading: 'Every home we listed and closed',
     headingLevel: input.headingLevel ?? 2,
-    claim:
-      'Not a selection. Every home Ryan Realty listed and closed in the last twelve months, with what each one did, against what the whole market did in the same year.',
+    // The claim names what is actually drawn. With the strips off it must not
+    // promise "what each one did against the market" — that is the sentence
+    // for the version that draws them.
+    claim: showOutcomes
+      ? 'Not a selection. Every home Ryan Realty listed and closed in the last twelve months, with what each one did, against what the whole market did in the same year.'
+      : 'Not a selection. Every home Ryan Realty listed and closed in the last twelve months, and the people who worked with us on them.',
     marks,
     strips,
     // Round three named first-read clarity as the weakest thing: nothing said

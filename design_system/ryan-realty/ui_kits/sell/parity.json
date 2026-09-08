@@ -2,7 +2,7 @@
   "route": "app/sell/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
   "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellValueForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home on the field submit, never What's my home worth on a control.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value. CLOSED 2026-08-27: 'Places autocomplete' verified by code trace, not by curl (client-hydrated). Chain confirmed: app/sell/_v3/SellValueForm.tsx renders components/seller-lp/AddressAutocomplete.tsx bound to the address field (visible 'Home address' label, empty value). AddressAutocomplete calls lib/use-google-maps-ready.ts (useGoogleMapsReady({libraries:['places']})) and instantiates google.maps.places.Autocomplete via importLibrary('places') restricted to US addresses, biased to Bend/Central Oregon bounds. The loader is components/GoogleMapsBootstrap.tsx, mounted app/layout.tsx -> RootProvider -> AnalyticsScripts -> GoogleMapsBootstrap (same shared loader used by SearchMapClustered, ListingLocationMap, ListingHeroMap, ListingLot3D, and other live map surfaces). NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env.local. Served SSR markup carries the empty address input with its visible label (curl-verified); the Places wiring itself only activates post-hydration by design, so it cannot be curl-verified and was not expected to be.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: no two adjacent sections share a pattern. There is NO cap on how many patterns a page uses (the four-pattern cap was killed 2026-08-27) and the pattern set is OPEN, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value. CLOSED 2026-08-27: 'Places autocomplete' verified by code trace, not by curl (client-hydrated). Chain confirmed: app/sell/_v3/SellValueForm.tsx renders components/seller-lp/AddressAutocomplete.tsx bound to the address field (visible 'Home address' label, empty value). AddressAutocomplete calls lib/use-google-maps-ready.ts (useGoogleMapsReady({libraries:['places']})) and instantiates google.maps.places.Autocomplete via importLibrary('places') restricted to US addresses, biased to Bend/Central Oregon bounds. The loader is components/GoogleMapsBootstrap.tsx, mounted app/layout.tsx -> RootProvider -> AnalyticsScripts -> GoogleMapsBootstrap (same shared loader used by SearchMapClustered, ListingLocationMap, ListingHeroMap, ListingLot3D, and other live map surfaces). NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set in .env.local. Served SSR markup carries the empty address input with its visible label (curl-verified); the Places wiring itself only activates post-hydration by design, so it cannot be curl-verified and was not expected to be. 2026-09-08 (SITE-02, SITE-10, SITE-05, SITE-11): the address step now ANSWERS before it asks. Order is address -> answer -> contact (email required, phone optional) -> timeframe (the choice is the submit, so a submit cannot land without one) -> success. The near-term lane (ready-now) gets a /book prompt in the success state and in the same-minute system confirmation. address_submit fires on the address step so the address-to-request ratio has a denominator. The old V3Proof reviews band was REMOVED rather than duplicated: V3ProofBlock carries the reviews, directly under the ask, and one reviews surface is the rule (TASTE.md consistency).",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -40,10 +40,6 @@
       "blocking": true
     },
     {
-      "name": "V3Proof",
-      "section": "Live Google reviews. Same getReviews read the homepage and /reviews use. Compact band, record=false."
-    },
-    {
       "name": "V3Quiet",
       "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, outbound doors including Value my home and valuationHref('/sell').",
       "blocking": true
@@ -51,6 +47,21 @@
     {
       "name": "V3Footer",
       "section": "Chrome. V3_FOOTER_COLUMNS. No button. Rendered OUTSIDE main.",
+      "blocking": true
+    },
+    {
+      "name": "SellAnswer",
+      "section": "SITE-02. The answer step, between the address and the contact ask. Months of supply DRAWN as two bars (homes for sale against a month of sales), the pace and cash-share readings as sentences with a disclosure each, and the comparable-close count the CMA ladder found for the typed address. No dollar figure for a typed address (Matt). One component file against SellAnswerData so the drawing can be replaced without touching the form.",
+      "blocking": true
+    },
+    {
+      "name": "V3ProofBlock",
+      "section": "SITE-11. Directly under the ask. The record, the Google reviews in full, and the reach to the ROUTED broker (tel/sms/book from the roster through aboutFaceFromBroker, never a literal - G38). Ships with showOutcomes:false until Matt rules on the two outcome strips; the sell-proof--quiet class collapses the body to one column while the drawing column is empty.",
+      "blocking": true
+    },
+    {
+      "name": "V3StickyAsk",
+      "section": "SITE-05. A direct child of main, never inside a hidden ancestor. Watches #sell-hero (sentinel) and #get-value (target): appears once the hero is fully past, retires whenever the address field is on screen. Its verdict tail is built by stickyAskVerdict from the Bend pulse row with applyDetachedOverlay, so it prints the SAME months of supply the Instrument prints.",
       "blocking": true
     }
   ],
@@ -113,13 +124,14 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Stage (SellCapture SellValueForm on the photograph)",
+    "V3Stage id=sell-hero (SellCapture SellValueForm on the photograph; address -> SellAnswer -> contact -> timeframe -> success)",
+    "V3ProofBlock #proof -- the record, the reviews, the reach (outcome strips OFF pending Matt)",
     "V3Instrument (Bend pulse) or V3Quiet empty",
     "V3Ledger #bend-also -- other types and leftover pace, not a 27-figure grid",
     "V3Sheet #listing-plan",
-    "V3Proof #reviews when live Google reviews exist",
     "V3Ledger #our-listings (office house rows, cap 6)",
-    "V3Quiet #selling-questions (FAQ, track record, doors)",
+    "V3Quiet #selling-questions (FAQ, track record, doors incl. the reviews door)",
+    "V3StickyAsk (fixed, direct child of main)",
     "V3Footer"
   ],
   "openDefects": {
