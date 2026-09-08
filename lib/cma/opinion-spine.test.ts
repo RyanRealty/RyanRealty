@@ -276,9 +276,12 @@ describe('print CMA price-opinion spine', () => {
   it('always renders cover numbers, sales/map/matrix, demoted snapshot, disclosure', () => {
     const { html } = renderCmaHtml(args())
     const cover = firstPage(html)
-    expect(cover).toContain('Recommended list')
+    // Blueprint chapter 0: the address, ONE sentence, prepared-for and the
+    // date. The list range is chapter 3's line, under chapter 3's number.
+    expect(cover).toContain('We recommend listing at')
     expect(cover).toContain('$475,000')
-    expect(cover).toContain('List $470,000 to $490,000')
+    expect(cover).toMatch(/Your home is worth \$[\d,]+ to \$[\d,]+ today\./)
+    expect(cover).not.toContain('List $470,000 to $490,000')
     expect(cover).not.toContain('Expected close')
     // CUT by the blueprint (CMA_REIMAGINED_2026-09-07.md): the property-facts
     // table served none of the three questions a seller opens this for.
@@ -297,8 +300,11 @@ describe('print CMA price-opinion spine', () => {
     expect(html).toContain('Condition was not adjusted for.')
     expect(html).toContain('Nobody walked through the inside of your home')
     expect(html).not.toMatch(BANNED)
-    const recAt = html.indexOf('$475,000')
-    const salesAt = html.indexOf('$475,000.')
+    // The cover's sentence carries the recommend with a full stop now, so
+    // "the figure without a period" no longer separates it from chapter 3's
+    // title. Anchor on what each surface actually prints.
+    const recAt = html.indexOf('We recommend listing at $475,000.')
+    const salesAt = html.indexOf('<h2 class="section is-answer">$475,000.</h2>')
     const discAt = html.indexOf('<h2 class="section">Basis and limits</h2>')
     expect(recAt).toBeGreaterThan(0)
     expect(salesAt).toBeGreaterThan(recAt)

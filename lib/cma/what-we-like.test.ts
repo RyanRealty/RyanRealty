@@ -187,9 +187,13 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
-  it('names THIS home on the cover as a price opinion', () => {
+  it('names THIS home on the cover, once', () => {
     const { html } = renderCmaHtml(args({}))
-    expect(html).toContain('A price opinion for 123 Test Way.')
+    // The address is the cover title. It used to be followed by "A price
+    // opinion for 123 Test Way." — a sentence whose whole job was to restate
+    // the two lines above it.
+    expect(html).toContain('class="cover-title">123 Test Way')
+    expect(html).not.toContain('A price opinion for 123 Test Way.')
     expect(html).not.toContain('How we would market')
     expect(html).not.toContain('listing video')
     expect(html).not.toContain('What Every Listing Gets')

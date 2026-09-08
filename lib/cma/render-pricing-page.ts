@@ -9,6 +9,7 @@
 
 import { cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
+import { currentAskLine } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
 import {
@@ -48,12 +49,18 @@ export function whatItsWorthLead(subject: CmaSubject, pricing: CmaPricing): stri
   if (ON_MARKET.test(subject.standardStatus ?? '') && subject.lastListPrice != null && subject.lastListPrice > 0) {
     return `Listed at ${usd(subject.lastListPrice)}. The sales support ${usd(pricing.valueLow)} to ${usd(pricing.valueHigh)}.`
   }
+  // A subject whose ASK is on the pricing row rather than its MLS status —
+  // an owner-supplied ask on an off-market home. The blueprint puts that line
+  // in this chapter too, beside the evidence, never blended into it. It used
+  // to sit on the cover, which the blueprint gives one sentence.
+  const ask = currentAskLine(pricing)
   const display = pricingRangeDisplay(pricing)
-  return display.outOfRange
+  const supported = display.outOfRange
     ? `${range} The sales support ${usd(pricing.valueLow)} to ${usd(pricing.valueHigh)}.${
         display.note ? ` ${display.note}` : ''
       }`
     : range
+  return ask ? `${supported} ${ask}` : supported
 }
 
 /**

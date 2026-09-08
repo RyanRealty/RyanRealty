@@ -201,10 +201,12 @@ describe('capability blocks return nothing when their data is absent', () => {
         askDerivedList: 774_000,
       },
     })
+    // The ask line sits in the price chapter now, beside the evidence — the
+    // blueprint cover carries one sentence and no second number.
     expect(html).toContain('On the market today at $765,000')
     expect(html).toContain('above the top of the supported range')
     // The recommendation printed is the comp-derived number, not the ask.
-    expect(html).toContain('class="vb-price">$594,000')
+    expect(html).toContain('We recommend listing at $594,000.')
   })
 
   it('an off-market subject prints no ask line', () => {
@@ -216,8 +218,10 @@ describe('capability blocks return nothing when their data is absent', () => {
     const { html } = renderCmaHtml(bareArgs)
     expect(html).not.toContain('>Contents<')
     expect(html).not.toContain('class="toc"')
-    expect(html).toContain('class="vb-price">$715,000')
-    expect(html).toContain('Recommended list')
+    expect(html).toContain('We recommend listing at $715,000.')
+    // The cover carries the recommend inside its one sentence, never as a
+    // labelled figure a reader meets again as chapter 3's own title.
+    expect(html).not.toContain('Recommended list')
   })
 })
 

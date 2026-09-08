@@ -142,12 +142,14 @@ describe('pricing beat craft', () => {
     const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
     expect(html).toContain('hero-payoff')
     expect(html).toContain('$563,000')
-    expect(html).toContain('List $522,000 to $575,000')
+    // The recommend is set in type above, so the line under it says what the
+    // home is worth — never the same figure twice in two sentences.
+    expect(html).toContain('Your home is worth $522,000 to $575,000 today.')
     expect(html).not.toContain('class="range-marks"')
     expect(html).not.toMatch(/class="rm-l">List low</)
     expect(html).not.toContain('id="answer"')
     // Lead sentence appears once (hero), not again under the photo beat.
-    const leadHits = html.match(/List \$522,000 to \$575,000\. Recommended list \$563,000\./g) ?? []
+    const leadHits = html.match(/Your home is worth \$522,000 to \$575,000 today\./g) ?? []
     expect(leadHits.length).toBe(1)
   })
 

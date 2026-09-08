@@ -6,14 +6,9 @@
 
 import { cmaStylesheet } from '@/lib/cma/render-css'
 import {
-  cleanText,
   dateLong,
-  dec,
-  dottedPhone,
   escapeHtml,
-  int,
   monthYear,
-  phoneHref,
   sparkPhotoAt,
 } from '@/lib/cma/render-blocks'
 import type {
@@ -31,21 +26,13 @@ import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
-import { sellerFacingFindingMeaning, type ExpiredAuditData } from '@/lib/cma/expired-audit'
-import { composeInboundCoverLine } from '@/lib/cma/inbound-packet'
-import { formatClientMlsField } from '@/lib/cma/client-facing'
+import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
-import { coverValueBlockHtml } from '@/lib/cma/cover-value'
+import { coverWorthSentence } from '@/lib/cma/cover-value'
 import {
-  cmaCoverIntroBlurbHtml,
   cmaCoverLabelHtml,
-  cmaProductBarFromExtras,
-  cmaWhyListPageBody,
-  factsFromCmaSurface,
-  placeLabelHtml,
-  resolveSubjectPlaceLinks,
 } from '@/lib/cma/fsbo-cma-render'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -156,7 +143,7 @@ function monthsSince(iso: string | null): number | null {
  * Order: a current photo, else the stale photo captioned honestly, else nothing.
  * Never a map (C9 — comps map is the single map; cover uses photo or empty).
  */
-function heroForSubject(subject: CmaSubject): { src: string | null; caption: string } {
+function heroForSubject(subject: CmaSubject): { src: string | null; caption: string; stale: boolean } {
   // C9: cover may use a photo, never a map — comps pin map is the single letter map.
   const src = sparkPhotoAt(subject.photoUrl, '1024x768')
   const when = monthYear(subject.lastListDate)
@@ -167,6 +154,7 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
     return {
       src,
       caption: `Most recent MLS listing photo${when !== '—' ? ` (${when})` : ''} · MLS ${subject.mlsNumber ?? '—'}`,
+      stale: false,
     }
   }
 
@@ -174,92 +162,44 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
     return {
       src,
       caption: `MLS listing photo from ${when} · MLS ${subject.mlsNumber ?? '—'}. This may not show the home today.`,
+      stale: true,
     }
   }
 
-  return { src: null, caption: 'No MLS photo on file for this home.' }
+  return { src: null, caption: 'No MLS photo on file for this home.', stale: false }
 }
 
-function coverSpecsLine(subject: CmaSubject): string {
-  const baths =
-    subject.baths == null
-      ? null
-      : subject.baths === 1
-        ? '1 bath'
-        : `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} baths`
-  return [
-    subject.beds != null ? `${subject.beds} bedrooms` : null,
-    baths,
-    subject.sqft != null ? `${int(subject.sqft)} sq ft` : null,
-    cleanText(subject.subdivision),
-    subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,
-    subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acre lot` : null,
-    formatClientMlsField(subject.viewDescription),
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
-
+/**
+ * Chapter 0, per the blueprint: a full-bleed listing photo with a CREAM title
+ * block over it. Address, one sentence, who it was prepared for, and the date.
+ *
+ * What came off it: a five-item product bar, a facts blurb, a specs line, a
+ * search story, a photo credit, and a 72px number the reader meets again as
+ * the title of chapter 3. A cover that says everything says nothing, and this
+ * one had a navy scrim over the house so the photograph — the one thing a
+ * seller actually wants to look at — read as a background texture.
+ */
 function coverPage(a: RenderCmaArgs): PageDef {
   // Cover prefers MLS photo; never a second map (C9). Non-map fallback when no photo.
   const hero = heroForSubject(a.subject)
-  const specs = coverSpecsLine(a.subject)
   const prepared = [
-    a.client.name ? `Prepared for ${a.client.name}` : null,
-    `Presented by ${a.broker.displayName}`,
-    a.broker.title,
-    a.broker.phone ? dottedPhone(a.broker.phone) ?? a.broker.phone : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const coverFacts = factsFromCmaSurface({
-    subject: a.subject,
-    pricing: a.pricing,
-    clientName: a.client.name,
-    generatedAtIso: a.generatedAtIso,
-    broker: a.broker,
-  })
-  const places = resolveSubjectPlaceLinks({ subject: a.subject })
-  const primaryPlace = places[0] ?? null
-  const band = a.extras?.band
-  const productBar = cmaProductBarFromExtras({
-    marketPresent: Boolean(a.market),
-    marketGeoLabel: a.market?.geoLabel ?? null,
-    placeLinks: places,
-    nearbyActiveCount: band?.activeCount ?? null,
-    nearbyPendingCount: band?.pendingCount ?? null,
-    nearbyActiveLabels: [],
-    recentSoldCount: a.comps.length,
-    closedSalePrices: [],
-  }).html
-  const subdivLinked = placeLabelHtml(a.subject.subdivision, primaryPlace?.href ?? null)
-  const specsHtml = (() => {
-    if (!specs) return ''
-    const plain = cleanText(a.subject.subdivision) ?? ''
-    if (!subdivLinked || !plain) return `<p class="cover-specs">${esc(specs)}</p>`
-    const idx = specs.indexOf(plain)
-    if (idx < 0) return `<p class="cover-specs">${esc(specs)}</p>`
-    return `<p class="cover-specs">${esc(specs.slice(0, idx))}${subdivLinked}${esc(specs.slice(idx + plain.length))}</p>`
-  })()
+    a.client.name ? `Prepared for ${a.client.name}` : 'Prepared',
+    `by ${a.broker.displayName}, Ryan Realty`,
+  ].join(' ')
+  const worth = coverWorthSentence(a.pricing)
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,
     body: `
   <div class="cover-stage">
     ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
-    <div class="cover-veil" aria-hidden="true"></div>
-    <div class="cover-mast">
+    <div class="cover-plate">
       ${cmaCoverLabelHtml()}
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
-      <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}<br/>${esc(composeInboundCoverLine(a.subject.streetAddress))}</div>
-    </div>
-    <div class="value-block">
-      ${coverValueBlockHtml(a)}
-      ${cmaCoverIntroBlurbHtml(coverFacts)}
-      ${productBar}
-      ${specsHtml}
-      <p class="cover-presented">${esc(prepared)}</p>
-      <p class="hero-caption">${esc(hero.caption)}</p>
+      <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}</div>
+      ${worth ? `<p class="cover-worth">${esc(worth)}</p>` : ''}
+      <p class="cover-presented">${esc(`${prepared} · ${dateLong(a.generatedAtIso)}`)}</p>
+      ${hero.stale ? `<p class="hero-caption">${esc(hero.caption)}</p>` : ''}
     </div>
   </div>`,
   }

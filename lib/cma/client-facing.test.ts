@@ -459,7 +459,7 @@ describe('engine output no longer contains the Tumalo leaks', () => {
     const { html } = renderCmaHtml(args())
     expect(html).not.toMatch(LEAK)
     expect(html).toContain('$1,050,000.')
-    expect(html).toContain('Recommended list $1,050,000')
+    expect(html).toContain('We recommend listing at $1,050,000.')
     expect(html).toContain('Mountain(s)')
     expect(html).toContain('Pricing report')
     expect(html).not.toContain('Verification Trace')

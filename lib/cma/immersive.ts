@@ -8,8 +8,7 @@ import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from '@/lib/cma/inbound-packet'
-import { formatClientMlsField } from '@/lib/cma/client-facing'
-import { cleanText } from '@/lib/cma/render-blocks'
+import { cleanText, dateLong } from '@/lib/cma/render-blocks'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
 import { renderCompPinMapScript } from '@/lib/cma/comp-pin-map'
@@ -32,16 +31,6 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
   const heroImg = s.photoUrl
     ? `<img class="hero-bed" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/><img class="hero-img" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/>`
     : ''
-  const view = formatClientMlsField(s.viewDescription)
-  const specs = [
-    s.beds != null ? `${s.beds} bed` : null,
-    s.baths != null ? `${s.baths} bath` : null,
-    s.sqft != null ? `${s.sqft.toLocaleString('en-US')} sqft` : null,
-    s.yearBuilt != null ? `built ${s.yearBuilt}` : null,
-    view,
-  ]
-    .filter(Boolean)
-    .join(' · ')
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -65,8 +54,10 @@ ${immersiveStylesheet()}
   <div class="in">
     <div class="hero-kick">${esc(inboundImmersiveHeroKick(s.streetAddress, a.generatedAtIso))}</div>
     <h1 class="hero-h">${esc(s.streetAddress)}</h1>
-    <div class="hero-sub">${esc(s.city)}, ${esc(s.state)} ${esc(s.postalCode ?? '')}${cleanText(s.subdivision) ? ` · ${esc(cleanText(s.subdivision)!)}` : ''}${specs ? ` · ${esc(specs)}` : ''}</div>
-    <div class="hero-for">Prepared for ${esc(a.client.name ?? 'the owner')} by ${esc(a.broker.displayName)}, Ryan Realty</div>
+    <div class="hero-sub">${esc(s.city)}, ${esc(s.state)} ${esc(s.postalCode ?? '')}${cleanText(s.subdivision) ? ` · ${esc(cleanText(s.subdivision)!)}` : ''}</div>
+    <div class="hero-for">Prepared for ${esc(a.client.name ?? 'the owner')} by ${esc(a.broker.displayName)}, Ryan Realty · ${esc(
+      dateLong(a.generatedAtIso),
+    )}</div>
     ${immersiveHeroNumberHtml(a)}
   </div>
   <div class="cue" aria-hidden="true"></div>

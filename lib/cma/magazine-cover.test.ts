@@ -136,21 +136,31 @@ function firstPage(html: string): string {
 }
 
 describe('print CMA magazine cover', () => {
-  it('puts the house and the recommended list on one full-bleed stage', () => {
+  // Blueprint chapter 0: full-bleed listing photo, ONE cream title block over
+  // it, the address, one sentence, prepared-for and the date. Everything the
+  // old cover also carried — a five-item product bar, a facts blurb, a specs
+  // line, a search story, a photo credit and a 72px figure the reader meets
+  // again as chapter 3's title — is somewhere it belongs or gone.
+  it('puts the house under one cream title block, and one sentence on it', () => {
     const { html } = renderCmaHtml(args())
     const cover = firstPage(html)
     expect(cover).toContain('cover-stage')
     expect(cover).toContain('class="hero-photo"')
+    expect(cover).toContain('class="cover-plate"')
     expect(cover).toContain('class="cover-title"')
     expect(cover).toContain('648 SE Douglas Street')
-    expect(cover).toContain('Recommended list')
-    expect(cover).toContain('$472,000')
+    expect(cover).toContain('Your home is worth $448,000 to $480,000 today.')
+    expect(cover).toContain('We recommend listing at $472,000.')
+    expect(cover).toContain('Prepared')
     expect(cover).not.toContain('Expected close')
     expect(cover.indexOf('cover-stage')).toBeLessThan(cover.indexOf('hero-photo'))
-    expect(cover.indexOf('hero-photo')).toBeLessThan(cover.indexOf('vb-price'))
-    expect(cover).toContain('3 bedrooms')
-    expect(cover).toContain('1 bath')
-    expect(cover).toContain('1,056 sq ft')
+    expect(cover.indexOf('hero-photo')).toBeLessThan(cover.indexOf('cover-plate'))
+    // Cut from the cover, every one of them.
+    expect(cover).not.toContain('3 bedrooms')
+    expect(cover).not.toContain('1,056 sq ft')
+    expect(cover).not.toContain('cma-product-bar')
+    expect(cover).not.toContain('vb-price')
+    expect(cover).not.toContain('cover-veil')
     expect(cover).not.toContain('stat-strip')
     expect(cover).not.toContain('pg-header')
   })
@@ -162,27 +172,36 @@ describe('print CMA magazine cover', () => {
     expect(css).not.toMatch(/\.page-cover\s+\.hero-photo\s*\{[^}]*height:\s*280px/)
   })
 
-  it('crops the cover photo down so MLS location arrows at the top of the frame sit off the page', () => {
+  it('contains the cover photo rather than cropping type out of it', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
-    expect(css).toMatch(/\.hero-photo\s*\{[^}]*height:\s*1[3-9]\d%/)
-    expect(css).toMatch(/\.hero-photo\s*\{[^}]*top:\s*-/)
-    expect(css).not.toMatch(/\.hero-photo\s*\{[^}]*inset:\s*0/)
+    // Cropping to fill cut the landmark callouts off both edges of 2465 7th's
+    // annotated aerial, and no URL tells us whether a photo carries type.
+    expect(css).toMatch(/\.hero-photo\s*\{[^}]*object-fit:\s*contain/)
+    expect(css).not.toMatch(/\.hero-photo\s*\{[^}]*object-fit:\s*cover/)
+    expect(css).not.toMatch(/\.hero-photo\s*\{[^}]*top:\s*-/)
   })
 
-  it('hides the cover product bar on a phone so the specs line stays in view', () => {
+  it('lets the presented line wrap on a phone rather than clipping the client name', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
+    // It used to be nowrap + ellipsis, which cut "Prepared for" off the name
+    // of the person the document is addressed to.
     expect(css).toMatch(
-      /@media screen and \(max-width: 700px\)[\s\S]*\.page-cover \.cma-product-bar\s*\{[^}]*display:\s*none/,
+      /@media screen and \(max-width: 700px\)[\s\S]*\.cover-presented, \.hero-caption\s*\{[^}]*white-space:\s*normal/,
     )
-    expect(css).toMatch(
-      /@media screen and \(max-width: 700px\)[\s\S]*\.cover-specs\s*\{[^}]*white-space:\s*nowrap/,
-    )
+    expect(css).not.toMatch(/\.cover-specs\s*\{[^}]*white-space:\s*nowrap/)
   })
 
-  it('puts an opaque navy field behind the cover title so MLS location type in the photo cannot sit on the address', () => {
+  it('sets the title on an opaque cream plate, not on the photograph', () => {
     const css = cmaStylesheet('https://ryan-realty.com')
-    expect(css).toMatch(/\.cover-mast\s*\{[^}]*background:\s*linear-gradient/)
-    expect(css).toMatch(/\.cover-mast\s*\{[^}]*top:\s*0/)
+    // Nothing sits on the photo any more, so the house needs no scrim over it
+    // to keep type legible — the navy masthead and the full-frame veil are
+    // both gone and the plate is a solid cream field.
+    expect(css).toMatch(/\.cover-plate\s*\{[^}]*background:\s*var\(--cream\)/)
+    // Last in the stage's flex column, so the photo takes the rest of the page.
+    expect(css).toMatch(/\.cover-stage\s*\{[^}]*flex-direction:\s*column/)
+    expect(css).not.toContain('.cover-mast')
+    expect(css).not.toContain('.cover-veil')
+    expect(css).toMatch(/\.cover-title\s*\{[^}]*color:\s*var\(--navy\)/)
   })
 
   it('keeps the cover recommended-list figure inside 375 after the desk-size 72px rule', () => {
