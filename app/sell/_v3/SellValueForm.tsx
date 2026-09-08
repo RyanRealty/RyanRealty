@@ -3,14 +3,37 @@
 /**
  * /sell capture. Address field is the spine. One filled ask: Value my home.
  * Posts through submitSellerLPForm with pagePath="/sell" and formId get-value.
+ *
+ * FOUR STEPS, IN THIS ORDER (site queue SITE-02 + SITE-10, Matt 2026-09-07):
+ *
+ *   address  → the ask. Fires `address_submit` so the share of address submits
+ *              that reach a contact is measurable at all — it was not before,
+ *              which is why the node's accept test could not be read.
+ *   answer   → what the address BOUGHT: the place's verdict drawn as supply
+ *              against pace, how fast homes go under contract, and the
+ *              comparable closes the CMA engine already found. No dollar
+ *              figure (Matt's ruling). This is the step that did not exist.
+ *   contact  → email required, phone optional, name optional.
+ *   when     → the timeframe, asked AFTER the answer (SITE-10). Choosing it
+ *              submits: a question that is also the button is a question
+ *              almost everyone answers, which is what the 80% accept needs.
+ *
+ * The answer step is deliberately thin here: everything it draws lives in
+ * SellAnswer.tsx against the SellAnswerData type, so the drawing can be
+ * replaced without touching this file.
+ *
+ * ATTRIBUTION. `readAskSource()` is read once at submit and feeds BOTH the GA4
+ * event (`ask_source`, never `source` — that key is taken and means the form)
+ * and the CMA request metadata, so a submit the sticky control sent can be
+ * counted in GA4 and audited in the row it created.
  */
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { readAskSource, withAskSource, type AskSource } from '@/lib/ask-source'
 import {
   submitSellerLPForm,
   type SellerLPTimeline,
@@ -19,6 +42,10 @@ import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { CONTACT } from '@/lib/brand/contact'
 import { publishSellValuationConfirm } from '@/lib/sell/publish-sell-valuation'
+import { answerSellValue } from './sell-answer-actions'
+import { SellAnswer } from './SellAnswer'
+import { sellAnswerHasSubstance, type SellAnswerData } from './sell-answer'
+import './sell-answer.css'
 
 declare global {
   interface Window {
@@ -26,13 +53,16 @@ declare global {
   }
 }
 
-type Step = 'address' | 'qualify' | 'success'
+type Step = 'address' | 'answer' | 'qualify' | 'when' | 'success'
 
 const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[] = [
-  { value: 'ready-now', label: 'Ready to sell', sub: 'Listing in the next 90 days.' },
-  { value: 'next-3-6', label: 'Sometime this year', sub: 'Planning ahead.' },
-  { value: 'exploring', label: 'Just curious', sub: 'Here for the number only.' },
+  { value: 'ready-now', label: 'Ready now', sub: 'Listing in the next 90 days.' },
+  { value: 'next-3-6', label: 'In the next three to six months', sub: 'Planning the move.' },
+  { value: 'exploring', label: 'Just exploring', sub: 'Want the number, no plans yet.' },
 ]
+
+/** The lane that gets a booking prompt: a seller listing inside 90 days. */
+const NEAR_TERM: SellerLPTimeline = 'ready-now'
 
 type Props = {
   pagePath?: string
@@ -42,6 +72,7 @@ type Props = {
 export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Props) {
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState('')
+  const [answer, setAnswer] = useState<SellAnswerData | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -50,6 +81,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [isHot, setIsHot] = useState(false)
+  const [bookLane, setBookLane] = useState(false)
 
   const addressFieldId = `${formId}-address`
 
@@ -61,11 +93,30 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       setError('Please enter a complete property address.')
       return
     }
-    setStep('qualify')
+    // The accept test for this node is the share of ADDRESS submits that end in
+    // a valuation request. Without this event there is no denominator.
+    try {
+      trackEvent('address_submit', { form: 'get-value', surface: 'sell' })
+    } catch {
+      // tracking helper missing in some envs
+    }
+    startTransition(async () => {
+      const result = await answerSellValue({ address: v })
+      if (!result.ok) {
+        // The answer is a bonus, never a gate: a visitor whose address we
+        // cannot place still gets to ask for the written valuation.
+        setAnswer(null)
+        setStep('qualify')
+        return
+      }
+      setAnswer(sellAnswerHasSubstance(result.answer) ? result.answer : null)
+      setStep(sellAnswerHasSubstance(result.answer) ? 'answer' : 'qualify')
+    })
   }
 
-  function submit() {
+  function submit(chosen: SellerLPTimeline) {
     setError(null)
+    const askSource: AskSource | null = readAskSource()
     startTransition(async () => {
       const result = await submitSellerLPForm({
         smsConsent,
@@ -73,7 +124,8 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
-        timeline: (timeline || undefined) as SellerLPTimeline | undefined,
+        timeline: chosen,
+        askSource,
         sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
         source: 'seller-lp',
         pagePath,
@@ -99,11 +151,18 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         }
       }
       try {
-        trackEvent('generate_lead', { source: 'seller_lp', classification: result.classification })
+        trackEvent(
+          'generate_lead',
+          withAskSource(
+            { source: 'seller_lp', classification: result.classification, timeframe: chosen },
+            askSource,
+          ),
+        )
       } catch {
         // tracking helper missing in some envs
       }
       setIsHot(result.classification === 'hot')
+      setBookLane(chosen === NEAR_TERM)
       setStep('success')
     })
   }
@@ -116,7 +175,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       setError('Please enter a valid email.')
       return
     }
-    submit()
+    setStep('when')
   }
 
   if (step === 'success') {
@@ -126,6 +185,16 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           Got it. Your home value is on its way.
         </h2>
         <p className="mt-3 text-foreground">{publishSellValuationConfirm(isHot)}</p>
+        {bookLane ? (
+          <p className="mt-3 text-foreground">
+            You said you are ready now, so the useful next thing is twenty minutes on the phone
+            or at the house.{' '}
+            <a href="/book" className="font-semibold text-primary underline underline-offset-2">
+              Pick a time that works
+            </a>
+            , and we will bring the numbers with us.
+          </p>
+        ) : null}
         <p className="mt-3 text-muted-foreground">
           Prefer to talk right now? Call Matt at{' '}
           <a href={`tel:${CONTACT.phoneDirectTel}`} className="font-semibold text-primary underline underline-offset-2 tabular-nums">
@@ -133,6 +202,87 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           </a>
           .
         </p>
+      </div>
+    )
+  }
+
+  if (step === 'when') {
+    return (
+      <div>
+        <Button
+          type="button"
+          variant="link"
+          onClick={() => {
+            setError(null)
+            setStep('qualify')
+          }}
+          className="mb-3 h-auto justify-start p-0"
+        >
+          Back
+        </Button>
+        <h2 className="font-display text-xl font-semibold text-primary">
+          Last thing: when are you thinking of selling?
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          It changes what we send you, not whether we send it.
+        </p>
+        <div className="mt-5 grid gap-2">
+          {TIMELINE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                setTimeline(opt.value)
+                submit(opt.value)
+              }}
+              className={cn(
+                'min-h-11 border border-border p-4 text-left',
+                'hover:border-primary focus-visible:border-primary',
+                timeline === opt.value && 'border-primary',
+              )}
+            >
+              <span className="block font-semibold text-foreground">{opt.label}</span>
+              <span className="mt-0.5 block text-sm text-muted-foreground">{opt.sub}</span>
+            </button>
+          ))}
+        </div>
+        {pending ? <p className="mt-3 text-sm text-muted-foreground">Sending</p> : null}
+        {error ? (
+          <p className="mt-3 text-sm font-medium text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
+  if (step === 'answer' && answer) {
+    return (
+      <div>
+        <Button
+          type="button"
+          variant="link"
+          onClick={() => {
+            setError(null)
+            setStep('address')
+          }}
+          className="mb-3 h-auto justify-start p-0"
+        >
+          Edit address
+        </Button>
+        <SellAnswer answer={answer} />
+        <p className="mt-5 text-foreground">
+          The one thing that is not on this page is the price. That takes the comparable sales
+          side by side, and it comes back written, inside 24 hours.
+        </p>
+        <Button
+          type="button"
+          onClick={() => setStep('qualify')}
+          className="mt-4 min-h-11 w-full text-base"
+        >
+          Send me the written valuation
+        </Button>
       </div>
     )
   }
@@ -145,11 +295,11 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
           variant="link"
           onClick={() => {
             setError(null)
-            setStep('address')
+            setStep(answer ? 'answer' : 'address')
           }}
           className="mb-3 h-auto justify-start p-0"
         >
-          Edit address
+          {answer ? 'Back to the market read' : 'Edit address'}
         </Button>
         <p className="text-sm text-muted-foreground">{address}</p>
         <h2 className="mt-2 font-display text-xl font-semibold text-primary">
@@ -201,32 +351,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
               className="mt-2 min-h-11 text-base"
             />
           </div>
-
-          <fieldset>
-            <legend className="text-sm font-medium">When are you thinking of selling?</legend>
-            <RadioGroup
-              value={timeline}
-              onValueChange={(v) => setTimeline(v as SellerLPTimeline)}
-              className="mt-3 gap-2"
-            >
-              {TIMELINE_OPTIONS.map((opt) => (
-                <Label
-                  key={opt.value}
-                  htmlFor={`sell-timeline-${opt.value}`}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-3 border p-4 font-normal',
-                    timeline === opt.value ? 'border-primary' : 'border-border',
-                  )}
-                >
-                  <RadioGroupItem id={`sell-timeline-${opt.value}`} value={opt.value} className="shrink-0" />
-                  <span className="min-w-0 leading-tight">
-                    <span className="block font-semibold text-foreground">{opt.label}</span>
-                    <span className="mt-0.5 block text-sm text-muted-foreground">{opt.sub}</span>
-                  </span>
-                </Label>
-              ))}
-            </RadioGroup>
-          </fieldset>
         </div>
 
         <SmsConsentDisclosure className="mt-4" checked={smsConsent} onCheckedChange={setSmsConsent} />
@@ -238,7 +362,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         ) : null}
 
         <Button type="submit" disabled={pending} className="mt-6 min-h-11 w-full text-base">
-          {pending ? 'Sending' : 'Send the report'}
+          Continue
         </Button>
       </form>
     )
@@ -267,7 +391,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       ) : null}
 
       <Button type="submit" disabled={pending} className="mt-4 min-h-11 w-full text-base">
-        {pending ? 'Working' : 'Value my home'}
+        {pending ? 'Reading the market' : 'Value my home'}
       </Button>
     </form>
   )

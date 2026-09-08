@@ -66,6 +66,14 @@ export type SellerLPSubmission = {
   pagePath?: string
   /** Optional "About your home" details the seller can add to sharpen the CMA. */
   homeDetails?: SellerHomeDetails
+  /**
+   * WHICH CONTROL sent the visitor to this ask — sticky, hero, chrome, inline,
+   * footer (lib/ask-source.ts). Site queue SITE-05: `source` on this submission
+   * already means WHICH FORM, so the control gets its own key and never
+   * overwrites the other. Optional and additive: the seller LP does not stamp
+   * one and keeps behaving exactly as before.
+   */
+  askSource?: string | null
 }
 
 /** Only accept a simple site-relative path for sourceUrl attribution. */
@@ -222,6 +230,13 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     const lpSource = submission.source ?? 'seller-lp'
     const isListNowLp = lpSource === 'list-now-lp'
     const { classification, tierTag } = classifyTimeline(timeline)
+    // SITE-05: the control that sent the visitor here, kept to the closed set
+    // lib/ask-source.ts publishes so an audit reads a fixed column, not free text.
+    const askSource = ['sticky', 'hero', 'chrome', 'inline', 'footer'].includes(
+      String(submission.askSource ?? ''),
+    )
+      ? String(submission.askSource)
+      : null
 
     // ─── Inbound attribution UTMs → CRM sourceUrl ──────────────────────────
     // CRM's /v1/people API exposes sourceUrl but NOT utmContent/utmCampaign
@@ -470,6 +485,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         isSellerCurious: classification === 'nurture' ? 'true' : 'false',
         sellerPropertyAddress: parsed.full,
         ...(reasonLabel ? { sellerReason: reasonLabel } : {}),
+        ...(askSource ? { askSource } : {}),
       }
 
       // 3. Lead-origin note → crm_timeline. Tells the broker WHY this lead came
@@ -484,7 +500,11 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       const originContext: LeadOriginContext = {
         source: `source:${lpSource}`,
         sourceLabel: isListNowLp ? 'Seller LP (List Now / high intent)' : 'Seller LP (Home Value)',
-        landingPage: isListNowLp ? '/lp/sell-your-home' : '/lp/seller-home-value',
+        // The page the visitor ACTUALLY submitted from. This used to be hard-set
+        // to an LP path, so every /sell lead reached the broker's origin note
+        // reading "Page: /lp/seller-home-value" — verified 2026-09-08 on a live
+        // /sell submit. The broker acts on that line, so it has to be true.
+        landingPage: leadPagePath,
         utmSource: originUtmSource,
         utmMedium: originUtmMedium,
         utmCampaign: originUtmCampaign,
@@ -581,6 +601,14 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         leadClassification: classification,
         fubPersonId,
         sellerHomeDetails: submission.homeDetails ?? null,
+        askSource,
+        // SITE-10, the near-term lane: a seller listing inside 90 days is the
+        // one whose next useful step is a conversation, not another document,
+        // so their same-minute confirmation carries the booking link. Every
+        // other lane gets the confirmation unchanged. This is a system
+        // confirmation to a visitor who just submitted their own request
+        // (CLAUDE.md §1), not a broker-initiated send.
+        leadBookHref: timeline === 'ready-now' ? `${siteUrl}/book` : null,
       })
       if (!created.ok) {
         console.warn('[seller-lp] createCmaRequest failed:', created.error)

@@ -92,6 +92,13 @@ export async function sendLeadConfirmation(params: {
   brokerEmail?: string | null
   /** Assigned broker's PUBLISHABLE line (E.164 twilio_number). Matt fallback. */
   brokerPhone?: string | null
+  /**
+   * Absolute booking URL, offered only when the caller says this lead's next
+   * useful step is a conversation — site queue SITE-10's near-term lane (a
+   * seller listing inside 90 days). Null or absent sends the confirmation
+   * exactly as it read before, which is what every other lane gets.
+   */
+  bookHref?: string | null
 }): Promise<void> {
   // Suppression chokepoint (fails closed). A lead who opted out of email never
   // gets the confirmation by EITHER path (Gmail send-as-matt or Resend
@@ -112,6 +119,12 @@ export async function sendLeadConfirmation(params: {
       : 'matt@ryan-realty.com'
   const signPhone = formatPublishedPhone(params.brokerPhone) ?? '541.703.3095'
   const signPhoneHref = (params.brokerPhone ?? '+15417033095').replace(/[^\d+]/g, '')
+  // Only an absolute https URL on our own site becomes a link in a lead's
+  // confirmation — never a caller-supplied string rendered as-is.
+  const bookHref =
+    params.bookHref && /^https:\/\/[a-z0-9.-]*ryan-realty\.com\/[A-Za-z0-9\-/?=&]*$/.test(params.bookHref)
+      ? params.bookHref
+      : null
   const subject = `Your home value request for ${params.subjectAddress}`
   const text = [
     `Hi ${firstName},`,
@@ -124,6 +137,14 @@ export async function sendLeadConfirmation(params: {
     '',
     `If you have anything you'd like us to know upfront, like recent`,
     `improvements, timing, or specific questions, just reply to this email.`,
+    ...(bookHref
+      ? [
+          '',
+          `You said you are ready now, so if it is easier to talk it through,`,
+          `pick a time here and ${brokerFirst} will bring the numbers:`,
+          bookHref,
+        ]
+      : []),
     '',
     signName,
     `Ryan Realty`,
@@ -137,6 +158,11 @@ export async function sendLeadConfirmation(params: {
   <p>Thanks for requesting a Comparative Market Analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>.</p>
   <p>${escapeHtml(brokerFirst)} from Ryan Realty will pull recent comparable sales, apply the right adjustments for your property, and email you a personalized analysis within the next business day.</p>
   <p>If you have anything you'd like us to know upfront, like recent improvements, timing, or specific questions, just reply to this email.</p>
+  ${
+    bookHref
+      ? `<p>You said you are ready now, so if it is easier to talk it through, <a href="${escapeHtml(bookHref)}" style="color:#102742;font-weight:600;">pick a time here</a> and ${escapeHtml(brokerFirst)} will bring the numbers.</p>`
+      : ''
+  }
   <p style="margin-top:32px;color:#5b6473;font-size:13px;">
     ${escapeHtml(signName)}<br/>
     Ryan Realty<br/>
