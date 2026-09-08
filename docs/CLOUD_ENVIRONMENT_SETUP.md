@@ -100,12 +100,23 @@ edit access to the environment as equivalent to handing over `.env.local`.
 
 ## 3. Setup script
 
-Paste this into the **Setup script** field:
+**Where the field is:** claude.ai/code, the environment chip under the composer, Cloud,
+hover RYANREALTY_CLOUD, the gear. It is not under Settings > Claude Code (that page is
+OAuth tokens and sharing), `/code/environments` is a 404, and the routine API cannot set it.
+
+**What is set on RYANREALTY_CLOUD (2026-09-08):**
 
 ```bash
 #!/bin/bash
-bash scripts/cloud-setup.sh || true
+CLOUD_SETUP_BROWSERS=1 bash scripts/cloud-setup.sh || true
 ```
+
+`CLOUD_SETUP_BROWSERS=1` is deliberate for the site fleet. Every site lane's taste pass
+runs `scripts/take-route-shots.mjs`, which calls `chromium.launch()`, so the browser goes
+into the snapshot once instead of being downloaded by every lane. The field was empty
+from 25 August to 8 September: every fire paid a 76-second `npm ci` and no lane had a
+browser at all. If the environment build ever exceeds its five-minute budget, drop the
+variable and let lanes run `npm run setup:browsers` themselves.
 
 The `|| true` matters: a non-zero exit means **the session fails to start**, and
 this script's apt/font/npm steps are all non-critical individually.

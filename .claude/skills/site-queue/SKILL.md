@@ -142,6 +142,18 @@ re-open date (`blockWorkNode(id, reason, until)`). The boot brief moves it back 
 `blocked` node with NO `blocked_until` is blocked on a person, and its
 `blocked_reason` must contain the question in one line.
 
+**A measurement window does not freeze the page (Matt 2026-09-08).** Asked whether the
+eleven items waiting on windows should stay untouched until October, Matt chose quality
+passes allowed, window keeps running. So an item that is `blocked` on a dated window may
+still take a taste pass: rebuild the look, raise the evaluator score, ship it. Three rules
+make that safe. The pass is recorded on the SAME node that owns the page — "a page with no
+node is not touched" still binds, and a quality pass is never a reason to open a new node.
+`blocked_until` is NOT moved; the window keeps running to its original date. And the pass
+appends to the node's evidence with its own before-and-after marks, so when the window comes
+due the conversion numbers can be read against a page that is known to have changed
+mid-window. A window is there to measure whether the page converts, not to protect a page
+Matt does not want to look at.
+
 **Heartbeat, or lose the claim (2026-09-08).** A SITE-* claim untouched for
 `SITE_CLAIM_IDLE_HOURS` (3, `lib/data/loop/work-node.ts`, the grinder's own guard) is
 released by the next boot's brief; the day-long window stays for every other domain. The
