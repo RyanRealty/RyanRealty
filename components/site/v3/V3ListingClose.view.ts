@@ -120,7 +120,12 @@ export function buildCloseSubject(input: CloseSubjectInput): CloseSubject | null
     source: [
       'public.listings, this listing',
       input.drop ? `OriginalListPrice ${input.drop.original} to ListPrice ${input.drop.ask}` : null,
-      input.onMarketDate ? `OnMarketDate ${input.onMarketDate.slice(0, 10)}, days live to today` : null,
+      // Name the count, not just the field. "days live to today" left a reader
+      // who counted calendar days from the date getting a different number than
+      // the page showed, back when this counted elapsed 24-hour periods.
+      input.onMarketDate
+        ? `OnMarketDate ${input.onMarketDate.slice(0, 10)}, calendar days to today in America/Los_Angeles`
+        : null,
       'not DaysOnMarket, which is list-to-close',
     ]
       .filter(Boolean)

@@ -155,14 +155,22 @@ describe('buildCloseSubject — this house, on the same axes', () => {
 
   it('counts days LIVE from OnMarketDate, and says so — never DaysOnMarket', () => {
     const s = buildCloseSubject({ addressLine: '20892 Caldera Ct', drop, onMarketDate: '2026-01-17T20:57:12Z', now })!
-    expect(s.daysLive).toBe(233)
-    expect(s.line).toBe('20892 Caldera Ct has taken 7.2% off its first ask and has been on the market 233 days.')
+    // CALENDAR days, January 17 to September 8: 14 + 28 + 31 + 30 + 31 + 30 +
+    // 31 + 31 + 8 = 234. The 233 this asserted until 2026-09-08 was elapsed
+    // 24-hour periods, which reads a day short of the date beside it whenever
+    // the home was listed in the afternoon. See lib/listing/days-live.ts.
+    expect(s.daysLive).toBe(234)
+    expect(s.line).toBe('20892 Caldera Ct has taken 7.2% off its first ask and has been on the market 234 days.')
     expect(s.source).toContain('OnMarketDate')
     expect(s.source).toContain('not DaysOnMarket')
+    // The count must be reproducible from the date the citation prints.
+    expect(s.source).toContain('calendar days')
   })
 
   it('says only what it has when the home has never cut', () => {
-    const s = buildCloseSubject({ addressLine: '1 Main St', drop: null, onMarketDate: '2026-08-30T00:00:00Z', now })!
+    // 11am Pacific on August 30. Midnight UTC would be the 29th in Oregon, and
+    // real OnMarketDate values carry a real time of day (timestamptz).
+    const s = buildCloseSubject({ addressLine: '1 Main St', drop: null, onMarketDate: '2026-08-30T18:00:00Z', now })!
     expect(s.cutDepth).toBeNull()
     expect(s.cutLabel).toBeNull()
     expect(s.line).toBe('1 Main St has been on the market 9 days.')
@@ -194,7 +202,7 @@ describe('buildCloseSubject — this house, on the same axes', () => {
     const by = (id: string) => view.readings.find((r) => r.id === id)!
     expect(by('depth').value).toBe('7.2%')
     expect(by('depth').against).toBe('off this home’s first ask, against a typical 5.9%')
-    expect(by('pace').value).toBe('233 days')
+    expect(by('pace').value).toBe('234 days')
     expect(by('pace').against).toBe('this home has been listed, against 29 days for the typical Bend sale')
   })
 
