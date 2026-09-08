@@ -133,7 +133,18 @@ describe('months of supply is drawn, not asserted', () => {
     // 1036 closes in six months. 1036 / 6 = 172.67, and 671 / 3.886 = 172.67.
     expect(Math.round(salesPerMonthFrom(671, 3.88610038610039) ?? 0)).toBe(173)
     expect(Math.round((1036 / 6) * 100) / 100).toBe(172.67)
-    expect(supply()?.bars?.map((b) => b.value)).toEqual([671, 173])
+    // The bar's VALUE is the true pace, so the bar's length is proportional to
+    // the real number; the LABEL is what the reader reads, and it rounds only
+    // when the rounded division still lands on the published months of supply
+    // (671 / 173 = 3.9, so 173 here). Sunriver on the same day proved why the
+    // two differ: 48 against 8.28 printed as 8, and 48 / 8 is 6.0 — a buyer's
+    // market under a caption that said balanced. lib/site/answer-figures.ts.
+    const bars = supply()?.bars ?? []
+    expect(bars.map((b) => b.name)).toEqual(['For sale right now', 'Under contract in a month'])
+    expect(bars[0]?.value).toBe(671)
+    expect(bars[1]?.value).toBeCloseTo(172.67, 1)
+    expect(bars.map((b) => b.label)).toEqual(['671', '173'])
+    expect((671 / Number(bars[1]?.label)).toFixed(1)).toBe('3.9')
   })
 
   it('draws two named counts on one scale, never one bar and never a tile', () => {

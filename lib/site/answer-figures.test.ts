@@ -56,4 +56,21 @@ describe('the supply two-bar · a reader can reproduce the verdict', () => {
     expect(sold.label).toBe('8')
     expect(supply.claim).toContain('about 8 of them')
   })
+
+  // Precision only where it changes the answer. Bend the same day: 671 for sale
+  // against 172.67 a month, and 671 / 173 still reads 3.9, so the whole number
+  // is honest AND easier to read than "172.7 homes a month".
+  it('keeps the whole number when the rounded division still lands on the figure', () => {
+    const supply = supplyOf({
+      ...base,
+      placeLabel: 'Bend',
+      activeCount: 671,
+      salesPerMonth: 671 / 3.886,
+      monthsOfSupply: '3.9',
+      verdictLabel: "seller's market",
+    })!
+    const sold = supply.bars!.find((b) => b.name === 'Under contract in a month')!
+    expect(sold.label).toBe('173')
+    expect((671 / 173).toFixed(1)).toBe('3.9')
+  })
 })

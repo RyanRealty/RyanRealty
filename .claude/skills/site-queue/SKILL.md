@@ -9,7 +9,7 @@ Matt, 2026-09-07: "I want the go to run until done, not do a loop and stop." Thi
 skill is that. One firing keeps taking items until nothing eligible is left. The
 only reasons it pauses are written below, and none of them is "finished an item."
 
-**Matt's words.** "run loop" (plain text) runs this protocol in the current session until its context is spent, then writes the handoff; the hourly cloud routine "Site queue grinder" continues from the graph, so nothing waits. `/loop /site-queue` runs this protocol and keeps the session
+**Matt's words.** "run loop" (plain text) runs this protocol in the current session until its context is spent, then writes the handoff; the cloud routine "Site queue grinder" (every four hours) continues from the graph, so nothing waits. `/loop /site-queue` runs this protocol and keeps the session
 waking itself (dynamic pacing, `ScheduleWakeup`) until the queue is empty, at which
 point the loop stops itself. `/site-queue` alone runs one grind until the context is
 nearly spent, then writes the handoff and spawns a fresh session to continue. "go"
@@ -38,6 +38,47 @@ system, TASTE.md), and `docs/DEVELOPMENT_PROCESS.md`.
   than an incomparable one; `ci:taste-canon` computes the drift.
 - A commit touching `app/**` or `components/site/**` carries `Node: <id>` (G72). A
   new audit document is refused; findings append to a node.
+
+## If you are a cloud session
+
+You are one if there is no browser pane and `dotenv` prints `injecting env (0) from
+.env.local`. Nothing is wrong: a cloud sandbox is cloned from GitHub, `.env.local` is
+gitignored, and the credentials come from the environment's own configuration instead.
+`docs/CLOUD_ENVIRONMENT_SETUP.md` is that configuration.
+
+**Install the browser before you build anything.** The taste pass is what decides
+whether an item is done, it runs on `scripts/take-route-shots.mjs`, and that file calls
+`chromium.launch()`. The npm package is installed; the browser binary is NOT —
+`scripts/cloud-setup.sh` skips it on purpose (five-minute environment build budget,
+`CLOUD_SETUP_BROWSERS=1` to include it). A cloud lane that skips this reaches the
+evaluator, cannot capture a shot, and is then tempted to call the item done without one:
+
+```bash
+npm run setup:browsers   # npx playwright install --with-deps chromium
+```
+
+Run it once at boot, in the background if you like, not when the taste pass is already
+blocked.
+
+The rest of what differs, none of it optional:
+
+- **Dev server:** `next dev --webpack`. Turbopack refuses the worktree `node_modules`
+  symlink (memory `reference_worktree_node_modules_turbopack`).
+- **Reading production:** curl with a real browser user agent. The WAF blocks curl's
+  default, so you read a bot screen and conclude the page is broken
+  (`reference_bot_screen_blocks_automation_uas`).
+- **Scratch files:** repo-root `scratchpad/` — gitignored and excluded from tsconfig. A
+  scratch script written outside the repo cannot resolve `node_modules`, and a
+  top-level `await` needs the `.mts` extension. A cloud fire on 2026-09-08 lost four
+  tool calls rediscovering both.
+- **Deleting:** name each file, `rm <file>`. A repo hook refuses recursive and
+  glob deletes, and it matches the literal text of your command — so it also fires on a
+  command that merely quotes one.
+- **Sends:** never message a real person (CLAUDE.md §1). A test submit uses an address
+  whose local part contains `fleet-test`, which the CRM suppresses by design.
+- **Push:** `npm run push` runs a full `next build`. On a 16 GB cloud box that can
+  SIGABRT during static generation; `NODE_OPTIONS=--max-old-space-size` is the first
+  lever, not a code bug.
 
 ## The round
 
@@ -142,6 +183,36 @@ at 1440 and 375 into the route's `ui_kits/<route>/shots/`); the gate list that b
 line keys, script-stat-source); the commit shape (`Node: <id>` trailer); and the
 push shape (`npm run gates:stamp`, then push its own branch, never `npm run push`
 from a worktree, memory `reference_npm_push_from_worktree_targets_main`).
+
+**A public-page lane runs the RUNTIME gates before it reports (2026-09-08).**
+`npm run ci:gates` is the static chain; six gates never run in it because they
+measure a REAL rendered page on a running server, and a lane that only runs the
+static chain reports all-green and fails CI after the push. On 2026-09-08 both
+lanes of one round did exactly that, on the same gate, in the same hour: SITE-12
+and SITE-08 each reported their local chain green (154/154 and all-pass) and both
+failed `lint-and-build` on `ci:tap-targets` — a 67x22.3 link and a 70.5x18.3
+disclosure toggle. Neither could have caught it locally, because until this entry
+there was no local way to run it.
+
+There is now. After the build, from the lane's own worktree:
+
+```bash
+npx next build && PORT=<free port> npm run ci:runtime-gates
+```
+
+`ci:runtime-gates` starts the production server once and runs the three gates CI
+runs against it — `ci:route-smoke`, `ci:page-payload`, `ci:tap-targets` — in the
+same order and with the same one-server shape as `.github/workflows/ci.yml`. It
+belongs in every lane brief that touches `app/**` or `components/site/**`, beside
+the static chain, and its output goes in the lane's report. `ci:a11y` and
+`ci:lighthouse` are in the same CI job but have never executed (noted in ci.yml
+since 2026-08-02), so they are not in this command; do not add them without
+first making them run.
+
+Never launder a runtime gate to get past it: `scripts/tap-targets-baseline.json`
+and the payload baseline are shrink-only and exist for pre-existing debt. A
+control under 44x44 gets a real hit area, or a full-size control doing the same
+job on the same page (WCAG 2.5.8).
 
 **The taste pass runs inside the lane, against the lane's own dev server, before
 the branch is pushed.** The 2026-09-08 forensic audit of the queue's first day

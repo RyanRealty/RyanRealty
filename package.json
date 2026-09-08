@@ -218,6 +218,8 @@
     "ci:route-smoke:start": "start-server-and-test start:ci http://127.0.0.1:3000 ci:route-smoke",
     "ci:tap-targets": "node scripts/check-tap-targets.mjs",
     "ci:tap-targets:baseline": "node scripts/check-tap-targets.mjs --write-baseline",
+    "ci:runtime-gates:run": "npm run ci:route-smoke && npm run ci:page-payload && npm run ci:tap-targets",
+    "ci:runtime-gates": "start-server-and-test start:ci http://127.0.0.1:3000 ci:runtime-gates:run",
     "ci:tap-targets:start": "start-server-and-test start:ci http://127.0.0.1:3000 ci:tap-targets",
     "smoke:search": "node scripts/smoke-search-renders.mjs",
     "ci:dal-column-quoting": "node scripts/check-dal-column-quoting.mjs",
@@ -524,6 +526,7 @@
     "supabase": "^2.76.16",
     "tailwindcss": "^4",
     "tesseract.js": "^7.0.0",
+    "tsx": "^4.23.13",
     "tweetsodium": "^0.0.4",
     "typescript": "^5",
     "vitest": "^4.0.18"

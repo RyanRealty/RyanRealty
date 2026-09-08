@@ -95,18 +95,27 @@ const one = (value: number) => Math.round(value).toLocaleString('en-US')
  *
  * Months of supply IS homes-for-sale divided by this number, and the drawing
  * invites the division by showing both bars. Rounding the pace to a whole
- * number breaks that: Sunriver on 2026-09-08 was 48 for sale against 8.28 a
- * month = 5.8 months, a balanced market, but the bar printed 8 and 48 / 8 is
- * 6.0 — a BUYER'S market on the canon's own thresholds (<=4 seller, 4-6
- * balanced, >=6 buyer). The reader who checks our work got a different verdict
- * than our caption, and the bar's note claimed the division "recovers it
- * exactly". CLAUDE.md section 0: never round in a way that changes the
- * narrative, and the verdict must match the number.
+ * number usually costs nothing — Bend on 2026-09-08 was 671 for sale against
+ * 172.67 a month, and 671 / 173 still reads 3.9 months — but it is not always
+ * free. Sunriver the same day was 48 against 8.28 = 5.8 months, a balanced
+ * market, while the bar printed 8 and 48 / 8 is 6.0, a BUYER'S market on the
+ * canon's own thresholds (<=4 seller, 4-6 balanced, >=6 buyer). The reader who
+ * checked our work got a different verdict than our caption.
  *
- * So a whole number prints whole, and anything else keeps one decimal.
+ * So the test is the reader's own: round the pace, do the division the drawing
+ * invites, and keep the whole number ONLY if it lands back on the months of
+ * supply we published. Otherwise print a decimal. Precision where it changes
+ * the answer, plain numbers where it does not (CLAUDE.md §0: never round in a
+ * way that changes the narrative).
  */
-const pace = (value: number) =>
-  Number.isInteger(value) ? value.toLocaleString('en-US') : value.toFixed(1)
+function paceLabel(value: number, activeCount: number, monthsOfSupply: string): string {
+  if (Number.isInteger(value)) return value.toLocaleString('en-US')
+  const rounded = Math.round(value)
+  if (rounded > 0 && (activeCount / rounded).toFixed(1) === monthsOfSupply) {
+    return rounded.toLocaleString('en-US')
+  }
+  return value.toFixed(1)
+}
 
 /**
  * The strip's x axis: the close month as a monotonic index (year * 12 + month).
@@ -175,7 +184,7 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
       key: 'supply',
       draw: 'pair',
       caption: 'homes for sale against a month of sales',
-      claim: `${one(input.activeCount)} detached homes are for sale in ${input.placeLabel}, and about ${pace(sold)} of them go under contract in a typical month.`,
+      claim: `${one(input.activeCount)} detached homes are for sale in ${input.placeLabel}, and about ${paceLabel(sold, input.activeCount, input.monthsOfSupply)} of them go under contract in a typical month.`,
       bars: [
         {
           name: 'For sale right now',
@@ -186,8 +195,8 @@ export function buildAnswerFigures(input: AnswerFiguresInput): AnswerFigure[] {
         {
           name: 'Under contract in a month',
           value: sold,
-          label: pace(sold),
-          note: `About ${pace(sold)} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale divided by months of supply recovers it exactly. Not a forecast — it is what the last six months did.`,
+          label: paceLabel(sold, input.activeCount, input.monthsOfSupply),
+          note: `About ${paceLabel(sold, input.activeCount, input.monthsOfSupply)} homes a month, which is the six-month close pace the months-of-supply formula divides by: homes for sale divided by months of supply recovers it exactly. Not a forecast — it is what the last six months did.`,
         },
       ],
       ...(input.verdictLabel
