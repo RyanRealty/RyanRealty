@@ -1100,6 +1100,12 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toContain('class="pin-hit is-subject"')
     expect(html).toMatch(/<button type="button" class="pin-hit" data-comp="1" data-pin="1"/)
     expect(html).toContain('aria-label="1. 730 Quince"')
+    // A cropped tile and a percentage-positioned pin cannot both be right.
+    for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
+      expect(css.replace(/\s+/g, ' ')).toMatch(
+        /\.pin-map-frame \.pin-map ?\{[^}]*(max-height: ?none)/,
+      )
+    }
   })
 
   it('rebuilds chapter 5 with a rounded month axis so a flat market looks flat', () => {

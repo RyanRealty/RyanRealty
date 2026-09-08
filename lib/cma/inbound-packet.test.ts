@@ -88,12 +88,12 @@ describe('cover + immersive openers', () => {
       expect(line).not.toMatch(/how we would market/i)
     }
     expect(cover).toBe('A price opinion for 1842 NW Foo St.')
-    // ONE date on the cover, formatted the way the byline formats it. A raw
-    // ISO slice takes the UTC day and the byline takes the Pacific one, so
-    // a document prepared after 5pm carried two different dates on its cover.
-    expect(kick).toBe('Price opinion · 1842 NW Foo St · Aug 13, 2026')
+    // ONE date on the cover, and it is the byline's. A raw ISO slice takes the
+    // UTC day and the byline takes the Pacific one, so a document prepared
+    // after 5pm carried two different dates on its own cover.
+    expect(kick).toBe('Price opinion · 1842 NW Foo St')
     expect(inboundImmersiveHeroKick('1842 NW Foo St', '2026-09-08T01:00:00.000Z')).toBe(
-      'Price opinion · 1842 NW Foo St · Sep 7, 2026',
+      'Price opinion · 1842 NW Foo St',
     )
     expect(title).toContain('Price opinion')
   })

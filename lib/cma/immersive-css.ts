@@ -149,7 +149,12 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 /* The tile is a bitmap; the pins are DOM over it, positioned from the centre
    and zoom the tile was drawn at. That is what lets a pin be tapped, light its
    row, and be a 44px target on a phone (tasteReview item 2). */
+/* A CROPPED tile and a percentage-positioned pin cannot both be right: the
+   pins are placed as a share of the whole image, so the frame must show the
+   whole image. A cover crop inside a max-height was putting every pin
+   on the wrong house. */
 .pin-map-frame{position:relative;margin:12px 0 6px;line-height:0}
+.pin-map-frame .pin-map{max-height:none;object-fit:fill;aspect-ratio:16/9}
 .pin-hit{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;padding:0;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
 .pin-hit:focus-visible{outline:3px solid rgba(16,39,66,.45);outline-offset:0;border-radius:22px}
 .pin-dot{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cream);font:600 13px/1 Geist,system-ui,sans-serif;box-shadow:0 1px 6px rgba(16,39,66,.35)}

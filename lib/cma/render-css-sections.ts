@@ -293,7 +293,9 @@ export function cmaSectionStyles(): string {
   .pin-map { max-height: 3.4in; object-fit: cover; }
   /* The same DOM pins on paper. Print keeps them: they are the numbers the
      grid above refers to, and a bitmap with no numbers on it is a decoration. */
+  /* A cropped tile and a percentage-positioned pin cannot both be right. */
   .pin-map-frame { position: relative; margin: 8px 0 4px; line-height: 0; }
+  .pin-map-frame .pin-map { max-height: none; object-fit: fill; aspect-ratio: 16 / 9; }
   .pin-hit {
     position: absolute;
     transform: translate(-50%, -50%);
