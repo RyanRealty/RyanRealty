@@ -1,4 +1,82 @@
-# Current — 2026-09-08 (round 3 landed on main: the answer draws, the listing page ends, two §0 defects fixed)
+# Current — 2026-09-08 (SITE-04 verified on a legal instrument; the instrument is the finding)
+
+Owner: Claude (Opus 5), session 019RdEm6, branch `claude/run-loop-w8f3ep` → PR #200 at
+`ddd8f45`. Main merged in at `9efa2cf` (50 commits, 7 conflicts, each resolved keeping both
+sides). `ci:gates` 207/207, `test:unit` 9470 across 887 files.
+
+**The phone alerts bar is repaired and measured.** Round three's compact phone row was a
+regression: it clamped the button to 7.5rem — narrower than its own label, so the glyphs ran
+past the border on both sides at 43px tall — and hid the line carrying the alert scope and
+the unsubscribe while still asking for an email. Smaller and worse. It stacks now: sentence
+on the measure, control on its own full-width row, disclosure kept on screen because it is
+the promise the button collects against. Measured live: **button 335x44 with its label
+inside it**, note 14.4px full cream carrying scope + unsubscribe, bar 164px/20.2%
+(neighborhood) and 174px/21.5% (community). The bar height is still an open defect, named by
+all three evaluators. CSS trap worth keeping: that media block needs the `.v3` prefix,
+because the base rules for the same elements sit later in the file and an unprefixed
+override at equal specificity loses on source order — one measurement cycle to find.
+
+**An Opus scoring pass was produced and then discarded, on purpose.** Five passes had scored
+the three place classes (city 57, neighborhood 60, community 53, 48 named defects). None of
+it could become a receipt: the evaluator ran on `claude-opus-5` and `claude-opus-5` also
+built the change. TASTE.md line 155 requires a separate agent on a DIFFERENT model and
+`check-taste-canon` enforces it. Three Sonnet evaluators re-scored the identical eight
+records per class instead: **city 60 (60/56/61), neighborhood 57 (63/50/57), community 55
+(57/51/55)**, 24 named defects, each hashed to the eight records that ship. **No rise is
+claimed anywhere** — city and neighborhood drift on `evaluatorModel` and `shotsHash`,
+community on `shotsHash` alone.
+
+**THE INSTRUMENT IS THE FINDING, and it changes how the queue's rise rule can work.** Three
+independent scorings of the SAME eight files inside ONE evaluator call spread 5 points on
+city, 6 on community and **13 on neighborhood**. Across calls it is wider: city ran
+78 → 74 → 69 → 57 over four Opus passes today while the code only improved. The last of
+those evaluators diagnosed the fall itself as its own rising scrutiny of sections nobody had
+touched, not a regression. So: **a difference under roughly 13 points on this instrument is
+not evidence about the page**, and "the score must rise" cannot be satisfied by craft work
+on one strip while the untouched sections hold the page down. The next process change should
+be a defect-closure test (did the named defects close?) or a fixed evaluator seed per class,
+not a scalar comparison. Recorded as `instrumentNotes` on all three receipts so it travels
+with the number instead of living in a chat.
+
+**Two sessions collided on the same route, and both lanes' work survives.** `main` carried a
+Sonnet mark of 60 for community (`510dd47`) scored against that route's TOP and ANSWER
+states. It is not overturned on the merits — it looked at a different part of the same page
+— but it could not stand as the file's receipt once this branch re-captured the desktop and
+mobile records it hashes. Its four defects are carried on the SITE-04 node and its
+`answer-*` shots are untouched on disk. Likewise `tokens.css`: two sessions fixed the same
+`ci:tap-targets` failure the same day and the auto-merge stacked both rule bodies with
+duplicate declarations; reconciled into one rule on the `--v3-tap` token rather than either
+side's literal 44px.
+
+**Converged next target** (all three Sonnet evaluators independently, and the Opus pass
+agreed): (1) the Atlas chip/plat layer — a duplicate "Highlands Ridge 3", five chips all
+reading "Tetherow" separated only by a count, and labels hard-clipped mid-word at the 375
+edge with no scroll cue; (2) the market slot must render or collapse — it reserves
+~150-250px of hairline-bounded blank announcing it cannot chart, which reads as a failed
+load, not a designed empty state; (3) section-shape repetition — adjacent sections share one
+eyebrow/heading/claim/figures/source recipe, the stacked-section page the rubric bans by
+name. Two of three also named the Atlas H2 rendering sliced under the sticky nav (missing
+`scroll-margin-top`, confirmed by pixel crop) and the sticky bar covering the market source
+trace mid-sentence.
+
+**Needs its own item, not SITE-04:** the community fold is a "What would your home sell for
+in Tetherow?" valuation card over the Stage photo, ahead of any inventory. `PUBLIC_UI.md`
+puts the master-plan opening at Stage then Atlas and calls value-my-home chrome outside
+`/sell` "wrong-job-chrome" — a canon violation on the fold of a page named for a place.
+
+**Queue state at handoff: nothing is claimable.** No SITE node is `open`. SITE-08 and
+SITE-12 are live under session `01NESdvn` (heartbeats 9 and 12 minutes old) — do not
+preempt. **SITE-03 and SITE-07 are stranded** on `cloud-grinder-2026-09-08-16` with
+heartbeats 164 minutes stale; they pass the 3-hour release at about 19:40Z and are the first
+two a next session should take. Nine nodes are `blocked` with `blocked_until` 2026-10-06
+(shipped and measuring), which is the correct state, not a stall.
+
+**Open for Matt, unanswered:** (a) may the alert capture take an `events` override so a
+price-drop alert is its own measurable row rather than folded into the new-listing row;
+(b) is "every new listing, by email" acceptable in place of the literal "one email per
+listing", given the hourly cron batches sends.
+
+## Prior — 2026-09-08 (round 3 landed on main: the answer draws, the listing page ends, two §0 defects fixed)
 
 Owner: Claude (Opus 5), session 01Aubwpa. **main is at `c26a68d3e`.** Round 3 is on main, gated,
 and its evidence is written to both nodes (`89efe5a4` SITE-02b, `b2366127` SITE-06). 24 commits
