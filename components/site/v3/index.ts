@@ -139,6 +139,27 @@ export { V3Proof } from './V3Proof.client'
 export type { V3ProofProps, V3ProofQuote, V3ProofFigure } from './V3Proof.client'
 
 /**
+ * Proof block (SITE-11): the brokerage's OWN closings as two linked dot
+ * strips against the market's median for the same window, with the record,
+ * the words, and the reach to a broker beside them. V3Proof is the reviews
+ * instrument; this is what our sales did. `proofBlockView()` turns a pulled
+ * `getProofBlock()` into these props — the primitive itself never computes.
+ */
+export { V3ProofBlock } from './V3ProofBlock.client'
+export { V3ProofStars } from './V3Proof.client'
+export { proofBlockView, packLanes, trackPctOf, ratioLabel, askDistanceLabel } from './V3ProofBlock.view'
+export type {
+  V3ProofBlockProps,
+  V3ProofBlockAttribution,
+  V3ProofMark,
+  V3ProofStrip,
+  V3ProofStripKey,
+  V3ProofQuoteView,
+  V3ProofReach,
+} from './V3ProofBlock.client'
+export type { ProofBlockViewInput } from './V3ProofBlock.view'
+
+/**
  * Ask: one screen, every field, one button. The contact form. The Sheet stays
  * the one-question-at-a-time pattern for a valuation.
  */
