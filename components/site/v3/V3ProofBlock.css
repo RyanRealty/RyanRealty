@@ -1,0 +1,576 @@
+/* ===========================================================================
+   V3ProofBlock. The brokerage's own closings drawn as two linked dot strips,
+   with the record, the words, and the reach beside them.
+
+   Every color, size, stroke, and duration comes from ./tokens.css. No raw
+   color is declared here (ci:public-v3 rule 2).
+
+   The composition is deliberately asymmetric: the drawing takes the wide
+   left column and the rail takes a narrow right one, so the section reads as
+   one object rather than a stack of equal bands. At 375 the rail falls under
+   the drawing and the strips keep their full width.
+
+   Motion is one draw-on when the visitor scrolls the section into view
+   (PUBLIC_UI.md section 5: motion that encodes a state change the visitor
+   caused). Under reduced motion the same graphic is simply already drawn.
+   =========================================================================== */
+
+.v3.v3-proofblock {
+  margin: 0;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+}
+
+/* A section that FOLLOWS content opens on the section rule. */
+* + .v3.v3-proofblock {
+  border-top: var(--v3-rule-section);
+}
+
+.v3 .v3-proofblock__head {
+  max-width: var(--v3-measure);
+  margin: 0 auto var(--v3-space-xl);
+}
+
+.v3 .v3-proofblock__claim {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__body {
+  display: grid;
+  gap: var(--v3-space-xl);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+}
+
+@media (min-width: 62rem) {
+  .v3 .v3-proofblock__body {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   The drawing
+   -------------------------------------------------------------------------- */
+
+.v3 .v3-proofblock__drawing {
+  min-width: 0;
+}
+
+.v3 .v3-proofblock__strip + .v3-proofblock__strip {
+  margin-top: var(--v3-space-2xl);
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-proofblock__strip-claim {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__strip-label {
+  margin: var(--v3-space-md) 0 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* The track, in four stacked bands from the top down:
+     0            the market median's name and figure
+     --band-mid   the scale's own anchor, when it has one
+     --band-mark  the active mark's reading
+     --base       the baseline rule, with the marks' lanes rising from it
+   Reserving a band per label is what stops the median block landing on the
+   strip's name (which is normal flow, above the track) or on the anchor. The
+   collision was worst at 375, where every label wraps.
+   `--v3-proofblock-lane` is the vertical step a colliding mark takes. */
+.v3 .v3-proofblock__track {
+  --v3-proofblock-lane: 15px;
+  --v3-proofblock-base: 34px;
+  --v3-proofblock-band-mid: 56px;
+  --v3-proofblock-band-mark: 92px;
+  position: relative;
+  height: 176px;
+  margin-top: var(--v3-space-sm);
+}
+
+.v3 .v3-proofblock__rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--v3-proofblock-base);
+  height: var(--v3-rule-weight-hairline);
+  background: var(--v3-navy-70);
+}
+
+/* The market's median: a full-height tick with its name above it. This is the
+   context series, so it is a tint and a hairline, never a second hue. */
+.v3 .v3-proofblock__context {
+  position: absolute;
+  bottom: calc(var(--v3-proofblock-base) - 6px);
+  top: var(--v3-proofblock-band-mid);
+  width: var(--v3-rule-weight-hairline);
+  background: var(--v3-navy);
+  transform: translateX(-50%);
+}
+
+.v3 .v3-proofblock__context-label {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  display: block;
+  padding-bottom: var(--v3-space-3xs);
+  padding-left: var(--v3-space-2xs);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__context-label b {
+  display: block;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+/* A tick past the middle of the track would hang its label off the right
+   edge, so the label flips to the tick's left instead. */
+.v3 .v3-proofblock__context.is-late .v3-proofblock__context-label,
+.v3 .v3-proofblock__anchor.is-late .v3-proofblock__anchor-label {
+  left: auto;
+  right: 0;
+  padding-left: 0;
+  padding-right: var(--v3-space-2xs);
+  text-align: right;
+}
+
+.v3 .v3-proofblock__anchor {
+  position: absolute;
+  bottom: var(--v3-proofblock-base);
+  top: var(--v3-proofblock-band-mark);
+  width: var(--v3-rule-weight-hairline);
+  background: var(--v3-navy-70);
+  transform: translateX(-50%);
+}
+
+.v3 .v3-proofblock__anchor-label {
+  position: absolute;
+  bottom: 100%;
+  left: var(--v3-space-2xs);
+  padding-bottom: var(--v3-space-3xs);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  white-space: nowrap;
+  color: var(--v3-ink-muted);
+}
+
+/* One closing. The button is the 44px tap target; the dot inside it is the
+   mark (WCAG 2.5.8 target size, TASTE.md 375 rule). */
+.v3 .v3-proofblock__mark {
+  position: absolute;
+  bottom: calc(var(--v3-proofblock-base) - (var(--v3-tap) / 2) + (var(--v3-mark-lane, 0) * var(--v3-proofblock-lane)));
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: var(--v3-radius-mark);
+  transform: translateX(-50%);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 1;
+}
+
+.v3 .v3-proofblock__mark-dot {
+  width: var(--v3-chart-mark);
+  height: var(--v3-chart-mark);
+  border-radius: var(--v3-radius-mark);
+  background: var(--v3-navy);
+  transition:
+    transform var(--v3-dur-state) var(--v3-ease-out),
+    background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-proofblock__mark.is-active .v3-proofblock__mark-dot,
+.v3 .v3-proofblock__mark:hover .v3-proofblock__mark-dot {
+  transform: scale(1.5);
+}
+
+/* The active mark's own figure, printed AT the mark. Without it the reader has
+   to travel to the shared reading below both strips to learn what the dot they
+   are pointing at is worth, which is a chart you cannot interrogate in place
+   (dataviz: a per-mark tooltip on every dot). Only one is ever visible. */
+.v3 .v3-proofblock__mark-value {
+  position: absolute;
+  bottom: calc(100% - var(--v3-space-2xs));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 var(--v3-space-3xs);
+  background: var(--v3-surface);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-note);
+  white-space: nowrap;
+  color: var(--v3-ink);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.v3 .v3-proofblock__mark.is-active .v3-proofblock__mark-value,
+.v3 .v3-proofblock__mark:hover .v3-proofblock__mark-value,
+.v3 .v3-proofblock__mark:focus-visible .v3-proofblock__mark-value {
+  opacity: 1;
+}
+
+/* A mark at either end of the track anchors its label inward, so the figure is
+   never clipped by the section edge. */
+.v3 .v3-proofblock__mark.is-first .v3-proofblock__mark-value {
+  left: 50%;
+  transform: translateX(-25%);
+}
+
+.v3 .v3-proofblock__mark.is-last .v3-proofblock__mark-value {
+  left: auto;
+  right: 50%;
+  transform: translateX(25%);
+}
+
+.v3 .v3-proofblock__mark:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* Draw-on: the marks rise into place once, when the section enters view. */
+.v3 .v3-proofblock__track .v3-proofblock__mark {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+
+.v3 .v3-proofblock__track.is-drawn .v3-proofblock__mark {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition:
+    opacity var(--v3-dur-enter) var(--v3-ease-out),
+    transform var(--v3-dur-enter) var(--v3-ease-out);
+  transition-delay: calc(var(--v3-mark-i, 0) * 40ms);
+}
+
+.v3 .v3-proofblock__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.v3 .v3-proofblock__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  margin: 0;
+  padding-top: var(--v3-space-2xs);
+  border-top: var(--v3-rule-hairline);
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__note {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-sm) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+/* The reading. Fixed minimum height so moving between marks never reflows
+   the section under the pointer. */
+.v3 .v3-proofblock__reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--v3-space-2xs) var(--v3-space-md);
+  min-height: var(--v3-tap);
+  margin-top: var(--v3-space-xl);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-wash);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__reading-when {
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  font-size: var(--v3-size-label);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__reading-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs) var(--v3-space-md);
+}
+
+.v3 .v3-proofblock__reading-figures b {
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__reading-aside {
+  font-style: normal;
+  padding-left: var(--v3-space-2xs);
+}
+
+.v3 .v3-proofblock__reading-off {
+  font-style: italic;
+}
+
+.v3 .v3-proofblock__count {
+  margin: var(--v3-space-md) 0 0;
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__trace {
+  margin-top: var(--v3-space-2xs);
+}
+
+.v3 .v3-proofblock__quiet {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* --------------------------------------------------------------------------
+   The rail: the record, the words, the reach
+   -------------------------------------------------------------------------- */
+
+.v3 .v3-proofblock__rail {
+  min-width: 0;
+}
+
+@media (min-width: 62rem) {
+  .v3 .v3-proofblock__rail {
+    padding-left: var(--v3-space-xl);
+    border-left: var(--v3-rule-hairline);
+  }
+}
+
+.v3 .v3-proofblock__figure {
+  margin: 0 0 var(--v3-space-xl);
+}
+
+.v3 .v3-proofblock__figure-value {
+  display: block;
+  font-family: var(--v3-font-num);
+  font-weight: var(--v3-weight-num);
+  font-size: var(--v3-size-num-lead);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__figure-label {
+  display: block;
+  margin-top: var(--v3-space-2xs);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__figure-aside {
+  display: block;
+  margin-top: var(--v3-space-3xs);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__words {
+  padding-top: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-proofblock__score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin: 0 0 var(--v3-space-md);
+}
+
+.v3 .v3-proofblock__score-line {
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__quote {
+  margin: 0;
+}
+
+.v3 .v3-proofblock__quote blockquote {
+  margin: 0;
+}
+
+.v3 .v3-proofblock__quote blockquote p {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__quote figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs) var(--v3-space-sm);
+  margin-top: var(--v3-space-sm);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-proofblock__quote cite {
+  font-style: normal;
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-md);
+}
+
+.v3 .v3-proofblock__pick {
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) var(--v3-space-sm);
+  border: var(--v3-panel-border);
+  border-radius: var(--v3-radius-control);
+  background: none;
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-proofblock__pick.is-active,
+.v3 .v3-proofblock__pick:hover {
+  background: var(--v3-wash);
+  color: var(--v3-ink);
+}
+
+.v3 .v3-proofblock__pick:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.v3 .v3-proofblock__reach {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-2xs);
+  margin-top: var(--v3-space-xl);
+  padding-top: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-proofblock__reach-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-2xs) var(--v3-space-md);
+  border: var(--v3-panel-border);
+  border-radius: var(--v3-radius-control);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: none;
+  color: var(--v3-ink);
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-proofblock__reach-link:hover {
+  background: var(--v3-wash);
+}
+
+.v3 .v3-proofblock__reach-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* --------------------------------------------------------------------------
+   375: the strips keep their width, the rail falls under them.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 30rem) {
+  /* Every label wraps at this width, so each band grows to hold two lines. */
+  .v3 .v3-proofblock__track {
+    --v3-proofblock-lane: 13px;
+    --v3-proofblock-base: 30px;
+    --v3-proofblock-band-mid: 62px;
+    --v3-proofblock-band-mark: 94px;
+    height: 178px;
+  }
+
+  .v3 .v3-proofblock__context-label {
+    max-width: 8rem;
+    white-space: normal;
+  }
+
+  .v3 .v3-proofblock__anchor-label {
+    max-width: 8rem;
+    white-space: normal;
+  }
+
+  .v3 .v3-proofblock__reading {
+    flex-direction: column;
+  }
+}
+
+/* Reduced motion: the same graphic, already drawn. */
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-proofblock__track .v3-proofblock__mark,
+  .v3 .v3-proofblock__track.is-drawn .v3-proofblock__mark {
+    opacity: 1;
+    transform: translateX(-50%);
+    transition: none;
+    transition-delay: 0s;
+  }
+
+  .v3 .v3-proofblock__mark-dot,
+  .v3 .v3-proofblock__pick,
+  .v3 .v3-proofblock__reach-link {
+    transition: none;
+  }
+}
