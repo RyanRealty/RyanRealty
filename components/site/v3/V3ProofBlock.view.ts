@@ -117,8 +117,19 @@ function daysLabel(days: number): string {
   return days === 1 ? '1 day' : `${Math.round(days)} days`
 }
 
-function traceText(block: ProofBlock): string {
+/**
+ * The disclosure text: one line per figure the section actually PUBLISHES.
+ *
+ * `showOutcomes` is a publishing decision, so it has to reach the trace too.
+ * With the strips off, the entries scoped to them source nothing on screen —
+ * and two of them are the market's own median days-to-contract and
+ * sale-to-first-ask, the exact figures our held comparison was drawn against.
+ * Publishing their provenance under a section that draws neither restates the
+ * comparison in prose. So the trace covers what is drawn, and nothing else.
+ */
+function traceText(block: ProofBlock, showOutcomes: boolean): string {
   return block.trace
+    .filter((t) => t.scope === 'always' || showOutcomes)
     .map(
       (t) =>
         `${t.figure} — ${t.source}; ${t.table}; ${t.filter}; ${t.window}; ${t.rows} rows; pulled ${t.fetchedAt}; ${t.query}`,
@@ -347,7 +358,7 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
     reviews,
     reach: input.reach ?? [],
     attribution: input.attribution,
-    trace: traceText(block),
+    trace: traceText(block, showOutcomes),
     quiet: o.publishable ? null : o.quietReason,
   }
 }

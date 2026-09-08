@@ -1350,3 +1350,11 @@ publishing decision, not a builder's.
 4. **The same rule binds every surface that would draw our own performance** against a market
    benchmark: place pages, listing pages, email, print and social. Positive proof publishes;
    an against-us comparison is Matt's call, per action, and the default is off.
+5. **The provenance follows the figure.** Found on live /sell after the strips came off: the
+   Source disclosure still carried their citations — Bend's own median days-to-contract (29) and
+   sale-to-first-ask (97.0%), beside a line saying we had computed ours on 7 closings. The
+   comparison was held on the page and restated in prose one summary open. A §0 trace lists the
+   figures we PUBLISH, so `ProofTrace` entries now carry a `scope` (`always` | `outcomes`) and
+   the view drops the outcome-scoped lines whenever it does not draw the strips. Any future hold
+   carries the same obligation: withhold the figure and its sourcing together, or the disclosure
+   publishes what the section declined to.

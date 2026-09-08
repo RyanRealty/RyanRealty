@@ -77,6 +77,23 @@ import {
 
 /** One figure's provenance. Everything a reviewer needs to re-run it. */
 export type ProofTrace = {
+  /**
+   * Which figures this entry sources.
+   *
+   * `always` covers what the section prints in every form — the reviews, the
+   * all-time record, the count and window of the closings. `outcomes` covers
+   * ONLY the two strips: the per-home day and ratio computation, and the two
+   * market medians they are drawn against.
+   *
+   * It exists because a trace is a list of the figures we PUBLISH (CLAUDE.md
+   * section 0), and /sell publishes the section with the strips held (Matt
+   * 2026-09-08). Shipping their provenance anyway put the market's own median
+   * days-to-contract and sale-to-list in the disclosure of a page that draws
+   * neither, next to a line saying we had computed ours and not printed it —
+   * which is the held comparison, stated in prose, one summary open. The view
+   * drops these entries when it does not draw the strips.
+   */
+  scope: 'always' | 'outcomes'
   figure: string
   source: string
   table: string
@@ -305,6 +322,7 @@ async function fetchProofBlock(input: {
 
   if (proofReviews) {
     trace.push({
+      scope: 'always',
       figure: `${proofReviews.averageRating.toFixed(1)} average from ${proofReviews.count} Google reviews`,
       source: 'Google Business Profile, ingested live',
       table: 'public.reviews',
@@ -318,6 +336,7 @@ async function fetchProofBlock(input: {
 
   if (record) {
     trace.push({
+      scope: 'always',
       figure: `${record.homesSold} homes closed, listed by Ryan Realty`,
       source: 'Central Oregon MLS via Supabase listings',
       table: 'public.listings',
@@ -330,8 +349,24 @@ async function fetchProofBlock(input: {
     })
   }
 
+  // Two entries, because the section publishes the COUNT in every form and the
+  // per-home computation only when it draws the strips. One combined entry made
+  // the quiet form's disclosure announce a measurement it does not show.
   trace.push({
-    figure: `${outcomes.closings} Ryan Realty closings in the window; sale-to-original-list on ${outcomes.saleToOriginalN}, days-to-contract on ${outcomes.daysToContractN} (${outcomes.daysExcludedN} dropped by the market definition)`,
+    scope: 'always',
+    figure: `${outcomes.closings} Ryan Realty closings in the window`,
+    source: 'Central Oregon MLS via Supabase listings',
+    table: 'public.listings',
+    filter: `"ListOfficeName" ILIKE '%ryan realty%' AND "StandardStatus" = 'Closed' (list side); cities ${outcomes.cities.join(', ') || 'none'}`,
+    window: windowLabel,
+    rows: outcomes.closings,
+    fetchedAt,
+    query: 'getProofBlock() — lib/data/proof/getProofBlock.ts',
+  })
+
+  trace.push({
+    scope: 'outcomes',
+    figure: `sale-to-original-list on ${outcomes.saleToOriginalN} of them, days-to-contract on ${outcomes.daysToContractN} (${outcomes.daysExcludedN} dropped by the market definition)`,
     source: 'Central Oregon MLS via Supabase listings, computed with the Market Truth fact definitions',
     table: 'public.listings',
     filter: `"ListOfficeName" ILIKE '%ryan realty%' AND "StandardStatus" = 'Closed' (list side); cities ${outcomes.cities.join(', ') || 'none'}`,
@@ -344,6 +379,7 @@ async function fetchProofBlock(input: {
 
   if (context?.medianDaysToContract != null) {
     trace.push({
+      scope: 'outcomes',
       figure: `${context.label} detached median days to contract ${Math.round(context.medianDaysToContract)}`,
       source: `Market Truth cell, definition ${context.definitionId ?? '?'}`,
       table: 'public.market_metric',
@@ -357,6 +393,7 @@ async function fetchProofBlock(input: {
 
   if (context?.medianSaleToOriginal != null) {
     trace.push({
+      scope: 'outcomes',
       figure: `${context.label} detached median sale to original list ${(context.medianSaleToOriginal * 100).toFixed(1)}%`,
       source: `Market Truth cell, definition ${context.definitionId ?? '?'}`,
       table: 'public.market_metric',

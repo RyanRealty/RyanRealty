@@ -64,7 +64,8 @@ function liveBlock(over: Partial<ProofBlock> = {}): ProofBlock {
       computedAt: '2026-09-08T00:21:24.953Z',
     },
     trace: [
-      { figure: '5.0 average from 25 Google reviews', source: 'GBP', table: 'public.reviews', filter: "source='google'", window: 'all', rows: 25, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getReviews()' },
+      { scope: 'always', figure: '5.0 average from 25 Google reviews', source: 'GBP', table: 'public.reviews', filter: "source='google'", window: 'all', rows: 25, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getReviews()' },
+      { scope: 'outcomes', figure: 'Bend detached median days to contract 29', source: 'Market Truth cell', table: 'public.market_metric', filter: "stat_id = 'median_days_to_contract'", window: '12 months', rows: 1994, fetchedAt: '2026-09-08T03:45:07.237Z', query: 'getMetrics()' },
     ],
     ...over,
   }
@@ -201,6 +202,22 @@ describe('proofBlockView', () => {
     // Quotes are never trimmed.
     expect(view.reviews?.quotes[0]?.text).toContain('more difficult than I had anticipated')
     expect(view.trace).toContain('public.reviews')
+    // The strips are drawn here, so their sourcing belongs in the disclosure.
+    expect(view.trace).toContain('median days to contract 29')
+  })
+
+  // Matt 2026-09-08, decisions.md: with the two outcome strips held, the
+  // disclosure must not publish their sourcing either. Live /sell shipped the
+  // Bend median days-to-contract (29) and sale-to-first-ask (97.0%) inside the
+  // Source summary of a section that draws neither, beside a line saying we
+  // had computed ours — the held comparison, in prose, one click away.
+  it('drops the outcome sourcing from the disclosure when the strips are held', () => {
+    const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
+    expect(view.strips).toHaveLength(0)
+    expect(view.trace).toContain('public.reviews')
+    expect(view.trace).not.toContain('median days to contract')
+    expect(view.trace).not.toContain('market_metric')
+    expect(view.trace).not.toContain('sale_to_orig_list')
   })
 
   it('goes quiet, keeping the rest, when the window is too thin to chart', () => {
