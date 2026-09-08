@@ -197,6 +197,38 @@ export interface CmaMarketContext {
   localFailedThenSold?: import('@/lib/pricing/failed-then-sold').CmaLocalFailedThenSold | null
 }
 
+/** A printed list tier the failed-ask ceiling can move. */
+export type CmaPricingClampTier = 'conservative' | 'recommended' | 'highEnd'
+
+/** One tier the clamp moved, and how far. */
+export interface CmaPricingClampApplication {
+  tier: CmaPricingClampTier
+  /** What the evidence supported before ANY application of this ceiling. */
+  before: number
+  after: number
+  /** The share of the failed ask this tier was held to. */
+  ratio: number
+}
+
+export interface CmaPricingClamp {
+  /** The only clamp there is today. A second kind gets its own name here. */
+  kind: 'failed-ask'
+  /**
+   * The tier the sentence is written about: the recommended price when the
+   * clamp moved it, otherwise the highest tier that did move.
+   */
+  appliedTo: CmaPricingClampTier
+  /** `appliedTo`'s figures. The two numbers the sentence names. */
+  before: number
+  after: number
+  /** The measured share, and the corpus it was measured over. */
+  basis: { ratio: number; source: string }
+  /** Every tier the ceiling moved, so nothing is changed silently. */
+  applications: CmaPricingClampApplication[]
+  /** Seller language. Says what the sales supported, and why we do not print it. */
+  sentence: string
+}
+
 export interface CmaPricing {
   method1Low: number
   method1Mid: number
@@ -230,6 +262,23 @@ export interface CmaPricing {
   failedAsk?: number | null
   /** True when the printed list band was clipped to failedAsk. */
   failedAskCapped?: boolean
+  /**
+   * THE PRICE MUST FOLLOW FROM THE PRINTED METHOD, OR THE DOCUMENT MUST PRINT
+   * WHAT OVERRODE IT (tasteReview round three, §2 item 1).
+   *
+   * cma-65365-concorde printed a reconciliation whose own weights carry to
+   * $1,972,665 and a recommended list of $1,473,000 — the failed ask
+   * $1,500,000 times the failed-then-sold p75, applied by `applyFailedAskCap`
+   * and named in `reviewReason`, which no reader sees. Half a million dollars
+   * of a $1.5M opinion sat between a stated method and a printed number with
+   * nothing on the page connecting them.
+   *
+   * This is that connection: what the evidence supported, what it was clamped
+   * to, the measured basis for the clamp, and one seller sentence saying so.
+   * Null whenever the clamp does not bind, so a renderer can print it whenever
+   * it is present and never has to decide.
+   */
+  clamp?: CmaPricingClamp | null
   /**
    * Which sale carried the price, and why — the appraisal reconciliation the
    * document owed the reader (research brief 2026-09-07, item 2). Computed in

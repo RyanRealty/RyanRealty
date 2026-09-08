@@ -122,6 +122,8 @@ type DryRun = {
   }>
   dateAdjustmentCheckOk: boolean
   dateAdjustmentFailures: string[]
+  /** render_args.pricing.clamp — what overrode the printed method, when it did. */
+  renderArgsPricingClamp: unknown
   /** render_args.pricing.rejected — considered and not used. */
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
@@ -161,7 +163,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { MIN_COMPS } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
-  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle } = await import('@/lib/cma/expired-audit')
+  const { buildFailureFindings, stampFinalCycleDom, buildFinalCycle, applyFailedAskCap } = await import('@/lib/cma/expired-audit')
   const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
   const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
   const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
@@ -176,6 +178,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
     renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsPricingClamp: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
     dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
   }
@@ -266,6 +269,19 @@ async function dryRun(slug: string): Promise<DryRun> {
     marketIndex, asOf, computePricing,
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
+
+  // EXACTLY the ceiling lib/cma/build.ts applies after priceSet (step 4, the
+  // `lastCycleFailed` branch). Without it this script printed the ask itself
+  // where the document prints the failed-then-sold p75 — $1,500,000 against
+  // $1,473,000 on cma-65365-concorde — so the one defect round three called
+  // blocking was invisible in the only tool that can see it without a build.
+  if (lastCycleFailed) {
+    const row0 = cycleRows[0] ?? {}
+    applyFailedAskCap(pricing, {
+      lastFailedListPrice: subject.lastListPrice,
+      offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+    })
+  }
 
   // The judge is skipped in a dry run, so the only rejections it can show are
   // the price-per-square-foot outlier trims the deterministic ladder made.
@@ -392,6 +408,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
+    renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingRejected: rejected,
     renderArgsMarketLocalFailedThenSold: localOutcomes.localFailedThenSold,
     renderArgsExpiredAuditFinalCycle: finalCycleBlock,
@@ -433,7 +450,8 @@ async function main() {
       renderArgsMarketOfferTiming: null, renderArgsMarketAskOutcome: null,
       renderArgsMarketOriginalAskRealization: null, renderArgsMarketLocalFailedThenSold: null,
       renderArgsPricingReconciliation: null, renderArgsPricingRangeRule: null,
-      renderArgsPricingTimeAdjustment: null, renderArgsPricingRejected: null,
+      renderArgsPricingTimeAdjustment: null, renderArgsPricingClamp: null,
+      renderArgsPricingRejected: null,
       renderArgsExpiredAuditFinalCycle: null,
       dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [],
       error: e instanceof Error ? e.message : String(e),
@@ -487,6 +505,8 @@ async function main() {
     }
     console.log('   render_args.pricing.timeAdjustment =')
     console.log(indent(r.renderArgsPricingTimeAdjustment))
+    console.log('   render_args.pricing.clamp =')
+    console.log(indent(r.renderArgsPricingClamp))
     console.log('   render_args.pricing.rangeRule =')
     console.log(indent(r.renderArgsPricingRangeRule))
     console.log('   render_args.pricing.reconciliation =')
