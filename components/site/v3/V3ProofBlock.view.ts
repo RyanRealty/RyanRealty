@@ -251,7 +251,7 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
             }
           : null,
       // Zero on this scale is a real place: the price the seller first asked.
-      anchor: zeroPct == null ? null : { pct: zeroPct, label: 'the first ask' },
+      anchor: zeroPct == null ? null : { pct: zeroPct, label: 'sold at the first ask' },
       note: null,
     })
   }
@@ -295,6 +295,10 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
       'Not a selection. Every home Ryan Realty listed and closed in the last twelve months, with what each one did, against what the whole market did in the same year.',
     marks,
     strips,
+    // Round three named first-read clarity as the weakest thing: nothing said
+    // the two tracks hold the SAME homes. This names the mark once, above both.
+    marksLegend:
+      marks.length > 0 ? `Each mark is one of these ${marks.length} closings, on both scales.` : null,
     countLine: windowLine,
     record,
     reviews,

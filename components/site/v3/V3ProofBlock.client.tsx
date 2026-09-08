@@ -117,6 +117,8 @@ export type V3ProofBlockProps = {
   marks: readonly V3ProofMark[]
   strips: readonly V3ProofStrip[]
   countLine: string
+  /** Names what a mark is, once, above both tracks. Null when nothing is drawn. */
+  marksLegend: string | null
   record: { value: string; label: string; aside: string } | null
   reviews: {
     score: string
@@ -353,7 +355,7 @@ function ReviewReader({
       {reviews.quotes.length > 1 ? (
         <div className="v3-proofblock__more">
           <p className="v3-proofblock__more-label" id={`${uid}-more`}>
-            More reviews
+            Read another
           </p>
           <div className="v3-proofblock__picks" role="group" aria-labelledby={`${uid}-more`}>
           {reviews.quotes.map((q) => (
@@ -386,6 +388,7 @@ export function V3ProofBlock({
   marks,
   strips,
   countLine,
+  marksLegend,
   record,
   reviews,
   reach,
@@ -459,6 +462,9 @@ export function V3ProofBlock({
           {hasDrawing ? (
             <>
               <div className="v3-proofblock__strips">
+                {marksLegend ? (
+                  <p className="v3-proofblock__legend">{marksLegend}</p>
+                ) : null}
                 {strips.map((strip) => (
                   <Strip
                     key={strip.key}

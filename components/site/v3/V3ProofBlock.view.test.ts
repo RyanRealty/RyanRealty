@@ -159,7 +159,7 @@ describe('proofBlockView', () => {
     const view = proofBlockView({ block: liveBlock(), attribution: ATTRIBUTION })!
     const ratio = view.strips.find((s) => s.key === 'ratio')!
     expect(ratio.anchor).not.toBeNull()
-    expect(ratio.anchor!.label).toBe('the first ask')
+    expect(ratio.anchor!.label).toBe('sold at the first ask')
     // A mark that sold OVER the first ask must sit to the right of the anchor,
     // and one that sold under must sit to its left.
     const over = view.marks.find((m) => m.id === '220225317')!
