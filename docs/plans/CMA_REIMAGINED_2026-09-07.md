@@ -615,3 +615,334 @@ holds both `05-394000.png` and `05-395000.png` and both `09-basis-and-limits.png
 `09-disclosure.png` — chapters from two different runs at two different recommended prices,
 left side by side. Clear the directory before each look-pass, or the evidence Matt reviews
 shows two answers.
+
+---
+
+## tasteReview — 2026-09-08 (round two)
+
+Evaluated: worktree `wt/cma-doc-20260907` at `15910214`, tree frozen and clean. Evidence:
+the four look-pass sets in `out/cma-look/` (written 00:40:13, one minute after the tip commit
+at 00:39:16, so they are the current build), plus the live document driven on a dev server on
+this worktree at 1280x900 and 375x812, admin session,
+`/admin/cmas/cma-2465-7th-redmond-97756/view`. Every Delta 2 interaction was exercised in the
+DOM, the competition filter's output was checked against `public.listings` directly, and the
+price grid was checked against `cmas.render_args.pricing`. Separate evaluator; did not build
+this. Round one's two measurement traps were held: the curve axis is measured, not assumed,
+and no claim rests on a look-pass image where the live page disagrees.
+
+**Verdict: better by a wide margin, and still do not send it to an expired owner today.** Both
+of round one's disqualifying defects are fixed and verified at the source. In their place is a
+single defect family that is worse than either, because it sits on the number the whole
+document exists to deliver: the price is not derivable from the basis the document prints, and
+three chapters print a "homes like yours" figure that contradicts the answer.
+
+### Scores
+
+| Chapter | R1 | R2 | The one thing |
+|---|---|---|---|
+| 0. Cover | 2 | 4 | Legible now, labelled now, rounded now — still the banned annotated aerial with six arrows and a reference-only watermark, on all four |
+| 1. What happened | 4 | 5 | Sourced, annotated on the mark, 45px targets — and its zone label is the sentence three other chapters contradict |
+| 2. Did not sell | 3 | 4 | Local pairs replace the regional figure; still two stories, one of them 789 sqft against a 1,440 sqft home |
+| 2b. What overpricing costs | 3 | **6** | The biggest gain in the build. Linear axis, snapped scrubber, encoded realization strip, a bar tap that says something new |
+| 3. What it is worth | 3 | 4 | The answer finally has a picture — sitting above a date column its own printed basis cannot produce |
+| 4. Competition | 4 | **6** | The filter is correct, and I checked all eight against `StandardStatus` |
+| 5. Redmond right now | 2 | 5 | KPI grid gone, MOS is two bars, the month axis lets a flat market look flat — and $532,311 is above every month drawn under it |
+| 6. Net at list | 1 | **6** | Reads the concessions the grid prints. Median $7,000 across the 2 that reported one, 3 reported none. Derivable |
+| 7. Basis and limits | 6 | 5 | The one chapter that went backwards: it claims a style adjustment the grid does not make, and its own next paragraph denies |
+| 8. Next step | 2 | **6** | Real buttons, full identity on both, the panel filled, Print demoted |
+
+Whole document on TASTE.md's weighting: **design quality 5, originality 5, interaction 6,
+craft 4, honesty and function 3 — about 69 of 100**, against round one's 41 by the same
+arithmetic (30/30/15/15/10, each criterion scored out of 7). Honesty is the only dimension that
+did not move, and it is the one that decides whether this goes in an envelope.
+
+### 1. Round one's ranked items
+
+**Item 1 — stop the document contradicting itself and stop a control publishing false status.**
+
+- Competition filter: **DONE**, and verified beyond the DOM. "Under contract" now yields
+  exactly 592 Redwood, 1297 3rd, 2618 26th Loop North, 2712 26th LP North; "For sale" yields
+  825 Poplar, 645 7th, 737 Elm, 2650 26th Loop North. Queried `listings` for all eight: the
+  first four are `StandardStatus='Pending'` with a `pending_timestamp`, the second four are
+  `Active` with none. The control tells the truth.
+- Chapter 6 concessions: **DONE**. "Net at list is the list price minus $7,000 … the median
+  across the 2 sales in the price chapter that reported one; the other 3 of the 5 that recorded
+  the field reported none." The grid prints $4,000 and $10,000; the median is $7,000. It now
+  reads its own evidence.
+- Two day counts on a sale row: **DONE**. 730 Quince prints "1 day" in the grid and its path
+  reads "sold $457K · offer in 1 day". One labelled measure. (Expanding the history still shows
+  Mar 21 → Apr 24 on 840 Quince beside "4 days to offer" — coherent, unexplained, minor.)
+- Missing source lines: **DONE** for all three named. The 3,394 / 94.2% / 12.3% row now carries
+  "These three figures are regional, not this city alone: 3,394 matched pairs … Measured
+  2026-08-05." Diamond Bar Ranch carries "between 2016 and 2026 … from the Oregon Data Share
+  MLS." Competition carries "Homes for sale and under contract in Redmond between $356,000 and
+  $435,000 … as of Sep 7, 2026."
+- Curve readout precision: **DONE**. `aria-valuemin=7`, `aria-valuemax=180`, ArrowRight steps
+  60 → 90. The slider snaps to the measured points; no interpolated tenth of a percent survives.
+
+**Item 2 — give the answer a picture, take the report chrome out of the letter.**
+
+- The dot strip: **DONE**, and it is the second-best idea in the document. "Sale price today, 5
+  sales" — five marks, the $372K–$399K shading, the list line at $395K, and the failed ask
+  drawn on the same axis at $460K. That last touch is the one that lands the whole argument in
+  one look.
+- The fixed `#bar`: **DONE**. Zero `position:fixed` elements in the live document. Nothing
+  clips the 100% axis label or the grid rows any more.
+- V3Atlas: **PARTIAL**. The map is still a base64 Google raster with the Google logo and "Map
+  data ©2026" — TASTE names that tell by hand. But it now carries five real `button.pin-hit`
+  targets at 44×44 plus a subject star, so pin → column and column → pin both work. Pan and
+  zoom still do not exist.
+- Chapter 5 rebuild: **DONE on form**. The KPI grid is gone. Months of supply is the two-bar
+  form TASTE prescribes (223 for sale against 57 a month → 3.9 months). The month line's y axis
+  runs $400K–$540K over a $461K–$530K series, so a flat market finally looks flat. $532,311
+  gets a reconciling sentence. See §3 for what the sentence introduced.
+
+**Item 3 — survivable on a phone, finish the close.**
+
+- "Your home" at the head of chapter 3 on mobile: **DONE**. The first card at 375 is "Your home
+  · 2465 7th · Listed $460,000 · 1,440 sqft · 3 bd / 2 ba · built 2004".
+- Every price path drawn twice: **DONE**. Chapter 3 at 375 now holds six SVGs total — one dot
+  strip and five price paths, one per sale. The duplicate block is deleted.
+- 65 sub-44px targets: **PARTIAL, and most of the way**. Now 21 of 75 focusable elements at
+  375. The chapter 1 cut marker went from 7×7 to 54×45 and 62×45. What remains: five dot-strip
+  marks at 24px, twelve month-line dots at 26px, four chapter 5 address links at 21px tall.
+- 25 screens: **NOT DONE — it went the wrong way.** `document.documentElement.scrollHeight` at
+  375 is **20,768px, 25.6 screens**, against round one's 19,987. Every fix added (source lines,
+  reconciliation sentences, the strip, the "Your home" card) and nothing was cut.
+- Chapter 7 rebuild: **DONE.** Real bordered buttons, not 22px text links. The panel is filled
+  — portrait left, heading, buttons, two paragraphs, license, disclosure. "Print this report"
+  demoted to a text link at the very end. And identity: all **25** links in the server-rendered
+  HTML carry `agent=matthew-ryan&_pid=538&utm_source=cma&utm_medium=document&utm_campaign=cma-2465-7th-redmond-97756`,
+  both CTAs included. Round one's "the one click that matters is unattributable" is closed.
+
+**Item 4 (non-blocking) — the cover.** Legibility **DONE**: the title block is a solid navy
+panel, no more 13px cream on a sunlit lawn. The eyebrow's raw ISO date and the date mismatch
+are gone. The photo is **NOT DONE**: all four documents still open on the annotated aerial with
+six landmark arrows and "*Location is approximate and for reference purposes only", which the
+blueprint's chapter 0 bans by name.
+
+**The Words list: DONE, cleanly.** `band`, `comp`, `comps`, `subject`, `adjusted close`,
+`tier`, `ladder`, `dispersion`, `supportable`, `brought to today` — zero hits in the live
+document. Of round one's three explain-the-previous-sentence lines, two are gone; **"Each sale
+below is moved by that path between the month it closed and today" survives verbatim**, and it
+is now the sentence that carries a false claim (§3). The four instruction captions ("Tap a
+price change…", "Drag along the curve…", "Tap a bar…", "Tap a month…") are all gone — the
+Atlas "pinch to zoom" tell is cleared. Off-palette grey is cleared too: the chapter 1 zone
+measures `rgba(16,39,66,0.13)` and the strip declares `rgba(16,39,66,0.16)` — navy tints, not
+neutral grey, and I sampled the pixels to be sure rather than trusting the eye.
+
+New in this round, and both are the banned form: **"The shading is what your home is worth"
+appears as a caption and then again as the next sentence, verbatim**; and chapter 3 states its
+value range three times inside ten lines — "$372,324 and $398,788", then "$372,000 to
+$399,000", then "$372,324 to $398,788" again.
+
+### 2. Regressions
+
+1. **Chapter 7, Basis and limits — the only chapter that scored lower.** "Condition was not
+   adjusted for. The grid in the price chapter moves each sale for when it sold, for size, **and
+   for style**." There is no style row in the grid. Two paragraphs later the same chapter says
+   the value rests on sales "adjusted for market conditions and size." A broker price opinion's
+   limitations block contradicting itself about which adjustments were made is the worst place
+   in the document for that error.
+2. **The phone document got longer**, 19,987 → 20,768px.
+3. **Chapter 3's controls take four rows on a phone.** Raising the pills to 44px pushed "With
+   the adjustments" and "Sale prices only" onto separate lines, and the four sort pills onto two
+   more — 208px of stacked controls, with "The sales:" and "Order:" orphaned beside wrapped
+   groups, before the reader reaches a single sale.
+4. **Chapter 5's four "most recent" addresses are dead links.** 730 Quince, 722 Redwood, 2475
+   7th and 585 Redwood all resolve to `https://ryan-realty.com/homes-for-sale/redmond` — the
+   city search — while 730 Quince has a real listing URL 2,000px above in chapter 3. Four
+   addresses presented as links to specific homes, all landing on the same generic page.
+5. **"Considered and not used" is gone.** `pricing.rejected` is `[]` on both documents I
+   checked, so this may simply be unexercised rather than removed. Flagging so it is confirmed
+   rather than assumed: round one asked for the missing reasons, and what shipped is no section.
+
+### 3. Numbers that disagree, or lack a source
+
+**A. The date adjustment is larger than the entire move its own source records. This is the
+blocking defect.** Chapter 3 prints: "Prices a square foot in this city have moved down 0.4
+percent a month over the last 12 months, across 864 sales. Each sale below is moved by that
+path between the month it closed and today." The grid then prints, per sale:
+
+| Sale | Closed | Months | −0.4%/mo implies | Printed |
+|---|---|---|---|---|
+| 730 Quince, $457,000 | Jul 6, 2026 | 2.0 | −$3,712 | **−$39,211 (−8.58%)** |
+| 840 Quince, $410,000 | Apr 24, 2026 | 4.5 | −$7,380 | **−$47,068 (−11.48%)** |
+| 1737 7th, $460,000 | Apr 24, 2026 | 4.5 | −$8,280 | **−$52,808 (−11.48%)** |
+| 2485 7th, $410,500 | Feb 6, 2026 | 7.0 | −$11,494 | **−$38,176 (−9.30%)** |
+| 735 Oak, $450,000 | Dec 15, 2025 | 8.7 | −$15,660 | **−$38,430 (−8.54%)** |
+
+Three things are wrong at once. The printed column is 2.5× to 6.4× the printed basis. It is
+non-monotone in time — a sale two months old is moved down 8.58 percent and one 8.7 months old
+by 8.54 percent, while the two 4.5-month sales get 11.48 — so an older sale is adjusted *less*
+than a newer one, and nothing on the page can explain that. And the source block behind that
+sentence (`pricing.timeAdjustment.source`, `pricing_market_index`, `city_slug='redmond'`)
+records the city's whole 12-month move as **median price a square foot 310.75 → 294.44, −5.25
+percent**. Every one of the five sales closed inside that window, so no path drawn from that
+series can move any of them more than 5.25 percent. The render args themselves name a different
+basis from the sentence they ship with: `"basis": "city-monthly-index"` against a sentence
+describing a smooth −0.4 percent monthly path. §0 requires that a printed number follow from
+its named source. This one does not, and it is the entire bridge between what the sales sold
+for and what the document says the house is worth.
+
+**B. "Homes like yours" has two values, and the document uses the phrase for both.** Chapter 1
+shades $372K–$399K and labels it "where homes like yours sold". Chapter 5 now says "Homes like
+yours, 3 bed, 2 bath, around 1,450 sqft, closed at **$410,000 to $460,000**" — which is the raw
+sold range of the same five sales. Chapter 2 says "Homes like it closed at $274 to $320 a foot",
+which on 1,440 sqft is $394,560 to $460,800. Chapter 4 shows eight rivals of the same size and
+type at $389,900 to $434,900, four of them under contract. Chapter 3 then recommends $395,000,
+and its own last line reads "At $395,000 across 1,440 square feet, that is **$274 per square
+foot**" — the exact bottom of the per-foot range chapter 2 printed. Four framings, one phrase,
+and the only reconciliation offered is defect A. This is what an expired owner will quote back,
+and the reconciliation sentence chapter 5 added — the right instinct — is what surfaced it.
+
+**C. Chapter 1 still delivers two verdicts on the same fact, now in one paragraph.** "The
+asking price was 15.3 percent above the top of the range homes like yours sold in. Asked
+$460,000 for 1,440 sqft, $319 a foot. Homes like it closed at $274 to $320 a foot. A foot at a
+time, that is at the top of what they closed at." Naming the two measures is an improvement.
+Putting "15.3 percent above the top" and "at the top" four lines apart is not.
+
+**D. $532,311 has no source and is above every month drawn beneath it.** Chapter 5 opens on a
+bare figure — "$532,311 is every Redmond home, all sizes" — with no window, no table, no
+fetch date. Three hundred pixels below, the "Median close" line it introduces reads Sep $530K,
+Oct $511K, Nov $509K, Dec $510K, Jan $474K, Feb $500K, Mar $482K, Apr $461K, May $496K, Jun
+$515K, Jul $525K, Aug $480K, captioned "Range $461K to $530K". A pooled median over the same
+window cannot exceed all twelve monthly medians. One of the two labels is wrong.
+
+**E. The cover of three of four documents opens on a quarter-of-the-price range with no
+reason.** 2465 7th is $372,000–$399,000, a 7 percent spread — good. 19968 Terrace is
+$312,000–$429,000 (29 percent), 1617 NW 8th $696,000–$926,000 (28 percent), 65365 Concorde
+$1,260,000–$1,750,000 (33 percent). Round one asked to round these and narrow or explain them;
+they are rounded and labelled now, which is real progress, but nothing says why a $1.47M
+opinion carries a $490,000 spread.
+
+**F. Cover and price chapter print different value ranges on the FSBO and land documents.**
+19968's cover says "worth $312,000 to $429,000"; its chapter 3 opens "7 closed sales … land
+between $295,926 and $441,070". Both are true — `rangeRule` is `trimmed-one-each-end` and
+paragraph four says so — but the reader meets the untrimmed pair first and neither is labelled
+where it appears. Round one's "the number is stated three ways" is fixed on the exemplar and
+still live on two of the other three.
+
+**G. Two dot strips fail outside the exemplar.** On 65365 Concorde the strip's width is set by
+the two sales the prose says are "set aside" ($971K and $2.65M), drawn as identical navy dots
+with the only two dollar labels on the graphic, while the $1.26M–$1.75M range they bracket goes
+unlabelled — first read: "worth somewhere between $971K and $2.65M". On 19968 the "asked $140K"
+marker sits at the far left with every dot clustered $296K–$441K, so 40 percent of the strip is
+empty. The section that carries the answer is the section that breaks first on the class.
+
+**H. Concessions are printed inside the adjustment grid and are not an adjustment.** 2485 7th:
+sold $410,500, concessions $4,000, net adjustment −$38,176 (date only), sale price today
+$372,324. The row sits between "Price history" and "Adjusted for date" with no note that it
+does not enter the arithmetic — while chapter 6 uses the same figures to take $7,000 off the
+seller's net.
+
+### 4. Interaction, exercised live
+
+Everything in Delta 2 now exists except map pan and zoom, and the ones round one called broken
+are fixed at the mechanism, not the surface:
+
+- **Curve.** X axis measured at 2.50–2.56 px/day across all four intervals — genuinely linear;
+  round one's even-spacing artifact is gone. `aria-valuenow="60"` and `aria-valuetext="By day
+  60, 70.2 percent of these sales had an accepted offer."` present before any input; both ARIA
+  gaps closed.
+- **Bars.** 538×105 hit areas, all three navy, `aria-pressed` consistent, accessible names
+  corrected ("Came off unsold · yours is in this group · median 118 days **on market before it
+  came off**" — round one's impossible "days to an accepted offer" is gone). A tap now adds
+  "110 days longer than the homes that sold without a price cut", which is not printed anywhere
+  else. No longer decoration.
+- **Timeline cut.** Markers 54×45 and 62×45, keyboard-focusable, named "Asked $475K on Feb 26"
+  / "Cut to $460K on Jul 28" — and the readout now renders **25px above the mark**, not 200px
+  below it.
+- **Sale ↔ pin.** Both directions work; the pin lights the column and the column lights the
+  pin. The pin side is a real `<button>`; the column side is a bare `<th>` with no role, no
+  `tabindex` and no cursor affordance, so one direction of the pair is neither discoverable nor
+  keyboard-reachable.
+- **Sort.** Sorts, and the badge travels with the sale — by price the columns run 3, 5, 1, 2, 4
+  and the pin numbers follow. Round one's number-as-position bug is fixed by making the number
+  an identity.
+- **Adjustments toggle, price history, month line.** All work; `aria-expanded` flips and the
+  dated list renders. Twelve month dots with real names.
+- Tab order is monotonic top-to-bottom across all 75 focusables but one 107px back-jump between
+  two map pins. No horizontal overflow at 375 or 1280 (`scrollWidth === clientWidth`).
+
+### 5. Would Matt send this today?
+
+No. Shortest ranked list to yes:
+
+**1. Make the price derivable, and stop three chapters contradicting the answer.** Fix the date
+column or fix the sentence that claims to explain it — as printed, the adjustment exceeds the
+entire 12-month move its own source block records, and moves an older sale less than a newer
+one. Then give "homes like yours" one meaning: chapter 1's zone is the *adjusted* range and
+chapter 5's $410,000–$460,000 is the *raw* range, so label them as two things or print only
+one. Give $532,311 a source and a window or cut it. Fix the disclosure's style-adjustment claim
+against its own next paragraph. Nothing else matters while a broker price opinion cannot show
+its work.
+
+**2. Say the range once, and say why it is that wide.** One statement of the value range,
+rounded, labelled value, with the list range beside it — not three statements in ten lines, two
+of them to the dollar. On the cover of the three documents carrying a 28–33 percent spread, one
+sentence giving that spread a cause.
+
+**3. Fix the two strips that fail off the exemplar, and the four dead links.** Clamp the land
+and FSBO strips to the kept sales and draw a set-aside sale differently from a counted one.
+Point chapter 5's four addresses at those four homes.
+
+**4. Then the phone.** 25.6 screens is longer than round one, not shorter — cut something. Then
+the four-row pill block, the 24–26px chart marks, and the 21px address links.
+
+Non-blocking, and it is the last cosmetic tell: the cover still opens on the annotated aerial
+with six landmark arrows and a reference-only watermark on all four documents, which chapter 0
+bans; and the letter path calls the document a "PRICING REPORT" where the web calls it a "PRICE
+OPINION".
+
+**Beats:** two wins now, not one. Nothing published in Central Oregon puts a failed seller's own
+price path on the same axis as the sales that set their value, with every address a tracked
+link carrying identity — and chapter 2b's linear offer-timing curve plus the realization strip
+is a better-evidenced answer to "what does overpricing cost" than any portal or competitor
+brokerage page publishes for this market. What it still loses on is the half a reader feels
+first: whether the number adds up in front of them.
+
+**Evaluator:** separate agent, did not build this. **Shots read:**
+`out/cma-look/cma-2465-7th-redmond-97756/` (all six sets) plus the covers and price chapters of
+`cma-65365-concorde/`, `cma-19968/`, `cma-1617-nw-8th/`. **Live:** dev server on this worktree,
+1280×900 and 375×812, every Delta 2 interaction exercised in the DOM, the competition filter
+cross-checked against `public.listings`, the price grid against `cmas.render_args.pricing`.
+
+**Evidence hygiene:** clean this round. Each `letter-375/` and `letter-816/` holds one price
+per document; round one's two-prices-side-by-side artifact is gone. The interact sets now carry
+`01-timeline-cut` and `08-competition-pending`, so the two controls that failed last time are
+in the evidence Matt sees.
+
+---
+
+## R3d ledger — round two, document side (2026-09-08)
+
+Worktree `wt/cma-doc-20260907`, merged to `6a4aff75` first. Three commits, in the
+order the evaluator ranked them. Every claim below was read off a look-pass run
+whose slug directory was cleared first; `--check --interact` is green on all
+four exemplars.
+
+**Measured length, 2465 7th, `document.documentElement.scrollHeight` at 375:
+20,768px → 15,832px (19.5 screens).** The look-pass prints this itself now, at
+both widths, so a length claim in the next review comes off the same run as the
+shots. Other exemplars: 19968 12,312 · 1617 NW 8th 14,283 · Concorde 17,638.
+
+| Item | Status |
+|---|---|
+| §3.B "homes like yours" gets ONE meaning | DONE. Ch1's zone label reads "where homes like yours sold, adjusted for date and size" (and shrinks to fit the phone frame); ch5 states the raw close prices and says "before adjusting for date and size"; ch2's dollars-a-foot line says "unadjusted". |
+| §3.D $532,311 | CUT. It sat above all twelve monthly medians drawn under it with no window, table or fetch stamp beside it that would make them different sets. §0: a figure that cannot be reconciled to what is drawn under it does not ship. |
+| §2.1 basis and limits | DONE. Both paragraphs read `adjustmentsMade(comps)`, so neither can name an adjustment the grid did not print. "Basis for the value" moves up beside the three a reader uses. |
+| §3.F the range stated once | DONE. Chapter 3 states it once, off `pricing.valueLow/valueHigh` — the pair the cover reads — rounded to the nearest thousand, with the list range beside it or "List in that range" when they are the same pair. The table lead and the strip reading no longer restate an untrimmed pair. |
+| §3.E wide ranges | DONE. Over 15 percent, one sentence off `pricing.rangeRule` gives the cause, on the letter cover and the immersive hero. |
+| §3.H concessions caption | DONE, under the grid. |
+| §2.4 four dead links | DONE. `trackedDocLink('listing', …)` now gets `mlsNumber` off `notableSales[].listNumber`; the four resolve to their own listing pages. |
+| §1 duplicated shading caption | DONE. The caption is on the drawing; the sentence under it says what a dot is. |
+| §3.G the strips off the exemplar | DONE. The axis is the kept sales, the list line and the FAILED ask. A set-aside sale is hollow with its own label inside the axis, named in the caption outside it. 19968's "asked $140K" is gone — that ask did not fail, it was a 2004 list price. |
+| §4 row → pin | DONE. The header cell carries a 44px overlay with role, tabindex, focus ring and Enter/Space. |
+| item 3, phone length | DONE, 15,832px. Sale cards are a conclusion with the working one tap under; ch2's story cards fold their price path; the statutory disclosure block sits behind one control (TASTE.md's own remedy for prose with no figure); ch4's competitor card lies down on a phone (104px thumbnail beside the facts, same markup and same filter); ch3's controls are one block, a segmented pair and a select. |
+| item 3, chart marks | DONE with a stated deviation. A dense series cannot give every mark a 44px-WIDE target without the neighbour swallowing it — the reason the strip's target was 26 units. The target is now a 44-unit-tall band as wide as the gap to the nearest neighbour. The dimension that was failing is the one that grew. Chapter 5's four sales are 44px chips. |
+| item 4, "PRICING REPORT" | DONE. The letter's eyebrow reads "Price opinion". The `<title>` and the PDF filename keep "Pricing report": that is the file's name, not the masthead. |
+| item 4, the cover photo | NOT A RENDERER CHOICE, and that is the finding. All four rows hold exactly ONE url in `extras.photos.current`, `historical` is empty, and `subject.photoUrl` IS that url — checked against the stored rows 2026-09-08. The annotated aerial is the only photograph the MLS carries for 2465 7th. A rule that skipped the first photo would degrade every listing whose first photo is its front elevation. The photo SET belongs to the build side; written into the comment on `heroForSubject` so it is not re-litigated. |
+
+Not touched, by instruction: `pricing.timeAdjustment.sentence` and the grid's
+date column render exactly as `lib/pricing` gives them (§3.A is R2d's).

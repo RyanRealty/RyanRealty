@@ -60,6 +60,15 @@ export function int(n: number | null | undefined): string {
   return new Intl.NumberFormat('en-US').format(Math.round(n))
 }
 
+/**
+ * Small counts read as words inside a sentence; anything larger stays a
+ * numeral. "The 5 sales behind your price" is a spreadsheet talking.
+ */
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+export function countWord(n: number | null | undefined): string {
+  return n != null && Number.isInteger(n) && n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : int(n)
+}
+
 export function dec(n: number | null | undefined, digits = 1): string {
   if (n == null || !Number.isFinite(n)) return '—'
   return n.toFixed(digits)

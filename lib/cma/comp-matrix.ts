@@ -465,7 +465,20 @@ function matrixTable(
             c.label,
           )}</a>`
         : `<span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span>`
-      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${img}${name}${
+      // ROW → PIN IS A CONTROL, so it says so. The pin on the map is a real
+      // <button>; this end of the same pair was a bare <th> with no role, no
+      // tabindex and no cursor, so one direction of a two-way interaction was
+      // neither discoverable nor keyboard-reachable (tasteReview round two,
+      // §4). `role="button"` on the <th> would take the header semantics away
+      // from the column, so the affordance goes on an inner element and the
+      // <th> keeps being a header.
+      const control =
+        c.key === 'subject'
+          ? ''
+          : `<span class="matrix-hit" role="button" tabindex="0" aria-label="${esc(
+              `Show ${c.label} on the map`,
+            )}" data-comp="${esc(pin)}" data-pin="${esc(pin)}"></span>`
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${control}${img}${name}${
         // `sub` is composed here, from figures already escaped by usd()/int(),
         // and carries one <br/> of our own — never reader input.
         c.sub ? `<span class="matrix-sub">${c.sub}</span>` : ''
@@ -542,7 +555,7 @@ function matrixStack(
       // card per sale with the same lines"). Reading the folded columns is
       // what keeps a row the table dropped from surviving on the phone.
       const col = cols[i]
-      const lines = rows
+      const all = rows
         .map((row, ri) => ({
           label: row.label,
           grid: row.grid === true,
@@ -550,21 +563,31 @@ function matrixStack(
           value: col?.cells[ri] ?? '-',
         }))
         .filter((line) => line.grid && line.value !== '-')
-        .map(
-          (line) =>
-            `<div class="comp-stack-line"${
-              line.rule ? '' : ' data-adj="1"'
-            }><span class="k">${esc(line.label)}</span><span class="v n">${esc(line.value)}</span></div>`,
-        )
-        .join('')
+      const lineHtml = (line: (typeof all)[number]) =>
+        `<div class="comp-stack-line"${
+          line.rule ? '' : ' data-adj="1"'
+        }><span class="k">${esc(line.label)}</span><span class="v n">${esc(line.value)}</span></div>`
+      // THE CARD IS A CONCLUSION; THE WORKING IS ONE TAP UNDER IT.
+      //
+      // tasteReview round two, item 3: the phone document went the wrong way,
+      // 19,987px to 20,768px, and this chapter was 5,788 of it — six cards at
+      // 713px each, every one carrying a drawn price path and eight grid lines
+      // a reader has to scroll past to reach the next sale. Nothing is removed:
+      // the price path, its dated history and every adjustment line sit behind
+      // the card's own expand, built by the interaction layer, so the print
+      // letter and a reader with no JavaScript still see all of it.
+      const conclusion = all.filter((line) => line.rule).map(lineHtml).join('')
+      const working = all.filter((line) => !line.rule).map(lineHtml).join('')
+      const fold = `<div class="comp-fold">${priceHistoryLineHtml(pricePathFromSale(c), `sale-${pin}`)}${
+        working ? `<div class="comp-stack-grid">${working}</div>` : ''
+      }</div>`
       return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<a class="comp-stack-addr" href="${esc(
         compHref(c, ctx),
       )}" data-rr-track="cma-sale">${pinBadge(pin)}${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
         dateLong(c.closeDate),
-      )} · ${usd(c.closePrice)}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${priceHistoryLineHtml(
-        pricePathFromSale(c),
-        `sale-${pin}`,
-      )}<div class="comp-stack-grid">${lines}</div></article>`
+      )} · ${usd(c.closePrice)}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${
+        conclusion ? `<div class="comp-stack-grid is-answer">${conclusion}</div>` : ''
+      }${fold}</article>`
     })
     .join('')
   return `<div class="comp-stack" aria-label="The sales that set this price, one card each">${yours}${cards}</div>`

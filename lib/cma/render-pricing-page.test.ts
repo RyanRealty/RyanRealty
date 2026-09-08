@@ -89,12 +89,16 @@ describe('pricingPage', () => {
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
     expect(html).toContain('Sale price today')
-    expect(html).toContain('List between $639,000 and $669,000.')
+    // ONE statement of the range, off pricing.valueLow/valueHigh — and on this
+    // row the list range IS that pair, so the instruction prints without the
+    // figures a second time (tasteReview round two, §1 Words).
+    expect(html).toContain('The sales support $639,000 to $669,000.')
+    expect(html).toContain('List in that range.')
+    expect(html).not.toContain('List between $639,000 and $669,000.')
     // The three-stat strip is gone: the number IS the chapter title and the
     // range is the line under it (CMA_REIMAGINED_2026-09-07.md chapter 3).
     expect(html).not.toContain('List low')
     expect(html).not.toContain('List high')
-    expect(html).toContain('List between $639,000 and $669,000.')
     expect(html).toContain('per square foot')
     expect(html).not.toContain('Expected close $640,000.')
     expect(html).not.toContain('The three checks')
