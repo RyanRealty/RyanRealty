@@ -189,7 +189,7 @@
     "#homes",
     "#subdivisions",
     "#market",
-    "V3PlaceAffordability #afford (SITE-07: the two-way affordability instrument, ending in the search at its ceiling)",
+    "#afford",
     "#daily-life",
     "#about",
     "V3PlaceDocuments",
