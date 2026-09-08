@@ -111,7 +111,7 @@ import {
 import { loadPlaceTypeCoverPhotos } from '@/lib/place/load-place-type-covers'
 import { overlaysFromRegions } from '@/lib/place/child-rings'
 import CityPageTracker from '@/components/city/CityPageTracker'
-import { CityAlertSheet } from './_v3/CityAlertSheet.client'
+import { CityAlertsStrip } from './_v3/CityAlertSheet.client'
 import { cityLibraryHero, cityStagePoster } from './_v3/city-opening'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import {
@@ -668,6 +668,19 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             {verdictCaption ? <p className="place-opening__caption">{verdictCaption}</p> : null}
           </div>
         </div>
+
+        {/* SITE-04: the one on-page ask as the first callout after the opening,
+            with the real 30-day count as its claim, and the sticky repeat past
+            #atlas from the same component. Same server action, same payload,
+            same honeypot as the sheet it replaces. */}
+        <CityAlertsStrip
+          id="alerts"
+          cityName={cityName}
+          geoSlug={slug}
+          newCount30d={publicPace.newCount30d}
+          updatedAt={leftoverStamp}
+        />
+
         {(
           <V3Atlas
             id="atlas"
@@ -788,9 +801,6 @@ export default async function CityDetailPage({ params, searchParams }: Props) {
             items={aboutItems}
           />
         ) : null}
-
-        {/* Pattern 5, Sheet. Same server action, same payload, same honeypot. */}
-        <CityAlertSheet cityName={cityName} />
 
         {/* D93: the live feed, every row carrying its listing's own photo. */}
         {firstAct ? (

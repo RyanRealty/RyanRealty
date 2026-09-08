@@ -108,7 +108,7 @@ import { slugify } from '@/lib/slug'
 import '@/components/search/search-ledger.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
-import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
+import { CommunityAlertsStrip } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
 import {
   buildExploreEdges,
@@ -682,6 +682,23 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             <CommunityPlaceValue slug={slug} placeName={publicName} />
           </div>
         </div>
+
+        {/* SITE-04: the listing-alert ask as the first callout after the
+            opening, with this community's real 30-day count as its claim, and
+            the sticky repeat past #atlas from the same component. Ghost button:
+            the opening's valuation ask above is the page's one filled primary.
+            Same server action, same payload, same honeypot as the sheet it
+            replaces. */}
+        <CommunityAlertsStrip
+          id="alerts"
+          communityName={publicName}
+          city={cityName}
+          subdivision={community.subdivision}
+          geoSlug={neighborhoodSlug}
+          newCount30d={publicPace.newCount30d}
+          updatedAt={leftoverStamp}
+        />
+
         {(
           <V3Atlas
             id="atlas"
@@ -809,12 +826,6 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
             rows={[firstGuide, ...restGuide]}
           />
         ) : null}
-
-        <CommunityAlertSheet
-          communityName={publicName}
-          city={cityName}
-          subdivision={community.subdivision}
-        />
 
         {firstOh ? (
           <V3Ledger

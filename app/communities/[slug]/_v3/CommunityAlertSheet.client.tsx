@@ -1,51 +1,38 @@
 'use client'
 
 /**
- * The community node's one on-page ask, as a barrel Sheet.
+ * The community node's listing-alert capture, bound to the barrel's
+ * V3AlertsStrip (site queue SITE-04, Matt 2026-09-07): the first callout after
+ * the opening, with this community's real 30-day count as its claim, and the
+ * sticky repeat past #atlas.
  *
- * THE CAPTURE CONTRACT IS UNCHANGED from KbCommunityAlerts:
- *   - the same server action, `submitSearchAlertSignup` from
- *     app/actions/search-alert-capture.ts
- *   - the same payload: `{ email, filters, company }`, with `filters` carrying
- *     `city` always and `subdivision` only when the community has one, the
- *     exact keys the unified `listing_alerts` row is normalized from
- *   - the same field NAME on the one visible control: `email`
- *   - the same trap NAME on the one hidden control: `company`
- *   - the same two post-success side effects, in the same order: the guest-watch
- *     residual (`buildGuestWatchFromPlace` -> `rememberGuestWatch`) so a return
- *     visit shows "you are watching X" without an account, and the `alert_create`
- *     measurement event built by `buildAlertCreatePayload('daily')`.
+ * THIS FILE KEEPS ITS NAME. ci:publish-median-caption pins
+ * `app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx` as the community
+ * surface that publishes no median, and its assertion is on the path. The
+ * component it exports is the strip; the sheet it replaced sat after the area
+ * guide, nine sections past the Atlas.
  *
- * THE HONEYPOT IS BACK, through the barrel rather than around it. The first cut of
- * this sheet dropped it and declared the deletion, reasoning that V3Sheet renders
- * one labelled control per step and a trap is not a question. That reasoning is
- * why `trap` is a SHEET-level prop rather than a field kind: a honeypot is a
- * property of the working surface. Its value rides in `onAdvance().answers` under
- * `company` and reaches the action unchanged, so the first of that action's five
- * defences, the naive-bot filter in FRONT of the per-IP limiter, is restored on a
- * public write path. The limiter (fail-closed in production) and the RFC-bounded
- * email validation behind it are as they were.
+ * THE CAPTURE CONTRACT IS UNCHANGED from the sheet and from KbCommunityAlerts
+ * before it: the same server action, `submitSearchAlertSignup`; the same
+ * payload `{ email, filters, company }`, with `filters` carrying `city` always
+ * and `subdivision` only when the community has one; the same field name on
+ * the visible control, `email`; the same trap name on the hidden one,
+ * `company`, forwarding its own value; and the same two post-success effects
+ * in the same order: the guest-watch residual, then the `alert_create`
+ * measurement event, now carrying which mount sent it.
  *
- * THE STANDING DISCLOSURE IS BACK TOO, and it had left with the honeypot without
- * being declared. KbCommunityAlerts always rendered "One email per new listing.
- * Unsubscribe any time." and, after a success, "Pause from any alert email." An
- * address collected on a licensed broker's site with no frequency statement and no
- * unsubscribe statement is a change to the capture contract, not a visual choice.
- * Both lines are step prose here. The third piece, "Sign in to manage alerts", was
- * a LINK, and V3Sheet renders prose rather than nodes on purpose (an open node slot
- * is the hole a nameless control walks through), so the route to manage a
- * subscription is a door in the closing block instead. That is the one barrel gap
- * this section still has, and it is reported to the orchestrator.
+ * THE BUTTON IS A GHOST HERE, not a primary: the community opening already
+ * carries the page's one filled ask (CommunityPlaceValue, SITE-01), and one
+ * primary per viewport is the rule (PUBLIC_UI.md section 1).
  *
- * Client because the answer, the send, and the confirmation are visitor-caused
- * state. Controlled on purpose: `steps` and `currentStepId` are derived from one
- * status value and always change together, so the sheet never sees an id that
- * names no step, and while the send is in flight the only rendered step is the
- * terminal one, so a second tap cannot fire a second submit.
+ * THE PRICE-DROP ALERT IS THE SAME ROW: see CityAlertSheet.client.tsx for why
+ * a second row is not honest today. The disclosure (frequency, unsubscribe) is
+ * in lib/site/place-alerts.ts, in copy a visitor reads. The route to manage a
+ * subscription stays a door in the closing block.
  */
 
-import { useCallback, useRef, useState } from 'react'
-import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { useCallback } from 'react'
+import { V3AlertsStrip, type V3AlertsSubmit } from '@/components/site/v3'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
@@ -54,134 +41,70 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
+import { placeAlertsCopy } from '@/lib/site/place-alerts'
 
-type Status = 'asking' | 'sending' | 'sent' | 'failed'
+const TRAP = { name: 'company', label: 'Company' } as const
 
-export function CommunityAlertSheet({
-  communityName,
-  city,
-  subdivision,
-}: {
+type Props = {
+  /** The section id. The page passes it so the contract's `#alerts` resolves in the page source (ci:page-purpose). */
+  id: string
   communityName: string
   city: string
   /** Empty string = whole city, exactly as KbCommunityAlerts read it. */
   subdivision: string
-}) {
-  const [status, setStatus] = useState<Status>('asking')
-  const [problem, setProblem] = useState<string>('')
-  const answersRef = useRef<Record<string, string>>({})
+  /** The Market Truth neighborhood slug the 30-day count was read under. Trace only. */
+  geoSlug: string
+  /** Market Truth new_listings_30d for this community, or null when withheld. */
+  newCount30d: number | null
+  /** The page's Market Truth stamp, the same one its market figures carry. */
+  updatedAt: string | null
+}
 
-  const send = useCallback(
-    async (answers: Readonly<Record<string, string>>) => {
-      setStatus('sending')
+export function CommunityAlertsStrip({ id, communityName, city, subdivision, geoSlug, newCount30d, updatedAt }: Props) {
+  const submit = useCallback<V3AlertsSubmit>(
+    async (input) => {
       const filters: Record<string, string> = {
         city,
         ...(subdivision ? { subdivision } : {}),
       }
-      try {
-        const result = await submitSearchAlertSignup({
-          email: answers.email ?? '',
-          filters,
-          // The trap's own answer, never a hardcoded ''. A filled `company` is the
-          // action's signal to fake a success and write nothing, and hardcoding the
-          // no-bot value is the same as having no trap.
-          company: answers.company ?? '',
-          sessionId: readRrSessionId(), // hydration-safe
-        })
-        if (result.ok) {
-          rememberGuestWatch( // hydration-safe: event/effect storage only
-            buildGuestWatchFromPlace({
-              communityName,
-              city,
-              subdivision: subdivision || undefined,
-            }),
-          )
-          fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
-          setStatus('sent')
-          return
-        }
-        setProblem(result.error)
-        setStatus('failed')
-      } catch {
-        // A thrown send is the same visitor-facing fact as a rejected one:
-        // nothing was captured. Saying so beats a control that never resolves.
-        setProblem('That did not send. Check the connection and try again.')
-        setStatus('failed')
-      }
+      const result = await submitSearchAlertSignup({
+        email: input.email,
+        filters,
+        // The trap's own answer, never a constant. See the header.
+        company: input.company,
+        sessionId: readRrSessionId(), // hydration-safe
+      })
+      if (!result.ok) return result
+      rememberGuestWatch( // hydration-safe: event/effect storage only
+        buildGuestWatchFromPlace({
+          communityName,
+          city,
+          subdivision: subdivision || undefined,
+        }),
+      )
+      fireSearchEvent('alert_create', { ...buildAlertCreatePayload('daily'), placement: input.placement })
+      return result
     },
     [city, communityName, subdivision],
   )
 
-  const onAdvance = useCallback(
-    (event: V3SheetAdvance) => {
-      answersRef.current = { ...event.answers }
-      if (event.toStepId !== null) return
-      void send(answersRef.current)
-    },
-    [send],
-  )
-
-  const askStep: V3SheetStep = {
-    id: 'email',
-    label: `Where should new ${communityName} listings go?`,
-    // What the address is used for, how often, and how it stops. Rendered on the
-    // asking step, so it is on screen before the address is typed.
-    children: 'One email per new listing. Unsubscribe any time.',
-    field: {
-      kind: 'email',
-      name: 'email',
-      label: 'Email',
-      required: true,
-      autoComplete: 'email',
-      maxLength: 254,
-      placeholder: 'you@email.com',
-      requiredMessage: 'An email is required so the alert has somewhere to land.',
-      invalidMessage: 'That address does not look complete.',
-    },
-    advanceLabel: 'Get alerts',
-  }
-
-  const steps: readonly V3SheetStep[] =
-    status === 'sent'
-      ? [
-          {
-            id: 'sent',
-            label: `Set. New ${communityName} listings land by email when they hit the market.`,
-            children: 'One email per new listing. Pause or unsubscribe from any alert email.',
-          },
-        ]
-      : status === 'sending'
-        ? [{ id: 'sending', label: 'Setting up your alert.' }]
-        : status === 'failed'
-          ? [askStep, { id: 'failed', label: problem, advanceLabel: 'Try again' }]
-          : [askStep]
-
-  const currentStepId =
-    status === 'sent'
-      ? 'sent'
-      : status === 'sending'
-        ? 'sending'
-        : status === 'failed'
-          ? 'failed'
-          : 'email'
+  const copy = placeAlertsCopy({
+    placeName: communityName,
+    scopeName: communityName,
+    newCount30d,
+    geoType: 'neighborhood',
+    geoSlug,
+  })
 
   return (
-    <V3Sheet
-      id="alerts"
-      eyebrow="New listings"
-      heading={`Get new ${communityName} listings by email`}
-      steps={steps}
-      // The bait keeps the name a scripted post reads and fills. Nobody sees it:
-      // the pair is aria-hidden and out of the tab order inside the primitive.
-      trap={{ name: 'company', label: 'Company' }}
-      currentStepId={currentStepId}
-      showProgress={false}
-      showEcho={false}
-      onStepChange={(id) => {
-        // Backing out of the failure screen returns the sheet to the question.
-        if (id === 'email') setStatus('asking')
-      }}
-      onAdvance={onAdvance}
+    <V3AlertsStrip
+      {...copy}
+      id={id}
+      promise={`Every new listing in ${copy.scopePhrase}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
+      updatedAt={updatedAt}
+      trap={TRAP}
+      emphasis="ghost"
+      onSubmit={submit}
     />
   )
 }

@@ -1,34 +1,49 @@
 'use client'
 
 /**
- * The city node's one on-page ask, as a barrel Sheet.
+ * The city node's listing-alert capture, bound to the barrel's V3AlertsStrip
+ * (site queue SITE-04, Matt 2026-09-07): the first callout after the opening,
+ * with the real 30-day count as its promise, and the sticky repeat past #atlas.
+ *
+ * THIS FILE KEEPS ITS NAME. ci:publish-median-caption pins
+ * `app/cities/[slug]/_v3/CityAlertSheet.client.tsx` as the city surface that
+ * publishes no median, and its assertion is on the path. The component it
+ * exports is the strip; the sheet it replaced sat after #about, seven sections
+ * past the Atlas, on a page whose one on-page ask this is.
  *
  * THE CAPTURE CONTRACT IS CARRIED ACROSS. This calls the same server action the
- * KB block called, `submitSearchAlertSignup` in app/actions/search-alert-capture.ts,
+ * sheet called, `submitSearchAlertSignup` in app/actions/search-alert-capture.ts,
  * with the same payload shape and the same field name: `email`, under the same
- * filter map the KB block built on this route, `{ city, propertyType: 'A' }` (no
- * `subdivision` key, because KbCommunityAlerts omitted it whenever its
- * `subdivision` prop was the empty string this page passed). The two side
- * effects of a successful capture are unchanged and fire in the same order: the
- * F2 guest-watch residual through `buildGuestWatchFromPlace` +
- * `rememberGuestWatch`, then the `alert_create` search event with
- * `buildAlertCreatePayload('daily')`. Nothing about what reaches
- * `listing_alerts` or `crm_people` moved. Only the markup did.
+ * filter map this route always built, `{ city, propertyType: 'A' }` (no
+ * `subdivision` key). The two side effects of a successful capture are
+ * unchanged and fire in the same order: the F2 guest-watch residual through
+ * `buildGuestWatchFromPlace` + `rememberGuestWatch`, then the `alert_create`
+ * search event with `buildAlertCreatePayload('daily')`, now carrying which of
+ * the two mounts sent it (`placement`) so the callout and the strip can be
+ * measured apart. Nothing about what reaches `listing_alerts` or `crm_people`
+ * moved.
  *
- * THE HONEYPOT IS A SHEET-LEVEL `trap` named `company`. Its value rides in
- * onAdvance().answers and is forwarded to the action. Hardcoding `company: ''`
- * is the same as having no trap.
+ * THE HONEYPOT IS THE STRIP'S `trap`, named `company`. Its own value rides in
+ * the submit input and is forwarded to the action. Hardcoding `company: ''` is
+ * the same as having no trap.
  *
- * Client because the answer, the step, and the send are all visitor-caused
- * state. Controlled on purpose, the same discipline MarketInquirySheet states:
- * `steps` and `currentStepId` derive from one status value and always change
- * together, so the sheet never sees an id that names no step, and while the send
- * is in flight the only rendered step is the terminal one, so a second click
- * cannot fire a second submit.
+ * THE PRICE-DROP ALERT IS THE SAME ROW. Every `listing_alerts` row this action
+ * writes takes the table's default event toggles, and `price_change` is on by
+ * default, so the engine (lib/alerts/event-detection.ts) already mails a price
+ * change on any home it has told this subscriber about. The action exposes no
+ * path to set the toggles, and the one price filter in the allowlist
+ * (`priceReduced`) keys on a listings column the MLS feed stopped populating on
+ * 2026-04-07 (lib/data/listings/getPriceDrops.ts), so a second "price drops"
+ * row would be a filter the engine cannot honor. The promise names what the
+ * row really sends and offers no toggle the system would ignore.
+ *
+ * The disclosure a licensed broker's capture form owes the visitor stays in
+ * copy a visitor reads: how often the email comes and how to stop it
+ * (ci:alert-capture-disclosure). See lib/site/place-alerts.ts.
  */
 
-import { useCallback, useRef, useState } from 'react'
-import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
+import { useCallback } from 'react'
+import { V3AlertsStrip, type V3AlertsSubmit } from '@/components/site/v3'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
@@ -37,121 +52,64 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
+import { placeAlertsCopy } from '@/lib/site/place-alerts'
 import { CITY_ALERT_PROPERTY_TYPE } from './city-constants'
 
-type Status = 'asking' | 'sending' | 'sent' | 'failed'
+const TRAP = { name: 'company', label: 'Company' } as const
 
-export function CityAlertSheet({ cityName }: { cityName: string }) {
-  const [status, setStatus] = useState<Status>('asking')
-  const [problem, setProblem] = useState<string>('')
-  // What the visitor typed on the last advance, kept so a retry after a failed
-  // send resubmits it instead of asking for the address again.
-  const answersRef = useRef<Record<string, string>>({})
+type Props = {
+  /** The section id. The page passes it so the contract's `#alerts` resolves in the page source (ci:page-purpose). */
+  id: string
+  cityName: string
+  /** The Market Truth city slug the 30-day count was read under. Trace only. */
+  geoSlug: string
+  /** Market Truth new_listings_30d for this city, or null when withheld. */
+  newCount30d: number | null
+  /** The page's Market Truth stamp, the same one its market figures carry. */
+  updatedAt: string | null
+}
 
-  const send = useCallback(
-    async (answers: Readonly<Record<string, string>>) => {
-      setStatus('sending')
-      const filters: Record<string, string> = {
-        city: cityName,
-        propertyType: CITY_ALERT_PROPERTY_TYPE,
-      }
-      try {
-        const result = await submitSearchAlertSignup({
-          email: answers.email ?? '',
-          filters,
-          company: answers.company ?? '',
-          sessionId: readRrSessionId(), // hydration-safe
-        })
-        if (result.ok) {
-          rememberGuestWatch( // hydration-safe: event/effect storage only
-            buildGuestWatchFromPlace({
-              communityName: cityName,
-              city: cityName,
-              extraFilters: { propertyType: CITY_ALERT_PROPERTY_TYPE },
-            }),
-          )
-          fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
-          setStatus('sent')
-          return
-        }
-        setProblem(result.error)
-        setStatus('failed')
-      } catch {
-        // A thrown send is the same visitor-facing fact as a rejected one:
-        // nothing was captured. Saying so beats a spinner that never resolves.
-        setProblem('That did not send. Check the connection and try again.')
-        setStatus('failed')
-      }
+export function CityAlertsStrip({ id, cityName, geoSlug, newCount30d, updatedAt }: Props) {
+  const submit = useCallback<V3AlertsSubmit>(
+    async (input) => {
+      const result = await submitSearchAlertSignup({
+        email: input.email,
+        filters: { city: cityName, propertyType: CITY_ALERT_PROPERTY_TYPE },
+        // The trap's own answer, never a constant. See the header.
+        company: input.company,
+        sessionId: readRrSessionId(), // hydration-safe
+      })
+      if (!result.ok) return result
+      rememberGuestWatch( // hydration-safe: event/effect storage only
+        buildGuestWatchFromPlace({
+          communityName: cityName,
+          city: cityName,
+          extraFilters: { propertyType: CITY_ALERT_PROPERTY_TYPE },
+        }),
+      )
+      fireSearchEvent('alert_create', { ...buildAlertCreatePayload('daily'), placement: input.placement })
+      return result
     },
     [cityName],
   )
 
-  const onAdvance = useCallback(
-    (event: V3SheetAdvance) => {
-      answersRef.current = { ...event.answers }
-      if (event.toStepId !== null) return
-      void send(answersRef.current)
-    },
-    [send],
-  )
-
-  const askStep: V3SheetStep = {
-    id: 'email',
-    label: `Where should new ${cityName} listings go?`,
-    field: {
-      kind: 'email',
-      name: 'email',
-      label: 'Email',
-      required: true,
-      autoComplete: 'email',
-      maxLength: 254,
-      placeholder: 'you@email.com',
-      requiredMessage: 'An email is required so the alert has somewhere to land.',
-      invalidMessage: 'That address does not look complete.',
-    },
-    children: 'One email per new listing. Unsubscribe any time.',
-    advanceLabel: 'Get alerts',
-  }
-
-  const steps: readonly V3SheetStep[] =
-    status === 'sent'
-      ? [
-          {
-            id: 'sent',
-            label: `Set. New ${cityName} listings land by email when they hit the market.`,
-            children: 'Pause from any alert email.',
-          },
-        ]
-      : status === 'sending'
-        ? [{ id: 'sending', label: 'Setting up your alert.' }]
-        : status === 'failed'
-          ? [askStep, { id: 'failed', label: problem, advanceLabel: 'Try again' }]
-          : [askStep]
-
-  const currentStepId =
-    status === 'sent'
-      ? 'sent'
-      : status === 'sending'
-        ? 'sending'
-        : status === 'failed'
-          ? 'failed'
-          : 'email'
+  const copy = placeAlertsCopy({
+    placeName: cityName,
+    scopeName: cityName,
+    newCount30d,
+    geoType: 'city',
+    geoSlug,
+  })
 
   return (
-    <V3Sheet
-      id="alerts"
-      eyebrow="New listings"
-      heading={`Get new ${cityName} listings by email`}
-      steps={steps}
-      trap={{ name: 'company', label: 'Company' }}
-      currentStepId={currentStepId}
-      showEcho={false}
-      showProgress={false}
-      onStepChange={(id) => {
-        // Backing out of the failure screen returns the sheet to the question.
-        if (id === 'email') setStatus('asking')
-      }}
-      onAdvance={onAdvance}
+    <V3AlertsStrip
+      {...copy}
+      id={id}
+      promise={`Every new listing in ${copy.scopePhrase}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
+      updatedAt={updatedAt}
+      trap={TRAP}
+      emphasis="primary"
+      onSubmit={submit}
     />
   )
 }

@@ -151,6 +151,21 @@ export { V3Ask } from './V3Ask.client'
 export { V3PlaceValue } from './V3PlaceValue.client'
 export type { V3PlaceValueProps } from './V3PlaceValue.client'
 
+/**
+ * The place-page listing-alert capture (SITE-04, 2026-09-07): the first callout
+ * after a place opening, with the real 30-day count as its promise, and the
+ * sticky repeat that shows once the visitor is past the Atlas. One component,
+ * one capture contract; a route binds its server action in a small client file.
+ */
+export { V3AlertsStrip } from './V3AlertsStrip.client'
+export type {
+  V3AlertsStripProps,
+  V3AlertsSubmit,
+  V3AlertsResult,
+  V3AlertsPlacement,
+  V3AlertsTrap,
+} from './V3AlertsStrip.client'
+
 export type { V3AskProps, V3AskField, V3AskOption, V3AskResult } from './V3Ask.client'
 
 export { V3ChartSwitch } from './V3ChartSwitch.client'

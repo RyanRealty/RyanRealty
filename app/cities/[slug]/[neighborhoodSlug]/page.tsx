@@ -99,7 +99,7 @@ import {
   placeCostChart,
   tooFewSalesItems,
 } from '@/app/cities/[slug]/_v3/place-graphics'
-import { NeighborhoodAlertsSheet } from './_v3/NeighborhoodAlertsSheet.client'
+import { NeighborhoodAlertsStrip } from './_v3/NeighborhoodAlertsSheet.client'
 import { dailyLifeRows } from './_v3/neighborhood-daily-life'
 import {
   neighborhoodAboutItems,
@@ -539,6 +539,21 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             </V3Heading>
           </div>
         </div>
+
+        {/* SITE-04: the ask as the first callout after the opening, with this
+            neighborhood's real 30-day count as its claim and the city-scoped
+            promise, plus the sticky repeat past #atlas from the same component.
+            Same server action, same payload, same honeypot as the sheet it
+            replaces. */}
+        <NeighborhoodAlertsStrip
+          id="alerts"
+          cityName={cityName}
+          neighborhoodName={neighborhood.name}
+          geoSlug={metricNeighborhoodSlug}
+          newCount30d={publicPace.newCount30d}
+          updatedAt={leftoverStamp}
+        />
+
         {(
           <V3Atlas
             id="atlas"
@@ -666,9 +681,6 @@ export default async function NeighborhoodDetailPage({ params, searchParams }: P
             action={{ label: v3Text(`Every open house in ${cityName}`), href: `/open-houses/${citySlug}` }}
           />
         ) : null}
-
-        {/* Pattern 5, Sheet. Same server action, same payload, same honeypot. */}
-        <NeighborhoodAlertsSheet cityName={cityName} neighborhoodName={neighborhood.name} />
 
         {/* Guides - real published posts, never generated filler. */}
         {firstGuide ? (
