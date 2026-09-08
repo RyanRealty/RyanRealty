@@ -1,4 +1,56 @@
-# Current — 2026-09-07 (voice canon retired, one voice doc)
+# Current — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
+
+Owner: Claude (Fable 5.1), session 3db16241, main checkout. Landed on `origin/main`:
+c5ecb045 (G-FRESH event dates), e1d77374 (the site queue mechanism), b3c34e88 (SITE-01).
+
+**Matt's directives (all 2026-09-07):** "I want this figured out once and for all" (the
+site keeps getting re-audited and never converts); the goal is traffic that converts to
+clients, a client being a signed buyer representation or listing agreement; seven product
+answers recorded in memory `project_site_conversion_decisions_2026-09-07` and the research
+artifact https://claude.ai/code/artifact/525cdcda-4c64-4954-9f5f-3b5eba500cdf (34/49 rival
+pages read and re-verified, 22 site programs since June traced).
+
+**The rule that ends the re-audits.** The site backlog is `loop_work_nodes`, domain
+`public-ux`, version_gap `SITE-00..12` + `SITE-M1` (table in
+`docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`). `npx tsx scripts/loop-brief.ts` serves the
+oldest open SITE node first whenever `app/**` or `components/site/**` changed in 14 days and
+releases stale claims itself. A commit touching the public site needs `Node: <id>` (G72,
+commit-msg hook; `Node: none (<reason>)` is the recorded escape). A new audit doc under
+`docs/plans` must name the nodes it appends to. Do not write a new site audit. Pull the node.
+
+**Shipped**
+- SITE-00 done. SITE-01 shipped and set `blocked` on MEASUREMENT (not a person): every
+  `/communities/[slug]` opens with the address ask (`CommunityPlaceValue` → barrel
+  `V3PlaceValue`), answer = verdict + days to pending + cash share + comparable-close count
+  with a source line, then email (required) + phone (optional) → cmas row with the new
+  `place-page` origin (send mode `now`, auto-send lane OFF), CRM person + tags + note,
+  rr_vid stitch, sequence enroll, broker alert, same-minute confirmation through
+  `sendGovernedEmail` (Gmail rail, broker signature; a system message per Matt's ruling,
+  CLAUDE.md §1). Verified on the dev server against production data; the confirmation
+  landed in Matt's inbox. Fleet-test identities are suppressed by design, so a test submit
+  shows "Sent" and no email goes.
+- Separate evaluator scored the community page 59 (prior 57). Its two functional findings
+  are fixed; the rest are appended to the SITE-01 node (draw the answer as bars/dots, a
+  buyer door in the card, shoot the answer state with the sheet's own scroll offset).
+- Search Console truth (scripts/_gsc-place-pages.mjs): `/communities/*` 4,516 impressions
+  and 24 clicks in 28 days; `/cities/bend/*` 17 and 0. Item 1 targets communities first.
+
+**Next (the queue, in order)**
+1. SITE-02 `/sell`: show the sourced answer between the address and the contact step
+   (the form goes straight to email today). The DAL for the answer exists:
+   `lib/data/places/getPlaceValueAnswer.ts` + `lib/cma/place-comps.ts`.
+2. SITE-03 place hero button with live count + verdict; SITE-04 alerts strip; then down
+   the list. SITE-M1 (homepage brokers section on phones) was Matt's "fix" answer.
+3. 2026-10-05: re-open SITE-01, read `cmas.request_source='place-page'` rows stitched by
+   rr_vid and Search Console clicks on `/communities/*`; done if both hold; then the Bend
+   neighborhood route gets the same primitive.
+
+**Do not**
+- Re-audit the site or write a punch-list doc; append to a SITE node instead.
+- Put a dollar figure on a public page for a typed address (Matt: hold it for the CMA).
+- Add a registration wall (Matt: no wall, email-only asks).
+
+## Prior — 2026-09-07 (Claude Fable) — voice canon retired, one voice doc
 
 Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
 `chore/retire-voice-canon`, landing on `origin/main` with this block.
