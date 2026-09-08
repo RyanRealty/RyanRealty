@@ -251,6 +251,18 @@ async function dryRun(slug: string): Promise<DryRun> {
     selectCompsPreferringFacts(subject, {}),
     getCmaMarketContext(subject).catch(() => null),
   ])
+  // EXACTLY lib/cma/build.ts step 2.9: one home, one sale.
+  const { dropPriorSalesOfSameHome } = await import('@/lib/pricing/same-address')
+  const sameAddress = dropPriorSalesOfSameHome(selection.comps)
+  const priorSaleDrops = sameAddress.dropped
+  if (priorSaleDrops.length > 0) {
+    const droppedKeys = new Set(priorSaleDrops.map((d) => d.listingKey))
+    selection.comps = sameAddress.kept
+    if (selection.pricingSales) {
+      selection.pricingSales = selection.pricingSales.filter((s) => !droppedKeys.has(s.listingKey))
+    }
+  }
+
   const withSel = { ...head, pricingSource: selection.pricingSource, compCount: selection.comps.length }
   if (selection.comps.length < MIN_COMPS) {
     return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
@@ -306,6 +318,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { buildRejectedSales } = await import('@/lib/pricing/rejected')
   const rejected = buildRejectedSales({
     candidates: selection.comps,
+    preRejected: priorSaleDrops,
     excluded: [],
     // The kept set is the full ladder result in a dry run, and it is what stops
     // a printed sale from also appearing as rejected.

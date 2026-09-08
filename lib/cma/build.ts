@@ -27,6 +27,7 @@ import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
+import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview } from '@/lib/pricing/review'
 import { attachCompConcessions, attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
@@ -321,6 +322,32 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
+    // 2.9. ONE HOME, ONE SALE (tasteReview round three, §3). cma-19968's grid
+    // printed "60924 Targee" twice, $455,000 in June and $287,500 in March,
+    // rows two and four of one table with no unit number and no note — two
+    // ListingKeys at one address, same 1,394 square feet, three months apart.
+    // One home bought and resold. Weighting both counted that house twice and
+    // priced the subject partly off what the flipper paid.
+    //
+    // Applied HERE, before the judge and before the comp floor, because both
+    // ladders converge on `selection` and the drop must be the same whichever
+    // one found the sales. The dropped rows print under "considered and not
+    // used" with the rule that cut them.
+    const sameAddress = dropPriorSalesOfSameHome(selection.comps)
+    const priorSaleDrops = sameAddress.dropped
+    if (priorSaleDrops.length > 0) {
+      const droppedKeys = new Set(priorSaleDrops.map((d) => d.listingKey))
+      selection.comps = sameAddress.kept
+      if (selection.pricingSales) {
+        selection.pricingSales = selection.pricingSales.filter((s) => !droppedKeys.has(s.listingKey))
+      }
+      selection.trace.push(
+        `One home, one sale: ${priorSaleDrops.length} sale(s) were an earlier close at an address already in the set (${priorSaleDrops
+          .map((d) => d.address)
+          .join(', ')}) and were dropped so no home is counted twice.`,
+      )
+    }
+
     if (selection.comps.length < MIN_COMPS) {
       // ONE broker-readable sentence on the row. Until 2026-09-07 this stored
       // the diagnosis plus the entire tier-by-tier search trace — up to 2,000
@@ -487,6 +514,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         // (cma-65365-concorde, 2026-09-07: five of six).
         p.rejected = buildRejectedSales({
           candidates: selection.comps,
+          preRejected: priorSaleDrops,
           excluded: excludedForAudit(),
           kept: set.map((c) => ({
             listingKey: c.listingKey,
