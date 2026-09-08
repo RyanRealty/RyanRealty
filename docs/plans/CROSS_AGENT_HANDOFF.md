@@ -1,3 +1,52 @@
+# Current — 2026-09-08 (the CMA, reimagined: landed at 6a4aff75)
+
+Owner: Claude (Fable). Same worktrees as the funnel mission; integration branch
+`wt/cma-ship-20260907` → main `6a4aff75`. Blueprint of record with three dated deltas and the
+evaluator's `tasteReview` sections: `docs/plans/CMA_REIMAGINED_2026-09-07.md`. Research:
+`docs/research/cma-professional-practice-2026-09-07.md`. Matt's words that bind it: "no one says
+band … everything should be linking back to my website … illustrate that if homes are priced too
+high they sit and expire … facts and not hype … show all pricing history for every listing …
+beautiful, interactive and engaging."
+
+**Shipped**
+- Statistics on `render_args`, verified three ways (`lib/pricing/local-outcomes.ts`,
+  `lib/data/cma/localOutcomeReads.ts`): city offer-timing curve, first-ask-vs-outcome groups with
+  share of original ask, realization by weeks to offer, local failed-then-sold pairs, the
+  subject's final listing cycle with dated cuts.
+- Pricing (`lib/pricing/estimate.ts`, `rejected.ts`, `reconciliation`): D10 closed — the range is
+  the spread of the printed adjusted sales (trimmed one each end at n ≥ 6), the point their
+  weighted reconciliation carried to an ask at the city sold-to-original-ask share with a ±50%
+  outlier rule; weights and reasons printed; time-adjustment basis printed; concessions per sale;
+  "considered and not used" never overlaps the printed set and states the rule that cut a sale;
+  range rounded once. Backtest within-10%: 60.1 → 64.4 on the 200-subject sample.
+- Document (`lib/cma/` renderers): cover → their listing as a timeline against the value zone →
+  the listings near them that did not sell, one story each with the price path → what overpricing
+  costs (curve, bars, realization table, all local) → the number with a worth strip, method
+  sentences and the appraisal-style grid with weights → competition cards with price paths and
+  cut counts → the market with the median reconciled → net at list from the printed rows →
+  basis and limits → next step with two tracked buttons. Cream throughout, navy cover and
+  closing. Every address, place and button through `trackedDocLink` (`lib/cma/doc-links.ts`) with
+  identity and `utm_campaign=<cmaSlug>`; a comp tap counts as a visit on the CMA's outcomes.
+  Interactive on the web view (timeline cut, curve slider, bar tap, row ↔ pin, adjustments
+  toggle, sort, competition filter, price-history expand, month line), keyboard and touch,
+  reduced motion honoured, no scroll box and no horizontal overflow at 375.
+- Tools: `scripts/cma-lookpass.ts <slug> [--check] [--interact]` is the visual gate;
+  `scripts/cma-build-dryrun.ts`, `scripts/cma-reverdict.ts`, `scripts/cma-lanes-check.ts`.
+- Privacy fix found on the way: `_pid`/`_fuid` were stored verbatim in `visitor_events.page_url`
+  and mirrored to GA4; now stripped server-side.
+
+**Open**
+- Evaluator round two (`tasteReview — 2026-09-08`) is running at handoff; round one scored
+  41/100 and every ranked item was worked. Read it before touching the document.
+- Rebuild wave of every `ready`/`flagged` row on the new pricing is running (agent); numbers
+  moved on many rows, and the expired-list-cap rule will flag some.
+- The cover still uses whatever `extras.photos.current` holds (for 2465 an annotated aerial);
+  choosing the next MLS photo needs a photo set on `render_args` from `lib/cma/build.ts`.
+- The map is a monochrome static tile with our own pins; Google attribution still prints.
+- The subdivision-story and voice-reviewer passes still call the Anthropic API and fail open on
+  "credit balance too low"; move to `lib/grok` or delete.
+- Main retired the voice canon and gates today (`352d4351`); CLAUDE.md §2 text is stale.
+
 # Current — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
 
 Owner: Claude (Fable 5.1), session 3db16241, main checkout. Landed on `origin/main`:
