@@ -145,7 +145,7 @@ describe('what homes like it closed at', () => {
   it('places an ask above, inside, or below what they closed at', () => {
     const range = { low: 274, high: 320 }
     expect(askAgainstSoldSentence({ ask: 360000, sqft: 789, range })).toBe(
-      'Asked $360,000 for 789 sqft, $456 a foot. Homes like it closed at $274 to $320 a foot. That is above every one of them.',
+      'Asked $360,000 for 789 sqft, $456 a foot. Homes like it closed at $274 to $320 a foot. A foot at a time, that is above every one of them.',
     )
     // Inside is not one answer: $294 a foot sits in the middle of $274 to $320,
     // $319 at the top of it, $278 at the bottom.

@@ -827,19 +827,8 @@ export function listingTimelineReading(input: {
   const low = Math.min(t.rangeLow, t.rangeHigh)
   const high = Math.max(t.rangeLow, t.rangeHigh)
   const bits: string[] = []
-  if (finalAsk != null && finalAsk > 0) {
-    if (finalAsk > high) {
-      bits.push(
-        `The asking price was ${pct1((finalAsk - high) / high)} percent above the top of the range homes like yours sold in.`,
-      )
-    } else if (finalAsk < low) {
-      bits.push(
-        `The asking price was ${pct1((low - finalAsk) / low)} percent below the bottom of the range homes like yours sold in.`,
-      )
-    } else {
-      bits.push('The asking price sat inside the range homes like yours sold in.')
-    }
-  }
+  const against = askAgainstRangeSentence(finalAsk, low, high)
+  if (against) bits.push(against)
   if (t.days != null && t.days > 0) bits.push(`It sat ${Math.round(t.days).toLocaleString('en-US')} days.`)
   const place = input.city.trim()
   if (input.marketMedianDom != null && input.marketMedianDom > 0 && place) {
@@ -855,4 +844,33 @@ export function listingTimelineReading(input: {
 
 function pct1(ratio: number): string {
   return (Math.abs(ratio) * 100).toFixed(1)
+}
+
+/**
+ * Where the seller's own ask sat against what homes like theirs sold for, in
+ * one sentence.
+ *
+ * ONE sentence, in ONE place, because two chapters say it. Chapter 1 read
+ * "the asking price was 15.3 percent above the top of the range"; chapter 2's
+ * card for the same listing read "that is at the top of what they closed at"
+ * on a dollars-a-foot measure. Both were true and, a minute apart, they
+ * cancelled. Chapter 2 now leads with this sentence and puts its own
+ * dollars-a-foot line after it.
+ */
+export function askAgainstRangeSentence(
+  ask: number | null,
+  rangeLow: number | null,
+  rangeHigh: number | null,
+): string {
+  if (ask == null || !(ask > 0) || rangeLow == null || rangeHigh == null) return ''
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > 0)) return ''
+  if (ask > high) {
+    return `The asking price was ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
+  }
+  if (ask < low) {
+    return `The asking price was ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
+  }
+  return 'The asking price sat inside the range homes like yours sold in.'
 }

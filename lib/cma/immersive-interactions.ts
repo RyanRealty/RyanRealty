@@ -143,6 +143,10 @@ try{
 }catch(e){}
 
 /* ── 2. the offer-timing curve, scrubbed ─────────────────────────────────── */
+/* The readout SNAPS to the six measured days the contract supplies. It used to
+   interpolate and print a tenth of a percent at any of 187 positions — a
+   figure nobody measured, printed to a precision nobody has (CLAUDE.md §0).
+   The marker and the reading now only ever land on 7, 14, 30, 60, 90, 180. */
 try{
   [].slice.call(document.querySelectorAll('svg.curve-scrub')).forEach(function(svg){
     var pts,plot
@@ -151,52 +155,56 @@ try{
     var L=plot[0],R=plot[1],TOP=plot[2],BOT=plot[3],MAXD=plot[4]
     var hit=svg.querySelector('.scrub-hit'),line=svg.querySelector('.scrub-line'),dot=svg.querySelector('.scrub-dot')
     if(!hit||!line||!dot)return
-    var read=readout(svg,'Drag along the curve, or use the arrow keys.')
-    var day=pts[0][0]
-    function pctAt(d){
-      if(d<=pts[0][0])return (pts[0][1]*d)/Math.max(pts[0][0],1)
-      for(var i=1;i<pts.length;i++){
-        if(d<=pts[i][0]){
-          var a=pts[i-1],b=pts[i]
-          var t=(d-a[0])/Math.max(b[0]-a[0],1)
-          return a[1]+(b[1]-a[1])*t
-        }
-      }
-      return pts[pts.length-1][1]
+    var read=readout(svg,'')
+    var i=0
+    function reading(k){
+      return 'By day '+pts[k][0]+', '+pts[k][1].toFixed(1)+' percent of these sales had an accepted offer.'
     }
-    function exact(d){for(var i=0;i<pts.length;i++)if(pts[i][0]===d)return true;return false}
-    function put(d){
-      day=Math.max(1,Math.min(MAXD,Math.round(d)))
-      var pct=pctAt(day)
-      var x=L+((R-L)*day)/Math.max(MAXD,1)
+    function put(k,announce){
+      i=Math.max(0,Math.min(pts.length-1,k))
+      var d=pts[i][0],pct=pts[i][1]
+      var x=L+((R-L)*d)/Math.max(MAXD,1)
       var y=BOT-((BOT-TOP)*Math.min(pct,100))/100
       line.setAttribute('x1',x);line.setAttribute('x2',x)
       dot.setAttribute('cx',x);dot.setAttribute('cy',y)
       svg.classList.add('is-scrubbing')
-      hit.setAttribute('aria-valuenow',String(day))
-      read.textContent='By day '+day+', '+pct.toFixed(1)+' percent of these sales had an accepted offer.'+
-        (exact(day)?'':' Between two measured days, read off the line.')
+      hit.setAttribute('aria-valuenow',String(d))
+      hit.setAttribute('aria-valuetext',reading(i))
+      if(announce!==false)read.textContent=reading(i)
+    }
+    /** The measured point nearest the finger, never a day between two of them. */
+    function nearest(day){
+      var best=0,bd=Infinity
+      for(var k=0;k<pts.length;k++){
+        var gap=Math.abs(pts[k][0]-day)
+        if(gap<bd){bd=gap;best=k}
+      }
+      return best
     }
     function fromEvent(e){
       var box=svg.getBoundingClientRect()
       var vb=svg.viewBox.baseVal
       var px=((e.clientX-box.left)/Math.max(box.width,1))*vb.width
-      put(((px-L)/Math.max(R-L,1))*MAXD)
+      put(nearest(((px-L)/Math.max(R-L,1))*MAXD))
     }
     hit.setAttribute('tabindex','0')
     hit.setAttribute('role','slider')
-    hit.setAttribute('aria-label','Day on the offer-timing curve')
-    hit.setAttribute('aria-valuemin','1')
-    hit.setAttribute('aria-valuemax',String(MAXD))
+    hit.setAttribute('aria-label','Days to an accepted offer')
+    hit.setAttribute('aria-valuemin',String(pts[0][0]))
+    hit.setAttribute('aria-valuemax',String(pts[pts.length-1][0]))
     hit.addEventListener('pointerdown',function(e){fromEvent(e);hit.setPointerCapture&&hit.setPointerCapture(e.pointerId)})
     hit.addEventListener('pointermove',function(e){if(e.buttons||e.pointerType==='mouse')fromEvent(e)})
     hit.addEventListener('keydown',function(e){
-      var step=e.shiftKey?7:1
-      if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();put(day+step)}
-      else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();put(day-step)}
-      else if(e.key==='Home'){e.preventDefault();put(1)}
-      else if(e.key==='End'){e.preventDefault();put(MAXD)}
+      if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();put(i+1)}
+      else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();put(i-1)}
+      else if(e.key==='Home'){e.preventDefault();put(0)}
+      else if(e.key==='End'){e.preventDefault();put(pts.length-1)}
     })
+    // A slider that announces nothing until the first key press is a slider a
+    // screen reader cannot read. The handle is placed, and both ARIA values
+    // are set, from the first render; the live line stays empty until the
+    // reader moves it, so nothing shouts at them on load.
+    put(Math.min(2,pts.length-1),false)
   })
 }catch(e){}
 

@@ -105,9 +105,11 @@ describe('pricePathFromSale', () => {
     expect(p.startPrice).toBe(465000)
     expect(p.closePrice).toBe(457000)
     expect(p.outcome).toBe('sold')
-    // The label names the period the line draws — 25 days from Jun 11 to
-    // Jul 6 — never the 1 day to an offer, which is its own row in the grid.
-    expect(priceHistoryEndLabel(p)).toBe('sold $457K · 25 days')
+    // ONE day measure per sale, and the label says which one. The grid's
+    // "Days to offer" row and this label read the same column; the two dates
+    // under the line still say the listing period the drawing spans.
+    expect(p.daysMeasure).toBe('offer')
+    expect(priceHistoryEndLabel(p)).toBe('sold $457K · offer in 1 day')
   })
 
   it('draws the close as a SOLID drop — a close date is a recorded date', () => {
@@ -159,7 +161,7 @@ describe('pricePathFromListing', () => {
     expect(p.outcome).toBe('off-market')
     expect(p.undatedCutTo).toBeNull()
     expect(cutCountOf(p)).toBe(0)
-    expect(priceHistoryEndLabel(p)).toBe('came off $360K · 36 days')
+    expect(priceHistoryEndLabel(p)).toBe('came off $360K · 36 days on market')
   })
 
   it('names a pending listing as under contract', () => {
@@ -215,7 +217,7 @@ describe('the drawing', () => {
 
   it('reads the whole path aloud for a screen reader', () => {
     expect(priceHistoryReading(path)).toBe(
-      '2465 7th: asked $475K on Feb 26, cut to $460K on Jul 28, came off Sep 1, 187 days.',
+      '2465 7th: asked $475K on Feb 26, cut to $460K on Jul 28, came off Sep 1, 187 days on market.',
     )
   })
 

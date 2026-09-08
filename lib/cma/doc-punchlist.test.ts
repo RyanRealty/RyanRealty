@@ -14,6 +14,7 @@ import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { immersiveStylesheet } from './immersive-css'
 import { cmaStylesheet } from './render-css'
+import { askOutcomeDaysPhrase } from './market-charts'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 import type { CmaMarketArea } from './market-status'
 import type { ExpiredAuditData } from './expired-audit'
@@ -955,5 +956,87 @@ describe('F8 — the days-to-offer strip fits a phone', () => {
     expect(html).toContain('<div class="szn days-wide">')
     const wide = /<div class="szn days-wide">([\s\S]*?)<\/div>/.exec(html)![1]!
     expect(wide).toContain('viewBox="0 0 720')
+  })
+})
+
+/**
+ * tasteReview 2026-09-07, item 1: the document must not contradict itself and
+ * no control may publish a false status. Every assertion below is a defect a
+ * separate evaluator found by reading the rendered document.
+ */
+describe('tasteReview 1 — nothing in the document argues with itself', () => {
+  it('makes [hidden] beat every author display rule, so the competition filter really filters', () => {
+    // `.rival-grid{display:grid}` beat the UA `[hidden]{display:none}`, so
+    // choosing "Under contract" hid the "For sale now" heading and left all
+    // eight cards on screen under the surviving heading. Four for-sale homes
+    // were presented to the seller as under contract.
+    const css = immersiveStylesheet().replace(/\s+/g, ' ')
+    expect(css).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important/)
+    const gridRule = /\.rival-grid\s*\{\s*display:\s*grid/.test(css)
+    expect(gridRule).toBe(true)
+    expect(css.indexOf('[hidden]{display:none!important}')).toBeGreaterThan(-1)
+  })
+
+  it('nets at list off the concessions the grid prints, never against them', () => {
+    const paid = comps.map((c, i) => ({ ...c, concessions: [4000, 0, 0, 10000, 0][i] ?? 0 }))
+    const html = letter({ comps: paid, pricing: { ...pricing, sellerNet: { expectedConcessions: 0 } } as never })
+    expect(html).not.toContain('reported no seller concessions')
+    expect(html).toContain('the median across the 2 sales in the price chapter that reported one')
+  })
+
+  it('says so truthfully when every printed sale reported none', () => {
+    const none = comps.map((c) => ({ ...c, concessions: 0 }))
+    const html = letter({ comps: none })
+    expect(html).toContain('recorded what the seller paid reported none')
+  })
+
+  it('gives every sale ONE day count, and says which measure it is', () => {
+    const html = letter()
+    // 730 Quince: 1 day to an accepted offer, 25 days list to close. The card
+    // printed "1 day to offer" and the price path "25 days", unlabelled.
+    expect(html).toContain('offer in 1 day')
+    expect(html).not.toMatch(/sold \$457K · 25 days/)
+  })
+
+  it('sources the three regional relist figures on the screen that prints them', () => {
+    for (const html of [letter(), immersive()]) {
+      expect(html).toContain('These three figures are regional, not this city alone')
+      expect(html).toContain('matched pairs')
+    }
+  })
+
+  it('sources the competition counts', () => {
+    expect(letter()).toContain('Homes for sale and under contract in Redmond between')
+  })
+
+  it('snaps the curve readout to the six measured days', () => {
+    const script = immersive()
+    expect(script).not.toContain('Between two measured days, read off the line')
+    expect(script).toContain("hit.setAttribute('aria-valuetext'")
+  })
+
+  it('never labels the unsold bar as days to an accepted offer', () => {
+    expect(askOutcomeDaysPhrase({ key: 'did-not-sell', n: 375, medianDays: 118 })).toBe(
+      'median 118 days on market before it came off',
+    )
+    expect(askOutcomeDaysPhrase({ key: 'sold-no-cut', n: 375, medianDays: 9 })).toBe(
+      'median 9 days to an accepted offer',
+    )
+  })
+
+  it('leads the seller own unsold card with the SAME measure chapter 1 states', () => {
+    const html = letter()
+    const ch1 = /above the top of the range homes like yours sold in\./.exec(html)
+    expect(ch1).not.toBeNull()
+    // The sentence appears twice: chapter 1's reading and chapter 2's card.
+    expect(
+      (html.match(/above the top of the range homes like yours sold in\./g) ?? []).length,
+    ).toBeGreaterThanOrEqual(2)
+  })
+
+  it('reconciles the city median against this house before it shows the board', () => {
+    const html = letter()
+    expect(html).toContain('is every Redmond home, all sizes')
+    expect(html).toContain('Homes like yours')
   })
 })

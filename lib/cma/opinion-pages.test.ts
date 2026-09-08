@@ -294,8 +294,8 @@ describe('the net-at-list caption names the sales it was taken over', () => {
   it('counts the sales that reported a figure and the sales that paid one', () => {
     const line = concessionBasisLine(withConcessions([4000, 0, 10000, null, 0]), 7500)
     expect(line).toContain('Net at list is the list price minus $7,500')
-    expect(line).toContain('the median across the 4 sales in the price chapter that reported')
-    expect(line).toContain('2 of which paid something')
+    expect(line).toContain('the median across the 2 sales in the price chapter that reported one')
+    expect(line).toContain('the other 2 of the 4 that recorded the field reported none')
   })
 
   it('states the figure alone when no sale reported one', () => {

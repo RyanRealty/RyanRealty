@@ -8,6 +8,7 @@ import { pricingPage, whatItsWorthHeading } from '@/lib/cma/render-pricing-page'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import {
   BASIS_AND_LIMITS_HEADING,
+  FAILED_ASK_BACKTEST_SOURCE,
   OPINION_CHAPTER_ORDER,
   PRICED_RIGHT_HEADING,
   competitionArgs,
@@ -100,6 +101,7 @@ function whatHappenedScene(a: OpinionSceneArgs): string {
         <div class="st"><div class="st-n">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="st-l">of the ask that failed is what the median one sold for</div></div>
         <div class="st"><div class="st-n">${b.shareClosedAboveAskPct}%</div><div class="st-l">sold for more than that ask</div></div>
       </div>
+      <p class="small r">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>
     </div>
   </section>`
 }

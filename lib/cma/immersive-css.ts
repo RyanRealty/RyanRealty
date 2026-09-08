@@ -10,6 +10,14 @@ export function immersiveStylesheet(): string {
 html{scroll-behavior:smooth}
 body{font-family:Geist,system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
 img{max-width:100%;display:block}
+/* [hidden] is a UA-stylesheet rule, so ANY author display declaration beats it.
+   \`.rival-grid{display:grid}\` did: the competition filter set grid.hidden =
+   true, the heading above it vanished (no author display rule of its own) and
+   all eight cards stayed on screen under the surviving heading — four for-sale
+   homes presented to the seller as under contract. A control that publishes a
+   false status blocks a send, so the rule is author-level and important once,
+   for the whole document. */
+[hidden]{display:none!important}
 .page-num,.pg-num,.pageNumber,.pg-footer,.toc .p{display:none}
 .sc{min-height:100svh;display:flex;align-items:center;padding:96px 24px;position:relative}
 .sc.tight{min-height:72svh}

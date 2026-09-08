@@ -800,9 +800,13 @@ export function askOutcomeBarsSvg(
       // of ask." Every figure in the reading is already drawn on the row; the
       // group carries it as one sentence so a tap on a phone, where the row's
       // sub-lines are 9px, states it in reading type under the chart.
+      // The measure is NOT the same for all three groups, and calling it one
+      // thing made the document assert something impossible: "came off unsold
+      // · your home · 118 days to an accepted offer" was the accessible name
+      // of a bar about listings that never got one (CLAUDE.md §0).
       const read = [
         name,
-        `${int(g.medianDays)} ${g.medianDays === 1 ? 'day' : 'days'} to an accepted offer`,
+        askOutcomeDaysPhrase(g),
         count,
         share,
       ]
@@ -832,10 +836,22 @@ export function askOutcomeBarsSvg(
     })
     .join('\n    ')
 
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median days to an accepted offer, by what the first price did" class="trend-svg">
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median days on the market, by what the first price did" class="trend-svg">
     ${phone ? '' : `<line x1="${plotL}" y1="${top}" x2="${plotL}" y2="${(H - 10).toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>`}
     ${rows}
   </svg>`
+}
+
+/**
+ * What a bar's days figure MEANS for its own group. Two of these groups sold
+ * and one never did, so only two of them can be counting days to an offer.
+ */
+export function askOutcomeDaysPhrase(g: AskOutcomeGroup): string {
+  const n = int(g.medianDays)
+  const unit = g.medianDays === 1 ? 'day' : 'days'
+  return g.key === 'did-not-sell'
+    ? `median ${n} ${unit} on market before it came off`
+    : `median ${n} ${unit} to an accepted offer`
 }
 
 export function askOutcomeBarsPhoneSvg(

@@ -322,6 +322,8 @@ export type BandRivalsInput = {
   docLinks?: TrackedDocLinkCtx | null
   /** The recommended list, which the chapter title names. */
   recommendedList?: number | null
+  /** The day this document was prepared, for the counts' source line. */
+  asOfIso?: string | null
 }
 
 /** "Who you would compete with at $389,000" — the chapter title. */
@@ -346,8 +348,33 @@ function competitionBody(input: BandRivalsInput): string {
   const cutLine = competitorCutLine(input.rivals)
   return `<p>${esc(sentence)}</p>
   ${cutLine ? `<p>${esc(cutLine)}</p>` : ''}
+  <p class="small">${esc(competitionSourceLine(input))}</p>
   ${actives.length ? `<h3 class="subhead">For sale now</h3><div class="rival-grid">${cards(actives)}</div>` : ''}
   ${pendings.length ? `<h3 class="subhead">Under contract</h3><div class="rival-grid">${cards(pendings)}</div>` : ''}`
+}
+
+/**
+ * The §0 trace for the two counts in the chapter's first sentence.
+ *
+ * "34 homes are for sale between $356,000 and $435,000. 13 are under contract."
+ * sat on the page with no geography, no status definition and no as-of date —
+ * three things a reader needs before they can check it.
+ */
+export function competitionSourceLine(
+  input: Pick<BandRivalsInput, 'city' | 'lo' | 'hi' | 'asOfIso'>,
+): string {
+  const day = (input.asOfIso ?? '').slice(0, 10)
+  const when = /^\d{4}-\d{2}-\d{2}$/.test(day)
+    ? ` as of ${new Date(`${day}T12:00:00.000Z`).toLocaleString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })}`
+    : ''
+  return `Homes for sale and under contract in ${input.city} between ${usd(input.lo)} and ${usd(
+    input.hi,
+  )}, from the Oregon Data Share MLS${when}.`
 }
 
 export function renderBandRivalsHtml(input: BandRivalsInput): string {

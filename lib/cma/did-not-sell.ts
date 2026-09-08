@@ -31,7 +31,7 @@ import {
 } from '@/lib/cma/price-path'
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
-import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
@@ -158,16 +158,20 @@ export function askAgainstSoldSentence(input: {
   // and "inside" alone flattens the two into the same sentence.
   const span = Math.max(range.high - range.low, 1)
   const position = (ppsf - range.low) / span
+  // Name the measure. "That is at the top of what they closed at" sitting
+  // under chapter 1's "15.3 percent above the top of the range" reads as two
+  // answers to one question; a foot at a time is a different question, and
+  // saying so is the whole fix.
   const where =
     ppsf > range.high
-      ? 'That is above every one of them.'
+      ? 'A foot at a time, that is above every one of them.'
       : ppsf < range.low
-        ? 'That is below every one of them.'
+        ? 'A foot at a time, that is below every one of them.'
         : position >= 2 / 3
-          ? 'That is at the top of what they closed at.'
+          ? 'A foot at a time, that is at the top of what they closed at.'
           : position <= 1 / 3
-            ? 'That is at the bottom of what they closed at.'
-            : 'That is in the middle of what they closed at.'
+            ? 'A foot at a time, that is at the bottom of what they closed at.'
+            : 'A foot at a time, that is in the middle of what they closed at.'
   return `Asked ${usd(ask)} for ${int(sqft)} sqft, ${usd(ppsf)} a foot. Homes like it closed at ${usd(
     range.low,
   )} to ${usd(range.high)} a foot. ${where}`
@@ -183,6 +187,8 @@ type Story = {
   facts: string
   path: PricePath | null
   isSubject: boolean
+  /** Printed BEFORE the dollars-a-foot line. Only the seller's own card carries one. */
+  lead?: string
 }
 
 function factsLine(f: {
@@ -216,6 +222,9 @@ export type DidNotSellArgs = {
   peers?: readonly CmaExpiredPeer[] | null
   finalCycle?: ExpiredFinalCycle | null
   docLinks?: TrackedDocLinkCtx | null
+  /** What homes like this one sold for. Chapter 1 measures the ask against it. */
+  rangeLow?: number | null
+  rangeHigh?: number | null
 }
 
 /**
@@ -247,6 +256,9 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
       facts: factsLine(s),
       path,
       isSubject: true,
+      // The SAME measure chapter 1 states, in the same words, on the same
+      // ask — so the two chapters cannot cancel each other a minute apart.
+      lead: askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null),
     })
   }
   const peers = collapseExpiredPeerCycles(
@@ -293,7 +305,8 @@ function storyCard(story: Story, range: { low: number; high: number } | null): s
   const name = story.href
     ? `<a class="dns-addr" href="${esc(story.href)}" data-rr-track="cma-unsold-peer">${esc(story.title)}</a>`
     : `<span class="dns-addr">${esc(story.title)}</span>`
-  const reading = askAgainstSoldSentence({ ask: story.ask, sqft: story.sqft, range })
+  const ppsf = askAgainstSoldSentence({ ask: story.ask, sqft: story.sqft, range })
+  const reading = [story.lead, ppsf].filter((b) => b && b.trim()).join(' ')
   return `<article class="dns-card${story.isSubject ? ' is-yours' : ''}" data-story="${esc(story.id)}">
     ${img}
     <div class="dns-body">

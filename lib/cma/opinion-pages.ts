@@ -96,34 +96,74 @@ export type OpinionPageArgs = {
 
 
 /**
+ * The seller concessions THIS DOCUMENT PRINTS, over the sales it prints them
+ * for.
+ *
+ * Chapter 3's grid carries a "Seller concessions" line per sale, resolved at
+ * build by `attachCompConcessions`. Chapter 6 used to assert a basis of its
+ * own — "the sales that set this price reported no seller concessions" — off
+ * `pricing.sellerNet.expectedConcessions`, which is measured over a wider set
+ * of rows than the five the document shows. On 2465 7th that produced a net
+ * sheet resting on "no concessions" three screens under a grid printing
+ * $4,000 and $10,000. A licensed broker's price opinion does not get to
+ * contradict its own evidence (CLAUDE.md §0), so this reads the same values
+ * the grid prints, resolved the same way `concessionCell` resolves them.
+ *
+ * It is arithmetic over printed figures, not a new statistic: a reader can add
+ * the concessions row up and land on the same median.
+ */
+export function printedConcessions(comps: ReadonlyArray<CmaAdjustedComp>): {
+  reported: number
+  paid: number
+  median: number | null
+} {
+  const values = comps
+    .map((c) => c.concessions ?? c.concessionsAmount ?? null)
+    .filter((v): v is number => v != null && Number.isFinite(v))
+  const paid = values.filter((v) => v > 0).sort((a, b) => a - b)
+  const mid = Math.floor(paid.length / 2)
+  const median =
+    paid.length === 0 ? null : paid.length % 2 === 1 ? paid[mid]! : Math.round((paid[mid - 1]! + paid[mid]!) / 2)
+  return { reported: values.length, paid: paid.length, median }
+}
+
+/**
  * Where the concession figure came from, over the rows that produced it.
  *
  * Research item 8, and D14 behind it: the net sheet quoted a concession figure
- * with no basis anywhere on the page. Chapter 3's grid now prints a Seller
- * concessions line per sale, so this caption names those same sales and counts
- * them — a reader can add the column up and land on the same median.
+ * with no basis anywhere on the page. The caption names the sales it was taken
+ * over and how many of them paid nothing, so the column above it adds up.
  */
 export function concessionBasisLine(a: OpinionPageArgs, concession: number): string {
-  const reported = a.comps.filter((c) => {
-    const v = c.concessions ?? c.concessionsAmount ?? null
-    return v != null && Number.isFinite(v) && v > 0
-  }).length
-  const known = a.comps.filter((c) => (c.concessions ?? c.concessionsAmount ?? null) != null).length
-  const basis =
-    known > 0
-      ? ` That figure is the median across the ${int(known)} ${known === 1 ? 'sale' : 'sales'} in the price chapter that reported what the seller paid, ${int(reported)} of which paid something.`
+  const p = printedConcessions(a.comps)
+  const head = `Net at list is the list price minus ${usd(concession)}, before commission and closing costs.`
+  if (p.paid === 0 || p.reported === 0) return head
+  const none = p.reported - p.paid
+  const basis = ` That figure is the median across the ${int(p.paid)} ${
+    p.paid === 1 ? 'sale' : 'sales'
+  } in the price chapter that reported one${
+    none > 0
+      ? `; the other ${int(none)} of the ${int(p.reported)} that recorded the field reported none`
       : ''
-  return `Net at list is the list price minus ${usd(concession)}, before commission and closing costs.${basis}`
+  }.`
+  return `${head}${basis}`
 }
 
 export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
-  const n = a.pricing.sellerNet
-  if (!n || n.expectedConcessions == null) return null
-  const concession = n.expectedConcessions
+  const printed = printedConcessions(a.comps)
+  const stored = a.pricing.sellerNet?.expectedConcessions ?? null
+  // The grid is the evidence. When the printed sales reported a concession the
+  // net reads THOSE rows; when they all recorded none it says so; when none of
+  // them recorded the field at all, the build's own figure stands in.
+  const concession = printed.median ?? (printed.reported > 0 ? 0 : stored)
+  if (concession == null) return null
   const low = sellerNetFromPrice(a.pricing.conservative, concession)
   const rec = sellerNetFromPrice(a.pricing.recommended, concession)
   const high = sellerNetFromPrice(a.pricing.highEnd, concession)
   if (low == null && rec == null && high == null) return null
+  const listPriceSentence = `what you net at list is the list price: ${usd(a.pricing.conservative)} to ${usd(
+    a.pricing.highEnd,
+  )}, ${usd(a.pricing.recommended)} at the recommended list. Commission and closing costs come out of that.`
   return {
     meta: `${esc(a.subject.streetAddress)} · Net at list`,
     toc: 'Net at list',
@@ -132,7 +172,13 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
   ${
     concession <= 0
       ? `<p>${esc(
-          `The sales that set this price reported no seller concessions, so what you net at list is the list price: ${usd(a.pricing.conservative)} to ${usd(a.pricing.highEnd)}, ${usd(a.pricing.recommended)} at the recommended list. Commission and closing costs come out of that.`,
+          printed.reported > 0
+            ? `${
+                printed.reported === 1
+                  ? 'The one sale in the price chapter that recorded what the seller paid reported none, so '
+                  : `All ${int(printed.reported)} sales in the price chapter that recorded what the seller paid reported none, so `
+              }${listPriceSentence}`
+            : `No sale in the price chapter recorded a seller concession, so ${listPriceSentence}`,
         )}</p>`
       : `<div class="stat-strip is-3">
     ${low != null ? `<div class="stat"><div class="lbl">At ${usd(a.pricing.conservative)}</div><div class="val">${usd(low)}</div></div>` : ''}
@@ -174,9 +220,22 @@ export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
     <div class="stat"><div class="val">${int(b.pairs)}</div><div class="lbl">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
     <div class="stat"><div class="val">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="lbl">of the ask that failed is what the median one sold for</div></div>
     <div class="stat"><div class="val">${b.shareClosedAboveAskPct}%</div><div class="lbl">sold for more than that ask</div></div>
-  </div>`,
+  </div>
+  <p class="small">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>`,
   }
 }
+
+/**
+ * The §0 trace for the three relist figures.
+ *
+ * They are REGIONAL — every listing in the Central Oregon MLS that came off
+ * unsold and later closed — and they sat on the screen with no source line at
+ * all, one scroll under a chapter of Redmond figures. A reader had no way to
+ * know which geography they were being handed.
+ */
+export const FAILED_ASK_BACKTEST_SOURCE = `These three figures are regional, not this city alone: ${int(
+  FAILED_ASK_BACKTEST.pairs,
+)} matched pairs, every Central Oregon listing that came off the market unsold and later closed between 2023 and 2026, from the Oregon Data Share MLS. Measured ${FAILED_ASK_BACKTEST.runstamp}.`
 
 /**
  * The timeline and its sentence, or the fallback sentence.
@@ -311,6 +370,8 @@ export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
     peers: a.extras?.marketArea?.expiredPeers,
     finalCycle: a.expiredAudit?.finalCycle ?? null,
     docLinks: a.docLinks ?? null,
+    rangeLow: a.pricing.valueLow,
+    rangeHigh: a.pricing.valueHigh,
   }
 }
 
@@ -361,9 +422,46 @@ export function thisMarketHeading(a: Pick<OpinionPageArgs, 'subject' | 'market'>
 
 /** Shared by the letter chapter and its immersive twin. */
 export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): string {
+  const reconcile = cityMedianReconciliationHtml(a)
   const board = renderInventoryBoardHtml(a.market)
   const street = subdivisionLineHtml(a, headingTag)
-  return [board, street].filter(Boolean).join('\n  ')
+  return [reconcile, board, street].filter(Boolean).join('\n  ')
+}
+
+/**
+ * The city median, reconciled against this house, in one sentence.
+ *
+ * "$532,311 · median sold, every Redmond home" printed in 56px beside a
+ * $395,000 recommendation with nothing between them is the first thing an
+ * expired owner quotes back. Both figures are right and they are measured over
+ * different sets of houses, so the chapter says which is which BEFORE it shows
+ * the board (§0: reconcile narrative to data).
+ *
+ * Every figure in it is printed elsewhere in this document: the city median is
+ * the board's own tile, and the range is the close prices of the same sales
+ * chapter 3 lists.
+ */
+export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
+  const median = a.market?.medianSalePrice
+  if (median == null || !(median > 0)) return ''
+  const closes = a.comps
+    .map((c) => c.closePrice)
+    .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
+  if (closes.length < 2) return ''
+  const place = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city) ?? 'this market'
+  const s = a.subject
+  const shape = [
+    s.beds != null ? `${int(s.beds)} bed` : null,
+    s.baths != null ? `${s.baths % 1 === 0 ? int(s.baths) : s.baths.toFixed(1)} bath` : null,
+    s.sqft != null && s.sqft > 0 ? `around ${int(Math.round(s.sqft / 50) * 50)} sqft` : null,
+  ]
+    .filter(Boolean)
+    .join(', ')
+  return `<p class="chart-read">${esc(
+    `${usd(median)} is every ${place} home, all sizes. Homes like yours${
+      shape ? `, ${shape},` : ''
+    } closed at ${usd(Math.min(...closes))} to ${usd(Math.max(...closes))}.`,
+  )}</p>`
 }
 
 /**
@@ -395,10 +493,21 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
     .join(', ')
   const sub = (text: string) =>
     headingTag === 'h3' ? `<h3 class="subhead">${esc(text)}</h3>` : `<h3 class="sub r">${esc(text)}</h3>`
+  // §0: the count is over a WINDOW, and the window was nowhere on the screen.
+  // The years the facts were aggregated over are on the row, so the line says
+  // them rather than implying "145 homes have sold" means all time.
+  const years = f.years.map((y) => y.year).filter((y) => Number.isFinite(y))
+  const span =
+    years.length > 0
+      ? ` between ${Math.min(...years)} and ${Math.max(...years)}`
+      : ''
   return `${sub(name)}
-  <p>${int(f.totalSales)} homes have sold in ${esc(name)}.${
+  <p>${int(f.totalSales)} homes have sold in ${esc(name)}${esc(span)}.${
     links ? ` The most recent ${recent.length === 1 ? 'one' : recent.length === 4 ? 'four' : String(recent.length)}: ${links}.` : ''
-  }</p>`
+  }</p>
+  <p class="small">${esc(
+    `Closed single-family sales recorded in ${name}${span}, from the Oregon Data Share MLS.`,
+  )}</p>`
 }
 
 /**
@@ -545,6 +654,7 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     rivals: b.rivals ?? [],
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
+    asOfIso: a.generatedAtIso,
     subject: {
       beds: a.subject.beds,
       baths: a.subject.baths,

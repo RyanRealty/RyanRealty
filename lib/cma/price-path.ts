@@ -71,8 +71,17 @@ export type PricePath = {
   /** What it closed at. Null unless it sold. */
   closePrice: number | null
   outcome: PricePathOutcome
-  /** Days the period ran, as the row records them. */
+  /** Days the period ran, or the days it waited for an offer. See `daysMeasure`. */
   days: number | null
+  /**
+   * WHAT `days` COUNTS. A closed sale's row carries two day figures — the days
+   * it waited for an accepted offer (`days_to_pending`) and the days from list
+   * to close (`domTotal`) — and the document printed one on the sale card and
+   * the other, unlabelled, at the end of this line: "1 day to offer" forty
+   * pixels above "sold $457K · 25 days" for one sale (CLAUDE.md §7). One
+   * measure per line, and the label says which one it is.
+   */
+  daysMeasure: 'offer' | 'listed-to-closed' | 'on-market'
   /** Read aloud, and the chart's own title. */
   label: string
 }
@@ -165,6 +174,7 @@ export function pricePathFromFinalCycle(cycle: {
     closePrice: null,
     outcome: 'off-market',
     days: cycle.days,
+    daysMeasure: 'on-market',
     label,
   }
 }
@@ -196,6 +206,15 @@ export function pricePathFromSale(sale: {
   if (!closeDate || closePrice == null || ask == null) return null
   const ran = sale.domTotal != null && sale.domTotal > 0 ? Math.round(sale.domTotal) : null
   const startDate = plusDays(closeDate, -(ran ?? 30))
+  // ONE measure per sale, and it is the one the grid already labels: days to
+  // an accepted offer. The line still spans the listing period, and its two
+  // date labels say so; the end label names an event, and says which event it
+  // is naming. When the row carries no days-to-offer the line falls back to
+  // the period it drew and labels itself "listed to closed".
+  const toOffer =
+    sale.daysToOffer != null && Number.isFinite(sale.daysToOffer) && sale.daysToOffer >= 0
+      ? Math.round(sale.daysToOffer)
+      : null
   return {
     startDate,
     startPrice: ask,
@@ -204,11 +223,8 @@ export function pricePathFromSale(sale: {
     endDate: closeDate,
     closePrice,
     outcome: 'sold',
-    // The label at the end of the line names the period the LINE DRAWS, which
-    // is the days the listing ran — not the days to an offer. A line spanning
-    // Jun 11 to Jul 6 that ends "sold $457K · 1 day" contradicts its own axis.
-    // Days to offer is its own labelled row in the grid above.
-    days: ran ?? sale.daysToOffer ?? null,
+    days: toOffer ?? ran,
+    daysMeasure: toOffer != null ? 'offer' : 'listed-to-closed',
     label: sale.address,
   }
 }
@@ -247,6 +263,7 @@ export function pricePathFromListing(listing: {
     closePrice: null,
     outcome,
     days,
+    daysMeasure: 'on-market',
     label: listing.address,
   }
 }
@@ -451,13 +468,26 @@ export function priceHistoryLinePhoneSvg(path: PricePath, id?: string): string {
   return priceHistoryLineSvg(path, PRICE_PATH_PHONE, id)
 }
 
-/** "sold $457K · 25 days" — the mark at the end of the line names itself. */
+/** "sold $457K · offer in 25 days" — the mark at the end names its own measure. */
 export function priceHistoryEndLabel(path: PricePath): string {
   const value = path.closePrice ?? finalAskOf(path)
   const word = OUTCOME_WORD[path.outcome]
-  const days =
-    path.days != null && path.days > 0 ? ` · ${int(path.days)} ${path.days === 1 ? 'day' : 'days'}` : ''
-  return `${word} ${shortUsd(value)}${days}`
+  return `${word} ${shortUsd(value)}${priceHistoryDaysClause(path, ' · ')}`
+}
+
+/**
+ * The days figure, with the measure said out loud. Never a bare "25 days":
+ * a reader cannot tell days-to-offer from days-on-market, and this document
+ * prints both, for the same sale, on the same screen.
+ */
+export function priceHistoryDaysClause(path: PricePath, lead = ''): string {
+  const d = path.days
+  if (d == null || !(d > 0)) return ''
+  const n = int(d)
+  const unit = d === 1 ? 'day' : 'days'
+  if (path.daysMeasure === 'offer') return `${lead}offer in ${n} ${unit}`
+  if (path.daysMeasure === 'listed-to-closed') return `${lead}listed to closed, ${n} ${unit}`
+  return `${lead}${n} ${unit} on market`
 }
 
 /**
@@ -478,9 +508,8 @@ export function priceHistoryReading(path: PricePath): string {
           ? 'now under contract'
           : 'still for sale'
   bits.push(end)
-  if (path.days != null && path.days > 0) {
-    bits.push(`${int(path.days)} ${path.days === 1 ? 'day' : 'days'}`)
-  }
+  const days = priceHistoryDaysClause(path)
+  if (days) bits.push(days)
   return `${bits.join(', ')}.`
 }
 
