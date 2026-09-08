@@ -365,6 +365,14 @@ async function checkSvgTextInsideViewBox(
  */
 type InteractStep = {
   name: string
+  /**
+   * Whether this interaction APPLIES to this document, run in the page. A
+   * chapter an origin does not carry (an asked CMA has no failed listing to
+   * put on a timeline) is skipped; a chapter that IS there whose control was
+   * never built is a failure. Without this line the two are the same result
+   * and the check learns nothing.
+   */
+  when?: string
   /** Skip silently when this chapter is not in this document. */
   optional?: boolean
   /** Run in the page; return a witness string, or null when the step cannot run. */
@@ -383,6 +391,8 @@ const READ_IN = (sel: string) => `(() => {
 const INTERACT_STEPS: InteractStep[] = [
   {
     name: 'timeline-cut',
+    // Only an expired origin carries chapter 1.
+    when: `!!document.getElementById('what-happened')`,
     shot: '#what-happened',
     run: `(() => {
       const mark = document.querySelectorAll('#what-happened .tl-mark')
@@ -465,22 +475,35 @@ const INTERACT_STEPS: InteractStep[] = [
       const b = btns.find((x) => /price today/i.test(x.textContent || ''))
       if (!b) return null
       b.click()
-      const keys = Array.from(document.querySelectorAll('#what-its-worth thead th.v'))
-        .map((th) => th.getAttribute('data-sort-price'))
-        .filter((v) => v != null)
-        .map(Number)
+      // The sort runs WITHIN each table: a table headed "Sales 4 through 6"
+      // would be lying if a sale moved between tables. So each table must come
+      // back descending on its own, and the cards must follow the tables read
+      // left to right.
+      const perTable = Array.from(document.querySelectorAll('#what-its-worth table.comp-matrix')).map((t) =>
+        Array.from(t.querySelectorAll('thead th.v'))
+          .map((th) => th.getAttribute('data-sort-price'))
+          .filter((v) => v != null)
+          .map(Number),
+      )
+      const keys = perTable.flat()
       if (keys.length < 2) return ''
-      const sorted = keys.every((v, i) => i === 0 || keys[i - 1] >= v)
+      const sorted = perTable.every((k) => k.every((v, i) => i === 0 || k[i - 1] >= v))
       // The cards and the price paths move with the columns, or the chapter
       // now disagrees with itself about which sale is which.
       const cards = Array.from(document.querySelectorAll('#what-its-worth .comp-stack-card'))
         .map((c) => Number(c.getAttribute('data-sort-price')))
-      const cardsMatch = cards.length === 0 || cards.join(',') === keys.join(',')
-      return sorted && cardsMatch ? 'highest first: ' + keys.join(' > ') : ''
+      const paths = Array.from(document.querySelectorAll('#what-its-worth .sale-path'))
+        .map((c) => Number(c.getAttribute('data-sort-price')))
+      const follows = (a) => a.length === 0 || a.join(',') === keys.join(',')
+      return sorted && follows(cards) && follows(paths)
+        ? perTable.map((k) => k.join(' > ')).join('  |  ')
+        : ''
     })()`,
   },
   {
     name: 'competition-pending',
+    // Nothing to filter when every competitor is in one status.
+    when: `document.querySelectorAll('#competition .rival-grid').length > 1`,
     shot: '#competition',
     run: `(() => {
       const btns = Array.from(document.querySelectorAll('#competition .rr-btn'))
@@ -540,6 +563,15 @@ async function driveInteractions(opts: {
     await page.evaluate(() => new Promise((r) => setTimeout(r, 200)))
     for (let i = 0; i < INTERACT_STEPS.length; i++) {
       const step = INTERACT_STEPS[i]!
+      if (step.when) {
+        const applies = await page.evaluate(step.when).catch(() => false)
+        if (!applies) {
+          console.log(
+            `  [interact ${width}] ${pad(i + 1)} ${step.name.padEnd(24)} — not in this document`,
+          )
+          continue
+        }
+      }
       let witness: string | null = null
       try {
         witness = (await page.evaluate(step.run)) as string | null

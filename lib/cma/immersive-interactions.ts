@@ -263,47 +263,60 @@ try{
 /* ── 5. chapter 3: put the working away, and re-order the sales ──────────── */
 try{
   var worth=document.getElementById('what-its-worth')
-  var table=worth&&worth.querySelectorAll('table.comp-matrix')
-  if(worth&&table&&table.length===1){
-    var grid=table[0]
+  var tables=worth?[].slice.call(worth.querySelectorAll('table.comp-matrix')):[]
+  if(worth&&tables.length){
     var stack=worth.querySelector('.comp-stack')
     var paths=worth.querySelector('.sale-paths')
-    var wrap=worth.querySelector('.comp-matrix-wrap')||grid
-    var box=controls(wrap,'The sales:')
+    var anchor=worth.querySelector('.comp-matrix-wrap')||tables[0]
+
+    // The toggle is a class on the chapter, so it works whatever the grid was
+    // chunked into. It hides the working and keeps the conclusion.
+    var box=controls(anchor,'The sales:')
     button(box,'With the adjustments',true,function(){worth.classList.remove('is-plain')})
     button(box,'Sale prices only',false,function(){worth.classList.add('is-plain')})
 
-    var sortBox=controls(wrap,'Order:')
-    var heads=[].slice.call(grid.querySelectorAll('thead th.v'))
-    var original=heads.map(function(h,i){return i})
-    function order(key,dir){
-      // The reader's own column is index 0 and never moves.
-      var idx=heads.map(function(h,i){return i}).slice(1)
-      if(key){
-        idx.sort(function(a,b){
-          var va=heads[a].getAttribute('data-sort-'+key),vb=heads[b].getAttribute('data-sort-'+key)
-          if(va==null&&vb==null)return 0
-          if(va==null)return 1
-          if(vb==null)return -1
-          if(key==='date')return dir*(va<vb?-1:va>vb?1:0)
-          return dir*(Number(va)-Number(vb))
-        })
-      }else{
-        idx=original.slice(1)
+    // The sort runs WITHIN each table, never across them: a table is headed
+    // "Sales 4 through 6", and moving a sale between tables would make that
+    // heading false. The cards and the price paths take the same permutation
+    // in the same order, so all three readings of the chapter agree.
+    var sortBox=controls(anchor,'Order:')
+    var groups=tables.map(function(t){
+      return {
+        table:t,
+        head:t.querySelector('thead tr'),
+        heads:[].slice.call(t.querySelectorAll('thead th.v'))
       }
-      var perm=[0].concat(idx)
-      // Header, then every body row's value cells, then the cards and paths.
-      var headRow=grid.querySelector('thead tr')
-      perm.forEach(function(i){headRow.appendChild(heads[i])})
-      ;[].slice.call(grid.querySelectorAll('tbody tr')).forEach(function(tr){
-        var tds=[].slice.call(tr.querySelectorAll('td'))
-        perm.forEach(function(i){if(tds[i])tr.appendChild(tds[i])})
+    })
+    function order(key,dir){
+      var global=[]
+      groups.forEach(function(g){
+        // Column 0 is the reader's own home, in every table, and never moves.
+        var idx=g.heads.map(function(h,i){return i}).slice(1)
+        if(key){
+          idx.sort(function(a,b){
+            var va=g.heads[a].getAttribute('data-sort-'+key),vb=g.heads[b].getAttribute('data-sort-'+key)
+            if(va==null&&vb==null)return 0
+            if(va==null)return 1
+            if(vb==null)return -1
+            if(key==='date')return dir*(va<vb?-1:va>vb?1:0)
+            return dir*(Number(va)-Number(vb))
+          })
+        }
+        var perm=[0].concat(idx)
+        perm.forEach(function(i){g.head.appendChild(g.heads[i])})
+        ;[].slice.call(g.table.querySelectorAll('tbody tr')).forEach(function(tr){
+          var tds=[].slice.call(tr.querySelectorAll('td'))
+          perm.forEach(function(i){if(tds[i])tr.appendChild(tds[i])})
+        })
+        idx.forEach(function(i){global.push(g.heads[i].getAttribute('data-comp'))})
       })
       function reflow(container,sel){
         if(!container)return
-        var items=[].slice.call(container.querySelectorAll(sel))
-        if(items.length!==heads.length-1)return
-        perm.slice(1).forEach(function(i){container.appendChild(items[i-1])})
+        var byPin={}
+        ;[].slice.call(container.querySelectorAll(sel)).forEach(function(n){
+          byPin[n.getAttribute('data-comp')||n.getAttribute('data-pin')]=n
+        })
+        global.forEach(function(pin){if(byPin[pin])container.appendChild(byPin[pin])})
       }
       reflow(stack,'.comp-stack-card')
       reflow(paths,'.sale-path')

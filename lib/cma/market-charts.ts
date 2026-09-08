@@ -665,7 +665,13 @@ export function offerTimingCurveSvg(
       const halfW = String(p.days).length * fs * 0.58
       if (tx - lastTickX < halfW * 2 + 4) return ''
       lastTickX = tx
-      return `<text x="${tx.toFixed(1)}" y="${(bottom + 15).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="${TL_MUTED}">${p.days}</text>`
+      // The last tick sits ON the right edge of the plot, so centred it runs
+      // half a label past the frame — "180" clipped at 375 on every Bend row.
+      // It anchors to the edge instead of hanging over it.
+      const overflows = tx + halfW > W - 1
+      return `<text x="${(overflows ? W - 1 : tx).toFixed(1)}" y="${(bottom + 15).toFixed(1)}" text-anchor="${
+        overflows ? 'end' : 'middle'
+      }" font-size="${fs}" fill="${TL_MUTED}">${p.days}</text>`
     })
     .join('')
 
