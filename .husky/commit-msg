@@ -2,3 +2,6 @@
 # Draft-first gate for user-facing diffs per CLAUDE.md §0.5.
 # Bypass for the gate itself: DRAFT_FIRST_OK=1 git commit ...
 node scripts/check-draft-first.mjs "$1"
+# Site-node gate (G72): app/** and components/site/** commits name their queue node.
+# Bypass for the gate itself: SITE_NODE_OK=1 git commit ...
+node scripts/check-site-node.mjs "$1"
