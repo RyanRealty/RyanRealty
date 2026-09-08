@@ -25,6 +25,8 @@ type Row = {
   evidence: string | null
   updated_at: string
   created_at: string
+  heartbeat_at: string | null
+  blocked_until: string | null
 }
 
 function ago(iso: string, now: Date): string {
@@ -40,6 +42,37 @@ function oneLine(s: string | null | undefined, max = 110): string {
   return t.length > max ? t.slice(0, max - 1) + '…' : t
 }
 
+/**
+ * `--touch <SITE-XX,...> --owner <session>` is the heartbeat (2026-09-08). A
+ * lane calls it at every report and at least hourly while it builds; the boot
+ * brief releases a site claim whose heartbeat is older than the window. It
+ * writes only heartbeat_at, and only for the session that holds the node, so it
+ * can neither revive someone else's claim nor be mistaken for progress.
+ */
+async function touch(sb: ReturnType<typeof createClient>, gaps: string[], owner: string): Promise<number> {
+  let ok = 0
+  for (const gap of gaps) {
+    const { data, error } = await sb
+      .from('loop_work_nodes')
+      .update({ heartbeat_at: new Date().toISOString() })
+      .eq('version_gap', gap)
+      .eq('state', 'in_progress')
+      .eq('owner_session', owner)
+      .select('version_gap')
+    if (error) {
+      console.error(`${gap}: ${error.message}`)
+      continue
+    }
+    if (!data?.length) {
+      console.error(`${gap}: not held by ${owner} — released or taken`)
+      continue
+    }
+    console.log(`${gap}: heartbeat`)
+    ok += 1
+  }
+  return ok
+}
+
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -48,9 +81,23 @@ async function main() {
     process.exit(2)
   }
   const sb = createClient(url, key)
+
+  const touchIdx = process.argv.indexOf('--touch')
+  if (touchIdx > -1) {
+    const gaps = (process.argv[touchIdx + 1] ?? '').split(',').map((g) => g.trim()).filter(Boolean)
+    const ownerIdx = process.argv.indexOf('--owner')
+    const owner = process.argv[ownerIdx + 1] ?? ''
+    if (!gaps.length || ownerIdx === -1 || !owner) {
+      console.error('usage: --touch SITE-02,SITE-05 --owner <session-id>')
+      process.exit(2)
+    }
+    const ok = await touch(sb, gaps, owner)
+    process.exit(ok === gaps.length ? 0 : 1)
+  }
+
   const { data, error } = await sb
     .from('loop_work_nodes')
-    .select('id,version_gap,title,state,owner_session,depends_on,blocked_reason,evidence,updated_at,created_at')
+    .select('id,version_gap,title,state,owner_session,depends_on,blocked_reason,evidence,updated_at,created_at,heartbeat_at,blocked_until')
     .eq('domain', 'public-ux')
     .like('version_gap', 'SITE-%')
     .order('created_at', { ascending: true })
@@ -72,8 +119,14 @@ async function main() {
       const eligible = r.state === 'open' && waits.length === 0
       let note = ''
       if (r.state === 'open') note = eligible ? 'eligible' : `waits on ${waits.join(', ')}`
-      if (r.state === 'in_progress') note = `held by ${r.owner_session ?? '?'}`
-      if (r.state === 'blocked') note = oneLine(r.blocked_reason)
+      if (r.state === 'in_progress') {
+        const beat = r.heartbeat_at ?? r.updated_at
+        note = `held by ${r.owner_session ?? '?'} · last heartbeat ${ago(beat, now)} ago${r.heartbeat_at ? '' : ' (never heartbeated)'}`
+      }
+      if (r.state === 'blocked') {
+        const until = r.blocked_until ? `reopens ${r.blocked_until.slice(0, 10)} · ` : 'waiting on a person · '
+        note = until + oneLine(r.blocked_reason, 90)
+      }
       if (r.state === 'done') note = oneLine(r.evidence)
       if (r.state === 'killed') note = oneLine(r.blocked_reason)
       return { gap: r.version_gap ?? '-', state: r.state, moved: ago(r.updated_at, now), title: r.title, note, eligible }

@@ -69,16 +69,44 @@ lands second. Every session shares one account allowance, so more sessions reach
 rate limit sooner; when one hits it, it schedules its wake for the reset and the
 others keep going.
 
+**The fleet cap (Matt 2026-09-08).** At most **three workers** hold site claims at
+once and **two claims per session** — enforced in `claimWorkNode`, printed by the
+brief as `SITE FLEET FULL`, and named in `lib/data/loop/work-node.ts`
+(`MAX_SITE_WORKERS`, `MAX_SITE_CLAIMS_PER_SESSION`). The reason is not politeness:
+every worker and the cloud routine spend ONE shared account allowance, and on
+2026-09-08 four concurrent lanes plus an hourly fire exhausted it at 09:13Z and
+killed every worker in the same minute, freezing seven nodes until a human
+intervened. Adding lanes buys nothing until the cost per item drops. If the brief
+says the fleet is full, do not start a lane: read `loop status` and stop.
+
+**A measurement window reopens itself (2026-09-08).** An item that ships but whose
+accept test needs production time is `blocked` with `blocked_until` set to its
+re-open date (`blockWorkNode(id, reason, until)`). The boot brief moves it back to
+`open` when the date passes and prints `REOPENED`. Nobody remembers a date. A
+`blocked` node with NO `blocked_until` is blocked on a person, and its
+`blocked_reason` must contain the question in one line.
+
 **Heartbeat, or lose the claim (2026-09-08).** A SITE-* claim untouched for
 `SITE_CLAIM_IDLE_HOURS` (3, `lib/data/loop/work-node.ts`, the grinder's own guard) is
 released by the next boot's brief; the day-long window stays for every other domain. The
 sentinel's orphan release only knows Cursor agents, so a Claude cloud session killed
-mid-round (a rate limit at 03:15 held four SITE nodes for five hours) leaves nothing else
-to free them. A lane routinely runs longer than three hours, so a live session touches
-`updated_at` on every node it holds when a lane reports, at each round boundary, and at
-least every two hours while a lane is building (a plain update, same state, same owner);
-a session that cannot finish a node releases it (`open`, `owner_session` null) before it
-ends.
+mid-round (a rate limit held four SITE nodes for five hours on 2026-09-08) leaves nothing
+else to free them.
+
+Liveness is `heartbeat_at`, not `updated_at`: a claim is alive because its owner SAYS so.
+`updated_at` could not tell a dead claim from a slow one — on 2026-09-08 dead sessions'
+claims looked fresh for the whole window while a live lane that had built for hours
+without committing was armed for wrongful release. So a session that holds a node
+heartbeats it at every lane report, at each round boundary, and at least hourly while a
+lane builds:
+
+```bash
+npx tsx scripts/site-queue-status.ts --touch SITE-02,SITE-05 --owner <your-session-id>
+```
+
+It writes only `heartbeat_at` and only for the session that holds the node, so it can
+neither revive someone else's claim nor read as progress. A session that cannot finish a
+node releases it (`open`, `owner_session` null) before it ends.
 
 ### 3. Run the lanes
 One `Agent` per lane, `isolation: 'worktree'`, `run_in_background: true`. Each
@@ -103,8 +131,9 @@ The orchestrator verifies every lane's claims itself (agents overstate), merges 
 lane branches into main in order, resolves the shared files, runs `npm run push`
 ONCE, `npm run deploy:verify` ONCE, opens each shipped page class on ryan-realty.com
 and exercises the change, then records evidence on each node: `done` with the READY
-SHA and what the environment showed, or `blocked` with a dated measurement window
-when the accept test needs production time (the next item starts anyway). Update
+SHA and what the environment showed, or `blocked` with `blocked_until` set to the
+re-open date when the accept test needs production time — the brief reopens it on
+that date by itself, and the next item starts anyway. Update
 each route's `parity.json` `tasteReview` with the evaluator's result and shots.
 
 ### 5. Next round, immediately
@@ -131,6 +160,11 @@ line, and keep building the other lanes.
 
 - Write a new audit, punch list, or plan for the site. Append to a node.
 - Rebuild a page for taste outside a node. A page with no node is not touched.
+- Land a site primitive that only a dev page imports. On 2026-09-08 two items merged
+  4,419 lines reachable only from `app/dev/**`, looked shipped, and no visitor could
+  reach either. `ci:site-primitive-wired` refuses it: wire it into the public route the
+  node owes, or record it in the shrink-only baseline with the node id that owes the
+  wiring. An item is not shipped until a visitor can reach it.
 - Mark a node done from a self-report. Evidence is what the environment showed.
 - Put a dollar figure on a public page for a typed address. Add a registration wall.
   Both are Matt's rulings.
