@@ -493,8 +493,21 @@ describe('sendGovernedGroupMms — one thread, same guards', () => {
  * shadow-write, or the SLA clock reads zero for every submit.
  */
 describe('SITE-09 — system sends are stamped, and never count as the broker touching the lead', () => {
+  // The rails stamp first-broker-action as a fire-and-forget promise
+  // (`void import(...).then(...)`). Under full-suite load a stamp from an EARLIER
+  // test in this file can land during one of these, so every test here first
+  // lets pending promises settle, clears the mock, and then asserts only on the
+  // calls made for its own person id (2026-09-08: a rebecca sms_out stamp from
+  // the SMS-rail block leaked into the resend assertion once in three runs).
+  beforeEach(async () => {
+    await new Promise((r) => setTimeout(r, 25))
+    h.stampFirstBrokerActionIfEmpty.mockClear()
+  })
+  const stampCallsFor = (personId: number) =>
+    h.stampFirstBrokerActionIfEmpty.mock.calls.filter((c) => c[1] === personId).length
+
   const systemGmail = {
-    personId: 7,
+    personId: 9071,
     purpose: 'contact:confirmation',
     initiator: { kind: 'system' as const, broker: 'matt', source: 'contact-form' },
     payload: {
@@ -540,13 +553,13 @@ describe('SITE-09 — system sends are stamped, and never count as the broker to
     h.recordConversationMessage.mockResolvedValue({ ok: true, conversationId: 'c1', messageId: 'm1', deduped: false })
 
     await sendGovernedEmail({
-      personId: 7,
+      personId: 9072,
       purpose: 'alert:confirmation',
       initiator: { kind: 'system', broker: 'matt', source: 'search-alert' },
       payload: { rail: 'resend', to: 'lead@example.com', subject: 'S', html: '<p>H</p>' },
     })
     await new Promise((r) => setTimeout(r, 0))
-    expect(h.stampFirstBrokerActionIfEmpty).not.toHaveBeenCalled()
+    expect(stampCallsFor(9072)).toBe(0)
     expect((h.inserts[0].rows as Record<string, unknown>).payload).toMatchObject({
       purpose: 'alert:confirmation',
       initiator: 'system',
@@ -555,13 +568,13 @@ describe('SITE-09 — system sends are stamped, and never count as the broker to
 
     h.inserts.length = 0
     await sendGovernedEmail({
-      personId: 7,
+      personId: 9072,
       purpose: 'crm:manual-email',
       initiator: { kind: 'broker', broker: 'matt' },
       payload: { rail: 'resend', to: 'lead@example.com', subject: 'S', html: '<p>H</p>' },
     })
     await new Promise((r) => setTimeout(r, 0))
-    expect(h.stampFirstBrokerActionIfEmpty).toHaveBeenCalledTimes(1)
+    expect(stampCallsFor(9072)).toBe(1)
   })
 
   it('sms rail: a system text stamps nothing and carries its purpose', async () => {
@@ -574,7 +587,7 @@ describe('SITE-09 — system sends are stamped, and never count as the broker to
       initiator: { kind: 'system', broker: 'matt', source: 'search-alert' },
     })
     await new Promise((r) => setTimeout(r, 0))
-    expect(h.stampFirstBrokerActionIfEmpty).not.toHaveBeenCalled()
+    expect(stampCallsFor(42)).toBe(0)
     expect((h.inserts[0].rows as Record<string, unknown>).payload).toMatchObject({
       purpose: 'alert:confirmation',
       initiator: 'system',
@@ -592,6 +605,6 @@ describe('SITE-09 — system sends are stamped, and never count as the broker to
       initiator: { kind: 'broker', broker: 'matt' },
     })
     await new Promise((r) => setTimeout(r, 0))
-    expect(h.stampFirstBrokerActionIfEmpty).toHaveBeenCalledTimes(1)
+    expect(stampCallsFor(42)).toBe(1)
   })
 })
