@@ -355,6 +355,14 @@
       "app/communities/**",
       "lib/data/**"
     ],
+    "ci:city-route-guard": [
+      "app/**/page.tsx",
+      "app/actions/**",
+      "lib/central-oregon.ts",
+      "middleware.ts",
+      "next.config.*",
+      "scripts/check-city-route-guard.mjs"
+    ],
     "ci:claude-canon": [
       "CLAUDE.md",
       "AGENTS.md",
