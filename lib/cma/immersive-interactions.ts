@@ -42,6 +42,13 @@ export function immersiveInteractionCss(): string {
    reflow the section under the reader's thumb. */
 .rr-read{min-height:1.5em;margin:6px 0 0;font-size:15px;line-height:1.5;color:var(--navy)}
 .rr-read:empty::before{content:attr(data-hint);opacity:.5}
+/* A mark whose answer is short is answered AT THE MARK, so the eye never
+   leaves the drawing — the readout under the figure sat up to a chart's full
+   height below the thing the reader had just tapped. The sentence still goes
+   to the live region for a screen reader; it is only taken out of the flow. */
+.rr-read.is-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;min-height:0}
+.rr-note text{font-family:inherit;font-weight:600;fill:var(--navy)}
+.rr-note rect{fill:var(--cream);stroke:rgba(16,39,66,.22);stroke-width:.75}
 /* Marks that answer a tap SAY SO, with a ring around the dot — the affordance
    is the mark, never a sentence under the chart telling a reader to tap it. */
 .tl-mark,.bar-row,.month-mark,.pp-cut,.ws-dot{cursor:pointer}
@@ -99,6 +106,50 @@ function readout(after,hint){
   after.parentNode.insertBefore(r,after.nextSibling)
   return r
 }
+/**
+ * The answer, drawn beside the mark that was tapped.
+ *
+ * One note per drawing, moved rather than remade. It is clamped inside the
+ * viewBox on both axes and flips under the mark when there is no room above,
+ * so a mark near the top of the plot never pushes its own label off the frame.
+ */
+function note(svg,mark,text){
+  if(!text)return
+  var vb=svg.viewBox&&svg.viewBox.baseVal
+  if(!vb||!vb.width)return
+  var box
+  try{box=mark.getBBox()}catch(e){return}
+  if(!box||(!box.width&&!box.height))return
+  var NS='http://www.w3.org/2000/svg'
+  var g=svg.querySelector('.rr-note')
+  if(!g){
+    g=document.createElementNS(NS,'g');g.setAttribute('class','rr-note')
+    g.appendChild(document.createElementNS(NS,'rect'))
+    g.appendChild(document.createElementNS(NS,'text'))
+    svg.appendChild(g)
+  }else{svg.appendChild(g)}
+  var rect=g.firstChild,label=g.lastChild
+  var fs=vb.width<=400?11:12
+  label.setAttribute('font-size',String(fs))
+  label.setAttribute('text-anchor','middle')
+  label.textContent=text
+  var w
+  try{w=label.getComputedTextLength()}catch(e){w=text.length*fs*0.56}
+  if(!w)w=text.length*fs*0.56
+  var padX=6,padY=4,h=fs+padY*2
+  var cx=box.x+box.width/2
+  var half=w/2+padX
+  cx=Math.min(Math.max(cx,half+2),vb.width-half-2)
+  // Above the mark, unless the mark sits within the note's own height of the
+  // top edge.
+  var above=box.y-10-h>=2
+  var top=above?box.y-10-h:box.y+box.height+10
+  top=Math.min(Math.max(top,2),Math.max(vb.height-h-2,2))
+  rect.setAttribute('x',String(cx-half));rect.setAttribute('y',String(top))
+  rect.setAttribute('width',String(w+padX*2));rect.setAttribute('height',String(h))
+  rect.setAttribute('rx','4')
+  label.setAttribute('x',String(cx));label.setAttribute('y',String(top+padY+fs*0.8))
+}
 function press(node,fn){
   node.addEventListener('click',fn)
   node.addEventListener('keydown',function(e){
@@ -131,13 +182,19 @@ try{
   // month — the same tell as the Atlas pinch-to-zoom sentence TASTE.md bans.
   // The affordance is on the control instead: a ring around every mark that
   // answers a tap, a placed handle on the scrub, a chevron on the toggle.
-  var GROUPS=[['.tl-mark',''],['.bar-row',''],['.month-mark',''],['.ws-dot','']]
+  // The third field says whether the answer is placed AT the mark. A timeline
+  // cut, a month and a sale dot each answer in a few words, so the answer goes
+  // beside the mark and the paragraph becomes a screen-reader line. The bars
+  // answer in a full sentence with a comparison in it, which belongs in
+  // reading type under the chart.
+  var GROUPS=[['.tl-mark','',1],['.bar-row','',0],['.month-mark','',1],['.ws-dot','',1]]
   GROUPS.forEach(function(g){
     var nodes=[].slice.call(document.querySelectorAll(g[0]))
     nodes.forEach(function(n){
       var svg=n.ownerSVGElement||n.closest('svg')
       if(!svg)return
       var read=readout(svg.parentNode&&svg.parentNode.classList.contains('fig')?svg.parentNode:svg,g[1])
+      if(g[2])read.classList.add('is-sr')
       // The bars and the marks are toggles, so they announce their state the
       // way the pills do. They shipped with aria-pressed left null.
       n.setAttribute('aria-pressed','false')
@@ -149,7 +206,9 @@ try{
         })
         n.classList.add('is-read')
         n.setAttribute('aria-pressed','true')
-        read.textContent=n.getAttribute('data-read')||''
+        var text=n.getAttribute('data-read')||''
+        read.textContent=text
+        if(g[2])note(svg,n,text)
       }
       press(n,show)
       n.addEventListener('mouseenter',show)

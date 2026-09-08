@@ -450,10 +450,24 @@ type InteractStep = {
   shot?: string
 }
 
-/** The first live line in a chapter that has something in it, ON SCREEN. */
+/**
+ * The answer a reader can SEE, in a chapter that has one.
+ *
+ * A mark whose answer is short is answered at the mark, inside the drawing,
+ * and its paragraph is left in the DOM as a screen-reader live region — which
+ * still has a client rect at 1x1. So the note is read first; only a chapter
+ * that answers in reading type under the figure falls through to the
+ * paragraph, and a paragraph taken out of the flow never counts as the
+ * visible answer.
+ */
 const READ_IN = (sel: string) => `(() => {
+  const notes = Array.from(document.querySelectorAll('${sel} .rr-note text'))
+    .filter((n) => n.getClientRects().length > 0)
+    .map((n) => (n.textContent || '').trim())
+    .filter(Boolean)
+  if (notes[0]) return notes[0]
   const reads = Array.from(document.querySelectorAll('${sel} .rr-read'))
-    .filter((r) => r.getClientRects().length > 0)
+    .filter((r) => r.getClientRects().length > 0 && !r.classList.contains('is-sr'))
   const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
   return said[0] || ''
 })()`

@@ -500,6 +500,9 @@ export function cmaSectionStyles(): string {
   table.comp-matrix thead th.v { vertical-align: top; text-align: center; }
   table.comp-matrix .matrix-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; margin: 0 0 6px; }
   table.comp-matrix .matrix-addr { display: block; }
+  /* The map's pin, at reading size: the number is the key to the pin, not a
+     rank. print-color-adjust is exact on * in the sheet, so it prints filled. */
+  .pin-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: var(--navy); color: var(--cream); font-size: 9px; font-weight: 700; line-height: 1; margin-right: 5px; flex: 0 0 auto; vertical-align: middle; }
   table.comp-matrix th, table.comp-matrix td {
     padding: 5px 6px;
     white-space: normal;

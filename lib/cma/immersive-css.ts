@@ -285,6 +285,11 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 table.comp-matrix thead th.v{vertical-align:top;text-align:center}
 table.comp-matrix .matrix-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;margin:0 0 8px}
 table.comp-matrix .matrix-addr{display:block}
+/* The map's pin, at reading size. The number beside a sale is the KEY to that
+   pin, not a rank, and drawn as the pin it cannot be misread as one after the
+   grid is sorted. */
+.pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
+.comp-stack-addr .pin-badge{margin-right:8px}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
 /* NO PAN BOX: every chart ships a 360-unit phone layout. */

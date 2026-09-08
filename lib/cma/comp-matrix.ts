@@ -120,10 +120,25 @@ type Col = {
   sort: string
   key: string
   label: string
+  /**
+   * The sale's number, drawn as the badge the map draws.
+   *
+   * It used to be typed into the label as "3. 947 6th", which reads as a rank
+   * — so a reader who sorted the grid by price met 3, 5, 1, 2, 4 and a map
+   * still saying 1 through 5, and concluded the sort was broken. The number is
+   * not a position, it is the key to the pin, and drawn as the pin's own badge
+   * it says so without a caption.
+   */
+  pin: string | null
   href: string | null
   sub: string | null
   cells: string[]
   photoUrl: string | null
+}
+
+/** The map's pin, at reading size, so the two read as one object. */
+function pinBadge(pin: string | null): string {
+  return pin ? `<span class="pin-badge" aria-hidden="true">${esc(pin)}</span>` : ''
 }
 
 /**
@@ -209,6 +224,7 @@ function subjectCol(subject: CmaSubject): Col {
   return {
     key: 'subject',
     label: 'Your home',
+    pin: null,
     href: null,
     sub: sub || null,
     photoUrl: subject.photoUrl?.trim() || null,
@@ -251,7 +267,8 @@ function compCol(
   const gross = weight?.grossAdjustmentPct ?? adj.grossPct
   return {
     key: `c${index + 1}`,
-    label: `${index + 1}. ${comp.address}`,
+    label: comp.address,
+    pin: String(index + 1),
     href: compHref(comp, ctx),
     sub: null,
     photoUrl: comp.photoUrl?.trim() || null,
@@ -438,8 +455,10 @@ function matrixTable(
         ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
         : ''
       const name = c.href
-        ? `<a class="matrix-addr" href="${esc(c.href)}" data-rr-track="cma-sale">${esc(c.label)}</a>`
-        : `<span class="matrix-addr">${esc(c.label)}</span>`
+        ? `<a class="matrix-addr" href="${esc(c.href)}" data-rr-track="cma-sale">${pinBadge(c.pin)}${esc(
+            c.label,
+          )}</a>`
+        : `<span class="matrix-addr">${pinBadge(c.pin)}${esc(c.label)}</span>`
       return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${img}${name}${
         // `sub` is composed here, from figures already escaped by usd()/int(),
         // and carries one <br/> of our own — never reader input.
@@ -534,7 +553,7 @@ function matrixStack(
         .join('')
       return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<a class="comp-stack-addr" href="${esc(
         compHref(c, ctx),
-      )}" data-rr-track="cma-sale">${esc(pin)}. ${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
+      )}" data-rr-track="cma-sale">${pinBadge(pin)}${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
         dateLong(c.closeDate),
       )} · ${usd(c.closePrice)}</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}${priceHistoryLineHtml(
         pricePathFromSale(c),

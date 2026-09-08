@@ -1181,6 +1181,55 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toContain('pp-chev')
   })
 
+  it('answers a short mark AT the mark, not a chart height below it', () => {
+    const js = immersiveInteractionScript()
+    const css = immersiveInteractionCss()
+    // The evaluator on the timeline cut: "the answer appears 200px below the
+    // mark you tapped, so your eye leaves the graphic. Annotate the mark."
+    expect(js).toContain("var GROUPS=[['.tl-mark','',1],['.bar-row','',0],['.month-mark','',1],['.ws-dot','',1]]")
+    expect(js).toContain("g.setAttribute('class','rr-note')")
+    expect(js).toContain('if(g[2])note(svg,n,text)')
+    // The sentence still reaches a screen reader; it only leaves the flow.
+    expect(js).toContain("if(g[2])read.classList.add('is-sr')")
+    expect(css).toMatch(/\.rr-read\.is-sr\{[^}]*clip-path:inset\(50%\)/)
+    expect(css).toContain('.rr-note text{')
+  })
+
+  it('makes a bar tap say something the bar does not already print', () => {
+    const svg = askOutcomeBarsSvg(
+      {
+        city: 'Redmond',
+        windowMonths: 12,
+        groups: [
+          { key: 'sold-no-cut', n: 375, medianDays: 8 },
+          { key: 'sold-after-cut', n: 214, medianDays: 57 },
+          { key: 'did-not-sell', n: 232, medianDays: 117 },
+        ],
+      },
+      null,
+    )
+    // Every figure the readout carried was already drawn on the row, which is
+    // decoration. The gap between two bars is the one thing three bars on one
+    // axis are for, and it is nowhere on the chart.
+    expect(svg).toContain('49 days longer than the homes that sold without a price cut')
+    expect(svg).toContain('109 days longer than the homes that sold without a price cut')
+    expect(svg).toContain('109 days faster than the homes that came off unsold')
+  })
+
+  it('draws the sale number as the map pin it keys, never as a rank', () => {
+    const html = immersive()
+    // Sorting the grid reorders the columns; the pins keep their numbers,
+    // because a number here is an identity. Drawn as the pin's own badge it
+    // says so, and no caption has to.
+    expect(html).toContain('class="pin-badge"')
+    // In the SORTABLE grid and its cards. The number still reads as "1. 730
+    // Quince" inside the two charts that list the sales in a fixed order,
+    // where nothing reorders and a key before a name is just a key.
+    expect(html).not.toMatch(/class="matrix-addr"[^>]*>\s*\d+\./)
+    expect(html).not.toMatch(/class="comp-stack-addr"[^>]*>\s*\d+\./)
+    expect(immersiveStylesheet()).toContain('.pin-badge{')
+  })
+
   it('gives the closing two real buttons that carry identity', () => {
     const html = immersive()
     expect(html).toContain('class="btn pri"')

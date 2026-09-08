@@ -891,6 +891,15 @@ export function askOutcomeBarsSvg(
   const max = Math.max(...groups.map((g) => g.medianDays))
   const x = (v: number) => plotL + ((plotR - plotL) * v) / Math.max(max, 1)
 
+  // The comparison the tap exists to make. Every figure the readout used to
+  // carry was already drawn on the row, so the tap restated what the reader was
+  // looking at — decoration, which TASTE bans. The one thing three bars on one
+  // axis are FOR is the distance between them, and that distance is nowhere on
+  // the chart. It is a subtraction of two medians printed above it, so it is
+  // derived and shown, never a new measurement (CLAUDE.md §0).
+  const fastest = groups.reduce((a, b) => (b.medianDays < a.medianDays ? b : a))
+  const slowest = groups.reduce((a, b) => (b.medianDays > a.medianDays ? b : a))
+
   const rows = groups
     .map((g, i) => {
       const mine = g.key === subjectGroup
@@ -929,6 +938,7 @@ export function askOutcomeBarsSvg(
         askOutcomeDaysPhrase(g),
         count,
         share,
+        askOutcomeGapPhrase(g, fastest, slowest),
       ]
         .filter(Boolean)
         .join(' · ')
@@ -973,6 +983,32 @@ export function askOutcomeBarsSvg(
  * What a bar's days figure MEANS for its own group. Two of these groups sold
  * and one never did, so only two of them can be counting days to an offer.
  */
+/**
+ * How far this group sits from the one it should be read against.
+ *
+ * The fastest group is the comparison for every other row; the fastest row
+ * itself is read against the slowest, which is the same gap from the other
+ * end. A group whose median matches its comparison gets nothing rather than
+ * "0 days longer".
+ */
+export function askOutcomeGapPhrase(
+  g: AskOutcomeGroup,
+  fastest: AskOutcomeGroup,
+  slowest: AskOutcomeGroup,
+): string {
+  const against = g.key === fastest.key ? slowest : fastest
+  if (against.key === g.key) return ''
+  const gap = Math.round(Math.abs(g.medianDays - against.medianDays))
+  if (!(gap > 0)) return ''
+  const unit = gap === 1 ? 'day' : 'days'
+  // Every label starts with a verb ("sold without a price cut", "came off
+  // unsold"), so it reads straight off "the homes that".
+  const other = ASK_OUTCOME_LABEL[against.key].toLowerCase()
+  return g.medianDays > against.medianDays
+    ? `${int(gap)} ${unit} longer than the homes that ${other}`
+    : `${int(gap)} ${unit} faster than the homes that ${other}`
+}
+
 export function askOutcomeDaysPhrase(g: AskOutcomeGroup): string {
   const n = int(g.medianDays)
   const unit = g.medianDays === 1 ? 'day' : 'days'

@@ -56,7 +56,11 @@ describe('renderCompMatrixHtml', () => {
     // it — never a price in a "Sold for" cell on a home that has not sold.
     expect(html).toContain('Your home')
     expect(html).toContain('listed $445,000<br/>1,056 sqft')
-    expect(html).toContain('1. 947 6th')
+    // The sale's number is the MAP PIN's badge, not an ordinal typed into the
+    // address: sorting the grid reorders the columns, and "3. 947 6th" sitting
+    // first read as a broken sort rather than as the key to pin 3.
+    expect(html).toContain('<span class="pin-badge" aria-hidden="true">1</span>947 6th')
+    expect(html).not.toContain('1. 947 6th')
     expect(html).toContain('data-comp="1"')
     expect(html).toContain('data-pin="subject"')
     // Seven rows, and only these. The identity rows (property type, beds and
@@ -123,7 +127,7 @@ describe('renderCompMatrixHtml', () => {
     expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 5 through 8</h4>')
     expect(twelve).toContain('<h4 class="subhead matrix-group-h">Sales 9 through 12</h4>')
     // The defect this whole shape exists to prevent: sales falling off the page.
-    expect(twelve).toContain('12. 947 6th')
+    expect(twelve).toContain('<span class="pin-badge" aria-hidden="true">12</span>947 6th')
     // Three table heads, plus the phone stack's own "Your home" card, which
     // the desktop grid had and the phone drawing did not (tasteReview item 1).
     expect(twelve.match(/Your home/g)).toHaveLength(4)
