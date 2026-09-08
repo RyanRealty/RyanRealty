@@ -146,7 +146,7 @@ export function pricingPage(input: {
     compWeightIndex(p),
   )}
   ${perSquareFootLine({ subject: s, pricing: p })}
-  ${renderRejectedSalesHtml(p)}
+  ${renderRejectedSalesHtml(p, input.comps)}
   ${
     pinMap
       ? `<div class="pin-map-wrap">${pinMap}</div><p class="small">${esc(mapLegend(s.subdivision))}</p>`

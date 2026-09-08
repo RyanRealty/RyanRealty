@@ -94,6 +94,23 @@ describe('considered and not used', () => {
     expect(html).toContain('These 2 sales were looked at and set aside.')
   })
 
+  it('never lists a sale the grid above it just used', () => {
+    // 65365 Concorde: the row's rejected list named five of the six sales
+    // printed in the grid, so the chapter said "looked at and set aside"
+    // under a table that had used them.
+    const html = renderRejectedSalesHtml(pricing, [
+      { listingKey: 'K-2748', address: '2748 6th' },
+    ])
+    expect(html).not.toContain('2748 6th')
+    expect(html).toContain('725 Redwood')
+    expect(html).toContain('This sale was looked at and set aside.')
+    // Matched on the address too, for a rejection the row carries no key for.
+    expect(renderRejectedSalesHtml(pricing, [{ address: '725 Redwood' }])).not.toContain('725 Redwood')
+    expect(
+      renderRejectedSalesHtml(pricing, [{ address: '725 Redwood' }, { listingKey: 'K-2748' }]),
+    ).toBe('')
+  })
+
   it('omits itself when nothing was set aside', () => {
     expect(renderRejectedSalesHtml({ ...pricing, rejected: [] } as unknown as CmaPricing)).toBe('')
     expect(renderRejectedSalesHtml(null)).toBe('')

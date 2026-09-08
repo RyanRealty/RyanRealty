@@ -111,7 +111,7 @@ export function renderPricingMethodHtml(input: {
 }
 
 /** `pricing.rejected`, validated. */
-export type RejectedSaleRow = { address: string; reason: string }
+export type RejectedSaleRow = { listingKey: string | null; address: string; reason: string }
 
 export function readRejectedSales(pricing: CmaPricing | null | undefined): RejectedSaleRow[] {
   const raw = (pricing as unknown as { rejected?: unknown } | null)?.rejected
@@ -121,7 +121,7 @@ export function readRejectedSales(pricing: CmaPricing | null | undefined): Rejec
       const o = (r ?? {}) as Record<string, unknown>
       const address = str(o.address)
       const reason = str(o.reason)
-      return address && reason ? { address, reason } : null
+      return address && reason ? { listingKey: str(o.listingKey), address, reason } : null
     })
     .filter((r): r is RejectedSaleRow => r != null)
 }
@@ -135,8 +135,21 @@ export function readRejectedSales(pricing: CmaPricing | null | undefined): Rejec
  * at and rejected rather than missed. The reasons are composed at build from
  * each sale's own recorded facts; the renderer prints them as written.
  */
-export function renderRejectedSalesHtml(pricing: CmaPricing | null | undefined): string {
-  const rows = readRejectedSales(pricing)
+export function renderRejectedSalesHtml(
+  pricing: CmaPricing | null | undefined,
+  used?: ReadonlyArray<{ listingKey?: string | null; address?: string | null }>,
+): string {
+  // A sale cannot be both one of the sales that set the price and a sale that
+  // was set aside. On 65365 Concorde the row's `rejected` list named five of
+  // the six sales printed in the grid above it, so the chapter said "these
+  // were looked at and set aside" under a table that had just used them.
+  // The grid is the evidence; anything in it leaves this list.
+  const keys = new Set(
+    (used ?? []).flatMap((c) => [c.listingKey, c.address].filter((v): v is string => !!v && !!v.trim()).map((v) => v.trim().toLowerCase())),
+  )
+  const rows = readRejectedSales(pricing).filter(
+    (r) => !keys.has(r.address.trim().toLowerCase()) && !(r.listingKey && keys.has(r.listingKey.trim().toLowerCase())),
+  )
   if (rows.length === 0) return ''
   const items = rows
     .map(
