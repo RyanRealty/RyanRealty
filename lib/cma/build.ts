@@ -77,6 +77,7 @@ import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
+import { buildCompSearch } from '@/lib/pricing/comp-search'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1054,9 +1055,31 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // document carries no land section.
     const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
 
+    // THE SEARCH, COUNTED (round four, class E). `compTrace` is prose and
+    // `tiersUsed` is a list of names, so the story a renderer wrote from them
+    // could — and on cma-2465-7th-redmond-97756 did — claim a shortage inside
+    // a subdivision that produced three of the five sales printed beneath it.
+    // This is the same ladder as counts: what each rung returned, how many of
+    // the PRINTED sales came from it, and how those sales fall by subdivision,
+    // with one sentence generated from those numbers.
+    const compSearch = buildCompSearch({
+      subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
+      ladder: selection.diagnostics.ladder.map((t) => ({
+        tier: t.tier,
+        ran: t.ran,
+        monthsBack: t.months_back,
+        compsAdded: t.comps_added,
+      })),
+      keptComps: renderComps.map((c) => ({
+        subdivision: c.subdivision,
+        selectionTier: c.selectionTier,
+      })),
+    })
+
     const renderArgs = {
       subject,
       comps: renderComps,
+      compSearch,
       market,
       pricing,
       client: input.client,

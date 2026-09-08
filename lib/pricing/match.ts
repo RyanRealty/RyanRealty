@@ -127,12 +127,37 @@ export type SelectedPricingComp = PricingSale & {
   monthsBeforeAsOf: number
 }
 
+/**
+ * One rung of the facts ladder, as COUNTS (round four, class E).
+ *
+ * `trace` says the same thing in prose ("subdivision-6mo: +3 (running 5)") and
+ * `tiersUsed` says only that a rung fired. Neither can be read to answer "how
+ * many of these sales came from inside the subdivision", which is the question
+ * cma-2465-7th-redmond-97756 answered wrongly in a chapter heading. One row
+ * per rung the ladder WALKED, whether it added anything or not.
+ */
+export type PricingLadderRung = {
+  tier: string
+  /** False when the rung was skipped before it ran (no subdivision, not rural). */
+  ran: boolean
+  skippedReason: string | null
+  monthsBack: number
+  /** Candidate sales the rung scanned. */
+  scanned: number
+  /** New sales it contributed to the pool. */
+  added: number
+  /** Distinct sales held after it. */
+  runningTotal: number
+}
+
 export type PricingMatchResult = {
   comps: SelectedPricingComp[]
   tiersUsed: string[]
   trace: string[]
   reachedTarget: boolean
   starved: boolean
+  /** Every rung the ladder walked, in order. */
+  rungs: PricingLadderRung[]
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -545,6 +570,7 @@ export function walkPricingLadder(
   )
   const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
   const byKey = new Map<string, SelectedPricingComp>()
+  const rungs: PricingLadderRung[] = []
   const tiersUsed: string[] = []
   const trace: string[] = [
     `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, zoning when both sides have a zone, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
@@ -552,13 +578,30 @@ export function walkPricingLadder(
 
   if (!subject.sqft || subject.sqft < 300) {
     const note = 'Subject has no usable living area, so there is nothing to compare.'
-    return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true }
+    return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true, rungs }
   }
 
   for (const tier of tiers) {
-    if (tier.sameSubdivision && !subject.subdivisionNorm) continue
-    if (tier.ruralOnly && !subject.ruralAcreage) continue
-    if (tier.name.startsWith('city-') && subject.ruralAcreage) continue
+    const skip =
+      tier.sameSubdivision && !subject.subdivisionNorm
+        ? 'the subject has no subdivision on its MLS row'
+        : tier.ruralOnly && !subject.ruralAcreage
+          ? 'the subject is not rural acreage'
+          : tier.name.startsWith('city-') && subject.ruralAcreage
+            ? 'the subject is rural acreage, so the citywide rung does not apply'
+            : null
+    if (skip) {
+      rungs.push({
+        tier: tier.name,
+        ran: false,
+        skippedReason: skip,
+        monthsBack: tier.monthsBack,
+        scanned: 0,
+        added: 0,
+        runningTotal: byKey.size,
+      })
+      continue
+    }
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue
@@ -567,6 +610,15 @@ export function walkPricingLadder(
       byKey.set(sale.listingKey, toSelected(subject, sale, asOf, tier.name))
       added++
     }
+    rungs.push({
+      tier: tier.name,
+      ran: true,
+      skippedReason: null,
+      monthsBack: tier.monthsBack,
+      scanned: pool.length,
+      added,
+      runningTotal: byKey.size,
+    })
     if (added > 0) {
       tiersUsed.push(tier.name)
       trace.push(
@@ -593,5 +645,5 @@ export function walkPricingLadder(
   } else {
     trace.push(`Final set: ${comps.length} closed sales from ${tiersUsed.join(', ') || 'none'}.`)
   }
-  return { comps, tiersUsed, trace, reachedTarget, starved: !reachedTarget }
+  return { comps, tiersUsed, trace, reachedTarget, starved: !reachedTarget, rungs }
 }

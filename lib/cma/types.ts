@@ -177,6 +177,15 @@ export interface CmaMarketContext {
   /** Completed months only. A chart renders only when six priced months exist. */
   trend?: CmaMarketTrendPoint[]
   /**
+   * What `trend` MEASURES, in the document's own words (round four, class E).
+   * The month line and the date-adjustment basis are two different city
+   * trends — a median sale price over single-family sales here, a median price
+   * a square foot over every product class there — and a document that prints
+   * both unlabelled reads as one number disagreeing with itself. Defined once,
+   * beside the query, at CMA_MARKET_TREND_MEASURE.
+   */
+  trendMeasure?: string | null
+  /**
    * Calendar-year volume from analytics_mart_market_annual.
    * City grain when the city cell exists, else the region row labeled as region.
    * Absent when the mart row is missing. Never a zero fill.
