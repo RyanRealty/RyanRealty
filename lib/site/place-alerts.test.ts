@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   earnsDisplayFigure,
+  joinClaimParts,
   joinNames,
   newestFirstHref,
   PLACE_ALERTS_FIGURE_MIN,
@@ -12,7 +13,9 @@ import {
   placeAlertsScopeLine,
   placeAlertsSource,
   placeAlertsStickyClaim,
+  placeAlertsStickyNote,
   publishableNewCount,
+  readableMatchNames,
 } from './place-alerts'
 
 /** The three capture surfaces that bind the strip. The disclosure literal lives in each (ci:alert-capture-disclosure). */
@@ -25,7 +28,14 @@ const BINDERS = [
 const PROMISE_LITERAL =
   "promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}"
 
-const STICKY_NOTE_LITERAL = 'stickyNote="Every new listing by email. Unsubscribe any time."'
+/**
+ * The strip's cadence sentence. It stays a LITERAL in each binder — the file
+ * that calls the capture action — because ci:alert-capture-disclosure reads
+ * that file for a frequency sentence and an unsubscribe sentence. What wraps it
+ * (placeAlertsStickyNote, which folds the scope in front of it) may move; the
+ * sentence may not leave the binder.
+ */
+const STICKY_NOTE_LITERAL = "'Every new listing by email. Unsubscribe any time.'"
 
 describe('publishableNewCount', () => {
   it('publishes only a real positive count', () => {
@@ -51,7 +61,11 @@ describe('the display numeral threshold', () => {
     const copy = placeAlertsCopy({ placeName: 'Tetherow', scopeName: 'Tetherow', newCount30d: 2, geoType: 'neighborhood', geoSlug: 'tetherow' })
     expect(copy.count).toBeNull()
     expect(copy.claim).toBe('2 houses came on the market in Tetherow in the last 30 days.')
-    expect(copy.stickyClaim).toEqual({ before: '2 houses listed in', place: 'Tetherow', after: 'in the last 30 days' })
+    expect(copy.stickyClaim).toEqual({
+      before: '2 houses came on the market in',
+      place: 'Tetherow',
+      after: 'in the last 30 days.',
+    })
     // The trace still carries the figure: the count is real, only its form changed.
     expect(copy.source).toMatch(/^2 houses: /)
   })
@@ -60,7 +74,11 @@ describe('the display numeral threshold', () => {
     const copy = placeAlertsCopy({ placeName: 'Bend', scopeName: 'Bend', newCount30d: 148, geoType: 'city', geoSlug: 'bend' })
     expect(copy.count).toBe('148')
     expect(copy.claim).toBe('houses came on the market in Bend in the last 30 days.')
-    expect(copy.stickyClaim).toEqual({ before: 'houses listed in', place: 'Bend', after: 'in the last 30 days' })
+    expect(copy.stickyClaim).toEqual({
+      before: 'houses came on the market in',
+      place: 'Bend',
+      after: 'in the last 30 days.',
+    })
     expect(copy.eyebrow).toBe('New listings · Bend')
     // No scope line on a same-scope city, so the promise names the city itself.
     expect(copy.scopeLine).toBeNull()
@@ -73,7 +91,35 @@ describe('the display numeral threshold', () => {
 
   it('singular at one, inline', () => {
     expect(placeAlertsClaim('Tetherow', 'Tetherow', 1)).toBe('1 house came on the market in Tetherow in the last 30 days.')
-    expect(placeAlertsStickyClaim('Tetherow', 'Tetherow', 1)).toEqual({ before: '1 house listed in', place: 'Tetherow', after: 'in the last 30 days' })
+    expect(placeAlertsStickyClaim('Tetherow', 'Tetherow', 1)).toEqual({
+      before: '1 house came on the market in',
+      place: 'Tetherow',
+      after: 'in the last 30 days.',
+    })
+  })
+})
+
+/**
+ * ONE FACT, ONE SENTENCE. The callout and the sticky repeat carry the same
+ * count; when they carried it in two wordings ("came on the market in" and
+ * "listed in") a reader had to check whether they were two figures.
+ */
+describe('the callout and the strip render one sentence', () => {
+  const cases: Array<[string, string, number | null]> = [
+    ['Bend', 'Bend', 148],
+    ['Tetherow', 'Tetherow', 2],
+    ['Awbrey Butte', 'Bend', 15],
+    ['Tetherow', 'Tetherow', 1],
+    ['Crosswater', 'Crosswater', null],
+  ]
+
+  it.each(cases)('%s / %s / %s: the joined parts ARE the claim', (place, scope, n) => {
+    const copy = placeAlertsCopy({ placeName: place, scopeName: scope, newCount30d: n, geoType: 'neighborhood', geoSlug: 'x' })
+    expect(joinClaimParts(copy.stickyClaim)).toBe(copy.claim)
+  })
+
+  it('and the sentence ends, so neither mount trails off', () => {
+    expect(placeAlertsStickyClaim('Bend', 'Bend', 148).after.endsWith('.')).toBe(true)
   })
 })
 
@@ -88,7 +134,11 @@ describe('placeAlertsCopy', () => {
     expect(copy.count).toBeNull()
     expect(copy.source).toBeUndefined()
     expect(copy.claim).toBe('New Crosswater listings, by email, as they come on the market.')
-    expect(copy.stickyClaim).toEqual({ before: 'New', place: 'Crosswater', after: 'listings by email' })
+    expect(copy.stickyClaim).toEqual({
+      before: 'New',
+      place: 'Crosswater',
+      after: 'listings, by email, as they come on the market.',
+    })
     expect(copy.scopeLine).toBeNull()
     expect(copy.submitLabel).toBe('Email me each one')
   })
@@ -105,7 +155,7 @@ describe('placeAlertsCopy', () => {
     expect(copy.stickyLabel).toBe('Bend listing alerts')
   })
 
-  it('names every MLS name a community alert matches (Tetherow: Tetherow, Triple, Tetherow Resort)', () => {
+  it('names the MLS names a community alert matches, and never a plat fragment (Tetherow files "Triple")', () => {
     const copy = placeAlertsCopy({
       placeName: 'Tetherow',
       scopeName: 'Tetherow',
@@ -114,7 +164,8 @@ describe('placeAlertsCopy', () => {
       geoSlug: 'tetherow',
       matchNames: ['Tetherow', 'Triple', 'Tetherow Resort'],
     })
-    expect(copy.scopeLine).toBe('The alert covers every listing the MLS files under Tetherow, Triple or Tetherow Resort.')
+    expect(copy.scopeLine).toBe('The alert covers every listing the MLS files under Tetherow or Tetherow Resort.')
+    expect(copy.scopeLine).not.toContain('Triple')
     expect(copy.promiseScope).toBeNull()
     expect(placeAlertsScopeLine({ placeName: 'Bend', scopeName: 'Bend', matchNames: ['Bend'] })).toBeNull()
     expect(placeAlertsScopeLine({ placeName: 'Bend', scopeName: 'Bend' })).toBeNull()
@@ -144,6 +195,61 @@ describe('placeAlertsCopy', () => {
     expect(source).toMatch(/^2 houses: /)
     expect(source).toContain('neighborhood:tetherow')
     expect(source).toContain('Coming Soon excluded')
+  })
+})
+
+/**
+ * The rendered list drops what a visitor cannot read as this place. The QUERY
+ * is untouched: the binder still hands the capture action the whole match set,
+ * and this function never touches it.
+ */
+describe('readableMatchNames', () => {
+  it('drops a plat fragment and keeps every name that reads as the place', () => {
+    expect(readableMatchNames('Tetherow', ['Tetherow', 'Triple', 'Tetherow Resort'])).toEqual([
+      'Tetherow',
+      'Tetherow Resort',
+    ])
+    expect(readableMatchNames('Pronghorn', ['Pronghorn', 'Pronghorn Resort', 'Pronghorn Golf Club'])).toHaveLength(3)
+  })
+
+  it('keeps a shorter name the place contains ("Black Butte" under "Black Butte Ranch")', () => {
+    expect(readableMatchNames('Black Butte Ranch', ['Black Butte Ranch', 'Black Butte'])).toEqual([
+      'Black Butte Ranch',
+      'Black Butte',
+    ])
+  })
+
+  it('says one name once, whatever the punctuation', () => {
+    expect(readableMatchNames('Mt Bachelor Village', ['Mt Bachelor Village', 'Mt. Bachelor Village'])).toEqual([
+      'Mt Bachelor Village',
+    ])
+  })
+
+  it('is empty for an empty place, and skips blanks', () => {
+    expect(readableMatchNames('', ['Tetherow'])).toEqual([])
+    expect(readableMatchNames('Tetherow', ['  ', 'Tetherow'])).toEqual(['Tetherow'])
+  })
+})
+
+/** The strip's one line: the scope where there is one, then the cadence. */
+describe('placeAlertsStickyNote', () => {
+  const cadence = 'Every new listing by email. Unsubscribe any time.'
+
+  it('leads with the scope where the alert sends wider than the count', () => {
+    expect(placeAlertsStickyNote('The alert covers all of Bend, Awbrey Butte included.', cadence)).toBe(
+      `The alert covers all of Bend, Awbrey Butte included. ${cadence}`,
+    )
+  })
+
+  it('is the cadence alone where the scope is the place (the city class)', () => {
+    expect(placeAlertsStickyNote(null, cadence)).toBe(cadence)
+    expect(placeAlertsStickyNote('   ', cadence)).toBe(cadence)
+  })
+
+  it('always states the frequency and the way out', () => {
+    const note = placeAlertsStickyNote('The alert covers all of Bend, Awbrey Butte included.', cadence)
+    expect(note).toMatch(/every new listing/i)
+    expect(note).toMatch(/unsubscribe/i)
   })
 })
 

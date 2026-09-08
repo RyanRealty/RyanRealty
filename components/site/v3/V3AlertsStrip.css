@@ -38,13 +38,24 @@
   .v3-alerts__grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
     column-gap: var(--v3-space-3xl);
-    align-items: start;
+    /* THE TWO COLUMNS END TOGETHER (evaluator, 2026-09-08). `align-items:
+       start` sized each column to its own content, so the hairline below ran
+       only as far as the form did and stopped mid-section, leaving an L-shaped
+       hole under the shorter column. Stretched, both columns are the row's
+       height and the rule runs the whole of it; each column's own content
+       still starts at the top, which is what align-content holds. */
+    align-items: stretch;
   }
 
   /* A hairline between the claim and the ask: two jobs, one section. */
   .v3-alerts__ask {
     padding-left: var(--v3-space-xl);
     border-left: var(--v3-rule-hairline);
+    align-content: start;
+  }
+
+  .v3-alerts__lead {
+    align-content: start;
   }
 
   /* After a send the confirmation carries its own navy rule (below), and two
@@ -83,21 +94,11 @@
   line-height: 1;
 }
 
-/* The figure as a door (the Instrument idiom): nothing at rest, so the claim
-   is not an underlined number; the affordance arrives on hover and on focus,
-   with the display-size offset the token layer carries for a large figure. */
-.v3.v3-alerts .v3-alerts__num--door {
-  color: inherit;
-  text-decoration: none;
-  border-radius: var(--v3-radius-sm);
-  transition: color var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.v3.v3-alerts .v3-alerts__num--door:hover,
-.v3.v3-alerts .v3-alerts__num--door:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: var(--v3-underline-offset-display);
-}
+/* THE FIGURE IS NOT A CONTROL (evaluator, 2026-09-08). It used to be a link
+   with no affordance at rest, beside a ghost button to the same place that the
+   wide layout then hid — an invisible door and a spare one. The numeral is a
+   figure now; the section's one door is the labelled button below, at every
+   width, so what a reader can click is what a reader can see. */
 
 /* The line that makes the figure and the offer agree: which scope the alert
    really sends. Body size, muted, held to the reading measure. */
@@ -281,12 +282,15 @@
    motion this mount spends; under reduced motion the token layer collapses
    the duration and the strip is simply there. */
 .v3.v3-alerts-sticky {
+  /* The strip's own block padding, so the resting phone row and the opened
+     form can breathe differently without two copies of the padding rule. */
+  --v3-strip-pad: var(--v3-space-xs);
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 90;
-  padding: var(--v3-space-sm) var(--v3-gutter) calc(var(--v3-space-sm) + env(safe-area-inset-bottom, 0px));
+  padding: var(--v3-strip-pad) var(--v3-gutter) calc(var(--v3-strip-pad) + env(safe-area-inset-bottom, 0px));
   background: var(--v3-surface-inverse);
   color: var(--v3-ink-on-navy);
   border-top: 1px solid var(--v3-ink-on-navy-muted);
@@ -305,23 +309,62 @@
     visibility 0s;
 }
 
+/* THE RESTING PHONE ROW: the sentence, the one control, the close. The field
+   and the disclosure are not in it (below) — they arrive when the visitor asks
+   for them, which is what keeps this under a tenth of an 812px viewport. */
 .v3-alerts-sticky__inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'line dismiss'
-    'controls controls';
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: 'line controls dismiss';
   align-items: center;
   gap: var(--v3-space-xs) var(--v3-space-sm);
   max-width: var(--v3-measure);
   margin: 0 auto;
 }
 
-@media (min-width: 64rem) {
-  .v3-alerts-sticky__inner {
+/* Opened on a phone: the field is full width under the line, where a thumb and
+   a keyboard want it, and the close stays with the sentence it closes. */
+.v3-alerts-sticky--armed .v3-alerts-sticky__inner {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'line dismiss'
+    'controls controls';
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-alerts-sticky {
+    --v3-strip-pad: var(--v3-space-sm);
+  }
+
+  /* Wide enough for the field to stand in the row from the start: the layout
+     the strip has always had, and the funnel it is being measured on. */
+  .v3-alerts-sticky__inner,
+  .v3-alerts-sticky--armed .v3-alerts-sticky__inner {
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas: 'line controls dismiss';
     column-gap: var(--v3-space-lg);
+  }
+}
+
+/* Below that, the ask is closed until it is asked for. Two rules, one state:
+   the field and the line that discloses what the field signs you up for arrive
+   together, so the promise is on screen whenever the control is. */
+@media (max-width: 47.99rem) {
+  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__control,
+  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__note {
+    display: none;
+  }
+
+  .v3.v3-alerts-sticky:not(.v3-alerts-sticky--armed) .v3-alerts-sticky__controls {
+    grid-template-columns: auto;
+  }
+
+  /* The label wraps rather than pushing the sentence into a gutter-wide column;
+     the control keeps its 44px box either way. */
+  .v3.v3-alerts-sticky .v3-btn {
+    white-space: normal;
+    max-width: 7.5rem;
+    padding-inline: var(--v3-space-sm);
   }
 }
 
@@ -332,10 +375,11 @@
   min-width: 0;
 }
 
+/* The same sentence the callout leads with, at reading size. */
 .v3-alerts-sticky__line {
   margin: 0;
   min-width: 0;
-  font-size: var(--v3-size-body-sm);
+  font-size: var(--v3-size-body);
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-on-navy);
   text-wrap: pretty;
@@ -346,13 +390,18 @@
   white-space: nowrap;
 }
 
-/* The strip's own disclosure: one short muted line, so the repeat promises
-   nothing the callout does not. AA muted ink on navy (cream-60). */
+/* THE LINE THAT CARRIES THE PROMISE IS THE LEGIBLE ONE (evaluator, 2026-09-08).
+   It shipped at --v3-size-source (12.5px) in cream-60, and PUBLIC_UI.md section
+   4 permits cream-60 at 16px and up — the one line stating what a visitor is
+   signing up for was the smallest thing on the strip. Body size, at the muted
+   ink the table clears at that size (5.99:1). Where the alert sends wider than
+   the figure counts, this is also where the scope is said. */
 .v3-alerts-sticky__note {
   margin: 0;
-  font-size: var(--v3-size-source);
+  font-size: var(--v3-size-body);
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-on-navy-muted);
+  text-wrap: pretty;
 }
 
 .v3-alerts-sticky__num {

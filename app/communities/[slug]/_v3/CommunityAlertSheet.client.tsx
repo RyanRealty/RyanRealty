@@ -29,6 +29,13 @@
  * a second row is not honest today. The disclosure (frequency, unsubscribe) is
  * in lib/site/place-alerts.ts, in copy a visitor reads. The route to manage a
  * subscription stays a door in the closing block.
+ *
+ * THE STRIP'S ONE LINE CARRIES THE SCOPE, and the sentence carries no plat
+ * fragments. The cadence sentence stays a literal here, where the gate reads
+ * it; placeAlertsStickyNote puts the scope line in front of it. `matchNames`
+ * still arrives whole — the filter matches every name in it — and only the
+ * RENDERED list drops the aliases that read as a data error rather than as this
+ * place (readableMatchNames in lib/site/place-alerts.ts).
  */
 
 import { useCallback } from 'react'
@@ -41,7 +48,7 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
-import { newestFirstHref, placeAlertsCopy } from '@/lib/site/place-alerts'
+import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
@@ -124,7 +131,7 @@ export function CommunityAlertsStrip({
       id={id}
       href={newestFirstHref(browseHref)}
       promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
-      stickyNote="Every new listing by email. Unsubscribe any time."
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing by email. Unsubscribe any time.')}
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="ghost"

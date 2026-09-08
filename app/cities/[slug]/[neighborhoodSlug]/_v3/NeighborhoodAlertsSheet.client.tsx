@@ -29,6 +29,12 @@
  * THE PRICE-DROP ALERT IS THE SAME ROW: see CityAlertSheet.client.tsx for why a
  * second row is not honest today. The disclosure (frequency, unsubscribe) is
  * in lib/site/place-alerts.ts, in copy a visitor reads.
+ *
+ * THE STRIP'S ONE LINE CARRIES THE SCOPE. The cadence sentence stays a literal
+ * here, where the gate reads it; placeAlertsStickyNote puts the scope line
+ * ("The alert covers all of Bend, Awbrey Butte included.") in front of it, so a
+ * visitor who only ever meets the sticky repeat learns what the callout tells
+ * one who scrolled past it: the alert is wider than the count.
  */
 
 import { useCallback } from 'react'
@@ -41,7 +47,7 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
-import { newestFirstHref, placeAlertsCopy } from '@/lib/site/place-alerts'
+import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
 
 const TRAP = { name: 'company', label: 'Company' } as const
 
@@ -108,7 +114,7 @@ export function NeighborhoodAlertsStrip({
       id={id}
       href={newestFirstHref(browseHref)}
       promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
-      stickyNote="Every new listing by email. Unsubscribe any time."
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing by email. Unsubscribe any time.')}
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="primary"

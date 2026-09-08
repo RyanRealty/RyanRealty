@@ -40,6 +40,12 @@
  * The disclosure a licensed broker's capture form owes the visitor stays in
  * copy a visitor reads: how often the email comes and how to stop it
  * (ci:alert-capture-disclosure). See lib/site/place-alerts.ts.
+ *
+ * THE STRIP'S ONE LINE CARRIES THE SCOPE. The cadence sentence stays a literal
+ * here, where the gate reads it; placeAlertsStickyNote puts the scope line in
+ * front of it wherever the alert sends wider than the figure counts. This is
+ * the city class, where the alert's scope IS the place, so the line stays the
+ * cadence sentence alone.
  */
 
 import { useCallback } from 'react'
@@ -52,7 +58,7 @@ import {
   buildGuestWatchFromPlace,
   rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
-import { newestFirstHref, placeAlertsCopy } from '@/lib/site/place-alerts'
+import { newestFirstHref, placeAlertsCopy, placeAlertsStickyNote } from '@/lib/site/place-alerts'
 import { CITY_ALERT_PROPERTY_TYPE } from './city-constants'
 
 const TRAP = { name: 'company', label: 'Company' } as const
@@ -109,7 +115,7 @@ export function CityAlertsStrip({ id, cityName, geoSlug, newCount30d, updatedAt,
       id={id}
       href={newestFirstHref(browseHref)}
       promise={`Every new listing${copy.promiseScope ? ` in ${copy.promiseScope}` : ''}, by email. Price changes on those homes come in the same email. Unsubscribe any time.`}
-      stickyNote="Every new listing by email. Unsubscribe any time."
+      stickyNote={placeAlertsStickyNote(copy.scopeLine, 'Every new listing by email. Unsubscribe any time.')}
       updatedAt={updatedAt}
       trap={TRAP}
       emphasis="primary"

@@ -669,23 +669,52 @@
   margin: 0;
 }
 
-/* The summary IS the toggle, so its own box has to be a 44px target: one small
-   uppercase word is 18px tall, which ci:tap-targets measured on /cities/bend
-   and refused (2026-09-08, the alerts callout put the first disclosure on a
-   crawled route). min-block-size keeps the marker (display stays list-item, so
-   a flex box cannot eat the triangle) and align-content centres the word in
-   the taller box where the browser supports it. */
+/* THE SUMMARY IS THE TOGGLE, so it owes a 44px target and its own marker.
+   ci:tap-targets measured it at 18.3px on /cities/bend and refused (2026-09-08:
+   the alerts callout put the first disclosure on a crawled route). And it was
+   the one control on a place page still wearing a native affordance — Chrome's
+   filled triangle, Safari's, whichever the visitor brought — beside a page of
+   hairlines. So: a flex box at the tap height, the native marker suppressed in
+   both engines, and a hairline caret drawn in the register's own ink that turns
+   on open. The keyboard behaviour is the browser's and stays the browser's. */
 .v3 .v3-source-disclosure__summary,
 .v3.v3-source-disclosure .v3-source-disclosure__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
   cursor: pointer;
   width: fit-content;
-  min-block-size: var(--v3-tap);
-  align-content: center;
   font-size: var(--v3-size-label);
   font-weight: var(--v3-weight-medium);
   letter-spacing: var(--v3-track-label);
   text-transform: uppercase;
   color: var(--v3-ink-muted);
+  list-style: none;
+}
+
+/* Safari and older Chrome draw the triangle through a pseudo-element that
+   `list-style: none` does not reach. */
+.v3 .v3-source-disclosure__summary::-webkit-details-marker,
+.v3.v3-source-disclosure .v3-source-disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .v3-source-disclosure__summary::before,
+.v3.v3-source-disclosure .v3-source-disclosure__summary::before {
+  content: '';
+  flex: none;
+  width: 0.4em;
+  height: 0.4em;
+  border-right: var(--v3-rule-weight-hairline) solid currentColor;
+  border-bottom: var(--v3-rule-weight-hairline) solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-source-disclosure[open] .v3-source-disclosure__summary::before,
+.v3.v3-source-disclosure[open] .v3-source-disclosure__summary::before {
+  transform: rotate(45deg);
 }
 
 .v3 .v3-source-disclosure[open] .v3-source-disclosure__summary,

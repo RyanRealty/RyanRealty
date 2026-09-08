@@ -34,12 +34,24 @@ export const V3_ALERTS_STICKY_INITIAL: V3AlertsStickyState = {
  * wins on its own.
  */
 export function stickyVisible(state: V3AlertsStickyState, status: V3AlertsStatus): boolean {
-  if (state.dismissed) return false
-  if (status === 'sent') return false
-  if (!state.passed) return false
+  if (!stickyEligible(state, status)) return false
   if (state.calloutVisible) return false
   if (state.footerVisible) return false
   return true
+}
+
+/**
+ * THE STRIP CAN COME BACK, so the page keeps its room. Eligibility drops the
+ * two conditions that flip on every scroll — the callout on screen, the footer
+ * on screen — and keeps the three that hold for the rest of the visit. The page
+ * root reserves the strip's height while this is true rather than while it is
+ * VISIBLE, because a reservation that appears and disappears at the foot of the
+ * page is a jump of the strip's own height, every time the footer arrives.
+ */
+export function stickyEligible(state: V3AlertsStickyState, status: V3AlertsStatus): boolean {
+  if (state.dismissed) return false
+  if (status === 'sent') return false
+  return state.passed
 }
 
 /**
@@ -51,6 +63,21 @@ export function anchorPassed(entry: {
   boundingClientRect: { bottom: number }
 }): boolean {
   return !entry.isIntersecting && entry.boundingClientRect.bottom <= 0
+}
+
+/**
+ * THE STRIP'S ASK IS CLOSED when its field renders no box at all — the narrow
+ * layout's resting state, where the stylesheet takes the field out of the flow
+ * and the one control's job is to open it (V3AlertsStrip.client.tsx).
+ *
+ * The field's own geometry is the test, never a breakpoint copied out of the
+ * stylesheet into JS: two copies of a media query drift the day one of them
+ * moves, and `matchMedia` read during render is a hydration mismatch. A missing
+ * field reads as closed for the same reason — there is nothing to submit.
+ */
+export function stickyAskClosed(field: { getClientRects(): { length: number } } | null | undefined): boolean {
+  if (!field) return true
+  return field.getClientRects().length === 0
 }
 
 /** The same shape the capture action accepts, so the callout never sends what the server refuses. */
