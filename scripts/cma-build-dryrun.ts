@@ -97,6 +97,12 @@ type DryRun = {
   renderArgsPricingReconciliation: unknown
   /** render_args.pricing.rangeRule — how the low and high were produced. */
   renderArgsPricingRangeRule: unknown
+  /**
+   * render_args.compSearch — the ladder as COUNTS. Round four class E: the
+   * prose search story claimed "not enough recent sales inside Diamond Bar
+   * Ranch" while three of the five printed sales were in it.
+   */
+  renderArgsCompSearch: unknown
   /** render_args.pricing.timeAdjustment — the basis every date adjustment used. */
   renderArgsPricingTimeAdjustment: unknown
   /**
@@ -208,7 +214,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
-    renderArgsPricingRangeRule: null, renderArgsPricingTimeAdjustment: null,
+    renderArgsPricingRangeRule: null, renderArgsCompSearch: null, renderArgsPricingTimeAdjustment: null,
     renderArgsPricingClamp: null, renderArgsPricingSetAside: null,
     renderArgsPricingReview: null, renderArgsPricingSellerNet: null, sellerNetAnchored: true,
     renderArgsExpiredAuditAskExposure: null, renderArgsSubjectStatus: null,
@@ -399,6 +405,21 @@ async function dryRun(slug: string): Promise<DryRun> {
     })),
   })
 
+  // render_args.compSearch — the ladder as counts, built by the same function
+  // lib/cma/build.ts calls. The judge is skipped here, so the kept set is the
+  // full ladder result and the counts are the widest the document could print.
+  const { buildCompSearch } = await import('@/lib/pricing/comp-search')
+  const compSearch = buildCompSearch({
+    subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
+    ladder: selection.diagnostics.ladder.map((t) => ({
+      tier: t.tier,
+      ran: t.ran,
+      monthsBack: t.months_back,
+      compsAdded: t.comps_added,
+    })),
+    keptComps: adjusted.map((c) => ({ subdivision: c.subdivision, selectionTier: c.selectionTier })),
+  })
+
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps)
   const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
@@ -523,6 +544,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsMarketOriginalAskRealization: localOutcomes.originalAskRealization,
     renderArgsPricingReconciliation: pricing.reconciliation ?? null,
     renderArgsPricingRangeRule: pricing.rangeRule ?? null,
+    renderArgsCompSearch: compSearch,
     renderArgsPricingTimeAdjustment: pricing.timeAdjustment ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
@@ -653,6 +675,8 @@ async function main() {
     console.log(indent(r.renderArgsPricingRangeRule))
     console.log('   render_args.pricing.setAside =')
     console.log(indent(r.renderArgsPricingSetAside))
+    console.log('   render_args.compSearch =')
+    console.log(indent(r.renderArgsCompSearch))
     console.log(
       `   queue state · stored ${r.queueStateStored ?? 'n/a'} · after this run ${r.queueState ?? 'n/a'}`,
     )

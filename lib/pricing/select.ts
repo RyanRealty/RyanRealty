@@ -97,6 +97,7 @@ export async function selectPricingComps(
       trace: ['sale_pricing_facts is still backfilling. The listings ladder is the fallback.'],
       reachedTarget: false,
       starved: true,
+      rungs: [],
       factsReady: false,
     }
   }
@@ -209,6 +210,28 @@ export async function priceSubjectFromFacts(
   return { match, ...est, index }
 }
 
+/**
+ * The geographic bound a rung searched, in plain language. The listings ladder
+ * writes a SQL-shaped string here; the facts ladder has no per-rung query, so
+ * this names the same bound from the tier itself.
+ */
+function ladderGeography(tier: string, subject: CmaSubject): string {
+  const sub = (subject.subdivision ?? '').trim()
+  const city = (subject.city ?? '').trim()
+  if (tier.startsWith('subdivision-')) {
+    return sub ? `subdivision ${sub}${city ? `, ${city}` : ''}` : 'the subject subdivision'
+  }
+  const miles = tier.match(/(\d+(?:\.\d+)?)mi/)?.[1] ?? null
+  if (tier.startsWith('rural-')) {
+    return miles ? `within ${miles} miles, any mailing city` : 'rural, any mailing city'
+  }
+  if (tier.startsWith('similar-sub')) {
+    return `subdivisions within 30% of the subject subdivision's median $/sqft${city ? `, ${city}` : ''}`
+  }
+  if (miles) return `within ${miles} miles of the subject${city ? `, ${city}` : ''}`
+  return city || 'the subject market'
+}
+
 export function matchToCompSelection(
   subject: CmaSubject,
   match: PricingMatchResult,
@@ -250,7 +273,29 @@ export function matchToCompSelection(
         subdivision_raw: subject.subdivision ?? null,
         product_sub_type: subject.propertySubType ?? null,
       },
-      ladder: [],
+      // THE LADDER, FILLED ON THE FACTS PATH TOO (round four, class E). This
+      // was an empty array, so every counted question about the search —
+      // "what did the subdivision rungs actually return" — had no answer on
+      // the path all four round-four exemplars took, and the seller-facing
+      // story was written from the tier names alone. `excluded` stays at zero
+      // here because the facts ladder rejects inside passesTier without
+      // categorising the reason, the same convention `excluded_totals` above
+      // already carries on this path. It is "not counted", never "none".
+      ladder: match.rungs.map((r) => ({
+        tier: r.tier,
+        ran: r.ran,
+        skipped_reason: r.skippedReason,
+        months_back: r.monthsBack,
+        sqft_min: null,
+        sqft_max: null,
+        lot_min: null,
+        lot_max: null,
+        geography: ladderGeography(r.tier, subject),
+        rows_returned: r.scanned,
+        comps_added: r.added,
+        running_total: r.runningTotal,
+        excluded: emptyExclusions(),
+      })),
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
       starved: match.starved,
