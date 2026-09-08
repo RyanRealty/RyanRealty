@@ -35,6 +35,32 @@ commit-msg hook; `Node: none (<reason>)` is the recorded escape). A new audit do
 - Search Console truth (scripts/_gsc-place-pages.mjs): `/communities/*` 4,516 impressions
   and 24 clicks in 28 days; `/cities/bend/*` 17 and 0. Item 1 targets communities first.
 
+**Parallel lanes (Matt 2026-09-07: "do more items in parallel").** The queue is not
+serial. Only SITE-03, SITE-06, SITE-07 depend on SITE-02b (they render its drawings);
+every other item is independent. Run lanes as separate agents in their own worktrees
+(`isolation: 'worktree'`), each claiming its node with `claimWorkNode` so the brief never
+serves the same node twice, each stamping with `npm run gates:stamp` and pushing its own
+branch, then merging to main (`npm run push` from a worktree targets main; see memory
+`reference_npm_push_from_worktree_targets_main`). Disjoint files per lane keep merges
+clean; the shared files to watch are `components/site/v3/index.ts` (barrel exports),
+`package.json`, and this handoff. Three or four lanes a session is the realistic ceiling
+(a sonnet helper hit a session rate limit today under heavier load).
+
+Round 1 (four lanes, disjoint routes):
+- A: SITE-02 then SITE-02b (the /sell answer, then the drawing primitive it will use).
+- B: SITE-12 + SITE-M1 (homepage).
+- C: SITE-09 (response clock: lib/crm send paths, timer, admin flag).
+- D: SITE-08 (cited Q&A with FAQPage schema on neighborhood, community, subdivision).
+Round 2: SITE-03, SITE-06, SITE-07 (need 02b), SITE-04, SITE-05, SITE-10, SITE-11.
+Each lane ends with a separate evaluator whose score must rise for that page class.
+
+**What this plan is not proof against (Matt asked, 2026-09-07):** taste is a judgment
+call (rotate the evaluator model; Matt's eyes on each live link); a directive that moves
+the surface must land as queue items, never as a new plan; community traffic is thin
+(24 clicks in 28 days), so some accept windows will not prove anything and the item is
+called done on evaluator + function; the site cannot change impressions or the AI
+shortlists (reviews, rankings); parallel lanes cost merges and rate limits.
+
 **Next (the queue, in order)**
 1. SITE-02 `/sell`: show the sourced answer between the address and the contact step
    (the form goes straight to email today). The DAL for the answer exists:
