@@ -33,7 +33,7 @@ import { TEAM_RANK } from './_v3/team-constants'
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
   description:
-    'The broker you call is the broker who works the deal. Every Ryan Realty listing gets video, a 3D walkthrough, and a price from live Central Oregon comps.',
+    'Three licensed Oregon brokers who live and work in Central Oregon. Local experts, exceptional customer service, and the same broker with you from the first call through closing.',
   path: '/team',
   ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
   keywords: [

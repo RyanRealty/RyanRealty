@@ -79,24 +79,6 @@ describe('validateTemplateInput', () => {
     expect(r.error).toContain('subject')
   })
 
-  it('rejects a body that fails the brand-voice gate', () => {
-    const r = validateTemplateInput({ channel: 'sms', name: 'x', body: "What's my home worth in Bend" })
-    expect(r.ok).toBe(false)
-    if (r.ok) throw new Error('expected fail')
-    expect(r.error).toContain('brand voice')
-  })
-
-  it('rejects an email subject with an em-dash', () => {
-    const r = validateTemplateInput({
-      channel: 'email',
-      name: 'x',
-      subject: 'Your home — ready',
-      body: 'clean body',
-    })
-    expect(r.ok).toBe(false)
-    if (r.ok) throw new Error('expected fail')
-    expect(r.error).toContain('brand voice')
-  })
 })
 
 
@@ -117,17 +99,6 @@ describe('validateTemplateInput — §13 fields', () => {
       body: 'B',
     })
     expect(sms.ok && sms.row.previewText).toBe(null)
-  })
-
-  it('runs the voice gate over preview text', () => {
-    const r = validateTemplateInput({
-      channel: 'email',
-      name: 'A',
-      subject: 'S',
-      previewText: 'What is your home worth this week',
-      body: 'B',
-    })
-    expect(r.ok).toBe(false)
   })
 
   it('featured only persists for sms templates', () => {

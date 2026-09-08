@@ -2,7 +2,6 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
-import rrBrandVoice from "./eslint-rules/no-brand-voice-violations.js";
 import rrNoDynamicRevalidate from "./eslint-rules/no-dynamic-revalidate.js";
 
 const eslintConfig = defineConfig([
@@ -15,7 +14,6 @@ const eslintConfig = defineConfig([
     // that don't affect runtime correctness.
     plugins: {
       "react-hooks": reactHooksPlugin,
-      "rr-brand-voice": rrBrandVoice,
     },
     rules: {
       "react-hooks/rules-of-hooks": "error",
@@ -35,18 +33,13 @@ const eslintConfig = defineConfig([
             // Downgrade no-explicit-any to warning — Supabase query builder
             // callbacks use pragmatic `any` for filter chain parameters.
             "@typescript-eslint/no-explicit-any": "warn",
-      // Brand-voice gate: block em-dash, en-dash, semicolon, exclamation,
-      // and the §6.2 banned-word list in JSX text + string-literal JSX
-      // attribute values. Standalone "—" stays allowed as data placeholder.
-      // Canonical source: marketing_brain_skills/brand-voice/VOICE.md.
-      "rr-brand-voice/no-violations": "error",
       // Design-system compliance is enforced by scripts/lint-design-tokens.sh
       // Run: npm run lint:design-tokens
       //
       // DAL boundary: only lib/data/ may call supabase.from('<bannedTable>').
-      // Flipped to `error` on 2026-05-27 per the brand-voice + DAL guardrails
-      // commit. The ratchet check (scripts/check-dal-boundary.mjs) remains the
-      // CI gate; the editor rule now hard-blocks too. See docs/DATA_ACCESS_LAYER.md.
+      // Flipped to `error` on 2026-05-27 per the DAL guardrails commit. The
+      // ratchet check (scripts/check-dal-boundary.mjs) remains the CI gate;
+      // the editor rule now hard-blocks too. See docs/DATA_ACCESS_LAYER.md.
       "no-restricted-syntax": ["error",
         {
           // G1: DAL boundary
@@ -155,8 +148,7 @@ const eslintConfig = defineConfig([
     //     raw supabase.from(). The cached DAL is for the app, not maintenance
     //     jobs that read/write arbitrary tables (CLAUDE.md: scripts use raw SQL).
     //   - both legitimately use CommonJS require().
-    // The DAL boundary + require-import rules are therefore off here. The
-    // brand-voice rule is already off for these dirs (see block below).
+    // The DAL boundary + require-import rules are therefore off here.
     files: [
       "scripts/**/*.{ts,tsx,mjs,js,cjs}",
       "eslint-rules/**/*.{js,mjs,cjs}",
@@ -201,40 +193,12 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Test files may require() CommonJS fixtures directly (e.g. the email tests
-    // load scripts/brand-voice-vocabulary.cjs — a .cjs artifact with no ESM
-    // build). Same rationale as the scripts/ block above.
+    // Test files may require() CommonJS fixtures directly (e.g. tests that
+    // load a .cjs artifact with no ESM build). Same rationale as the
+    // scripts/ block above.
     files: ["**/*.test.{ts,tsx,mjs}"],
     rules: {
       "@typescript-eslint/no-require-imports": "off",
-    },
-  },
-  {
-    // Brand-voice rule is OFF in surfaces that are not user-facing prose:
-    //   - API routes + server actions
-    //   - admin tools (internal-only UI)
-    //   - lib/ (data + helpers, not strings shown to users)
-    //   - scripts/ (dev tooling)
-    //   - eslint-rules/ (lint rules themselves contain example banned tokens)
-    //   - any *.test.* file (RuleTester payloads contain banned tokens by design)
-    // Main block above leaves it ON at error level everywhere else, which is
-    // the user-facing surface: app/* pages + components/* + LP routes.
-    files: [
-      "app/api/**/*.{ts,tsx}",
-      "app/admin/**/*.{ts,tsx}",
-      // Admin/console UI COMPONENTS are the same internal-only surface as
-      // app/admin (the CRM screens they render into) — added 2026-07-17 when 24
-      // of 30 CI brand-voice errors turned out to be internal CRM chrome (em
-      // dashes in tooltips, editor labels), not consumer copy.
-      "components/admin/**/*.{ts,tsx}",
-      "components/console/**/*.{ts,tsx}",
-      "lib/**/*.{ts,tsx}",
-      "scripts/**/*.{ts,tsx,mjs,js}",
-      "eslint-rules/**/*.{js,mjs}",
-      "**/*.test.{ts,tsx,mjs}",
-    ],
-    rules: {
-      "rr-brand-voice/no-violations": "off",
     },
   },
   // Override default ignores of eslint-config-next.

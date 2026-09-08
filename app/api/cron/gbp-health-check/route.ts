@@ -3,7 +3,6 @@
  *
  * Runs every 30 minutes. Sweeps the live GBP and surfaces any operational
  * regressions that need immediate attention:
- *   - Any LIVE post containing banned words (per CLAUDE.md brand voice)
  *   - Any LIVE post containing leaked AI scaffolding ("POST TYPE:", "EVENT TYPE:", etc.)
  *   - Any review older than 24 hours with no reviewReply
  *   - Stale post cadence (no new post in last 7 days)
@@ -24,21 +23,11 @@
 import { NextResponse } from 'next/server'
 import { getOrRefreshGoogleBusinessProfileAccessToken } from '@/lib/google-business-profile'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { BANNED_WORD_STRINGS } from '@/lib/brand-voice/generated-vocabulary'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Banned vocabulary the brand-voice cron checks GBP posts against. Sourced
-// from lib/brand-voice/generated-vocabulary.ts (the in-bundle mirror of the
-// canonical scripts/brand-voice-vocabulary.cjs) — no obfuscation needed since
-// this is a real import, not a hand-typed literal list.
-// Monitor-specific extra layered on the generated core (never a re-typed list):
-// the canonical core intentionally relaxed descriptive adjectives, but this
-// GBP-post monitor still flags a bare "beautiful".
-const LOCAL_EXTRAS = ['beautiful'] as const
-const BANNED_WORDS: readonly string[] = [...BANNED_WORD_STRINGS, ...LOCAL_EXTRAS]
 const SCAFFOLD_RE = /\b(POST TYPE|EVENT TYPE|TITLE\s*\/\s*SUMMARY|CTA BUTTON|CTA URL)\s*:/i
 
 async function fetchLivePosts(token: string, accountId: string, locationId: string) {
@@ -98,7 +87,7 @@ export async function GET(request: Request) {
   const alerts: HealthAlert[] = []
   const now = Date.now()
 
-  // Check 1: LIVE posts containing scaffolding or banned words
+  // Check 1: LIVE posts containing leaked AI scaffolding
   for (const p of livePosts) {
     const sum = String(p.summary || '')
     if (SCAFFOLD_RE.test(sum)) {
@@ -108,17 +97,6 @@ export async function GET(request: Request) {
         message: `LIVE post ${p.name?.split('/').pop()} contains leaked AI scaffolding`,
         ref: p.name,
       })
-    }
-    for (const word of BANNED_WORDS) {
-      const re = new RegExp(`\\b${word.replace(/\s+/g, '\\s+')}\\b`, 'i')
-      if (re.test(sum)) {
-        alerts.push({
-          severity: 'critical',
-          category: 'banned-word',
-          message: `LIVE post ${p.name?.split('/').pop()} contains banned word "${word}"`,
-          ref: p.name,
-        })
-      }
     }
   }
 

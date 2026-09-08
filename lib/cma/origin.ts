@@ -15,6 +15,7 @@ export type CmaOrigin =
   | 'expired'
   | 'fsbo'
   | 'seller-valuation'
+  | 'place-page'
   | 'lead-form'
   | 'bpo'
   | 'broker'
@@ -26,6 +27,7 @@ export const CMA_ORIGIN_LABEL: Record<CmaOrigin, string> = {
   expired: 'Expired',
   fsbo: 'FSBO',
   'seller-valuation': 'Seller form',
+  'place-page': 'Place page',
   'lead-form': 'Lead form',
   bpo: 'BPO',
   broker: 'Broker',
@@ -41,6 +43,7 @@ export const CMA_ORIGIN_INTENT: Record<CmaOrigin, string> = {
   expired: 'Their listing came off unsold. Audit what happened and what sold meanwhile.',
   fsbo: 'Selling it themselves. Show the competition at their price and why FSBOs stall.',
   'seller-valuation': 'A seller weighing a move asked what it is worth.',
+  'place-page': 'A homeowner on a neighborhood or community page typed their address and asked what it would sell for.',
   'lead-form': 'Asked for a value through a lead form.',
   // Verified against lib/bpo/build.ts + app/actions/bpo-admin.ts: every BPO is
   // started by a signed-in broker, from the admin form or a CRM contact card,
@@ -72,6 +75,7 @@ const EXPIRED_SOURCES = new Set([
 ])
 const FSBO_SOURCES = new Set(['fsbo-cron', 'fsbo-dashboard', 'fsbo-lp', 'fsbo-outreach', 'fsbo-backfill'])
 const SELLER_SOURCES = new Set(['seller-lp', 'seller-home-value'])
+const PLACE_PAGE_SOURCES = new Set(['place-page'])
 const LEAD_FORM_SOURCES = new Set(['lead-form', 'contact-form'])
 const BROKER_SOURCES = new Set(['admin-manual', 'admin-rebuild', 'crm-contact-card', 'crm-kickoff'])
 const INTERNAL_PREFIXES = ['cli-', 'brain-', 'test-']
@@ -91,6 +95,7 @@ export function classifyCmaOrigin(
     if (EXPIRED_SOURCES.has(s)) return 'expired'
     if (FSBO_SOURCES.has(s)) return 'fsbo'
     if (SELLER_SOURCES.has(s)) return 'seller-valuation'
+    if (PLACE_PAGE_SOURCES.has(s)) return 'place-page'
     if (LEAD_FORM_SOURCES.has(s)) return 'lead-form'
     if (BROKER_SOURCES.has(s)) return 'broker'
     if (INTERNAL_PREFIXES.some((p) => s.startsWith(p))) return 'internal'
@@ -106,6 +111,7 @@ export function classifyCmaOrigin(
 export function isAskedOrigin(origin: CmaOrigin): boolean {
   return (
     origin === 'seller-valuation' ||
+    origin === 'place-page' ||
     origin === 'lead-form' ||
     origin === 'broker' ||
     origin === 'bpo'

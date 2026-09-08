@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { GBP_REVIEW_URL } from '@/lib/brand/contact'
-import { checkBrandVoice } from '@/lib/voice/check'
 import {
   REVIEW_ASK_SUBJECT,
   buildReviewAskBody,
@@ -19,12 +18,6 @@ describe('review-ask template', () => {
   it('omits a blank address rather than inventing one', () => {
     expect(buildReviewAskBody('  ')).not.toContain('on  ')
     expect(buildReviewAskBody(null)).toContain(GBP_REVIEW_URL)
-  })
-
-  it('passes the runtime voice scanner', () => {
-    const body = buildReviewAskBody('4125 SW Glacier Place')
-    const result = checkBrandVoice({ subject: REVIEW_ASK_SUBJECT, body })
-    expect(result.ok, result.violations.map((v) => v.term).join(' | ')).toBe(true)
   })
 
   it('recognizes only our staged draft', () => {

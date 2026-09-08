@@ -15,16 +15,16 @@ export const CONTACT_FAQ_ITEMS = [
   {
     question: 'What areas does Ryan Realty serve?',
     answer:
-      'Ryan Realty serves Central Oregon including Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding communities.',
+      'All of Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, Tumalo, Terrebonne, and the communities around them. We live here, and we know these neighborhoods.',
   },
   {
     question: 'How do I schedule a showing?',
     answer:
-      'Send the form on this page or call the office. A broker replies within one business day to set a time for the showing.',
+      'Send the form on this page, or call or text the office. A broker gets back to you within one business day to set a time that works for you.',
   },
   {
     question: 'How quickly will I hear back after contacting Ryan Realty?',
     answer:
-      'A broker replies within one business day. Calling or texting gets you an answer sooner.',
+      'Within one business day, and usually sooner. If it is urgent, call or text and you will reach us faster.',
   },
 ] as const

@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { checkBrandVoice } from '@/lib/voice/check'
 import {
  CMA_BOTTOM_WHY_LIST_V1,
  CMA_COVER_INTRO_V1,
@@ -52,7 +51,7 @@ describe('fsbo_cma_first_touch_v1', () => {
  }
  })
 
- it('names the property, range, CTA, and passes voice', () => {
+ it('names the property, range, and CTA', () => {
  const { body } = composeFsboCmaFirstTouchEmail(FULL)
  expect(body).toContain('Sarah')
  expect(body).toContain('123 NW Cascade Ave, Bend, OR 97703')
@@ -61,8 +60,6 @@ describe('fsbo_cma_first_touch_v1', () => {
  expect(body).toContain('https://ryan-realty.com/book/matt')
  expect(body).not.toMatch(/net more/i)
  expect(body).not.toMatch(/\bCMA\b/)
- const voice = checkBrandVoice(body)
- expect(voice.ok, JSON.stringify(voice.violations)).toBe(true)
  })
 
  it('omits suggested list and range digits when missing - invents nothing', () => {

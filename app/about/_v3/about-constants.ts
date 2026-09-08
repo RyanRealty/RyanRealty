@@ -4,17 +4,13 @@
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
  * here fetches or formats.
  *
- * THE D11 MISSION SENTENCE IS OFF THIS PAGE (2026-09-02). VOICE.md grants it
- * and grants nothing else — "This sentence MAY appear on About" — so no gate
- * required it; check-brand-voice.mjs only carves it out of the self-praise
- * scan, and the carve-out survives whether or not the page uses it. What it
- * opened the closing section with was "We are a boutique real estate brokerage
- * in Bend, Oregon", which is the positioning Matt killed on 2026-06-10 ("is
- * that going to position us, our intent is to grow"), and which
- * scripts/brand-voice-vocabulary.cjs bans by pattern (boutique|small + org)
- * everywhere the About carve-out does not reach. The record below it states
- * the firm without the gloss: founded, firm license, principal broker license,
- * each traceable to the Oregon Real Estate Agency.
+ * THE D11 MISSION SENTENCE IS OFF THIS PAGE (2026-09-02). What it opened the
+ * closing section with was "We are a boutique real estate brokerage in Bend,
+ * Oregon", which is the positioning Matt killed on 2026-06-10 ("is that going
+ * to position us, our intent is to grow") and which VOICE.md's no-smallness
+ * framing still rules out everywhere. The record below it states the firm
+ * without the gloss: founded, firm license, principal broker license, each
+ * traceable to the Oregon Real Estate Agency.
  *
  * THE FAQ IS FOUR QUESTIONS, NOT SIX (2026-09-02). The set is what /about can
  * answer that /about has not already said. "When did Ryan Realty start?" went:
@@ -108,16 +104,16 @@ export const ABOUT_FAQ_ITEMS = [
     // No hand-off." — is not repeated here. What is left is the part that
     // section does not say: what the hand-off would have been to.
     question: 'Will I work with the same broker from start to finish?',
-    answer: 'Yes. No hand-off to a junior agent or a transaction desk.',
+    answer: 'Yes. The broker you meet first is the broker who works with you through closing. We are a small team of local experts, and we stay with you.',
   },
   {
     question: 'Do you cover Tumalo?',
     answer:
-      'Tumalo is unincorporated and not a separate MLS city. It is served as part of the Bend market.',
+      'Yes. Tumalo is unincorporated and the MLS counts it as part of Bend, so you will find Tumalo homes under Bend on this site. We know the area well and help buyers and sellers there all the time.',
   },
   {
     question: 'How do I get a home valuation?',
     answer:
-      'Use Value my home. A broker prepares a comparative market analysis from recent comparable sales and gives you a price range, with the comps that support it.',
+      'Use Value my home. A broker prepares a comparative market analysis from recent sales near you and sends a price range within 24 hours, with the comps that support it. It is free, and there is no listing agreement.',
   },
 ] as const

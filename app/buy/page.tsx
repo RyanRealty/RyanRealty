@@ -61,7 +61,7 @@ export const revalidate = 300
 export const metadata = pageMetadata({
   title: 'Buy a home in Central Oregon · Ryan Realty',
   description:
-    'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, and one broker from your first search to closing.',
+    'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, local experts, and one broker who stays with you from your first search to closing.',
   path: '/buy',
   ogImage: '/images/homepage/sisters-downtown-three-peaks.jpg',
   keywords: [
@@ -122,7 +122,7 @@ export default async function BuyPage() {
               type: 'webPage',
               name: 'Buy a home in Central Oregon · Ryan Realty',
               description:
-                'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, and one broker from your first search to closing.',
+                'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, local experts, and one broker who stays with you from your first search to closing.',
               url: '/buy',
             },
             {

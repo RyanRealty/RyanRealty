@@ -16,8 +16,8 @@
  *   out/blog/market-report/<city>/<YYYY-MM>/json-ld.json
  *
  * Every figure in the post is cited in a <!-- citation: ... --> comment at
- * the end of the section it lives in. All numbers carry units. No banned words
- * (grep gate runs before write). Title ≤60 chars. Meta description 150-160.
+ * the end of the section it lives in. All numbers carry units. Title ≤60
+ * chars. Meta description 150-160.
  *
  * Requires:
  *   NEXT_PUBLIC_SUPABASE_URL      — Supabase project URL
@@ -27,13 +27,10 @@
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createRequire } from 'node:module'
 import { search as assetSearch } from '../lib/asset-library.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
-const require = createRequire(import.meta.url)
-const VOCAB = require('./brand-voice-vocabulary.cjs')
 
 // ---------------------------------------------------------------------------
 // City config — lat/lng for JSON-LD Place, display name, search paths
@@ -99,24 +96,6 @@ const CITY_CONFIG = {
     searchSlug: 'prineville-sfr',
     neighborhoods: [],
   },
-}
-
-// ---------------------------------------------------------------------------
-// Banned words come from the canon, and only from the canon
-// (marketing_brain_skills/brand-voice/VOICE.md via
-// scripts/brand-voice-vocabulary.cjs). The blog-specific extras list that used
-// to sit here was a second rule set, which is what Matt ordered deleted on
-// 2026-08-05. If a phrase should be banned in blog copy, it is banned in the
-// canon or it is not banned.
-const BANNED_WORDS = [...VOCAB.BANNED_WORD_STRINGS]
-
-function grepBannedWords(text) {
-  const hits = []
-  const lower = text.toLowerCase()
-  for (const word of BANNED_WORDS) {
-    if (lower.includes(word.toLowerCase())) hits.push(word)
-  }
-  return hits
 }
 
 // ---------------------------------------------------------------------------
@@ -863,15 +842,6 @@ const topN = topNeighborhoods(data.neighborhoods, 5)
 const heroUrl = heroAsset?.file_url || heroAsset?.source_url || null
 const markdownContent = buildPostMarkdown(cityConfig, period, stats, topN, meta, heroAsset)
 const jsonLdBlocks = buildJsonLd(cityConfig, period, stats, meta, heroUrl)
-
-// Banned-word grep (hard gate before write)
-const bannedHits = grepBannedWords(markdownContent + ' ' + title + ' ' + metaDescription)
-if (bannedHits.length > 0) {
-  console.error('\nBANNED WORDS DETECTED — post will NOT be written until cleaned:')
-  for (const w of bannedHits) console.error(`  "${w}"`)
-  console.error('\nReview the content and remove banned words before proceeding.')
-  process.exit(1)
-}
 
 // Title length check
 if (title.length > 60) {

@@ -38,25 +38,6 @@ function parseArgs(argv) {
   return out
 }
 
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED_WORDS = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-function checkBannedWords(text) {
-  const lower = text.toLowerCase()
-  return BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-}
-
-function assertClean(text, label) {
-  const hits = checkBannedWords(text)
-  if (hits.length > 0) {
-    console.error(`BANNED WORDS in ${label}: ${hits.join(', ')}`)
-    process.exit(1)
-  }
-}
-
 async function write(dir, filename, content) {
   const p = join(dir, filename)
   await writeFile(p, content, 'utf8')
@@ -100,8 +81,6 @@ async function main() {
     `Represented by ${broker.name}, Ryan Realty. ${broker.phone_brand} · ryan-realty.com. OR Lic. #${broker.license}.`
   ].join('\n')
 
-  assertClean(publicRemarks, 'public-remarks')
-
   if (publicRemarks.length > 1000) {
     console.error(`Public remarks too long: ${publicRemarks.length} chars (max 1000)`)
     process.exit(1)
@@ -142,8 +121,6 @@ Submit to ${broker.email}. Include proof of funds or pre-approval with all offer
 EMD: $25,000 minimum, wire preferred.
 `
 
-  assertClean(privateRemarks, 'private-remarks')
-
   // ---------------------------------------------------------------------------
   // SHOWING INSTRUCTIONS (buyer-facing)
   // ---------------------------------------------------------------------------
@@ -171,8 +148,6 @@ Text ${broker.name} at ${broker.phone_brand} with any questions from the showing
 Questions? ${broker.phone_brand} · ryan-realty.com
 `
 
-  assertClean(showingInstructions, 'showing-instructions')
-
   await write(outDir, 'public-remarks.txt', publicRemarks)
   await write(outDir, 'private-remarks.md', privateRemarks)
   await write(outDir, 'showing-instructions.md', showingInstructions)
@@ -199,10 +174,8 @@ Questions? ${broker.phone_brand} · ryan-realty.com
 
   const charCount = publicRemarks.length
   const allText = [publicRemarks, privateRemarks, showingInstructions].join('\n')
-  const bannedHits = checkBannedWords(allText)
 
   const checks = [
-    { name: 'banned_words', pass: bannedHits.length === 0, notes: bannedHits.length ? bannedHits.join(', ') : 'clean' },
     { name: 'public_remarks_length', pass: charCount <= 1000, notes: `${charCount} chars (max 1000)` },
     { name: 'no_em_dash', pass: !allText.includes('—') && !allText.includes('–'), notes: 'em/en-dash absent' },
     { name: 'no_exclamation_body', pass: !allText.includes('!'), notes: 'no exclamation marks' },

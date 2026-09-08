@@ -119,7 +119,7 @@ export function ContactAsk({
         heading: isTour ? 'Tour request received' : 'Message received',
         body: isTour
           ? publishTourConfirmation(listingSummary)
-          : 'A broker replies within one business day. Calling or texting gets you an answer sooner.',
+          : 'Thank you. A broker will get back to you within one business day. If it is urgent, call or text and we will answer sooner.',
       }
     },
     [defaultInquiryType, isTour, listingKey, listingSummary, smsConsent],

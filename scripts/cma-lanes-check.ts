@@ -31,6 +31,7 @@ const ORIGIN_ORDER: CmaOrigin[] = [
   'expired',
   'fsbo',
   'seller-valuation',
+  'place-page',
   'lead-form',
   'bpo',
   'broker',

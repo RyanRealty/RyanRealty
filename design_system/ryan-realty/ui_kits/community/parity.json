@@ -99,6 +99,11 @@
       "name": "V3CourseMap",
       "section": "#course -- the community's own golf course, drawn from its geometry: OSM greens, bunkers, tees and hole routings clipped to the course's named boundary, fairway turf traced out of Oregon's 2018 aerial, and a card per hole measured off the same shapes the map draws. ONE course per page even where the resort owns three (Sunriver, Eagle Crest): a map runs the height of the property, and the other courses are already exits in the closing Quiet block. Renders only for a community whose registry row names a course with a committed map file -- Tetherow, Crosswater, Sunriver, Eagle Crest today; Woodlands, Widgi Creek and Glaze Meadow map 17 of 18 holes in OSM and are refused at build. Per-hole par and yardage print only when they reconcile with the club's published card (CLAUDE.md \u00a70).",
       "blocking": false
+    },
+    {
+      "name": "CommunityPlaceValue",
+      "section": "The first-screen ask (site queue SITE-01, Matt 2026-09-07): V3PlaceValue bound to this route's server actions. Address in, verdict and pace out with no contact asked (months of supply verdict, days to pending, cash share, comparable-close count, each with its source and date), then email required and phone optional to deliver the written valuation. Never a dollar figure on the page. Renders on every community page: where Market Truth publishes no verdict (Brasada Ranch, too few recent sales) the answer says so and still carries the comparable-close count from the CMA engine, the figure the written valuation is built on. The kill-list ban on a KPI strip as the first thing you read still holds: nothing prints until the visitor types their own address.",
+      "blocking": true
     }
   ],
   "layoutComponents": [
@@ -205,6 +210,7 @@
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading (H1 `{Community} homes for sale`)",
+    "CommunityPlaceValue (the first-screen ask: address in, verdict and pace out, then the email that delivers the written valuation; on every community page; the answer names it when no verdict is published)",
     "V3Atlas #atlas -- the living map scoped to the community (renders only with a trusted boundary and at least one listing inside it)",
     "PlaceTypeSlider (type cards, not H2s)",
     "PlaceSplitView #homes",
@@ -225,13 +231,31 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-06",
-    "score": 57,
-    "beats": "tetherow.com on first-screen identity: owned course and Cascades with H1 plus live Atlas inventory, a query the amenity site does not answer",
-    "evaluator": "separate grok-4.6 evaluator, remaining-issues pass, community",
+    "evaluatedAt": "2026-09-07",
+    "score": 59,
+    "beats": "tetherow.com (photo and story, no data, no valuation path) and Zillow's community page (search plus flat stats, valuation gated behind a home page) on giving a seller an honest verdict and comparable-close count from one typed address with no contact asked; does not beat Zillow on the FORM of the answer, which is a label/value ledger rather than a drawing.",
+    "evaluator": "separate Fable 5.1 evaluator, SITE-01 place-value pass, community (design 19 / originality 16 / interaction 9 / craft 9 / honesty 6)",
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png"
-    }
+      "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
+      "answerDesktop": "design_system/ryan-realty/ui_kits/community/shots/answer-desktop.png",
+      "answerMobile375": "design_system/ryan-realty/ui_kits/community/shots/answer-mobile375.png",
+      "emailDesktop": "design_system/ryan-realty/ui_kits/community/shots/email-desktop.png",
+      "emailMobile375": "design_system/ryan-realty/ui_kits/community/shots/email-mobile375.png"
+    },
+    "fixedFromThisPass": [
+      "Failure path: 'Try again' after an address-step failure re-asks instead of sending (was posting to the request action with no email).",
+      "No-verdict sentence no longer claims a monthly window; it says fewer recent sales than a fair verdict needs.",
+      "Eyebrow, H2 and step label no longer say the same thing three times; the H2 is the question, the step label is 'Start with your street address.'",
+      "The answer names the typed address ('For 19301 Alianna Loop.').",
+      "Sent step no longer repeats the email step; it says who sends the valuation and when.",
+      "375: copy block clears the absolute breadcrumb and keeps some photograph above the card.",
+      "Answer step throttled on its own strict key (10 a minute) instead of the shared 5-a-minute sign-in budget."
+    ],
+    "openRaise": [
+      "Draw the answer: months of supply as the two-bar (for sale vs one month of sales) with the verdict as caption; the N comparable sales as a dot strip by close month or square feet with a hover row per dot; days to pending as one mark on a 0 to 120 rule with the city median as context. One draw-on under 300ms.",
+      "Fold job: the H1 says 'homes for sale' over a seller ask; add one buyer door in the card ('26 homes for sale below') or give the buyer claim to the Atlas section.",
+      "Shots of the answer state are scrolled under the sticky chrome in the record; capture with the sheet's own scroll offset."
+    ]
   }
 }

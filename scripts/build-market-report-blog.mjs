@@ -36,25 +36,6 @@ function parseArgs(argv) {
   return out
 }
 
-import { createRequire } from 'node:module'
-const _req = createRequire(import.meta.url)
-// One vocabulary, from the canon (marketing_brain_skills/brand-voice/VOICE.md).
-// This script used to hand-maintain its own copy of the retired word list.
-const BANNED_WORDS = _req('./brand-voice-vocabulary.cjs').BANNED_WORD_STRINGS
-
-function checkBannedWords(text) {
-  const lower = text.toLowerCase()
-  return BANNED_WORDS.filter(w => lower.includes(w.toLowerCase()))
-}
-
-function assertClean(text, label) {
-  const hits = checkBannedWords(text)
-  if (hits.length > 0) {
-    console.error(`BANNED WORDS in ${label}: ${hits.join(', ')}`)
-    process.exit(1)
-  }
-}
-
 async function write(dir, filename, content) {
   const p = join(dir, filename)
   await writeFile(p, content, 'utf8')
@@ -231,8 +212,6 @@ The median days on market in Bend during this period was ${market.median_dom_dis
 The current market health score for Bend is ${market.market_health_score.toFixed(0)} out of 100 (rated "${market.market_health_label}"), with ${market.end_of_period_inventory} active listings and a sale-to-list ratio of ${market.sale_to_list_display}. Whether it is a good time to sell depends on your specific property, location within Bend, and price point. Contact Ryan Realty at 541.213.6706 for a no-cost pricing consultation.
 `
 
-  assertClean(blog, 'market-report-blog.md')
-
   // Check for em/en-dashes — not allowed in blog body
   if (blog.includes('—') || blog.includes('–')) {
     console.error('Em/en-dash found in blog post')
@@ -374,9 +353,7 @@ The current market health score for Bend is ${market.market_health_score.toFixed
   }
   await write(outDir, 'provenance.json', JSON.stringify(provenance, null, 2))
 
-  const bannedHits = checkBannedWords(blog)
   const checks = [
-    { name: 'banned_words', pass: bannedHits.length === 0, notes: bannedHits.length ? bannedHits.join(', ') : 'clean' },
     { name: 'word_count_min', pass: wordCount >= 1200, notes: `${wordCount} words (min 1200)` },
     { name: 'word_count_max', pass: wordCount <= 1800, notes: `${wordCount} words (max 1800)` },
     { name: 'faq_schema_present', pass: blog.includes('@type": "FAQPage"'), notes: 'FAQPage JSON-LD present' },

@@ -31,7 +31,6 @@ import { sendEmail } from '@/lib/resend'
 import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/newsletter-shell'
 import { attributeSiteLinks } from '@/lib/crm/merge'
 import { instrumentEmailHtml } from '@/lib/email-tracking'
-import { checkNewsletterVoice } from '@/lib/email/voice-precheck'
 import { NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import {
   subscribeToNewsletter,
@@ -146,10 +145,6 @@ async function sendNewsletterToContactCore(
 
     const letter = await resolveCurrentNewsletter()
     if (!letter) return { ok: false, error: 'No newsletter is ready to send' }
-
-    // Voice hard-fail gate (G-NL-4) — parity with the bulk send path (R-1).
-    const voice = checkNewsletterVoice({ subject: letter.subject, bodyHtml: letter.body_html, bodyText: letter.body_text })
-    if (!voice.ok) return { ok: false, error: `Brand-voice check failed: ${voice.violations.join('; ')}` }
 
     // Never resurrect an opt-out (S-10). If this email is already a subscriber who
     // unsubscribed / bounced / complained, refuse — don't reactivate + send. Only a

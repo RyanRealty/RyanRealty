@@ -1,4 +1,99 @@
-# Current — 2026-09-07 (Social channel tune-up)
+# Current — 2026-09-07 (site queue mechanism + the place-page value ask, SITE-01)
+
+Owner: Claude (Fable 5.1), session 3db16241, main checkout. Landed on `origin/main`:
+c5ecb045 (G-FRESH event dates), e1d77374 (the site queue mechanism), b3c34e88 (SITE-01).
+
+**Matt's directives (all 2026-09-07):** "I want this figured out once and for all" (the
+site keeps getting re-audited and never converts); the goal is traffic that converts to
+clients, a client being a signed buyer representation or listing agreement; seven product
+answers recorded in memory `project_site_conversion_decisions_2026-09-07` and the research
+artifact https://claude.ai/code/artifact/525cdcda-4c64-4954-9f5f-3b5eba500cdf (34/49 rival
+pages read and re-verified, 22 site programs since June traced).
+
+**The rule that ends the re-audits.** The site backlog is `loop_work_nodes`, domain
+`public-ux`, version_gap `SITE-00..12` + `SITE-M1` (table in
+`docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`). `npx tsx scripts/loop-brief.ts` serves the
+oldest open SITE node first whenever `app/**` or `components/site/**` changed in 14 days and
+releases stale claims itself. A commit touching the public site needs `Node: <id>` (G72,
+commit-msg hook; `Node: none (<reason>)` is the recorded escape). A new audit doc under
+`docs/plans` must name the nodes it appends to. Do not write a new site audit. Pull the node.
+
+**Shipped**
+- SITE-00 done. SITE-01 shipped and set `blocked` on MEASUREMENT (not a person): every
+  `/communities/[slug]` opens with the address ask (`CommunityPlaceValue` → barrel
+  `V3PlaceValue`), answer = verdict + days to pending + cash share + comparable-close count
+  with a source line, then email (required) + phone (optional) → cmas row with the new
+  `place-page` origin (send mode `now`, auto-send lane OFF), CRM person + tags + note,
+  rr_vid stitch, sequence enroll, broker alert, same-minute confirmation through
+  `sendGovernedEmail` (Gmail rail, broker signature; a system message per Matt's ruling,
+  CLAUDE.md §1). Verified on the dev server against production data; the confirmation
+  landed in Matt's inbox. Fleet-test identities are suppressed by design, so a test submit
+  shows "Sent" and no email goes.
+- Separate evaluator scored the community page 59 (prior 57). Its two functional findings
+  are fixed; the rest are appended to the SITE-01 node (draw the answer as bars/dots, a
+  buyer door in the card, shoot the answer state with the sheet's own scroll offset).
+- Search Console truth (scripts/_gsc-place-pages.mjs): `/communities/*` 4,516 impressions
+  and 24 clicks in 28 days; `/cities/bend/*` 17 and 0. Item 1 targets communities first.
+
+**Next (the queue, in order)**
+1. SITE-02 `/sell`: show the sourced answer between the address and the contact step
+   (the form goes straight to email today). The DAL for the answer exists:
+   `lib/data/places/getPlaceValueAnswer.ts` + `lib/cma/place-comps.ts`.
+2. SITE-03 place hero button with live count + verdict; SITE-04 alerts strip; then down
+   the list. SITE-M1 (homepage brokers section on phones) was Matt's "fix" answer.
+3. 2026-10-05: re-open SITE-01, read `cmas.request_source='place-page'` rows stitched by
+   rr_vid and Search Console clicks on `/communities/*`; done if both hold; then the Bend
+   neighborhood route gets the same primitive.
+
+**Do not**
+- Re-audit the site or write a punch-list doc; append to a SITE node instead.
+- Put a dollar figure on a public page for a typed address (Matt: hold it for the CMA).
+- Add a registration wall (Matt: no wall, email-only asks).
+
+## Prior — 2026-09-07 (Claude Fable) — voice canon retired, one voice doc
+
+Owner: Claude (Fable). Worktree `~/RyanRealty-aeo-bend-truth`, branch
+`chore/retire-voice-canon`, landing on `origin/main` with this block.
+
+**Matt's directive:** "get rid of our voice canon, nuke it", "too many stupid rules
+affecting how we create copy", "one unified voice that everything uses".
+
+**Shipped**
+- `marketing_brain_skills/brand-voice/VOICE.md` rewritten as the ONE voice doc (path kept
+  so ~230 SKILL.md citations stay valid): local experts, exceptional customer service,
+  warm and direct, normal punctuation, no word lists. Compliance lines only: real numbers
+  (§0), real quotes, fair housing, MLS remarks as written. Exemplars inside.
+- CLAUDE.md §2 replaced. Removed: ci:brand-voice, ci:voice-constructions(+parity),
+  ci:voice-send-paths, ci:voice-vocab-parity, ci:voice-reviewer, ci:voice-rewrite-batch,
+  ci:voice-db-copy, ci:newsletter-voice-paths; lib/voice/**, lib/brand-voice/**,
+  lib/crm/templateVoiceCheck.ts, lib/email/voice-precheck.ts; the ESLint rule; the
+  pre-commit block; the pre-tool-use Refusal 6; the /voice-canon skill; voice_grader.md;
+  the two design-system voice preview cards. Thirteen send paths (CMA, BPO, blog, social,
+  Studio caption, newsletter x4, CRM templates + compose) no longer hard-fail on voice.
+- Contact + reviews pages: "A broker answers, not a desk" replaced (Matt rejected it).
+- app/_v3/home-featured-communities.ts: pulse lookup uses geo_type 'neighborhood'
+  (resort rows live there); ci:studio-geo-contract was red on main.
+
+**Next (approved by Matt)**
+1. Marketing brain dead layer: delete lib/marketing-brain/{generate-briefs,diagnose,
+   platform-trends,performance-bias}.ts, the audit-* routes + libs, /dashboard/marketing
+   pages, producer skills marked UNUSED in producers/REGISTRY.md, automation_skills
+   triggers/automation, producer scripts + gates (ci:producer-skills,
+   ci:producer-registry-resolves). KEEP intake (inbox-*), snapshot.ts (tracerfy-history
+   imports isAuthorizedCron from it), measurement-loop, competitor-recon,
+   deliverable-{path,share,library}, platform-fetch-code, and the marketing_brain_actions
+   table (CMA/Studio/agent job queue).
+2. Google review email template in crm_templates in the new voice; update
+   lib/crm/review-ask.ts body to match.
+3. Rewrite Home, About, Contact, Team, Sell, Buy copy in the new voice. Founding facts:
+   LLC since 2014, Bend office opened June 2023.
+
+**Do not**
+- Reintroduce word lists, punctuation regexes, or a voice gate. Judgment, not regex.
+
+---
+
+# Previous — 2026-09-07 (Social channel tune-up)
 
 Owner: Claude session, worktree `wt/social-x-lock-20260907`. Brief with every figure and
 its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832
@@ -19,8 +114,8 @@ its source: https://claude.ai/code/artifact/15e70783-7dde-4017-b973-80bb5a65c832
 - GBP: replied to MJB's 5-star review from 10 Jul (approved wording). 0 unanswered.
 
 **Matt's calls (2026-09-07):** keep @Ryan-Realty on YouTube and move the handle · keep
-TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealtybend, close
-/ryanrealty · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
+TikTok @ryanrealtybend, delete @ryanrealtyllc · keep Pinterest /ryanrealty (revised later that
+day from /ryanrealtybend), close /ryanrealtybend · KCM feed off on Instagram, stays on Facebook · hours stay 5 AM to 7 PM daily ·
 reconnect X · fix LinkedIn page facts · review reply as written.
 
 **Waiting on Matt (manual, not API-reachable):** YouTube handle swap then re-grant at
@@ -124,6 +219,27 @@ audit), `0301398e` (handoff).
   `/buy` FAQ corrected. The market page price FAQ and chrome scope are the
   sibling's `90cffee8`; this branch dropped its duplicate.
 - Review sheet: https://claude.ai/code/artifact/f306abc5-26fc-4a95-a74f-eaf755797441
+
+**Round three (same day), all landed through `10a9bcb2`**
+- Sign-in prompt no longer auto-opens on `/blog/*` (`signin-prompt-policy.ts`, reason
+  `guide`). Verified in a fresh browser.
+- Monthly Bend + Redmond market report cron live: `/api/cron/blog-monthly-city-report`, 3rd
+  of the month 15:00 UTC, reads the Market Truth series the market page charts (NOT the stats
+  cache, which disagreed on Bend's August median). August 2026 posts published and match the
+  pages. `?month=YYYY-MM&dry=1` is the check before any backfill.
+- 52 older published posts triaged figure by figure (KEEP 5, FIX 37, RESTORE 9, RETIRE 1;
+  files `triage2-g1/2/3.md` in the session scratchpad, summary in the ledger). Same-day fix
+  pass: two fair-housing takedowns (`raising-kids-bend-parents-guide`,
+  `schools-central-oregon-guide-families`, redirected), two retirements (wildfire standards,
+  ADU proposal, redirected), seven steering sentences rewritten, five invented quotes removed,
+  eight math corrections, legal sentences attributed to OREF and TRID. `blog_posts`: 78
+  published (the two August reports included), 20 retired, 0 voice violations.
+- Photographer shot list: `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
+- The two takedowns are rewritten and back at their slugs (program, size, lookup, and offering
+  facts, sourced, zero steering words). Redirects removed. Verified live after 00440ca9
+  (200, FAQPage, heroes, legacy paths 301 to the blog URLs). `blog_posts`: 80 published, 18 retired.
+- Next: the 37 FIX posts (mostly unsourced price tiers, HOA dues, rental income in the resort
+  guides) and 9 RESTORE posts, exact sentences in the triage files.
 
 **Open**
 - Hero images for the nine new guides: resolved with real asset-library photos

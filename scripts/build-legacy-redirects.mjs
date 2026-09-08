@@ -100,6 +100,8 @@ const CURATED = {
       'homelessness-central-oregon-2025-count': '/blog',
       'bend-sdc-overhaul-housing-costs': '/blog/new-construction-guide-central-oregon',
       'construction-costs-central-oregon-300-sqft': '/blog/new-construction-guide-central-oregon',
+      'bend-wildfire-resistant-building-standards': '/blog/deschutes-county-wildfire-building-codes',
+      'adu-rules-changing-bend-two-units': '/blog/oregons-hb-2001-middle-housing-bend',
     }).flatMap(([slug, dest]) => [[`/${slug}`, dest], [`/blog/${slug}`, dest]]),
   ),
   // system / legal

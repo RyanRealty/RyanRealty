@@ -106,7 +106,16 @@ The builder never grades its own page. After the ritual, spawn an evaluator
 (`Agent`, any model, with the desktop + 375px screenshots and the rendered
 page's URL) with this rubric. It returns named defects with the section id;
 the builder fixes and re-submits. Ship only when the evaluator passes every
-row. Weights are deliberate: craft and function are what the model already
+row.
+
+**The score must rise (Matt 2026-09-07: "I want to be done with these shitty
+looking sites").** A site queue item (`loop_work_nodes`, domain public-ux,
+version_gap SITE-*) is not done until the separate evaluator's score for its
+page class rises above the previous mark in that route's `tasteReview`. The
+shrink-only ratchet (`ci:taste-canon`) stops a fall; this rule demands a rise.
+It is written into every open SITE node's accept test and into
+`docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md`. A page that still looks bad is
+a failed item, not a done one. Weights are deliberate: craft and function are what the model already
 does well; the bland-output problem lives in design quality and originality.
 
 | Criterion | Weight | Passing looks like |

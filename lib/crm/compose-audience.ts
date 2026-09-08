@@ -23,7 +23,6 @@
  */
 
 import type { BulkActionSelection } from '@/lib/crm/bulk-helpers'
-import { checkTemplateVoice } from '@/lib/crm/templateVoiceCheck'
 
 /** The audience the compose surface targets. Discriminated by `kind`. */
 export type ComposeAudience =
@@ -78,7 +77,7 @@ export function parseComposeAudience(
   return { ok: false, error: 'Pick an audience to send to' }
 }
 
-// ── Content validation (brand-voice hard-fail gate) ──────────────────────────
+// ── Content validation ────────────────────────────────────────────────────────
 
 export type ComposeContentInput = {
   templateId?: string
@@ -91,12 +90,9 @@ export type ComposeContentInput = {
 export type ComposeValidationResult = { ok: true } | { ok: false; error: string }
 
 /**
- * Validate the chosen content. A saved templateId is trusted (it already passed
- * the gate when it was saved). Inline subject + body run through the SAME
- * brand-voice hard-fail gate the template CRUD uses (checkTemplateVoice), so a
- * cohort blast can never carry banned punctuation/wording the gate would block on
- * a saved template. PURE. Used both client-side (fast feedback) and server-side
- * (the authoritative check on send).
+ * Validate the chosen content. A saved templateId is trusted. Inline subject +
+ * body just need both fields present. PURE. Used both client-side (fast
+ * feedback) and server-side (the authoritative check on send).
  */
 export function validateComposeContent(input: ComposeContentInput): ComposeValidationResult {
   const templateId = (input.templateId ?? '').trim()
@@ -107,8 +103,6 @@ export function validateComposeContent(input: ComposeContentInput): ComposeValid
   if (!subject || !body) {
     return { ok: false, error: 'Pick a template, or write a subject and body' }
   }
-  const voice = checkTemplateVoice({ subject, body })
-  if (!voice.ok) return { ok: false, error: voice.error }
   return { ok: true }
 }
 

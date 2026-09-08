@@ -2,8 +2,6 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { checkAdminAction } from '@/lib/admin/require-admin'
-import { checkBrandVoice } from '@/lib/voice/check'
-import { reviewProse, type VoiceReview } from '@/lib/voice/reviewer'
 
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -116,34 +114,15 @@ export async function saveBlogPost(input: {
   status: string
   publishedAt?: string
   authorBrokerId?: string
-}): Promise<{ ok: boolean; error?: string; voiceReview?: VoiceReview | null }> {
+}): Promise<{ ok: boolean; error?: string }> {
   // In-body auth (RC5 fix): a server action is an independently-invocable POST —
   // the admin layout gate does not run on it. Without this, anyone who extracts
   // the action id could publish arbitrary HTML/JS on the public blog.
   const gate = await checkAdminAction('content.blog')
   if (!gate.ok) return { ok: false, error: gate.error }
 
-  // Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice"): a published
-  // blog post is public copy the CI voice gate never sees (scripts/check-
-  // brand-voice.mjs scopes to app/ and this is a server action, not a page).
-  // Drafts stay work-in-progress and are not gated — only a status:'published'
-  // save is a real send.
-  let voiceReview: VoiceReview | null = null
-  if (input.status === 'published') {
-    const voice = checkBrandVoice(
-      { subject: [input.title, input.excerpt, input.seoTitle, input.seoDescription].filter(Boolean).join(' '), bodyHtml: input.content },
-      { stripHtml: true },
-    )
-    if (!voice.ok) return { ok: false, error: 'Brand voice: ' + voice.violations.map((v) => v.term).join(', ') }
-
-    // Advisory Orwell-rules review (W11.3) — runs alongside the hard-fail gate
-    // above, never replacing it. Purely advisory: never throws, never blocks
-    // the publish. Attached to the result for the admin edit UI to surface.
-    voiceReview = await reviewProse(input.content ?? '', { context: 'blog' }).catch(() => null)
-  }
-
   const supabase = getServiceSupabase()
-  if (!supabase) return { ok: false, error: 'Database not configured', voiceReview }
+  if (!supabase) return { ok: false, error: 'Database not configured' }
 
   const payload: Record<string, unknown> = {
     slug: input.slug.trim().toLowerCase(),
@@ -164,7 +143,7 @@ export async function saveBlogPost(input: {
   const { error } = await supabase.from('blog_posts').upsert(payload, { onConflict: 'slug' })
   if (error) {
     console.error('[saveBlogPost]', error)
-    return { ok: false, error: error.message, voiceReview }
+    return { ok: false, error: error.message }
   }
   // P12 audit trail: content publishes / status transitions.
   const { logAdminAction } = await import('@/app/actions/log-admin-action')
@@ -180,7 +159,7 @@ export async function saveBlogPost(input: {
   const { revalidatePath } = await import('next/cache')
   revalidatePath('/blog')
   revalidatePath('/admin/blog')
-  return { ok: true, voiceReview }
+  return { ok: true }
 }
 
 export async function deleteBlogPost(id: string): Promise<{ ok: boolean; error?: string }> {

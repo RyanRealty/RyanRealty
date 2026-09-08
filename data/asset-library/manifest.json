@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema_version": 1,
-  "updated_at": "2026-09-07T21:40:01.644Z",
+  "updated_at": "2026-09-07T23:04:07.994Z",
   "description": "Ryan Realty asset library manifest. Every fetched, generated, or rendered asset is registered here. Future builds query this file FIRST before going to external sources. Closes the loop on cost, license tracking, and reuse. Authored 2026-05-07.",
   "assets": [
     {
@@ -21193,8 +21193,15 @@
       "height": 2800,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:30:17.504+00:00",
-      "last_used_at": null,
-      "used_in": [],
+      "last_used_at": "2026-09-07T23:04:07.827Z",
+      "used_in": [
+        {
+          "render_path": "public/images/blog/raising-kids-bend-parents-guide.jpg",
+          "scene_id": "raising-kids-bend-parents-guide",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T23:04:07.819Z"
+        }
+      ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Sisters - 03.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",
       "file_path": "public/asset-library/photos/curated/826bb0a8-fbe7-4121-96a8-5319d35bc609.JPG",
@@ -23172,9 +23179,15 @@
       "height": 2160,
       "duration_sec": null,
       "registered_at": "2026-06-02T22:32:58.991+00:00",
-      "last_used_at": "2026-06-11T00:37:59Z",
+      "last_used_at": "2026-09-07T23:04:07.994Z",
       "used_in": [
-        "blog-hero-best-neighborhoods-bend-retirees"
+        "blog-hero-best-neighborhoods-bend-retirees",
+        {
+          "render_path": "public/images/blog/schools-central-oregon-guide-families.jpg",
+          "scene_id": "schools-central-oregon-guide-families",
+          "render_type": "blog-hero",
+          "used_at": "2026-09-07T23:04:07.988Z"
+        }
       ],
       "approval": "approved",
       "notes": "Ingested from Google Drive (Area Guide - Old Bend - 05.JPG) | family4 city curation 2026-06-10: geo verified (vision_location / Area Guide source label / Unsplash location metadata) + heroes visually reviewed",

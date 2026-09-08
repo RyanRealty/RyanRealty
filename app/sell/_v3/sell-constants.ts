@@ -22,32 +22,32 @@ export const FAQ_ITEMS = [
   {
     question: 'Do I need to sign a listing agreement to get the CMA?',
     answer:
-      'No. The comparative market analysis is free and requires no contract. If you decide to list with us after reading it, that is a separate signed agreement.',
+      'No. The comparative market analysis is free, and there is no contract to sign to get it. If you read it and decide to list with us, that is a separate agreement we go through together.',
   },
   {
     question: 'What does it cost to list with you?',
     answer:
-      'The listing fee is 3% of the sale price, with no add-on fees. It covers the MLS listing, professional photography, a 3D tour, the marketing plan, every showing, and transaction management through close. Buyer-agent compensation is a separate number, negotiated per offer under the current rules.',
+      'The listing fee is 3% of the sale price, with no add-on fees. That covers the MLS listing, professional photography, video, a 3D tour, the full marketing plan, every showing, and transaction management all the way through closing. Buyer-agent compensation is a separate number, negotiated with each offer, and we walk you through it before you sign anything.',
   },
   {
     question: 'How do you decide on a list price?',
     answer:
-      'We use recent comparable sales and current active inventory in your area, the same market data shown across this site. You see the three closed comps and three active comps we base the range on.',
+      'We start with recent comparable sales and the homes competing with yours right now, the same live market data you see across this site. Then we walk you through the three closed comps and three active comps behind the range, so you understand the number, not just receive it.',
   },
   {
     question: 'How long does it take to get listed?',
     answer:
-      'From a signed agreement to live on MLS is typically 5 to 7 business days. Professional photos within 48 hours. MLS description and pricing locked the day after photos return.',
+      'Typically 5 to 7 business days from a signed agreement to live on the MLS. Professional photos happen within 48 hours, and we lock the description and pricing with you the day after the photos come back.',
   },
   {
     question: 'What if my home is in a resort community with very few sales?',
     answer:
-      'For slow-turnover areas like Pronghorn, Crosswater, Black Butte Ranch, or Vandevert Ranch, we expand the comp window to 12 or 24 months and tell you exactly which comps were stretched and why.',
+      'We know these communities well. For slow-turnover areas like Pronghorn, Crosswater, Black Butte Ranch, or Vandevert Ranch, we widen the comp window to 12 or 24 months and show you exactly which comps we stretched and why.',
   },
   {
     question: 'What areas do you list homes in?',
     answer:
-      'Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding communities.',
+      'All of Central Oregon: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding communities. We live and work here, and we know these neighborhoods.',
   },
 ] as const
 
@@ -115,8 +115,8 @@ export const PLAN_STEPS: readonly V3SheetStep[] = [
     id: 'included',
     label: 'What the 3% includes',
     children: [
-      'The photography, the drone and cinematic video, the 3D tour, the MLS and the national feeds, the mailers and the open houses, the transaction coordinator, and a written report every week you are on the market. Nothing on the list below is an upgrade.',
-      'Buyer-agent compensation is a separate number, negotiated per offer. Before you sign, we show you the settlement statement.',
+      'Everything your home needs to sell well is in the plan: the photography, the drone and cinematic video, the 3D tour, the MLS and the national feeds, the mailers and the open houses, a transaction coordinator, and a written report every week you are on the market. Nothing on the list below is an upgrade or an add-on.',
+      'Buyer-agent compensation is a separate number, negotiated with each offer. Before you sign, we sit down with you and go through the settlement statement line by line.',
     ],
     blocks: PLAN_GROUPS.map((group) => ({
       kind: 'points' as const,
@@ -181,12 +181,12 @@ export const VALUATION_FAQ_ITEMS = [
   {
     question: "How do I get my home's value in Bend?",
     answer:
-      'Use Value my home on this page. We send a written comparative market analysis from recent closed sales and current listings near your address. No listing agreement.',
+      'Use Value my home on this page. A broker who knows your neighborhood prepares a written comparative market analysis from recent closed sales and the current listings near you, and sends it within 24 hours. No listing agreement, and no obligation.',
   },
   {
     question: 'What is in the written CMA?',
     answer:
-      'Three closed comps, three active comps, and the list-price range those six support.',
+      'Three closed comps, three active comps, the list-price range those six support, and a broker who will walk you through all of it.',
   },
   {
     question: 'How long does it take?',
@@ -195,7 +195,7 @@ export const VALUATION_FAQ_ITEMS = [
   {
     question: 'Does this cost anything?',
     answer:
-      'No. The comparative market analysis is free. If you later list with us, that is a separate signed agreement. The listing fee is 3% of the sale price.',
+      'No. The comparative market analysis is free, and you are welcome to it whether or not you ever list. If you do list with us later, that is a separate agreement, and the listing fee is 3% of the sale price with nothing added on.',
   },
 ] as const
 

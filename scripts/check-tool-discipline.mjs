@@ -6,7 +6,7 @@
  * Replicate calls with drifted settings instead of the shared helpers. This gate
  * bans NEW inline callers while grandfathering the known current ones via a
  * baseline that may only SHRINK (same ratchet pattern as G3/G6/G8).
- *   - All VO must go through scripts/_voice_lib.py or lib/voice/* (CLAUDE.md
+ *   - All VO must go through scripts/_voice_lib.py (CLAUDE.md
  *     "every VO call goes through scripts/_voice_lib.py").
  *   - All Replicate video must go through the shared video helper.
  *
@@ -43,7 +43,6 @@ export const INLINE_RULES = [
     // …is allowed ONLY inside the shared voice libraries.
     allowedHomes: [
       'scripts/_voice_lib.py',
-      'lib/voice/',
       'scripts/check-tool-discipline.mjs', // this file names the API in comments
     ],
   },
@@ -148,7 +147,7 @@ function main() {
 
   if (newViolations.length > 0) {
     console.error('\nG36 FAILED.')
-    console.error('• New inline AI-tool call: route VO through scripts/_voice_lib.py / lib/voice and')
+    console.error('• New inline AI-tool call: route VO through scripts/_voice_lib.py and')
     console.error('  Replicate video through the shared helper. Do not inline the API with drifted settings.')
     process.exit(1)
   }

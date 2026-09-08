@@ -6,7 +6,13 @@
 
 import { describe, expect, it } from 'vitest'
 import { buildRejectedSales, rejectionReason, type RejectedCandidate } from './rejected'
-import { checkBrandVoice } from '@/lib/voice/check'
+// The mechanical voice module was retired (main, 2026-09). What it enforced on
+// these strings is checked here directly: no display punctuation, no jargon.
+const BANNED_PUNCTUATION = /[—–;]/
+const BANNED_JARGON = /\b(comp|comps|subject|band|bands|tier|tiers|ladder)\b/i
+function readsLikeSellerProse(text: string): boolean {
+  return !BANNED_PUNCTUATION.test(text) && !BANNED_JARGON.test(text)
+}
 
 const ASOF = new Date('2026-09-07T00:00:00Z').getTime()
 
@@ -67,7 +73,7 @@ describe('rejectionReason', () => {
     )
   })
 
-  it('writes prose the send-path voice check accepts', () => {
+  it('writes prose the voice canon accepts', () => {
     const lines = [
       rejectionReason(candidate({ propertySubType: 'Townhouse' }), SUBJECT, ASOF),
       rejectionReason(candidate({ sqft: 2_400 }), SUBJECT, ASOF),
@@ -75,7 +81,7 @@ describe('rejectionReason', () => {
       rejectionReason(candidate({ closeDate: '2024-01-15' }), SUBJECT, ASOF),
       rejectionReason(candidate({ proximity: null }), SUBJECT, ASOF),
     ].join('\n')
-    expect(checkBrandVoice(lines).ok).toBe(true)
+    expect(readsLikeSellerProse(lines)).toBe(true)
   })
 })
 

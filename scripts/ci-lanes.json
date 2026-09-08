@@ -1,7 +1,6 @@
 {
   "version": 1,
   "always": [
-    "ci:brand-voice",
     "ci:broker-own-book",
     "ci:commit-compiles",
     "ci:count-degraded-read",
@@ -90,10 +89,7 @@
     "ci:streamed-redirect",
     "ci:toast-discipline",
     "ci:untracked-imports",
-    "ci:vercel-config",
-    "ci:voice-constructions",
-    "ci:voice-constructions-parity",
-    "ci:voice-send-paths"
+    "ci:vercel-config"
   ],
   "path": {
     "ci:access-denied": [
@@ -633,9 +629,7 @@
       "public/images/**"
     ],
     "ci:hook-tests": [
-      ".claude/hooks/**",
-      "scripts/__tests__/brand-voice-vocabulary.test.cjs",
-      "scripts/brand-voice-vocabulary.cjs"
+      ".claude/hooks/**"
     ],
     "ci:hydration-safety": [
       "app/**",
@@ -919,20 +913,6 @@
       "app/actions/contact-newsletter.ts",
       "app/api/**/*newsletter*"
     ],
-    "ci:newsletter-voice-paths": [
-      "lib/newsletter/**",
-      "lib/email/**",
-      "lib/email-templates/newsletter*",
-      "app/admin/**/newsletters**",
-      "app/admin/**/newsletter*",
-      "app/actions/newsletter.ts",
-      "app/actions/contact-newsletter.ts",
-      "app/api/**/*newsletter*",
-      "lib/voice/**",
-      "scripts/brand-voice-vocabulary.cjs",
-      "scripts/gen-brand-voice-consumers.mjs",
-      "lib/brand-voice/**"
-    ],
     "ci:no-explore-route": [
       "app/**",
       "next.config.*",
@@ -989,17 +969,6 @@
       "AGENTS.md",
       "marketing_brain_skills/producers/TEMPLATE.md",
       "lib/marketing-brain/producer-output-class.ts"
-    ],
-    "ci:producer-registry-resolves": [
-      "marketing_brain_skills/**",
-      "social_media_skills/**",
-      "automation_skills/**",
-      "lib/marketing-brain/**"
-    ],
-    "ci:producer-skills": [
-      "marketing_brain_skills/**",
-      "social_media_skills/**",
-      "automation_skills/**"
     ],
     "ci:program-complete": [
       "docs/plans/PROGRAM_2026-07-21/**",
@@ -1128,6 +1097,10 @@
       "lib/data/**",
       "app/site-index/**",
       "app/**/site-index/**"
+    ],
+    "ci:site-node": [
+      "app/**",
+      "components/site/**"
     ],
     "ci:sitemap-inventory-gate": [
       "app/**/page.tsx",
@@ -1269,17 +1242,6 @@
       "scripts/**",
       "scripts/vm-parity-baseline.json"
     ],
-    "ci:voice-reviewer": [
-      "lib/voice/**",
-      "lib/cma/**",
-      "lib/bpo/**"
-    ],
-    "ci:voice-vocab-parity": [
-      "lib/voice/**",
-      "scripts/brand-voice-vocabulary.cjs",
-      "scripts/gen-brand-voice-consumers.mjs",
-      "lib/brand-voice/**"
-    ],
     "ci:web-push-durable": [
       "app/api/push/**",
       "app/api/cron/crm-alert-drain/**",
@@ -1305,8 +1267,7 @@
     "ci:reachable-exports",
     "ci:search-field-completeness",
     "ci:search-perf-budget",
-    "ci:shadcn-burndown",
-    "ci:voice-rewrite-batch"
+    "ci:shadcn-burndown"
   ],
   "cert": []
 }

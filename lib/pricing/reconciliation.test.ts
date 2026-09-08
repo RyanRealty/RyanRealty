@@ -8,7 +8,13 @@
 
 import { describe, it, expect } from 'vitest'
 import { reconcileAdjustedSales, grossAdjustmentPct, type ReconcilableSale } from './reconciliation'
-import { checkBrandVoice } from '@/lib/voice/check'
+// The mechanical voice module was retired (main, 2026-09). What it enforced on
+// these strings is checked here directly: no display punctuation, no jargon.
+const BANNED_PUNCTUATION = /[—–;]/
+const BANNED_JARGON = /\b(comp|comps|subject|band|bands|tier|tiers|ladder)\b/i
+function readsLikeSellerProse(text: string): boolean {
+  return !BANNED_PUNCTUATION.test(text) && !BANNED_JARGON.test(text)
+}
 
 function sale(over: Partial<ReconcilableSale> = {}): ReconcilableSale {
   return {
@@ -118,7 +124,7 @@ describe('reconcileAdjustedSales', () => {
     }
   })
 
-  it('writes prose the send-path voice check accepts', () => {
+  it('writes prose the voice canon accepts', () => {
     const out = reconcileAdjustedSales({
       sales: [
         sale({ listingKey: 'A', address: '1234 NW Juniper Ave', weight: 0.9 }),
@@ -127,6 +133,6 @@ describe('reconcileAdjustedSales', () => {
       subjectSqft: 1_700,
     })
     const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
-    expect(checkBrandVoice(prose).ok).toBe(true)
+    expect(readsLikeSellerProse(prose)).toBe(true)
   })
 })

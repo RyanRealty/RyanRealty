@@ -20,10 +20,6 @@ import type {
   MarketTrendSummary,
 } from '@/lib/data/crm/getMarketReportData'
 
-const BANNED_VOCAB = require('../../scripts/brand-voice-vocabulary.cjs') as {
-  BANNED_WORD_STRINGS: string[]
-}
-
 /** A realistic monthly trend fixture (chronological completed months). */
 function trend(overrides: Partial<MarketTrendSummary> = {}): MarketTrendSummary {
   const points = [
@@ -530,17 +526,6 @@ describe('renderMarketReportEmail', () => {
     const out = sampleEmail()
     expect(out.subject).not.toContain('!')
     expect(out.text).not.toContain('!')
-  })
-
-  it('contains no banned vocabulary', () => {
-    const out = sampleEmail()
-    const haystack = `${out.subject}\n${out.text}`.toLowerCase()
-    const hits = BANNED_VOCAB.BANNED_WORD_STRINGS.filter((w) => {
-      // whole-token match where the term is a single word; substring for phrases
-      if (/\s/.test(w)) return haystack.includes(w)
-      return new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(haystack)
-    })
-    expect(hits).toEqual([])
   })
 })
 

@@ -251,3 +251,113 @@ The key retry scored 78, 74, 71 (inconsistent lighting, impossible geometry), so
 closed at $5.90 of the $10 cap with 0 passes in 22 candidates across two rounds. The
 buyer's-agent guide takes library `53a6958e` (lakeside community center with a footbridge).
 All nine new guides now carry real, owned, grade-A library photos, nine distinct files.
+
+## Round three (2026-09-07, Matt's four answers)
+
+- **Sign-in prompt off on guides.** `lib/auth/signin-prompt-policy.ts` returns `guide` for
+  `/blog` and `/blog/*`, so the alerts wall never auto-opens on a post. A reader from a search
+  result or an answer engine was getting it on the first scroll. Tested.
+- **Monthly city report, Bend and Redmond.** `lib/blog/monthly-city-report.ts` (pure builder,
+  tested) + `lib/data/blog/blogPostWrites.ts` (voice-gated cron write path, registered in
+  `ci:voice-send-paths`) + `app/api/cron/blog-monthly-city-report` (3rd of the month, 15:00
+  UTC; `?month=YYYY-MM` backfills, `?dry=1` validates). Figures come from the Market Truth
+  detached monthly series the market page charts (`getPublicDetachedMonthly`) and the
+  `getCityReportSnapshot` live block, each stated once with its month. The stats cache was
+  the first draft's source and disagreed with the page on Bend's August median ($705,000
+  against $749,500), so the cron reads what the page reads. Refuses on fewer than 15 closings, a missing median, or a
+  cache whose last completed month is not the target. Slug pattern matches the hand-made July
+  reports (`bend-oregon-market-report-august-2026`).
+- **Backlog, second half.** 52 published posts untouched today are in figure-by-figure triage
+  (three read-only passes). Verdicts and fixes follow in the next commit.
+- **Shot list** for the subjects neither the library nor the generator can cover:
+  `docs/plans/PUBLIC_PRODUCT/PHOTO_SHOT_LIST_2026-09.md`.
+
+## Second-half triage and first fix pass (2026-09-07, later)
+
+Three read-only passes over the 52 published posts untouched earlier in the day
+(`scratchpad/triage2-g1.md`, `g2.md`, `g3.md` in the session). Verdicts: KEEP 5, FIX 37, RESTORE
+9, RETIRE 1. Acted on the same day, live rows only, seeds
+diverge as before:
+
+**Taken down (status `retired`, redirected).** `raising-kids-bend-parents-guide` (neighborhoods
+by racial composition, "families of color" steering toward Redmond and Madras, "family-oriented"
+neighborhoods) and `schools-central-oregon-guide-families` (school choice tied to neighborhood
+income and free-lunch share). Both redirect, to `/blog` and `/schools`, until rewritten on
+program, size, and offering facts. `bend-wildfire-resistant-building-standards` (an invented,
+unclosed quotation, and a council vote narrated as "today" five months on) retired in favor of
+`deschutes-county-wildfire-building-codes`. `adu-rules-changing-bend-two-units` (a 2023 proposal
+with no outcome and a midpoint math error) retired; the renovation guide now points at the HB
+2001 post.
+
+**Steering lines rewritten in place.** Sunriver ("works best for retirees, remote workers, and
+families"), NW Crossing ("natural fit for families with kids"), Sisters ("Families who value
+small schools, low crime"), Redmond ("Families who prioritize", two school-score sentences cut),
+Moving to Bend (west-side schools "rate higher", "where most young families land").
+
+**Invented quotes removed.** Moving to Bend: five quoted "answers" from unnamed transplants are
+now plain prose.
+
+**Math corrected.** June 2026 Bend report 3.6% to 3.5%; best-time-to-buy $510,000 to $530,000
+and the $25,000 to $40,000 seasonal gap to $17,500 at the post's own 3.5%; permit timeline
+total 14 to 24 months; Broken Top combined dues $800 to $1,300; Sunriver July report 20.6% to
+20.5%; the three July city reports date-label their second active-listing count; "six other
+homes to walk to" cut from the months-of-supply explainer.
+
+**Sentences softened to their real basis.** Earnest money and inspection windows attributed to
+the OREF purchase agreement as common terms, the Closing Disclosure rule to TRID, appraisal
+ordering to the federal appraiser independence rules, and the unsourced appraisal fee and
+west-Bend price band cut. Pre-listing checklist lost its ROI, paint-uplift, and "50% bigger"
+claims.
+
+**Still open (next sessions).** The 36 FIX posts carry roughly 150 unsourced dollar, percent,
+and count figures, concentrated in the eleven resort and neighborhood guides (price tiers, HOA
+dues, rental income) and the relocation guides (drive times, ISP speeds, cost of living). Each
+needs the figure sourced from the stats cache or the resort's own page, or cut. Eight RESTORE
+posts: earnest money (OREF form citations), vacation rental rules (ordinance citations, 10
+months stale), working remote (25 uncited figures), retirement (sales-tax math wrong, a dozen
+uncited tax figures), price-per-sqft trends (four non-Bend communities listed as Bend
+neighborhoods, Sunriver at two prices), SB 1537 (two years stale), plus the two fair-housing
+takedowns. Cross-post conflicts to reconcile to one figure: Bend to Redmond mileage, Bend
+population, Mt. Bachelor distance, studded-tire dates, Black Butte and Brasada both "about
+1,800 acres".
+
+## Backfill and close (2026-09-07, end of day)
+
+- The cron published `bend-oregon-market-report-august-2026` and
+  `redmond-oregon-market-report-august-2026` through `?month=2026-08` after the dry run matched
+  the pages: Bend $749,500, down 5.7% from $795,000; Redmond $527,500, down 7.8% from $572,000.
+  Both carry FAQPage schema and name the market page's series as the source. September publishes
+  on October 3 without a hand.
+- Retired-slug redirects live for the wildfire-standards and ADU posts. The two fair-housing
+  takedowns redirect to `/blog` and `/schools`.
+- Guides no longer open the sign-in prompt (checked in a fresh browser on two posts).
+- Backlog queue for the next sessions: 37 FIX and 9 RESTORE posts, verdicts and exact sentences
+  in the three triage files, cross-post conflicts listed above. Rewrite the two takedowns first.
+
+## The two takedowns, rewritten (2026-09-07, end of day)
+
+Both are back at their slugs, redirects removed, on program, size, lookup, and offering facts
+only. No ratings, no demographics, no crime, no neighborhood recommendations. Sources fetched
+2026-09-07: Oregon Department of Education Fall Membership Report 2025-26 (Bend-La Pine
+16,530; Redmond 7,281; Crook County 3,291; Sisters 1,171), blschools.org (school list, DIAL
+attendance lookup, inter-district transfer rule, 2026-27 calendar), redmondschools.org (school
+list, bus route locator, May 31 transfer deadline), district.ssd6.org (schools, boundary tool,
+no-cap transfers), crookcountyschools.org (eleven schools, boundary map, case-by-case
+transfers), each private school's own 2026-27 tuition page (Cascades Academy, Seven Peaks,
+Trinity Lutheran, St. Francis, Morning Star, Waldorf posted rate), bendinternationalschool.org
+and rpacademy.org (free charters), osucascades.edu (1,401 students fall 2025, 24 majors),
+cocc.edu (four campuses), bendparksandrec.org (86 parks, 90+ miles of trail, 3,600+ acres,
+Juniper's two facilities and five pools), mtbachelor.com (Mighty Mites ages 4 to 5 ski, 5 to 6
+snowboard; kids group 7 to 12), deschuteslibrary.org (six branches, Downtown Bend closed to
+summer 2027), oregon.gov/delc (NeighborImpact is the Central region referral agency), NOAA
+1991 to 2020 normals for Bend. Cut: any child care slot count (only a live dashboard exists),
+COCC enrollment (only a news quote), Waldorf's year label (the page is mislabeled).
+
+Steering-word scan on both bodies: zero hits for family-friendly, good or best schools, safe,
+crime, diverse, affluent, income, test scores, rated, ranking, or "for families".
+
+Live check after the deploy of 00440ca9 (2026-09-07 16:37, browser UA): both slugs return 200
+with a FAQPage block and their new heroes (`schools` ← library 87010cd4, `raising-kids` ←
+826bb0a8), `/blog/raising-kids-bend-parents-guide` no longer 301s to `/blog`, and the legacy
+paths `/raising-kids-bend-parents-guide` and `/schools-central-oregon-guide-families` 301 to
+the blog URLs. Contact sheet sent to Matt. `blog_posts`: 80 published, 18 retired.

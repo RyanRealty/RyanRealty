@@ -46,9 +46,7 @@ above everything.
 
 | What | Path | Why |
 |---|---|---|
-| Brand voice (canonical) | `marketing_brain_skills/brand-voice/VOICE.md` | Five Laws + competitor/receipt tests |
-| Voice hard-fails (full) | `marketing_brain_skills/brand-voice/VOICE.md` | The ban lists for long-form copy |
-| Voice gate (run it) | `scripts/check-brand-voice.mjs` + `scripts/brand-voice-vocabulary.cjs` | Mechanical banned-word scan |
+| Brand voice (canonical) | `marketing_brain_skills/brand-voice/VOICE.md` | The one voice document; competitor/receipt tests below |
 | Design system | `design_system/ryan-realty/SKILL.md` + `MANIFEST.md` | Navy #102742 / cream #faf8f4, Amboqia + Geist, asset paths |
 | FB ad spec | `social_media_skills/facebook-lead-gen-ad/SKILL.md` | Lead-form template, creative spec, CRM inbound (`sendEvent`) |
 | FB pipeline (live wiring) | `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md` | Meta -> site -> CAPI -> crm_people, env vars |
@@ -201,11 +199,9 @@ shipped that failed and what you changed. If nothing failed, you weren't honest 
   work? If yes, it's dead — rewrite until only Ryan Realty could have said it.
 - **Receipt test:** every claim backed by a number/name/fact, not an adjective.
 - **Message-match:** ad promise == LP H1 == first CRM touch. Verify literally.
-- **Voice gate (mechanical):** run `node scripts/check-brand-voice.mjs` on the LP copy;
-  grep all ad/CRM copy for the ban list (stunning, dream home, nestled, charming, must-see,
-  hidden gem, boasts, luxurious, passionate, dedicated, premier, boutique,
-  manufactured-urgency phrasing; em-dashes, semicolons, body exclamation marks;
-  category-naming; headcount/smallness positioning). Any hit = rewrite, not flag.
+- **Voice check:** read the LP, ad, and CRM copy against `marketing_brain_skills/brand-voice/VOICE.md`.
+  No mechanical gate — a real-estate cliché, a hedge word standing in for a number, or
+  smallness positioning is a rewrite, not a flag.
 - **Data trace:** every number on the ad + LP maps to a §3 verification line.
 
 ---

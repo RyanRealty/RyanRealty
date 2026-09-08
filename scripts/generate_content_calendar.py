@@ -10,8 +10,7 @@ Usage:
     python scripts/generate_content_calendar.py --address "56111 School House Rd, Bend, OR 97707" \
         --price 3025000 --beds 4 --baths 4.5 --sqft 4900 --lot "1.38 acres"
 
-All captions are template-based and deterministic (no LLM). Every caption is scanned
-for banned words before output; the script exits loudly if any banned term is found.
+All captions are template-based and deterministic (no LLM).
 
 Data accuracy: all stats in captions come from the listing manifest or inline flags.
 No numbers are invented, estimated, or approximated.
@@ -39,49 +38,6 @@ DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 # Brand contact — never goes inside video frames, always in caption
 BRAND_HANDLE = "@MattRyanRealty"
 BRAND_CTA = "Tour link in bio."
-
-# ---------------------------------------------------------------------------
-# Banned-word filter (from VIDEO_PRODUCTION_SKILL.md + CLAUDE.md)
-#
-# Core vocabulary + punctuation come from the canonical scripts/brand-voice-
-# vocabulary.cjs via scripts/_brand_voice_vocab_generated.py (see
-# scripts/gen-brand-voice-consumers.mjs) — never hand-typed here. The three
-# entries below are calendar-specific opening-line phrases the canonical
-# (general prose) list doesn't carry.
-# ---------------------------------------------------------------------------
-
-_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
-if _SCRIPTS_DIR not in sys.path:
-    sys.path.insert(0, _SCRIPTS_DIR)
-
-from _brand_voice_vocab_generated import BANNED_WORD_STRINGS, PUNCTUATION_CHARS
-
-CALENDAR_LOCAL_EXTRAS = [
-    "welcome to your dream home",
-    "worth a serious look",
-    "as a bend homeowner",
-]
-
-BANNED_WORDS = [*BANNED_WORD_STRINGS, *CALENDAR_LOCAL_EXTRAS, *PUNCTUATION_CHARS]
-
-
-def check_banned_words(text: str, context: str = "") -> None:
-    """
-    Scan text for banned terms. Exit loudly if any are found.
-    This is the brand-voice enforcement gate — it cannot be bypassed.
-    """
-    lower = text.lower()
-    for term in BANNED_WORDS:
-        if term in lower:
-            print(
-                f"\n[BANNED-WORD FAIL] Caption contains '{term}'\n"
-                f"  Context: {context}\n"
-                f"  Caption: {text}\n"
-                f"  Fix: choose a different template or remove the term.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-
 
 # ---------------------------------------------------------------------------
 # Caption templates — source of truth (also documented in
@@ -572,9 +528,6 @@ def generate_posts(
                 f"{alt_hook} {short_addr} {BRAND_HANDLE} {BRAND_CTA}", post_date
             )
 
-        # Banned-word check — hard fail
-        check_banned_words(caption, context=f"post {post_number}, {content_type}")
-
         # Assign photos
         if content_type == "full_tour_video":
             assigned_photos = "all"
@@ -631,38 +584,6 @@ def generate_posts(
         })
 
     return posts
-
-
-# ---------------------------------------------------------------------------
-# Banned-word final audit across all posts
-# ---------------------------------------------------------------------------
-
-def audit_all_captions(posts: list) -> None:
-    """
-    Final pass: scan every generated caption for banned words.
-    Exits loudly if any are found. This is the last gate before output.
-    """
-    failures = []
-    for post in posts:
-        caption = post.get("caption", "")
-        lower = caption.lower()
-        for term in BANNED_WORDS:
-            if term in lower:
-                failures.append(
-                    f"  post {post['post_number']} ({post['content_type']}): "
-                    f"banned term '{term}' in: {caption[:80]}..."
-                )
-
-    if failures:
-        print(
-            "\n[BANNED-WORD AUDIT FAILED]\n"
-            "The following posts contain banned terms and cannot be shipped:\n"
-            + "\n".join(failures)
-            + "\n\nFix the templates in scripts/generate_content_calendar.py "
-            "and re-run.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
@@ -809,9 +730,6 @@ Examples:
 
     # --- Generate ---
     posts = generate_posts(listing, start_date, args.weeks, cadence_days)
-
-    # --- Final banned-word audit (hard gate) ---
-    audit_all_captions(posts)
 
     # --- Compute horizon ---
     if posts:
