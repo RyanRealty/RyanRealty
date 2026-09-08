@@ -116,6 +116,8 @@ function dash(v: string | null | undefined): string {
  * "Sold for" cell where it could be misread as a sale.
  */
 type Col = {
+  /** Sort keys for the interactive layer, off the sale's own figures. */
+  sort: string
   key: string
   label: string
   href: string | null
@@ -204,6 +206,8 @@ function subjectCol(subject: CmaSubject): Col {
     href: null,
     sub: sub || null,
     photoUrl: subject.photoUrl?.trim() || null,
+    // The reader's own home never sorts: it is the first column, always.
+    sort: '',
     cells: [
       dash(subject.propertySubType),
       sizeCell(subject.sqft, subject.lotAcres),
@@ -245,6 +249,7 @@ function compCol(
     href: compHref(comp, ctx),
     sub: null,
     photoUrl: comp.photoUrl?.trim() || null,
+    sort: sortKeys(comp),
     cells: [
       dash(comp.propertySubType),
       sizeCell(comp.sqft, comp.lotAcres),
@@ -264,6 +269,23 @@ function compCol(
       weight?.weight != null ? `${weight.weight.toFixed(1)}%` : '-',
     ],
   }
+}
+
+/**
+ * What the reader can re-order the sales by (Delta 2: "Sort by distance, date,
+ * price"). Every key is a figure the column already prints, so a sort can only
+ * rearrange what is on the page. Distance is not on a closed sale's row, so it
+ * is not offered — the map beside the grid is where distance is read.
+ */
+function sortKeys(comp: CmaAdjustedComp): string {
+  const parts: string[] = []
+  const date = (comp.closeDate ?? '').slice(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) parts.push(` data-sort-date="${date}"`)
+  if (comp.adjustedPrice != null && Number.isFinite(comp.adjustedPrice)) {
+    parts.push(` data-sort-price="${Math.round(comp.adjustedPrice)}"`)
+  }
+  if (comp.sqft != null && Number.isFinite(comp.sqft)) parts.push(` data-sort-size="${Math.round(comp.sqft)}"`)
+  return parts.join('')
 }
 
 /** `pricing.reconciliation.weights[]`, keyed by listing. */
@@ -408,7 +430,7 @@ function matrixTable(
       const name = c.href
         ? `<a class="matrix-addr" href="${esc(c.href)}" data-rr-track="cma-sale">${esc(c.label)}</a>`
         : `<span class="matrix-addr">${esc(c.label)}</span>`
-      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}${name}${
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${c.sort}>${img}${name}${
         c.sub ? `<span class="matrix-sub">${esc(c.sub)}</span>` : ''
       }</th>`
     })
@@ -426,7 +448,11 @@ function matrixTable(
       const factAttr = row.fact ? ` data-fact="${row.fact}"` : ''
       // The conclusion of the grid gets a rule above it, the way a total does.
       const cls = row.rule ? ' class="is-total"' : ''
-      return `<tr${factAttr}${cls}><th>${esc(row.label)}</th>${tds}</tr>`
+      // Delta 2: 'Toggle "adjusted for date and size" on and off on the sale
+      // prices to see what the adjustments do.' The toggle hides the working,
+      // never the conclusion — the sale price today keeps its row.
+      const adjAttr = row.grid === true && row.rule !== true ? ' data-adj="1"' : ''
+      return `<tr${factAttr}${cls}${adjAttr}><th>${esc(row.label)}</th>${tds}</tr>`
     })
     .join('')
   return `
@@ -471,14 +497,21 @@ function matrixStack(
       // what keeps a row the table dropped from surviving on the phone.
       const col = cols[i]
       const lines = rows
-        .map((row, ri) => ({ label: row.label, grid: row.grid === true, value: col?.cells[ri] ?? '-' }))
+        .map((row, ri) => ({
+          label: row.label,
+          grid: row.grid === true,
+          rule: row.rule === true,
+          value: col?.cells[ri] ?? '-',
+        }))
         .filter((line) => line.grid && line.value !== '-')
         .map(
           (line) =>
-            `<div class="comp-stack-line"><span class="k">${esc(line.label)}</span><span class="v n">${esc(line.value)}</span></div>`,
+            `<div class="comp-stack-line"${
+              line.rule ? '' : ' data-adj="1"'
+            }><span class="k">${esc(line.label)}</span><span class="v n">${esc(line.value)}</span></div>`,
         )
         .join('')
-      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}">${img}<a class="comp-stack-addr" href="${esc(
+      return `<article class="comp-stack-card" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${sortKeys(c)}>${img}<a class="comp-stack-addr" href="${esc(
         compHref(c, ctx),
       )}" data-rr-track="cma-sale">${esc(pin)}. ${esc(c.address)}</a><div class="comp-stack-sold">Sold ${esc(
         dateLong(c.closeDate),
@@ -504,7 +537,7 @@ function pricePathsHtml(comps: readonly CmaAdjustedComp[]): string {
     .map((c, i) => {
       const path = pricePathFromSale(c)
       if (!path) return ''
-      return `<div class="sale-path" data-comp="${i + 1}" data-pin="${i + 1}">
+      return `<div class="sale-path" data-comp="${i + 1}" data-pin="${i + 1}"${sortKeys(c)}>
       <div class="sale-path-name">${esc(`${i + 1}. ${c.address}`)}</div>
       ${priceHistoryLineHtml(path, `sale-${i + 1}`)}
     </div>`

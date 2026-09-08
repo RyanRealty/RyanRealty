@@ -13,6 +13,16 @@
  * Usage:
  *   npx tsx scripts/cma-lookpass.ts <slug> [<slug> ...]
  *   npx tsx scripts/cma-lookpass.ts --check <slug> [<slug> ...]
+ *   npx tsx scripts/cma-lookpass.ts --interact <slug> [<slug> ...]
+ *
+ * `--interact` drives every interaction the blueprint's Delta 2 asks for on
+ * the immersive document — the timeline draw and a tap on a cut, the curve
+ * scrub, a bar, a sale row and its pin, the adjusted-prices toggle, the sort,
+ * the competition filter, a price-history expand, a month on the market line —
+ * and screenshots the RESULT of each one at 1280 and 375, into
+ * out/cma-look/<slug>/interact-<width>/NN-<name>.png. A control that is not
+ * there, or a tap that changes nothing on the page, fails the run: an
+ * interaction nobody drove is an interaction nobody knows works.
  *
  * `--check` adds three MECHANICAL failures on top of the shots, so the three
  * defects Matt found on 2026-09-07 cannot come back without the tool saying so
@@ -341,6 +351,248 @@ async function checkSvgTextInsideViewBox(
   return bad.map((detail) => ({ doc, rule: 'chart label outside its viewBox at 375', detail }))
 }
 
+
+/**
+ * ── --interact ─────────────────────────────────────────────────────────────
+ * Drive every interaction Delta 2 names on the web document, and shoot the
+ * result of each one.
+ *
+ * Each step names a selector to act on and, where it can, a witness: something
+ * about the page that MUST be different afterwards. A step whose control is
+ * missing, or whose witness did not move, is a failure — the same standard as
+ * the three mechanical checks above. A screenshot of a button nobody could
+ * press is how an interaction layer rots.
+ */
+type InteractStep = {
+  name: string
+  /** Skip silently when this chapter is not in this document. */
+  optional?: boolean
+  /** Run in the page; return a witness string, or null when the step cannot run. */
+  run: string
+  /** Element to frame the shot on. Falls back to the whole viewport. */
+  shot?: string
+}
+
+/** The first live line in a chapter that has something in it. */
+const READ_IN = (sel: string) => `(() => {
+  const reads = Array.from(document.querySelectorAll('${sel} .rr-read'))
+  const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
+  return said[0] || ''
+})()`
+
+const INTERACT_STEPS: InteractStep[] = [
+  {
+    name: 'timeline-cut',
+    shot: '#what-happened',
+    run: `(() => {
+      const mark = document.querySelectorAll('#what-happened .tl-mark')
+      const target = mark[mark.length - 1]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      return ${READ_IN('#what-happened')}
+    })()`,
+  },
+  {
+    name: 'did-not-sell-history',
+    shot: '#did-not-sell',
+    run: `(() => {
+      const t = document.querySelector('#did-not-sell .pp-toggle')
+      if (!t) return null
+      t.click()
+      const list = document.querySelector('#did-not-sell .pp-list')
+      return list && !list.hidden ? 'expanded ' + list.children.length + ' dated rows' : ''
+    })()`,
+  },
+  {
+    name: 'curve-scrub',
+    shot: '#priced-right',
+    run: `(() => {
+      const hit = document.querySelector('#priced-right svg.curve-scrub .scrub-hit')
+      if (!hit) return null
+      for (let i = 0; i < 20; i++) {
+        hit.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, shiftKey: true }))
+      }
+      return ${READ_IN('#priced-right')}
+    })()`,
+  },
+  {
+    name: 'ask-outcome-bar',
+    shot: '#priced-right',
+    run: `(() => {
+      const bars = document.querySelectorAll('#priced-right .bar-row')
+      const target = bars[bars.length - 1]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const reads = Array.from(document.querySelectorAll('#priced-right .rr-read'))
+      const said = reads.map((r) => (r.textContent || '').trim()).filter(Boolean)
+      return said[said.length - 1] || ''
+    })()`,
+  },
+  {
+    name: 'sale-and-pin',
+    shot: '#what-its-worth',
+    run: `(() => {
+      const pin = document.querySelector('#what-its-worth .pin-map [data-pin], #what-its-worth .pin-map-wrap [data-pin]')
+      const row = document.querySelector('#what-its-worth th.v[data-comp="2"], #what-its-worth .comp-stack-card[data-comp="2"]')
+      const target = pin || row
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const lit = document.querySelectorAll('#what-its-worth .is-on')
+      return lit.length ? 'lit ' + lit.length + ' element(s)' : ''
+    })()`,
+  },
+  {
+    name: 'adjustments-off',
+    shot: '#what-its-worth',
+    run: `(() => {
+      const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
+      const b = btns.find((x) => /sale prices only/i.test(x.textContent || ''))
+      if (!b) return null
+      const before = document.querySelectorAll('#what-its-worth tr[data-adj]').length
+      b.click()
+      const hidden = Array.from(document.querySelectorAll('#what-its-worth tr[data-adj]'))
+        .filter((tr) => getComputedStyle(tr).display === 'none').length
+      return before > 0 && hidden === before ? 'hid ' + hidden + ' adjustment rows' : ''
+    })()`,
+  },
+  {
+    name: 'sort-by-price',
+    shot: '#what-its-worth',
+    run: `(() => {
+      const btns = Array.from(document.querySelectorAll('#what-its-worth .rr-btn'))
+      const plain = btns.find((x) => /with the adjustments/i.test(x.textContent || ''))
+      if (plain) plain.click()
+      const b = btns.find((x) => /price today/i.test(x.textContent || ''))
+      if (!b) return null
+      b.click()
+      const keys = Array.from(document.querySelectorAll('#what-its-worth thead th.v'))
+        .map((th) => th.getAttribute('data-sort-price'))
+        .filter((v) => v != null)
+        .map(Number)
+      if (keys.length < 2) return ''
+      const sorted = keys.every((v, i) => i === 0 || keys[i - 1] >= v)
+      // The cards and the price paths move with the columns, or the chapter
+      // now disagrees with itself about which sale is which.
+      const cards = Array.from(document.querySelectorAll('#what-its-worth .comp-stack-card'))
+        .map((c) => Number(c.getAttribute('data-sort-price')))
+      const cardsMatch = cards.length === 0 || cards.join(',') === keys.join(',')
+      return sorted && cardsMatch ? 'highest first: ' + keys.join(' > ') : ''
+    })()`,
+  },
+  {
+    name: 'competition-pending',
+    shot: '#competition',
+    run: `(() => {
+      const btns = Array.from(document.querySelectorAll('#competition .rr-btn'))
+      const b = btns.find((x) => /under contract/i.test(x.textContent || ''))
+      if (!b) return null
+      b.click()
+      const shown = Array.from(document.querySelectorAll('#competition .rival-grid')).filter((g) => !g.hidden)
+      const hidden = Array.from(document.querySelectorAll('#competition .rival-grid')).filter((g) => g.hidden)
+      return hidden.length > 0 && shown.length > 0 ? 'showing ' + shown.length + ' of ' + (shown.length + hidden.length) + ' groups' : ''
+    })()`,
+  },
+  {
+    name: 'month-line',
+    optional: true,
+    shot: '#this-market',
+    run: `(() => {
+      const marks = document.querySelectorAll('#this-market .month-mark')
+      const target = marks[Math.floor(marks.length / 2)]
+      if (!target) return null
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      return ${READ_IN('#this-market')}
+    })()`,
+  },
+]
+
+/**
+ * One pass over the immersive document at one width: reload, run every step in
+ * order, shoot each result. Motion is NOT reduced here — this is the pass that
+ * proves the interactions work for a reader who gets them.
+ */
+async function driveInteractions(opts: {
+  browser: import('puppeteer-core').Browser
+  html: string
+  width: number
+  outDir: string
+}): Promise<{ shots: Shot[]; failures: CheckFailure[] }> {
+  const { browser, html, width, outDir } = opts
+  await fs.mkdir(outDir, { recursive: true })
+  const page = await browser.newPage()
+  const shots: Shot[] = []
+  const failures: CheckFailure[] = []
+  try {
+    await page.setViewport({ width, height: 1400, deviceScaleFactor: 1 })
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await waitForImages(page)
+    // Every scene revealed and SETTLED, so a step never taps a control inside
+    // a hidden section and no shot catches a chapter mid-fade. The reveal is
+    // chapter entrance; it is not what this pass is driving. Killing the
+    // transitions also lands the timeline's draw on its finished state, which
+    // is what a reader sees a moment after it runs.
+    await page.evaluate(() => {
+      document.querySelectorAll('.sc').forEach((el) => el.classList.add('on'))
+      const style = document.createElement('style')
+      style.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }'
+      document.head.appendChild(style)
+    })
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 200)))
+    for (let i = 0; i < INTERACT_STEPS.length; i++) {
+      const step = INTERACT_STEPS[i]!
+      let witness: string | null = null
+      try {
+        witness = (await page.evaluate(step.run)) as string | null
+      } catch (err) {
+        witness = ''
+        failures.push({
+          doc: 'immersive',
+          rule: `interaction "${step.name}" threw`,
+          detail: err instanceof Error ? err.message : String(err),
+        })
+      }
+      if (witness == null) {
+        if (!step.optional) {
+          failures.push({
+            doc: 'immersive',
+            rule: `interaction "${step.name}" has no control`,
+            detail: `nothing matched at ${width}px — the chapter is present but the control was never built`,
+          })
+        }
+        console.log(`  [interact ${width}] ${pad(i + 1)} ${step.name.padEnd(24)} — absent${step.optional ? ' (optional)' : ''}`)
+        continue
+      }
+      if (!witness) {
+        failures.push({
+          doc: 'immersive',
+          rule: `interaction "${step.name}" changed nothing`,
+          detail: `the control is there at ${width}px and driving it moved no witness on the page`,
+        })
+      }
+      const fileName = `${pad(i + 1)}-${step.name}.png`
+      const handle = step.shot ? await page.$(step.shot) : null
+      if (handle) await handle.screenshot({ path: path.join(outDir, fileName) as `${string}.png` })
+      else await page.screenshot({ path: path.join(outDir, fileName) as `${string}.png` })
+      shots.push({
+        doc: 'immersive',
+        width,
+        index: i + 1,
+        id: step.name,
+        heading: witness,
+        heightPx: 0,
+        svgCount: 0,
+        imgCount: 0,
+        tableCount: 0,
+        file: `${path.basename(outDir)}/${fileName}`,
+      })
+      console.log(`  [interact ${width}] ${pad(i + 1)} ${step.name.padEnd(24)} ${witness || '✗ no change'}`)
+    }
+    return { shots, failures }
+  } finally {
+    await page.close().catch(() => {})
+  }
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
@@ -351,6 +603,8 @@ async function writeContactSheet(outDir: string, slug: string, meta: Record<stri
     { label: 'Letter · 375px (mobile)', items: shots.filter((s) => s.doc === 'letter' && s.width === 375) },
     { label: 'Immersive · 1280px (desktop)', items: shots.filter((s) => s.doc === 'immersive' && s.width === 1280) },
     { label: 'Immersive · 375px (mobile)', items: shots.filter((s) => s.doc === 'immersive' && s.width === 375) },
+    { label: 'Interactions · 1280px — the RESULT of each one', items: shots.filter((s) => s.width === 1281) },
+    { label: 'Interactions · 375px — the RESULT of each one', items: shots.filter((s) => s.width === 376) },
   ]
   const body = groups
     .filter((g) => g.items.length > 0)
@@ -405,6 +659,7 @@ async function processSlug(
   slug: string,
   browser: import('puppeteer-core').Browser,
   check: boolean,
+  interact: boolean,
   deps: {
     getCmaAdminRowBySlug: (slug: string) => Promise<Record<string, unknown> | null>
     getCmaRenderSourceBySlug: (slug: string) => Promise<CmaRenderSource | null>
@@ -506,6 +761,22 @@ async function processSlug(
     console.error(`  no immersive HTML for "${slug}" (render_args miss AND no stored html_content) — no immersive shots`)
   }
 
+  if (interact && immersiveHtml) {
+    for (const width of [1280, 375] as const) {
+      const run = await driveInteractions({
+        browser,
+        html: immersiveHtml,
+        width,
+        outDir: path.join(outDir, `interact-${width}`),
+      })
+      // The contact sheet groups by width, and 1280/375 are already taken by
+      // the chapter shots — stamp these one apart so they land in their own
+      // rows rather than mixing into the chapter grid.
+      allShots.push(...run.shots.map((s) => ({ ...s, width: width + 1 })))
+      failures.push(...run.failures)
+    }
+  }
+
   if (check) {
     for (const [doc, html] of [
       ['letter', letter?.html ?? null],
@@ -534,12 +805,13 @@ async function processSlug(
 async function main(): Promise<void> {
   const argv = process.argv.slice(2)
   const check = argv.includes('--check')
+  const interact = argv.includes('--interact')
   const slugs = argv
     .filter((a) => !a.startsWith('--'))
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
   if (slugs.length === 0) {
-    console.error('usage: npx tsx scripts/cma-lookpass.ts [--check] <slug> [<slug> ...]')
+    console.error('usage: npx tsx scripts/cma-lookpass.ts [--check] [--interact] <slug> [<slug> ...]')
     process.exit(1)
   }
 
@@ -570,7 +842,7 @@ async function main(): Promise<void> {
   const results: Array<{ slug: string; ok: boolean; contactSheet?: string; failures: CheckFailure[] }> = []
   try {
     for (const slug of slugs) {
-      const result = await processSlug(slug, browser, check, {
+      const result = await processSlug(slug, browser, check, interact, {
         getCmaAdminRowBySlug,
         getCmaRenderSourceBySlug,
         getCmaStoredHtmlBySlug,

@@ -251,6 +251,24 @@ export function pricePathFromListing(listing: {
   }
 }
 
+/**
+ * The dated events behind the drawing, in order, as JSON for the interactive
+ * layer. Delta 2: "Tap the price path to expand the full history as a dated
+ * list." The list is BUILT FROM THESE — the script never derives a date, a
+ * price, or an event that is not already on the row.
+ */
+export function pricePathEventsJson(path: PricePath): string {
+  const rows: Array<{ d: string; p: number; k: string }> = [
+    { d: path.startDate, p: path.startPrice, k: 'Asked' },
+    ...path.cuts.map((c) => ({ d: c.date, p: c.price, k: 'Changed to' })),
+  ]
+  if (path.undatedCutTo != null) rows.push({ d: '', p: path.undatedCutTo, k: 'Later asked' })
+  const end = path.closePrice
+  if (end != null) rows.push({ d: path.endDate, p: end, k: 'Sold' })
+  else if (path.outcome === 'off-market') rows.push({ d: path.endDate, p: finalAskOf(path), k: 'Came off at' })
+  return JSON.stringify(rows)
+}
+
 /** The final ask the path ends on, whatever route it took to get there. */
 export function finalAskOf(path: PricePath): number {
   if (path.undatedCutTo != null) return path.undatedCutTo
@@ -476,7 +494,7 @@ export function priceHistoryLineHtml(path: PricePath | null, id?: string): strin
   const wide = priceHistoryLineSvg(path, PRICE_PATH_WIDE, id)
   if (!wide) return ''
   const phone = priceHistoryLinePhoneSvg(path, id)
-  return `<div class="pp-wrap"><div class="pp pp-wide">${wide}</div><div class="pp pp-phone">${phone}</div></div>`
+  return `<div class="pp-wrap"${ppData(path, id)}><div class="pp pp-wide">${wide}</div><div class="pp pp-phone">${phone}</div></div>`
 }
 
 /**
@@ -491,5 +509,12 @@ export function priceHistoryLineCompactHtml(path: PricePath | null, id?: string)
   if (!svg) return ''
   // The reading stays on the wrapper: the drawing itself drops the labels the
   // card already prints, so the words are what a screen reader gets.
-  return `<div class="pp-wrap is-compact" title="${esc(priceHistoryReading(path))}"><div class="pp">${svg}</div></div>`
+  return `<div class="pp-wrap is-compact" title="${esc(priceHistoryReading(path))}"${ppData(path, id)}><div class="pp">${svg}</div></div>`
+}
+
+/** What the interactive layer reads off a drawn path. Inert without script. */
+function ppData(path: PricePath, id?: string): string {
+  return ` data-events="${esc(pricePathEventsJson(path))}" data-reading="${esc(
+    priceHistoryReading(path),
+  )}"${id ? ` data-pp="${esc(id)}"` : ''}`
 }

@@ -9,6 +9,10 @@ import type { CmaBroker } from '@/lib/cma/types'
 import { immersiveHeroNumberHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle } from '@/lib/cma/inbound-packet'
 import { cleanText, dateLong } from '@/lib/cma/render-blocks'
+import {
+  immersiveInteractionCss,
+  immersiveInteractionScript,
+} from '@/lib/cma/immersive-interactions'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { assembleOpinionScenes } from '@/lib/cma/opinion-scenes'
 import { renderCompPinMapScript } from '@/lib/cma/comp-pin-map'
@@ -43,6 +47,7 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
 <style>
 @font-face{font-family:'Amboqia Boriango';src:url('${siteUrl}/fonts/Amboqia_Boriango.otf') format('opentype');font-display:swap}
 ${immersiveStylesheet()}
+${immersiveInteractionCss()}
 </style>
 </head>
 <body>
@@ -89,6 +94,7 @@ ${assembleOpinionScenes(a)}
     setTimeout(function(){scenes.forEach(function(s){s.classList.add('on')})},4500)
   }catch(e){}
 })();
+${immersiveInteractionScript()}
 ${renderCompPinMapScript()}
 </script>
 </body>

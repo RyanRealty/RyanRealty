@@ -72,6 +72,11 @@ function textOutsideViewBox(svg: string): string[] {
   return bad
 }
 
+/** The drawing with its attributes stripped — what a reader actually sees. */
+function visibleText(svg: string): string {
+  return svg.replace(/\s(?:data-read|aria-label|title)="[^"]*"/g, '')
+}
+
 describe('resolveListingTimeline', () => {
   it('prefers the build contract and steps down at every cut', () => {
     const t = resolveListingTimeline({
@@ -205,8 +210,10 @@ describe('the timeline drawing', () => {
     expect(svg).toContain('came off withdrawn · 187 days')
     // A step path, not a diagonal: horizontal, vertical, horizontal.
     expect(svg).toMatch(/<path d="M[\d.]+,[\d.]+ L[\d.]+,[\d.]+ L[\d.]+,[\d.]+ L[\d.]+,[\d.]+"/)
-    // Only the asks carry a number. Never a label on every point.
-    expect((svg.match(/\$\d/g) ?? []).length).toBeLessThanOrEqual(4)
+    // Only the asks carry a number. Never a label on every point. Counted
+    // over what a reader SEES: the interactive layer puts the same figure in
+    // a data-read and an aria-label on each mark, and neither is ink.
+    expect((visibleText(svg).match(/\$\d/g) ?? []).length).toBeLessThanOrEqual(4)
   })
 
   it('keeps the line clear of the zone when the ask sat above it', () => {

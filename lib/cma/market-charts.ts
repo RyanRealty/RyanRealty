@@ -84,12 +84,18 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
         lastTickX = x
         tick = `<text x="${x.toFixed(1)}" y="${bottom + 22}" text-anchor="middle" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
       }
-      return `<circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>${tick}`
+      // Delta 2: "Hover or tap the month line: the value and the month." The
+      // reading is the month and the figure already plotted at that point.
+      const read = `${monthLabel(priced[i]!.periodStart)}: ${chartUsd(vals[i]!)} median close`
+      return `<g class="month-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
+      <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="12" fill="transparent"/>
+      <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>
+    </g>${tick}`
     })
     .join('')
   const min = Math.min(...vals)
   const max = Math.max(...vals)
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg">
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg month-line">
     <text x="0" y="14" font-size="${fs}" fill="#102742" opacity="0.7">Median close</text>
     <text x="${left - 10}" y="${(y(max) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(max)}</text>
     <text x="${left - 10}" y="${(y(min) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(min)}</text>
@@ -391,7 +397,7 @@ export type ListingTimelineInput = {
 }
 
 type TimelineGeometry = {
-  steps: Array<{ t: number; ask: number }>
+  steps: Array<{ t: number; ask: number; date: string }>
   t0: number
   t1: number
   lo: number
@@ -417,7 +423,7 @@ function timelineGeometry(input: ListingTimelineInput): TimelineGeometry | null 
   const t0 = timelineDay(input.listDate)
   if (t0 == null) return null
   const steps = input.steps
-    .map((s) => ({ t: timelineDay(s.date) ?? t0, ask: s.ask }))
+    .map((s) => ({ t: timelineDay(s.date) ?? t0, ask: s.ask, date: s.date }))
     .filter((s) => Number.isFinite(s.ask) && s.ask > 0)
     .sort((a, b) => a.t - b.t)
   if (steps.length === 0) return null
@@ -536,8 +542,15 @@ function timelineBody(o: {
       const flip = i > 0 && cx + 8 + w > W - 2
       const lx = i === 0 ? cx : flip ? cx - 8 : cx + 8
       const anchor: 'start' | 'end' = i === 0 || !flip ? 'start' : 'end'
-      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${TL_INK}"/>
-    <text x="${lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>`
+      // Delta 2: "Tap or hover a cut: the date and the ask." The reading is
+      // composed here, from the same two recorded figures the mark is drawn
+      // from; the script prints it and derives nothing.
+      const read = `${i === 0 ? 'Asked' : 'Cut to'} ${label} on ${monthDay(s.date)}`
+      return `<g class="tl-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
+    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="10" fill="transparent"/>
+    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${TL_INK}"/>
+    <text x="${lx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(label)}</text>
+    </g>`
     })
     .join('\n    ')
 
@@ -554,7 +567,7 @@ function timelineBody(o: {
   const endDay = input.offMarketDate ? monthDay(input.offMarketDate) : ''
   const zoneLabelY = Math.max(zoneTop - 6, top - 12)
 
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg">
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
     <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.11"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
@@ -562,7 +575,7 @@ function timelineBody(o: {
     <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
     <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
-    <path d="${path}" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="miter" stroke-linecap="butt"/>
+    <path d="${path}" class="tl-ask" fill="none" stroke="${TL_INK}" stroke-width="2.5" stroke-linejoin="miter" stroke-linecap="butt"/>
     ${marks}
     <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="3.5" fill="none" stroke="${TL_INK}" stroke-width="1.6"/>
     <text x="${endFit.x}" y="${endLabelY.toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${endFs}" font-weight="600" fill="${TL_INK}">${esc(endText)}</text>
@@ -682,7 +695,14 @@ export function offerTimingCurveSvg(
         })()
       : ''
 
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Share of sales with an accepted offer, by day" class="trend-svg">
+  // Delta 2: "a slider or a tap on the axis moves a marker along the curve and
+  // reads 'by day N, X percent had an offer'." The points and the plot box go
+  // on the element; the script interpolates BETWEEN measured points and says
+  // so, and derives no figure of its own.
+  const scrubData = ` data-points="${esc(
+    JSON.stringify(points.map((pt) => [pt.days, Number(pt.pct.toFixed(2))])),
+  )}" data-plot="${esc(JSON.stringify([plotL, plotR, top, bottom, maxDay]))}"`
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Share of sales with an accepted offer, by day" class="trend-svg curve-scrub"${scrubData}>
     <text x="${plotL - 6}" y="${(y(100) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">100%</text>
     <text x="${plotL - 6}" y="${(y(50) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">50%</text>
     <line x1="${plotL}" y1="${y(100).toFixed(1)}" x2="${plotR}" y2="${y(100).toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
@@ -694,6 +714,11 @@ export function offerTimingCurveSvg(
     <text x="${endFit.x}" y="${(y(last.pct) + 18).toFixed(1)}" text-anchor="${endFit.anchor}" font-size="${fs}" font-weight="600" fill="${TL_INK}">${esc(endLabel)}</text>
     ${ticks}
     <text x="${plotR}" y="${(H - 6).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">days to an accepted offer</text>
+    <g class="scrub" aria-hidden="true" opacity="0">
+      <line class="scrub-line" x1="0" y1="${top}" x2="0" y2="${bottom.toFixed(1)}" stroke="${TL_INK}" stroke-width="1" stroke-dasharray="2 3"/>
+      <circle class="scrub-dot" cx="0" cy="0" r="4.5" fill="${TL_INK}"/>
+    </g>
+    <rect class="scrub-hit" x="${plotL}" y="${top}" width="${(plotR - plotL).toFixed(1)}" height="${(bottom - top).toFixed(1)}" fill="transparent"/>
   </svg>`
 }
 
@@ -765,26 +790,39 @@ export function askOutcomeBarsSvg(
                 : ''
             }`
           : ''
+      // Delta 2: "tap a bar to see its n, median days, median cut, median share
+      // of ask." Every figure in the reading is already drawn on the row; the
+      // group carries it as one sentence so a tap on a phone, where the row's
+      // sub-lines are 9px, states it in reading type under the chart.
+      const read = [
+        name,
+        `${int(g.medianDays)} ${g.medianDays === 1 ? 'day' : 'days'} to an accepted offer`,
+        count,
+        share,
+      ]
+        .filter(Boolean)
+        .join(' · ')
       const stroke = mine ? TL_INK : TL_MUTED
       const weight = mine ? 9 : 6
       const bold = mine ? ' font-weight="600"' : ''
+      const open = `<g class="bar-row" data-bar="${esc(g.key)}" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}"><rect x="0" y="${(top + i * rowH).toFixed(1)}" width="${W}" height="${rowH}" fill="transparent"/>`
       if (phone) {
         const nameY = top + i * rowH + 12
         const countY = nameY + 14
         const shareY = countY + 13
         const barY = (share ? shareY : countY) + 14
-        return `<text x="${plotL}" y="${nameY}"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
+        return `${open}<text x="${plotL}" y="${nameY}"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
     <text x="${plotL}" y="${countY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
     ${share ? `<text x="${plotL}" y="${shareY}" font-size="${subFs}" fill="${TL_MUTED}">${esc(share)}</text>` : ''}
     <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
-    <text x="${W - 6}" y="${barY + 4}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text>`
+    <text x="${W - 6}" y="${barY + 4}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text></g>`
       }
       const mid = top + i * rowH + rowH / 2
-      return `<text x="${gutter - 14}" y="${(mid - (share ? 10 : 3)).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
+      return `${open}<text x="${gutter - 14}" y="${(mid - (share ? 10 : 3)).toFixed(1)}" text-anchor="end"${bold} font-size="${fs}" fill="${TL_INK}">${esc(name)}</text>
     <text x="${gutter - 14}" y="${(mid + (share ? 6 : 13)).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(count)}</text>
     ${share ? `<text x="${gutter - 14}" y="${(mid + 20).toFixed(1)}" text-anchor="end" font-size="${subFs}" fill="${TL_MUTED}">${esc(share)}</text>` : ''}
     <line x1="${plotL}" y1="${mid.toFixed(1)}" x2="${Math.max(x(g.medianDays), plotL + 1).toFixed(1)}" y2="${mid.toFixed(1)}" stroke="${stroke}" stroke-width="${weight}" stroke-linecap="butt"/>
-    <text x="${(Math.max(x(g.medianDays), plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text>`
+    <text x="${(Math.max(x(g.medianDays), plotL + 1) + 10).toFixed(1)}" y="${(mid + 4).toFixed(1)}"${bold} font-size="${fs}" fill="${TL_INK}">${int(g.medianDays)} days</text></g>`
     })
     .join('\n    ')
 

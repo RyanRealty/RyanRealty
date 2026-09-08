@@ -294,7 +294,10 @@ describe('the three bars carry what each group realized', () => {
     expect(html).toContain('sold at 100.0% of the first ask, 214 sales')
     expect(html).toContain('sold at 94.3% of the first ask, 95 sales')
     // The group that never sold has no close to divide, so it carries none.
-    // Two groups × the wide layout and the phone layout.
-    expect((html.match(/of the first ask/g) ?? []).length).toBe(4)
+    // Two groups × the wide layout and the phone layout. Counted over what a
+    // reader SEES: the interactive layer repeats each row's reading in a
+    // data-read and an aria-label, and neither is ink.
+    const visible = html.replace(/\s(?:data-read|aria-label|title)="[^"]*"/g, '')
+    expect((visible.match(/of the first ask/g) ?? []).length).toBe(4)
   })
 })
