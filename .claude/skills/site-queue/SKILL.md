@@ -184,6 +184,36 @@ line keys, script-stat-source); the commit shape (`Node: <id>` trailer); and the
 push shape (`npm run gates:stamp`, then push its own branch, never `npm run push`
 from a worktree, memory `reference_npm_push_from_worktree_targets_main`).
 
+**A public-page lane runs the RUNTIME gates before it reports (2026-09-08).**
+`npm run ci:gates` is the static chain; six gates never run in it because they
+measure a REAL rendered page on a running server, and a lane that only runs the
+static chain reports all-green and fails CI after the push. On 2026-09-08 both
+lanes of one round did exactly that, on the same gate, in the same hour: SITE-12
+and SITE-08 each reported their local chain green (154/154 and all-pass) and both
+failed `lint-and-build` on `ci:tap-targets` — a 67x22.3 link and a 70.5x18.3
+disclosure toggle. Neither could have caught it locally, because until this entry
+there was no local way to run it.
+
+There is now. After the build, from the lane's own worktree:
+
+```bash
+npx next build && PORT=<free port> npm run ci:runtime-gates
+```
+
+`ci:runtime-gates` starts the production server once and runs the three gates CI
+runs against it — `ci:route-smoke`, `ci:page-payload`, `ci:tap-targets` — in the
+same order and with the same one-server shape as `.github/workflows/ci.yml`. It
+belongs in every lane brief that touches `app/**` or `components/site/**`, beside
+the static chain, and its output goes in the lane's report. `ci:a11y` and
+`ci:lighthouse` are in the same CI job but have never executed (noted in ci.yml
+since 2026-08-02), so they are not in this command; do not add them without
+first making them run.
+
+Never launder a runtime gate to get past it: `scripts/tap-targets-baseline.json`
+and the payload baseline are shrink-only and exist for pre-existing debt. A
+control under 44x44 gets a real hit area, or a full-size control doing the same
+job on the same page (WCAG 2.5.8).
+
 **The taste pass runs inside the lane, against the lane's own dev server, before
 the branch is pushed.** The 2026-09-08 forensic audit of the queue's first day
 counted 17 of 37 item commits (45.9%) as evaluator rework — SITE-09 was 4 of its
