@@ -10,6 +10,8 @@ import {
   predictedCloseFromAdjusted,
   priceCmaSet,
   reconcileAskAndComps,
+  roundPriceDown,
+  roundPriceUp,
   trimPpsfOutliers,
   usableSaleToAskRatio,
 } from '@/lib/pricing/estimate'
@@ -771,5 +773,93 @@ describe('D10 — what the cover calls the value is the printed evidence', () =>
     expect(priced.recommended).toBe(474_000)
     expect(priced.highEnd).toBe(505_000)
     expect(priced.rangeRule?.saleToAskRatio).toBe(0.95)
+  })
+})
+
+describe('the range is rounded once, at the pricing unit', () => {
+  const priced = (adjustedPrice: number) => ({
+    ppsfTimeAdjusted: adjustedPrice / 3000,
+    adjustedPrice,
+    weight: 1,
+  })
+  const base = {
+    method1Low: 0, method1Mid: 1_500_000, method1High: 0, method2: null, method3: 1_500_000,
+    convergenceSpreadPct: null, converged: true, conservative: 0, recommended: 0, highEnd: 0,
+    valueLow: 0, valueHigh: 0, confidence: 'High' as const, confidenceReason: '', needsReview: false,
+    reviewReason: null, compPpsfCv: 0, priceOverride: null, improvementsValueAdd: null, notes: [],
+  }
+
+  it('rounds to the nearest $1,000 below $1M, low down and high up', () => {
+    expect(roundPriceDown(474_500)).toBe(474_000)
+    expect(roundPriceUp(474_500)).toBe(475_000)
+    expect(roundPriceDown(999_999)).toBe(999_000)
+    expect(roundPriceUp(999_999)).toBe(1_000_000)
+  })
+
+  it('rounds to the nearest $5,000 at and above $1M, low down and high up', () => {
+    expect(roundPriceDown(1_264_174)).toBe(1_260_000)
+    expect(roundPriceUp(1_264_174)).toBe(1_265_000)
+    expect(roundPriceDown(1_748_776)).toBe(1_745_000)
+    expect(roundPriceUp(1_748_776)).toBe(1_750_000)
+    expect(roundPriceDown(1_000_000)).toBe(1_000_000)
+    expect(roundPriceUp(1_000_000)).toBe(1_000_000)
+  })
+
+  it('carries the rounded figures into rangeRule and its sentence', () => {
+    // cma-65365-concorde printed "worth $1,264,174 to $1,748,776".
+    const engine = listPriceFromEngine({
+      subjectSqft: 3000,
+      lastAsk: null,
+      adjusted: [1_100_000, 1_264_174, 1_400_000, 1_600_000, 1_748_776, 1_900_000].map(priced),
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 1,
+      qualitySet: false,
+    })
+    expect(engine.rangeRule?.adjustedLow).toBe(1_260_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(1_750_000)
+    expect(engine.rangeRule?.sentence).toContain('$1,260,000 to $1,750,000')
+    expect(engine.rangeRule?.sentence).not.toContain('1,264,174')
+    expect(engine.rangeRule?.sentence).not.toContain('1,748,776')
+  })
+
+  it('gives the cover a rounded value range, and keeps the recommendation inside it', () => {
+    const engine = listPriceFromEngine({
+      subjectSqft: 3000,
+      lastAsk: null,
+      adjusted: [1_100_000, 1_264_174, 1_400_000, 1_600_000, 1_748_776, 1_900_000].map(priced),
+      saleToAskRatios: [],
+      asOfSaleToOriginal: 1,
+      qualitySet: false,
+    })
+    const out = applyEngineRecommendedList(base, engine)
+    expect(out.valueLow).toBe(1_260_000)
+    expect(out.valueHigh).toBe(1_750_000)
+    expect(out.conservative).toBeLessThanOrEqual(out.recommended)
+    expect(out.recommended).toBeLessThanOrEqual(out.highEnd)
+  })
+
+  it('rounds the value range on the ask path too, and the recommendation stays within it', () => {
+    const engine = {
+      recommendedList: 1_264_174,
+      predictedClose: 1_264_174,
+      conservativeList: 1_264_174,
+      highEndList: 1_748_776,
+      source: 'ask' as const,
+      rangeRule: null,
+    }
+    const out = applyEngineRecommendedList(base, engine, { lastAsk: 1_300_000 })
+    expect(out.valueLow).toBe(1_260_000)
+    expect(out.valueHigh).toBe(1_750_000)
+    expect(out.recommended).toBeGreaterThanOrEqual(out.valueLow)
+    expect(out.recommended).toBeLessThanOrEqual(out.valueHigh)
+  })
+
+  it('rounds the fallback value range when the engine has no list at all', () => {
+    const out = applyEngineRecommendedList(
+      { ...base, conservative: 806_123, recommended: 840_500, highEnd: 874_901, valueLow: 806_123, valueHigh: 874_901 },
+      { recommendedList: null, predictedClose: null, conservativeList: null, highEndList: null, source: 'comps' },
+    )
+    expect(out.valueLow).toBe(806_000)
+    expect(out.valueHigh).toBe(875_000)
   })
 })

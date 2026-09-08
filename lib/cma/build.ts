@@ -448,14 +448,30 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // from the sale's own facts (never the review's own words, which are not
       // word-sanitized).
       if (p) {
+        // `kept` is the set the grid prints, so a sale can never appear in both
+        // places. It is NOT the review's keep list: when the review would drop
+        // below the comp floor, or the broker curated the set, nothing is
+        // actually dropped and the review's exclusions are printed sales
+        // (cma-65365-concorde, 2026-09-07: five of six).
         p.rejected = buildRejectedSales({
           candidates: selection.comps,
-          excludedKeys: excludedForAudit().map((e) => e.listingKey),
+          excluded: excludedForAudit(),
+          kept: set.map((c) => ({
+            listingKey: c.listingKey,
+            address: c.address,
+            sqft: c.sqft,
+            yearBuilt: c.yearBuilt,
+            closeDate: c.closeDate,
+            closePrice: c.closePrice,
+          })),
           outliers: selection.excludedOutliers,
           subject: {
             sqft: subject.sqft,
             yearBuilt: subject.yearBuilt,
+            baths: subject.baths,
             propertySubType: subject.propertySubType,
+            latitude: subject.latitude,
+            longitude: subject.longitude,
           },
         })
       }
