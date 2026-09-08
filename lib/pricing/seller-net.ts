@@ -200,13 +200,20 @@ export function buildSellerNet(args: { list: number; summary: ConcessionSummary 
   // stops a pathological set from netting below zero.
   const net = Math.min(Math.round(list), Math.max(0, Math.round(list) - Math.round(costs)))
 
-  const head = `From a ${usd(list)} list`
+  const article = /^8/.test(String(Math.round(list))) ? 'an' : 'a'
+  const head = `From ${article} ${usd(list)} list`
+  // The line above carries the median across every sale that reported the
+  // field, zeros included. When fewer than half gave one that median is $0,
+  // which is not the same fact as "none gave one", so the sentence says
+  // which it is (round-four class E: the sentence contradicted its own line).
   const middle =
     expected == null
       ? `, ${usd(net)} remains.`
       : expected > 0
         ? `, less ${usd(expected)} in seller concessions, ${usd(net)} remains.`
-        : `, and none of the ${summary.knownCount} comparable sales that reported the field gave a seller concession, ${usd(net)} remains.`
+        : summary.givenCount > 0
+          ? `, and with ${summary.givenCount} of the ${summary.knownCount} comparable sales giving a seller concession the median across all ${summary.knownCount} is $0, ${usd(net)} remains.`
+          : `, and none of the ${summary.knownCount} comparable sales that reported the field gave a seller concession, ${usd(net)} remains.`
   const tail = ` This figure does not include ${joinWords(unknowns)}.`
 
   return {
