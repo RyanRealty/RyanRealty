@@ -334,6 +334,7 @@ export function cmaSectionStyles(): string {
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* Chapter 3's lead line, under the number that is the chapter title. */
   .worth-lead { font-size: 13.5px; line-height: 1.5; margin: 0 0 12px; }
+  .worth-lead-note { font-size: 13px; line-height: 1.5; margin: 0 0 12px; border-left: 2px solid var(--navy); padding-left: 9px; }
   /* The seller's own listed price and size, under "Your home" in the head. */
   table.comp-matrix .matrix-sub {
     display: block;

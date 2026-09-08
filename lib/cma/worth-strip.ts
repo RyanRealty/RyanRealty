@@ -269,7 +269,9 @@ export function worthStripSvg(
   const askY = askDrops ? markY + fs + 4 : markY
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Where the sales put this home, and where we would list it" class="trend-svg worth-strip">
-    <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">Sale price today, ${int(g.sales.length)} sales</text>
+    <text x="${left}" y="14" font-size="${fs}" fill="${MUTED}">Sale price today, ${int(
+      g.sales.filter((s) => s.setAside !== true).length,
+    )} sales</text>
     <rect x="${x(g.low).toFixed(1)}" y="${zoneTop.toFixed(1)}" width="${Math.max(x(g.high) - x(g.low), 2).toFixed(1)}" height="${(zoneBottom - zoneTop).toFixed(1)}" fill="${ZONE}" stroke="${INK}" stroke-opacity="0.45" stroke-width="1"/>
     <line x1="${left}" y1="${zoneBottom.toFixed(1)}" x2="${right}" y2="${zoneBottom.toFixed(1)}" stroke="${EDGE}" stroke-width="0.75"/>
     ${

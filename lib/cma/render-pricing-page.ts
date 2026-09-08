@@ -21,6 +21,7 @@ import {
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { worthStripHtml } from '@/lib/cma/worth-strip'
+import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -118,29 +119,6 @@ function listRangeSentence(pricing: CmaPricing): string {
 }
 
 /**
- * WHICH SALES THE RANGE WAS NOT THE SPREAD OF, by their index in the grid.
- *
- * `pricing.rangeRule.rule` is the pricing unit's own record of what it did:
- * `trimmed-one-each-end` means the highest and the lowest adjusted sale were
- * set aside, which is the sentence it prints in the method block. Nothing is
- * decided here — the rule is read, and the two extremes it names are found in
- * the sales the grid already prints.
- */
-function setAsideKeys(pricing: CmaPricing, comps: readonly CmaAdjustedComp[]): Set<number> {
-  const out = new Set<number>()
-  const rule = (pricing as unknown as { rangeRule?: { rule?: unknown } | null }).rangeRule
-  if (!rule || typeof rule !== 'object' || rule.rule !== 'trimmed-one-each-end') return out
-  const ranked = comps
-    .map((c, i) => ({ i, v: c.adjustedPrice }))
-    .filter((r) => r.v != null && Number.isFinite(r.v) && r.v > 0)
-    .sort((a, b) => a.v - b.v)
-  if (ranked.length < 4) return out
-  out.add(ranked[0]!.i)
-  out.add(ranked[ranked.length - 1]!.i)
-  return out
-}
-
-/**
  * The map legend, written here rather than taken from `describeCompSearch`.
  *
  * `lib/pricing/search-story.ts` writes "The pins are the sales we kept", and
@@ -166,15 +144,28 @@ function mapLegend(subdivision: string | null | undefined): string {
 function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): string {
   const adj = adjustedCloseRange(input.comps)
   if (!adj || !adj.adjustments || !(input.pricing.recommended > 0)) return ''
-  const n = input.comps.length
+  // ONE n FOR THIS CHAPTER. The strip's caption, this lead and the range
+  // sentence lib/pricing writes were 7, 7 and 5 on 19968 and 4, 6 and 4 on
+  // Concorde — three counts of one set inside one chapter (tasteReview round
+  // three, §2 item 2). The number that means something is the count of sales
+  // the price is over; the rest are shown, and said to be set aside.
+  const n = keptCompCount(input.pricing, input.comps)
+  const aside = input.comps.length - n
   // NO SECOND RANGE HERE. This line used to print the span of every adjusted
   // sale to the dollar — the UNTRIMMED pair on a document whose cover, method
   // sentence and strip were all printing the trimmed one (tasteReview round
   // two, §3.F). The trimmed pair is the answer and it is stated once, in the
   // lead above; the untrimmed span belongs to the method sentence lib/pricing
   // writes, which says in its own words which sales it set aside.
+  const asideWord = countWord(aside)
+  const shown =
+    aside > 0
+      ? ` ${asideWord.charAt(0).toUpperCase()}${asideWord.slice(1)} more ${
+          aside === 1 ? 'is' : 'are'
+        } shown below and set aside.`
+      : ''
   return `<p class="chart-read">${esc(
-    `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number, each moved for ${adj.adjustments}.`,
+    `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number, each moved for ${adj.adjustments}.${shown}`,
   )}</p>`
 }
 
@@ -221,6 +212,53 @@ function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }):
   )}</p>`
 }
 
+/**
+ * The weight index, with every set-aside sale removed.
+ *
+ * A sale the document says was set aside may not carry a share of the answer
+ * in the row under it: on Concorde the two "set aside" sales carried 38.4
+ * percent of the weight (tasteReview round three, §3). The pricing side is
+ * dropping them from `reconciliation.weights`; this holds the same line in the
+ * renderer, so the grid cannot print a weight the prose has disowned whichever
+ * row it is given.
+ */
+function weightsWithoutSetAside(
+  pricing: CmaPricing,
+  comps: readonly CmaAdjustedComp[],
+  aside: ReadonlySet<number>,
+): ReadonlyMap<string, { weight: number | null; grossAdjustmentPct: number | null }> {
+  const map = new Map(compWeightIndex(pricing))
+  for (const i of aside) {
+    const k = comps[i]?.listingKey
+    if (k) map.delete(k)
+  }
+  return map
+}
+
+/**
+ * The set-aside sales, as their own short list with the reason.
+ *
+ * "Set aside" appeared only as a hollow dot on the strip and a clause inside a
+ * method sentence, and the same sales then read as ordinary evidence in the
+ * grid. Named here, under the grid, beside "Considered and not used" — which
+ * is the other list of sales this chapter shows and does not price off.
+ */
+function renderSetAsideHtml(pricing: CmaPricing, comps: readonly CmaAdjustedComp[]): string {
+  const rows = setAsideRows(pricing, comps)
+  if (rows.length === 0) return ''
+  const items = rows
+    .map(
+      (r) =>
+        `<li><span class="rj-addr">${esc(r.address)}</span><span class="rj-why">${esc(r.reason)}</span></li>`,
+    )
+    .join('')
+  return `<h4 class="sale-paths-h">Set aside</h4>
+  <p class="small">${esc(
+    `${rows.length === 1 ? 'This sale is' : `These ${rows.length} sales are`} shown above and did not set the number.`,
+  )}</p>
+  <ul class="rejected-list">${items}</ul>`
+}
+
 export function pricingPage(input: {
   subject: CmaSubject
   comps: CmaAdjustedComp[]
@@ -244,11 +282,19 @@ export function pricingPage(input: {
     input.mapOverlay ?? null,
   )
   const heading = whatItsWorthHeading(p)
+  // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
+  // printed price is not the one the method above it produces — Concorde
+  // stated a method yielding $1,973,000 and printed $1,473,000 with nothing
+  // between them (tasteReview round three, §2 item 1). lib/pricing writes the
+  // sentence; it prints where the reader meets the number, and nowhere else.
+  const clamp = clampSentence(p)
+  const clampHtml = clamp ? `<p class="worth-lead-note">${esc(clamp)}</p>` : ''
   const lead = input.omitLeadPrices
     ? ''
     : `
   <h2 class="section is-answer">${esc(heading)}</h2>
-  <p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>`
+  <p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>
+  ${clampHtml}`
   // The method comes BEFORE the evidence for it (Delta 1): which sales, how
   // each was adjusted, and how the range and the recommended list follow.
   // Every one of those sentences is written by lib/pricing and stored on the
@@ -257,7 +303,7 @@ export function pricingPage(input: {
   // The chapter's own conclusion, drawn, BEFORE the method that reached it and
   // the grid that proves it (tasteReview item 2). One glance lands where five
   // real sales put this house and where we would list it.
-  const aside = setAsideKeys(p, input.comps)
+  const aside = setAsideCompIndexes(p, input.comps)
   const strip = worthStripHtml({
     sales: input.comps.map((c, i) => ({
       n: i + 1,
@@ -283,7 +329,8 @@ export function pricingPage(input: {
     toc: heading,
     body: `
   ${lead}
-  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>` : ''}
+  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p))}</p>
+  ${clampHtml}` : ''}
   ${strip}
   ${method}
   ${renderCompMatrixHtml(
@@ -291,9 +338,10 @@ export function pricingPage(input: {
     input.comps,
     tableLead({ comps: input.comps, pricing: p }),
     input.docLinks,
-    compWeightIndex(p),
+    weightsWithoutSetAside(p, input.comps, aside),
   )}
   ${concessionsCaption(input.comps)}
+  ${renderSetAsideHtml(p, input.comps)}
   ${renderReconciliationHtml(p)}
   ${perSquareFootLine({ subject: s, pricing: p })}
   ${renderRejectedSalesHtml(p, input.comps)}

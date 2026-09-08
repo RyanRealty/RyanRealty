@@ -341,6 +341,8 @@ table.comp-matrix .matrix-addr{display:block}
 .pin-map{max-height:60vh;object-fit:cover}
 /* Chapter 3's lead line, under the number that is the chapter title. */
 .worth-lead{font-size:clamp(16px,2vw,19px);opacity:.85;max-width:640px;margin-bottom:26px}
+.worth-lead+.worth-lead-note{margin-top:-18px}
+.worth-lead-note{font-size:clamp(15px,1.8vw,17px);max-width:640px;margin:0 0 26px;border-left:2px solid var(--navy);padding-left:12px}
 table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */
