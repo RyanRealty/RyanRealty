@@ -13,6 +13,7 @@ import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { UNADDRESSED_DOC_LINKS, cleanText, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
+  readOfferTiming,
   renderAskOutcomeHtml,
   renderInventoryBoardHtml,
   renderDaysToOfferHtml,
@@ -189,7 +190,12 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
   const reading = listingTimelineReading({
     timeline,
     city: a.subject.city,
-    marketMedianDom: a.market?.medianDom ?? null,
+    // The SAME median chapter 2 draws, when the row carries it. Two figures
+    // for "days to an accepted offer in Redmond" — 21 off `market_stats_cache`
+    // and 26 off the 12-month single-family read — printed one screen apart is
+    // a §0 failure whichever is right, and only the offer-timing block ships
+    // with a source trace beside it.
+    marketMedianDom: readOfferTiming(a.market)?.medianDays ?? a.market?.medianDom ?? null,
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}

@@ -160,7 +160,7 @@ describe('listingTimelineReading', () => {
 
   it('measures the final ask against the top of the range', () => {
     expect(listingTimelineReading({ timeline: base, city: 'Redmond', marketMedianDom: 21 })).toBe(
-      'The asking price was 15.6 percent above the top of the range homes like yours sold in. It sat 187 days. The Redmond median is 21.',
+      'The asking price was 15.6 percent above the top of the range homes like yours sold in. It sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
     )
   })
 
@@ -180,7 +180,7 @@ describe('listingTimelineReading', () => {
       marketMedianDom: null,
     })
     expect(reading).toContain('sat inside the range homes like yours sold in')
-    expect(reading).not.toContain('median is')
+    expect(reading).not.toContain('accepted offer in')
   })
 })
 

@@ -537,13 +537,37 @@ export function readAskOutcome(market: CmaMarketContext | null | undefined): Ask
       const n = num(r.n)
       const medianDays = num(r.medianDays)
       if (!key || n == null || medianDays == null) return null
-      const group: AskOutcomeGroup = { key, n, medianDays, medianCutPct: num(r.medianCutPct) }
+      const group: AskOutcomeGroup = {
+        key,
+        n,
+        medianDays,
+        medianCutPct: num(r.medianCutPct),
+        medianSoldToOriginalAskPct: num(r.medianSoldToOriginalAskPct),
+        soldToOriginalAskN: num(r.soldToOriginalAskN),
+      }
       return group
     })
     .filter((g): g is AskOutcomeGroup => g != null)
   // One thin group makes the comparison a lie, so the whole graphic goes.
   if (groups.length < 2 || groups.some((g) => g.n < CHAPTER2_MIN_N)) return null
   return { city, windowMonths: num(o.windowMonths) ?? 12, groups }
+}
+
+/**
+ * What the build says about a figure it did not publish.
+ *
+ * The blueprint's rule for chapter 2 is that a figure under the minimum count
+ * is "omitted and the chapter says the count was too small". The build already
+ * writes that sentence — `reason` on the block is a MEASURED outcome ("14 sales
+ * in Sisters in the last 12 months carried a days-to-offer value. That is under
+ * the 30 needed to publish a timing curve"), not a narration of which query
+ * missed. So it is printed as written when the block exists and carries one,
+ * and nothing is said when the row predates the contract entirely.
+ */
+export function statWithheldReason(block: unknown): string | null {
+  if (!block || typeof block !== 'object') return null
+  const reason = (block as { reason?: unknown }).reason
+  return typeof reason === 'string' && reason.trim() ? reason.trim() : null
 }
 
 /** The §0 trace, at seller grain: what was counted, where, over how long. */
@@ -558,18 +582,33 @@ export function renderOfferTimingHtml(a: {
   market: CmaMarketContext | null
   subject: CmaSubject
 }): string {
+  const raw = (a.market as unknown as { offerTiming?: unknown } | null)?.offerTiming
   const timing = readOfferTiming(a.market)
-  if (!timing) return ''
+  if (!timing) {
+    const withheld = statWithheldReason(raw)
+    return withheld
+      ? `<h3 class="subhead">When homes like yours get their offer</h3>
+  <p class="chart-read">${esc(withheld)}</p>`
+      : ''
+  }
   const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
   const wide = offerTimingCurveSvg(timing, subjectDays)
   if (!wide) return ''
   const phone = offerTimingCurvePhoneSvg(timing, subjectDays)
-  const nineInTen = timing.points.find((p) => p.pct >= 90)
+  // The figures the curve DRAWS, to one decimal, in the order it draws them.
+  // "Nine in ten inside 180" was a fraction fitted to a 95.6 percent point,
+  // and the blueprint's own note on this curve is that its last point is not
+  // 100 — so the sentence states the shares, not a rounded fraction of them.
+  const ninety = timing.points.find((p) => p.days === 90) ?? null
+  const last = timing.points[timing.points.length - 1] ?? null
   const reading = [
     timing.medianDays != null && timing.medianDays > 0
       ? `Half of the homes that sold in ${timing.city} had an offer inside ${int(timing.medianDays)} days.`
       : null,
-    nineInTen ? `Nine in ten inside ${int(nineInTen.days)}.` : null,
+    ninety ? `${ninety.pct.toFixed(1)} percent had one inside 90 days.` : null,
+    last && (!ninety || last.days !== ninety.days)
+      ? `By day ${int(last.days)}, ${last.pct.toFixed(1)} percent did.`
+      : null,
     subjectDays != null && subjectDays > 0 ? `Yours went ${int(subjectDays)} days without one.` : null,
   ]
     .filter(Boolean)
@@ -586,8 +625,15 @@ export function renderAskOutcomeHtml(a: {
   market: CmaMarketContext | null
   subject: CmaSubject
 }): string {
+  const raw = (a.market as unknown as { askOutcome?: unknown } | null)?.askOutcome
   const outcome = readAskOutcome(a.market)
-  if (!outcome) return ''
+  if (!outcome) {
+    const withheld = statWithheldReason(raw)
+    return withheld
+      ? `<h3 class="subhead">The first price decides the days</h3>
+  <p class="chart-read">${esc(withheld)}</p>`
+      : ''
+  }
   const mine: AskOutcomeGroup['key'] | null = subjectListingFailed(a.subject) ? 'did-not-sell' : null
   const wide = askOutcomeBarsSvg(outcome, mine)
   if (!wide) return ''
@@ -613,7 +659,31 @@ export function renderAskOutcomeHtml(a: {
   <div class="szn outcome-wide">${wide}</div>
   ${phone ? `<div class="szn outcome-phone">${phone}</div>` : ''}
   ${reading ? `<p class="chart-read">${esc(reading)}</p>` : ''}
-  <p class="small">${esc(chapter2SourceLine(outcome.city, outcome.windowMonths, null))}</p>`
+  <p class="small">${esc(askOutcomeSourceLine(outcome))}</p>`
+}
+
+/**
+ * The §0 trace for the three-group bars.
+ *
+ * It cannot reuse `chapter2SourceLine`: two of these groups are closed sales
+ * and the third is listings that came off without one, so a single "N closed
+ * sales" figure over the total would be false. The counts are named for what
+ * each of them is.
+ */
+function askOutcomeSourceLine(outcome: AskOutcome): string {
+  const period =
+    outcome.windowMonths === 12 ? 'the last 12 months' : `the last ${int(outcome.windowMonths)} months`
+  const sold = outcome.groups
+    .filter((g) => g.key !== 'did-not-sell')
+    .reduce((sum, g) => sum + g.n, 0)
+  const failed = outcome.groups.find((g) => g.key === 'did-not-sell')?.n ?? 0
+  const counts = [
+    sold > 0 ? `${int(sold)} single-family ${sold === 1 ? 'sale' : 'sales'}` : null,
+    failed > 0 ? `${int(failed)} that came off without one` : null,
+  ]
+    .filter(Boolean)
+    .join(' and ')
+  return `${counts ? `${counts}. ` : ''}${outcome.city} over ${period}, from the Oregon Data Share MLS.`
 }
 
 /**

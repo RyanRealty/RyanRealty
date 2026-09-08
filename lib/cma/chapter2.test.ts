@@ -104,9 +104,11 @@ describe('2a — when homes like yours get their offer', () => {
     const html = renderOfferTimingHtml({ market: market({ offerTiming }), subject })
     expect(html).toContain('When homes like yours get their offer')
     expect(html).toContain('yours, 187 days')
-    expect(html).toContain('99% by day 180')
+    expect(html).toContain('99.0% by day 180')
+    // The shares the curve DRAWS, in the order it draws them — never a rounded
+    // fraction fitted to a point ("nine in ten inside 60" over a 90.0 pct).
     expect(html).toContain(
-      'Half of the homes that sold in Redmond had an offer inside 12 days. Nine in ten inside 60. Yours went 187 days without one.',
+      'Half of the homes that sold in Redmond had an offer inside 12 days. 95.0 percent had one inside 90 days. By day 180, 99.0 percent did. Yours went 187 days without one.',
     )
     // Every figure traces to a named source, at seller grain (CLAUDE.md §0).
     expect(html).toContain('188 closed sales. Single-family sales in Redmond over the last 12 months')
@@ -114,6 +116,27 @@ describe('2a — when homes like yours get their offer', () => {
 
   it('omits itself when the contract is absent', () => {
     expect(renderOfferTimingHtml({ market: market({}), subject })).toBe('')
+  })
+
+  it('states the build\'s own reason when the count was too small to publish', () => {
+    // The blueprint: under the minimum the graphic is omitted "and the chapter
+    // says the count was too small". lib/pricing writes that sentence at build
+    // as a measured outcome; the renderer prints it as written.
+    const html = renderOfferTimingHtml({
+      market: market({
+        offerTiming: {
+          ...offerTiming,
+          n: 14,
+          points: null,
+          medianDays: null,
+          reason:
+            '14 sales in Sisters in the last 12 months carried a days-to-offer value. That is under the 30 needed to publish a timing curve.',
+        },
+      }),
+      subject,
+    })
+    expect(html).toContain('That is under the 30 needed to publish a timing curve.')
+    expect(html).not.toContain('<svg')
   })
 
   it('fits a phone with nothing outside the viewBox', () => {

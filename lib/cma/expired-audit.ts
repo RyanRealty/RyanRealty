@@ -814,6 +814,12 @@ function offMarketFromDays(listDate: string, days: number | null): string | null
 export function listingTimelineReading(input: {
   timeline: ListingTimelineInput
   city: string
+  /**
+   * The city's median days to an ACCEPTED OFFER. Chapter 2 draws the same
+   * figure from `market.offerTiming.medianDays`, so the caller passes that one
+   * when the row carries it: two different medians for the same thing, one
+   * screen apart, is a §0 reconciliation failure whichever is right.
+   */
   marketMedianDom: number | null
 }): string {
   const t = input.timeline
@@ -837,7 +843,12 @@ export function listingTimelineReading(input: {
   if (t.days != null && t.days > 0) bits.push(`It sat ${Math.round(t.days).toLocaleString('en-US')} days.`)
   const place = input.city.trim()
   if (input.marketMedianDom != null && input.marketMedianDom > 0 && place) {
-    bits.push(`The ${place} median is ${Math.round(input.marketMedianDom)}.`)
+    // Name the measure. "The Redmond median is 26" leaves a reader to guess
+    // whether that is days to an offer, days to close, or something else —
+    // and the next chapter draws the same figure under its full name.
+    bits.push(
+      `The median home in ${place} has an accepted offer in ${Math.round(input.marketMedianDom)} days.`,
+    )
   }
   return bits.join(' ')
 }

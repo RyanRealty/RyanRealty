@@ -591,6 +591,13 @@ export type AskOutcomeGroup = {
   n: number
   medianDays: number
   medianCutPct?: number | null
+  /**
+   * Median close as a share of the ORIGINAL ask, for the sold groups. Null on
+   * the group that never sold — there is no close to divide.
+   */
+  medianSoldToOriginalAskPct?: number | null
+  /** How many rows that share was measured over. Printed beside it. */
+  soldToOriginalAskN?: number | null
 }
 export type AskOutcome = {
   city: string
@@ -653,7 +660,9 @@ export function offerTimingCurveSvg(
   // curve. Anywhere above or right of it collides with the seller's own mark,
   // which lands beside the last point whenever they sat past six months.
   const last = points[points.length - 1]!
-  const endLabel = `${Math.round(last.pct)}% by day ${last.days}`
+  // One decimal, because the sentence under the curve states the same figure
+  // and 95.6 rounded to 96 makes the two disagree on the page.
+  const endLabel = `${last.pct.toFixed(1)}% by day ${last.days}`
   const endFit = { x: (x(last.days) - 8).toFixed(1), anchor: 'end' as const }
 
   const median = timing.medianDays
