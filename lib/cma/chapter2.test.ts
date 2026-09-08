@@ -212,9 +212,16 @@ describe('2b — what the first asking price realized', () => {
     expect(html).toContain('100.0%')
     expect(html).toContain('92.1%')
     expect(html).toContain('260')
-    // A table, not a chart: five named rows carrying two units each.
+    // A table, and every row carries a mark. The evaluator read five rows of
+    // bare figures as "a table wearing hairlines" and could not see that the
+    // series steps back up; the dot column shows the shape, the figure stays
+    // printed beside it, and the header names the scale the dots sit on.
     expect(html).toContain('table class="kv realization"')
-    expect(html).not.toContain('<svg')
+    expect(html).toContain('91% to 100%')
+    expect(html.match(/class="rz-svg"/g) ?? []).toHaveLength(5)
+    expect(html).toContain(
+      'The fall is not steady: the 5 to 8 week row closed at 97.2 percent, above the 97.0 percent of the row before it.',
+    )
   })
 
   it('marks the row the seller\'s own days land in, without claiming they got an offer', () => {

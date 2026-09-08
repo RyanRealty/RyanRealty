@@ -350,9 +350,16 @@ ul.rejected-list .rj-why{opacity:.7}
 .comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600}
 /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
 table.realization{width:100%;table-layout:fixed;border-collapse:collapse;margin:16px 0 8px;font-size:15px}
-table.realization col.rz-weeks{width:46%}
-table.realization col.rz-n{width:14%}
-table.realization col.rz-share{width:40%}
+table.realization col.rz-weeks{width:38%}
+table.realization col.rz-n{width:12%}
+table.realization col.rz-mark{width:30%}
+table.realization col.rz-share{width:20%}
+/* The mark column carries the encoding, so the share reads as a shape before
+   it reads as five numbers. The dot column has no type in it: the header names
+   the scale once. */
+table.realization .rz-mark{text-align:left;padding-right:14px}
+table.realization thead th.rz-mark{white-space:normal}
+.rz-svg{width:100%;height:14px;display:block;overflow:visible}
 table.realization th,table.realization td{padding:12px 10px;border-bottom:1px solid var(--ink12);text-align:left}
 table.realization thead th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.6}
 table.realization td.n,table.realization th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}

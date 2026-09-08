@@ -493,7 +493,11 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // row every column leaves empty is dropped rather than printed as dashes.
     expect(html).toContain('Net adjustment')
     expect(html).toContain('Every adjustment added up')
-    expect(html).toMatch(/Sale price today is the sale price plus every adjustment above it/i)
+    expect(html).toContain('Sale price today')
+    // The legend says what the labels cannot: which way a minus points. It no
+    // longer restates the arithmetic the rows spell out in order.
+    expect(html).toContain('A minus figure means that sale had something yours does not.')
+    expect(html).not.toMatch(/Sale price today is the sale price plus every adjustment above it/i)
   })
 })
 

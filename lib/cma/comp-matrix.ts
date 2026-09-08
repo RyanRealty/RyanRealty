@@ -568,9 +568,17 @@ function subjectStackCard(subject: CmaSubject): string {
   }</div>${facts ? `<div class="comp-stack-facts">${esc(facts)}</div>` : ''}</article>`
 }
 
-/** The one line that says what "Sale price today" is. */
+/**
+ * The one line the grid cannot say in its row labels: what the SIGN means.
+ *
+ * It used to open "Sale price today is the sale price plus every adjustment
+ * above it", which is the arithmetic the rows already spell out in order —
+ * a sentence whose job was to explain the sentence before it (VOICE.md, and
+ * the taste review's Words list). What a reader cannot work out from the
+ * labels is which way a minus points, so that is all this says.
+ */
 const SALE_PRICE_TODAY_LEGEND =
-  'Sale price today is the sale price plus every adjustment above it. A minus figure means that sale had something yours does not. A plus means yours has it.'
+  'A minus figure means that sale had something yours does not. A plus means yours has it.'
 
 export function renderCompMatrixHtml(
   subject: CmaSubject,

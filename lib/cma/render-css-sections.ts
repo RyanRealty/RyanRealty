@@ -373,9 +373,14 @@ export function cmaSectionStyles(): string {
   .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; }
   /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
   table.realization { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
-  table.realization col.rz-weeks { width: 46%; }
-  table.realization col.rz-n { width: 14%; }
-  table.realization col.rz-share { width: 40%; }
+  table.realization col.rz-weeks { width: 38%; }
+  table.realization col.rz-n { width: 12%; }
+  table.realization col.rz-mark { width: 30%; }
+  table.realization col.rz-share { width: 20%; }
+  /* The mark column carries the encoding; the header names the scale once. */
+  table.realization .rz-mark { text-align: left; padding-right: 10px; }
+  table.realization thead th.rz-mark { white-space: normal; }
+  .rz-svg { width: 100%; height: 12px; display: block; overflow: visible; }
   table.realization th, table.realization td { padding: 6px 8px; border-bottom: 1px solid var(--navy-line); text-align: left; }
   table.realization thead th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
   table.realization td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }

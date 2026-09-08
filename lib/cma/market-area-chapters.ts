@@ -219,8 +219,13 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
       )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
     )
   } else if (mos != null && verdict) {
+    // The degraded branch, when the active count or the pace is missing. It
+    // still may not print the trade term: "months of supply" as a bare label
+    // is the jargon the taste review named.
     sentences.push(
-      `${place} carries ${formatMonthsOfSupply(mos)} months of supply, which is ${verdict.label.toLowerCase()} territory.`,
+      `At the pace homes are selling in ${place} it would take ${formatMonthsOfSupply(
+        mos,
+      )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
     )
   }
   // NO THIRD SOLD-TO-FIRST-ASK FIGURE. `saleToListRatio` is the pace read's
@@ -237,7 +242,11 @@ export function renderInventoryBoardHtml(market: CmaMarketContext | null | undef
   const offerMedian = readOfferTiming(market)?.medianDays ?? market.medianDom
   if (offerMedian != null && offerMedian > 0) {
     sentences.push(
-      `Half of them had an accepted offer inside ${int(offerMedian)} days; the other half waited longer.`,
+      // "Half of them" sat after a sentence whose subject is the homes FOR
+      // SALE; this median is over the homes that sold.
+      `Half of the homes that sold had an accepted offer inside ${int(
+        offerMedian,
+      )} days; the other half waited longer.`,
     )
   }
   if (chart) {
@@ -875,6 +884,7 @@ export function renderAskRealizationHtml(a: {
   const subjectDays = subjectDomDays(a.subject)
   const failed = subjectListingFailed(a.subject)
   const mine = subjectRealizationBucket(table.buckets, subjectDays)
+  const scale = realizationScale(table.buckets)
   const rows = table.buckets
     .map((b) => {
       const isMine = mine != null && b.weeks === mine
@@ -893,6 +903,7 @@ export function renderAskRealizationHtml(a: {
           : ''
       }</th>
       <td class="n">${int(b.n)}</td>
+      <td class="rz-mark">${realizationMark(b.medianPctOfOriginalAsk, scale, isMine)}</td>
       <td class="n">${esc(value)}</td>
     </tr>`
     })
@@ -901,8 +912,10 @@ export function renderAskRealizationHtml(a: {
     table.windowMonths === 12 ? 'the last 12 months' : `the last ${int(table.windowMonths)} months`
   return `<h3 class="subhead">What the first asking price actually realized</h3>
   <table class="kv realization">
-    <colgroup><col class="rz-weeks"/><col class="rz-n"/><col class="rz-share"/></colgroup>
-    <thead><tr><th>Weeks to an offer</th><th class="n">Sales</th><th class="n">Share of the first ask</th></tr></thead>
+    <colgroup><col class="rz-weeks"/><col class="rz-n"/><col class="rz-mark"/><col class="rz-share"/></colgroup>
+    <thead><tr><th>Weeks to an offer</th><th class="n">Sales</th><th class="rz-mark">${esc(
+      `${scale.lo}% to ${scale.hi}%`,
+    )}</th><th class="n">Share of the first ask</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   ${realizationReading(table, mine, subjectDays, failed)}
@@ -913,6 +926,47 @@ export function renderAskRealizationHtml(a: {
           `Single-family sales in ${table.city} over ${period}, from the Oregon Data Share MLS. Each row is the median close over the price that listing first asked, across the sales in that row.`,
         )}</p>`
   }`
+}
+
+/**
+ * The one scale every row's mark is drawn on.
+ *
+ * Cropped to the data at the bottom and anchored at the top on the whole first
+ * ask, which is the only number in this table that means something on its own.
+ * A share of the ask does not grow from zero, so a bar from zero would draw
+ * five rows that all look the same (dataviz anti-patterns: "lollipops from
+ * zero for a tight range"); the shape only appears when the axis is the range
+ * the data actually occupies, and the header prints that range.
+ */
+function realizationScale(buckets: readonly AskRealizationBucket[]): { lo: number; hi: number } {
+  const vals = buckets
+    .map((b) => b.medianPctOfOriginalAsk)
+    .filter((v): v is number => v != null && Number.isFinite(v))
+  const hi = Math.max(100, Math.ceil(Math.max(...vals, 100)))
+  const lo = Math.min(Math.floor(Math.min(...vals, hi)) - 1, hi - 2)
+  return { lo, hi }
+}
+
+/**
+ * One row's mark: a dot on the shared scale, beside the figure it encodes.
+ *
+ * The evaluator's note on this table was "five rows, no mark, no bar — a table
+ * wearing hairlines, for the most persuasive fact in the document", and that
+ * the series is not monotonic (100.0 → 97.0 → 97.2 → 95.3 → 92.1) with nothing
+ * on the page showing the reversal. A dot per row shows it at a glance. The
+ * figure stays printed beside it, so print and a screen reader lose nothing —
+ * the mark is `aria-hidden`, because the number next to it is the same fact.
+ */
+function realizationMark(
+  pct: number | null | undefined,
+  scale: { lo: number; hi: number },
+  isMine: boolean,
+): string {
+  if (pct == null || !Number.isFinite(pct)) return ''
+  const x = ((Math.min(Math.max(pct, scale.lo), scale.hi) - scale.lo) / (scale.hi - scale.lo)) * 96
+  return `<svg viewBox="0 0 100 14" class="rz-svg" aria-hidden="true" focusable="false"><line x1="0" y1="7" x2="96" y2="7" stroke="rgba(16,39,66,0.22)" stroke-width="0.75"/><line x1="96" y1="2" x2="96" y2="12" stroke="rgba(16,39,66,0.22)" stroke-width="0.75"/><circle cx="${x.toFixed(
+    1,
+  )}" cy="7" r="${isMine ? '4.2' : '3.2'}" fill="#102742"/></svg>`
 }
 
 /** "0-2" → "0 to 2"; "17+" → "17 or more". */
@@ -954,6 +1008,21 @@ function realizationReading(
         : `${weeksLabel(last.weeks)} weeks`
     } closed at ${last.medianPctOfOriginalAsk.toFixed(1)} percent, over ${int(last.n)}.`,
   ]
+  // The series is not always monotonic — on Redmond it runs 100.0 → 97.0 →
+  // 97.2 → 95.3 → 92.1. Quoting the two ends and saying nothing about the step
+  // back up describes a straight line the table does not draw.
+  const up = priced.findIndex(
+    (b, i) => i > 0 && b.medianPctOfOriginalAsk > priced[i - 1]!.medianPctOfOriginalAsk,
+  )
+  if (up > 0) {
+    const rose = priced[up]!
+    const before = priced[up - 1]!
+    bits.push(
+      `The fall is not steady: the ${weeksLabel(rose.weeks)} week row closed at ${rose.medianPctOfOriginalAsk.toFixed(
+        1,
+      )} percent, above the ${before.medianPctOfOriginalAsk.toFixed(1)} percent of the row before it.`,
+    )
+  }
   if (mine != null && failed && subjectDays != null && subjectDays > 0) {
     bits.push(
       `Your listing ran ${int(subjectDays)} days, which is the last row, and it never reached an offer at all.`,
