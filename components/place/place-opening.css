@@ -152,7 +152,7 @@
 }
 
 .place-opening--media .place-opening__ask .v3-place-value {
-  box-shadow: 0 1px 0 rgba(16, 39, 66, 0.12);
+  box-shadow: 0 1px 0 var(--v3-edge);
 }
 
 .place-opening__ask .v3.v3-sheet {
