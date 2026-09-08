@@ -317,30 +317,9 @@ export interface PricingRangeRule {
 }
 
 /**
- * D10, closed by construction: the range the seller reads is the spread of the
- * SAME adjusted sale prices the grid prints — six or more sales drop the
- * highest and the lowest, fewer keep every one — instead of p25/p75 of
- * time-adjusted $/sqft, which ignored the size and story adjustments the
- * document itemizes and on heterogeneous sets diverged from its own evidence
- * (Tumalo: band $1,241,000-$1,297,000 against ten printed values with median
- * $1,099,810).
- */
-export function adjustedPriceRange(
-  prices: readonly number[],
-): { low: number; high: number; rule: PricingRangeRuleName; n: number; kept: number } | null {
-  const vals = prices.filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
-  if (vals.length < PRICING_MIN_COMPS) return null
-  if (vals.length >= RANGE_TRIM_MIN_N) {
-    const kept = vals.slice(1, -1)
-    return { low: kept[0]!, high: kept[kept.length - 1]!, rule: 'trimmed-one-each-end', n: vals.length, kept: kept.length }
-  }
-  return { low: vals[0]!, high: vals[vals.length - 1]!, rule: 'min-max', n: vals.length, kept: vals.length }
-}
-
-/**
  * SET ASIDE MEANS SET ASIDE (tasteReview round three, §2 item 1).
  *
- * `adjustedPriceRange` trimmed one sale at each end to draw the range and then
+ * The range rule trimmed one sale at each end to draw the range and then
  * the price was reconciled over ALL of them, so on cma-65365-concorde the two
  * sales the document said had been set aside carried 38.4 percent of the
  * recommended price, and on cma-19968 22.3 percent. A reader told a sale was

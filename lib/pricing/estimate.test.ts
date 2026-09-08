@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { computePricing } from '@/lib/cma/pricing'
 import {
   adjustCompAlongMarket,
-  adjustedPriceRange,
+  partitionByRangeRule,
+  rangeFromPartition,
   applyEngineRecommendedList,
   buildTimeAdjustmentBasis,
   currentListAsk,
@@ -616,8 +617,10 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     weight,
   })
 
+  const range = (prices: number[]) => rangeFromPartition(partitionByRangeRule(prices.map((p) => sale(p))))
+
   it('trims one sale at each end once six are priced', () => {
-    expect(adjustedPriceRange([100, 200, 300, 400, 500, 600])).toEqual({
+    expect(range([100, 200, 300, 400, 500, 600])).toEqual({
       low: 200,
       high: 500,
       rule: 'trimmed-one-each-end',
@@ -627,7 +630,7 @@ describe('D10 — the range and the point come off the printed adjusted prices',
   })
 
   it('keeps every sale under six', () => {
-    expect(adjustedPriceRange([100, 300, 200, 500, 400])).toEqual({
+    expect(range([100, 300, 200, 500, 400])).toEqual({
       low: 100,
       high: 500,
       rule: 'min-max',
@@ -637,7 +640,7 @@ describe('D10 — the range and the point come off the printed adjusted prices',
   })
 
   it('will not draw a range from fewer than the comp floor', () => {
-    expect(adjustedPriceRange([100, 200])).toBeNull()
+    expect(range([100, 200])).toBeNull()
   })
 
   it('prices the low, the point and the high off the same sales', () => {
