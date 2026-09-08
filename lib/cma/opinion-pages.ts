@@ -216,6 +216,10 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
 }
 
 export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
+  // No sheet on the row at all: the build never priced a net, so there is no
+  // chapter. The "what a net would need" sentence is for a sheet that exists
+  // and cannot be added up, not for a row that never carried one.
+  if (a.pricing.sellerNet == null) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · Net at list`,
     toc: 'Net at list',
