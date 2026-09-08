@@ -27,7 +27,16 @@
  * change, because a title is a claim.
  */
 
-export type AskGapClass = 'far-above' | 'near-above' | 'inside' | 'below'
+/**
+ * `neutral` is not a measurement. It is the POLICY class: this document is not
+ * allowed to argue about the price at all — the home is on the market with
+ * another brokerage today, or the ask sat below the bottom of the range, so
+ * "it asked too much" is a claim the numbers do not carry and, in the first
+ * case, one a licensed broker may not make about somebody else's listing
+ * (round-four class B and class D). `askGapClass` never returns it; the
+ * chapter chooses it.
+ */
+export type AskGapClass = 'far-above' | 'near-above' | 'inside' | 'below' | 'neutral'
 
 function pct1(ratio: number): string {
   return (Math.abs(ratio) * 100).toFixed(1)
@@ -131,17 +140,122 @@ function medianSentence(cls: AskGapClass, city: string, medianDays: number | nul
 }
 
 /**
+ * "It asked $475,000 for 152 days, then $460,000 for 35."
+ *
+ * ROUND-FOUR CLASS B. Chapter 1 opened on the ask the listing came OFF at —
+ * the cut made five weeks before it expired — and measured the whole story
+ * against that number. On the exemplar, 152 of 187 days were spent $15,000
+ * higher. The heading named a price the market barely saw, the verdict
+ * sentence measured its gap, and chapter 2b argued the cost of it.
+ *
+ * The sentence names every ask and how long each one ran, so the reader can
+ * see which price actually held the clock. Days are printed once, on the
+ * first: "for 152 days, then $460,000 for 35" reads as one measure.
+ *
+ * Returns '' when the row cannot say how long any ask ran — a duration is a
+ * number, and a number without a basis does not ship (§0).
+ */
+export function askExposureSentence(
+  segments: ReadonlyArray<{ ask: number; days: number | null }>,
+): string {
+  const runs = segments.filter((s) => s.ask > 0)
+  if (runs.length === 0) return ''
+  const allDated = runs.every((s) => s.days != null && s.days > 0)
+  if (!allDated) {
+    const asks = runs.map((s) => usd(s.ask))
+    return asks.length === 1
+      ? `It asked ${asks[0]}.`
+      : `It asked ${asks.slice(0, -1).join(', then ')}, then ${asks[asks.length - 1]}.`
+  }
+  const parts = runs.map((s, i) => {
+    const n = Math.round(s.days!).toLocaleString('en-US')
+    return i === 0 ? `${usd(s.ask)} for ${n} days` : `${usd(s.ask)} for ${n}`
+  })
+  return `It asked ${parts.join(', then ')}.`
+}
+
+function usd(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`
+}
+
+/**
+ * The ask, the range, and the days. Nothing else.
+ *
+ * The chapter a document gets when it may not argue about the price: the home
+ * is listed with another brokerage, or the ask was below the bottom of the
+ * range and "it asked too much" is simply false. Three facts, no comparison,
+ * no verdict, no handoff.
+ */
+export function neutralAskReading(input: {
+  ask: number | null
+  rangeLow: number
+  rangeHigh: number
+  days: number | null
+}): string {
+  const bits: string[] = []
+  if (input.ask != null && input.ask > 0) bits.push(`It asked ${usd(input.ask)}.`)
+  const low = Math.min(input.rangeLow, input.rangeHigh)
+  const high = Math.max(input.rangeLow, input.rangeHigh)
+  if (low > 0 && high > 0) {
+    bits.push(
+      low === high
+        ? `Homes like yours sold for ${usd(low)}.`
+        : `Homes like yours sold for ${usd(low)} to ${usd(high)}.`,
+    )
+  }
+  if (input.days != null && input.days > 0) {
+    bits.push(`It was on the market ${Math.round(input.days).toLocaleString('en-US')} days.`)
+  }
+  return bits.join(' ')
+}
+
+/**
  * The whole reading under chapter 1's timeline, for whichever story the gap
  * put the document in.
+ *
+ * THREE GATES, in order, and each one narrows what may be said:
+ *
+ *  1. `neutral` — the policy class above. Ask, range, days, stop.
+ *  2. `exposureKnown: false` — nothing on the row says which ask ran the
+ *     clock, so the days and the city's median print and NOTHING causal does.
+ *     Naming a gap here would be measuring the wrong ask, which is the exact
+ *     defect this parameter exists to stop.
+ *  3. otherwise — the measured story, off the DOMINANT ask.
  */
 export function askStoryReading(input: {
+  /** The ask that ran the clock, not the one it came off at. */
   ask: number | null
   rangeLow: number
   rangeHigh: number
   days: number | null
   city: string
   marketMedianDom: number | null
+  /** This document may not argue about the price. */
+  neutral?: boolean
+  /**
+   * Whether the row says which ask held the market. Defaults true so the
+   * existing caller in lib/cma/expired-audit.ts is unchanged; chapter 1 passes
+   * it explicitly.
+   */
+  exposureKnown?: boolean
 }): string {
+  if (input.neutral) {
+    return neutralAskReading({
+      ask: input.ask,
+      rangeLow: input.rangeLow,
+      rangeHigh: input.rangeHigh,
+      days: input.days,
+    })
+  }
+  if (input.exposureKnown === false) {
+    const days =
+      input.days != null && input.days > 0
+        ? `It sat ${Math.round(input.days).toLocaleString('en-US')} days.`
+        : ''
+    return [days, medianSentence('near-above', input.city, input.marketMedianDom)]
+      .filter((s) => s.trim())
+      .join(' ')
+  }
   const cls = askGapClass(input.ask, input.rangeLow, input.rangeHigh)
   if (!cls) return ''
   const bits = [
@@ -166,6 +280,12 @@ export const PRICED_RIGHT_HEADING_OVERPRICED = 'What overpricing costs.'
 
 export function pricedRightHeadingFor(cls: AskGapClass | null, city: string): string {
   const place = city.trim()
-  if (cls == null || cls === 'far-above' || !place) return PRICED_RIGHT_HEADING_OVERPRICED
+  // A title is a claim, and with no place to name there is no descriptive
+  // title to fall back to — so the overpricing title survives ONLY where the
+  // gap carries it. `neutral` and `null` never carry it: null means the row
+  // does not say which ask ran the clock (class B), and neutral means the
+  // document is not entitled to argue price at all.
+  if (cls === 'far-above' && place) return PRICED_RIGHT_HEADING_OVERPRICED
+  if (!place) return 'What price and time cost.'
   return `What price and time look like in ${place}.`
 }

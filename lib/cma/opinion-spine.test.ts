@@ -318,7 +318,13 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('Status in this market')
     expect(html).not.toContain('What 3 bedroom / 2 bath homes sold for')
     expect(html).not.toContain('Permits and ownership')
-    expect(html).not.toContain('<h2 class="section">Net at list</h2>')
+    // Net at list STAYS, with no figure in it. Round-four class A: a seller
+    // asked what they would keep, so the chapter says what a net would need
+    // rather than printing a number that has not subtracted the commission,
+    // title, escrow or the loan payoff.
+    expect(html).toContain('<h2 class="section">Net at list</h2>')
+    expect(html).toContain('the commission written into your listing agreement')
+    expect(html).not.toMatch(/\$\d[\d,]* *<\/td>\s*<\/tr>\s*<tr class="is-net"/)
   })
 
   it('renders conditional chapters when extras and sellerNet are provided', () => {
@@ -352,12 +358,15 @@ describe('print CMA price-opinion spine', () => {
         pricing: {
           ...pricing,
           sellerNet: {
-            expectedConcessions: 8000,
-            predictedSellerNet: 457000,
-            knownCount: 3,
-            givenCount: 2,
-            medianWhenGiven: 10000,
-            rate: 0.67,
+            basis: 'Commission is the rate in your listing agreement.',
+            list: 475000,
+            lines: [
+              { label: 'Commission', amount: 23750, source: 'Listing agreement, 5.0%' },
+              { label: 'Title and escrow', amount: 3100, source: 'Deschutes County schedule' },
+            ],
+            net: 448150,
+            sentence: null,
+            unknowns: ['your loan payoff'],
           },
         },
       }),
@@ -380,8 +389,10 @@ describe('print CMA price-opinion spine', () => {
     expect(html).not.toContain('Permits and ownership')
     expect(html).not.toContain('B-88')
     expect(html).toContain('<h2 class="section">Net at list</h2>')
-    expect(html).toContain('At $475,000')
-    expect(html).toContain('$467,000')
+    expect(html).toContain('Listing agreement, 5.0%')
+    expect(html).toContain('$448,150')
+    expect(html).toContain('This does not include your loan payoff.')
+    expect(html).not.toContain('What you keep')
     expect(html).not.toMatch(/typical concessions/)
     expect(html).toContain('sales that set this price')
     expect(html).not.toMatch(BANNED)

@@ -235,12 +235,37 @@ const marketArea: CmaMarketArea = {
   ],
 } as unknown as CmaMarketArea
 
+/**
+ * `askExposure` is what says WHICH ask ran the clock (round-four class B).
+ * Without it chapter 1 prints the days and the city's median and claims
+ * nothing causal, so the default fixture carries it: one ask, $460,000, for
+ * the whole 186 days, which is the document these assertions were written
+ * against.
+ */
 const expiredAudit = {
   findings: [
     { lens: 'pricing', fact: 'The final asking price was $460,000.', meaning: '' },
     { lens: 'time-on-market', fact: '186 days on market for the final listing period.', meaning: '' },
     { lens: 'price-cuts', fact: 'The ask moved from $475,000 to $460,000.', meaning: '' },
   ],
+  finalCycle: {
+    listDate: '2026-02-26',
+    initialAsk: 460000,
+    cuts: [],
+    cutsDated: true,
+    finalAsk: 460000,
+    offMarketDate: '2026-08-31',
+    status: 'Withdrawn',
+    days: 186,
+  },
+  askExposure: {
+    segments: [
+      { ask: 460000, from: '2026-02-26', to: '2026-08-31', days: 186, sharePct: 100, pctAboveRangeTop: 15.6 },
+    ],
+    dominant: 460000,
+    final: 460000,
+    sentence: 'It asked $460,000 for 186 days.',
+  },
 } as unknown as ExpiredAuditData
 
 function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
@@ -1002,17 +1027,44 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     expect(css.indexOf('[hidden]{display:none!important}')).toBeGreaterThan(-1)
   })
 
-  it('nets at list off the concessions the grid prints, never against them', () => {
+  it('prints no net figure at all when the row holds no itemised sheet', () => {
+    // Round-four class A. The chapter used to compute the list minus the
+    // median seller concession and head it as what the seller keeps, with the
+    // commission, title, escrow and loan payoff nowhere in the arithmetic.
     const paid = comps.map((c, i) => ({ ...c, concessions: [4000, 0, 0, 10000, 0][i] ?? 0 }))
-    const html = letter({ comps: paid, pricing: { ...pricing, sellerNet: { expectedConcessions: 0 } } as never })
-    expect(html).not.toContain('reported no seller concessions')
-    expect(html).toContain('the median across the 2 sales in the price chapter that reported one')
+    for (const html of [
+      letter({ comps: paid, pricing: { ...pricing, sellerNet: { expectedConcessions: 7000 } } as never }),
+      immersive({ comps: paid, pricing: { ...pricing, sellerNet: { expectedConcessions: 7000 } } as never }),
+    ]) {
+      expect(html).toContain('Net at list')
+      expect(html).toContain('the commission written into your listing agreement')
+      expect(html).not.toContain('Net at list is the list price minus')
+      expect(html).not.toContain('What you keep')
+    }
   })
 
-  it('says so truthfully when every printed sale reported none', () => {
-    const none = comps.map((c) => ({ ...c, concessions: 0 }))
-    const html = letter({ comps: none })
-    expect(html).toContain('recorded what the seller paid reported none')
+  it('itemises every deduction with its source when the row holds the sheet', () => {
+    const sheet = {
+      ...pricing,
+      sellerNet: {
+        basis: 'Commission is the rate in your listing agreement.',
+        list: 389000,
+        lines: [
+          { label: 'Commission', amount: 19450, source: 'Listing agreement, 5.0%' },
+          { label: 'Title and escrow', amount: 2900, source: 'Deschutes County schedule' },
+        ],
+        net: 366650,
+        sentence: null,
+        unknowns: ['your loan payoff'],
+      },
+    } as never
+    for (const html of [letter({ pricing: sheet }), immersive({ pricing: sheet })]) {
+      expect(html).toContain('Listing agreement, 5.0%')
+      expect(html).toContain('Deschutes County schedule')
+      expect(html).toContain('$366,650')
+      expect(html).toContain('This does not include your loan payoff.')
+      expect(html).not.toContain('What you keep')
+    }
   })
 
   it('gives every sale ONE day count, and says which measure it is', () => {
@@ -1411,6 +1463,17 @@ describe('chapter 1 — the story the numbers carry', () => {
       offMarketDate: '2026-09-01',
       status: 'Withdrawn',
       days: 187,
+    },
+    // $460,000 held 110 of the 187 days, so it is the ask the story is about
+    // and the one every gap below is measured from (class B).
+    askExposure: {
+      segments: [
+        { ask: 475000, from: '2026-02-26', to: '2026-05-14', days: 77, sharePct: 41.2, pctAboveRangeTop: null },
+        { ask: 460000, from: '2026-05-14', to: '2026-09-01', days: 110, sharePct: 58.8, pctAboveRangeTop: null },
+      ],
+      dominant: 460000,
+      final: 460000,
+      sentence: 'It asked $475,000 for 77 days, then $460,000 for 110.',
     },
   } as unknown as ExpiredAuditData
 

@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { assembleOpinionPages, concessionBasisLine, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
+import {
+  assembleOpinionPages,
+  closingComplianceSentence,
+  nextStepButtonsHtml,
+  nextStepHeading,
+  sellerNetBodyHtml,
+  sellerNetKick,
+  storyClassFor,
+  whatHappenedHeading,
+  type OpinionPageArgs,
+} from '@/lib/cma/opinion-pages'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject: CmaSubject = {
@@ -281,27 +291,198 @@ describe('assembleOpinionPages format', () => {
   })
 })
 
-describe('the net-at-list caption names the sales it was taken over', () => {
-  // Research item 8 / D14: chapter 6 quoted a concession figure with no basis
-  // anywhere on the page. Chapter 3's grid now prints a Seller concessions
-  // line per sale, so this caption counts THOSE rows — a reader can add the
-  // column up and land on the same median.
-  const withConcessions = (values: Array<number | null>): OpinionPageArgs => ({
-    ...args(),
-    comps: values.map((v, i) => ({ ...comp, listingKey: `K-${i}`, concessions: v })),
+/**
+ * Round-four class A. The chapter either itemises every deduction or it prints
+ * no figure at all — a number headed as what the seller keeps, with the
+ * commission, title, escrow and the loan payoff outside the arithmetic, is the
+ * one figure in this document a seller quotes back.
+ */
+const NET_SHEET = {
+  basis: 'Commission is the rate in your listing agreement; title and escrow are the Deschutes County schedule.',
+  list: 475000,
+  lines: [
+    { label: 'Commission', amount: 23750, source: 'Listing agreement, 5.0%' },
+    { label: 'Title and escrow', amount: 3100, source: 'Deschutes County schedule' },
+    { label: 'Loan payoff', amount: 210000, source: 'Payoff quote you provided' },
+  ],
+  net: 238150,
+  sentence: 'At $475,000 you would walk away with about $238,150.',
+  unknowns: [],
+}
+
+function withNet(sellerNet: unknown): OpinionPageArgs {
+  return { ...args(), pricing: { ...pricing, sellerNet } as unknown as CmaPricing }
+}
+
+describe('net at list itemises, or prints no figure at all', () => {
+  it('prints the list, every cost line with its source, and the net', () => {
+    const html = sellerNetBodyHtml(withNet(NET_SHEET))
+    expect(html).toContain('List price')
+    expect(html).toContain('$475,000')
+    expect(html).toContain('Commission')
+    expect(html).toContain('Listing agreement, 5.0%')
+    expect(html).toContain('Deschutes County schedule')
+    expect(html).toContain('Payoff quote you provided')
+    expect(html).toContain('$238,150')
+    expect(html).toContain('What you keep at $475,000')
   })
 
-  it('counts the sales that reported a figure and the sales that paid one', () => {
-    const line = concessionBasisLine(withConcessions([4000, 0, 10000, null, 0]), 7500)
-    expect(line).toContain('Net at list is the list price minus $7,500')
-    expect(line).toContain('the median across the 2 sales in the price chapter that reported one')
-    expect(line).toContain('the other 2 of the 4 that recorded the field reported none')
-  })
-
-  it('states the figure alone when no sale reported one', () => {
-    const line = concessionBasisLine(withConcessions([null, null]), 7500)
-    expect(line).toBe(
-      'Net at list is the list price minus $7,500, before commission and closing costs.',
+  it('names what is not in the net and refuses the phrase when something is missing', () => {
+    const a = withNet({ ...NET_SHEET, unknowns: ['commission', 'title', 'escrow', 'your loan payoff'] })
+    const html = sellerNetBodyHtml(a)
+    expect(html).toContain(
+      'This does not include commission, title, escrow, or your loan payoff.',
     )
+    expect(html).not.toContain('What you keep')
+    expect(sellerNetKick(a)).toBe('Net at list')
+  })
+
+  it('prints no figure when there are no cost lines, and says what a net would need', () => {
+    const html = sellerNetBodyHtml(withNet({ list: 475000, lines: [], net: 475000, unknowns: [] }))
+    expect(html).not.toContain('$475,000')
+    expect(html).toContain('A net at $429,000 needs')
+    expect(html).toContain('the commission written into your listing agreement')
+  })
+
+  it('prints no figure on the legacy concessions-only block', () => {
+    const html = sellerNetBodyHtml(
+      withNet({ expectedConcessions: 8000, predictedSellerNet: 467000, knownCount: 3 }),
+    )
+    expect(html).not.toContain('$467,000')
+    expect(html).toContain('A net at $429,000 needs')
+  })
+
+  it('refuses a line with no source, and refuses a net above the list', () => {
+    const noSource = sellerNetBodyHtml(
+      withNet({ ...NET_SHEET, lines: [{ label: 'Commission', amount: 23750, source: '' }], net: 451250 }),
+    )
+    expect(noSource).toContain('A net at $429,000 needs')
+    const overList = sellerNetBodyHtml(withNet({ ...NET_SHEET, net: 480000 }))
+    expect(overList).toContain('A net at $429,000 needs')
+    expect(overList).not.toContain('$480,000')
+  })
+
+  it('refuses a column that does not add up', () => {
+    const html = sellerNetBodyHtml(withNet({ ...NET_SHEET, net: 300000 }))
+    expect(html).toContain('A net at $429,000 needs')
+  })
+})
+
+/**
+ * Round-four class B. The story is about the ask that ran the clock, not the
+ * cut the listing came off at.
+ */
+const EXPOSURE = {
+  segments: [
+    { ask: 500000, from: '2025-08-01', to: '2025-12-31', days: 152, sharePct: 81.3, pctAboveRangeTop: 12.6 },
+    { ask: 460000, from: '2026-01-01', to: '2026-02-04', days: 35, sharePct: 18.7, pctAboveRangeTop: 3.6 },
+  ],
+  dominant: 500000,
+  final: 460000,
+  sentence: 'It asked $500,000 for 152 days, then $460,000 for 35.',
+}
+
+function withAudit(expiredAudit: unknown): OpinionPageArgs {
+  return { ...args(), expiredAudit: expiredAudit as OpinionPageArgs['expiredAudit'] }
+}
+
+const FINDINGS = [{ lens: 'pricing' as const, fact: 'It sat 187 days.', meaning: '' }]
+
+describe('chapter one reads the ask that ran the clock', () => {
+  it('names both asks and their days', () => {
+    const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
+    expect(whatHappenedHeading(a)).toBe('It asked $500,000 for 152 days, then $460,000 for 35.')
+  })
+
+  it('measures the gap off the dominant ask, not the final one', () => {
+    const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
+    // $500,000 against a $444,000 top is 12.6 percent — far-above. The final
+    // $460,000 ask is 3.6 percent, which is near-above and a different story,
+    // and it is the one the chapter used to tell.
+    expect(storyClassFor(a)).toBe('far-above')
+  })
+
+  it('tells no causal story when the row does not say which ask ran the clock', () => {
+    const a = withAudit({ findings: FINDINGS, finalCycle: { days: 187 } })
+    expect(storyClassFor(a)).toBeNull()
+    expect(whatHappenedHeading(a)).toBe('It asked $460,000 and did not sell.')
+  })
+
+  it('goes neutral when the ask sat below the bottom of the range', () => {
+    const low = {
+      ...EXPOSURE,
+      dominant: 380000,
+      final: 380000,
+      segments: [{ ask: 380000, from: null, to: null, days: 187, sharePct: 100, pctAboveRangeTop: null }],
+    }
+    const a = withAudit({ findings: FINDINGS, askExposure: low, finalCycle: { days: 187 } })
+    expect(storyClassFor(a)).toBe('neutral')
+  })
+
+  it('goes neutral, and says so in the title, on a home listed with another brokerage', () => {
+    const a: OpinionPageArgs = {
+      ...withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } }),
+      subjectStatus: {
+        standardStatus: 'Active',
+        isActiveWithOtherBrokerage: true,
+        isWithdrawnNotExpired: false,
+        listingAgentIsUs: false,
+        note: null,
+      },
+    }
+    expect(storyClassFor(a)).toBe('neutral')
+    expect(whatHappenedHeading(a)).toBe('It is listed at $460,000.')
+  })
+})
+
+/** Round-four class D. */
+describe('the closing does not solicit somebody else\'s listing', () => {
+  const active: OpinionPageArgs = {
+    ...args(),
+    broker: {
+      id: null,
+      slug: 'matthew-ryan',
+      displayName: 'Matt Ryan',
+      title: 'Principal Broker',
+      licenseNumber: '201234567',
+      email: 'matt@ryan-realty.com',
+      phone: '5415551234',
+      photoUrl: null,
+    },
+    subjectStatus: {
+      standardStatus: 'Active',
+      isActiveWithOtherBrokerage: true,
+      isWithdrawnNotExpired: false,
+      listingAgentIsUs: false,
+      note: null,
+    },
+  }
+
+  it('replaces the two asks with one neutral action and adds the non-solicitation sentence', () => {
+    const buttons = nextStepButtonsHtml(active)
+    expect(buttons).not.toContain('Talk with Matt')
+    expect(buttons).toContain('See homes for sale near you')
+    expect((buttons.match(/class="btn/g) ?? []).length).toBe(1)
+    expect(closingComplianceSentence(active)).toContain('not a solicitation')
+    expect(nextStepHeading(active)).toBe('What this report is.')
+  })
+
+  it('says the report is not an offer to interfere when the listing was withdrawn', () => {
+    const withdrawn: OpinionPageArgs = {
+      ...active,
+      subjectStatus: {
+        standardStatus: 'Withdrawn',
+        isActiveWithOtherBrokerage: false,
+        isWithdrawnNotExpired: true,
+        listingAgentIsUs: false,
+        note: null,
+      },
+    }
+    expect(closingComplianceSentence(withdrawn)).toContain('not an offer to interfere')
+    expect(nextStepButtonsHtml(withdrawn)).toContain('Talk with Matt')
+  })
+
+  it('says nothing extra on a plain expired row', () => {
+    expect(closingComplianceSentence(args())).toBe('')
   })
 })
