@@ -7,6 +7,7 @@ import {
   sendModeForOrigin,
   theirPriceLabelFor,
   CMA_ORIGIN_LABEL,
+  CMA_ORIGIN_INTENT,
   type CmaOrigin,
 } from '@/lib/cma/origin'
 
@@ -17,6 +18,7 @@ describe('classifyCmaOrigin', () => {
     expect(classifyCmaOrigin('fsbo-cron')).toBe('fsbo')
     expect(classifyCmaOrigin('fsbo-lp')).toBe('fsbo')
     expect(classifyCmaOrigin('seller-lp')).toBe('seller-valuation')
+    expect(classifyCmaOrigin('place-page')).toBe('place-page')
     expect(classifyCmaOrigin('lead-form')).toBe('lead-form')
     expect(classifyCmaOrigin('admin-manual')).toBe('broker')
     expect(classifyCmaOrigin('crm-kickoff')).toBe('broker')
@@ -64,6 +66,7 @@ describe('classifyCmaOrigin', () => {
 describe('send lanes', () => {
   it('sends what a person asked for immediately, and drips cold outreach', () => {
     expect(sendModeForOrigin('seller-valuation')).toBe('now')
+    expect(sendModeForOrigin('place-page')).toBe('now')
     expect(sendModeForOrigin('lead-form')).toBe('now')
     expect(sendModeForOrigin('broker')).toBe('now')
     // A BPO is a broker asking for the brokerage's own opinion of value — it is
@@ -81,12 +84,30 @@ describe('send lanes', () => {
   })
 
   it('asked and cold are mutually exclusive, and every origin has a lane', () => {
-    const all: CmaOrigin[] = ['expired', 'fsbo', 'seller-valuation', 'lead-form', 'bpo', 'broker', 'internal', 'unknown']
+    const all: CmaOrigin[] = [
+      'expired',
+      'fsbo',
+      'seller-valuation',
+      'place-page',
+      'lead-form',
+      'bpo',
+      'broker',
+      'internal',
+      'unknown',
+    ]
     for (const o of all) {
       expect(isAskedOrigin(o) && isColdOrigin(o)).toBe(false)
       expect(['now', 'drip', 'manual']).toContain(sendModeForOrigin(o))
       expect(CMA_ORIGIN_LABEL[o]).toBeTruthy()
+      expect(CMA_ORIGIN_INTENT[o]).toBeTruthy()
     }
+  })
+
+  it('labels and explains the place-page origin', () => {
+    expect(CMA_ORIGIN_LABEL['place-page']).toBe('Place page')
+    expect(CMA_ORIGIN_INTENT['place-page']).toBe(
+      'A homeowner on a neighborhood or community page typed their address and asked what it would sell for.',
+    )
   })
 })
 

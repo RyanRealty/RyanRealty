@@ -147,6 +147,7 @@ Northwest Crossing is this job even if the URL is `/communities/northwest-crossi
 | # | Section |
 |---|---|
 | 1 | Owned photo of **this** place + breadcrumb to the city. Belonging, not “17 homes / $2.3M.” |
+| 1b | Value my home ask on the photo (Matt 2026-09-07, SITE-01): one address field, then the place’s verdict, days to pending, cash share, and comparable-sale count with sources, then email to deliver the written valuation. No dollar figure on the page. |
 | 2 | What this place is (golf, membership, dining, hotel, pool — sourced from `resort-communities.json` and recorded facts). |
 | 3 | Houses for sale here. |
 | 4 | Villages / plats inside, what’s moving. |

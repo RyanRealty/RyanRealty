@@ -29,6 +29,7 @@ export const AUTO_SEND_LANES = [
   'expired',
   'fsbo',
   'seller-valuation',
+  'place-page',
   'lead-form',
   'bpo',
   'broker',

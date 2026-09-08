@@ -2,7 +2,9 @@
  * /communities/[slug] — master-plan grain. First screen is owned still + H1
  * `{Name} homes for sale`. Belonging facts (HOA, acres, membership) sit as a
  * caption on the still, not a KPI Instrument. Atlas is the inventory graphic.
- * MOS / sold / verdict / DTP stay off the face.
+ * MOS / sold / verdict / DTP stay off the face as a strip. They appear on the face
+ * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
+ * Matt 2026-09-07): an input-to-answer ask, not a number hero.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
  * regions and Split overlayBoundaries.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
@@ -93,6 +95,7 @@ import { courseMapKind } from '@/lib/golf/course-map'
 import { buildPlaceAtlas, EMPTY_PLACE_ATLAS } from '@/lib/atlas/build-place-atlas'
 import { getTaxlotsInBoundary, TAXLOT_DISCLAIMER } from '@/lib/data'
 import { PlaceAreaHero } from '@/components/place/PlaceAreaHero'
+import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { PlaceTypeSlider } from '@/components/place/PlaceTypeSlider'
 import { PlaceSplitView } from '@/components/search/PlaceSplitView'
 import {
@@ -670,6 +673,13 @@ export default async function CommunityDetailPage({ params, searchParams }: Prop
                 {belongingLine}
               </p>
             ) : null}
+            {/* SITE-01 (Matt 2026-09-07): the first-screen ask. Address in, verdict and
+                pace out with no contact asked, then the email that delivers the written
+                valuation. On every community page: where the metric layer publishes no
+                verdict (Brasada Ranch, too few recent sales), the answer says so and still
+                carries the comparable-close count from the CMA engine, which is the figure
+                the written valuation is built on. */}
+            <CommunityPlaceValue slug={slug} placeName={publicName} />
           </div>
         </div>
         {(

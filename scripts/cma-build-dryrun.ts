@@ -232,9 +232,26 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { buildRejectedSales } = await import('@/lib/pricing/rejected')
   const rejected = buildRejectedSales({
     candidates: selection.comps,
-    excludedKeys: [],
+    excluded: [],
+    // The kept set is the full ladder result in a dry run, and it is what stops
+    // a printed sale from also appearing as rejected.
+    kept: selection.comps.map((c) => ({
+      listingKey: c.listingKey,
+      address: c.address,
+      sqft: c.sqft,
+      yearBuilt: c.yearBuilt,
+      closeDate: c.closeDate,
+      closePrice: c.closePrice,
+    })),
     outliers: selection.excludedOutliers,
-    subject: { sqft: subject.sqft, yearBuilt: subject.yearBuilt, propertySubType: subject.propertySubType },
+    subject: {
+      sqft: subject.sqft,
+      yearBuilt: subject.yearBuilt,
+      baths: subject.baths,
+      propertySubType: subject.propertySubType,
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+    },
   })
 
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.

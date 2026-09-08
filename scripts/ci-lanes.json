@@ -1098,6 +1098,10 @@
       "app/site-index/**",
       "app/**/site-index/**"
     ],
+    "ci:site-node": [
+      "app/**",
+      "components/site/**"
+    ],
     "ci:sitemap-inventory-gate": [
       "app/**/page.tsx",
       "app/**/page.ts",

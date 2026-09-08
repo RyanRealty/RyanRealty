@@ -117,3 +117,52 @@
 .place-opening--media .place-face__label {
   text-shadow: var(--v3-media-shadow);
 }
+
+/* On a phone the copy block is taller than the opening's minimum height, so it
+   starts at the top, under the absolute breadcrumb. Clear the breadcrumb and
+   keep some photograph above the card so the place still reads as a place. */
+@media (max-width: 47.99rem) {
+  .place-opening--media .place-opening__copy {
+    padding-top: calc(var(--v3-space-xl) + 2.25rem);
+  }
+  .place-opening--media .place-opening__ask {
+    margin-top: max(var(--v3-space-lg), 6vh);
+  }
+}
+
+/* The first-screen ask (SITE-01). One cream working surface on the photograph,
+   sized to the sheet measure, so the address field reads as the thing to do on
+   this screen and the answer has room to land without pushing the H1 off. */
+.place-opening__ask {
+  margin-top: var(--v3-space-lg);
+  max-width: var(--v3-measure-sheet);
+}
+
+/* When a step changes, the sheet brings itself into view. The chrome is sticky,
+   so leave room for it or the new step's heading lands under the nav. */
+.place-opening__ask .v3.v3-sheet,
+.place-opening__ask .v3.v3-sheet * {
+  scroll-margin-top: 5.5rem;
+}
+
+.place-opening__ask .v3-place-value {
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  text-shadow: none;
+}
+
+.place-opening--media .place-opening__ask .v3-place-value {
+  box-shadow: 0 1px 0 var(--v3-edge);
+}
+
+.place-opening__ask .v3.v3-sheet {
+  padding: var(--v3-space-lg) var(--v3-space-lg);
+  background: transparent;
+}
+
+/* The one door after a send (book a call) sits inside the same surface as the
+   sheet, never out on the photograph where a ghost button disappears. */
+.v3-place-value__after {
+  margin: 0;
+  padding: 0 var(--v3-space-lg) var(--v3-space-lg);
+}

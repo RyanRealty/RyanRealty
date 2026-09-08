@@ -59,6 +59,7 @@ export function composeCmaFirstContactSubject(origin: CmaOrigin, address: string
   if (!named) return 'Your report on this home'
   if (origin === 'expired') return `${named}, and what sold while it was listed`
   if (origin === 'fsbo') return `${named}, and what it is competing with`
+  if (origin === 'place-page') return `Your ${named} valuation`
   return `Your report on ${named}`
 }
 
@@ -78,6 +79,9 @@ function planFor(origin: CmaOrigin, named: string): string {
   }
   if (origin === 'fsbo') {
     return `You are selling ${named} yourself.`
+  }
+  if (origin === 'place-page') {
+    return `You asked what ${named} would sell for. Here's the full comparison.`
   }
   return `The number for ${named}, and the sales that set it.`
 }

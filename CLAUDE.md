@@ -134,7 +134,7 @@ approval, a passing gate is never approval, a successful build is never approval
 
 **Broker self-approval (2026-08-01):** `content:*` drafts a broker initiates on the broker
 SMS agent line are approved by that broker (APPROVE reply = the stamp, same 7-day freshness;
-Matt gets a daily digest). Everything else above is unchanged.
+Matt gets a daily digest). A same-minute system confirmation to a visitor who just submitted their own request, and the sequence that submit enrolls, are not broker sends (Matt 2026-09-07).
 
 **One commit-time class keeps an approval marker:** rendered content deliverables (video files
 in tracked `public/` paths) require `Approved-by: matt` or `Draft-shown: <url>` in the commit
@@ -484,8 +484,7 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
   code, check the output, read the actual files. Every claim about code behavior must be
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
-  unless you've confirmed it. If you got something wrong, own it immediately.
-- **No partial answers.** On status questions, go all the way to the exact answer.
+  unless you've confirmed it.
 - **Ship on `main`.** Default checkout is `main`. Worktrees OK for parallel/experiment work —
   merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop (anti-strand). See
   [`AGENTS.md`](AGENTS.md) Worktrees + Cost-aware push. **R-221:** do not poll GitHub Actions.
