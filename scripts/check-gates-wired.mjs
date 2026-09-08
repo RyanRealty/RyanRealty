@@ -65,7 +65,8 @@ export const KNOWN_UNWIRED = new Map([
   // twice in one hour on 2026-09-08 (escape 7196f7f8), because there was no
   // local command; this is that command.
   ['ci:runtime-gates', 'starts the production server once and runs the runtime gates CI already runs (route-smoke, page-payload, tap-targets); needs a built server, so it cannot live in the secret-less static chain — a public-page lane runs it before pushing, per .claude/skills/site-queue/SKILL.md'],
-  ['ci:runtime-gates:run', 'the inner sequence of ci:runtime-gates, invoked by start-server-and-test once the server is up; never run on its own'],
+  ['ci:route-smoke:start', 'alias of ci:runtime-gates, kept because check-tap-targets.mjs and ci.yml name it in their guidance'],
+  ['ci:tap-targets:start', 'alias of ci:runtime-gates, kept because check-tap-targets.mjs names it in its usage block'],
 ])
 
 /** Unique `ci:*` names from `ci:gates:chain` (`npm run ci:foo && …`). */

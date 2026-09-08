@@ -202,7 +202,14 @@ npx next build && PORT=<free port> npm run ci:runtime-gates
 
 `ci:runtime-gates` starts the production server once and runs the three gates CI
 runs against it — `ci:route-smoke`, `ci:page-payload`, `ci:tap-targets` — in the
-same order and with the same one-server shape as `.github/workflows/ci.yml`. It
+same order and with the same one-server shape as `.github/workflows/ci.yml`. Its
+first cut wrapped them in `start-server-and-test` and could never start, because
+that wrapper's waiter sends `User-Agent: axios/1.x` and the middleware bot screen
+403s it — the identical mute five-minute timeout CI carried for a week in
+2026-07 and already root-caused in `scripts/wait-for-server.mjs`. It now uses the
+same explicit start / wait / run split CI uses, and it REFUSES to run against a
+`.next` older than the HEAD commit, because a lane in that same round read a pass
+from a build 13 minutes older than its own fix. It
 belongs in every lane brief that touches `app/**` or `components/site/**`, beside
 the static chain, and its output goes in the lane's report. `ci:a11y` and
 `ci:lighthouse` are in the same CI job but have never executed (noted in ci.yml
