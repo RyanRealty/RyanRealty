@@ -129,7 +129,9 @@ export function ContactAsk({
         body: isTour
           ? `${publishTourConfirmation(listingSummary)} A confirmation is on its way to your inbox.`
           : 'A broker gets this now and answers you personally. A confirmation is on its way to your inbox.',
+        detail: `Sent: ${String(formData.get('inquiryType') ?? '')}${listingSummary ? ` · ${listingSummary}` : ''}`,
         door: { href: '/book', label: 'Or pick a time now' },
+        again: 'Send another message',
       }
     },
     [defaultInquiryType, intent, isTour, listingKey, listingSummary, smsConsent],

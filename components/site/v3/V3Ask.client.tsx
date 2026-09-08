@@ -48,7 +48,16 @@ export type V3AskField = {
  * offered above the form and stopped offering the moment it mattered most.
  */
 export type V3AskResult =
-  | { ok: true; heading: string; body?: string; door?: { href: string; label: string } }
+  | {
+      ok: true
+      heading: string
+      body?: string
+      door?: { href: string; label: string }
+      /** What was sent, echoed back in one line ("Sent: Buying · 123 NW …"). */
+      detail?: string
+      /** Label for the quiet second action that reopens the form. */
+      again?: string
+    }
   | { ok: false; message: string }
 
 export type V3AskProps = {
@@ -83,6 +92,10 @@ export function V3Ask({
   const uid = useId()
   const [status, setStatus] = useState<Status>('asking')
   const [result, setResult] = useState<V3AskResult | null>(null)
+  const reset = useCallback(() => {
+    setResult(null)
+    setStatus('asking')
+  }, [])
 
   const submit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -118,9 +131,17 @@ export function V3Ask({
         ) : lede ? (
           <p className="v3-ask__lede">{lede}</p>
         ) : null}
-        {status === 'sent' && result?.ok && result.door ? (
+        {status === 'sent' && result?.ok && result.detail ? (
+          <p className="v3-ask__done-detail">{result.detail}</p>
+        ) : null}
+        {status === 'sent' && result?.ok && (result.door || result.again) ? (
           <p className="v3-ask__done-door">
-            <V3Button href={result.door.href}>{result.door.label}</V3Button>
+            {result.door ? <V3Button href={result.door.href}>{result.door.label}</V3Button> : null}
+            {result.again ? (
+              <button type="button" className="v3-ask__done-again" onClick={reset}>
+                {result.again}
+              </button>
+            ) : null}
           </p>
         ) : null}
       </div>
