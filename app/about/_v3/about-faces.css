@@ -277,3 +277,157 @@
 .about-faces--portrait .about-faces__heading {
   font-size: var(--v3-size-display-2);
 }
+
+/* ===========================================================================
+   COMPACT (homepage, SITE-M1). One table, not three cards.
+
+   The three cutouts stand on a shared hairline shelf as the column heads;
+   name, Oregon license, Call, Text and Book are rows beneath, aligned across
+   the columns by subgrid so the rules run the full measure and the section
+   reads as one object. No box, no fill behind a portrait (CLAUDE.md section
+   3). At 390 the whole section, heading included, sits in one screen; from
+   48rem the rows also print the number itself, because a tel: link on a
+   desk is not a tap.
+   =========================================================================== */
+
+.v3.about-faces--compact {
+  padding-block: var(--v3-space-xl);
+}
+
+.about-faces--compact .about-faces__head {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  margin-bottom: var(--v3-space-lg);
+}
+
+/* The one door out of the section. Text variant so it never competes with
+   the rows; tap height so a thumb can hit it. */
+.v3.about-faces--compact .about-faces__door {
+  flex: none;
+  min-height: var(--v3-tap);
+  white-space: nowrap;
+}
+
+.about-faces--compact .about-faces__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  align-items: end;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+/* One column per broker. The roster's two-column phone template (cutout
+   beside caption) must not leak in here: with it, every row would sit in a
+   120px first column and wrap the names at 1440. */
+.about-faces--compact .about-faces__item {
+  display: grid;
+  grid-row: span 6;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: subgrid;
+  gap: 0;
+  align-items: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+/* Column head: the cutout, bottom edge on the shelf. Narrower than the
+   column by one step so the three faces keep air between them while the
+   rules beneath still meet. */
+.about-faces--compact .about-faces__photo-link {
+  grid-row: 1;
+  align-self: end;
+  width: calc(100% - var(--v3-space-xs));
+  aspect-ratio: 2 / 3;
+}
+
+/* The shelf is the name row's top rule. */
+.about-faces--compact .about-faces__name {
+  grid-row: 2;
+  display: flex;
+  align-items: flex-start;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) var(--v3-space-xs) 0 0;
+  border-top: var(--v3-rule-hairline);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-heading);
+  white-space: normal;
+}
+
+.about-faces--compact .about-faces__license {
+  grid-row: 3;
+  padding: 0 var(--v3-space-xs) var(--v3-space-xs) 0;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Rows, not chips: a hairline above each, the full column as the target. */
+.about-faces--compact .about-faces__reach {
+  justify-content: flex-start;
+  gap: var(--v3-space-2xs);
+  padding: 0 var(--v3-space-xs) 0 0;
+  border: 0;
+  border-top: var(--v3-rule-hairline);
+  background: transparent;
+  color: var(--v3-ink);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.about-faces--compact .about-faces__reach--call {
+  grid-row: 4;
+}
+
+.about-faces--compact .about-faces__reach--text {
+  grid-row: 5;
+}
+
+.about-faces--compact .about-faces__reach--book {
+  grid-row: 6;
+}
+
+/* The wash is the only motion; it encodes which row will open (V3Ledger). */
+.about-faces--compact .about-faces__reach:hover,
+.about-faces--compact .about-faces__reach:focus-visible {
+  color: var(--v3-ink);
+  background: var(--v3-wash);
+  border-top-color: var(--v3-hairline);
+}
+
+.about-faces__reach-detail {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-body);
+  letter-spacing: 0;
+  line-height: var(--v3-leading-control);
+  text-transform: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 48rem) {
+  /* Faces are the content: half again the card-photo width, still well
+     inside a third of the measure. */
+  .about-faces--compact .about-faces__photo-link {
+    width: min(calc(100% - var(--v3-space-xs)), calc(var(--v3-card-photo-w) * 1.5));
+  }
+
+  .about-faces--compact .about-faces__name {
+    font-size: var(--v3-size-body);
+  }
+
+  /* Label goes quiet, the number carries the row. A fixed label width keeps
+     the three numbers on one vertical line. */
+  .about-faces--compact .about-faces__reach-label {
+    min-width: 3rem;
+    color: var(--v3-ink-muted);
+  }
+
+  .about-faces--compact .about-faces__reach-detail {
+    display: inline-block;
+  }
+}

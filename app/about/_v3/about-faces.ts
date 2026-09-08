@@ -57,6 +57,57 @@ export function aboutDisplayName(slug: string, fullName: string): string {
   return BROKER_BY_SLUG.get(slug)?.nameShort ?? fullName
 }
 
+export type AboutReachRow = {
+  kind: 'call' | 'text' | 'book'
+  href: string
+  /** The row label at every width. */
+  label: string
+  /**
+   * Shown beside the label from 48rem up, where a tel: link is not a tap: the
+   * broker's own number for Call and Text, what /book offers for Book. Never an
+   * invented number: null when the roster has no display phone.
+   */
+  detail: string | null
+  ariaLabel: string
+}
+
+/**
+ * The compact (homepage) reach rows, in table order: Call, Text, Book. Email
+ * and Schedule stay on the roster and the portrait. A row the broker cannot
+ * take is absent, never a placeholder, so no dead link ships.
+ */
+export function aboutCompactReach(
+  person: Pick<AboutFace, 'name' | 'tel' | 'phoneDisplay' | 'bookHref'>,
+): AboutReachRow[] {
+  const rows: AboutReachRow[] = []
+  if (person.tel) {
+    rows.push({
+      kind: 'call',
+      href: `tel:${person.tel}`,
+      label: 'Call',
+      detail: person.phoneDisplay,
+      ariaLabel: `Call ${person.name}`,
+    })
+    rows.push({
+      kind: 'text',
+      href: `sms:${person.tel}`,
+      label: 'Text',
+      detail: person.phoneDisplay,
+      ariaLabel: `Text ${person.name}`,
+    })
+  }
+  if (person.bookHref) {
+    rows.push({
+      kind: 'book',
+      href: person.bookHref,
+      label: 'Book',
+      detail: 'Pick a time',
+      ariaLabel: `Book time with ${person.name}`,
+    })
+  }
+  return rows
+}
+
 export function aboutFaceFromBroker(b: {
   slug: string
   fullName: string | null | undefined
